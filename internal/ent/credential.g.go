@@ -5,17 +5,17 @@ package ent
 
 import (
 	uuid "github.com/google/uuid"
-	roster "github.com/lesomnus/roster"
+	rstr "github.com/lesomnus/roster/rstr"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (e *Credential) Proto() *roster.Credential {
-	x := &roster.Credential{}
+func (e *Credential) Proto() *rstr.Credential {
+	x := &rstr.Credential{}
 	x.SetId(e.ID[:])
 	if v := e.Edges.Holder; v != nil {
 		x.SetHolder(v.Proto())
 	} else if v := e.HolderID; v != *new(uuid.UUID) {
-		r := &roster.Holder{}
+		r := &rstr.Holder{}
 		r.SetId(v[:])
 		x.SetHolder(r)
 	}

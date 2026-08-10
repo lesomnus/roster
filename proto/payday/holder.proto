@@ -7,7 +7,7 @@ import "payday.proto";
 import "payday/tenant.proto";
 
 option features.field_presence = IMPLICIT;
-option go_package = "github.com/lesomnus/roster";
+option go_package = "github.com/lesomnus/roster/rstr";
 
 // Holder is who a request is from.
 //

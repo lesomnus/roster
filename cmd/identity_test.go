@@ -9,7 +9,7 @@ import (
 
 	"github.com/lesomnus/payday/pderr"
 
-	app "github.com/lesomnus/roster"
+	app "github.com/lesomnus/roster/rstr"
 )
 
 // TestOnePersonHasSeveralIdentities is why Identity is a row.

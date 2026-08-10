@@ -5,24 +5,24 @@ package ent
 
 import (
 	uuid "github.com/google/uuid"
-	roster "github.com/lesomnus/roster"
+	rstr "github.com/lesomnus/roster/rstr"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (e *SiteMembership) Proto() *roster.SiteMembership {
-	x := &roster.SiteMembership{}
+func (e *SiteMembership) Proto() *rstr.SiteMembership {
+	x := &rstr.SiteMembership{}
 	x.SetId(e.ID[:])
 	if v := e.Edges.Holder; v != nil {
 		x.SetHolder(v.Proto())
 	} else if v := e.HolderID; v != *new(uuid.UUID) {
-		r := &roster.Holder{}
+		r := &rstr.Holder{}
 		r.SetId(v[:])
 		x.SetHolder(r)
 	}
 	if v := e.Edges.Site; v != nil {
 		x.SetSite(v.Proto())
 	} else if v := e.SiteID; v != *new(uuid.UUID) {
-		r := &roster.Site{}
+		r := &rstr.Site{}
 		r.SetId(v[:])
 		x.SetSite(r)
 	}
@@ -33,20 +33,20 @@ func (e *SiteMembership) Proto() *roster.SiteMembership {
 	x.SetDateCreated(timestamppb.New(e.DateCreated))
 	return x
 }
-func (e *TeamMembership) Proto() *roster.TeamMembership {
-	x := &roster.TeamMembership{}
+func (e *TeamMembership) Proto() *rstr.TeamMembership {
+	x := &rstr.TeamMembership{}
 	x.SetId(e.ID[:])
 	if v := e.Edges.Holder; v != nil {
 		x.SetHolder(v.Proto())
 	} else if v := e.HolderID; v != *new(uuid.UUID) {
-		r := &roster.Holder{}
+		r := &rstr.Holder{}
 		r.SetId(v[:])
 		x.SetHolder(r)
 	}
 	if v := e.Edges.Team; v != nil {
 		x.SetTeam(v.Proto())
 	} else if v := e.TeamID; v != *new(uuid.UUID) {
-		r := &roster.Team{}
+		r := &rstr.Team{}
 		r.SetId(v[:])
 		x.SetTeam(r)
 	}

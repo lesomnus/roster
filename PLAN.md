@@ -162,6 +162,25 @@ one predicate rather than three reads.
 A role therefore means something *in a site*: operator in Seoul, reader in
 Frankfurt, one person. A role held on the person could not say that.
 
+### D10 · The generated messages are package `rstr`, in `rstr/`
+
+Rather than at the module root, which is what `pd new` writes, and rather than
+the `api/` that custody uses.
+
+The reason is that roster's types are **meant to be imported by other apps** —
+it is a service others call, so its messages travel. `api` is what every app
+calls its own generated package, so a product importing roster's would be
+aliasing one of the two on every file. `rstr` collides with nothing.
+
+Inside roster the import keeps the alias `app`, which is the template's
+convention and custody's: locally these are "this app's types", and the package
+name is doing its work at the other end.
+
+Changing it is one line per proto — `option go_package` — and `pd gen` follows,
+including rewriting the copies of payday's own entities. Nothing else moved:
+`internal/ent`, `server/bare` and `server/pd` are named from the module root
+rather than from the messages.
+
 ### D9 · The linking rules are a layer, and they apply without the wall too
 
 Two judgements no schema can state, in `server/core`:

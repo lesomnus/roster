@@ -4,12 +4,12 @@
 package ent
 
 import (
-	roster "github.com/lesomnus/roster"
+	rstr "github.com/lesomnus/roster/rstr"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (e *Tenant) Proto() *roster.Tenant {
-	x := &roster.Tenant{}
+func (e *Tenant) Proto() *rstr.Tenant {
+	x := &rstr.Tenant{}
 	x.SetId(e.ID[:])
 	x.SetAlias(e.Alias)
 	x.SetName(e.Name)

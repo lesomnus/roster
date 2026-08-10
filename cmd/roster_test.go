@@ -11,8 +11,8 @@ import (
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/pdtest"
 
-	app "github.com/lesomnus/roster"
 	"github.com/lesomnus/roster/cmd"
+	app "github.com/lesomnus/roster/rstr"
 )
 
 // built is roster with two customers in it, and somebody in each.

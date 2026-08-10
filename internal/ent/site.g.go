@@ -5,17 +5,17 @@ package ent
 
 import (
 	uuid "github.com/google/uuid"
-	roster "github.com/lesomnus/roster"
+	rstr "github.com/lesomnus/roster/rstr"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (e *Site) Proto() *roster.Site {
-	x := &roster.Site{}
+func (e *Site) Proto() *rstr.Site {
+	x := &rstr.Site{}
 	x.SetId(e.ID[:])
 	if v := e.Edges.Tenant; v != nil {
 		x.SetTenant(v.Proto())
 	} else if v := e.TenantID; v != *new(uuid.UUID) {
-		r := &roster.Tenant{}
+		r := &rstr.Tenant{}
 		r.SetId(v[:])
 		x.SetTenant(r)
 	}

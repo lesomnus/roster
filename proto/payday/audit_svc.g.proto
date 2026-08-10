@@ -6,7 +6,7 @@ import "google/protobuf/timestamp.proto";
 import "patch/patch.proto";
 import "payday/audit.proto";
 
-option go_package = "github.com/lesomnus/roster";
+option go_package = "github.com/lesomnus/roster/rstr";
 
 service AuditService {
   // Add creates a new Audit

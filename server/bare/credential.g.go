@@ -9,10 +9,10 @@ import (
 	errors "errors"
 	uuid "github.com/google/uuid"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
-	roster "github.com/lesomnus/roster"
 	ent "github.com/lesomnus/roster/internal/ent"
 	credential "github.com/lesomnus/roster/internal/ent/credential"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
+	rstr "github.com/lesomnus/roster/rstr"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
@@ -24,7 +24,7 @@ import (
 type CredentialServiceServer struct {
 	Store
 
-	roster.UnimplementedCredentialServiceServer
+	rstr.UnimplementedCredentialServiceServer
 }
 
 // NewCredentialServiceServer answers with a server that runs its queries with `db`.
@@ -32,7 +32,7 @@ type CredentialServiceServer struct {
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
 // reports nowhere and sees everything.
-func NewCredentialServiceServer(db *ent.Client, opts ...Option) roster.CredentialServiceServer {
+func NewCredentialServiceServer(db *ent.Client, opts ...Option) rstr.CredentialServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
 		opt(&s)
@@ -80,7 +80,7 @@ func (s CredentialServiceServer) narrow(ctx context.Context, p predicate.Credent
 	return CredentialNarrow(ctx, s.Scope, p)
 }
 
-func (s CredentialServiceServer) Add(ctx context.Context, req *roster.CredentialAddRequest) (*roster.Credential, error) {
+func (s CredentialServiceServer) Add(ctx context.Context, req *rstr.CredentialAddRequest) (*rstr.Credential, error) {
 	tx, err := enttx.Join[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
 		return nil, err
@@ -90,7 +90,7 @@ func (s CredentialServiceServer) Add(ctx context.Context, req *roster.Credential
 	st := s
 	st.Db = tx.Db
 
-	ds := make([]func(v *roster.Credential), 0, 1)
+	ds := make([]func(v *rstr.Credential), 0, 1)
 	q := st.Db.Credential.Create()
 	var k uuid.UUID
 	if req.HasId() {
@@ -109,8 +109,8 @@ func (s CredentialServiceServer) Add(ctx context.Context, req *roster.Credential
 		return nil, err
 	} else {
 		q.SetHolderID(k)
-		ds = append(ds, func(v *roster.Credential) {
-			v.SetHolder(roster.Holder_builder{Id: k[:]}.Build())
+		ds = append(ds, func(v *rstr.Credential) {
+			v.SetHolder(rstr.Holder_builder{Id: k[:]}.Build())
 		})
 	}
 	q.SetKind(req.GetKind())
@@ -143,7 +143,7 @@ func (s CredentialServiceServer) Add(ctx context.Context, req *roster.Credential
 	}
 
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  roster.CredentialService_Add_FullMethodName,
+		By:  rstr.CredentialService_Add_FullMethodName,
 		Key: u.ID,
 	}); err != nil {
 		return nil, err
@@ -159,7 +159,7 @@ func (s CredentialServiceServer) Add(ctx context.Context, req *roster.Credential
 	return v, nil
 }
 
-func (s CredentialServiceServer) Get(ctx context.Context, req *roster.CredentialGetRequest) (*roster.Credential, error) {
+func (s CredentialServiceServer) Get(ctx context.Context, req *rstr.CredentialGetRequest) (*rstr.Credential, error) {
 	p, err := CredentialPick(req.GetRef())
 	if err != nil {
 		return nil, err
@@ -186,7 +186,7 @@ func selectCredentialKey(q *ent.CredentialQuery) {
 	q.Select(credential.FieldID)
 }
 
-func CredentialSelectedFields(m *roster.CredentialSelect) []string {
+func CredentialSelectedFields(m *rstr.CredentialSelect) []string {
 	if m.GetAll() {
 		return credential.Columns
 	}
@@ -223,7 +223,7 @@ func CredentialSelectedFields(m *roster.CredentialSelect) []string {
 	return vs
 }
 
-func CredentialSelect(q *ent.CredentialQuery, m *roster.CredentialSelect) {
+func CredentialSelect(q *ent.CredentialQuery, m *rstr.CredentialSelect) {
 	if !m.GetAll() {
 		fields := CredentialSelectedFields(m)
 		q.Select(fields...)
@@ -235,7 +235,7 @@ func CredentialSelect(q *ent.CredentialQuery, m *roster.CredentialSelect) {
 	}
 }
 
-func CredentialSelectInit(q *ent.CredentialQuery, m *roster.CredentialSelect) {
+func CredentialSelectInit(q *ent.CredentialQuery, m *rstr.CredentialSelect) {
 	if m != nil {
 		CredentialSelect(q, m)
 	} else {
@@ -243,7 +243,7 @@ func CredentialSelectInit(q *ent.CredentialQuery, m *roster.CredentialSelect) {
 	}
 }
 
-func (s CredentialServiceServer) Patch(ctx context.Context, req *roster.CredentialPatchRequest) (*roster.Credential, error) {
+func (s CredentialServiceServer) Patch(ctx context.Context, req *rstr.CredentialPatchRequest) (*rstr.Credential, error) {
 	doc, err := ormpatch.FromPatchRequest(credentialOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -258,10 +258,10 @@ func (s CredentialServiceServer) Patch(ctx context.Context, req *roster.Credenti
 		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 	}
 
-	return s.apply(ctx, req.GetRef(), doc, roster.CredentialService_Patch_FullMethodName)
+	return s.apply(ctx, req.GetRef(), doc, rstr.CredentialService_Patch_FullMethodName)
 }
 
-func CredentialGetKey(ctx context.Context, db *ent.Client, ref *roster.CredentialRef) (uuid.UUID, error) {
+func CredentialGetKey(ctx context.Context, db *ent.Client, ref *rstr.CredentialRef) (uuid.UUID, error) {
 	var z uuid.UUID
 	if ref.HasId() {
 		if v, err := uuid.FromBytes(ref.GetId()); err != nil {
@@ -287,19 +287,19 @@ func CredentialGetKey(ctx context.Context, db *ent.Client, ref *roster.Credentia
 	return v, nil
 }
 
-var credentialOrmEntity = ormpatch.MustEntityOf(roster.File_app_credential_proto, "Credential")
+var credentialOrmEntity = ormpatch.MustEntityOf(rstr.File_app_credential_proto, "Credential")
 
 var credentialPatchColumns = entpatch.Columns{
 	1: credential.FieldID, 2: credential.HolderColumn, 8: credential.FieldKind, 9: credential.FieldSecret, 10: credential.FieldFailures, 11: credential.FieldDateLocked, 12: credential.FieldDateRotated, 13: credential.FieldDateUpdated, 14: credential.FieldDateErased, 15: credential.FieldDateCreated}
 
-func (s CredentialServiceServer) Apply(ctx context.Context, req *roster.CredentialApplyRequest) (*roster.Credential, error) {
+func (s CredentialServiceServer) Apply(ctx context.Context, req *rstr.CredentialApplyRequest) (*rstr.Credential, error) {
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), roster.CredentialService_Apply_FullMethodName)
+	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.CredentialService_Apply_FullMethodName)
 }
 
-func (s CredentialServiceServer) apply(ctx context.Context, ref *roster.CredentialRef, doc *patchpb.Patch, by string) (*roster.Credential, error) {
+func (s CredentialServiceServer) apply(ctx context.Context, ref *rstr.CredentialRef, doc *patchpb.Patch, by string) (*rstr.Credential, error) {
 	plan := &ormpatch.Plan{Entity: credentialOrmEntity}
 	if doc != nil {
 		v, err := ormpatch.Compile(credentialOrmEntity, doc)
@@ -333,7 +333,7 @@ func (s CredentialServiceServer) apply(ctx context.Context, ref *roster.Credenti
 	if err != nil {
 		return nil, err
 	}
-	at := &roster.CredentialRef{}
+	at := &rstr.CredentialRef{}
 	at.SetId(k[:])
 	p, err := s.narrow(ctx, credential.IDEQ(k))
 	if err != nil {
@@ -400,7 +400,7 @@ func (s CredentialServiceServer) apply(ctx context.Context, ref *roster.Credenti
 	return out, nil
 }
 
-func (s CredentialServiceServer) Erase(ctx context.Context, req *roster.CredentialRef) (*emptypb.Empty, error) {
+func (s CredentialServiceServer) Erase(ctx context.Context, req *rstr.CredentialRef) (*emptypb.Empty, error) {
 	p, err := CredentialPick(req)
 	if err != nil {
 		return nil, err
@@ -442,7 +442,7 @@ func (s CredentialServiceServer) Erase(ctx context.Context, req *roster.Credenti
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  roster.CredentialService_Erase_FullMethodName,
+			By:  rstr.CredentialService_Erase_FullMethodName,
 			Key: k,
 		}); err != nil {
 			return nil, err
@@ -454,15 +454,15 @@ func (s CredentialServiceServer) Erase(ctx context.Context, req *roster.Credenti
 	return &emptypb.Empty{}, nil
 }
 
-func CredentialPick(req *roster.CredentialRef) (predicate.Credential, error) {
+func CredentialPick(req *rstr.CredentialRef) (predicate.Credential, error) {
 	switch req.WhichKey() {
-	case roster.CredentialRef_Id_case:
+	case rstr.CredentialRef_Id_case:
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			return credential.IDEQ(v), nil
 		}
-	case roster.CredentialRef_Kind_case:
+	case rstr.CredentialRef_Kind_case:
 		k := req.GetKind()
 		ps := make([]predicate.Credential, 0, 2)
 		if p, err := HolderPick(k.GetHolder()); err != nil {
@@ -472,7 +472,7 @@ func CredentialPick(req *roster.CredentialRef) (predicate.Credential, error) {
 		}
 		ps = append(ps, credential.KindEQ(k.GetKind()))
 		return credential.And(ps...), nil
-	case roster.CredentialRef_Key_not_set_case:
+	case rstr.CredentialRef_Key_not_set_case:
 		return nil, status.Errorf(codes.InvalidArgument, "key not set: Credential")
 	default:
 		return nil, status.Errorf(codes.Unimplemented, "unknown type of key: %s", req.WhichKey())

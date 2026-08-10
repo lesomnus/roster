@@ -9,10 +9,10 @@ import (
 	errors "errors"
 	uuid "github.com/google/uuid"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
-	roster "github.com/lesomnus/roster"
 	ent "github.com/lesomnus/roster/internal/ent"
 	email "github.com/lesomnus/roster/internal/ent/email"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
+	rstr "github.com/lesomnus/roster/rstr"
 	graph "github.com/protobuf-orm/protobuf-orm/graph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
@@ -26,7 +26,7 @@ import (
 type EmailServiceServer struct {
 	Store
 
-	roster.UnimplementedEmailServiceServer
+	rstr.UnimplementedEmailServiceServer
 }
 
 // NewEmailServiceServer answers with a server that runs its queries with `db`.
@@ -34,7 +34,7 @@ type EmailServiceServer struct {
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
 // reports nowhere and sees everything.
-func NewEmailServiceServer(db *ent.Client, opts ...Option) roster.EmailServiceServer {
+func NewEmailServiceServer(db *ent.Client, opts ...Option) rstr.EmailServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
 		opt(&s)
@@ -82,7 +82,7 @@ func (s EmailServiceServer) narrow(ctx context.Context, p predicate.Email) (pred
 	return EmailNarrow(ctx, s.Scope, p)
 }
 
-func (s EmailServiceServer) Add(ctx context.Context, req *roster.EmailAddRequest) (*roster.Email, error) {
+func (s EmailServiceServer) Add(ctx context.Context, req *rstr.EmailAddRequest) (*rstr.Email, error) {
 	tx, err := enttx.Join[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
 		return nil, err
@@ -92,7 +92,7 @@ func (s EmailServiceServer) Add(ctx context.Context, req *roster.EmailAddRequest
 	st := s
 	st.Db = tx.Db
 
-	ds := make([]func(v *roster.Email), 0, 2)
+	ds := make([]func(v *rstr.Email), 0, 2)
 	q := st.Db.Email.Create()
 	var k uuid.UUID
 	if req.HasId() {
@@ -111,8 +111,8 @@ func (s EmailServiceServer) Add(ctx context.Context, req *roster.EmailAddRequest
 		return nil, err
 	} else {
 		q.SetHolderID(k)
-		ds = append(ds, func(v *roster.Email) {
-			v.SetHolder(roster.Holder_builder{Id: k[:]}.Build())
+		ds = append(ds, func(v *rstr.Email) {
+			v.SetHolder(rstr.Holder_builder{Id: k[:]}.Build())
 		})
 	}
 	q.SetAddress(req.GetAddress())
@@ -124,8 +124,8 @@ func (s EmailServiceServer) Add(ctx context.Context, req *roster.EmailAddRequest
 			return nil, err
 		} else {
 			q.SetVouchedByID(k)
-			ds = append(ds, func(v *roster.Email) {
-				v.SetVouchedBy(roster.Identity_builder{Id: k[:]}.Build())
+			ds = append(ds, func(v *rstr.Email) {
+				v.SetVouchedBy(rstr.Identity_builder{Id: k[:]}.Build())
 			})
 		}
 	}
@@ -150,7 +150,7 @@ func (s EmailServiceServer) Add(ctx context.Context, req *roster.EmailAddRequest
 	}
 
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  roster.EmailService_Add_FullMethodName,
+		By:  rstr.EmailService_Add_FullMethodName,
 		Key: u.ID,
 	}); err != nil {
 		return nil, err
@@ -166,7 +166,7 @@ func (s EmailServiceServer) Add(ctx context.Context, req *roster.EmailAddRequest
 	return v, nil
 }
 
-func (s EmailServiceServer) Get(ctx context.Context, req *roster.EmailGetRequest) (*roster.Email, error) {
+func (s EmailServiceServer) Get(ctx context.Context, req *rstr.EmailGetRequest) (*rstr.Email, error) {
 	p, err := EmailPick(req.GetRef())
 	if err != nil {
 		return nil, err
@@ -193,7 +193,7 @@ func selectEmailKey(q *ent.EmailQuery) {
 	q.Select(email.FieldID)
 }
 
-func EmailSelectedFields(m *roster.EmailSelect) []string {
+func EmailSelectedFields(m *rstr.EmailSelect) []string {
 	if m.GetAll() {
 		return email.Columns
 	}
@@ -221,7 +221,7 @@ func EmailSelectedFields(m *roster.EmailSelect) []string {
 	return vs
 }
 
-func EmailSelect(q *ent.EmailQuery, m *roster.EmailSelect) {
+func EmailSelect(q *ent.EmailQuery, m *rstr.EmailSelect) {
 	if !m.GetAll() {
 		fields := EmailSelectedFields(m)
 		q.Select(fields...)
@@ -238,7 +238,7 @@ func EmailSelect(q *ent.EmailQuery, m *roster.EmailSelect) {
 	}
 }
 
-func EmailSelectInit(q *ent.EmailQuery, m *roster.EmailSelect) {
+func EmailSelectInit(q *ent.EmailQuery, m *rstr.EmailSelect) {
 	if m != nil {
 		EmailSelect(q, m)
 	} else {
@@ -247,11 +247,11 @@ func EmailSelectInit(q *ent.EmailQuery, m *roster.EmailSelect) {
 	}
 }
 
-func (s EmailServiceServer) Patch(ctx context.Context, req *roster.EmailPatchRequest) (*roster.Email, error) {
+func (s EmailServiceServer) Patch(ctx context.Context, req *rstr.EmailPatchRequest) (*rstr.Email, error) {
 	doc, err := ormpatch.FromPatchRequest(emailOrmEntity, req.ProtoReflect(), func(ed graph.Edge, ref protoreflect.Message) (protoreflect.Value, error) {
 		switch ed.Number() {
 		case 10:
-			k, err := IdentityGetKey(ctx, s.Db, ref.Interface().(*roster.IdentityRef))
+			k, err := IdentityGetKey(ctx, s.Db, ref.Interface().(*rstr.IdentityRef))
 			if err != nil {
 				return protoreflect.Value{}, err
 			}
@@ -272,10 +272,10 @@ func (s EmailServiceServer) Patch(ctx context.Context, req *roster.EmailPatchReq
 		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 	}
 
-	return s.apply(ctx, req.GetRef(), doc, roster.EmailService_Patch_FullMethodName)
+	return s.apply(ctx, req.GetRef(), doc, rstr.EmailService_Patch_FullMethodName)
 }
 
-func EmailGetKey(ctx context.Context, db *ent.Client, ref *roster.EmailRef) (uuid.UUID, error) {
+func EmailGetKey(ctx context.Context, db *ent.Client, ref *rstr.EmailRef) (uuid.UUID, error) {
 	var z uuid.UUID
 	if ref.HasId() {
 		if v, err := uuid.FromBytes(ref.GetId()); err != nil {
@@ -301,19 +301,19 @@ func EmailGetKey(ctx context.Context, db *ent.Client, ref *roster.EmailRef) (uui
 	return v, nil
 }
 
-var emailOrmEntity = ormpatch.MustEntityOf(roster.File_app_email_proto, "Email")
+var emailOrmEntity = ormpatch.MustEntityOf(rstr.File_app_email_proto, "Email")
 
 var emailPatchColumns = entpatch.Columns{
 	1: email.FieldID, 2: email.HolderColumn, 8: email.FieldAddress, 9: email.FieldDateVerified, 10: email.VouchedByColumn, 13: email.FieldDateUpdated, 14: email.FieldDateErased, 15: email.FieldDateCreated}
 
-func (s EmailServiceServer) Apply(ctx context.Context, req *roster.EmailApplyRequest) (*roster.Email, error) {
+func (s EmailServiceServer) Apply(ctx context.Context, req *rstr.EmailApplyRequest) (*rstr.Email, error) {
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), roster.EmailService_Apply_FullMethodName)
+	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.EmailService_Apply_FullMethodName)
 }
 
-func (s EmailServiceServer) apply(ctx context.Context, ref *roster.EmailRef, doc *patchpb.Patch, by string) (*roster.Email, error) {
+func (s EmailServiceServer) apply(ctx context.Context, ref *rstr.EmailRef, doc *patchpb.Patch, by string) (*rstr.Email, error) {
 	plan := &ormpatch.Plan{Entity: emailOrmEntity}
 	if doc != nil {
 		v, err := ormpatch.Compile(emailOrmEntity, doc)
@@ -347,7 +347,7 @@ func (s EmailServiceServer) apply(ctx context.Context, ref *roster.EmailRef, doc
 	if err != nil {
 		return nil, err
 	}
-	at := &roster.EmailRef{}
+	at := &rstr.EmailRef{}
 	at.SetId(k[:])
 	p, err := s.narrow(ctx, email.IDEQ(k))
 	if err != nil {
@@ -414,7 +414,7 @@ func (s EmailServiceServer) apply(ctx context.Context, ref *roster.EmailRef, doc
 	return out, nil
 }
 
-func (s EmailServiceServer) Erase(ctx context.Context, req *roster.EmailRef) (*emptypb.Empty, error) {
+func (s EmailServiceServer) Erase(ctx context.Context, req *rstr.EmailRef) (*emptypb.Empty, error) {
 	p, err := EmailPick(req)
 	if err != nil {
 		return nil, err
@@ -456,7 +456,7 @@ func (s EmailServiceServer) Erase(ctx context.Context, req *roster.EmailRef) (*e
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  roster.EmailService_Erase_FullMethodName,
+			By:  rstr.EmailService_Erase_FullMethodName,
 			Key: k,
 		}); err != nil {
 			return nil, err
@@ -468,15 +468,15 @@ func (s EmailServiceServer) Erase(ctx context.Context, req *roster.EmailRef) (*e
 	return &emptypb.Empty{}, nil
 }
 
-func EmailPick(req *roster.EmailRef) (predicate.Email, error) {
+func EmailPick(req *rstr.EmailRef) (predicate.Email, error) {
 	switch req.WhichKey() {
-	case roster.EmailRef_Id_case:
+	case rstr.EmailRef_Id_case:
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			return email.IDEQ(v), nil
 		}
-	case roster.EmailRef_Address_case:
+	case rstr.EmailRef_Address_case:
 		k := req.GetAddress()
 		ps := make([]predicate.Email, 0, 2)
 		if p, err := HolderPick(k.GetHolder()); err != nil {
@@ -486,7 +486,7 @@ func EmailPick(req *roster.EmailRef) (predicate.Email, error) {
 		}
 		ps = append(ps, email.AddressEQ(k.GetAddress()))
 		return email.And(ps...), nil
-	case roster.EmailRef_Key_not_set_case:
+	case rstr.EmailRef_Key_not_set_case:
 		return nil, status.Errorf(codes.InvalidArgument, "key not set: Email")
 	default:
 		return nil, status.Errorf(codes.Unimplemented, "unknown type of key: %s", req.WhichKey())

@@ -11,7 +11,7 @@ import (
 	"entgo.io/ent/dialect"
 	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 
-	app "github.com/lesomnus/roster"
+	app "github.com/lesomnus/roster/rstr"
 )
 
 // Core is the layer that answers what this app decided.

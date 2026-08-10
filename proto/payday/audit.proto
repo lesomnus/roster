@@ -7,7 +7,7 @@ import "orm.proto";
 import "payday.proto";
 
 option features.field_presence = IMPLICIT;
-option go_package = "github.com/lesomnus/roster";
+option go_package = "github.com/lesomnus/roster/rstr";
 
 // Audit is one write that happened, and who made it.
 //

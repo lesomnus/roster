@@ -5,17 +5,17 @@ package ent
 
 import (
 	uuid "github.com/google/uuid"
-	roster "github.com/lesomnus/roster"
+	rstr "github.com/lesomnus/roster/rstr"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (e *Team) Proto() *roster.Team {
-	x := &roster.Team{}
+func (e *Team) Proto() *rstr.Team {
+	x := &rstr.Team{}
 	x.SetId(e.ID[:])
 	if v := e.Edges.Site; v != nil {
 		x.SetSite(v.Proto())
 	} else if v := e.SiteID; v != *new(uuid.UUID) {
-		r := &roster.Site{}
+		r := &rstr.Site{}
 		r.SetId(v[:])
 		x.SetSite(r)
 	}

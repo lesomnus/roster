@@ -9,10 +9,10 @@ import (
 	errors "errors"
 	uuid "github.com/google/uuid"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
-	roster "github.com/lesomnus/roster"
 	ent "github.com/lesomnus/roster/internal/ent"
 	identity "github.com/lesomnus/roster/internal/ent/identity"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
+	rstr "github.com/lesomnus/roster/rstr"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
@@ -24,7 +24,7 @@ import (
 type IdentityServiceServer struct {
 	Store
 
-	roster.UnimplementedIdentityServiceServer
+	rstr.UnimplementedIdentityServiceServer
 }
 
 // NewIdentityServiceServer answers with a server that runs its queries with `db`.
@@ -32,7 +32,7 @@ type IdentityServiceServer struct {
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
 // reports nowhere and sees everything.
-func NewIdentityServiceServer(db *ent.Client, opts ...Option) roster.IdentityServiceServer {
+func NewIdentityServiceServer(db *ent.Client, opts ...Option) rstr.IdentityServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
 		opt(&s)
@@ -80,7 +80,7 @@ func (s IdentityServiceServer) narrow(ctx context.Context, p predicate.Identity)
 	return IdentityNarrow(ctx, s.Scope, p)
 }
 
-func (s IdentityServiceServer) Add(ctx context.Context, req *roster.IdentityAddRequest) (*roster.Identity, error) {
+func (s IdentityServiceServer) Add(ctx context.Context, req *rstr.IdentityAddRequest) (*rstr.Identity, error) {
 	tx, err := enttx.Join[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
 		return nil, err
@@ -90,7 +90,7 @@ func (s IdentityServiceServer) Add(ctx context.Context, req *roster.IdentityAddR
 	st := s
 	st.Db = tx.Db
 
-	ds := make([]func(v *roster.Identity), 0, 1)
+	ds := make([]func(v *rstr.Identity), 0, 1)
 	q := st.Db.Identity.Create()
 	var k uuid.UUID
 	if req.HasId() {
@@ -109,8 +109,8 @@ func (s IdentityServiceServer) Add(ctx context.Context, req *roster.IdentityAddR
 		return nil, err
 	} else {
 		q.SetHolderID(k)
-		ds = append(ds, func(v *roster.Identity) {
-			v.SetHolder(roster.Holder_builder{Id: k[:]}.Build())
+		ds = append(ds, func(v *rstr.Identity) {
+			v.SetHolder(rstr.Holder_builder{Id: k[:]}.Build())
 		})
 	}
 	q.SetProvider(req.GetProvider())
@@ -136,7 +136,7 @@ func (s IdentityServiceServer) Add(ctx context.Context, req *roster.IdentityAddR
 	}
 
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  roster.IdentityService_Add_FullMethodName,
+		By:  rstr.IdentityService_Add_FullMethodName,
 		Key: u.ID,
 	}); err != nil {
 		return nil, err
@@ -152,7 +152,7 @@ func (s IdentityServiceServer) Add(ctx context.Context, req *roster.IdentityAddR
 	return v, nil
 }
 
-func (s IdentityServiceServer) Get(ctx context.Context, req *roster.IdentityGetRequest) (*roster.Identity, error) {
+func (s IdentityServiceServer) Get(ctx context.Context, req *rstr.IdentityGetRequest) (*rstr.Identity, error) {
 	p, err := IdentityPick(req.GetRef())
 	if err != nil {
 		return nil, err
@@ -179,7 +179,7 @@ func selectIdentityKey(q *ent.IdentityQuery) {
 	q.Select(identity.FieldID)
 }
 
-func IdentitySelectedFields(m *roster.IdentitySelect) []string {
+func IdentitySelectedFields(m *rstr.IdentitySelect) []string {
 	if m.GetAll() {
 		return identity.Columns
 	}
@@ -207,7 +207,7 @@ func IdentitySelectedFields(m *roster.IdentitySelect) []string {
 	return vs
 }
 
-func IdentitySelect(q *ent.IdentityQuery, m *roster.IdentitySelect) {
+func IdentitySelect(q *ent.IdentityQuery, m *rstr.IdentitySelect) {
 	if !m.GetAll() {
 		fields := IdentitySelectedFields(m)
 		q.Select(fields...)
@@ -219,7 +219,7 @@ func IdentitySelect(q *ent.IdentityQuery, m *roster.IdentitySelect) {
 	}
 }
 
-func IdentitySelectInit(q *ent.IdentityQuery, m *roster.IdentitySelect) {
+func IdentitySelectInit(q *ent.IdentityQuery, m *rstr.IdentitySelect) {
 	if m != nil {
 		IdentitySelect(q, m)
 	} else {
@@ -227,7 +227,7 @@ func IdentitySelectInit(q *ent.IdentityQuery, m *roster.IdentitySelect) {
 	}
 }
 
-func (s IdentityServiceServer) Patch(ctx context.Context, req *roster.IdentityPatchRequest) (*roster.Identity, error) {
+func (s IdentityServiceServer) Patch(ctx context.Context, req *rstr.IdentityPatchRequest) (*rstr.Identity, error) {
 	doc, err := ormpatch.FromPatchRequest(identityOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -242,10 +242,10 @@ func (s IdentityServiceServer) Patch(ctx context.Context, req *roster.IdentityPa
 		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 	}
 
-	return s.apply(ctx, req.GetRef(), doc, roster.IdentityService_Patch_FullMethodName)
+	return s.apply(ctx, req.GetRef(), doc, rstr.IdentityService_Patch_FullMethodName)
 }
 
-func IdentityGetKey(ctx context.Context, db *ent.Client, ref *roster.IdentityRef) (uuid.UUID, error) {
+func IdentityGetKey(ctx context.Context, db *ent.Client, ref *rstr.IdentityRef) (uuid.UUID, error) {
 	var z uuid.UUID
 	if ref.HasId() {
 		if v, err := uuid.FromBytes(ref.GetId()); err != nil {
@@ -271,19 +271,19 @@ func IdentityGetKey(ctx context.Context, db *ent.Client, ref *roster.IdentityRef
 	return v, nil
 }
 
-var identityOrmEntity = ormpatch.MustEntityOf(roster.File_app_identity_proto, "Identity")
+var identityOrmEntity = ormpatch.MustEntityOf(rstr.File_app_identity_proto, "Identity")
 
 var identityPatchColumns = entpatch.Columns{
 	1: identity.FieldID, 2: identity.HolderColumn, 8: identity.FieldProvider, 9: identity.FieldSubject, 13: identity.FieldDateUpdated, 14: identity.FieldDateErased, 15: identity.FieldDateCreated}
 
-func (s IdentityServiceServer) Apply(ctx context.Context, req *roster.IdentityApplyRequest) (*roster.Identity, error) {
+func (s IdentityServiceServer) Apply(ctx context.Context, req *rstr.IdentityApplyRequest) (*rstr.Identity, error) {
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), roster.IdentityService_Apply_FullMethodName)
+	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.IdentityService_Apply_FullMethodName)
 }
 
-func (s IdentityServiceServer) apply(ctx context.Context, ref *roster.IdentityRef, doc *patchpb.Patch, by string) (*roster.Identity, error) {
+func (s IdentityServiceServer) apply(ctx context.Context, ref *rstr.IdentityRef, doc *patchpb.Patch, by string) (*rstr.Identity, error) {
 	plan := &ormpatch.Plan{Entity: identityOrmEntity}
 	if doc != nil {
 		v, err := ormpatch.Compile(identityOrmEntity, doc)
@@ -317,7 +317,7 @@ func (s IdentityServiceServer) apply(ctx context.Context, ref *roster.IdentityRe
 	if err != nil {
 		return nil, err
 	}
-	at := &roster.IdentityRef{}
+	at := &rstr.IdentityRef{}
 	at.SetId(k[:])
 	p, err := s.narrow(ctx, identity.IDEQ(k))
 	if err != nil {
@@ -384,7 +384,7 @@ func (s IdentityServiceServer) apply(ctx context.Context, ref *roster.IdentityRe
 	return out, nil
 }
 
-func (s IdentityServiceServer) Erase(ctx context.Context, req *roster.IdentityRef) (*emptypb.Empty, error) {
+func (s IdentityServiceServer) Erase(ctx context.Context, req *rstr.IdentityRef) (*emptypb.Empty, error) {
 	p, err := IdentityPick(req)
 	if err != nil {
 		return nil, err
@@ -426,7 +426,7 @@ func (s IdentityServiceServer) Erase(ctx context.Context, req *roster.IdentityRe
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  roster.IdentityService_Erase_FullMethodName,
+			By:  rstr.IdentityService_Erase_FullMethodName,
 			Key: k,
 		}); err != nil {
 			return nil, err
@@ -438,21 +438,21 @@ func (s IdentityServiceServer) Erase(ctx context.Context, req *roster.IdentityRe
 	return &emptypb.Empty{}, nil
 }
 
-func IdentityPick(req *roster.IdentityRef) (predicate.Identity, error) {
+func IdentityPick(req *rstr.IdentityRef) (predicate.Identity, error) {
 	switch req.WhichKey() {
-	case roster.IdentityRef_Id_case:
+	case rstr.IdentityRef_Id_case:
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			return identity.IDEQ(v), nil
 		}
-	case roster.IdentityRef_Subject_case:
+	case rstr.IdentityRef_Subject_case:
 		k := req.GetSubject()
 		ps := make([]predicate.Identity, 0, 2)
 		ps = append(ps, identity.ProviderEQ(k.GetProvider()))
 		ps = append(ps, identity.SubjectEQ(k.GetSubject()))
 		return identity.And(ps...), nil
-	case roster.IdentityRef_Key_not_set_case:
+	case rstr.IdentityRef_Key_not_set_case:
 		return nil, status.Errorf(codes.InvalidArgument, "key not set: Identity")
 	default:
 		return nil, status.Errorf(codes.Unimplemented, "unknown type of key: %s", req.WhichKey())

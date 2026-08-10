@@ -9,10 +9,10 @@ import (
 	errors "errors"
 	uuid "github.com/google/uuid"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
-	roster "github.com/lesomnus/roster"
 	ent "github.com/lesomnus/roster/internal/ent"
 	holder "github.com/lesomnus/roster/internal/ent/holder"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
+	rstr "github.com/lesomnus/roster/rstr"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
@@ -24,7 +24,7 @@ import (
 type HolderServiceServer struct {
 	Store
 
-	roster.UnimplementedHolderServiceServer
+	rstr.UnimplementedHolderServiceServer
 }
 
 // NewHolderServiceServer answers with a server that runs its queries with `db`.
@@ -32,7 +32,7 @@ type HolderServiceServer struct {
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
 // reports nowhere and sees everything.
-func NewHolderServiceServer(db *ent.Client, opts ...Option) roster.HolderServiceServer {
+func NewHolderServiceServer(db *ent.Client, opts ...Option) rstr.HolderServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
 		opt(&s)
@@ -80,7 +80,7 @@ func (s HolderServiceServer) narrow(ctx context.Context, p predicate.Holder) (pr
 	return HolderNarrow(ctx, s.Scope, p)
 }
 
-func (s HolderServiceServer) Add(ctx context.Context, req *roster.HolderAddRequest) (*roster.Holder, error) {
+func (s HolderServiceServer) Add(ctx context.Context, req *rstr.HolderAddRequest) (*rstr.Holder, error) {
 	tx, err := enttx.Join[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
 		return nil, err
@@ -90,7 +90,7 @@ func (s HolderServiceServer) Add(ctx context.Context, req *roster.HolderAddReque
 	st := s
 	st.Db = tx.Db
 
-	ds := make([]func(v *roster.Holder), 0, 1)
+	ds := make([]func(v *rstr.Holder), 0, 1)
 	q := st.Db.Holder.Create()
 	var k uuid.UUID
 	if req.HasId() {
@@ -109,8 +109,8 @@ func (s HolderServiceServer) Add(ctx context.Context, req *roster.HolderAddReque
 		return nil, err
 	} else {
 		q.SetTenantID(k)
-		ds = append(ds, func(v *roster.Holder) {
-			v.SetTenant(roster.Tenant_builder{Id: k[:]}.Build())
+		ds = append(ds, func(v *rstr.Holder) {
+			v.SetTenant(rstr.Tenant_builder{Id: k[:]}.Build())
 		})
 	}
 	q.SetAlias(req.GetAlias())
@@ -143,7 +143,7 @@ func (s HolderServiceServer) Add(ctx context.Context, req *roster.HolderAddReque
 	}
 
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  roster.HolderService_Add_FullMethodName,
+		By:  rstr.HolderService_Add_FullMethodName,
 		Key: u.ID,
 	}); err != nil {
 		return nil, err
@@ -159,7 +159,7 @@ func (s HolderServiceServer) Add(ctx context.Context, req *roster.HolderAddReque
 	return v, nil
 }
 
-func (s HolderServiceServer) Get(ctx context.Context, req *roster.HolderGetRequest) (*roster.Holder, error) {
+func (s HolderServiceServer) Get(ctx context.Context, req *rstr.HolderGetRequest) (*rstr.Holder, error) {
 	p, err := HolderPick(req.GetRef())
 	if err != nil {
 		return nil, err
@@ -186,7 +186,7 @@ func selectHolderKey(q *ent.HolderQuery) {
 	q.Select(holder.FieldID)
 }
 
-func HolderSelectedFields(m *roster.HolderSelect) []string {
+func HolderSelectedFields(m *rstr.HolderSelect) []string {
 	if m.GetAll() {
 		return holder.Columns
 	}
@@ -223,7 +223,7 @@ func HolderSelectedFields(m *roster.HolderSelect) []string {
 	return vs
 }
 
-func HolderSelect(q *ent.HolderQuery, m *roster.HolderSelect) {
+func HolderSelect(q *ent.HolderQuery, m *rstr.HolderSelect) {
 	if !m.GetAll() {
 		fields := HolderSelectedFields(m)
 		q.Select(fields...)
@@ -235,7 +235,7 @@ func HolderSelect(q *ent.HolderQuery, m *roster.HolderSelect) {
 	}
 }
 
-func HolderSelectInit(q *ent.HolderQuery, m *roster.HolderSelect) {
+func HolderSelectInit(q *ent.HolderQuery, m *rstr.HolderSelect) {
 	if m != nil {
 		HolderSelect(q, m)
 	} else {
@@ -243,7 +243,7 @@ func HolderSelectInit(q *ent.HolderQuery, m *roster.HolderSelect) {
 	}
 }
 
-func (s HolderServiceServer) Patch(ctx context.Context, req *roster.HolderPatchRequest) (*roster.Holder, error) {
+func (s HolderServiceServer) Patch(ctx context.Context, req *rstr.HolderPatchRequest) (*rstr.Holder, error) {
 	doc, err := ormpatch.FromPatchRequest(holderOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -258,10 +258,10 @@ func (s HolderServiceServer) Patch(ctx context.Context, req *roster.HolderPatchR
 		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 	}
 
-	return s.apply(ctx, req.GetRef(), doc, roster.HolderService_Patch_FullMethodName)
+	return s.apply(ctx, req.GetRef(), doc, rstr.HolderService_Patch_FullMethodName)
 }
 
-func HolderGetKey(ctx context.Context, db *ent.Client, ref *roster.HolderRef) (uuid.UUID, error) {
+func HolderGetKey(ctx context.Context, db *ent.Client, ref *rstr.HolderRef) (uuid.UUID, error) {
 	var z uuid.UUID
 	if ref.HasId() {
 		if v, err := uuid.FromBytes(ref.GetId()); err != nil {
@@ -287,19 +287,19 @@ func HolderGetKey(ctx context.Context, db *ent.Client, ref *roster.HolderRef) (u
 	return v, nil
 }
 
-var holderOrmEntity = ormpatch.MustEntityOf(roster.File_payday_holder_proto, "Holder")
+var holderOrmEntity = ormpatch.MustEntityOf(rstr.File_payday_holder_proto, "Holder")
 
 var holderPatchColumns = entpatch.Columns{
 	1: holder.FieldID, 2: holder.TenantColumn, 4: holder.FieldAlias, 5: holder.FieldName, 6: holder.FieldDesc, 7: holder.FieldLabels, 13: holder.FieldDateUpdated, 14: holder.FieldDateErased, 15: holder.FieldDateCreated, 8: holder.FieldIdpSubject}
 
-func (s HolderServiceServer) Apply(ctx context.Context, req *roster.HolderApplyRequest) (*roster.Holder, error) {
+func (s HolderServiceServer) Apply(ctx context.Context, req *rstr.HolderApplyRequest) (*rstr.Holder, error) {
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), roster.HolderService_Apply_FullMethodName)
+	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.HolderService_Apply_FullMethodName)
 }
 
-func (s HolderServiceServer) apply(ctx context.Context, ref *roster.HolderRef, doc *patchpb.Patch, by string) (*roster.Holder, error) {
+func (s HolderServiceServer) apply(ctx context.Context, ref *rstr.HolderRef, doc *patchpb.Patch, by string) (*rstr.Holder, error) {
 	plan := &ormpatch.Plan{Entity: holderOrmEntity}
 	if doc != nil {
 		v, err := ormpatch.Compile(holderOrmEntity, doc)
@@ -333,7 +333,7 @@ func (s HolderServiceServer) apply(ctx context.Context, ref *roster.HolderRef, d
 	if err != nil {
 		return nil, err
 	}
-	at := &roster.HolderRef{}
+	at := &rstr.HolderRef{}
 	at.SetId(k[:])
 	p, err := s.narrow(ctx, holder.IDEQ(k))
 	if err != nil {
@@ -400,7 +400,7 @@ func (s HolderServiceServer) apply(ctx context.Context, ref *roster.HolderRef, d
 	return out, nil
 }
 
-func (s HolderServiceServer) Erase(ctx context.Context, req *roster.HolderRef) (*emptypb.Empty, error) {
+func (s HolderServiceServer) Erase(ctx context.Context, req *rstr.HolderRef) (*emptypb.Empty, error) {
 	p, err := HolderPick(req)
 	if err != nil {
 		return nil, err
@@ -442,7 +442,7 @@ func (s HolderServiceServer) Erase(ctx context.Context, req *roster.HolderRef) (
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  roster.HolderService_Erase_FullMethodName,
+			By:  rstr.HolderService_Erase_FullMethodName,
 			Key: k,
 		}); err != nil {
 			return nil, err
@@ -454,17 +454,17 @@ func (s HolderServiceServer) Erase(ctx context.Context, req *roster.HolderRef) (
 	return &emptypb.Empty{}, nil
 }
 
-func HolderPick(req *roster.HolderRef) (predicate.Holder, error) {
+func HolderPick(req *rstr.HolderRef) (predicate.Holder, error) {
 	switch req.WhichKey() {
-	case roster.HolderRef_Id_case:
+	case rstr.HolderRef_Id_case:
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			return holder.IDEQ(v), nil
 		}
-	case roster.HolderRef_IdpSubject_case:
+	case rstr.HolderRef_IdpSubject_case:
 		return holder.IdpSubjectEQ(req.GetIdpSubject()), nil
-	case roster.HolderRef_Slug_case:
+	case rstr.HolderRef_Slug_case:
 		k := req.GetSlug()
 		ps := make([]predicate.Holder, 0, 2)
 		ps = append(ps, holder.AliasEQ(k.GetAlias()))
@@ -474,7 +474,7 @@ func HolderPick(req *roster.HolderRef) (predicate.Holder, error) {
 			ps = append(ps, holder.HasTenantWith(p))
 		}
 		return holder.And(ps...), nil
-	case roster.HolderRef_Key_not_set_case:
+	case rstr.HolderRef_Key_not_set_case:
 		return nil, status.Errorf(codes.InvalidArgument, "key not set: Holder")
 	default:
 		return nil, status.Errorf(codes.Unimplemented, "unknown type of key: %s", req.WhichKey())

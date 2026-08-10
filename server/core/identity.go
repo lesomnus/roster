@@ -6,7 +6,7 @@ import (
 
 	"github.com/lesomnus/payday/pderr"
 
-	app "github.com/lesomnus/roster"
+	app "github.com/lesomnus/roster/rstr"
 )
 
 type coreIdentity struct {

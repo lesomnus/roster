@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	app "github.com/lesomnus/roster"
+	app "github.com/lesomnus/roster/rstr"
 )
 
 // TestOnePersonHasSeveralAddresses, which is the first reason this is a row.

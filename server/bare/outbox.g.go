@@ -5,16 +5,16 @@ package bare
 
 import (
 	context "context"
-	roster "github.com/lesomnus/roster"
 	ent "github.com/lesomnus/roster/internal/ent"
 	outbox "github.com/lesomnus/roster/internal/ent/outbox"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
+	rstr "github.com/lesomnus/roster/rstr"
 )
 
 type OutboxServiceServer struct {
 	Store
 
-	roster.UnimplementedOutboxServiceServer
+	rstr.UnimplementedOutboxServiceServer
 }
 
 // NewOutboxServiceServer answers with a server that runs its queries with `db`.
@@ -22,7 +22,7 @@ type OutboxServiceServer struct {
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
 // reports nowhere and sees everything.
-func NewOutboxServiceServer(db *ent.Client, opts ...Option) roster.OutboxServiceServer {
+func NewOutboxServiceServer(db *ent.Client, opts ...Option) rstr.OutboxServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
 		opt(&s)

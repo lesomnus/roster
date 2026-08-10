@@ -11,7 +11,7 @@ import "patch/patch.proto";
 import "payday/holder.proto";
 import "payday/tenant_svc.g.proto";
 
-option go_package = "github.com/lesomnus/roster";
+option go_package = "github.com/lesomnus/roster/rstr";
 
 service HolderService {
 	// Add creates a new Holder

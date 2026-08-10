@@ -25,9 +25,9 @@ import (
 	"github.com/lesomnus/payday/watch"
 	"github.com/lesomnus/payday/web"
 
-	app "github.com/lesomnus/roster"
 	"github.com/lesomnus/roster/internal/ent"
 	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
+	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/core"
 	"github.com/lesomnus/roster/server/pd"

@@ -27,7 +27,6 @@ import (
 	version "github.com/lesomnus/payday/version"
 	watch "github.com/lesomnus/payday/watch"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
-	roster "github.com/lesomnus/roster"
 	ent "github.com/lesomnus/roster/internal/ent"
 	audit "github.com/lesomnus/roster/internal/ent/audit"
 	credential "github.com/lesomnus/roster/internal/ent/credential"
@@ -41,6 +40,7 @@ import (
 	team "github.com/lesomnus/roster/internal/ent/team"
 	teammembership "github.com/lesomnus/roster/internal/ent/teammembership"
 	tenant "github.com/lesomnus/roster/internal/ent/tenant"
+	rstr "github.com/lesomnus/roster/rstr"
 	bare "github.com/lesomnus/roster/server/bare"
 	entpage "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpage"
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
@@ -452,11 +452,11 @@ func (s Sink) WithNamer(n slug.Namer) Sink {
 	return s
 }
 
-var _ roster.Server = Sink{}
-var _ enttx.Binder[roster.Server] = Sink{}
+var _ rstr.Server = Sink{}
+var _ enttx.Binder[rstr.Server] = Sink{}
 
 // WithDriver answers with this server running on `drv`; see [Gate.WithDriver].
-func (s Sink) WithDriver(drv dialect.Driver) (roster.Server, error) {
+func (s Sink) WithDriver(drv dialect.Driver) (rstr.Server, error) {
 	v, err := s.Server.WithDriver(drv)
 	if err != nil {
 		return nil, err
@@ -469,14 +469,14 @@ func (s Sink) WithDriver(drv dialect.Driver) (roster.Server, error) {
 }
 
 type sinkAudit struct {
-	roster.AuditServiceServer
+	rstr.AuditServiceServer
 	store  bare.Store
 	w      *watch.Watch
 	namer  slug.Namer
 	joined bool
 }
 
-func (s Sink) Audit() roster.AuditServiceServer {
+func (s Sink) Audit() rstr.AuditServiceServer {
 	return sinkAudit{s.Server.Audit(), s.Server.Store, s.w, s.namer, s.joined}
 }
 
@@ -507,7 +507,7 @@ const (
 
 // List answers with the Audits that match any of the given filters, or with
 // every one there is if the request named none, a page at a time.
-func (s sinkAudit) List(ctx context.Context, req *roster.AuditListRequest) (*roster.AuditListResponse, error) {
+func (s sinkAudit) List(ctx context.Context, req *rstr.AuditListRequest) (*rstr.AuditListResponse, error) {
 	q := s.store.Db.Audit.Query()
 
 	// Through the same narrowing every generated read goes through, and not
@@ -572,12 +572,12 @@ func (s sinkAudit) List(ctx context.Context, req *roster.AuditListRequest) (*ros
 		us = us[:size]
 	}
 
-	items := make([]*roster.Audit, len(us))
+	items := make([]*rstr.Audit, len(us))
 	for i, u := range us {
 		items[i] = u.Proto()
 	}
 
-	res := roster.AuditListResponse_builder{Items: items}.Build()
+	res := rstr.AuditListResponse_builder{Items: items}.Build()
 	if more {
 		last := us[len(us)-1]
 		next, err := entpage.Encode(last.DateCreated, last.ID)
@@ -594,7 +594,7 @@ func (s sinkAudit) List(ctx context.Context, req *roster.AuditListRequest) (*ros
 // filterAudit turns one filter into the predicate that selects what it
 // names. Naming nothing is refused, since the request asked for "these" and
 // did not say which.
-func filterAudit(f *roster.AuditFilter) (predicate.Audit, error) {
+func filterAudit(f *rstr.AuditFilter) (predicate.Audit, error) {
 	ps := make([]predicate.Audit, 0, 1)
 	if f.HasObjectId() {
 		k, err := uuid.FromBytes(f.GetObjectId())
@@ -636,14 +636,14 @@ func filterAudit(f *roster.AuditFilter) (predicate.Audit, error) {
 }
 
 type sinkCredential struct {
-	roster.CredentialServiceServer
+	rstr.CredentialServiceServer
 	store  bare.Store
 	w      *watch.Watch
 	namer  slug.Namer
 	joined bool
 }
 
-func (s Sink) Credential() roster.CredentialServiceServer {
+func (s Sink) Credential() rstr.CredentialServiceServer {
 	return sinkCredential{s.Server.Credential(), s.Server.Store, s.w, s.namer, s.joined}
 }
 
@@ -674,7 +674,7 @@ const (
 
 // List answers with the Credentials that match any of the given filters, or with
 // every one there is if the request named none, a page at a time.
-func (s sinkCredential) List(ctx context.Context, req *roster.CredentialListRequest) (*roster.CredentialListResponse, error) {
+func (s sinkCredential) List(ctx context.Context, req *rstr.CredentialListRequest) (*rstr.CredentialListResponse, error) {
 	q := s.store.Db.Credential.Query()
 
 	// Through the same narrowing every generated read goes through, and not
@@ -739,12 +739,12 @@ func (s sinkCredential) List(ctx context.Context, req *roster.CredentialListRequ
 		us = us[:size]
 	}
 
-	items := make([]*roster.Credential, len(us))
+	items := make([]*rstr.Credential, len(us))
 	for i, u := range us {
 		items[i] = u.Proto()
 	}
 
-	res := roster.CredentialListResponse_builder{Items: items}.Build()
+	res := rstr.CredentialListResponse_builder{Items: items}.Build()
 	if more {
 		last := us[len(us)-1]
 		next, err := entpage.Encode(last.DateCreated, last.ID)
@@ -761,7 +761,7 @@ func (s sinkCredential) List(ctx context.Context, req *roster.CredentialListRequ
 // filterCredential turns one filter into the predicate that selects what it
 // names. Naming nothing is refused, since the request asked for "these" and
 // did not say which.
-func filterCredential(f *roster.CredentialFilter) (predicate.Credential, error) {
+func filterCredential(f *rstr.CredentialFilter) (predicate.Credential, error) {
 	ps := make([]predicate.Credential, 0, 1)
 	if f.HasRef() {
 		p, err := bare.CredentialPick(f.GetRef())
@@ -781,7 +781,7 @@ func filterCredential(f *roster.CredentialFilter) (predicate.Credential, error) 
 // CredentialService is the prefix of every RPC of that service, which is how a
 // change is known to be about a Credential. A service is named for the entity it
 // is about, so the name carries it.
-var CredentialService = watch.ServiceOf(roster.CredentialService_Get_FullMethodName)
+var CredentialService = watch.ServiceOf(rstr.CredentialService_Get_FullMethodName)
 
 // Watch answers with the Credentials this caller may see, as they are now and as
 // they change.
@@ -790,7 +790,7 @@ var CredentialService = watch.ServiceOf(roster.CredentialService_Get_FullMethodN
 // that missed something still correct: the next item about a row carries the
 // whole of it, so a client converges rather than replays. It is also what
 // makes the first message safe to duplicate against the ones after it.
-func (s sinkCredential) Watch(req *roster.CredentialWatchRequest, out grpc.ServerStreamingServer[roster.CredentialWatchResponse]) error {
+func (s sinkCredential) Watch(req *rstr.CredentialWatchRequest, out grpc.ServerStreamingServer[rstr.CredentialWatchResponse]) error {
 	ctx := out.Context()
 
 	// A watch with no filters is the whole table, forever. It is the one
@@ -824,7 +824,7 @@ func (s sinkCredential) Watch(req *roster.CredentialWatchRequest, out grpc.Serve
 
 	return watch.Stream(ctx, s.w, CredentialService, snapshot,
 		func(ks map[pdid.Id]string, sent watch.Seen) error {
-			items := make([]*roster.CredentialWatchItem, 0, len(ks))
+			items := make([]*rstr.CredentialWatchItem, 0, len(ks))
 			for k, action := range ks {
 				u, err := s.watchRead(ctx, watching, k)
 				if err != nil {
@@ -838,7 +838,7 @@ func (s sinkCredential) Watch(req *roster.CredentialWatchRequest, out grpc.Serve
 				}
 
 				sent[k] = u != nil
-				items = append(items, roster.CredentialWatchItem_builder{
+				items = append(items, rstr.CredentialWatchItem_builder{
 					Id:     k.Bytes(),
 					Value:  u,
 					Action: action,
@@ -848,7 +848,7 @@ func (s sinkCredential) Watch(req *roster.CredentialWatchRequest, out grpc.Serve
 				return nil
 			}
 
-			return out.Send(roster.CredentialWatchResponse_builder{Items: items}.Build())
+			return out.Send(rstr.CredentialWatchResponse_builder{Items: items}.Build())
 		})
 }
 
@@ -856,12 +856,12 @@ func (s sinkCredential) Watch(req *roster.CredentialWatchRequest, out grpc.Serve
 // would have called -- so what a stream begins with and what a list answers
 // cannot disagree, and a client does not have to do both and race them.
 func (s sinkCredential) watchNow(
-	ctx context.Context, req *roster.CredentialWatchRequest, out grpc.ServerStreamingServer[roster.CredentialWatchResponse],
+	ctx context.Context, req *rstr.CredentialWatchRequest, out grpc.ServerStreamingServer[rstr.CredentialWatchResponse],
 	sent watch.Seen,
 ) error {
 	after := ""
 	for {
-		res, err := s.List(ctx, roster.CredentialListRequest_builder{
+		res, err := s.List(ctx, rstr.CredentialListRequest_builder{
 			Filters: req.GetFilters(),
 			After:   after,
 		}.Build())
@@ -869,7 +869,7 @@ func (s sinkCredential) watchNow(
 			return err
 		}
 
-		items := make([]*roster.CredentialWatchItem, 0, len(res.GetItems()))
+		items := make([]*rstr.CredentialWatchItem, 0, len(res.GetItems()))
 		for _, u := range res.GetItems() {
 			k, err := pdid.From(u.GetId())
 			if err != nil {
@@ -879,10 +879,10 @@ func (s sinkCredential) watchNow(
 			sent[k] = true
 			// No action: this is not something anybody asked for, it is
 			// what is already there.
-			items = append(items, roster.CredentialWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+			items = append(items, rstr.CredentialWatchItem_builder{Id: u.GetId(), Value: u}.Build())
 		}
 		if len(items) > 0 {
-			if err := out.Send(roster.CredentialWatchResponse_builder{Items: items}.Build()); err != nil {
+			if err := out.Send(rstr.CredentialWatchResponse_builder{Items: items}.Build()); err != nil {
 				return err
 			}
 		}
@@ -904,15 +904,15 @@ func (s sinkCredential) watchNow(
 // a row they may not see comes back NotFound and is never sent.
 func (s sinkCredential) watchRead(
 	ctx context.Context, watching []pdid.Id, k pdid.Id,
-) (*roster.Credential, error) {
+) (*rstr.Credential, error) {
 	// Not one of the rows this stream is about. Asked before the read, so a
 	// busy table costs a stream nothing for the rows it does not watch.
 	if !slices.Contains(watching, k) {
 		return nil, nil
 	}
 
-	v, err := s.Get(ctx, roster.CredentialGetRequest_builder{
-		Ref: roster.CredentialRef_builder{Id: k.Bytes()}.Build(),
+	v, err := s.Get(ctx, rstr.CredentialGetRequest_builder{
+		Ref: rstr.CredentialRef_builder{Id: k.Bytes()}.Build(),
 	}.Build())
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
@@ -935,7 +935,7 @@ func (s sinkCredential) watchRead(
 // row renamed while the stream is open goes on being the row that was asked
 // for -- which is what somebody watching a thing meant.
 func (s sinkCredential) watchCredentialKeys(
-	ctx context.Context, fs []*roster.CredentialFilter,
+	ctx context.Context, fs []*rstr.CredentialFilter,
 ) ([]pdid.Id, error) {
 	ks := make([]pdid.Id, 0, len(fs))
 	for i, f := range fs {
@@ -944,7 +944,7 @@ func (s sinkCredential) watchCredentialKeys(
 				"filters[%d]: a watch says which rows it is about by naming them", i)
 		}
 
-		v, err := s.Get(ctx, roster.CredentialGetRequest_builder{Ref: f.GetRef()}.Build())
+		v, err := s.Get(ctx, rstr.CredentialGetRequest_builder{Ref: f.GetRef()}.Build())
 		if err != nil {
 			return nil, err
 		}
@@ -961,14 +961,14 @@ func (s sinkCredential) watchCredentialKeys(
 }
 
 type sinkEmail struct {
-	roster.EmailServiceServer
+	rstr.EmailServiceServer
 	store  bare.Store
 	w      *watch.Watch
 	namer  slug.Namer
 	joined bool
 }
 
-func (s Sink) Email() roster.EmailServiceServer {
+func (s Sink) Email() rstr.EmailServiceServer {
 	return sinkEmail{s.Server.Email(), s.Server.Store, s.w, s.namer, s.joined}
 }
 
@@ -999,7 +999,7 @@ const (
 
 // List answers with the Emails that match any of the given filters, or with
 // every one there is if the request named none, a page at a time.
-func (s sinkEmail) List(ctx context.Context, req *roster.EmailListRequest) (*roster.EmailListResponse, error) {
+func (s sinkEmail) List(ctx context.Context, req *rstr.EmailListRequest) (*rstr.EmailListResponse, error) {
 	q := s.store.Db.Email.Query()
 
 	// Through the same narrowing every generated read goes through, and not
@@ -1064,12 +1064,12 @@ func (s sinkEmail) List(ctx context.Context, req *roster.EmailListRequest) (*ros
 		us = us[:size]
 	}
 
-	items := make([]*roster.Email, len(us))
+	items := make([]*rstr.Email, len(us))
 	for i, u := range us {
 		items[i] = u.Proto()
 	}
 
-	res := roster.EmailListResponse_builder{Items: items}.Build()
+	res := rstr.EmailListResponse_builder{Items: items}.Build()
 	if more {
 		last := us[len(us)-1]
 		next, err := entpage.Encode(last.DateCreated, last.ID)
@@ -1086,7 +1086,7 @@ func (s sinkEmail) List(ctx context.Context, req *roster.EmailListRequest) (*ros
 // filterEmail turns one filter into the predicate that selects what it
 // names. Naming nothing is refused, since the request asked for "these" and
 // did not say which.
-func filterEmail(f *roster.EmailFilter) (predicate.Email, error) {
+func filterEmail(f *rstr.EmailFilter) (predicate.Email, error) {
 	ps := make([]predicate.Email, 0, 1)
 	if f.HasRef() {
 		p, err := bare.EmailPick(f.GetRef())
@@ -1106,7 +1106,7 @@ func filterEmail(f *roster.EmailFilter) (predicate.Email, error) {
 // EmailService is the prefix of every RPC of that service, which is how a
 // change is known to be about a Email. A service is named for the entity it
 // is about, so the name carries it.
-var EmailService = watch.ServiceOf(roster.EmailService_Get_FullMethodName)
+var EmailService = watch.ServiceOf(rstr.EmailService_Get_FullMethodName)
 
 // Watch answers with the Emails this caller may see, as they are now and as
 // they change.
@@ -1115,7 +1115,7 @@ var EmailService = watch.ServiceOf(roster.EmailService_Get_FullMethodName)
 // that missed something still correct: the next item about a row carries the
 // whole of it, so a client converges rather than replays. It is also what
 // makes the first message safe to duplicate against the ones after it.
-func (s sinkEmail) Watch(req *roster.EmailWatchRequest, out grpc.ServerStreamingServer[roster.EmailWatchResponse]) error {
+func (s sinkEmail) Watch(req *rstr.EmailWatchRequest, out grpc.ServerStreamingServer[rstr.EmailWatchResponse]) error {
 	ctx := out.Context()
 
 	// A watch with no filters is the whole table, forever. It is the one
@@ -1149,7 +1149,7 @@ func (s sinkEmail) Watch(req *roster.EmailWatchRequest, out grpc.ServerStreaming
 
 	return watch.Stream(ctx, s.w, EmailService, snapshot,
 		func(ks map[pdid.Id]string, sent watch.Seen) error {
-			items := make([]*roster.EmailWatchItem, 0, len(ks))
+			items := make([]*rstr.EmailWatchItem, 0, len(ks))
 			for k, action := range ks {
 				u, err := s.watchRead(ctx, watching, k)
 				if err != nil {
@@ -1163,7 +1163,7 @@ func (s sinkEmail) Watch(req *roster.EmailWatchRequest, out grpc.ServerStreaming
 				}
 
 				sent[k] = u != nil
-				items = append(items, roster.EmailWatchItem_builder{
+				items = append(items, rstr.EmailWatchItem_builder{
 					Id:     k.Bytes(),
 					Value:  u,
 					Action: action,
@@ -1173,7 +1173,7 @@ func (s sinkEmail) Watch(req *roster.EmailWatchRequest, out grpc.ServerStreaming
 				return nil
 			}
 
-			return out.Send(roster.EmailWatchResponse_builder{Items: items}.Build())
+			return out.Send(rstr.EmailWatchResponse_builder{Items: items}.Build())
 		})
 }
 
@@ -1181,12 +1181,12 @@ func (s sinkEmail) Watch(req *roster.EmailWatchRequest, out grpc.ServerStreaming
 // would have called -- so what a stream begins with and what a list answers
 // cannot disagree, and a client does not have to do both and race them.
 func (s sinkEmail) watchNow(
-	ctx context.Context, req *roster.EmailWatchRequest, out grpc.ServerStreamingServer[roster.EmailWatchResponse],
+	ctx context.Context, req *rstr.EmailWatchRequest, out grpc.ServerStreamingServer[rstr.EmailWatchResponse],
 	sent watch.Seen,
 ) error {
 	after := ""
 	for {
-		res, err := s.List(ctx, roster.EmailListRequest_builder{
+		res, err := s.List(ctx, rstr.EmailListRequest_builder{
 			Filters: req.GetFilters(),
 			After:   after,
 		}.Build())
@@ -1194,7 +1194,7 @@ func (s sinkEmail) watchNow(
 			return err
 		}
 
-		items := make([]*roster.EmailWatchItem, 0, len(res.GetItems()))
+		items := make([]*rstr.EmailWatchItem, 0, len(res.GetItems()))
 		for _, u := range res.GetItems() {
 			k, err := pdid.From(u.GetId())
 			if err != nil {
@@ -1204,10 +1204,10 @@ func (s sinkEmail) watchNow(
 			sent[k] = true
 			// No action: this is not something anybody asked for, it is
 			// what is already there.
-			items = append(items, roster.EmailWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+			items = append(items, rstr.EmailWatchItem_builder{Id: u.GetId(), Value: u}.Build())
 		}
 		if len(items) > 0 {
-			if err := out.Send(roster.EmailWatchResponse_builder{Items: items}.Build()); err != nil {
+			if err := out.Send(rstr.EmailWatchResponse_builder{Items: items}.Build()); err != nil {
 				return err
 			}
 		}
@@ -1229,15 +1229,15 @@ func (s sinkEmail) watchNow(
 // a row they may not see comes back NotFound and is never sent.
 func (s sinkEmail) watchRead(
 	ctx context.Context, watching []pdid.Id, k pdid.Id,
-) (*roster.Email, error) {
+) (*rstr.Email, error) {
 	// Not one of the rows this stream is about. Asked before the read, so a
 	// busy table costs a stream nothing for the rows it does not watch.
 	if !slices.Contains(watching, k) {
 		return nil, nil
 	}
 
-	v, err := s.Get(ctx, roster.EmailGetRequest_builder{
-		Ref: roster.EmailRef_builder{Id: k.Bytes()}.Build(),
+	v, err := s.Get(ctx, rstr.EmailGetRequest_builder{
+		Ref: rstr.EmailRef_builder{Id: k.Bytes()}.Build(),
 	}.Build())
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
@@ -1260,7 +1260,7 @@ func (s sinkEmail) watchRead(
 // row renamed while the stream is open goes on being the row that was asked
 // for -- which is what somebody watching a thing meant.
 func (s sinkEmail) watchEmailKeys(
-	ctx context.Context, fs []*roster.EmailFilter,
+	ctx context.Context, fs []*rstr.EmailFilter,
 ) ([]pdid.Id, error) {
 	ks := make([]pdid.Id, 0, len(fs))
 	for i, f := range fs {
@@ -1269,7 +1269,7 @@ func (s sinkEmail) watchEmailKeys(
 				"filters[%d]: a watch says which rows it is about by naming them", i)
 		}
 
-		v, err := s.Get(ctx, roster.EmailGetRequest_builder{Ref: f.GetRef()}.Build())
+		v, err := s.Get(ctx, rstr.EmailGetRequest_builder{Ref: f.GetRef()}.Build())
 		if err != nil {
 			return nil, err
 		}
@@ -1286,14 +1286,14 @@ func (s sinkEmail) watchEmailKeys(
 }
 
 type sinkHolder struct {
-	roster.HolderServiceServer
+	rstr.HolderServiceServer
 	store  bare.Store
 	w      *watch.Watch
 	namer  slug.Namer
 	joined bool
 }
 
-func (s Sink) Holder() roster.HolderServiceServer {
+func (s Sink) Holder() rstr.HolderServiceServer {
 	return sinkHolder{s.Server.Holder(), s.Server.Store, s.w, s.namer, s.joined}
 }
 
@@ -1309,7 +1309,7 @@ func (s Sink) Holder() roster.HolderServiceServer {
 // called, and for a call made in this process that is a message they may
 // still be holding -- a server that folded a caller's own field would be
 // changing a value they can read back.
-func (s sinkHolder) Add(ctx context.Context, req *roster.HolderAddRequest) (*roster.Holder, error) {
+func (s sinkHolder) Add(ctx context.Context, req *rstr.HolderAddRequest) (*rstr.Holder, error) {
 	// How many names to try. More than one only when the caller named
 	// nothing -- then the name is this server's and a collision is this
 	// server's to resolve. A name the caller gave is theirs, and quietly
@@ -1355,7 +1355,7 @@ func (s sinkHolder) Add(ctx context.Context, req *roster.HolderAddRequest) (*ros
 // decides the name of a row being made; a patch that cleared the alias is
 // a caller asking for something invalid, and answering that with an
 // invented name would hand them a row they did not ask for.
-func (s sinkHolder) Patch(ctx context.Context, req *roster.HolderPatchRequest) (*roster.Holder, error) {
+func (s sinkHolder) Patch(ctx context.Context, req *rstr.HolderPatchRequest) (*rstr.Holder, error) {
 	if !req.HasAlias() {
 		return s.HolderServiceServer.Patch(ctx, req)
 	}
@@ -1372,14 +1372,14 @@ func (s sinkHolder) Patch(ctx context.Context, req *roster.HolderPatchRequest) (
 }
 
 type sinkIdentity struct {
-	roster.IdentityServiceServer
+	rstr.IdentityServiceServer
 	store  bare.Store
 	w      *watch.Watch
 	namer  slug.Namer
 	joined bool
 }
 
-func (s Sink) Identity() roster.IdentityServiceServer {
+func (s Sink) Identity() rstr.IdentityServiceServer {
 	return sinkIdentity{s.Server.Identity(), s.Server.Store, s.w, s.namer, s.joined}
 }
 
@@ -1410,7 +1410,7 @@ const (
 
 // List answers with the Identitys that match any of the given filters, or with
 // every one there is if the request named none, a page at a time.
-func (s sinkIdentity) List(ctx context.Context, req *roster.IdentityListRequest) (*roster.IdentityListResponse, error) {
+func (s sinkIdentity) List(ctx context.Context, req *rstr.IdentityListRequest) (*rstr.IdentityListResponse, error) {
 	q := s.store.Db.Identity.Query()
 
 	// Through the same narrowing every generated read goes through, and not
@@ -1475,12 +1475,12 @@ func (s sinkIdentity) List(ctx context.Context, req *roster.IdentityListRequest)
 		us = us[:size]
 	}
 
-	items := make([]*roster.Identity, len(us))
+	items := make([]*rstr.Identity, len(us))
 	for i, u := range us {
 		items[i] = u.Proto()
 	}
 
-	res := roster.IdentityListResponse_builder{Items: items}.Build()
+	res := rstr.IdentityListResponse_builder{Items: items}.Build()
 	if more {
 		last := us[len(us)-1]
 		next, err := entpage.Encode(last.DateCreated, last.ID)
@@ -1497,7 +1497,7 @@ func (s sinkIdentity) List(ctx context.Context, req *roster.IdentityListRequest)
 // filterIdentity turns one filter into the predicate that selects what it
 // names. Naming nothing is refused, since the request asked for "these" and
 // did not say which.
-func filterIdentity(f *roster.IdentityFilter) (predicate.Identity, error) {
+func filterIdentity(f *rstr.IdentityFilter) (predicate.Identity, error) {
 	ps := make([]predicate.Identity, 0, 1)
 	if f.HasRef() {
 		p, err := bare.IdentityPick(f.GetRef())
@@ -1517,7 +1517,7 @@ func filterIdentity(f *roster.IdentityFilter) (predicate.Identity, error) {
 // IdentityService is the prefix of every RPC of that service, which is how a
 // change is known to be about a Identity. A service is named for the entity it
 // is about, so the name carries it.
-var IdentityService = watch.ServiceOf(roster.IdentityService_Get_FullMethodName)
+var IdentityService = watch.ServiceOf(rstr.IdentityService_Get_FullMethodName)
 
 // Watch answers with the Identitys this caller may see, as they are now and as
 // they change.
@@ -1526,7 +1526,7 @@ var IdentityService = watch.ServiceOf(roster.IdentityService_Get_FullMethodName)
 // that missed something still correct: the next item about a row carries the
 // whole of it, so a client converges rather than replays. It is also what
 // makes the first message safe to duplicate against the ones after it.
-func (s sinkIdentity) Watch(req *roster.IdentityWatchRequest, out grpc.ServerStreamingServer[roster.IdentityWatchResponse]) error {
+func (s sinkIdentity) Watch(req *rstr.IdentityWatchRequest, out grpc.ServerStreamingServer[rstr.IdentityWatchResponse]) error {
 	ctx := out.Context()
 
 	// A watch with no filters is the whole table, forever. It is the one
@@ -1560,7 +1560,7 @@ func (s sinkIdentity) Watch(req *roster.IdentityWatchRequest, out grpc.ServerStr
 
 	return watch.Stream(ctx, s.w, IdentityService, snapshot,
 		func(ks map[pdid.Id]string, sent watch.Seen) error {
-			items := make([]*roster.IdentityWatchItem, 0, len(ks))
+			items := make([]*rstr.IdentityWatchItem, 0, len(ks))
 			for k, action := range ks {
 				u, err := s.watchRead(ctx, watching, k)
 				if err != nil {
@@ -1574,7 +1574,7 @@ func (s sinkIdentity) Watch(req *roster.IdentityWatchRequest, out grpc.ServerStr
 				}
 
 				sent[k] = u != nil
-				items = append(items, roster.IdentityWatchItem_builder{
+				items = append(items, rstr.IdentityWatchItem_builder{
 					Id:     k.Bytes(),
 					Value:  u,
 					Action: action,
@@ -1584,7 +1584,7 @@ func (s sinkIdentity) Watch(req *roster.IdentityWatchRequest, out grpc.ServerStr
 				return nil
 			}
 
-			return out.Send(roster.IdentityWatchResponse_builder{Items: items}.Build())
+			return out.Send(rstr.IdentityWatchResponse_builder{Items: items}.Build())
 		})
 }
 
@@ -1592,12 +1592,12 @@ func (s sinkIdentity) Watch(req *roster.IdentityWatchRequest, out grpc.ServerStr
 // would have called -- so what a stream begins with and what a list answers
 // cannot disagree, and a client does not have to do both and race them.
 func (s sinkIdentity) watchNow(
-	ctx context.Context, req *roster.IdentityWatchRequest, out grpc.ServerStreamingServer[roster.IdentityWatchResponse],
+	ctx context.Context, req *rstr.IdentityWatchRequest, out grpc.ServerStreamingServer[rstr.IdentityWatchResponse],
 	sent watch.Seen,
 ) error {
 	after := ""
 	for {
-		res, err := s.List(ctx, roster.IdentityListRequest_builder{
+		res, err := s.List(ctx, rstr.IdentityListRequest_builder{
 			Filters: req.GetFilters(),
 			After:   after,
 		}.Build())
@@ -1605,7 +1605,7 @@ func (s sinkIdentity) watchNow(
 			return err
 		}
 
-		items := make([]*roster.IdentityWatchItem, 0, len(res.GetItems()))
+		items := make([]*rstr.IdentityWatchItem, 0, len(res.GetItems()))
 		for _, u := range res.GetItems() {
 			k, err := pdid.From(u.GetId())
 			if err != nil {
@@ -1615,10 +1615,10 @@ func (s sinkIdentity) watchNow(
 			sent[k] = true
 			// No action: this is not something anybody asked for, it is
 			// what is already there.
-			items = append(items, roster.IdentityWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+			items = append(items, rstr.IdentityWatchItem_builder{Id: u.GetId(), Value: u}.Build())
 		}
 		if len(items) > 0 {
-			if err := out.Send(roster.IdentityWatchResponse_builder{Items: items}.Build()); err != nil {
+			if err := out.Send(rstr.IdentityWatchResponse_builder{Items: items}.Build()); err != nil {
 				return err
 			}
 		}
@@ -1640,15 +1640,15 @@ func (s sinkIdentity) watchNow(
 // a row they may not see comes back NotFound and is never sent.
 func (s sinkIdentity) watchRead(
 	ctx context.Context, watching []pdid.Id, k pdid.Id,
-) (*roster.Identity, error) {
+) (*rstr.Identity, error) {
 	// Not one of the rows this stream is about. Asked before the read, so a
 	// busy table costs a stream nothing for the rows it does not watch.
 	if !slices.Contains(watching, k) {
 		return nil, nil
 	}
 
-	v, err := s.Get(ctx, roster.IdentityGetRequest_builder{
-		Ref: roster.IdentityRef_builder{Id: k.Bytes()}.Build(),
+	v, err := s.Get(ctx, rstr.IdentityGetRequest_builder{
+		Ref: rstr.IdentityRef_builder{Id: k.Bytes()}.Build(),
 	}.Build())
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
@@ -1671,7 +1671,7 @@ func (s sinkIdentity) watchRead(
 // row renamed while the stream is open goes on being the row that was asked
 // for -- which is what somebody watching a thing meant.
 func (s sinkIdentity) watchIdentityKeys(
-	ctx context.Context, fs []*roster.IdentityFilter,
+	ctx context.Context, fs []*rstr.IdentityFilter,
 ) ([]pdid.Id, error) {
 	ks := make([]pdid.Id, 0, len(fs))
 	for i, f := range fs {
@@ -1680,7 +1680,7 @@ func (s sinkIdentity) watchIdentityKeys(
 				"filters[%d]: a watch says which rows it is about by naming them", i)
 		}
 
-		v, err := s.Get(ctx, roster.IdentityGetRequest_builder{Ref: f.GetRef()}.Build())
+		v, err := s.Get(ctx, rstr.IdentityGetRequest_builder{Ref: f.GetRef()}.Build())
 		if err != nil {
 			return nil, err
 		}
@@ -1697,14 +1697,14 @@ func (s sinkIdentity) watchIdentityKeys(
 }
 
 type sinkSite struct {
-	roster.SiteServiceServer
+	rstr.SiteServiceServer
 	store  bare.Store
 	w      *watch.Watch
 	namer  slug.Namer
 	joined bool
 }
 
-func (s Sink) Site() roster.SiteServiceServer {
+func (s Sink) Site() rstr.SiteServiceServer {
 	return sinkSite{s.Server.Site(), s.Server.Store, s.w, s.namer, s.joined}
 }
 
@@ -1720,7 +1720,7 @@ func (s Sink) Site() roster.SiteServiceServer {
 // called, and for a call made in this process that is a message they may
 // still be holding -- a server that folded a caller's own field would be
 // changing a value they can read back.
-func (s sinkSite) Add(ctx context.Context, req *roster.SiteAddRequest) (*roster.Site, error) {
+func (s sinkSite) Add(ctx context.Context, req *rstr.SiteAddRequest) (*rstr.Site, error) {
 	// How many names to try. More than one only when the caller named
 	// nothing -- then the name is this server's and a collision is this
 	// server's to resolve. A name the caller gave is theirs, and quietly
@@ -1766,7 +1766,7 @@ func (s sinkSite) Add(ctx context.Context, req *roster.SiteAddRequest) (*roster.
 // decides the name of a row being made; a patch that cleared the alias is
 // a caller asking for something invalid, and answering that with an
 // invented name would hand them a row they did not ask for.
-func (s sinkSite) Patch(ctx context.Context, req *roster.SitePatchRequest) (*roster.Site, error) {
+func (s sinkSite) Patch(ctx context.Context, req *rstr.SitePatchRequest) (*rstr.Site, error) {
 	if !req.HasAlias() {
 		return s.SiteServiceServer.Patch(ctx, req)
 	}
@@ -1809,7 +1809,7 @@ const (
 
 // List answers with the Sites that match any of the given filters, or with
 // every one there is if the request named none, a page at a time.
-func (s sinkSite) List(ctx context.Context, req *roster.SiteListRequest) (*roster.SiteListResponse, error) {
+func (s sinkSite) List(ctx context.Context, req *rstr.SiteListRequest) (*rstr.SiteListResponse, error) {
 	q := s.store.Db.Site.Query()
 
 	// Through the same narrowing every generated read goes through, and not
@@ -1874,12 +1874,12 @@ func (s sinkSite) List(ctx context.Context, req *roster.SiteListRequest) (*roste
 		us = us[:size]
 	}
 
-	items := make([]*roster.Site, len(us))
+	items := make([]*rstr.Site, len(us))
 	for i, u := range us {
 		items[i] = u.Proto()
 	}
 
-	res := roster.SiteListResponse_builder{Items: items}.Build()
+	res := rstr.SiteListResponse_builder{Items: items}.Build()
 	if more {
 		last := us[len(us)-1]
 		next, err := entpage.Encode(last.DateCreated, last.ID)
@@ -1896,7 +1896,7 @@ func (s sinkSite) List(ctx context.Context, req *roster.SiteListRequest) (*roste
 // filterSite turns one filter into the predicate that selects what it
 // names. Naming nothing is refused, since the request asked for "these" and
 // did not say which.
-func filterSite(f *roster.SiteFilter) (predicate.Site, error) {
+func filterSite(f *rstr.SiteFilter) (predicate.Site, error) {
 	ps := make([]predicate.Site, 0, 1)
 	if f.HasRef() {
 		p, err := bare.SitePick(f.GetRef())
@@ -1916,7 +1916,7 @@ func filterSite(f *roster.SiteFilter) (predicate.Site, error) {
 // SiteService is the prefix of every RPC of that service, which is how a
 // change is known to be about a Site. A service is named for the entity it
 // is about, so the name carries it.
-var SiteService = watch.ServiceOf(roster.SiteService_Get_FullMethodName)
+var SiteService = watch.ServiceOf(rstr.SiteService_Get_FullMethodName)
 
 // Watch answers with the Sites this caller may see, as they are now and as
 // they change.
@@ -1925,7 +1925,7 @@ var SiteService = watch.ServiceOf(roster.SiteService_Get_FullMethodName)
 // that missed something still correct: the next item about a row carries the
 // whole of it, so a client converges rather than replays. It is also what
 // makes the first message safe to duplicate against the ones after it.
-func (s sinkSite) Watch(req *roster.SiteWatchRequest, out grpc.ServerStreamingServer[roster.SiteWatchResponse]) error {
+func (s sinkSite) Watch(req *rstr.SiteWatchRequest, out grpc.ServerStreamingServer[rstr.SiteWatchResponse]) error {
 	ctx := out.Context()
 
 	// A watch with no filters is the whole table, forever. It is the one
@@ -1959,7 +1959,7 @@ func (s sinkSite) Watch(req *roster.SiteWatchRequest, out grpc.ServerStreamingSe
 
 	return watch.Stream(ctx, s.w, SiteService, snapshot,
 		func(ks map[pdid.Id]string, sent watch.Seen) error {
-			items := make([]*roster.SiteWatchItem, 0, len(ks))
+			items := make([]*rstr.SiteWatchItem, 0, len(ks))
 			for k, action := range ks {
 				u, err := s.watchRead(ctx, watching, k)
 				if err != nil {
@@ -1973,7 +1973,7 @@ func (s sinkSite) Watch(req *roster.SiteWatchRequest, out grpc.ServerStreamingSe
 				}
 
 				sent[k] = u != nil
-				items = append(items, roster.SiteWatchItem_builder{
+				items = append(items, rstr.SiteWatchItem_builder{
 					Id:     k.Bytes(),
 					Value:  u,
 					Action: action,
@@ -1983,7 +1983,7 @@ func (s sinkSite) Watch(req *roster.SiteWatchRequest, out grpc.ServerStreamingSe
 				return nil
 			}
 
-			return out.Send(roster.SiteWatchResponse_builder{Items: items}.Build())
+			return out.Send(rstr.SiteWatchResponse_builder{Items: items}.Build())
 		})
 }
 
@@ -1991,12 +1991,12 @@ func (s sinkSite) Watch(req *roster.SiteWatchRequest, out grpc.ServerStreamingSe
 // would have called -- so what a stream begins with and what a list answers
 // cannot disagree, and a client does not have to do both and race them.
 func (s sinkSite) watchNow(
-	ctx context.Context, req *roster.SiteWatchRequest, out grpc.ServerStreamingServer[roster.SiteWatchResponse],
+	ctx context.Context, req *rstr.SiteWatchRequest, out grpc.ServerStreamingServer[rstr.SiteWatchResponse],
 	sent watch.Seen,
 ) error {
 	after := ""
 	for {
-		res, err := s.List(ctx, roster.SiteListRequest_builder{
+		res, err := s.List(ctx, rstr.SiteListRequest_builder{
 			Filters: req.GetFilters(),
 			After:   after,
 		}.Build())
@@ -2004,7 +2004,7 @@ func (s sinkSite) watchNow(
 			return err
 		}
 
-		items := make([]*roster.SiteWatchItem, 0, len(res.GetItems()))
+		items := make([]*rstr.SiteWatchItem, 0, len(res.GetItems()))
 		for _, u := range res.GetItems() {
 			k, err := pdid.From(u.GetId())
 			if err != nil {
@@ -2014,10 +2014,10 @@ func (s sinkSite) watchNow(
 			sent[k] = true
 			// No action: this is not something anybody asked for, it is
 			// what is already there.
-			items = append(items, roster.SiteWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+			items = append(items, rstr.SiteWatchItem_builder{Id: u.GetId(), Value: u}.Build())
 		}
 		if len(items) > 0 {
-			if err := out.Send(roster.SiteWatchResponse_builder{Items: items}.Build()); err != nil {
+			if err := out.Send(rstr.SiteWatchResponse_builder{Items: items}.Build()); err != nil {
 				return err
 			}
 		}
@@ -2039,15 +2039,15 @@ func (s sinkSite) watchNow(
 // a row they may not see comes back NotFound and is never sent.
 func (s sinkSite) watchRead(
 	ctx context.Context, watching []pdid.Id, k pdid.Id,
-) (*roster.Site, error) {
+) (*rstr.Site, error) {
 	// Not one of the rows this stream is about. Asked before the read, so a
 	// busy table costs a stream nothing for the rows it does not watch.
 	if !slices.Contains(watching, k) {
 		return nil, nil
 	}
 
-	v, err := s.Get(ctx, roster.SiteGetRequest_builder{
-		Ref: roster.SiteRef_builder{Id: k.Bytes()}.Build(),
+	v, err := s.Get(ctx, rstr.SiteGetRequest_builder{
+		Ref: rstr.SiteRef_builder{Id: k.Bytes()}.Build(),
 	}.Build())
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
@@ -2070,7 +2070,7 @@ func (s sinkSite) watchRead(
 // row renamed while the stream is open goes on being the row that was asked
 // for -- which is what somebody watching a thing meant.
 func (s sinkSite) watchSiteKeys(
-	ctx context.Context, fs []*roster.SiteFilter,
+	ctx context.Context, fs []*rstr.SiteFilter,
 ) ([]pdid.Id, error) {
 	ks := make([]pdid.Id, 0, len(fs))
 	for i, f := range fs {
@@ -2079,7 +2079,7 @@ func (s sinkSite) watchSiteKeys(
 				"filters[%d]: a watch says which rows it is about by naming them", i)
 		}
 
-		v, err := s.Get(ctx, roster.SiteGetRequest_builder{Ref: f.GetRef()}.Build())
+		v, err := s.Get(ctx, rstr.SiteGetRequest_builder{Ref: f.GetRef()}.Build())
 		if err != nil {
 			return nil, err
 		}
@@ -2096,14 +2096,14 @@ func (s sinkSite) watchSiteKeys(
 }
 
 type sinkSiteMembership struct {
-	roster.SiteMembershipServiceServer
+	rstr.SiteMembershipServiceServer
 	store  bare.Store
 	w      *watch.Watch
 	namer  slug.Namer
 	joined bool
 }
 
-func (s Sink) SiteMembership() roster.SiteMembershipServiceServer {
+func (s Sink) SiteMembership() rstr.SiteMembershipServiceServer {
 	return sinkSiteMembership{s.Server.SiteMembership(), s.Server.Store, s.w, s.namer, s.joined}
 }
 
@@ -2134,7 +2134,7 @@ const (
 
 // List answers with the SiteMemberships that match any of the given filters, or with
 // every one there is if the request named none, a page at a time.
-func (s sinkSiteMembership) List(ctx context.Context, req *roster.SiteMembershipListRequest) (*roster.SiteMembershipListResponse, error) {
+func (s sinkSiteMembership) List(ctx context.Context, req *rstr.SiteMembershipListRequest) (*rstr.SiteMembershipListResponse, error) {
 	q := s.store.Db.SiteMembership.Query()
 
 	// Through the same narrowing every generated read goes through, and not
@@ -2199,12 +2199,12 @@ func (s sinkSiteMembership) List(ctx context.Context, req *roster.SiteMembership
 		us = us[:size]
 	}
 
-	items := make([]*roster.SiteMembership, len(us))
+	items := make([]*rstr.SiteMembership, len(us))
 	for i, u := range us {
 		items[i] = u.Proto()
 	}
 
-	res := roster.SiteMembershipListResponse_builder{Items: items}.Build()
+	res := rstr.SiteMembershipListResponse_builder{Items: items}.Build()
 	if more {
 		last := us[len(us)-1]
 		next, err := entpage.Encode(last.DateCreated, last.ID)
@@ -2221,7 +2221,7 @@ func (s sinkSiteMembership) List(ctx context.Context, req *roster.SiteMembership
 // filterSiteMembership turns one filter into the predicate that selects what it
 // names. Naming nothing is refused, since the request asked for "these" and
 // did not say which.
-func filterSiteMembership(f *roster.SiteMembershipFilter) (predicate.SiteMembership, error) {
+func filterSiteMembership(f *rstr.SiteMembershipFilter) (predicate.SiteMembership, error) {
 	ps := make([]predicate.SiteMembership, 0, 1)
 	if f.HasRef() {
 		p, err := bare.SiteMembershipPick(f.GetRef())
@@ -2241,7 +2241,7 @@ func filterSiteMembership(f *roster.SiteMembershipFilter) (predicate.SiteMembers
 // SiteMembershipService is the prefix of every RPC of that service, which is how a
 // change is known to be about a SiteMembership. A service is named for the entity it
 // is about, so the name carries it.
-var SiteMembershipService = watch.ServiceOf(roster.SiteMembershipService_Get_FullMethodName)
+var SiteMembershipService = watch.ServiceOf(rstr.SiteMembershipService_Get_FullMethodName)
 
 // Watch answers with the SiteMemberships this caller may see, as they are now and as
 // they change.
@@ -2250,7 +2250,7 @@ var SiteMembershipService = watch.ServiceOf(roster.SiteMembershipService_Get_Ful
 // that missed something still correct: the next item about a row carries the
 // whole of it, so a client converges rather than replays. It is also what
 // makes the first message safe to duplicate against the ones after it.
-func (s sinkSiteMembership) Watch(req *roster.SiteMembershipWatchRequest, out grpc.ServerStreamingServer[roster.SiteMembershipWatchResponse]) error {
+func (s sinkSiteMembership) Watch(req *rstr.SiteMembershipWatchRequest, out grpc.ServerStreamingServer[rstr.SiteMembershipWatchResponse]) error {
 	ctx := out.Context()
 
 	// A watch with no filters is the whole table, forever. It is the one
@@ -2284,7 +2284,7 @@ func (s sinkSiteMembership) Watch(req *roster.SiteMembershipWatchRequest, out gr
 
 	return watch.Stream(ctx, s.w, SiteMembershipService, snapshot,
 		func(ks map[pdid.Id]string, sent watch.Seen) error {
-			items := make([]*roster.SiteMembershipWatchItem, 0, len(ks))
+			items := make([]*rstr.SiteMembershipWatchItem, 0, len(ks))
 			for k, action := range ks {
 				u, err := s.watchRead(ctx, watching, k)
 				if err != nil {
@@ -2298,7 +2298,7 @@ func (s sinkSiteMembership) Watch(req *roster.SiteMembershipWatchRequest, out gr
 				}
 
 				sent[k] = u != nil
-				items = append(items, roster.SiteMembershipWatchItem_builder{
+				items = append(items, rstr.SiteMembershipWatchItem_builder{
 					Id:     k.Bytes(),
 					Value:  u,
 					Action: action,
@@ -2308,7 +2308,7 @@ func (s sinkSiteMembership) Watch(req *roster.SiteMembershipWatchRequest, out gr
 				return nil
 			}
 
-			return out.Send(roster.SiteMembershipWatchResponse_builder{Items: items}.Build())
+			return out.Send(rstr.SiteMembershipWatchResponse_builder{Items: items}.Build())
 		})
 }
 
@@ -2316,12 +2316,12 @@ func (s sinkSiteMembership) Watch(req *roster.SiteMembershipWatchRequest, out gr
 // would have called -- so what a stream begins with and what a list answers
 // cannot disagree, and a client does not have to do both and race them.
 func (s sinkSiteMembership) watchNow(
-	ctx context.Context, req *roster.SiteMembershipWatchRequest, out grpc.ServerStreamingServer[roster.SiteMembershipWatchResponse],
+	ctx context.Context, req *rstr.SiteMembershipWatchRequest, out grpc.ServerStreamingServer[rstr.SiteMembershipWatchResponse],
 	sent watch.Seen,
 ) error {
 	after := ""
 	for {
-		res, err := s.List(ctx, roster.SiteMembershipListRequest_builder{
+		res, err := s.List(ctx, rstr.SiteMembershipListRequest_builder{
 			Filters: req.GetFilters(),
 			After:   after,
 		}.Build())
@@ -2329,7 +2329,7 @@ func (s sinkSiteMembership) watchNow(
 			return err
 		}
 
-		items := make([]*roster.SiteMembershipWatchItem, 0, len(res.GetItems()))
+		items := make([]*rstr.SiteMembershipWatchItem, 0, len(res.GetItems()))
 		for _, u := range res.GetItems() {
 			k, err := pdid.From(u.GetId())
 			if err != nil {
@@ -2339,10 +2339,10 @@ func (s sinkSiteMembership) watchNow(
 			sent[k] = true
 			// No action: this is not something anybody asked for, it is
 			// what is already there.
-			items = append(items, roster.SiteMembershipWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+			items = append(items, rstr.SiteMembershipWatchItem_builder{Id: u.GetId(), Value: u}.Build())
 		}
 		if len(items) > 0 {
-			if err := out.Send(roster.SiteMembershipWatchResponse_builder{Items: items}.Build()); err != nil {
+			if err := out.Send(rstr.SiteMembershipWatchResponse_builder{Items: items}.Build()); err != nil {
 				return err
 			}
 		}
@@ -2364,15 +2364,15 @@ func (s sinkSiteMembership) watchNow(
 // a row they may not see comes back NotFound and is never sent.
 func (s sinkSiteMembership) watchRead(
 	ctx context.Context, watching []pdid.Id, k pdid.Id,
-) (*roster.SiteMembership, error) {
+) (*rstr.SiteMembership, error) {
 	// Not one of the rows this stream is about. Asked before the read, so a
 	// busy table costs a stream nothing for the rows it does not watch.
 	if !slices.Contains(watching, k) {
 		return nil, nil
 	}
 
-	v, err := s.Get(ctx, roster.SiteMembershipGetRequest_builder{
-		Ref: roster.SiteMembershipRef_builder{Id: k.Bytes()}.Build(),
+	v, err := s.Get(ctx, rstr.SiteMembershipGetRequest_builder{
+		Ref: rstr.SiteMembershipRef_builder{Id: k.Bytes()}.Build(),
 	}.Build())
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
@@ -2395,7 +2395,7 @@ func (s sinkSiteMembership) watchRead(
 // row renamed while the stream is open goes on being the row that was asked
 // for -- which is what somebody watching a thing meant.
 func (s sinkSiteMembership) watchSiteMembershipKeys(
-	ctx context.Context, fs []*roster.SiteMembershipFilter,
+	ctx context.Context, fs []*rstr.SiteMembershipFilter,
 ) ([]pdid.Id, error) {
 	ks := make([]pdid.Id, 0, len(fs))
 	for i, f := range fs {
@@ -2404,7 +2404,7 @@ func (s sinkSiteMembership) watchSiteMembershipKeys(
 				"filters[%d]: a watch says which rows it is about by naming them", i)
 		}
 
-		v, err := s.Get(ctx, roster.SiteMembershipGetRequest_builder{Ref: f.GetRef()}.Build())
+		v, err := s.Get(ctx, rstr.SiteMembershipGetRequest_builder{Ref: f.GetRef()}.Build())
 		if err != nil {
 			return nil, err
 		}
@@ -2421,14 +2421,14 @@ func (s sinkSiteMembership) watchSiteMembershipKeys(
 }
 
 type sinkTeam struct {
-	roster.TeamServiceServer
+	rstr.TeamServiceServer
 	store  bare.Store
 	w      *watch.Watch
 	namer  slug.Namer
 	joined bool
 }
 
-func (s Sink) Team() roster.TeamServiceServer {
+func (s Sink) Team() rstr.TeamServiceServer {
 	return sinkTeam{s.Server.Team(), s.Server.Store, s.w, s.namer, s.joined}
 }
 
@@ -2444,7 +2444,7 @@ func (s Sink) Team() roster.TeamServiceServer {
 // called, and for a call made in this process that is a message they may
 // still be holding -- a server that folded a caller's own field would be
 // changing a value they can read back.
-func (s sinkTeam) Add(ctx context.Context, req *roster.TeamAddRequest) (*roster.Team, error) {
+func (s sinkTeam) Add(ctx context.Context, req *rstr.TeamAddRequest) (*rstr.Team, error) {
 	// How many names to try. More than one only when the caller named
 	// nothing -- then the name is this server's and a collision is this
 	// server's to resolve. A name the caller gave is theirs, and quietly
@@ -2490,7 +2490,7 @@ func (s sinkTeam) Add(ctx context.Context, req *roster.TeamAddRequest) (*roster.
 // decides the name of a row being made; a patch that cleared the alias is
 // a caller asking for something invalid, and answering that with an
 // invented name would hand them a row they did not ask for.
-func (s sinkTeam) Patch(ctx context.Context, req *roster.TeamPatchRequest) (*roster.Team, error) {
+func (s sinkTeam) Patch(ctx context.Context, req *rstr.TeamPatchRequest) (*rstr.Team, error) {
 	if !req.HasAlias() {
 		return s.TeamServiceServer.Patch(ctx, req)
 	}
@@ -2533,7 +2533,7 @@ const (
 
 // List answers with the Teams that match any of the given filters, or with
 // every one there is if the request named none, a page at a time.
-func (s sinkTeam) List(ctx context.Context, req *roster.TeamListRequest) (*roster.TeamListResponse, error) {
+func (s sinkTeam) List(ctx context.Context, req *rstr.TeamListRequest) (*rstr.TeamListResponse, error) {
 	q := s.store.Db.Team.Query()
 
 	// Through the same narrowing every generated read goes through, and not
@@ -2598,12 +2598,12 @@ func (s sinkTeam) List(ctx context.Context, req *roster.TeamListRequest) (*roste
 		us = us[:size]
 	}
 
-	items := make([]*roster.Team, len(us))
+	items := make([]*rstr.Team, len(us))
 	for i, u := range us {
 		items[i] = u.Proto()
 	}
 
-	res := roster.TeamListResponse_builder{Items: items}.Build()
+	res := rstr.TeamListResponse_builder{Items: items}.Build()
 	if more {
 		last := us[len(us)-1]
 		next, err := entpage.Encode(last.DateCreated, last.ID)
@@ -2620,7 +2620,7 @@ func (s sinkTeam) List(ctx context.Context, req *roster.TeamListRequest) (*roste
 // filterTeam turns one filter into the predicate that selects what it
 // names. Naming nothing is refused, since the request asked for "these" and
 // did not say which.
-func filterTeam(f *roster.TeamFilter) (predicate.Team, error) {
+func filterTeam(f *rstr.TeamFilter) (predicate.Team, error) {
 	ps := make([]predicate.Team, 0, 1)
 	if f.HasRef() {
 		p, err := bare.TeamPick(f.GetRef())
@@ -2640,7 +2640,7 @@ func filterTeam(f *roster.TeamFilter) (predicate.Team, error) {
 // TeamService is the prefix of every RPC of that service, which is how a
 // change is known to be about a Team. A service is named for the entity it
 // is about, so the name carries it.
-var TeamService = watch.ServiceOf(roster.TeamService_Get_FullMethodName)
+var TeamService = watch.ServiceOf(rstr.TeamService_Get_FullMethodName)
 
 // Watch answers with the Teams this caller may see, as they are now and as
 // they change.
@@ -2649,7 +2649,7 @@ var TeamService = watch.ServiceOf(roster.TeamService_Get_FullMethodName)
 // that missed something still correct: the next item about a row carries the
 // whole of it, so a client converges rather than replays. It is also what
 // makes the first message safe to duplicate against the ones after it.
-func (s sinkTeam) Watch(req *roster.TeamWatchRequest, out grpc.ServerStreamingServer[roster.TeamWatchResponse]) error {
+func (s sinkTeam) Watch(req *rstr.TeamWatchRequest, out grpc.ServerStreamingServer[rstr.TeamWatchResponse]) error {
 	ctx := out.Context()
 
 	// A watch with no filters is the whole table, forever. It is the one
@@ -2683,7 +2683,7 @@ func (s sinkTeam) Watch(req *roster.TeamWatchRequest, out grpc.ServerStreamingSe
 
 	return watch.Stream(ctx, s.w, TeamService, snapshot,
 		func(ks map[pdid.Id]string, sent watch.Seen) error {
-			items := make([]*roster.TeamWatchItem, 0, len(ks))
+			items := make([]*rstr.TeamWatchItem, 0, len(ks))
 			for k, action := range ks {
 				u, err := s.watchRead(ctx, watching, k)
 				if err != nil {
@@ -2697,7 +2697,7 @@ func (s sinkTeam) Watch(req *roster.TeamWatchRequest, out grpc.ServerStreamingSe
 				}
 
 				sent[k] = u != nil
-				items = append(items, roster.TeamWatchItem_builder{
+				items = append(items, rstr.TeamWatchItem_builder{
 					Id:     k.Bytes(),
 					Value:  u,
 					Action: action,
@@ -2707,7 +2707,7 @@ func (s sinkTeam) Watch(req *roster.TeamWatchRequest, out grpc.ServerStreamingSe
 				return nil
 			}
 
-			return out.Send(roster.TeamWatchResponse_builder{Items: items}.Build())
+			return out.Send(rstr.TeamWatchResponse_builder{Items: items}.Build())
 		})
 }
 
@@ -2715,12 +2715,12 @@ func (s sinkTeam) Watch(req *roster.TeamWatchRequest, out grpc.ServerStreamingSe
 // would have called -- so what a stream begins with and what a list answers
 // cannot disagree, and a client does not have to do both and race them.
 func (s sinkTeam) watchNow(
-	ctx context.Context, req *roster.TeamWatchRequest, out grpc.ServerStreamingServer[roster.TeamWatchResponse],
+	ctx context.Context, req *rstr.TeamWatchRequest, out grpc.ServerStreamingServer[rstr.TeamWatchResponse],
 	sent watch.Seen,
 ) error {
 	after := ""
 	for {
-		res, err := s.List(ctx, roster.TeamListRequest_builder{
+		res, err := s.List(ctx, rstr.TeamListRequest_builder{
 			Filters: req.GetFilters(),
 			After:   after,
 		}.Build())
@@ -2728,7 +2728,7 @@ func (s sinkTeam) watchNow(
 			return err
 		}
 
-		items := make([]*roster.TeamWatchItem, 0, len(res.GetItems()))
+		items := make([]*rstr.TeamWatchItem, 0, len(res.GetItems()))
 		for _, u := range res.GetItems() {
 			k, err := pdid.From(u.GetId())
 			if err != nil {
@@ -2738,10 +2738,10 @@ func (s sinkTeam) watchNow(
 			sent[k] = true
 			// No action: this is not something anybody asked for, it is
 			// what is already there.
-			items = append(items, roster.TeamWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+			items = append(items, rstr.TeamWatchItem_builder{Id: u.GetId(), Value: u}.Build())
 		}
 		if len(items) > 0 {
-			if err := out.Send(roster.TeamWatchResponse_builder{Items: items}.Build()); err != nil {
+			if err := out.Send(rstr.TeamWatchResponse_builder{Items: items}.Build()); err != nil {
 				return err
 			}
 		}
@@ -2763,15 +2763,15 @@ func (s sinkTeam) watchNow(
 // a row they may not see comes back NotFound and is never sent.
 func (s sinkTeam) watchRead(
 	ctx context.Context, watching []pdid.Id, k pdid.Id,
-) (*roster.Team, error) {
+) (*rstr.Team, error) {
 	// Not one of the rows this stream is about. Asked before the read, so a
 	// busy table costs a stream nothing for the rows it does not watch.
 	if !slices.Contains(watching, k) {
 		return nil, nil
 	}
 
-	v, err := s.Get(ctx, roster.TeamGetRequest_builder{
-		Ref: roster.TeamRef_builder{Id: k.Bytes()}.Build(),
+	v, err := s.Get(ctx, rstr.TeamGetRequest_builder{
+		Ref: rstr.TeamRef_builder{Id: k.Bytes()}.Build(),
 	}.Build())
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
@@ -2794,7 +2794,7 @@ func (s sinkTeam) watchRead(
 // row renamed while the stream is open goes on being the row that was asked
 // for -- which is what somebody watching a thing meant.
 func (s sinkTeam) watchTeamKeys(
-	ctx context.Context, fs []*roster.TeamFilter,
+	ctx context.Context, fs []*rstr.TeamFilter,
 ) ([]pdid.Id, error) {
 	ks := make([]pdid.Id, 0, len(fs))
 	for i, f := range fs {
@@ -2803,7 +2803,7 @@ func (s sinkTeam) watchTeamKeys(
 				"filters[%d]: a watch says which rows it is about by naming them", i)
 		}
 
-		v, err := s.Get(ctx, roster.TeamGetRequest_builder{Ref: f.GetRef()}.Build())
+		v, err := s.Get(ctx, rstr.TeamGetRequest_builder{Ref: f.GetRef()}.Build())
 		if err != nil {
 			return nil, err
 		}
@@ -2820,14 +2820,14 @@ func (s sinkTeam) watchTeamKeys(
 }
 
 type sinkTeamMembership struct {
-	roster.TeamMembershipServiceServer
+	rstr.TeamMembershipServiceServer
 	store  bare.Store
 	w      *watch.Watch
 	namer  slug.Namer
 	joined bool
 }
 
-func (s Sink) TeamMembership() roster.TeamMembershipServiceServer {
+func (s Sink) TeamMembership() rstr.TeamMembershipServiceServer {
 	return sinkTeamMembership{s.Server.TeamMembership(), s.Server.Store, s.w, s.namer, s.joined}
 }
 
@@ -2858,7 +2858,7 @@ const (
 
 // List answers with the TeamMemberships that match any of the given filters, or with
 // every one there is if the request named none, a page at a time.
-func (s sinkTeamMembership) List(ctx context.Context, req *roster.TeamMembershipListRequest) (*roster.TeamMembershipListResponse, error) {
+func (s sinkTeamMembership) List(ctx context.Context, req *rstr.TeamMembershipListRequest) (*rstr.TeamMembershipListResponse, error) {
 	q := s.store.Db.TeamMembership.Query()
 
 	// Through the same narrowing every generated read goes through, and not
@@ -2923,12 +2923,12 @@ func (s sinkTeamMembership) List(ctx context.Context, req *roster.TeamMembership
 		us = us[:size]
 	}
 
-	items := make([]*roster.TeamMembership, len(us))
+	items := make([]*rstr.TeamMembership, len(us))
 	for i, u := range us {
 		items[i] = u.Proto()
 	}
 
-	res := roster.TeamMembershipListResponse_builder{Items: items}.Build()
+	res := rstr.TeamMembershipListResponse_builder{Items: items}.Build()
 	if more {
 		last := us[len(us)-1]
 		next, err := entpage.Encode(last.DateCreated, last.ID)
@@ -2945,7 +2945,7 @@ func (s sinkTeamMembership) List(ctx context.Context, req *roster.TeamMembership
 // filterTeamMembership turns one filter into the predicate that selects what it
 // names. Naming nothing is refused, since the request asked for "these" and
 // did not say which.
-func filterTeamMembership(f *roster.TeamMembershipFilter) (predicate.TeamMembership, error) {
+func filterTeamMembership(f *rstr.TeamMembershipFilter) (predicate.TeamMembership, error) {
 	ps := make([]predicate.TeamMembership, 0, 1)
 	if f.HasRef() {
 		p, err := bare.TeamMembershipPick(f.GetRef())
@@ -2965,7 +2965,7 @@ func filterTeamMembership(f *roster.TeamMembershipFilter) (predicate.TeamMembers
 // TeamMembershipService is the prefix of every RPC of that service, which is how a
 // change is known to be about a TeamMembership. A service is named for the entity it
 // is about, so the name carries it.
-var TeamMembershipService = watch.ServiceOf(roster.TeamMembershipService_Get_FullMethodName)
+var TeamMembershipService = watch.ServiceOf(rstr.TeamMembershipService_Get_FullMethodName)
 
 // Watch answers with the TeamMemberships this caller may see, as they are now and as
 // they change.
@@ -2974,7 +2974,7 @@ var TeamMembershipService = watch.ServiceOf(roster.TeamMembershipService_Get_Ful
 // that missed something still correct: the next item about a row carries the
 // whole of it, so a client converges rather than replays. It is also what
 // makes the first message safe to duplicate against the ones after it.
-func (s sinkTeamMembership) Watch(req *roster.TeamMembershipWatchRequest, out grpc.ServerStreamingServer[roster.TeamMembershipWatchResponse]) error {
+func (s sinkTeamMembership) Watch(req *rstr.TeamMembershipWatchRequest, out grpc.ServerStreamingServer[rstr.TeamMembershipWatchResponse]) error {
 	ctx := out.Context()
 
 	// A watch with no filters is the whole table, forever. It is the one
@@ -3008,7 +3008,7 @@ func (s sinkTeamMembership) Watch(req *roster.TeamMembershipWatchRequest, out gr
 
 	return watch.Stream(ctx, s.w, TeamMembershipService, snapshot,
 		func(ks map[pdid.Id]string, sent watch.Seen) error {
-			items := make([]*roster.TeamMembershipWatchItem, 0, len(ks))
+			items := make([]*rstr.TeamMembershipWatchItem, 0, len(ks))
 			for k, action := range ks {
 				u, err := s.watchRead(ctx, watching, k)
 				if err != nil {
@@ -3022,7 +3022,7 @@ func (s sinkTeamMembership) Watch(req *roster.TeamMembershipWatchRequest, out gr
 				}
 
 				sent[k] = u != nil
-				items = append(items, roster.TeamMembershipWatchItem_builder{
+				items = append(items, rstr.TeamMembershipWatchItem_builder{
 					Id:     k.Bytes(),
 					Value:  u,
 					Action: action,
@@ -3032,7 +3032,7 @@ func (s sinkTeamMembership) Watch(req *roster.TeamMembershipWatchRequest, out gr
 				return nil
 			}
 
-			return out.Send(roster.TeamMembershipWatchResponse_builder{Items: items}.Build())
+			return out.Send(rstr.TeamMembershipWatchResponse_builder{Items: items}.Build())
 		})
 }
 
@@ -3040,12 +3040,12 @@ func (s sinkTeamMembership) Watch(req *roster.TeamMembershipWatchRequest, out gr
 // would have called -- so what a stream begins with and what a list answers
 // cannot disagree, and a client does not have to do both and race them.
 func (s sinkTeamMembership) watchNow(
-	ctx context.Context, req *roster.TeamMembershipWatchRequest, out grpc.ServerStreamingServer[roster.TeamMembershipWatchResponse],
+	ctx context.Context, req *rstr.TeamMembershipWatchRequest, out grpc.ServerStreamingServer[rstr.TeamMembershipWatchResponse],
 	sent watch.Seen,
 ) error {
 	after := ""
 	for {
-		res, err := s.List(ctx, roster.TeamMembershipListRequest_builder{
+		res, err := s.List(ctx, rstr.TeamMembershipListRequest_builder{
 			Filters: req.GetFilters(),
 			After:   after,
 		}.Build())
@@ -3053,7 +3053,7 @@ func (s sinkTeamMembership) watchNow(
 			return err
 		}
 
-		items := make([]*roster.TeamMembershipWatchItem, 0, len(res.GetItems()))
+		items := make([]*rstr.TeamMembershipWatchItem, 0, len(res.GetItems()))
 		for _, u := range res.GetItems() {
 			k, err := pdid.From(u.GetId())
 			if err != nil {
@@ -3063,10 +3063,10 @@ func (s sinkTeamMembership) watchNow(
 			sent[k] = true
 			// No action: this is not something anybody asked for, it is
 			// what is already there.
-			items = append(items, roster.TeamMembershipWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+			items = append(items, rstr.TeamMembershipWatchItem_builder{Id: u.GetId(), Value: u}.Build())
 		}
 		if len(items) > 0 {
-			if err := out.Send(roster.TeamMembershipWatchResponse_builder{Items: items}.Build()); err != nil {
+			if err := out.Send(rstr.TeamMembershipWatchResponse_builder{Items: items}.Build()); err != nil {
 				return err
 			}
 		}
@@ -3088,15 +3088,15 @@ func (s sinkTeamMembership) watchNow(
 // a row they may not see comes back NotFound and is never sent.
 func (s sinkTeamMembership) watchRead(
 	ctx context.Context, watching []pdid.Id, k pdid.Id,
-) (*roster.TeamMembership, error) {
+) (*rstr.TeamMembership, error) {
 	// Not one of the rows this stream is about. Asked before the read, so a
 	// busy table costs a stream nothing for the rows it does not watch.
 	if !slices.Contains(watching, k) {
 		return nil, nil
 	}
 
-	v, err := s.Get(ctx, roster.TeamMembershipGetRequest_builder{
-		Ref: roster.TeamMembershipRef_builder{Id: k.Bytes()}.Build(),
+	v, err := s.Get(ctx, rstr.TeamMembershipGetRequest_builder{
+		Ref: rstr.TeamMembershipRef_builder{Id: k.Bytes()}.Build(),
 	}.Build())
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
@@ -3119,7 +3119,7 @@ func (s sinkTeamMembership) watchRead(
 // row renamed while the stream is open goes on being the row that was asked
 // for -- which is what somebody watching a thing meant.
 func (s sinkTeamMembership) watchTeamMembershipKeys(
-	ctx context.Context, fs []*roster.TeamMembershipFilter,
+	ctx context.Context, fs []*rstr.TeamMembershipFilter,
 ) ([]pdid.Id, error) {
 	ks := make([]pdid.Id, 0, len(fs))
 	for i, f := range fs {
@@ -3128,7 +3128,7 @@ func (s sinkTeamMembership) watchTeamMembershipKeys(
 				"filters[%d]: a watch says which rows it is about by naming them", i)
 		}
 
-		v, err := s.Get(ctx, roster.TeamMembershipGetRequest_builder{Ref: f.GetRef()}.Build())
+		v, err := s.Get(ctx, rstr.TeamMembershipGetRequest_builder{Ref: f.GetRef()}.Build())
 		if err != nil {
 			return nil, err
 		}
@@ -3145,14 +3145,14 @@ func (s sinkTeamMembership) watchTeamMembershipKeys(
 }
 
 type sinkTenant struct {
-	roster.TenantServiceServer
+	rstr.TenantServiceServer
 	store  bare.Store
 	w      *watch.Watch
 	namer  slug.Namer
 	joined bool
 }
 
-func (s Sink) Tenant() roster.TenantServiceServer {
+func (s Sink) Tenant() rstr.TenantServiceServer {
 	return sinkTenant{s.Server.Tenant(), s.Server.Store, s.w, s.namer, s.joined}
 }
 
@@ -3168,7 +3168,7 @@ func (s Sink) Tenant() roster.TenantServiceServer {
 // called, and for a call made in this process that is a message they may
 // still be holding -- a server that folded a caller's own field would be
 // changing a value they can read back.
-func (s sinkTenant) Add(ctx context.Context, req *roster.TenantAddRequest) (*roster.Tenant, error) {
+func (s sinkTenant) Add(ctx context.Context, req *rstr.TenantAddRequest) (*rstr.Tenant, error) {
 	// How many names to try. More than one only when the caller named
 	// nothing -- then the name is this server's and a collision is this
 	// server's to resolve. A name the caller gave is theirs, and quietly
@@ -3214,7 +3214,7 @@ func (s sinkTenant) Add(ctx context.Context, req *roster.TenantAddRequest) (*ros
 // decides the name of a row being made; a patch that cleared the alias is
 // a caller asking for something invalid, and answering that with an
 // invented name would hand them a row they did not ask for.
-func (s sinkTenant) Patch(ctx context.Context, req *roster.TenantPatchRequest) (*roster.Tenant, error) {
+func (s sinkTenant) Patch(ctx context.Context, req *rstr.TenantPatchRequest) (*rstr.Tenant, error) {
 	if !req.HasAlias() {
 		return s.TenantServiceServer.Patch(ctx, req)
 	}
@@ -3240,16 +3240,16 @@ func (s sinkTenant) Patch(ctx context.Context, req *roster.TenantPatchRequest) (
 //
 //	s, err := app.Build(walled, core.Build(), pd.AuditBuild(), pd.GateBuild())
 type Gate struct {
-	roster.Overlay
+	rstr.Overlay
 }
 
-func NewGate(next roster.Server) Gate {
-	return Gate{roster.NewOverlay(next)}
+func NewGate(next rstr.Server) Gate {
+	return Gate{rstr.NewOverlay(next)}
 }
 
-var _ roster.Server = Gate{}
+var _ rstr.Server = Gate{}
 
-var _ enttx.Binder[roster.Server] = Gate{}
+var _ enttx.Binder[rstr.Server] = Gate{}
 
 // WithDriver answers with this stack running on `drv`, which is how several
 // servers are put on one transaction.
@@ -3258,7 +3258,7 @@ var _ enttx.Binder[roster.Server] = Gate{}
 // behind it and has no way to make itself again, so a layer that did not
 // write it would be missing from the rebuilt stack and the requests inside
 // the transaction would go around it.
-func (s Gate) WithDriver(drv dialect.Driver) (roster.Server, error) {
+func (s Gate) WithDriver(drv dialect.Driver) (rstr.Server, error) {
 	next, err := enttx.Rebind(s.Next(), drv)
 	if err != nil {
 		return nil, err
@@ -3268,41 +3268,41 @@ func (s Gate) WithDriver(drv dialect.Driver) (roster.Server, error) {
 }
 
 // GateBuild makes a builder of this layer so that it can be stacked.
-func GateBuild() roster.Builder { return gateBuilder{} }
+func GateBuild() rstr.Builder { return gateBuilder{} }
 
 type gateBuilder struct{}
 
-func (gateBuilder) Build(next roster.Server) (roster.Server, error) {
+func (gateBuilder) Build(next rstr.Server) (rstr.Server, error) {
 	return NewGate(next), nil
 }
 
 type gateTenant struct {
 	Gate
-	roster.TenantServiceServer
+	rstr.TenantServiceServer
 }
 
-func (s Gate) Tenant() roster.TenantServiceServer {
+func (s Gate) Tenant() rstr.TenantServiceServer {
 	return gateTenant{s, s.Next().Tenant()}
 }
 
 // Add is not served. A tenant is put up by whoever runs the deployment,
 // through a server this layer is not in front of.
-func (s gateTenant) Add(ctx context.Context, req *roster.TenantAddRequest) (*roster.Tenant, error) {
+func (s gateTenant) Add(ctx context.Context, req *rstr.TenantAddRequest) (*rstr.Tenant, error) {
 	return nil, gate.ErrDeployment("put up")
 }
 
 // Erase is not served either, and it would take everything in the tenant
 // with it.
-func (s gateTenant) Erase(ctx context.Context, req *roster.TenantRef) (*emptypb.Empty, error) {
+func (s gateTenant) Erase(ctx context.Context, req *rstr.TenantRef) (*emptypb.Empty, error) {
 	return nil, gate.ErrDeployment("taken down")
 }
 
 type gateHolder struct {
 	Gate
-	roster.HolderServiceServer
+	rstr.HolderServiceServer
 }
 
-func (s Gate) Holder() roster.HolderServiceServer {
+func (s Gate) Holder() rstr.HolderServiceServer {
 	return gateHolder{s, s.Next().Holder()}
 }
 
@@ -3322,12 +3322,12 @@ func (s Gate) Holder() roster.HolderServiceServer {
 // tenant gives: that one exists is itself something a caller who may not see
 // it should not be told. It also gets a tenant that simply is not there
 // right, which comparing against a scope did not.
-func (s gateHolder) Add(ctx context.Context, req *roster.HolderAddRequest) (*roster.Holder, error) {
+func (s gateHolder) Add(ctx context.Context, req *rstr.HolderAddRequest) (*rstr.Holder, error) {
 	if _, err := gate.Actor(ctx); err != nil {
 		return nil, err
 	}
 
-	if _, err := s.Gate.Next().Tenant().Get(ctx, roster.TenantGetRequest_builder{
+	if _, err := s.Gate.Next().Tenant().Get(ctx, rstr.TenantGetRequest_builder{
 		Ref: req.GetTenant(),
 	}.Build()); err != nil {
 		if status.Code(err) == codes.NotFound {
@@ -3342,10 +3342,10 @@ func (s gateHolder) Add(ctx context.Context, req *roster.HolderAddRequest) (*ros
 
 type gateCredential struct {
 	Gate
-	roster.CredentialServiceServer
+	rstr.CredentialServiceServer
 }
 
-func (s Gate) Credential() roster.CredentialServiceServer {
+func (s Gate) Credential() rstr.CredentialServiceServer {
 	return gateCredential{s, s.Next().Credential()}
 }
 
@@ -3360,9 +3360,9 @@ func (s Gate) Credential() roster.CredentialServiceServer {
 // NotFound rather than a refusal, for the reason on `gateHolder.Add`:
 // that a row exists is itself something a caller who may not see it
 // should not be told.
-func (s gateCredential) Add(ctx context.Context, req *roster.CredentialAddRequest) (*roster.Credential, error) {
+func (s gateCredential) Add(ctx context.Context, req *rstr.CredentialAddRequest) (*rstr.Credential, error) {
 	if ref := req.GetHolder(); ref != nil {
-		if _, err := s.Gate.Next().Holder().Get(ctx, roster.HolderGetRequest_builder{
+		if _, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{
 			Ref: ref,
 		}.Build()); err != nil {
 			if status.Code(err) == codes.NotFound {
@@ -3378,10 +3378,10 @@ func (s gateCredential) Add(ctx context.Context, req *roster.CredentialAddReques
 
 type gateEmail struct {
 	Gate
-	roster.EmailServiceServer
+	rstr.EmailServiceServer
 }
 
-func (s Gate) Email() roster.EmailServiceServer {
+func (s Gate) Email() rstr.EmailServiceServer {
 	return gateEmail{s, s.Next().Email()}
 }
 
@@ -3396,9 +3396,9 @@ func (s Gate) Email() roster.EmailServiceServer {
 // NotFound rather than a refusal, for the reason on `gateHolder.Add`:
 // that a row exists is itself something a caller who may not see it
 // should not be told.
-func (s gateEmail) Add(ctx context.Context, req *roster.EmailAddRequest) (*roster.Email, error) {
+func (s gateEmail) Add(ctx context.Context, req *rstr.EmailAddRequest) (*rstr.Email, error) {
 	if ref := req.GetHolder(); ref != nil {
-		if _, err := s.Gate.Next().Holder().Get(ctx, roster.HolderGetRequest_builder{
+		if _, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{
 			Ref: ref,
 		}.Build()); err != nil {
 			if status.Code(err) == codes.NotFound {
@@ -3414,10 +3414,10 @@ func (s gateEmail) Add(ctx context.Context, req *roster.EmailAddRequest) (*roste
 
 type gateIdentity struct {
 	Gate
-	roster.IdentityServiceServer
+	rstr.IdentityServiceServer
 }
 
-func (s Gate) Identity() roster.IdentityServiceServer {
+func (s Gate) Identity() rstr.IdentityServiceServer {
 	return gateIdentity{s, s.Next().Identity()}
 }
 
@@ -3432,9 +3432,9 @@ func (s Gate) Identity() roster.IdentityServiceServer {
 // NotFound rather than a refusal, for the reason on `gateHolder.Add`:
 // that a row exists is itself something a caller who may not see it
 // should not be told.
-func (s gateIdentity) Add(ctx context.Context, req *roster.IdentityAddRequest) (*roster.Identity, error) {
+func (s gateIdentity) Add(ctx context.Context, req *rstr.IdentityAddRequest) (*rstr.Identity, error) {
 	if ref := req.GetHolder(); ref != nil {
-		if _, err := s.Gate.Next().Holder().Get(ctx, roster.HolderGetRequest_builder{
+		if _, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{
 			Ref: ref,
 		}.Build()); err != nil {
 			if status.Code(err) == codes.NotFound {
@@ -3450,10 +3450,10 @@ func (s gateIdentity) Add(ctx context.Context, req *roster.IdentityAddRequest) (
 
 type gateSite struct {
 	Gate
-	roster.SiteServiceServer
+	rstr.SiteServiceServer
 }
 
-func (s Gate) Site() roster.SiteServiceServer {
+func (s Gate) Site() rstr.SiteServiceServer {
 	return gateSite{s, s.Next().Site()}
 }
 
@@ -3468,9 +3468,9 @@ func (s Gate) Site() roster.SiteServiceServer {
 // NotFound rather than a refusal, for the reason on `gateHolder.Add`:
 // that a row exists is itself something a caller who may not see it
 // should not be told.
-func (s gateSite) Add(ctx context.Context, req *roster.SiteAddRequest) (*roster.Site, error) {
+func (s gateSite) Add(ctx context.Context, req *rstr.SiteAddRequest) (*rstr.Site, error) {
 	if ref := req.GetTenant(); ref != nil {
-		if _, err := s.Gate.Next().Tenant().Get(ctx, roster.TenantGetRequest_builder{
+		if _, err := s.Gate.Next().Tenant().Get(ctx, rstr.TenantGetRequest_builder{
 			Ref: ref,
 		}.Build()); err != nil {
 			if status.Code(err) == codes.NotFound {
@@ -3486,10 +3486,10 @@ func (s gateSite) Add(ctx context.Context, req *roster.SiteAddRequest) (*roster.
 
 type gateSiteMembership struct {
 	Gate
-	roster.SiteMembershipServiceServer
+	rstr.SiteMembershipServiceServer
 }
 
-func (s Gate) SiteMembership() roster.SiteMembershipServiceServer {
+func (s Gate) SiteMembership() rstr.SiteMembershipServiceServer {
 	return gateSiteMembership{s, s.Next().SiteMembership()}
 }
 
@@ -3504,9 +3504,9 @@ func (s Gate) SiteMembership() roster.SiteMembershipServiceServer {
 // NotFound rather than a refusal, for the reason on `gateHolder.Add`:
 // that a row exists is itself something a caller who may not see it
 // should not be told.
-func (s gateSiteMembership) Add(ctx context.Context, req *roster.SiteMembershipAddRequest) (*roster.SiteMembership, error) {
+func (s gateSiteMembership) Add(ctx context.Context, req *rstr.SiteMembershipAddRequest) (*rstr.SiteMembership, error) {
 	if ref := req.GetSite(); ref != nil {
-		if _, err := s.Gate.Next().Site().Get(ctx, roster.SiteGetRequest_builder{
+		if _, err := s.Gate.Next().Site().Get(ctx, rstr.SiteGetRequest_builder{
 			Ref: ref,
 		}.Build()); err != nil {
 			if status.Code(err) == codes.NotFound {
@@ -3518,7 +3518,7 @@ func (s gateSiteMembership) Add(ctx context.Context, req *roster.SiteMembershipA
 	}
 
 	if ref := req.GetSite(); ref != nil {
-		if _, err := s.Gate.Next().Site().Get(ctx, roster.SiteGetRequest_builder{
+		if _, err := s.Gate.Next().Site().Get(ctx, rstr.SiteGetRequest_builder{
 			Ref: ref,
 		}.Build()); err != nil {
 			if status.Code(err) == codes.NotFound {
@@ -3534,10 +3534,10 @@ func (s gateSiteMembership) Add(ctx context.Context, req *roster.SiteMembershipA
 
 type gateTeam struct {
 	Gate
-	roster.TeamServiceServer
+	rstr.TeamServiceServer
 }
 
-func (s Gate) Team() roster.TeamServiceServer {
+func (s Gate) Team() rstr.TeamServiceServer {
 	return gateTeam{s, s.Next().Team()}
 }
 
@@ -3552,9 +3552,9 @@ func (s Gate) Team() roster.TeamServiceServer {
 // NotFound rather than a refusal, for the reason on `gateHolder.Add`:
 // that a row exists is itself something a caller who may not see it
 // should not be told.
-func (s gateTeam) Add(ctx context.Context, req *roster.TeamAddRequest) (*roster.Team, error) {
+func (s gateTeam) Add(ctx context.Context, req *rstr.TeamAddRequest) (*rstr.Team, error) {
 	if ref := req.GetSite(); ref != nil {
-		if _, err := s.Gate.Next().Site().Get(ctx, roster.SiteGetRequest_builder{
+		if _, err := s.Gate.Next().Site().Get(ctx, rstr.SiteGetRequest_builder{
 			Ref: ref,
 		}.Build()); err != nil {
 			if status.Code(err) == codes.NotFound {
@@ -3566,7 +3566,7 @@ func (s gateTeam) Add(ctx context.Context, req *roster.TeamAddRequest) (*roster.
 	}
 
 	if ref := req.GetSite(); ref != nil {
-		if _, err := s.Gate.Next().Site().Get(ctx, roster.SiteGetRequest_builder{
+		if _, err := s.Gate.Next().Site().Get(ctx, rstr.SiteGetRequest_builder{
 			Ref: ref,
 		}.Build()); err != nil {
 			if status.Code(err) == codes.NotFound {
@@ -3582,10 +3582,10 @@ func (s gateTeam) Add(ctx context.Context, req *roster.TeamAddRequest) (*roster.
 
 type gateTeamMembership struct {
 	Gate
-	roster.TeamMembershipServiceServer
+	rstr.TeamMembershipServiceServer
 }
 
-func (s Gate) TeamMembership() roster.TeamMembershipServiceServer {
+func (s Gate) TeamMembership() rstr.TeamMembershipServiceServer {
 	return gateTeamMembership{s, s.Next().TeamMembership()}
 }
 
@@ -3600,9 +3600,9 @@ func (s Gate) TeamMembership() roster.TeamMembershipServiceServer {
 // NotFound rather than a refusal, for the reason on `gateHolder.Add`:
 // that a row exists is itself something a caller who may not see it
 // should not be told.
-func (s gateTeamMembership) Add(ctx context.Context, req *roster.TeamMembershipAddRequest) (*roster.TeamMembership, error) {
+func (s gateTeamMembership) Add(ctx context.Context, req *rstr.TeamMembershipAddRequest) (*rstr.TeamMembership, error) {
 	if ref := req.GetTeam(); ref != nil {
-		if _, err := s.Gate.Next().Team().Get(ctx, roster.TeamGetRequest_builder{
+		if _, err := s.Gate.Next().Team().Get(ctx, rstr.TeamGetRequest_builder{
 			Ref: ref,
 		}.Build()); err != nil {
 			if status.Code(err) == codes.NotFound {
@@ -3622,18 +3622,18 @@ func (s gateTeamMembership) Add(ctx context.Context, req *roster.TeamMembershipA
 // far plainer for having them. A deployment serves none of the ones that
 // write: a trail somebody can edit is evidence of nothing.
 type Audit struct {
-	roster.Overlay
+	rstr.Overlay
 }
 
-func NewAudit(next roster.Server) Audit {
-	return Audit{roster.NewOverlay(next)}
+func NewAudit(next rstr.Server) Audit {
+	return Audit{rstr.NewOverlay(next)}
 }
 
-var _ roster.Server = Audit{}
-var _ enttx.Binder[roster.Server] = Audit{}
+var _ rstr.Server = Audit{}
+var _ enttx.Binder[rstr.Server] = Audit{}
 
 // WithDriver answers with this stack running on `drv`; see [Gate.WithDriver].
-func (s Audit) WithDriver(drv dialect.Driver) (roster.Server, error) {
+func (s Audit) WithDriver(drv dialect.Driver) (rstr.Server, error) {
 	next, err := enttx.Rebind(s.Next(), drv)
 	if err != nil {
 		return nil, err
@@ -3643,36 +3643,36 @@ func (s Audit) WithDriver(drv dialect.Driver) (roster.Server, error) {
 }
 
 // AuditBuild makes a builder of this layer so that it can be stacked.
-func AuditBuild() roster.Builder { return auditBuilder{} }
+func AuditBuild() rstr.Builder { return auditBuilder{} }
 
 type auditBuilder struct{}
 
-func (auditBuilder) Build(next roster.Server) (roster.Server, error) {
+func (auditBuilder) Build(next rstr.Server) (rstr.Server, error) {
 	return NewAudit(next), nil
 }
 
 type auditService struct {
 	Audit
-	roster.AuditServiceServer
+	rstr.AuditServiceServer
 }
 
-func (s Audit) Audit() roster.AuditServiceServer {
+func (s Audit) Audit() rstr.AuditServiceServer {
 	return auditService{s, s.Next().Audit()}
 }
 
-func (s auditService) Add(ctx context.Context, req *roster.AuditAddRequest) (*roster.Audit, error) {
+func (s auditService) Add(ctx context.Context, req *rstr.AuditAddRequest) (*rstr.Audit, error) {
 	return nil, errTrail()
 }
 
-func (s auditService) Patch(ctx context.Context, req *roster.AuditPatchRequest) (*roster.Audit, error) {
+func (s auditService) Patch(ctx context.Context, req *rstr.AuditPatchRequest) (*rstr.Audit, error) {
 	return nil, errTrail()
 }
 
-func (s auditService) Apply(ctx context.Context, req *roster.AuditApplyRequest) (*roster.Audit, error) {
+func (s auditService) Apply(ctx context.Context, req *rstr.AuditApplyRequest) (*rstr.Audit, error) {
 	return nil, errTrail()
 }
 
-func (s auditService) Erase(ctx context.Context, req *roster.AuditRef) (*emptypb.Empty, error) {
+func (s auditService) Erase(ctx context.Context, req *rstr.AuditRef) (*emptypb.Empty, error) {
 	return nil, errTrail()
 }
 
@@ -3730,7 +3730,7 @@ func (recorder) Record(ctx context.Context, s bare.Server, c bare.Change) error 
 		tenant = uuid.UUID(v.Tenant)
 	}
 
-	_, err = s.Audit().Add(ctx, roster.AuditAddRequest_builder{
+	_, err = s.Audit().Add(ctx, rstr.AuditAddRequest_builder{
 		TenantId:      tenant[:],
 		ActorTenantId: v.Tenant.Bytes(),
 		ActorId:       v.Actor.Bytes(),
@@ -3749,8 +3749,8 @@ func (recorder) Record(ctx context.Context, s bare.Server, c bare.Change) error 
 func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte, error) {
 	switch key.Domain() {
 	case AuditDomain:
-		row, err := s.Audit().Get(ctx, roster.AuditGetRequest_builder{
-			Ref: roster.AuditRef_builder{Id: key.Bytes()}.Build(),
+		row, err := s.Audit().Get(ctx, rstr.AuditGetRequest_builder{
+			Ref: rstr.AuditRef_builder{Id: key.Bytes()}.Build(),
 		}.Build())
 		if err != nil {
 			if status.Code(err) == codes.NotFound {
@@ -3773,8 +3773,8 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 		return k, b, nil
 
 	case CredentialDomain:
-		row, err := s.Credential().Get(ctx, roster.CredentialGetRequest_builder{
-			Ref: roster.CredentialRef_builder{Id: key.Bytes()}.Build(),
+		row, err := s.Credential().Get(ctx, rstr.CredentialGetRequest_builder{
+			Ref: rstr.CredentialRef_builder{Id: key.Bytes()}.Build(),
 		}.Build())
 		if err != nil {
 			if status.Code(err) == codes.NotFound {
@@ -3806,8 +3806,8 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 		return k, b, nil
 
 	case EmailDomain:
-		row, err := s.Email().Get(ctx, roster.EmailGetRequest_builder{
-			Ref: roster.EmailRef_builder{Id: key.Bytes()}.Build(),
+		row, err := s.Email().Get(ctx, rstr.EmailGetRequest_builder{
+			Ref: rstr.EmailRef_builder{Id: key.Bytes()}.Build(),
 		}.Build())
 		if err != nil {
 			if status.Code(err) == codes.NotFound {
@@ -3839,8 +3839,8 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 		return k, b, nil
 
 	case HolderDomain:
-		row, err := s.Holder().Get(ctx, roster.HolderGetRequest_builder{
-			Ref: roster.HolderRef_builder{Id: key.Bytes()}.Build(),
+		row, err := s.Holder().Get(ctx, rstr.HolderGetRequest_builder{
+			Ref: rstr.HolderRef_builder{Id: key.Bytes()}.Build(),
 		}.Build())
 		if err != nil {
 			if status.Code(err) == codes.NotFound {
@@ -3867,8 +3867,8 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 		return k, b, nil
 
 	case IdentityDomain:
-		row, err := s.Identity().Get(ctx, roster.IdentityGetRequest_builder{
-			Ref: roster.IdentityRef_builder{Id: key.Bytes()}.Build(),
+		row, err := s.Identity().Get(ctx, rstr.IdentityGetRequest_builder{
+			Ref: rstr.IdentityRef_builder{Id: key.Bytes()}.Build(),
 		}.Build())
 		if err != nil {
 			if status.Code(err) == codes.NotFound {
@@ -3900,8 +3900,8 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 		return k, b, nil
 
 	case SiteDomain:
-		row, err := s.Site().Get(ctx, roster.SiteGetRequest_builder{
-			Ref: roster.SiteRef_builder{Id: key.Bytes()}.Build(),
+		row, err := s.Site().Get(ctx, rstr.SiteGetRequest_builder{
+			Ref: rstr.SiteRef_builder{Id: key.Bytes()}.Build(),
 		}.Build())
 		if err != nil {
 			if status.Code(err) == codes.NotFound {
@@ -3928,8 +3928,8 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 		return k, b, nil
 
 	case SiteMembershipDomain:
-		row, err := s.SiteMembership().Get(ctx, roster.SiteMembershipGetRequest_builder{
-			Ref: roster.SiteMembershipRef_builder{Id: key.Bytes()}.Build(),
+		row, err := s.SiteMembership().Get(ctx, rstr.SiteMembershipGetRequest_builder{
+			Ref: rstr.SiteMembershipRef_builder{Id: key.Bytes()}.Build(),
 		}.Build())
 		if err != nil {
 			if status.Code(err) == codes.NotFound {
@@ -3961,8 +3961,8 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 		return k, b, nil
 
 	case TeamDomain:
-		row, err := s.Team().Get(ctx, roster.TeamGetRequest_builder{
-			Ref: roster.TeamRef_builder{Id: key.Bytes()}.Build(),
+		row, err := s.Team().Get(ctx, rstr.TeamGetRequest_builder{
+			Ref: rstr.TeamRef_builder{Id: key.Bytes()}.Build(),
 		}.Build())
 		if err != nil {
 			if status.Code(err) == codes.NotFound {
@@ -3994,8 +3994,8 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 		return k, b, nil
 
 	case TeamMembershipDomain:
-		row, err := s.TeamMembership().Get(ctx, roster.TeamMembershipGetRequest_builder{
-			Ref: roster.TeamMembershipRef_builder{Id: key.Bytes()}.Build(),
+		row, err := s.TeamMembership().Get(ctx, rstr.TeamMembershipGetRequest_builder{
+			Ref: rstr.TeamMembershipRef_builder{Id: key.Bytes()}.Build(),
 		}.Build())
 		if err != nil {
 			if status.Code(err) == codes.NotFound {
@@ -4027,8 +4027,8 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 		return k, b, nil
 
 	case TenantDomain:
-		row, err := s.Tenant().Get(ctx, roster.TenantGetRequest_builder{
-			Ref: roster.TenantRef_builder{Id: key.Bytes()}.Build(),
+		row, err := s.Tenant().Get(ctx, rstr.TenantGetRequest_builder{
+			Ref: rstr.TenantRef_builder{Id: key.Bytes()}.Build(),
 		}.Build())
 		if err != nil {
 			if status.Code(err) == codes.NotFound {
@@ -4316,7 +4316,7 @@ func (d drain) once(ctx context.Context) (int, error) {
 // transaction is begun on it and a `*ent.Client` does not hand out the
 // driver it was built with. The app has one: it is what it built the client
 // from.
-func Batch(s roster.Server, drv dialect.Driver, guard batch.Guard) (pdpb.BatchServiceServer, error) {
+func Batch(s rstr.Server, drv dialect.Driver, guard batch.Guard) (pdpb.BatchServiceServer, error) {
 	if guard.IsZero() {
 		// Nobody filled it in. It is the zero value and not a judgement about
 		// how open the deployment is: `config.ServerConfig.Guard` always sets
@@ -4335,7 +4335,7 @@ func Batch(s roster.Server, drv dialect.Driver, guard batch.Guard) (pdpb.BatchSe
 type batchServer struct {
 	pdpb.UnimplementedBatchServiceServer
 
-	s     roster.Server
+	s     rstr.Server
 	drv   dialect.Driver
 	guard batch.Guard
 }
@@ -4408,10 +4408,10 @@ func (b batchServer) Do(ctx context.Context, req *pdpb.BatchRequest) (*pdpb.Batc
 // `Any` carrying anything else is refused rather than coerced -- a request
 // that decoded into a different message would be a write the caller did not
 // ask for, and `Any` is checked by type URL so there is a right answer.
-func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, error) {
+func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, error) {
 	switch m := op.GetMethod(); m {
-	case roster.TenantService_Add_FullMethodName:
-		v := &roster.TenantAddRequest{}
+	case rstr.TenantService_Add_FullMethodName:
+		v := &rstr.TenantAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4423,8 +4423,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.TenantService_Get_FullMethodName:
-		v := &roster.TenantGetRequest{}
+	case rstr.TenantService_Get_FullMethodName:
+		v := &rstr.TenantGetRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4436,8 +4436,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.TenantService_Patch_FullMethodName:
-		v := &roster.TenantPatchRequest{}
+	case rstr.TenantService_Patch_FullMethodName:
+		v := &rstr.TenantPatchRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4449,8 +4449,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.TenantService_Apply_FullMethodName:
-		v := &roster.TenantApplyRequest{}
+	case rstr.TenantService_Apply_FullMethodName:
+		v := &rstr.TenantApplyRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4462,8 +4462,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.TenantService_Erase_FullMethodName:
-		v := &roster.TenantRef{}
+	case rstr.TenantService_Erase_FullMethodName:
+		v := &rstr.TenantRef{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4475,8 +4475,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.HolderService_Add_FullMethodName:
-		v := &roster.HolderAddRequest{}
+	case rstr.HolderService_Add_FullMethodName:
+		v := &rstr.HolderAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4488,8 +4488,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.HolderService_Get_FullMethodName:
-		v := &roster.HolderGetRequest{}
+	case rstr.HolderService_Get_FullMethodName:
+		v := &rstr.HolderGetRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4501,8 +4501,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.HolderService_Patch_FullMethodName:
-		v := &roster.HolderPatchRequest{}
+	case rstr.HolderService_Patch_FullMethodName:
+		v := &rstr.HolderPatchRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4514,8 +4514,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.HolderService_Apply_FullMethodName:
-		v := &roster.HolderApplyRequest{}
+	case rstr.HolderService_Apply_FullMethodName:
+		v := &rstr.HolderApplyRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4527,8 +4527,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.HolderService_Erase_FullMethodName:
-		v := &roster.HolderRef{}
+	case rstr.HolderService_Erase_FullMethodName:
+		v := &rstr.HolderRef{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4540,8 +4540,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.CredentialService_Add_FullMethodName:
-		v := &roster.CredentialAddRequest{}
+	case rstr.CredentialService_Add_FullMethodName:
+		v := &rstr.CredentialAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4553,8 +4553,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.CredentialService_Get_FullMethodName:
-		v := &roster.CredentialGetRequest{}
+	case rstr.CredentialService_Get_FullMethodName:
+		v := &rstr.CredentialGetRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4566,8 +4566,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.CredentialService_Patch_FullMethodName:
-		v := &roster.CredentialPatchRequest{}
+	case rstr.CredentialService_Patch_FullMethodName:
+		v := &rstr.CredentialPatchRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4579,8 +4579,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.CredentialService_Apply_FullMethodName:
-		v := &roster.CredentialApplyRequest{}
+	case rstr.CredentialService_Apply_FullMethodName:
+		v := &rstr.CredentialApplyRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4592,8 +4592,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.CredentialService_Erase_FullMethodName:
-		v := &roster.CredentialRef{}
+	case rstr.CredentialService_Erase_FullMethodName:
+		v := &rstr.CredentialRef{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4605,8 +4605,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.CredentialService_List_FullMethodName:
-		v := &roster.CredentialListRequest{}
+	case rstr.CredentialService_List_FullMethodName:
+		v := &rstr.CredentialListRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4618,8 +4618,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.IdentityService_Add_FullMethodName:
-		v := &roster.IdentityAddRequest{}
+	case rstr.IdentityService_Add_FullMethodName:
+		v := &rstr.IdentityAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4631,8 +4631,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.IdentityService_Get_FullMethodName:
-		v := &roster.IdentityGetRequest{}
+	case rstr.IdentityService_Get_FullMethodName:
+		v := &rstr.IdentityGetRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4644,8 +4644,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.IdentityService_Patch_FullMethodName:
-		v := &roster.IdentityPatchRequest{}
+	case rstr.IdentityService_Patch_FullMethodName:
+		v := &rstr.IdentityPatchRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4657,8 +4657,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.IdentityService_Apply_FullMethodName:
-		v := &roster.IdentityApplyRequest{}
+	case rstr.IdentityService_Apply_FullMethodName:
+		v := &rstr.IdentityApplyRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4670,8 +4670,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.IdentityService_Erase_FullMethodName:
-		v := &roster.IdentityRef{}
+	case rstr.IdentityService_Erase_FullMethodName:
+		v := &rstr.IdentityRef{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4683,8 +4683,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.IdentityService_List_FullMethodName:
-		v := &roster.IdentityListRequest{}
+	case rstr.IdentityService_List_FullMethodName:
+		v := &rstr.IdentityListRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4696,8 +4696,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.EmailService_Add_FullMethodName:
-		v := &roster.EmailAddRequest{}
+	case rstr.EmailService_Add_FullMethodName:
+		v := &rstr.EmailAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4709,8 +4709,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.EmailService_Get_FullMethodName:
-		v := &roster.EmailGetRequest{}
+	case rstr.EmailService_Get_FullMethodName:
+		v := &rstr.EmailGetRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4722,8 +4722,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.EmailService_Patch_FullMethodName:
-		v := &roster.EmailPatchRequest{}
+	case rstr.EmailService_Patch_FullMethodName:
+		v := &rstr.EmailPatchRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4735,8 +4735,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.EmailService_Apply_FullMethodName:
-		v := &roster.EmailApplyRequest{}
+	case rstr.EmailService_Apply_FullMethodName:
+		v := &rstr.EmailApplyRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4748,8 +4748,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.EmailService_Erase_FullMethodName:
-		v := &roster.EmailRef{}
+	case rstr.EmailService_Erase_FullMethodName:
+		v := &rstr.EmailRef{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4761,8 +4761,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.EmailService_List_FullMethodName:
-		v := &roster.EmailListRequest{}
+	case rstr.EmailService_List_FullMethodName:
+		v := &rstr.EmailListRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4774,8 +4774,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.SiteService_Add_FullMethodName:
-		v := &roster.SiteAddRequest{}
+	case rstr.SiteService_Add_FullMethodName:
+		v := &rstr.SiteAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4787,8 +4787,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.SiteService_Get_FullMethodName:
-		v := &roster.SiteGetRequest{}
+	case rstr.SiteService_Get_FullMethodName:
+		v := &rstr.SiteGetRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4800,8 +4800,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.SiteService_Patch_FullMethodName:
-		v := &roster.SitePatchRequest{}
+	case rstr.SiteService_Patch_FullMethodName:
+		v := &rstr.SitePatchRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4813,8 +4813,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.SiteService_Apply_FullMethodName:
-		v := &roster.SiteApplyRequest{}
+	case rstr.SiteService_Apply_FullMethodName:
+		v := &rstr.SiteApplyRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4826,8 +4826,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.SiteService_Erase_FullMethodName:
-		v := &roster.SiteRef{}
+	case rstr.SiteService_Erase_FullMethodName:
+		v := &rstr.SiteRef{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4839,8 +4839,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.SiteService_List_FullMethodName:
-		v := &roster.SiteListRequest{}
+	case rstr.SiteService_List_FullMethodName:
+		v := &rstr.SiteListRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4852,8 +4852,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.TeamService_Add_FullMethodName:
-		v := &roster.TeamAddRequest{}
+	case rstr.TeamService_Add_FullMethodName:
+		v := &rstr.TeamAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4865,8 +4865,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.TeamService_Get_FullMethodName:
-		v := &roster.TeamGetRequest{}
+	case rstr.TeamService_Get_FullMethodName:
+		v := &rstr.TeamGetRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4878,8 +4878,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.TeamService_Patch_FullMethodName:
-		v := &roster.TeamPatchRequest{}
+	case rstr.TeamService_Patch_FullMethodName:
+		v := &rstr.TeamPatchRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4891,8 +4891,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.TeamService_Apply_FullMethodName:
-		v := &roster.TeamApplyRequest{}
+	case rstr.TeamService_Apply_FullMethodName:
+		v := &rstr.TeamApplyRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4904,8 +4904,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.TeamService_Erase_FullMethodName:
-		v := &roster.TeamRef{}
+	case rstr.TeamService_Erase_FullMethodName:
+		v := &rstr.TeamRef{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4917,8 +4917,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.TeamService_List_FullMethodName:
-		v := &roster.TeamListRequest{}
+	case rstr.TeamService_List_FullMethodName:
+		v := &rstr.TeamListRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4930,8 +4930,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.SiteMembershipService_Add_FullMethodName:
-		v := &roster.SiteMembershipAddRequest{}
+	case rstr.SiteMembershipService_Add_FullMethodName:
+		v := &rstr.SiteMembershipAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4943,8 +4943,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.SiteMembershipService_Get_FullMethodName:
-		v := &roster.SiteMembershipGetRequest{}
+	case rstr.SiteMembershipService_Get_FullMethodName:
+		v := &rstr.SiteMembershipGetRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4956,8 +4956,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.SiteMembershipService_Patch_FullMethodName:
-		v := &roster.SiteMembershipPatchRequest{}
+	case rstr.SiteMembershipService_Patch_FullMethodName:
+		v := &rstr.SiteMembershipPatchRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4969,8 +4969,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.SiteMembershipService_Apply_FullMethodName:
-		v := &roster.SiteMembershipApplyRequest{}
+	case rstr.SiteMembershipService_Apply_FullMethodName:
+		v := &rstr.SiteMembershipApplyRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4982,8 +4982,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.SiteMembershipService_Erase_FullMethodName:
-		v := &roster.SiteMembershipRef{}
+	case rstr.SiteMembershipService_Erase_FullMethodName:
+		v := &rstr.SiteMembershipRef{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -4995,8 +4995,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.SiteMembershipService_List_FullMethodName:
-		v := &roster.SiteMembershipListRequest{}
+	case rstr.SiteMembershipService_List_FullMethodName:
+		v := &rstr.SiteMembershipListRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -5008,8 +5008,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.TeamMembershipService_Add_FullMethodName:
-		v := &roster.TeamMembershipAddRequest{}
+	case rstr.TeamMembershipService_Add_FullMethodName:
+		v := &rstr.TeamMembershipAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -5021,8 +5021,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.TeamMembershipService_Get_FullMethodName:
-		v := &roster.TeamMembershipGetRequest{}
+	case rstr.TeamMembershipService_Get_FullMethodName:
+		v := &rstr.TeamMembershipGetRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -5034,8 +5034,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.TeamMembershipService_Patch_FullMethodName:
-		v := &roster.TeamMembershipPatchRequest{}
+	case rstr.TeamMembershipService_Patch_FullMethodName:
+		v := &rstr.TeamMembershipPatchRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -5047,8 +5047,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.TeamMembershipService_Apply_FullMethodName:
-		v := &roster.TeamMembershipApplyRequest{}
+	case rstr.TeamMembershipService_Apply_FullMethodName:
+		v := &rstr.TeamMembershipApplyRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -5060,8 +5060,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.TeamMembershipService_Erase_FullMethodName:
-		v := &roster.TeamMembershipRef{}
+	case rstr.TeamMembershipService_Erase_FullMethodName:
+		v := &rstr.TeamMembershipRef{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -5073,8 +5073,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.TeamMembershipService_List_FullMethodName:
-		v := &roster.TeamMembershipListRequest{}
+	case rstr.TeamMembershipService_List_FullMethodName:
+		v := &rstr.TeamMembershipListRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -5086,8 +5086,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.AuditService_Add_FullMethodName:
-		v := &roster.AuditAddRequest{}
+	case rstr.AuditService_Add_FullMethodName:
+		v := &rstr.AuditAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -5099,8 +5099,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.AuditService_Get_FullMethodName:
-		v := &roster.AuditGetRequest{}
+	case rstr.AuditService_Get_FullMethodName:
+		v := &rstr.AuditGetRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -5112,8 +5112,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.AuditService_Patch_FullMethodName:
-		v := &roster.AuditPatchRequest{}
+	case rstr.AuditService_Patch_FullMethodName:
+		v := &rstr.AuditPatchRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -5125,8 +5125,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.AuditService_Apply_FullMethodName:
-		v := &roster.AuditApplyRequest{}
+	case rstr.AuditService_Apply_FullMethodName:
+		v := &rstr.AuditApplyRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -5138,8 +5138,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.AuditService_Erase_FullMethodName:
-		v := &roster.AuditRef{}
+	case rstr.AuditService_Erase_FullMethodName:
+		v := &rstr.AuditRef{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
@@ -5151,8 +5151,8 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.AuditService_List_FullMethodName:
-		v := &roster.AuditListRequest{}
+	case rstr.AuditService_List_FullMethodName:
+		v := &rstr.AuditListRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}

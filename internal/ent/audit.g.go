@@ -4,12 +4,12 @@
 package ent
 
 import (
-	roster "github.com/lesomnus/roster"
+	rstr "github.com/lesomnus/roster/rstr"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (e *Audit) Proto() *roster.Audit {
-	x := &roster.Audit{}
+func (e *Audit) Proto() *rstr.Audit {
+	x := &rstr.Audit{}
 	x.SetId(e.ID[:])
 	x.SetTenantId(e.TenantID[:])
 	x.SetActorId(e.ActorID[:])

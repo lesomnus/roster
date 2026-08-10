@@ -9,11 +9,11 @@ import (
 	errors "errors"
 	uuid "github.com/google/uuid"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
-	roster "github.com/lesomnus/roster"
 	ent "github.com/lesomnus/roster/internal/ent"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	sitemembership "github.com/lesomnus/roster/internal/ent/sitemembership"
 	teammembership "github.com/lesomnus/roster/internal/ent/teammembership"
+	rstr "github.com/lesomnus/roster/rstr"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
@@ -25,7 +25,7 @@ import (
 type SiteMembershipServiceServer struct {
 	Store
 
-	roster.UnimplementedSiteMembershipServiceServer
+	rstr.UnimplementedSiteMembershipServiceServer
 }
 
 // NewSiteMembershipServiceServer answers with a server that runs its queries with `db`.
@@ -33,7 +33,7 @@ type SiteMembershipServiceServer struct {
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
 // reports nowhere and sees everything.
-func NewSiteMembershipServiceServer(db *ent.Client, opts ...Option) roster.SiteMembershipServiceServer {
+func NewSiteMembershipServiceServer(db *ent.Client, opts ...Option) rstr.SiteMembershipServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
 		opt(&s)
@@ -81,7 +81,7 @@ func (s SiteMembershipServiceServer) narrow(ctx context.Context, p predicate.Sit
 	return SiteMembershipNarrow(ctx, s.Scope, p)
 }
 
-func (s SiteMembershipServiceServer) Add(ctx context.Context, req *roster.SiteMembershipAddRequest) (*roster.SiteMembership, error) {
+func (s SiteMembershipServiceServer) Add(ctx context.Context, req *rstr.SiteMembershipAddRequest) (*rstr.SiteMembership, error) {
 	tx, err := enttx.Join[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func (s SiteMembershipServiceServer) Add(ctx context.Context, req *roster.SiteMe
 	st := s
 	st.Db = tx.Db
 
-	ds := make([]func(v *roster.SiteMembership), 0, 2)
+	ds := make([]func(v *rstr.SiteMembership), 0, 2)
 	q := st.Db.SiteMembership.Create()
 	var k uuid.UUID
 	if req.HasId() {
@@ -110,8 +110,8 @@ func (s SiteMembershipServiceServer) Add(ctx context.Context, req *roster.SiteMe
 		return nil, err
 	} else {
 		q.SetHolderID(k)
-		ds = append(ds, func(v *roster.SiteMembership) {
-			v.SetHolder(roster.Holder_builder{Id: k[:]}.Build())
+		ds = append(ds, func(v *rstr.SiteMembership) {
+			v.SetHolder(rstr.Holder_builder{Id: k[:]}.Build())
 		})
 	}
 	if req.HasSite() {
@@ -119,8 +119,8 @@ func (s SiteMembershipServiceServer) Add(ctx context.Context, req *roster.SiteMe
 			return nil, err
 		} else {
 			q.SetSiteID(k)
-			ds = append(ds, func(v *roster.SiteMembership) {
-				v.SetSite(roster.Site_builder{Id: k[:]}.Build())
+			ds = append(ds, func(v *rstr.SiteMembership) {
+				v.SetSite(rstr.Site_builder{Id: k[:]}.Build())
 			})
 		}
 	}
@@ -145,7 +145,7 @@ func (s SiteMembershipServiceServer) Add(ctx context.Context, req *roster.SiteMe
 	}
 
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  roster.SiteMembershipService_Add_FullMethodName,
+		By:  rstr.SiteMembershipService_Add_FullMethodName,
 		Key: u.ID,
 	}); err != nil {
 		return nil, err
@@ -161,7 +161,7 @@ func (s SiteMembershipServiceServer) Add(ctx context.Context, req *roster.SiteMe
 	return v, nil
 }
 
-func (s SiteMembershipServiceServer) Get(ctx context.Context, req *roster.SiteMembershipGetRequest) (*roster.SiteMembership, error) {
+func (s SiteMembershipServiceServer) Get(ctx context.Context, req *rstr.SiteMembershipGetRequest) (*rstr.SiteMembership, error) {
 	p, err := SiteMembershipPick(req.GetRef())
 	if err != nil {
 		return nil, err
@@ -188,7 +188,7 @@ func selectSiteMembershipKey(q *ent.SiteMembershipQuery) {
 	q.Select(sitemembership.FieldID)
 }
 
-func SiteMembershipSelectedFields(m *roster.SiteMembershipSelect) []string {
+func SiteMembershipSelectedFields(m *rstr.SiteMembershipSelect) []string {
 	if m.GetAll() {
 		return sitemembership.Columns
 	}
@@ -210,7 +210,7 @@ func SiteMembershipSelectedFields(m *roster.SiteMembershipSelect) []string {
 	return vs
 }
 
-func SiteMembershipSelect(q *ent.SiteMembershipQuery, m *roster.SiteMembershipSelect) {
+func SiteMembershipSelect(q *ent.SiteMembershipQuery, m *rstr.SiteMembershipSelect) {
 	if !m.GetAll() {
 		fields := SiteMembershipSelectedFields(m)
 		q.Select(fields...)
@@ -227,7 +227,7 @@ func SiteMembershipSelect(q *ent.SiteMembershipQuery, m *roster.SiteMembershipSe
 	}
 }
 
-func SiteMembershipSelectInit(q *ent.SiteMembershipQuery, m *roster.SiteMembershipSelect) {
+func SiteMembershipSelectInit(q *ent.SiteMembershipQuery, m *rstr.SiteMembershipSelect) {
 	if m != nil {
 		SiteMembershipSelect(q, m)
 	} else {
@@ -236,7 +236,7 @@ func SiteMembershipSelectInit(q *ent.SiteMembershipQuery, m *roster.SiteMembersh
 	}
 }
 
-func (s SiteMembershipServiceServer) Patch(ctx context.Context, req *roster.SiteMembershipPatchRequest) (*roster.SiteMembership, error) {
+func (s SiteMembershipServiceServer) Patch(ctx context.Context, req *rstr.SiteMembershipPatchRequest) (*rstr.SiteMembership, error) {
 	doc, err := ormpatch.FromPatchRequest(siteMembershipOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -251,10 +251,10 @@ func (s SiteMembershipServiceServer) Patch(ctx context.Context, req *roster.Site
 		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 	}
 
-	return s.apply(ctx, req.GetRef(), doc, roster.SiteMembershipService_Patch_FullMethodName)
+	return s.apply(ctx, req.GetRef(), doc, rstr.SiteMembershipService_Patch_FullMethodName)
 }
 
-func SiteMembershipGetKey(ctx context.Context, db *ent.Client, ref *roster.SiteMembershipRef) (uuid.UUID, error) {
+func SiteMembershipGetKey(ctx context.Context, db *ent.Client, ref *rstr.SiteMembershipRef) (uuid.UUID, error) {
 	var z uuid.UUID
 	if ref.HasId() {
 		if v, err := uuid.FromBytes(ref.GetId()); err != nil {
@@ -280,19 +280,19 @@ func SiteMembershipGetKey(ctx context.Context, db *ent.Client, ref *roster.SiteM
 	return v, nil
 }
 
-var siteMembershipOrmEntity = ormpatch.MustEntityOf(roster.File_app_membership_proto, "SiteMembership")
+var siteMembershipOrmEntity = ormpatch.MustEntityOf(rstr.File_app_membership_proto, "SiteMembership")
 
 var siteMembershipPatchColumns = entpatch.Columns{
 	1: sitemembership.FieldID, 2: sitemembership.HolderColumn, 3: sitemembership.SiteColumn, 13: sitemembership.FieldDateUpdated, 14: sitemembership.FieldDateErased, 15: sitemembership.FieldDateCreated}
 
-func (s SiteMembershipServiceServer) Apply(ctx context.Context, req *roster.SiteMembershipApplyRequest) (*roster.SiteMembership, error) {
+func (s SiteMembershipServiceServer) Apply(ctx context.Context, req *rstr.SiteMembershipApplyRequest) (*rstr.SiteMembership, error) {
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), roster.SiteMembershipService_Apply_FullMethodName)
+	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.SiteMembershipService_Apply_FullMethodName)
 }
 
-func (s SiteMembershipServiceServer) apply(ctx context.Context, ref *roster.SiteMembershipRef, doc *patchpb.Patch, by string) (*roster.SiteMembership, error) {
+func (s SiteMembershipServiceServer) apply(ctx context.Context, ref *rstr.SiteMembershipRef, doc *patchpb.Patch, by string) (*rstr.SiteMembership, error) {
 	plan := &ormpatch.Plan{Entity: siteMembershipOrmEntity}
 	if doc != nil {
 		v, err := ormpatch.Compile(siteMembershipOrmEntity, doc)
@@ -326,7 +326,7 @@ func (s SiteMembershipServiceServer) apply(ctx context.Context, ref *roster.Site
 	if err != nil {
 		return nil, err
 	}
-	at := &roster.SiteMembershipRef{}
+	at := &rstr.SiteMembershipRef{}
 	at.SetId(k[:])
 	p, err := s.narrow(ctx, sitemembership.IDEQ(k))
 	if err != nil {
@@ -393,7 +393,7 @@ func (s SiteMembershipServiceServer) apply(ctx context.Context, ref *roster.Site
 	return out, nil
 }
 
-func (s SiteMembershipServiceServer) Erase(ctx context.Context, req *roster.SiteMembershipRef) (*emptypb.Empty, error) {
+func (s SiteMembershipServiceServer) Erase(ctx context.Context, req *rstr.SiteMembershipRef) (*emptypb.Empty, error) {
 	p, err := SiteMembershipPick(req)
 	if err != nil {
 		return nil, err
@@ -435,7 +435,7 @@ func (s SiteMembershipServiceServer) Erase(ctx context.Context, req *roster.Site
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  roster.SiteMembershipService_Erase_FullMethodName,
+			By:  rstr.SiteMembershipService_Erase_FullMethodName,
 			Key: k,
 		}); err != nil {
 			return nil, err
@@ -447,15 +447,15 @@ func (s SiteMembershipServiceServer) Erase(ctx context.Context, req *roster.Site
 	return &emptypb.Empty{}, nil
 }
 
-func SiteMembershipPick(req *roster.SiteMembershipRef) (predicate.SiteMembership, error) {
+func SiteMembershipPick(req *rstr.SiteMembershipRef) (predicate.SiteMembership, error) {
 	switch req.WhichKey() {
-	case roster.SiteMembershipRef_Id_case:
+	case rstr.SiteMembershipRef_Id_case:
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			return sitemembership.IDEQ(v), nil
 		}
-	case roster.SiteMembershipRef_Member_case:
+	case rstr.SiteMembershipRef_Member_case:
 		k := req.GetMember()
 		ps := make([]predicate.SiteMembership, 0, 2)
 		if p, err := HolderPick(k.GetHolder()); err != nil {
@@ -469,7 +469,7 @@ func SiteMembershipPick(req *roster.SiteMembershipRef) (predicate.SiteMembership
 			ps = append(ps, sitemembership.HasSiteWith(p))
 		}
 		return sitemembership.And(ps...), nil
-	case roster.SiteMembershipRef_Key_not_set_case:
+	case rstr.SiteMembershipRef_Key_not_set_case:
 		return nil, status.Errorf(codes.InvalidArgument, "key not set: SiteMembership")
 	default:
 		return nil, status.Errorf(codes.Unimplemented, "unknown type of key: %s", req.WhichKey())
@@ -479,7 +479,7 @@ func SiteMembershipPick(req *roster.SiteMembershipRef) (predicate.SiteMembership
 type TeamMembershipServiceServer struct {
 	Store
 
-	roster.UnimplementedTeamMembershipServiceServer
+	rstr.UnimplementedTeamMembershipServiceServer
 }
 
 // NewTeamMembershipServiceServer answers with a server that runs its queries with `db`.
@@ -487,7 +487,7 @@ type TeamMembershipServiceServer struct {
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
 // reports nowhere and sees everything.
-func NewTeamMembershipServiceServer(db *ent.Client, opts ...Option) roster.TeamMembershipServiceServer {
+func NewTeamMembershipServiceServer(db *ent.Client, opts ...Option) rstr.TeamMembershipServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
 		opt(&s)
@@ -535,7 +535,7 @@ func (s TeamMembershipServiceServer) narrow(ctx context.Context, p predicate.Tea
 	return TeamMembershipNarrow(ctx, s.Scope, p)
 }
 
-func (s TeamMembershipServiceServer) Add(ctx context.Context, req *roster.TeamMembershipAddRequest) (*roster.TeamMembership, error) {
+func (s TeamMembershipServiceServer) Add(ctx context.Context, req *rstr.TeamMembershipAddRequest) (*rstr.TeamMembership, error) {
 	tx, err := enttx.Join[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
 		return nil, err
@@ -545,7 +545,7 @@ func (s TeamMembershipServiceServer) Add(ctx context.Context, req *roster.TeamMe
 	st := s
 	st.Db = tx.Db
 
-	ds := make([]func(v *roster.TeamMembership), 0, 2)
+	ds := make([]func(v *rstr.TeamMembership), 0, 2)
 	q := st.Db.TeamMembership.Create()
 	var k uuid.UUID
 	if req.HasId() {
@@ -564,16 +564,16 @@ func (s TeamMembershipServiceServer) Add(ctx context.Context, req *roster.TeamMe
 		return nil, err
 	} else {
 		q.SetHolderID(k)
-		ds = append(ds, func(v *roster.TeamMembership) {
-			v.SetHolder(roster.Holder_builder{Id: k[:]}.Build())
+		ds = append(ds, func(v *rstr.TeamMembership) {
+			v.SetHolder(rstr.Holder_builder{Id: k[:]}.Build())
 		})
 	}
 	if k, err := TeamGetKey(ctx, st.Db, req.GetTeam()); err != nil {
 		return nil, err
 	} else {
 		q.SetTeamID(k)
-		ds = append(ds, func(v *roster.TeamMembership) {
-			v.SetTeam(roster.Team_builder{Id: k[:]}.Build())
+		ds = append(ds, func(v *rstr.TeamMembership) {
+			v.SetTeam(rstr.Team_builder{Id: k[:]}.Build())
 		})
 	}
 	q.SetRole(req.GetRole())
@@ -598,7 +598,7 @@ func (s TeamMembershipServiceServer) Add(ctx context.Context, req *roster.TeamMe
 	}
 
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  roster.TeamMembershipService_Add_FullMethodName,
+		By:  rstr.TeamMembershipService_Add_FullMethodName,
 		Key: u.ID,
 	}); err != nil {
 		return nil, err
@@ -614,7 +614,7 @@ func (s TeamMembershipServiceServer) Add(ctx context.Context, req *roster.TeamMe
 	return v, nil
 }
 
-func (s TeamMembershipServiceServer) Get(ctx context.Context, req *roster.TeamMembershipGetRequest) (*roster.TeamMembership, error) {
+func (s TeamMembershipServiceServer) Get(ctx context.Context, req *rstr.TeamMembershipGetRequest) (*rstr.TeamMembership, error) {
 	p, err := TeamMembershipPick(req.GetRef())
 	if err != nil {
 		return nil, err
@@ -641,7 +641,7 @@ func selectTeamMembershipKey(q *ent.TeamMembershipQuery) {
 	q.Select(teammembership.FieldID)
 }
 
-func TeamMembershipSelectedFields(m *roster.TeamMembershipSelect) []string {
+func TeamMembershipSelectedFields(m *rstr.TeamMembershipSelect) []string {
 	if m.GetAll() {
 		return teammembership.Columns
 	}
@@ -666,7 +666,7 @@ func TeamMembershipSelectedFields(m *roster.TeamMembershipSelect) []string {
 	return vs
 }
 
-func TeamMembershipSelect(q *ent.TeamMembershipQuery, m *roster.TeamMembershipSelect) {
+func TeamMembershipSelect(q *ent.TeamMembershipQuery, m *rstr.TeamMembershipSelect) {
 	if !m.GetAll() {
 		fields := TeamMembershipSelectedFields(m)
 		q.Select(fields...)
@@ -683,7 +683,7 @@ func TeamMembershipSelect(q *ent.TeamMembershipQuery, m *roster.TeamMembershipSe
 	}
 }
 
-func TeamMembershipSelectInit(q *ent.TeamMembershipQuery, m *roster.TeamMembershipSelect) {
+func TeamMembershipSelectInit(q *ent.TeamMembershipQuery, m *rstr.TeamMembershipSelect) {
 	if m != nil {
 		TeamMembershipSelect(q, m)
 	} else {
@@ -692,7 +692,7 @@ func TeamMembershipSelectInit(q *ent.TeamMembershipQuery, m *roster.TeamMembersh
 	}
 }
 
-func (s TeamMembershipServiceServer) Patch(ctx context.Context, req *roster.TeamMembershipPatchRequest) (*roster.TeamMembership, error) {
+func (s TeamMembershipServiceServer) Patch(ctx context.Context, req *rstr.TeamMembershipPatchRequest) (*rstr.TeamMembership, error) {
 	doc, err := ormpatch.FromPatchRequest(teamMembershipOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -707,10 +707,10 @@ func (s TeamMembershipServiceServer) Patch(ctx context.Context, req *roster.Team
 		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 	}
 
-	return s.apply(ctx, req.GetRef(), doc, roster.TeamMembershipService_Patch_FullMethodName)
+	return s.apply(ctx, req.GetRef(), doc, rstr.TeamMembershipService_Patch_FullMethodName)
 }
 
-func TeamMembershipGetKey(ctx context.Context, db *ent.Client, ref *roster.TeamMembershipRef) (uuid.UUID, error) {
+func TeamMembershipGetKey(ctx context.Context, db *ent.Client, ref *rstr.TeamMembershipRef) (uuid.UUID, error) {
 	var z uuid.UUID
 	if ref.HasId() {
 		if v, err := uuid.FromBytes(ref.GetId()); err != nil {
@@ -736,19 +736,19 @@ func TeamMembershipGetKey(ctx context.Context, db *ent.Client, ref *roster.TeamM
 	return v, nil
 }
 
-var teamMembershipOrmEntity = ormpatch.MustEntityOf(roster.File_app_membership_proto, "TeamMembership")
+var teamMembershipOrmEntity = ormpatch.MustEntityOf(rstr.File_app_membership_proto, "TeamMembership")
 
 var teamMembershipPatchColumns = entpatch.Columns{
 	1: teammembership.FieldID, 2: teammembership.HolderColumn, 8: teammembership.TeamColumn, 9: teammembership.FieldRole, 13: teammembership.FieldDateUpdated, 14: teammembership.FieldDateErased, 15: teammembership.FieldDateCreated}
 
-func (s TeamMembershipServiceServer) Apply(ctx context.Context, req *roster.TeamMembershipApplyRequest) (*roster.TeamMembership, error) {
+func (s TeamMembershipServiceServer) Apply(ctx context.Context, req *rstr.TeamMembershipApplyRequest) (*rstr.TeamMembership, error) {
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), roster.TeamMembershipService_Apply_FullMethodName)
+	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.TeamMembershipService_Apply_FullMethodName)
 }
 
-func (s TeamMembershipServiceServer) apply(ctx context.Context, ref *roster.TeamMembershipRef, doc *patchpb.Patch, by string) (*roster.TeamMembership, error) {
+func (s TeamMembershipServiceServer) apply(ctx context.Context, ref *rstr.TeamMembershipRef, doc *patchpb.Patch, by string) (*rstr.TeamMembership, error) {
 	plan := &ormpatch.Plan{Entity: teamMembershipOrmEntity}
 	if doc != nil {
 		v, err := ormpatch.Compile(teamMembershipOrmEntity, doc)
@@ -782,7 +782,7 @@ func (s TeamMembershipServiceServer) apply(ctx context.Context, ref *roster.Team
 	if err != nil {
 		return nil, err
 	}
-	at := &roster.TeamMembershipRef{}
+	at := &rstr.TeamMembershipRef{}
 	at.SetId(k[:])
 	p, err := s.narrow(ctx, teammembership.IDEQ(k))
 	if err != nil {
@@ -849,7 +849,7 @@ func (s TeamMembershipServiceServer) apply(ctx context.Context, ref *roster.Team
 	return out, nil
 }
 
-func (s TeamMembershipServiceServer) Erase(ctx context.Context, req *roster.TeamMembershipRef) (*emptypb.Empty, error) {
+func (s TeamMembershipServiceServer) Erase(ctx context.Context, req *rstr.TeamMembershipRef) (*emptypb.Empty, error) {
 	p, err := TeamMembershipPick(req)
 	if err != nil {
 		return nil, err
@@ -891,7 +891,7 @@ func (s TeamMembershipServiceServer) Erase(ctx context.Context, req *roster.Team
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  roster.TeamMembershipService_Erase_FullMethodName,
+			By:  rstr.TeamMembershipService_Erase_FullMethodName,
 			Key: k,
 		}); err != nil {
 			return nil, err
@@ -903,15 +903,15 @@ func (s TeamMembershipServiceServer) Erase(ctx context.Context, req *roster.Team
 	return &emptypb.Empty{}, nil
 }
 
-func TeamMembershipPick(req *roster.TeamMembershipRef) (predicate.TeamMembership, error) {
+func TeamMembershipPick(req *rstr.TeamMembershipRef) (predicate.TeamMembership, error) {
 	switch req.WhichKey() {
-	case roster.TeamMembershipRef_Id_case:
+	case rstr.TeamMembershipRef_Id_case:
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			return teammembership.IDEQ(v), nil
 		}
-	case roster.TeamMembershipRef_Member_case:
+	case rstr.TeamMembershipRef_Member_case:
 		k := req.GetMember()
 		ps := make([]predicate.TeamMembership, 0, 2)
 		if p, err := HolderPick(k.GetHolder()); err != nil {
@@ -925,7 +925,7 @@ func TeamMembershipPick(req *roster.TeamMembershipRef) (predicate.TeamMembership
 			ps = append(ps, teammembership.HasTeamWith(p))
 		}
 		return teammembership.And(ps...), nil
-	case roster.TeamMembershipRef_Key_not_set_case:
+	case rstr.TeamMembershipRef_Key_not_set_case:
 		return nil, status.Errorf(codes.InvalidArgument, "key not set: TeamMembership")
 	default:
 		return nil, status.Errorf(codes.Unimplemented, "unknown type of key: %s", req.WhichKey())

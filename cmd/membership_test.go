@@ -10,7 +10,7 @@ import (
 
 	"github.com/lesomnus/payday/pdid"
 
-	app "github.com/lesomnus/roster"
+	app "github.com/lesomnus/roster/rstr"
 )
 
 func (b *built) joins(t *testing.T, ctx context.Context, who, site pdid.Id) {

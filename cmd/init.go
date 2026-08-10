@@ -9,7 +9,7 @@ import (
 
 	"github.com/lesomnus/payday/pdid"
 
-	app "github.com/lesomnus/roster"
+	app "github.com/lesomnus/roster/rstr"
 )
 
 // NewCmdInit is `roster init`: the first tenant, and somebody in it.

@@ -5,17 +5,17 @@ package ent
 
 import (
 	uuid "github.com/google/uuid"
-	roster "github.com/lesomnus/roster"
+	rstr "github.com/lesomnus/roster/rstr"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (e *Email) Proto() *roster.Email {
-	x := &roster.Email{}
+func (e *Email) Proto() *rstr.Email {
+	x := &rstr.Email{}
 	x.SetId(e.ID[:])
 	if v := e.Edges.Holder; v != nil {
 		x.SetHolder(v.Proto())
 	} else if v := e.HolderID; v != *new(uuid.UUID) {
-		r := &roster.Holder{}
+		r := &rstr.Holder{}
 		r.SetId(v[:])
 		x.SetHolder(r)
 	}
@@ -26,7 +26,7 @@ func (e *Email) Proto() *roster.Email {
 	if v := e.Edges.VouchedBy; v != nil {
 		x.SetVouchedBy(v.Proto())
 	} else if v := e.VouchedByID; v != *new(uuid.UUID) {
-		r := &roster.Identity{}
+		r := &rstr.Identity{}
 		r.SetId(v[:])
 		x.SetVouchedBy(r)
 	}

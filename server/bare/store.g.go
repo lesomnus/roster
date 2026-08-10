@@ -9,7 +9,6 @@ import (
 	fmt "fmt"
 	uuid "github.com/google/uuid"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
-	roster "github.com/lesomnus/roster"
 	ent "github.com/lesomnus/roster/internal/ent"
 	audit "github.com/lesomnus/roster/internal/ent/audit"
 	credential "github.com/lesomnus/roster/internal/ent/credential"
@@ -23,6 +22,7 @@ import (
 	team "github.com/lesomnus/roster/internal/ent/team"
 	teammembership "github.com/lesomnus/roster/internal/ent/teammembership"
 	tenant "github.com/lesomnus/roster/internal/ent/tenant"
+	rstr "github.com/lesomnus/roster/rstr"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -725,7 +725,7 @@ func NewServer(db *ent.Client, opts ...Option) (Server, error) {
 // the connection it was begun on, so it carries the same dialect -- but
 // this takes a driver from anywhere, and what NewServer refused at the
 // start should not become reachable by going around it.
-func (s Server) WithDriver(drv dialect.Driver) (roster.Server, error) {
+func (s Server) WithDriver(drv dialect.Driver) (rstr.Server, error) {
 	db := s.Db.WithDriver(drv)
 	if d := db.Dialect(); !entpatch.Supports(d) {
 		return nil, fmt.Errorf("%w: %s", entpatch.ErrDialect, d)
@@ -734,20 +734,20 @@ func (s Server) WithDriver(drv dialect.Driver) (roster.Server, error) {
 	return s, nil
 }
 
-func (s Server) Tenant() roster.TenantServiceServer { return TenantServiceServer{Store: s.Store} }
-func (s Server) Holder() roster.HolderServiceServer { return HolderServiceServer{Store: s.Store} }
-func (s Server) Credential() roster.CredentialServiceServer {
+func (s Server) Tenant() rstr.TenantServiceServer { return TenantServiceServer{Store: s.Store} }
+func (s Server) Holder() rstr.HolderServiceServer { return HolderServiceServer{Store: s.Store} }
+func (s Server) Credential() rstr.CredentialServiceServer {
 	return CredentialServiceServer{Store: s.Store}
 }
-func (s Server) Identity() roster.IdentityServiceServer { return IdentityServiceServer{Store: s.Store} }
-func (s Server) Email() roster.EmailServiceServer       { return EmailServiceServer{Store: s.Store} }
-func (s Server) Site() roster.SiteServiceServer         { return SiteServiceServer{Store: s.Store} }
-func (s Server) Team() roster.TeamServiceServer         { return TeamServiceServer{Store: s.Store} }
-func (s Server) SiteMembership() roster.SiteMembershipServiceServer {
+func (s Server) Identity() rstr.IdentityServiceServer { return IdentityServiceServer{Store: s.Store} }
+func (s Server) Email() rstr.EmailServiceServer       { return EmailServiceServer{Store: s.Store} }
+func (s Server) Site() rstr.SiteServiceServer         { return SiteServiceServer{Store: s.Store} }
+func (s Server) Team() rstr.TeamServiceServer         { return TeamServiceServer{Store: s.Store} }
+func (s Server) SiteMembership() rstr.SiteMembershipServiceServer {
 	return SiteMembershipServiceServer{Store: s.Store}
 }
-func (s Server) TeamMembership() roster.TeamMembershipServiceServer {
+func (s Server) TeamMembership() rstr.TeamMembershipServiceServer {
 	return TeamMembershipServiceServer{Store: s.Store}
 }
-func (s Server) Audit() roster.AuditServiceServer   { return AuditServiceServer{Store: s.Store} }
-func (s Server) Outbox() roster.OutboxServiceServer { return OutboxServiceServer{Store: s.Store} }
+func (s Server) Audit() rstr.AuditServiceServer   { return AuditServiceServer{Store: s.Store} }
+func (s Server) Outbox() rstr.OutboxServiceServer { return OutboxServiceServer{Store: s.Store} }

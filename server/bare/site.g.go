@@ -9,10 +9,10 @@ import (
 	errors "errors"
 	uuid "github.com/google/uuid"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
-	roster "github.com/lesomnus/roster"
 	ent "github.com/lesomnus/roster/internal/ent"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	site "github.com/lesomnus/roster/internal/ent/site"
+	rstr "github.com/lesomnus/roster/rstr"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
@@ -24,7 +24,7 @@ import (
 type SiteServiceServer struct {
 	Store
 
-	roster.UnimplementedSiteServiceServer
+	rstr.UnimplementedSiteServiceServer
 }
 
 // NewSiteServiceServer answers with a server that runs its queries with `db`.
@@ -32,7 +32,7 @@ type SiteServiceServer struct {
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
 // reports nowhere and sees everything.
-func NewSiteServiceServer(db *ent.Client, opts ...Option) roster.SiteServiceServer {
+func NewSiteServiceServer(db *ent.Client, opts ...Option) rstr.SiteServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
 		opt(&s)
@@ -80,7 +80,7 @@ func (s SiteServiceServer) narrow(ctx context.Context, p predicate.Site) (predic
 	return SiteNarrow(ctx, s.Scope, p)
 }
 
-func (s SiteServiceServer) Add(ctx context.Context, req *roster.SiteAddRequest) (*roster.Site, error) {
+func (s SiteServiceServer) Add(ctx context.Context, req *rstr.SiteAddRequest) (*rstr.Site, error) {
 	tx, err := enttx.Join[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
 		return nil, err
@@ -90,7 +90,7 @@ func (s SiteServiceServer) Add(ctx context.Context, req *roster.SiteAddRequest) 
 	st := s
 	st.Db = tx.Db
 
-	ds := make([]func(v *roster.Site), 0, 1)
+	ds := make([]func(v *rstr.Site), 0, 1)
 	q := st.Db.Site.Create()
 	var k uuid.UUID
 	if req.HasId() {
@@ -109,8 +109,8 @@ func (s SiteServiceServer) Add(ctx context.Context, req *roster.SiteAddRequest) 
 		return nil, err
 	} else {
 		q.SetTenantID(k)
-		ds = append(ds, func(v *roster.Site) {
-			v.SetTenant(roster.Tenant_builder{Id: k[:]}.Build())
+		ds = append(ds, func(v *rstr.Site) {
+			v.SetTenant(rstr.Tenant_builder{Id: k[:]}.Build())
 		})
 	}
 	q.SetAlias(req.GetAlias())
@@ -140,7 +140,7 @@ func (s SiteServiceServer) Add(ctx context.Context, req *roster.SiteAddRequest) 
 	}
 
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  roster.SiteService_Add_FullMethodName,
+		By:  rstr.SiteService_Add_FullMethodName,
 		Key: u.ID,
 	}); err != nil {
 		return nil, err
@@ -156,7 +156,7 @@ func (s SiteServiceServer) Add(ctx context.Context, req *roster.SiteAddRequest) 
 	return v, nil
 }
 
-func (s SiteServiceServer) Get(ctx context.Context, req *roster.SiteGetRequest) (*roster.Site, error) {
+func (s SiteServiceServer) Get(ctx context.Context, req *rstr.SiteGetRequest) (*rstr.Site, error) {
 	p, err := SitePick(req.GetRef())
 	if err != nil {
 		return nil, err
@@ -183,7 +183,7 @@ func selectSiteKey(q *ent.SiteQuery) {
 	q.Select(site.FieldID)
 }
 
-func SiteSelectedFields(m *roster.SiteSelect) []string {
+func SiteSelectedFields(m *rstr.SiteSelect) []string {
 	if m.GetAll() {
 		return site.Columns
 	}
@@ -217,7 +217,7 @@ func SiteSelectedFields(m *roster.SiteSelect) []string {
 	return vs
 }
 
-func SiteSelect(q *ent.SiteQuery, m *roster.SiteSelect) {
+func SiteSelect(q *ent.SiteQuery, m *rstr.SiteSelect) {
 	if !m.GetAll() {
 		fields := SiteSelectedFields(m)
 		q.Select(fields...)
@@ -229,7 +229,7 @@ func SiteSelect(q *ent.SiteQuery, m *roster.SiteSelect) {
 	}
 }
 
-func SiteSelectInit(q *ent.SiteQuery, m *roster.SiteSelect) {
+func SiteSelectInit(q *ent.SiteQuery, m *rstr.SiteSelect) {
 	if m != nil {
 		SiteSelect(q, m)
 	} else {
@@ -237,7 +237,7 @@ func SiteSelectInit(q *ent.SiteQuery, m *roster.SiteSelect) {
 	}
 }
 
-func (s SiteServiceServer) Patch(ctx context.Context, req *roster.SitePatchRequest) (*roster.Site, error) {
+func (s SiteServiceServer) Patch(ctx context.Context, req *rstr.SitePatchRequest) (*rstr.Site, error) {
 	doc, err := ormpatch.FromPatchRequest(siteOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -252,10 +252,10 @@ func (s SiteServiceServer) Patch(ctx context.Context, req *roster.SitePatchReque
 		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 	}
 
-	return s.apply(ctx, req.GetRef(), doc, roster.SiteService_Patch_FullMethodName)
+	return s.apply(ctx, req.GetRef(), doc, rstr.SiteService_Patch_FullMethodName)
 }
 
-func SiteGetKey(ctx context.Context, db *ent.Client, ref *roster.SiteRef) (uuid.UUID, error) {
+func SiteGetKey(ctx context.Context, db *ent.Client, ref *rstr.SiteRef) (uuid.UUID, error) {
 	var z uuid.UUID
 	if ref.HasId() {
 		if v, err := uuid.FromBytes(ref.GetId()); err != nil {
@@ -281,19 +281,19 @@ func SiteGetKey(ctx context.Context, db *ent.Client, ref *roster.SiteRef) (uuid.
 	return v, nil
 }
 
-var siteOrmEntity = ormpatch.MustEntityOf(roster.File_app_site_proto, "Site")
+var siteOrmEntity = ormpatch.MustEntityOf(rstr.File_app_site_proto, "Site")
 
 var sitePatchColumns = entpatch.Columns{
 	1: site.FieldID, 2: site.TenantColumn, 4: site.FieldAlias, 5: site.FieldName, 6: site.FieldDesc, 7: site.FieldLabels, 13: site.FieldDateUpdated, 14: site.FieldDateErased, 15: site.FieldDateCreated}
 
-func (s SiteServiceServer) Apply(ctx context.Context, req *roster.SiteApplyRequest) (*roster.Site, error) {
+func (s SiteServiceServer) Apply(ctx context.Context, req *rstr.SiteApplyRequest) (*rstr.Site, error) {
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), roster.SiteService_Apply_FullMethodName)
+	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.SiteService_Apply_FullMethodName)
 }
 
-func (s SiteServiceServer) apply(ctx context.Context, ref *roster.SiteRef, doc *patchpb.Patch, by string) (*roster.Site, error) {
+func (s SiteServiceServer) apply(ctx context.Context, ref *rstr.SiteRef, doc *patchpb.Patch, by string) (*rstr.Site, error) {
 	plan := &ormpatch.Plan{Entity: siteOrmEntity}
 	if doc != nil {
 		v, err := ormpatch.Compile(siteOrmEntity, doc)
@@ -327,7 +327,7 @@ func (s SiteServiceServer) apply(ctx context.Context, ref *roster.SiteRef, doc *
 	if err != nil {
 		return nil, err
 	}
-	at := &roster.SiteRef{}
+	at := &rstr.SiteRef{}
 	at.SetId(k[:])
 	p, err := s.narrow(ctx, site.IDEQ(k))
 	if err != nil {
@@ -394,7 +394,7 @@ func (s SiteServiceServer) apply(ctx context.Context, ref *roster.SiteRef, doc *
 	return out, nil
 }
 
-func (s SiteServiceServer) Erase(ctx context.Context, req *roster.SiteRef) (*emptypb.Empty, error) {
+func (s SiteServiceServer) Erase(ctx context.Context, req *rstr.SiteRef) (*emptypb.Empty, error) {
 	p, err := SitePick(req)
 	if err != nil {
 		return nil, err
@@ -436,7 +436,7 @@ func (s SiteServiceServer) Erase(ctx context.Context, req *roster.SiteRef) (*emp
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  roster.SiteService_Erase_FullMethodName,
+			By:  rstr.SiteService_Erase_FullMethodName,
 			Key: k,
 		}); err != nil {
 			return nil, err
@@ -448,15 +448,15 @@ func (s SiteServiceServer) Erase(ctx context.Context, req *roster.SiteRef) (*emp
 	return &emptypb.Empty{}, nil
 }
 
-func SitePick(req *roster.SiteRef) (predicate.Site, error) {
+func SitePick(req *rstr.SiteRef) (predicate.Site, error) {
 	switch req.WhichKey() {
-	case roster.SiteRef_Id_case:
+	case rstr.SiteRef_Id_case:
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			return site.IDEQ(v), nil
 		}
-	case roster.SiteRef_Slug_case:
+	case rstr.SiteRef_Slug_case:
 		k := req.GetSlug()
 		ps := make([]predicate.Site, 0, 2)
 		ps = append(ps, site.AliasEQ(k.GetAlias()))
@@ -466,7 +466,7 @@ func SitePick(req *roster.SiteRef) (predicate.Site, error) {
 			ps = append(ps, site.HasTenantWith(p))
 		}
 		return site.And(ps...), nil
-	case roster.SiteRef_Key_not_set_case:
+	case rstr.SiteRef_Key_not_set_case:
 		return nil, status.Errorf(codes.InvalidArgument, "key not set: Site")
 	default:
 		return nil, status.Errorf(codes.Unimplemented, "unknown type of key: %s", req.WhichKey())

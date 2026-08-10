@@ -9,10 +9,10 @@ import (
 	errors "errors"
 	uuid "github.com/google/uuid"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
-	roster "github.com/lesomnus/roster"
 	ent "github.com/lesomnus/roster/internal/ent"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	team "github.com/lesomnus/roster/internal/ent/team"
+	rstr "github.com/lesomnus/roster/rstr"
 	graph "github.com/protobuf-orm/protobuf-orm/graph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
@@ -26,7 +26,7 @@ import (
 type TeamServiceServer struct {
 	Store
 
-	roster.UnimplementedTeamServiceServer
+	rstr.UnimplementedTeamServiceServer
 }
 
 // NewTeamServiceServer answers with a server that runs its queries with `db`.
@@ -34,7 +34,7 @@ type TeamServiceServer struct {
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
 // reports nowhere and sees everything.
-func NewTeamServiceServer(db *ent.Client, opts ...Option) roster.TeamServiceServer {
+func NewTeamServiceServer(db *ent.Client, opts ...Option) rstr.TeamServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
 		opt(&s)
@@ -82,7 +82,7 @@ func (s TeamServiceServer) narrow(ctx context.Context, p predicate.Team) (predic
 	return TeamNarrow(ctx, s.Scope, p)
 }
 
-func (s TeamServiceServer) Add(ctx context.Context, req *roster.TeamAddRequest) (*roster.Team, error) {
+func (s TeamServiceServer) Add(ctx context.Context, req *rstr.TeamAddRequest) (*rstr.Team, error) {
 	tx, err := enttx.Join[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
 		return nil, err
@@ -92,7 +92,7 @@ func (s TeamServiceServer) Add(ctx context.Context, req *roster.TeamAddRequest) 
 	st := s
 	st.Db = tx.Db
 
-	ds := make([]func(v *roster.Team), 0, 1)
+	ds := make([]func(v *rstr.Team), 0, 1)
 	q := st.Db.Team.Create()
 	var k uuid.UUID
 	if req.HasId() {
@@ -112,8 +112,8 @@ func (s TeamServiceServer) Add(ctx context.Context, req *roster.TeamAddRequest) 
 			return nil, err
 		} else {
 			q.SetSiteID(k)
-			ds = append(ds, func(v *roster.Team) {
-				v.SetSite(roster.Site_builder{Id: k[:]}.Build())
+			ds = append(ds, func(v *rstr.Team) {
+				v.SetSite(rstr.Site_builder{Id: k[:]}.Build())
 			})
 		}
 	}
@@ -141,7 +141,7 @@ func (s TeamServiceServer) Add(ctx context.Context, req *roster.TeamAddRequest) 
 	}
 
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  roster.TeamService_Add_FullMethodName,
+		By:  rstr.TeamService_Add_FullMethodName,
 		Key: u.ID,
 	}); err != nil {
 		return nil, err
@@ -157,7 +157,7 @@ func (s TeamServiceServer) Add(ctx context.Context, req *roster.TeamAddRequest) 
 	return v, nil
 }
 
-func (s TeamServiceServer) Get(ctx context.Context, req *roster.TeamGetRequest) (*roster.Team, error) {
+func (s TeamServiceServer) Get(ctx context.Context, req *rstr.TeamGetRequest) (*rstr.Team, error) {
 	p, err := TeamPick(req.GetRef())
 	if err != nil {
 		return nil, err
@@ -184,7 +184,7 @@ func selectTeamKey(q *ent.TeamQuery) {
 	q.Select(team.FieldID)
 }
 
-func TeamSelectedFields(m *roster.TeamSelect) []string {
+func TeamSelectedFields(m *rstr.TeamSelect) []string {
 	if m.GetAll() {
 		return team.Columns
 	}
@@ -215,7 +215,7 @@ func TeamSelectedFields(m *roster.TeamSelect) []string {
 	return vs
 }
 
-func TeamSelect(q *ent.TeamQuery, m *roster.TeamSelect) {
+func TeamSelect(q *ent.TeamQuery, m *rstr.TeamSelect) {
 	if !m.GetAll() {
 		fields := TeamSelectedFields(m)
 		q.Select(fields...)
@@ -227,7 +227,7 @@ func TeamSelect(q *ent.TeamQuery, m *roster.TeamSelect) {
 	}
 }
 
-func TeamSelectInit(q *ent.TeamQuery, m *roster.TeamSelect) {
+func TeamSelectInit(q *ent.TeamQuery, m *rstr.TeamSelect) {
 	if m != nil {
 		TeamSelect(q, m)
 	} else {
@@ -235,11 +235,11 @@ func TeamSelectInit(q *ent.TeamQuery, m *roster.TeamSelect) {
 	}
 }
 
-func (s TeamServiceServer) Patch(ctx context.Context, req *roster.TeamPatchRequest) (*roster.Team, error) {
+func (s TeamServiceServer) Patch(ctx context.Context, req *rstr.TeamPatchRequest) (*rstr.Team, error) {
 	doc, err := ormpatch.FromPatchRequest(teamOrmEntity, req.ProtoReflect(), func(ed graph.Edge, ref protoreflect.Message) (protoreflect.Value, error) {
 		switch ed.Number() {
 		case 3:
-			k, err := SiteGetKey(ctx, s.Db, ref.Interface().(*roster.SiteRef))
+			k, err := SiteGetKey(ctx, s.Db, ref.Interface().(*rstr.SiteRef))
 			if err != nil {
 				return protoreflect.Value{}, err
 			}
@@ -260,10 +260,10 @@ func (s TeamServiceServer) Patch(ctx context.Context, req *roster.TeamPatchReque
 		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 	}
 
-	return s.apply(ctx, req.GetRef(), doc, roster.TeamService_Patch_FullMethodName)
+	return s.apply(ctx, req.GetRef(), doc, rstr.TeamService_Patch_FullMethodName)
 }
 
-func TeamGetKey(ctx context.Context, db *ent.Client, ref *roster.TeamRef) (uuid.UUID, error) {
+func TeamGetKey(ctx context.Context, db *ent.Client, ref *rstr.TeamRef) (uuid.UUID, error) {
 	var z uuid.UUID
 	if ref.HasId() {
 		if v, err := uuid.FromBytes(ref.GetId()); err != nil {
@@ -289,19 +289,19 @@ func TeamGetKey(ctx context.Context, db *ent.Client, ref *roster.TeamRef) (uuid.
 	return v, nil
 }
 
-var teamOrmEntity = ormpatch.MustEntityOf(roster.File_app_team_proto, "Team")
+var teamOrmEntity = ormpatch.MustEntityOf(rstr.File_app_team_proto, "Team")
 
 var teamPatchColumns = entpatch.Columns{
 	1: team.FieldID, 3: team.SiteColumn, 4: team.FieldAlias, 5: team.FieldName, 6: team.FieldDesc, 13: team.FieldDateUpdated, 14: team.FieldDateErased, 15: team.FieldDateCreated}
 
-func (s TeamServiceServer) Apply(ctx context.Context, req *roster.TeamApplyRequest) (*roster.Team, error) {
+func (s TeamServiceServer) Apply(ctx context.Context, req *rstr.TeamApplyRequest) (*rstr.Team, error) {
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), roster.TeamService_Apply_FullMethodName)
+	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.TeamService_Apply_FullMethodName)
 }
 
-func (s TeamServiceServer) apply(ctx context.Context, ref *roster.TeamRef, doc *patchpb.Patch, by string) (*roster.Team, error) {
+func (s TeamServiceServer) apply(ctx context.Context, ref *rstr.TeamRef, doc *patchpb.Patch, by string) (*rstr.Team, error) {
 	plan := &ormpatch.Plan{Entity: teamOrmEntity}
 	if doc != nil {
 		v, err := ormpatch.Compile(teamOrmEntity, doc)
@@ -335,7 +335,7 @@ func (s TeamServiceServer) apply(ctx context.Context, ref *roster.TeamRef, doc *
 	if err != nil {
 		return nil, err
 	}
-	at := &roster.TeamRef{}
+	at := &rstr.TeamRef{}
 	at.SetId(k[:])
 	p, err := s.narrow(ctx, team.IDEQ(k))
 	if err != nil {
@@ -402,7 +402,7 @@ func (s TeamServiceServer) apply(ctx context.Context, ref *roster.TeamRef, doc *
 	return out, nil
 }
 
-func (s TeamServiceServer) Erase(ctx context.Context, req *roster.TeamRef) (*emptypb.Empty, error) {
+func (s TeamServiceServer) Erase(ctx context.Context, req *rstr.TeamRef) (*emptypb.Empty, error) {
 	p, err := TeamPick(req)
 	if err != nil {
 		return nil, err
@@ -444,7 +444,7 @@ func (s TeamServiceServer) Erase(ctx context.Context, req *roster.TeamRef) (*emp
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  roster.TeamService_Erase_FullMethodName,
+			By:  rstr.TeamService_Erase_FullMethodName,
 			Key: k,
 		}); err != nil {
 			return nil, err
@@ -456,15 +456,15 @@ func (s TeamServiceServer) Erase(ctx context.Context, req *roster.TeamRef) (*emp
 	return &emptypb.Empty{}, nil
 }
 
-func TeamPick(req *roster.TeamRef) (predicate.Team, error) {
+func TeamPick(req *rstr.TeamRef) (predicate.Team, error) {
 	switch req.WhichKey() {
-	case roster.TeamRef_Id_case:
+	case rstr.TeamRef_Id_case:
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			return team.IDEQ(v), nil
 		}
-	case roster.TeamRef_Slug_case:
+	case rstr.TeamRef_Slug_case:
 		k := req.GetSlug()
 		ps := make([]predicate.Team, 0, 2)
 		ps = append(ps, team.AliasEQ(k.GetAlias()))
@@ -474,7 +474,7 @@ func TeamPick(req *roster.TeamRef) (predicate.Team, error) {
 			ps = append(ps, team.HasSiteWith(p))
 		}
 		return team.And(ps...), nil
-	case roster.TeamRef_Key_not_set_case:
+	case rstr.TeamRef_Key_not_set_case:
 		return nil, status.Errorf(codes.InvalidArgument, "key not set: Team")
 	default:
 		return nil, status.Errorf(codes.Unimplemented, "unknown type of key: %s", req.WhichKey())

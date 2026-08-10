@@ -9,10 +9,10 @@ import (
 	errors "errors"
 	uuid "github.com/google/uuid"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
-	roster "github.com/lesomnus/roster"
 	ent "github.com/lesomnus/roster/internal/ent"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	tenant "github.com/lesomnus/roster/internal/ent/tenant"
+	rstr "github.com/lesomnus/roster/rstr"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
@@ -24,7 +24,7 @@ import (
 type TenantServiceServer struct {
 	Store
 
-	roster.UnimplementedTenantServiceServer
+	rstr.UnimplementedTenantServiceServer
 }
 
 // NewTenantServiceServer answers with a server that runs its queries with `db`.
@@ -32,7 +32,7 @@ type TenantServiceServer struct {
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
 // reports nowhere and sees everything.
-func NewTenantServiceServer(db *ent.Client, opts ...Option) roster.TenantServiceServer {
+func NewTenantServiceServer(db *ent.Client, opts ...Option) rstr.TenantServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
 		opt(&s)
@@ -76,7 +76,7 @@ func (s TenantServiceServer) narrow(ctx context.Context, p predicate.Tenant) (pr
 	return TenantNarrow(ctx, s.Scope, p)
 }
 
-func (s TenantServiceServer) Add(ctx context.Context, req *roster.TenantAddRequest) (*roster.Tenant, error) {
+func (s TenantServiceServer) Add(ctx context.Context, req *rstr.TenantAddRequest) (*rstr.Tenant, error) {
 	tx, err := enttx.Join[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
 		return nil, err
@@ -127,7 +127,7 @@ func (s TenantServiceServer) Add(ctx context.Context, req *roster.TenantAddReque
 	}
 
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  roster.TenantService_Add_FullMethodName,
+		By:  rstr.TenantService_Add_FullMethodName,
 		Key: u.ID,
 	}); err != nil {
 		return nil, err
@@ -139,7 +139,7 @@ func (s TenantServiceServer) Add(ctx context.Context, req *roster.TenantAddReque
 	return u.Proto(), nil
 }
 
-func (s TenantServiceServer) Get(ctx context.Context, req *roster.TenantGetRequest) (*roster.Tenant, error) {
+func (s TenantServiceServer) Get(ctx context.Context, req *rstr.TenantGetRequest) (*rstr.Tenant, error) {
 	p, err := TenantPick(req.GetRef())
 	if err != nil {
 		return nil, err
@@ -166,7 +166,7 @@ func selectTenantKey(q *ent.TenantQuery) {
 	q.Select(tenant.FieldID)
 }
 
-func TenantSelectedFields(m *roster.TenantSelect) []string {
+func TenantSelectedFields(m *rstr.TenantSelect) []string {
 	if m.GetAll() {
 		return tenant.Columns
 	}
@@ -197,21 +197,21 @@ func TenantSelectedFields(m *roster.TenantSelect) []string {
 	return vs
 }
 
-func TenantSelect(q *ent.TenantQuery, m *roster.TenantSelect) {
+func TenantSelect(q *ent.TenantQuery, m *rstr.TenantSelect) {
 	if !m.GetAll() {
 		fields := TenantSelectedFields(m)
 		q.Select(fields...)
 	}
 }
 
-func TenantSelectInit(q *ent.TenantQuery, m *roster.TenantSelect) {
+func TenantSelectInit(q *ent.TenantQuery, m *rstr.TenantSelect) {
 	if m != nil {
 		TenantSelect(q, m)
 	} else {
 	}
 }
 
-func (s TenantServiceServer) Patch(ctx context.Context, req *roster.TenantPatchRequest) (*roster.Tenant, error) {
+func (s TenantServiceServer) Patch(ctx context.Context, req *rstr.TenantPatchRequest) (*rstr.Tenant, error) {
 	doc, err := ormpatch.FromPatchRequest(tenantOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -226,10 +226,10 @@ func (s TenantServiceServer) Patch(ctx context.Context, req *roster.TenantPatchR
 		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 	}
 
-	return s.apply(ctx, req.GetRef(), doc, roster.TenantService_Patch_FullMethodName)
+	return s.apply(ctx, req.GetRef(), doc, rstr.TenantService_Patch_FullMethodName)
 }
 
-func TenantGetKey(ctx context.Context, db *ent.Client, ref *roster.TenantRef) (uuid.UUID, error) {
+func TenantGetKey(ctx context.Context, db *ent.Client, ref *rstr.TenantRef) (uuid.UUID, error) {
 	var z uuid.UUID
 	if ref.HasId() {
 		if v, err := uuid.FromBytes(ref.GetId()); err != nil {
@@ -255,19 +255,19 @@ func TenantGetKey(ctx context.Context, db *ent.Client, ref *roster.TenantRef) (u
 	return v, nil
 }
 
-var tenantOrmEntity = ormpatch.MustEntityOf(roster.File_payday_tenant_proto, "Tenant")
+var tenantOrmEntity = ormpatch.MustEntityOf(rstr.File_payday_tenant_proto, "Tenant")
 
 var tenantPatchColumns = entpatch.Columns{
 	1: tenant.FieldID, 4: tenant.FieldAlias, 5: tenant.FieldName, 6: tenant.FieldDesc, 7: tenant.FieldLabels, 13: tenant.FieldDateUpdated, 15: tenant.FieldDateCreated}
 
-func (s TenantServiceServer) Apply(ctx context.Context, req *roster.TenantApplyRequest) (*roster.Tenant, error) {
+func (s TenantServiceServer) Apply(ctx context.Context, req *rstr.TenantApplyRequest) (*rstr.Tenant, error) {
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), roster.TenantService_Apply_FullMethodName)
+	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.TenantService_Apply_FullMethodName)
 }
 
-func (s TenantServiceServer) apply(ctx context.Context, ref *roster.TenantRef, doc *patchpb.Patch, by string) (*roster.Tenant, error) {
+func (s TenantServiceServer) apply(ctx context.Context, ref *rstr.TenantRef, doc *patchpb.Patch, by string) (*rstr.Tenant, error) {
 	plan := &ormpatch.Plan{Entity: tenantOrmEntity}
 	if doc != nil {
 		v, err := ormpatch.Compile(tenantOrmEntity, doc)
@@ -301,7 +301,7 @@ func (s TenantServiceServer) apply(ctx context.Context, ref *roster.TenantRef, d
 	if err != nil {
 		return nil, err
 	}
-	at := &roster.TenantRef{}
+	at := &rstr.TenantRef{}
 	at.SetId(k[:])
 	p, err := s.narrow(ctx, tenant.IDEQ(k))
 	if err != nil {
@@ -368,7 +368,7 @@ func (s TenantServiceServer) apply(ctx context.Context, ref *roster.TenantRef, d
 	return out, nil
 }
 
-func (s TenantServiceServer) Erase(ctx context.Context, req *roster.TenantRef) (*emptypb.Empty, error) {
+func (s TenantServiceServer) Erase(ctx context.Context, req *rstr.TenantRef) (*emptypb.Empty, error) {
 	p, err := TenantPick(req)
 	if err != nil {
 		return nil, err
@@ -407,7 +407,7 @@ func (s TenantServiceServer) Erase(ctx context.Context, req *roster.TenantRef) (
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  roster.TenantService_Erase_FullMethodName,
+			By:  rstr.TenantService_Erase_FullMethodName,
 			Key: k,
 		}); err != nil {
 			return nil, err
@@ -419,17 +419,17 @@ func (s TenantServiceServer) Erase(ctx context.Context, req *roster.TenantRef) (
 	return &emptypb.Empty{}, nil
 }
 
-func TenantPick(req *roster.TenantRef) (predicate.Tenant, error) {
+func TenantPick(req *rstr.TenantRef) (predicate.Tenant, error) {
 	switch req.WhichKey() {
-	case roster.TenantRef_Id_case:
+	case rstr.TenantRef_Id_case:
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			return tenant.IDEQ(v), nil
 		}
-	case roster.TenantRef_Alias_case:
+	case rstr.TenantRef_Alias_case:
 		return tenant.AliasEQ(req.GetAlias()), nil
-	case roster.TenantRef_Key_not_set_case:
+	case rstr.TenantRef_Key_not_set_case:
 		return nil, status.Errorf(codes.InvalidArgument, "key not set: Tenant")
 	default:
 		return nil, status.Errorf(codes.Unimplemented, "unknown type of key: %s", req.WhichKey())

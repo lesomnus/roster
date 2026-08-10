@@ -9,10 +9,10 @@ import (
 	errors "errors"
 	uuid "github.com/google/uuid"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
-	roster "github.com/lesomnus/roster"
 	ent "github.com/lesomnus/roster/internal/ent"
 	audit "github.com/lesomnus/roster/internal/ent/audit"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
+	rstr "github.com/lesomnus/roster/rstr"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
@@ -24,7 +24,7 @@ import (
 type AuditServiceServer struct {
 	Store
 
-	roster.UnimplementedAuditServiceServer
+	rstr.UnimplementedAuditServiceServer
 }
 
 // NewAuditServiceServer answers with a server that runs its queries with `db`.
@@ -32,7 +32,7 @@ type AuditServiceServer struct {
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
 // reports nowhere and sees everything.
-func NewAuditServiceServer(db *ent.Client, opts ...Option) roster.AuditServiceServer {
+func NewAuditServiceServer(db *ent.Client, opts ...Option) rstr.AuditServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
 		opt(&s)
@@ -76,7 +76,7 @@ func (s AuditServiceServer) narrow(ctx context.Context, p predicate.Audit) (pred
 	return AuditNarrow(ctx, s.Scope, p)
 }
 
-func (s AuditServiceServer) Add(ctx context.Context, req *roster.AuditAddRequest) (*roster.Audit, error) {
+func (s AuditServiceServer) Add(ctx context.Context, req *rstr.AuditAddRequest) (*rstr.Audit, error) {
 	tx, err := enttx.Join[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
 		return nil, err
@@ -144,7 +144,7 @@ func (s AuditServiceServer) Add(ctx context.Context, req *roster.AuditAddRequest
 	}
 
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  roster.AuditService_Add_FullMethodName,
+		By:  rstr.AuditService_Add_FullMethodName,
 		Key: u.ID,
 	}); err != nil {
 		return nil, err
@@ -156,7 +156,7 @@ func (s AuditServiceServer) Add(ctx context.Context, req *roster.AuditAddRequest
 	return u.Proto(), nil
 }
 
-func (s AuditServiceServer) Get(ctx context.Context, req *roster.AuditGetRequest) (*roster.Audit, error) {
+func (s AuditServiceServer) Get(ctx context.Context, req *rstr.AuditGetRequest) (*rstr.Audit, error) {
 	p, err := AuditPick(req.GetRef())
 	if err != nil {
 		return nil, err
@@ -183,7 +183,7 @@ func selectAuditKey(q *ent.AuditQuery) {
 	q.Select(audit.FieldID)
 }
 
-func AuditSelectedFields(m *roster.AuditSelect) []string {
+func AuditSelectedFields(m *rstr.AuditSelect) []string {
 	if m.GetAll() {
 		return audit.Columns
 	}
@@ -223,21 +223,21 @@ func AuditSelectedFields(m *roster.AuditSelect) []string {
 	return vs
 }
 
-func AuditSelect(q *ent.AuditQuery, m *roster.AuditSelect) {
+func AuditSelect(q *ent.AuditQuery, m *rstr.AuditSelect) {
 	if !m.GetAll() {
 		fields := AuditSelectedFields(m)
 		q.Select(fields...)
 	}
 }
 
-func AuditSelectInit(q *ent.AuditQuery, m *roster.AuditSelect) {
+func AuditSelectInit(q *ent.AuditQuery, m *rstr.AuditSelect) {
 	if m != nil {
 		AuditSelect(q, m)
 	} else {
 	}
 }
 
-func (s AuditServiceServer) Patch(ctx context.Context, req *roster.AuditPatchRequest) (*roster.Audit, error) {
+func (s AuditServiceServer) Patch(ctx context.Context, req *rstr.AuditPatchRequest) (*rstr.Audit, error) {
 	doc, err := ormpatch.FromPatchRequest(auditOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -252,10 +252,10 @@ func (s AuditServiceServer) Patch(ctx context.Context, req *roster.AuditPatchReq
 		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 	}
 
-	return s.apply(ctx, req.GetRef(), doc, roster.AuditService_Patch_FullMethodName)
+	return s.apply(ctx, req.GetRef(), doc, rstr.AuditService_Patch_FullMethodName)
 }
 
-func AuditGetKey(ctx context.Context, db *ent.Client, ref *roster.AuditRef) (uuid.UUID, error) {
+func AuditGetKey(ctx context.Context, db *ent.Client, ref *rstr.AuditRef) (uuid.UUID, error) {
 	var z uuid.UUID
 	if ref.HasId() {
 		if v, err := uuid.FromBytes(ref.GetId()); err != nil {
@@ -281,19 +281,19 @@ func AuditGetKey(ctx context.Context, db *ent.Client, ref *roster.AuditRef) (uui
 	return v, nil
 }
 
-var auditOrmEntity = ormpatch.MustEntityOf(roster.File_payday_audit_proto, "Audit")
+var auditOrmEntity = ormpatch.MustEntityOf(rstr.File_payday_audit_proto, "Audit")
 
 var auditPatchColumns = entpatch.Columns{
 	1: audit.FieldID, 2: audit.FieldTenantID, 8: audit.FieldActorID, 9: audit.FieldTraceID, 10: audit.FieldAction, 11: audit.FieldObjectID, 12: audit.FieldPatch, 15: audit.FieldDateCreated, 16: audit.FieldActorTenantID, 17: audit.FieldValue}
 
-func (s AuditServiceServer) Apply(ctx context.Context, req *roster.AuditApplyRequest) (*roster.Audit, error) {
+func (s AuditServiceServer) Apply(ctx context.Context, req *rstr.AuditApplyRequest) (*rstr.Audit, error) {
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), roster.AuditService_Apply_FullMethodName)
+	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.AuditService_Apply_FullMethodName)
 }
 
-func (s AuditServiceServer) apply(ctx context.Context, ref *roster.AuditRef, doc *patchpb.Patch, by string) (*roster.Audit, error) {
+func (s AuditServiceServer) apply(ctx context.Context, ref *rstr.AuditRef, doc *patchpb.Patch, by string) (*rstr.Audit, error) {
 	plan := &ormpatch.Plan{Entity: auditOrmEntity}
 	if doc != nil {
 		v, err := ormpatch.Compile(auditOrmEntity, doc)
@@ -327,7 +327,7 @@ func (s AuditServiceServer) apply(ctx context.Context, ref *roster.AuditRef, doc
 	if err != nil {
 		return nil, err
 	}
-	at := &roster.AuditRef{}
+	at := &rstr.AuditRef{}
 	at.SetId(k[:])
 	p, err := s.narrow(ctx, audit.IDEQ(k))
 	if err != nil {
@@ -391,7 +391,7 @@ func (s AuditServiceServer) apply(ctx context.Context, ref *roster.AuditRef, doc
 	return out, nil
 }
 
-func (s AuditServiceServer) Erase(ctx context.Context, req *roster.AuditRef) (*emptypb.Empty, error) {
+func (s AuditServiceServer) Erase(ctx context.Context, req *rstr.AuditRef) (*emptypb.Empty, error) {
 	p, err := AuditPick(req)
 	if err != nil {
 		return nil, err
@@ -430,7 +430,7 @@ func (s AuditServiceServer) Erase(ctx context.Context, req *roster.AuditRef) (*e
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  roster.AuditService_Erase_FullMethodName,
+			By:  rstr.AuditService_Erase_FullMethodName,
 			Key: k,
 		}); err != nil {
 			return nil, err
@@ -442,15 +442,15 @@ func (s AuditServiceServer) Erase(ctx context.Context, req *roster.AuditRef) (*e
 	return &emptypb.Empty{}, nil
 }
 
-func AuditPick(req *roster.AuditRef) (predicate.Audit, error) {
+func AuditPick(req *rstr.AuditRef) (predicate.Audit, error) {
 	switch req.WhichKey() {
-	case roster.AuditRef_Id_case:
+	case rstr.AuditRef_Id_case:
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			return audit.IDEQ(v), nil
 		}
-	case roster.AuditRef_Key_not_set_case:
+	case rstr.AuditRef_Key_not_set_case:
 		return nil, status.Errorf(codes.InvalidArgument, "key not set: Audit")
 	default:
 		return nil, status.Errorf(codes.Unimplemented, "unknown type of key: %s", req.WhichKey())
