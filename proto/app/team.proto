@@ -1,0 +1,85 @@
+edition = "2023";
+
+package app;
+
+import "app/site.proto";
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/roster";
+
+// Team is a group of people within one site, and what a role is derived from.
+//
+// The design says roles come from team membership **within a site**: the same
+// person can be an operator in Seoul and a reader in Frankfurt, and a role that
+// meant the same thing everywhere could not say that.
+//
+// # This is what field 3 is for
+//
+// The site is at 3, which payday reserves for a set smaller than a tenant.
+// Everything that follows -- a read narrowed to the sites a caller may see, on
+// top of the tenants they may see -- is generated from that one number.
+//
+// A team belongs to exactly **one** site, which is the condition. A Holder does
+// not, so a Holder has no site edge; see PLAN.md, D4.
+message Team {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+
+  // Nullable, and not because a team without a site is meaningful. It is the
+  // shape payday asks for: a required field-3 edge cannot be added to a schema
+  // that already has rows, and this one will. A team in no site is then
+  // invisible to a read narrowed to one, which is fail-closed and is the right
+  // way round.
+  Site site = 3 [(orm.edge) = {nullable: true}];
+
+  // Unique within the site, so `operators` may exist in every one of them.
+  string alias = 4;
+
+  string name = 5;
+  string desc = 6;
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      },
+      {
+        name: "slug"
+        refs: [
+          {name: "alias", number: 4},
+          {name: "site", number: 3}
+        ]
+        unique: true
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 10
+    tenanted: {via: "site.tenant"}
+    list: {
+      order: [{field: "date_created"}, {field: "id"}]
+      by: ["ref"]
+      size: 20
+      max: 100
+    }
+    watch: {}
+  };
+}

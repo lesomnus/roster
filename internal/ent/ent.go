@@ -18,6 +18,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/identity"
 	"github.com/lesomnus/roster/internal/ent/outbox"
 	"github.com/lesomnus/roster/internal/ent/site"
+	"github.com/lesomnus/roster/internal/ent/team"
 	"github.com/lesomnus/roster/internal/ent/tenant"
 )
 
@@ -85,6 +86,7 @@ func checkColumn(t, c string) error {
 			identity.Table: identity.ValidColumn,
 			outbox.Table:   outbox.ValidColumn,
 			site.Table:     site.ValidColumn,
+			team.Table:     team.ValidColumn,
 			tenant.Table:   tenant.ValidColumn,
 		})
 	})

@@ -31,6 +31,7 @@ type Server interface {
 	Identity() IdentityServiceServer
 	Email() EmailServiceServer
 	Site() SiteServiceServer
+	Team() TeamServiceServer
 	Audit() AuditServiceServer
 	Outbox() OutboxServiceServer
 }
@@ -45,6 +46,7 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterIdentityServiceServer(g, s.Identity())
 	RegisterEmailServiceServer(g, s.Email())
 	RegisterSiteServiceServer(g, s.Site())
+	RegisterTeamServiceServer(g, s.Team())
 	RegisterAuditServiceServer(g, s.Audit())
 	RegisterOutboxServiceServer(g, s.Outbox())
 }
@@ -55,6 +57,7 @@ type UnimplementedServer struct {
 	IdentityServer IdentityServiceServer
 	EmailServer    EmailServiceServer
 	SiteServer     SiteServiceServer
+	TeamServer     TeamServiceServer
 	AuditServer    AuditServiceServer
 	OutboxServer   OutboxServiceServer
 }
@@ -66,6 +69,7 @@ func (UnimplementedServer) Identity() IdentityServiceServer {
 }
 func (UnimplementedServer) Email() EmailServiceServer   { return UnimplementedEmailServiceServer{} }
 func (UnimplementedServer) Site() SiteServiceServer     { return UnimplementedSiteServiceServer{} }
+func (UnimplementedServer) Team() TeamServiceServer     { return UnimplementedTeamServiceServer{} }
 func (UnimplementedServer) Audit() AuditServiceServer   { return UnimplementedAuditServiceServer{} }
 func (UnimplementedServer) Outbox() OutboxServiceServer { return UnimplementedOutboxServiceServer{} }
 
@@ -75,6 +79,7 @@ type StaticServer struct {
 	IdentityServer IdentityServiceServer
 	EmailServer    EmailServiceServer
 	SiteServer     SiteServiceServer
+	TeamServer     TeamServiceServer
 	AuditServer    AuditServiceServer
 	OutboxServer   OutboxServiceServer
 }
@@ -84,6 +89,7 @@ func (s StaticServer) Holder() HolderServiceServer     { return s.HolderServer }
 func (s StaticServer) Identity() IdentityServiceServer { return s.IdentityServer }
 func (s StaticServer) Email() EmailServiceServer       { return s.EmailServer }
 func (s StaticServer) Site() SiteServiceServer         { return s.SiteServer }
+func (s StaticServer) Team() TeamServiceServer         { return s.TeamServer }
 func (s StaticServer) Audit() AuditServiceServer       { return s.AuditServer }
 func (s StaticServer) Outbox() OutboxServiceServer     { return s.OutboxServer }
 
@@ -93,6 +99,7 @@ type Client interface {
 	Identity() IdentityServiceClient
 	Email() EmailServiceClient
 	Site() SiteServiceClient
+	Team() TeamServiceClient
 	Audit() AuditServiceClient
 	Outbox() OutboxServiceClient
 }
@@ -104,6 +111,7 @@ func NewClient(c *grpc.ClientConn) Client {
 		_Identity: NewIdentityServiceClient(c),
 		_Email:    NewEmailServiceClient(c),
 		_Site:     NewSiteServiceClient(c),
+		_Team:     NewTeamServiceClient(c),
 		_Audit:    NewAuditServiceClient(c),
 		_Outbox:   NewOutboxServiceClient(c),
 	}
@@ -115,6 +123,7 @@ type client struct {
 	_Identity IdentityServiceClient
 	_Email    EmailServiceClient
 	_Site     SiteServiceClient
+	_Team     TeamServiceClient
 	_Audit    AuditServiceClient
 	_Outbox   OutboxServiceClient
 }
@@ -124,6 +133,7 @@ func (c *client) Holder() HolderServiceClient     { return c._Holder }
 func (c *client) Identity() IdentityServiceClient { return c._Identity }
 func (c *client) Email() EmailServiceClient       { return c._Email }
 func (c *client) Site() SiteServiceClient         { return c._Site }
+func (c *client) Team() TeamServiceClient         { return c._Team }
 func (c *client) Audit() AuditServiceClient       { return c._Audit }
 func (c *client) Outbox() OutboxServiceClient     { return c._Outbox }
 

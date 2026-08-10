@@ -15,8 +15,13 @@ roster is a proving ground for payday as much as it is a product, and it is the
 more demanding of the two apps that try it. A workaround written here is a
 defect left in payday for its next user, and it is invisible afterwards.
 
-That means: pin payday from a checkout while working, fix it there, push it,
-then move the pin. It does not mean "file an issue and carry on".
+That means: fix it in the payday checkout, push it, then move the pin here. It
+does not mean "file an issue and carry on".
+
+**Move the pin with the commit, not with `@main`.** The module proxy caches what
+`@main` resolves to, so `go get github.com/lesomnus/payday@main` right after a
+push reports success and changes nothing -- and the next hour is spent chasing a
+bug that is already fixed. `GOPROXY=direct go get github.com/lesomnus/payday@<sha>`.
 
 ## What roster is
 

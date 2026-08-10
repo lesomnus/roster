@@ -18,6 +18,7 @@ import (
 	outbox "github.com/lesomnus/roster/internal/ent/outbox"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	site "github.com/lesomnus/roster/internal/ent/site"
+	team "github.com/lesomnus/roster/internal/ent/team"
 	tenant "github.com/lesomnus/roster/internal/ent/tenant"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	grpc "google.golang.org/grpc"
@@ -319,6 +320,7 @@ type Scope interface {
 	IdentityScope(ctx context.Context) (predicate.Identity, error)
 	EmailScope(ctx context.Context) (predicate.Email, error)
 	SiteScope(ctx context.Context) (predicate.Site, error)
+	TeamScope(ctx context.Context) (predicate.Team, error)
 	AuditScope(ctx context.Context) (predicate.Audit, error)
 	OutboxScope(ctx context.Context) (predicate.Outbox, error)
 }
@@ -348,6 +350,9 @@ func (Unscoped) EmailScope(_ context.Context) (predicate.Email, error) {
 	return nil, nil
 }
 func (Unscoped) SiteScope(_ context.Context) (predicate.Site, error) {
+	return nil, nil
+}
+func (Unscoped) TeamScope(_ context.Context) (predicate.Team, error) {
 	return nil, nil
 }
 func (Unscoped) AuditScope(_ context.Context) (predicate.Audit, error) {
@@ -476,6 +481,26 @@ func (ss Scopes) SiteScope(ctx context.Context) (predicate.Site, error) {
 	return site.And(ps...), nil
 }
 
+func (ss Scopes) TeamScope(ctx context.Context) (predicate.Team, error) {
+	ps := make([]predicate.Team, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.TeamScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return team.And(ps...), nil
+}
+
 func (ss Scopes) AuditScope(ctx context.Context) (predicate.Audit, error) {
 	ps := make([]predicate.Audit, 0, len(ss))
 	for _, s := range ss {
@@ -596,7 +621,7 @@ func (s Store) now() time.Time {
 // is rendered for that dialect, not just what this server writes.
 //
 // That set is also what a soft erasure needs, so this is the whole
-// check. Email, Holder, Identity and Site free the names they held when a row
+// check. Email, Holder, Identity, Site and Team free the names they held when a row
 // is erased, which is a unique index covering only the rows that are
 // still there -- a partial index, and the dialects above are the ones
 // that have one. MySQL does not, and ent writes the annotation out for
@@ -639,5 +664,6 @@ func (s Server) Holder() roster.HolderServiceServer     { return HolderServiceSe
 func (s Server) Identity() roster.IdentityServiceServer { return IdentityServiceServer{Store: s.Store} }
 func (s Server) Email() roster.EmailServiceServer       { return EmailServiceServer{Store: s.Store} }
 func (s Server) Site() roster.SiteServiceServer         { return SiteServiceServer{Store: s.Store} }
+func (s Server) Team() roster.TeamServiceServer         { return TeamServiceServer{Store: s.Store} }
 func (s Server) Audit() roster.AuditServiceServer       { return AuditServiceServer{Store: s.Store} }
 func (s Server) Outbox() roster.OutboxServiceServer     { return OutboxServiceServer{Store: s.Store} }

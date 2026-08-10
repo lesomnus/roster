@@ -135,6 +135,19 @@ carries no site edge and is narrowed by tenant alone.
 This is a real limit of the second axis rather than a modelling mistake, and it
 is written here so the next person does not try to force it.
 
+### D5 · Credential is separate from Holder
+
+The password hash, and later a TOTP secret, are their own row.
+
+Most people have none — they arrive through an external provider — so a column
+would be empty on nearly every row. And credentials have a lifetime of their
+own: rotation, history, lockout. That is a row that changes when the person does
+not.
+
+roster **verifies** rather than handing the hash out. A comparison done
+elsewhere is a hash that has left the store, and it puts timing-safe comparison
+and lockout in two places.
+
 ### D6 · A timestamp that means "or never" says `nullable: true`
 
 `Email.date_verified` is a `google.protobuf.Timestamp`, and a message field has
@@ -153,21 +166,6 @@ what anybody deploys on, and the two disagree exactly where mistakes hide.
 
 roster is the first app to use `pdtest.DB`, and it found a defect in it on the
 first run — see F2.
-
-### D5 · Credential is separate from Holder
-
-The password hash, and later a TOTP secret, are their own row.
-
-Most people have none — they arrive through an external provider — so a column
-would be empty on nearly every row. And credentials have a lifetime of their
-own: rotation, history, lockout. That is a row that changes when the person does
-not.
-
-roster **verifies** rather than handing the hash out. A comparison done
-elsewhere is a hash that has left the store, and it puts timing-safe comparison
-and lockout in two places.
-
----
 
 ---
 
@@ -198,6 +196,35 @@ this invisible.
 
 *payday `02fc7c9`.*
 
+### F4 · A `via` path whose first hop was absent failed the write
+
+payday asks apps to make a field-3 edge nullable — a schema gains one after it
+already has rows, and a required edge could never be added to one. `Team` is
+that shape, and it is also its own tenancy path (`via: "site.tenant"`).
+
+The trail walks that path to file itself under a tenant. Finding no edge it
+parsed no bytes as an identifier and failed — and it runs inside the transaction
+that makes the write, so the **write** failed, with an `Internal`, from a layer
+the caller never asked for. A team in no site could not be created at all.
+
+It answers `uuid.Nil` now, which the recorder already knew what to do with. The
+wall is unchanged and asserted separately: a row that reaches no tenant is
+behind none.
+
+Why it survived is worth keeping. payday's own apptest had entities with `via`
+paths in one package and the trail in another, so no test had both at once.
+
+*payday `e09af48`.*
+
+### F5 · `go get @main` silently kept an old pin — **operational**
+
+Not a defect in payday, but it cost an hour of chasing a fixed bug. The module
+proxy caches what `@main` resolves to, so `go get …@main` right after a push
+reports success and moves nothing. Twice the tests here failed against a payday
+that already had the fix.
+
+Use the commit, or `GOPROXY=direct`. Written in `CLAUDE.md`.
+
 ### F3 · A non-nullable message field lies about presence — **open**
 
 The one above (D6) as a payday question rather than a roster one. A
@@ -220,8 +247,9 @@ existing schema.
 | --- | --- |
 | 0 · repo, plan, rules | **done** |
 | 1 · schema — Site, Identity, Email | **done**, 15 tests, both databases |
-| 1b · Team, memberships, Credential | next |
-| 2 · payday fixes | F1 and F2 done, F3 open |
+| 1b · Team, on the second axis | **done**, 21 tests, both databases |
+| 1c · memberships, Credential | next |
+| 2 · payday fixes | F1, F2, F4 done · F3 open · F5 written down |
 | 3 · app layer | — |
 | 4 · keys, sync, console | — |
 
@@ -231,6 +259,9 @@ existing schema.
   refused by a permission check rather than decided, so it is worth an explicit
   choice.
 - **F3** above: whether payday should refuse the declaration that lies.
-- **Does the second axis earn its place here?** `Site` is field 3's subject, but
-  nothing carries the edge yet — `Team` will. Until something does, D4 is a
-  claim rather than a demonstration.
+- **The second axis is demonstrated.** `Team` carries the edge, and a caller
+  narrowed to one site sees one team out of two in the same tenant. D4 is no
+  longer a claim.
+- **`Sets` is handed in by the test, not by the app.** `cmd.Build` installs the
+  wall only, because which sites somebody may see is a membership roster does
+  not have yet. Phase 3 is where that becomes real.

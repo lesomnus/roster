@@ -24,6 +24,8 @@ type Tx struct {
 	Outbox *OutboxClient
 	// Site is the client for interacting with the Site builders.
 	Site *SiteClient
+	// Team is the client for interacting with the Team builders.
+	Team *TeamClient
 	// Tenant is the client for interacting with the Tenant builders.
 	Tenant *TenantClient
 
@@ -163,6 +165,7 @@ func (tx *Tx) init() {
 	tx.Identity = NewIdentityClient(tx.config)
 	tx.Outbox = NewOutboxClient(tx.config)
 	tx.Site = NewSiteClient(tx.config)
+	tx.Team = NewTeamClient(tx.config)
 	tx.Tenant = NewTenantClient(tx.config)
 }
 

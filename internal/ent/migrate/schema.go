@@ -245,6 +245,46 @@ var (
 			},
 		},
 	}
+	// TeamColumns holds the columns for the "team" table.
+	TeamColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "alias", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "desc", Type: field.TypeString},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "site_id", Type: field.TypeUUID, Nullable: true},
+	}
+	// TeamTable holds the schema information for the "team" table.
+	TeamTable = &schema.Table{
+		Name:       "team",
+		Columns:    TeamColumns,
+		PrimaryKey: []*schema.Column{TeamColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "team_site_site",
+				Columns:    []*schema.Column{TeamColumns[7]},
+				RefColumns: []*schema.Column{SiteColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "team_date_created_id",
+				Unique:  false,
+				Columns: []*schema.Column{TeamColumns[6], TeamColumns[0]},
+			},
+			{
+				Name:    "team_alias_site_id",
+				Unique:  true,
+				Columns: []*schema.Column{TeamColumns[1], TeamColumns[7]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
 	// TenantColumns holds the columns for the "tenant" table.
 	TenantColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
@@ -269,6 +309,7 @@ var (
 		IdentityTable,
 		OutboxTable,
 		SiteTable,
+		TeamTable,
 		TenantTable,
 	}
 )
@@ -296,6 +337,10 @@ func init() {
 	SiteTable.ForeignKeys[0].RefTable = TenantTable
 	SiteTable.Annotation = &entsql.Annotation{
 		Table: "site",
+	}
+	TeamTable.ForeignKeys[0].RefTable = SiteTable
+	TeamTable.Annotation = &entsql.Annotation{
+		Table: "team",
 	}
 	TenantTable.Annotation = &entsql.Annotation{
 		Table: "tenant",
