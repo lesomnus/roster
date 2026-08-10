@@ -1,28 +1,29 @@
 edition = "2023";
 package app;
 
-import "app/thing.proto";
+import "app/email.proto";
+import "app/identity_svc.g.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "patch/patch.proto";
-import "payday/tenant_svc.g.proto";
+import "payday/holder_svc.g.proto";
 
 option go_package = "github.com/lesomnus/roster";
 
-service ThingService {
-  // Add creates a new Thing
-  rpc Add(ThingAddRequest) returns (Thing);
-  // Get retrieves a Thing
-  rpc Get(ThingGetRequest) returns (Thing);
-  // Patch updates an existing Thing
-  rpc Patch(ThingPatchRequest) returns (Thing);
-  // Apply applies a patch document to an existing Thing
-  rpc Apply(ThingApplyRequest) returns (Thing);
-  // Erase deletes a Thing
-  rpc Erase(ThingRef) returns (google.protobuf.Empty);
-  // List reads Things a page at a time.
-  rpc List(ThingListRequest) returns (ThingListResponse);
-  // Watch the Things this caller may see, as they are now and as they change.
+service EmailService {
+  // Add creates a new Email
+  rpc Add(EmailAddRequest) returns (Email);
+  // Get retrieves a Email
+  rpc Get(EmailGetRequest) returns (Email);
+  // Patch updates an existing Email
+  rpc Patch(EmailPatchRequest) returns (Email);
+  // Apply applies a patch document to an existing Email
+  rpc Apply(EmailApplyRequest) returns (Email);
+  // Erase deletes a Email
+  rpc Erase(EmailRef) returns (google.protobuf.Empty);
+  // List reads Emails a page at a time.
+  rpc List(EmailListRequest) returns (EmailListResponse);
+  // Watch the Emails this caller may see, as they are now and as they change.
   //
   // What arrives is **state and never a delta**, so a client converges rather
   // than replays: it keeps what it was last told about a row and replaces it.
@@ -33,48 +34,61 @@ service ThingService {
   // not have to List first and race the subscription. A row may arrive twice --
   // once in that first message and once as a change that happened while it was
   // being read -- and that is harmless for the same reason.
-  rpc Watch(ThingWatchRequest) returns (stream ThingWatchResponse);
+  rpc Watch(EmailWatchRequest) returns (stream EmailWatchResponse);
 }
 
-message ThingAddRequest {
+message EmailAddRequest {
   bytes id = 1;
-  TenantRef tenant = 2;
-  string alias = 4 [features.field_presence = IMPLICIT];
-  string desc = 6 [features.field_presence = IMPLICIT];
+  HolderRef holder = 2;
+  string address = 8 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_verified = 9;
+  IdentityRef vouched_by = 10;
   google.protobuf.Timestamp date_created = 15;
 }
 
-message ThingGetRequest {
-  ThingRef ref = 1;
-  ThingSelect select = 2;
+message EmailGetRequest {
+  EmailRef ref = 1;
+  EmailSelect select = 2;
 }
 
-message ThingRef {
+message EmailRef {
   oneof key {
     bytes id = 1;
-    ThingRefBySlug slug = 4;
+    EmailRefByAddress address = 2;
   }
 }
 
-message ThingRefBySlug {
-  string alias = 4;
-  TenantRef tenant = 2;
+message EmailRefByAddress {
+  HolderRef holder = 2;
+  string address = 8;
 }
 
-message ThingSelect {
+message EmailSelect {
   bool all = 1;
-  TenantSelect tenant = 2;
-  bool alias = 4;
-  bool desc = 6;
-  bool date_erased = 14;
+  HolderSelect holder = 2;
+  bool address = 8;
+  bool date_verified = 9;
+  IdentitySelect vouched_by = 10;
   bool date_updated = 13;
+  bool date_erased = 14;
   bool date_created = 15;
 }
 
-message ThingPatchRequest {
-  ThingRef ref = 1;
-  string alias = 8;
-  string desc = 12;
+message EmailPatchRequest {
+  EmailRef ref = 1;
+  string address = 16;
+  google.protobuf.Timestamp date_verified = 18;
+  // Clear date_verified instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_verified clears.
+  bool date_verified_null = 19;
+  IdentityRef vouched_by = 20;
+  // Clear vouched_by instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and vouched_by clears.
+  bool vouched_by_null = 21;
   // The version this update requires the stored date_updated to be.
   // It is a precondition, not a write: the update applies only if the row
   // still holds this value, and the server stamps the new version itself.
@@ -91,15 +105,15 @@ message ThingPatchRequest {
   bool date_updated_force = 27;
 }
 
-message ThingApplyRequest {
-  ThingRef ref = 1;
+message EmailApplyRequest {
+  EmailRef ref = 1;
   patch.Patch patch = 2;
 }
 
-message ThingListRequest {
+message EmailListRequest {
   // Bounded because the work is: each filter is a predicate in the same query,
   // so this is what says how much of the database one request may read.
-  repeated ThingFilter filters = 1;
+  repeated EmailFilter filters = 1;
 
   // How many to answer with. Nothing said is what the schema declared, and more
   // than the cap is the cap -- a caller asking for more than there is meant no
@@ -113,8 +127,8 @@ message ThingListRequest {
   string after = 3 [features.field_presence = IMPLICIT];
 }
 
-message ThingListResponse {
-  repeated Thing items = 1;
+message EmailListResponse {
+  repeated Email items = 1;
 
   // What to ask for next, and empty when this was the last of them.
   //
@@ -126,11 +140,11 @@ message ThingListResponse {
   string next = 2 [features.field_presence = IMPLICIT];
 }
 
-message ThingFilter {
-  ThingRef ref = 1;
+message EmailFilter {
+  EmailRef ref = 1;
 }
 
-message ThingWatchRequest {
+message EmailWatchRequest {
   // Which rows to watch, in the same words List takes them: what is watched is
   // what that list would answer with, now and afterwards.
   //
@@ -138,7 +152,7 @@ message ThingWatchRequest {
   // runs its filters once; a watch runs them again for every write that touches
   // the entity, for as long as the stream is open. A watch with no filters is
   // the whole table, forever, which is the one shape that has no cap at all.
-  repeated ThingFilter filters = 1;
+  repeated EmailFilter filters = 1;
 
   // Skip what is there now and send only what changes from here.
   //
@@ -148,12 +162,12 @@ message ThingWatchRequest {
   bool skip_snapshot = 2 [features.field_presence = IMPLICIT];
 }
 
-message ThingWatchResponse {
+message EmailWatchResponse {
   // What changed, or -- in the first message -- everything that matches.
-  repeated ThingWatchItem items = 1;
+  repeated EmailWatchItem items = 1;
 }
 
-message ThingWatchItem {
+message EmailWatchItem {
   // Which row. Always said, since one that is gone still has to be named.
   bytes id = 1;
 
@@ -167,7 +181,7 @@ message ThingWatchItem {
   //
   // It is only ever said about a row this stream has already carried. One that
   // never matched is not news.
-  Thing value = 2;
+  Email value = 2;
 
   // The RPC that changed it, by the name gRPC knows it by. It is what the
   // caller of *that* RPC asked for and not the write it became, so an RPC

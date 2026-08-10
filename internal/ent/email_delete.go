@@ -8,30 +8,30 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/lesomnus/roster/internal/ent/email"
 	"github.com/lesomnus/roster/internal/ent/predicate"
-	"github.com/lesomnus/roster/internal/ent/thing"
 )
 
-// ThingDelete is the builder for deleting a Thing entity.
-type ThingDelete struct {
+// EmailDelete is the builder for deleting a Email entity.
+type EmailDelete struct {
 	config
 	hooks    []Hook
-	mutation *ThingMutation
+	mutation *EmailMutation
 }
 
-// Where appends a list predicates to the ThingDelete builder.
-func (_d *ThingDelete) Where(ps ...predicate.Thing) *ThingDelete {
+// Where appends a list predicates to the EmailDelete builder.
+func (_d *EmailDelete) Where(ps ...predicate.Email) *EmailDelete {
 	_d.mutation.Where(ps...)
 	return _d
 }
 
 // Exec executes the deletion query and returns how many vertices were deleted.
-func (_d *ThingDelete) Exec(ctx context.Context) (int, error) {
+func (_d *EmailDelete) Exec(ctx context.Context) (int, error) {
 	return withHooks(ctx, _d.sqlExec, _d.mutation, _d.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_d *ThingDelete) ExecX(ctx context.Context) int {
+func (_d *EmailDelete) ExecX(ctx context.Context) int {
 	n, err := _d.Exec(ctx)
 	if err != nil {
 		panic(err)
@@ -39,8 +39,8 @@ func (_d *ThingDelete) ExecX(ctx context.Context) int {
 	return n
 }
 
-func (_d *ThingDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(thing.Table, sqlgraph.NewFieldSpec(thing.FieldID, field.TypeUUID))
+func (_d *EmailDelete) sqlExec(ctx context.Context) (int, error) {
+	_spec := sqlgraph.NewDeleteSpec(email.Table, sqlgraph.NewFieldSpec(email.FieldID, field.TypeUUID))
 	if ps := _d.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -56,32 +56,32 @@ func (_d *ThingDelete) sqlExec(ctx context.Context) (int, error) {
 	return affected, err
 }
 
-// ThingDeleteOne is the builder for deleting a single Thing entity.
-type ThingDeleteOne struct {
-	_d *ThingDelete
+// EmailDeleteOne is the builder for deleting a single Email entity.
+type EmailDeleteOne struct {
+	_d *EmailDelete
 }
 
-// Where appends a list predicates to the ThingDelete builder.
-func (_d *ThingDeleteOne) Where(ps ...predicate.Thing) *ThingDeleteOne {
+// Where appends a list predicates to the EmailDelete builder.
+func (_d *EmailDeleteOne) Where(ps ...predicate.Email) *EmailDeleteOne {
 	_d._d.mutation.Where(ps...)
 	return _d
 }
 
 // Exec executes the deletion query.
-func (_d *ThingDeleteOne) Exec(ctx context.Context) error {
+func (_d *EmailDeleteOne) Exec(ctx context.Context) error {
 	n, err := _d._d.Exec(ctx)
 	switch {
 	case err != nil:
 		return err
 	case n == 0:
-		return &NotFoundError{thing.Label}
+		return &NotFoundError{email.Label}
 	default:
 		return nil
 	}
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_d *ThingDeleteOne) ExecX(ctx context.Context) {
+func (_d *EmailDeleteOne) ExecX(ctx context.Context) {
 	if err := _d.Exec(ctx); err != nil {
 		panic(err)
 	}

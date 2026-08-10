@@ -9,14 +9,20 @@ import (
 // Audit is the predicate function for audit builders.
 type Audit func(*sql.Selector)
 
+// Email is the predicate function for email builders.
+type Email func(*sql.Selector)
+
 // Holder is the predicate function for holder builders.
 type Holder func(*sql.Selector)
+
+// Identity is the predicate function for identity builders.
+type Identity func(*sql.Selector)
 
 // Outbox is the predicate function for outbox builders.
 type Outbox func(*sql.Selector)
 
+// Site is the predicate function for site builders.
+type Site func(*sql.Selector)
+
 // Tenant is the predicate function for tenant builders.
 type Tenant func(*sql.Selector)
-
-// Thing is the predicate function for thing builders.
-type Thing func(*sql.Selector)

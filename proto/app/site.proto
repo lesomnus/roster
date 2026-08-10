@@ -1,0 +1,84 @@
+edition = "2023";
+
+package app;
+
+import "payday/tenant.proto";
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/roster";
+
+// Site is where a deployment of the product runs, and the boundary everything
+// in it is isolated by.
+//
+// A tenant is the wall between customers; a site is the wall inside one. A
+// factory, a region, an environment -- whatever the customer runs a copy for.
+// It is payday's **second axis**: an entity that names a site at field 3 is
+// narrowed by both, and a caller who may see a tenant does not thereby see
+// every site in it.
+//
+// It is a row rather than a label because things point at it and because it has
+// a name people say. `labels` is what an administrative grant matches on --
+// "every site in Asia" is a selector over these, resolved to a set of sites by
+// this app rather than by payday.
+message Site {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+
+  Tenant tenant = 2 [(orm.edge) = {immutable: true}];
+
+  // Unique within the tenant, which is what makes `@acme/seoul` a name somebody
+  // can type into a configuration file.
+  string alias = 4;
+
+  string name = 5;
+  string desc = 6;
+
+  // What a grant selects on. `{"region": "asia"}` and a grant matching it is
+  // the design's `admin_scope`; resolving the match to a set of sites is this
+  // app's, since payday's grant carries identifiers rather than selectors.
+  map<string, string> labels = 7;
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      },
+      {
+        name: "slug"
+        refs: [
+          {name: "alias", number: 4},
+          {name: "tenant", number: 2}
+        ]
+        unique: true
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 7
+    list: {
+      order: [{field: "date_created"}, {field: "id"}]
+      by: ["ref"]
+      size: 20
+      max: 100
+    }
+    watch: {}
+  };
+}

@@ -1,0 +1,98 @@
+edition = "2023";
+
+package app;
+
+import "payday/holder.proto";
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/roster";
+
+// Identity is one way a person signs in: a subject at a provider, pointing at
+// the Holder it turned out to be.
+//
+// # Why it is a row and not a column
+//
+// One person, several. The same human arrives through the company's Entra
+// tenant on Monday and through GitHub on Saturday, and both have to land on one
+// Holder -- otherwise they are two people to everything downstream, with two
+// histories and two sets of permissions.
+//
+// A column would be one-to-one and would make the second route a second person.
+//
+// # It reaches its tenant through the Holder
+//
+// There is no `tenant` edge here: an identity belongs to whoever it names, and
+// whoever it names belongs to a tenant. `tenanted: {via: "holder.tenant"}` is
+// that path written down, and the wall is generated from it.
+message Identity {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+
+  Holder holder = 2 [(orm.edge) = {immutable: true}];
+
+  // 4..7 are empty on purpose. An identity has no name a person writes: it is
+  // named by the pair below, and both halves come from a provider rather than
+  // from anybody here. The numbers stay reserved.
+
+  // Which provider said so -- "entra", "github", "ldap", "local". A string
+  // rather than an enum because adding one is a deployment's decision and a new
+  // enumerator is this schema's.
+  string provider = 8;
+
+  // What that provider calls this person, and it must be the identifier the
+  // provider treats as **immutable**: a numeric ID for GitHub, `objectGUID` or
+  // `entryUUID` for LDAP, `oid` for Entra.
+  //
+  // Never a username and never an email address. Both get changed, and an email
+  // gets reassigned to somebody else entirely -- which would silently hand one
+  // person another person's account.
+  string subject = 9;
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      },
+      // The pair is the identity. Unique, because two Holders claiming the same
+      // subject at the same provider is the account-takeover shape: whoever
+      // logs in next becomes whichever row was found first.
+      {
+        name: "subject"
+        refs: [
+          {name: "provider", number: 8},
+          {name: "subject", number: 9}
+        ]
+        unique: true
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 8
+    tenanted: {via: "holder.tenant"}
+    list: {
+      order: [{field: "date_created"}, {field: "id"}]
+      by: ["ref"]
+      size: 20
+      max: 100
+    }
+    watch: {}
+  };
+}

@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -10,35 +11,39 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
+	"github.com/lesomnus/roster/internal/ent/site"
 	"github.com/lesomnus/roster/internal/ent/tenant"
-	"github.com/lesomnus/roster/internal/ent/thing"
 )
 
-// Thing is the model entity for the Thing schema.
-type Thing struct {
+// Site is the model entity for the Site schema.
+type Site struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
 	// Alias holds the value of the "alias" field.
 	Alias string `json:"alias,omitempty"`
+	// Name holds the value of the "name" field.
+	Name string `json:"name,omitempty"`
 	// Desc holds the value of the "desc" field.
 	Desc string `json:"desc,omitempty"`
-	// DateErased holds the value of the "date_erased" field.
-	DateErased *time.Time `json:"date_erased,omitempty"`
+	// Labels holds the value of the "labels" field.
+	Labels map[string]string `json:"labels,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
+	// DateErased holds the value of the "date_erased" field.
+	DateErased *time.Time `json:"date_erased,omitempty"`
 	// DateCreated holds the value of the "date_created" field.
 	DateCreated time.Time `json:"date_created,omitempty"`
 	// TenantID holds the value of the "tenant_id" field.
 	TenantID uuid.UUID `json:"tenant_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
-	// The values are being populated by the ThingQuery when eager-loading is set.
-	Edges        ThingEdges `json:"edges"`
+	// The values are being populated by the SiteQuery when eager-loading is set.
+	Edges        SiteEdges `json:"edges"`
 	selectValues sql.SelectValues
 }
 
-// ThingEdges holds the relations/edges for other nodes in the graph.
-type ThingEdges struct {
+// SiteEdges holds the relations/edges for other nodes in the graph.
+type SiteEdges struct {
 	// Tenant holds the value of the tenant edge.
 	Tenant *Tenant `json:"tenant,omitempty"`
 	// loadedTypes holds the information for reporting if a
@@ -48,7 +53,7 @@ type ThingEdges struct {
 
 // TenantOrErr returns the Tenant value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e ThingEdges) TenantOrErr() (*Tenant, error) {
+func (e SiteEdges) TenantOrErr() (*Tenant, error) {
 	if e.Tenant != nil {
 		return e.Tenant, nil
 	} else if e.loadedTypes[0] {
@@ -58,15 +63,17 @@ func (e ThingEdges) TenantOrErr() (*Tenant, error) {
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
-func (*Thing) scanValues(columns []string) ([]any, error) {
+func (*Site) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case thing.FieldAlias, thing.FieldDesc:
+		case site.FieldLabels:
+			values[i] = new([]byte)
+		case site.FieldAlias, site.FieldName, site.FieldDesc:
 			values[i] = new(sql.NullString)
-		case thing.FieldDateErased, thing.FieldDateUpdated, thing.FieldDateCreated:
+		case site.FieldDateUpdated, site.FieldDateErased, site.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case thing.FieldID, thing.FieldTenantID:
+		case site.FieldID, site.FieldTenantID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -76,51 +83,65 @@ func (*Thing) scanValues(columns []string) ([]any, error) {
 }
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
-// to the Thing fields.
-func (_m *Thing) assignValues(columns []string, values []any) error {
+// to the Site fields.
+func (_m *Site) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
 	for i := range columns {
 		switch columns[i] {
-		case thing.FieldID:
+		case site.FieldID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				_m.ID = *value
 			}
-		case thing.FieldAlias:
+		case site.FieldAlias:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field alias", values[i])
 			} else if value.Valid {
 				_m.Alias = value.String
 			}
-		case thing.FieldDesc:
+		case site.FieldName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field name", values[i])
+			} else if value.Valid {
+				_m.Name = value.String
+			}
+		case site.FieldDesc:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field desc", values[i])
 			} else if value.Valid {
 				_m.Desc = value.String
 			}
-		case thing.FieldDateErased:
+		case site.FieldLabels:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field labels", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.Labels); err != nil {
+					return fmt.Errorf("unmarshal field labels: %w", err)
+				}
+			}
+		case site.FieldDateUpdated:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field date_updated", values[i])
+			} else if value.Valid {
+				_m.DateUpdated = value.Time
+			}
+		case site.FieldDateErased:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field date_erased", values[i])
 			} else if value.Valid {
 				_m.DateErased = new(time.Time)
 				*_m.DateErased = value.Time
 			}
-		case thing.FieldDateUpdated:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field date_updated", values[i])
-			} else if value.Valid {
-				_m.DateUpdated = value.Time
-			}
-		case thing.FieldDateCreated:
+		case site.FieldDateCreated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field date_created", values[i])
 			} else if value.Valid {
 				_m.DateCreated = value.Time
 			}
-		case thing.FieldTenantID:
+		case site.FieldTenantID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
 			} else if value != nil {
@@ -133,53 +154,59 @@ func (_m *Thing) assignValues(columns []string, values []any) error {
 	return nil
 }
 
-// Value returns the ent.Value that was dynamically selected and assigned to the Thing.
+// Value returns the ent.Value that was dynamically selected and assigned to the Site.
 // This includes values selected through modifiers, order, etc.
-func (_m *Thing) Value(name string) (ent.Value, error) {
+func (_m *Site) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
 }
 
-// QueryTenant queries the "tenant" edge of the Thing entity.
-func (_m *Thing) QueryTenant() *TenantQuery {
-	return NewThingClient(_m.config).QueryTenant(_m)
+// QueryTenant queries the "tenant" edge of the Site entity.
+func (_m *Site) QueryTenant() *TenantQuery {
+	return NewSiteClient(_m.config).QueryTenant(_m)
 }
 
-// Update returns a builder for updating this Thing.
-// Note that you need to call Thing.Unwrap() before calling this method if this Thing
+// Update returns a builder for updating this Site.
+// Note that you need to call Site.Unwrap() before calling this method if this Site
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (_m *Thing) Update() *ThingUpdateOne {
-	return NewThingClient(_m.config).UpdateOne(_m)
+func (_m *Site) Update() *SiteUpdateOne {
+	return NewSiteClient(_m.config).UpdateOne(_m)
 }
 
-// Unwrap unwraps the Thing entity that was returned from a transaction after it was closed,
+// Unwrap unwraps the Site entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (_m *Thing) Unwrap() *Thing {
+func (_m *Site) Unwrap() *Site {
 	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
-		panic("ent: Thing is not a transactional entity")
+		panic("ent: Site is not a transactional entity")
 	}
 	_m.config.driver = _tx.drv
 	return _m
 }
 
 // String implements the fmt.Stringer.
-func (_m *Thing) String() string {
+func (_m *Site) String() string {
 	var builder strings.Builder
-	builder.WriteString("Thing(")
+	builder.WriteString("Site(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("alias=")
 	builder.WriteString(_m.Alias)
 	builder.WriteString(", ")
+	builder.WriteString("name=")
+	builder.WriteString(_m.Name)
+	builder.WriteString(", ")
 	builder.WriteString("desc=")
 	builder.WriteString(_m.Desc)
+	builder.WriteString(", ")
+	builder.WriteString("labels=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Labels))
+	builder.WriteString(", ")
+	builder.WriteString("date_updated=")
+	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))
 	builder.WriteString(", ")
 	if v := _m.DateErased; v != nil {
 		builder.WriteString("date_erased=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
-	builder.WriteString(", ")
-	builder.WriteString("date_updated=")
-	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("date_created=")
 	builder.WriteString(_m.DateCreated.Format(time.ANSIC))
@@ -190,5 +217,5 @@ func (_m *Thing) String() string {
 	return builder.String()
 }
 
-// Things is a parsable slice of Thing.
-type Things []*Thing
+// Sites is a parsable slice of Site.
+type Sites []*Site

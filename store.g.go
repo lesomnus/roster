@@ -27,9 +27,11 @@ import (
 
 type Server interface {
 	Tenant() TenantServiceServer
-	Thing() ThingServiceServer
-	Audit() AuditServiceServer
 	Holder() HolderServiceServer
+	Identity() IdentityServiceServer
+	Email() EmailServiceServer
+	Site() SiteServiceServer
+	Audit() AuditServiceServer
 	Outbox() OutboxServiceServer
 }
 
@@ -39,71 +41,91 @@ type Server interface {
 // server which is not gRPC's own can be handed the same set of services.
 func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterTenantServiceServer(g, s.Tenant())
-	RegisterThingServiceServer(g, s.Thing())
-	RegisterAuditServiceServer(g, s.Audit())
 	RegisterHolderServiceServer(g, s.Holder())
+	RegisterIdentityServiceServer(g, s.Identity())
+	RegisterEmailServiceServer(g, s.Email())
+	RegisterSiteServiceServer(g, s.Site())
+	RegisterAuditServiceServer(g, s.Audit())
 	RegisterOutboxServiceServer(g, s.Outbox())
 }
 
 type UnimplementedServer struct {
-	TenantServer TenantServiceServer
-	ThingServer  ThingServiceServer
-	AuditServer  AuditServiceServer
-	HolderServer HolderServiceServer
-	OutboxServer OutboxServiceServer
+	TenantServer   TenantServiceServer
+	HolderServer   HolderServiceServer
+	IdentityServer IdentityServiceServer
+	EmailServer    EmailServiceServer
+	SiteServer     SiteServiceServer
+	AuditServer    AuditServiceServer
+	OutboxServer   OutboxServiceServer
 }
 
 func (UnimplementedServer) Tenant() TenantServiceServer { return UnimplementedTenantServiceServer{} }
-func (UnimplementedServer) Thing() ThingServiceServer   { return UnimplementedThingServiceServer{} }
-func (UnimplementedServer) Audit() AuditServiceServer   { return UnimplementedAuditServiceServer{} }
 func (UnimplementedServer) Holder() HolderServiceServer { return UnimplementedHolderServiceServer{} }
+func (UnimplementedServer) Identity() IdentityServiceServer {
+	return UnimplementedIdentityServiceServer{}
+}
+func (UnimplementedServer) Email() EmailServiceServer   { return UnimplementedEmailServiceServer{} }
+func (UnimplementedServer) Site() SiteServiceServer     { return UnimplementedSiteServiceServer{} }
+func (UnimplementedServer) Audit() AuditServiceServer   { return UnimplementedAuditServiceServer{} }
 func (UnimplementedServer) Outbox() OutboxServiceServer { return UnimplementedOutboxServiceServer{} }
 
 type StaticServer struct {
-	TenantServer TenantServiceServer
-	ThingServer  ThingServiceServer
-	AuditServer  AuditServiceServer
-	HolderServer HolderServiceServer
-	OutboxServer OutboxServiceServer
+	TenantServer   TenantServiceServer
+	HolderServer   HolderServiceServer
+	IdentityServer IdentityServiceServer
+	EmailServer    EmailServiceServer
+	SiteServer     SiteServiceServer
+	AuditServer    AuditServiceServer
+	OutboxServer   OutboxServiceServer
 }
 
-func (s StaticServer) Tenant() TenantServiceServer { return s.TenantServer }
-func (s StaticServer) Thing() ThingServiceServer   { return s.ThingServer }
-func (s StaticServer) Audit() AuditServiceServer   { return s.AuditServer }
-func (s StaticServer) Holder() HolderServiceServer { return s.HolderServer }
-func (s StaticServer) Outbox() OutboxServiceServer { return s.OutboxServer }
+func (s StaticServer) Tenant() TenantServiceServer     { return s.TenantServer }
+func (s StaticServer) Holder() HolderServiceServer     { return s.HolderServer }
+func (s StaticServer) Identity() IdentityServiceServer { return s.IdentityServer }
+func (s StaticServer) Email() EmailServiceServer       { return s.EmailServer }
+func (s StaticServer) Site() SiteServiceServer         { return s.SiteServer }
+func (s StaticServer) Audit() AuditServiceServer       { return s.AuditServer }
+func (s StaticServer) Outbox() OutboxServiceServer     { return s.OutboxServer }
 
 type Client interface {
 	Tenant() TenantServiceClient
-	Thing() ThingServiceClient
-	Audit() AuditServiceClient
 	Holder() HolderServiceClient
+	Identity() IdentityServiceClient
+	Email() EmailServiceClient
+	Site() SiteServiceClient
+	Audit() AuditServiceClient
 	Outbox() OutboxServiceClient
 }
 
 func NewClient(c *grpc.ClientConn) Client {
 	return &client{
-		_Tenant: NewTenantServiceClient(c),
-		_Thing:  NewThingServiceClient(c),
-		_Audit:  NewAuditServiceClient(c),
-		_Holder: NewHolderServiceClient(c),
-		_Outbox: NewOutboxServiceClient(c),
+		_Tenant:   NewTenantServiceClient(c),
+		_Holder:   NewHolderServiceClient(c),
+		_Identity: NewIdentityServiceClient(c),
+		_Email:    NewEmailServiceClient(c),
+		_Site:     NewSiteServiceClient(c),
+		_Audit:    NewAuditServiceClient(c),
+		_Outbox:   NewOutboxServiceClient(c),
 	}
 }
 
 type client struct {
-	_Tenant TenantServiceClient
-	_Thing  ThingServiceClient
-	_Audit  AuditServiceClient
-	_Holder HolderServiceClient
-	_Outbox OutboxServiceClient
+	_Tenant   TenantServiceClient
+	_Holder   HolderServiceClient
+	_Identity IdentityServiceClient
+	_Email    EmailServiceClient
+	_Site     SiteServiceClient
+	_Audit    AuditServiceClient
+	_Outbox   OutboxServiceClient
 }
 
-func (c *client) Tenant() TenantServiceClient { return c._Tenant }
-func (c *client) Thing() ThingServiceClient   { return c._Thing }
-func (c *client) Audit() AuditServiceClient   { return c._Audit }
-func (c *client) Holder() HolderServiceClient { return c._Holder }
-func (c *client) Outbox() OutboxServiceClient { return c._Outbox }
+func (c *client) Tenant() TenantServiceClient     { return c._Tenant }
+func (c *client) Holder() HolderServiceClient     { return c._Holder }
+func (c *client) Identity() IdentityServiceClient { return c._Identity }
+func (c *client) Email() EmailServiceClient       { return c._Email }
+func (c *client) Site() SiteServiceClient         { return c._Site }
+func (c *client) Audit() AuditServiceClient       { return c._Audit }
+func (c *client) Outbox() OutboxServiceClient     { return c._Outbox }
 
 // Middleware is a server that delegates to another server.
 type Middleware interface {

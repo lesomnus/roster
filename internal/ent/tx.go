@@ -14,14 +14,18 @@ type Tx struct {
 	config
 	// Audit is the client for interacting with the Audit builders.
 	Audit *AuditClient
+	// Email is the client for interacting with the Email builders.
+	Email *EmailClient
 	// Holder is the client for interacting with the Holder builders.
 	Holder *HolderClient
+	// Identity is the client for interacting with the Identity builders.
+	Identity *IdentityClient
 	// Outbox is the client for interacting with the Outbox builders.
 	Outbox *OutboxClient
+	// Site is the client for interacting with the Site builders.
+	Site *SiteClient
 	// Tenant is the client for interacting with the Tenant builders.
 	Tenant *TenantClient
-	// Thing is the client for interacting with the Thing builders.
-	Thing *ThingClient
 
 	// lazily loaded.
 	client     *Client
@@ -154,10 +158,12 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.Audit = NewAuditClient(tx.config)
+	tx.Email = NewEmailClient(tx.config)
 	tx.Holder = NewHolderClient(tx.config)
+	tx.Identity = NewIdentityClient(tx.config)
 	tx.Outbox = NewOutboxClient(tx.config)
+	tx.Site = NewSiteClient(tx.config)
 	tx.Tenant = NewTenantClient(tx.config)
-	tx.Thing = NewThingClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.

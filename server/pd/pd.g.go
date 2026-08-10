@@ -30,11 +30,13 @@ import (
 	roster "github.com/lesomnus/roster"
 	ent "github.com/lesomnus/roster/internal/ent"
 	audit "github.com/lesomnus/roster/internal/ent/audit"
+	email "github.com/lesomnus/roster/internal/ent/email"
 	holder "github.com/lesomnus/roster/internal/ent/holder"
+	identity "github.com/lesomnus/roster/internal/ent/identity"
 	outbox "github.com/lesomnus/roster/internal/ent/outbox"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
+	site "github.com/lesomnus/roster/internal/ent/site"
 	tenant "github.com/lesomnus/roster/internal/ent/tenant"
-	thing "github.com/lesomnus/roster/internal/ent/thing"
 	bare "github.com/lesomnus/roster/server/bare"
 	entpage "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpage"
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
@@ -72,19 +74,23 @@ func Check() error { return version.Same(Payday) }
 // trail says what kind of thing it was long after the row is gone. So a
 // number is chosen once and never given to something else.
 const (
-	AuditDomain  pdid.Domain = 3 // "audit"
-	HolderDomain pdid.Domain = 2 // "holder"
-	OutboxDomain pdid.Domain = 4 // "outbox"
-	TenantDomain pdid.Domain = 1 // "tenant"
-	ThingDomain  pdid.Domain = 7 // "thing"
+	AuditDomain    pdid.Domain = 3 // "audit"
+	EmailDomain    pdid.Domain = 9 // "email"
+	HolderDomain   pdid.Domain = 2 // "holder"
+	IdentityDomain pdid.Domain = 8 // "identity"
+	OutboxDomain   pdid.Domain = 4 // "outbox"
+	SiteDomain     pdid.Domain = 7 // "site"
+	TenantDomain   pdid.Domain = 1 // "tenant"
 )
 
 func init() {
 	pdid.Register("app.Audit", AuditDomain, "audit")
+	pdid.Register("app.Email", EmailDomain, "email")
 	pdid.Register("app.Holder", HolderDomain, "holder")
+	pdid.Register("app.Identity", IdentityDomain, "identity")
 	pdid.Register("app.Outbox", OutboxDomain, "outbox")
+	pdid.Register("app.Site", SiteDomain, "site")
 	pdid.Register("app.Tenant", TenantDomain, "tenant")
-	pdid.Register("app.Thing", ThingDomain, "thing")
 
 	pdid.RegisterTenant(TenantDomain)
 }
@@ -92,11 +98,13 @@ func init() {
 // Domains is the domain of each entity by the full name of its message,
 // which is the name a [Minter] is asked about.
 var Domains = map[string]pdid.Domain{
-	"app.Audit":  AuditDomain,
-	"app.Holder": HolderDomain,
-	"app.Outbox": OutboxDomain,
-	"app.Tenant": TenantDomain,
-	"app.Thing":  ThingDomain,
+	"app.Audit":    AuditDomain,
+	"app.Email":    EmailDomain,
+	"app.Holder":   HolderDomain,
+	"app.Identity": IdentityDomain,
+	"app.Outbox":   OutboxDomain,
+	"app.Site":     SiteDomain,
+	"app.Tenant":   TenantDomain,
 }
 
 // Minter answers with the [bare.Minter] that gives every new row an
@@ -151,6 +159,16 @@ func (wall) AuditScope(ctx context.Context) (predicate.Audit, error) {
 	return audit.Or(audit.TenantIDIn(vs...), audit.ActorTenantIDIn(vs...)), nil
 }
 
+// EmailScope: a row belongs to the tenant its "holder.tenant" reaches.
+func (wall) EmailScope(ctx context.Context) (predicate.Email, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return email.HasHolderWith(holder.TenantIDIn(vs...)), nil
+}
+
 // HolderScope: a row belongs to the tenant its "tenant" reaches.
 func (wall) HolderScope(ctx context.Context) (predicate.Holder, error) {
 	vs, all, err := frame.Narrow(ctx)
@@ -161,9 +179,29 @@ func (wall) HolderScope(ctx context.Context) (predicate.Holder, error) {
 	return holder.TenantIDIn(vs...), nil
 }
 
+// IdentityScope: a row belongs to the tenant its "holder.tenant" reaches.
+func (wall) IdentityScope(ctx context.Context) (predicate.Identity, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return identity.HasHolderWith(holder.TenantIDIn(vs...)), nil
+}
+
 // OutboxScope: declared `global`, so it is not behind the wall at all.
 func (wall) OutboxScope(ctx context.Context) (predicate.Outbox, error) {
 	return nil, nil
+}
+
+// SiteScope: a row belongs to the tenant its "tenant" reaches.
+func (wall) SiteScope(ctx context.Context) (predicate.Site, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return site.TenantIDIn(vs...), nil
 }
 
 // TenantScope: a tenant is inside itself, which is what a tenant being a wall comes down to.
@@ -174,16 +212,6 @@ func (wall) TenantScope(ctx context.Context) (predicate.Tenant, error) {
 	}
 
 	return tenant.IDIn(vs...), nil
-}
-
-// ThingScope: a row belongs to the tenant its "tenant" reaches.
-func (wall) ThingScope(ctx context.Context) (predicate.Thing, error) {
-	vs, all, err := frame.Narrow(ctx)
-	if all || err != nil {
-		return nil, err
-	}
-
-	return thing.TenantIDIn(vs...), nil
 }
 
 // Sink is the server the stack is built on: the generated CRUD servers,
@@ -445,6 +473,331 @@ func filterAudit(f *roster.AuditFilter) (predicate.Audit, error) {
 	return audit.And(ps...), nil
 }
 
+type sinkEmail struct {
+	roster.EmailServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) Email() roster.EmailServiceServer {
+	return sinkEmail{s.Server.Email(), s.Server.Store, s.w, s.namer, s.joined}
+}
+
+// orderEmail is how Emails come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderEmail = []entpage.Order{
+	{Column: email.FieldDateCreated, Desc: false},
+	{Column: email.FieldID, Desc: false},
+}
+
+const (
+	// EmailPageSize is what a request that did not say gets, and
+	// EmailPageLimit is the most it gets however loudly it asks.
+	EmailPageSize  = 20
+	EmailPageLimit = 100
+
+	// EmailFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	EmailFilterLimit = 32
+)
+
+// List answers with the Emails that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkEmail) List(ctx context.Context, req *roster.EmailListRequest) (*roster.EmailListResponse, error) {
+	q := s.store.Db.Email.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.EmailNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > EmailFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), EmailFilterLimit)
+		}
+
+		ps := make([]predicate.Email, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterEmail(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(email.Or(ps...))
+	}
+
+	if v := req.GetAfter(); v != "" {
+		var (
+			at0 time.Time
+			at1 uuid.UUID
+		)
+		if err := entpage.Decode(v, &at0, &at1); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		p, err := entpage.After(orderEmail, []any{at0, at1})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := entpage.Size(int(req.GetSize()), EmailPageSize, EmailPageLimit)
+	us, err := q.Order(email.ByDateCreated(), email.ByID()).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*roster.Email, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := roster.EmailListResponse_builder{Items: items}.Build()
+	if more {
+		last := us[len(us)-1]
+		next, err := entpage.Encode(last.DateCreated, last.ID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(next)
+	}
+
+	return res, nil
+}
+
+// filterEmail turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterEmail(f *roster.EmailFilter) (predicate.Email, error) {
+	ps := make([]predicate.Email, 0, 1)
+	if f.HasRef() {
+		p, err := bare.EmailPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return email.And(ps...), nil
+}
+
+// EmailService is the prefix of every RPC of that service, which is how a
+// change is known to be about a Email. A service is named for the entity it
+// is about, so the name carries it.
+var EmailService = watch.ServiceOf(roster.EmailService_Get_FullMethodName)
+
+// Watch answers with the Emails this caller may see, as they are now and as
+// they change.
+//
+// What is sent is **state and never a delta**, which is what makes a stream
+// that missed something still correct: the next item about a row carries the
+// whole of it, so a client converges rather than replays. It is also what
+// makes the first message safe to duplicate against the ones after it.
+func (s sinkEmail) Watch(req *roster.EmailWatchRequest, out grpc.ServerStreamingServer[roster.EmailWatchResponse]) error {
+	ctx := out.Context()
+
+	// A watch with no filters is the whole table, forever. It is the one
+	// shape that has no cap at all, so it is the one shape refused.
+	fs := req.GetFilters()
+	switch {
+	case len(fs) == 0:
+		return status.Error(codes.InvalidArgument,
+			"filters: a watch says which rows it is about; one that says nothing is the whole table, for as long as it is open")
+	case len(fs) > EmailFilterLimit:
+		return status.Errorf(codes.InvalidArgument,
+			"filters: %d of them, and %d is the most one watch carries", len(fs), EmailFilterLimit)
+	}
+
+	// Resolved before anything is subscribed to, so a name that names
+	// nothing is an answer rather than a stream that quietly watches none.
+	watching, err := s.watchEmailKeys(ctx, fs)
+	if err != nil {
+		return err
+	}
+
+	var snapshot func(watch.Seen) error
+	if !req.GetSkipSnapshot() {
+		snapshot = func(sent watch.Seen) error { return s.watchNow(ctx, req, out, sent) }
+	}
+
+	if s.w == nil {
+		return status.Error(codes.Unimplemented,
+			"this deployment publishes no changes; see WithWatch")
+	}
+
+	return watch.Stream(ctx, s.w, EmailService, snapshot,
+		func(ks map[pdid.Id]string, sent watch.Seen) error {
+			items := make([]*roster.EmailWatchItem, 0, len(ks))
+			for k, action := range ks {
+				u, err := s.watchRead(ctx, watching, k)
+				if err != nil {
+					return err
+				}
+				if u == nil && !sent[k] {
+					// Not theirs, or not what they asked for, and they
+					// have never been told about it. A row that never
+					// matched is not news.
+					continue
+				}
+
+				sent[k] = u != nil
+				items = append(items, roster.EmailWatchItem_builder{
+					Id:     k.Bytes(),
+					Value:  u,
+					Action: action,
+				}.Build())
+			}
+			if len(items) == 0 {
+				return nil
+			}
+
+			return out.Send(roster.EmailWatchResponse_builder{Items: items}.Build())
+		})
+}
+
+// watchNow sends what matches right now, through the same List a caller
+// would have called -- so what a stream begins with and what a list answers
+// cannot disagree, and a client does not have to do both and race them.
+func (s sinkEmail) watchNow(
+	ctx context.Context, req *roster.EmailWatchRequest, out grpc.ServerStreamingServer[roster.EmailWatchResponse],
+	sent watch.Seen,
+) error {
+	after := ""
+	for {
+		res, err := s.List(ctx, roster.EmailListRequest_builder{
+			Filters: req.GetFilters(),
+			After:   after,
+		}.Build())
+		if err != nil {
+			return err
+		}
+
+		items := make([]*roster.EmailWatchItem, 0, len(res.GetItems()))
+		for _, u := range res.GetItems() {
+			k, err := pdid.From(u.GetId())
+			if err != nil {
+				return err
+			}
+
+			sent[k] = true
+			// No action: this is not something anybody asked for, it is
+			// what is already there.
+			items = append(items, roster.EmailWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+		}
+		if len(items) > 0 {
+			if err := out.Send(roster.EmailWatchResponse_builder{Items: items}.Build()); err != nil {
+				return err
+			}
+		}
+
+		if after = res.GetNext(); after == "" {
+			return nil
+		}
+	}
+}
+
+// watchRead answers with the row as it is now, or nil when it is no longer
+// one this caller may see -- erased, walled off, or no longer matching what
+// they asked for. The three are deliberately indistinguishable to a caller:
+// a stream that told them apart would be saying which rows stopped being
+// theirs, which is the thing the wall is for.
+//
+// The Get is what keeps the wall out of this file. It goes through the same
+// server every other read does, with the context of the caller who asked, so
+// a row they may not see comes back NotFound and is never sent.
+func (s sinkEmail) watchRead(
+	ctx context.Context, watching []pdid.Id, k pdid.Id,
+) (*roster.Email, error) {
+	// Not one of the rows this stream is about. Asked before the read, so a
+	// busy table costs a stream nothing for the rows it does not watch.
+	if !slices.Contains(watching, k) {
+		return nil, nil
+	}
+
+	v, err := s.Get(ctx, roster.EmailGetRequest_builder{
+		Ref: roster.EmailRef_builder{Id: k.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return v, nil
+}
+
+// watchEmailKeys is the rows a stream is about, resolved once when it opens.
+//
+// A filter names a row and a row is named several ways -- by identifier, or
+// by whatever unique index the schema declared. Resolving them here rather
+// than comparing them per event does three things: the comparison afterwards
+// is an identifier against an identifier, a name that names nothing is
+// refused when the stream opens rather than silently watching nothing, and a
+// row renamed while the stream is open goes on being the row that was asked
+// for -- which is what somebody watching a thing meant.
+func (s sinkEmail) watchEmailKeys(
+	ctx context.Context, fs []*roster.EmailFilter,
+) ([]pdid.Id, error) {
+	ks := make([]pdid.Id, 0, len(fs))
+	for i, f := range fs {
+		if !f.HasRef() {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters[%d]: a watch says which rows it is about by naming them", i)
+		}
+
+		v, err := s.Get(ctx, roster.EmailGetRequest_builder{Ref: f.GetRef()}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		k, err := pdid.From(v.GetId())
+		if err != nil {
+			return nil, err
+		}
+
+		ks = append(ks, k)
+	}
+
+	return ks, nil
+}
+
 type sinkHolder struct {
 	roster.HolderServiceServer
 	store  bare.Store
@@ -531,6 +884,730 @@ func (s sinkHolder) Patch(ctx context.Context, req *roster.HolderPatchRequest) (
 	return s.HolderServiceServer.Patch(ctx, req)
 }
 
+type sinkIdentity struct {
+	roster.IdentityServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) Identity() roster.IdentityServiceServer {
+	return sinkIdentity{s.Server.Identity(), s.Server.Store, s.w, s.namer, s.joined}
+}
+
+// orderIdentity is how Identitys come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderIdentity = []entpage.Order{
+	{Column: identity.FieldDateCreated, Desc: false},
+	{Column: identity.FieldID, Desc: false},
+}
+
+const (
+	// IdentityPageSize is what a request that did not say gets, and
+	// IdentityPageLimit is the most it gets however loudly it asks.
+	IdentityPageSize  = 20
+	IdentityPageLimit = 100
+
+	// IdentityFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	IdentityFilterLimit = 32
+)
+
+// List answers with the Identitys that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkIdentity) List(ctx context.Context, req *roster.IdentityListRequest) (*roster.IdentityListResponse, error) {
+	q := s.store.Db.Identity.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.IdentityNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > IdentityFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), IdentityFilterLimit)
+		}
+
+		ps := make([]predicate.Identity, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterIdentity(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(identity.Or(ps...))
+	}
+
+	if v := req.GetAfter(); v != "" {
+		var (
+			at0 time.Time
+			at1 uuid.UUID
+		)
+		if err := entpage.Decode(v, &at0, &at1); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		p, err := entpage.After(orderIdentity, []any{at0, at1})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := entpage.Size(int(req.GetSize()), IdentityPageSize, IdentityPageLimit)
+	us, err := q.Order(identity.ByDateCreated(), identity.ByID()).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*roster.Identity, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := roster.IdentityListResponse_builder{Items: items}.Build()
+	if more {
+		last := us[len(us)-1]
+		next, err := entpage.Encode(last.DateCreated, last.ID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(next)
+	}
+
+	return res, nil
+}
+
+// filterIdentity turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterIdentity(f *roster.IdentityFilter) (predicate.Identity, error) {
+	ps := make([]predicate.Identity, 0, 1)
+	if f.HasRef() {
+		p, err := bare.IdentityPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return identity.And(ps...), nil
+}
+
+// IdentityService is the prefix of every RPC of that service, which is how a
+// change is known to be about a Identity. A service is named for the entity it
+// is about, so the name carries it.
+var IdentityService = watch.ServiceOf(roster.IdentityService_Get_FullMethodName)
+
+// Watch answers with the Identitys this caller may see, as they are now and as
+// they change.
+//
+// What is sent is **state and never a delta**, which is what makes a stream
+// that missed something still correct: the next item about a row carries the
+// whole of it, so a client converges rather than replays. It is also what
+// makes the first message safe to duplicate against the ones after it.
+func (s sinkIdentity) Watch(req *roster.IdentityWatchRequest, out grpc.ServerStreamingServer[roster.IdentityWatchResponse]) error {
+	ctx := out.Context()
+
+	// A watch with no filters is the whole table, forever. It is the one
+	// shape that has no cap at all, so it is the one shape refused.
+	fs := req.GetFilters()
+	switch {
+	case len(fs) == 0:
+		return status.Error(codes.InvalidArgument,
+			"filters: a watch says which rows it is about; one that says nothing is the whole table, for as long as it is open")
+	case len(fs) > IdentityFilterLimit:
+		return status.Errorf(codes.InvalidArgument,
+			"filters: %d of them, and %d is the most one watch carries", len(fs), IdentityFilterLimit)
+	}
+
+	// Resolved before anything is subscribed to, so a name that names
+	// nothing is an answer rather than a stream that quietly watches none.
+	watching, err := s.watchIdentityKeys(ctx, fs)
+	if err != nil {
+		return err
+	}
+
+	var snapshot func(watch.Seen) error
+	if !req.GetSkipSnapshot() {
+		snapshot = func(sent watch.Seen) error { return s.watchNow(ctx, req, out, sent) }
+	}
+
+	if s.w == nil {
+		return status.Error(codes.Unimplemented,
+			"this deployment publishes no changes; see WithWatch")
+	}
+
+	return watch.Stream(ctx, s.w, IdentityService, snapshot,
+		func(ks map[pdid.Id]string, sent watch.Seen) error {
+			items := make([]*roster.IdentityWatchItem, 0, len(ks))
+			for k, action := range ks {
+				u, err := s.watchRead(ctx, watching, k)
+				if err != nil {
+					return err
+				}
+				if u == nil && !sent[k] {
+					// Not theirs, or not what they asked for, and they
+					// have never been told about it. A row that never
+					// matched is not news.
+					continue
+				}
+
+				sent[k] = u != nil
+				items = append(items, roster.IdentityWatchItem_builder{
+					Id:     k.Bytes(),
+					Value:  u,
+					Action: action,
+				}.Build())
+			}
+			if len(items) == 0 {
+				return nil
+			}
+
+			return out.Send(roster.IdentityWatchResponse_builder{Items: items}.Build())
+		})
+}
+
+// watchNow sends what matches right now, through the same List a caller
+// would have called -- so what a stream begins with and what a list answers
+// cannot disagree, and a client does not have to do both and race them.
+func (s sinkIdentity) watchNow(
+	ctx context.Context, req *roster.IdentityWatchRequest, out grpc.ServerStreamingServer[roster.IdentityWatchResponse],
+	sent watch.Seen,
+) error {
+	after := ""
+	for {
+		res, err := s.List(ctx, roster.IdentityListRequest_builder{
+			Filters: req.GetFilters(),
+			After:   after,
+		}.Build())
+		if err != nil {
+			return err
+		}
+
+		items := make([]*roster.IdentityWatchItem, 0, len(res.GetItems()))
+		for _, u := range res.GetItems() {
+			k, err := pdid.From(u.GetId())
+			if err != nil {
+				return err
+			}
+
+			sent[k] = true
+			// No action: this is not something anybody asked for, it is
+			// what is already there.
+			items = append(items, roster.IdentityWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+		}
+		if len(items) > 0 {
+			if err := out.Send(roster.IdentityWatchResponse_builder{Items: items}.Build()); err != nil {
+				return err
+			}
+		}
+
+		if after = res.GetNext(); after == "" {
+			return nil
+		}
+	}
+}
+
+// watchRead answers with the row as it is now, or nil when it is no longer
+// one this caller may see -- erased, walled off, or no longer matching what
+// they asked for. The three are deliberately indistinguishable to a caller:
+// a stream that told them apart would be saying which rows stopped being
+// theirs, which is the thing the wall is for.
+//
+// The Get is what keeps the wall out of this file. It goes through the same
+// server every other read does, with the context of the caller who asked, so
+// a row they may not see comes back NotFound and is never sent.
+func (s sinkIdentity) watchRead(
+	ctx context.Context, watching []pdid.Id, k pdid.Id,
+) (*roster.Identity, error) {
+	// Not one of the rows this stream is about. Asked before the read, so a
+	// busy table costs a stream nothing for the rows it does not watch.
+	if !slices.Contains(watching, k) {
+		return nil, nil
+	}
+
+	v, err := s.Get(ctx, roster.IdentityGetRequest_builder{
+		Ref: roster.IdentityRef_builder{Id: k.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return v, nil
+}
+
+// watchIdentityKeys is the rows a stream is about, resolved once when it opens.
+//
+// A filter names a row and a row is named several ways -- by identifier, or
+// by whatever unique index the schema declared. Resolving them here rather
+// than comparing them per event does three things: the comparison afterwards
+// is an identifier against an identifier, a name that names nothing is
+// refused when the stream opens rather than silently watching nothing, and a
+// row renamed while the stream is open goes on being the row that was asked
+// for -- which is what somebody watching a thing meant.
+func (s sinkIdentity) watchIdentityKeys(
+	ctx context.Context, fs []*roster.IdentityFilter,
+) ([]pdid.Id, error) {
+	ks := make([]pdid.Id, 0, len(fs))
+	for i, f := range fs {
+		if !f.HasRef() {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters[%d]: a watch says which rows it is about by naming them", i)
+		}
+
+		v, err := s.Get(ctx, roster.IdentityGetRequest_builder{Ref: f.GetRef()}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		k, err := pdid.From(v.GetId())
+		if err != nil {
+			return nil, err
+		}
+
+		ks = append(ks, k)
+	}
+
+	return ks, nil
+}
+
+type sinkSite struct {
+	roster.SiteServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) Site() roster.SiteServiceServer {
+	return sinkSite{s.Server.Site(), s.Server.Store, s.w, s.namer, s.joined}
+}
+
+// Add decides the name, and refuses one that was given and cannot be one.
+//
+// It goes through [Sink.WithNamer], which is unset in most deployments and
+// then means: fold what was given, and make a name up when nothing was --
+// for the reason `bare.Minter` makes a key up. An app whose rows have to
+// be named says so with `slug.Required`; see `slug.Names` for why that is
+// the way round it is.
+//
+// The request is copied rather than written to. It belongs to whoever
+// called, and for a call made in this process that is a message they may
+// still be holding -- a server that folded a caller's own field would be
+// changing a value they can read back.
+func (s sinkSite) Add(ctx context.Context, req *roster.SiteAddRequest) (*roster.Site, error) {
+	// How many names to try. More than one only when the caller named
+	// nothing -- then the name is this server's and a collision is this
+	// server's to resolve. A name the caller gave is theirs, and quietly
+	// choosing a different one would write a row they did not ask for.
+	//
+	// And only when this Add opens its own transaction; see [Sink.joined].
+	tries := 1
+	if req.GetAlias() == "" && !s.joined {
+		tries = slug.Tries
+	}
+
+	for try := 0; ; try++ {
+		v, err := slug.NameWith(ctx, s.namer, "app.Site", req.GetAlias(), req)
+		if err != nil {
+			return nil, pderr.At("alias", err)
+		}
+
+		// The request is copied rather than written to, and copied again on
+		// each try: it belongs to whoever called, and for a call made in this
+		// process that is a message they may still be holding.
+		r := proto.CloneOf(req)
+		r.SetAlias(v)
+
+		res, err := s.SiteServiceServer.Add(ctx, r)
+		if err == nil || try+1 >= tries || status.Code(err) != codes.AlreadyExists {
+			// Whatever it was, said in the words it was said in. Rewriting
+			// it into "no free name" would assert the one thing this cannot
+			// know -- a duplicate key is the same code -- and would say it
+			// loudest exactly when it is wrong.
+			return res, err
+		}
+	}
+}
+
+// Patch folds a name it was given, and says nothing about one it was not.
+//
+// The presence is the whole of the difference from [sinkSite.Add]: a patch
+// that does not mention the alias is not a patch setting it to the empty
+// string, and refusing one would make every patch of any other field carry
+// the name along.
+//
+// The namer is **not** asked here, and that is the second difference. It
+// decides the name of a row being made; a patch that cleared the alias is
+// a caller asking for something invalid, and answering that with an
+// invented name would hand them a row they did not ask for.
+func (s sinkSite) Patch(ctx context.Context, req *roster.SitePatchRequest) (*roster.Site, error) {
+	if !req.HasAlias() {
+		return s.SiteServiceServer.Patch(ctx, req)
+	}
+
+	v, err := slug.ParseAlias(req.GetAlias())
+	if err != nil {
+		return nil, pderr.At("alias", err)
+	}
+
+	req = proto.CloneOf(req)
+	req.SetAlias(v)
+
+	return s.SiteServiceServer.Patch(ctx, req)
+}
+
+// orderSite is how Sites come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderSite = []entpage.Order{
+	{Column: site.FieldDateCreated, Desc: false},
+	{Column: site.FieldID, Desc: false},
+}
+
+const (
+	// SitePageSize is what a request that did not say gets, and
+	// SitePageLimit is the most it gets however loudly it asks.
+	SitePageSize  = 20
+	SitePageLimit = 100
+
+	// SiteFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	SiteFilterLimit = 32
+)
+
+// List answers with the Sites that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkSite) List(ctx context.Context, req *roster.SiteListRequest) (*roster.SiteListResponse, error) {
+	q := s.store.Db.Site.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.SiteNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > SiteFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), SiteFilterLimit)
+		}
+
+		ps := make([]predicate.Site, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterSite(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(site.Or(ps...))
+	}
+
+	if v := req.GetAfter(); v != "" {
+		var (
+			at0 time.Time
+			at1 uuid.UUID
+		)
+		if err := entpage.Decode(v, &at0, &at1); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		p, err := entpage.After(orderSite, []any{at0, at1})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := entpage.Size(int(req.GetSize()), SitePageSize, SitePageLimit)
+	us, err := q.Order(site.ByDateCreated(), site.ByID()).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*roster.Site, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := roster.SiteListResponse_builder{Items: items}.Build()
+	if more {
+		last := us[len(us)-1]
+		next, err := entpage.Encode(last.DateCreated, last.ID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(next)
+	}
+
+	return res, nil
+}
+
+// filterSite turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterSite(f *roster.SiteFilter) (predicate.Site, error) {
+	ps := make([]predicate.Site, 0, 1)
+	if f.HasRef() {
+		p, err := bare.SitePick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return site.And(ps...), nil
+}
+
+// SiteService is the prefix of every RPC of that service, which is how a
+// change is known to be about a Site. A service is named for the entity it
+// is about, so the name carries it.
+var SiteService = watch.ServiceOf(roster.SiteService_Get_FullMethodName)
+
+// Watch answers with the Sites this caller may see, as they are now and as
+// they change.
+//
+// What is sent is **state and never a delta**, which is what makes a stream
+// that missed something still correct: the next item about a row carries the
+// whole of it, so a client converges rather than replays. It is also what
+// makes the first message safe to duplicate against the ones after it.
+func (s sinkSite) Watch(req *roster.SiteWatchRequest, out grpc.ServerStreamingServer[roster.SiteWatchResponse]) error {
+	ctx := out.Context()
+
+	// A watch with no filters is the whole table, forever. It is the one
+	// shape that has no cap at all, so it is the one shape refused.
+	fs := req.GetFilters()
+	switch {
+	case len(fs) == 0:
+		return status.Error(codes.InvalidArgument,
+			"filters: a watch says which rows it is about; one that says nothing is the whole table, for as long as it is open")
+	case len(fs) > SiteFilterLimit:
+		return status.Errorf(codes.InvalidArgument,
+			"filters: %d of them, and %d is the most one watch carries", len(fs), SiteFilterLimit)
+	}
+
+	// Resolved before anything is subscribed to, so a name that names
+	// nothing is an answer rather than a stream that quietly watches none.
+	watching, err := s.watchSiteKeys(ctx, fs)
+	if err != nil {
+		return err
+	}
+
+	var snapshot func(watch.Seen) error
+	if !req.GetSkipSnapshot() {
+		snapshot = func(sent watch.Seen) error { return s.watchNow(ctx, req, out, sent) }
+	}
+
+	if s.w == nil {
+		return status.Error(codes.Unimplemented,
+			"this deployment publishes no changes; see WithWatch")
+	}
+
+	return watch.Stream(ctx, s.w, SiteService, snapshot,
+		func(ks map[pdid.Id]string, sent watch.Seen) error {
+			items := make([]*roster.SiteWatchItem, 0, len(ks))
+			for k, action := range ks {
+				u, err := s.watchRead(ctx, watching, k)
+				if err != nil {
+					return err
+				}
+				if u == nil && !sent[k] {
+					// Not theirs, or not what they asked for, and they
+					// have never been told about it. A row that never
+					// matched is not news.
+					continue
+				}
+
+				sent[k] = u != nil
+				items = append(items, roster.SiteWatchItem_builder{
+					Id:     k.Bytes(),
+					Value:  u,
+					Action: action,
+				}.Build())
+			}
+			if len(items) == 0 {
+				return nil
+			}
+
+			return out.Send(roster.SiteWatchResponse_builder{Items: items}.Build())
+		})
+}
+
+// watchNow sends what matches right now, through the same List a caller
+// would have called -- so what a stream begins with and what a list answers
+// cannot disagree, and a client does not have to do both and race them.
+func (s sinkSite) watchNow(
+	ctx context.Context, req *roster.SiteWatchRequest, out grpc.ServerStreamingServer[roster.SiteWatchResponse],
+	sent watch.Seen,
+) error {
+	after := ""
+	for {
+		res, err := s.List(ctx, roster.SiteListRequest_builder{
+			Filters: req.GetFilters(),
+			After:   after,
+		}.Build())
+		if err != nil {
+			return err
+		}
+
+		items := make([]*roster.SiteWatchItem, 0, len(res.GetItems()))
+		for _, u := range res.GetItems() {
+			k, err := pdid.From(u.GetId())
+			if err != nil {
+				return err
+			}
+
+			sent[k] = true
+			// No action: this is not something anybody asked for, it is
+			// what is already there.
+			items = append(items, roster.SiteWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+		}
+		if len(items) > 0 {
+			if err := out.Send(roster.SiteWatchResponse_builder{Items: items}.Build()); err != nil {
+				return err
+			}
+		}
+
+		if after = res.GetNext(); after == "" {
+			return nil
+		}
+	}
+}
+
+// watchRead answers with the row as it is now, or nil when it is no longer
+// one this caller may see -- erased, walled off, or no longer matching what
+// they asked for. The three are deliberately indistinguishable to a caller:
+// a stream that told them apart would be saying which rows stopped being
+// theirs, which is the thing the wall is for.
+//
+// The Get is what keeps the wall out of this file. It goes through the same
+// server every other read does, with the context of the caller who asked, so
+// a row they may not see comes back NotFound and is never sent.
+func (s sinkSite) watchRead(
+	ctx context.Context, watching []pdid.Id, k pdid.Id,
+) (*roster.Site, error) {
+	// Not one of the rows this stream is about. Asked before the read, so a
+	// busy table costs a stream nothing for the rows it does not watch.
+	if !slices.Contains(watching, k) {
+		return nil, nil
+	}
+
+	v, err := s.Get(ctx, roster.SiteGetRequest_builder{
+		Ref: roster.SiteRef_builder{Id: k.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return v, nil
+}
+
+// watchSiteKeys is the rows a stream is about, resolved once when it opens.
+//
+// A filter names a row and a row is named several ways -- by identifier, or
+// by whatever unique index the schema declared. Resolving them here rather
+// than comparing them per event does three things: the comparison afterwards
+// is an identifier against an identifier, a name that names nothing is
+// refused when the stream opens rather than silently watching nothing, and a
+// row renamed while the stream is open goes on being the row that was asked
+// for -- which is what somebody watching a thing meant.
+func (s sinkSite) watchSiteKeys(
+	ctx context.Context, fs []*roster.SiteFilter,
+) ([]pdid.Id, error) {
+	ks := make([]pdid.Id, 0, len(fs))
+	for i, f := range fs {
+		if !f.HasRef() {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters[%d]: a watch says which rows it is about by naming them", i)
+		}
+
+		v, err := s.Get(ctx, roster.SiteGetRequest_builder{Ref: f.GetRef()}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		k, err := pdid.From(v.GetId())
+		if err != nil {
+			return nil, err
+		}
+
+		ks = append(ks, k)
+	}
+
+	return ks, nil
+}
+
 type sinkTenant struct {
 	roster.TenantServiceServer
 	store  bare.Store
@@ -615,405 +1692,6 @@ func (s sinkTenant) Patch(ctx context.Context, req *roster.TenantPatchRequest) (
 	req.SetAlias(v)
 
 	return s.TenantServiceServer.Patch(ctx, req)
-}
-
-type sinkThing struct {
-	roster.ThingServiceServer
-	store  bare.Store
-	w      *watch.Watch
-	namer  slug.Namer
-	joined bool
-}
-
-func (s Sink) Thing() roster.ThingServiceServer {
-	return sinkThing{s.Server.Thing(), s.Server.Store, s.w, s.namer, s.joined}
-}
-
-// Add decides the name, and refuses one that was given and cannot be one.
-//
-// It goes through [Sink.WithNamer], which is unset in most deployments and
-// then means: fold what was given, and make a name up when nothing was --
-// for the reason `bare.Minter` makes a key up. An app whose rows have to
-// be named says so with `slug.Required`; see `slug.Names` for why that is
-// the way round it is.
-//
-// The request is copied rather than written to. It belongs to whoever
-// called, and for a call made in this process that is a message they may
-// still be holding -- a server that folded a caller's own field would be
-// changing a value they can read back.
-func (s sinkThing) Add(ctx context.Context, req *roster.ThingAddRequest) (*roster.Thing, error) {
-	// How many names to try. More than one only when the caller named
-	// nothing -- then the name is this server's and a collision is this
-	// server's to resolve. A name the caller gave is theirs, and quietly
-	// choosing a different one would write a row they did not ask for.
-	//
-	// And only when this Add opens its own transaction; see [Sink.joined].
-	tries := 1
-	if req.GetAlias() == "" && !s.joined {
-		tries = slug.Tries
-	}
-
-	for try := 0; ; try++ {
-		v, err := slug.NameWith(ctx, s.namer, "app.Thing", req.GetAlias(), req)
-		if err != nil {
-			return nil, pderr.At("alias", err)
-		}
-
-		// The request is copied rather than written to, and copied again on
-		// each try: it belongs to whoever called, and for a call made in this
-		// process that is a message they may still be holding.
-		r := proto.CloneOf(req)
-		r.SetAlias(v)
-
-		res, err := s.ThingServiceServer.Add(ctx, r)
-		if err == nil || try+1 >= tries || status.Code(err) != codes.AlreadyExists {
-			// Whatever it was, said in the words it was said in. Rewriting
-			// it into "no free name" would assert the one thing this cannot
-			// know -- a duplicate key is the same code -- and would say it
-			// loudest exactly when it is wrong.
-			return res, err
-		}
-	}
-}
-
-// Patch folds a name it was given, and says nothing about one it was not.
-//
-// The presence is the whole of the difference from [sinkThing.Add]: a patch
-// that does not mention the alias is not a patch setting it to the empty
-// string, and refusing one would make every patch of any other field carry
-// the name along.
-//
-// The namer is **not** asked here, and that is the second difference. It
-// decides the name of a row being made; a patch that cleared the alias is
-// a caller asking for something invalid, and answering that with an
-// invented name would hand them a row they did not ask for.
-func (s sinkThing) Patch(ctx context.Context, req *roster.ThingPatchRequest) (*roster.Thing, error) {
-	if !req.HasAlias() {
-		return s.ThingServiceServer.Patch(ctx, req)
-	}
-
-	v, err := slug.ParseAlias(req.GetAlias())
-	if err != nil {
-		return nil, pderr.At("alias", err)
-	}
-
-	req = proto.CloneOf(req)
-	req.SetAlias(v)
-
-	return s.ThingServiceServer.Patch(ctx, req)
-}
-
-// orderThing is how Things come back.
-//
-// The last column is the key, and it is not decoration: a cursor cannot
-// tell apart two rows equal in every column of the order, so the page after
-// the first of them either repeats the second or skips it. Rows written by
-// one request are stamped a moment apart at best.
-var orderThing = []entpage.Order{
-	{Column: thing.FieldDateCreated, Desc: false},
-	{Column: thing.FieldID, Desc: false},
-}
-
-const (
-	// ThingPageSize is what a request that did not say gets, and
-	// ThingPageLimit is the most it gets however loudly it asks.
-	ThingPageSize  = 20
-	ThingPageLimit = 100
-
-	// ThingFilterLimit is how many filters one request may carry. Each is a
-	// predicate in the same query, so it is what says how much of the
-	// database a request may ask to read -- and it is refused rather than
-	// clamped, because dropping half the filters would answer a question
-	// nobody asked.
-	ThingFilterLimit = 32
-)
-
-// List answers with the Things that match any of the given filters, or with
-// every one there is if the request named none, a page at a time.
-func (s sinkThing) List(ctx context.Context, req *roster.ThingListRequest) (*roster.ThingListResponse, error) {
-	q := s.store.Db.Thing.Query()
-
-	// Through the same narrowing every generated read goes through, and not
-	// by asking the scope alone: what narrows a read is the wall today and
-	// the wall and something else tomorrow, and a list that reached past it
-	// would be the one read that missed the something else.
-	if p, err := bare.ThingNarrow(ctx, s.store.Scope, nil); err != nil {
-		return nil, err
-	} else if p != nil {
-		q.Where(p)
-	}
-
-	if fs := req.GetFilters(); len(fs) > 0 {
-		if len(fs) > ThingFilterLimit {
-			return nil, status.Errorf(codes.InvalidArgument,
-				"filters: %d of them, and %d is the most one list carries", len(fs), ThingFilterLimit)
-		}
-
-		ps := make([]predicate.Thing, 0, len(fs))
-		for i, f := range fs {
-			p, err := filterThing(f)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
-			}
-
-			ps = append(ps, p)
-		}
-
-		q.Where(thing.Or(ps...))
-	}
-
-	if v := req.GetAfter(); v != "" {
-		var (
-			at0 time.Time
-			at1 uuid.UUID
-		)
-		if err := entpage.Decode(v, &at0, &at1); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
-		}
-
-		p, err := entpage.After(orderThing, []any{at0, at1})
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
-		}
-
-		q.Where(p)
-	}
-
-	// One row more than the page, which is how "is there another" is answered
-	// without a second query and without a count. The extra is dropped before
-	// the answer is built; it was only ever asked for to see whether it was
-	// there -- so a full last page answers with no cursor rather than sending
-	// the caller back for an empty one.
-	size := entpage.Size(int(req.GetSize()), ThingPageSize, ThingPageLimit)
-	us, err := q.Order(thing.ByDateCreated(), thing.ByID()).Limit(size + 1).All(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	more := len(us) > size
-	if more {
-		us = us[:size]
-	}
-
-	items := make([]*roster.Thing, len(us))
-	for i, u := range us {
-		items[i] = u.Proto()
-	}
-
-	res := roster.ThingListResponse_builder{Items: items}.Build()
-	if more {
-		last := us[len(us)-1]
-		next, err := entpage.Encode(last.DateCreated, last.ID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "next: %s", err)
-		}
-
-		res.SetNext(next)
-	}
-
-	return res, nil
-}
-
-// filterThing turns one filter into the predicate that selects what it
-// names. Naming nothing is refused, since the request asked for "these" and
-// did not say which.
-func filterThing(f *roster.ThingFilter) (predicate.Thing, error) {
-	ps := make([]predicate.Thing, 0, 1)
-	if f.HasRef() {
-		p, err := bare.ThingPick(f.GetRef())
-		if err != nil {
-			return nil, err
-		}
-
-		ps = append(ps, p)
-	}
-	if len(ps) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
-	}
-
-	return thing.And(ps...), nil
-}
-
-// ThingService is the prefix of every RPC of that service, which is how a
-// change is known to be about a Thing. A service is named for the entity it
-// is about, so the name carries it.
-var ThingService = watch.ServiceOf(roster.ThingService_Get_FullMethodName)
-
-// Watch answers with the Things this caller may see, as they are now and as
-// they change.
-//
-// What is sent is **state and never a delta**, which is what makes a stream
-// that missed something still correct: the next item about a row carries the
-// whole of it, so a client converges rather than replays. It is also what
-// makes the first message safe to duplicate against the ones after it.
-func (s sinkThing) Watch(req *roster.ThingWatchRequest, out grpc.ServerStreamingServer[roster.ThingWatchResponse]) error {
-	ctx := out.Context()
-
-	// A watch with no filters is the whole table, forever. It is the one
-	// shape that has no cap at all, so it is the one shape refused.
-	fs := req.GetFilters()
-	switch {
-	case len(fs) == 0:
-		return status.Error(codes.InvalidArgument,
-			"filters: a watch says which rows it is about; one that says nothing is the whole table, for as long as it is open")
-	case len(fs) > ThingFilterLimit:
-		return status.Errorf(codes.InvalidArgument,
-			"filters: %d of them, and %d is the most one watch carries", len(fs), ThingFilterLimit)
-	}
-
-	// Resolved before anything is subscribed to, so a name that names
-	// nothing is an answer rather than a stream that quietly watches none.
-	watching, err := s.watchThingKeys(ctx, fs)
-	if err != nil {
-		return err
-	}
-
-	var snapshot func(watch.Seen) error
-	if !req.GetSkipSnapshot() {
-		snapshot = func(sent watch.Seen) error { return s.watchNow(ctx, req, out, sent) }
-	}
-
-	if s.w == nil {
-		return status.Error(codes.Unimplemented,
-			"this deployment publishes no changes; see WithWatch")
-	}
-
-	return watch.Stream(ctx, s.w, ThingService, snapshot,
-		func(ks map[pdid.Id]string, sent watch.Seen) error {
-			items := make([]*roster.ThingWatchItem, 0, len(ks))
-			for k, action := range ks {
-				u, err := s.watchRead(ctx, watching, k)
-				if err != nil {
-					return err
-				}
-				if u == nil && !sent[k] {
-					// Not theirs, or not what they asked for, and they
-					// have never been told about it. A row that never
-					// matched is not news.
-					continue
-				}
-
-				sent[k] = u != nil
-				items = append(items, roster.ThingWatchItem_builder{
-					Id:     k.Bytes(),
-					Value:  u,
-					Action: action,
-				}.Build())
-			}
-			if len(items) == 0 {
-				return nil
-			}
-
-			return out.Send(roster.ThingWatchResponse_builder{Items: items}.Build())
-		})
-}
-
-// watchNow sends what matches right now, through the same List a caller
-// would have called -- so what a stream begins with and what a list answers
-// cannot disagree, and a client does not have to do both and race them.
-func (s sinkThing) watchNow(
-	ctx context.Context, req *roster.ThingWatchRequest, out grpc.ServerStreamingServer[roster.ThingWatchResponse],
-	sent watch.Seen,
-) error {
-	after := ""
-	for {
-		res, err := s.List(ctx, roster.ThingListRequest_builder{
-			Filters: req.GetFilters(),
-			After:   after,
-		}.Build())
-		if err != nil {
-			return err
-		}
-
-		items := make([]*roster.ThingWatchItem, 0, len(res.GetItems()))
-		for _, u := range res.GetItems() {
-			k, err := pdid.From(u.GetId())
-			if err != nil {
-				return err
-			}
-
-			sent[k] = true
-			// No action: this is not something anybody asked for, it is
-			// what is already there.
-			items = append(items, roster.ThingWatchItem_builder{Id: u.GetId(), Value: u}.Build())
-		}
-		if len(items) > 0 {
-			if err := out.Send(roster.ThingWatchResponse_builder{Items: items}.Build()); err != nil {
-				return err
-			}
-		}
-
-		if after = res.GetNext(); after == "" {
-			return nil
-		}
-	}
-}
-
-// watchRead answers with the row as it is now, or nil when it is no longer
-// one this caller may see -- erased, walled off, or no longer matching what
-// they asked for. The three are deliberately indistinguishable to a caller:
-// a stream that told them apart would be saying which rows stopped being
-// theirs, which is the thing the wall is for.
-//
-// The Get is what keeps the wall out of this file. It goes through the same
-// server every other read does, with the context of the caller who asked, so
-// a row they may not see comes back NotFound and is never sent.
-func (s sinkThing) watchRead(
-	ctx context.Context, watching []pdid.Id, k pdid.Id,
-) (*roster.Thing, error) {
-	// Not one of the rows this stream is about. Asked before the read, so a
-	// busy table costs a stream nothing for the rows it does not watch.
-	if !slices.Contains(watching, k) {
-		return nil, nil
-	}
-
-	v, err := s.Get(ctx, roster.ThingGetRequest_builder{
-		Ref: roster.ThingRef_builder{Id: k.Bytes()}.Build(),
-	}.Build())
-	if err != nil {
-		if status.Code(err) == codes.NotFound {
-			return nil, nil
-		}
-
-		return nil, err
-	}
-
-	return v, nil
-}
-
-// watchThingKeys is the rows a stream is about, resolved once when it opens.
-//
-// A filter names a row and a row is named several ways -- by identifier, or
-// by whatever unique index the schema declared. Resolving them here rather
-// than comparing them per event does three things: the comparison afterwards
-// is an identifier against an identifier, a name that names nothing is
-// refused when the stream opens rather than silently watching nothing, and a
-// row renamed while the stream is open goes on being the row that was asked
-// for -- which is what somebody watching a thing meant.
-func (s sinkThing) watchThingKeys(
-	ctx context.Context, fs []*roster.ThingFilter,
-) ([]pdid.Id, error) {
-	ks := make([]pdid.Id, 0, len(fs))
-	for i, f := range fs {
-		if !f.HasRef() {
-			return nil, status.Errorf(codes.InvalidArgument,
-				"filters[%d]: a watch says which rows it is about by naming them", i)
-		}
-
-		v, err := s.Get(ctx, roster.ThingGetRequest_builder{Ref: f.GetRef()}.Build())
-		if err != nil {
-			return nil, err
-		}
-
-		k, err := pdid.From(v.GetId())
-		if err != nil {
-			return nil, err
-		}
-
-		ks = append(ks, k)
-	}
-
-	return ks, nil
 }
 
 // Gate is the layer that says what a caller may do with a request.
@@ -1126,16 +1804,88 @@ func (s gateHolder) Add(ctx context.Context, req *roster.HolderAddRequest) (*ros
 	return s.HolderServiceServer.Add(ctx, req)
 }
 
-type gateThing struct {
+type gateEmail struct {
 	Gate
-	roster.ThingServiceServer
+	roster.EmailServiceServer
 }
 
-func (s Gate) Thing() roster.ThingServiceServer {
-	return gateThing{s, s.Next().Thing()}
+func (s Gate) Email() roster.EmailServiceServer {
+	return gateEmail{s, s.Next().Email()}
 }
 
-// Add refuses a Thing put into a Tenant this caller cannot see.
+// Add refuses a Email put into a Holder this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `holder` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Holder, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.Add`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+func (s gateEmail) Add(ctx context.Context, req *roster.EmailAddRequest) (*roster.Email, error) {
+	if ref := req.GetHolder(); ref != nil {
+		if _, err := s.Gate.Next().Holder().Get(ctx, roster.HolderGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Holder")
+			}
+
+			return nil, err
+		}
+	}
+
+	return s.EmailServiceServer.Add(ctx, req)
+}
+
+type gateIdentity struct {
+	Gate
+	roster.IdentityServiceServer
+}
+
+func (s Gate) Identity() roster.IdentityServiceServer {
+	return gateIdentity{s, s.Next().Identity()}
+}
+
+// Add refuses a Identity put into a Holder this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `holder` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Holder, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.Add`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+func (s gateIdentity) Add(ctx context.Context, req *roster.IdentityAddRequest) (*roster.Identity, error) {
+	if ref := req.GetHolder(); ref != nil {
+		if _, err := s.Gate.Next().Holder().Get(ctx, roster.HolderGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Holder")
+			}
+
+			return nil, err
+		}
+	}
+
+	return s.IdentityServiceServer.Add(ctx, req)
+}
+
+type gateSite struct {
+	Gate
+	roster.SiteServiceServer
+}
+
+func (s Gate) Site() roster.SiteServiceServer {
+	return gateSite{s, s.Next().Site()}
+}
+
+// Add refuses a Site put into a Tenant this caller cannot see.
 //
 // The wall is a predicate and an Add has no query, so without this the
 // identifier in `tenant` becomes a foreign key with nothing consulted.
@@ -1146,7 +1896,7 @@ func (s Gate) Thing() roster.ThingServiceServer {
 // NotFound rather than a refusal, for the reason on `gateHolder.Add`:
 // that a row exists is itself something a caller who may not see it
 // should not be told.
-func (s gateThing) Add(ctx context.Context, req *roster.ThingAddRequest) (*roster.Thing, error) {
+func (s gateSite) Add(ctx context.Context, req *roster.SiteAddRequest) (*roster.Site, error) {
 	if ref := req.GetTenant(); ref != nil {
 		if _, err := s.Gate.Next().Tenant().Get(ctx, roster.TenantGetRequest_builder{
 			Ref: ref,
@@ -1159,7 +1909,7 @@ func (s gateThing) Add(ctx context.Context, req *roster.ThingAddRequest) (*roste
 		}
 	}
 
-	return s.ThingServiceServer.Add(ctx, req)
+	return s.SiteServiceServer.Add(ctx, req)
 }
 
 // Audit is the layer that refuses a trail row written by hand.
@@ -1318,9 +2068,91 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 
 		return k, b, nil
 
+	case EmailDomain:
+		row, err := s.Email().Get(ctx, roster.EmailGetRequest_builder{
+			Ref: roster.EmailRef_builder{Id: key.Bytes()}.Build(),
+		}.Build())
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				return uuid.Nil, []byte{}, nil
+			}
+
+			return uuid.Nil, nil, err
+		}
+
+		b, err := proto.Marshal(row)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		up, err := pdid.From(row.GetHolder().GetId())
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		k, _, err := subject(ctx, s, up)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		return k, b, nil
+
 	case HolderDomain:
 		row, err := s.Holder().Get(ctx, roster.HolderGetRequest_builder{
 			Ref: roster.HolderRef_builder{Id: key.Bytes()}.Build(),
+		}.Build())
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				return uuid.Nil, []byte{}, nil
+			}
+
+			return uuid.Nil, nil, err
+		}
+
+		b, err := proto.Marshal(row)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		k, err := uuid.FromBytes(row.GetTenant().GetId())
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		return k, b, nil
+
+	case IdentityDomain:
+		row, err := s.Identity().Get(ctx, roster.IdentityGetRequest_builder{
+			Ref: roster.IdentityRef_builder{Id: key.Bytes()}.Build(),
+		}.Build())
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				return uuid.Nil, []byte{}, nil
+			}
+
+			return uuid.Nil, nil, err
+		}
+
+		b, err := proto.Marshal(row)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		up, err := pdid.From(row.GetHolder().GetId())
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		k, _, err := subject(ctx, s, up)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		return k, b, nil
+
+	case SiteDomain:
+		row, err := s.Site().Get(ctx, roster.SiteGetRequest_builder{
+			Ref: roster.SiteRef_builder{Id: key.Bytes()}.Build(),
 		}.Build())
 		if err != nil {
 			if status.Code(err) == codes.NotFound {
@@ -1360,30 +2192,6 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 		}
 
 		k, err := uuid.FromBytes(row.GetId())
-		if err != nil {
-			return uuid.Nil, nil, err
-		}
-
-		return k, b, nil
-
-	case ThingDomain:
-		row, err := s.Thing().Get(ctx, roster.ThingGetRequest_builder{
-			Ref: roster.ThingRef_builder{Id: key.Bytes()}.Build(),
-		}.Build())
-		if err != nil {
-			if status.Code(err) == codes.NotFound {
-				return uuid.Nil, []byte{}, nil
-			}
-
-			return uuid.Nil, nil, err
-		}
-
-		b, err := proto.Marshal(row)
-		if err != nil {
-			return uuid.Nil, nil, err
-		}
-
-		k, err := uuid.FromBytes(row.GetTenant().GetId())
 		if err != nil {
 			return uuid.Nil, nil, err
 		}
@@ -1815,78 +2623,299 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
-	case roster.ThingService_Add_FullMethodName:
-		v := &roster.ThingAddRequest{}
+	case roster.HolderService_Add_FullMethodName:
+		v := &roster.HolderAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
 
-		res, err := s.Thing().Add(ctx, v)
+		res, err := s.Holder().Add(ctx, v)
 		if err != nil {
 			return nil, err
 		}
 
 		return anypb.New(res)
 
-	case roster.ThingService_Get_FullMethodName:
-		v := &roster.ThingGetRequest{}
+	case roster.HolderService_Get_FullMethodName:
+		v := &roster.HolderGetRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
 
-		res, err := s.Thing().Get(ctx, v)
+		res, err := s.Holder().Get(ctx, v)
 		if err != nil {
 			return nil, err
 		}
 
 		return anypb.New(res)
 
-	case roster.ThingService_Patch_FullMethodName:
-		v := &roster.ThingPatchRequest{}
+	case roster.HolderService_Patch_FullMethodName:
+		v := &roster.HolderPatchRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
 
-		res, err := s.Thing().Patch(ctx, v)
+		res, err := s.Holder().Patch(ctx, v)
 		if err != nil {
 			return nil, err
 		}
 
 		return anypb.New(res)
 
-	case roster.ThingService_Apply_FullMethodName:
-		v := &roster.ThingApplyRequest{}
+	case roster.HolderService_Apply_FullMethodName:
+		v := &roster.HolderApplyRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
 
-		res, err := s.Thing().Apply(ctx, v)
+		res, err := s.Holder().Apply(ctx, v)
 		if err != nil {
 			return nil, err
 		}
 
 		return anypb.New(res)
 
-	case roster.ThingService_Erase_FullMethodName:
-		v := &roster.ThingRef{}
+	case roster.HolderService_Erase_FullMethodName:
+		v := &roster.HolderRef{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
 
-		res, err := s.Thing().Erase(ctx, v)
+		res, err := s.Holder().Erase(ctx, v)
 		if err != nil {
 			return nil, err
 		}
 
 		return anypb.New(res)
 
-	case roster.ThingService_List_FullMethodName:
-		v := &roster.ThingListRequest{}
+	case roster.IdentityService_Add_FullMethodName:
+		v := &roster.IdentityAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
 
-		res, err := s.Thing().List(ctx, v)
+		res, err := s.Identity().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.IdentityService_Get_FullMethodName:
+		v := &roster.IdentityGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Identity().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.IdentityService_Patch_FullMethodName:
+		v := &roster.IdentityPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Identity().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.IdentityService_Apply_FullMethodName:
+		v := &roster.IdentityApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Identity().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.IdentityService_Erase_FullMethodName:
+		v := &roster.IdentityRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Identity().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.IdentityService_List_FullMethodName:
+		v := &roster.IdentityListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Identity().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.EmailService_Add_FullMethodName:
+		v := &roster.EmailAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Email().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.EmailService_Get_FullMethodName:
+		v := &roster.EmailGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Email().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.EmailService_Patch_FullMethodName:
+		v := &roster.EmailPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Email().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.EmailService_Apply_FullMethodName:
+		v := &roster.EmailApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Email().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.EmailService_Erase_FullMethodName:
+		v := &roster.EmailRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Email().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.EmailService_List_FullMethodName:
+		v := &roster.EmailListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Email().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.SiteService_Add_FullMethodName:
+		v := &roster.SiteAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Site().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.SiteService_Get_FullMethodName:
+		v := &roster.SiteGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Site().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.SiteService_Patch_FullMethodName:
+		v := &roster.SitePatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Site().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.SiteService_Apply_FullMethodName:
+		v := &roster.SiteApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Site().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.SiteService_Erase_FullMethodName:
+		v := &roster.SiteRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Site().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.SiteService_List_FullMethodName:
+		v := &roster.SiteListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Site().List(ctx, v)
 		if err != nil {
 			return nil, err
 		}
@@ -1965,71 +2994,6 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 		}
 
 		res, err := s.Audit().List(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case roster.HolderService_Add_FullMethodName:
-		v := &roster.HolderAddRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Holder().Add(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case roster.HolderService_Get_FullMethodName:
-		v := &roster.HolderGetRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Holder().Get(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case roster.HolderService_Patch_FullMethodName:
-		v := &roster.HolderPatchRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Holder().Patch(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case roster.HolderService_Apply_FullMethodName:
-		v := &roster.HolderApplyRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Holder().Apply(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case roster.HolderService_Erase_FullMethodName:
-		v := &roster.HolderRef{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Holder().Erase(ctx, v)
 		if err != nil {
 			return nil, err
 		}

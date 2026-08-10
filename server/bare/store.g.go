@@ -12,11 +12,13 @@ import (
 	roster "github.com/lesomnus/roster"
 	ent "github.com/lesomnus/roster/internal/ent"
 	audit "github.com/lesomnus/roster/internal/ent/audit"
+	email "github.com/lesomnus/roster/internal/ent/email"
 	holder "github.com/lesomnus/roster/internal/ent/holder"
+	identity "github.com/lesomnus/roster/internal/ent/identity"
 	outbox "github.com/lesomnus/roster/internal/ent/outbox"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
+	site "github.com/lesomnus/roster/internal/ent/site"
 	tenant "github.com/lesomnus/roster/internal/ent/tenant"
-	thing "github.com/lesomnus/roster/internal/ent/thing"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -313,9 +315,11 @@ func record(ctx context.Context, rec Recorder, db *ent.Client, c Change) error {
 // say about.
 type Scope interface {
 	TenantScope(ctx context.Context) (predicate.Tenant, error)
-	ThingScope(ctx context.Context) (predicate.Thing, error)
-	AuditScope(ctx context.Context) (predicate.Audit, error)
 	HolderScope(ctx context.Context) (predicate.Holder, error)
+	IdentityScope(ctx context.Context) (predicate.Identity, error)
+	EmailScope(ctx context.Context) (predicate.Email, error)
+	SiteScope(ctx context.Context) (predicate.Site, error)
+	AuditScope(ctx context.Context) (predicate.Audit, error)
 	OutboxScope(ctx context.Context) (predicate.Outbox, error)
 }
 
@@ -334,13 +338,19 @@ var _ Scope = Unscoped{}
 func (Unscoped) TenantScope(_ context.Context) (predicate.Tenant, error) {
 	return nil, nil
 }
-func (Unscoped) ThingScope(_ context.Context) (predicate.Thing, error) {
+func (Unscoped) HolderScope(_ context.Context) (predicate.Holder, error) {
+	return nil, nil
+}
+func (Unscoped) IdentityScope(_ context.Context) (predicate.Identity, error) {
+	return nil, nil
+}
+func (Unscoped) EmailScope(_ context.Context) (predicate.Email, error) {
+	return nil, nil
+}
+func (Unscoped) SiteScope(_ context.Context) (predicate.Site, error) {
 	return nil, nil
 }
 func (Unscoped) AuditScope(_ context.Context) (predicate.Audit, error) {
-	return nil, nil
-}
-func (Unscoped) HolderScope(_ context.Context) (predicate.Holder, error) {
 	return nil, nil
 }
 func (Unscoped) OutboxScope(_ context.Context) (predicate.Outbox, error) {
@@ -386,10 +396,10 @@ func (ss Scopes) TenantScope(ctx context.Context) (predicate.Tenant, error) {
 	return tenant.And(ps...), nil
 }
 
-func (ss Scopes) ThingScope(ctx context.Context) (predicate.Thing, error) {
-	ps := make([]predicate.Thing, 0, len(ss))
+func (ss Scopes) HolderScope(ctx context.Context) (predicate.Holder, error) {
+	ps := make([]predicate.Holder, 0, len(ss))
 	for _, s := range ss {
-		p, err := s.ThingScope(ctx)
+		p, err := s.HolderScope(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -403,7 +413,67 @@ func (ss Scopes) ThingScope(ctx context.Context) (predicate.Thing, error) {
 		return nil, nil
 	}
 
-	return thing.And(ps...), nil
+	return holder.And(ps...), nil
+}
+
+func (ss Scopes) IdentityScope(ctx context.Context) (predicate.Identity, error) {
+	ps := make([]predicate.Identity, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.IdentityScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return identity.And(ps...), nil
+}
+
+func (ss Scopes) EmailScope(ctx context.Context) (predicate.Email, error) {
+	ps := make([]predicate.Email, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.EmailScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return email.And(ps...), nil
+}
+
+func (ss Scopes) SiteScope(ctx context.Context) (predicate.Site, error) {
+	ps := make([]predicate.Site, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.SiteScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return site.And(ps...), nil
 }
 
 func (ss Scopes) AuditScope(ctx context.Context) (predicate.Audit, error) {
@@ -424,26 +494,6 @@ func (ss Scopes) AuditScope(ctx context.Context) (predicate.Audit, error) {
 	}
 
 	return audit.And(ps...), nil
-}
-
-func (ss Scopes) HolderScope(ctx context.Context) (predicate.Holder, error) {
-	ps := make([]predicate.Holder, 0, len(ss))
-	for _, s := range ss {
-		p, err := s.HolderScope(ctx)
-		if err != nil {
-			return nil, err
-		}
-		if p == nil {
-			continue
-		}
-
-		ps = append(ps, p)
-	}
-	if len(ps) == 0 {
-		return nil, nil
-	}
-
-	return holder.And(ps...), nil
 }
 
 func (ss Scopes) OutboxScope(ctx context.Context) (predicate.Outbox, error) {
@@ -546,7 +596,7 @@ func (s Store) now() time.Time {
 // is rendered for that dialect, not just what this server writes.
 //
 // That set is also what a soft erasure needs, so this is the whole
-// check. Holder and Thing free the names they held when a row
+// check. Email, Holder, Identity and Site free the names they held when a row
 // is erased, which is a unique index covering only the rows that are
 // still there -- a partial index, and the dialects above are the ones
 // that have one. MySQL does not, and ent writes the annotation out for
@@ -584,8 +634,10 @@ func (s Server) WithDriver(drv dialect.Driver) (roster.Server, error) {
 	return s, nil
 }
 
-func (s Server) Tenant() roster.TenantServiceServer { return TenantServiceServer{Store: s.Store} }
-func (s Server) Thing() roster.ThingServiceServer   { return ThingServiceServer{Store: s.Store} }
-func (s Server) Audit() roster.AuditServiceServer   { return AuditServiceServer{Store: s.Store} }
-func (s Server) Holder() roster.HolderServiceServer { return HolderServiceServer{Store: s.Store} }
-func (s Server) Outbox() roster.OutboxServiceServer { return OutboxServiceServer{Store: s.Store} }
+func (s Server) Tenant() roster.TenantServiceServer     { return TenantServiceServer{Store: s.Store} }
+func (s Server) Holder() roster.HolderServiceServer     { return HolderServiceServer{Store: s.Store} }
+func (s Server) Identity() roster.IdentityServiceServer { return IdentityServiceServer{Store: s.Store} }
+func (s Server) Email() roster.EmailServiceServer       { return EmailServiceServer{Store: s.Store} }
+func (s Server) Site() roster.SiteServiceServer         { return SiteServiceServer{Store: s.Store} }
+func (s Server) Audit() roster.AuditServiceServer       { return AuditServiceServer{Store: s.Store} }
+func (s Server) Outbox() roster.OutboxServiceServer     { return OutboxServiceServer{Store: s.Store} }

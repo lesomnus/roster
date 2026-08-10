@@ -135,6 +135,25 @@ carries no site edge and is narrowed by tenant alone.
 This is a real limit of the second axis rather than a modelling mistake, and it
 is written here so the next person does not try to force it.
 
+### D6 · A timestamp that means "or never" says `nullable: true`
+
+`Email.date_verified` is a `google.protobuf.Timestamp`, and a message field has
+presence in the generated API — `HasDateVerified` exists. A NOT NULL column
+cannot keep that: an address nobody ever verified reads back as verified at the
+zero time, and `Has` says yes.
+
+So it is declared nullable, which is the honest declaration and not a
+workaround. **What payday should do about the dishonest one is logged below.**
+
+### D7 · Two databases from the first day
+
+Every test runs on SQLite by default and on PostgreSQL when `PDTEST_POSTGRES`
+names one. SQLite needs no server, so the fast loop stays fast; PostgreSQL is
+what anybody deploys on, and the two disagree exactly where mistakes hide.
+
+roster is the first app to use `pdtest.DB`, and it found a defect in it on the
+first run — see F2.
+
 ### D5 · Credential is separate from Holder
 
 The password hash, and later a TOTP secret, are their own row.
@@ -150,12 +169,68 @@ and lockout in two places.
 
 ---
 
+---
+
+## What roster found in payday
+
+The point of the exercise. Each was fixed upstream rather than worked around
+here, which is the rule.
+
+### F1 · `pd new` wrote a scaffold that was not gofmt-clean
+
+Two imports the wrong way round in `cmd/serve.go`, so every app payday
+scaffolds began life failing its own first format check. Fixed in the template,
+and payday's CI now runs gofmt over a fresh scaffold — the formatting is a
+property an app inherits rather than chooses.
+
+*payday `0e78d88`.*
+
+### F2 · `pdtest.DB` answered a driver an app could not open
+
+It handed back `"pgx"` without registering it with `config`, and a
+`config.DbConfig` can only name a registered driver. An app building its harness
+the obvious way got `unknown driver "pgx"` the moment it pointed at PostgreSQL.
+
+payday's own apptest never saw it, because the `dbpgx` import had been added
+there while wiring it up — the app carried the fix and the helper stayed broken
+for the next one. That import is now gone, since its being there is what made
+this invisible.
+
+*payday `02fc7c9`.*
+
+### F3 · A non-nullable message field lies about presence — **open**
+
+The one above (D6) as a payday question rather than a roster one. A
+`google.protobuf.Timestamp` with no `nullable`, no `default` and no marker
+generates a NOT NULL column, while the API it generates beside it has `Has…`.
+The two cannot both be true, and the caller is told a value it never set is set.
+
+It should be a generation failure, the way everything else that fails quietly
+is: *this field has presence in the API and nowhere to keep it — say
+`nullable: true` or give it a default.* Not attempted yet, because the rule has
+to leave `date_created` (`default: ""`), `date_updated` (`version: {}`) and
+`date_erased` (`erased: {}`) alone, and getting that boundary wrong breaks every
+existing schema.
+
+---
+
 ## Progress
 
 | Phase | State |
 | --- | --- |
 | 0 · repo, plan, rules | **done** |
-| 1 · schema | not started |
-| 2 · payday fixes | — |
+| 1 · schema — Site, Identity, Email | **done**, 15 tests, both databases |
+| 1b · Team, memberships, Credential | next |
+| 2 · payday fixes | F1 and F2 done, F3 open |
 | 3 · app layer | — |
 | 4 · keys, sync, console | — |
+
+### Open questions for whoever reads this next
+
+- **The repository is private.** custody is public; making roster public was
+  refused by a permission check rather than decided, so it is worth an explicit
+  choice.
+- **F3** above: whether payday should refuse the declaration that lies.
+- **Does the second axis earn its place here?** `Site` is field 3's subject, but
+  nothing carries the edge yet — `Team` will. Until something does, D4 is a
+  claim rather than a demonstration.

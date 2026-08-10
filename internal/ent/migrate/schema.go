@@ -50,6 +50,52 @@ var (
 			},
 		},
 	}
+	// EmailColumns holds the columns for the "email" table.
+	EmailColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "address", Type: field.TypeString},
+		{Name: "date_verified", Type: field.TypeTime, Nullable: true},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "holder_id", Type: field.TypeUUID},
+		{Name: "vouched_by_id", Type: field.TypeUUID, Nullable: true},
+	}
+	// EmailTable holds the schema information for the "email" table.
+	EmailTable = &schema.Table{
+		Name:       "email",
+		Columns:    EmailColumns,
+		PrimaryKey: []*schema.Column{EmailColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "email_holder_holder",
+				Columns:    []*schema.Column{EmailColumns[6]},
+				RefColumns: []*schema.Column{HolderColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "email_identity_vouched_by",
+				Columns:    []*schema.Column{EmailColumns[7]},
+				RefColumns: []*schema.Column{IdentityColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "email_date_created_id",
+				Unique:  false,
+				Columns: []*schema.Column{EmailColumns[5], EmailColumns[0]},
+			},
+			{
+				Name:    "email_address_holder_id",
+				Unique:  true,
+				Columns: []*schema.Column{EmailColumns[1], EmailColumns[6]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
 	// HolderColumns holds the columns for the "holder" table.
 	HolderColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
@@ -95,6 +141,45 @@ var (
 			},
 		},
 	}
+	// IdentityColumns holds the columns for the "identity" table.
+	IdentityColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "provider", Type: field.TypeString},
+		{Name: "subject", Type: field.TypeString},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "holder_id", Type: field.TypeUUID},
+	}
+	// IdentityTable holds the schema information for the "identity" table.
+	IdentityTable = &schema.Table{
+		Name:       "identity",
+		Columns:    IdentityColumns,
+		PrimaryKey: []*schema.Column{IdentityColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "identity_holder_holder",
+				Columns:    []*schema.Column{IdentityColumns[6]},
+				RefColumns: []*schema.Column{HolderColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "identity_date_created_id",
+				Unique:  false,
+				Columns: []*schema.Column{IdentityColumns[5], IdentityColumns[0]},
+			},
+			{
+				Name:    "identity_provider_subject",
+				Unique:  true,
+				Columns: []*schema.Column{IdentityColumns[1], IdentityColumns[2]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
 	// OutboxColumns holds the columns for the "outbox" table.
 	OutboxColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
@@ -119,6 +204,47 @@ var (
 			},
 		},
 	}
+	// SiteColumns holds the columns for the "site" table.
+	SiteColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "alias", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "desc", Type: field.TypeString},
+		{Name: "labels", Type: field.TypeJSON, Nullable: true},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "tenant_id", Type: field.TypeUUID},
+	}
+	// SiteTable holds the schema information for the "site" table.
+	SiteTable = &schema.Table{
+		Name:       "site",
+		Columns:    SiteColumns,
+		PrimaryKey: []*schema.Column{SiteColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "site_tenant_tenant",
+				Columns:    []*schema.Column{SiteColumns[8]},
+				RefColumns: []*schema.Column{TenantColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "site_date_created_id",
+				Unique:  false,
+				Columns: []*schema.Column{SiteColumns[7], SiteColumns[0]},
+			},
+			{
+				Name:    "site_alias_tenant_id",
+				Unique:  true,
+				Columns: []*schema.Column{SiteColumns[1], SiteColumns[8]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
 	// TenantColumns holds the columns for the "tenant" table.
 	TenantColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
@@ -135,52 +261,15 @@ var (
 		Columns:    TenantColumns,
 		PrimaryKey: []*schema.Column{TenantColumns[0]},
 	}
-	// ThingColumns holds the columns for the "thing" table.
-	ThingColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "alias", Type: field.TypeString},
-		{Name: "desc", Type: field.TypeString},
-		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
-		{Name: "date_updated", Type: field.TypeTime},
-		{Name: "date_created", Type: field.TypeTime, Nullable: true},
-		{Name: "tenant_id", Type: field.TypeUUID},
-	}
-	// ThingTable holds the schema information for the "thing" table.
-	ThingTable = &schema.Table{
-		Name:       "thing",
-		Columns:    ThingColumns,
-		PrimaryKey: []*schema.Column{ThingColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "thing_tenant_tenant",
-				Columns:    []*schema.Column{ThingColumns[6]},
-				RefColumns: []*schema.Column{TenantColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "thing_date_created_id",
-				Unique:  false,
-				Columns: []*schema.Column{ThingColumns[5], ThingColumns[0]},
-			},
-			{
-				Name:    "thing_alias_tenant_id",
-				Unique:  true,
-				Columns: []*schema.Column{ThingColumns[1], ThingColumns[6]},
-				Annotation: &entsql.IndexAnnotation{
-					Where: "date_erased IS NULL",
-				},
-			},
-		},
-	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		AuditTable,
+		EmailTable,
 		HolderTable,
+		IdentityTable,
 		OutboxTable,
+		SiteTable,
 		TenantTable,
-		ThingTable,
 	}
 )
 
@@ -188,18 +277,27 @@ func init() {
 	AuditTable.Annotation = &entsql.Annotation{
 		Table: "audit",
 	}
+	EmailTable.ForeignKeys[0].RefTable = HolderTable
+	EmailTable.ForeignKeys[1].RefTable = IdentityTable
+	EmailTable.Annotation = &entsql.Annotation{
+		Table: "email",
+	}
 	HolderTable.ForeignKeys[0].RefTable = TenantTable
 	HolderTable.Annotation = &entsql.Annotation{
 		Table: "holder",
 	}
+	IdentityTable.ForeignKeys[0].RefTable = HolderTable
+	IdentityTable.Annotation = &entsql.Annotation{
+		Table: "identity",
+	}
 	OutboxTable.Annotation = &entsql.Annotation{
 		Table: "outbox",
 	}
+	SiteTable.ForeignKeys[0].RefTable = TenantTable
+	SiteTable.Annotation = &entsql.Annotation{
+		Table: "site",
+	}
 	TenantTable.Annotation = &entsql.Annotation{
 		Table: "tenant",
-	}
-	ThingTable.ForeignKeys[0].RefTable = TenantTable
-	ThingTable.Annotation = &entsql.Annotation{
-		Table: "thing",
 	}
 }

@@ -13,10 +13,12 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/lesomnus/roster/internal/ent/audit"
+	"github.com/lesomnus/roster/internal/ent/email"
 	"github.com/lesomnus/roster/internal/ent/holder"
+	"github.com/lesomnus/roster/internal/ent/identity"
 	"github.com/lesomnus/roster/internal/ent/outbox"
+	"github.com/lesomnus/roster/internal/ent/site"
 	"github.com/lesomnus/roster/internal/ent/tenant"
-	"github.com/lesomnus/roster/internal/ent/thing"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -77,11 +79,13 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			audit.Table:  audit.ValidColumn,
-			holder.Table: holder.ValidColumn,
-			outbox.Table: outbox.ValidColumn,
-			tenant.Table: tenant.ValidColumn,
-			thing.Table:  thing.ValidColumn,
+			audit.Table:    audit.ValidColumn,
+			email.Table:    email.ValidColumn,
+			holder.Table:   holder.ValidColumn,
+			identity.Table: identity.ValidColumn,
+			outbox.Table:   outbox.ValidColumn,
+			site.Table:     site.ValidColumn,
+			tenant.Table:   tenant.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

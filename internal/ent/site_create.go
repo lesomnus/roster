@@ -11,57 +11,69 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/lesomnus/roster/internal/ent/site"
 	"github.com/lesomnus/roster/internal/ent/tenant"
-	"github.com/lesomnus/roster/internal/ent/thing"
 )
 
-// ThingCreate is the builder for creating a Thing entity.
-type ThingCreate struct {
+// SiteCreate is the builder for creating a Site entity.
+type SiteCreate struct {
 	config
-	mutation *ThingMutation
+	mutation *SiteMutation
 	hooks    []Hook
 }
 
 // SetAlias sets the "alias" field.
-func (_c *ThingCreate) SetAlias(v string) *ThingCreate {
+func (_c *SiteCreate) SetAlias(v string) *SiteCreate {
 	_c.mutation.SetAlias(v)
 	return _c
 }
 
+// SetName sets the "name" field.
+func (_c *SiteCreate) SetName(v string) *SiteCreate {
+	_c.mutation.SetName(v)
+	return _c
+}
+
 // SetDesc sets the "desc" field.
-func (_c *ThingCreate) SetDesc(v string) *ThingCreate {
+func (_c *SiteCreate) SetDesc(v string) *SiteCreate {
 	_c.mutation.SetDesc(v)
 	return _c
 }
 
+// SetLabels sets the "labels" field.
+func (_c *SiteCreate) SetLabels(v map[string]string) *SiteCreate {
+	_c.mutation.SetLabels(v)
+	return _c
+}
+
+// SetDateUpdated sets the "date_updated" field.
+func (_c *SiteCreate) SetDateUpdated(v time.Time) *SiteCreate {
+	_c.mutation.SetDateUpdated(v)
+	return _c
+}
+
 // SetDateErased sets the "date_erased" field.
-func (_c *ThingCreate) SetDateErased(v time.Time) *ThingCreate {
+func (_c *SiteCreate) SetDateErased(v time.Time) *SiteCreate {
 	_c.mutation.SetDateErased(v)
 	return _c
 }
 
 // SetNillableDateErased sets the "date_erased" field if the given value is not nil.
-func (_c *ThingCreate) SetNillableDateErased(v *time.Time) *ThingCreate {
+func (_c *SiteCreate) SetNillableDateErased(v *time.Time) *SiteCreate {
 	if v != nil {
 		_c.SetDateErased(*v)
 	}
 	return _c
 }
 
-// SetDateUpdated sets the "date_updated" field.
-func (_c *ThingCreate) SetDateUpdated(v time.Time) *ThingCreate {
-	_c.mutation.SetDateUpdated(v)
-	return _c
-}
-
 // SetDateCreated sets the "date_created" field.
-func (_c *ThingCreate) SetDateCreated(v time.Time) *ThingCreate {
+func (_c *SiteCreate) SetDateCreated(v time.Time) *SiteCreate {
 	_c.mutation.SetDateCreated(v)
 	return _c
 }
 
 // SetNillableDateCreated sets the "date_created" field if the given value is not nil.
-func (_c *ThingCreate) SetNillableDateCreated(v *time.Time) *ThingCreate {
+func (_c *SiteCreate) SetNillableDateCreated(v *time.Time) *SiteCreate {
 	if v != nil {
 		_c.SetDateCreated(*v)
 	}
@@ -69,34 +81,34 @@ func (_c *ThingCreate) SetNillableDateCreated(v *time.Time) *ThingCreate {
 }
 
 // SetTenantID sets the "tenant_id" field.
-func (_c *ThingCreate) SetTenantID(v uuid.UUID) *ThingCreate {
+func (_c *SiteCreate) SetTenantID(v uuid.UUID) *SiteCreate {
 	_c.mutation.SetTenantID(v)
 	return _c
 }
 
 // SetID sets the "id" field.
-func (_c *ThingCreate) SetID(v uuid.UUID) *ThingCreate {
+func (_c *SiteCreate) SetID(v uuid.UUID) *SiteCreate {
 	_c.mutation.SetID(v)
 	return _c
 }
 
 // SetTenant sets the "tenant" edge to the Tenant entity.
-func (_c *ThingCreate) SetTenant(v *Tenant) *ThingCreate {
+func (_c *SiteCreate) SetTenant(v *Tenant) *SiteCreate {
 	return _c.SetTenantID(v.ID)
 }
 
-// Mutation returns the ThingMutation object of the builder.
-func (_c *ThingCreate) Mutation() *ThingMutation {
+// Mutation returns the SiteMutation object of the builder.
+func (_c *SiteCreate) Mutation() *SiteMutation {
 	return _c.mutation
 }
 
-// Save creates the Thing in the database.
-func (_c *ThingCreate) Save(ctx context.Context) (*Thing, error) {
+// Save creates the Site in the database.
+func (_c *SiteCreate) Save(ctx context.Context) (*Site, error) {
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (_c *ThingCreate) SaveX(ctx context.Context) *Thing {
+func (_c *SiteCreate) SaveX(ctx context.Context) *Site {
 	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -105,39 +117,42 @@ func (_c *ThingCreate) SaveX(ctx context.Context) *Thing {
 }
 
 // Exec executes the query.
-func (_c *ThingCreate) Exec(ctx context.Context) error {
+func (_c *SiteCreate) Exec(ctx context.Context) error {
 	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_c *ThingCreate) ExecX(ctx context.Context) {
+func (_c *SiteCreate) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_c *ThingCreate) check() error {
+func (_c *SiteCreate) check() error {
 	if _, ok := _c.mutation.Alias(); !ok {
-		return &ValidationError{Name: "alias", err: errors.New(`ent: missing required field "Thing.alias"`)}
+		return &ValidationError{Name: "alias", err: errors.New(`ent: missing required field "Site.alias"`)}
+	}
+	if _, ok := _c.mutation.Name(); !ok {
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Site.name"`)}
 	}
 	if _, ok := _c.mutation.Desc(); !ok {
-		return &ValidationError{Name: "desc", err: errors.New(`ent: missing required field "Thing.desc"`)}
+		return &ValidationError{Name: "desc", err: errors.New(`ent: missing required field "Site.desc"`)}
 	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
-		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Thing.date_updated"`)}
+		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Site.date_updated"`)}
 	}
 	if _, ok := _c.mutation.TenantID(); !ok {
-		return &ValidationError{Name: "tenant_id", err: errors.New(`ent: missing required field "Thing.tenant_id"`)}
+		return &ValidationError{Name: "tenant_id", err: errors.New(`ent: missing required field "Site.tenant_id"`)}
 	}
 	if len(_c.mutation.TenantIDs()) == 0 {
-		return &ValidationError{Name: "tenant", err: errors.New(`ent: missing required edge "Thing.tenant"`)}
+		return &ValidationError{Name: "tenant", err: errors.New(`ent: missing required edge "Site.tenant"`)}
 	}
 	return nil
 }
 
-func (_c *ThingCreate) sqlSave(ctx context.Context) (*Thing, error) {
+func (_c *SiteCreate) sqlSave(ctx context.Context) (*Site, error) {
 	if err := _c.check(); err != nil {
 		return nil, err
 	}
@@ -160,41 +175,49 @@ func (_c *ThingCreate) sqlSave(ctx context.Context) (*Thing, error) {
 	return _node, nil
 }
 
-func (_c *ThingCreate) createSpec() (*Thing, *sqlgraph.CreateSpec) {
+func (_c *SiteCreate) createSpec() (*Site, *sqlgraph.CreateSpec) {
 	var (
-		_node = &Thing{config: _c.config}
-		_spec = sqlgraph.NewCreateSpec(thing.Table, sqlgraph.NewFieldSpec(thing.FieldID, field.TypeUUID))
+		_node = &Site{config: _c.config}
+		_spec = sqlgraph.NewCreateSpec(site.Table, sqlgraph.NewFieldSpec(site.FieldID, field.TypeUUID))
 	)
 	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
 	if value, ok := _c.mutation.Alias(); ok {
-		_spec.SetField(thing.FieldAlias, field.TypeString, value)
+		_spec.SetField(site.FieldAlias, field.TypeString, value)
 		_node.Alias = value
 	}
+	if value, ok := _c.mutation.Name(); ok {
+		_spec.SetField(site.FieldName, field.TypeString, value)
+		_node.Name = value
+	}
 	if value, ok := _c.mutation.Desc(); ok {
-		_spec.SetField(thing.FieldDesc, field.TypeString, value)
+		_spec.SetField(site.FieldDesc, field.TypeString, value)
 		_node.Desc = value
 	}
-	if value, ok := _c.mutation.DateErased(); ok {
-		_spec.SetField(thing.FieldDateErased, field.TypeTime, value)
-		_node.DateErased = &value
+	if value, ok := _c.mutation.Labels(); ok {
+		_spec.SetField(site.FieldLabels, field.TypeJSON, value)
+		_node.Labels = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
-		_spec.SetField(thing.FieldDateUpdated, field.TypeTime, value)
+		_spec.SetField(site.FieldDateUpdated, field.TypeTime, value)
 		_node.DateUpdated = value
 	}
+	if value, ok := _c.mutation.DateErased(); ok {
+		_spec.SetField(site.FieldDateErased, field.TypeTime, value)
+		_node.DateErased = &value
+	}
 	if value, ok := _c.mutation.DateCreated(); ok {
-		_spec.SetField(thing.FieldDateCreated, field.TypeTime, value)
+		_spec.SetField(site.FieldDateCreated, field.TypeTime, value)
 		_node.DateCreated = value
 	}
 	if nodes := _c.mutation.TenantIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   thing.TenantTable,
-			Columns: []string{thing.TenantColumn},
+			Table:   site.TenantTable,
+			Columns: []string{site.TenantColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(tenant.FieldID, field.TypeUUID),
@@ -209,26 +232,26 @@ func (_c *ThingCreate) createSpec() (*Thing, *sqlgraph.CreateSpec) {
 	return _node, _spec
 }
 
-// ThingCreateBulk is the builder for creating many Thing entities in bulk.
-type ThingCreateBulk struct {
+// SiteCreateBulk is the builder for creating many Site entities in bulk.
+type SiteCreateBulk struct {
 	config
 	err      error
-	builders []*ThingCreate
+	builders []*SiteCreate
 }
 
-// Save creates the Thing entities in the database.
-func (_c *ThingCreateBulk) Save(ctx context.Context) ([]*Thing, error) {
+// Save creates the Site entities in the database.
+func (_c *SiteCreateBulk) Save(ctx context.Context) ([]*Site, error) {
 	if _c.err != nil {
 		return nil, _c.err
 	}
 	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
-	nodes := make([]*Thing, len(_c.builders))
+	nodes := make([]*Site, len(_c.builders))
 	mutators := make([]Mutator, len(_c.builders))
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				mutation, ok := m.(*ThingMutation)
+				mutation, ok := m.(*SiteMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
 				}
@@ -271,7 +294,7 @@ func (_c *ThingCreateBulk) Save(ctx context.Context) ([]*Thing, error) {
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_c *ThingCreateBulk) SaveX(ctx context.Context) []*Thing {
+func (_c *SiteCreateBulk) SaveX(ctx context.Context) []*Site {
 	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -280,13 +303,13 @@ func (_c *ThingCreateBulk) SaveX(ctx context.Context) []*Thing {
 }
 
 // Exec executes the query.
-func (_c *ThingCreateBulk) Exec(ctx context.Context) error {
+func (_c *SiteCreateBulk) Exec(ctx context.Context) error {
 	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_c *ThingCreateBulk) ExecX(ctx context.Context) {
+func (_c *SiteCreateBulk) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
