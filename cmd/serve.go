@@ -29,6 +29,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent"
 	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 	"github.com/lesomnus/roster/server/bare"
+	"github.com/lesomnus/roster/server/core"
 	"github.com/lesomnus/roster/server/pd"
 )
 
@@ -138,7 +139,10 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 
 	// The stack a caller reaches. `pd.Gate` is outermost, so nothing behind it
 	// asks again.
-	stacked, err := app.Build(walled.WithWatch(w), pd.AuditBuild(), pd.GateBuild())
+	// `core` is inside the gate and outside the sink: it reads through the wall
+	// to make its judgements, so it must be behind whatever installs one, and it
+	// refuses before the write happens rather than after.
+	stacked, err := app.Build(walled.WithWatch(w), core.Build(), pd.AuditBuild(), pd.GateBuild())
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -149,7 +153,11 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	// holds: it is an instance somebody was handed, so going around the wall
 	// is a line of wiring a reader can find rather than a rule that opens up
 	// whenever nobody is asking.
-	ungated, err := app.Build(sink.WithWatch(w), pd.AuditBuild())
+	// The same rules with no wall. Going around the wall is not going around
+	// what this app means -- an identity linked by `init` or by an admin console
+	// is still an identity, and a subject that is an email address is still
+	// wrong.
+	ungated, err := app.Build(sink.WithWatch(w), core.Build(), pd.AuditBuild())
 	if err != nil {
 		db.Close()
 		return nil, err

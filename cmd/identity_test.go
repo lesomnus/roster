@@ -7,6 +7,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/lesomnus/payday/pderr"
+
 	app "github.com/lesomnus/roster"
 )
 
@@ -113,4 +115,65 @@ func TestTheWallReachesThroughTheHolder(t *testing.T) {
 	// NotFound and not PermissionDenied: a row outside the wall is a row the
 	// query did not match, and that it exists is itself not to be said.
 	x.Equal(codes.NotFound, status.Code(err))
+}
+
+// TestASubjectThatLooksLikeAnAddressIsRefused is the mistake with an
+// unrecoverable ending.
+//
+// A provider's subject has to be what that provider treats as immutable, and
+// what gets written by mistake is the username or the email -- both are in the
+// same claims and both read like a name. Nothing goes wrong at link time. It
+// goes wrong months later when the address is reassigned to a new joiner, who
+// signs in and is served as the person who left.
+func TestASubjectThatLooksLikeAnAddressIsRefused(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	_, err := b.Ungated.Identity().Add(ctx, app.IdentityAddRequest_builder{
+		Holder:   app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Provider: "entra",
+		Subject:  "someone@acme.example",
+	}.Build())
+	x.Equal(codes.InvalidArgument, status.Code(err))
+
+	// And it says which field, so a console can put the message under the box
+	// rather than at the top of the page.
+	vs := pderr.Violations(err)
+	x.Len(vs, 1)
+	x.Equal("subject", vs[0].Field)
+}
+
+// TestASecondAccountAtOneProviderIsRefused.
+//
+// The pair being unique stops two people sharing a subject. This is the other
+// direction: one person accumulating two accounts at one provider, which is
+// what a link that found the wrong row looks like from here. A person has one
+// account at each provider; if they have two, one belongs to somebody else.
+func TestASecondAccountAtOneProviderIsRefused(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	b.identity(t, ctx, b.AcmeUser, "github", "1074321")
+
+	_, err := b.Ungated.Identity().Add(ctx, app.IdentityAddRequest_builder{
+		Holder:   app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Provider: "github",
+		Subject:  "2222222",
+	}.Build())
+	x.Equal(codes.InvalidArgument, status.Code(err))
+	x.Contains(err.Error(), "already has a github identity")
+}
+
+// TestTheRulesApplyWithoutTheWallToo. `Ungated` is not a way around what this
+// app means; it is a way around the wall.
+func TestTheRulesApplyWithoutTheWallToo(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	_, err := b.Ungated.Identity().Add(ctx, app.IdentityAddRequest_builder{
+		Holder:   app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Provider: "ldap",
+		Subject:  "",
+	}.Build())
+	x.Equal(codes.InvalidArgument, status.Code(err))
 }

@@ -162,6 +162,24 @@ one predicate rather than three reads.
 A role therefore means something *in a site*: operator in Seoul, reader in
 Frankfurt, one person. A role held on the person could not say that.
 
+### D9 · The linking rules are a layer, and they apply without the wall too
+
+Two judgements no schema can state, in `server/core`:
+
+- **A subject containing `@` is refused.** It has to be what the provider treats
+  as immutable, and what gets written by mistake is the username or the address —
+  both are in the same claims and both read like a name. Nothing fails at link
+  time; it fails months later when the address is reassigned and the new joiner
+  is served as the person who left.
+- **A second identity at a provider somebody already has one at is refused.**
+  Uniqueness of the pair stops two people sharing a subject; this is the other
+  direction, and it is what a link that found the wrong row looks like. A person
+  has one account per provider. If they have two, one belongs to somebody else.
+
+The layer is stacked on **both** servers. `Ungated` is a way around the wall and
+not a way around what this app means: an identity linked by an admin console is
+still an identity, and a subject that is an address is still wrong.
+
 ### D6 · A timestamp that means "or never" says `nullable: true`
 
 `Email.date_verified` is a `google.protobuf.Timestamp`, and a message field has
@@ -264,7 +282,7 @@ existing schema.
 | 1b · Team, on the second axis | **done**, 21 tests, both databases |
 | 1c · memberships, Credential | **done**, 27 tests, both databases |
 | 2 · payday fixes | F1, F2, F4 done · F3 open · F5 written down |
-| 3 · app layer | next |
+| 3 · app layer | linking rules **done** · `/api/v1/me`, policy, credential verify next |
 | 4 · keys, sync, console | — |
 
 ### Open questions for whoever reads this next
@@ -276,6 +294,10 @@ existing schema.
 - **The second axis is demonstrated.** `Team` carries the edge, and a caller
   narrowed to one site sees one team out of two in the same tenant. D4 is no
   longer a claim.
-- **`Sets` is handed in by the test, not by the app.** `cmd.Build` installs the
-  wall only, because which sites somebody may see is a membership roster does
-  not have yet. Phase 3 is where that becomes real.
+- **`Sets` is still handed in by the test, not by the app.** `cmd.Build`
+  installs the wall only. The membership table it should read now exists, so
+  wiring `pd.Grouped` over `SiteMembership` is the next real step.
+- **`/api/v1/me` is not written.** It needs an overlay RPC, which is the first
+  thing here that is not plain CRUD.
+- **Credential verification is a schema and no behaviour.** The row is there;
+  the RPC that compares a secret without handing it out is not.
