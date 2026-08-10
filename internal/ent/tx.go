@@ -14,6 +14,8 @@ type Tx struct {
 	config
 	// Audit is the client for interacting with the Audit builders.
 	Audit *AuditClient
+	// Credential is the client for interacting with the Credential builders.
+	Credential *CredentialClient
 	// Email is the client for interacting with the Email builders.
 	Email *EmailClient
 	// Holder is the client for interacting with the Holder builders.
@@ -24,8 +26,12 @@ type Tx struct {
 	Outbox *OutboxClient
 	// Site is the client for interacting with the Site builders.
 	Site *SiteClient
+	// SiteMembership is the client for interacting with the SiteMembership builders.
+	SiteMembership *SiteMembershipClient
 	// Team is the client for interacting with the Team builders.
 	Team *TeamClient
+	// TeamMembership is the client for interacting with the TeamMembership builders.
+	TeamMembership *TeamMembershipClient
 	// Tenant is the client for interacting with the Tenant builders.
 	Tenant *TenantClient
 
@@ -160,12 +166,15 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.Audit = NewAuditClient(tx.config)
+	tx.Credential = NewCredentialClient(tx.config)
 	tx.Email = NewEmailClient(tx.config)
 	tx.Holder = NewHolderClient(tx.config)
 	tx.Identity = NewIdentityClient(tx.config)
 	tx.Outbox = NewOutboxClient(tx.config)
 	tx.Site = NewSiteClient(tx.config)
+	tx.SiteMembership = NewSiteMembershipClient(tx.config)
 	tx.Team = NewTeamClient(tx.config)
+	tx.TeamMembership = NewTeamMembershipClient(tx.config)
 	tx.Tenant = NewTenantClient(tx.config)
 }
 

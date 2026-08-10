@@ -30,13 +30,16 @@ import (
 	roster "github.com/lesomnus/roster"
 	ent "github.com/lesomnus/roster/internal/ent"
 	audit "github.com/lesomnus/roster/internal/ent/audit"
+	credential "github.com/lesomnus/roster/internal/ent/credential"
 	email "github.com/lesomnus/roster/internal/ent/email"
 	holder "github.com/lesomnus/roster/internal/ent/holder"
 	identity "github.com/lesomnus/roster/internal/ent/identity"
 	outbox "github.com/lesomnus/roster/internal/ent/outbox"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	site "github.com/lesomnus/roster/internal/ent/site"
+	sitemembership "github.com/lesomnus/roster/internal/ent/sitemembership"
 	team "github.com/lesomnus/roster/internal/ent/team"
+	teammembership "github.com/lesomnus/roster/internal/ent/teammembership"
 	tenant "github.com/lesomnus/roster/internal/ent/tenant"
 	bare "github.com/lesomnus/roster/server/bare"
 	entpage "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpage"
@@ -75,24 +78,30 @@ func Check() error { return version.Same(Payday) }
 // trail says what kind of thing it was long after the row is gone. So a
 // number is chosen once and never given to something else.
 const (
-	AuditDomain    pdid.Domain = 3  // "audit"
-	EmailDomain    pdid.Domain = 9  // "email"
-	HolderDomain   pdid.Domain = 2  // "holder"
-	IdentityDomain pdid.Domain = 8  // "identity"
-	OutboxDomain   pdid.Domain = 4  // "outbox"
-	SiteDomain     pdid.Domain = 7  // "site"
-	TeamDomain     pdid.Domain = 10 // "team"
-	TenantDomain   pdid.Domain = 1  // "tenant"
+	AuditDomain          pdid.Domain = 3  // "audit"
+	CredentialDomain     pdid.Domain = 13 // "credential"
+	EmailDomain          pdid.Domain = 9  // "email"
+	HolderDomain         pdid.Domain = 2  // "holder"
+	IdentityDomain       pdid.Domain = 8  // "identity"
+	OutboxDomain         pdid.Domain = 4  // "outbox"
+	SiteDomain           pdid.Domain = 7  // "site"
+	SiteMembershipDomain pdid.Domain = 11 // "site-membership"
+	TeamDomain           pdid.Domain = 10 // "team"
+	TeamMembershipDomain pdid.Domain = 12 // "team-membership"
+	TenantDomain         pdid.Domain = 1  // "tenant"
 )
 
 func init() {
 	pdid.Register("app.Audit", AuditDomain, "audit")
+	pdid.Register("app.Credential", CredentialDomain, "credential")
 	pdid.Register("app.Email", EmailDomain, "email")
 	pdid.Register("app.Holder", HolderDomain, "holder")
 	pdid.Register("app.Identity", IdentityDomain, "identity")
 	pdid.Register("app.Outbox", OutboxDomain, "outbox")
 	pdid.Register("app.Site", SiteDomain, "site")
+	pdid.Register("app.SiteMembership", SiteMembershipDomain, "site-membership")
 	pdid.Register("app.Team", TeamDomain, "team")
+	pdid.Register("app.TeamMembership", TeamMembershipDomain, "team-membership")
 	pdid.Register("app.Tenant", TenantDomain, "tenant")
 
 	pdid.RegisterTenant(TenantDomain)
@@ -101,14 +110,17 @@ func init() {
 // Domains is the domain of each entity by the full name of its message,
 // which is the name a [Minter] is asked about.
 var Domains = map[string]pdid.Domain{
-	"app.Audit":    AuditDomain,
-	"app.Email":    EmailDomain,
-	"app.Holder":   HolderDomain,
-	"app.Identity": IdentityDomain,
-	"app.Outbox":   OutboxDomain,
-	"app.Site":     SiteDomain,
-	"app.Team":     TeamDomain,
-	"app.Tenant":   TenantDomain,
+	"app.Audit":          AuditDomain,
+	"app.Credential":     CredentialDomain,
+	"app.Email":          EmailDomain,
+	"app.Holder":         HolderDomain,
+	"app.Identity":       IdentityDomain,
+	"app.Outbox":         OutboxDomain,
+	"app.Site":           SiteDomain,
+	"app.SiteMembership": SiteMembershipDomain,
+	"app.Team":           TeamDomain,
+	"app.TeamMembership": TeamMembershipDomain,
+	"app.Tenant":         TenantDomain,
 }
 
 // Minter answers with the [bare.Minter] that gives every new row an
@@ -163,6 +175,16 @@ func (wall) AuditScope(ctx context.Context) (predicate.Audit, error) {
 	return audit.Or(audit.TenantIDIn(vs...), audit.ActorTenantIDIn(vs...)), nil
 }
 
+// CredentialScope: a row belongs to the tenant its "holder.tenant" reaches.
+func (wall) CredentialScope(ctx context.Context) (predicate.Credential, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return credential.HasHolderWith(holder.TenantIDIn(vs...)), nil
+}
+
 // EmailScope: a row belongs to the tenant its "holder.tenant" reaches.
 func (wall) EmailScope(ctx context.Context) (predicate.Email, error) {
 	vs, all, err := frame.Narrow(ctx)
@@ -208,6 +230,16 @@ func (wall) SiteScope(ctx context.Context) (predicate.Site, error) {
 	return site.TenantIDIn(vs...), nil
 }
 
+// SiteMembershipScope: a row belongs to the tenant its "site.tenant" reaches.
+func (wall) SiteMembershipScope(ctx context.Context) (predicate.SiteMembership, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return sitemembership.HasSiteWith(site.TenantIDIn(vs...)), nil
+}
+
 // TeamScope: a row belongs to the tenant its "site.tenant" reaches.
 func (wall) TeamScope(ctx context.Context) (predicate.Team, error) {
 	vs, all, err := frame.Narrow(ctx)
@@ -216,6 +248,16 @@ func (wall) TeamScope(ctx context.Context) (predicate.Team, error) {
 	}
 
 	return team.HasSiteWith(site.TenantIDIn(vs...)), nil
+}
+
+// TeamMembershipScope: a row belongs to the tenant its "team.site.tenant" reaches.
+func (wall) TeamMembershipScope(ctx context.Context) (predicate.TeamMembership, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return teammembership.HasTeamWith(team.HasSiteWith(site.TenantIDIn(vs...))), nil
 }
 
 // TenantScope: a tenant is inside itself, which is what a tenant being a wall comes down to.
@@ -269,6 +311,11 @@ func (x grouped) AuditScope(ctx context.Context) (predicate.Audit, error) {
 	return nil, nil
 }
 
+// CredentialScope: in no set -- it declared no field 3, so this narrows nothing.
+func (x grouped) CredentialScope(ctx context.Context) (predicate.Credential, error) {
+	return nil, nil
+}
+
 // EmailScope: in no set -- it declared no field 3, so this narrows nothing.
 func (x grouped) EmailScope(ctx context.Context) (predicate.Email, error) {
 	return nil, nil
@@ -299,6 +346,16 @@ func (x grouped) SiteScope(ctx context.Context) (predicate.Site, error) {
 	return site.IDIn(vs...), nil
 }
 
+// SiteMembershipScope: in the Site its "site" names.
+func (x grouped) SiteMembershipScope(ctx context.Context) (predicate.SiteMembership, error) {
+	vs, all, err := frame.NarrowSet(ctx, x.of)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return sitemembership.SiteIDIn(vs...), nil
+}
+
 // TeamScope: in the Site its "site" names.
 func (x grouped) TeamScope(ctx context.Context) (predicate.Team, error) {
 	vs, all, err := frame.NarrowSet(ctx, x.of)
@@ -307,6 +364,11 @@ func (x grouped) TeamScope(ctx context.Context) (predicate.Team, error) {
 	}
 
 	return team.SiteIDIn(vs...), nil
+}
+
+// TeamMembershipScope: in no set -- it declared no field 3, so this narrows nothing.
+func (x grouped) TeamMembershipScope(ctx context.Context) (predicate.TeamMembership, error) {
+	return nil, nil
 }
 
 // TenantScope: in no set -- it declared no field 3, so this narrows nothing.
@@ -571,6 +633,331 @@ func filterAudit(f *roster.AuditFilter) (predicate.Audit, error) {
 	}
 
 	return audit.And(ps...), nil
+}
+
+type sinkCredential struct {
+	roster.CredentialServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) Credential() roster.CredentialServiceServer {
+	return sinkCredential{s.Server.Credential(), s.Server.Store, s.w, s.namer, s.joined}
+}
+
+// orderCredential is how Credentials come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderCredential = []entpage.Order{
+	{Column: credential.FieldDateCreated, Desc: false},
+	{Column: credential.FieldID, Desc: false},
+}
+
+const (
+	// CredentialPageSize is what a request that did not say gets, and
+	// CredentialPageLimit is the most it gets however loudly it asks.
+	CredentialPageSize  = 20
+	CredentialPageLimit = 100
+
+	// CredentialFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	CredentialFilterLimit = 32
+)
+
+// List answers with the Credentials that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkCredential) List(ctx context.Context, req *roster.CredentialListRequest) (*roster.CredentialListResponse, error) {
+	q := s.store.Db.Credential.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.CredentialNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > CredentialFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), CredentialFilterLimit)
+		}
+
+		ps := make([]predicate.Credential, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterCredential(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(credential.Or(ps...))
+	}
+
+	if v := req.GetAfter(); v != "" {
+		var (
+			at0 time.Time
+			at1 uuid.UUID
+		)
+		if err := entpage.Decode(v, &at0, &at1); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		p, err := entpage.After(orderCredential, []any{at0, at1})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := entpage.Size(int(req.GetSize()), CredentialPageSize, CredentialPageLimit)
+	us, err := q.Order(credential.ByDateCreated(), credential.ByID()).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*roster.Credential, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := roster.CredentialListResponse_builder{Items: items}.Build()
+	if more {
+		last := us[len(us)-1]
+		next, err := entpage.Encode(last.DateCreated, last.ID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(next)
+	}
+
+	return res, nil
+}
+
+// filterCredential turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterCredential(f *roster.CredentialFilter) (predicate.Credential, error) {
+	ps := make([]predicate.Credential, 0, 1)
+	if f.HasRef() {
+		p, err := bare.CredentialPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return credential.And(ps...), nil
+}
+
+// CredentialService is the prefix of every RPC of that service, which is how a
+// change is known to be about a Credential. A service is named for the entity it
+// is about, so the name carries it.
+var CredentialService = watch.ServiceOf(roster.CredentialService_Get_FullMethodName)
+
+// Watch answers with the Credentials this caller may see, as they are now and as
+// they change.
+//
+// What is sent is **state and never a delta**, which is what makes a stream
+// that missed something still correct: the next item about a row carries the
+// whole of it, so a client converges rather than replays. It is also what
+// makes the first message safe to duplicate against the ones after it.
+func (s sinkCredential) Watch(req *roster.CredentialWatchRequest, out grpc.ServerStreamingServer[roster.CredentialWatchResponse]) error {
+	ctx := out.Context()
+
+	// A watch with no filters is the whole table, forever. It is the one
+	// shape that has no cap at all, so it is the one shape refused.
+	fs := req.GetFilters()
+	switch {
+	case len(fs) == 0:
+		return status.Error(codes.InvalidArgument,
+			"filters: a watch says which rows it is about; one that says nothing is the whole table, for as long as it is open")
+	case len(fs) > CredentialFilterLimit:
+		return status.Errorf(codes.InvalidArgument,
+			"filters: %d of them, and %d is the most one watch carries", len(fs), CredentialFilterLimit)
+	}
+
+	// Resolved before anything is subscribed to, so a name that names
+	// nothing is an answer rather than a stream that quietly watches none.
+	watching, err := s.watchCredentialKeys(ctx, fs)
+	if err != nil {
+		return err
+	}
+
+	var snapshot func(watch.Seen) error
+	if !req.GetSkipSnapshot() {
+		snapshot = func(sent watch.Seen) error { return s.watchNow(ctx, req, out, sent) }
+	}
+
+	if s.w == nil {
+		return status.Error(codes.Unimplemented,
+			"this deployment publishes no changes; see WithWatch")
+	}
+
+	return watch.Stream(ctx, s.w, CredentialService, snapshot,
+		func(ks map[pdid.Id]string, sent watch.Seen) error {
+			items := make([]*roster.CredentialWatchItem, 0, len(ks))
+			for k, action := range ks {
+				u, err := s.watchRead(ctx, watching, k)
+				if err != nil {
+					return err
+				}
+				if u == nil && !sent[k] {
+					// Not theirs, or not what they asked for, and they
+					// have never been told about it. A row that never
+					// matched is not news.
+					continue
+				}
+
+				sent[k] = u != nil
+				items = append(items, roster.CredentialWatchItem_builder{
+					Id:     k.Bytes(),
+					Value:  u,
+					Action: action,
+				}.Build())
+			}
+			if len(items) == 0 {
+				return nil
+			}
+
+			return out.Send(roster.CredentialWatchResponse_builder{Items: items}.Build())
+		})
+}
+
+// watchNow sends what matches right now, through the same List a caller
+// would have called -- so what a stream begins with and what a list answers
+// cannot disagree, and a client does not have to do both and race them.
+func (s sinkCredential) watchNow(
+	ctx context.Context, req *roster.CredentialWatchRequest, out grpc.ServerStreamingServer[roster.CredentialWatchResponse],
+	sent watch.Seen,
+) error {
+	after := ""
+	for {
+		res, err := s.List(ctx, roster.CredentialListRequest_builder{
+			Filters: req.GetFilters(),
+			After:   after,
+		}.Build())
+		if err != nil {
+			return err
+		}
+
+		items := make([]*roster.CredentialWatchItem, 0, len(res.GetItems()))
+		for _, u := range res.GetItems() {
+			k, err := pdid.From(u.GetId())
+			if err != nil {
+				return err
+			}
+
+			sent[k] = true
+			// No action: this is not something anybody asked for, it is
+			// what is already there.
+			items = append(items, roster.CredentialWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+		}
+		if len(items) > 0 {
+			if err := out.Send(roster.CredentialWatchResponse_builder{Items: items}.Build()); err != nil {
+				return err
+			}
+		}
+
+		if after = res.GetNext(); after == "" {
+			return nil
+		}
+	}
+}
+
+// watchRead answers with the row as it is now, or nil when it is no longer
+// one this caller may see -- erased, walled off, or no longer matching what
+// they asked for. The three are deliberately indistinguishable to a caller:
+// a stream that told them apart would be saying which rows stopped being
+// theirs, which is the thing the wall is for.
+//
+// The Get is what keeps the wall out of this file. It goes through the same
+// server every other read does, with the context of the caller who asked, so
+// a row they may not see comes back NotFound and is never sent.
+func (s sinkCredential) watchRead(
+	ctx context.Context, watching []pdid.Id, k pdid.Id,
+) (*roster.Credential, error) {
+	// Not one of the rows this stream is about. Asked before the read, so a
+	// busy table costs a stream nothing for the rows it does not watch.
+	if !slices.Contains(watching, k) {
+		return nil, nil
+	}
+
+	v, err := s.Get(ctx, roster.CredentialGetRequest_builder{
+		Ref: roster.CredentialRef_builder{Id: k.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return v, nil
+}
+
+// watchCredentialKeys is the rows a stream is about, resolved once when it opens.
+//
+// A filter names a row and a row is named several ways -- by identifier, or
+// by whatever unique index the schema declared. Resolving them here rather
+// than comparing them per event does three things: the comparison afterwards
+// is an identifier against an identifier, a name that names nothing is
+// refused when the stream opens rather than silently watching nothing, and a
+// row renamed while the stream is open goes on being the row that was asked
+// for -- which is what somebody watching a thing meant.
+func (s sinkCredential) watchCredentialKeys(
+	ctx context.Context, fs []*roster.CredentialFilter,
+) ([]pdid.Id, error) {
+	ks := make([]pdid.Id, 0, len(fs))
+	for i, f := range fs {
+		if !f.HasRef() {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters[%d]: a watch says which rows it is about by naming them", i)
+		}
+
+		v, err := s.Get(ctx, roster.CredentialGetRequest_builder{Ref: f.GetRef()}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		k, err := pdid.From(v.GetId())
+		if err != nil {
+			return nil, err
+		}
+
+		ks = append(ks, k)
+	}
+
+	return ks, nil
 }
 
 type sinkEmail struct {
@@ -1708,6 +2095,331 @@ func (s sinkSite) watchSiteKeys(
 	return ks, nil
 }
 
+type sinkSiteMembership struct {
+	roster.SiteMembershipServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) SiteMembership() roster.SiteMembershipServiceServer {
+	return sinkSiteMembership{s.Server.SiteMembership(), s.Server.Store, s.w, s.namer, s.joined}
+}
+
+// orderSiteMembership is how SiteMemberships come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderSiteMembership = []entpage.Order{
+	{Column: sitemembership.FieldDateCreated, Desc: false},
+	{Column: sitemembership.FieldID, Desc: false},
+}
+
+const (
+	// SiteMembershipPageSize is what a request that did not say gets, and
+	// SiteMembershipPageLimit is the most it gets however loudly it asks.
+	SiteMembershipPageSize  = 20
+	SiteMembershipPageLimit = 100
+
+	// SiteMembershipFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	SiteMembershipFilterLimit = 32
+)
+
+// List answers with the SiteMemberships that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkSiteMembership) List(ctx context.Context, req *roster.SiteMembershipListRequest) (*roster.SiteMembershipListResponse, error) {
+	q := s.store.Db.SiteMembership.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.SiteMembershipNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > SiteMembershipFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), SiteMembershipFilterLimit)
+		}
+
+		ps := make([]predicate.SiteMembership, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterSiteMembership(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(sitemembership.Or(ps...))
+	}
+
+	if v := req.GetAfter(); v != "" {
+		var (
+			at0 time.Time
+			at1 uuid.UUID
+		)
+		if err := entpage.Decode(v, &at0, &at1); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		p, err := entpage.After(orderSiteMembership, []any{at0, at1})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := entpage.Size(int(req.GetSize()), SiteMembershipPageSize, SiteMembershipPageLimit)
+	us, err := q.Order(sitemembership.ByDateCreated(), sitemembership.ByID()).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*roster.SiteMembership, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := roster.SiteMembershipListResponse_builder{Items: items}.Build()
+	if more {
+		last := us[len(us)-1]
+		next, err := entpage.Encode(last.DateCreated, last.ID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(next)
+	}
+
+	return res, nil
+}
+
+// filterSiteMembership turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterSiteMembership(f *roster.SiteMembershipFilter) (predicate.SiteMembership, error) {
+	ps := make([]predicate.SiteMembership, 0, 1)
+	if f.HasRef() {
+		p, err := bare.SiteMembershipPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return sitemembership.And(ps...), nil
+}
+
+// SiteMembershipService is the prefix of every RPC of that service, which is how a
+// change is known to be about a SiteMembership. A service is named for the entity it
+// is about, so the name carries it.
+var SiteMembershipService = watch.ServiceOf(roster.SiteMembershipService_Get_FullMethodName)
+
+// Watch answers with the SiteMemberships this caller may see, as they are now and as
+// they change.
+//
+// What is sent is **state and never a delta**, which is what makes a stream
+// that missed something still correct: the next item about a row carries the
+// whole of it, so a client converges rather than replays. It is also what
+// makes the first message safe to duplicate against the ones after it.
+func (s sinkSiteMembership) Watch(req *roster.SiteMembershipWatchRequest, out grpc.ServerStreamingServer[roster.SiteMembershipWatchResponse]) error {
+	ctx := out.Context()
+
+	// A watch with no filters is the whole table, forever. It is the one
+	// shape that has no cap at all, so it is the one shape refused.
+	fs := req.GetFilters()
+	switch {
+	case len(fs) == 0:
+		return status.Error(codes.InvalidArgument,
+			"filters: a watch says which rows it is about; one that says nothing is the whole table, for as long as it is open")
+	case len(fs) > SiteMembershipFilterLimit:
+		return status.Errorf(codes.InvalidArgument,
+			"filters: %d of them, and %d is the most one watch carries", len(fs), SiteMembershipFilterLimit)
+	}
+
+	// Resolved before anything is subscribed to, so a name that names
+	// nothing is an answer rather than a stream that quietly watches none.
+	watching, err := s.watchSiteMembershipKeys(ctx, fs)
+	if err != nil {
+		return err
+	}
+
+	var snapshot func(watch.Seen) error
+	if !req.GetSkipSnapshot() {
+		snapshot = func(sent watch.Seen) error { return s.watchNow(ctx, req, out, sent) }
+	}
+
+	if s.w == nil {
+		return status.Error(codes.Unimplemented,
+			"this deployment publishes no changes; see WithWatch")
+	}
+
+	return watch.Stream(ctx, s.w, SiteMembershipService, snapshot,
+		func(ks map[pdid.Id]string, sent watch.Seen) error {
+			items := make([]*roster.SiteMembershipWatchItem, 0, len(ks))
+			for k, action := range ks {
+				u, err := s.watchRead(ctx, watching, k)
+				if err != nil {
+					return err
+				}
+				if u == nil && !sent[k] {
+					// Not theirs, or not what they asked for, and they
+					// have never been told about it. A row that never
+					// matched is not news.
+					continue
+				}
+
+				sent[k] = u != nil
+				items = append(items, roster.SiteMembershipWatchItem_builder{
+					Id:     k.Bytes(),
+					Value:  u,
+					Action: action,
+				}.Build())
+			}
+			if len(items) == 0 {
+				return nil
+			}
+
+			return out.Send(roster.SiteMembershipWatchResponse_builder{Items: items}.Build())
+		})
+}
+
+// watchNow sends what matches right now, through the same List a caller
+// would have called -- so what a stream begins with and what a list answers
+// cannot disagree, and a client does not have to do both and race them.
+func (s sinkSiteMembership) watchNow(
+	ctx context.Context, req *roster.SiteMembershipWatchRequest, out grpc.ServerStreamingServer[roster.SiteMembershipWatchResponse],
+	sent watch.Seen,
+) error {
+	after := ""
+	for {
+		res, err := s.List(ctx, roster.SiteMembershipListRequest_builder{
+			Filters: req.GetFilters(),
+			After:   after,
+		}.Build())
+		if err != nil {
+			return err
+		}
+
+		items := make([]*roster.SiteMembershipWatchItem, 0, len(res.GetItems()))
+		for _, u := range res.GetItems() {
+			k, err := pdid.From(u.GetId())
+			if err != nil {
+				return err
+			}
+
+			sent[k] = true
+			// No action: this is not something anybody asked for, it is
+			// what is already there.
+			items = append(items, roster.SiteMembershipWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+		}
+		if len(items) > 0 {
+			if err := out.Send(roster.SiteMembershipWatchResponse_builder{Items: items}.Build()); err != nil {
+				return err
+			}
+		}
+
+		if after = res.GetNext(); after == "" {
+			return nil
+		}
+	}
+}
+
+// watchRead answers with the row as it is now, or nil when it is no longer
+// one this caller may see -- erased, walled off, or no longer matching what
+// they asked for. The three are deliberately indistinguishable to a caller:
+// a stream that told them apart would be saying which rows stopped being
+// theirs, which is the thing the wall is for.
+//
+// The Get is what keeps the wall out of this file. It goes through the same
+// server every other read does, with the context of the caller who asked, so
+// a row they may not see comes back NotFound and is never sent.
+func (s sinkSiteMembership) watchRead(
+	ctx context.Context, watching []pdid.Id, k pdid.Id,
+) (*roster.SiteMembership, error) {
+	// Not one of the rows this stream is about. Asked before the read, so a
+	// busy table costs a stream nothing for the rows it does not watch.
+	if !slices.Contains(watching, k) {
+		return nil, nil
+	}
+
+	v, err := s.Get(ctx, roster.SiteMembershipGetRequest_builder{
+		Ref: roster.SiteMembershipRef_builder{Id: k.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return v, nil
+}
+
+// watchSiteMembershipKeys is the rows a stream is about, resolved once when it opens.
+//
+// A filter names a row and a row is named several ways -- by identifier, or
+// by whatever unique index the schema declared. Resolving them here rather
+// than comparing them per event does three things: the comparison afterwards
+// is an identifier against an identifier, a name that names nothing is
+// refused when the stream opens rather than silently watching nothing, and a
+// row renamed while the stream is open goes on being the row that was asked
+// for -- which is what somebody watching a thing meant.
+func (s sinkSiteMembership) watchSiteMembershipKeys(
+	ctx context.Context, fs []*roster.SiteMembershipFilter,
+) ([]pdid.Id, error) {
+	ks := make([]pdid.Id, 0, len(fs))
+	for i, f := range fs {
+		if !f.HasRef() {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters[%d]: a watch says which rows it is about by naming them", i)
+		}
+
+		v, err := s.Get(ctx, roster.SiteMembershipGetRequest_builder{Ref: f.GetRef()}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		k, err := pdid.From(v.GetId())
+		if err != nil {
+			return nil, err
+		}
+
+		ks = append(ks, k)
+	}
+
+	return ks, nil
+}
+
 type sinkTeam struct {
 	roster.TeamServiceServer
 	store  bare.Store
@@ -2107,6 +2819,331 @@ func (s sinkTeam) watchTeamKeys(
 	return ks, nil
 }
 
+type sinkTeamMembership struct {
+	roster.TeamMembershipServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) TeamMembership() roster.TeamMembershipServiceServer {
+	return sinkTeamMembership{s.Server.TeamMembership(), s.Server.Store, s.w, s.namer, s.joined}
+}
+
+// orderTeamMembership is how TeamMemberships come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderTeamMembership = []entpage.Order{
+	{Column: teammembership.FieldDateCreated, Desc: false},
+	{Column: teammembership.FieldID, Desc: false},
+}
+
+const (
+	// TeamMembershipPageSize is what a request that did not say gets, and
+	// TeamMembershipPageLimit is the most it gets however loudly it asks.
+	TeamMembershipPageSize  = 20
+	TeamMembershipPageLimit = 100
+
+	// TeamMembershipFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	TeamMembershipFilterLimit = 32
+)
+
+// List answers with the TeamMemberships that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkTeamMembership) List(ctx context.Context, req *roster.TeamMembershipListRequest) (*roster.TeamMembershipListResponse, error) {
+	q := s.store.Db.TeamMembership.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.TeamMembershipNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > TeamMembershipFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), TeamMembershipFilterLimit)
+		}
+
+		ps := make([]predicate.TeamMembership, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterTeamMembership(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(teammembership.Or(ps...))
+	}
+
+	if v := req.GetAfter(); v != "" {
+		var (
+			at0 time.Time
+			at1 uuid.UUID
+		)
+		if err := entpage.Decode(v, &at0, &at1); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		p, err := entpage.After(orderTeamMembership, []any{at0, at1})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := entpage.Size(int(req.GetSize()), TeamMembershipPageSize, TeamMembershipPageLimit)
+	us, err := q.Order(teammembership.ByDateCreated(), teammembership.ByID()).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*roster.TeamMembership, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := roster.TeamMembershipListResponse_builder{Items: items}.Build()
+	if more {
+		last := us[len(us)-1]
+		next, err := entpage.Encode(last.DateCreated, last.ID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(next)
+	}
+
+	return res, nil
+}
+
+// filterTeamMembership turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterTeamMembership(f *roster.TeamMembershipFilter) (predicate.TeamMembership, error) {
+	ps := make([]predicate.TeamMembership, 0, 1)
+	if f.HasRef() {
+		p, err := bare.TeamMembershipPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return teammembership.And(ps...), nil
+}
+
+// TeamMembershipService is the prefix of every RPC of that service, which is how a
+// change is known to be about a TeamMembership. A service is named for the entity it
+// is about, so the name carries it.
+var TeamMembershipService = watch.ServiceOf(roster.TeamMembershipService_Get_FullMethodName)
+
+// Watch answers with the TeamMemberships this caller may see, as they are now and as
+// they change.
+//
+// What is sent is **state and never a delta**, which is what makes a stream
+// that missed something still correct: the next item about a row carries the
+// whole of it, so a client converges rather than replays. It is also what
+// makes the first message safe to duplicate against the ones after it.
+func (s sinkTeamMembership) Watch(req *roster.TeamMembershipWatchRequest, out grpc.ServerStreamingServer[roster.TeamMembershipWatchResponse]) error {
+	ctx := out.Context()
+
+	// A watch with no filters is the whole table, forever. It is the one
+	// shape that has no cap at all, so it is the one shape refused.
+	fs := req.GetFilters()
+	switch {
+	case len(fs) == 0:
+		return status.Error(codes.InvalidArgument,
+			"filters: a watch says which rows it is about; one that says nothing is the whole table, for as long as it is open")
+	case len(fs) > TeamMembershipFilterLimit:
+		return status.Errorf(codes.InvalidArgument,
+			"filters: %d of them, and %d is the most one watch carries", len(fs), TeamMembershipFilterLimit)
+	}
+
+	// Resolved before anything is subscribed to, so a name that names
+	// nothing is an answer rather than a stream that quietly watches none.
+	watching, err := s.watchTeamMembershipKeys(ctx, fs)
+	if err != nil {
+		return err
+	}
+
+	var snapshot func(watch.Seen) error
+	if !req.GetSkipSnapshot() {
+		snapshot = func(sent watch.Seen) error { return s.watchNow(ctx, req, out, sent) }
+	}
+
+	if s.w == nil {
+		return status.Error(codes.Unimplemented,
+			"this deployment publishes no changes; see WithWatch")
+	}
+
+	return watch.Stream(ctx, s.w, TeamMembershipService, snapshot,
+		func(ks map[pdid.Id]string, sent watch.Seen) error {
+			items := make([]*roster.TeamMembershipWatchItem, 0, len(ks))
+			for k, action := range ks {
+				u, err := s.watchRead(ctx, watching, k)
+				if err != nil {
+					return err
+				}
+				if u == nil && !sent[k] {
+					// Not theirs, or not what they asked for, and they
+					// have never been told about it. A row that never
+					// matched is not news.
+					continue
+				}
+
+				sent[k] = u != nil
+				items = append(items, roster.TeamMembershipWatchItem_builder{
+					Id:     k.Bytes(),
+					Value:  u,
+					Action: action,
+				}.Build())
+			}
+			if len(items) == 0 {
+				return nil
+			}
+
+			return out.Send(roster.TeamMembershipWatchResponse_builder{Items: items}.Build())
+		})
+}
+
+// watchNow sends what matches right now, through the same List a caller
+// would have called -- so what a stream begins with and what a list answers
+// cannot disagree, and a client does not have to do both and race them.
+func (s sinkTeamMembership) watchNow(
+	ctx context.Context, req *roster.TeamMembershipWatchRequest, out grpc.ServerStreamingServer[roster.TeamMembershipWatchResponse],
+	sent watch.Seen,
+) error {
+	after := ""
+	for {
+		res, err := s.List(ctx, roster.TeamMembershipListRequest_builder{
+			Filters: req.GetFilters(),
+			After:   after,
+		}.Build())
+		if err != nil {
+			return err
+		}
+
+		items := make([]*roster.TeamMembershipWatchItem, 0, len(res.GetItems()))
+		for _, u := range res.GetItems() {
+			k, err := pdid.From(u.GetId())
+			if err != nil {
+				return err
+			}
+
+			sent[k] = true
+			// No action: this is not something anybody asked for, it is
+			// what is already there.
+			items = append(items, roster.TeamMembershipWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+		}
+		if len(items) > 0 {
+			if err := out.Send(roster.TeamMembershipWatchResponse_builder{Items: items}.Build()); err != nil {
+				return err
+			}
+		}
+
+		if after = res.GetNext(); after == "" {
+			return nil
+		}
+	}
+}
+
+// watchRead answers with the row as it is now, or nil when it is no longer
+// one this caller may see -- erased, walled off, or no longer matching what
+// they asked for. The three are deliberately indistinguishable to a caller:
+// a stream that told them apart would be saying which rows stopped being
+// theirs, which is the thing the wall is for.
+//
+// The Get is what keeps the wall out of this file. It goes through the same
+// server every other read does, with the context of the caller who asked, so
+// a row they may not see comes back NotFound and is never sent.
+func (s sinkTeamMembership) watchRead(
+	ctx context.Context, watching []pdid.Id, k pdid.Id,
+) (*roster.TeamMembership, error) {
+	// Not one of the rows this stream is about. Asked before the read, so a
+	// busy table costs a stream nothing for the rows it does not watch.
+	if !slices.Contains(watching, k) {
+		return nil, nil
+	}
+
+	v, err := s.Get(ctx, roster.TeamMembershipGetRequest_builder{
+		Ref: roster.TeamMembershipRef_builder{Id: k.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return v, nil
+}
+
+// watchTeamMembershipKeys is the rows a stream is about, resolved once when it opens.
+//
+// A filter names a row and a row is named several ways -- by identifier, or
+// by whatever unique index the schema declared. Resolving them here rather
+// than comparing them per event does three things: the comparison afterwards
+// is an identifier against an identifier, a name that names nothing is
+// refused when the stream opens rather than silently watching nothing, and a
+// row renamed while the stream is open goes on being the row that was asked
+// for -- which is what somebody watching a thing meant.
+func (s sinkTeamMembership) watchTeamMembershipKeys(
+	ctx context.Context, fs []*roster.TeamMembershipFilter,
+) ([]pdid.Id, error) {
+	ks := make([]pdid.Id, 0, len(fs))
+	for i, f := range fs {
+		if !f.HasRef() {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters[%d]: a watch says which rows it is about by naming them", i)
+		}
+
+		v, err := s.Get(ctx, roster.TeamMembershipGetRequest_builder{Ref: f.GetRef()}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		k, err := pdid.From(v.GetId())
+		if err != nil {
+			return nil, err
+		}
+
+		ks = append(ks, k)
+	}
+
+	return ks, nil
+}
+
 type sinkTenant struct {
 	roster.TenantServiceServer
 	store  bare.Store
@@ -2303,6 +3340,42 @@ func (s gateHolder) Add(ctx context.Context, req *roster.HolderAddRequest) (*ros
 	return s.HolderServiceServer.Add(ctx, req)
 }
 
+type gateCredential struct {
+	Gate
+	roster.CredentialServiceServer
+}
+
+func (s Gate) Credential() roster.CredentialServiceServer {
+	return gateCredential{s, s.Next().Credential()}
+}
+
+// Add refuses a Credential put into a Holder this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `holder` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Holder, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.Add`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+func (s gateCredential) Add(ctx context.Context, req *roster.CredentialAddRequest) (*roster.Credential, error) {
+	if ref := req.GetHolder(); ref != nil {
+		if _, err := s.Gate.Next().Holder().Get(ctx, roster.HolderGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Holder")
+			}
+
+			return nil, err
+		}
+	}
+
+	return s.CredentialServiceServer.Add(ctx, req)
+}
+
 type gateEmail struct {
 	Gate
 	roster.EmailServiceServer
@@ -2411,6 +3484,54 @@ func (s gateSite) Add(ctx context.Context, req *roster.SiteAddRequest) (*roster.
 	return s.SiteServiceServer.Add(ctx, req)
 }
 
+type gateSiteMembership struct {
+	Gate
+	roster.SiteMembershipServiceServer
+}
+
+func (s Gate) SiteMembership() roster.SiteMembershipServiceServer {
+	return gateSiteMembership{s, s.Next().SiteMembership()}
+}
+
+// Add refuses a SiteMembership put into a Site this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `site` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Site, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.Add`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+func (s gateSiteMembership) Add(ctx context.Context, req *roster.SiteMembershipAddRequest) (*roster.SiteMembership, error) {
+	if ref := req.GetSite(); ref != nil {
+		if _, err := s.Gate.Next().Site().Get(ctx, roster.SiteGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Site")
+			}
+
+			return nil, err
+		}
+	}
+
+	if ref := req.GetSite(); ref != nil {
+		if _, err := s.Gate.Next().Site().Get(ctx, roster.SiteGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Site")
+			}
+
+			return nil, err
+		}
+	}
+
+	return s.SiteMembershipServiceServer.Add(ctx, req)
+}
+
 type gateTeam struct {
 	Gate
 	roster.TeamServiceServer
@@ -2457,6 +3578,42 @@ func (s gateTeam) Add(ctx context.Context, req *roster.TeamAddRequest) (*roster.
 	}
 
 	return s.TeamServiceServer.Add(ctx, req)
+}
+
+type gateTeamMembership struct {
+	Gate
+	roster.TeamMembershipServiceServer
+}
+
+func (s Gate) TeamMembership() roster.TeamMembershipServiceServer {
+	return gateTeamMembership{s, s.Next().TeamMembership()}
+}
+
+// Add refuses a TeamMembership put into a Team this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `team` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Team, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.Add`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+func (s gateTeamMembership) Add(ctx context.Context, req *roster.TeamMembershipAddRequest) (*roster.TeamMembership, error) {
+	if ref := req.GetTeam(); ref != nil {
+		if _, err := s.Gate.Next().Team().Get(ctx, roster.TeamGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Team")
+			}
+
+			return nil, err
+		}
+	}
+
+	return s.TeamMembershipServiceServer.Add(ctx, req)
 }
 
 // Audit is the layer that refuses a trail row written by hand.
@@ -2615,6 +3772,39 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 
 		return k, b, nil
 
+	case CredentialDomain:
+		row, err := s.Credential().Get(ctx, roster.CredentialGetRequest_builder{
+			Ref: roster.CredentialRef_builder{Id: key.Bytes()}.Build(),
+		}.Build())
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				return uuid.Nil, []byte{}, nil
+			}
+
+			return uuid.Nil, nil, err
+		}
+
+		b, err := proto.Marshal(row)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		if !row.HasHolder() {
+			return uuid.Nil, b, nil
+		}
+
+		up, err := pdid.From(row.GetHolder().GetId())
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		k, _, err := subject(ctx, s, up)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		return k, b, nil
+
 	case EmailDomain:
 		row, err := s.Email().Get(ctx, roster.EmailGetRequest_builder{
 			Ref: roster.EmailRef_builder{Id: key.Bytes()}.Build(),
@@ -2737,6 +3927,39 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 
 		return k, b, nil
 
+	case SiteMembershipDomain:
+		row, err := s.SiteMembership().Get(ctx, roster.SiteMembershipGetRequest_builder{
+			Ref: roster.SiteMembershipRef_builder{Id: key.Bytes()}.Build(),
+		}.Build())
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				return uuid.Nil, []byte{}, nil
+			}
+
+			return uuid.Nil, nil, err
+		}
+
+		b, err := proto.Marshal(row)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		if !row.HasSite() {
+			return uuid.Nil, b, nil
+		}
+
+		up, err := pdid.From(row.GetSite().GetId())
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		k, _, err := subject(ctx, s, up)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		return k, b, nil
+
 	case TeamDomain:
 		row, err := s.Team().Get(ctx, roster.TeamGetRequest_builder{
 			Ref: roster.TeamRef_builder{Id: key.Bytes()}.Build(),
@@ -2759,6 +3982,39 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 		}
 
 		up, err := pdid.From(row.GetSite().GetId())
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		k, _, err := subject(ctx, s, up)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		return k, b, nil
+
+	case TeamMembershipDomain:
+		row, err := s.TeamMembership().Get(ctx, roster.TeamMembershipGetRequest_builder{
+			Ref: roster.TeamMembershipRef_builder{Id: key.Bytes()}.Build(),
+		}.Build())
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				return uuid.Nil, []byte{}, nil
+			}
+
+			return uuid.Nil, nil, err
+		}
+
+		b, err := proto.Marshal(row)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		if !row.HasTeam() {
+			return uuid.Nil, b, nil
+		}
+
+		up, err := pdid.From(row.GetTeam().GetId())
 		if err != nil {
 			return uuid.Nil, nil, err
 		}
@@ -3284,6 +4540,84 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 
 		return anypb.New(res)
 
+	case roster.CredentialService_Add_FullMethodName:
+		v := &roster.CredentialAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Credential().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.CredentialService_Get_FullMethodName:
+		v := &roster.CredentialGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Credential().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.CredentialService_Patch_FullMethodName:
+		v := &roster.CredentialPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Credential().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.CredentialService_Apply_FullMethodName:
+		v := &roster.CredentialApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Credential().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.CredentialService_Erase_FullMethodName:
+		v := &roster.CredentialRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Credential().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.CredentialService_List_FullMethodName:
+		v := &roster.CredentialListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Credential().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
 	case roster.IdentityService_Add_FullMethodName:
 		v := &roster.IdentityAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
@@ -3590,6 +4924,162 @@ func dispatch(ctx context.Context, s roster.Server, op *pdpb.Op) (*anypb.Any, er
 		}
 
 		res, err := s.Team().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.SiteMembershipService_Add_FullMethodName:
+		v := &roster.SiteMembershipAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.SiteMembership().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.SiteMembershipService_Get_FullMethodName:
+		v := &roster.SiteMembershipGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.SiteMembership().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.SiteMembershipService_Patch_FullMethodName:
+		v := &roster.SiteMembershipPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.SiteMembership().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.SiteMembershipService_Apply_FullMethodName:
+		v := &roster.SiteMembershipApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.SiteMembership().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.SiteMembershipService_Erase_FullMethodName:
+		v := &roster.SiteMembershipRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.SiteMembership().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.SiteMembershipService_List_FullMethodName:
+		v := &roster.SiteMembershipListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.SiteMembership().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.TeamMembershipService_Add_FullMethodName:
+		v := &roster.TeamMembershipAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.TeamMembership().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.TeamMembershipService_Get_FullMethodName:
+		v := &roster.TeamMembershipGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.TeamMembership().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.TeamMembershipService_Patch_FullMethodName:
+		v := &roster.TeamMembershipPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.TeamMembership().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.TeamMembershipService_Apply_FullMethodName:
+		v := &roster.TeamMembershipApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.TeamMembership().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.TeamMembershipService_Erase_FullMethodName:
+		v := &roster.TeamMembershipRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.TeamMembership().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case roster.TeamMembershipService_List_FullMethodName:
+		v := &roster.TeamMembershipListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.TeamMembership().List(ctx, v)
 		if err != nil {
 			return nil, err
 		}

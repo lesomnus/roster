@@ -12,13 +12,16 @@ import (
 	roster "github.com/lesomnus/roster"
 	ent "github.com/lesomnus/roster/internal/ent"
 	audit "github.com/lesomnus/roster/internal/ent/audit"
+	credential "github.com/lesomnus/roster/internal/ent/credential"
 	email "github.com/lesomnus/roster/internal/ent/email"
 	holder "github.com/lesomnus/roster/internal/ent/holder"
 	identity "github.com/lesomnus/roster/internal/ent/identity"
 	outbox "github.com/lesomnus/roster/internal/ent/outbox"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	site "github.com/lesomnus/roster/internal/ent/site"
+	sitemembership "github.com/lesomnus/roster/internal/ent/sitemembership"
 	team "github.com/lesomnus/roster/internal/ent/team"
+	teammembership "github.com/lesomnus/roster/internal/ent/teammembership"
 	tenant "github.com/lesomnus/roster/internal/ent/tenant"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	grpc "google.golang.org/grpc"
@@ -317,10 +320,13 @@ func record(ctx context.Context, rec Recorder, db *ent.Client, c Change) error {
 type Scope interface {
 	TenantScope(ctx context.Context) (predicate.Tenant, error)
 	HolderScope(ctx context.Context) (predicate.Holder, error)
+	CredentialScope(ctx context.Context) (predicate.Credential, error)
 	IdentityScope(ctx context.Context) (predicate.Identity, error)
 	EmailScope(ctx context.Context) (predicate.Email, error)
 	SiteScope(ctx context.Context) (predicate.Site, error)
 	TeamScope(ctx context.Context) (predicate.Team, error)
+	SiteMembershipScope(ctx context.Context) (predicate.SiteMembership, error)
+	TeamMembershipScope(ctx context.Context) (predicate.TeamMembership, error)
 	AuditScope(ctx context.Context) (predicate.Audit, error)
 	OutboxScope(ctx context.Context) (predicate.Outbox, error)
 }
@@ -343,6 +349,9 @@ func (Unscoped) TenantScope(_ context.Context) (predicate.Tenant, error) {
 func (Unscoped) HolderScope(_ context.Context) (predicate.Holder, error) {
 	return nil, nil
 }
+func (Unscoped) CredentialScope(_ context.Context) (predicate.Credential, error) {
+	return nil, nil
+}
 func (Unscoped) IdentityScope(_ context.Context) (predicate.Identity, error) {
 	return nil, nil
 }
@@ -353,6 +362,12 @@ func (Unscoped) SiteScope(_ context.Context) (predicate.Site, error) {
 	return nil, nil
 }
 func (Unscoped) TeamScope(_ context.Context) (predicate.Team, error) {
+	return nil, nil
+}
+func (Unscoped) SiteMembershipScope(_ context.Context) (predicate.SiteMembership, error) {
+	return nil, nil
+}
+func (Unscoped) TeamMembershipScope(_ context.Context) (predicate.TeamMembership, error) {
 	return nil, nil
 }
 func (Unscoped) AuditScope(_ context.Context) (predicate.Audit, error) {
@@ -419,6 +434,26 @@ func (ss Scopes) HolderScope(ctx context.Context) (predicate.Holder, error) {
 	}
 
 	return holder.And(ps...), nil
+}
+
+func (ss Scopes) CredentialScope(ctx context.Context) (predicate.Credential, error) {
+	ps := make([]predicate.Credential, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.CredentialScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return credential.And(ps...), nil
 }
 
 func (ss Scopes) IdentityScope(ctx context.Context) (predicate.Identity, error) {
@@ -499,6 +534,46 @@ func (ss Scopes) TeamScope(ctx context.Context) (predicate.Team, error) {
 	}
 
 	return team.And(ps...), nil
+}
+
+func (ss Scopes) SiteMembershipScope(ctx context.Context) (predicate.SiteMembership, error) {
+	ps := make([]predicate.SiteMembership, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.SiteMembershipScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return sitemembership.And(ps...), nil
+}
+
+func (ss Scopes) TeamMembershipScope(ctx context.Context) (predicate.TeamMembership, error) {
+	ps := make([]predicate.TeamMembership, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.TeamMembershipScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return teammembership.And(ps...), nil
 }
 
 func (ss Scopes) AuditScope(ctx context.Context) (predicate.Audit, error) {
@@ -621,7 +696,7 @@ func (s Store) now() time.Time {
 // is rendered for that dialect, not just what this server writes.
 //
 // That set is also what a soft erasure needs, so this is the whole
-// check. Email, Holder, Identity, Site and Team free the names they held when a row
+// check. Credential, Email, Holder, Identity, Site, SiteMembership, Team and TeamMembership free the names they held when a row
 // is erased, which is a unique index covering only the rows that are
 // still there -- a partial index, and the dialects above are the ones
 // that have one. MySQL does not, and ent writes the annotation out for
@@ -659,11 +734,20 @@ func (s Server) WithDriver(drv dialect.Driver) (roster.Server, error) {
 	return s, nil
 }
 
-func (s Server) Tenant() roster.TenantServiceServer     { return TenantServiceServer{Store: s.Store} }
-func (s Server) Holder() roster.HolderServiceServer     { return HolderServiceServer{Store: s.Store} }
+func (s Server) Tenant() roster.TenantServiceServer { return TenantServiceServer{Store: s.Store} }
+func (s Server) Holder() roster.HolderServiceServer { return HolderServiceServer{Store: s.Store} }
+func (s Server) Credential() roster.CredentialServiceServer {
+	return CredentialServiceServer{Store: s.Store}
+}
 func (s Server) Identity() roster.IdentityServiceServer { return IdentityServiceServer{Store: s.Store} }
 func (s Server) Email() roster.EmailServiceServer       { return EmailServiceServer{Store: s.Store} }
 func (s Server) Site() roster.SiteServiceServer         { return SiteServiceServer{Store: s.Store} }
 func (s Server) Team() roster.TeamServiceServer         { return TeamServiceServer{Store: s.Store} }
-func (s Server) Audit() roster.AuditServiceServer       { return AuditServiceServer{Store: s.Store} }
-func (s Server) Outbox() roster.OutboxServiceServer     { return OutboxServiceServer{Store: s.Store} }
+func (s Server) SiteMembership() roster.SiteMembershipServiceServer {
+	return SiteMembershipServiceServer{Store: s.Store}
+}
+func (s Server) TeamMembership() roster.TeamMembershipServiceServer {
+	return TeamMembershipServiceServer{Store: s.Store}
+}
+func (s Server) Audit() roster.AuditServiceServer   { return AuditServiceServer{Store: s.Store} }
+func (s Server) Outbox() roster.OutboxServiceServer { return OutboxServiceServer{Store: s.Store} }

@@ -13,12 +13,15 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/lesomnus/roster/internal/ent/audit"
+	"github.com/lesomnus/roster/internal/ent/credential"
 	"github.com/lesomnus/roster/internal/ent/email"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/identity"
 	"github.com/lesomnus/roster/internal/ent/outbox"
 	"github.com/lesomnus/roster/internal/ent/site"
+	"github.com/lesomnus/roster/internal/ent/sitemembership"
 	"github.com/lesomnus/roster/internal/ent/team"
+	"github.com/lesomnus/roster/internal/ent/teammembership"
 	"github.com/lesomnus/roster/internal/ent/tenant"
 )
 
@@ -80,14 +83,17 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			audit.Table:    audit.ValidColumn,
-			email.Table:    email.ValidColumn,
-			holder.Table:   holder.ValidColumn,
-			identity.Table: identity.ValidColumn,
-			outbox.Table:   outbox.ValidColumn,
-			site.Table:     site.ValidColumn,
-			team.Table:     team.ValidColumn,
-			tenant.Table:   tenant.ValidColumn,
+			audit.Table:          audit.ValidColumn,
+			credential.Table:     credential.ValidColumn,
+			email.Table:          email.ValidColumn,
+			holder.Table:         holder.ValidColumn,
+			identity.Table:       identity.ValidColumn,
+			outbox.Table:         outbox.ValidColumn,
+			site.Table:           site.ValidColumn,
+			sitemembership.Table: sitemembership.ValidColumn,
+			team.Table:           team.ValidColumn,
+			teammembership.Table: teammembership.ValidColumn,
+			tenant.Table:         tenant.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

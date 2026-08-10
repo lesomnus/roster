@@ -148,6 +148,20 @@ roster **verifies** rather than handing the hash out. A comparison done
 elsewhere is a hash that has left the store, and it puts timing-safe comparison
 and lockout in two places.
 
+### D8 · A membership is a row on the second axis, and a role hangs off a team
+
+`SiteMembership` is many-to-many, which is the reason `Holder` carries no site
+edge (D4). It sits on field 3 itself, so "who is in Seoul" is answerable without
+also answering "who is anywhere else".
+
+`TeamMembership` carries the role, and **not** a site of its own: the site is
+the team's, and saying it twice is two facts that can disagree. That makes its
+tenancy path three hops — `via: "team.site.tenant"` — which payday generates as
+one predicate rather than three reads.
+
+A role therefore means something *in a site*: operator in Seoul, reader in
+Frankfurt, one person. A role held on the person could not say that.
+
 ### D6 · A timestamp that means "or never" says `nullable: true`
 
 `Email.date_verified` is a `google.protobuf.Timestamp`, and a message field has
@@ -248,9 +262,9 @@ existing schema.
 | 0 · repo, plan, rules | **done** |
 | 1 · schema — Site, Identity, Email | **done**, 15 tests, both databases |
 | 1b · Team, on the second axis | **done**, 21 tests, both databases |
-| 1c · memberships, Credential | next |
+| 1c · memberships, Credential | **done**, 27 tests, both databases |
 | 2 · payday fixes | F1, F2, F4 done · F3 open · F5 written down |
-| 3 · app layer | — |
+| 3 · app layer | next |
 | 4 · keys, sync, console | — |
 
 ### Open questions for whoever reads this next
