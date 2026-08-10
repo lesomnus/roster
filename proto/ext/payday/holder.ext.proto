@@ -21,5 +21,42 @@ message Holder {
   // string admits exactly one such row. Nullable is what makes "unset" not
   // collide with "unset": a unique index permits many NULLs and one of each
   // value.
+  //
+  // **Deprecated by [Identity].** It is one-to-one and this deployment needs
+  // one-to-many -- the same person arrives through Entra and through GitHub.
+  // Kept only so that removing it is a migration somebody decides to run.
   string idp_subject = 8 [(orm.field) = {unique: true, nullable: true}];
+
+  // What this person is called, as one thing.
+  //
+  // roster is the profile service, which the design puts **outside** the
+  // identity provider deliberately: a customer IdP's `/userinfo` has only what
+  // that customer put in it, the metadata is ours, and the schema has to be
+  // ours to change. So it lives here, beside the person it describes.
+  //
+  // Product apps do not copy it. They hold the identifier and ask for this when
+  // they have a screen to draw, cached for a minute or two -- which is the same
+  // reason it is not in the token: a profile changes and a token does not.
+  Profile profile = 9;
+}
+
+// Profile is what a person is called, and it is replaced whole.
+//
+// An object rather than four fields on the Holder because it is one fact from
+// one moment: whatever last told us. Its cost is that it is one value to the
+// database -- no filter, no index -- so anything that has to be **looked up**
+// goes flat beside it. That is what [Identity] is.
+//
+// Stored as the canonical protobuf JSON, so these **names** are the storage.
+// Renaming one does not break the build and does not break the wire; it stops
+// finding the old value. Renaming a field here is a migration.
+message Profile {
+  string display_name = 1;
+  string picture = 2;
+
+  // Not the address. Addresses are [Email] rows, because a person has several
+  // and because whether one has been verified has to live somewhere.
+  string department = 3;
+  string employee_no = 4;
+  string locale = 5;
 }

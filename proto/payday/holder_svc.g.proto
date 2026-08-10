@@ -41,6 +41,7 @@ message HolderAddRequest {
 	map<string, string> labels = 7;
 	google.protobuf.Timestamp date_created = 15;
 	string idp_subject = 8;
+	Profile profile = 9;
 }
 
 message HolderRefBySlug {
@@ -67,6 +68,7 @@ message HolderSelect {
 	bool date_erased = 14;
 	bool date_created = 15;
 	bool idp_subject = 8;
+	bool profile = 9;
 }
 
 message HolderGetRequest {
@@ -100,6 +102,12 @@ message HolderPatchRequest {
 	// "leave it alone", so no value could have meant NULL. It wins
 	// outright: setting both this and idp_subject clears.
 	bool idp_subject_null = 17;
+	Profile profile = 18;
+	// Clear profile instead of writing it.
+	// It takes a field of its own because an unset value already means
+	// "leave it alone", so no value could have meant NULL. It wins
+	// outright: setting both this and profile clears.
+	bool profile_null = 19;
 }
 
 message HolderApplyRequest {

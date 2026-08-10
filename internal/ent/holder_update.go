@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/predicate"
+	"github.com/lesomnus/roster/rstr"
 )
 
 // HolderUpdate is the builder for updating Holder entities.
@@ -137,6 +138,18 @@ func (_u *HolderUpdate) ClearIdpSubject() *HolderUpdate {
 	return _u
 }
 
+// SetProfile sets the "profile" field.
+func (_u *HolderUpdate) SetProfile(v *rstr.Profile) *HolderUpdate {
+	_u.mutation.SetProfile(v)
+	return _u
+}
+
+// ClearProfile clears the value of the "profile" field.
+func (_u *HolderUpdate) ClearProfile() *HolderUpdate {
+	_u.mutation.ClearProfile()
+	return _u
+}
+
 // Mutation returns the HolderMutation object of the builder.
 func (_u *HolderUpdate) Mutation() *HolderMutation {
 	return _u.mutation
@@ -227,6 +240,16 @@ func (_u *HolderUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.IdpSubjectCleared() {
 		_spec.ClearField(holder.FieldIdpSubject, field.TypeString)
+	}
+	if value, ok := _u.mutation.Profile(); ok {
+		vv, err := holder.ValueScanner.Profile.Value(value)
+		if err != nil {
+			return 0, err
+		}
+		_spec.SetField(holder.FieldProfile, field.TypeString, vv)
+	}
+	if _u.mutation.ProfileCleared() {
+		_spec.ClearField(holder.FieldProfile, field.TypeString)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -358,6 +381,18 @@ func (_u *HolderUpdateOne) ClearIdpSubject() *HolderUpdateOne {
 	return _u
 }
 
+// SetProfile sets the "profile" field.
+func (_u *HolderUpdateOne) SetProfile(v *rstr.Profile) *HolderUpdateOne {
+	_u.mutation.SetProfile(v)
+	return _u
+}
+
+// ClearProfile clears the value of the "profile" field.
+func (_u *HolderUpdateOne) ClearProfile() *HolderUpdateOne {
+	_u.mutation.ClearProfile()
+	return _u
+}
+
 // Mutation returns the HolderMutation object of the builder.
 func (_u *HolderUpdateOne) Mutation() *HolderMutation {
 	return _u.mutation
@@ -478,6 +513,16 @@ func (_u *HolderUpdateOne) sqlSave(ctx context.Context) (_node *Holder, err erro
 	}
 	if _u.mutation.IdpSubjectCleared() {
 		_spec.ClearField(holder.FieldIdpSubject, field.TypeString)
+	}
+	if value, ok := _u.mutation.Profile(); ok {
+		vv, err := holder.ValueScanner.Profile.Value(value)
+		if err != nil {
+			return nil, err
+		}
+		_spec.SetField(holder.FieldProfile, field.TypeString, vv)
+	}
+	if _u.mutation.ProfileCleared() {
+		_spec.ClearField(holder.FieldProfile, field.TypeString)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Holder{config: _u.config}

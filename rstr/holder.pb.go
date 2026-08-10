@@ -44,6 +44,7 @@ type Holder struct {
 	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	xxx_hidden_IdpSubject  string                 `protobuf:"bytes,8,opt,name=idp_subject,json=idpSubject"`
+	xxx_hidden_Profile     *Profile               `protobuf:"bytes,9,opt,name=profile"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -143,6 +144,13 @@ func (x *Holder) GetIdpSubject() string {
 	return ""
 }
 
+func (x *Holder) GetProfile() *Profile {
+	if x != nil {
+		return x.xxx_hidden_Profile
+	}
+	return nil
+}
+
 func (x *Holder) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -186,6 +194,10 @@ func (x *Holder) SetIdpSubject(v string) {
 	x.xxx_hidden_IdpSubject = v
 }
 
+func (x *Holder) SetProfile(v *Profile) {
+	x.xxx_hidden_Profile = v
+}
+
 func (x *Holder) HasTenant() bool {
 	if x == nil {
 		return false
@@ -214,6 +226,13 @@ func (x *Holder) HasDateCreated() bool {
 	return x.xxx_hidden_DateCreated != nil
 }
 
+func (x *Holder) HasProfile() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Profile != nil
+}
+
 func (x *Holder) ClearTenant() {
 	x.xxx_hidden_Tenant = nil
 }
@@ -228,6 +247,10 @@ func (x *Holder) ClearDateErased() {
 
 func (x *Holder) ClearDateCreated() {
 	x.xxx_hidden_DateCreated = nil
+}
+
+func (x *Holder) ClearProfile() {
+	x.xxx_hidden_Profile = nil
 }
 
 type Holder_builder struct {
@@ -271,7 +294,22 @@ type Holder_builder struct {
 	// string admits exactly one such row. Nullable is what makes "unset" not
 	// collide with "unset": a unique index permits many NULLs and one of each
 	// value.
+	//
+	// **Deprecated by [Identity].** It is one-to-one and this deployment needs
+	// one-to-many -- the same person arrives through Entra and through GitHub.
+	// Kept only so that removing it is a migration somebody decides to run.
 	IdpSubject string
+	// What this person is called, as one thing.
+	//
+	// roster is the profile service, which the design puts **outside** the
+	// identity provider deliberately: a customer IdP's `/userinfo` has only what
+	// that customer put in it, the metadata is ours, and the schema has to be
+	// ours to change. So it lives here, beside the person it describes.
+	//
+	// Product apps do not copy it. They hold the identifier and ask for this when
+	// they have a screen to draw, cached for a minute or two -- which is the same
+	// reason it is not in the token: a profile changes and a token does not.
+	Profile *Profile
 }
 
 func (b0 Holder_builder) Build() *Holder {
@@ -288,6 +326,132 @@ func (b0 Holder_builder) Build() *Holder {
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
 	x.xxx_hidden_IdpSubject = b.IdpSubject
+	x.xxx_hidden_Profile = b.Profile
+	return m0
+}
+
+// Profile is what a person is called, and it is replaced whole.
+//
+// An object rather than four fields on the Holder because it is one fact from
+// one moment: whatever last told us. Its cost is that it is one value to the
+// database -- no filter, no index -- so anything that has to be **looked up**
+// goes flat beside it. That is what [Identity] is.
+//
+// Stored as the canonical protobuf JSON, so these **names** are the storage.
+// Renaming one does not break the build and does not break the wire; it stops
+// finding the old value. Renaming a field here is a migration.
+type Profile struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_DisplayName string                 `protobuf:"bytes,1,opt,name=display_name,json=displayName"`
+	xxx_hidden_Picture     string                 `protobuf:"bytes,2,opt,name=picture"`
+	xxx_hidden_Department  string                 `protobuf:"bytes,3,opt,name=department"`
+	xxx_hidden_EmployeeNo  string                 `protobuf:"bytes,4,opt,name=employee_no,json=employeeNo"`
+	xxx_hidden_Locale      string                 `protobuf:"bytes,5,opt,name=locale"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *Profile) Reset() {
+	*x = Profile{}
+	mi := &file_payday_holder_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Profile) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Profile) ProtoMessage() {}
+
+func (x *Profile) ProtoReflect() protoreflect.Message {
+	mi := &file_payday_holder_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *Profile) GetDisplayName() string {
+	if x != nil {
+		return x.xxx_hidden_DisplayName
+	}
+	return ""
+}
+
+func (x *Profile) GetPicture() string {
+	if x != nil {
+		return x.xxx_hidden_Picture
+	}
+	return ""
+}
+
+func (x *Profile) GetDepartment() string {
+	if x != nil {
+		return x.xxx_hidden_Department
+	}
+	return ""
+}
+
+func (x *Profile) GetEmployeeNo() string {
+	if x != nil {
+		return x.xxx_hidden_EmployeeNo
+	}
+	return ""
+}
+
+func (x *Profile) GetLocale() string {
+	if x != nil {
+		return x.xxx_hidden_Locale
+	}
+	return ""
+}
+
+func (x *Profile) SetDisplayName(v string) {
+	x.xxx_hidden_DisplayName = v
+}
+
+func (x *Profile) SetPicture(v string) {
+	x.xxx_hidden_Picture = v
+}
+
+func (x *Profile) SetDepartment(v string) {
+	x.xxx_hidden_Department = v
+}
+
+func (x *Profile) SetEmployeeNo(v string) {
+	x.xxx_hidden_EmployeeNo = v
+}
+
+func (x *Profile) SetLocale(v string) {
+	x.xxx_hidden_Locale = v
+}
+
+type Profile_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	DisplayName string
+	Picture     string
+	// Not the address. Addresses are [Email] rows, because a person has several
+	// and because whether one has been verified has to live somewhere.
+	Department string
+	EmployeeNo string
+	Locale     string
+}
+
+func (b0 Profile_builder) Build() *Profile {
+	m0 := &Profile{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_DisplayName = b.DisplayName
+	x.xxx_hidden_Picture = b.Picture
+	x.xxx_hidden_Department = b.Department
+	x.xxx_hidden_EmployeeNo = b.EmployeeNo
+	x.xxx_hidden_Locale = b.Locale
 	return m0
 }
 
@@ -295,7 +459,7 @@ var File_payday_holder_proto protoreflect.FileDescriptor
 
 const file_payday_holder_proto_rawDesc = "" +
 	"\n" +
-	"\x13payday/holder.proto\x12\x03app\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x13payday/tenant.proto\"\xb2\x04\n" +
+	"\x13payday/holder.proto\x12\x03app\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x13payday/tenant.proto\"\xda\x04\n" +
 	"\x06Holder\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12+\n" +
 	"\x06tenant\x18\x02 \x01(\v2\v.app.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x14\n" +
@@ -308,32 +472,44 @@ const file_payday_holder_proto_rawDesc = "" +
 	"dateErased\x12H\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x12)\n" +
 	"\vidp_subject\x18\b \x01(\tB\b\xea\x82\x16\x040\x018\x01R\n" +
-	"idpSubject\x1a9\n" +
+	"idpSubject\x12&\n" +
+	"\aprofile\x18\t \x01(\v2\f.app.ProfileR\aprofile\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:1\xca\xfc\x15%\x12\x02\x10\x01\x1a\x1f\x12\x04slug\x1a\t\n" +
 	"\x05alias\x10\x04\x1a\n" +
 	"\n" +
-	"\x06tenant\x10\x020\x01\x8a\xbb\x16\x04\b\x02H\x02B&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
+	"\x06tenant\x10\x020\x01\x8a\xbb\x16\x04\b\x02H\x02\"\x9f\x01\n" +
+	"\aProfile\x12!\n" +
+	"\fdisplay_name\x18\x01 \x01(\tR\vdisplayName\x12\x18\n" +
+	"\apicture\x18\x02 \x01(\tR\apicture\x12\x1e\n" +
+	"\n" +
+	"department\x18\x03 \x01(\tR\n" +
+	"department\x12\x1f\n" +
+	"\vemployee_no\x18\x04 \x01(\tR\n" +
+	"employeeNo\x12\x16\n" +
+	"\x06locale\x18\x05 \x01(\tR\x06localeB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_payday_holder_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_payday_holder_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_payday_holder_proto_goTypes = []any{
 	(*Holder)(nil),                // 0: app.Holder
-	nil,                           // 1: app.Holder.LabelsEntry
-	(*Tenant)(nil),                // 2: app.Tenant
-	(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
+	(*Profile)(nil),               // 1: app.Profile
+	nil,                           // 2: app.Holder.LabelsEntry
+	(*Tenant)(nil),                // 3: app.Tenant
+	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
 }
 var file_payday_holder_proto_depIdxs = []int32{
-	2, // 0: app.Holder.tenant:type_name -> app.Tenant
-	1, // 1: app.Holder.labels:type_name -> app.Holder.LabelsEntry
-	3, // 2: app.Holder.date_updated:type_name -> google.protobuf.Timestamp
-	3, // 3: app.Holder.date_erased:type_name -> google.protobuf.Timestamp
-	3, // 4: app.Holder.date_created:type_name -> google.protobuf.Timestamp
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	3, // 0: app.Holder.tenant:type_name -> app.Tenant
+	2, // 1: app.Holder.labels:type_name -> app.Holder.LabelsEntry
+	4, // 2: app.Holder.date_updated:type_name -> google.protobuf.Timestamp
+	4, // 3: app.Holder.date_erased:type_name -> google.protobuf.Timestamp
+	4, // 4: app.Holder.date_created:type_name -> google.protobuf.Timestamp
+	1, // 5: app.Holder.profile:type_name -> app.Profile
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_payday_holder_proto_init() }
@@ -348,7 +524,7 @@ func file_payday_holder_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_payday_holder_proto_rawDesc), len(file_payday_holder_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

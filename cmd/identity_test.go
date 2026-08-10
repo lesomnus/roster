@@ -177,3 +177,59 @@ func TestTheRulesApplyWithoutTheWallToo(t *testing.T) {
 	}.Build())
 	x.Equal(codes.InvalidArgument, status.Code(err))
 }
+
+// TestAProfileIsStoredOnTheHolder, which is roster being the profile service.
+//
+// The design puts it outside the identity provider on purpose: a customer IdP's
+// `/userinfo` has only what that customer put in it, and the schema has to be
+// ours to change. Product apps hold the identifier and ask for this.
+//
+// It is also the message-field-in-a-column path, which is a thing payday could
+// not do until recently -- `encoding/json` cannot see an opaque message, so
+// every such value stored as `{}` with nothing failing anywhere.
+func TestAProfileIsStoredOnTheHolder(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	v, err := b.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{
+		Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Alias:  "ada",
+		Profile: app.Profile_builder{
+			DisplayName: "Ada Lovelace",
+			Department:  "Analytical Engines",
+			Locale:      "en-GB",
+		}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	// Read back rather than trusting the answer: an Add echoes what it was
+	// given, so a value that was never stored still looks right.
+	got, err := b.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{Ref: v.Ref()}.Build())
+	x.NoError(err)
+	x.Equal("Ada Lovelace", got.GetProfile().GetDisplayName())
+	x.Equal("Analytical Engines", got.GetProfile().GetDepartment())
+
+	// Replaced whole, which is the shape it was chosen for.
+	u, err := b.Ungated.Holder().Patch(ctx, app.HolderPatchRequest_builder{
+		Ref:         v.Ref(),
+		Profile:     app.Profile_builder{DisplayName: "Ada Byron"}.Build(),
+		DateUpdated: got.GetDateUpdated(),
+	}.Build())
+	x.NoError(err)
+	x.Equal("Ada Byron", u.GetProfile().GetDisplayName())
+	x.Empty(u.GetProfile().GetDepartment())
+}
+
+// TestAHolderWithNoProfileHasNone, so that "not set" and "set to nothing" are
+// different rows.
+func TestAHolderWithNoProfileHasNone(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	v, err := b.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{
+		Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Alias:  "plain",
+	}.Build())
+	x.NoError(err)
+	x.False(v.HasProfile())
+}
