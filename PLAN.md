@@ -162,6 +162,62 @@ one predicate rather than three reads.
 A role therefore means something *in a site*: operator in Seoul, reader in
 Frankfurt, one person. A role held on the person could not say that.
 
+### D13 · A credential never travels, and it is registration that says so
+
+`CredentialService` is generated like every other entity's, and its `Get`
+answers with whatever columns it was asked for. One of those columns is the
+password verifier. `credential.proto` had already written *"nothing reads
+`secret` back"* — as an intention, which the generated code did not share.
+
+Two doors, closed by two lines that are the same line:
+
+- **gRPC.** `cmd.register` writes the services out and leaves that one off.
+  `app.RegisterServer` is all-or-nothing, so this is a hand-written list.
+- **The batch.** A batch arrives as one method carrying many, so "not
+  registered" never reaches it — `pd.Batch` dispatches through the app's own
+  table. `cmd.closed` names the service, and the *same function* is given to
+  the chain and to `batch.Guard`, because `ServerConfig.Guard` fills `Closed`
+  from configuration alone and a guard left as it came would serve what the
+  wire will not.
+
+Writing the list out means an entity added tomorrow is not served until somebody
+adds a line. That is the direction to fail in: the other arrangement — serve
+everything, then take one away — fails by publishing, and fails silently.
+
+What replaces it is `VouchService`, which takes secrets in and never answers
+with one.
+
+### D14 · roster hashes, because roster compares
+
+`Credential` already argued that comparison belongs to whoever holds the row: a
+hash that has left the store puts timing-safe comparison, attempt counting and
+lockout in two places that will disagree. Hashing is the same argument one step
+earlier — a caller that hashes has chosen the parameters, and a store cannot
+tell a good choice from a bad one, since what arrives is bytes either way.
+
+argon2id at OWASP's first choice (19 MiB, t=2, p=1), stored as the PHC string so
+the cost travels with the hash. That is what makes `vouch.Default` changeable:
+`Compare` reads the parameters from the row in front of it, so raising the cost
+does not lock out everybody who was hashed at the old one.
+
+Three things that are decisions rather than implementation:
+
+- **Every refusal costs the same.** An unknown person, a person with no
+  password and a wrong password are one response, and the first two call
+  `vouch.Burn` so they take as long as the third. Otherwise the response time
+  answers "does this account exist".
+- **A lockout is reported and the rest is not.** It tells a caller that the
+  person exists, which every other refusal avoids. The alternative is somebody
+  locked out being told nothing and trying forever.
+- **An attempt during a lockout is not counted.** Counting it would let anybody
+  hold an account closed indefinitely by typing at it.
+
+The failure counter is a compare-and-swap, so two attempts at once are one
+recorded failure. It defends against *sustained* guessing; the burst is
+`grpcx.Limit`'s, which counts calls without reading a row. Two mechanisms
+because they are two attacks, and one counter that did both would need an
+atomic increment the schema cannot ask for.
+
 ### D10 · The generated messages are package `rstr`, in `rstr/`
 
 Rather than at the module root, which is what `pd new` writes, and rather than
@@ -290,6 +346,43 @@ to leave `date_created` (`default: ""`), `date_updated` (`version: {}`) and
 `date_erased` (`erased: {}`) alone, and getting that boundary wrong breaks every
 existing schema.
 
+### F6 · A schema cannot say "written, never read" — **open**
+
+`payday.proto` extends `MessageOptions` only. There is no field-level payday
+option at all, so there is nowhere to declare that `Credential.secret` is
+assigned and never returned — the generated `Select` has a `secret` bool like
+every other column, and `Get` honours it.
+
+roster says it at registration instead (D13), which works and is checkable, but
+it is said in the app that happens to hold the field rather than beside the
+field. Any other app that stores a verifier has to rediscover the whole
+argument.
+
+What it would take: a `payday.field` extension in a new number block, a case in
+`internal/pdgen` that leaves the field out of `Select` and out of every response
+message, and `pd gen --check` across apptest. The write side stays as it is —
+the field is still in `Add` and `Patch`, since that is the half that works.
+
+Worth doing only if a second app needs it. One app closing a door it can see is
+not obviously worse than a schema option that every app has to remember to use.
+
+### F7 · Signing in by address has no answer yet — **open**
+
+`Email` decided an address is unique **per holder**, deliberately, so that a
+consultant can be one person in two tenants under one address. One address may
+therefore name two people, and `email.proto` says it outright: *"nothing here
+resolves anybody by address."*
+
+Which means `VouchService` cannot take one, and it does not — `VouchWho` names
+somebody by identifier or by `@tenant/alias`, and field 4 is a comment saying
+why it is empty. Most sign-in forms collect an address, so this is a gap in the
+product rather than a tidy boundary.
+
+The two ways out are a decision, not a field: make addresses globally unique and
+give up the consultant case, or take the tenant from somewhere the form did not
+type — a hostname, a selector, the URL a Login App was reached at. The second
+keeps the schema and is what a multi-tenant product does anyway.
+
 ---
 
 ## Progress
@@ -300,8 +393,8 @@ existing schema.
 | 1 · schema — Site, Identity, Email | **done**, 15 tests, both databases |
 | 1b · Team, on the second axis | **done**, 21 tests, both databases |
 | 1c · memberships, Credential | **done**, 27 tests, both databases |
-| 2 · payday fixes | F1, F2, F4 done · F3 open · F5 written down |
-| 3 · app layer | linking rules **done** · `/api/v1/me`, policy, credential verify next |
+| 2 · payday fixes | F1, F2, F4 done · F3, F6, F7 open · F5 written down |
+| 3 · app layer | linking rules and **credential verification** done, 52 tests, both databases · `/api/v1/me`, policy next |
 | 4 · keys, sync, console | — |
 
 ### Open questions for whoever reads this next
@@ -316,7 +409,33 @@ existing schema.
 - **`Sets` is still handed in by the test, not by the app.** `cmd.Build`
   installs the wall only. The membership table it should read now exists, so
   wiring `pd.Grouped` over `SiteMembership` is the next real step.
-- **`/api/v1/me` is not written.** It needs an overlay RPC, which is the first
-  thing here that is not plain CRUD.
-- **Credential verification is a schema and no behaviour.** The row is there;
-  the RPC that compares a secret without handing it out is not.
+- **`/api/v1/me` is not written.** It needs an overlay RPC. `VouchService` is
+  now the worked example of one, so this is no longer the first of its kind.
+- **Credential verification is done** — `server/vouch`, D13 and D14. What is
+  *not* done is what happens after it says yes.
+
+### What "after it says yes" means, since it came up
+
+roster answers whether a secret is somebody's. It does **not** issue a session,
+and should not: it is called by machines, has no browser, no cookie domain and
+no CSRF story. The session belongs to whatever the browser talks to.
+
+Which makes the shapes:
+
+| | needs Hydra? |
+| --- | --- |
+| one app, its own login | **no.** The app calls `Vouch.Verify`, sets its own cookie, and its `auth.Resolver` reads it back |
+| several apps, one sign-in | **yes.** App A's cookie means nothing to app B, and a signed credential with an issuer, a JWKS, expiry and revocation *is* OIDC |
+
+So the boundary is not id/pw versus OIDC — it is **one relying party versus
+many**. An air-gapped single-app deployment needs no Hydra and no token.
+
+The half that is missing is payday's, and payday already left the seam: `web.New`
+answers a mux the app mounts on, and `cmd.serveHttp` carries a commented
+`h.Handle("/login", …)` saying exactly this. What is not written is an
+`auth/authsession` beside `authoidc` — a handler that mints the cookie and an
+`auth.Handler` that reads it back into an `auth.Identity`. It does not
+re-introduce the deleted `auth.Issuer`: that minted tokens **other parties
+verify**, which is an IdP's job, and a session cookie is an opaque handle
+meaningful only to the server that minted it. The store it needs carries the
+`broker: memory` trap exactly — right for one replica, silently wrong for two.

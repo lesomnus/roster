@@ -1,0 +1,120 @@
+edition = "2023";
+
+package app;
+
+import "google/protobuf/timestamp.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/roster/rstr";
+
+// VouchService is how a secret is used without ever leaving the store.
+//
+// # Why it is not `CredentialService`
+//
+// The generated CRUD for `Credential` has a `Get` that returns every field it
+// was asked for, and one of those fields is the hash. That is the right shape
+// for a row this app reads itself and the wrong shape for anything on a wire,
+// so `CredentialService` is **not registered** -- see `cmd/serve.go`. What is
+// registered is this: two RPCs that take a secret in and never hand one back.
+//
+// The distinction is the same one `Credential` states about comparison. A hash
+// that has left the store puts timing-safe comparison, attempt counting and
+// lockout in two places that will disagree; and a hash *computed* somewhere
+// else puts the argon2 parameters in two places, where the weaker of them is
+// the one that matters. So both happen here.
+//
+// # The two halves differ in whether there is a caller
+//
+// `Verify` runs before anybody has been authenticated -- that is what it is
+// for -- so it is public, and it reads the server the wall was never installed
+// on, exactly as `cmd.Resolver` does and for the same reason.
+//
+// `Set` has a caller: somebody is changing somebody's password. It goes through
+// the ordinary chain and behind the wall.
+//
+// This is why `cmd.public` names a **method** here rather than a service, which
+// is the opposite of what custody's catalogue does. A service where every RPC
+// is public should be named by its prefix, so that a second read added tomorrow
+// is public by intent. This service is mixed, and a method added to it should
+// be closed until somebody says otherwise.
+service VouchService {
+  // Verify answers whether a secret is the one held for somebody.
+  rpc Verify(VouchVerifyRequest) returns (VouchVerifyResponse);
+
+  // Set writes a secret, hashing it here.
+  rpc Set(VouchSetRequest) returns (VouchSetResponse);
+}
+
+// VouchWho names somebody in the words a sign-in form collects.
+//
+// It is this file's own shape rather than the generated `HolderRef`, for the
+// same reason custody's catalogue defines its own item: what a hand-written
+// service takes is its own vocabulary, and `HolderRef` is roster's internal
+// one. It is also the only thing that compiles -- the refs are generated from
+// the entities in a later step than this file, so a service written by hand
+// cannot name one.
+//
+// Exactly one of these ways is expected. More than one is a caller that has not
+// decided, and it is refused rather than resolved in some order this comment
+// would then have to define.
+message VouchWho {
+  // The identifier, when the caller already has it.
+  bytes id = 1;
+
+  // `@tenant/alias`, which is the pair a username field and a tenant selector
+  // make.
+  string tenant = 2;
+  string alias = 3;
+
+  // 4 is empty, and it is worth saying what is not here: an **address**.
+  //
+  // Signing in by email is what most forms collect, and this service cannot
+  // serve it, because `Email` decided the other way and said so: an address is
+  // unique *per holder*, deliberately, so that a consultant can be one person
+  // in two tenants under one address. One address may therefore name two
+  // people, and a sign-in that resolves by address would pick one of them.
+  //
+  // Making it work needs a decision rather than a field -- globally unique
+  // addresses, or a tenant that arrives from somewhere the form did not type.
+  // See PLAN.md.
+}
+
+message VouchVerifyRequest {
+  VouchWho who = 1;
+
+  // Which secret -- "password", "totp". Empty means "password", since that is
+  // the one every deployment has.
+  string kind = 8;
+
+  // The secret itself, as typed. Not a hash: hashing is this service's, because
+  // parameters chosen by a caller are parameters this store cannot vouch for.
+  bytes secret = 9;
+}
+
+message VouchVerifyResponse {
+  bool ok = 1;
+
+  // Who it was, set only when `ok`. This is what the Login App puts in the
+  // subject of whatever it goes on to issue.
+  bytes holder = 2;
+  bytes tenant = 3;
+
+  // When they may try again, set only when too many failures have closed the
+  // account for a while.
+  //
+  // It is distinguishable from an ordinary refusal, and that is a deliberate
+  // trade rather than an oversight: it tells a caller that this person exists,
+  // which every other refusal here is careful not to. The alternative is a
+  // product where somebody locked out is told nothing and tries forever, and
+  // being locked out is already something they can discover by succeeding.
+  google.protobuf.Timestamp locked_until = 4;
+}
+
+message VouchSetRequest {
+  VouchWho who = 1;
+
+  string kind = 8;
+  bytes secret = 9;
+}
+
+message VouchSetResponse {}

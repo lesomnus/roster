@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"slices"
+	"strings"
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
@@ -31,6 +32,7 @@ import (
 	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/core"
 	"github.com/lesomnus/roster/server/pd"
+	"github.com/lesomnus/roster/server/vouch"
 )
 
 // Server is a built app: the database it runs on and the two stacks it answers
@@ -191,24 +193,36 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// `Plain` believes what the caller writes, which is right for a sandbox
 	// and for tests and is not something to serve where anyone can reach it.
 	chain := grpcx.Serving(ctx, grpcx.WithDeadline(c.Server.CallTimeout())).
-		WithUnary(auth.InterceptorUnary(auth.Plain(), Resolver(s.Ungated), auth.PublicDefault)).
-		WithStream(auth.InterceptorStream(auth.Plain(), Resolver(s.Ungated), auth.PublicDefault)).
+		WithUnary(auth.InterceptorUnary(auth.Plain(), Resolver(s.Ungated), public)).
+		WithStream(auth.InterceptorStream(auth.Plain(), Resolver(s.Ungated), public)).
 		WithUnary(grpcx.LimitUnary(c.Server.Limiter(), gate.ByTenant())).
 		With(gate.Interceptor(nil)).
 		With(s.Watch.Interceptor()).
-		WithUnary(grpcx.ClosedUnary(c.Server.Closed()))
+		WithUnary(grpcx.ClosedUnary(closed(c)))
 
 	os := append(opts, chain.ServerOptions()...)
 	os = append(os, c.Server.GrpcOptions()...)
 
 	g := grpc.NewServer(os...)
-	app.RegisterServer(g, s.Walled)
+	register(g, s.Walled)
+
+	// The one service that is not an entity: it answers yes or no about a row
+	// nothing else may read. See `server/vouch`.
+	app.RegisterVouchServiceServer(g, vouch.New(s.Ungated, s.Walled))
 
 	// The batch, with the same rules the chain above enforces -- read off the
 	// same configuration rather than written out again, which is the only way
 	// the two stay in step. What they enforce by looking at the method gRPC
 	// dispatched, this enforces per operation.
-	if b, err := pd.Batch(s.Walled, s.Drv, c.Server.Guard(nil)); err == nil {
+	//
+	// `Closed` is replaced with the same function the chain got, and that is not
+	// tidiness: `ServerConfig.Guard` fills it from the configuration alone, so a
+	// guard left as it came would let a batch carry the credential reads that
+	// are closed everywhere else.
+	guard := c.Server.Guard(nil)
+	guard.Closed = closed(c)
+
+	if b, err := pd.Batch(s.Walled, s.Drv, guard); err == nil {
 		pdpb.RegisterBatchServiceServer(g, b)
 	} else {
 		// A deployment that closed nothing, limits nothing and has no policy.
@@ -218,6 +232,75 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	}
 
 	return g
+}
+
+// register puts every service on the wire, and it is written out rather than
+// being `app.RegisterServer` because of the one that is missing.
+//
+// `CredentialService` is not here. Its generated `Get` answers with whatever
+// columns it was asked for and one of them is the password hash, so serving it
+// is publishing verifiers to anybody the wall lets read a row. The row still
+// exists and this app still reads it -- `server/vouch` does, in process -- but
+// there is no method on this server that returns one.
+//
+// It is said here rather than in the schema because there is nowhere in the
+// schema to say it: payday extends `MessageOptions` only, so no field can be
+// declared written-and-never-read. See PLAN.md, D11 and F6.
+//
+// Written out has a cost worth naming: an entity added to the schema tomorrow
+// is not served until somebody adds a line here. That is the direction to fail
+// in. The other arrangement -- serve everything, then take one away -- fails by
+// publishing something nobody meant to, and it fails silently.
+func register(g grpc.ServiceRegistrar, s app.Server) {
+	app.RegisterTenantServiceServer(g, s.Tenant())
+	app.RegisterHolderServiceServer(g, s.Holder())
+	app.RegisterIdentityServiceServer(g, s.Identity())
+	app.RegisterEmailServiceServer(g, s.Email())
+	app.RegisterSiteServiceServer(g, s.Site())
+	app.RegisterTeamServiceServer(g, s.Team())
+	app.RegisterSiteMembershipServiceServer(g, s.SiteMembership())
+	app.RegisterTeamMembershipServiceServer(g, s.TeamMembership())
+	app.RegisterAuditServiceServer(g, s.Audit())
+	app.RegisterOutboxServiceServer(g, s.Outbox())
+}
+
+// closed is what this server does not answer at all.
+//
+// Whatever the configuration closed, and `CredentialService` on top of it. Not
+// registering it is already enough for gRPC, which dispatches by name and has
+// nothing to dispatch to -- this is for the batch, which arrives as one method
+// carrying many and would otherwise be a way to ask for exactly the reads that
+// were taken off the wire.
+//
+// So the two are one function used twice rather than two lists that agree
+// today.
+func closed(c Config) func(method string) bool {
+	was := c.Server.Closed()
+
+	return func(method string) bool {
+		if strings.HasPrefix(method, "/"+app.CredentialService_ServiceDesc.ServiceName+"/") {
+			return true
+		}
+
+		return was != nil && was(method)
+	}
+}
+
+// public is what this app answers without asking who is calling.
+//
+// Only `VouchService/Verify`, and it has to be: it is the question "is this
+// somebody's password", which is what is asked in order to have a caller at
+// all. A version of it that required one could never be reached.
+//
+// A **method** and not a service prefix, which is the opposite of what
+// custody's catalogue does, and the difference is the point. There, every RPC
+// is public and a second read added tomorrow should be public too, so the
+// prefix says what is meant. Here the service is mixed -- `Set` changes a
+// password and must have a caller -- so a method added to it should be closed
+// until somebody comes back to this line and says otherwise.
+func public(method string) bool {
+	return auth.PublicDefault(method) ||
+		method == "/"+app.VouchService_ServiceDesc.ServiceName+"/Verify"
 }
 
 // Serve answers on `l` until the context is done.
