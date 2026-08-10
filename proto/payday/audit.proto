@@ -1,0 +1,238 @@
+edition = "2023";
+
+package app;
+
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/roster";
+
+// Audit is one write that happened, and who made it.
+//
+// A row is written for every request that changed something, **inside the
+// transaction that changed it**, so the trail and the data it is about hold or
+// fall together. Nothing writes one by hand: the RPCs exist so that a test can
+// arrange a trail and read it back, and a deployment refuses the ones that
+// write -- a trail somebody can edit is evidence of nothing.
+//
+// # Where its fields are
+//
+// 1, 2, 4..7 and 13..15 are payday's on every entity it ships, and this one
+// leaves almost all of them **empty**: 4..7 are the header -- the alias, the
+// name, the description and the labels that anything can read off a row it has
+// no type for. A trail row has none of those and never will, so the numbers
+// stay reserved rather than being spent on something else.
+//
+// 3 is not payday's. It is left open **for the app**, for a set smaller than a
+// tenant -- a site, a cell, a region -- and payday will not spend it. See
+// `docs/guide/permissions.md` for what to put there and how reads are narrowed
+// by it.
+//
+// Its own fields are in 8..12, which is where an app's would be. That is not a
+// special rule: `CheckOverlay` derives what payday owns from what payday
+// declared, so an `audit.ext.proto` is refused at whichever numbers this file
+// actually uses. What is left for an app here is 16 and up -- and there is less
+// reason than usual to want any, since a column here is a column on the one
+// table that never stops growing.
+message Audit {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+
+  // The tenant of the **thing that changed**, as it was when this happened.
+  //
+  // It is a column and not an edge, which is the one place in payday's own
+  // schema that is true, and it is on purpose: **the trail has to outlive the
+  // tenant it points at**. An edge is a foreign key, and a foreign key would
+  // mean either that a tenant can never be erased or that erasing one erases
+  // the record of what was done in it. Neither is what a trail is for.
+  //
+  // The wall reads this column directly; see `tenanted: {field: ...}` below.
+  //
+  // It is the object's tenant and not the actor's, and it used to be the other
+  // way round. The reason given for that was the transfer: a row is stamped
+  // once and nothing moves it, so something that changes hands leaves its whole
+  // trail behind and receiving it does not come with the right to read what its
+  // previous owner did. **That reason survives this change** -- the stamp is
+  // still taken at the moment of the write and still never moves. What it does
+  // not survive is the case it was silent about: an actor of one tenant writing
+  // to a row of another, which is the headquarters pattern payday itself
+  // recommends. Filed under the actor, the record of what was done to somebody
+  // lands behind a wall that somebody cannot see over, and their trail says
+  // nothing happened.
+  //
+  // payday is resource-centric everywhere else -- `object_id` is what a history
+  // is asked with, and both indexes below are about it -- so the actor is an
+  // attribute of the event and not the drawer it is filed in.
+  bytes tenant_id = 2 [(orm.field) = {type: TYPE_UUID}];
+
+  // The holder that made the request, and the zero identifier for a write
+  // nobody asked for -- what a deployment does to itself before it serves
+  // anything.
+  bytes actor_id = 8 [(orm.field) = {type: TYPE_UUID}];
+
+  // The trace the request belonged to, empty if it was not traced. Sixteen
+  // bytes as OpenTelemetry spells one, which is not a UUID however alike they
+  // look, so it is stored as what it is.
+  bytes trace_id = 9;
+
+  // The RPC that did it, by the name gRPC knows it by, such as
+  // "/app.RobotService/Rename".
+  //
+  // It is what the *caller* asked for and not the leg of it that wrote: one
+  // call writes through several servers, and an RPC written by hand ends in an
+  // Apply nobody called by that name. "Who renamed this" has to answer with
+  // Rename.
+  string action = 10;
+
+  // What changed, by its identifier. That is the whole of what "the history of
+  // this thing" is asked with.
+  //
+  // Which *kind* of thing it was is not a column, and with payday it does not
+  // need to be: an identifier carries its domain, so a row erased later still
+  // says what it used to be. That was the standing cost of naming a row by an
+  // identifier alone, and it is what `pdid` was for.
+  bytes object_id = 11 [(orm.field) = {type: TYPE_UUID}];
+
+  // The patch document the write was compiled from, as it was marshaled, and
+  // empty for a write that was not one -- an Add or an Erase says everything it
+  // did in `action` and `object_id`.
+  //
+  // Stored as bytes rather than read back as a document, because that is what a
+  // trail is for: written once, read by somebody asking what happened, and
+  // whoever asks can unmarshal it.
+  bytes patch = 12;
+
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  // The tenant the **actor** was held by, and the same value as `tenant_id` for
+  // the ordinary write, which is nearly all of them.
+  //
+  // It is here so that the two parties to a cross-tenant write are both parties
+  // to the record: the wall is the OR of these two columns, so the tenant whose
+  // row changed reads it and the tenant whose operator made the change reads it,
+  // and neither has to hold a scope wide enough to see the other.
+  //
+  // Not derived from `actor_id`. That would need the holder to still be there
+  // and to still be in the same tenant, and the trail is kept precisely for
+  // when neither is true.
+  bytes actor_tenant_id = 16 [(orm.field) = {type: TYPE_UUID}];
+
+  // The row this happened to, marshaled, as it was when the event was over --
+  // and for an Erase, as it was the moment before.
+  //
+  // `patch` is the delta and this is the state, and the trail needs both for a
+  // reason each of them cannot answer alone. A patch says what changed and not
+  // what it became; and an Add and an Erase have no patch at all, so without
+  // this the two events that matter most -- what was created, what was
+  // destroyed -- record nothing but their own names.
+  //
+  // Erase is the sharp one. An entity that is not softly erased loses its row
+  // for good, and then this is the **only** record that it ever held anything.
+  //
+  // Which is also what it costs: the trail outlives what it names, so an erased
+  // row's contents live here afterwards. An app with an obligation to destroy
+  // data has to reckon with the trail, and the answer is a retention policy
+  // rather than an empty column.
+  bytes value = 17;
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "object"
+        refs: [
+          {
+            name: "object_id"
+            number: 11
+          }
+        ]
+      },
+      // The trail as it is read: one tenant's, newest first. Without it the
+      // only read there is scans the one table that never stops growing and
+      // sorts what it finds.
+      //
+      // One per column the wall reads, because the wall is their OR and a read
+      // filters by one of them: `WHERE (a IN vs OR b IN vs) AND a = me` uses the
+      // index on `a` and leaves the OR as a residual. Without the second, half
+      // the reads scan.
+      {
+        name: "trail"
+        refs: [
+          {
+            name: "tenant_id"
+            number: 2
+          },
+          {
+            name: "date_created"
+            number: 15
+          }
+        ]
+      },
+      {
+        name: "by_actor_tenant"
+        refs: [
+          {
+            name: "actor_tenant_id"
+            number: 16
+          },
+          {
+            name: "date_created"
+            number: 15
+          }
+        ]
+      },
+      {
+        name: "by_actor"
+        refs: [
+          {
+            name: "actor_id"
+            number: 8
+          },
+          {
+            name: "date_created"
+            number: 15
+          }
+        ]
+      }
+    ]
+  };
+  option (payday.entity) = {
+    // payday's own, so that generation finds it whatever an app called the
+    // proto package. An app never writes this; see `Own` in entity.proto.
+    own: OWN_AUDIT
+
+    domain: 3
+
+    // Nothing erases a trail row -- the layer in front does not serve the RPC
+    // -- so what this says is that there is no column here pretending it might.
+    erase: {hard: {}}
+
+    // The OR of the two: readable by the tenant whose row changed and by the
+    // tenant whose actor changed it. See the note on `field` in the option.
+    tenanted: {field: "tenant_id", field: "actor_tenant_id"}
+
+    // A trail nobody can query is not a trail. The filters are the four
+    // identifiers a question is actually asked with -- what happened to this
+    // row, what did this person do, what happened in this tenant, what did this
+    // tenant's people do.
+    list: {
+      // Backwards, which is what a trail wants: what it is asked is what
+      // happened, and the answer starts with what happened last.
+      order: [
+        {field: "date_created", desc: true},
+        {field: "id", desc: true}
+      ]
+      by: ["object_id", "actor_id", "tenant_id", "actor_tenant_id"]
+      size: 50
+      max: 200
+    }
+  };
+}
