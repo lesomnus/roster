@@ -168,7 +168,15 @@ func (s coreRole) Add(ctx context.Context, req *app.RoleAddRequest) (*app.Role, 
 
 	// A role nobody may bind is a delayed version of binding it, so writing one
 	// is held to the same rule as granting one. See `escalate.go`.
-	if err := s.mayGrant(ctx, "methods", req.GetMethods()); err != nil {
+	//
+	// The scope is the role's **own** site, because that is where it may be
+	// bound: a role of no site is bindable across the tenant, so writing one is
+	// a tenant-wide grant however narrow the writer is.
+	at, err := s.siteOf(ctx, req.GetSite())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.mayGrant(ctx, "methods", req.GetMethods(), at); err != nil {
 		return nil, err
 	}
 
@@ -196,7 +204,14 @@ func (s coreRole) Add(ctx context.Context, req *app.RoleAddRequest) (*app.Role, 
 // same call: `mayGrant` refuses anybody who does not already hold everything,
 // and holding everything is the only way to hand it out.
 func (s coreRole) Patch(ctx context.Context, req *app.RolePatchRequest) (*app.Role, error) {
-	if err := s.mayGrant(ctx, "methods", req.GetMethods()); err != nil {
+	// Read off the row rather than taken from the request: `Role.site` is
+	// immutable, so the request has no say in it, and asking the request would
+	// be asking the caller which rules to hold them to.
+	where, err := s.siteOfRole(ctx, req.GetRef())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.mayGrant(ctx, "methods", req.GetMethods(), where); err != nil {
 		return nil, err
 	}
 
@@ -288,7 +303,11 @@ func (s coreBinding) Add(ctx context.Context, req *app.BindingAddRequest) (*app.
 	if err != nil {
 		return nil, err
 	}
-	if err := s.mayGrant(ctx, "role", ms); err != nil {
+	at, err := s.siteOf(ctx, req.GetSite())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.mayGrant(ctx, "role", ms, at); err != nil {
 		return nil, err
 	}
 

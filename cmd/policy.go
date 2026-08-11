@@ -301,62 +301,55 @@ func Rules(db *ent.Client) core.Rules {
 	return core.Rules{Holds: Holds(db), Granted: Granted(db)}
 }
 
-// Granted is every method somebody holds **across their whole tenant**, which
-// is what they may pass on.
+// Granted is every pattern somebody holds through a binding, and **where**.
 //
-// # Only what is held tenant-wide
+// # Why the site travels with the methods
 //
-// Two things are left out and it is one reason. A role held in a **team** is
-// scoped to that team; a binding made in a **site** is scoped to that site; and
-// handing either on at a wider scope would widen a permission rather than pass
-// it on.
+// Because a permission held in one place is not one to hand out in another,
+// and flattened into a single list the two are the same strings. That is not
+// hypothetical: somebody bound to a role in Seoul had those methods in a flat
+// list with no trace of Seoul on them, so `mayGrant` compared them against a
+// tenant-wide write and agreed. Two RPCs later they held the tenant.
 //
-// The team half was here from the start. The site half was not, and what it
-// cost was found by writing it: somebody bound to a role in Seoul had those
-// methods in this list with no trace of Seoul on them, so `mayGrant` compared
-// them against a tenant-wide write and agreed. Two RPCs later they held the
-// tenant. `server/core.bindableIn` closes the path they actually took; this
-// closes the question rather than the path.
+// Kept together, `mayGrant` takes the scope being written to and only what
+// reaches it counts. A site administrator delegates inside their own site,
+// which is correct, and nowhere else, which is the point.
 //
-// # What it costs, which is real
+// # Bindings only
 //
-// A site administrator may now delegate **nothing** -- not even within their
-// own site, where it would be perfectly correct. That is the same thing a team
-// role already could not do, so it is at least consistent, and it is the safe
-// direction of a wrong answer.
-//
-// Doing better means `mayGrant` taking the scope being written to and this
-// answering per scope rather than as one flat list. Every caller already knows
-// the scope -- `coreRole.Add` has `req.GetSite()`, `coreBinding.Add` has one
-// too -- so it is a change of shape rather than of information. It is not done
-// here because inventing it inside a security fix is how a security fix
-// acquires a bug.
+// A role held in a **team** is still left out entirely. Its scope is a team
+// and the scopes here are the tenant and a site, so there is nothing to
+// compare it against -- `server/core.Holds` is what asks about a team, per
+// call, with the team in hand.
 func Granted(db *ent.Client) core.Granted {
-	return func(ctx context.Context, who pdid.Id) ([]string, error) {
+	return func(ctx context.Context, who pdid.Id) ([]core.Grant, error) {
 		vs, err := db.Binding.Query().
 			Where(
 				binding.DateErasedIsNil(),
 				binding.HasHolderWith(holder.IDEQ(who.Uuid())),
-
-				// Tenant-wide only. A binding that names a site is a permission
-				// held there, and it is not theirs to hand out anywhere else.
-				binding.Not(binding.HasSite()),
 			).
 			WithRole().
+			WithSite().
 			All(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		var ms []string
+		gs := make([]core.Grant, 0, len(vs))
 		for _, v := range vs {
 			if v.Edges.Role == nil {
 				continue
 			}
-			ms = append(ms, v.Edges.Role.Methods...)
+
+			g := core.Grant{Methods: v.Edges.Role.Methods}
+			if v.Edges.Site != nil {
+				g.Site = pdid.Id(v.Edges.Site.ID)
+			}
+
+			gs = append(gs, g)
 		}
 
-		return ms, nil
+		return gs, nil
 	}
 }
 

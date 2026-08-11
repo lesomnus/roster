@@ -60,7 +60,19 @@ import (
 // than a second return beside it. It briefly was one, while the widest grant
 // was a boolean on the row; `frame.Covers` made the boolean unnecessary and
 // says four useful things between one method and all of them besides.
-type Granted func(ctx context.Context, who pdid.Id) ([]string, error)
+type Granted func(ctx context.Context, who pdid.Id) ([]Grant, error)
+
+// Grant is a set of patterns and where they are held.
+//
+// `Site` is `pdid.Nil` for a binding made across the tenant, and otherwise the
+// site it was made in. Keeping the two together is the whole of what lets a
+// site administrator delegate inside their own site without being able to
+// delegate outside it -- flattened into one list, the two are the same strings
+// and the wider one wins.
+type Grant struct {
+	Methods []string
+	Site    pdid.Id
+}
 
 // mayGrant refuses a caller handing out a method they do not hold.
 //
@@ -68,7 +80,14 @@ type Granted func(ctx context.Context, who pdid.Id) ([]string, error)
 // server: `init`, the key command, a migration. There is nobody to refuse, and
 // that door is a line of wiring a reader can find rather than a privilege
 // anybody holds.
-func (s Core) mayGrant(ctx context.Context, field string, methods []string) error {
+// `at` is the scope being written to: `pdid.Nil` for the whole tenant, and
+// otherwise the site. What somebody holds tenant-wide they may hand out
+// anywhere; what they hold in a site they may hand out **in that site**.
+//
+// That asymmetry is the rule rather than a special case. Narrowing a permission
+// is free and widening one is what needs permission, so a grant made in Seoul
+// covers a grant being made in Seoul and covers nothing wider.
+func (s Core) mayGrant(ctx context.Context, field string, methods []string, at pdid.Id) error {
 	f, ok := frame.From(ctx)
 	if !ok {
 		return nil
@@ -86,15 +105,24 @@ func (s Core) mayGrant(ctx context.Context, field string, methods []string) erro
 		return err
 	}
 
+	// What of theirs reaches the scope being written to. A tenant-wide grant
+	// reaches everywhere; a grant made in a site reaches that site alone.
+	var reaches []string
+	for _, g := range held {
+		if g.Site == pdid.Nil || g.Site == at {
+			reaches = append(reaches, g.Methods...)
+		}
+	}
+
 	for _, m := range methods {
 		// One of theirs has to cover it **on its own**. Asking whether the
 		// union covers it would let somebody holding every service of a package
 		// hand out the package -- true today and wrong the moment a service is
 		// added, which is the widening this exists to refuse. See
 		// `frame.Covers`.
-		if !slices.ContainsFunc(held, func(v string) bool { return frame.Covers(v, m) }) {
+		if !slices.ContainsFunc(reaches, func(v string) bool { return frame.Covers(v, m) }) {
 			return status.Errorf(codes.PermissionDenied,
-				"%s: you do not hold %s, so you may not grant it", field, m)
+				"%s: you do not hold %s here, so you may not grant it", field, m)
 		}
 	}
 
@@ -181,6 +209,31 @@ func (s Core) siteOf(ctx context.Context, ref *app.SiteRef) (pdid.Id, error) {
 	}
 
 	return pdid.From(v.GetId())
+}
+
+// siteOfRole is where a role belongs, read off the row.
+//
+// Separate from [Core.siteOf] because a patch names the role and not the site:
+// `Role.site` is immutable, so the request has no say in it, and asking the
+// request would be asking the caller which rules to hold them to.
+func (s Core) siteOfRole(ctx context.Context, ref *app.RoleRef) (pdid.Id, error) {
+	if ref == nil {
+		return pdid.Nil, nil
+	}
+
+	v, err := s.Next().Role().Get(ctx, app.RoleGetRequest_builder{
+		Ref:    ref,
+		Select: app.RoleSelect_builder{Site: app.SiteSelect_builder{}.Build()}.Build(),
+	}.Build())
+	if err != nil {
+		return pdid.Nil, err
+	}
+
+	if b := v.GetSite().GetId(); len(b) > 0 {
+		return pdid.From(b)
+	}
+
+	return pdid.Nil, nil
 }
 
 // methodsOf is what a role allows, read through this stack so that a caller who

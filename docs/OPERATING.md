@@ -202,11 +202,13 @@ Writing a role, patching one, binding one, and putting methods on an API key are
 all refused when they name a method you do not hold **through a binding**. A
 role you hold in one team is not yours to bind across the tenant.
 
-**Only what you hold across the whole tenant.** A role held in a team, or a
-binding made in a site, is a permission scoped to that team or site — and
-handing either on more widely would widen it rather than pass it on. So a site
-administrator may act in their site and delegate nothing, which is a real loss
-and the safe direction of a wrong answer.
+**What you hold, where you hold it.** A binding made in a site is a permission
+held there, so it may be handed on **in that site** and nowhere wider. A site
+administrator delegates inside their own site and cannot reach past it.
+
+A role held in a *team* is left out of this entirely: its scope is a team and
+the scopes here are the tenant and a site, so there is nothing to compare. What
+asks about a team is the per-call check in `server/core`.
 
 **And a role that belongs to a site is bound only there**, whoever is asking.
 That is the schema's own rule and it holds for somebody who legitimately holds

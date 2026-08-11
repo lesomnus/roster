@@ -524,12 +524,37 @@ func TestASiteAdministratorStaysInTheirSite(t *testing.T) {
 		x.Equal(codes.PermissionDenied, status.Code(err))
 	})
 
-	t.Run("what she holds in a site is not what she may pass on", func(t *testing.T) {
+	// What she holds travels with **where** she holds it, which is what lets
+	// her delegate inside her own site while the two refusals above still hold.
+	//
+	// Flattened into one list, a Seoul grant and a tenant-wide grant are the
+	// same strings and the wider one wins -- which is exactly how the
+	// escalation above worked.
+	t.Run("she may delegate inside her own site", func(t *testing.T) {
 		x := require.New(t)
 
 		held, err := cmd.Granted(b.Ent)(ctx, b.AcmeUser)
 		x.NoError(err)
-		x.Empty(held, "a site-scoped binding was offered as something to grant")
+		x.Len(held, 1)
+		x.Equal(site, held[0].Site, "the site was flattened away")
+
+		// A role of her own site, with methods she holds there.
+		w, err := b.Walled.Role().Add(as, app.RoleAddRequest_builder{
+			Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+			Site:    app.SiteRef_builder{Id: seoul.GetId()}.Build(),
+			Alias:   "seoul-reader",
+			Methods: []string{listTeams},
+		}.Build())
+		x.NoError(err, "a site administrator could not delegate within their own site")
+
+		// And binding it, in that site.
+		mate := b.holder(t, ctx, b.Acme, "colleague")
+		_, err = b.Walled.Binding().Add(as, app.BindingAddRequest_builder{
+			Role:   app.RoleRef_builder{Id: w.GetId()}.Build(),
+			Holder: app.HolderRef_builder{Id: mate.Bytes()}.Build(),
+			Site:   app.SiteRef_builder{Id: seoul.GetId()}.Build(),
+		}.Build())
+		x.NoError(err)
 	})
 
 	// The rule is about the **role**, not about who is asking, so it holds for
