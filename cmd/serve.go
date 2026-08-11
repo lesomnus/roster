@@ -34,6 +34,7 @@ import (
 	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/core"
 	"github.com/lesomnus/roster/server/keys"
+	"github.com/lesomnus/roster/server/me"
 	"github.com/lesomnus/roster/server/pd"
 	"github.com/lesomnus/roster/server/vouch"
 )
@@ -262,6 +263,10 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// The one service that is not an entity: it answers yes or no about a row
 	// nothing else may read. See `server/vouch`.
 	app.RegisterVouchServiceServer(g, vouch.New(s.Ungated, s.Walled))
+
+	// And what a caller is, in one round trip. It takes nothing, so there is
+	// nobody but the caller to ask about; see `server/me`.
+	app.RegisterMeServiceServer(g, me.New(s.Ent, Everything(s.Ent)))
 
 	// The batch, with the same rules the chain above enforces -- read off the
 	// same configuration rather than written out again, which is the only way

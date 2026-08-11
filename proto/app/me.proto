@@ -1,0 +1,93 @@
+edition = "2023";
+
+package roster;
+
+import "google/protobuf/timestamp.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/roster/rstr";
+
+// MeService answers what a caller is, in one round trip.
+//
+// # Why it is not four reads
+//
+// Everything here is already readable: a `Holder`, their `Email` rows, the
+// teams they are in, the roles they hold. A page that drew them would make four
+// calls and then do the join itself -- in TypeScript, differently in every app
+// that tried.
+//
+// What makes it one RPC rather than a convenience is that the **join is
+// roster's**. Which roles somebody effectively holds is a union over bindings,
+// group memberships and team memberships, and an app that computed it from the
+// parts would be a second implementation of `gate.Policy` that drifts from the
+// one enforcing it. So this answers with what roster itself would decide.
+//
+// # It takes nothing
+//
+// There is no subject field, and that is the point: it answers about **the
+// caller**, read from the frame. A version that took an identifier would be
+// `Holder.Get` with extra steps, and would need its own rule about who may ask
+// about whom -- which `Holder.Get` already has, in the wall.
+//
+// # What it is not
+//
+// Not a token, not a session, and not something to cache. It is a read, and the
+// answer is true when it was made.
+service MeService {
+  rpc Get(MeGetRequest) returns (MeGetResponse);
+}
+
+message MeGetRequest {}
+
+message MeGetResponse {
+  // The caller, by the identifier every product knows them by -- `sub`.
+  bytes id = 1;
+  bytes tenant = 2;
+
+  string alias = 4;
+  string name = 5;
+
+  // The addresses roster holds, and whether anybody checked each one.
+  //
+  // Unverified ones are here rather than filtered out, because "we have this
+  // address and nobody has confirmed it" is a different fact from not having
+  // it, and a page that wants to prompt somebody needs the difference.
+  repeated MeEmail emails = 8;
+
+  // The teams they are in, with the site each is in.
+  repeated MeTeam teams = 9;
+
+  // Every RPC they may call, which is the union `gate.Policy` enforces --
+  // through bindings, through groups, and through a role held in a team.
+  //
+  // Written out rather than named, for the reason a `Role` holds methods
+  // rather than a name: a name is a lookup somewhere else, and the somewhere
+  // else is what an app would have to reimplement.
+  //
+  // A page uses it to decide what to **show**. It is not what decides what is
+  // allowed -- that is the server, on every call, and a client that treated
+  // this as the decision would be one an altered client could talk out of.
+  repeated string methods = 10;
+
+  // The sites they are narrowed to, and empty means every site of their
+  // tenant. It is `frame.Sets` as an answer; see `cmd.Sets`.
+  repeated bytes sites = 11;
+  bool every_site = 12;
+}
+
+message MeEmail {
+  string address = 8;
+  google.protobuf.Timestamp date_verified = 9;
+}
+
+message MeTeam {
+  bytes id = 1;
+  string alias = 4;
+  string name = 5;
+
+  bytes site = 8;
+  string site_alias = 9;
+
+  // What they may do in it, and empty is a plain member.
+  string role = 10;
+}

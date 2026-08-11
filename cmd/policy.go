@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"slices"
 
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
@@ -11,6 +12,8 @@ import (
 	"github.com/lesomnus/payday/gate"
 	"github.com/lesomnus/payday/pdid"
 
+	app "github.com/lesomnus/roster/rstr"
+
 	"github.com/lesomnus/roster/internal/ent"
 	"github.com/lesomnus/roster/internal/ent/binding"
 	"github.com/lesomnus/roster/internal/ent/group"
@@ -19,6 +22,7 @@ import (
 	entteam "github.com/lesomnus/roster/internal/ent/team"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
 	"github.com/lesomnus/roster/server/core"
+	"github.com/lesomnus/roster/server/me"
 	"github.com/lesomnus/roster/server/pd"
 )
 
@@ -66,6 +70,10 @@ func (p policy) May(ctx context.Context, c gate.Call) error {
 		return nil
 	}
 
+	if aboutYourself(c.Action) {
+		return nil
+	}
+
 	held, err := p.of(ctx, c.Actor.Uuid())
 	if err != nil {
 		return err
@@ -76,6 +84,26 @@ func (p policy) May(ctx context.Context, c gate.Call) error {
 	}
 
 	return nil
+}
+
+// aboutYourself is the methods a binding is not required for.
+//
+// One, and it has to be: `MeService.Get` takes nothing and answers only the
+// caller's own facts, including **which roles they hold**. Requiring a role to
+// learn that you have none is a deployment where somebody who has just been
+// given an account cannot be told what it is for -- and where the page that
+// would say so is the one that cannot load.
+//
+// It reveals nothing a caller does not already have. There is no subject
+// argument, so it cannot be pointed at anybody else, and the absence of that
+// argument is what makes this safe rather than a judgement about the handler.
+//
+// A list of methods and not a prefix, which is the opposite of custody's
+// catalogue. There every RPC is public and a second one added tomorrow should
+// be too. Here it is exactly this one, and a method added to `MeService`
+// tomorrow should need a decision rather than inherit one.
+func aboutYourself(method string) bool {
+	return method == app.MeService_Get_FullMethodName
 }
 
 // Where is which tenants this caller sees.
@@ -344,4 +372,32 @@ func allows(r *ent.Role, method string) bool {
 	}
 
 	return false
+}
+
+// Everything is what a caller effectively holds, for `server/me`.
+//
+// The same union the gate enforces, so that what a page shows and what the
+// server allows come from one function rather than two that agree today.
+func Everything(db *ent.Client) me.Held {
+	p := policy{db}
+
+	return func(ctx context.Context, who pdid.Id) ([]string, []pdid.Id, bool, error) {
+		h, err := p.of(ctx, who.Uuid())
+		if err != nil {
+			return nil, nil, false, err
+		}
+
+		ms := make([]string, 0, len(h.methods))
+		for m := range h.methods {
+			ms = append(ms, m)
+		}
+		slices.Sort(ms)
+
+		ks := make([]pdid.Id, 0, len(h.sites))
+		for _, v := range h.sites {
+			ks = append(ks, pdid.Id(v))
+		}
+
+		return ms, ks, h.anySite, nil
+	}
 }
