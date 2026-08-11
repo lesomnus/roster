@@ -154,7 +154,7 @@ func TestAKeyIsARowThatExists(t *testing.T) {
 
 		// The identity `keys.Store` answers with, obtained the way it is: by
 		// presenting the token to the store.
-		id, err := keys.Store(b.Control.Ungated).Lookup(ctx, b.Token)
+		id, err := keys.Store(b.Control.Ungated, b.Ungated).Lookup(ctx, b.Token)
 		x.NoError(err)
 
 		f, err := r.Resolve(ctx, id)

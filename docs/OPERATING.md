@@ -97,8 +97,27 @@ Three things about it are worth knowing before allowing it:
   add` mints — live in the other database, and there is no query from one to the
   other. They are not refused here; they are invisible.
 
-Nothing mints a data-plane key yet. The rows exist and `Introspect` reads them,
-and the console that would create one is not written; see below.
+### Two kinds of key
+
+The prefix is which, and it is not decoration — it decides which database holds
+the row and who the token is served as.
+
+| | | |
+| --- | --- | --- |
+| `rk_` | the deployment's | `roster key add`. Resolves to the **key**, holds no tenant, sees every tenant there is |
+| `rt_` | a tenant's | belongs to a holder. Resolves to that **holder**, so the wall, the bindings and the sites all apply exactly as when that person calls |
+
+A `rt_` key is therefore never wider than the person it hangs off. Its `methods`
+narrow that further and can never widen it — a method on the key that its holder
+cannot call is still refused.
+
+What a tenant key costs is the trail: its writes are recorded as the person's,
+so `Audit` says who and not which of their keys. Revoking still works, since the
+row is what the token resolves through.
+
+Nothing mints a `rt_` key over the wire yet — `ApiKeyService` is unregistered,
+so it takes `Ungated`, which means a shell. The console is what changes that,
+and the rules that make it safe are in place: see below.
 
 ## Who may do what
 
@@ -171,18 +190,11 @@ Nothing written down is plaintext, and it warns once.
 - **No admin console.** Keys and roles are the CLI's, which means a shell on the
   box. A console would itself need a key, and the first key has to come from
   somewhere that is not one.
-- **Nothing mints a data-plane key.** `Introspect` reads them and there is no way
-  to create one but `Ungated`, so the API tokens it exists for cannot be issued
-  yet. What is missing is not the row: it is the rules that would make a
-  customer-minted key safe, and those are listed below.
-- **A customer-minted key would cross the wall.** `policy.Where` hands
-  `frame.Everything` to any actor whose identifier says "api key" — a byte of
-  the identifier, with no row read — and `policy.May` lets one past the gate
-  unasked. Both are right for a key the operator minted with `roster key add`
-  and neither is right for one a customer made. Nor is there any escalation
-  check on `ApiKey.methods`: `mayGrant` is wired to `Role.Add` and
-  `Binding.Add` and to nothing else, so whoever reaches `ApiKey.Add` writes
-  their own grant.
+- **Nothing mints a `rt_` key over the wire.** `ApiKeyService` is unregistered,
+  so issuing one takes `Ungated` and therefore a shell. The rules that make a
+  customer-minted key safe are in place — the prefix, the holder it resolves to,
+  and `mayGrant` on `methods` — and what is missing is the surface that would
+  use them.
 - **No escalation-proof `Patch`.** `Role.Patch` would be how a role grows
   methods after it was written, and it is closed at the transport. A deployment
   that opens general writes opens that with them.

@@ -100,7 +100,10 @@ func newCmdKeyAdd(c *Config) *xli.Command {
 				return err
 			}
 
-			token, sum, err := keys.Mint()
+			// The deployment's own. `roster key add` is the operator at a
+			// shell, and a key for somebody inside a tenant is not something a
+			// shell on the box should be handing out.
+			token, sum, err := keys.Mint(keys.PrefixDeployment)
 			if err != nil {
 				return err
 			}

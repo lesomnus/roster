@@ -210,7 +210,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		}
 
 		s.Control = control
-		s.Auth = auth.Bearer(keys.Store(control.Ungated))
+		s.Auth = auth.Bearer(keys.Store(control.Ungated, s.Ungated))
 	}
 	if c.Watch.Outbox && b != nil {
 		// The loop that makes an event durable. It is not a layer and not a

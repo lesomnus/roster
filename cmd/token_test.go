@@ -29,7 +29,7 @@ func mintFor(t *testing.T, ctx context.Context, b *keyedBuilt, who pdid.Id, alia
 	t.Helper()
 	x := require.New(t)
 
-	token, sum, err := keys.Mint()
+	token, sum, err := keys.Mint(keys.PrefixTenant)
 	x.NoError(err)
 
 	req := app.ApiKeyAddRequest_builder{

@@ -72,7 +72,7 @@ func keyFor(t *testing.T, methods ...string) *keyedBuilt {
 	k := add(t, ctx, s.Control, "k")
 	svc := addHolder(t, ctx, s.Control, k, "custody")
 
-	token, sum, err := keys.Mint()
+	token, sum, err := keys.Mint(keys.PrefixDeployment)
 	x.NoError(err)
 
 	_, err = s.Control.Ungated.ApiKey().Add(ctx, app.ApiKeyAddRequest_builder{
@@ -216,7 +216,7 @@ func TestAKeyNobodyMintedIsRefused(t *testing.T) {
 		token string
 	}{
 		{"not ours", "hunter2"},
-		{"right shape, never minted", keys.Prefix + "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"},
+		{"right shape, never minted", keys.PrefixDeployment + "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"},
 		{"one byte off", b.Token[:len(b.Token)-1] + "x"},
 	} {
 		t.Run(tt.what, func(t *testing.T) {
