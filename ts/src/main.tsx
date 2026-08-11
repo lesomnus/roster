@@ -2,16 +2,15 @@
  * Where the page starts.
  *
  * Two things happen before React does, and both have to: the transport is
- * decided -- a real server here, and a Go server compiled to wasm in a sandbox
- * -- and the store is opened for **this** credential and filled from its
- * mirror. Rendering over a store that has not been hydrated is rendering a
- * spinner for something the tab already had.
+ * decided, and the store is opened and filled from its mirror. Rendering over a
+ * store that has not been hydrated is rendering a spinner for something the tab
+ * already had.
  *
  * @module
  */
 
 import { createConnectTransport } from '@connectrpc/connect-web'
-import { StrictMode } from 'react'
+import { StrictMode, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import { Provider } from '@lesomnus/payday/react'
@@ -26,96 +25,138 @@ import './style.css'
  * `npm run dev` is a different origin from the server, so the server has to say
  * this page may call it -- `origins:` under `server.http`. A build served by
  * the app itself is same-origin and needs none of that.
+ *
+ * This is the **control plane's** listener. A console administers the
+ * deployment, and an operator is a holder of that plane -- on the data plane
+ * their session names nobody, because the two are separate databases with no
+ * query between them.
  */
 const ADDR = import.meta.env['VITE_ADDR'] ?? 'http://localhost:8080'
 
 const root = createRoot(document.getElementById('root') as HTMLElement)
 
 /**
- * The credential, which this app believes because the server does.
+ * Signing in, which is a **cookie** and not something this page can hold.
  *
- * `auth.Plain` reads `@tenant/holder` and takes the caller's word for it, which
- * is right for a sandbox and for tests and is **not** something to serve where
- * anyone can reach it. Putting a real one here means an endpoint that issues
- * one -- payday leaves the seam and cannot fill it, since issuing is HTTP and
- * `auth` only reads. See `serve.go`.
+ * A browser has nowhere safe to keep a credential -- script that can read one
+ * is script that can send it somewhere else -- so what it gets is an opaque
+ * cookie naming a session the server keeps. This page never sees it: the
+ * browser stores it, sends it, and `credentials: 'include'` is the whole of
+ * what this file has to say about it.
+ *
+ * Which is why there is no `localStorage` here any more. The scaffold this
+ * replaced kept `@acme/admin` there and sent it as `auth.Plain`, which believes
+ * whatever a caller writes -- right for a sandbox and not something to serve
+ * where anyone can reach it.
  */
-function credential(): string | null {
-	return localStorage.getItem('credential')
+async function signIn(alias: string, password: string): Promise<boolean> {
+	const res = await fetch(`${ADDR}/session`, {
+		method: 'POST',
+		headers: { 'content-type': 'application/json' },
+		credentials: 'include',
+		body: JSON.stringify({ alias, password }),
+	})
+
+	return res.status === 204
 }
 
-function SignIn(): React.ReactNode {
+/**
+ * Signing out deletes the row, which is the part that matters: the key is dead
+ * in every tab that had it, immediately, which is the thing a self-contained
+ * token cannot do.
+ */
+async function signOut(): Promise<void> {
+	await fetch(`${ADDR}/session`, { method: 'DELETE', credentials: 'include' })
+}
+
+function SignIn(props: { onDone: () => void }): React.ReactNode {
+	const [bad, setBad] = useState(false)
+
 	return (
 		<form
 			className="sign-in"
 			onSubmit={(e) => {
 				e.preventDefault()
-				const v = new FormData(e.currentTarget).get('credential')
-				if (typeof v !== 'string' || v === '') return
 
-				localStorage.setItem('credential', v)
-				void boot()
+				const f = new FormData(e.currentTarget)
+				const alias = String(f.get('alias') ?? '')
+				const password = String(f.get('password') ?? '')
+
+				void signIn(alias, password).then((ok) => {
+					if (ok) props.onDone()
+					else setBad(true)
+				})
 			}}
 		>
 			<h1>roster</h1>
 			<label>
-				sign in as
-				<input name="credential" defaultValue="@acme/admin" autoFocus />
+				operator
+				<input name="alias" defaultValue="ops" autoFocus />
 			</label>
-			<button type="submit">go</button>
+			<label>
+				password
+				<input name="password" type="password" />
+			</label>
+			<button type="submit">sign in</button>
+
+			{/* One answer however it was wrong. Which of "no such person",
+			    "wrong password" and "locked" it was is an oracle, and the
+			    lockout in `server/vouch` is what makes guessing expensive. */}
+			{bad && <p className="bad">no</p>}
+
 			<p>
-				Run <code>go run ./cmd/roster init</code> first; it prints who to sign in as.
+				Run <code>roster init</code> first; it prints the operator and their
+				password, once.
 			</p>
 		</form>
 	)
 }
 
 async function boot(): Promise<void> {
-	const who = credential()
-	if (who === null) {
-		root.render(
-			<StrictMode>
-				<SignIn />
-			</StrictMode>,
-		)
-
-		return
-	}
-
 	const transport = createConnectTransport({
 		baseUrl: ADDR,
-		interceptors: [
-			(next) => (req) => {
-				req.header.set('authorization', `Plain ${who}`)
 
-				return next(req)
-			},
-		],
+		// On every call, or the browser neither receives the cookie a sign-in
+		// sets nor sends it back -- a login that works in `curl` and does
+		// nothing here, with no error anywhere.
+		fetch: (input, init) => fetch(input, { ...init, credentials: 'include' }),
 	})
 
-	const app = await open(transport, who)
+	// Opened per **session** rather than per credential, because this page no
+	// longer holds one: what it would key on is who the server says the caller
+	// is, and that is a call away.
+	const app = await open(transport, 'console')
 
 	/**
-	 * Signing out drops this caller's copy -- the rows, the answers and the
-	 * mirror. Nothing there is a secret, since the server only ever sent what
-	 * that caller could see, but it is *that caller's*, and leaving it where
-	 * the next one opens the same page is the kind of thing that looks like a
-	 * leak whether or not it is one.
+	 * Signing out ends the session and drops this caller's copy -- the rows,
+	 * the answers and the mirror. Nothing there is a secret, since the server
+	 * only ever sent what that caller could see, but it is *that caller's*, and
+	 * leaving it where the next one opens the same page is the kind of thing
+	 * that looks like a leak whether or not it is one.
 	 */
 	const out = (): void => {
-		app.store.forget()
-		app.store.close()
-		localStorage.removeItem('credential')
-		void boot()
+		void signOut().then(() => {
+			app.store.forget()
+			app.store.close()
+			start()
+		})
 	}
 
 	root.render(
 		<StrictMode>
 			<Provider app={app}>
-				<Page who={who} onSignOut={out} />
+				<Page onSignOut={out} />
 			</Provider>
 		</StrictMode>,
 	)
 }
 
-void boot()
+function start(): void {
+	root.render(
+		<StrictMode>
+			<SignIn onDone={() => void boot()} />
+		</StrictMode>,
+	)
+}
+
+start()

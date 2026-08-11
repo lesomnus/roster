@@ -1,134 +1,130 @@
 /**
- * One page, and the whole of what payday's client layer is for.
+ * The console's first screen: who you are and what you may do.
  *
- * Read it for what is **not** here. Nothing declares which query a write
- * invalidates, nothing pushes a new row into a list, and nothing tells the row
- * at the top of the page that the row in the table below it is the same row.
- * Every one of those falls out of the calls going through `useQuery` and
- * `useCall`: the framework knows what was drawn because it drew it.
+ * It is one call, and that is the point. Which roles somebody effectively holds
+ * is a union over bindings, group memberships and team memberships, and a page
+ * that worked it out from the parts would be a second implementation of
+ * `gate.Policy` that drifts from the one enforcing it. `MeService` answers with
+ * what roster itself would decide.
+ *
+ * What it draws the menu from is the same list -- so what a page offers and
+ * what the server allows cannot disagree. That is a claim about drawing and not
+ * about safety: the server decides on every call, and a client that treated
+ * this as the decision would be one an altered client could talk out of.
  *
  * @module
  */
 
-import { useState } from 'react'
+import { useQuery } from '@lesomnus/payday/react'
 
-import { useCall, useQuery, useRow } from '@lesomnus/payday/react'
-import { key } from '@lesomnus/payday/store'
+import { MeService } from '../gen/app/me_pb.js'
 
-import { Tenant } from '../gen/entities.js'
-import type { Thing } from '../gen/app/thing_pb.js'
-import type { Tenant as TenantMsg } from '../gen/payday/tenant_pb.js'
-import { ThingService } from '../gen/app/thing_svc_pb.js'
-import { TenantService } from '../gen/payday/tenant_svc_pb.js'
+/**
+ * covers is `frame.Covers` in the browser: three parts, each `*` or a name.
+ *
+ * The same three comparisons the server makes, because the patterns it answers
+ * with are patterns rather than an expansion -- an expansion would be the
+ * methods that exist in whichever replica answered, and during a rolling deploy
+ * two of them would tell this page two different things about one person.
+ */
+export function covers(held: string, want: string): boolean {
+	if (held === want) return true
 
-export function Page(props: { who: string; onSignOut: () => void }): React.ReactNode {
-	// `@acme/admin` -- the tenant this credential is inside.
-	const alias = props.who.replace(/^@/, '').split('/')[0] ?? ''
+	const h = parts(held)
+	const w = parts(want)
+	if (h === null || w === null) return false
 
-	// A `Get`, which is a query like any other: its answer is a row, so the
-	// store holds it and anything else that names that row draws the same copy.
-	// `Things` below never asks for a tenant and shows one anyway.
-	const tenant = useQuery(TenantService.method.get, { ref: { key: { case: 'alias', value: alias } } })
+	return h.every((v, i) => v === '*' || v === w[i])
+}
+
+function parts(v: string): [string, string, string] | null {
+	if (!v.startsWith('/')) return null
+
+	const i = v.indexOf('/', 1)
+	if (i < 0) return null
+
+	const full = v.slice(1, i)
+	const method = v.slice(i + 1)
+	if (full === '' || method === '' || method.includes('/')) return null
+
+	// The **last** dot, because a package has dots in it: split at the first,
+	// `/google.protobuf.Any/Pack` is package "google".
+	const j = full.lastIndexOf('.')
+	if (j < 0) return null
+
+	const pkg = full.slice(0, j)
+	const service = full.slice(j + 1)
+	if (pkg === '' || service === '') return null
+
+	return [pkg, service, method]
+}
+
+export function Page(props: { onSignOut: () => void }): React.ReactNode {
+	// A query like any other, so the store holds the answer and anything else
+	// naming those rows draws the same copy.
+	const me = useQuery(MeService.method.get, {})
+
+	if (me.state === 'pending') return <main className="loading">…</main>
+	if (me.state === 'error') {
+		return (
+			<main className="error">
+				<p>{me.error instanceof Error ? me.error.message : 'no'}</p>
+				<button onClick={props.onSignOut}>sign out</button>
+			</main>
+		)
+	}
+
+	const v = me.data
+	const may = (method: string): boolean =>
+		(v?.methods ?? []).some((held) => covers(held, method))
 
 	return (
-		<main>
+		<main className="console">
 			<header>
-				<h1>roster</h1>
-				<span>{props.who}</span>
+				<h1>{v?.alias}</h1>
 				<button onClick={props.onSignOut}>sign out</button>
 			</header>
 
-			{tenant.state === 'error' ? (
-				<p className="bad">{String(tenant.error)}</p>
-			) : tenant.data === undefined ? (
-				<p>...</p>
-			) : (
-				<>
-					<Add tenant={tenant.data.id} />
-					<Things />
-				</>
+			<section>
+				<h2>what you may do</h2>
+				<ul className="methods">
+					{(v?.methods ?? []).map((m) => (
+						<li key={m}>
+							<code>{m}</code>
+						</li>
+					))}
+				</ul>
+				<p className="note">
+					Patterns, not a list of every RPC. <code>/roster.*/*</code> is
+					everything roster serves, now and after an upgrade.
+				</p>
+			</section>
+
+			<section>
+				<h2>what this console would show</h2>
+				<ul className="menu">
+					<Item name="people" ok={may('/roster.HolderService/List')} />
+					<Item name="customers" ok={may('/roster.TenantService/List')} />
+					<Item name="sites" ok={may('/roster.SiteService/List')} />
+					<Item name="roles" ok={may('/roster.RoleService/List')} />
+					<Item name="keys" ok={may('/roster.ApiKeyService/List')} />
+				</ul>
+				<p className="note">
+					Greyed out is a screen this operator may not open. The server
+					refuses it either way — this only decides what is worth drawing.
+				</p>
+			</section>
+
+			{(v?.sites ?? []).length > 0 && (
+				<section>
+					<h2>narrowed to</h2>
+					<p>{v?.everySite === true ? 'every site' : `${v?.sites.length} site(s)`}</p>
+				</section>
 			)}
 		</main>
 	)
 }
 
-/** Add is a write, and the whole of what a write has to say. */
-function Add(props: { tenant: Uint8Array }): React.ReactNode {
-	const [alias, setAlias] = useState('')
-	const add = useCall(ThingService.method.add)
-
-	return (
-		<form
-			onSubmit={(e) => {
-				e.preventDefault()
-				if (alias === '') return
-
-				// What happens next is not written down anywhere. The answer is
-				// a row, so it goes into the store and every place showing that
-				// row is right at once; and the lists over Things are read
-				// again, because a create can change what belongs in one and
-				// only the server knows which.
-				add.call({ tenant: { key: { case: 'id', value: props.tenant } }, alias })
-					.then(() => setAlias(''))
-					.catch(() => {})
-			}}
-		>
-			<input value={alias} placeholder="a name" onChange={(e) => setAlias(e.target.value)} />
-			<button type="submit" disabled={add.state === 'pending'}>
-				add
-			</button>
-			{add.state === 'error' && <span className="bad">{String(add.error)}</span>}
-		</form>
-	)
-}
-
-function Things(): React.ReactNode {
-	// No filters, so the server answers with the first page of what this caller
-	// may see -- and opens a `Watch` over the same question behind it, so a row
-	// somebody else changes arrives without anything here polling.
-	const { state, data, error } = useQuery(ThingService.method.list, { filters: [] })
-
-	if (state === 'error') return <p className="bad">{String(error)}</p>
-	if (data === undefined) return <p>...</p>
-	if (data.items.length === 0) return <p>nothing yet.</p>
-
-	return (
-		<table>
-			<tbody>
-				{data.items.map((v) => (
-					<Row key={key(v.id)} thing={v} />
-				))}
-			</tbody>
-		</table>
-	)
-}
-
-function Row(props: { thing: Thing }): React.ReactNode {
-	const erase = useCall(ThingService.method.erase)
-
-	// The list did not ask for the tenant and the answer carries only its
-	// identifier -- so this reads the row the `Get` above already put in the
-	// store. One copy, two components, and nothing joining them up. If nothing
-	// had it, this would answer with undefined, which is the cue to go and ask.
-	const tenant = useRow<TenantMsg>(Tenant.typeName, props.thing.tenant?.id)
-
-	return (
-		<tr>
-			<td>{props.thing.alias}</td>
-			<td className="dim">{tenant?.alias ?? '-'}</td>
-			<td>
-				<button
-					disabled={erase.state === 'pending'}
-					onClick={() => {
-						// The answer to an `Erase` is empty, so what says which
-						// row is gone is the request -- and the row leaves every
-						// list drawing it before the round trip is over.
-						erase.call({ key: { case: 'id', value: props.thing.id } }).catch(() => {})
-					}}
-				>
-					erase
-				</button>
-			</td>
-		</tr>
-	)
+function Item(props: { name: string; ok: boolean }): React.ReactNode {
+	return <li className={props.ok ? 'may' : 'may-not'}>{props.name}</li>
 }

@@ -18,15 +18,27 @@
 
 import { createClient, type Client, type Transport } from '@connectrpc/connect'
 
-import { ThingService } from '../gen/app/thing_svc_pb.js'
-import { TenantService } from '../gen/payday/tenant_svc_pb.js'
-import { HolderService } from '../gen/payday/holder_svc_pb.js'
+import { ApiKeyService } from '../gen/app/apikey_svc_pb.js'
+import { RoleService } from '../gen/app/role_svc_pb.js'
+import { BindingService } from '../gen/app/role_svc_pb.js'
+import { SiteService } from '../gen/app/site_svc_pb.js'
+import { MeService } from '../gen/app/me_pb.js'
+import { TenantService } from '../gen/roster/payday/tenant_svc_pb.js'
+import { HolderService } from '../gen/roster/payday/holder_svc_pb.js'
 import { BatchService } from '@lesomnus/payday/pdpb'
 
 export interface App {
-	readonly thing: Client<typeof ThingService>
 	readonly tenant: Client<typeof TenantService>
 	readonly holder: Client<typeof HolderService>
+	readonly site: Client<typeof SiteService>
+	readonly role: Client<typeof RoleService>
+	readonly binding: Client<typeof BindingService>
+
+	/** The deployment's own keys, served on the control plane's port only. */
+	readonly apiKey: Client<typeof ApiKeyService>
+
+	/** What the caller is, in one round trip; see `server/me`. */
+	readonly me: Client<typeof MeService>
 
 	/** Several writes as one transaction; see `payday/batch`. */
 	readonly batch: Client<typeof BatchService>
@@ -34,9 +46,13 @@ export interface App {
 
 export function app(transport: Transport): App {
 	return {
-		thing: createClient(ThingService, transport),
 		tenant: createClient(TenantService, transport),
 		holder: createClient(HolderService, transport),
+		site: createClient(SiteService, transport),
+		role: createClient(RoleService, transport),
+		binding: createClient(BindingService, transport),
+		apiKey: createClient(ApiKeyService, transport),
+		me: createClient(MeService, transport),
 		batch: createClient(BatchService, transport),
 	}
 }
