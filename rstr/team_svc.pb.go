@@ -26,6 +26,7 @@ const (
 type TeamAddRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Tenant      *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
 	xxx_hidden_Site        *SiteRef               `protobuf:"bytes,3,opt,name=site"`
 	xxx_hidden_Alias       string                 `protobuf:"bytes,4,opt,name=alias"`
 	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
@@ -65,6 +66,13 @@ func (x *TeamAddRequest) ProtoReflect() protoreflect.Message {
 func (x *TeamAddRequest) GetId() []byte {
 	if x != nil {
 		return x.xxx_hidden_Id
+	}
+	return nil
+}
+
+func (x *TeamAddRequest) GetTenant() *TenantRef {
+	if x != nil {
+		return x.xxx_hidden_Tenant
 	}
 	return nil
 }
@@ -109,7 +117,11 @@ func (x *TeamAddRequest) SetId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 7)
+}
+
+func (x *TeamAddRequest) SetTenant(v *TenantRef) {
+	x.xxx_hidden_Tenant = v
 }
 
 func (x *TeamAddRequest) SetSite(v *SiteRef) {
@@ -139,6 +151,13 @@ func (x *TeamAddRequest) HasId() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
 }
 
+func (x *TeamAddRequest) HasTenant() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Tenant != nil
+}
+
 func (x *TeamAddRequest) HasSite() bool {
 	if x == nil {
 		return false
@@ -158,6 +177,10 @@ func (x *TeamAddRequest) ClearId() {
 	x.xxx_hidden_Id = nil
 }
 
+func (x *TeamAddRequest) ClearTenant() {
+	x.xxx_hidden_Tenant = nil
+}
+
 func (x *TeamAddRequest) ClearSite() {
 	x.xxx_hidden_Site = nil
 }
@@ -170,6 +193,7 @@ type TeamAddRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Id          []byte
+	Tenant      *TenantRef
 	Site        *SiteRef
 	Alias       string
 	Name        string
@@ -182,9 +206,10 @@ func (b0 TeamAddRequest_builder) Build() *TeamAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 7)
 		x.xxx_hidden_Id = b.Id
 	}
+	x.xxx_hidden_Tenant = b.Tenant
 	x.xxx_hidden_Site = b.Site
 	x.xxx_hidden_Alias = b.Alias
 	x.xxx_hidden_Name = b.Name
@@ -562,6 +587,7 @@ func (b0 TeamRefBySlug_builder) Build() *TeamRefBySlug {
 type TeamSelect struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_All         bool                   `protobuf:"varint,1,opt,name=all"`
+	xxx_hidden_Tenant      *TenantSelect          `protobuf:"bytes,2,opt,name=tenant"`
 	xxx_hidden_Site        *SiteSelect            `protobuf:"bytes,3,opt,name=site"`
 	xxx_hidden_Alias       bool                   `protobuf:"varint,4,opt,name=alias"`
 	xxx_hidden_Name        bool                   `protobuf:"varint,5,opt,name=name"`
@@ -605,6 +631,13 @@ func (x *TeamSelect) GetAll() bool {
 		return x.xxx_hidden_All
 	}
 	return false
+}
+
+func (x *TeamSelect) GetTenant() *TenantSelect {
+	if x != nil {
+		return x.xxx_hidden_Tenant
+	}
+	return nil
 }
 
 func (x *TeamSelect) GetSite() *SiteSelect {
@@ -658,7 +691,11 @@ func (x *TeamSelect) GetDateCreated() bool {
 
 func (x *TeamSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 9)
+}
+
+func (x *TeamSelect) SetTenant(v *TenantSelect) {
+	x.xxx_hidden_Tenant = v
 }
 
 func (x *TeamSelect) SetSite(v *SiteSelect) {
@@ -667,32 +704,32 @@ func (x *TeamSelect) SetSite(v *SiteSelect) {
 
 func (x *TeamSelect) SetAlias(v bool) {
 	x.xxx_hidden_Alias = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 9)
 }
 
 func (x *TeamSelect) SetName(v bool) {
 	x.xxx_hidden_Name = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 9)
 }
 
 func (x *TeamSelect) SetDesc(v bool) {
 	x.xxx_hidden_Desc = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 9)
 }
 
 func (x *TeamSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 9)
 }
 
 func (x *TeamSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 9)
 }
 
 func (x *TeamSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 9)
 }
 
 func (x *TeamSelect) HasAll() bool {
@@ -700,6 +737,13 @@ func (x *TeamSelect) HasAll() bool {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *TeamSelect) HasTenant() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Tenant != nil
 }
 
 func (x *TeamSelect) HasSite() bool {
@@ -713,42 +757,42 @@ func (x *TeamSelect) HasAlias() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
 func (x *TeamSelect) HasName() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
 }
 
 func (x *TeamSelect) HasDesc() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
 func (x *TeamSelect) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
 func (x *TeamSelect) HasDateErased() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
 }
 
 func (x *TeamSelect) HasDateCreated() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
 }
 
 func (x *TeamSelect) ClearAll() {
@@ -756,37 +800,41 @@ func (x *TeamSelect) ClearAll() {
 	x.xxx_hidden_All = false
 }
 
+func (x *TeamSelect) ClearTenant() {
+	x.xxx_hidden_Tenant = nil
+}
+
 func (x *TeamSelect) ClearSite() {
 	x.xxx_hidden_Site = nil
 }
 
 func (x *TeamSelect) ClearAlias() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
 	x.xxx_hidden_Alias = false
 }
 
 func (x *TeamSelect) ClearName() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
 	x.xxx_hidden_Name = false
 }
 
 func (x *TeamSelect) ClearDesc() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
 	x.xxx_hidden_Desc = false
 }
 
 func (x *TeamSelect) ClearDateUpdated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
 	x.xxx_hidden_DateUpdated = false
 }
 
 func (x *TeamSelect) ClearDateErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
 	x.xxx_hidden_DateErased = false
 }
 
 func (x *TeamSelect) ClearDateCreated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
 	x.xxx_hidden_DateCreated = false
 }
 
@@ -794,6 +842,7 @@ type TeamSelect_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	All         *bool
+	Tenant      *TenantSelect
 	Site        *SiteSelect
 	Alias       *bool
 	Name        *bool
@@ -808,32 +857,33 @@ func (b0 TeamSelect_builder) Build() *TeamSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 9)
 		x.xxx_hidden_All = *b.All
 	}
+	x.xxx_hidden_Tenant = b.Tenant
 	x.xxx_hidden_Site = b.Site
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 9)
 		x.xxx_hidden_Alias = *b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 9)
 		x.xxx_hidden_Name = *b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 9)
 		x.xxx_hidden_Desc = *b.Desc
 	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 9)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 9)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 9)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	return m0
@@ -1695,9 +1745,10 @@ var File_app_team_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_team_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/team_svc.g.proto\x12\x06roster\x1a\x14app/site_svc.g.proto\x1a\x0eapp/team.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\xd7\x01\n" +
+	"\x14app/team_svc.g.proto\x12\x06roster\x1a\x14app/site_svc.g.proto\x1a\x0eapp/team.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/tenant_svc.g.proto\"\x82\x02\n" +
 	"\x0eTeamAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12#\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12#\n" +
 	"\x04site\x18\x03 \x01(\v2\x0f.roster.SiteRefR\x04site\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
@@ -1712,10 +1763,11 @@ const file_app_team_svc_g_proto_rawDesc = "" +
 	"\x03key\"J\n" +
 	"\rTeamRefBySlug\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\tR\x05alias\x12#\n" +
-	"\x04site\x18\x03 \x01(\v2\x0f.roster.SiteRefR\x04site\"\xeb\x01\n" +
+	"\x04site\x18\x03 \x01(\v2\x0f.roster.SiteRefR\x04site\"\x99\x02\n" +
 	"\n" +
 	"TeamSelect\x12\x10\n" +
-	"\x03all\x18\x01 \x01(\bR\x03all\x12&\n" +
+	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x14.roster.TenantSelectR\x06tenant\x12&\n" +
 	"\x04site\x18\x03 \x01(\v2\x12.roster.SiteSelectR\x04site\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\bR\x05alias\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\bR\x04name\x12\x12\n" +
@@ -1778,50 +1830,54 @@ var file_app_team_svc_g_proto_goTypes = []any{
 	(*TeamWatchRequest)(nil),      // 10: roster.TeamWatchRequest
 	(*TeamWatchResponse)(nil),     // 11: roster.TeamWatchResponse
 	(*TeamWatchItem)(nil),         // 12: roster.TeamWatchItem
-	(*SiteRef)(nil),               // 13: roster.SiteRef
-	(*timestamppb.Timestamp)(nil), // 14: google.protobuf.Timestamp
-	(*SiteSelect)(nil),            // 15: roster.SiteSelect
-	(*patchpb.Patch)(nil),         // 16: patch.Patch
-	(*Team)(nil),                  // 17: roster.Team
-	(*emptypb.Empty)(nil),         // 18: google.protobuf.Empty
+	(*TenantRef)(nil),             // 13: roster.TenantRef
+	(*SiteRef)(nil),               // 14: roster.SiteRef
+	(*timestamppb.Timestamp)(nil), // 15: google.protobuf.Timestamp
+	(*TenantSelect)(nil),          // 16: roster.TenantSelect
+	(*SiteSelect)(nil),            // 17: roster.SiteSelect
+	(*patchpb.Patch)(nil),         // 18: patch.Patch
+	(*Team)(nil),                  // 19: roster.Team
+	(*emptypb.Empty)(nil),         // 20: google.protobuf.Empty
 }
 var file_app_team_svc_g_proto_depIdxs = []int32{
-	13, // 0: roster.TeamAddRequest.site:type_name -> roster.SiteRef
-	14, // 1: roster.TeamAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	2,  // 2: roster.TeamGetRequest.ref:type_name -> roster.TeamRef
-	4,  // 3: roster.TeamGetRequest.select:type_name -> roster.TeamSelect
-	3,  // 4: roster.TeamRef.slug:type_name -> roster.TeamRefBySlug
-	13, // 5: roster.TeamRefBySlug.site:type_name -> roster.SiteRef
-	15, // 6: roster.TeamSelect.site:type_name -> roster.SiteSelect
-	2,  // 7: roster.TeamPatchRequest.ref:type_name -> roster.TeamRef
-	14, // 8: roster.TeamPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 9: roster.TeamApplyRequest.ref:type_name -> roster.TeamRef
-	16, // 10: roster.TeamApplyRequest.patch:type_name -> patch.Patch
-	9,  // 11: roster.TeamListRequest.filters:type_name -> roster.TeamFilter
-	17, // 12: roster.TeamListResponse.items:type_name -> roster.Team
-	2,  // 13: roster.TeamFilter.ref:type_name -> roster.TeamRef
-	9,  // 14: roster.TeamWatchRequest.filters:type_name -> roster.TeamFilter
-	12, // 15: roster.TeamWatchResponse.items:type_name -> roster.TeamWatchItem
-	17, // 16: roster.TeamWatchItem.value:type_name -> roster.Team
-	0,  // 17: roster.TeamService.Add:input_type -> roster.TeamAddRequest
-	1,  // 18: roster.TeamService.Get:input_type -> roster.TeamGetRequest
-	5,  // 19: roster.TeamService.Patch:input_type -> roster.TeamPatchRequest
-	6,  // 20: roster.TeamService.Apply:input_type -> roster.TeamApplyRequest
-	2,  // 21: roster.TeamService.Erase:input_type -> roster.TeamRef
-	7,  // 22: roster.TeamService.List:input_type -> roster.TeamListRequest
-	10, // 23: roster.TeamService.Watch:input_type -> roster.TeamWatchRequest
-	17, // 24: roster.TeamService.Add:output_type -> roster.Team
-	17, // 25: roster.TeamService.Get:output_type -> roster.Team
-	17, // 26: roster.TeamService.Patch:output_type -> roster.Team
-	17, // 27: roster.TeamService.Apply:output_type -> roster.Team
-	18, // 28: roster.TeamService.Erase:output_type -> google.protobuf.Empty
-	8,  // 29: roster.TeamService.List:output_type -> roster.TeamListResponse
-	11, // 30: roster.TeamService.Watch:output_type -> roster.TeamWatchResponse
-	24, // [24:31] is the sub-list for method output_type
-	17, // [17:24] is the sub-list for method input_type
-	17, // [17:17] is the sub-list for extension type_name
-	17, // [17:17] is the sub-list for extension extendee
-	0,  // [0:17] is the sub-list for field type_name
+	13, // 0: roster.TeamAddRequest.tenant:type_name -> roster.TenantRef
+	14, // 1: roster.TeamAddRequest.site:type_name -> roster.SiteRef
+	15, // 2: roster.TeamAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	2,  // 3: roster.TeamGetRequest.ref:type_name -> roster.TeamRef
+	4,  // 4: roster.TeamGetRequest.select:type_name -> roster.TeamSelect
+	3,  // 5: roster.TeamRef.slug:type_name -> roster.TeamRefBySlug
+	14, // 6: roster.TeamRefBySlug.site:type_name -> roster.SiteRef
+	16, // 7: roster.TeamSelect.tenant:type_name -> roster.TenantSelect
+	17, // 8: roster.TeamSelect.site:type_name -> roster.SiteSelect
+	2,  // 9: roster.TeamPatchRequest.ref:type_name -> roster.TeamRef
+	15, // 10: roster.TeamPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 11: roster.TeamApplyRequest.ref:type_name -> roster.TeamRef
+	18, // 12: roster.TeamApplyRequest.patch:type_name -> patch.Patch
+	9,  // 13: roster.TeamListRequest.filters:type_name -> roster.TeamFilter
+	19, // 14: roster.TeamListResponse.items:type_name -> roster.Team
+	2,  // 15: roster.TeamFilter.ref:type_name -> roster.TeamRef
+	9,  // 16: roster.TeamWatchRequest.filters:type_name -> roster.TeamFilter
+	12, // 17: roster.TeamWatchResponse.items:type_name -> roster.TeamWatchItem
+	19, // 18: roster.TeamWatchItem.value:type_name -> roster.Team
+	0,  // 19: roster.TeamService.Add:input_type -> roster.TeamAddRequest
+	1,  // 20: roster.TeamService.Get:input_type -> roster.TeamGetRequest
+	5,  // 21: roster.TeamService.Patch:input_type -> roster.TeamPatchRequest
+	6,  // 22: roster.TeamService.Apply:input_type -> roster.TeamApplyRequest
+	2,  // 23: roster.TeamService.Erase:input_type -> roster.TeamRef
+	7,  // 24: roster.TeamService.List:input_type -> roster.TeamListRequest
+	10, // 25: roster.TeamService.Watch:input_type -> roster.TeamWatchRequest
+	19, // 26: roster.TeamService.Add:output_type -> roster.Team
+	19, // 27: roster.TeamService.Get:output_type -> roster.Team
+	19, // 28: roster.TeamService.Patch:output_type -> roster.Team
+	19, // 29: roster.TeamService.Apply:output_type -> roster.Team
+	20, // 30: roster.TeamService.Erase:output_type -> google.protobuf.Empty
+	8,  // 31: roster.TeamService.List:output_type -> roster.TeamListResponse
+	11, // 32: roster.TeamService.Watch:output_type -> roster.TeamWatchResponse
+	26, // [26:33] is the sub-list for method output_type
+	19, // [19:26] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_app_team_svc_g_proto_init() }
@@ -1831,6 +1887,7 @@ func file_app_team_svc_g_proto_init() {
 	}
 	file_app_site_svc_g_proto_init()
 	file_app_team_proto_init()
+	file_roster_payday_tenant_svc_g_proto_init()
 	file_app_team_svc_g_proto_msgTypes[2].OneofWrappers = []any{
 		(*teamRef_Id)(nil),
 		(*teamRef_Slug)(nil),

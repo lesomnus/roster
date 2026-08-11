@@ -51,9 +51,19 @@ func (b *built) grouped(t *testing.T, sites ...pdid.Id) app.Server {
 func (b *built) team(t *testing.T, ctx context.Context, in pdid.Id, alias string) pdid.Id {
 	t.Helper()
 
+	// The tenant comes from the site, because a helper that took both would let
+	// every test that uses it disagree with itself. The rule that they must
+	// agree is `server/core`'s, and `agree_test.go` is where it is checked.
+	w, err := b.Ungated.Site().Get(ctx, app.SiteGetRequest_builder{
+		Ref:    app.SiteRef_builder{Id: in.Bytes()}.Build(),
+		Select: app.SiteSelect_builder{Tenant: app.TenantSelect_builder{}.Build()}.Build(),
+	}.Build())
+	require.NoError(t, err)
+
 	v, err := b.Ungated.Team().Add(ctx, app.TeamAddRequest_builder{
-		Site:  app.SiteRef_builder{Id: in.Bytes()}.Build(),
-		Alias: alias,
+		Tenant: app.TenantRef_builder{Id: w.GetTenant().GetId()}.Build(),
+		Site:   app.SiteRef_builder{Id: in.Bytes()}.Build(),
+		Alias:  alias,
 	}.Build())
 	require.NoError(t, err)
 
@@ -153,8 +163,9 @@ func TestATeamAliasIsUniqueWithinItsSite(t *testing.T) {
 	b.team(t, ctx, frankfurt, "operators")
 
 	_, err := b.Ungated.Team().Add(ctx, app.TeamAddRequest_builder{
-		Site:  app.SiteRef_builder{Id: seoul.Bytes()}.Build(),
-		Alias: "operators",
+		Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Site:   app.SiteRef_builder{Id: seoul.Bytes()}.Build(),
+		Alias:  "operators",
 	}.Build())
 	x.Equal(codes.AlreadyExists, status.Code(err))
 }

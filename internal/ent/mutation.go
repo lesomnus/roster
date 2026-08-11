@@ -10936,6 +10936,8 @@ type TeamMutation struct {
 	date_erased   *time.Time
 	date_created  *time.Time
 	clearedFields map[string]struct{}
+	tenant        *uuid.UUID
+	clearedtenant bool
 	site          *uuid.UUID
 	clearedsite   bool
 	done          bool
@@ -11289,6 +11291,42 @@ func (m *TeamMutation) ResetDateCreated() {
 	delete(m.clearedFields, team.FieldDateCreated)
 }
 
+// SetTenantID sets the "tenant_id" field.
+func (m *TeamMutation) SetTenantID(u uuid.UUID) {
+	m.tenant = &u
+}
+
+// TenantID returns the value of the "tenant_id" field in the mutation.
+func (m *TeamMutation) TenantID() (r uuid.UUID, exists bool) {
+	v := m.tenant
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTenantID returns the old "tenant_id" field's value of the Team entity.
+// If the Team object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TeamMutation) OldTenantID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTenantID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTenantID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTenantID: %w", err)
+	}
+	return oldValue.TenantID, nil
+}
+
+// ResetTenantID resets all changes to the "tenant_id" field.
+func (m *TeamMutation) ResetTenantID() {
+	m.tenant = nil
+}
+
 // SetSiteID sets the "site_id" field.
 func (m *TeamMutation) SetSiteID(u uuid.UUID) {
 	m.site = &u
@@ -11320,9 +11358,49 @@ func (m *TeamMutation) OldSiteID(ctx context.Context) (v uuid.UUID, err error) {
 	return oldValue.SiteID, nil
 }
 
+// ClearSiteID clears the value of the "site_id" field.
+func (m *TeamMutation) ClearSiteID() {
+	m.site = nil
+	m.clearedFields[team.FieldSiteID] = struct{}{}
+}
+
+// SiteIDCleared returns if the "site_id" field was cleared in this mutation.
+func (m *TeamMutation) SiteIDCleared() bool {
+	_, ok := m.clearedFields[team.FieldSiteID]
+	return ok
+}
+
 // ResetSiteID resets all changes to the "site_id" field.
 func (m *TeamMutation) ResetSiteID() {
 	m.site = nil
+	delete(m.clearedFields, team.FieldSiteID)
+}
+
+// ClearTenant clears the "tenant" edge to the Tenant entity.
+func (m *TeamMutation) ClearTenant() {
+	m.clearedtenant = true
+	m.clearedFields[team.FieldTenantID] = struct{}{}
+}
+
+// TenantCleared reports if the "tenant" edge to the Tenant entity was cleared.
+func (m *TeamMutation) TenantCleared() bool {
+	return m.clearedtenant
+}
+
+// TenantIDs returns the "tenant" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// TenantID instead. It exists only for internal usage by the builders.
+func (m *TeamMutation) TenantIDs() (ids []uuid.UUID) {
+	if id := m.tenant; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetTenant resets all changes to the "tenant" edge.
+func (m *TeamMutation) ResetTenant() {
+	m.tenant = nil
+	m.clearedtenant = false
 }
 
 // ClearSite clears the "site" edge to the Site entity.
@@ -11333,7 +11411,7 @@ func (m *TeamMutation) ClearSite() {
 
 // SiteCleared reports if the "site" edge to the Site entity was cleared.
 func (m *TeamMutation) SiteCleared() bool {
-	return m.clearedsite
+	return m.SiteIDCleared() || m.clearedsite
 }
 
 // SiteIDs returns the "site" edge IDs in the mutation.
@@ -11386,7 +11464,7 @@ func (m *TeamMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TeamMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 8)
 	if m.alias != nil {
 		fields = append(fields, team.FieldAlias)
 	}
@@ -11404,6 +11482,9 @@ func (m *TeamMutation) Fields() []string {
 	}
 	if m.date_created != nil {
 		fields = append(fields, team.FieldDateCreated)
+	}
+	if m.tenant != nil {
+		fields = append(fields, team.FieldTenantID)
 	}
 	if m.site != nil {
 		fields = append(fields, team.FieldSiteID)
@@ -11428,6 +11509,8 @@ func (m *TeamMutation) Field(name string) (ent.Value, bool) {
 		return m.DateErased()
 	case team.FieldDateCreated:
 		return m.DateCreated()
+	case team.FieldTenantID:
+		return m.TenantID()
 	case team.FieldSiteID:
 		return m.SiteID()
 	}
@@ -11451,6 +11534,8 @@ func (m *TeamMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldDateErased(ctx)
 	case team.FieldDateCreated:
 		return m.OldDateCreated(ctx)
+	case team.FieldTenantID:
+		return m.OldTenantID(ctx)
 	case team.FieldSiteID:
 		return m.OldSiteID(ctx)
 	}
@@ -11504,6 +11589,13 @@ func (m *TeamMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDateCreated(v)
 		return nil
+	case team.FieldTenantID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTenantID(v)
+		return nil
 	case team.FieldSiteID:
 		v, ok := value.(uuid.UUID)
 		if !ok {
@@ -11547,6 +11639,9 @@ func (m *TeamMutation) ClearedFields() []string {
 	if m.FieldCleared(team.FieldDateCreated) {
 		fields = append(fields, team.FieldDateCreated)
 	}
+	if m.FieldCleared(team.FieldSiteID) {
+		fields = append(fields, team.FieldSiteID)
+	}
 	return fields
 }
 
@@ -11566,6 +11661,9 @@ func (m *TeamMutation) ClearField(name string) error {
 		return nil
 	case team.FieldDateCreated:
 		m.ClearDateCreated()
+		return nil
+	case team.FieldSiteID:
+		m.ClearSiteID()
 		return nil
 	}
 	return fmt.Errorf("unknown Team nullable field %s", name)
@@ -11593,6 +11691,9 @@ func (m *TeamMutation) ResetField(name string) error {
 	case team.FieldDateCreated:
 		m.ResetDateCreated()
 		return nil
+	case team.FieldTenantID:
+		m.ResetTenantID()
+		return nil
 	case team.FieldSiteID:
 		m.ResetSiteID()
 		return nil
@@ -11602,7 +11703,10 @@ func (m *TeamMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *TeamMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
+	if m.tenant != nil {
+		edges = append(edges, team.EdgeTenant)
+	}
 	if m.site != nil {
 		edges = append(edges, team.EdgeSite)
 	}
@@ -11613,6 +11717,10 @@ func (m *TeamMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *TeamMutation) AddedIDs(name string) []ent.Value {
 	switch name {
+	case team.EdgeTenant:
+		if id := m.tenant; id != nil {
+			return []ent.Value{*id}
+		}
 	case team.EdgeSite:
 		if id := m.site; id != nil {
 			return []ent.Value{*id}
@@ -11623,7 +11731,7 @@ func (m *TeamMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *TeamMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	return edges
 }
 
@@ -11635,7 +11743,10 @@ func (m *TeamMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *TeamMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
+	if m.clearedtenant {
+		edges = append(edges, team.EdgeTenant)
+	}
 	if m.clearedsite {
 		edges = append(edges, team.EdgeSite)
 	}
@@ -11646,6 +11757,8 @@ func (m *TeamMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *TeamMutation) EdgeCleared(name string) bool {
 	switch name {
+	case team.EdgeTenant:
+		return m.clearedtenant
 	case team.EdgeSite:
 		return m.clearedsite
 	}
@@ -11656,6 +11769,9 @@ func (m *TeamMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *TeamMutation) ClearEdge(name string) error {
 	switch name {
+	case team.EdgeTenant:
+		m.ClearTenant()
+		return nil
 	case team.EdgeSite:
 		m.ClearSite()
 		return nil
@@ -11667,6 +11783,9 @@ func (m *TeamMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *TeamMutation) ResetEdge(name string) error {
 	switch name {
+	case team.EdgeTenant:
+		m.ResetTenant()
+		return nil
 	case team.EdgeSite:
 		m.ResetSite()
 		return nil

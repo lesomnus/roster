@@ -12,6 +12,13 @@ import (
 func (e *Team) Proto() *rstr.Team {
 	x := &rstr.Team{}
 	x.SetId(e.ID[:])
+	if v := e.Edges.Tenant; v != nil {
+		x.SetTenant(v.Proto())
+	} else if v := e.TenantID; v != *new(uuid.UUID) {
+		r := &rstr.Tenant{}
+		r.SetId(v[:])
+		x.SetTenant(r)
+	}
 	if v := e.Edges.Site; v != nil {
 		x.SetSite(v.Proto())
 	} else if v := e.SiteID; v != *new(uuid.UUID) {

@@ -2471,6 +2471,22 @@ func (c *TeamClient) GetX(ctx context.Context, id uuid.UUID) *Team {
 	return obj
 }
 
+// QueryTenant queries the tenant edge of a Team.
+func (c *TeamClient) QueryTenant(_m *Team) *TenantQuery {
+	query := (&TenantClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(team.Table, team.FieldID, id),
+			sqlgraph.To(tenant.Table, tenant.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, team.TenantTable, team.TenantColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QuerySite queries the site edge of a Team.
 func (c *TeamClient) QuerySite(_m *Team) *SiteQuery {
 	query := (&SiteClient{config: c.config}).Query()

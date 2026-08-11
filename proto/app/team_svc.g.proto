@@ -6,6 +6,7 @@ import "app/team.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "patch/patch.proto";
+import "roster/payday/tenant_svc.g.proto";
 
 option go_package = "github.com/lesomnus/roster/rstr";
 
@@ -38,6 +39,7 @@ service TeamService {
 
 message TeamAddRequest {
   bytes id = 1;
+  TenantRef tenant = 2;
   SiteRef site = 3;
   string alias = 4 [features.field_presence = IMPLICIT];
   string name = 5 [features.field_presence = IMPLICIT];
@@ -64,6 +66,7 @@ message TeamRefBySlug {
 
 message TeamSelect {
   bool all = 1;
+  TenantSelect tenant = 2;
   SiteSelect site = 3;
   bool alias = 4;
   bool name = 5;

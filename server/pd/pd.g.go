@@ -300,34 +300,34 @@ func (wall) SiteScope(ctx context.Context) (predicate.Site, error) {
 	return site.TenantIDIn(vs...), nil
 }
 
-// SiteMembershipScope: a row belongs to the tenant its "site.tenant" reaches.
+// SiteMembershipScope: a row belongs to the tenant its "holder.tenant" reaches.
 func (wall) SiteMembershipScope(ctx context.Context) (predicate.SiteMembership, error) {
 	vs, all, err := frame.Narrow(ctx)
 	if all || err != nil {
 		return nil, err
 	}
 
-	return sitemembership.HasSiteWith(site.TenantIDIn(vs...)), nil
+	return sitemembership.HasHolderWith(holder.TenantIDIn(vs...)), nil
 }
 
-// TeamScope: a row belongs to the tenant its "site.tenant" reaches.
+// TeamScope: a row belongs to the tenant its "tenant" reaches.
 func (wall) TeamScope(ctx context.Context) (predicate.Team, error) {
 	vs, all, err := frame.Narrow(ctx)
 	if all || err != nil {
 		return nil, err
 	}
 
-	return team.HasSiteWith(site.TenantIDIn(vs...)), nil
+	return team.TenantIDIn(vs...), nil
 }
 
-// TeamMembershipScope: a row belongs to the tenant its "team.site.tenant" reaches.
+// TeamMembershipScope: a row belongs to the tenant its "holder.tenant" reaches.
 func (wall) TeamMembershipScope(ctx context.Context) (predicate.TeamMembership, error) {
 	vs, all, err := frame.Narrow(ctx)
 	if all || err != nil {
 		return nil, err
 	}
 
-	return teammembership.HasTeamWith(team.HasSiteWith(site.TenantIDIn(vs...))), nil
+	return teammembership.HasHolderWith(holder.TenantIDIn(vs...)), nil
 }
 
 // TenantScope: a tenant is inside itself, which is what a tenant being a wall comes down to.
@@ -4756,24 +4756,24 @@ func (s Gate) SiteMembership() rstr.SiteMembershipServiceServer {
 	return gateSiteMembership{s, s.Next().SiteMembership()}
 }
 
-// Add refuses a SiteMembership put into a Site this caller cannot see.
+// Add refuses a SiteMembership put into a Holder this caller cannot see.
 //
 // The wall is a predicate and an Add has no query, so without this the
-// identifier in `site` becomes a foreign key with nothing consulted.
+// identifier in `holder` becomes a foreign key with nothing consulted.
 // The row is then invisible to whoever planted it and visible to whoever
-// holds that Site, which is the shape of the bug rather than a
+// holds that Holder, which is the shape of the bug rather than a
 // mitigation of it.
 //
 // NotFound rather than a refusal, for the reason on `gateHolder.Add`:
 // that a row exists is itself something a caller who may not see it
 // should not be told.
 func (s gateSiteMembership) Add(ctx context.Context, req *rstr.SiteMembershipAddRequest) (*rstr.SiteMembership, error) {
-	if ref := req.GetSite(); ref != nil {
-		if _, err := s.Gate.Next().Site().Get(ctx, rstr.SiteGetRequest_builder{
+	if ref := req.GetHolder(); ref != nil {
+		if _, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{
 			Ref: ref,
 		}.Build()); err != nil {
 			if status.Code(err) == codes.NotFound {
-				return nil, gate.ErrNotFound("Site")
+				return nil, gate.ErrNotFound("Holder")
 			}
 
 			return nil, err
@@ -4804,24 +4804,24 @@ func (s Gate) Team() rstr.TeamServiceServer {
 	return gateTeam{s, s.Next().Team()}
 }
 
-// Add refuses a Team put into a Site this caller cannot see.
+// Add refuses a Team put into a Tenant this caller cannot see.
 //
 // The wall is a predicate and an Add has no query, so without this the
-// identifier in `site` becomes a foreign key with nothing consulted.
+// identifier in `tenant` becomes a foreign key with nothing consulted.
 // The row is then invisible to whoever planted it and visible to whoever
-// holds that Site, which is the shape of the bug rather than a
+// holds that Tenant, which is the shape of the bug rather than a
 // mitigation of it.
 //
 // NotFound rather than a refusal, for the reason on `gateHolder.Add`:
 // that a row exists is itself something a caller who may not see it
 // should not be told.
 func (s gateTeam) Add(ctx context.Context, req *rstr.TeamAddRequest) (*rstr.Team, error) {
-	if ref := req.GetSite(); ref != nil {
-		if _, err := s.Gate.Next().Site().Get(ctx, rstr.SiteGetRequest_builder{
+	if ref := req.GetTenant(); ref != nil {
+		if _, err := s.Gate.Next().Tenant().Get(ctx, rstr.TenantGetRequest_builder{
 			Ref: ref,
 		}.Build()); err != nil {
 			if status.Code(err) == codes.NotFound {
-				return nil, gate.ErrNotFound("Site")
+				return nil, gate.ErrNotFound("Tenant")
 			}
 
 			return nil, err
@@ -4852,24 +4852,24 @@ func (s Gate) TeamMembership() rstr.TeamMembershipServiceServer {
 	return gateTeamMembership{s, s.Next().TeamMembership()}
 }
 
-// Add refuses a TeamMembership put into a Team this caller cannot see.
+// Add refuses a TeamMembership put into a Holder this caller cannot see.
 //
 // The wall is a predicate and an Add has no query, so without this the
-// identifier in `team` becomes a foreign key with nothing consulted.
+// identifier in `holder` becomes a foreign key with nothing consulted.
 // The row is then invisible to whoever planted it and visible to whoever
-// holds that Team, which is the shape of the bug rather than a
+// holds that Holder, which is the shape of the bug rather than a
 // mitigation of it.
 //
 // NotFound rather than a refusal, for the reason on `gateHolder.Add`:
 // that a row exists is itself something a caller who may not see it
 // should not be told.
 func (s gateTeamMembership) Add(ctx context.Context, req *rstr.TeamMembershipAddRequest) (*rstr.TeamMembership, error) {
-	if ref := req.GetTeam(); ref != nil {
-		if _, err := s.Gate.Next().Team().Get(ctx, rstr.TeamGetRequest_builder{
+	if ref := req.GetHolder(); ref != nil {
+		if _, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{
 			Ref: ref,
 		}.Build()); err != nil {
 			if status.Code(err) == codes.NotFound {
-				return nil, gate.ErrNotFound("Team")
+				return nil, gate.ErrNotFound("Holder")
 			}
 
 			return nil, err
@@ -5362,11 +5362,11 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 			return uuid.Nil, nil, err
 		}
 
-		if !row.HasSite() {
+		if !row.HasHolder() {
 			return uuid.Nil, b, nil
 		}
 
-		up, err := pdid.From(row.GetSite().GetId())
+		up, err := pdid.From(row.GetHolder().GetId())
 		if err != nil {
 			return uuid.Nil, nil, err
 		}
@@ -5395,16 +5395,11 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 			return uuid.Nil, nil, err
 		}
 
-		if !row.HasSite() {
+		if !row.HasTenant() {
 			return uuid.Nil, b, nil
 		}
 
-		up, err := pdid.From(row.GetSite().GetId())
-		if err != nil {
-			return uuid.Nil, nil, err
-		}
-
-		k, _, err := subject(ctx, s, up)
+		k, err := uuid.FromBytes(row.GetTenant().GetId())
 		if err != nil {
 			return uuid.Nil, nil, err
 		}
@@ -5428,11 +5423,11 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 			return uuid.Nil, nil, err
 		}
 
-		if !row.HasTeam() {
+		if !row.HasHolder() {
 			return uuid.Nil, b, nil
 		}
 
-		up, err := pdid.From(row.GetTeam().GetId())
+		up, err := pdid.From(row.GetHolder().GetId())
 		if err != nil {
 			return uuid.Nil, nil, err
 		}

@@ -32,17 +32,24 @@ func (Team) Fields() []ent.Field {
 		field.Time("date_created").
 			Immutable().
 			Optional(),
+		field.UUID("tenant_id", uuid.UUID{}).
+			Immutable(),
 		field.UUID("site_id", uuid.UUID{}).
+			Optional().
 			Immutable(),
 	}
 }
 
 func (Team) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.To("tenant", Tenant.Type).
+			Unique().
+			Field("tenant_id").
+			Required().
+			Immutable(),
 		edge.To("site", Site.Type).
 			Unique().
 			Field("site_id").
-			Required().
 			Immutable(),
 	}
 }

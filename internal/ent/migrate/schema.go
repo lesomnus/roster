@@ -581,7 +581,8 @@ var (
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
-		{Name: "site_id", Type: field.TypeUUID},
+		{Name: "tenant_id", Type: field.TypeUUID},
+		{Name: "site_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// TeamTable holds the schema information for the "team" table.
 	TeamTable = &schema.Table{
@@ -590,10 +591,16 @@ var (
 		PrimaryKey: []*schema.Column{TeamColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "team_site_site",
+				Symbol:     "team_tenant_tenant",
 				Columns:    []*schema.Column{TeamColumns[7]},
-				RefColumns: []*schema.Column{SiteColumns[0]},
+				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "team_site_site",
+				Columns:    []*schema.Column{TeamColumns[8]},
+				RefColumns: []*schema.Column{SiteColumns[0]},
+				OnDelete:   schema.SetNull,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -605,7 +612,7 @@ var (
 			{
 				Name:    "team_alias_site_id",
 				Unique:  true,
-				Columns: []*schema.Column{TeamColumns[1], TeamColumns[7]},
+				Columns: []*schema.Column{TeamColumns[1], TeamColumns[8]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -759,7 +766,8 @@ func init() {
 	SitemembershipTable.Annotation = &entsql.Annotation{
 		Table: "sitemembership",
 	}
-	TeamTable.ForeignKeys[0].RefTable = SiteTable
+	TeamTable.ForeignKeys[0].RefTable = TenantTable
+	TeamTable.ForeignKeys[1].RefTable = SiteTable
 	TeamTable.Annotation = &entsql.Annotation{
 		Table: "team",
 	}

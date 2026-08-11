@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/site"
 	"github.com/lesomnus/roster/internal/ent/team"
+	"github.com/lesomnus/roster/internal/ent/tenant"
 )
 
 // TeamCreate is the builder for creating a Team entity.
@@ -74,9 +75,23 @@ func (_c *TeamCreate) SetNillableDateCreated(v *time.Time) *TeamCreate {
 	return _c
 }
 
+// SetTenantID sets the "tenant_id" field.
+func (_c *TeamCreate) SetTenantID(v uuid.UUID) *TeamCreate {
+	_c.mutation.SetTenantID(v)
+	return _c
+}
+
 // SetSiteID sets the "site_id" field.
 func (_c *TeamCreate) SetSiteID(v uuid.UUID) *TeamCreate {
 	_c.mutation.SetSiteID(v)
+	return _c
+}
+
+// SetNillableSiteID sets the "site_id" field if the given value is not nil.
+func (_c *TeamCreate) SetNillableSiteID(v *uuid.UUID) *TeamCreate {
+	if v != nil {
+		_c.SetSiteID(*v)
+	}
 	return _c
 }
 
@@ -84,6 +99,11 @@ func (_c *TeamCreate) SetSiteID(v uuid.UUID) *TeamCreate {
 func (_c *TeamCreate) SetID(v uuid.UUID) *TeamCreate {
 	_c.mutation.SetID(v)
 	return _c
+}
+
+// SetTenant sets the "tenant" edge to the Tenant entity.
+func (_c *TeamCreate) SetTenant(v *Tenant) *TeamCreate {
+	return _c.SetTenantID(v.ID)
 }
 
 // SetSite sets the "site" edge to the Site entity.
@@ -137,11 +157,11 @@ func (_c *TeamCreate) check() error {
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Team.date_updated"`)}
 	}
-	if _, ok := _c.mutation.SiteID(); !ok {
-		return &ValidationError{Name: "site_id", err: errors.New(`ent: missing required field "Team.site_id"`)}
+	if _, ok := _c.mutation.TenantID(); !ok {
+		return &ValidationError{Name: "tenant_id", err: errors.New(`ent: missing required field "Team.tenant_id"`)}
 	}
-	if len(_c.mutation.SiteIDs()) == 0 {
-		return &ValidationError{Name: "site", err: errors.New(`ent: missing required edge "Team.site"`)}
+	if len(_c.mutation.TenantIDs()) == 0 {
+		return &ValidationError{Name: "tenant", err: errors.New(`ent: missing required edge "Team.tenant"`)}
 	}
 	return nil
 }
@@ -201,6 +221,23 @@ func (_c *TeamCreate) createSpec() (*Team, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.DateCreated(); ok {
 		_spec.SetField(team.FieldDateCreated, field.TypeTime, value)
 		_node.DateCreated = value
+	}
+	if nodes := _c.mutation.TenantIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   team.TenantTable,
+			Columns: []string{team.TenantColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(tenant.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.TenantID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.SiteIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

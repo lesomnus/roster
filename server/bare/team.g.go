@@ -90,7 +90,7 @@ func (s TeamServiceServer) Add(ctx context.Context, req *rstr.TeamAddRequest) (*
 	st := s
 	st.Db = tx.Db
 
-	ds := make([]func(v *rstr.Team), 0, 1)
+	ds := make([]func(v *rstr.Team), 0, 2)
 	q := st.Db.Team.Create()
 	var k uuid.UUID
 	if req.HasId() {
@@ -105,13 +105,23 @@ func (s TeamServiceServer) Add(ctx context.Context, req *rstr.TeamAddRequest) (*
 	} else {
 		q.SetID(v)
 	}
-	if k, err := SiteGetKey(ctx, st.Db, req.GetSite()); err != nil {
+	if k, err := TenantGetKey(ctx, st.Db, req.GetTenant()); err != nil {
 		return nil, err
 	} else {
-		q.SetSiteID(k)
+		q.SetTenantID(k)
 		ds = append(ds, func(v *rstr.Team) {
-			v.SetSite(rstr.Site_builder{Id: k[:]}.Build())
+			v.SetTenant(rstr.Tenant_builder{Id: k[:]}.Build())
 		})
+	}
+	if req.HasSite() {
+		if k, err := SiteGetKey(ctx, st.Db, req.GetSite()); err != nil {
+			return nil, err
+		} else {
+			q.SetSiteID(k)
+			ds = append(ds, func(v *rstr.Team) {
+				v.SetSite(rstr.Site_builder{Id: k[:]}.Build())
+			})
+		}
 	}
 	q.SetAlias(req.GetAlias())
 	q.SetName(req.GetName())
@@ -216,6 +226,11 @@ func TeamSelect(q *ent.TeamQuery, m *rstr.TeamSelect) {
 		fields := TeamSelectedFields(m)
 		q.Select(fields...)
 	}
+	if m.HasTenant() {
+		q.WithTenant(func(q *ent.TenantQuery) {
+			TenantSelect(q, m.GetTenant())
+		})
+	}
 	if m.HasSite() {
 		q.WithSite(func(q *ent.SiteQuery) {
 			SiteSelect(q, m.GetSite())
@@ -227,6 +242,7 @@ func TeamSelectInit(q *ent.TeamQuery, m *rstr.TeamSelect) {
 	if m != nil {
 		TeamSelect(q, m)
 	} else {
+		q.WithTenant(selectTenantKey)
 		q.WithSite(selectSiteKey)
 	}
 }
@@ -278,7 +294,7 @@ func TeamGetKey(ctx context.Context, db *ent.Client, ref *rstr.TeamRef) (uuid.UU
 var teamOrmEntity = ormpatch.MustEntityOf(rstr.File_app_team_proto, "Team")
 
 var teamPatchColumns = entpatch.Columns{
-	1: team.FieldID, 3: team.SiteColumn, 4: team.FieldAlias, 5: team.FieldName, 6: team.FieldDesc, 13: team.FieldDateUpdated, 14: team.FieldDateErased, 15: team.FieldDateCreated}
+	1: team.FieldID, 2: team.TenantColumn, 3: team.SiteColumn, 4: team.FieldAlias, 5: team.FieldName, 6: team.FieldDesc, 13: team.FieldDateUpdated, 14: team.FieldDateErased, 15: team.FieldDateCreated}
 
 func (s TeamServiceServer) Apply(ctx context.Context, req *rstr.TeamApplyRequest) (*rstr.Team, error) {
 	if !req.HasPatch() {

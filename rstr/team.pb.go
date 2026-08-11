@@ -40,6 +40,7 @@ const (
 type Team struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Tenant      *Tenant                `protobuf:"bytes,2,opt,name=tenant"`
 	xxx_hidden_Site        *Site                  `protobuf:"bytes,3,opt,name=site"`
 	xxx_hidden_Alias       string                 `protobuf:"bytes,4,opt,name=alias"`
 	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
@@ -79,6 +80,13 @@ func (x *Team) ProtoReflect() protoreflect.Message {
 func (x *Team) GetId() []byte {
 	if x != nil {
 		return x.xxx_hidden_Id
+	}
+	return nil
+}
+
+func (x *Team) GetTenant() *Tenant {
+	if x != nil {
+		return x.xxx_hidden_Tenant
 	}
 	return nil
 }
@@ -139,6 +147,10 @@ func (x *Team) SetId(v []byte) {
 	x.xxx_hidden_Id = v
 }
 
+func (x *Team) SetTenant(v *Tenant) {
+	x.xxx_hidden_Tenant = v
+}
+
 func (x *Team) SetSite(v *Site) {
 	x.xxx_hidden_Site = v
 }
@@ -165,6 +177,13 @@ func (x *Team) SetDateErased(v *timestamppb.Timestamp) {
 
 func (x *Team) SetDateCreated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateCreated = v
+}
+
+func (x *Team) HasTenant() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Tenant != nil
 }
 
 func (x *Team) HasSite() bool {
@@ -195,6 +214,10 @@ func (x *Team) HasDateCreated() bool {
 	return x.xxx_hidden_DateCreated != nil
 }
 
+func (x *Team) ClearTenant() {
+	x.xxx_hidden_Tenant = nil
+}
+
 func (x *Team) ClearSite() {
 	x.xxx_hidden_Site = nil
 }
@@ -220,6 +243,19 @@ type Team_builder struct {
 	// that already has rows, and this one will. A team in no site is then
 	// invisible to a read narrowed to one, which is fail-closed and is the right
 	// way round.
+	Tenant *Tenant
+	// Which site, and **empty is none**, which is what an optional namespace
+	// means.
+	//
+	// It is field 3 and therefore what a narrowed read is narrowed by -- so a
+	// team with no site is seen by a read of the whole tenant and not by one
+	// scoped to a site. That is the right way round: the alternative is a row
+	// that turns up in every scoped read because it belongs to none of them.
+	//
+	// What it is **not** any more is how this row reaches a tenant. It was, and
+	// then a team with no site reached none -- written, invisible to everybody,
+	// with nothing saying so. The wall goes through field 2 and field 3 only ever
+	// narrows; see PLAN.md, D18.
 	Site *Site
 	// Unique within the site, so `operators` may exist in every one of them.
 	Alias       string
@@ -235,6 +271,7 @@ func (b0 Team_builder) Build() *Team {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Id = b.Id
+	x.xxx_hidden_Tenant = b.Tenant
 	x.xxx_hidden_Site = b.Site
 	x.xxx_hidden_Alias = b.Alias
 	x.xxx_hidden_Name = b.Name
@@ -249,44 +286,46 @@ var File_app_team_proto protoreflect.FileDescriptor
 
 const file_app_team_proto_rawDesc = "" +
 	"\n" +
-	"\x0eapp/team.proto\x12\x06roster\x1a\x0eapp/site.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xe7\x03\n" +
+	"\x0eapp/team.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x0eapp/site.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x89\x04\n" +
 	"\x04Team\x12\x1b\n" +
-	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12(\n" +
-	"\x04site\x18\x03 \x01(\v2\f.roster.SiteB\x06\xf2\x82\x16\x02@\x01R\x04site\x12\x14\n" +
+	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12*\n" +
+	"\x04site\x18\x03 \x01(\v2\f.roster.SiteB\b\xf2\x82\x16\x048\x01@\x01R\x04site\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\tR\x05alias\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
 	"\x04desc\x18\x06 \x01(\tR\x04desc\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:\x81\x01\xca\xfc\x15E\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:r\xca\xfc\x15E\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
 	"\x02id\x10\x01\x1a\x1d\x12\x04slug\x1a\t\n" +
 	"\x05alias\x10\x04\x1a\b\n" +
-	"\x04site\x10\x030\x01\x8a\xbb\x164\b\n" +
+	"\x04site\x10\x030\x01\x8a\xbb\x16%\b\n" +
 	"2\x1f\n" +
 	"\x0e\n" +
 	"\fdate_created\n" +
 	"\x04\n" +
-	"\x02id\x1a\x03ref \x14(d:\x00\"\r\n" +
-	"\vsite.tenantB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
+	"\x02id\x1a\x03ref \x14(d:\x00B&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
 var file_app_team_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_app_team_proto_goTypes = []any{
 	(*Team)(nil),                  // 0: roster.Team
-	(*Site)(nil),                  // 1: roster.Site
-	(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
+	(*Tenant)(nil),                // 1: roster.Tenant
+	(*Site)(nil),                  // 2: roster.Site
+	(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
 }
 var file_app_team_proto_depIdxs = []int32{
-	1, // 0: roster.Team.site:type_name -> roster.Site
-	2, // 1: roster.Team.date_updated:type_name -> google.protobuf.Timestamp
-	2, // 2: roster.Team.date_erased:type_name -> google.protobuf.Timestamp
-	2, // 3: roster.Team.date_created:type_name -> google.protobuf.Timestamp
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	1, // 0: roster.Team.tenant:type_name -> roster.Tenant
+	2, // 1: roster.Team.site:type_name -> roster.Site
+	3, // 2: roster.Team.date_updated:type_name -> google.protobuf.Timestamp
+	3, // 3: roster.Team.date_erased:type_name -> google.protobuf.Timestamp
+	3, // 4: roster.Team.date_created:type_name -> google.protobuf.Timestamp
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_app_team_proto_init() }
@@ -294,6 +333,7 @@ func file_app_team_proto_init() {
 	if File_app_team_proto != nil {
 		return
 	}
+	file_roster_payday_tenant_proto_init()
 	file_app_site_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{

@@ -139,8 +139,8 @@ func (_u *TeamUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *TeamUpdate) check() error {
-	if _u.mutation.SiteCleared() && len(_u.mutation.SiteIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Team.site"`)
+	if _u.mutation.TenantCleared() && len(_u.mutation.TenantIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Team.tenant"`)
 	}
 	return nil
 }
@@ -329,8 +329,8 @@ func (_u *TeamUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *TeamUpdateOne) check() error {
-	if _u.mutation.SiteCleared() && len(_u.mutation.SiteIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Team.site"`)
+	if _u.mutation.TenantCleared() && len(_u.mutation.TenantIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Team.tenant"`)
 	}
 	return nil
 }

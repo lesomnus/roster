@@ -162,6 +162,41 @@ one predicate rather than three reads.
 A role therefore means something *in a site*: operator in Seoul, reader in
 Frankfurt, one person. A role held on the person could not say that.
 
+### D18 · The wall goes through field 2, and field 3 only narrows
+
+`Team` reached its tenant through `site.tenant`, and the memberships through
+`site.tenant` and `team.site.tenant`. So the **wall ran along the optional
+axis**, and that is one mistake with two symptoms.
+
+A team with no site reached no tenant: written, invisible to everybody
+including the tenant that made it, with nothing saying so. That was read as an
+argument for making the site required, which is backwards -- a namespace is
+optional, and what was wrong is that the wall depended on one.
+
+And a row naming two things reached two tenants while only one was checked:
+
+    SiteMembership{holder: somebody in acme, site: a site of hooli's}
+
+written, accepted, and visible to whichever tenant the wall's path happened to
+land on. One tenant read a row naming the other's, which is the single thing the
+wall exists to prevent. It was found by writing it.
+
+So the rule, and it is worth stating as one:
+
+> **Field 2 is how a row reaches its tenant. Field 3 only ever narrows.** A row
+> that names two things has to be checked that they agree, and no schema can say
+> that.
+
+`Team` has a tenant edge now and its site is optional again. The memberships go
+through `holder.tenant` -- one hop instead of two and three. And `server/core`
+refuses a write whose references disagree, which is where the judgements no
+schema can state already lived.
+
+The agreement check is written out per entity rather than derived. An entity
+added tomorrow is unchecked until somebody adds a case, and for a rule about
+writes that is the direction to fail in: a generic walk would quietly stop
+covering a shape nobody wrote it for.
+
 ### D17 · Roles, bound at a scope, in the shape Kubernetes settled on
 
 roster sells access control and has none of its own beyond "your tenant".

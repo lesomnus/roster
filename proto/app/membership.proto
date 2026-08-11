@@ -65,7 +65,7 @@ message SiteMembership {
   };
   option (payday.entity) = {
     domain: 11
-    tenanted: {via: "site.tenant"}
+    tenanted: {via: "holder.tenant"}
     list: {
       order: [{field: "date_created"}, {field: "id"}]
       by: ["ref"]
@@ -135,7 +135,7 @@ message TeamMembership {
   };
   option (payday.entity) = {
     domain: 12
-    tenanted: {via: "team.site.tenant"}
+    tenanted: {via: "holder.tenant"}
     list: {
       order: [{field: "date_created"}, {field: "id"}]
       by: ["ref"]

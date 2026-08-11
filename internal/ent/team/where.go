@@ -86,6 +86,11 @@ func DateCreated(v time.Time) predicate.Team {
 	return predicate.Team(sql.FieldEQ(FieldDateCreated, v))
 }
 
+// TenantID applies equality check predicate on the "tenant_id" field. It's identical to TenantIDEQ.
+func TenantID(v uuid.UUID) predicate.Team {
+	return predicate.Team(sql.FieldEQ(FieldTenantID, v))
+}
+
 // SiteID applies equality check predicate on the "site_id" field. It's identical to SiteIDEQ.
 func SiteID(v uuid.UUID) predicate.Team {
 	return predicate.Team(sql.FieldEQ(FieldSiteID, v))
@@ -426,6 +431,26 @@ func DateCreatedNotNil() predicate.Team {
 	return predicate.Team(sql.FieldNotNull(FieldDateCreated))
 }
 
+// TenantIDEQ applies the EQ predicate on the "tenant_id" field.
+func TenantIDEQ(v uuid.UUID) predicate.Team {
+	return predicate.Team(sql.FieldEQ(FieldTenantID, v))
+}
+
+// TenantIDNEQ applies the NEQ predicate on the "tenant_id" field.
+func TenantIDNEQ(v uuid.UUID) predicate.Team {
+	return predicate.Team(sql.FieldNEQ(FieldTenantID, v))
+}
+
+// TenantIDIn applies the In predicate on the "tenant_id" field.
+func TenantIDIn(vs ...uuid.UUID) predicate.Team {
+	return predicate.Team(sql.FieldIn(FieldTenantID, vs...))
+}
+
+// TenantIDNotIn applies the NotIn predicate on the "tenant_id" field.
+func TenantIDNotIn(vs ...uuid.UUID) predicate.Team {
+	return predicate.Team(sql.FieldNotIn(FieldTenantID, vs...))
+}
+
 // SiteIDEQ applies the EQ predicate on the "site_id" field.
 func SiteIDEQ(v uuid.UUID) predicate.Team {
 	return predicate.Team(sql.FieldEQ(FieldSiteID, v))
@@ -444,6 +469,39 @@ func SiteIDIn(vs ...uuid.UUID) predicate.Team {
 // SiteIDNotIn applies the NotIn predicate on the "site_id" field.
 func SiteIDNotIn(vs ...uuid.UUID) predicate.Team {
 	return predicate.Team(sql.FieldNotIn(FieldSiteID, vs...))
+}
+
+// SiteIDIsNil applies the IsNil predicate on the "site_id" field.
+func SiteIDIsNil() predicate.Team {
+	return predicate.Team(sql.FieldIsNull(FieldSiteID))
+}
+
+// SiteIDNotNil applies the NotNil predicate on the "site_id" field.
+func SiteIDNotNil() predicate.Team {
+	return predicate.Team(sql.FieldNotNull(FieldSiteID))
+}
+
+// HasTenant applies the HasEdge predicate on the "tenant" edge.
+func HasTenant() predicate.Team {
+	return predicate.Team(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, TenantTable, TenantColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasTenantWith applies the HasEdge predicate on the "tenant" edge with a given conditions (other predicates).
+func HasTenantWith(preds ...predicate.Tenant) predicate.Team {
+	return predicate.Team(func(s *sql.Selector) {
+		step := newTenantStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
 // HasSite applies the HasEdge predicate on the "site" edge.

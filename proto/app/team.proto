@@ -2,6 +2,7 @@ edition = "2023";
 
 package roster;
 
+import "roster/payday/tenant.proto";
 import "app/site.proto";
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
@@ -36,7 +37,21 @@ message Team {
   // that already has rows, and this one will. A team in no site is then
   // invisible to a read narrowed to one, which is fail-closed and is the right
   // way round.
-  Site site = 3 [(orm.edge) = {immutable: true}];
+  Tenant tenant = 2 [(orm.edge) = {immutable: true}];
+
+  // Which site, and **empty is none**, which is what an optional namespace
+  // means.
+  //
+  // It is field 3 and therefore what a narrowed read is narrowed by -- so a
+  // team with no site is seen by a read of the whole tenant and not by one
+  // scoped to a site. That is the right way round: the alternative is a row
+  // that turns up in every scoped read because it belongs to none of them.
+  //
+  // What it is **not** any more is how this row reaches a tenant. It was, and
+  // then a team with no site reached none -- written, invisible to everybody,
+  // with nothing saying so. The wall goes through field 2 and field 3 only ever
+  // narrows; see PLAN.md, D18.
+  Site site = 3 [(orm.edge) = {immutable: true, nullable: true}];
 
   // Unique within the site, so `operators` may exist in every one of them.
   string alias = 4;
@@ -73,7 +88,6 @@ message Team {
   };
   option (payday.entity) = {
     domain: 10
-    tenanted: {via: "site.tenant"}
     list: {
       order: [{field: "date_created"}, {field: "id"}]
       by: ["ref"]

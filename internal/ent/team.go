@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/site"
 	"github.com/lesomnus/roster/internal/ent/team"
+	"github.com/lesomnus/roster/internal/ent/tenant"
 )
 
 // Team is the model entity for the Team schema.
@@ -31,6 +32,8 @@ type Team struct {
 	DateErased *time.Time `json:"date_erased,omitempty"`
 	// DateCreated holds the value of the "date_created" field.
 	DateCreated time.Time `json:"date_created,omitempty"`
+	// TenantID holds the value of the "tenant_id" field.
+	TenantID uuid.UUID `json:"tenant_id,omitempty"`
 	// SiteID holds the value of the "site_id" field.
 	SiteID uuid.UUID `json:"site_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -41,11 +44,24 @@ type Team struct {
 
 // TeamEdges holds the relations/edges for other nodes in the graph.
 type TeamEdges struct {
+	// Tenant holds the value of the tenant edge.
+	Tenant *Tenant `json:"tenant,omitempty"`
 	// Site holds the value of the site edge.
 	Site *Site `json:"site,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
+}
+
+// TenantOrErr returns the Tenant value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e TeamEdges) TenantOrErr() (*Tenant, error) {
+	if e.Tenant != nil {
+		return e.Tenant, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: tenant.Label}
+	}
+	return nil, &NotLoadedError{edge: "tenant"}
 }
 
 // SiteOrErr returns the Site value or an error if the edge
@@ -53,7 +69,7 @@ type TeamEdges struct {
 func (e TeamEdges) SiteOrErr() (*Site, error) {
 	if e.Site != nil {
 		return e.Site, nil
-	} else if e.loadedTypes[0] {
+	} else if e.loadedTypes[1] {
 		return nil, &NotFoundError{label: site.Label}
 	}
 	return nil, &NotLoadedError{edge: "site"}
@@ -68,7 +84,7 @@ func (*Team) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case team.FieldDateUpdated, team.FieldDateErased, team.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case team.FieldID, team.FieldSiteID:
+		case team.FieldID, team.FieldTenantID, team.FieldSiteID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -128,6 +144,12 @@ func (_m *Team) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.DateCreated = value.Time
 			}
+		case team.FieldTenantID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
+			} else if value != nil {
+				_m.TenantID = *value
+			}
 		case team.FieldSiteID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field site_id", values[i])
@@ -145,6 +167,11 @@ func (_m *Team) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (_m *Team) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
+}
+
+// QueryTenant queries the "tenant" edge of the Team entity.
+func (_m *Team) QueryTenant() *TenantQuery {
+	return NewTeamClient(_m.config).QueryTenant(_m)
 }
 
 // QuerySite queries the "site" edge of the Team entity.
@@ -194,6 +221,9 @@ func (_m *Team) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("date_created=")
 	builder.WriteString(_m.DateCreated.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("tenant_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.TenantID))
 	builder.WriteString(", ")
 	builder.WriteString("site_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.SiteID))
