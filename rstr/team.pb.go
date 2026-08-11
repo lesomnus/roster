@@ -286,7 +286,7 @@ var File_app_team_proto protoreflect.FileDescriptor
 
 const file_app_team_proto_rawDesc = "" +
 	"\n" +
-	"\x0eapp/team.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x0eapp/site.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x89\x04\n" +
+	"\x0eapp/team.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x0eapp/site.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x93\x04\n" +
 	"\x04Team\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12*\n" +
@@ -297,16 +297,19 @@ const file_app_team_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:r\xca\xfc\x15E\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:|\xca\xfc\x15E\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
 	"\x02id\x10\x01\x1a\x1d\x12\x04slug\x1a\t\n" +
 	"\x05alias\x10\x04\x1a\b\n" +
-	"\x04site\x10\x030\x01\x8a\xbb\x16%\b\n" +
-	"2\x1f\n" +
-	"\x0e\n" +
-	"\fdate_created\n" +
-	"\x04\n" +
-	"\x02id\x1a\x03ref \x14(d:\x00B&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
+	"\x04site\x10\x030\x01\x8a\xbb\x16/\b\n" +
+	"2)\n" +
+	"\x12\n" +
+	"\x10\n" +
+	"\fdate_created\x10\x0f\n" +
+	"\b\n" +
+	"\x06\n" +
+	"\x02id\x10\x01\x1a\x05\n" +
+	"\x03ref \x14(d:\x00B&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
 var file_app_team_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_app_team_proto_goTypes = []any{

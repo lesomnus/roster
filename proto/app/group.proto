@@ -73,8 +73,11 @@ message Group {
   option (payday.entity) = {
     domain: 16
     list: {
-      order: [{field: "date_created"}, {field: "id"}]
-      by: ["ref"]
+      order: [
+        {field: {name: "date_created", number: 15}},
+        {field: {name: "id", number: 1}}
+      ]
+      by: [{name: "ref"}]
       size: 20
       max: 100
     }
@@ -127,8 +130,11 @@ message GroupMembership {
     domain: 17
     tenanted: {via: "holder.tenant"}
     list: {
-      order: [{field: "date_created"}, {field: "id"}]
-      by: ["ref"]
+      order: [
+        {field: {name: "date_created", number: 15}},
+        {field: {name: "id", number: 1}}
+      ]
+      by: [{name: "ref"}]
       size: 20
       max: 100
     }

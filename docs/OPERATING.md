@@ -65,12 +65,40 @@ roster key revoke --id <id>     # a delete, so the next call carrying it fails
 | | |
 | --- | --- |
 | `/roster.VouchService/Verify` | checking a password |
-| `/roster.HolderService/Watch` | hearing that somebody left |
-| `/roster.HolderService/Get` | a name for a screen, if it draws one |
+| `/roster.HolderService/Get` | who somebody still is — a name for a screen, and the periodic recheck that ends a session after somebody leaves |
+| `/payday.TokenService/Introspect` | only if the app takes API tokens; see below |
 
 Not `VouchService/Set` — changing a password belongs to whatever account portal
 owns the person — and no `Holder` writes, since a product does not own the
 people it serves.
+
+## Tokens a product app was handed
+
+A session cookie is between a browser and the app that set it. A token somebody
+pastes into a script is not: the app that receives it has to find out what it
+means, and the string means something only here.
+
+`payday.TokenService/Introspect` is that question. The app asks with **its own**
+key, and roster answers with who the token stands for and what it was narrowed
+to:
+
+```go
+h := auth.Bearer(auth.Remote(pdpb.NewTokenServiceClient(conn)))
+```
+
+Three things about it are worth knowing before allowing it:
+
+- **It is not public.** The bearer's token is the subject of the question; the
+  caller is the product app. Allowing this on an app's key is the whole of the
+  trust decision, and it is per app.
+- **It answers about the holder, not the key.** The app in front resolves what it
+  is told against its own rows, and those are about people.
+- **It sees only this plane's keys.** Control-plane keys — the ones `roster key
+  add` mints — live in the other database, and there is no query from one to the
+  other. They are not refused here; they are invisible.
+
+Nothing mints a data-plane key yet. The rows exist and `Introspect` reads them,
+and the console that would create one is not written; see below.
 
 ## Who may do what
 
@@ -143,8 +171,18 @@ Nothing written down is plaintext, and it warns once.
 - **No admin console.** Keys and roles are the CLI's, which means a shell on the
   box. A console would itself need a key, and the first key has to come from
   somewhere that is not one.
-- **The sync channel is unfinished.** `Holder.Watch` streams, and an erase does
-  not yet arrive on an open stream; see custody's `cmd/sync.go`.
+- **Nothing mints a data-plane key.** `Introspect` reads them and there is no way
+  to create one but `Ungated`, so the API tokens it exists for cannot be issued
+  yet. What is missing is not the row: it is the rules that would make a
+  customer-minted key safe, and those are listed below.
+- **A customer-minted key would cross the wall.** `policy.Where` hands
+  `frame.Everything` to any actor whose identifier says "api key" — a byte of
+  the identifier, with no row read — and `policy.May` lets one past the gate
+  unasked. Both are right for a key the operator minted with `roster key add`
+  and neither is right for one a customer made. Nor is there any escalation
+  check on `ApiKey.methods`: `mayGrant` is wired to `Role.Add` and
+  `Binding.Add` and to nothing else, so whoever reaches `ApiKey.Add` writes
+  their own grant.
 - **No escalation-proof `Patch`.** `Role.Patch` would be how a role grows
   methods after it was written, and it is closed at the transport. A deployment
   that opens general writes opens that with them.

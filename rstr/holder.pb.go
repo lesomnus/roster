@@ -459,7 +459,7 @@ var File_roster_payday_holder_proto protoreflect.FileDescriptor
 
 const file_roster_payday_holder_proto_rawDesc = "" +
 	"\n" +
-	"\x1aroster/payday/holder.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x1aroster/payday/tenant.proto\"\x86\x05\n" +
+	"\x1aroster/payday/holder.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x1aroster/payday/tenant.proto\"\x8c\x05\n" +
 	"\x06Holder\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x14\n" +
@@ -476,14 +476,17 @@ const file_roster_payday_holder_proto_rawDesc = "" +
 	"\aprofile\x18\t \x01(\v2\x0f.roster.ProfileR\aprofile\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:T\xca\xfc\x15%\x12\x02\x10\x01\x1a\x1f\x12\x04slug\x1a\t\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:Z\xca\xfc\x15%\x12\x02\x10\x01\x1a\x1f\x12\x04slug\x1a\t\n" +
 	"\x05alias\x10\x04\x1a\n" +
 	"\n" +
-	"\x06tenant\x10\x020\x01\x8a\xbb\x16'\b\x022\x1f\n" +
+	"\x06tenant\x10\x020\x01\x8a\xbb\x16-\b\x022%\n" +
+	"\x10\n" +
 	"\x0e\n" +
 	"\fdate_created\n" +
+	"\x06\n" +
 	"\x04\n" +
-	"\x02id\x1a\x03ref \x14(d:\x00H\x02\"\x9f\x01\n" +
+	"\x02id\x1a\x05\n" +
+	"\x03ref \x14(d:\x00H\x02\"\x9f\x01\n" +
 	"\aProfile\x12!\n" +
 	"\fdisplay_name\x18\x01 \x01(\tR\vdisplayName\x12\x18\n" +
 	"\apicture\x18\x02 \x01(\tR\apicture\x12\x1e\n" +

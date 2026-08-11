@@ -242,7 +242,7 @@ var File_app_identity_proto protoreflect.FileDescriptor
 
 const file_app_identity_proto_rawDesc = "" +
 	"\n" +
-	"\x12app/identity.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xf4\x03\n" +
+	"\x12app/identity.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xfe\x03\n" +
 	"\bIdentity\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\x1a\n" +
@@ -251,15 +251,18 @@ const file_app_identity_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:\x8c\x01\xca\xfc\x15N\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:\x96\x01\xca\xfc\x15N\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
 	"\x02id\x10\x01\x1a&\x12\asubject\x1a\f\n" +
 	"\bprovider\x10\b\x1a\v\n" +
-	"\asubject\x10\t0\x01\x8a\xbb\x166\b\b2\x1f\n" +
-	"\x0e\n" +
-	"\fdate_created\n" +
-	"\x04\n" +
-	"\x02id\x1a\x03ref \x14(d:\x00\"\x0f\n" +
+	"\asubject\x10\t0\x01\x8a\xbb\x16@\b\b2)\n" +
+	"\x12\n" +
+	"\x10\n" +
+	"\fdate_created\x10\x0f\n" +
+	"\b\n" +
+	"\x06\n" +
+	"\x02id\x10\x01\x1a\x05\n" +
+	"\x03ref \x14(d:\x00\"\x0f\n" +
 	"\rholder.tenantB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
 var file_app_identity_proto_msgTypes = make([]protoimpl.MessageInfo, 1)

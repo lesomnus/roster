@@ -100,25 +100,14 @@ func Sum(token string) []byte {
 // require knowing who is calling.
 func Store(s app.Server) auth.TokenStore {
 	return auth.TokenStoreFunc(func(ctx context.Context, token string) (auth.Identity, error) {
-		if !strings.HasPrefix(token, Prefix) {
-			// Not one of ours. It is still a credential that was presented, so
-			// it is refused rather than passed over -- `auth.TokenStore` is
-			// explicit that a token which is not known must stop the search.
-			return auth.Identity{}, status.Error(codes.Unauthenticated, "no")
-		}
-
-		v, err := s.ApiKey().Get(ctx, app.ApiKeyGetRequest_builder{
-			Ref: app.ApiKeyRef_builder{Secret: Sum(token)}.Build(),
-			Select: app.ApiKeySelect_builder{
-				Secret:      z.Ptr(true),
-				Methods:     z.Ptr(true),
-				DateUsed:    z.Ptr(true),
-				DateExpires: z.Ptr(true),
-				DateUpdated: z.Ptr(true),
-			}.Build(),
-		}.Build())
+		v, err := lookup(ctx, s, token)
 		if err != nil {
 			if status.Code(err) == codes.NotFound {
+				// No such key, which includes a string that is not one of ours
+				// at all. It is still a credential that was presented, so it is
+				// refused rather than passed over -- `auth.TokenStore` is
+				// explicit that a token which is not known must stop the
+				// search.
 				return auth.Identity{}, status.Error(codes.Unauthenticated, "no")
 			}
 
@@ -129,24 +118,10 @@ func Store(s app.Server) auth.TokenStore {
 			return auth.Identity{}, fmt.Errorf("%w: %w", auth.ErrUnavailable, err)
 		}
 
-		// Compared again, in constant time, even though the row was found by
-		// this exact value. The index did the finding; this is what makes the
-		// answer independent of how a mismatched hash sorts, and it costs one
-		// comparison of thirty-two bytes.
-		if subtle.ConstantTimeCompare(v.GetSecret(), Sum(token)) != 1 {
-			return auth.Identity{}, status.Error(codes.Unauthenticated, "no")
-		}
-
-		if u := v.GetDateExpires(); u != nil && !time.Now().Before(u.AsTime()) {
-			return auth.Identity{}, status.Error(codes.Unauthenticated, "no")
-		}
-
 		k, err := pdid.From(v.GetId())
 		if err != nil {
 			return auth.Identity{}, err
 		}
-
-		touch(ctx, s, v)
 
 		return auth.Identity{
 			// The **key** is who is calling, not the service it hangs off.
@@ -164,6 +139,61 @@ func Store(s app.Server) auth.TokenStore {
 			Expires: expiryOf(v),
 		}, nil
 	})
+}
+
+// lookup finds the row a token stands for, or says there is none.
+//
+// It is separate from [Store] because there are two answers to give about one
+// row and only one way to find it. What differs is who the caller is told the
+// token stands for -- the key itself here, the holder it hangs off in
+// [Service] -- and none of the checking differs at all. Written twice, the
+// second copy is the one that forgets the constant-time comparison.
+//
+// Every refusal is `NotFound`, including a row that was found and did not
+// match: expired, revoked and never-existed told apart are an oracle for "this
+// string was a real key once".
+func lookup(ctx context.Context, s app.Server, token string) (*app.ApiKey, error) {
+	if !strings.HasPrefix(token, Prefix) {
+		return nil, status.Error(codes.NotFound, "no such key")
+	}
+
+	v, err := s.ApiKey().Get(ctx, app.ApiKeyGetRequest_builder{
+		Ref: app.ApiKeyRef_builder{Secret: Sum(token)}.Build(),
+		Select: app.ApiKeySelect_builder{
+			Secret:      z.Ptr(true),
+			Methods:     z.Ptr(true),
+			DateUsed:    z.Ptr(true),
+			DateExpires: z.Ptr(true),
+			DateUpdated: z.Ptr(true),
+
+			// The holder and its tenant, which [Service] answers with and
+			// [Store] does not use. One select rather than two because the
+			// edge is a join the query does either way once it is asked for,
+			// and a second shape here is a second thing to keep in step.
+			Holder: app.HolderSelect_builder{
+				Tenant: app.TenantSelect_builder{}.Build(),
+			}.Build(),
+		}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	// Compared again, in constant time, even though the row was found by this
+	// exact value. The index did the finding; this is what makes the answer
+	// independent of how a mismatched hash sorts, and it costs one comparison
+	// of thirty-two bytes.
+	if subtle.ConstantTimeCompare(v.GetSecret(), Sum(token)) != 1 {
+		return nil, status.Error(codes.NotFound, "no such key")
+	}
+
+	if u := v.GetDateExpires(); u != nil && !time.Now().Before(u.AsTime()) {
+		return nil, status.Error(codes.NotFound, "no such key")
+	}
+
+	touch(ctx, s, v)
+
+	return v, nil
 }
 
 // touch records that the key was used, rarely.

@@ -268,6 +268,23 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// nobody but the caller to ask about; see `server/me`.
 	app.RegisterMeServiceServer(g, me.New(s.Ent, Everything(s.Ent)))
 
+	// What a token stands for, for a product app that was handed one.
+	//
+	// payday's contract rather than this app's, so an app in front changes one
+	// line of wiring if it ever changes identity stores; see `auth.Remote`.
+	//
+	// Built on **this** plane's server, which is what decides the population it
+	// can answer about: a control-plane key lives in the other database and
+	// there is no query from here to there, so it is not that this refuses to
+	// introspect one -- it cannot see one. That is the same property the two
+	// databases were separated for.
+	//
+	// `Ungated` for the reason `vouch.Verify` uses one: this is asked before
+	// anybody has been resolved, so there is no frame to narrow by, and the row
+	// is unreadable through the wall anyway -- `ApiKeyService` is unregistered
+	// and closed because its generated `Get` answers with the verifier.
+	pdpb.RegisterTokenServiceServer(g, keys.Service(s.Ungated))
+
 	// The batch, with the same rules the chain above enforces -- read off the
 	// same configuration rather than written out again, which is the only way
 	// the two stay in step. What they enforce by looking at the method gRPC
