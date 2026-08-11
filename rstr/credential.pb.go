@@ -315,11 +315,11 @@ var File_app_credential_proto protoreflect.FileDescriptor
 
 const file_app_credential_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/credential.proto\x12\x03app\x1a\x13payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x89\x05\n" +
+	"\x14app/credential.proto\x12\x06roster\x1a\x13payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x8c\x05\n" +
 	"\n" +
 	"Credential\x12\x1b\n" +
-	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12+\n" +
-	"\x06holder\x18\x02 \x01(\v2\v.app.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\x12\n" +
+	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
+	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\x12\n" +
 	"\x04kind\x18\b \x01(\tR\x04kind\x12\x16\n" +
 	"\x06secret\x18\t \x01(\fR\x06secret\x12\x1a\n" +
 	"\bfailures\x18\n" +
@@ -344,17 +344,17 @@ const file_app_credential_proto_rawDesc = "" +
 
 var file_app_credential_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_app_credential_proto_goTypes = []any{
-	(*Credential)(nil),            // 0: app.Credential
-	(*Holder)(nil),                // 1: app.Holder
+	(*Credential)(nil),            // 0: roster.Credential
+	(*Holder)(nil),                // 1: roster.Holder
 	(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
 }
 var file_app_credential_proto_depIdxs = []int32{
-	1, // 0: app.Credential.holder:type_name -> app.Holder
-	2, // 1: app.Credential.date_locked:type_name -> google.protobuf.Timestamp
-	2, // 2: app.Credential.date_rotated:type_name -> google.protobuf.Timestamp
-	2, // 3: app.Credential.date_updated:type_name -> google.protobuf.Timestamp
-	2, // 4: app.Credential.date_erased:type_name -> google.protobuf.Timestamp
-	2, // 5: app.Credential.date_created:type_name -> google.protobuf.Timestamp
+	1, // 0: roster.Credential.holder:type_name -> roster.Holder
+	2, // 1: roster.Credential.date_locked:type_name -> google.protobuf.Timestamp
+	2, // 2: roster.Credential.date_rotated:type_name -> google.protobuf.Timestamp
+	2, // 3: roster.Credential.date_updated:type_name -> google.protobuf.Timestamp
+	2, // 4: roster.Credential.date_erased:type_name -> google.protobuf.Timestamp
+	2, // 5: roster.Credential.date_created:type_name -> google.protobuf.Timestamp
 	6, // [6:6] is the sub-list for method output_type
 	6, // [6:6] is the sub-list for method input_type
 	6, // [6:6] is the sub-list for extension type_name

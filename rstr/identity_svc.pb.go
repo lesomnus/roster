@@ -1626,121 +1626,121 @@ var File_app_identity_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_identity_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x18app/identity_svc.g.proto\x12\x03app\x1a\x12app/identity.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x19payday/holder_svc.g.proto\"\xcf\x01\n" +
+	"\x18app/identity_svc.g.proto\x12\x06roster\x1a\x12app/identity.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x19payday/holder_svc.g.proto\"\xd2\x01\n" +
 	"\x12IdentityAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12&\n" +
-	"\x06holder\x18\x02 \x01(\v2\x0e.app.HolderRefR\x06holder\x12!\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
+	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12!\n" +
 	"\bprovider\x18\b \x01(\tB\x05\xaa\x01\x02\b\x02R\bprovider\x12\x1f\n" +
 	"\asubject\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\asubject\x12=\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"e\n" +
-	"\x12IdentityGetRequest\x12\"\n" +
-	"\x03ref\x18\x01 \x01(\v2\x10.app.IdentityRefR\x03ref\x12+\n" +
-	"\x06select\x18\x02 \x01(\v2\x13.app.IdentitySelectR\x06select\"]\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"k\n" +
+	"\x12IdentityGetRequest\x12%\n" +
+	"\x03ref\x18\x01 \x01(\v2\x13.roster.IdentityRefR\x03ref\x12.\n" +
+	"\x06select\x18\x02 \x01(\v2\x16.roster.IdentitySelectR\x06select\"`\n" +
 	"\vIdentityRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x125\n" +
-	"\asubject\x18\b \x01(\v2\x19.app.IdentityRefBySubjectH\x00R\asubjectB\x05\n" +
+	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x128\n" +
+	"\asubject\x18\b \x01(\v2\x1c.roster.IdentityRefBySubjectH\x00R\asubjectB\x05\n" +
 	"\x03key\"L\n" +
 	"\x14IdentityRefBySubject\x12\x1a\n" +
 	"\bprovider\x18\b \x01(\tR\bprovider\x12\x18\n" +
-	"\asubject\x18\t \x01(\tR\asubject\"\xea\x01\n" +
+	"\asubject\x18\t \x01(\tR\asubject\"\xed\x01\n" +
 	"\x0eIdentitySelect\x12\x10\n" +
-	"\x03all\x18\x01 \x01(\bR\x03all\x12)\n" +
-	"\x06holder\x18\x02 \x01(\v2\x11.app.HolderSelectR\x06holder\x12\x1a\n" +
+	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
+	"\x06holder\x18\x02 \x01(\v2\x14.roster.HolderSelectR\x06holder\x12\x1a\n" +
 	"\bprovider\x18\b \x01(\bR\bprovider\x12\x18\n" +
 	"\asubject\x18\t \x01(\bR\asubject\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xdd\x01\n" +
-	"\x14IdentityPatchRequest\x12\"\n" +
-	"\x03ref\x18\x01 \x01(\v2\x10.app.IdentityRefR\x03ref\x12\x1a\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xe0\x01\n" +
+	"\x14IdentityPatchRequest\x12%\n" +
+	"\x03ref\x18\x01 \x01(\v2\x13.roster.IdentityRefR\x03ref\x12\x1a\n" +
 	"\bprovider\x18\x10 \x01(\tR\bprovider\x12\x18\n" +
 	"\asubject\x18\x12 \x01(\tR\asubject\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"^\n" +
-	"\x14IdentityApplyRequest\x12\"\n" +
-	"\x03ref\x18\x01 \x01(\v2\x10.app.IdentityRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"|\n" +
-	"\x13IdentityListRequest\x12-\n" +
-	"\afilters\x18\x01 \x03(\v2\x13.app.IdentityFilterR\afilters\x12\x19\n" +
+	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"a\n" +
+	"\x14IdentityApplyRequest\x12%\n" +
+	"\x03ref\x18\x01 \x01(\v2\x13.roster.IdentityRefR\x03ref\x12\"\n" +
+	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"\x7f\n" +
+	"\x13IdentityListRequest\x120\n" +
+	"\afilters\x18\x01 \x03(\v2\x16.roster.IdentityFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
-	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"V\n" +
-	"\x14IdentityListResponse\x12#\n" +
-	"\x05items\x18\x01 \x03(\v2\r.app.IdentityR\x05items\x12\x19\n" +
-	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"4\n" +
-	"\x0eIdentityFilter\x12\"\n" +
-	"\x03ref\x18\x01 \x01(\v2\x10.app.IdentityRefR\x03ref\"q\n" +
-	"\x14IdentityWatchRequest\x12-\n" +
-	"\afilters\x18\x01 \x03(\v2\x13.app.IdentityFilterR\afilters\x12*\n" +
-	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"E\n" +
-	"\x15IdentityWatchResponse\x12,\n" +
-	"\x05items\x18\x01 \x03(\v2\x16.app.IdentityWatchItemR\x05items\"g\n" +
+	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"Y\n" +
+	"\x14IdentityListResponse\x12&\n" +
+	"\x05items\x18\x01 \x03(\v2\x10.roster.IdentityR\x05items\x12\x19\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"7\n" +
+	"\x0eIdentityFilter\x12%\n" +
+	"\x03ref\x18\x01 \x01(\v2\x13.roster.IdentityRefR\x03ref\"t\n" +
+	"\x14IdentityWatchRequest\x120\n" +
+	"\afilters\x18\x01 \x03(\v2\x16.roster.IdentityFilterR\afilters\x12*\n" +
+	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"H\n" +
+	"\x15IdentityWatchResponse\x12/\n" +
+	"\x05items\x18\x01 \x03(\v2\x19.roster.IdentityWatchItemR\x05items\"j\n" +
 	"\x11IdentityWatchItem\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12#\n" +
-	"\x05value\x18\x02 \x01(\v2\r.app.IdentityR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action2\x87\x03\n" +
-	"\x0fIdentityService\x12-\n" +
-	"\x03Add\x12\x17.app.IdentityAddRequest\x1a\r.app.Identity\x12-\n" +
-	"\x03Get\x12\x17.app.IdentityGetRequest\x1a\r.app.Identity\x121\n" +
-	"\x05Patch\x12\x19.app.IdentityPatchRequest\x1a\r.app.Identity\x121\n" +
-	"\x05Apply\x12\x19.app.IdentityApplyRequest\x1a\r.app.Identity\x121\n" +
-	"\x05Erase\x12\x10.app.IdentityRef\x1a\x16.google.protobuf.Empty\x12;\n" +
-	"\x04List\x12\x18.app.IdentityListRequest\x1a\x19.app.IdentityListResponse\x12@\n" +
-	"\x05Watch\x12\x19.app.IdentityWatchRequest\x1a\x1a.app.IdentityWatchResponse0\x01B!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
+	"\x02id\x18\x01 \x01(\fR\x02id\x12&\n" +
+	"\x05value\x18\x02 \x01(\v2\x10.roster.IdentityR\x05value\x12\x1d\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action2\xae\x03\n" +
+	"\x0fIdentityService\x123\n" +
+	"\x03Add\x12\x1a.roster.IdentityAddRequest\x1a\x10.roster.Identity\x123\n" +
+	"\x03Get\x12\x1a.roster.IdentityGetRequest\x1a\x10.roster.Identity\x127\n" +
+	"\x05Patch\x12\x1c.roster.IdentityPatchRequest\x1a\x10.roster.Identity\x127\n" +
+	"\x05Apply\x12\x1c.roster.IdentityApplyRequest\x1a\x10.roster.Identity\x124\n" +
+	"\x05Erase\x12\x13.roster.IdentityRef\x1a\x16.google.protobuf.Empty\x12A\n" +
+	"\x04List\x12\x1b.roster.IdentityListRequest\x1a\x1c.roster.IdentityListResponse\x12F\n" +
+	"\x05Watch\x12\x1c.roster.IdentityWatchRequest\x1a\x1d.roster.IdentityWatchResponse0\x01B!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
 var file_app_identity_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_app_identity_svc_g_proto_goTypes = []any{
-	(*IdentityAddRequest)(nil),    // 0: app.IdentityAddRequest
-	(*IdentityGetRequest)(nil),    // 1: app.IdentityGetRequest
-	(*IdentityRef)(nil),           // 2: app.IdentityRef
-	(*IdentityRefBySubject)(nil),  // 3: app.IdentityRefBySubject
-	(*IdentitySelect)(nil),        // 4: app.IdentitySelect
-	(*IdentityPatchRequest)(nil),  // 5: app.IdentityPatchRequest
-	(*IdentityApplyRequest)(nil),  // 6: app.IdentityApplyRequest
-	(*IdentityListRequest)(nil),   // 7: app.IdentityListRequest
-	(*IdentityListResponse)(nil),  // 8: app.IdentityListResponse
-	(*IdentityFilter)(nil),        // 9: app.IdentityFilter
-	(*IdentityWatchRequest)(nil),  // 10: app.IdentityWatchRequest
-	(*IdentityWatchResponse)(nil), // 11: app.IdentityWatchResponse
-	(*IdentityWatchItem)(nil),     // 12: app.IdentityWatchItem
-	(*HolderRef)(nil),             // 13: app.HolderRef
+	(*IdentityAddRequest)(nil),    // 0: roster.IdentityAddRequest
+	(*IdentityGetRequest)(nil),    // 1: roster.IdentityGetRequest
+	(*IdentityRef)(nil),           // 2: roster.IdentityRef
+	(*IdentityRefBySubject)(nil),  // 3: roster.IdentityRefBySubject
+	(*IdentitySelect)(nil),        // 4: roster.IdentitySelect
+	(*IdentityPatchRequest)(nil),  // 5: roster.IdentityPatchRequest
+	(*IdentityApplyRequest)(nil),  // 6: roster.IdentityApplyRequest
+	(*IdentityListRequest)(nil),   // 7: roster.IdentityListRequest
+	(*IdentityListResponse)(nil),  // 8: roster.IdentityListResponse
+	(*IdentityFilter)(nil),        // 9: roster.IdentityFilter
+	(*IdentityWatchRequest)(nil),  // 10: roster.IdentityWatchRequest
+	(*IdentityWatchResponse)(nil), // 11: roster.IdentityWatchResponse
+	(*IdentityWatchItem)(nil),     // 12: roster.IdentityWatchItem
+	(*HolderRef)(nil),             // 13: roster.HolderRef
 	(*timestamppb.Timestamp)(nil), // 14: google.protobuf.Timestamp
-	(*HolderSelect)(nil),          // 15: app.HolderSelect
+	(*HolderSelect)(nil),          // 15: roster.HolderSelect
 	(*patchpb.Patch)(nil),         // 16: patch.Patch
-	(*Identity)(nil),              // 17: app.Identity
+	(*Identity)(nil),              // 17: roster.Identity
 	(*emptypb.Empty)(nil),         // 18: google.protobuf.Empty
 }
 var file_app_identity_svc_g_proto_depIdxs = []int32{
-	13, // 0: app.IdentityAddRequest.holder:type_name -> app.HolderRef
-	14, // 1: app.IdentityAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	2,  // 2: app.IdentityGetRequest.ref:type_name -> app.IdentityRef
-	4,  // 3: app.IdentityGetRequest.select:type_name -> app.IdentitySelect
-	3,  // 4: app.IdentityRef.subject:type_name -> app.IdentityRefBySubject
-	15, // 5: app.IdentitySelect.holder:type_name -> app.HolderSelect
-	2,  // 6: app.IdentityPatchRequest.ref:type_name -> app.IdentityRef
-	14, // 7: app.IdentityPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 8: app.IdentityApplyRequest.ref:type_name -> app.IdentityRef
-	16, // 9: app.IdentityApplyRequest.patch:type_name -> patch.Patch
-	9,  // 10: app.IdentityListRequest.filters:type_name -> app.IdentityFilter
-	17, // 11: app.IdentityListResponse.items:type_name -> app.Identity
-	2,  // 12: app.IdentityFilter.ref:type_name -> app.IdentityRef
-	9,  // 13: app.IdentityWatchRequest.filters:type_name -> app.IdentityFilter
-	12, // 14: app.IdentityWatchResponse.items:type_name -> app.IdentityWatchItem
-	17, // 15: app.IdentityWatchItem.value:type_name -> app.Identity
-	0,  // 16: app.IdentityService.Add:input_type -> app.IdentityAddRequest
-	1,  // 17: app.IdentityService.Get:input_type -> app.IdentityGetRequest
-	5,  // 18: app.IdentityService.Patch:input_type -> app.IdentityPatchRequest
-	6,  // 19: app.IdentityService.Apply:input_type -> app.IdentityApplyRequest
-	2,  // 20: app.IdentityService.Erase:input_type -> app.IdentityRef
-	7,  // 21: app.IdentityService.List:input_type -> app.IdentityListRequest
-	10, // 22: app.IdentityService.Watch:input_type -> app.IdentityWatchRequest
-	17, // 23: app.IdentityService.Add:output_type -> app.Identity
-	17, // 24: app.IdentityService.Get:output_type -> app.Identity
-	17, // 25: app.IdentityService.Patch:output_type -> app.Identity
-	17, // 26: app.IdentityService.Apply:output_type -> app.Identity
-	18, // 27: app.IdentityService.Erase:output_type -> google.protobuf.Empty
-	8,  // 28: app.IdentityService.List:output_type -> app.IdentityListResponse
-	11, // 29: app.IdentityService.Watch:output_type -> app.IdentityWatchResponse
+	13, // 0: roster.IdentityAddRequest.holder:type_name -> roster.HolderRef
+	14, // 1: roster.IdentityAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	2,  // 2: roster.IdentityGetRequest.ref:type_name -> roster.IdentityRef
+	4,  // 3: roster.IdentityGetRequest.select:type_name -> roster.IdentitySelect
+	3,  // 4: roster.IdentityRef.subject:type_name -> roster.IdentityRefBySubject
+	15, // 5: roster.IdentitySelect.holder:type_name -> roster.HolderSelect
+	2,  // 6: roster.IdentityPatchRequest.ref:type_name -> roster.IdentityRef
+	14, // 7: roster.IdentityPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 8: roster.IdentityApplyRequest.ref:type_name -> roster.IdentityRef
+	16, // 9: roster.IdentityApplyRequest.patch:type_name -> patch.Patch
+	9,  // 10: roster.IdentityListRequest.filters:type_name -> roster.IdentityFilter
+	17, // 11: roster.IdentityListResponse.items:type_name -> roster.Identity
+	2,  // 12: roster.IdentityFilter.ref:type_name -> roster.IdentityRef
+	9,  // 13: roster.IdentityWatchRequest.filters:type_name -> roster.IdentityFilter
+	12, // 14: roster.IdentityWatchResponse.items:type_name -> roster.IdentityWatchItem
+	17, // 15: roster.IdentityWatchItem.value:type_name -> roster.Identity
+	0,  // 16: roster.IdentityService.Add:input_type -> roster.IdentityAddRequest
+	1,  // 17: roster.IdentityService.Get:input_type -> roster.IdentityGetRequest
+	5,  // 18: roster.IdentityService.Patch:input_type -> roster.IdentityPatchRequest
+	6,  // 19: roster.IdentityService.Apply:input_type -> roster.IdentityApplyRequest
+	2,  // 20: roster.IdentityService.Erase:input_type -> roster.IdentityRef
+	7,  // 21: roster.IdentityService.List:input_type -> roster.IdentityListRequest
+	10, // 22: roster.IdentityService.Watch:input_type -> roster.IdentityWatchRequest
+	17, // 23: roster.IdentityService.Add:output_type -> roster.Identity
+	17, // 24: roster.IdentityService.Get:output_type -> roster.Identity
+	17, // 25: roster.IdentityService.Patch:output_type -> roster.Identity
+	17, // 26: roster.IdentityService.Apply:output_type -> roster.Identity
+	18, // 27: roster.IdentityService.Erase:output_type -> google.protobuf.Empty
+	8,  // 28: roster.IdentityService.List:output_type -> roster.IdentityListResponse
+	11, // 29: roster.IdentityService.Watch:output_type -> roster.IdentityWatchResponse
 	23, // [23:30] is the sub-list for method output_type
 	16, // [16:23] is the sub-list for method input_type
 	16, // [16:16] is the sub-list for extension type_name

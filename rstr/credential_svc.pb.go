@@ -1923,10 +1923,10 @@ var File_app_credential_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_credential_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1aapp/credential_svc.g.proto\x12\x03app\x1a\x14app/credential.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x19payday/holder_svc.g.proto\"\xe6\x02\n" +
+	"\x1aapp/credential_svc.g.proto\x12\x06roster\x1a\x14app/credential.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x19payday/holder_svc.g.proto\"\xe9\x02\n" +
 	"\x14CredentialAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12&\n" +
-	"\x06holder\x18\x02 \x01(\v2\x0e.app.HolderRefR\x06holder\x12\x19\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
+	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x19\n" +
 	"\x04kind\x18\b \x01(\tB\x05\xaa\x01\x02\b\x02R\x04kind\x12\x1d\n" +
 	"\x06secret\x18\t \x01(\fB\x05\xaa\x01\x02\b\x02R\x06secret\x12!\n" +
 	"\bfailures\x18\n" +
@@ -1934,20 +1934,20 @@ const file_app_credential_svc_g_proto_rawDesc = "" +
 	"\vdate_locked\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"dateLocked\x12=\n" +
 	"\fdate_rotated\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\vdateRotated\x12=\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"k\n" +
-	"\x14CredentialGetRequest\x12$\n" +
-	"\x03ref\x18\x01 \x01(\v2\x12.app.CredentialRefR\x03ref\x12-\n" +
-	"\x06select\x18\x02 \x01(\v2\x15.app.CredentialSelectR\x06select\"X\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"q\n" +
+	"\x14CredentialGetRequest\x12'\n" +
+	"\x03ref\x18\x01 \x01(\v2\x15.roster.CredentialRefR\x03ref\x120\n" +
+	"\x06select\x18\x02 \x01(\v2\x18.roster.CredentialSelectR\x06select\"[\n" +
 	"\rCredentialRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12.\n" +
-	"\x04kind\x18\x02 \x01(\v2\x18.app.CredentialRefByKindH\x00R\x04kindB\x05\n" +
-	"\x03key\"Q\n" +
-	"\x13CredentialRefByKind\x12&\n" +
-	"\x06holder\x18\x02 \x01(\v2\x0e.app.HolderRefR\x06holder\x12\x12\n" +
-	"\x04kind\x18\b \x01(\tR\x04kind\"\xc2\x02\n" +
+	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x121\n" +
+	"\x04kind\x18\x02 \x01(\v2\x1b.roster.CredentialRefByKindH\x00R\x04kindB\x05\n" +
+	"\x03key\"T\n" +
+	"\x13CredentialRefByKind\x12)\n" +
+	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x12\n" +
+	"\x04kind\x18\b \x01(\tR\x04kind\"\xc5\x02\n" +
 	"\x10CredentialSelect\x12\x10\n" +
-	"\x03all\x18\x01 \x01(\bR\x03all\x12)\n" +
-	"\x06holder\x18\x02 \x01(\v2\x11.app.HolderSelectR\x06holder\x12\x12\n" +
+	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
+	"\x06holder\x18\x02 \x01(\v2\x14.roster.HolderSelectR\x06holder\x12\x12\n" +
 	"\x04kind\x18\b \x01(\bR\x04kind\x12\x16\n" +
 	"\x06secret\x18\t \x01(\bR\x06secret\x12\x1a\n" +
 	"\bfailures\x18\n" +
@@ -1958,9 +1958,9 @@ const file_app_credential_svc_g_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xc5\x03\n" +
-	"\x16CredentialPatchRequest\x12$\n" +
-	"\x03ref\x18\x01 \x01(\v2\x12.app.CredentialRefR\x03ref\x12\x12\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xc8\x03\n" +
+	"\x16CredentialPatchRequest\x12'\n" +
+	"\x03ref\x18\x01 \x01(\v2\x15.roster.CredentialRefR\x03ref\x12\x12\n" +
 	"\x04kind\x18\x10 \x01(\tR\x04kind\x12\x16\n" +
 	"\x06secret\x18\x12 \x01(\fR\x06secret\x12\x1a\n" +
 	"\bfailures\x18\x14 \x01(\x05R\bfailures\x12;\n" +
@@ -1970,95 +1970,95 @@ const file_app_credential_svc_g_proto_rawDesc = "" +
 	"\fdate_rotated\x18\x18 \x01(\v2\x1a.google.protobuf.TimestampR\vdateRotated\x12*\n" +
 	"\x11date_rotated_null\x18\x19 \x01(\bR\x0fdateRotatedNull\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"b\n" +
-	"\x16CredentialApplyRequest\x12$\n" +
-	"\x03ref\x18\x01 \x01(\v2\x12.app.CredentialRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"\x80\x01\n" +
-	"\x15CredentialListRequest\x12/\n" +
-	"\afilters\x18\x01 \x03(\v2\x15.app.CredentialFilterR\afilters\x12\x19\n" +
+	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"e\n" +
+	"\x16CredentialApplyRequest\x12'\n" +
+	"\x03ref\x18\x01 \x01(\v2\x15.roster.CredentialRefR\x03ref\x12\"\n" +
+	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"\x83\x01\n" +
+	"\x15CredentialListRequest\x122\n" +
+	"\afilters\x18\x01 \x03(\v2\x18.roster.CredentialFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
-	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"Z\n" +
-	"\x16CredentialListResponse\x12%\n" +
-	"\x05items\x18\x01 \x03(\v2\x0f.app.CredentialR\x05items\x12\x19\n" +
-	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"8\n" +
-	"\x10CredentialFilter\x12$\n" +
-	"\x03ref\x18\x01 \x01(\v2\x12.app.CredentialRefR\x03ref\"u\n" +
-	"\x16CredentialWatchRequest\x12/\n" +
-	"\afilters\x18\x01 \x03(\v2\x15.app.CredentialFilterR\afilters\x12*\n" +
-	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"I\n" +
-	"\x17CredentialWatchResponse\x12.\n" +
-	"\x05items\x18\x01 \x03(\v2\x18.app.CredentialWatchItemR\x05items\"k\n" +
+	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"]\n" +
+	"\x16CredentialListResponse\x12(\n" +
+	"\x05items\x18\x01 \x03(\v2\x12.roster.CredentialR\x05items\x12\x19\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\";\n" +
+	"\x10CredentialFilter\x12'\n" +
+	"\x03ref\x18\x01 \x01(\v2\x15.roster.CredentialRefR\x03ref\"x\n" +
+	"\x16CredentialWatchRequest\x122\n" +
+	"\afilters\x18\x01 \x03(\v2\x18.roster.CredentialFilterR\afilters\x12*\n" +
+	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"L\n" +
+	"\x17CredentialWatchResponse\x121\n" +
+	"\x05items\x18\x01 \x03(\v2\x1b.roster.CredentialWatchItemR\x05items\"n\n" +
 	"\x13CredentialWatchItem\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12%\n" +
-	"\x05value\x18\x02 \x01(\v2\x0f.app.CredentialR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action2\xa3\x03\n" +
-	"\x11CredentialService\x121\n" +
-	"\x03Add\x12\x19.app.CredentialAddRequest\x1a\x0f.app.Credential\x121\n" +
-	"\x03Get\x12\x19.app.CredentialGetRequest\x1a\x0f.app.Credential\x125\n" +
-	"\x05Patch\x12\x1b.app.CredentialPatchRequest\x1a\x0f.app.Credential\x125\n" +
-	"\x05Apply\x12\x1b.app.CredentialApplyRequest\x1a\x0f.app.Credential\x123\n" +
-	"\x05Erase\x12\x12.app.CredentialRef\x1a\x16.google.protobuf.Empty\x12?\n" +
-	"\x04List\x12\x1a.app.CredentialListRequest\x1a\x1b.app.CredentialListResponse\x12D\n" +
-	"\x05Watch\x12\x1b.app.CredentialWatchRequest\x1a\x1c.app.CredentialWatchResponse0\x01B!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
+	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
+	"\x05value\x18\x02 \x01(\v2\x12.roster.CredentialR\x05value\x12\x1d\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action2\xca\x03\n" +
+	"\x11CredentialService\x127\n" +
+	"\x03Add\x12\x1c.roster.CredentialAddRequest\x1a\x12.roster.Credential\x127\n" +
+	"\x03Get\x12\x1c.roster.CredentialGetRequest\x1a\x12.roster.Credential\x12;\n" +
+	"\x05Patch\x12\x1e.roster.CredentialPatchRequest\x1a\x12.roster.Credential\x12;\n" +
+	"\x05Apply\x12\x1e.roster.CredentialApplyRequest\x1a\x12.roster.Credential\x126\n" +
+	"\x05Erase\x12\x15.roster.CredentialRef\x1a\x16.google.protobuf.Empty\x12E\n" +
+	"\x04List\x12\x1d.roster.CredentialListRequest\x1a\x1e.roster.CredentialListResponse\x12J\n" +
+	"\x05Watch\x12\x1e.roster.CredentialWatchRequest\x1a\x1f.roster.CredentialWatchResponse0\x01B!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
 var file_app_credential_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_app_credential_svc_g_proto_goTypes = []any{
-	(*CredentialAddRequest)(nil),    // 0: app.CredentialAddRequest
-	(*CredentialGetRequest)(nil),    // 1: app.CredentialGetRequest
-	(*CredentialRef)(nil),           // 2: app.CredentialRef
-	(*CredentialRefByKind)(nil),     // 3: app.CredentialRefByKind
-	(*CredentialSelect)(nil),        // 4: app.CredentialSelect
-	(*CredentialPatchRequest)(nil),  // 5: app.CredentialPatchRequest
-	(*CredentialApplyRequest)(nil),  // 6: app.CredentialApplyRequest
-	(*CredentialListRequest)(nil),   // 7: app.CredentialListRequest
-	(*CredentialListResponse)(nil),  // 8: app.CredentialListResponse
-	(*CredentialFilter)(nil),        // 9: app.CredentialFilter
-	(*CredentialWatchRequest)(nil),  // 10: app.CredentialWatchRequest
-	(*CredentialWatchResponse)(nil), // 11: app.CredentialWatchResponse
-	(*CredentialWatchItem)(nil),     // 12: app.CredentialWatchItem
-	(*HolderRef)(nil),               // 13: app.HolderRef
+	(*CredentialAddRequest)(nil),    // 0: roster.CredentialAddRequest
+	(*CredentialGetRequest)(nil),    // 1: roster.CredentialGetRequest
+	(*CredentialRef)(nil),           // 2: roster.CredentialRef
+	(*CredentialRefByKind)(nil),     // 3: roster.CredentialRefByKind
+	(*CredentialSelect)(nil),        // 4: roster.CredentialSelect
+	(*CredentialPatchRequest)(nil),  // 5: roster.CredentialPatchRequest
+	(*CredentialApplyRequest)(nil),  // 6: roster.CredentialApplyRequest
+	(*CredentialListRequest)(nil),   // 7: roster.CredentialListRequest
+	(*CredentialListResponse)(nil),  // 8: roster.CredentialListResponse
+	(*CredentialFilter)(nil),        // 9: roster.CredentialFilter
+	(*CredentialWatchRequest)(nil),  // 10: roster.CredentialWatchRequest
+	(*CredentialWatchResponse)(nil), // 11: roster.CredentialWatchResponse
+	(*CredentialWatchItem)(nil),     // 12: roster.CredentialWatchItem
+	(*HolderRef)(nil),               // 13: roster.HolderRef
 	(*timestamppb.Timestamp)(nil),   // 14: google.protobuf.Timestamp
-	(*HolderSelect)(nil),            // 15: app.HolderSelect
+	(*HolderSelect)(nil),            // 15: roster.HolderSelect
 	(*patchpb.Patch)(nil),           // 16: patch.Patch
-	(*Credential)(nil),              // 17: app.Credential
+	(*Credential)(nil),              // 17: roster.Credential
 	(*emptypb.Empty)(nil),           // 18: google.protobuf.Empty
 }
 var file_app_credential_svc_g_proto_depIdxs = []int32{
-	13, // 0: app.CredentialAddRequest.holder:type_name -> app.HolderRef
-	14, // 1: app.CredentialAddRequest.date_locked:type_name -> google.protobuf.Timestamp
-	14, // 2: app.CredentialAddRequest.date_rotated:type_name -> google.protobuf.Timestamp
-	14, // 3: app.CredentialAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	2,  // 4: app.CredentialGetRequest.ref:type_name -> app.CredentialRef
-	4,  // 5: app.CredentialGetRequest.select:type_name -> app.CredentialSelect
-	3,  // 6: app.CredentialRef.kind:type_name -> app.CredentialRefByKind
-	13, // 7: app.CredentialRefByKind.holder:type_name -> app.HolderRef
-	15, // 8: app.CredentialSelect.holder:type_name -> app.HolderSelect
-	2,  // 9: app.CredentialPatchRequest.ref:type_name -> app.CredentialRef
-	14, // 10: app.CredentialPatchRequest.date_locked:type_name -> google.protobuf.Timestamp
-	14, // 11: app.CredentialPatchRequest.date_rotated:type_name -> google.protobuf.Timestamp
-	14, // 12: app.CredentialPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 13: app.CredentialApplyRequest.ref:type_name -> app.CredentialRef
-	16, // 14: app.CredentialApplyRequest.patch:type_name -> patch.Patch
-	9,  // 15: app.CredentialListRequest.filters:type_name -> app.CredentialFilter
-	17, // 16: app.CredentialListResponse.items:type_name -> app.Credential
-	2,  // 17: app.CredentialFilter.ref:type_name -> app.CredentialRef
-	9,  // 18: app.CredentialWatchRequest.filters:type_name -> app.CredentialFilter
-	12, // 19: app.CredentialWatchResponse.items:type_name -> app.CredentialWatchItem
-	17, // 20: app.CredentialWatchItem.value:type_name -> app.Credential
-	0,  // 21: app.CredentialService.Add:input_type -> app.CredentialAddRequest
-	1,  // 22: app.CredentialService.Get:input_type -> app.CredentialGetRequest
-	5,  // 23: app.CredentialService.Patch:input_type -> app.CredentialPatchRequest
-	6,  // 24: app.CredentialService.Apply:input_type -> app.CredentialApplyRequest
-	2,  // 25: app.CredentialService.Erase:input_type -> app.CredentialRef
-	7,  // 26: app.CredentialService.List:input_type -> app.CredentialListRequest
-	10, // 27: app.CredentialService.Watch:input_type -> app.CredentialWatchRequest
-	17, // 28: app.CredentialService.Add:output_type -> app.Credential
-	17, // 29: app.CredentialService.Get:output_type -> app.Credential
-	17, // 30: app.CredentialService.Patch:output_type -> app.Credential
-	17, // 31: app.CredentialService.Apply:output_type -> app.Credential
-	18, // 32: app.CredentialService.Erase:output_type -> google.protobuf.Empty
-	8,  // 33: app.CredentialService.List:output_type -> app.CredentialListResponse
-	11, // 34: app.CredentialService.Watch:output_type -> app.CredentialWatchResponse
+	13, // 0: roster.CredentialAddRequest.holder:type_name -> roster.HolderRef
+	14, // 1: roster.CredentialAddRequest.date_locked:type_name -> google.protobuf.Timestamp
+	14, // 2: roster.CredentialAddRequest.date_rotated:type_name -> google.protobuf.Timestamp
+	14, // 3: roster.CredentialAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	2,  // 4: roster.CredentialGetRequest.ref:type_name -> roster.CredentialRef
+	4,  // 5: roster.CredentialGetRequest.select:type_name -> roster.CredentialSelect
+	3,  // 6: roster.CredentialRef.kind:type_name -> roster.CredentialRefByKind
+	13, // 7: roster.CredentialRefByKind.holder:type_name -> roster.HolderRef
+	15, // 8: roster.CredentialSelect.holder:type_name -> roster.HolderSelect
+	2,  // 9: roster.CredentialPatchRequest.ref:type_name -> roster.CredentialRef
+	14, // 10: roster.CredentialPatchRequest.date_locked:type_name -> google.protobuf.Timestamp
+	14, // 11: roster.CredentialPatchRequest.date_rotated:type_name -> google.protobuf.Timestamp
+	14, // 12: roster.CredentialPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 13: roster.CredentialApplyRequest.ref:type_name -> roster.CredentialRef
+	16, // 14: roster.CredentialApplyRequest.patch:type_name -> patch.Patch
+	9,  // 15: roster.CredentialListRequest.filters:type_name -> roster.CredentialFilter
+	17, // 16: roster.CredentialListResponse.items:type_name -> roster.Credential
+	2,  // 17: roster.CredentialFilter.ref:type_name -> roster.CredentialRef
+	9,  // 18: roster.CredentialWatchRequest.filters:type_name -> roster.CredentialFilter
+	12, // 19: roster.CredentialWatchResponse.items:type_name -> roster.CredentialWatchItem
+	17, // 20: roster.CredentialWatchItem.value:type_name -> roster.Credential
+	0,  // 21: roster.CredentialService.Add:input_type -> roster.CredentialAddRequest
+	1,  // 22: roster.CredentialService.Get:input_type -> roster.CredentialGetRequest
+	5,  // 23: roster.CredentialService.Patch:input_type -> roster.CredentialPatchRequest
+	6,  // 24: roster.CredentialService.Apply:input_type -> roster.CredentialApplyRequest
+	2,  // 25: roster.CredentialService.Erase:input_type -> roster.CredentialRef
+	7,  // 26: roster.CredentialService.List:input_type -> roster.CredentialListRequest
+	10, // 27: roster.CredentialService.Watch:input_type -> roster.CredentialWatchRequest
+	17, // 28: roster.CredentialService.Add:output_type -> roster.Credential
+	17, // 29: roster.CredentialService.Get:output_type -> roster.Credential
+	17, // 30: roster.CredentialService.Patch:output_type -> roster.Credential
+	17, // 31: roster.CredentialService.Apply:output_type -> roster.Credential
+	18, // 32: roster.CredentialService.Erase:output_type -> google.protobuf.Empty
+	8,  // 33: roster.CredentialService.List:output_type -> roster.CredentialListResponse
+	11, // 34: roster.CredentialService.Watch:output_type -> roster.CredentialWatchResponse
 	28, // [28:35] is the sub-list for method output_type
 	21, // [21:28] is the sub-list for method input_type
 	21, // [21:21] is the sub-list for extension type_name

@@ -242,10 +242,10 @@ var File_app_identity_proto protoreflect.FileDescriptor
 
 const file_app_identity_proto_rawDesc = "" +
 	"\n" +
-	"\x12app/identity.proto\x12\x03app\x1a\x13payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xf1\x03\n" +
+	"\x12app/identity.proto\x12\x06roster\x1a\x13payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xf4\x03\n" +
 	"\bIdentity\x12\x1b\n" +
-	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12+\n" +
-	"\x06holder\x18\x02 \x01(\v2\v.app.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\x1a\n" +
+	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
+	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\x1a\n" +
 	"\bprovider\x18\b \x01(\tR\bprovider\x12\x18\n" +
 	"\asubject\x18\t \x01(\tR\asubject\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
@@ -264,15 +264,15 @@ const file_app_identity_proto_rawDesc = "" +
 
 var file_app_identity_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_app_identity_proto_goTypes = []any{
-	(*Identity)(nil),              // 0: app.Identity
-	(*Holder)(nil),                // 1: app.Holder
+	(*Identity)(nil),              // 0: roster.Identity
+	(*Holder)(nil),                // 1: roster.Holder
 	(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
 }
 var file_app_identity_proto_depIdxs = []int32{
-	1, // 0: app.Identity.holder:type_name -> app.Holder
-	2, // 1: app.Identity.date_updated:type_name -> google.protobuf.Timestamp
-	2, // 2: app.Identity.date_erased:type_name -> google.protobuf.Timestamp
-	2, // 3: app.Identity.date_created:type_name -> google.protobuf.Timestamp
+	1, // 0: roster.Identity.holder:type_name -> roster.Holder
+	2, // 1: roster.Identity.date_updated:type_name -> google.protobuf.Timestamp
+	2, // 2: roster.Identity.date_erased:type_name -> google.protobuf.Timestamp
+	2, // 3: roster.Identity.date_created:type_name -> google.protobuf.Timestamp
 	4, // [4:4] is the sub-list for method output_type
 	4, // [4:4] is the sub-list for method input_type
 	4, // [4:4] is the sub-list for extension type_name

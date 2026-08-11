@@ -102,7 +102,7 @@ func (s EmailServiceServer) Add(ctx context.Context, req *rstr.EmailAddRequest) 
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "app.Email", k, req.HasId()); err != nil {
+	if v, err := mint(ctx, s.Mint, "roster.Email", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
 		q.SetID(v)

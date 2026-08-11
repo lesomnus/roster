@@ -20,13 +20,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	CredentialService_Add_FullMethodName   = "/app.CredentialService/Add"
-	CredentialService_Get_FullMethodName   = "/app.CredentialService/Get"
-	CredentialService_Patch_FullMethodName = "/app.CredentialService/Patch"
-	CredentialService_Apply_FullMethodName = "/app.CredentialService/Apply"
-	CredentialService_Erase_FullMethodName = "/app.CredentialService/Erase"
-	CredentialService_List_FullMethodName  = "/app.CredentialService/List"
-	CredentialService_Watch_FullMethodName = "/app.CredentialService/Watch"
+	CredentialService_Add_FullMethodName   = "/roster.CredentialService/Add"
+	CredentialService_Get_FullMethodName   = "/roster.CredentialService/Get"
+	CredentialService_Patch_FullMethodName = "/roster.CredentialService/Patch"
+	CredentialService_Apply_FullMethodName = "/roster.CredentialService/Apply"
+	CredentialService_Erase_FullMethodName = "/roster.CredentialService/Erase"
+	CredentialService_List_FullMethodName  = "/roster.CredentialService/List"
+	CredentialService_Watch_FullMethodName = "/roster.CredentialService/Watch"
 )
 
 // CredentialServiceClient is the client API for CredentialService service.
@@ -349,7 +349,7 @@ type CredentialService_WatchServer = grpc.ServerStreamingServer[CredentialWatchR
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var CredentialService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "app.CredentialService",
+	ServiceName: "roster.CredentialService",
 	HandlerType: (*CredentialServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

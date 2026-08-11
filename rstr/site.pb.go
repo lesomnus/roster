@@ -261,14 +261,14 @@ var File_app_site_proto protoreflect.FileDescriptor
 
 const file_app_site_proto_rawDesc = "" +
 	"\n" +
-	"\x0eapp/site.proto\x12\x03app\x1a\x13payday/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xc6\x04\n" +
+	"\x0eapp/site.proto\x12\x06roster\x1a\x13payday/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xcc\x04\n" +
 	"\x04Site\x12\x1b\n" +
-	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12+\n" +
-	"\x06tenant\x18\x02 \x01(\v2\v.app.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x14\n" +
+	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\tR\x05alias\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\tR\x04desc\x12-\n" +
-	"\x06labels\x18\a \x03(\v2\x15.app.Site.LabelsEntryR\x06labels\x12F\n" +
+	"\x04desc\x18\x06 \x01(\tR\x04desc\x120\n" +
+	"\x06labels\x18\a \x03(\v2\x18.roster.Site.LabelsEntryR\x06labels\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
@@ -288,17 +288,17 @@ const file_app_site_proto_rawDesc = "" +
 
 var file_app_site_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_app_site_proto_goTypes = []any{
-	(*Site)(nil),                  // 0: app.Site
-	nil,                           // 1: app.Site.LabelsEntry
-	(*Tenant)(nil),                // 2: app.Tenant
+	(*Site)(nil),                  // 0: roster.Site
+	nil,                           // 1: roster.Site.LabelsEntry
+	(*Tenant)(nil),                // 2: roster.Tenant
 	(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
 }
 var file_app_site_proto_depIdxs = []int32{
-	2, // 0: app.Site.tenant:type_name -> app.Tenant
-	1, // 1: app.Site.labels:type_name -> app.Site.LabelsEntry
-	3, // 2: app.Site.date_updated:type_name -> google.protobuf.Timestamp
-	3, // 3: app.Site.date_erased:type_name -> google.protobuf.Timestamp
-	3, // 4: app.Site.date_created:type_name -> google.protobuf.Timestamp
+	2, // 0: roster.Site.tenant:type_name -> roster.Tenant
+	1, // 1: roster.Site.labels:type_name -> roster.Site.LabelsEntry
+	3, // 2: roster.Site.date_updated:type_name -> google.protobuf.Timestamp
+	3, // 3: roster.Site.date_erased:type_name -> google.protobuf.Timestamp
+	3, // 4: roster.Site.date_created:type_name -> google.protobuf.Timestamp
 	5, // [5:5] is the sub-list for method output_type
 	5, // [5:5] is the sub-list for method input_type
 	5, // [5:5] is the sub-list for extension type_name

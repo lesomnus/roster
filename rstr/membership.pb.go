@@ -434,11 +434,11 @@ var File_app_membership_proto protoreflect.FileDescriptor
 
 const file_app_membership_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/membership.proto\x12\x03app\x1a\x0eapp/site.proto\x1a\x0eapp/team.proto\x1a\x13payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xe2\x03\n" +
+	"\x14app/membership.proto\x12\x06roster\x1a\x0eapp/site.proto\x1a\x0eapp/team.proto\x1a\x13payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xe8\x03\n" +
 	"\x0eSiteMembership\x12\x1b\n" +
-	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12+\n" +
-	"\x06holder\x18\x02 \x01(\v2\v.app.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12'\n" +
-	"\x04site\x18\x03 \x01(\v2\t.app.SiteB\b\xf2\x82\x16\x048\x01@\x01R\x04site\x12F\n" +
+	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
+	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12*\n" +
+	"\x04site\x18\x03 \x01(\v2\f.roster.SiteB\b\xf2\x82\x16\x048\x01@\x01R\x04site\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
@@ -452,11 +452,11 @@ const file_app_membership_proto_rawDesc = "" +
 	"\fdate_created\n" +
 	"\x04\n" +
 	"\x02id\x1a\x03ref \x14(d:\x00\"\r\n" +
-	"\vsite.tenant\"\xf9\x03\n" +
+	"\vsite.tenant\"\xff\x03\n" +
 	"\x0eTeamMembership\x12\x1b\n" +
-	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12+\n" +
-	"\x06holder\x18\x02 \x01(\v2\v.app.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12%\n" +
-	"\x04team\x18\b \x01(\v2\t.app.TeamB\x06\xf2\x82\x16\x02@\x01R\x04team\x12\x12\n" +
+	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
+	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12(\n" +
+	"\x04team\x18\b \x01(\v2\f.roster.TeamB\x06\xf2\x82\x16\x02@\x01R\x04team\x12\x12\n" +
 	"\x04role\x18\t \x01(\tR\x04role\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
@@ -475,24 +475,24 @@ const file_app_membership_proto_rawDesc = "" +
 
 var file_app_membership_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_app_membership_proto_goTypes = []any{
-	(*SiteMembership)(nil),        // 0: app.SiteMembership
-	(*TeamMembership)(nil),        // 1: app.TeamMembership
-	(*Holder)(nil),                // 2: app.Holder
-	(*Site)(nil),                  // 3: app.Site
+	(*SiteMembership)(nil),        // 0: roster.SiteMembership
+	(*TeamMembership)(nil),        // 1: roster.TeamMembership
+	(*Holder)(nil),                // 2: roster.Holder
+	(*Site)(nil),                  // 3: roster.Site
 	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
-	(*Team)(nil),                  // 5: app.Team
+	(*Team)(nil),                  // 5: roster.Team
 }
 var file_app_membership_proto_depIdxs = []int32{
-	2,  // 0: app.SiteMembership.holder:type_name -> app.Holder
-	3,  // 1: app.SiteMembership.site:type_name -> app.Site
-	4,  // 2: app.SiteMembership.date_updated:type_name -> google.protobuf.Timestamp
-	4,  // 3: app.SiteMembership.date_erased:type_name -> google.protobuf.Timestamp
-	4,  // 4: app.SiteMembership.date_created:type_name -> google.protobuf.Timestamp
-	2,  // 5: app.TeamMembership.holder:type_name -> app.Holder
-	5,  // 6: app.TeamMembership.team:type_name -> app.Team
-	4,  // 7: app.TeamMembership.date_updated:type_name -> google.protobuf.Timestamp
-	4,  // 8: app.TeamMembership.date_erased:type_name -> google.protobuf.Timestamp
-	4,  // 9: app.TeamMembership.date_created:type_name -> google.protobuf.Timestamp
+	2,  // 0: roster.SiteMembership.holder:type_name -> roster.Holder
+	3,  // 1: roster.SiteMembership.site:type_name -> roster.Site
+	4,  // 2: roster.SiteMembership.date_updated:type_name -> google.protobuf.Timestamp
+	4,  // 3: roster.SiteMembership.date_erased:type_name -> google.protobuf.Timestamp
+	4,  // 4: roster.SiteMembership.date_created:type_name -> google.protobuf.Timestamp
+	2,  // 5: roster.TeamMembership.holder:type_name -> roster.Holder
+	5,  // 6: roster.TeamMembership.team:type_name -> roster.Team
+	4,  // 7: roster.TeamMembership.date_updated:type_name -> google.protobuf.Timestamp
+	4,  // 8: roster.TeamMembership.date_erased:type_name -> google.protobuf.Timestamp
+	4,  // 9: roster.TeamMembership.date_created:type_name -> google.protobuf.Timestamp
 	10, // [10:10] is the sub-list for method output_type
 	10, // [10:10] is the sub-list for method input_type
 	10, // [10:10] is the sub-list for extension type_name

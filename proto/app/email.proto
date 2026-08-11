@@ -1,6 +1,6 @@
 edition = "2023";
 
-package app;
+package roster;
 
 import "app/identity.proto";
 import "payday/holder.proto";

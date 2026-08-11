@@ -3,7 +3,7 @@
 
 edition = "2023";
 
-package app;
+package roster;
 
 option go_package = "github.com/lesomnus/roster/rstr";
 

@@ -1,6 +1,6 @@
 edition = "2023";
 
-package app;
+package roster;
 
 import "app/site.proto";
 import "app/team.proto";

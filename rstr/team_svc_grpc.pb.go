@@ -20,13 +20,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	TeamService_Add_FullMethodName   = "/app.TeamService/Add"
-	TeamService_Get_FullMethodName   = "/app.TeamService/Get"
-	TeamService_Patch_FullMethodName = "/app.TeamService/Patch"
-	TeamService_Apply_FullMethodName = "/app.TeamService/Apply"
-	TeamService_Erase_FullMethodName = "/app.TeamService/Erase"
-	TeamService_List_FullMethodName  = "/app.TeamService/List"
-	TeamService_Watch_FullMethodName = "/app.TeamService/Watch"
+	TeamService_Add_FullMethodName   = "/roster.TeamService/Add"
+	TeamService_Get_FullMethodName   = "/roster.TeamService/Get"
+	TeamService_Patch_FullMethodName = "/roster.TeamService/Patch"
+	TeamService_Apply_FullMethodName = "/roster.TeamService/Apply"
+	TeamService_Erase_FullMethodName = "/roster.TeamService/Erase"
+	TeamService_List_FullMethodName  = "/roster.TeamService/List"
+	TeamService_Watch_FullMethodName = "/roster.TeamService/Watch"
 )
 
 // TeamServiceClient is the client API for TeamService service.
@@ -349,7 +349,7 @@ type TeamService_WatchServer = grpc.ServerStreamingServer[TeamWatchResponse]
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var TeamService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "app.TeamService",
+	ServiceName: "roster.TeamService",
 	HandlerType: (*TeamServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

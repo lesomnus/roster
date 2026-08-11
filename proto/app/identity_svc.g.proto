@@ -1,5 +1,5 @@
 edition = "2023";
-package app;
+package roster;
 
 import "app/identity.proto";
 import "google/protobuf/empty.proto";

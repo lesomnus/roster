@@ -249,10 +249,10 @@ var File_app_team_proto protoreflect.FileDescriptor
 
 const file_app_team_proto_rawDesc = "" +
 	"\n" +
-	"\x0eapp/team.proto\x12\x03app\x1a\x0eapp/site.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xe4\x03\n" +
+	"\x0eapp/team.proto\x12\x06roster\x1a\x0eapp/site.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xe7\x03\n" +
 	"\x04Team\x12\x1b\n" +
-	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12%\n" +
-	"\x04site\x18\x03 \x01(\v2\t.app.SiteB\x06\xf2\x82\x16\x028\x01R\x04site\x12\x14\n" +
+	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12(\n" +
+	"\x04site\x18\x03 \x01(\v2\f.roster.SiteB\x06\xf2\x82\x16\x028\x01R\x04site\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\tR\x05alias\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
 	"\x04desc\x18\x06 \x01(\tR\x04desc\x12F\n" +
@@ -273,15 +273,15 @@ const file_app_team_proto_rawDesc = "" +
 
 var file_app_team_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_app_team_proto_goTypes = []any{
-	(*Team)(nil),                  // 0: app.Team
-	(*Site)(nil),                  // 1: app.Site
+	(*Team)(nil),                  // 0: roster.Team
+	(*Site)(nil),                  // 1: roster.Site
 	(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
 }
 var file_app_team_proto_depIdxs = []int32{
-	1, // 0: app.Team.site:type_name -> app.Site
-	2, // 1: app.Team.date_updated:type_name -> google.protobuf.Timestamp
-	2, // 2: app.Team.date_erased:type_name -> google.protobuf.Timestamp
-	2, // 3: app.Team.date_created:type_name -> google.protobuf.Timestamp
+	1, // 0: roster.Team.site:type_name -> roster.Site
+	2, // 1: roster.Team.date_updated:type_name -> google.protobuf.Timestamp
+	2, // 2: roster.Team.date_erased:type_name -> google.protobuf.Timestamp
+	2, // 3: roster.Team.date_created:type_name -> google.protobuf.Timestamp
 	4, // [4:4] is the sub-list for method output_type
 	4, // [4:4] is the sub-list for method input_type
 	4, // [4:4] is the sub-list for extension type_name

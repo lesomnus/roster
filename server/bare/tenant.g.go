@@ -95,7 +95,7 @@ func (s TenantServiceServer) Add(ctx context.Context, req *rstr.TenantAddRequest
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "app.Tenant", k, req.HasId()); err != nil {
+	if v, err := mint(ctx, s.Mint, "roster.Tenant", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
 		q.SetID(v)

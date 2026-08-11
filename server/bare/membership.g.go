@@ -101,7 +101,7 @@ func (s SiteMembershipServiceServer) Add(ctx context.Context, req *rstr.SiteMemb
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "app.SiteMembership", k, req.HasId()); err != nil {
+	if v, err := mint(ctx, s.Mint, "roster.SiteMembership", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
 		q.SetID(v)
@@ -555,7 +555,7 @@ func (s TeamMembershipServiceServer) Add(ctx context.Context, req *rstr.TeamMemb
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "app.TeamMembership", k, req.HasId()); err != nil {
+	if v, err := mint(ctx, s.Mint, "roster.TeamMembership", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
 		q.SetID(v)

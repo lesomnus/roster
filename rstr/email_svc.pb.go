@@ -1764,145 +1764,139 @@ var File_app_email_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_email_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x15app/email_svc.g.proto\x12\x03app\x1a\x0fapp/email.proto\x1a\x18app/identity_svc.g.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x19payday/holder_svc.g.proto\"\x9b\x02\n" +
+	"\x15app/email_svc.g.proto\x12\x06roster\x1a\x0fapp/email.proto\x1a\x18app/identity_svc.g.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x19payday/holder_svc.g.proto\"\xa1\x02\n" +
 	"\x0fEmailAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12&\n" +
-	"\x06holder\x18\x02 \x01(\v2\x0e.app.HolderRefR\x06holder\x12\x1f\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
+	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x1f\n" +
 	"\aaddress\x18\b \x01(\tB\x05\xaa\x01\x02\b\x02R\aaddress\x12?\n" +
-	"\rdate_verified\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\fdateVerified\x12/\n" +
+	"\rdate_verified\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\fdateVerified\x122\n" +
 	"\n" +
 	"vouched_by\x18\n" +
-	" \x01(\v2\x10.app.IdentityRefR\tvouchedBy\x12=\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"\\\n" +
-	"\x0fEmailGetRequest\x12\x1f\n" +
-	"\x03ref\x18\x01 \x01(\v2\r.app.EmailRefR\x03ref\x12(\n" +
-	"\x06select\x18\x02 \x01(\v2\x10.app.EmailSelectR\x06select\"W\n" +
+	" \x01(\v2\x13.roster.IdentityRefR\tvouchedBy\x12=\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"b\n" +
+	"\x0fEmailGetRequest\x12\"\n" +
+	"\x03ref\x18\x01 \x01(\v2\x10.roster.EmailRefR\x03ref\x12+\n" +
+	"\x06select\x18\x02 \x01(\v2\x13.roster.EmailSelectR\x06select\"Z\n" +
 	"\bEmailRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x122\n" +
-	"\aaddress\x18\x02 \x01(\v2\x16.app.EmailRefByAddressH\x00R\aaddressB\x05\n" +
-	"\x03key\"U\n" +
-	"\x11EmailRefByAddress\x12&\n" +
-	"\x06holder\x18\x02 \x01(\v2\x0e.app.HolderRefR\x06holder\x12\x18\n" +
-	"\aaddress\x18\b \x01(\tR\aaddress\"\xa4\x02\n" +
+	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x125\n" +
+	"\aaddress\x18\x02 \x01(\v2\x19.roster.EmailRefByAddressH\x00R\aaddressB\x05\n" +
+	"\x03key\"X\n" +
+	"\x11EmailRefByAddress\x12)\n" +
+	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x18\n" +
+	"\aaddress\x18\b \x01(\tR\aaddress\"\xaa\x02\n" +
 	"\vEmailSelect\x12\x10\n" +
-	"\x03all\x18\x01 \x01(\bR\x03all\x12)\n" +
-	"\x06holder\x18\x02 \x01(\v2\x11.app.HolderSelectR\x06holder\x12\x18\n" +
+	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
+	"\x06holder\x18\x02 \x01(\v2\x14.roster.HolderSelectR\x06holder\x12\x18\n" +
 	"\aaddress\x18\b \x01(\bR\aaddress\x12#\n" +
-	"\rdate_verified\x18\t \x01(\bR\fdateVerified\x122\n" +
+	"\rdate_verified\x18\t \x01(\bR\fdateVerified\x125\n" +
 	"\n" +
 	"vouched_by\x18\n" +
-	" \x01(\v2\x13.app.IdentitySelectR\tvouchedBy\x12!\n" +
+	" \x01(\v2\x16.roster.IdentitySelectR\tvouchedBy\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\x83\x03\n" +
-	"\x11EmailPatchRequest\x12\x1f\n" +
-	"\x03ref\x18\x01 \x01(\v2\r.app.EmailRefR\x03ref\x12\x18\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\x89\x03\n" +
+	"\x11EmailPatchRequest\x12\"\n" +
+	"\x03ref\x18\x01 \x01(\v2\x10.roster.EmailRefR\x03ref\x12\x18\n" +
 	"\aaddress\x18\x10 \x01(\tR\aaddress\x12?\n" +
 	"\rdate_verified\x18\x12 \x01(\v2\x1a.google.protobuf.TimestampR\fdateVerified\x12,\n" +
-	"\x12date_verified_null\x18\x13 \x01(\bR\x10dateVerifiedNull\x12/\n" +
+	"\x12date_verified_null\x18\x13 \x01(\bR\x10dateVerifiedNull\x122\n" +
 	"\n" +
-	"vouched_by\x18\x14 \x01(\v2\x10.app.IdentityRefR\tvouchedBy\x12&\n" +
+	"vouched_by\x18\x14 \x01(\v2\x13.roster.IdentityRefR\tvouchedBy\x12&\n" +
 	"\x0fvouched_by_null\x18\x15 \x01(\bR\rvouchedByNull\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"X\n" +
-	"\x11EmailApplyRequest\x12\x1f\n" +
-	"\x03ref\x18\x01 \x01(\v2\r.app.EmailRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"v\n" +
-	"\x10EmailListRequest\x12*\n" +
-	"\afilters\x18\x01 \x03(\v2\x10.app.EmailFilterR\afilters\x12\x19\n" +
+	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"[\n" +
+	"\x11EmailApplyRequest\x12\"\n" +
+	"\x03ref\x18\x01 \x01(\v2\x10.roster.EmailRefR\x03ref\x12\"\n" +
+	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"y\n" +
+	"\x10EmailListRequest\x12-\n" +
+	"\afilters\x18\x01 \x03(\v2\x13.roster.EmailFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
-	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"P\n" +
-	"\x11EmailListResponse\x12 \n" +
-	"\x05items\x18\x01 \x03(\v2\n" +
-	".app.EmailR\x05items\x12\x19\n" +
-	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\".\n" +
-	"\vEmailFilter\x12\x1f\n" +
-	"\x03ref\x18\x01 \x01(\v2\r.app.EmailRefR\x03ref\"k\n" +
-	"\x11EmailWatchRequest\x12*\n" +
-	"\afilters\x18\x01 \x03(\v2\x10.app.EmailFilterR\afilters\x12*\n" +
-	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"?\n" +
-	"\x12EmailWatchResponse\x12)\n" +
-	"\x05items\x18\x01 \x03(\v2\x13.app.EmailWatchItemR\x05items\"a\n" +
+	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"S\n" +
+	"\x11EmailListResponse\x12#\n" +
+	"\x05items\x18\x01 \x03(\v2\r.roster.EmailR\x05items\x12\x19\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"1\n" +
+	"\vEmailFilter\x12\"\n" +
+	"\x03ref\x18\x01 \x01(\v2\x10.roster.EmailRefR\x03ref\"n\n" +
+	"\x11EmailWatchRequest\x12-\n" +
+	"\afilters\x18\x01 \x03(\v2\x13.roster.EmailFilterR\afilters\x12*\n" +
+	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"B\n" +
+	"\x12EmailWatchResponse\x12,\n" +
+	"\x05items\x18\x01 \x03(\v2\x16.roster.EmailWatchItemR\x05items\"d\n" +
 	"\x0eEmailWatchItem\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12 \n" +
-	"\x05value\x18\x02 \x01(\v2\n" +
-	".app.EmailR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action2\xdd\x02\n" +
-	"\fEmailService\x12'\n" +
-	"\x03Add\x12\x14.app.EmailAddRequest\x1a\n" +
-	".app.Email\x12'\n" +
-	"\x03Get\x12\x14.app.EmailGetRequest\x1a\n" +
-	".app.Email\x12+\n" +
-	"\x05Patch\x12\x16.app.EmailPatchRequest\x1a\n" +
-	".app.Email\x12+\n" +
-	"\x05Apply\x12\x16.app.EmailApplyRequest\x1a\n" +
-	".app.Email\x12.\n" +
-	"\x05Erase\x12\r.app.EmailRef\x1a\x16.google.protobuf.Empty\x125\n" +
-	"\x04List\x12\x15.app.EmailListRequest\x1a\x16.app.EmailListResponse\x12:\n" +
-	"\x05Watch\x12\x16.app.EmailWatchRequest\x1a\x17.app.EmailWatchResponse0\x01B!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
+	"\x02id\x18\x01 \x01(\fR\x02id\x12#\n" +
+	"\x05value\x18\x02 \x01(\v2\r.roster.EmailR\x05value\x12\x1d\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action2\x84\x03\n" +
+	"\fEmailService\x12-\n" +
+	"\x03Add\x12\x17.roster.EmailAddRequest\x1a\r.roster.Email\x12-\n" +
+	"\x03Get\x12\x17.roster.EmailGetRequest\x1a\r.roster.Email\x121\n" +
+	"\x05Patch\x12\x19.roster.EmailPatchRequest\x1a\r.roster.Email\x121\n" +
+	"\x05Apply\x12\x19.roster.EmailApplyRequest\x1a\r.roster.Email\x121\n" +
+	"\x05Erase\x12\x10.roster.EmailRef\x1a\x16.google.protobuf.Empty\x12;\n" +
+	"\x04List\x12\x18.roster.EmailListRequest\x1a\x19.roster.EmailListResponse\x12@\n" +
+	"\x05Watch\x12\x19.roster.EmailWatchRequest\x1a\x1a.roster.EmailWatchResponse0\x01B!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
 var file_app_email_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_app_email_svc_g_proto_goTypes = []any{
-	(*EmailAddRequest)(nil),       // 0: app.EmailAddRequest
-	(*EmailGetRequest)(nil),       // 1: app.EmailGetRequest
-	(*EmailRef)(nil),              // 2: app.EmailRef
-	(*EmailRefByAddress)(nil),     // 3: app.EmailRefByAddress
-	(*EmailSelect)(nil),           // 4: app.EmailSelect
-	(*EmailPatchRequest)(nil),     // 5: app.EmailPatchRequest
-	(*EmailApplyRequest)(nil),     // 6: app.EmailApplyRequest
-	(*EmailListRequest)(nil),      // 7: app.EmailListRequest
-	(*EmailListResponse)(nil),     // 8: app.EmailListResponse
-	(*EmailFilter)(nil),           // 9: app.EmailFilter
-	(*EmailWatchRequest)(nil),     // 10: app.EmailWatchRequest
-	(*EmailWatchResponse)(nil),    // 11: app.EmailWatchResponse
-	(*EmailWatchItem)(nil),        // 12: app.EmailWatchItem
-	(*HolderRef)(nil),             // 13: app.HolderRef
+	(*EmailAddRequest)(nil),       // 0: roster.EmailAddRequest
+	(*EmailGetRequest)(nil),       // 1: roster.EmailGetRequest
+	(*EmailRef)(nil),              // 2: roster.EmailRef
+	(*EmailRefByAddress)(nil),     // 3: roster.EmailRefByAddress
+	(*EmailSelect)(nil),           // 4: roster.EmailSelect
+	(*EmailPatchRequest)(nil),     // 5: roster.EmailPatchRequest
+	(*EmailApplyRequest)(nil),     // 6: roster.EmailApplyRequest
+	(*EmailListRequest)(nil),      // 7: roster.EmailListRequest
+	(*EmailListResponse)(nil),     // 8: roster.EmailListResponse
+	(*EmailFilter)(nil),           // 9: roster.EmailFilter
+	(*EmailWatchRequest)(nil),     // 10: roster.EmailWatchRequest
+	(*EmailWatchResponse)(nil),    // 11: roster.EmailWatchResponse
+	(*EmailWatchItem)(nil),        // 12: roster.EmailWatchItem
+	(*HolderRef)(nil),             // 13: roster.HolderRef
 	(*timestamppb.Timestamp)(nil), // 14: google.protobuf.Timestamp
-	(*IdentityRef)(nil),           // 15: app.IdentityRef
-	(*HolderSelect)(nil),          // 16: app.HolderSelect
-	(*IdentitySelect)(nil),        // 17: app.IdentitySelect
+	(*IdentityRef)(nil),           // 15: roster.IdentityRef
+	(*HolderSelect)(nil),          // 16: roster.HolderSelect
+	(*IdentitySelect)(nil),        // 17: roster.IdentitySelect
 	(*patchpb.Patch)(nil),         // 18: patch.Patch
-	(*Email)(nil),                 // 19: app.Email
+	(*Email)(nil),                 // 19: roster.Email
 	(*emptypb.Empty)(nil),         // 20: google.protobuf.Empty
 }
 var file_app_email_svc_g_proto_depIdxs = []int32{
-	13, // 0: app.EmailAddRequest.holder:type_name -> app.HolderRef
-	14, // 1: app.EmailAddRequest.date_verified:type_name -> google.protobuf.Timestamp
-	15, // 2: app.EmailAddRequest.vouched_by:type_name -> app.IdentityRef
-	14, // 3: app.EmailAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	2,  // 4: app.EmailGetRequest.ref:type_name -> app.EmailRef
-	4,  // 5: app.EmailGetRequest.select:type_name -> app.EmailSelect
-	3,  // 6: app.EmailRef.address:type_name -> app.EmailRefByAddress
-	13, // 7: app.EmailRefByAddress.holder:type_name -> app.HolderRef
-	16, // 8: app.EmailSelect.holder:type_name -> app.HolderSelect
-	17, // 9: app.EmailSelect.vouched_by:type_name -> app.IdentitySelect
-	2,  // 10: app.EmailPatchRequest.ref:type_name -> app.EmailRef
-	14, // 11: app.EmailPatchRequest.date_verified:type_name -> google.protobuf.Timestamp
-	15, // 12: app.EmailPatchRequest.vouched_by:type_name -> app.IdentityRef
-	14, // 13: app.EmailPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 14: app.EmailApplyRequest.ref:type_name -> app.EmailRef
-	18, // 15: app.EmailApplyRequest.patch:type_name -> patch.Patch
-	9,  // 16: app.EmailListRequest.filters:type_name -> app.EmailFilter
-	19, // 17: app.EmailListResponse.items:type_name -> app.Email
-	2,  // 18: app.EmailFilter.ref:type_name -> app.EmailRef
-	9,  // 19: app.EmailWatchRequest.filters:type_name -> app.EmailFilter
-	12, // 20: app.EmailWatchResponse.items:type_name -> app.EmailWatchItem
-	19, // 21: app.EmailWatchItem.value:type_name -> app.Email
-	0,  // 22: app.EmailService.Add:input_type -> app.EmailAddRequest
-	1,  // 23: app.EmailService.Get:input_type -> app.EmailGetRequest
-	5,  // 24: app.EmailService.Patch:input_type -> app.EmailPatchRequest
-	6,  // 25: app.EmailService.Apply:input_type -> app.EmailApplyRequest
-	2,  // 26: app.EmailService.Erase:input_type -> app.EmailRef
-	7,  // 27: app.EmailService.List:input_type -> app.EmailListRequest
-	10, // 28: app.EmailService.Watch:input_type -> app.EmailWatchRequest
-	19, // 29: app.EmailService.Add:output_type -> app.Email
-	19, // 30: app.EmailService.Get:output_type -> app.Email
-	19, // 31: app.EmailService.Patch:output_type -> app.Email
-	19, // 32: app.EmailService.Apply:output_type -> app.Email
-	20, // 33: app.EmailService.Erase:output_type -> google.protobuf.Empty
-	8,  // 34: app.EmailService.List:output_type -> app.EmailListResponse
-	11, // 35: app.EmailService.Watch:output_type -> app.EmailWatchResponse
+	13, // 0: roster.EmailAddRequest.holder:type_name -> roster.HolderRef
+	14, // 1: roster.EmailAddRequest.date_verified:type_name -> google.protobuf.Timestamp
+	15, // 2: roster.EmailAddRequest.vouched_by:type_name -> roster.IdentityRef
+	14, // 3: roster.EmailAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	2,  // 4: roster.EmailGetRequest.ref:type_name -> roster.EmailRef
+	4,  // 5: roster.EmailGetRequest.select:type_name -> roster.EmailSelect
+	3,  // 6: roster.EmailRef.address:type_name -> roster.EmailRefByAddress
+	13, // 7: roster.EmailRefByAddress.holder:type_name -> roster.HolderRef
+	16, // 8: roster.EmailSelect.holder:type_name -> roster.HolderSelect
+	17, // 9: roster.EmailSelect.vouched_by:type_name -> roster.IdentitySelect
+	2,  // 10: roster.EmailPatchRequest.ref:type_name -> roster.EmailRef
+	14, // 11: roster.EmailPatchRequest.date_verified:type_name -> google.protobuf.Timestamp
+	15, // 12: roster.EmailPatchRequest.vouched_by:type_name -> roster.IdentityRef
+	14, // 13: roster.EmailPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 14: roster.EmailApplyRequest.ref:type_name -> roster.EmailRef
+	18, // 15: roster.EmailApplyRequest.patch:type_name -> patch.Patch
+	9,  // 16: roster.EmailListRequest.filters:type_name -> roster.EmailFilter
+	19, // 17: roster.EmailListResponse.items:type_name -> roster.Email
+	2,  // 18: roster.EmailFilter.ref:type_name -> roster.EmailRef
+	9,  // 19: roster.EmailWatchRequest.filters:type_name -> roster.EmailFilter
+	12, // 20: roster.EmailWatchResponse.items:type_name -> roster.EmailWatchItem
+	19, // 21: roster.EmailWatchItem.value:type_name -> roster.Email
+	0,  // 22: roster.EmailService.Add:input_type -> roster.EmailAddRequest
+	1,  // 23: roster.EmailService.Get:input_type -> roster.EmailGetRequest
+	5,  // 24: roster.EmailService.Patch:input_type -> roster.EmailPatchRequest
+	6,  // 25: roster.EmailService.Apply:input_type -> roster.EmailApplyRequest
+	2,  // 26: roster.EmailService.Erase:input_type -> roster.EmailRef
+	7,  // 27: roster.EmailService.List:input_type -> roster.EmailListRequest
+	10, // 28: roster.EmailService.Watch:input_type -> roster.EmailWatchRequest
+	19, // 29: roster.EmailService.Add:output_type -> roster.Email
+	19, // 30: roster.EmailService.Get:output_type -> roster.Email
+	19, // 31: roster.EmailService.Patch:output_type -> roster.Email
+	19, // 32: roster.EmailService.Apply:output_type -> roster.Email
+	20, // 33: roster.EmailService.Erase:output_type -> google.protobuf.Empty
+	8,  // 34: roster.EmailService.List:output_type -> roster.EmailListResponse
+	11, // 35: roster.EmailService.Watch:output_type -> roster.EmailWatchResponse
 	29, // [29:36] is the sub-list for method output_type
 	22, // [22:29] is the sub-list for method input_type
 	22, // [22:22] is the sub-list for extension type_name

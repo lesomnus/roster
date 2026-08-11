@@ -20,13 +20,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	EmailService_Add_FullMethodName   = "/app.EmailService/Add"
-	EmailService_Get_FullMethodName   = "/app.EmailService/Get"
-	EmailService_Patch_FullMethodName = "/app.EmailService/Patch"
-	EmailService_Apply_FullMethodName = "/app.EmailService/Apply"
-	EmailService_Erase_FullMethodName = "/app.EmailService/Erase"
-	EmailService_List_FullMethodName  = "/app.EmailService/List"
-	EmailService_Watch_FullMethodName = "/app.EmailService/Watch"
+	EmailService_Add_FullMethodName   = "/roster.EmailService/Add"
+	EmailService_Get_FullMethodName   = "/roster.EmailService/Get"
+	EmailService_Patch_FullMethodName = "/roster.EmailService/Patch"
+	EmailService_Apply_FullMethodName = "/roster.EmailService/Apply"
+	EmailService_Erase_FullMethodName = "/roster.EmailService/Erase"
+	EmailService_List_FullMethodName  = "/roster.EmailService/List"
+	EmailService_Watch_FullMethodName = "/roster.EmailService/Watch"
 )
 
 // EmailServiceClient is the client API for EmailService service.
@@ -349,7 +349,7 @@ type EmailService_WatchServer = grpc.ServerStreamingServer[EmailWatchResponse]
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var EmailService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "app.EmailService",
+	ServiceName: "roster.EmailService",
 	HandlerType: (*EmailServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

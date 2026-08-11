@@ -499,46 +499,46 @@ var File_app_vouch_proto protoreflect.FileDescriptor
 
 const file_app_vouch_proto_rawDesc = "" +
 	"\n" +
-	"\x0fapp/vouch.proto\x12\x03app\x1a\x1fgoogle/protobuf/timestamp.proto\"H\n" +
+	"\x0fapp/vouch.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\"H\n" +
 	"\bVouchWho\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x16\n" +
 	"\x06tenant\x18\x02 \x01(\tR\x06tenant\x12\x14\n" +
-	"\x05alias\x18\x03 \x01(\tR\x05alias\"a\n" +
-	"\x12VouchVerifyRequest\x12\x1f\n" +
-	"\x03who\x18\x01 \x01(\v2\r.app.VouchWhoR\x03who\x12\x12\n" +
+	"\x05alias\x18\x03 \x01(\tR\x05alias\"d\n" +
+	"\x12VouchVerifyRequest\x12\"\n" +
+	"\x03who\x18\x01 \x01(\v2\x10.roster.VouchWhoR\x03who\x12\x12\n" +
 	"\x04kind\x18\b \x01(\tR\x04kind\x12\x16\n" +
 	"\x06secret\x18\t \x01(\fR\x06secret\"\x94\x01\n" +
 	"\x13VouchVerifyResponse\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\x12\x16\n" +
 	"\x06holder\x18\x02 \x01(\fR\x06holder\x12\x16\n" +
 	"\x06tenant\x18\x03 \x01(\fR\x06tenant\x12=\n" +
-	"\flocked_until\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\vlockedUntil\"^\n" +
-	"\x0fVouchSetRequest\x12\x1f\n" +
-	"\x03who\x18\x01 \x01(\v2\r.app.VouchWhoR\x03who\x12\x12\n" +
+	"\flocked_until\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\vlockedUntil\"a\n" +
+	"\x0fVouchSetRequest\x12\"\n" +
+	"\x03who\x18\x01 \x01(\v2\x10.roster.VouchWhoR\x03who\x12\x12\n" +
 	"\x04kind\x18\b \x01(\tR\x04kind\x12\x16\n" +
 	"\x06secret\x18\t \x01(\fR\x06secret\"\x12\n" +
-	"\x10VouchSetResponse2\x7f\n" +
-	"\fVouchService\x12;\n" +
-	"\x06Verify\x12\x17.app.VouchVerifyRequest\x1a\x18.app.VouchVerifyResponse\x122\n" +
-	"\x03Set\x12\x14.app.VouchSetRequest\x1a\x15.app.VouchSetResponseB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
+	"\x10VouchSetResponse2\x8b\x01\n" +
+	"\fVouchService\x12A\n" +
+	"\x06Verify\x12\x1a.roster.VouchVerifyRequest\x1a\x1b.roster.VouchVerifyResponse\x128\n" +
+	"\x03Set\x12\x17.roster.VouchSetRequest\x1a\x18.roster.VouchSetResponseB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
 var file_app_vouch_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_app_vouch_proto_goTypes = []any{
-	(*VouchWho)(nil),              // 0: app.VouchWho
-	(*VouchVerifyRequest)(nil),    // 1: app.VouchVerifyRequest
-	(*VouchVerifyResponse)(nil),   // 2: app.VouchVerifyResponse
-	(*VouchSetRequest)(nil),       // 3: app.VouchSetRequest
-	(*VouchSetResponse)(nil),      // 4: app.VouchSetResponse
+	(*VouchWho)(nil),              // 0: roster.VouchWho
+	(*VouchVerifyRequest)(nil),    // 1: roster.VouchVerifyRequest
+	(*VouchVerifyResponse)(nil),   // 2: roster.VouchVerifyResponse
+	(*VouchSetRequest)(nil),       // 3: roster.VouchSetRequest
+	(*VouchSetResponse)(nil),      // 4: roster.VouchSetResponse
 	(*timestamppb.Timestamp)(nil), // 5: google.protobuf.Timestamp
 }
 var file_app_vouch_proto_depIdxs = []int32{
-	0, // 0: app.VouchVerifyRequest.who:type_name -> app.VouchWho
-	5, // 1: app.VouchVerifyResponse.locked_until:type_name -> google.protobuf.Timestamp
-	0, // 2: app.VouchSetRequest.who:type_name -> app.VouchWho
-	1, // 3: app.VouchService.Verify:input_type -> app.VouchVerifyRequest
-	3, // 4: app.VouchService.Set:input_type -> app.VouchSetRequest
-	2, // 5: app.VouchService.Verify:output_type -> app.VouchVerifyResponse
-	4, // 6: app.VouchService.Set:output_type -> app.VouchSetResponse
+	0, // 0: roster.VouchVerifyRequest.who:type_name -> roster.VouchWho
+	5, // 1: roster.VouchVerifyResponse.locked_until:type_name -> google.protobuf.Timestamp
+	0, // 2: roster.VouchSetRequest.who:type_name -> roster.VouchWho
+	1, // 3: roster.VouchService.Verify:input_type -> roster.VouchVerifyRequest
+	3, // 4: roster.VouchService.Set:input_type -> roster.VouchSetRequest
+	2, // 5: roster.VouchService.Verify:output_type -> roster.VouchVerifyResponse
+	4, // 6: roster.VouchService.Set:output_type -> roster.VouchSetResponse
 	5, // [5:7] is the sub-list for method output_type
 	3, // [3:5] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name

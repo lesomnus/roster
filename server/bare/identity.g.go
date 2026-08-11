@@ -100,7 +100,7 @@ func (s IdentityServiceServer) Add(ctx context.Context, req *rstr.IdentityAddReq
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "app.Identity", k, req.HasId()); err != nil {
+	if v, err := mint(ctx, s.Mint, "roster.Identity", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
 		q.SetID(v)

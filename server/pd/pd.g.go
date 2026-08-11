@@ -92,17 +92,17 @@ const (
 )
 
 func init() {
-	pdid.Register("app.Audit", AuditDomain, "audit")
-	pdid.Register("app.Credential", CredentialDomain, "credential")
-	pdid.Register("app.Email", EmailDomain, "email")
-	pdid.Register("app.Holder", HolderDomain, "holder")
-	pdid.Register("app.Identity", IdentityDomain, "identity")
-	pdid.Register("app.Outbox", OutboxDomain, "outbox")
-	pdid.Register("app.Site", SiteDomain, "site")
-	pdid.Register("app.SiteMembership", SiteMembershipDomain, "site-membership")
-	pdid.Register("app.Team", TeamDomain, "team")
-	pdid.Register("app.TeamMembership", TeamMembershipDomain, "team-membership")
-	pdid.Register("app.Tenant", TenantDomain, "tenant")
+	pdid.Register("roster.Audit", AuditDomain, "audit")
+	pdid.Register("roster.Credential", CredentialDomain, "credential")
+	pdid.Register("roster.Email", EmailDomain, "email")
+	pdid.Register("roster.Holder", HolderDomain, "holder")
+	pdid.Register("roster.Identity", IdentityDomain, "identity")
+	pdid.Register("roster.Outbox", OutboxDomain, "outbox")
+	pdid.Register("roster.Site", SiteDomain, "site")
+	pdid.Register("roster.SiteMembership", SiteMembershipDomain, "site-membership")
+	pdid.Register("roster.Team", TeamDomain, "team")
+	pdid.Register("roster.TeamMembership", TeamMembershipDomain, "team-membership")
+	pdid.Register("roster.Tenant", TenantDomain, "tenant")
 
 	pdid.RegisterTenant(TenantDomain)
 }
@@ -110,17 +110,17 @@ func init() {
 // Domains is the domain of each entity by the full name of its message,
 // which is the name a [Minter] is asked about.
 var Domains = map[string]pdid.Domain{
-	"app.Audit":          AuditDomain,
-	"app.Credential":     CredentialDomain,
-	"app.Email":          EmailDomain,
-	"app.Holder":         HolderDomain,
-	"app.Identity":       IdentityDomain,
-	"app.Outbox":         OutboxDomain,
-	"app.Site":           SiteDomain,
-	"app.SiteMembership": SiteMembershipDomain,
-	"app.Team":           TeamDomain,
-	"app.TeamMembership": TeamMembershipDomain,
-	"app.Tenant":         TenantDomain,
+	"roster.Audit":          AuditDomain,
+	"roster.Credential":     CredentialDomain,
+	"roster.Email":          EmailDomain,
+	"roster.Holder":         HolderDomain,
+	"roster.Identity":       IdentityDomain,
+	"roster.Outbox":         OutboxDomain,
+	"roster.Site":           SiteDomain,
+	"roster.SiteMembership": SiteMembershipDomain,
+	"roster.Team":           TeamDomain,
+	"roster.TeamMembership": TeamMembershipDomain,
+	"roster.Tenant":         TenantDomain,
 }
 
 // Minter answers with the [bare.Minter] that gives every new row an
@@ -1322,7 +1322,7 @@ func (s sinkHolder) Add(ctx context.Context, req *rstr.HolderAddRequest) (*rstr.
 	}
 
 	for try := 0; ; try++ {
-		v, err := slug.NameWith(ctx, s.namer, "app.Holder", req.GetAlias(), req)
+		v, err := slug.NameWith(ctx, s.namer, "roster.Holder", req.GetAlias(), req)
 		if err != nil {
 			return nil, pderr.At("alias", err)
 		}
@@ -1733,7 +1733,7 @@ func (s sinkSite) Add(ctx context.Context, req *rstr.SiteAddRequest) (*rstr.Site
 	}
 
 	for try := 0; ; try++ {
-		v, err := slug.NameWith(ctx, s.namer, "app.Site", req.GetAlias(), req)
+		v, err := slug.NameWith(ctx, s.namer, "roster.Site", req.GetAlias(), req)
 		if err != nil {
 			return nil, pderr.At("alias", err)
 		}
@@ -2457,7 +2457,7 @@ func (s sinkTeam) Add(ctx context.Context, req *rstr.TeamAddRequest) (*rstr.Team
 	}
 
 	for try := 0; ; try++ {
-		v, err := slug.NameWith(ctx, s.namer, "app.Team", req.GetAlias(), req)
+		v, err := slug.NameWith(ctx, s.namer, "roster.Team", req.GetAlias(), req)
 		if err != nil {
 			return nil, pderr.At("alias", err)
 		}
@@ -3181,7 +3181,7 @@ func (s sinkTenant) Add(ctx context.Context, req *rstr.TenantAddRequest) (*rstr.
 	}
 
 	for try := 0; ; try++ {
-		v, err := slug.NameWith(ctx, s.namer, "app.Tenant", req.GetAlias(), req)
+		v, err := slug.NameWith(ctx, s.namer, "roster.Tenant", req.GetAlias(), req)
 		if err != nil {
 			return nil, pderr.At("alias", err)
 		}

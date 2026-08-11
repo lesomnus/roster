@@ -288,20 +288,25 @@ func closed(c Config) func(method string) bool {
 
 // public is what this app answers without asking who is calling.
 //
-// Only `VouchService/Verify`, and it has to be: it is the question "is this
-// somebody's password", which is what is asked in order to have a caller at
-// all. A version of it that required one could never be reached.
+// **Nothing.** `VouchService/Verify` was briefly listed here, and the reason is
+// a mistake worth leaving written down: it confused the person signing in with
+// the **caller**.
 //
-// A **method** and not a service prefix, which is the opposite of what
-// custody's catalogue does, and the difference is the point. There, every RPC
-// is public and a second read added tomorrow should be public too, so the
-// prefix says what is meant. Here the service is mixed -- `Set` changes a
-// password and must have a caller -- so a method added to it should be closed
-// until somebody comes back to this line and says otherwise.
-func public(method string) bool {
-	return auth.PublicDefault(method) ||
-		method == "/"+app.VouchService_ServiceDesc.ServiceName+"/Verify"
-}
+// The person signing in has no credential yet -- that is the thing they are
+// asking for. But they are not who is calling. The caller is custody, or a
+// Login App, or an admin console, and every one of those is a machine holding a
+// certificate long before any of this. roster is called by machines and never
+// by a browser, which PLAN.md decided before any of it was written.
+//
+// Public gave up two things for nothing. Anybody who could reach the port could
+// guess passwords at the whole organisation -- and not slowly, since
+// `grpcx.Limit` counts per tenant off the frame and a public call has no frame.
+// And the trail could not say which service asked, so a compromised product app
+// looked exactly like a stranger.
+//
+// The lockout in `server/vouch` is unaffected and was never meant to be the
+// first line.
+func public(method string) bool { return auth.PublicDefault(method) }
 
 // Serve answers on `l` until the context is done.
 func (s *Server) Serve(ctx context.Context, c Config, l net.Listener) error {

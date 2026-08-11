@@ -20,13 +20,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	IdentityService_Add_FullMethodName   = "/app.IdentityService/Add"
-	IdentityService_Get_FullMethodName   = "/app.IdentityService/Get"
-	IdentityService_Patch_FullMethodName = "/app.IdentityService/Patch"
-	IdentityService_Apply_FullMethodName = "/app.IdentityService/Apply"
-	IdentityService_Erase_FullMethodName = "/app.IdentityService/Erase"
-	IdentityService_List_FullMethodName  = "/app.IdentityService/List"
-	IdentityService_Watch_FullMethodName = "/app.IdentityService/Watch"
+	IdentityService_Add_FullMethodName   = "/roster.IdentityService/Add"
+	IdentityService_Get_FullMethodName   = "/roster.IdentityService/Get"
+	IdentityService_Patch_FullMethodName = "/roster.IdentityService/Patch"
+	IdentityService_Apply_FullMethodName = "/roster.IdentityService/Apply"
+	IdentityService_Erase_FullMethodName = "/roster.IdentityService/Erase"
+	IdentityService_List_FullMethodName  = "/roster.IdentityService/List"
+	IdentityService_Watch_FullMethodName = "/roster.IdentityService/Watch"
 )
 
 // IdentityServiceClient is the client API for IdentityService service.
@@ -349,7 +349,7 @@ type IdentityService_WatchServer = grpc.ServerStreamingServer[IdentityWatchRespo
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var IdentityService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "app.IdentityService",
+	ServiceName: "roster.IdentityService",
 	HandlerType: (*IdentityServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

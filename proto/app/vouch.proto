@@ -1,6 +1,6 @@
 edition = "2023";
 
-package app;
+package roster;
 
 import "google/protobuf/timestamp.proto";
 
@@ -23,20 +23,21 @@ option go_package = "github.com/lesomnus/roster/rstr";
 // else puts the argon2 parameters in two places, where the weaker of them is
 // the one that matters. So both happen here.
 //
-// # The two halves differ in whether there is a caller
+// # Neither half is public, and the difference between them is the wall
 //
-// `Verify` runs before anybody has been authenticated -- that is what it is
-// for -- so it is public, and it reads the server the wall was never installed
-// on, exactly as `cmd.Resolver` does and for the same reason.
+// The person signing in has no credential -- that is what they are asking for
+// -- but they are not who is calling. The caller is custody, or a Login App, or
+// an admin console, and roster is reached only by those. So both RPCs need the
+// caller's certificate like everything else here.
 //
-// `Set` has a caller: somebody is changing somebody's password. It goes through
-// the ordinary chain and behind the wall.
+// What they differ in is the **frame**. `Verify` is asked before anybody has
+// been resolved to a person, so it reads the server the wall was never
+// installed on -- exactly as `cmd.Resolver` does and for the same reason:
+// working out who somebody is cannot require knowing who they are.
 //
-// This is why `cmd.public` names a **method** here rather than a service, which
-// is the opposite of what custody's catalogue does. A service where every RPC
-// is public should be named by its prefix, so that a second read added tomorrow
-// is public by intent. This service is mixed, and a method added to it should
-// be closed until somebody says otherwise.
+// `Set` is a caller changing somebody's password, which is an ordinary
+// authorised write. It goes behind the wall, so an administrator of one tenant
+// cannot reach into another, and that narrowing costs this service nothing.
 service VouchService {
   // Verify answers whether a secret is the one held for somebody.
   rpc Verify(VouchVerifyRequest) returns (VouchVerifyResponse);

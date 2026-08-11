@@ -1754,131 +1754,131 @@ var File_app_team_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_team_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/team_svc.g.proto\x12\x03app\x1a\x14app/site_svc.g.proto\x1a\x0eapp/team.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\xd4\x01\n" +
+	"\x14app/team_svc.g.proto\x12\x06roster\x1a\x14app/site_svc.g.proto\x1a\x0eapp/team.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\xd7\x01\n" +
 	"\x0eTeamAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12 \n" +
-	"\x04site\x18\x03 \x01(\v2\f.app.SiteRefR\x04site\x12\x1b\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12#\n" +
+	"\x04site\x18\x03 \x01(\v2\x0f.roster.SiteRefR\x04site\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
 	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12=\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"Y\n" +
-	"\x0eTeamGetRequest\x12\x1e\n" +
-	"\x03ref\x18\x01 \x01(\v2\f.app.TeamRefR\x03ref\x12'\n" +
-	"\x06select\x18\x02 \x01(\v2\x0f.app.TeamSelectR\x06select\"L\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"_\n" +
+	"\x0eTeamGetRequest\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.roster.TeamRefR\x03ref\x12*\n" +
+	"\x06select\x18\x02 \x01(\v2\x12.roster.TeamSelectR\x06select\"O\n" +
 	"\aTeamRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12(\n" +
-	"\x04slug\x18\x04 \x01(\v2\x12.app.TeamRefBySlugH\x00R\x04slugB\x05\n" +
-	"\x03key\"G\n" +
+	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12+\n" +
+	"\x04slug\x18\x04 \x01(\v2\x15.roster.TeamRefBySlugH\x00R\x04slugB\x05\n" +
+	"\x03key\"J\n" +
 	"\rTeamRefBySlug\x12\x14\n" +
-	"\x05alias\x18\x04 \x01(\tR\x05alias\x12 \n" +
-	"\x04site\x18\x03 \x01(\v2\f.app.SiteRefR\x04site\"\xe8\x01\n" +
+	"\x05alias\x18\x04 \x01(\tR\x05alias\x12#\n" +
+	"\x04site\x18\x03 \x01(\v2\x0f.roster.SiteRefR\x04site\"\xeb\x01\n" +
 	"\n" +
 	"TeamSelect\x12\x10\n" +
-	"\x03all\x18\x01 \x01(\bR\x03all\x12#\n" +
-	"\x04site\x18\x03 \x01(\v2\x0f.app.SiteSelectR\x04site\x12\x14\n" +
+	"\x03all\x18\x01 \x01(\bR\x03all\x12&\n" +
+	"\x04site\x18\x03 \x01(\v2\x12.roster.SiteSelectR\x04site\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\bR\x05alias\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\bR\x04name\x12\x12\n" +
 	"\x04desc\x18\x06 \x01(\bR\x04desc\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\x9c\x02\n" +
-	"\x10TeamPatchRequest\x12\x1e\n" +
-	"\x03ref\x18\x01 \x01(\v2\f.app.TeamRefR\x03ref\x12 \n" +
-	"\x04site\x18\x06 \x01(\v2\f.app.SiteRefR\x04site\x12\x1b\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xa2\x02\n" +
+	"\x10TeamPatchRequest\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.roster.TeamRefR\x03ref\x12#\n" +
+	"\x04site\x18\x06 \x01(\v2\x0f.roster.SiteRefR\x04site\x12\x1b\n" +
 	"\tsite_null\x18\a \x01(\bR\bsiteNull\x12\x14\n" +
 	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
 	"\x04name\x18\n" +
 	" \x01(\tR\x04name\x12\x12\n" +
 	"\x04desc\x18\f \x01(\tR\x04desc\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"V\n" +
-	"\x10TeamApplyRequest\x12\x1e\n" +
-	"\x03ref\x18\x01 \x01(\v2\f.app.TeamRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"t\n" +
-	"\x0fTeamListRequest\x12)\n" +
-	"\afilters\x18\x01 \x03(\v2\x0f.app.TeamFilterR\afilters\x12\x19\n" +
+	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"Y\n" +
+	"\x10TeamApplyRequest\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.roster.TeamRefR\x03ref\x12\"\n" +
+	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"w\n" +
+	"\x0fTeamListRequest\x12,\n" +
+	"\afilters\x18\x01 \x03(\v2\x12.roster.TeamFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
-	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"N\n" +
-	"\x10TeamListResponse\x12\x1f\n" +
-	"\x05items\x18\x01 \x03(\v2\t.app.TeamR\x05items\x12\x19\n" +
-	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\",\n" +
+	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"Q\n" +
+	"\x10TeamListResponse\x12\"\n" +
+	"\x05items\x18\x01 \x03(\v2\f.roster.TeamR\x05items\x12\x19\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"/\n" +
 	"\n" +
-	"TeamFilter\x12\x1e\n" +
-	"\x03ref\x18\x01 \x01(\v2\f.app.TeamRefR\x03ref\"i\n" +
-	"\x10TeamWatchRequest\x12)\n" +
-	"\afilters\x18\x01 \x03(\v2\x0f.app.TeamFilterR\afilters\x12*\n" +
-	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"=\n" +
-	"\x11TeamWatchResponse\x12(\n" +
-	"\x05items\x18\x01 \x03(\v2\x12.app.TeamWatchItemR\x05items\"_\n" +
+	"TeamFilter\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.roster.TeamRefR\x03ref\"l\n" +
+	"\x10TeamWatchRequest\x12,\n" +
+	"\afilters\x18\x01 \x03(\v2\x12.roster.TeamFilterR\afilters\x12*\n" +
+	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"@\n" +
+	"\x11TeamWatchResponse\x12+\n" +
+	"\x05items\x18\x01 \x03(\v2\x15.roster.TeamWatchItemR\x05items\"b\n" +
 	"\rTeamWatchItem\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1f\n" +
-	"\x05value\x18\x02 \x01(\v2\t.app.TeamR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action2\xcf\x02\n" +
-	"\vTeamService\x12%\n" +
-	"\x03Add\x12\x13.app.TeamAddRequest\x1a\t.app.Team\x12%\n" +
-	"\x03Get\x12\x13.app.TeamGetRequest\x1a\t.app.Team\x12)\n" +
-	"\x05Patch\x12\x15.app.TeamPatchRequest\x1a\t.app.Team\x12)\n" +
-	"\x05Apply\x12\x15.app.TeamApplyRequest\x1a\t.app.Team\x12-\n" +
-	"\x05Erase\x12\f.app.TeamRef\x1a\x16.google.protobuf.Empty\x123\n" +
-	"\x04List\x12\x14.app.TeamListRequest\x1a\x15.app.TeamListResponse\x128\n" +
-	"\x05Watch\x12\x15.app.TeamWatchRequest\x1a\x16.app.TeamWatchResponse0\x01B!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\"\n" +
+	"\x05value\x18\x02 \x01(\v2\f.roster.TeamR\x05value\x12\x1d\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action2\xf6\x02\n" +
+	"\vTeamService\x12+\n" +
+	"\x03Add\x12\x16.roster.TeamAddRequest\x1a\f.roster.Team\x12+\n" +
+	"\x03Get\x12\x16.roster.TeamGetRequest\x1a\f.roster.Team\x12/\n" +
+	"\x05Patch\x12\x18.roster.TeamPatchRequest\x1a\f.roster.Team\x12/\n" +
+	"\x05Apply\x12\x18.roster.TeamApplyRequest\x1a\f.roster.Team\x120\n" +
+	"\x05Erase\x12\x0f.roster.TeamRef\x1a\x16.google.protobuf.Empty\x129\n" +
+	"\x04List\x12\x17.roster.TeamListRequest\x1a\x18.roster.TeamListResponse\x12>\n" +
+	"\x05Watch\x12\x18.roster.TeamWatchRequest\x1a\x19.roster.TeamWatchResponse0\x01B!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
 var file_app_team_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_app_team_svc_g_proto_goTypes = []any{
-	(*TeamAddRequest)(nil),        // 0: app.TeamAddRequest
-	(*TeamGetRequest)(nil),        // 1: app.TeamGetRequest
-	(*TeamRef)(nil),               // 2: app.TeamRef
-	(*TeamRefBySlug)(nil),         // 3: app.TeamRefBySlug
-	(*TeamSelect)(nil),            // 4: app.TeamSelect
-	(*TeamPatchRequest)(nil),      // 5: app.TeamPatchRequest
-	(*TeamApplyRequest)(nil),      // 6: app.TeamApplyRequest
-	(*TeamListRequest)(nil),       // 7: app.TeamListRequest
-	(*TeamListResponse)(nil),      // 8: app.TeamListResponse
-	(*TeamFilter)(nil),            // 9: app.TeamFilter
-	(*TeamWatchRequest)(nil),      // 10: app.TeamWatchRequest
-	(*TeamWatchResponse)(nil),     // 11: app.TeamWatchResponse
-	(*TeamWatchItem)(nil),         // 12: app.TeamWatchItem
-	(*SiteRef)(nil),               // 13: app.SiteRef
+	(*TeamAddRequest)(nil),        // 0: roster.TeamAddRequest
+	(*TeamGetRequest)(nil),        // 1: roster.TeamGetRequest
+	(*TeamRef)(nil),               // 2: roster.TeamRef
+	(*TeamRefBySlug)(nil),         // 3: roster.TeamRefBySlug
+	(*TeamSelect)(nil),            // 4: roster.TeamSelect
+	(*TeamPatchRequest)(nil),      // 5: roster.TeamPatchRequest
+	(*TeamApplyRequest)(nil),      // 6: roster.TeamApplyRequest
+	(*TeamListRequest)(nil),       // 7: roster.TeamListRequest
+	(*TeamListResponse)(nil),      // 8: roster.TeamListResponse
+	(*TeamFilter)(nil),            // 9: roster.TeamFilter
+	(*TeamWatchRequest)(nil),      // 10: roster.TeamWatchRequest
+	(*TeamWatchResponse)(nil),     // 11: roster.TeamWatchResponse
+	(*TeamWatchItem)(nil),         // 12: roster.TeamWatchItem
+	(*SiteRef)(nil),               // 13: roster.SiteRef
 	(*timestamppb.Timestamp)(nil), // 14: google.protobuf.Timestamp
-	(*SiteSelect)(nil),            // 15: app.SiteSelect
+	(*SiteSelect)(nil),            // 15: roster.SiteSelect
 	(*patchpb.Patch)(nil),         // 16: patch.Patch
-	(*Team)(nil),                  // 17: app.Team
+	(*Team)(nil),                  // 17: roster.Team
 	(*emptypb.Empty)(nil),         // 18: google.protobuf.Empty
 }
 var file_app_team_svc_g_proto_depIdxs = []int32{
-	13, // 0: app.TeamAddRequest.site:type_name -> app.SiteRef
-	14, // 1: app.TeamAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	2,  // 2: app.TeamGetRequest.ref:type_name -> app.TeamRef
-	4,  // 3: app.TeamGetRequest.select:type_name -> app.TeamSelect
-	3,  // 4: app.TeamRef.slug:type_name -> app.TeamRefBySlug
-	13, // 5: app.TeamRefBySlug.site:type_name -> app.SiteRef
-	15, // 6: app.TeamSelect.site:type_name -> app.SiteSelect
-	2,  // 7: app.TeamPatchRequest.ref:type_name -> app.TeamRef
-	13, // 8: app.TeamPatchRequest.site:type_name -> app.SiteRef
-	14, // 9: app.TeamPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 10: app.TeamApplyRequest.ref:type_name -> app.TeamRef
-	16, // 11: app.TeamApplyRequest.patch:type_name -> patch.Patch
-	9,  // 12: app.TeamListRequest.filters:type_name -> app.TeamFilter
-	17, // 13: app.TeamListResponse.items:type_name -> app.Team
-	2,  // 14: app.TeamFilter.ref:type_name -> app.TeamRef
-	9,  // 15: app.TeamWatchRequest.filters:type_name -> app.TeamFilter
-	12, // 16: app.TeamWatchResponse.items:type_name -> app.TeamWatchItem
-	17, // 17: app.TeamWatchItem.value:type_name -> app.Team
-	0,  // 18: app.TeamService.Add:input_type -> app.TeamAddRequest
-	1,  // 19: app.TeamService.Get:input_type -> app.TeamGetRequest
-	5,  // 20: app.TeamService.Patch:input_type -> app.TeamPatchRequest
-	6,  // 21: app.TeamService.Apply:input_type -> app.TeamApplyRequest
-	2,  // 22: app.TeamService.Erase:input_type -> app.TeamRef
-	7,  // 23: app.TeamService.List:input_type -> app.TeamListRequest
-	10, // 24: app.TeamService.Watch:input_type -> app.TeamWatchRequest
-	17, // 25: app.TeamService.Add:output_type -> app.Team
-	17, // 26: app.TeamService.Get:output_type -> app.Team
-	17, // 27: app.TeamService.Patch:output_type -> app.Team
-	17, // 28: app.TeamService.Apply:output_type -> app.Team
-	18, // 29: app.TeamService.Erase:output_type -> google.protobuf.Empty
-	8,  // 30: app.TeamService.List:output_type -> app.TeamListResponse
-	11, // 31: app.TeamService.Watch:output_type -> app.TeamWatchResponse
+	13, // 0: roster.TeamAddRequest.site:type_name -> roster.SiteRef
+	14, // 1: roster.TeamAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	2,  // 2: roster.TeamGetRequest.ref:type_name -> roster.TeamRef
+	4,  // 3: roster.TeamGetRequest.select:type_name -> roster.TeamSelect
+	3,  // 4: roster.TeamRef.slug:type_name -> roster.TeamRefBySlug
+	13, // 5: roster.TeamRefBySlug.site:type_name -> roster.SiteRef
+	15, // 6: roster.TeamSelect.site:type_name -> roster.SiteSelect
+	2,  // 7: roster.TeamPatchRequest.ref:type_name -> roster.TeamRef
+	13, // 8: roster.TeamPatchRequest.site:type_name -> roster.SiteRef
+	14, // 9: roster.TeamPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 10: roster.TeamApplyRequest.ref:type_name -> roster.TeamRef
+	16, // 11: roster.TeamApplyRequest.patch:type_name -> patch.Patch
+	9,  // 12: roster.TeamListRequest.filters:type_name -> roster.TeamFilter
+	17, // 13: roster.TeamListResponse.items:type_name -> roster.Team
+	2,  // 14: roster.TeamFilter.ref:type_name -> roster.TeamRef
+	9,  // 15: roster.TeamWatchRequest.filters:type_name -> roster.TeamFilter
+	12, // 16: roster.TeamWatchResponse.items:type_name -> roster.TeamWatchItem
+	17, // 17: roster.TeamWatchItem.value:type_name -> roster.Team
+	0,  // 18: roster.TeamService.Add:input_type -> roster.TeamAddRequest
+	1,  // 19: roster.TeamService.Get:input_type -> roster.TeamGetRequest
+	5,  // 20: roster.TeamService.Patch:input_type -> roster.TeamPatchRequest
+	6,  // 21: roster.TeamService.Apply:input_type -> roster.TeamApplyRequest
+	2,  // 22: roster.TeamService.Erase:input_type -> roster.TeamRef
+	7,  // 23: roster.TeamService.List:input_type -> roster.TeamListRequest
+	10, // 24: roster.TeamService.Watch:input_type -> roster.TeamWatchRequest
+	17, // 25: roster.TeamService.Add:output_type -> roster.Team
+	17, // 26: roster.TeamService.Get:output_type -> roster.Team
+	17, // 27: roster.TeamService.Patch:output_type -> roster.Team
+	17, // 28: roster.TeamService.Apply:output_type -> roster.Team
+	18, // 29: roster.TeamService.Erase:output_type -> google.protobuf.Empty
+	8,  // 30: roster.TeamService.List:output_type -> roster.TeamListResponse
+	11, // 31: roster.TeamService.Watch:output_type -> roster.TeamWatchResponse
 	25, // [25:32] is the sub-list for method output_type
 	18, // [18:25] is the sub-list for method input_type
 	18, // [18:18] is the sub-list for extension type_name

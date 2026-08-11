@@ -1,5 +1,5 @@
 edition = "2023";
-package app;
+package roster;
 
 import "app/email.proto";
 import "app/identity_svc.g.proto";

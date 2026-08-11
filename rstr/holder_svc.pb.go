@@ -1517,33 +1517,33 @@ var File_payday_holder_svc_g_proto protoreflect.FileDescriptor
 
 const file_payday_holder_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x19payday/holder_svc.g.proto\x12\x03app\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x13payday/holder.proto\x1a\x19payday/tenant_svc.g.proto\"\x9b\x03\n" +
+	"\x19payday/holder_svc.g.proto\x12\x06roster\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x13payday/holder.proto\x1a\x19payday/tenant_svc.g.proto\"\xa4\x03\n" +
 	"\x10HolderAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12&\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x0e.app.TenantRefR\x06tenant\x12\x1b\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
-	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x129\n" +
-	"\x06labels\x18\a \x03(\v2!.app.HolderAddRequest.LabelsEntryR\x06labels\x12=\n" +
+	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12<\n" +
+	"\x06labels\x18\a \x03(\v2$.roster.HolderAddRequest.LabelsEntryR\x06labels\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x12\x1f\n" +
 	"\vidp_subject\x18\b \x01(\tR\n" +
-	"idpSubject\x12&\n" +
-	"\aprofile\x18\t \x01(\v2\f.app.ProfileR\aprofile\x1a9\n" +
+	"idpSubject\x12)\n" +
+	"\aprofile\x18\t \x01(\v2\x0f.roster.ProfileR\aprofile\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"O\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"R\n" +
 	"\x0fHolderRefBySlug\x12\x14\n" +
-	"\x05alias\x18\x04 \x01(\tR\x05alias\x12&\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x0e.app.TenantRefR\x06tenant\"s\n" +
+	"\x05alias\x18\x04 \x01(\tR\x05alias\x12)\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\"v\n" +
 	"\tHolderRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12*\n" +
-	"\x04slug\x18\x04 \x01(\v2\x14.app.HolderRefBySlugH\x00R\x04slug\x12!\n" +
+	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12-\n" +
+	"\x04slug\x18\x04 \x01(\v2\x17.roster.HolderRefBySlugH\x00R\x04slug\x12!\n" +
 	"\vidp_subject\x18\b \x01(\tH\x00R\n" +
 	"idpSubjectB\x05\n" +
-	"\x03key\"\xc3\x02\n" +
+	"\x03key\"\xc6\x02\n" +
 	"\fHolderSelect\x12\x10\n" +
-	"\x03all\x18\x01 \x01(\bR\x03all\x12)\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x11.app.TenantSelectR\x06tenant\x12\x14\n" +
+	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x14.roster.TenantSelectR\x06tenant\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\bR\x05alias\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\bR\x04name\x12\x12\n" +
 	"\x04desc\x18\x06 \x01(\bR\x04desc\x12\x16\n" +
@@ -1554,82 +1554,82 @@ const file_payday_holder_svc_g_proto_rawDesc = "" +
 	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\x12\x1f\n" +
 	"\vidp_subject\x18\b \x01(\bR\n" +
 	"idpSubject\x12\x18\n" +
-	"\aprofile\x18\t \x01(\bR\aprofile\"_\n" +
-	"\x10HolderGetRequest\x12 \n" +
-	"\x03ref\x18\x01 \x01(\v2\x0e.app.HolderRefR\x03ref\x12)\n" +
-	"\x06select\x18\x02 \x01(\v2\x11.app.HolderSelectR\x06select\"\xef\x03\n" +
-	"\x12HolderPatchRequest\x12 \n" +
-	"\x03ref\x18\x01 \x01(\v2\x0e.app.HolderRefR\x03ref\x12\x14\n" +
+	"\aprofile\x18\t \x01(\bR\aprofile\"e\n" +
+	"\x10HolderGetRequest\x12#\n" +
+	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\x12,\n" +
+	"\x06select\x18\x02 \x01(\v2\x14.roster.HolderSelectR\x06select\"\xf8\x03\n" +
+	"\x12HolderPatchRequest\x12#\n" +
+	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\x12\x14\n" +
 	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
 	"\x04name\x18\n" +
 	" \x01(\tR\x04name\x12\x12\n" +
-	"\x04desc\x18\f \x01(\tR\x04desc\x12;\n" +
-	"\x06labels\x18\x0e \x03(\v2#.app.HolderPatchRequest.LabelsEntryR\x06labels\x12=\n" +
+	"\x04desc\x18\f \x01(\tR\x04desc\x12>\n" +
+	"\x06labels\x18\x0e \x03(\v2&.roster.HolderPatchRequest.LabelsEntryR\x06labels\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x12\x1f\n" +
 	"\vidp_subject\x18\x10 \x01(\tR\n" +
 	"idpSubject\x12(\n" +
-	"\x10idp_subject_null\x18\x11 \x01(\bR\x0eidpSubjectNull\x12&\n" +
-	"\aprofile\x18\x12 \x01(\v2\f.app.ProfileR\aprofile\x12!\n" +
+	"\x10idp_subject_null\x18\x11 \x01(\bR\x0eidpSubjectNull\x12)\n" +
+	"\aprofile\x18\x12 \x01(\v2\x0f.roster.ProfileR\aprofile\x12!\n" +
 	"\fprofile_null\x18\x13 \x01(\bR\vprofileNull\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"Z\n" +
-	"\x12HolderApplyRequest\x12 \n" +
-	"\x03ref\x18\x01 \x01(\v2\x0e.app.HolderRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch2\xf4\x01\n" +
-	"\rHolderService\x12)\n" +
-	"\x03Add\x12\x15.app.HolderAddRequest\x1a\v.app.Holder\x12)\n" +
-	"\x03Get\x12\x15.app.HolderGetRequest\x1a\v.app.Holder\x12-\n" +
-	"\x05Patch\x12\x17.app.HolderPatchRequest\x1a\v.app.Holder\x12-\n" +
-	"\x05Apply\x12\x17.app.HolderApplyRequest\x1a\v.app.Holder\x12/\n" +
-	"\x05Erase\x12\x0e.app.HolderRef\x1a\x16.google.protobuf.EmptyB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"]\n" +
+	"\x12HolderApplyRequest\x12#\n" +
+	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\x12\"\n" +
+	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch2\x8f\x02\n" +
+	"\rHolderService\x12/\n" +
+	"\x03Add\x12\x18.roster.HolderAddRequest\x1a\x0e.roster.Holder\x12/\n" +
+	"\x03Get\x12\x18.roster.HolderGetRequest\x1a\x0e.roster.Holder\x123\n" +
+	"\x05Patch\x12\x1a.roster.HolderPatchRequest\x1a\x0e.roster.Holder\x123\n" +
+	"\x05Apply\x12\x1a.roster.HolderApplyRequest\x1a\x0e.roster.Holder\x122\n" +
+	"\x05Erase\x12\x11.roster.HolderRef\x1a\x16.google.protobuf.EmptyB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
 var file_payday_holder_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_payday_holder_svc_g_proto_goTypes = []any{
-	(*HolderAddRequest)(nil),      // 0: app.HolderAddRequest
-	(*HolderRefBySlug)(nil),       // 1: app.HolderRefBySlug
-	(*HolderRef)(nil),             // 2: app.HolderRef
-	(*HolderSelect)(nil),          // 3: app.HolderSelect
-	(*HolderGetRequest)(nil),      // 4: app.HolderGetRequest
-	(*HolderPatchRequest)(nil),    // 5: app.HolderPatchRequest
-	(*HolderApplyRequest)(nil),    // 6: app.HolderApplyRequest
-	nil,                           // 7: app.HolderAddRequest.LabelsEntry
-	nil,                           // 8: app.HolderPatchRequest.LabelsEntry
-	(*TenantRef)(nil),             // 9: app.TenantRef
+	(*HolderAddRequest)(nil),      // 0: roster.HolderAddRequest
+	(*HolderRefBySlug)(nil),       // 1: roster.HolderRefBySlug
+	(*HolderRef)(nil),             // 2: roster.HolderRef
+	(*HolderSelect)(nil),          // 3: roster.HolderSelect
+	(*HolderGetRequest)(nil),      // 4: roster.HolderGetRequest
+	(*HolderPatchRequest)(nil),    // 5: roster.HolderPatchRequest
+	(*HolderApplyRequest)(nil),    // 6: roster.HolderApplyRequest
+	nil,                           // 7: roster.HolderAddRequest.LabelsEntry
+	nil,                           // 8: roster.HolderPatchRequest.LabelsEntry
+	(*TenantRef)(nil),             // 9: roster.TenantRef
 	(*timestamppb.Timestamp)(nil), // 10: google.protobuf.Timestamp
-	(*Profile)(nil),               // 11: app.Profile
-	(*TenantSelect)(nil),          // 12: app.TenantSelect
+	(*Profile)(nil),               // 11: roster.Profile
+	(*TenantSelect)(nil),          // 12: roster.TenantSelect
 	(*patchpb.Patch)(nil),         // 13: patch.Patch
-	(*Holder)(nil),                // 14: app.Holder
+	(*Holder)(nil),                // 14: roster.Holder
 	(*emptypb.Empty)(nil),         // 15: google.protobuf.Empty
 }
 var file_payday_holder_svc_g_proto_depIdxs = []int32{
-	9,  // 0: app.HolderAddRequest.tenant:type_name -> app.TenantRef
-	7,  // 1: app.HolderAddRequest.labels:type_name -> app.HolderAddRequest.LabelsEntry
-	10, // 2: app.HolderAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	11, // 3: app.HolderAddRequest.profile:type_name -> app.Profile
-	9,  // 4: app.HolderRefBySlug.tenant:type_name -> app.TenantRef
-	1,  // 5: app.HolderRef.slug:type_name -> app.HolderRefBySlug
-	12, // 6: app.HolderSelect.tenant:type_name -> app.TenantSelect
-	2,  // 7: app.HolderGetRequest.ref:type_name -> app.HolderRef
-	3,  // 8: app.HolderGetRequest.select:type_name -> app.HolderSelect
-	2,  // 9: app.HolderPatchRequest.ref:type_name -> app.HolderRef
-	8,  // 10: app.HolderPatchRequest.labels:type_name -> app.HolderPatchRequest.LabelsEntry
-	10, // 11: app.HolderPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	11, // 12: app.HolderPatchRequest.profile:type_name -> app.Profile
-	2,  // 13: app.HolderApplyRequest.ref:type_name -> app.HolderRef
-	13, // 14: app.HolderApplyRequest.patch:type_name -> patch.Patch
-	0,  // 15: app.HolderService.Add:input_type -> app.HolderAddRequest
-	4,  // 16: app.HolderService.Get:input_type -> app.HolderGetRequest
-	5,  // 17: app.HolderService.Patch:input_type -> app.HolderPatchRequest
-	6,  // 18: app.HolderService.Apply:input_type -> app.HolderApplyRequest
-	2,  // 19: app.HolderService.Erase:input_type -> app.HolderRef
-	14, // 20: app.HolderService.Add:output_type -> app.Holder
-	14, // 21: app.HolderService.Get:output_type -> app.Holder
-	14, // 22: app.HolderService.Patch:output_type -> app.Holder
-	14, // 23: app.HolderService.Apply:output_type -> app.Holder
-	15, // 24: app.HolderService.Erase:output_type -> google.protobuf.Empty
+	9,  // 0: roster.HolderAddRequest.tenant:type_name -> roster.TenantRef
+	7,  // 1: roster.HolderAddRequest.labels:type_name -> roster.HolderAddRequest.LabelsEntry
+	10, // 2: roster.HolderAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	11, // 3: roster.HolderAddRequest.profile:type_name -> roster.Profile
+	9,  // 4: roster.HolderRefBySlug.tenant:type_name -> roster.TenantRef
+	1,  // 5: roster.HolderRef.slug:type_name -> roster.HolderRefBySlug
+	12, // 6: roster.HolderSelect.tenant:type_name -> roster.TenantSelect
+	2,  // 7: roster.HolderGetRequest.ref:type_name -> roster.HolderRef
+	3,  // 8: roster.HolderGetRequest.select:type_name -> roster.HolderSelect
+	2,  // 9: roster.HolderPatchRequest.ref:type_name -> roster.HolderRef
+	8,  // 10: roster.HolderPatchRequest.labels:type_name -> roster.HolderPatchRequest.LabelsEntry
+	10, // 11: roster.HolderPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	11, // 12: roster.HolderPatchRequest.profile:type_name -> roster.Profile
+	2,  // 13: roster.HolderApplyRequest.ref:type_name -> roster.HolderRef
+	13, // 14: roster.HolderApplyRequest.patch:type_name -> patch.Patch
+	0,  // 15: roster.HolderService.Add:input_type -> roster.HolderAddRequest
+	4,  // 16: roster.HolderService.Get:input_type -> roster.HolderGetRequest
+	5,  // 17: roster.HolderService.Patch:input_type -> roster.HolderPatchRequest
+	6,  // 18: roster.HolderService.Apply:input_type -> roster.HolderApplyRequest
+	2,  // 19: roster.HolderService.Erase:input_type -> roster.HolderRef
+	14, // 20: roster.HolderService.Add:output_type -> roster.Holder
+	14, // 21: roster.HolderService.Get:output_type -> roster.Holder
+	14, // 22: roster.HolderService.Patch:output_type -> roster.Holder
+	14, // 23: roster.HolderService.Apply:output_type -> roster.Holder
+	15, // 24: roster.HolderService.Erase:output_type -> google.protobuf.Empty
 	20, // [20:25] is the sub-list for method output_type
 	15, // [15:20] is the sub-list for method input_type
 	15, // [15:15] is the sub-list for extension type_name

@@ -459,21 +459,21 @@ var File_payday_holder_proto protoreflect.FileDescriptor
 
 const file_payday_holder_proto_rawDesc = "" +
 	"\n" +
-	"\x13payday/holder.proto\x12\x03app\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x13payday/tenant.proto\"\xda\x04\n" +
+	"\x13payday/holder.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x13payday/tenant.proto\"\xe3\x04\n" +
 	"\x06Holder\x12\x1b\n" +
-	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12+\n" +
-	"\x06tenant\x18\x02 \x01(\v2\v.app.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x14\n" +
+	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\tR\x05alias\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\tR\x04desc\x12/\n" +
-	"\x06labels\x18\a \x03(\v2\x17.app.Holder.LabelsEntryR\x06labels\x12F\n" +
+	"\x04desc\x18\x06 \x01(\tR\x04desc\x122\n" +
+	"\x06labels\x18\a \x03(\v2\x1a.roster.Holder.LabelsEntryR\x06labels\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x12)\n" +
 	"\vidp_subject\x18\b \x01(\tB\b\xea\x82\x16\x040\x018\x01R\n" +
-	"idpSubject\x12&\n" +
-	"\aprofile\x18\t \x01(\v2\f.app.ProfileR\aprofile\x1a9\n" +
+	"idpSubject\x12)\n" +
+	"\aprofile\x18\t \x01(\v2\x0f.roster.ProfileR\aprofile\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:1\xca\xfc\x15%\x12\x02\x10\x01\x1a\x1f\x12\x04slug\x1a\t\n" +
@@ -492,19 +492,19 @@ const file_payday_holder_proto_rawDesc = "" +
 
 var file_payday_holder_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_payday_holder_proto_goTypes = []any{
-	(*Holder)(nil),                // 0: app.Holder
-	(*Profile)(nil),               // 1: app.Profile
-	nil,                           // 2: app.Holder.LabelsEntry
-	(*Tenant)(nil),                // 3: app.Tenant
+	(*Holder)(nil),                // 0: roster.Holder
+	(*Profile)(nil),               // 1: roster.Profile
+	nil,                           // 2: roster.Holder.LabelsEntry
+	(*Tenant)(nil),                // 3: roster.Tenant
 	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
 }
 var file_payday_holder_proto_depIdxs = []int32{
-	3, // 0: app.Holder.tenant:type_name -> app.Tenant
-	2, // 1: app.Holder.labels:type_name -> app.Holder.LabelsEntry
-	4, // 2: app.Holder.date_updated:type_name -> google.protobuf.Timestamp
-	4, // 3: app.Holder.date_erased:type_name -> google.protobuf.Timestamp
-	4, // 4: app.Holder.date_created:type_name -> google.protobuf.Timestamp
-	1, // 5: app.Holder.profile:type_name -> app.Profile
+	3, // 0: roster.Holder.tenant:type_name -> roster.Tenant
+	2, // 1: roster.Holder.labels:type_name -> roster.Holder.LabelsEntry
+	4, // 2: roster.Holder.date_updated:type_name -> google.protobuf.Timestamp
+	4, // 3: roster.Holder.date_erased:type_name -> google.protobuf.Timestamp
+	4, // 4: roster.Holder.date_created:type_name -> google.protobuf.Timestamp
+	1, // 5: roster.Holder.profile:type_name -> roster.Profile
 	6, // [6:6] is the sub-list for method output_type
 	6, // [6:6] is the sub-list for method input_type
 	6, // [6:6] is the sub-list for extension type_name

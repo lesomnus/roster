@@ -20,13 +20,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SiteMembershipService_Add_FullMethodName   = "/app.SiteMembershipService/Add"
-	SiteMembershipService_Get_FullMethodName   = "/app.SiteMembershipService/Get"
-	SiteMembershipService_Patch_FullMethodName = "/app.SiteMembershipService/Patch"
-	SiteMembershipService_Apply_FullMethodName = "/app.SiteMembershipService/Apply"
-	SiteMembershipService_Erase_FullMethodName = "/app.SiteMembershipService/Erase"
-	SiteMembershipService_List_FullMethodName  = "/app.SiteMembershipService/List"
-	SiteMembershipService_Watch_FullMethodName = "/app.SiteMembershipService/Watch"
+	SiteMembershipService_Add_FullMethodName   = "/roster.SiteMembershipService/Add"
+	SiteMembershipService_Get_FullMethodName   = "/roster.SiteMembershipService/Get"
+	SiteMembershipService_Patch_FullMethodName = "/roster.SiteMembershipService/Patch"
+	SiteMembershipService_Apply_FullMethodName = "/roster.SiteMembershipService/Apply"
+	SiteMembershipService_Erase_FullMethodName = "/roster.SiteMembershipService/Erase"
+	SiteMembershipService_List_FullMethodName  = "/roster.SiteMembershipService/List"
+	SiteMembershipService_Watch_FullMethodName = "/roster.SiteMembershipService/Watch"
 )
 
 // SiteMembershipServiceClient is the client API for SiteMembershipService service.
@@ -349,7 +349,7 @@ type SiteMembershipService_WatchServer = grpc.ServerStreamingServer[SiteMembersh
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var SiteMembershipService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "app.SiteMembershipService",
+	ServiceName: "roster.SiteMembershipService",
 	HandlerType: (*SiteMembershipServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -388,13 +388,13 @@ var SiteMembershipService_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	TeamMembershipService_Add_FullMethodName   = "/app.TeamMembershipService/Add"
-	TeamMembershipService_Get_FullMethodName   = "/app.TeamMembershipService/Get"
-	TeamMembershipService_Patch_FullMethodName = "/app.TeamMembershipService/Patch"
-	TeamMembershipService_Apply_FullMethodName = "/app.TeamMembershipService/Apply"
-	TeamMembershipService_Erase_FullMethodName = "/app.TeamMembershipService/Erase"
-	TeamMembershipService_List_FullMethodName  = "/app.TeamMembershipService/List"
-	TeamMembershipService_Watch_FullMethodName = "/app.TeamMembershipService/Watch"
+	TeamMembershipService_Add_FullMethodName   = "/roster.TeamMembershipService/Add"
+	TeamMembershipService_Get_FullMethodName   = "/roster.TeamMembershipService/Get"
+	TeamMembershipService_Patch_FullMethodName = "/roster.TeamMembershipService/Patch"
+	TeamMembershipService_Apply_FullMethodName = "/roster.TeamMembershipService/Apply"
+	TeamMembershipService_Erase_FullMethodName = "/roster.TeamMembershipService/Erase"
+	TeamMembershipService_List_FullMethodName  = "/roster.TeamMembershipService/List"
+	TeamMembershipService_Watch_FullMethodName = "/roster.TeamMembershipService/Watch"
 )
 
 // TeamMembershipServiceClient is the client API for TeamMembershipService service.
@@ -717,7 +717,7 @@ type TeamMembershipService_WatchServer = grpc.ServerStreamingServer[TeamMembersh
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var TeamMembershipService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "app.TeamMembershipService",
+	ServiceName: "roster.TeamMembershipService",
 	HandlerType: (*TeamMembershipServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

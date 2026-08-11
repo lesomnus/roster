@@ -100,7 +100,7 @@ func (s CredentialServiceServer) Add(ctx context.Context, req *rstr.CredentialAd
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "app.Credential", k, req.HasId()); err != nil {
+	if v, err := mint(ctx, s.Mint, "roster.Credential", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
 		q.SetID(v)

@@ -284,15 +284,15 @@ var File_app_email_proto protoreflect.FileDescriptor
 
 const file_app_email_proto_rawDesc = "" +
 	"\n" +
-	"\x0fapp/email.proto\x12\x03app\x1a\x12app/identity.proto\x1a\x13payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xcf\x04\n" +
+	"\x0fapp/email.proto\x12\x06roster\x1a\x12app/identity.proto\x1a\x13payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xd5\x04\n" +
 	"\x05Email\x12\x1b\n" +
-	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12+\n" +
-	"\x06holder\x18\x02 \x01(\v2\v.app.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
+	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\x18\n" +
 	"\aaddress\x18\b \x01(\tR\aaddress\x12G\n" +
-	"\rdate_verified\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\fdateVerified\x124\n" +
+	"\rdate_verified\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\fdateVerified\x127\n" +
 	"\n" +
 	"vouched_by\x18\n" +
-	" \x01(\v2\r.app.IdentityB\x06\xf2\x82\x16\x028\x01R\tvouchedBy\x12F\n" +
+	" \x01(\v2\x10.roster.IdentityB\x06\xf2\x82\x16\x028\x01R\tvouchedBy\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
@@ -310,18 +310,18 @@ const file_app_email_proto_rawDesc = "" +
 
 var file_app_email_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_app_email_proto_goTypes = []any{
-	(*Email)(nil),                 // 0: app.Email
-	(*Holder)(nil),                // 1: app.Holder
+	(*Email)(nil),                 // 0: roster.Email
+	(*Holder)(nil),                // 1: roster.Holder
 	(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
-	(*Identity)(nil),              // 3: app.Identity
+	(*Identity)(nil),              // 3: roster.Identity
 }
 var file_app_email_proto_depIdxs = []int32{
-	1, // 0: app.Email.holder:type_name -> app.Holder
-	2, // 1: app.Email.date_verified:type_name -> google.protobuf.Timestamp
-	3, // 2: app.Email.vouched_by:type_name -> app.Identity
-	2, // 3: app.Email.date_updated:type_name -> google.protobuf.Timestamp
-	2, // 4: app.Email.date_erased:type_name -> google.protobuf.Timestamp
-	2, // 5: app.Email.date_created:type_name -> google.protobuf.Timestamp
+	1, // 0: roster.Email.holder:type_name -> roster.Holder
+	2, // 1: roster.Email.date_verified:type_name -> google.protobuf.Timestamp
+	3, // 2: roster.Email.vouched_by:type_name -> roster.Identity
+	2, // 3: roster.Email.date_updated:type_name -> google.protobuf.Timestamp
+	2, // 4: roster.Email.date_erased:type_name -> google.protobuf.Timestamp
+	2, // 5: roster.Email.date_created:type_name -> google.protobuf.Timestamp
 	6, // [6:6] is the sub-list for method output_type
 	6, // [6:6] is the sub-list for method input_type
 	6, // [6:6] is the sub-list for extension type_name

@@ -100,7 +100,7 @@ func (s SiteServiceServer) Add(ctx context.Context, req *rstr.SiteAddRequest) (*
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "app.Site", k, req.HasId()); err != nil {
+	if v, err := mint(ctx, s.Mint, "roster.Site", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
 		q.SetID(v)

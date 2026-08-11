@@ -100,7 +100,7 @@ func (s HolderServiceServer) Add(ctx context.Context, req *rstr.HolderAddRequest
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "app.Holder", k, req.HasId()); err != nil {
+	if v, err := mint(ctx, s.Mint, "roster.Holder", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
 		q.SetID(v)

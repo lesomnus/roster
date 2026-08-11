@@ -3058,232 +3058,232 @@ var File_app_membership_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_membership_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1aapp/membership_svc.g.proto\x12\x03app\x1a\x14app/membership.proto\x1a\x14app/site_svc.g.proto\x1a\x14app/team_svc.g.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x19payday/holder_svc.g.proto\"\xb3\x01\n" +
+	"\x1aapp/membership_svc.g.proto\x12\x06roster\x1a\x14app/membership.proto\x1a\x14app/site_svc.g.proto\x1a\x14app/team_svc.g.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x19payday/holder_svc.g.proto\"\xb9\x01\n" +
 	"\x18SiteMembershipAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12&\n" +
-	"\x06holder\x18\x02 \x01(\v2\x0e.app.HolderRefR\x06holder\x12 \n" +
-	"\x04site\x18\x03 \x01(\v2\f.app.SiteRefR\x04site\x12=\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"w\n" +
-	"\x18SiteMembershipGetRequest\x12(\n" +
-	"\x03ref\x18\x01 \x01(\v2\x16.app.SiteMembershipRefR\x03ref\x121\n" +
-	"\x06select\x18\x02 \x01(\v2\x19.app.SiteMembershipSelectR\x06select\"f\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
+	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12#\n" +
+	"\x04site\x18\x03 \x01(\v2\x0f.roster.SiteRefR\x04site\x12=\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"}\n" +
+	"\x18SiteMembershipGetRequest\x12+\n" +
+	"\x03ref\x18\x01 \x01(\v2\x19.roster.SiteMembershipRefR\x03ref\x124\n" +
+	"\x06select\x18\x02 \x01(\v2\x1c.roster.SiteMembershipSelectR\x06select\"i\n" +
 	"\x11SiteMembershipRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x128\n" +
-	"\x06member\x18\x02 \x01(\v2\x1e.app.SiteMembershipRefByMemberH\x00R\x06memberB\x05\n" +
-	"\x03key\"e\n" +
-	"\x19SiteMembershipRefByMember\x12&\n" +
-	"\x06holder\x18\x02 \x01(\v2\x0e.app.HolderRefR\x06holder\x12 \n" +
-	"\x04site\x18\x03 \x01(\v2\f.app.SiteRefR\x04site\"\xdf\x01\n" +
+	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12;\n" +
+	"\x06member\x18\x02 \x01(\v2!.roster.SiteMembershipRefByMemberH\x00R\x06memberB\x05\n" +
+	"\x03key\"k\n" +
+	"\x19SiteMembershipRefByMember\x12)\n" +
+	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12#\n" +
+	"\x04site\x18\x03 \x01(\v2\x0f.roster.SiteRefR\x04site\"\xe5\x01\n" +
 	"\x14SiteMembershipSelect\x12\x10\n" +
-	"\x03all\x18\x01 \x01(\bR\x03all\x12)\n" +
-	"\x06holder\x18\x02 \x01(\v2\x11.app.HolderSelectR\x06holder\x12#\n" +
-	"\x04site\x18\x03 \x01(\v2\x0f.app.SiteSelectR\x04site\x12!\n" +
+	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
+	"\x06holder\x18\x02 \x01(\v2\x14.roster.HolderSelectR\x06holder\x12&\n" +
+	"\x04site\x18\x03 \x01(\v2\x12.roster.SiteSelectR\x04site\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xb3\x01\n" +
-	"\x1aSiteMembershipPatchRequest\x12(\n" +
-	"\x03ref\x18\x01 \x01(\v2\x16.app.SiteMembershipRefR\x03ref\x12=\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xb6\x01\n" +
+	"\x1aSiteMembershipPatchRequest\x12+\n" +
+	"\x03ref\x18\x01 \x01(\v2\x19.roster.SiteMembershipRefR\x03ref\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"j\n" +
-	"\x1aSiteMembershipApplyRequest\x12(\n" +
-	"\x03ref\x18\x01 \x01(\v2\x16.app.SiteMembershipRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"\x88\x01\n" +
-	"\x19SiteMembershipListRequest\x123\n" +
-	"\afilters\x18\x01 \x03(\v2\x19.app.SiteMembershipFilterR\afilters\x12\x19\n" +
+	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"m\n" +
+	"\x1aSiteMembershipApplyRequest\x12+\n" +
+	"\x03ref\x18\x01 \x01(\v2\x19.roster.SiteMembershipRefR\x03ref\x12\"\n" +
+	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"\x8b\x01\n" +
+	"\x19SiteMembershipListRequest\x126\n" +
+	"\afilters\x18\x01 \x03(\v2\x1c.roster.SiteMembershipFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
-	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"b\n" +
-	"\x1aSiteMembershipListResponse\x12)\n" +
-	"\x05items\x18\x01 \x03(\v2\x13.app.SiteMembershipR\x05items\x12\x19\n" +
-	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"@\n" +
-	"\x14SiteMembershipFilter\x12(\n" +
-	"\x03ref\x18\x01 \x01(\v2\x16.app.SiteMembershipRefR\x03ref\"}\n" +
-	"\x1aSiteMembershipWatchRequest\x123\n" +
-	"\afilters\x18\x01 \x03(\v2\x19.app.SiteMembershipFilterR\afilters\x12*\n" +
-	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"Q\n" +
-	"\x1bSiteMembershipWatchResponse\x122\n" +
-	"\x05items\x18\x01 \x03(\v2\x1c.app.SiteMembershipWatchItemR\x05items\"s\n" +
+	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"e\n" +
+	"\x1aSiteMembershipListResponse\x12,\n" +
+	"\x05items\x18\x01 \x03(\v2\x16.roster.SiteMembershipR\x05items\x12\x19\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"C\n" +
+	"\x14SiteMembershipFilter\x12+\n" +
+	"\x03ref\x18\x01 \x01(\v2\x19.roster.SiteMembershipRefR\x03ref\"\x80\x01\n" +
+	"\x1aSiteMembershipWatchRequest\x126\n" +
+	"\afilters\x18\x01 \x03(\v2\x1c.roster.SiteMembershipFilterR\afilters\x12*\n" +
+	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"T\n" +
+	"\x1bSiteMembershipWatchResponse\x125\n" +
+	"\x05items\x18\x01 \x03(\v2\x1f.roster.SiteMembershipWatchItemR\x05items\"v\n" +
 	"\x17SiteMembershipWatchItem\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
-	"\x05value\x18\x02 \x01(\v2\x13.app.SiteMembershipR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\xce\x01\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12,\n" +
+	"\x05value\x18\x02 \x01(\v2\x16.roster.SiteMembershipR\x05value\x12\x1d\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\xd4\x01\n" +
 	"\x18TeamMembershipAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12&\n" +
-	"\x06holder\x18\x02 \x01(\v2\x0e.app.HolderRefR\x06holder\x12 \n" +
-	"\x04team\x18\b \x01(\v2\f.app.TeamRefR\x04team\x12\x19\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
+	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12#\n" +
+	"\x04team\x18\b \x01(\v2\x0f.roster.TeamRefR\x04team\x12\x19\n" +
 	"\x04role\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\x04role\x12=\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"w\n" +
-	"\x18TeamMembershipGetRequest\x12(\n" +
-	"\x03ref\x18\x01 \x01(\v2\x16.app.TeamMembershipRefR\x03ref\x121\n" +
-	"\x06select\x18\x02 \x01(\v2\x19.app.TeamMembershipSelectR\x06select\"f\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"}\n" +
+	"\x18TeamMembershipGetRequest\x12+\n" +
+	"\x03ref\x18\x01 \x01(\v2\x19.roster.TeamMembershipRefR\x03ref\x124\n" +
+	"\x06select\x18\x02 \x01(\v2\x1c.roster.TeamMembershipSelectR\x06select\"i\n" +
 	"\x11TeamMembershipRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x128\n" +
-	"\x06member\x18\x02 \x01(\v2\x1e.app.TeamMembershipRefByMemberH\x00R\x06memberB\x05\n" +
-	"\x03key\"e\n" +
-	"\x19TeamMembershipRefByMember\x12&\n" +
-	"\x06holder\x18\x02 \x01(\v2\x0e.app.HolderRefR\x06holder\x12 \n" +
-	"\x04team\x18\b \x01(\v2\f.app.TeamRefR\x04team\"\xf3\x01\n" +
+	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12;\n" +
+	"\x06member\x18\x02 \x01(\v2!.roster.TeamMembershipRefByMemberH\x00R\x06memberB\x05\n" +
+	"\x03key\"k\n" +
+	"\x19TeamMembershipRefByMember\x12)\n" +
+	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12#\n" +
+	"\x04team\x18\b \x01(\v2\x0f.roster.TeamRefR\x04team\"\xf9\x01\n" +
 	"\x14TeamMembershipSelect\x12\x10\n" +
-	"\x03all\x18\x01 \x01(\bR\x03all\x12)\n" +
-	"\x06holder\x18\x02 \x01(\v2\x11.app.HolderSelectR\x06holder\x12#\n" +
-	"\x04team\x18\b \x01(\v2\x0f.app.TeamSelectR\x04team\x12\x12\n" +
+	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
+	"\x06holder\x18\x02 \x01(\v2\x14.roster.HolderSelectR\x06holder\x12&\n" +
+	"\x04team\x18\b \x01(\v2\x12.roster.TeamSelectR\x04team\x12\x12\n" +
 	"\x04role\x18\t \x01(\bR\x04role\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xc7\x01\n" +
-	"\x1aTeamMembershipPatchRequest\x12(\n" +
-	"\x03ref\x18\x01 \x01(\v2\x16.app.TeamMembershipRefR\x03ref\x12\x12\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xca\x01\n" +
+	"\x1aTeamMembershipPatchRequest\x12+\n" +
+	"\x03ref\x18\x01 \x01(\v2\x19.roster.TeamMembershipRefR\x03ref\x12\x12\n" +
 	"\x04role\x18\x12 \x01(\tR\x04role\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"j\n" +
-	"\x1aTeamMembershipApplyRequest\x12(\n" +
-	"\x03ref\x18\x01 \x01(\v2\x16.app.TeamMembershipRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"\x88\x01\n" +
-	"\x19TeamMembershipListRequest\x123\n" +
-	"\afilters\x18\x01 \x03(\v2\x19.app.TeamMembershipFilterR\afilters\x12\x19\n" +
+	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"m\n" +
+	"\x1aTeamMembershipApplyRequest\x12+\n" +
+	"\x03ref\x18\x01 \x01(\v2\x19.roster.TeamMembershipRefR\x03ref\x12\"\n" +
+	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"\x8b\x01\n" +
+	"\x19TeamMembershipListRequest\x126\n" +
+	"\afilters\x18\x01 \x03(\v2\x1c.roster.TeamMembershipFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
-	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"b\n" +
-	"\x1aTeamMembershipListResponse\x12)\n" +
-	"\x05items\x18\x01 \x03(\v2\x13.app.TeamMembershipR\x05items\x12\x19\n" +
-	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"@\n" +
-	"\x14TeamMembershipFilter\x12(\n" +
-	"\x03ref\x18\x01 \x01(\v2\x16.app.TeamMembershipRefR\x03ref\"}\n" +
-	"\x1aTeamMembershipWatchRequest\x123\n" +
-	"\afilters\x18\x01 \x03(\v2\x19.app.TeamMembershipFilterR\afilters\x12*\n" +
-	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"Q\n" +
-	"\x1bTeamMembershipWatchResponse\x122\n" +
-	"\x05items\x18\x01 \x03(\v2\x1c.app.TeamMembershipWatchItemR\x05items\"s\n" +
+	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"e\n" +
+	"\x1aTeamMembershipListResponse\x12,\n" +
+	"\x05items\x18\x01 \x03(\v2\x16.roster.TeamMembershipR\x05items\x12\x19\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"C\n" +
+	"\x14TeamMembershipFilter\x12+\n" +
+	"\x03ref\x18\x01 \x01(\v2\x19.roster.TeamMembershipRefR\x03ref\"\x80\x01\n" +
+	"\x1aTeamMembershipWatchRequest\x126\n" +
+	"\afilters\x18\x01 \x03(\v2\x1c.roster.TeamMembershipFilterR\afilters\x12*\n" +
+	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"T\n" +
+	"\x1bTeamMembershipWatchResponse\x125\n" +
+	"\x05items\x18\x01 \x03(\v2\x1f.roster.TeamMembershipWatchItemR\x05items\"v\n" +
 	"\x17TeamMembershipWatchItem\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
-	"\x05value\x18\x02 \x01(\v2\x13.app.TeamMembershipR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action2\xdb\x03\n" +
-	"\x15SiteMembershipService\x129\n" +
-	"\x03Add\x12\x1d.app.SiteMembershipAddRequest\x1a\x13.app.SiteMembership\x129\n" +
-	"\x03Get\x12\x1d.app.SiteMembershipGetRequest\x1a\x13.app.SiteMembership\x12=\n" +
-	"\x05Patch\x12\x1f.app.SiteMembershipPatchRequest\x1a\x13.app.SiteMembership\x12=\n" +
-	"\x05Apply\x12\x1f.app.SiteMembershipApplyRequest\x1a\x13.app.SiteMembership\x127\n" +
-	"\x05Erase\x12\x16.app.SiteMembershipRef\x1a\x16.google.protobuf.Empty\x12G\n" +
-	"\x04List\x12\x1e.app.SiteMembershipListRequest\x1a\x1f.app.SiteMembershipListResponse\x12L\n" +
-	"\x05Watch\x12\x1f.app.SiteMembershipWatchRequest\x1a .app.SiteMembershipWatchResponse0\x012\xdb\x03\n" +
-	"\x15TeamMembershipService\x129\n" +
-	"\x03Add\x12\x1d.app.TeamMembershipAddRequest\x1a\x13.app.TeamMembership\x129\n" +
-	"\x03Get\x12\x1d.app.TeamMembershipGetRequest\x1a\x13.app.TeamMembership\x12=\n" +
-	"\x05Patch\x12\x1f.app.TeamMembershipPatchRequest\x1a\x13.app.TeamMembership\x12=\n" +
-	"\x05Apply\x12\x1f.app.TeamMembershipApplyRequest\x1a\x13.app.TeamMembership\x127\n" +
-	"\x05Erase\x12\x16.app.TeamMembershipRef\x1a\x16.google.protobuf.Empty\x12G\n" +
-	"\x04List\x12\x1e.app.TeamMembershipListRequest\x1a\x1f.app.TeamMembershipListResponse\x12L\n" +
-	"\x05Watch\x12\x1f.app.TeamMembershipWatchRequest\x1a .app.TeamMembershipWatchResponse0\x01B!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
+	"\x02id\x18\x01 \x01(\fR\x02id\x12,\n" +
+	"\x05value\x18\x02 \x01(\v2\x16.roster.TeamMembershipR\x05value\x12\x1d\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action2\x82\x04\n" +
+	"\x15SiteMembershipService\x12?\n" +
+	"\x03Add\x12 .roster.SiteMembershipAddRequest\x1a\x16.roster.SiteMembership\x12?\n" +
+	"\x03Get\x12 .roster.SiteMembershipGetRequest\x1a\x16.roster.SiteMembership\x12C\n" +
+	"\x05Patch\x12\".roster.SiteMembershipPatchRequest\x1a\x16.roster.SiteMembership\x12C\n" +
+	"\x05Apply\x12\".roster.SiteMembershipApplyRequest\x1a\x16.roster.SiteMembership\x12:\n" +
+	"\x05Erase\x12\x19.roster.SiteMembershipRef\x1a\x16.google.protobuf.Empty\x12M\n" +
+	"\x04List\x12!.roster.SiteMembershipListRequest\x1a\".roster.SiteMembershipListResponse\x12R\n" +
+	"\x05Watch\x12\".roster.SiteMembershipWatchRequest\x1a#.roster.SiteMembershipWatchResponse0\x012\x82\x04\n" +
+	"\x15TeamMembershipService\x12?\n" +
+	"\x03Add\x12 .roster.TeamMembershipAddRequest\x1a\x16.roster.TeamMembership\x12?\n" +
+	"\x03Get\x12 .roster.TeamMembershipGetRequest\x1a\x16.roster.TeamMembership\x12C\n" +
+	"\x05Patch\x12\".roster.TeamMembershipPatchRequest\x1a\x16.roster.TeamMembership\x12C\n" +
+	"\x05Apply\x12\".roster.TeamMembershipApplyRequest\x1a\x16.roster.TeamMembership\x12:\n" +
+	"\x05Erase\x12\x19.roster.TeamMembershipRef\x1a\x16.google.protobuf.Empty\x12M\n" +
+	"\x04List\x12!.roster.TeamMembershipListRequest\x1a\".roster.TeamMembershipListResponse\x12R\n" +
+	"\x05Watch\x12\".roster.TeamMembershipWatchRequest\x1a#.roster.TeamMembershipWatchResponse0\x01B!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
 var file_app_membership_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
 var file_app_membership_svc_g_proto_goTypes = []any{
-	(*SiteMembershipAddRequest)(nil),    // 0: app.SiteMembershipAddRequest
-	(*SiteMembershipGetRequest)(nil),    // 1: app.SiteMembershipGetRequest
-	(*SiteMembershipRef)(nil),           // 2: app.SiteMembershipRef
-	(*SiteMembershipRefByMember)(nil),   // 3: app.SiteMembershipRefByMember
-	(*SiteMembershipSelect)(nil),        // 4: app.SiteMembershipSelect
-	(*SiteMembershipPatchRequest)(nil),  // 5: app.SiteMembershipPatchRequest
-	(*SiteMembershipApplyRequest)(nil),  // 6: app.SiteMembershipApplyRequest
-	(*SiteMembershipListRequest)(nil),   // 7: app.SiteMembershipListRequest
-	(*SiteMembershipListResponse)(nil),  // 8: app.SiteMembershipListResponse
-	(*SiteMembershipFilter)(nil),        // 9: app.SiteMembershipFilter
-	(*SiteMembershipWatchRequest)(nil),  // 10: app.SiteMembershipWatchRequest
-	(*SiteMembershipWatchResponse)(nil), // 11: app.SiteMembershipWatchResponse
-	(*SiteMembershipWatchItem)(nil),     // 12: app.SiteMembershipWatchItem
-	(*TeamMembershipAddRequest)(nil),    // 13: app.TeamMembershipAddRequest
-	(*TeamMembershipGetRequest)(nil),    // 14: app.TeamMembershipGetRequest
-	(*TeamMembershipRef)(nil),           // 15: app.TeamMembershipRef
-	(*TeamMembershipRefByMember)(nil),   // 16: app.TeamMembershipRefByMember
-	(*TeamMembershipSelect)(nil),        // 17: app.TeamMembershipSelect
-	(*TeamMembershipPatchRequest)(nil),  // 18: app.TeamMembershipPatchRequest
-	(*TeamMembershipApplyRequest)(nil),  // 19: app.TeamMembershipApplyRequest
-	(*TeamMembershipListRequest)(nil),   // 20: app.TeamMembershipListRequest
-	(*TeamMembershipListResponse)(nil),  // 21: app.TeamMembershipListResponse
-	(*TeamMembershipFilter)(nil),        // 22: app.TeamMembershipFilter
-	(*TeamMembershipWatchRequest)(nil),  // 23: app.TeamMembershipWatchRequest
-	(*TeamMembershipWatchResponse)(nil), // 24: app.TeamMembershipWatchResponse
-	(*TeamMembershipWatchItem)(nil),     // 25: app.TeamMembershipWatchItem
-	(*HolderRef)(nil),                   // 26: app.HolderRef
-	(*SiteRef)(nil),                     // 27: app.SiteRef
+	(*SiteMembershipAddRequest)(nil),    // 0: roster.SiteMembershipAddRequest
+	(*SiteMembershipGetRequest)(nil),    // 1: roster.SiteMembershipGetRequest
+	(*SiteMembershipRef)(nil),           // 2: roster.SiteMembershipRef
+	(*SiteMembershipRefByMember)(nil),   // 3: roster.SiteMembershipRefByMember
+	(*SiteMembershipSelect)(nil),        // 4: roster.SiteMembershipSelect
+	(*SiteMembershipPatchRequest)(nil),  // 5: roster.SiteMembershipPatchRequest
+	(*SiteMembershipApplyRequest)(nil),  // 6: roster.SiteMembershipApplyRequest
+	(*SiteMembershipListRequest)(nil),   // 7: roster.SiteMembershipListRequest
+	(*SiteMembershipListResponse)(nil),  // 8: roster.SiteMembershipListResponse
+	(*SiteMembershipFilter)(nil),        // 9: roster.SiteMembershipFilter
+	(*SiteMembershipWatchRequest)(nil),  // 10: roster.SiteMembershipWatchRequest
+	(*SiteMembershipWatchResponse)(nil), // 11: roster.SiteMembershipWatchResponse
+	(*SiteMembershipWatchItem)(nil),     // 12: roster.SiteMembershipWatchItem
+	(*TeamMembershipAddRequest)(nil),    // 13: roster.TeamMembershipAddRequest
+	(*TeamMembershipGetRequest)(nil),    // 14: roster.TeamMembershipGetRequest
+	(*TeamMembershipRef)(nil),           // 15: roster.TeamMembershipRef
+	(*TeamMembershipRefByMember)(nil),   // 16: roster.TeamMembershipRefByMember
+	(*TeamMembershipSelect)(nil),        // 17: roster.TeamMembershipSelect
+	(*TeamMembershipPatchRequest)(nil),  // 18: roster.TeamMembershipPatchRequest
+	(*TeamMembershipApplyRequest)(nil),  // 19: roster.TeamMembershipApplyRequest
+	(*TeamMembershipListRequest)(nil),   // 20: roster.TeamMembershipListRequest
+	(*TeamMembershipListResponse)(nil),  // 21: roster.TeamMembershipListResponse
+	(*TeamMembershipFilter)(nil),        // 22: roster.TeamMembershipFilter
+	(*TeamMembershipWatchRequest)(nil),  // 23: roster.TeamMembershipWatchRequest
+	(*TeamMembershipWatchResponse)(nil), // 24: roster.TeamMembershipWatchResponse
+	(*TeamMembershipWatchItem)(nil),     // 25: roster.TeamMembershipWatchItem
+	(*HolderRef)(nil),                   // 26: roster.HolderRef
+	(*SiteRef)(nil),                     // 27: roster.SiteRef
 	(*timestamppb.Timestamp)(nil),       // 28: google.protobuf.Timestamp
-	(*HolderSelect)(nil),                // 29: app.HolderSelect
-	(*SiteSelect)(nil),                  // 30: app.SiteSelect
+	(*HolderSelect)(nil),                // 29: roster.HolderSelect
+	(*SiteSelect)(nil),                  // 30: roster.SiteSelect
 	(*patchpb.Patch)(nil),               // 31: patch.Patch
-	(*SiteMembership)(nil),              // 32: app.SiteMembership
-	(*TeamRef)(nil),                     // 33: app.TeamRef
-	(*TeamSelect)(nil),                  // 34: app.TeamSelect
-	(*TeamMembership)(nil),              // 35: app.TeamMembership
+	(*SiteMembership)(nil),              // 32: roster.SiteMembership
+	(*TeamRef)(nil),                     // 33: roster.TeamRef
+	(*TeamSelect)(nil),                  // 34: roster.TeamSelect
+	(*TeamMembership)(nil),              // 35: roster.TeamMembership
 	(*emptypb.Empty)(nil),               // 36: google.protobuf.Empty
 }
 var file_app_membership_svc_g_proto_depIdxs = []int32{
-	26, // 0: app.SiteMembershipAddRequest.holder:type_name -> app.HolderRef
-	27, // 1: app.SiteMembershipAddRequest.site:type_name -> app.SiteRef
-	28, // 2: app.SiteMembershipAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	2,  // 3: app.SiteMembershipGetRequest.ref:type_name -> app.SiteMembershipRef
-	4,  // 4: app.SiteMembershipGetRequest.select:type_name -> app.SiteMembershipSelect
-	3,  // 5: app.SiteMembershipRef.member:type_name -> app.SiteMembershipRefByMember
-	26, // 6: app.SiteMembershipRefByMember.holder:type_name -> app.HolderRef
-	27, // 7: app.SiteMembershipRefByMember.site:type_name -> app.SiteRef
-	29, // 8: app.SiteMembershipSelect.holder:type_name -> app.HolderSelect
-	30, // 9: app.SiteMembershipSelect.site:type_name -> app.SiteSelect
-	2,  // 10: app.SiteMembershipPatchRequest.ref:type_name -> app.SiteMembershipRef
-	28, // 11: app.SiteMembershipPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 12: app.SiteMembershipApplyRequest.ref:type_name -> app.SiteMembershipRef
-	31, // 13: app.SiteMembershipApplyRequest.patch:type_name -> patch.Patch
-	9,  // 14: app.SiteMembershipListRequest.filters:type_name -> app.SiteMembershipFilter
-	32, // 15: app.SiteMembershipListResponse.items:type_name -> app.SiteMembership
-	2,  // 16: app.SiteMembershipFilter.ref:type_name -> app.SiteMembershipRef
-	9,  // 17: app.SiteMembershipWatchRequest.filters:type_name -> app.SiteMembershipFilter
-	12, // 18: app.SiteMembershipWatchResponse.items:type_name -> app.SiteMembershipWatchItem
-	32, // 19: app.SiteMembershipWatchItem.value:type_name -> app.SiteMembership
-	26, // 20: app.TeamMembershipAddRequest.holder:type_name -> app.HolderRef
-	33, // 21: app.TeamMembershipAddRequest.team:type_name -> app.TeamRef
-	28, // 22: app.TeamMembershipAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	15, // 23: app.TeamMembershipGetRequest.ref:type_name -> app.TeamMembershipRef
-	17, // 24: app.TeamMembershipGetRequest.select:type_name -> app.TeamMembershipSelect
-	16, // 25: app.TeamMembershipRef.member:type_name -> app.TeamMembershipRefByMember
-	26, // 26: app.TeamMembershipRefByMember.holder:type_name -> app.HolderRef
-	33, // 27: app.TeamMembershipRefByMember.team:type_name -> app.TeamRef
-	29, // 28: app.TeamMembershipSelect.holder:type_name -> app.HolderSelect
-	34, // 29: app.TeamMembershipSelect.team:type_name -> app.TeamSelect
-	15, // 30: app.TeamMembershipPatchRequest.ref:type_name -> app.TeamMembershipRef
-	28, // 31: app.TeamMembershipPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	15, // 32: app.TeamMembershipApplyRequest.ref:type_name -> app.TeamMembershipRef
-	31, // 33: app.TeamMembershipApplyRequest.patch:type_name -> patch.Patch
-	22, // 34: app.TeamMembershipListRequest.filters:type_name -> app.TeamMembershipFilter
-	35, // 35: app.TeamMembershipListResponse.items:type_name -> app.TeamMembership
-	15, // 36: app.TeamMembershipFilter.ref:type_name -> app.TeamMembershipRef
-	22, // 37: app.TeamMembershipWatchRequest.filters:type_name -> app.TeamMembershipFilter
-	25, // 38: app.TeamMembershipWatchResponse.items:type_name -> app.TeamMembershipWatchItem
-	35, // 39: app.TeamMembershipWatchItem.value:type_name -> app.TeamMembership
-	0,  // 40: app.SiteMembershipService.Add:input_type -> app.SiteMembershipAddRequest
-	1,  // 41: app.SiteMembershipService.Get:input_type -> app.SiteMembershipGetRequest
-	5,  // 42: app.SiteMembershipService.Patch:input_type -> app.SiteMembershipPatchRequest
-	6,  // 43: app.SiteMembershipService.Apply:input_type -> app.SiteMembershipApplyRequest
-	2,  // 44: app.SiteMembershipService.Erase:input_type -> app.SiteMembershipRef
-	7,  // 45: app.SiteMembershipService.List:input_type -> app.SiteMembershipListRequest
-	10, // 46: app.SiteMembershipService.Watch:input_type -> app.SiteMembershipWatchRequest
-	13, // 47: app.TeamMembershipService.Add:input_type -> app.TeamMembershipAddRequest
-	14, // 48: app.TeamMembershipService.Get:input_type -> app.TeamMembershipGetRequest
-	18, // 49: app.TeamMembershipService.Patch:input_type -> app.TeamMembershipPatchRequest
-	19, // 50: app.TeamMembershipService.Apply:input_type -> app.TeamMembershipApplyRequest
-	15, // 51: app.TeamMembershipService.Erase:input_type -> app.TeamMembershipRef
-	20, // 52: app.TeamMembershipService.List:input_type -> app.TeamMembershipListRequest
-	23, // 53: app.TeamMembershipService.Watch:input_type -> app.TeamMembershipWatchRequest
-	32, // 54: app.SiteMembershipService.Add:output_type -> app.SiteMembership
-	32, // 55: app.SiteMembershipService.Get:output_type -> app.SiteMembership
-	32, // 56: app.SiteMembershipService.Patch:output_type -> app.SiteMembership
-	32, // 57: app.SiteMembershipService.Apply:output_type -> app.SiteMembership
-	36, // 58: app.SiteMembershipService.Erase:output_type -> google.protobuf.Empty
-	8,  // 59: app.SiteMembershipService.List:output_type -> app.SiteMembershipListResponse
-	11, // 60: app.SiteMembershipService.Watch:output_type -> app.SiteMembershipWatchResponse
-	35, // 61: app.TeamMembershipService.Add:output_type -> app.TeamMembership
-	35, // 62: app.TeamMembershipService.Get:output_type -> app.TeamMembership
-	35, // 63: app.TeamMembershipService.Patch:output_type -> app.TeamMembership
-	35, // 64: app.TeamMembershipService.Apply:output_type -> app.TeamMembership
-	36, // 65: app.TeamMembershipService.Erase:output_type -> google.protobuf.Empty
-	21, // 66: app.TeamMembershipService.List:output_type -> app.TeamMembershipListResponse
-	24, // 67: app.TeamMembershipService.Watch:output_type -> app.TeamMembershipWatchResponse
+	26, // 0: roster.SiteMembershipAddRequest.holder:type_name -> roster.HolderRef
+	27, // 1: roster.SiteMembershipAddRequest.site:type_name -> roster.SiteRef
+	28, // 2: roster.SiteMembershipAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	2,  // 3: roster.SiteMembershipGetRequest.ref:type_name -> roster.SiteMembershipRef
+	4,  // 4: roster.SiteMembershipGetRequest.select:type_name -> roster.SiteMembershipSelect
+	3,  // 5: roster.SiteMembershipRef.member:type_name -> roster.SiteMembershipRefByMember
+	26, // 6: roster.SiteMembershipRefByMember.holder:type_name -> roster.HolderRef
+	27, // 7: roster.SiteMembershipRefByMember.site:type_name -> roster.SiteRef
+	29, // 8: roster.SiteMembershipSelect.holder:type_name -> roster.HolderSelect
+	30, // 9: roster.SiteMembershipSelect.site:type_name -> roster.SiteSelect
+	2,  // 10: roster.SiteMembershipPatchRequest.ref:type_name -> roster.SiteMembershipRef
+	28, // 11: roster.SiteMembershipPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 12: roster.SiteMembershipApplyRequest.ref:type_name -> roster.SiteMembershipRef
+	31, // 13: roster.SiteMembershipApplyRequest.patch:type_name -> patch.Patch
+	9,  // 14: roster.SiteMembershipListRequest.filters:type_name -> roster.SiteMembershipFilter
+	32, // 15: roster.SiteMembershipListResponse.items:type_name -> roster.SiteMembership
+	2,  // 16: roster.SiteMembershipFilter.ref:type_name -> roster.SiteMembershipRef
+	9,  // 17: roster.SiteMembershipWatchRequest.filters:type_name -> roster.SiteMembershipFilter
+	12, // 18: roster.SiteMembershipWatchResponse.items:type_name -> roster.SiteMembershipWatchItem
+	32, // 19: roster.SiteMembershipWatchItem.value:type_name -> roster.SiteMembership
+	26, // 20: roster.TeamMembershipAddRequest.holder:type_name -> roster.HolderRef
+	33, // 21: roster.TeamMembershipAddRequest.team:type_name -> roster.TeamRef
+	28, // 22: roster.TeamMembershipAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	15, // 23: roster.TeamMembershipGetRequest.ref:type_name -> roster.TeamMembershipRef
+	17, // 24: roster.TeamMembershipGetRequest.select:type_name -> roster.TeamMembershipSelect
+	16, // 25: roster.TeamMembershipRef.member:type_name -> roster.TeamMembershipRefByMember
+	26, // 26: roster.TeamMembershipRefByMember.holder:type_name -> roster.HolderRef
+	33, // 27: roster.TeamMembershipRefByMember.team:type_name -> roster.TeamRef
+	29, // 28: roster.TeamMembershipSelect.holder:type_name -> roster.HolderSelect
+	34, // 29: roster.TeamMembershipSelect.team:type_name -> roster.TeamSelect
+	15, // 30: roster.TeamMembershipPatchRequest.ref:type_name -> roster.TeamMembershipRef
+	28, // 31: roster.TeamMembershipPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	15, // 32: roster.TeamMembershipApplyRequest.ref:type_name -> roster.TeamMembershipRef
+	31, // 33: roster.TeamMembershipApplyRequest.patch:type_name -> patch.Patch
+	22, // 34: roster.TeamMembershipListRequest.filters:type_name -> roster.TeamMembershipFilter
+	35, // 35: roster.TeamMembershipListResponse.items:type_name -> roster.TeamMembership
+	15, // 36: roster.TeamMembershipFilter.ref:type_name -> roster.TeamMembershipRef
+	22, // 37: roster.TeamMembershipWatchRequest.filters:type_name -> roster.TeamMembershipFilter
+	25, // 38: roster.TeamMembershipWatchResponse.items:type_name -> roster.TeamMembershipWatchItem
+	35, // 39: roster.TeamMembershipWatchItem.value:type_name -> roster.TeamMembership
+	0,  // 40: roster.SiteMembershipService.Add:input_type -> roster.SiteMembershipAddRequest
+	1,  // 41: roster.SiteMembershipService.Get:input_type -> roster.SiteMembershipGetRequest
+	5,  // 42: roster.SiteMembershipService.Patch:input_type -> roster.SiteMembershipPatchRequest
+	6,  // 43: roster.SiteMembershipService.Apply:input_type -> roster.SiteMembershipApplyRequest
+	2,  // 44: roster.SiteMembershipService.Erase:input_type -> roster.SiteMembershipRef
+	7,  // 45: roster.SiteMembershipService.List:input_type -> roster.SiteMembershipListRequest
+	10, // 46: roster.SiteMembershipService.Watch:input_type -> roster.SiteMembershipWatchRequest
+	13, // 47: roster.TeamMembershipService.Add:input_type -> roster.TeamMembershipAddRequest
+	14, // 48: roster.TeamMembershipService.Get:input_type -> roster.TeamMembershipGetRequest
+	18, // 49: roster.TeamMembershipService.Patch:input_type -> roster.TeamMembershipPatchRequest
+	19, // 50: roster.TeamMembershipService.Apply:input_type -> roster.TeamMembershipApplyRequest
+	15, // 51: roster.TeamMembershipService.Erase:input_type -> roster.TeamMembershipRef
+	20, // 52: roster.TeamMembershipService.List:input_type -> roster.TeamMembershipListRequest
+	23, // 53: roster.TeamMembershipService.Watch:input_type -> roster.TeamMembershipWatchRequest
+	32, // 54: roster.SiteMembershipService.Add:output_type -> roster.SiteMembership
+	32, // 55: roster.SiteMembershipService.Get:output_type -> roster.SiteMembership
+	32, // 56: roster.SiteMembershipService.Patch:output_type -> roster.SiteMembership
+	32, // 57: roster.SiteMembershipService.Apply:output_type -> roster.SiteMembership
+	36, // 58: roster.SiteMembershipService.Erase:output_type -> google.protobuf.Empty
+	8,  // 59: roster.SiteMembershipService.List:output_type -> roster.SiteMembershipListResponse
+	11, // 60: roster.SiteMembershipService.Watch:output_type -> roster.SiteMembershipWatchResponse
+	35, // 61: roster.TeamMembershipService.Add:output_type -> roster.TeamMembership
+	35, // 62: roster.TeamMembershipService.Get:output_type -> roster.TeamMembership
+	35, // 63: roster.TeamMembershipService.Patch:output_type -> roster.TeamMembership
+	35, // 64: roster.TeamMembershipService.Apply:output_type -> roster.TeamMembership
+	36, // 65: roster.TeamMembershipService.Erase:output_type -> google.protobuf.Empty
+	21, // 66: roster.TeamMembershipService.List:output_type -> roster.TeamMembershipListResponse
+	24, // 67: roster.TeamMembershipService.Watch:output_type -> roster.TeamMembershipWatchResponse
 	54, // [54:68] is the sub-list for method output_type
 	40, // [40:54] is the sub-list for method input_type
 	40, // [40:40] is the sub-list for extension type_name

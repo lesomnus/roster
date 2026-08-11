@@ -20,13 +20,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SiteService_Add_FullMethodName   = "/app.SiteService/Add"
-	SiteService_Get_FullMethodName   = "/app.SiteService/Get"
-	SiteService_Patch_FullMethodName = "/app.SiteService/Patch"
-	SiteService_Apply_FullMethodName = "/app.SiteService/Apply"
-	SiteService_Erase_FullMethodName = "/app.SiteService/Erase"
-	SiteService_List_FullMethodName  = "/app.SiteService/List"
-	SiteService_Watch_FullMethodName = "/app.SiteService/Watch"
+	SiteService_Add_FullMethodName   = "/roster.SiteService/Add"
+	SiteService_Get_FullMethodName   = "/roster.SiteService/Get"
+	SiteService_Patch_FullMethodName = "/roster.SiteService/Patch"
+	SiteService_Apply_FullMethodName = "/roster.SiteService/Apply"
+	SiteService_Erase_FullMethodName = "/roster.SiteService/Erase"
+	SiteService_List_FullMethodName  = "/roster.SiteService/List"
+	SiteService_Watch_FullMethodName = "/roster.SiteService/Watch"
 )
 
 // SiteServiceClient is the client API for SiteService service.
@@ -349,7 +349,7 @@ type SiteService_WatchServer = grpc.ServerStreamingServer[SiteWatchResponse]
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var SiteService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "app.SiteService",
+	ServiceName: "roster.SiteService",
 	HandlerType: (*SiteServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

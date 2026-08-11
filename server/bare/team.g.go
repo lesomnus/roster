@@ -102,7 +102,7 @@ func (s TeamServiceServer) Add(ctx context.Context, req *rstr.TeamAddRequest) (*
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "app.Team", k, req.HasId()); err != nil {
+	if v, err := mint(ctx, s.Mint, "roster.Team", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
 		q.SetID(v)

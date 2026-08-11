@@ -362,6 +362,44 @@ func TestTheCredentialServiceIsNotOnTheWire(t *testing.T) {
 		"the credential service answered; the hash is on the wire")
 }
 
+// TestNobodyVerifiesAPasswordAnonymously.
+//
+// `Verify` was public for an afternoon, on the argument that the person signing
+// in has no credential. They do not -- and they are not who is calling. The
+// caller is custody or a Login App, and roster is reached by nothing else.
+//
+// What public cost: anybody who could reach the port could guess passwords at
+// the whole organisation, and not slowly, since `grpcx.Limit` counts per tenant
+// off the frame and a public call has none.
+func TestNobodyVerifiesAPasswordAnonymously(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+
+	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+
+	// No credential at all, which is what a stranger has.
+	_, err := app.NewVouchServiceClient(conn).Verify(ctx, app.VouchVerifyRequest_builder{
+		Who:    app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Secret: []byte("correct horse battery staple"),
+	}.Build())
+
+	x.Equal(codes.Unauthenticated, status.Code(err),
+		"a stranger could guess passwords at this deployment")
+
+	// And with one, it answers -- so this is a closed door and not a broken
+	// service.
+	v, err := app.NewVouchServiceClient(conn).Verify(
+		auth.PlainProvider(b.AcmeUser.String()).Provide(ctx),
+		app.VouchVerifyRequest_builder{
+			Who:    app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Secret: []byte("correct horse battery staple"),
+		}.Build())
+	x.NoError(err)
+	x.True(v.GetOk())
+}
+
 // TestABatchCannotCarryACredentialRead is the other door.
 //
 // A batch arrives as one method carrying many, so "not registered" does not

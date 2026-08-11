@@ -1,5 +1,5 @@
 edition = "2023";
-package app;
+package roster;
 
 import "app/membership.proto";
 import "app/site_svc.g.proto";

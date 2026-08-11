@@ -21,15 +21,22 @@
 // caller that chose badly has weakened a store that cannot tell -- what arrives
 // is bytes either way.
 //
-// # The two halves differ in whether there is a caller
+// # Neither half is public, and what they differ in is the frame
 //
-// `Verify` runs before anybody has been authenticated, which is what it is for.
-// It reads the server the wall was never installed on, exactly as `cmd.Resolver`
-// does: working out who is calling cannot itself require knowing who is calling.
+// The person signing in has no credential -- that is what they are asking for
+// -- but they are not who is **calling**. The caller is custody, or a Login
+// App, or an admin console, and roster is reached by nothing else. Both RPCs
+// therefore need the caller's certificate, like everything else here. See
+// `cmd.public`, which says what it cost to get this wrong for an afternoon.
 //
-// `Set` has a caller -- somebody is changing somebody's password -- so it goes
-// behind the wall, and an administrator of one tenant cannot reach into
-// another. That narrowing is the generated one and costs this file nothing.
+// `Verify` is asked before anybody has been resolved to a person, so it reads
+// the server the wall was never installed on -- exactly as `cmd.Resolver` does,
+// and for the same reason: working out who somebody is cannot require already
+// knowing.
+//
+// `Set` is a caller changing somebody's password, which is an ordinary
+// authorised write. It goes behind the wall, so an administrator of one tenant
+// cannot reach into another, and that narrowing is the generated one.
 package vouch
 
 import (
