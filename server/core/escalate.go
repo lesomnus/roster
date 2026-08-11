@@ -101,6 +101,88 @@ func (s Core) mayGrant(ctx context.Context, field string, methods []string) erro
 	return nil
 }
 
+// bindableIn refuses a binding that would put a role somewhere it does not
+// belong.
+//
+// # The rule the schema states and nothing enforced
+//
+// `Role.site` is where a role may be **bound**, and `role.proto` says what it
+// is for: *a role in a site may only be bound in that site -- Kubernetes' rule,
+// and it is the whole of what keeps somebody who administers one site from
+// writing a rule that lands outside it.* It was written down and never
+// checked.
+//
+// What that cost, found by writing it: somebody bound to a Seoul role, in
+// Seoul, could bind that same role to themselves with **no site**. The second
+// axis then answered "every site" for them and they held the tenant. Two RPCs,
+// no method they did not already hold, and nothing refused or logged.
+//
+// # Why it is not the tenant check
+//
+// `tenantsAgree` already runs over the same four references and passes: every
+// row here belongs to one tenant, which is exactly the case this is about. The
+// tenant is the wall and the site is the axis inside it, and agreeing about one
+// says nothing about the other.
+//
+// # A role with no site
+//
+// Bindable anywhere in its tenant -- it is this schema's `ClusterRole`, and
+// writing one is the tenant operator's to do. That asymmetry is the rule, not a
+// gap in it: narrowing is free and widening is what needs permission.
+func (s Core) bindableIn(ctx context.Context, role *app.RoleRef, at *app.SiteRef) error {
+	if role == nil {
+		return nil
+	}
+
+	v, err := s.Next().Role().Get(ctx, app.RoleGetRequest_builder{
+		Ref:    role,
+		Select: app.RoleSelect_builder{Site: app.SiteSelect_builder{}.Build()}.Build(),
+	}.Build())
+	if err != nil {
+		return err
+	}
+
+	where := v.GetSite().GetId()
+	if len(where) == 0 {
+		return nil
+	}
+
+	if at == nil {
+		return status.Error(codes.PermissionDenied,
+			"site: this role belongs to a site, so it may only be bound in that site -- and this binding names none, which is the whole tenant")
+	}
+
+	to, err := s.siteOf(ctx, at)
+	if err != nil {
+		return err
+	}
+
+	k, err := pdid.From(where)
+	if err != nil {
+		return err
+	}
+	if k != to {
+		return status.Error(codes.PermissionDenied,
+			"site: this role belongs to another site, and a role is bound only where it belongs")
+	}
+
+	return nil
+}
+
+// siteOf is which site a reference names, read through this stack.
+func (s Core) siteOf(ctx context.Context, ref *app.SiteRef) (pdid.Id, error) {
+	if ref == nil {
+		return pdid.Nil, nil
+	}
+
+	v, err := s.Next().Site().Get(ctx, app.SiteGetRequest_builder{Ref: ref}.Build())
+	if err != nil {
+		return pdid.Nil, err
+	}
+
+	return pdid.From(v.GetId())
+}
+
 // methodsOf is what a role allows, read through this stack so that a caller who
 // cannot see the role cannot bind it either.
 //

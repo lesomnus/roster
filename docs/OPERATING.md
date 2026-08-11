@@ -202,6 +202,18 @@ Writing a role, patching one, binding one, and putting methods on an API key are
 all refused when they name a method you do not hold **through a binding**. A
 role you hold in one team is not yours to bind across the tenant.
 
+**Only what you hold across the whole tenant.** A role held in a team, or a
+binding made in a site, is a permission scoped to that team or site — and
+handing either on more widely would widen it rather than pass it on. So a site
+administrator may act in their site and delegate nothing, which is a real loss
+and the safe direction of a wrong answer.
+
+**And a role that belongs to a site is bound only there**, whoever is asking.
+That is the schema's own rule and it holds for somebody who legitimately holds
+the whole tenant, because it is about the role rather than about the asker.
+A role of no site is this schema's `ClusterRole` and is bindable anywhere in
+its tenant: narrowing is free, widening is what needs permission.
+
 A pattern is covered by **one** pattern you hold, never by several together.
 Holding `/roster.HolderService/*` and `/roster.TeamService/*` does not let you
 grant `/roster.*/*`, even in a deployment where those are the only two services

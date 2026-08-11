@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/pdtest"
 
@@ -446,5 +447,157 @@ func TestARoleMayNameAServiceOrAPackage(t *testing.T) {
 		for _, h := range v.GetItems() {
 			x.NotEqual(b.Hooli.Bytes(), h.GetTenant().GetId())
 		}
+	})
+}
+
+// TestASiteAdministratorStaysInTheirSite is the rule `role.proto` states and
+// nothing enforced.
+//
+// The schema says it outright -- *a role in a site may only be bound in that
+// site, and it is the whole of what keeps somebody who administers one site
+// from writing a rule that lands outside it* -- and until this, nothing read
+// that sentence. Found by an adversarial pass over something else entirely.
+//
+// The escalation was two RPCs, used no method the attacker did not already
+// hold, and nothing refused or logged: bound to a Seoul role **in Seoul**, bind
+// that same role to yourself with no site, and the second axis answers "every
+// site" for you afterwards.
+func TestASiteAdministratorStaysInTheirSite(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	const listTeams = "/roster.TeamService/List"
+	const bind = "/roster.BindingService/Add"
+	const writeRole = "/roster.RoleService/Add"
+
+	seoul, err := b.Ungated.Site().Add(ctx, app.SiteAddRequest_builder{
+		Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Alias:  "seoul",
+	}.Build())
+	x.NoError(err)
+	site := mustId(t, seoul.GetId())
+
+	r, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
+		Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Site:    app.SiteRef_builder{Id: seoul.GetId()}.Build(),
+		Alias:   "seoul-admin",
+		Methods: []string{listTeams, bind, writeRole},
+	}.Build())
+	x.NoError(err)
+	b.binds(t, b.AcmeUser, mustId(t, r.GetId()), &site)
+
+	as := frame.Into(ctx, frame.New(b.AcmeUser, b.Acme, frame.Whole()).WithScope(frame.Only(b.Acme)))
+
+	// She really does hold those methods, in Seoul. Without this the refusals
+	// below could be her holding nothing at all.
+	t.Run("she may act in her own site", func(t *testing.T) {
+		x := require.New(t)
+
+		_, err := b.Walled.Team().List(as, app.TeamListRequest_builder{}.Build())
+		x.NoError(err)
+	})
+
+	t.Run("her role cannot be bound outside its site", func(t *testing.T) {
+		x := require.New(t)
+
+		_, err := b.Walled.Binding().Add(as, app.BindingAddRequest_builder{
+			Role:   app.RoleRef_builder{Id: r.GetId()}.Build(),
+			Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			// No site, which is the whole tenant.
+		}.Build())
+		x.Error(err, "a site administrator bound their role across the tenant")
+		x.Equal(codes.PermissionDenied, status.Code(err))
+	})
+
+	// And the other way round: what is held in a site is not hers to write into
+	// a tenant-wide role either. `bindableIn` closes the path she took; this
+	// closes the question.
+	t.Run("nor written into a tenant-wide role", func(t *testing.T) {
+		x := require.New(t)
+
+		_, err := b.Walled.Role().Add(as, app.RoleAddRequest_builder{
+			Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+			Alias:   "mine-everywhere",
+			Methods: []string{listTeams},
+		}.Build())
+		x.Error(err)
+		x.Equal(codes.PermissionDenied, status.Code(err))
+	})
+
+	t.Run("what she holds in a site is not what she may pass on", func(t *testing.T) {
+		x := require.New(t)
+
+		held, err := cmd.Granted(b.Ent)(ctx, b.AcmeUser)
+		x.NoError(err)
+		x.Empty(held, "a site-scoped binding was offered as something to grant")
+	})
+
+	// The rule is about the **role**, not about who is asking, so it holds for
+	// somebody who legitimately holds everything.
+	//
+	// This is the case `Granted` cannot answer: a tenant operator really does
+	// hold those methods tenant-wide, so `mayGrant` agrees and only the role's
+	// own site refuses. Without it, the schema's rule is enforced by nobody
+	// whenever the person asking is allowed to ask.
+	t.Run("not even by somebody who holds the whole tenant", func(t *testing.T) {
+		x := require.New(t)
+
+		boss := b.holder(t, ctx, b.Acme, "boss")
+		everywhere, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
+			Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+			Alias:   "tenant-operator",
+			Methods: []string{"/roster.*/*"},
+		}.Build())
+		x.NoError(err)
+		b.binds(t, boss, mustId(t, everywhere.GetId()), nil)
+
+		theirs := frame.Into(ctx,
+			frame.New(boss, b.Acme, frame.Whole()).WithScope(frame.Only(b.Acme)))
+
+		// They may bind it where it belongs.
+		_, err = b.Walled.Binding().Add(theirs, app.BindingAddRequest_builder{
+			Role:   app.RoleRef_builder{Id: r.GetId()}.Build(),
+			Holder: app.HolderRef_builder{Id: boss.Bytes()}.Build(),
+			Site:   app.SiteRef_builder{Id: seoul.GetId()}.Build(),
+		}.Build())
+		x.NoError(err)
+
+		// And not outside it, however much they hold.
+		_, err = b.Walled.Binding().Add(theirs, app.BindingAddRequest_builder{
+			Role:   app.RoleRef_builder{Id: r.GetId()}.Build(),
+			Holder: app.HolderRef_builder{Id: boss.Bytes()}.Build(),
+		}.Build())
+		x.Error(err, "a role of one site was bound across the tenant")
+		x.Equal(codes.PermissionDenied, status.Code(err))
+	})
+
+	// A role belonging to no site is this schema's ClusterRole and is bindable
+	// anywhere in its tenant. Narrowing is free; widening is what needs
+	// permission, and that asymmetry is the rule rather than a gap in it.
+	t.Run("a role of no site is still bindable anywhere", func(t *testing.T) {
+		x := require.New(t)
+
+		w, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
+			Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+			Alias:   "tenant-reader",
+			Methods: []string{listTeams},
+		}.Build())
+		x.NoError(err)
+
+		bob := b.holder(t, ctx, b.Acme, "bob")
+
+		_, err = b.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
+			Role:   app.RoleRef_builder{Id: w.GetId()}.Build(),
+			Holder: app.HolderRef_builder{Id: bob.Bytes()}.Build(),
+		}.Build())
+		x.NoError(err)
+
+		// And in a site, which is narrowing.
+		_, err = b.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
+			Role:   app.RoleRef_builder{Id: w.GetId()}.Build(),
+			Holder: app.HolderRef_builder{Id: bob.Bytes()}.Build(),
+			Site:   app.SiteRef_builder{Id: seoul.GetId()}.Build(),
+		}.Build())
+		x.NoError(err)
 	})
 }

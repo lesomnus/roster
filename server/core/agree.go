@@ -278,6 +278,12 @@ func (s coreBinding) Add(ctx context.Context, req *app.BindingAddRequest) (*app.
 	// And what it hands out. Being allowed to write bindings was, until this,
 	// being allowed everything: write a role holding anything, bind it to
 	// yourself, and the permission system is a formality.
+	// Where the role may be bound, which is the schema's rule and was nobody's
+	// to enforce until this. See `bindableIn`.
+	if err := s.bindableIn(ctx, req.GetRole(), req.GetSite()); err != nil {
+		return nil, err
+	}
+
 	ms, err := s.methodsOf(ctx, req.GetRole())
 	if err != nil {
 		return nil, err

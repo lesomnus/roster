@@ -301,17 +301,46 @@ func Rules(db *ent.Client) core.Rules {
 	return core.Rules{Holds: Holds(db), Granted: Granted(db)}
 }
 
-// Granted is every method somebody holds **through a binding**, which is what
-// they may pass on.
+// Granted is every method somebody holds **across their whole tenant**, which
+// is what they may pass on.
 //
-// Bindings only. A role held in a team is scoped to that team, and letting it
-// be bound tenant-wide would widen a scope rather than pass on a permission.
+// # Only what is held tenant-wide
+//
+// Two things are left out and it is one reason. A role held in a **team** is
+// scoped to that team; a binding made in a **site** is scoped to that site; and
+// handing either on at a wider scope would widen a permission rather than pass
+// it on.
+//
+// The team half was here from the start. The site half was not, and what it
+// cost was found by writing it: somebody bound to a role in Seoul had those
+// methods in this list with no trace of Seoul on them, so `mayGrant` compared
+// them against a tenant-wide write and agreed. Two RPCs later they held the
+// tenant. `server/core.bindableIn` closes the path they actually took; this
+// closes the question rather than the path.
+//
+// # What it costs, which is real
+//
+// A site administrator may now delegate **nothing** -- not even within their
+// own site, where it would be perfectly correct. That is the same thing a team
+// role already could not do, so it is at least consistent, and it is the safe
+// direction of a wrong answer.
+//
+// Doing better means `mayGrant` taking the scope being written to and this
+// answering per scope rather than as one flat list. Every caller already knows
+// the scope -- `coreRole.Add` has `req.GetSite()`, `coreBinding.Add` has one
+// too -- so it is a change of shape rather than of information. It is not done
+// here because inventing it inside a security fix is how a security fix
+// acquires a bug.
 func Granted(db *ent.Client) core.Granted {
 	return func(ctx context.Context, who pdid.Id) ([]string, error) {
 		vs, err := db.Binding.Query().
 			Where(
 				binding.DateErasedIsNil(),
 				binding.HasHolderWith(holder.IDEQ(who.Uuid())),
+
+				// Tenant-wide only. A binding that names a site is a permission
+				// held there, and it is not theirs to hand out anywhere else.
+				binding.Not(binding.HasSite()),
 			).
 			WithRole().
 			All(ctx)
