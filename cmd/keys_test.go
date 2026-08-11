@@ -349,3 +349,50 @@ func TestABatchIsTheSameKey(t *testing.T) {
 	x.Error(err, "a batch carried what the key may not call")
 	x.Equal(codes.PermissionDenied, status.Code(err))
 }
+
+// TestTheFirstKeyMakesWhatItNeeds, which is what `roster key add --service
+// custody` does against an empty control plane.
+//
+// A service is not something an operator creates on purpose before they need
+// it: naming it in `key add` **is** the moment it becomes a caller. Asking for
+// three commands to express one intent is how a runbook grows a step nobody
+// remembers.
+func TestTheFirstKeyMakesWhatItNeeds(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	drv, dsn := pdtest.DB(t)
+	cdrv, cdsn := pdtest.DB(t)
+
+	s, err := cmd.Build(ctx, cmd.Config{
+		Db:      config.DbConfig{Driver: drv, Dsn: dsn},
+		Watch:   config.WatchConfig{Broker: config.BrokerMemory},
+		Control: cmd.ControlConfig{Db: config.DbConfig{Driver: cdrv, Dsn: cdsn}},
+	})
+	x.NoError(err)
+	t.Cleanup(func() { s.Close() })
+	x.NoError(s.Control.Ent.Schema.Create(ctx))
+
+	// Nothing at all yet.
+	n, err := s.Control.Ent.Tenant.Query().Count(ctx)
+	x.NoError(err)
+	x.Zero(n)
+
+	who, err := cmd.ServiceOf(ctx, s.Control, "custody")
+	x.NoError(err)
+
+	// The owner's tenant and the service, made on the way.
+	v, err := s.Control.Ent.Holder.Query().Only(ctx)
+	x.NoError(err)
+	x.Equal("custody", v.Alias)
+	x.Equal(who.String(), pdid.Id(v.ID).String())
+
+	// And asking again is the same service rather than a second one.
+	again, err := cmd.ServiceOf(ctx, s.Control, "custody")
+	x.NoError(err)
+	x.Equal(who, again)
+
+	n, err = s.Control.Ent.Holder.Query().Count(ctx)
+	x.NoError(err)
+	x.Equal(1, n, "a second key made a second service")
+}
