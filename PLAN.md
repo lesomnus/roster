@@ -162,6 +162,93 @@ one predicate rather than three reads.
 A role therefore means something *in a site*: operator in Seoul, reader in
 Frankfurt, one person. A role held on the person could not say that.
 
+### D17 · Roles, bound at a scope, in the shape Kubernetes settled on
+
+roster sells access control and has none of its own beyond "your tenant".
+`TeamMembership.role` is a string nothing reads, which is the gap stated as a
+column.
+
+**Site is a namespace.** That analogy is the design, not a comparison made
+afterwards:
+
+| Kubernetes | here |
+| --- | --- |
+| cluster | `Tenant` — the boundary that never leaks |
+| namespace | `Site` — optional, and payday's field 3 is literally "narrow to a set smaller than a tenant" |
+| cluster-scoped resource | `Holder`, `Identity`, `Credential` |
+| namespace-scoped resource | `Team` |
+| `ClusterRole` | `Role` with no site |
+| `Role` | `Role` in a site |
+| `RoleBinding` | `Binding` with a site |
+
+And it predicts a defect roster already has: **a namespaced thing with no
+namespace is not a thing.** `Team.site` is nullable and the wall reaches a
+tenant through it, so a team with no site belongs to nobody and nobody can see
+it -- it is written, it is invisible, and nothing says so. Kubernetes answers
+this with a `default` namespace; here the edge becomes required.
+
+#### The entities
+
+    Role     tenant=2  site=3?  alias=4  methods=8[]
+    Group    tenant=2  site=3?  alias=4
+    GroupMembership  holder=2  group=8
+    Binding  holder=2?  site=3?  role=8  group=9?  team=10?
+
+**Roles carry methods and nothing else.** A rule set is the list of RPCs it
+allows, written out. Not a resource-and-verb pair, because a gRPC method name
+already is one -- `/roster.HolderService/Get` says both -- and not a name to be
+looked up somewhere, because the somewhere is the thing this does not have.
+
+**A binding names a subject and a scope.** Either a holder or a group, refused
+in a layer when it names both or neither, the way `server/core` already refuses
+the two link mistakes no schema can state. The scope is the narrowest thing it
+names: nothing is the whole tenant, a site is that site, a team is that team.
+
+**A role defined in a site may only be bound in that site.** Kubernetes'
+rule, and it is what keeps somebody who administers one site from writing a
+rule that applies outside it.
+
+#### What is deliberately not copied
+
+- **No deny rules.** Permissions are a union, so order does not matter and a
+  question has one answer arrived at one way.
+- **No aggregation.** It is a convenience that makes "where did this rule come
+  from" unanswerable by reading.
+- **No `resourceNames` yet.** See below; it needs a seam that does not exist.
+- **Escalation prevention later.** Nobody should be able to grant what they do
+  not hold, and it is not the first thing to build.
+
+#### Team-scoped permission, and where it has to live
+
+"Somebody may add and remove members of the team they are in" is an
+**object-scoped** rule, and `gate.Policy` cannot express it. `gate.Call` carries
+the actor, their tenant, **the actor's own row** and the method -- and never
+what the call is about. A policy knows who is asking and not what they are
+asking for.
+
+So it splits, and the split is not a workaround:
+
+- **Reads** narrow through the wall, which means the scope axis. `Site` is that
+  axis, so "the teams in my site" is expressible and "this one team" is not --
+  payday has one second axis and Site is it.
+- **Writes** are refused in a layer that reads the request. `server/core` is
+  already where the judgements no schema can state live, and this is one:
+  `TeamMembership.Add` looks at `req.team` and asks whether the caller holds a
+  binding scoped to it.
+
+That is worth knowing before designing more of this: **`gate.Policy` is not the
+authorization seam it looks like.** It answers "may this actor call this
+method", which is most of the question and not the interesting part of it. The
+rest is a layer, and payday says so by giving layers the request.
+
+#### What this finally uses
+
+`Binding.site` **is** `frame.Sets`. `pd.Grouped` has been generated since the
+first week and PLAN.md has said since then that `Sets` is handed in by a test
+rather than by the app. A binding scoped to a site is the answer that function
+was waiting for, and it is where `Site` stops being a demonstration of payday's
+second axis and starts being a feature.
+
 ### D15 · roster's own access control is a second roster
 
 roster sells access control. If it cannot express its own, that is evidence
