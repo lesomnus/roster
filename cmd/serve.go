@@ -246,9 +246,19 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 		h = auth.Plain()
 	}
 
+	// The resolver is given the control plane, which is what makes an api-key
+	// identifier a row rather than a shape: see `keyed`. Nil here is a
+	// deployment with no keys, and then there is no such identifier to resolve.
+	var keyrows app.Server
+	if s.Control != nil {
+		keyrows = s.Control.Ungated
+	}
+
+	r := Resolver(s.Ungated, keyrows)
+
 	chain := grpcx.Serving(ctx, grpcx.WithDeadline(c.Server.CallTimeout())).
-		WithUnary(auth.InterceptorUnary(h, Resolver(s.Ungated), public)).
-		WithStream(auth.InterceptorStream(h, Resolver(s.Ungated), public)).
+		WithUnary(auth.InterceptorUnary(h, r, public)).
+		WithStream(auth.InterceptorStream(h, r, public)).
 		WithUnary(grpcx.LimitUnary(c.Server.Limiter(), gate.ByTenant())).
 		With(gate.Interceptor(Policy(s.Ent))).
 		With(s.Watch.Interceptor()).
