@@ -89,29 +89,22 @@ func TestTheSecondAxisNarrowsWithinATenant(t *testing.T) {
 	x.Equal("operators", some.GetItems()[0].GetAlias())
 }
 
-// TestARowInNoSetIsInvisibleToANarrowedRead is fail-closed, pinned.
+// TestATeamMustNameASite, which it did not have to until it was tried.
 //
-// The site edge is nullable, because a schema gains field 3 after it already
-// has rows and requiring it would mean no app could ever add one. A team that
-// named no site is then in no set — and a read narrowed to a set does not
-// include it.
+// The edge was nullable, and a team with no site reached no tenant -- so it was
+// written, was invisible to everybody including the tenant that made it, and
+// nothing anywhere said so. It was found by asking what `Site` is for and
+// answering "a namespace", because a namespaced thing with no namespace is not
+// a thing.
 //
-// Surprising, and the right way round: the alternative is a row that appears in
-// every narrowed read because it belongs to none of them.
-func TestARowInNoSetIsInvisibleToANarrowedRead(t *testing.T) {
+// Refused at the write now, which is the only place the answer is useful.
+func TestATeamMustNameASite(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	seoul := b.site(t, ctx, b.Acme, "seoul")
-
 	_, err := b.Ungated.Team().Add(ctx, app.TeamAddRequest_builder{Alias: "homeless"}.Build())
-	x.NoError(err)
-
-	ctx = b.as(ctx, b.AcmeUser, b.Acme)
-
-	vs, err := b.grouped(t, seoul).Team().List(ctx, app.TeamListRequest_builder{}.Build())
-	x.NoError(err)
-	x.Empty(vs.GetItems())
+	x.Error(err, "a team with no site was written, and nobody can see it")
+	x.Equal(codes.InvalidArgument, status.Code(err))
 }
 
 // TestTheTenantWallStillApplies, because the second axis narrows further and

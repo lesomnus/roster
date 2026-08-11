@@ -101,6 +101,56 @@ var (
 			},
 		},
 	}
+	// BindingColumns holds the columns for the "binding" table.
+	BindingColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "role_id", Type: field.TypeUUID},
+		{Name: "site_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "holder_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "group_id", Type: field.TypeUUID, Nullable: true},
+	}
+	// BindingTable holds the schema information for the "binding" table.
+	BindingTable = &schema.Table{
+		Name:       "binding",
+		Columns:    BindingColumns,
+		PrimaryKey: []*schema.Column{BindingColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "binding_role_role",
+				Columns:    []*schema.Column{BindingColumns[4]},
+				RefColumns: []*schema.Column{RoleColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "binding_site_site",
+				Columns:    []*schema.Column{BindingColumns[5]},
+				RefColumns: []*schema.Column{SiteColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "binding_holder_holder",
+				Columns:    []*schema.Column{BindingColumns[6]},
+				RefColumns: []*schema.Column{HolderColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "binding_group_group",
+				Columns:    []*schema.Column{BindingColumns[7]},
+				RefColumns: []*schema.Column{GroupColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "binding_date_created_id",
+				Unique:  false,
+				Columns: []*schema.Column{BindingColumns[3], BindingColumns[0]},
+			},
+		},
+	}
 	// CredentialColumns holds the columns for the "credential" table.
 	CredentialColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
@@ -183,6 +233,97 @@ var (
 				Name:    "email_address_holder_id",
 				Unique:  true,
 				Columns: []*schema.Column{EmailColumns[1], EmailColumns[6]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
+	// GroupColumns holds the columns for the "group" table.
+	GroupColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "alias", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "desc", Type: field.TypeString},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "tenant_id", Type: field.TypeUUID},
+		{Name: "site_id", Type: field.TypeUUID, Nullable: true},
+	}
+	// GroupTable holds the schema information for the "group" table.
+	GroupTable = &schema.Table{
+		Name:       "group",
+		Columns:    GroupColumns,
+		PrimaryKey: []*schema.Column{GroupColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "group_tenant_tenant",
+				Columns:    []*schema.Column{GroupColumns[7]},
+				RefColumns: []*schema.Column{TenantColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "group_site_site",
+				Columns:    []*schema.Column{GroupColumns[8]},
+				RefColumns: []*schema.Column{SiteColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "group_date_created_id",
+				Unique:  false,
+				Columns: []*schema.Column{GroupColumns[6], GroupColumns[0]},
+			},
+			{
+				Name:    "group_alias_tenant_id",
+				Unique:  true,
+				Columns: []*schema.Column{GroupColumns[1], GroupColumns[7]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
+	// GroupmembershipColumns holds the columns for the "groupmembership" table.
+	GroupmembershipColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "holder_id", Type: field.TypeUUID},
+		{Name: "group_id", Type: field.TypeUUID},
+	}
+	// GroupmembershipTable holds the schema information for the "groupmembership" table.
+	GroupmembershipTable = &schema.Table{
+		Name:       "groupmembership",
+		Columns:    GroupmembershipColumns,
+		PrimaryKey: []*schema.Column{GroupmembershipColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "groupmembership_holder_holder",
+				Columns:    []*schema.Column{GroupmembershipColumns[4]},
+				RefColumns: []*schema.Column{HolderColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "groupmembership_group_group",
+				Columns:    []*schema.Column{GroupmembershipColumns[5]},
+				RefColumns: []*schema.Column{GroupColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "groupmembership_date_created_id",
+				Unique:  false,
+				Columns: []*schema.Column{GroupmembershipColumns[3], GroupmembershipColumns[0]},
+			},
+			{
+				Name:    "groupmembership_holder_id_group_id",
+				Unique:  true,
+				Columns: []*schema.Column{GroupmembershipColumns[4], GroupmembershipColumns[5]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -298,6 +439,54 @@ var (
 			},
 		},
 	}
+	// RoleColumns holds the columns for the "role" table.
+	RoleColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "alias", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "desc", Type: field.TypeString},
+		{Name: "methods", Type: field.TypeJSON, Nullable: true},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "tenant_id", Type: field.TypeUUID},
+		{Name: "site_id", Type: field.TypeUUID, Nullable: true},
+	}
+	// RoleTable holds the schema information for the "role" table.
+	RoleTable = &schema.Table{
+		Name:       "role",
+		Columns:    RoleColumns,
+		PrimaryKey: []*schema.Column{RoleColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "role_tenant_tenant",
+				Columns:    []*schema.Column{RoleColumns[8]},
+				RefColumns: []*schema.Column{TenantColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "role_site_site",
+				Columns:    []*schema.Column{RoleColumns[9]},
+				RefColumns: []*schema.Column{SiteColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "role_date_created_id",
+				Unique:  false,
+				Columns: []*schema.Column{RoleColumns[7], RoleColumns[0]},
+			},
+			{
+				Name:    "role_alias_tenant_id",
+				Unique:  true,
+				Columns: []*schema.Column{RoleColumns[1], RoleColumns[8]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
 	// SiteColumns holds the columns for the "site" table.
 	SiteColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
@@ -346,7 +535,7 @@ var (
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
 		{Name: "holder_id", Type: field.TypeUUID},
-		{Name: "site_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "site_id", Type: field.TypeUUID},
 	}
 	// SitemembershipTable holds the schema information for the "sitemembership" table.
 	SitemembershipTable = &schema.Table{
@@ -364,7 +553,7 @@ var (
 				Symbol:     "sitemembership_site_site",
 				Columns:    []*schema.Column{SitemembershipColumns[5]},
 				RefColumns: []*schema.Column{SiteColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.NoAction,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -392,7 +581,7 @@ var (
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
-		{Name: "site_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "site_id", Type: field.TypeUUID},
 	}
 	// TeamTable holds the schema information for the "team" table.
 	TeamTable = &schema.Table{
@@ -404,7 +593,7 @@ var (
 				Symbol:     "team_site_site",
 				Columns:    []*schema.Column{TeamColumns[7]},
 				RefColumns: []*schema.Column{SiteColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.NoAction,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -426,12 +615,12 @@ var (
 	// TeammembershipColumns holds the columns for the "teammembership" table.
 	TeammembershipColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "role", Type: field.TypeString},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
 		{Name: "holder_id", Type: field.TypeUUID},
 		{Name: "team_id", Type: field.TypeUUID},
+		{Name: "role_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// TeammembershipTable holds the schema information for the "teammembership" table.
 	TeammembershipTable = &schema.Table{
@@ -441,27 +630,33 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "teammembership_holder_holder",
-				Columns:    []*schema.Column{TeammembershipColumns[5]},
+				Columns:    []*schema.Column{TeammembershipColumns[4]},
 				RefColumns: []*schema.Column{HolderColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "teammembership_team_team",
-				Columns:    []*schema.Column{TeammembershipColumns[6]},
+				Columns:    []*schema.Column{TeammembershipColumns[5]},
 				RefColumns: []*schema.Column{TeamColumns[0]},
 				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "teammembership_role_role",
+				Columns:    []*schema.Column{TeammembershipColumns[6]},
+				RefColumns: []*schema.Column{RoleColumns[0]},
+				OnDelete:   schema.SetNull,
 			},
 		},
 		Indexes: []*schema.Index{
 			{
 				Name:    "teammembership_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{TeammembershipColumns[4], TeammembershipColumns[0]},
+				Columns: []*schema.Column{TeammembershipColumns[3], TeammembershipColumns[0]},
 			},
 			{
 				Name:    "teammembership_holder_id_team_id",
 				Unique:  true,
-				Columns: []*schema.Column{TeammembershipColumns[5], TeammembershipColumns[6]},
+				Columns: []*schema.Column{TeammembershipColumns[4], TeammembershipColumns[5]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -488,11 +683,15 @@ var (
 	Tables = []*schema.Table{
 		ApikeyTable,
 		AuditTable,
+		BindingTable,
 		CredentialTable,
 		EmailTable,
+		GroupTable,
+		GroupmembershipTable,
 		HolderTable,
 		IdentityTable,
 		OutboxTable,
+		RoleTable,
 		SiteTable,
 		SitemembershipTable,
 		TeamTable,
@@ -509,6 +708,13 @@ func init() {
 	AuditTable.Annotation = &entsql.Annotation{
 		Table: "audit",
 	}
+	BindingTable.ForeignKeys[0].RefTable = RoleTable
+	BindingTable.ForeignKeys[1].RefTable = SiteTable
+	BindingTable.ForeignKeys[2].RefTable = HolderTable
+	BindingTable.ForeignKeys[3].RefTable = GroupTable
+	BindingTable.Annotation = &entsql.Annotation{
+		Table: "binding",
+	}
 	CredentialTable.ForeignKeys[0].RefTable = HolderTable
 	CredentialTable.Annotation = &entsql.Annotation{
 		Table: "credential",
@@ -517,6 +723,16 @@ func init() {
 	EmailTable.ForeignKeys[1].RefTable = IdentityTable
 	EmailTable.Annotation = &entsql.Annotation{
 		Table: "email",
+	}
+	GroupTable.ForeignKeys[0].RefTable = TenantTable
+	GroupTable.ForeignKeys[1].RefTable = SiteTable
+	GroupTable.Annotation = &entsql.Annotation{
+		Table: "group",
+	}
+	GroupmembershipTable.ForeignKeys[0].RefTable = HolderTable
+	GroupmembershipTable.ForeignKeys[1].RefTable = GroupTable
+	GroupmembershipTable.Annotation = &entsql.Annotation{
+		Table: "groupmembership",
 	}
 	HolderTable.ForeignKeys[0].RefTable = TenantTable
 	HolderTable.Annotation = &entsql.Annotation{
@@ -528,6 +744,11 @@ func init() {
 	}
 	OutboxTable.Annotation = &entsql.Annotation{
 		Table: "outbox",
+	}
+	RoleTable.ForeignKeys[0].RefTable = TenantTable
+	RoleTable.ForeignKeys[1].RefTable = SiteTable
+	RoleTable.Annotation = &entsql.Annotation{
+		Table: "role",
 	}
 	SiteTable.ForeignKeys[0].RefTable = TenantTable
 	SiteTable.Annotation = &entsql.Annotation{
@@ -544,6 +765,7 @@ func init() {
 	}
 	TeammembershipTable.ForeignKeys[0].RefTable = HolderTable
 	TeammembershipTable.ForeignKeys[1].RefTable = TeamTable
+	TeammembershipTable.ForeignKeys[2].RefTable = RoleTable
 	TeammembershipTable.Annotation = &entsql.Annotation{
 		Table: "teammembership",
 	}

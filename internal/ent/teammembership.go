@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/holder"
+	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/lesomnus/roster/internal/ent/team"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
 )
@@ -20,8 +21,6 @@ type TeamMembership struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
-	// Role holds the value of the "role" field.
-	Role string `json:"role,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -32,6 +31,8 @@ type TeamMembership struct {
 	HolderID uuid.UUID `json:"holder_id,omitempty"`
 	// TeamID holds the value of the "team_id" field.
 	TeamID uuid.UUID `json:"team_id,omitempty"`
+	// RoleID holds the value of the "role_id" field.
+	RoleID uuid.UUID `json:"role_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the TeamMembershipQuery when eager-loading is set.
 	Edges        TeamMembershipEdges `json:"edges"`
@@ -44,9 +45,11 @@ type TeamMembershipEdges struct {
 	Holder *Holder `json:"holder,omitempty"`
 	// Team holds the value of the team edge.
 	Team *Team `json:"team,omitempty"`
+	// Role holds the value of the role edge.
+	Role *Role `json:"role,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // HolderOrErr returns the Holder value or an error if the edge
@@ -71,16 +74,25 @@ func (e TeamMembershipEdges) TeamOrErr() (*Team, error) {
 	return nil, &NotLoadedError{edge: "team"}
 }
 
+// RoleOrErr returns the Role value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e TeamMembershipEdges) RoleOrErr() (*Role, error) {
+	if e.Role != nil {
+		return e.Role, nil
+	} else if e.loadedTypes[2] {
+		return nil, &NotFoundError{label: role.Label}
+	}
+	return nil, &NotLoadedError{edge: "role"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*TeamMembership) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case teammembership.FieldRole:
-			values[i] = new(sql.NullString)
 		case teammembership.FieldDateUpdated, teammembership.FieldDateErased, teammembership.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case teammembership.FieldID, teammembership.FieldHolderID, teammembership.FieldTeamID:
+		case teammembership.FieldID, teammembership.FieldHolderID, teammembership.FieldTeamID, teammembership.FieldRoleID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -102,12 +114,6 @@ func (_m *TeamMembership) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				_m.ID = *value
-			}
-		case teammembership.FieldRole:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field role", values[i])
-			} else if value.Valid {
-				_m.Role = value.String
 			}
 		case teammembership.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -140,6 +146,12 @@ func (_m *TeamMembership) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				_m.TeamID = *value
 			}
+		case teammembership.FieldRoleID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field role_id", values[i])
+			} else if value != nil {
+				_m.RoleID = *value
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -161,6 +173,11 @@ func (_m *TeamMembership) QueryHolder() *HolderQuery {
 // QueryTeam queries the "team" edge of the TeamMembership entity.
 func (_m *TeamMembership) QueryTeam() *TeamQuery {
 	return NewTeamMembershipClient(_m.config).QueryTeam(_m)
+}
+
+// QueryRole queries the "role" edge of the TeamMembership entity.
+func (_m *TeamMembership) QueryRole() *RoleQuery {
+	return NewTeamMembershipClient(_m.config).QueryRole(_m)
 }
 
 // Update returns a builder for updating this TeamMembership.
@@ -186,9 +203,6 @@ func (_m *TeamMembership) String() string {
 	var builder strings.Builder
 	builder.WriteString("TeamMembership(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
-	builder.WriteString("role=")
-	builder.WriteString(_m.Role)
-	builder.WriteString(", ")
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))
 	builder.WriteString(", ")
@@ -205,6 +219,9 @@ func (_m *TeamMembership) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("team_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.TeamID))
+	builder.WriteString(", ")
+	builder.WriteString("role_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RoleID))
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -30,12 +30,16 @@ import (
 	ent "github.com/lesomnus/roster/internal/ent"
 	apikey "github.com/lesomnus/roster/internal/ent/apikey"
 	audit "github.com/lesomnus/roster/internal/ent/audit"
+	binding "github.com/lesomnus/roster/internal/ent/binding"
 	credential "github.com/lesomnus/roster/internal/ent/credential"
 	email "github.com/lesomnus/roster/internal/ent/email"
+	group "github.com/lesomnus/roster/internal/ent/group"
+	groupmembership "github.com/lesomnus/roster/internal/ent/groupmembership"
 	holder "github.com/lesomnus/roster/internal/ent/holder"
 	identity "github.com/lesomnus/roster/internal/ent/identity"
 	outbox "github.com/lesomnus/roster/internal/ent/outbox"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
+	role "github.com/lesomnus/roster/internal/ent/role"
 	site "github.com/lesomnus/roster/internal/ent/site"
 	sitemembership "github.com/lesomnus/roster/internal/ent/sitemembership"
 	team "github.com/lesomnus/roster/internal/ent/team"
@@ -79,28 +83,36 @@ func Check() error { return version.Same(Payday) }
 // trail says what kind of thing it was long after the row is gone. So a
 // number is chosen once and never given to something else.
 const (
-	ApiKeyDomain         pdid.Domain = 14 // "api-key"
-	AuditDomain          pdid.Domain = 3  // "audit"
-	CredentialDomain     pdid.Domain = 13 // "credential"
-	EmailDomain          pdid.Domain = 9  // "email"
-	HolderDomain         pdid.Domain = 2  // "holder"
-	IdentityDomain       pdid.Domain = 8  // "identity"
-	OutboxDomain         pdid.Domain = 4  // "outbox"
-	SiteDomain           pdid.Domain = 7  // "site"
-	SiteMembershipDomain pdid.Domain = 11 // "site-membership"
-	TeamDomain           pdid.Domain = 10 // "team"
-	TeamMembershipDomain pdid.Domain = 12 // "team-membership"
-	TenantDomain         pdid.Domain = 1  // "tenant"
+	ApiKeyDomain          pdid.Domain = 14 // "api-key"
+	AuditDomain           pdid.Domain = 3  // "audit"
+	BindingDomain         pdid.Domain = 18 // "binding"
+	CredentialDomain      pdid.Domain = 13 // "credential"
+	EmailDomain           pdid.Domain = 9  // "email"
+	GroupDomain           pdid.Domain = 16 // "group"
+	GroupMembershipDomain pdid.Domain = 17 // "group-membership"
+	HolderDomain          pdid.Domain = 2  // "holder"
+	IdentityDomain        pdid.Domain = 8  // "identity"
+	OutboxDomain          pdid.Domain = 4  // "outbox"
+	RoleDomain            pdid.Domain = 15 // "role"
+	SiteDomain            pdid.Domain = 7  // "site"
+	SiteMembershipDomain  pdid.Domain = 11 // "site-membership"
+	TeamDomain            pdid.Domain = 10 // "team"
+	TeamMembershipDomain  pdid.Domain = 12 // "team-membership"
+	TenantDomain          pdid.Domain = 1  // "tenant"
 )
 
 func init() {
 	pdid.Register("roster.ApiKey", ApiKeyDomain, "api-key")
 	pdid.Register("roster.Audit", AuditDomain, "audit")
+	pdid.Register("roster.Binding", BindingDomain, "binding")
 	pdid.Register("roster.Credential", CredentialDomain, "credential")
 	pdid.Register("roster.Email", EmailDomain, "email")
+	pdid.Register("roster.Group", GroupDomain, "group")
+	pdid.Register("roster.GroupMembership", GroupMembershipDomain, "group-membership")
 	pdid.Register("roster.Holder", HolderDomain, "holder")
 	pdid.Register("roster.Identity", IdentityDomain, "identity")
 	pdid.Register("roster.Outbox", OutboxDomain, "outbox")
+	pdid.Register("roster.Role", RoleDomain, "role")
 	pdid.Register("roster.Site", SiteDomain, "site")
 	pdid.Register("roster.SiteMembership", SiteMembershipDomain, "site-membership")
 	pdid.Register("roster.Team", TeamDomain, "team")
@@ -113,18 +125,22 @@ func init() {
 // Domains is the domain of each entity by the full name of its message,
 // which is the name a [Minter] is asked about.
 var Domains = map[string]pdid.Domain{
-	"roster.ApiKey":         ApiKeyDomain,
-	"roster.Audit":          AuditDomain,
-	"roster.Credential":     CredentialDomain,
-	"roster.Email":          EmailDomain,
-	"roster.Holder":         HolderDomain,
-	"roster.Identity":       IdentityDomain,
-	"roster.Outbox":         OutboxDomain,
-	"roster.Site":           SiteDomain,
-	"roster.SiteMembership": SiteMembershipDomain,
-	"roster.Team":           TeamDomain,
-	"roster.TeamMembership": TeamMembershipDomain,
-	"roster.Tenant":         TenantDomain,
+	"roster.ApiKey":          ApiKeyDomain,
+	"roster.Audit":           AuditDomain,
+	"roster.Binding":         BindingDomain,
+	"roster.Credential":      CredentialDomain,
+	"roster.Email":           EmailDomain,
+	"roster.Group":           GroupDomain,
+	"roster.GroupMembership": GroupMembershipDomain,
+	"roster.Holder":          HolderDomain,
+	"roster.Identity":        IdentityDomain,
+	"roster.Outbox":          OutboxDomain,
+	"roster.Role":            RoleDomain,
+	"roster.Site":            SiteDomain,
+	"roster.SiteMembership":  SiteMembershipDomain,
+	"roster.Team":            TeamDomain,
+	"roster.TeamMembership":  TeamMembershipDomain,
+	"roster.Tenant":          TenantDomain,
 }
 
 // Minter answers with the [bare.Minter] that gives every new row an
@@ -189,6 +205,16 @@ func (wall) AuditScope(ctx context.Context) (predicate.Audit, error) {
 	return audit.Or(audit.TenantIDIn(vs...), audit.ActorTenantIDIn(vs...)), nil
 }
 
+// BindingScope: a row belongs to the tenant its "role.tenant" reaches.
+func (wall) BindingScope(ctx context.Context) (predicate.Binding, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return binding.HasRoleWith(role.TenantIDIn(vs...)), nil
+}
+
 // CredentialScope: a row belongs to the tenant its "holder.tenant" reaches.
 func (wall) CredentialScope(ctx context.Context) (predicate.Credential, error) {
 	vs, all, err := frame.Narrow(ctx)
@@ -207,6 +233,26 @@ func (wall) EmailScope(ctx context.Context) (predicate.Email, error) {
 	}
 
 	return email.HasHolderWith(holder.TenantIDIn(vs...)), nil
+}
+
+// GroupScope: a row belongs to the tenant its "tenant" reaches.
+func (wall) GroupScope(ctx context.Context) (predicate.Group, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return group.TenantIDIn(vs...), nil
+}
+
+// GroupMembershipScope: a row belongs to the tenant its "holder.tenant" reaches.
+func (wall) GroupMembershipScope(ctx context.Context) (predicate.GroupMembership, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return groupmembership.HasHolderWith(holder.TenantIDIn(vs...)), nil
 }
 
 // HolderScope: a row belongs to the tenant its "tenant" reaches.
@@ -232,6 +278,16 @@ func (wall) IdentityScope(ctx context.Context) (predicate.Identity, error) {
 // OutboxScope: declared `global`, so it is not behind the wall at all.
 func (wall) OutboxScope(ctx context.Context) (predicate.Outbox, error) {
 	return nil, nil
+}
+
+// RoleScope: a row belongs to the tenant its "tenant" reaches.
+func (wall) RoleScope(ctx context.Context) (predicate.Role, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return role.TenantIDIn(vs...), nil
 }
 
 // SiteScope: a row belongs to the tenant its "tenant" reaches.
@@ -330,6 +386,16 @@ func (x grouped) AuditScope(ctx context.Context) (predicate.Audit, error) {
 	return nil, nil
 }
 
+// BindingScope: in the Site its "site" names.
+func (x grouped) BindingScope(ctx context.Context) (predicate.Binding, error) {
+	vs, all, err := frame.NarrowSet(ctx, x.of)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return binding.SiteIDIn(vs...), nil
+}
+
 // CredentialScope: in no set -- it declared no field 3, so this narrows nothing.
 func (x grouped) CredentialScope(ctx context.Context) (predicate.Credential, error) {
 	return nil, nil
@@ -337,6 +403,21 @@ func (x grouped) CredentialScope(ctx context.Context) (predicate.Credential, err
 
 // EmailScope: in no set -- it declared no field 3, so this narrows nothing.
 func (x grouped) EmailScope(ctx context.Context) (predicate.Email, error) {
+	return nil, nil
+}
+
+// GroupScope: in the Site its "site" names.
+func (x grouped) GroupScope(ctx context.Context) (predicate.Group, error) {
+	vs, all, err := frame.NarrowSet(ctx, x.of)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return group.SiteIDIn(vs...), nil
+}
+
+// GroupMembershipScope: in no set -- it declared no field 3, so this narrows nothing.
+func (x grouped) GroupMembershipScope(ctx context.Context) (predicate.GroupMembership, error) {
 	return nil, nil
 }
 
@@ -353,6 +434,16 @@ func (x grouped) IdentityScope(ctx context.Context) (predicate.Identity, error) 
 // OutboxScope: in no set -- it declared no field 3, so this narrows nothing.
 func (x grouped) OutboxScope(ctx context.Context) (predicate.Outbox, error) {
 	return nil, nil
+}
+
+// RoleScope: in the Site its "site" names.
+func (x grouped) RoleScope(ctx context.Context) (predicate.Role, error) {
+	vs, all, err := frame.NarrowSet(ctx, x.of)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return role.SiteIDIn(vs...), nil
 }
 
 // SiteScope: it is the set, so the sets a caller may see are the rows they may see.
@@ -869,6 +960,149 @@ func filterAudit(f *rstr.AuditFilter) (predicate.Audit, error) {
 	}
 
 	return audit.And(ps...), nil
+}
+
+type sinkBinding struct {
+	rstr.BindingServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) Binding() rstr.BindingServiceServer {
+	return sinkBinding{s.Server.Binding(), s.Server.Store, s.w, s.namer, s.joined}
+}
+
+// orderBinding is how Bindings come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderBinding = []entpage.Order{
+	{Column: binding.FieldDateCreated, Desc: false},
+	{Column: binding.FieldID, Desc: false},
+}
+
+const (
+	// BindingPageSize is what a request that did not say gets, and
+	// BindingPageLimit is the most it gets however loudly it asks.
+	BindingPageSize  = 20
+	BindingPageLimit = 100
+
+	// BindingFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	BindingFilterLimit = 32
+)
+
+// List answers with the Bindings that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkBinding) List(ctx context.Context, req *rstr.BindingListRequest) (*rstr.BindingListResponse, error) {
+	q := s.store.Db.Binding.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.BindingNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > BindingFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), BindingFilterLimit)
+		}
+
+		ps := make([]predicate.Binding, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterBinding(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(binding.Or(ps...))
+	}
+
+	if v := req.GetAfter(); v != "" {
+		var (
+			at0 time.Time
+			at1 uuid.UUID
+		)
+		if err := entpage.Decode(v, &at0, &at1); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		p, err := entpage.After(orderBinding, []any{at0, at1})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := entpage.Size(int(req.GetSize()), BindingPageSize, BindingPageLimit)
+	us, err := q.Order(binding.ByDateCreated(), binding.ByID()).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*rstr.Binding, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := rstr.BindingListResponse_builder{Items: items}.Build()
+	if more {
+		last := us[len(us)-1]
+		next, err := entpage.Encode(last.DateCreated, last.ID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(next)
+	}
+
+	return res, nil
+}
+
+// filterBinding turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterBinding(f *rstr.BindingFilter) (predicate.Binding, error) {
+	ps := make([]predicate.Binding, 0, 1)
+	if f.HasRef() {
+		p, err := bare.BindingPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return binding.And(ps...), nil
 }
 
 type sinkCredential struct {
@@ -1521,6 +1755,366 @@ func (s sinkEmail) watchEmailKeys(
 	return ks, nil
 }
 
+type sinkGroup struct {
+	rstr.GroupServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) Group() rstr.GroupServiceServer {
+	return sinkGroup{s.Server.Group(), s.Server.Store, s.w, s.namer, s.joined}
+}
+
+// Add decides the name, and refuses one that was given and cannot be one.
+//
+// It goes through [Sink.WithNamer], which is unset in most deployments and
+// then means: fold what was given, and make a name up when nothing was --
+// for the reason `bare.Minter` makes a key up. An app whose rows have to
+// be named says so with `slug.Required`; see `slug.Names` for why that is
+// the way round it is.
+//
+// The request is copied rather than written to. It belongs to whoever
+// called, and for a call made in this process that is a message they may
+// still be holding -- a server that folded a caller's own field would be
+// changing a value they can read back.
+func (s sinkGroup) Add(ctx context.Context, req *rstr.GroupAddRequest) (*rstr.Group, error) {
+	// How many names to try. More than one only when the caller named
+	// nothing -- then the name is this server's and a collision is this
+	// server's to resolve. A name the caller gave is theirs, and quietly
+	// choosing a different one would write a row they did not ask for.
+	//
+	// And only when this Add opens its own transaction; see [Sink.joined].
+	tries := 1
+	if req.GetAlias() == "" && !s.joined {
+		tries = slug.Tries
+	}
+
+	for try := 0; ; try++ {
+		v, err := slug.NameWith(ctx, s.namer, "roster.Group", req.GetAlias(), req)
+		if err != nil {
+			return nil, pderr.At("alias", err)
+		}
+
+		// The request is copied rather than written to, and copied again on
+		// each try: it belongs to whoever called, and for a call made in this
+		// process that is a message they may still be holding.
+		r := proto.CloneOf(req)
+		r.SetAlias(v)
+
+		res, err := s.GroupServiceServer.Add(ctx, r)
+		if err == nil || try+1 >= tries || status.Code(err) != codes.AlreadyExists {
+			// Whatever it was, said in the words it was said in. Rewriting
+			// it into "no free name" would assert the one thing this cannot
+			// know -- a duplicate key is the same code -- and would say it
+			// loudest exactly when it is wrong.
+			return res, err
+		}
+	}
+}
+
+// Patch folds a name it was given, and says nothing about one it was not.
+//
+// The presence is the whole of the difference from [sinkGroup.Add]: a patch
+// that does not mention the alias is not a patch setting it to the empty
+// string, and refusing one would make every patch of any other field carry
+// the name along.
+//
+// The namer is **not** asked here, and that is the second difference. It
+// decides the name of a row being made; a patch that cleared the alias is
+// a caller asking for something invalid, and answering that with an
+// invented name would hand them a row they did not ask for.
+func (s sinkGroup) Patch(ctx context.Context, req *rstr.GroupPatchRequest) (*rstr.Group, error) {
+	if !req.HasAlias() {
+		return s.GroupServiceServer.Patch(ctx, req)
+	}
+
+	v, err := slug.ParseAlias(req.GetAlias())
+	if err != nil {
+		return nil, pderr.At("alias", err)
+	}
+
+	req = proto.CloneOf(req)
+	req.SetAlias(v)
+
+	return s.GroupServiceServer.Patch(ctx, req)
+}
+
+// orderGroup is how Groups come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderGroup = []entpage.Order{
+	{Column: group.FieldDateCreated, Desc: false},
+	{Column: group.FieldID, Desc: false},
+}
+
+const (
+	// GroupPageSize is what a request that did not say gets, and
+	// GroupPageLimit is the most it gets however loudly it asks.
+	GroupPageSize  = 20
+	GroupPageLimit = 100
+
+	// GroupFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	GroupFilterLimit = 32
+)
+
+// List answers with the Groups that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkGroup) List(ctx context.Context, req *rstr.GroupListRequest) (*rstr.GroupListResponse, error) {
+	q := s.store.Db.Group.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.GroupNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > GroupFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), GroupFilterLimit)
+		}
+
+		ps := make([]predicate.Group, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterGroup(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(group.Or(ps...))
+	}
+
+	if v := req.GetAfter(); v != "" {
+		var (
+			at0 time.Time
+			at1 uuid.UUID
+		)
+		if err := entpage.Decode(v, &at0, &at1); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		p, err := entpage.After(orderGroup, []any{at0, at1})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := entpage.Size(int(req.GetSize()), GroupPageSize, GroupPageLimit)
+	us, err := q.Order(group.ByDateCreated(), group.ByID()).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*rstr.Group, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := rstr.GroupListResponse_builder{Items: items}.Build()
+	if more {
+		last := us[len(us)-1]
+		next, err := entpage.Encode(last.DateCreated, last.ID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(next)
+	}
+
+	return res, nil
+}
+
+// filterGroup turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterGroup(f *rstr.GroupFilter) (predicate.Group, error) {
+	ps := make([]predicate.Group, 0, 1)
+	if f.HasRef() {
+		p, err := bare.GroupPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return group.And(ps...), nil
+}
+
+type sinkGroupMembership struct {
+	rstr.GroupMembershipServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) GroupMembership() rstr.GroupMembershipServiceServer {
+	return sinkGroupMembership{s.Server.GroupMembership(), s.Server.Store, s.w, s.namer, s.joined}
+}
+
+// orderGroupMembership is how GroupMemberships come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderGroupMembership = []entpage.Order{
+	{Column: groupmembership.FieldDateCreated, Desc: false},
+	{Column: groupmembership.FieldID, Desc: false},
+}
+
+const (
+	// GroupMembershipPageSize is what a request that did not say gets, and
+	// GroupMembershipPageLimit is the most it gets however loudly it asks.
+	GroupMembershipPageSize  = 20
+	GroupMembershipPageLimit = 100
+
+	// GroupMembershipFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	GroupMembershipFilterLimit = 32
+)
+
+// List answers with the GroupMemberships that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkGroupMembership) List(ctx context.Context, req *rstr.GroupMembershipListRequest) (*rstr.GroupMembershipListResponse, error) {
+	q := s.store.Db.GroupMembership.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.GroupMembershipNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > GroupMembershipFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), GroupMembershipFilterLimit)
+		}
+
+		ps := make([]predicate.GroupMembership, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterGroupMembership(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(groupmembership.Or(ps...))
+	}
+
+	if v := req.GetAfter(); v != "" {
+		var (
+			at0 time.Time
+			at1 uuid.UUID
+		)
+		if err := entpage.Decode(v, &at0, &at1); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		p, err := entpage.After(orderGroupMembership, []any{at0, at1})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := entpage.Size(int(req.GetSize()), GroupMembershipPageSize, GroupMembershipPageLimit)
+	us, err := q.Order(groupmembership.ByDateCreated(), groupmembership.ByID()).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*rstr.GroupMembership, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := rstr.GroupMembershipListResponse_builder{Items: items}.Build()
+	if more {
+		last := us[len(us)-1]
+		next, err := entpage.Encode(last.DateCreated, last.ID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(next)
+	}
+
+	return res, nil
+}
+
+// filterGroupMembership turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterGroupMembership(f *rstr.GroupMembershipFilter) (predicate.GroupMembership, error) {
+	ps := make([]predicate.GroupMembership, 0, 1)
+	if f.HasRef() {
+		p, err := bare.GroupMembershipPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return groupmembership.And(ps...), nil
+}
+
 type sinkHolder struct {
 	rstr.HolderServiceServer
 	store  bare.Store
@@ -1930,6 +2524,223 @@ func (s sinkIdentity) watchIdentityKeys(
 	}
 
 	return ks, nil
+}
+
+type sinkRole struct {
+	rstr.RoleServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) Role() rstr.RoleServiceServer {
+	return sinkRole{s.Server.Role(), s.Server.Store, s.w, s.namer, s.joined}
+}
+
+// Add decides the name, and refuses one that was given and cannot be one.
+//
+// It goes through [Sink.WithNamer], which is unset in most deployments and
+// then means: fold what was given, and make a name up when nothing was --
+// for the reason `bare.Minter` makes a key up. An app whose rows have to
+// be named says so with `slug.Required`; see `slug.Names` for why that is
+// the way round it is.
+//
+// The request is copied rather than written to. It belongs to whoever
+// called, and for a call made in this process that is a message they may
+// still be holding -- a server that folded a caller's own field would be
+// changing a value they can read back.
+func (s sinkRole) Add(ctx context.Context, req *rstr.RoleAddRequest) (*rstr.Role, error) {
+	// How many names to try. More than one only when the caller named
+	// nothing -- then the name is this server's and a collision is this
+	// server's to resolve. A name the caller gave is theirs, and quietly
+	// choosing a different one would write a row they did not ask for.
+	//
+	// And only when this Add opens its own transaction; see [Sink.joined].
+	tries := 1
+	if req.GetAlias() == "" && !s.joined {
+		tries = slug.Tries
+	}
+
+	for try := 0; ; try++ {
+		v, err := slug.NameWith(ctx, s.namer, "roster.Role", req.GetAlias(), req)
+		if err != nil {
+			return nil, pderr.At("alias", err)
+		}
+
+		// The request is copied rather than written to, and copied again on
+		// each try: it belongs to whoever called, and for a call made in this
+		// process that is a message they may still be holding.
+		r := proto.CloneOf(req)
+		r.SetAlias(v)
+
+		res, err := s.RoleServiceServer.Add(ctx, r)
+		if err == nil || try+1 >= tries || status.Code(err) != codes.AlreadyExists {
+			// Whatever it was, said in the words it was said in. Rewriting
+			// it into "no free name" would assert the one thing this cannot
+			// know -- a duplicate key is the same code -- and would say it
+			// loudest exactly when it is wrong.
+			return res, err
+		}
+	}
+}
+
+// Patch folds a name it was given, and says nothing about one it was not.
+//
+// The presence is the whole of the difference from [sinkRole.Add]: a patch
+// that does not mention the alias is not a patch setting it to the empty
+// string, and refusing one would make every patch of any other field carry
+// the name along.
+//
+// The namer is **not** asked here, and that is the second difference. It
+// decides the name of a row being made; a patch that cleared the alias is
+// a caller asking for something invalid, and answering that with an
+// invented name would hand them a row they did not ask for.
+func (s sinkRole) Patch(ctx context.Context, req *rstr.RolePatchRequest) (*rstr.Role, error) {
+	if !req.HasAlias() {
+		return s.RoleServiceServer.Patch(ctx, req)
+	}
+
+	v, err := slug.ParseAlias(req.GetAlias())
+	if err != nil {
+		return nil, pderr.At("alias", err)
+	}
+
+	req = proto.CloneOf(req)
+	req.SetAlias(v)
+
+	return s.RoleServiceServer.Patch(ctx, req)
+}
+
+// orderRole is how Roles come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderRole = []entpage.Order{
+	{Column: role.FieldDateCreated, Desc: false},
+	{Column: role.FieldID, Desc: false},
+}
+
+const (
+	// RolePageSize is what a request that did not say gets, and
+	// RolePageLimit is the most it gets however loudly it asks.
+	RolePageSize  = 20
+	RolePageLimit = 100
+
+	// RoleFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	RoleFilterLimit = 32
+)
+
+// List answers with the Roles that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkRole) List(ctx context.Context, req *rstr.RoleListRequest) (*rstr.RoleListResponse, error) {
+	q := s.store.Db.Role.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.RoleNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > RoleFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), RoleFilterLimit)
+		}
+
+		ps := make([]predicate.Role, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterRole(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(role.Or(ps...))
+	}
+
+	if v := req.GetAfter(); v != "" {
+		var (
+			at0 time.Time
+			at1 uuid.UUID
+		)
+		if err := entpage.Decode(v, &at0, &at1); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		p, err := entpage.After(orderRole, []any{at0, at1})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := entpage.Size(int(req.GetSize()), RolePageSize, RolePageLimit)
+	us, err := q.Order(role.ByDateCreated(), role.ByID()).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*rstr.Role, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := rstr.RoleListResponse_builder{Items: items}.Build()
+	if more {
+		last := us[len(us)-1]
+		next, err := entpage.Encode(last.DateCreated, last.ID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(next)
+	}
+
+	return res, nil
+}
+
+// filterRole turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterRole(f *rstr.RoleFilter) (predicate.Role, error) {
+	ps := make([]predicate.Role, 0, 1)
+	if f.HasRef() {
+		p, err := bare.RolePick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return role.And(ps...), nil
 }
 
 type sinkSite struct {
@@ -3612,6 +4423,54 @@ func (s gateApiKey) Add(ctx context.Context, req *rstr.ApiKeyAddRequest) (*rstr.
 	return s.ApiKeyServiceServer.Add(ctx, req)
 }
 
+type gateBinding struct {
+	Gate
+	rstr.BindingServiceServer
+}
+
+func (s Gate) Binding() rstr.BindingServiceServer {
+	return gateBinding{s, s.Next().Binding()}
+}
+
+// Add refuses a Binding put into a Role this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `role` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Role, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.Add`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+func (s gateBinding) Add(ctx context.Context, req *rstr.BindingAddRequest) (*rstr.Binding, error) {
+	if ref := req.GetRole(); ref != nil {
+		if _, err := s.Gate.Next().Role().Get(ctx, rstr.RoleGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Role")
+			}
+
+			return nil, err
+		}
+	}
+
+	if ref := req.GetSite(); ref != nil {
+		if _, err := s.Gate.Next().Site().Get(ctx, rstr.SiteGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Site")
+			}
+
+			return nil, err
+		}
+	}
+
+	return s.BindingServiceServer.Add(ctx, req)
+}
+
 type gateCredential struct {
 	Gate
 	rstr.CredentialServiceServer
@@ -3684,6 +4543,90 @@ func (s gateEmail) Add(ctx context.Context, req *rstr.EmailAddRequest) (*rstr.Em
 	return s.EmailServiceServer.Add(ctx, req)
 }
 
+type gateGroup struct {
+	Gate
+	rstr.GroupServiceServer
+}
+
+func (s Gate) Group() rstr.GroupServiceServer {
+	return gateGroup{s, s.Next().Group()}
+}
+
+// Add refuses a Group put into a Tenant this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `tenant` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Tenant, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.Add`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+func (s gateGroup) Add(ctx context.Context, req *rstr.GroupAddRequest) (*rstr.Group, error) {
+	if ref := req.GetTenant(); ref != nil {
+		if _, err := s.Gate.Next().Tenant().Get(ctx, rstr.TenantGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Tenant")
+			}
+
+			return nil, err
+		}
+	}
+
+	if ref := req.GetSite(); ref != nil {
+		if _, err := s.Gate.Next().Site().Get(ctx, rstr.SiteGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Site")
+			}
+
+			return nil, err
+		}
+	}
+
+	return s.GroupServiceServer.Add(ctx, req)
+}
+
+type gateGroupMembership struct {
+	Gate
+	rstr.GroupMembershipServiceServer
+}
+
+func (s Gate) GroupMembership() rstr.GroupMembershipServiceServer {
+	return gateGroupMembership{s, s.Next().GroupMembership()}
+}
+
+// Add refuses a GroupMembership put into a Holder this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `holder` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Holder, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.Add`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+func (s gateGroupMembership) Add(ctx context.Context, req *rstr.GroupMembershipAddRequest) (*rstr.GroupMembership, error) {
+	if ref := req.GetHolder(); ref != nil {
+		if _, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Holder")
+			}
+
+			return nil, err
+		}
+	}
+
+	return s.GroupMembershipServiceServer.Add(ctx, req)
+}
+
 type gateIdentity struct {
 	Gate
 	rstr.IdentityServiceServer
@@ -3718,6 +4661,54 @@ func (s gateIdentity) Add(ctx context.Context, req *rstr.IdentityAddRequest) (*r
 	}
 
 	return s.IdentityServiceServer.Add(ctx, req)
+}
+
+type gateRole struct {
+	Gate
+	rstr.RoleServiceServer
+}
+
+func (s Gate) Role() rstr.RoleServiceServer {
+	return gateRole{s, s.Next().Role()}
+}
+
+// Add refuses a Role put into a Tenant this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `tenant` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Tenant, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.Add`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+func (s gateRole) Add(ctx context.Context, req *rstr.RoleAddRequest) (*rstr.Role, error) {
+	if ref := req.GetTenant(); ref != nil {
+		if _, err := s.Gate.Next().Tenant().Get(ctx, rstr.TenantGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Tenant")
+			}
+
+			return nil, err
+		}
+	}
+
+	if ref := req.GetSite(); ref != nil {
+		if _, err := s.Gate.Next().Site().Get(ctx, rstr.SiteGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Site")
+			}
+
+			return nil, err
+		}
+	}
+
+	return s.RoleServiceServer.Add(ctx, req)
 }
 
 type gateSite struct {
@@ -4077,6 +5068,39 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 
 		return k, b, nil
 
+	case BindingDomain:
+		row, err := s.Binding().Get(ctx, rstr.BindingGetRequest_builder{
+			Ref: rstr.BindingRef_builder{Id: key.Bytes()}.Build(),
+		}.Build())
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				return uuid.Nil, []byte{}, nil
+			}
+
+			return uuid.Nil, nil, err
+		}
+
+		b, err := proto.Marshal(row)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		if !row.HasRole() {
+			return uuid.Nil, b, nil
+		}
+
+		up, err := pdid.From(row.GetRole().GetId())
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		k, _, err := subject(ctx, s, up)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		return k, b, nil
+
 	case CredentialDomain:
 		row, err := s.Credential().Get(ctx, rstr.CredentialGetRequest_builder{
 			Ref: rstr.CredentialRef_builder{Id: key.Bytes()}.Build(),
@@ -4113,6 +5137,67 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 	case EmailDomain:
 		row, err := s.Email().Get(ctx, rstr.EmailGetRequest_builder{
 			Ref: rstr.EmailRef_builder{Id: key.Bytes()}.Build(),
+		}.Build())
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				return uuid.Nil, []byte{}, nil
+			}
+
+			return uuid.Nil, nil, err
+		}
+
+		b, err := proto.Marshal(row)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		if !row.HasHolder() {
+			return uuid.Nil, b, nil
+		}
+
+		up, err := pdid.From(row.GetHolder().GetId())
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		k, _, err := subject(ctx, s, up)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		return k, b, nil
+
+	case GroupDomain:
+		row, err := s.Group().Get(ctx, rstr.GroupGetRequest_builder{
+			Ref: rstr.GroupRef_builder{Id: key.Bytes()}.Build(),
+		}.Build())
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				return uuid.Nil, []byte{}, nil
+			}
+
+			return uuid.Nil, nil, err
+		}
+
+		b, err := proto.Marshal(row)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		if !row.HasTenant() {
+			return uuid.Nil, b, nil
+		}
+
+		k, err := uuid.FromBytes(row.GetTenant().GetId())
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		return k, b, nil
+
+	case GroupMembershipDomain:
+		row, err := s.GroupMembership().Get(ctx, rstr.GroupMembershipGetRequest_builder{
+			Ref: rstr.GroupMembershipRef_builder{Id: key.Bytes()}.Build(),
 		}.Build())
 		if err != nil {
 			if status.Code(err) == codes.NotFound {
@@ -4198,6 +5283,34 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 		}
 
 		k, _, err := subject(ctx, s, up)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		return k, b, nil
+
+	case RoleDomain:
+		row, err := s.Role().Get(ctx, rstr.RoleGetRequest_builder{
+			Ref: rstr.RoleRef_builder{Id: key.Bytes()}.Build(),
+		}.Build())
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				return uuid.Nil, []byte{}, nil
+			}
+
+			return uuid.Nil, nil, err
+		}
+
+		b, err := proto.Marshal(row)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		if !row.HasTenant() {
+			return uuid.Nil, b, nil
+		}
+
+		k, err := uuid.FromBytes(row.GetTenant().GetId())
 		if err != nil {
 			return uuid.Nil, nil, err
 		}
@@ -5229,6 +6342,318 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 		}
 
 		res, err := s.Site().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.GroupService_Add_FullMethodName:
+		v := &rstr.GroupAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Group().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.GroupService_Get_FullMethodName:
+		v := &rstr.GroupGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Group().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.GroupService_Patch_FullMethodName:
+		v := &rstr.GroupPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Group().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.GroupService_Apply_FullMethodName:
+		v := &rstr.GroupApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Group().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.GroupService_Erase_FullMethodName:
+		v := &rstr.GroupRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Group().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.GroupService_List_FullMethodName:
+		v := &rstr.GroupListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Group().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.GroupMembershipService_Add_FullMethodName:
+		v := &rstr.GroupMembershipAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.GroupMembership().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.GroupMembershipService_Get_FullMethodName:
+		v := &rstr.GroupMembershipGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.GroupMembership().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.GroupMembershipService_Patch_FullMethodName:
+		v := &rstr.GroupMembershipPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.GroupMembership().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.GroupMembershipService_Apply_FullMethodName:
+		v := &rstr.GroupMembershipApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.GroupMembership().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.GroupMembershipService_Erase_FullMethodName:
+		v := &rstr.GroupMembershipRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.GroupMembership().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.GroupMembershipService_List_FullMethodName:
+		v := &rstr.GroupMembershipListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.GroupMembership().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.RoleService_Add_FullMethodName:
+		v := &rstr.RoleAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Role().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.RoleService_Get_FullMethodName:
+		v := &rstr.RoleGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Role().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.RoleService_Patch_FullMethodName:
+		v := &rstr.RolePatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Role().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.RoleService_Apply_FullMethodName:
+		v := &rstr.RoleApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Role().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.RoleService_Erase_FullMethodName:
+		v := &rstr.RoleRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Role().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.RoleService_List_FullMethodName:
+		v := &rstr.RoleListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Role().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.BindingService_Add_FullMethodName:
+		v := &rstr.BindingAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Binding().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.BindingService_Get_FullMethodName:
+		v := &rstr.BindingGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Binding().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.BindingService_Patch_FullMethodName:
+		v := &rstr.BindingPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Binding().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.BindingService_Apply_FullMethodName:
+		v := &rstr.BindingApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Binding().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.BindingService_Erase_FullMethodName:
+		v := &rstr.BindingRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Binding().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.BindingService_List_FullMethodName:
+		v := &rstr.BindingListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Binding().List(ctx, v)
 		if err != nil {
 			return nil, err
 		}

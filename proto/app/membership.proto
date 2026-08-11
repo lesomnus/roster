@@ -4,6 +4,7 @@ package roster;
 
 import "app/site.proto";
 import "app/team.proto";
+import "app/role.proto";
 import "roster/payday/holder.proto";
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
@@ -33,7 +34,7 @@ message SiteMembership {
   // Immutable: moving somebody between sites is leaving one and joining
   // another, and the trail should say both happened rather than showing one row
   // that changed its mind.
-  Site site = 3 [(orm.edge) = {immutable: true, nullable: true}];
+  Site site = 3 [(orm.edge) = {immutable: true}];
 
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
@@ -97,7 +98,13 @@ message TeamMembership {
 
   // What being on it means. A string rather than an enum for the reason
   // `Identity.provider` is one: the set is a deployment's to choose.
-  string role = 9;
+  // What they may do in it, and empty is a plain member.
+  //
+  // An edge and not the string it used to be. A string is a role nothing reads
+  // -- which is what it was -- and the thing that reads one has to know what it
+  // allows. Where the reference sits is the scope: on this row it is that team,
+  // and on a [Binding] it is a site or the whole tenant.
+  Role role = 9 [(orm.edge) = {nullable: true}];
 
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];

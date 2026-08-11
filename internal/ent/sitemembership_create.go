@@ -69,14 +69,6 @@ func (_c *SiteMembershipCreate) SetSiteID(v uuid.UUID) *SiteMembershipCreate {
 	return _c
 }
 
-// SetNillableSiteID sets the "site_id" field if the given value is not nil.
-func (_c *SiteMembershipCreate) SetNillableSiteID(v *uuid.UUID) *SiteMembershipCreate {
-	if v != nil {
-		_c.SetSiteID(*v)
-	}
-	return _c
-}
-
 // SetID sets the "id" field.
 func (_c *SiteMembershipCreate) SetID(v uuid.UUID) *SiteMembershipCreate {
 	_c.mutation.SetID(v)
@@ -133,8 +125,14 @@ func (_c *SiteMembershipCreate) check() error {
 	if _, ok := _c.mutation.HolderID(); !ok {
 		return &ValidationError{Name: "holder_id", err: errors.New(`ent: missing required field "SiteMembership.holder_id"`)}
 	}
+	if _, ok := _c.mutation.SiteID(); !ok {
+		return &ValidationError{Name: "site_id", err: errors.New(`ent: missing required field "SiteMembership.site_id"`)}
+	}
 	if len(_c.mutation.HolderIDs()) == 0 {
 		return &ValidationError{Name: "holder", err: errors.New(`ent: missing required edge "SiteMembership.holder"`)}
+	}
+	if len(_c.mutation.SiteIDs()) == 0 {
+		return &ValidationError{Name: "site", err: errors.New(`ent: missing required edge "SiteMembership.site"`)}
 	}
 	return nil
 }

@@ -842,8 +842,6 @@ func (b0 TeamSelect_builder) Build() *TeamSelect {
 type TeamPatchRequest struct {
 	state                       protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Ref              *TeamRef               `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Site             *SiteRef               `protobuf:"bytes,6,opt,name=site"`
-	xxx_hidden_SiteNull         bool                   `protobuf:"varint,7,opt,name=site_null,json=siteNull"`
 	xxx_hidden_Alias            *string                `protobuf:"bytes,8,opt,name=alias"`
 	xxx_hidden_Name             *string                `protobuf:"bytes,10,opt,name=name"`
 	xxx_hidden_Desc             *string                `protobuf:"bytes,12,opt,name=desc"`
@@ -885,20 +883,6 @@ func (x *TeamPatchRequest) GetRef() *TeamRef {
 		return x.xxx_hidden_Ref
 	}
 	return nil
-}
-
-func (x *TeamPatchRequest) GetSite() *SiteRef {
-	if x != nil {
-		return x.xxx_hidden_Site
-	}
-	return nil
-}
-
-func (x *TeamPatchRequest) GetSiteNull() bool {
-	if x != nil {
-		return x.xxx_hidden_SiteNull
-	}
-	return false
 }
 
 func (x *TeamPatchRequest) GetAlias() string {
@@ -949,28 +933,19 @@ func (x *TeamPatchRequest) SetRef(v *TeamRef) {
 	x.xxx_hidden_Ref = v
 }
 
-func (x *TeamPatchRequest) SetSite(v *SiteRef) {
-	x.xxx_hidden_Site = v
-}
-
-func (x *TeamPatchRequest) SetSiteNull(v bool) {
-	x.xxx_hidden_SiteNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 8)
-}
-
 func (x *TeamPatchRequest) SetAlias(v string) {
 	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 6)
 }
 
 func (x *TeamPatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 6)
 }
 
 func (x *TeamPatchRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 6)
 }
 
 func (x *TeamPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -979,7 +954,7 @@ func (x *TeamPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *TeamPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 6)
 }
 
 func (x *TeamPatchRequest) HasRef() bool {
@@ -989,39 +964,25 @@ func (x *TeamPatchRequest) HasRef() bool {
 	return x.xxx_hidden_Ref != nil
 }
 
-func (x *TeamPatchRequest) HasSite() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Site != nil
-}
-
-func (x *TeamPatchRequest) HasSiteNull() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
-}
-
 func (x *TeamPatchRequest) HasAlias() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
 }
 
 func (x *TeamPatchRequest) HasName() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
 }
 
 func (x *TeamPatchRequest) HasDesc() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
 func (x *TeamPatchRequest) HasDateUpdated() bool {
@@ -1035,34 +996,25 @@ func (x *TeamPatchRequest) HasDateUpdatedForce() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
 func (x *TeamPatchRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
 
-func (x *TeamPatchRequest) ClearSite() {
-	x.xxx_hidden_Site = nil
-}
-
-func (x *TeamPatchRequest) ClearSiteNull() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
-	x.xxx_hidden_SiteNull = false
-}
-
 func (x *TeamPatchRequest) ClearAlias() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
 	x.xxx_hidden_Alias = nil
 }
 
 func (x *TeamPatchRequest) ClearName() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
 	x.xxx_hidden_Name = nil
 }
 
 func (x *TeamPatchRequest) ClearDesc() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
 	x.xxx_hidden_Desc = nil
 }
 
@@ -1071,23 +1023,17 @@ func (x *TeamPatchRequest) ClearDateUpdated() {
 }
 
 func (x *TeamPatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
 	x.xxx_hidden_DateUpdatedForce = false
 }
 
 type TeamPatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref  *TeamRef
-	Site *SiteRef
-	// Clear site instead of writing it.
-	// It takes a field of its own because an unset value already means
-	// "leave it alone", so no value could have meant NULL. It wins
-	// outright: setting both this and site clears.
-	SiteNull *bool
-	Alias    *string
-	Name     *string
-	Desc     *string
+	Ref   *TeamRef
+	Alias *string
+	Name  *string
+	Desc  *string
 	// The version this update requires the stored date_updated to be.
 	// It is a precondition, not a write: the update applies only if the row
 	// still holds this value, and the server stamps the new version itself.
@@ -1109,26 +1055,21 @@ func (b0 TeamPatchRequest_builder) Build() *TeamPatchRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Site = b.Site
-	if b.SiteNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 8)
-		x.xxx_hidden_SiteNull = *b.SiteNull
-	}
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 6)
 		x.xxx_hidden_Alias = b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 6)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 6)
 		x.xxx_hidden_Desc = b.Desc
 	}
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 6)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	return m0
@@ -1782,11 +1723,9 @@ const file_app_team_svc_g_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xa2\x02\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xe0\x01\n" +
 	"\x10TeamPatchRequest\x12!\n" +
-	"\x03ref\x18\x01 \x01(\v2\x0f.roster.TeamRefR\x03ref\x12#\n" +
-	"\x04site\x18\x06 \x01(\v2\x0f.roster.SiteRefR\x04site\x12\x1b\n" +
-	"\tsite_null\x18\a \x01(\bR\bsiteNull\x12\x14\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.roster.TeamRefR\x03ref\x12\x14\n" +
 	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
 	"\x04name\x18\n" +
 	" \x01(\tR\x04name\x12\x12\n" +
@@ -1855,35 +1794,34 @@ var file_app_team_svc_g_proto_depIdxs = []int32{
 	13, // 5: roster.TeamRefBySlug.site:type_name -> roster.SiteRef
 	15, // 6: roster.TeamSelect.site:type_name -> roster.SiteSelect
 	2,  // 7: roster.TeamPatchRequest.ref:type_name -> roster.TeamRef
-	13, // 8: roster.TeamPatchRequest.site:type_name -> roster.SiteRef
-	14, // 9: roster.TeamPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 10: roster.TeamApplyRequest.ref:type_name -> roster.TeamRef
-	16, // 11: roster.TeamApplyRequest.patch:type_name -> patch.Patch
-	9,  // 12: roster.TeamListRequest.filters:type_name -> roster.TeamFilter
-	17, // 13: roster.TeamListResponse.items:type_name -> roster.Team
-	2,  // 14: roster.TeamFilter.ref:type_name -> roster.TeamRef
-	9,  // 15: roster.TeamWatchRequest.filters:type_name -> roster.TeamFilter
-	12, // 16: roster.TeamWatchResponse.items:type_name -> roster.TeamWatchItem
-	17, // 17: roster.TeamWatchItem.value:type_name -> roster.Team
-	0,  // 18: roster.TeamService.Add:input_type -> roster.TeamAddRequest
-	1,  // 19: roster.TeamService.Get:input_type -> roster.TeamGetRequest
-	5,  // 20: roster.TeamService.Patch:input_type -> roster.TeamPatchRequest
-	6,  // 21: roster.TeamService.Apply:input_type -> roster.TeamApplyRequest
-	2,  // 22: roster.TeamService.Erase:input_type -> roster.TeamRef
-	7,  // 23: roster.TeamService.List:input_type -> roster.TeamListRequest
-	10, // 24: roster.TeamService.Watch:input_type -> roster.TeamWatchRequest
-	17, // 25: roster.TeamService.Add:output_type -> roster.Team
-	17, // 26: roster.TeamService.Get:output_type -> roster.Team
-	17, // 27: roster.TeamService.Patch:output_type -> roster.Team
-	17, // 28: roster.TeamService.Apply:output_type -> roster.Team
-	18, // 29: roster.TeamService.Erase:output_type -> google.protobuf.Empty
-	8,  // 30: roster.TeamService.List:output_type -> roster.TeamListResponse
-	11, // 31: roster.TeamService.Watch:output_type -> roster.TeamWatchResponse
-	25, // [25:32] is the sub-list for method output_type
-	18, // [18:25] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	14, // 8: roster.TeamPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 9: roster.TeamApplyRequest.ref:type_name -> roster.TeamRef
+	16, // 10: roster.TeamApplyRequest.patch:type_name -> patch.Patch
+	9,  // 11: roster.TeamListRequest.filters:type_name -> roster.TeamFilter
+	17, // 12: roster.TeamListResponse.items:type_name -> roster.Team
+	2,  // 13: roster.TeamFilter.ref:type_name -> roster.TeamRef
+	9,  // 14: roster.TeamWatchRequest.filters:type_name -> roster.TeamFilter
+	12, // 15: roster.TeamWatchResponse.items:type_name -> roster.TeamWatchItem
+	17, // 16: roster.TeamWatchItem.value:type_name -> roster.Team
+	0,  // 17: roster.TeamService.Add:input_type -> roster.TeamAddRequest
+	1,  // 18: roster.TeamService.Get:input_type -> roster.TeamGetRequest
+	5,  // 19: roster.TeamService.Patch:input_type -> roster.TeamPatchRequest
+	6,  // 20: roster.TeamService.Apply:input_type -> roster.TeamApplyRequest
+	2,  // 21: roster.TeamService.Erase:input_type -> roster.TeamRef
+	7,  // 22: roster.TeamService.List:input_type -> roster.TeamListRequest
+	10, // 23: roster.TeamService.Watch:input_type -> roster.TeamWatchRequest
+	17, // 24: roster.TeamService.Add:output_type -> roster.Team
+	17, // 25: roster.TeamService.Get:output_type -> roster.Team
+	17, // 26: roster.TeamService.Patch:output_type -> roster.Team
+	17, // 27: roster.TeamService.Apply:output_type -> roster.Team
+	18, // 28: roster.TeamService.Erase:output_type -> google.protobuf.Empty
+	8,  // 29: roster.TeamService.List:output_type -> roster.TeamListResponse
+	11, // 30: roster.TeamService.Watch:output_type -> roster.TeamWatchResponse
+	24, // [24:31] is the sub-list for method output_type
+	17, // [17:24] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_app_team_svc_g_proto_init() }

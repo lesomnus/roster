@@ -2,6 +2,7 @@ edition = "2023";
 package roster;
 
 import "app/membership.proto";
+import "app/role_svc.g.proto";
 import "app/site_svc.g.proto";
 import "app/team_svc.g.proto";
 import "google/protobuf/empty.proto";
@@ -207,7 +208,7 @@ message TeamMembershipAddRequest {
   bytes id = 1;
   HolderRef holder = 2;
   TeamRef team = 8;
-  string role = 9 [features.field_presence = IMPLICIT];
+  RoleRef role = 9;
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -232,7 +233,7 @@ message TeamMembershipSelect {
   bool all = 1;
   HolderSelect holder = 2;
   TeamSelect team = 8;
-  bool role = 9;
+  RoleSelect role = 9;
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;
@@ -240,7 +241,12 @@ message TeamMembershipSelect {
 
 message TeamMembershipPatchRequest {
   TeamMembershipRef ref = 1;
-  string role = 18;
+  RoleRef role = 18;
+  // Clear role instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and role clears.
+  bool role_null = 19;
   // The version this update requires the stored date_updated to be.
   // It is a precondition, not a write: the update applies only if the row
   // still holds this value, and the server stamps the new version itself.

@@ -1,0 +1,172 @@
+edition = "2023";
+
+package roster;
+
+import "roster/payday/tenant.proto";
+import "roster/payday/holder.proto";
+import "app/site.proto";
+import "app/group.proto";
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/roster/rstr";
+
+// Role is a named set of RPCs somebody may call.
+//
+// # What it holds, and what it deliberately does not
+//
+// A list of gRPC methods, written out. Not a resource and a verb, because a
+// method name already is one -- `/roster.HolderService/Get` says both -- and
+// not a name to be looked up in a table of resource kinds, because that table
+// is a second schema that has to agree with the first one.
+//
+// There are no deny rules. Permissions are a union, so the order they are read
+// in cannot matter and a question has one answer arrived at one way. Every
+// system that added denies acquired a precedence table nobody can hold in their
+// head.
+//
+// # Where it applies is not here
+//
+// A role says what may be done and never where. That is the [Binding], and the
+// separation is what lets one "operator" be defined once and granted in Seoul
+// to one person and in Frankfurt to another.
+//
+// # A role in a site may only be bound in that site
+//
+// Kubernetes' rule, and it is the whole of what keeps somebody who administers
+// one site from writing a rule that lands outside it. `site` empty is the
+// tenant's own -- the `ClusterRole` of this schema -- and is the operator's to
+// write.
+message Role {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+
+  Tenant tenant = 2 [(orm.edge) = {immutable: true}];
+
+  // Where this role may be **bound**, and empty is anywhere in the tenant.
+  //
+  // Field 3 is payday's second axis, so a role belonging to a site is narrowed
+  // by it the way everything else on that axis is.
+  Site site = 3 [(orm.edge) = {immutable: true, nullable: true}];
+
+  string alias = 4;
+  string name = 5;
+  string desc = 6;
+
+  // The RPCs this allows, in full: "/roster.HolderService/Get".
+  //
+  // Empty allows nothing, which is `frame.Grant`'s zero value and the right way
+  // round -- a role somebody has not finished writing grants nothing rather
+  // than everything.
+  repeated string methods = 8;
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      },
+      {
+        name: "alias"
+        refs: [
+          {name: "tenant", number: 2},
+          {name: "alias", number: 4}
+        ]
+        unique: true
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 15
+    list: {
+      order: [{field: "date_created"}, {field: "id"}]
+      by: ["ref"]
+      size: 20
+      max: 100
+    }
+  };
+}
+
+// Binding grants a [Role] to somebody, somewhere.
+//
+// # The subject is a holder or a group, and exactly one
+//
+// Two nullable edges rather than one required subject table, because a group of
+// one is ceremony people resent and a schema cannot say "exactly one of these".
+// So it is refused in `server/core`, where the judgements no schema can state
+// already live.
+//
+// # The scope is nothing or a site
+//
+// Nothing is the whole tenant. A site is that site, and that is `frame.Sets` --
+// the second axis payday generated `pd.Grouped` for and which nothing had
+// filled in until this.
+//
+// It does **not** name a team. "The administrator of a team manages its
+// members" is a product invariant rather than a thing to configure, so it is
+// roster's own rule and lives in a layer; see PLAN.md, D17. What carries a role
+// for a team is the `TeamMembership` that already said somebody is in it.
+message Binding {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+
+  // What is granted. It is field 2 because it is how this row reaches a tenant:
+  // a subject may be either of two things and a role is always exactly one.
+  Role role = 2 [(orm.edge) = {immutable: true}];
+
+  // Where it applies, and empty is the whole tenant.
+  Site site = 3 [(orm.edge) = {immutable: true, nullable: true}];
+
+  // Who it is for: one of these, never both and never neither.
+  Holder holder = 8 [(orm.edge) = {immutable: true, nullable: true}];
+  Group group = 9 [(orm.edge) = {immutable: true, nullable: true}];
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 18
+    tenanted: {via: "role.tenant"}
+    list: {
+      order: [{field: "date_created"}, {field: "id"}]
+      by: ["ref"]
+      size: 20
+      max: 100
+    }
+  };
+}

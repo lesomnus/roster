@@ -16,16 +16,24 @@ type Tx struct {
 	ApiKey *ApiKeyClient
 	// Audit is the client for interacting with the Audit builders.
 	Audit *AuditClient
+	// Binding is the client for interacting with the Binding builders.
+	Binding *BindingClient
 	// Credential is the client for interacting with the Credential builders.
 	Credential *CredentialClient
 	// Email is the client for interacting with the Email builders.
 	Email *EmailClient
+	// Group is the client for interacting with the Group builders.
+	Group *GroupClient
+	// GroupMembership is the client for interacting with the GroupMembership builders.
+	GroupMembership *GroupMembershipClient
 	// Holder is the client for interacting with the Holder builders.
 	Holder *HolderClient
 	// Identity is the client for interacting with the Identity builders.
 	Identity *IdentityClient
 	// Outbox is the client for interacting with the Outbox builders.
 	Outbox *OutboxClient
+	// Role is the client for interacting with the Role builders.
+	Role *RoleClient
 	// Site is the client for interacting with the Site builders.
 	Site *SiteClient
 	// SiteMembership is the client for interacting with the SiteMembership builders.
@@ -169,11 +177,15 @@ func (tx *Tx) Client() *Client {
 func (tx *Tx) init() {
 	tx.ApiKey = NewApiKeyClient(tx.config)
 	tx.Audit = NewAuditClient(tx.config)
+	tx.Binding = NewBindingClient(tx.config)
 	tx.Credential = NewCredentialClient(tx.config)
 	tx.Email = NewEmailClient(tx.config)
+	tx.Group = NewGroupClient(tx.config)
+	tx.GroupMembership = NewGroupMembershipClient(tx.config)
 	tx.Holder = NewHolderClient(tx.config)
 	tx.Identity = NewIdentityClient(tx.config)
 	tx.Outbox = NewOutboxClient(tx.config)
+	tx.Role = NewRoleClient(tx.config)
 	tx.Site = NewSiteClient(tx.config)
 	tx.SiteMembership = NewSiteMembershipClient(tx.config)
 	tx.Team = NewTeamClient(tx.config)

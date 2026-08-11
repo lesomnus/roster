@@ -112,3 +112,17 @@ func mustId(t *testing.T, b []byte) pdid.Id {
 
 	return k
 }
+
+// role is a role of this tenant's, made once per alias.
+func (b *built) role(t *testing.T, ctx context.Context, alias string, methods ...string) pdid.Id {
+	t.Helper()
+
+	v, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
+		Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Alias:   alias,
+		Methods: methods,
+	}.Build())
+	require.NoError(t, err)
+
+	return mustId(t, v.GetId())
+}

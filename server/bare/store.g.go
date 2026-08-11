@@ -12,12 +12,16 @@ import (
 	ent "github.com/lesomnus/roster/internal/ent"
 	apikey "github.com/lesomnus/roster/internal/ent/apikey"
 	audit "github.com/lesomnus/roster/internal/ent/audit"
+	binding "github.com/lesomnus/roster/internal/ent/binding"
 	credential "github.com/lesomnus/roster/internal/ent/credential"
 	email "github.com/lesomnus/roster/internal/ent/email"
+	group "github.com/lesomnus/roster/internal/ent/group"
+	groupmembership "github.com/lesomnus/roster/internal/ent/groupmembership"
 	holder "github.com/lesomnus/roster/internal/ent/holder"
 	identity "github.com/lesomnus/roster/internal/ent/identity"
 	outbox "github.com/lesomnus/roster/internal/ent/outbox"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
+	role "github.com/lesomnus/roster/internal/ent/role"
 	site "github.com/lesomnus/roster/internal/ent/site"
 	sitemembership "github.com/lesomnus/roster/internal/ent/sitemembership"
 	team "github.com/lesomnus/roster/internal/ent/team"
@@ -326,7 +330,11 @@ type Scope interface {
 	IdentityScope(ctx context.Context) (predicate.Identity, error)
 	EmailScope(ctx context.Context) (predicate.Email, error)
 	SiteScope(ctx context.Context) (predicate.Site, error)
+	GroupScope(ctx context.Context) (predicate.Group, error)
+	GroupMembershipScope(ctx context.Context) (predicate.GroupMembership, error)
 	TeamScope(ctx context.Context) (predicate.Team, error)
+	RoleScope(ctx context.Context) (predicate.Role, error)
+	BindingScope(ctx context.Context) (predicate.Binding, error)
 	SiteMembershipScope(ctx context.Context) (predicate.SiteMembership, error)
 	TeamMembershipScope(ctx context.Context) (predicate.TeamMembership, error)
 	AuditScope(ctx context.Context) (predicate.Audit, error)
@@ -366,7 +374,19 @@ func (Unscoped) EmailScope(_ context.Context) (predicate.Email, error) {
 func (Unscoped) SiteScope(_ context.Context) (predicate.Site, error) {
 	return nil, nil
 }
+func (Unscoped) GroupScope(_ context.Context) (predicate.Group, error) {
+	return nil, nil
+}
+func (Unscoped) GroupMembershipScope(_ context.Context) (predicate.GroupMembership, error) {
+	return nil, nil
+}
 func (Unscoped) TeamScope(_ context.Context) (predicate.Team, error) {
+	return nil, nil
+}
+func (Unscoped) RoleScope(_ context.Context) (predicate.Role, error) {
+	return nil, nil
+}
+func (Unscoped) BindingScope(_ context.Context) (predicate.Binding, error) {
 	return nil, nil
 }
 func (Unscoped) SiteMembershipScope(_ context.Context) (predicate.SiteMembership, error) {
@@ -541,6 +561,46 @@ func (ss Scopes) SiteScope(ctx context.Context) (predicate.Site, error) {
 	return site.And(ps...), nil
 }
 
+func (ss Scopes) GroupScope(ctx context.Context) (predicate.Group, error) {
+	ps := make([]predicate.Group, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.GroupScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return group.And(ps...), nil
+}
+
+func (ss Scopes) GroupMembershipScope(ctx context.Context) (predicate.GroupMembership, error) {
+	ps := make([]predicate.GroupMembership, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.GroupMembershipScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return groupmembership.And(ps...), nil
+}
+
 func (ss Scopes) TeamScope(ctx context.Context) (predicate.Team, error) {
 	ps := make([]predicate.Team, 0, len(ss))
 	for _, s := range ss {
@@ -559,6 +619,46 @@ func (ss Scopes) TeamScope(ctx context.Context) (predicate.Team, error) {
 	}
 
 	return team.And(ps...), nil
+}
+
+func (ss Scopes) RoleScope(ctx context.Context) (predicate.Role, error) {
+	ps := make([]predicate.Role, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.RoleScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return role.And(ps...), nil
+}
+
+func (ss Scopes) BindingScope(ctx context.Context) (predicate.Binding, error) {
+	ps := make([]predicate.Binding, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.BindingScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return binding.And(ps...), nil
 }
 
 func (ss Scopes) SiteMembershipScope(ctx context.Context) (predicate.SiteMembership, error) {
@@ -721,7 +821,7 @@ func (s Store) now() time.Time {
 // is rendered for that dialect, not just what this server writes.
 //
 // That set is also what a soft erasure needs, so this is the whole
-// check. ApiKey, Credential, Email, Holder, Identity, Site, SiteMembership, Team and TeamMembership free the names they held when a row
+// check. ApiKey, Binding, Credential, Email, Group, GroupMembership, Holder, Identity, Role, Site, SiteMembership, Team and TeamMembership free the names they held when a row
 // is erased, which is a unique index covering only the rows that are
 // still there -- a partial index, and the dialects above are the ones
 // that have one. MySQL does not, and ent writes the annotation out for
@@ -768,7 +868,13 @@ func (s Server) Credential() rstr.CredentialServiceServer {
 func (s Server) Identity() rstr.IdentityServiceServer { return IdentityServiceServer{Store: s.Store} }
 func (s Server) Email() rstr.EmailServiceServer       { return EmailServiceServer{Store: s.Store} }
 func (s Server) Site() rstr.SiteServiceServer         { return SiteServiceServer{Store: s.Store} }
-func (s Server) Team() rstr.TeamServiceServer         { return TeamServiceServer{Store: s.Store} }
+func (s Server) Group() rstr.GroupServiceServer       { return GroupServiceServer{Store: s.Store} }
+func (s Server) GroupMembership() rstr.GroupMembershipServiceServer {
+	return GroupMembershipServiceServer{Store: s.Store}
+}
+func (s Server) Team() rstr.TeamServiceServer       { return TeamServiceServer{Store: s.Store} }
+func (s Server) Role() rstr.RoleServiceServer       { return RoleServiceServer{Store: s.Store} }
+func (s Server) Binding() rstr.BindingServiceServer { return BindingServiceServer{Store: s.Store} }
 func (s Server) SiteMembership() rstr.SiteMembershipServiceServer {
 	return SiteMembershipServiceServer{Store: s.Store}
 }

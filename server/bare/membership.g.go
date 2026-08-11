@@ -14,11 +14,13 @@ import (
 	sitemembership "github.com/lesomnus/roster/internal/ent/sitemembership"
 	teammembership "github.com/lesomnus/roster/internal/ent/teammembership"
 	rstr "github.com/lesomnus/roster/rstr"
+	graph "github.com/protobuf-orm/protobuf-orm/graph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -114,15 +116,13 @@ func (s SiteMembershipServiceServer) Add(ctx context.Context, req *rstr.SiteMemb
 			v.SetHolder(rstr.Holder_builder{Id: k[:]}.Build())
 		})
 	}
-	if req.HasSite() {
-		if k, err := SiteGetKey(ctx, st.Db, req.GetSite()); err != nil {
-			return nil, err
-		} else {
-			q.SetSiteID(k)
-			ds = append(ds, func(v *rstr.SiteMembership) {
-				v.SetSite(rstr.Site_builder{Id: k[:]}.Build())
-			})
-		}
+	if k, err := SiteGetKey(ctx, st.Db, req.GetSite()); err != nil {
+		return nil, err
+	} else {
+		q.SetSiteID(k)
+		ds = append(ds, func(v *rstr.SiteMembership) {
+			v.SetSite(rstr.Site_builder{Id: k[:]}.Build())
+		})
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
@@ -545,7 +545,7 @@ func (s TeamMembershipServiceServer) Add(ctx context.Context, req *rstr.TeamMemb
 	st := s
 	st.Db = tx.Db
 
-	ds := make([]func(v *rstr.TeamMembership), 0, 2)
+	ds := make([]func(v *rstr.TeamMembership), 0, 3)
 	q := st.Db.TeamMembership.Create()
 	var k uuid.UUID
 	if req.HasId() {
@@ -576,7 +576,16 @@ func (s TeamMembershipServiceServer) Add(ctx context.Context, req *rstr.TeamMemb
 			v.SetTeam(rstr.Team_builder{Id: k[:]}.Build())
 		})
 	}
-	q.SetRole(req.GetRole())
+	if req.HasRole() {
+		if k, err := RoleGetKey(ctx, st.Db, req.GetRole()); err != nil {
+			return nil, err
+		} else {
+			q.SetRoleID(k)
+			ds = append(ds, func(v *rstr.TeamMembership) {
+				v.SetRole(rstr.Role_builder{Id: k[:]}.Build())
+			})
+		}
+	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
 		q.SetDateCreated(req.GetDateCreated().AsTime())
@@ -650,9 +659,6 @@ func TeamMembershipSelectedFields(m *rstr.TeamMembershipSelect) []string {
 	{
 		vs = append(vs, teammembership.FieldID)
 	}
-	if m.GetRole() {
-		vs = append(vs, teammembership.FieldRole)
-	}
 	if m.GetDateUpdated() {
 		vs = append(vs, teammembership.FieldDateUpdated)
 	}
@@ -681,6 +687,11 @@ func TeamMembershipSelect(q *ent.TeamMembershipQuery, m *rstr.TeamMembershipSele
 			TeamSelect(q, m.GetTeam())
 		})
 	}
+	if m.HasRole() {
+		q.WithRole(func(q *ent.RoleQuery) {
+			RoleSelect(q, m.GetRole())
+		})
+	}
 }
 
 func TeamMembershipSelectInit(q *ent.TeamMembershipQuery, m *rstr.TeamMembershipSelect) {
@@ -689,11 +700,22 @@ func TeamMembershipSelectInit(q *ent.TeamMembershipQuery, m *rstr.TeamMembership
 	} else {
 		q.WithHolder(selectHolderKey)
 		q.WithTeam(selectTeamKey)
+		q.WithRole(selectRoleKey)
 	}
 }
 
 func (s TeamMembershipServiceServer) Patch(ctx context.Context, req *rstr.TeamMembershipPatchRequest) (*rstr.TeamMembership, error) {
-	doc, err := ormpatch.FromPatchRequest(teamMembershipOrmEntity, req.ProtoReflect(), nil)
+	doc, err := ormpatch.FromPatchRequest(teamMembershipOrmEntity, req.ProtoReflect(), func(ed graph.Edge, ref protoreflect.Message) (protoreflect.Value, error) {
+		switch ed.Number() {
+		case 9:
+			k, err := RoleGetKey(ctx, s.Db, ref.Interface().(*rstr.RoleRef))
+			if err != nil {
+				return protoreflect.Value{}, err
+			}
+			return protoreflect.ValueOfBytes(k[:]), nil
+		}
+		return protoreflect.Value{}, status.Errorf(codes.Internal, "no key resolver for edge: %s", ed.Name())
+	})
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
 			return nil, err
@@ -739,7 +761,7 @@ func TeamMembershipGetKey(ctx context.Context, db *ent.Client, ref *rstr.TeamMem
 var teamMembershipOrmEntity = ormpatch.MustEntityOf(rstr.File_app_membership_proto, "TeamMembership")
 
 var teamMembershipPatchColumns = entpatch.Columns{
-	1: teammembership.FieldID, 2: teammembership.HolderColumn, 8: teammembership.TeamColumn, 9: teammembership.FieldRole, 13: teammembership.FieldDateUpdated, 14: teammembership.FieldDateErased, 15: teammembership.FieldDateCreated}
+	1: teammembership.FieldID, 2: teammembership.HolderColumn, 8: teammembership.TeamColumn, 9: teammembership.RoleColumn, 13: teammembership.FieldDateUpdated, 14: teammembership.FieldDateErased, 15: teammembership.FieldDateCreated}
 
 func (s TeamMembershipServiceServer) Apply(ctx context.Context, req *rstr.TeamMembershipApplyRequest) (*rstr.TeamMembership, error) {
 	if !req.HasPatch() {

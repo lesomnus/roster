@@ -11,7 +11,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/predicate"
+	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
 )
 
@@ -26,20 +28,6 @@ type TeamMembershipUpdate struct {
 // Where appends a list predicates to the TeamMembershipUpdate builder.
 func (_u *TeamMembershipUpdate) Where(ps ...predicate.TeamMembership) *TeamMembershipUpdate {
 	_u.mutation.Where(ps...)
-	return _u
-}
-
-// SetRole sets the "role" field.
-func (_u *TeamMembershipUpdate) SetRole(v string) *TeamMembershipUpdate {
-	_u.mutation.SetRole(v)
-	return _u
-}
-
-// SetNillableRole sets the "role" field if the given value is not nil.
-func (_u *TeamMembershipUpdate) SetNillableRole(v *string) *TeamMembershipUpdate {
-	if v != nil {
-		_u.SetRole(*v)
-	}
 	return _u
 }
 
@@ -77,9 +65,40 @@ func (_u *TeamMembershipUpdate) ClearDateErased() *TeamMembershipUpdate {
 	return _u
 }
 
+// SetRoleID sets the "role_id" field.
+func (_u *TeamMembershipUpdate) SetRoleID(v uuid.UUID) *TeamMembershipUpdate {
+	_u.mutation.SetRoleID(v)
+	return _u
+}
+
+// SetNillableRoleID sets the "role_id" field if the given value is not nil.
+func (_u *TeamMembershipUpdate) SetNillableRoleID(v *uuid.UUID) *TeamMembershipUpdate {
+	if v != nil {
+		_u.SetRoleID(*v)
+	}
+	return _u
+}
+
+// ClearRoleID clears the value of the "role_id" field.
+func (_u *TeamMembershipUpdate) ClearRoleID() *TeamMembershipUpdate {
+	_u.mutation.ClearRoleID()
+	return _u
+}
+
+// SetRole sets the "role" edge to the Role entity.
+func (_u *TeamMembershipUpdate) SetRole(v *Role) *TeamMembershipUpdate {
+	return _u.SetRoleID(v.ID)
+}
+
 // Mutation returns the TeamMembershipMutation object of the builder.
 func (_u *TeamMembershipUpdate) Mutation() *TeamMembershipMutation {
 	return _u.mutation
+}
+
+// ClearRole clears the "role" edge to the Role entity.
+func (_u *TeamMembershipUpdate) ClearRole() *TeamMembershipUpdate {
+	_u.mutation.ClearRole()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -138,9 +157,6 @@ func (_u *TeamMembershipUpdate) sqlSave(ctx context.Context) (_node int, err err
 			}
 		}
 	}
-	if value, ok := _u.mutation.Role(); ok {
-		_spec.SetField(teammembership.FieldRole, field.TypeString, value)
-	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(teammembership.FieldDateUpdated, field.TypeTime, value)
 	}
@@ -152,6 +168,35 @@ func (_u *TeamMembershipUpdate) sqlSave(ctx context.Context) (_node int, err err
 	}
 	if _u.mutation.DateCreatedCleared() {
 		_spec.ClearField(teammembership.FieldDateCreated, field.TypeTime)
+	}
+	if _u.mutation.RoleCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   teammembership.RoleTable,
+			Columns: []string{teammembership.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(role.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RoleIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   teammembership.RoleTable,
+			Columns: []string{teammembership.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(role.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -173,20 +218,6 @@ type TeamMembershipUpdateOne struct {
 	hooks     []Hook
 	mutation  *TeamMembershipMutation
 	modifiers []func(*sql.UpdateBuilder)
-}
-
-// SetRole sets the "role" field.
-func (_u *TeamMembershipUpdateOne) SetRole(v string) *TeamMembershipUpdateOne {
-	_u.mutation.SetRole(v)
-	return _u
-}
-
-// SetNillableRole sets the "role" field if the given value is not nil.
-func (_u *TeamMembershipUpdateOne) SetNillableRole(v *string) *TeamMembershipUpdateOne {
-	if v != nil {
-		_u.SetRole(*v)
-	}
-	return _u
 }
 
 // SetDateUpdated sets the "date_updated" field.
@@ -223,9 +254,40 @@ func (_u *TeamMembershipUpdateOne) ClearDateErased() *TeamMembershipUpdateOne {
 	return _u
 }
 
+// SetRoleID sets the "role_id" field.
+func (_u *TeamMembershipUpdateOne) SetRoleID(v uuid.UUID) *TeamMembershipUpdateOne {
+	_u.mutation.SetRoleID(v)
+	return _u
+}
+
+// SetNillableRoleID sets the "role_id" field if the given value is not nil.
+func (_u *TeamMembershipUpdateOne) SetNillableRoleID(v *uuid.UUID) *TeamMembershipUpdateOne {
+	if v != nil {
+		_u.SetRoleID(*v)
+	}
+	return _u
+}
+
+// ClearRoleID clears the value of the "role_id" field.
+func (_u *TeamMembershipUpdateOne) ClearRoleID() *TeamMembershipUpdateOne {
+	_u.mutation.ClearRoleID()
+	return _u
+}
+
+// SetRole sets the "role" edge to the Role entity.
+func (_u *TeamMembershipUpdateOne) SetRole(v *Role) *TeamMembershipUpdateOne {
+	return _u.SetRoleID(v.ID)
+}
+
 // Mutation returns the TeamMembershipMutation object of the builder.
 func (_u *TeamMembershipUpdateOne) Mutation() *TeamMembershipMutation {
 	return _u.mutation
+}
+
+// ClearRole clears the "role" edge to the Role entity.
+func (_u *TeamMembershipUpdateOne) ClearRole() *TeamMembershipUpdateOne {
+	_u.mutation.ClearRole()
+	return _u
 }
 
 // Where appends a list predicates to the TeamMembershipUpdate builder.
@@ -314,9 +376,6 @@ func (_u *TeamMembershipUpdateOne) sqlSave(ctx context.Context) (_node *TeamMemb
 			}
 		}
 	}
-	if value, ok := _u.mutation.Role(); ok {
-		_spec.SetField(teammembership.FieldRole, field.TypeString, value)
-	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(teammembership.FieldDateUpdated, field.TypeTime, value)
 	}
@@ -328,6 +387,35 @@ func (_u *TeamMembershipUpdateOne) sqlSave(ctx context.Context) (_node *TeamMemb
 	}
 	if _u.mutation.DateCreatedCleared() {
 		_spec.ClearField(teammembership.FieldDateCreated, field.TypeTime)
+	}
+	if _u.mutation.RoleCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   teammembership.RoleTable,
+			Columns: []string{teammembership.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(role.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RoleIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   teammembership.RoleTable,
+			Columns: []string{teammembership.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(role.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &TeamMembership{config: _u.config}

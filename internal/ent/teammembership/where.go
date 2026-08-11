@@ -56,11 +56,6 @@ func IDLTE(id uuid.UUID) predicate.TeamMembership {
 	return predicate.TeamMembership(sql.FieldLTE(FieldID, id))
 }
 
-// Role applies equality check predicate on the "role" field. It's identical to RoleEQ.
-func Role(v string) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldEQ(FieldRole, v))
-}
-
 // DateUpdated applies equality check predicate on the "date_updated" field. It's identical to DateUpdatedEQ.
 func DateUpdated(v time.Time) predicate.TeamMembership {
 	return predicate.TeamMembership(sql.FieldEQ(FieldDateUpdated, v))
@@ -86,69 +81,9 @@ func TeamID(v uuid.UUID) predicate.TeamMembership {
 	return predicate.TeamMembership(sql.FieldEQ(FieldTeamID, v))
 }
 
-// RoleEQ applies the EQ predicate on the "role" field.
-func RoleEQ(v string) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldEQ(FieldRole, v))
-}
-
-// RoleNEQ applies the NEQ predicate on the "role" field.
-func RoleNEQ(v string) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldNEQ(FieldRole, v))
-}
-
-// RoleIn applies the In predicate on the "role" field.
-func RoleIn(vs ...string) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldIn(FieldRole, vs...))
-}
-
-// RoleNotIn applies the NotIn predicate on the "role" field.
-func RoleNotIn(vs ...string) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldNotIn(FieldRole, vs...))
-}
-
-// RoleGT applies the GT predicate on the "role" field.
-func RoleGT(v string) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldGT(FieldRole, v))
-}
-
-// RoleGTE applies the GTE predicate on the "role" field.
-func RoleGTE(v string) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldGTE(FieldRole, v))
-}
-
-// RoleLT applies the LT predicate on the "role" field.
-func RoleLT(v string) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldLT(FieldRole, v))
-}
-
-// RoleLTE applies the LTE predicate on the "role" field.
-func RoleLTE(v string) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldLTE(FieldRole, v))
-}
-
-// RoleContains applies the Contains predicate on the "role" field.
-func RoleContains(v string) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldContains(FieldRole, v))
-}
-
-// RoleHasPrefix applies the HasPrefix predicate on the "role" field.
-func RoleHasPrefix(v string) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldHasPrefix(FieldRole, v))
-}
-
-// RoleHasSuffix applies the HasSuffix predicate on the "role" field.
-func RoleHasSuffix(v string) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldHasSuffix(FieldRole, v))
-}
-
-// RoleEqualFold applies the EqualFold predicate on the "role" field.
-func RoleEqualFold(v string) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldEqualFold(FieldRole, v))
-}
-
-// RoleContainsFold applies the ContainsFold predicate on the "role" field.
-func RoleContainsFold(v string) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldContainsFold(FieldRole, v))
+// RoleID applies equality check predicate on the "role_id" field. It's identical to RoleIDEQ.
+func RoleID(v uuid.UUID) predicate.TeamMembership {
+	return predicate.TeamMembership(sql.FieldEQ(FieldRoleID, v))
 }
 
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
@@ -331,6 +266,36 @@ func TeamIDNotIn(vs ...uuid.UUID) predicate.TeamMembership {
 	return predicate.TeamMembership(sql.FieldNotIn(FieldTeamID, vs...))
 }
 
+// RoleIDEQ applies the EQ predicate on the "role_id" field.
+func RoleIDEQ(v uuid.UUID) predicate.TeamMembership {
+	return predicate.TeamMembership(sql.FieldEQ(FieldRoleID, v))
+}
+
+// RoleIDNEQ applies the NEQ predicate on the "role_id" field.
+func RoleIDNEQ(v uuid.UUID) predicate.TeamMembership {
+	return predicate.TeamMembership(sql.FieldNEQ(FieldRoleID, v))
+}
+
+// RoleIDIn applies the In predicate on the "role_id" field.
+func RoleIDIn(vs ...uuid.UUID) predicate.TeamMembership {
+	return predicate.TeamMembership(sql.FieldIn(FieldRoleID, vs...))
+}
+
+// RoleIDNotIn applies the NotIn predicate on the "role_id" field.
+func RoleIDNotIn(vs ...uuid.UUID) predicate.TeamMembership {
+	return predicate.TeamMembership(sql.FieldNotIn(FieldRoleID, vs...))
+}
+
+// RoleIDIsNil applies the IsNil predicate on the "role_id" field.
+func RoleIDIsNil() predicate.TeamMembership {
+	return predicate.TeamMembership(sql.FieldIsNull(FieldRoleID))
+}
+
+// RoleIDNotNil applies the NotNil predicate on the "role_id" field.
+func RoleIDNotNil() predicate.TeamMembership {
+	return predicate.TeamMembership(sql.FieldNotNull(FieldRoleID))
+}
+
 // HasHolder applies the HasEdge predicate on the "holder" edge.
 func HasHolder() predicate.TeamMembership {
 	return predicate.TeamMembership(func(s *sql.Selector) {
@@ -369,6 +334,29 @@ func HasTeam() predicate.TeamMembership {
 func HasTeamWith(preds ...predicate.Team) predicate.TeamMembership {
 	return predicate.TeamMembership(func(s *sql.Selector) {
 		step := newTeamStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasRole applies the HasEdge predicate on the "role" edge.
+func HasRole() predicate.TeamMembership {
+	return predicate.TeamMembership(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, RoleTable, RoleColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRoleWith applies the HasEdge predicate on the "role" edge with a given conditions (other predicates).
+func HasRoleWith(preds ...predicate.Role) predicate.TeamMembership {
+	return predicate.TeamMembership(func(s *sql.Selector) {
+		step := newRoleStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

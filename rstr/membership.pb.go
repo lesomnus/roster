@@ -231,7 +231,7 @@ type TeamMembership struct {
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
 	xxx_hidden_Holder      *Holder                `protobuf:"bytes,2,opt,name=holder"`
 	xxx_hidden_Team        *Team                  `protobuf:"bytes,8,opt,name=team"`
-	xxx_hidden_Role        string                 `protobuf:"bytes,9,opt,name=role"`
+	xxx_hidden_Role        *Role                  `protobuf:"bytes,9,opt,name=role"`
 	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
@@ -285,11 +285,11 @@ func (x *TeamMembership) GetTeam() *Team {
 	return nil
 }
 
-func (x *TeamMembership) GetRole() string {
+func (x *TeamMembership) GetRole() *Role {
 	if x != nil {
 		return x.xxx_hidden_Role
 	}
-	return ""
+	return nil
 }
 
 func (x *TeamMembership) GetDateUpdated() *timestamppb.Timestamp {
@@ -328,7 +328,7 @@ func (x *TeamMembership) SetTeam(v *Team) {
 	x.xxx_hidden_Team = v
 }
 
-func (x *TeamMembership) SetRole(v string) {
+func (x *TeamMembership) SetRole(v *Role) {
 	x.xxx_hidden_Role = v
 }
 
@@ -356,6 +356,13 @@ func (x *TeamMembership) HasTeam() bool {
 		return false
 	}
 	return x.xxx_hidden_Team != nil
+}
+
+func (x *TeamMembership) HasRole() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Role != nil
 }
 
 func (x *TeamMembership) HasDateUpdated() bool {
@@ -387,6 +394,10 @@ func (x *TeamMembership) ClearTeam() {
 	x.xxx_hidden_Team = nil
 }
 
+func (x *TeamMembership) ClearRole() {
+	x.xxx_hidden_Role = nil
+}
+
 func (x *TeamMembership) ClearDateUpdated() {
 	x.xxx_hidden_DateUpdated = nil
 }
@@ -410,7 +421,13 @@ type TeamMembership_builder struct {
 	Team *Team
 	// What being on it means. A string rather than an enum for the reason
 	// `Identity.provider` is one: the set is a deployment's to choose.
-	Role        string
+	// What they may do in it, and empty is a plain member.
+	//
+	// An edge and not the string it used to be. A string is a role nothing reads
+	// -- which is what it was -- and the thing that reads one has to know what it
+	// allows. Where the reference sits is the scope: on this row it is that team,
+	// and on a [Binding] it is a site or the whole tenant.
+	Role        *Role
 	DateUpdated *timestamppb.Timestamp
 	DateErased  *timestamppb.Timestamp
 	DateCreated *timestamppb.Timestamp
@@ -434,11 +451,11 @@ var File_app_membership_proto protoreflect.FileDescriptor
 
 const file_app_membership_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/membership.proto\x12\x06roster\x1a\x0eapp/site.proto\x1a\x0eapp/team.proto\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xe8\x03\n" +
+	"\x14app/membership.proto\x12\x06roster\x1a\x0eapp/site.proto\x1a\x0eapp/team.proto\x1a\x0eapp/role.proto\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xe6\x03\n" +
 	"\x0eSiteMembership\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
-	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12*\n" +
-	"\x04site\x18\x03 \x01(\v2\f.roster.SiteB\b\xf2\x82\x16\x048\x01@\x01R\x04site\x12F\n" +
+	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12(\n" +
+	"\x04site\x18\x03 \x01(\v2\f.roster.SiteB\x06\xf2\x82\x16\x02@\x01R\x04site\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
@@ -452,12 +469,12 @@ const file_app_membership_proto_rawDesc = "" +
 	"\fdate_created\n" +
 	"\x04\n" +
 	"\x02id\x1a\x03ref \x14(d:\x00\"\r\n" +
-	"\vsite.tenant\"\xff\x03\n" +
+	"\vsite.tenant\"\x95\x04\n" +
 	"\x0eTeamMembership\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12(\n" +
-	"\x04team\x18\b \x01(\v2\f.roster.TeamB\x06\xf2\x82\x16\x02@\x01R\x04team\x12\x12\n" +
-	"\x04role\x18\t \x01(\tR\x04role\x12F\n" +
+	"\x04team\x18\b \x01(\v2\f.roster.TeamB\x06\xf2\x82\x16\x02@\x01R\x04team\x12(\n" +
+	"\x04role\x18\t \x01(\v2\f.roster.RoleB\x06\xf2\x82\x16\x028\x01R\x04role\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
@@ -481,6 +498,7 @@ var file_app_membership_proto_goTypes = []any{
 	(*Site)(nil),                  // 3: roster.Site
 	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
 	(*Team)(nil),                  // 5: roster.Team
+	(*Role)(nil),                  // 6: roster.Role
 }
 var file_app_membership_proto_depIdxs = []int32{
 	2,  // 0: roster.SiteMembership.holder:type_name -> roster.Holder
@@ -490,14 +508,15 @@ var file_app_membership_proto_depIdxs = []int32{
 	4,  // 4: roster.SiteMembership.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 5: roster.TeamMembership.holder:type_name -> roster.Holder
 	5,  // 6: roster.TeamMembership.team:type_name -> roster.Team
-	4,  // 7: roster.TeamMembership.date_updated:type_name -> google.protobuf.Timestamp
-	4,  // 8: roster.TeamMembership.date_erased:type_name -> google.protobuf.Timestamp
-	4,  // 9: roster.TeamMembership.date_created:type_name -> google.protobuf.Timestamp
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	6,  // 7: roster.TeamMembership.role:type_name -> roster.Role
+	4,  // 8: roster.TeamMembership.date_updated:type_name -> google.protobuf.Timestamp
+	4,  // 9: roster.TeamMembership.date_erased:type_name -> google.protobuf.Timestamp
+	4,  // 10: roster.TeamMembership.date_created:type_name -> google.protobuf.Timestamp
+	11, // [11:11] is the sub-list for method output_type
+	11, // [11:11] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_app_membership_proto_init() }
@@ -507,6 +526,7 @@ func file_app_membership_proto_init() {
 	}
 	file_app_site_proto_init()
 	file_app_team_proto_init()
+	file_app_role_proto_init()
 	file_roster_payday_holder_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{

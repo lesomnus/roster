@@ -11,9 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/predicate"
-	"github.com/lesomnus/roster/internal/ent/site"
 	"github.com/lesomnus/roster/internal/ent/team"
 )
 
@@ -107,40 +105,9 @@ func (_u *TeamUpdate) ClearDateErased() *TeamUpdate {
 	return _u
 }
 
-// SetSiteID sets the "site_id" field.
-func (_u *TeamUpdate) SetSiteID(v uuid.UUID) *TeamUpdate {
-	_u.mutation.SetSiteID(v)
-	return _u
-}
-
-// SetNillableSiteID sets the "site_id" field if the given value is not nil.
-func (_u *TeamUpdate) SetNillableSiteID(v *uuid.UUID) *TeamUpdate {
-	if v != nil {
-		_u.SetSiteID(*v)
-	}
-	return _u
-}
-
-// ClearSiteID clears the value of the "site_id" field.
-func (_u *TeamUpdate) ClearSiteID() *TeamUpdate {
-	_u.mutation.ClearSiteID()
-	return _u
-}
-
-// SetSite sets the "site" edge to the Site entity.
-func (_u *TeamUpdate) SetSite(v *Site) *TeamUpdate {
-	return _u.SetSiteID(v.ID)
-}
-
 // Mutation returns the TeamMutation object of the builder.
 func (_u *TeamUpdate) Mutation() *TeamMutation {
 	return _u.mutation
-}
-
-// ClearSite clears the "site" edge to the Site entity.
-func (_u *TeamUpdate) ClearSite() *TeamUpdate {
-	_u.mutation.ClearSite()
-	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -170,6 +137,14 @@ func (_u *TeamUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (_u *TeamUpdate) check() error {
+	if _u.mutation.SiteCleared() && len(_u.mutation.SiteIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Team.site"`)
+	}
+	return nil
+}
+
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
 func (_u *TeamUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *TeamUpdate {
 	_u.modifiers = append(_u.modifiers, modifiers...)
@@ -177,6 +152,9 @@ func (_u *TeamUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *TeamUpdat
 }
 
 func (_u *TeamUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(team.Table, team.Columns, sqlgraph.NewFieldSpec(team.FieldID, field.TypeUUID))
 	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -205,35 +183,6 @@ func (_u *TeamUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.DateCreatedCleared() {
 		_spec.ClearField(team.FieldDateCreated, field.TypeTime)
-	}
-	if _u.mutation.SiteCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   team.SiteTable,
-			Columns: []string{team.SiteColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(site.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.SiteIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   team.SiteTable,
-			Columns: []string{team.SiteColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(site.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -333,40 +282,9 @@ func (_u *TeamUpdateOne) ClearDateErased() *TeamUpdateOne {
 	return _u
 }
 
-// SetSiteID sets the "site_id" field.
-func (_u *TeamUpdateOne) SetSiteID(v uuid.UUID) *TeamUpdateOne {
-	_u.mutation.SetSiteID(v)
-	return _u
-}
-
-// SetNillableSiteID sets the "site_id" field if the given value is not nil.
-func (_u *TeamUpdateOne) SetNillableSiteID(v *uuid.UUID) *TeamUpdateOne {
-	if v != nil {
-		_u.SetSiteID(*v)
-	}
-	return _u
-}
-
-// ClearSiteID clears the value of the "site_id" field.
-func (_u *TeamUpdateOne) ClearSiteID() *TeamUpdateOne {
-	_u.mutation.ClearSiteID()
-	return _u
-}
-
-// SetSite sets the "site" edge to the Site entity.
-func (_u *TeamUpdateOne) SetSite(v *Site) *TeamUpdateOne {
-	return _u.SetSiteID(v.ID)
-}
-
 // Mutation returns the TeamMutation object of the builder.
 func (_u *TeamUpdateOne) Mutation() *TeamMutation {
 	return _u.mutation
-}
-
-// ClearSite clears the "site" edge to the Site entity.
-func (_u *TeamUpdateOne) ClearSite() *TeamUpdateOne {
-	_u.mutation.ClearSite()
-	return _u
 }
 
 // Where appends a list predicates to the TeamUpdate builder.
@@ -409,6 +327,14 @@ func (_u *TeamUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (_u *TeamUpdateOne) check() error {
+	if _u.mutation.SiteCleared() && len(_u.mutation.SiteIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Team.site"`)
+	}
+	return nil
+}
+
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
 func (_u *TeamUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *TeamUpdateOne {
 	_u.modifiers = append(_u.modifiers, modifiers...)
@@ -416,6 +342,9 @@ func (_u *TeamUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *TeamUp
 }
 
 func (_u *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(team.Table, team.Columns, sqlgraph.NewFieldSpec(team.FieldID, field.TypeUUID))
 	id, ok := _u.mutation.ID()
 	if !ok {
@@ -461,35 +390,6 @@ func (_u *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) {
 	}
 	if _u.mutation.DateCreatedCleared() {
 		_spec.ClearField(team.FieldDateCreated, field.TypeTime)
-	}
-	if _u.mutation.SiteCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   team.SiteTable,
-			Columns: []string{team.SiteColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(site.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.SiteIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   team.SiteTable,
-			Columns: []string{team.SiteColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(site.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Team{config: _u.config}

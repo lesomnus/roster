@@ -33,7 +33,11 @@ type Server interface {
 	Identity() IdentityServiceServer
 	Email() EmailServiceServer
 	Site() SiteServiceServer
+	Group() GroupServiceServer
+	GroupMembership() GroupMembershipServiceServer
 	Team() TeamServiceServer
+	Role() RoleServiceServer
+	Binding() BindingServiceServer
 	SiteMembership() SiteMembershipServiceServer
 	TeamMembership() TeamMembershipServiceServer
 	Audit() AuditServiceServer
@@ -52,7 +56,11 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterIdentityServiceServer(g, s.Identity())
 	RegisterEmailServiceServer(g, s.Email())
 	RegisterSiteServiceServer(g, s.Site())
+	RegisterGroupServiceServer(g, s.Group())
+	RegisterGroupMembershipServiceServer(g, s.GroupMembership())
 	RegisterTeamServiceServer(g, s.Team())
+	RegisterRoleServiceServer(g, s.Role())
+	RegisterBindingServiceServer(g, s.Binding())
 	RegisterSiteMembershipServiceServer(g, s.SiteMembership())
 	RegisterTeamMembershipServiceServer(g, s.TeamMembership())
 	RegisterAuditServiceServer(g, s.Audit())
@@ -60,18 +68,22 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 }
 
 type UnimplementedServer struct {
-	TenantServer         TenantServiceServer
-	HolderServer         HolderServiceServer
-	ApiKeyServer         ApiKeyServiceServer
-	CredentialServer     CredentialServiceServer
-	IdentityServer       IdentityServiceServer
-	EmailServer          EmailServiceServer
-	SiteServer           SiteServiceServer
-	TeamServer           TeamServiceServer
-	SiteMembershipServer SiteMembershipServiceServer
-	TeamMembershipServer TeamMembershipServiceServer
-	AuditServer          AuditServiceServer
-	OutboxServer         OutboxServiceServer
+	TenantServer          TenantServiceServer
+	HolderServer          HolderServiceServer
+	ApiKeyServer          ApiKeyServiceServer
+	CredentialServer      CredentialServiceServer
+	IdentityServer        IdentityServiceServer
+	EmailServer           EmailServiceServer
+	SiteServer            SiteServiceServer
+	GroupServer           GroupServiceServer
+	GroupMembershipServer GroupMembershipServiceServer
+	TeamServer            TeamServiceServer
+	RoleServer            RoleServiceServer
+	BindingServer         BindingServiceServer
+	SiteMembershipServer  SiteMembershipServiceServer
+	TeamMembershipServer  TeamMembershipServiceServer
+	AuditServer           AuditServiceServer
+	OutboxServer          OutboxServiceServer
 }
 
 func (UnimplementedServer) Tenant() TenantServiceServer { return UnimplementedTenantServiceServer{} }
@@ -85,7 +97,13 @@ func (UnimplementedServer) Identity() IdentityServiceServer {
 }
 func (UnimplementedServer) Email() EmailServiceServer { return UnimplementedEmailServiceServer{} }
 func (UnimplementedServer) Site() SiteServiceServer   { return UnimplementedSiteServiceServer{} }
-func (UnimplementedServer) Team() TeamServiceServer   { return UnimplementedTeamServiceServer{} }
+func (UnimplementedServer) Group() GroupServiceServer { return UnimplementedGroupServiceServer{} }
+func (UnimplementedServer) GroupMembership() GroupMembershipServiceServer {
+	return UnimplementedGroupMembershipServiceServer{}
+}
+func (UnimplementedServer) Team() TeamServiceServer       { return UnimplementedTeamServiceServer{} }
+func (UnimplementedServer) Role() RoleServiceServer       { return UnimplementedRoleServiceServer{} }
+func (UnimplementedServer) Binding() BindingServiceServer { return UnimplementedBindingServiceServer{} }
 func (UnimplementedServer) SiteMembership() SiteMembershipServiceServer {
 	return UnimplementedSiteMembershipServiceServer{}
 }
@@ -96,32 +114,40 @@ func (UnimplementedServer) Audit() AuditServiceServer   { return UnimplementedAu
 func (UnimplementedServer) Outbox() OutboxServiceServer { return UnimplementedOutboxServiceServer{} }
 
 type StaticServer struct {
-	TenantServer         TenantServiceServer
-	HolderServer         HolderServiceServer
-	ApiKeyServer         ApiKeyServiceServer
-	CredentialServer     CredentialServiceServer
-	IdentityServer       IdentityServiceServer
-	EmailServer          EmailServiceServer
-	SiteServer           SiteServiceServer
-	TeamServer           TeamServiceServer
-	SiteMembershipServer SiteMembershipServiceServer
-	TeamMembershipServer TeamMembershipServiceServer
-	AuditServer          AuditServiceServer
-	OutboxServer         OutboxServiceServer
+	TenantServer          TenantServiceServer
+	HolderServer          HolderServiceServer
+	ApiKeyServer          ApiKeyServiceServer
+	CredentialServer      CredentialServiceServer
+	IdentityServer        IdentityServiceServer
+	EmailServer           EmailServiceServer
+	SiteServer            SiteServiceServer
+	GroupServer           GroupServiceServer
+	GroupMembershipServer GroupMembershipServiceServer
+	TeamServer            TeamServiceServer
+	RoleServer            RoleServiceServer
+	BindingServer         BindingServiceServer
+	SiteMembershipServer  SiteMembershipServiceServer
+	TeamMembershipServer  TeamMembershipServiceServer
+	AuditServer           AuditServiceServer
+	OutboxServer          OutboxServiceServer
 }
 
-func (s StaticServer) Tenant() TenantServiceServer                 { return s.TenantServer }
-func (s StaticServer) Holder() HolderServiceServer                 { return s.HolderServer }
-func (s StaticServer) ApiKey() ApiKeyServiceServer                 { return s.ApiKeyServer }
-func (s StaticServer) Credential() CredentialServiceServer         { return s.CredentialServer }
-func (s StaticServer) Identity() IdentityServiceServer             { return s.IdentityServer }
-func (s StaticServer) Email() EmailServiceServer                   { return s.EmailServer }
-func (s StaticServer) Site() SiteServiceServer                     { return s.SiteServer }
-func (s StaticServer) Team() TeamServiceServer                     { return s.TeamServer }
-func (s StaticServer) SiteMembership() SiteMembershipServiceServer { return s.SiteMembershipServer }
-func (s StaticServer) TeamMembership() TeamMembershipServiceServer { return s.TeamMembershipServer }
-func (s StaticServer) Audit() AuditServiceServer                   { return s.AuditServer }
-func (s StaticServer) Outbox() OutboxServiceServer                 { return s.OutboxServer }
+func (s StaticServer) Tenant() TenantServiceServer                   { return s.TenantServer }
+func (s StaticServer) Holder() HolderServiceServer                   { return s.HolderServer }
+func (s StaticServer) ApiKey() ApiKeyServiceServer                   { return s.ApiKeyServer }
+func (s StaticServer) Credential() CredentialServiceServer           { return s.CredentialServer }
+func (s StaticServer) Identity() IdentityServiceServer               { return s.IdentityServer }
+func (s StaticServer) Email() EmailServiceServer                     { return s.EmailServer }
+func (s StaticServer) Site() SiteServiceServer                       { return s.SiteServer }
+func (s StaticServer) Group() GroupServiceServer                     { return s.GroupServer }
+func (s StaticServer) GroupMembership() GroupMembershipServiceServer { return s.GroupMembershipServer }
+func (s StaticServer) Team() TeamServiceServer                       { return s.TeamServer }
+func (s StaticServer) Role() RoleServiceServer                       { return s.RoleServer }
+func (s StaticServer) Binding() BindingServiceServer                 { return s.BindingServer }
+func (s StaticServer) SiteMembership() SiteMembershipServiceServer   { return s.SiteMembershipServer }
+func (s StaticServer) TeamMembership() TeamMembershipServiceServer   { return s.TeamMembershipServer }
+func (s StaticServer) Audit() AuditServiceServer                     { return s.AuditServer }
+func (s StaticServer) Outbox() OutboxServiceServer                   { return s.OutboxServer }
 
 type Client interface {
 	Tenant() TenantServiceClient
@@ -131,7 +157,11 @@ type Client interface {
 	Identity() IdentityServiceClient
 	Email() EmailServiceClient
 	Site() SiteServiceClient
+	Group() GroupServiceClient
+	GroupMembership() GroupMembershipServiceClient
 	Team() TeamServiceClient
+	Role() RoleServiceClient
+	Binding() BindingServiceClient
 	SiteMembership() SiteMembershipServiceClient
 	TeamMembership() TeamMembershipServiceClient
 	Audit() AuditServiceClient
@@ -140,48 +170,60 @@ type Client interface {
 
 func NewClient(c *grpc.ClientConn) Client {
 	return &client{
-		_Tenant:         NewTenantServiceClient(c),
-		_Holder:         NewHolderServiceClient(c),
-		_ApiKey:         NewApiKeyServiceClient(c),
-		_Credential:     NewCredentialServiceClient(c),
-		_Identity:       NewIdentityServiceClient(c),
-		_Email:          NewEmailServiceClient(c),
-		_Site:           NewSiteServiceClient(c),
-		_Team:           NewTeamServiceClient(c),
-		_SiteMembership: NewSiteMembershipServiceClient(c),
-		_TeamMembership: NewTeamMembershipServiceClient(c),
-		_Audit:          NewAuditServiceClient(c),
-		_Outbox:         NewOutboxServiceClient(c),
+		_Tenant:          NewTenantServiceClient(c),
+		_Holder:          NewHolderServiceClient(c),
+		_ApiKey:          NewApiKeyServiceClient(c),
+		_Credential:      NewCredentialServiceClient(c),
+		_Identity:        NewIdentityServiceClient(c),
+		_Email:           NewEmailServiceClient(c),
+		_Site:            NewSiteServiceClient(c),
+		_Group:           NewGroupServiceClient(c),
+		_GroupMembership: NewGroupMembershipServiceClient(c),
+		_Team:            NewTeamServiceClient(c),
+		_Role:            NewRoleServiceClient(c),
+		_Binding:         NewBindingServiceClient(c),
+		_SiteMembership:  NewSiteMembershipServiceClient(c),
+		_TeamMembership:  NewTeamMembershipServiceClient(c),
+		_Audit:           NewAuditServiceClient(c),
+		_Outbox:          NewOutboxServiceClient(c),
 	}
 }
 
 type client struct {
-	_Tenant         TenantServiceClient
-	_Holder         HolderServiceClient
-	_ApiKey         ApiKeyServiceClient
-	_Credential     CredentialServiceClient
-	_Identity       IdentityServiceClient
-	_Email          EmailServiceClient
-	_Site           SiteServiceClient
-	_Team           TeamServiceClient
-	_SiteMembership SiteMembershipServiceClient
-	_TeamMembership TeamMembershipServiceClient
-	_Audit          AuditServiceClient
-	_Outbox         OutboxServiceClient
+	_Tenant          TenantServiceClient
+	_Holder          HolderServiceClient
+	_ApiKey          ApiKeyServiceClient
+	_Credential      CredentialServiceClient
+	_Identity        IdentityServiceClient
+	_Email           EmailServiceClient
+	_Site            SiteServiceClient
+	_Group           GroupServiceClient
+	_GroupMembership GroupMembershipServiceClient
+	_Team            TeamServiceClient
+	_Role            RoleServiceClient
+	_Binding         BindingServiceClient
+	_SiteMembership  SiteMembershipServiceClient
+	_TeamMembership  TeamMembershipServiceClient
+	_Audit           AuditServiceClient
+	_Outbox          OutboxServiceClient
 }
 
-func (c *client) Tenant() TenantServiceClient                 { return c._Tenant }
-func (c *client) Holder() HolderServiceClient                 { return c._Holder }
-func (c *client) ApiKey() ApiKeyServiceClient                 { return c._ApiKey }
-func (c *client) Credential() CredentialServiceClient         { return c._Credential }
-func (c *client) Identity() IdentityServiceClient             { return c._Identity }
-func (c *client) Email() EmailServiceClient                   { return c._Email }
-func (c *client) Site() SiteServiceClient                     { return c._Site }
-func (c *client) Team() TeamServiceClient                     { return c._Team }
-func (c *client) SiteMembership() SiteMembershipServiceClient { return c._SiteMembership }
-func (c *client) TeamMembership() TeamMembershipServiceClient { return c._TeamMembership }
-func (c *client) Audit() AuditServiceClient                   { return c._Audit }
-func (c *client) Outbox() OutboxServiceClient                 { return c._Outbox }
+func (c *client) Tenant() TenantServiceClient                   { return c._Tenant }
+func (c *client) Holder() HolderServiceClient                   { return c._Holder }
+func (c *client) ApiKey() ApiKeyServiceClient                   { return c._ApiKey }
+func (c *client) Credential() CredentialServiceClient           { return c._Credential }
+func (c *client) Identity() IdentityServiceClient               { return c._Identity }
+func (c *client) Email() EmailServiceClient                     { return c._Email }
+func (c *client) Site() SiteServiceClient                       { return c._Site }
+func (c *client) Group() GroupServiceClient                     { return c._Group }
+func (c *client) GroupMembership() GroupMembershipServiceClient { return c._GroupMembership }
+func (c *client) Team() TeamServiceClient                       { return c._Team }
+func (c *client) Role() RoleServiceClient                       { return c._Role }
+func (c *client) Binding() BindingServiceClient                 { return c._Binding }
+func (c *client) SiteMembership() SiteMembershipServiceClient   { return c._SiteMembership }
+func (c *client) TeamMembership() TeamMembershipServiceClient   { return c._TeamMembership }
+func (c *client) Audit() AuditServiceClient                     { return c._Audit }
+func (c *client) Outbox() OutboxServiceClient                   { return c._Outbox }
 
 // Middleware is a server that delegates to another server.
 type Middleware interface {

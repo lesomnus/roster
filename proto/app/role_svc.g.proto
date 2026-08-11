@@ -1,0 +1,233 @@
+edition = "2023";
+package roster;
+
+import "app/group_svc.g.proto";
+import "app/role.proto";
+import "app/site_svc.g.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "patch/patch.proto";
+import "roster/payday/holder_svc.g.proto";
+import "roster/payday/tenant_svc.g.proto";
+
+option go_package = "github.com/lesomnus/roster/rstr";
+
+service RoleService {
+  // Add creates a new Role
+  rpc Add(RoleAddRequest) returns (Role);
+  // Get retrieves a Role
+  rpc Get(RoleGetRequest) returns (Role);
+  // Patch updates an existing Role
+  rpc Patch(RolePatchRequest) returns (Role);
+  // Apply applies a patch document to an existing Role
+  rpc Apply(RoleApplyRequest) returns (Role);
+  // Erase deletes a Role
+  rpc Erase(RoleRef) returns (google.protobuf.Empty);
+  // List reads Roles a page at a time.
+  rpc List(RoleListRequest) returns (RoleListResponse);
+}
+
+service BindingService {
+  // Add creates a new Binding
+  rpc Add(BindingAddRequest) returns (Binding);
+  // Get retrieves a Binding
+  rpc Get(BindingGetRequest) returns (Binding);
+  // Patch updates an existing Binding
+  rpc Patch(BindingPatchRequest) returns (Binding);
+  // Apply applies a patch document to an existing Binding
+  rpc Apply(BindingApplyRequest) returns (Binding);
+  // Erase deletes a Binding
+  rpc Erase(BindingRef) returns (google.protobuf.Empty);
+  // List reads Bindings a page at a time.
+  rpc List(BindingListRequest) returns (BindingListResponse);
+}
+
+message RoleAddRequest {
+  bytes id = 1;
+  TenantRef tenant = 2;
+  SiteRef site = 3;
+  string alias = 4 [features.field_presence = IMPLICIT];
+  string name = 5 [features.field_presence = IMPLICIT];
+  string desc = 6 [features.field_presence = IMPLICIT];
+  repeated string methods = 8;
+  google.protobuf.Timestamp date_created = 15;
+}
+
+message RoleGetRequest {
+  RoleRef ref = 1;
+  RoleSelect select = 2;
+}
+
+message RoleRef {
+  oneof key {
+    bytes id = 1;
+    RoleRefByAlias alias = 2;
+  }
+}
+
+message RoleRefByAlias {
+  TenantRef tenant = 2;
+  string alias = 4;
+}
+
+message RoleSelect {
+  bool all = 1;
+  TenantSelect tenant = 2;
+  SiteSelect site = 3;
+  bool alias = 4;
+  bool name = 5;
+  bool desc = 6;
+  bool methods = 8;
+  bool date_updated = 13;
+  bool date_erased = 14;
+  bool date_created = 15;
+}
+
+message RolePatchRequest {
+  RoleRef ref = 1;
+  string alias = 8;
+  string name = 10;
+  string desc = 12;
+  repeated string methods = 16;
+  // The version this update requires the stored date_updated to be.
+  // It is a precondition, not a write: the update applies only if the row
+  // still holds this value, and the server stamps the new version itself.
+  // Setting it together with date_updated_force is an error --
+  // the version is the token every client's compare-and-swap is measured
+  // against, so it is not the caller's to choose.
+  google.protobuf.Timestamp date_updated = 26;
+  // Update whatever the stored date_updated is, with no precondition.
+  // The server still stamps a new version, so other clients' tokens are
+  // invalidated as usual; this declines the check for THIS update only.
+  // One of date_updated or this must be set. An omitted version is
+  // refused rather than assumed, because an unset field cannot be told
+  // apart from a caller who never considered locking at all.
+  bool date_updated_force = 27;
+}
+
+message RoleApplyRequest {
+  RoleRef ref = 1;
+  patch.Patch patch = 2;
+}
+
+message RoleListRequest {
+  // Bounded because the work is: each filter is a predicate in the same query,
+  // so this is what says how much of the database one request may read.
+  repeated RoleFilter filters = 1;
+
+  // How many to answer with. Nothing said is what the schema declared, and more
+  // than the cap is the cap -- a caller asking for more than there is meant no
+  // harm, so it is not an error and it is not the whole table either.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+
+  // Where to carry on from: the "next" of the answer before. It names the last
+  // row of that page rather than counting rows from the start, so a row added
+  // ahead of the page does not shift it and a caller reading through never sees
+  // one twice or misses one.
+  string after = 3 [features.field_presence = IMPLICIT];
+}
+
+message RoleListResponse {
+  repeated Role items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  //
+  // Empty means there is no more *for now*: a list is read as it is, and one
+  // that has grown since answers a fresh call. It is not empty merely because
+  // the page came back short -- a page is short when the last row of it was the
+  // last row there was, which is a thing the server can only know by having
+  // looked.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message RoleFilter {
+  RoleRef ref = 1;
+}
+
+message BindingAddRequest {
+  bytes id = 1;
+  RoleRef role = 2;
+  SiteRef site = 3;
+  HolderRef holder = 8;
+  GroupRef group = 9;
+  google.protobuf.Timestamp date_created = 15;
+}
+
+message BindingGetRequest {
+  BindingRef ref = 1;
+  BindingSelect select = 2;
+}
+
+message BindingRef {
+  oneof key {
+    bytes id = 1;
+  }
+}
+
+message BindingSelect {
+  bool all = 1;
+  RoleSelect role = 2;
+  SiteSelect site = 3;
+  HolderSelect holder = 8;
+  GroupSelect group = 9;
+  bool date_updated = 13;
+  bool date_erased = 14;
+  bool date_created = 15;
+}
+
+message BindingPatchRequest {
+  BindingRef ref = 1;
+  // The version this update requires the stored date_updated to be.
+  // It is a precondition, not a write: the update applies only if the row
+  // still holds this value, and the server stamps the new version itself.
+  // Setting it together with date_updated_force is an error --
+  // the version is the token every client's compare-and-swap is measured
+  // against, so it is not the caller's to choose.
+  google.protobuf.Timestamp date_updated = 26;
+  // Update whatever the stored date_updated is, with no precondition.
+  // The server still stamps a new version, so other clients' tokens are
+  // invalidated as usual; this declines the check for THIS update only.
+  // One of date_updated or this must be set. An omitted version is
+  // refused rather than assumed, because an unset field cannot be told
+  // apart from a caller who never considered locking at all.
+  bool date_updated_force = 27;
+}
+
+message BindingApplyRequest {
+  BindingRef ref = 1;
+  patch.Patch patch = 2;
+}
+
+message BindingListRequest {
+  // Bounded because the work is: each filter is a predicate in the same query,
+  // so this is what says how much of the database one request may read.
+  repeated BindingFilter filters = 1;
+
+  // How many to answer with. Nothing said is what the schema declared, and more
+  // than the cap is the cap -- a caller asking for more than there is meant no
+  // harm, so it is not an error and it is not the whole table either.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+
+  // Where to carry on from: the "next" of the answer before. It names the last
+  // row of that page rather than counting rows from the start, so a row added
+  // ahead of the page does not shift it and a caller reading through never sees
+  // one twice or misses one.
+  string after = 3 [features.field_presence = IMPLICIT];
+}
+
+message BindingListResponse {
+  repeated Binding items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  //
+  // Empty means there is no more *for now*: a list is read as it is, and one
+  // that has grown since answers a fresh call. It is not empty merely because
+  // the page came back short -- a page is short when the last row of it was the
+  // last row there was, which is a thing the server can only know by having
+  // looked.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message BindingFilter {
+  BindingRef ref = 1;
+}

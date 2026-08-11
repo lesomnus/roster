@@ -93,7 +93,7 @@ func TestATeamMembershipReachesItsTenantThreeHopsAway(t *testing.T) {
 	v, err := b.Ungated.TeamMembership().Add(ctx, app.TeamMembershipAddRequest_builder{
 		Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
 		Team:   app.TeamRef_builder{Id: team.Bytes()}.Build(),
-		Role:   "operator",
+		Role:   app.RoleRef_builder{Id: b.role(t, ctx, "operator").Bytes()}.Build(),
 	}.Build())
 	x.NoError(err)
 
@@ -102,7 +102,7 @@ func TestATeamMembershipReachesItsTenantThreeHopsAway(t *testing.T) {
 		b.as(ctx, b.AcmeUser, b.Acme),
 		app.TeamMembershipGetRequest_builder{Ref: v.Ref()}.Build())
 	x.NoError(err)
-	x.Equal("operator", got.GetRole())
+	x.NotNil(got.GetRole())
 
 	// Another tenant does not, three hops away.
 	hooliUser := b.holder(t, ctx, b.Hooli, "theirs")
@@ -129,7 +129,7 @@ func TestARoleIsPerTeamAndThereforePerSite(t *testing.T) {
 		_, err := b.Ungated.TeamMembership().Add(ctx, app.TeamMembershipAddRequest_builder{
 			Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
 			Team:   app.TeamRef_builder{Id: team.Bytes()}.Build(),
-			Role:   v.role,
+			Role:   app.RoleRef_builder{Id: b.role(t, ctx, v.role).Bytes()}.Build(),
 		}.Build())
 		x.NoError(err)
 	}

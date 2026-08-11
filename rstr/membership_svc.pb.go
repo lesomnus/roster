@@ -1505,7 +1505,7 @@ type TeamMembershipAddRequest struct {
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
 	xxx_hidden_Holder      *HolderRef             `protobuf:"bytes,2,opt,name=holder"`
 	xxx_hidden_Team        *TeamRef               `protobuf:"bytes,8,opt,name=team"`
-	xxx_hidden_Role        string                 `protobuf:"bytes,9,opt,name=role"`
+	xxx_hidden_Role        *RoleRef               `protobuf:"bytes,9,opt,name=role"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
@@ -1559,11 +1559,11 @@ func (x *TeamMembershipAddRequest) GetTeam() *TeamRef {
 	return nil
 }
 
-func (x *TeamMembershipAddRequest) GetRole() string {
+func (x *TeamMembershipAddRequest) GetRole() *RoleRef {
 	if x != nil {
 		return x.xxx_hidden_Role
 	}
-	return ""
+	return nil
 }
 
 func (x *TeamMembershipAddRequest) GetDateCreated() *timestamppb.Timestamp {
@@ -1589,7 +1589,7 @@ func (x *TeamMembershipAddRequest) SetTeam(v *TeamRef) {
 	x.xxx_hidden_Team = v
 }
 
-func (x *TeamMembershipAddRequest) SetRole(v string) {
+func (x *TeamMembershipAddRequest) SetRole(v *RoleRef) {
 	x.xxx_hidden_Role = v
 }
 
@@ -1618,6 +1618,13 @@ func (x *TeamMembershipAddRequest) HasTeam() bool {
 	return x.xxx_hidden_Team != nil
 }
 
+func (x *TeamMembershipAddRequest) HasRole() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Role != nil
+}
+
 func (x *TeamMembershipAddRequest) HasDateCreated() bool {
 	if x == nil {
 		return false
@@ -1638,6 +1645,10 @@ func (x *TeamMembershipAddRequest) ClearTeam() {
 	x.xxx_hidden_Team = nil
 }
 
+func (x *TeamMembershipAddRequest) ClearRole() {
+	x.xxx_hidden_Role = nil
+}
+
 func (x *TeamMembershipAddRequest) ClearDateCreated() {
 	x.xxx_hidden_DateCreated = nil
 }
@@ -1648,7 +1659,7 @@ type TeamMembershipAddRequest_builder struct {
 	Id          []byte
 	Holder      *HolderRef
 	Team        *TeamRef
-	Role        string
+	Role        *RoleRef
 	DateCreated *timestamppb.Timestamp
 }
 
@@ -2028,7 +2039,7 @@ type TeamMembershipSelect struct {
 	xxx_hidden_All         bool                   `protobuf:"varint,1,opt,name=all"`
 	xxx_hidden_Holder      *HolderSelect          `protobuf:"bytes,2,opt,name=holder"`
 	xxx_hidden_Team        *TeamSelect            `protobuf:"bytes,8,opt,name=team"`
-	xxx_hidden_Role        bool                   `protobuf:"varint,9,opt,name=role"`
+	xxx_hidden_Role        *RoleSelect            `protobuf:"bytes,9,opt,name=role"`
 	xxx_hidden_DateUpdated bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
@@ -2084,11 +2095,11 @@ func (x *TeamMembershipSelect) GetTeam() *TeamSelect {
 	return nil
 }
 
-func (x *TeamMembershipSelect) GetRole() bool {
+func (x *TeamMembershipSelect) GetRole() *RoleSelect {
 	if x != nil {
 		return x.xxx_hidden_Role
 	}
-	return false
+	return nil
 }
 
 func (x *TeamMembershipSelect) GetDateUpdated() bool {
@@ -2125,9 +2136,8 @@ func (x *TeamMembershipSelect) SetTeam(v *TeamSelect) {
 	x.xxx_hidden_Team = v
 }
 
-func (x *TeamMembershipSelect) SetRole(v bool) {
+func (x *TeamMembershipSelect) SetRole(v *RoleSelect) {
 	x.xxx_hidden_Role = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 7)
 }
 
 func (x *TeamMembershipSelect) SetDateUpdated(v bool) {
@@ -2170,7 +2180,7 @@ func (x *TeamMembershipSelect) HasRole() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+	return x.xxx_hidden_Role != nil
 }
 
 func (x *TeamMembershipSelect) HasDateUpdated() bool {
@@ -2208,8 +2218,7 @@ func (x *TeamMembershipSelect) ClearTeam() {
 }
 
 func (x *TeamMembershipSelect) ClearRole() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
-	x.xxx_hidden_Role = false
+	x.xxx_hidden_Role = nil
 }
 
 func (x *TeamMembershipSelect) ClearDateUpdated() {
@@ -2233,7 +2242,7 @@ type TeamMembershipSelect_builder struct {
 	All         *bool
 	Holder      *HolderSelect
 	Team        *TeamSelect
-	Role        *bool
+	Role        *RoleSelect
 	DateUpdated *bool
 	DateErased  *bool
 	DateCreated *bool
@@ -2249,10 +2258,7 @@ func (b0 TeamMembershipSelect_builder) Build() *TeamMembershipSelect {
 	}
 	x.xxx_hidden_Holder = b.Holder
 	x.xxx_hidden_Team = b.Team
-	if b.Role != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 7)
-		x.xxx_hidden_Role = *b.Role
-	}
+	x.xxx_hidden_Role = b.Role
 	if b.DateUpdated != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 7)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
@@ -2271,7 +2277,8 @@ func (b0 TeamMembershipSelect_builder) Build() *TeamMembershipSelect {
 type TeamMembershipPatchRequest struct {
 	state                       protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Ref              *TeamMembershipRef     `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Role             *string                `protobuf:"bytes,18,opt,name=role"`
+	xxx_hidden_Role             *RoleRef               `protobuf:"bytes,18,opt,name=role"`
+	xxx_hidden_RoleNull         bool                   `protobuf:"varint,19,opt,name=role_null,json=roleNull"`
 	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateUpdatedForce bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
 	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
@@ -2312,14 +2319,18 @@ func (x *TeamMembershipPatchRequest) GetRef() *TeamMembershipRef {
 	return nil
 }
 
-func (x *TeamMembershipPatchRequest) GetRole() string {
+func (x *TeamMembershipPatchRequest) GetRole() *RoleRef {
 	if x != nil {
-		if x.xxx_hidden_Role != nil {
-			return *x.xxx_hidden_Role
-		}
-		return ""
+		return x.xxx_hidden_Role
 	}
-	return ""
+	return nil
+}
+
+func (x *TeamMembershipPatchRequest) GetRoleNull() bool {
+	if x != nil {
+		return x.xxx_hidden_RoleNull
+	}
+	return false
 }
 
 func (x *TeamMembershipPatchRequest) GetDateUpdated() *timestamppb.Timestamp {
@@ -2340,9 +2351,13 @@ func (x *TeamMembershipPatchRequest) SetRef(v *TeamMembershipRef) {
 	x.xxx_hidden_Ref = v
 }
 
-func (x *TeamMembershipPatchRequest) SetRole(v string) {
-	x.xxx_hidden_Role = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 4)
+func (x *TeamMembershipPatchRequest) SetRole(v *RoleRef) {
+	x.xxx_hidden_Role = v
+}
+
+func (x *TeamMembershipPatchRequest) SetRoleNull(v bool) {
+	x.xxx_hidden_RoleNull = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 5)
 }
 
 func (x *TeamMembershipPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -2351,7 +2366,7 @@ func (x *TeamMembershipPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *TeamMembershipPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 5)
 }
 
 func (x *TeamMembershipPatchRequest) HasRef() bool {
@@ -2365,7 +2380,14 @@ func (x *TeamMembershipPatchRequest) HasRole() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+	return x.xxx_hidden_Role != nil
+}
+
+func (x *TeamMembershipPatchRequest) HasRoleNull() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
 }
 
 func (x *TeamMembershipPatchRequest) HasDateUpdated() bool {
@@ -2379,7 +2401,7 @@ func (x *TeamMembershipPatchRequest) HasDateUpdatedForce() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
 }
 
 func (x *TeamMembershipPatchRequest) ClearRef() {
@@ -2387,8 +2409,12 @@ func (x *TeamMembershipPatchRequest) ClearRef() {
 }
 
 func (x *TeamMembershipPatchRequest) ClearRole() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
 	x.xxx_hidden_Role = nil
+}
+
+func (x *TeamMembershipPatchRequest) ClearRoleNull() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_RoleNull = false
 }
 
 func (x *TeamMembershipPatchRequest) ClearDateUpdated() {
@@ -2396,7 +2422,7 @@ func (x *TeamMembershipPatchRequest) ClearDateUpdated() {
 }
 
 func (x *TeamMembershipPatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
 	x.xxx_hidden_DateUpdatedForce = false
 }
 
@@ -2404,7 +2430,12 @@ type TeamMembershipPatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Ref  *TeamMembershipRef
-	Role *string
+	Role *RoleRef
+	// Clear role instead of writing it.
+	// It takes a field of its own because an unset value already means
+	// "leave it alone", so no value could have meant NULL. It wins
+	// outright: setting both this and role clears.
+	RoleNull *bool
 	// The version this update requires the stored date_updated to be.
 	// It is a precondition, not a write: the update applies only if the row
 	// still holds this value, and the server stamps the new version itself.
@@ -2426,13 +2457,14 @@ func (b0 TeamMembershipPatchRequest_builder) Build() *TeamMembershipPatchRequest
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
-	if b.Role != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 4)
-		x.xxx_hidden_Role = b.Role
+	x.xxx_hidden_Role = b.Role
+	if b.RoleNull != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 5)
+		x.xxx_hidden_RoleNull = *b.RoleNull
 	}
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 4)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 5)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	return m0
@@ -3058,7 +3090,7 @@ var File_app_membership_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_membership_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1aapp/membership_svc.g.proto\x12\x06roster\x1a\x14app/membership.proto\x1a\x14app/site_svc.g.proto\x1a\x14app/team_svc.g.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xb9\x01\n" +
+	"\x1aapp/membership_svc.g.proto\x12\x06roster\x1a\x14app/membership.proto\x1a\x14app/role_svc.g.proto\x1a\x14app/site_svc.g.proto\x1a\x14app/team_svc.g.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xb9\x01\n" +
 	"\x18SiteMembershipAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12#\n" +
@@ -3106,12 +3138,12 @@ const file_app_membership_svc_g_proto_rawDesc = "" +
 	"\x17SiteMembershipWatchItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12,\n" +
 	"\x05value\x18\x02 \x01(\v2\x16.roster.SiteMembershipR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\xd4\x01\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\xde\x01\n" +
 	"\x18TeamMembershipAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12#\n" +
-	"\x04team\x18\b \x01(\v2\x0f.roster.TeamRefR\x04team\x12\x19\n" +
-	"\x04role\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\x04role\x12=\n" +
+	"\x04team\x18\b \x01(\v2\x0f.roster.TeamRefR\x04team\x12#\n" +
+	"\x04role\x18\t \x01(\v2\x0f.roster.RoleRefR\x04role\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"}\n" +
 	"\x18TeamMembershipGetRequest\x12+\n" +
 	"\x03ref\x18\x01 \x01(\v2\x19.roster.TeamMembershipRefR\x03ref\x124\n" +
@@ -3122,19 +3154,20 @@ const file_app_membership_svc_g_proto_rawDesc = "" +
 	"\x03key\"k\n" +
 	"\x19TeamMembershipRefByMember\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12#\n" +
-	"\x04team\x18\b \x01(\v2\x0f.roster.TeamRefR\x04team\"\xf9\x01\n" +
+	"\x04team\x18\b \x01(\v2\x0f.roster.TeamRefR\x04team\"\x8d\x02\n" +
 	"\x14TeamMembershipSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
 	"\x06holder\x18\x02 \x01(\v2\x14.roster.HolderSelectR\x06holder\x12&\n" +
-	"\x04team\x18\b \x01(\v2\x12.roster.TeamSelectR\x04team\x12\x12\n" +
-	"\x04role\x18\t \x01(\bR\x04role\x12!\n" +
+	"\x04team\x18\b \x01(\v2\x12.roster.TeamSelectR\x04team\x12&\n" +
+	"\x04role\x18\t \x01(\v2\x12.roster.RoleSelectR\x04role\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xca\x01\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xf8\x01\n" +
 	"\x1aTeamMembershipPatchRequest\x12+\n" +
-	"\x03ref\x18\x01 \x01(\v2\x19.roster.TeamMembershipRefR\x03ref\x12\x12\n" +
-	"\x04role\x18\x12 \x01(\tR\x04role\x12=\n" +
+	"\x03ref\x18\x01 \x01(\v2\x19.roster.TeamMembershipRefR\x03ref\x12#\n" +
+	"\x04role\x18\x12 \x01(\v2\x0f.roster.RoleRefR\x04role\x12\x1b\n" +
+	"\trole_null\x18\x13 \x01(\bR\broleNull\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"m\n" +
 	"\x1aTeamMembershipApplyRequest\x12+\n" +
@@ -3211,9 +3244,11 @@ var file_app_membership_svc_g_proto_goTypes = []any{
 	(*patchpb.Patch)(nil),               // 31: patch.Patch
 	(*SiteMembership)(nil),              // 32: roster.SiteMembership
 	(*TeamRef)(nil),                     // 33: roster.TeamRef
-	(*TeamSelect)(nil),                  // 34: roster.TeamSelect
-	(*TeamMembership)(nil),              // 35: roster.TeamMembership
-	(*emptypb.Empty)(nil),               // 36: google.protobuf.Empty
+	(*RoleRef)(nil),                     // 34: roster.RoleRef
+	(*TeamSelect)(nil),                  // 35: roster.TeamSelect
+	(*RoleSelect)(nil),                  // 36: roster.RoleSelect
+	(*TeamMembership)(nil),              // 37: roster.TeamMembership
+	(*emptypb.Empty)(nil),               // 38: google.protobuf.Empty
 }
 var file_app_membership_svc_g_proto_depIdxs = []int32{
 	26, // 0: roster.SiteMembershipAddRequest.holder:type_name -> roster.HolderRef
@@ -3238,57 +3273,60 @@ var file_app_membership_svc_g_proto_depIdxs = []int32{
 	32, // 19: roster.SiteMembershipWatchItem.value:type_name -> roster.SiteMembership
 	26, // 20: roster.TeamMembershipAddRequest.holder:type_name -> roster.HolderRef
 	33, // 21: roster.TeamMembershipAddRequest.team:type_name -> roster.TeamRef
-	28, // 22: roster.TeamMembershipAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	15, // 23: roster.TeamMembershipGetRequest.ref:type_name -> roster.TeamMembershipRef
-	17, // 24: roster.TeamMembershipGetRequest.select:type_name -> roster.TeamMembershipSelect
-	16, // 25: roster.TeamMembershipRef.member:type_name -> roster.TeamMembershipRefByMember
-	26, // 26: roster.TeamMembershipRefByMember.holder:type_name -> roster.HolderRef
-	33, // 27: roster.TeamMembershipRefByMember.team:type_name -> roster.TeamRef
-	29, // 28: roster.TeamMembershipSelect.holder:type_name -> roster.HolderSelect
-	34, // 29: roster.TeamMembershipSelect.team:type_name -> roster.TeamSelect
-	15, // 30: roster.TeamMembershipPatchRequest.ref:type_name -> roster.TeamMembershipRef
-	28, // 31: roster.TeamMembershipPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	15, // 32: roster.TeamMembershipApplyRequest.ref:type_name -> roster.TeamMembershipRef
-	31, // 33: roster.TeamMembershipApplyRequest.patch:type_name -> patch.Patch
-	22, // 34: roster.TeamMembershipListRequest.filters:type_name -> roster.TeamMembershipFilter
-	35, // 35: roster.TeamMembershipListResponse.items:type_name -> roster.TeamMembership
-	15, // 36: roster.TeamMembershipFilter.ref:type_name -> roster.TeamMembershipRef
-	22, // 37: roster.TeamMembershipWatchRequest.filters:type_name -> roster.TeamMembershipFilter
-	25, // 38: roster.TeamMembershipWatchResponse.items:type_name -> roster.TeamMembershipWatchItem
-	35, // 39: roster.TeamMembershipWatchItem.value:type_name -> roster.TeamMembership
-	0,  // 40: roster.SiteMembershipService.Add:input_type -> roster.SiteMembershipAddRequest
-	1,  // 41: roster.SiteMembershipService.Get:input_type -> roster.SiteMembershipGetRequest
-	5,  // 42: roster.SiteMembershipService.Patch:input_type -> roster.SiteMembershipPatchRequest
-	6,  // 43: roster.SiteMembershipService.Apply:input_type -> roster.SiteMembershipApplyRequest
-	2,  // 44: roster.SiteMembershipService.Erase:input_type -> roster.SiteMembershipRef
-	7,  // 45: roster.SiteMembershipService.List:input_type -> roster.SiteMembershipListRequest
-	10, // 46: roster.SiteMembershipService.Watch:input_type -> roster.SiteMembershipWatchRequest
-	13, // 47: roster.TeamMembershipService.Add:input_type -> roster.TeamMembershipAddRequest
-	14, // 48: roster.TeamMembershipService.Get:input_type -> roster.TeamMembershipGetRequest
-	18, // 49: roster.TeamMembershipService.Patch:input_type -> roster.TeamMembershipPatchRequest
-	19, // 50: roster.TeamMembershipService.Apply:input_type -> roster.TeamMembershipApplyRequest
-	15, // 51: roster.TeamMembershipService.Erase:input_type -> roster.TeamMembershipRef
-	20, // 52: roster.TeamMembershipService.List:input_type -> roster.TeamMembershipListRequest
-	23, // 53: roster.TeamMembershipService.Watch:input_type -> roster.TeamMembershipWatchRequest
-	32, // 54: roster.SiteMembershipService.Add:output_type -> roster.SiteMembership
-	32, // 55: roster.SiteMembershipService.Get:output_type -> roster.SiteMembership
-	32, // 56: roster.SiteMembershipService.Patch:output_type -> roster.SiteMembership
-	32, // 57: roster.SiteMembershipService.Apply:output_type -> roster.SiteMembership
-	36, // 58: roster.SiteMembershipService.Erase:output_type -> google.protobuf.Empty
-	8,  // 59: roster.SiteMembershipService.List:output_type -> roster.SiteMembershipListResponse
-	11, // 60: roster.SiteMembershipService.Watch:output_type -> roster.SiteMembershipWatchResponse
-	35, // 61: roster.TeamMembershipService.Add:output_type -> roster.TeamMembership
-	35, // 62: roster.TeamMembershipService.Get:output_type -> roster.TeamMembership
-	35, // 63: roster.TeamMembershipService.Patch:output_type -> roster.TeamMembership
-	35, // 64: roster.TeamMembershipService.Apply:output_type -> roster.TeamMembership
-	36, // 65: roster.TeamMembershipService.Erase:output_type -> google.protobuf.Empty
-	21, // 66: roster.TeamMembershipService.List:output_type -> roster.TeamMembershipListResponse
-	24, // 67: roster.TeamMembershipService.Watch:output_type -> roster.TeamMembershipWatchResponse
-	54, // [54:68] is the sub-list for method output_type
-	40, // [40:54] is the sub-list for method input_type
-	40, // [40:40] is the sub-list for extension type_name
-	40, // [40:40] is the sub-list for extension extendee
-	0,  // [0:40] is the sub-list for field type_name
+	34, // 22: roster.TeamMembershipAddRequest.role:type_name -> roster.RoleRef
+	28, // 23: roster.TeamMembershipAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	15, // 24: roster.TeamMembershipGetRequest.ref:type_name -> roster.TeamMembershipRef
+	17, // 25: roster.TeamMembershipGetRequest.select:type_name -> roster.TeamMembershipSelect
+	16, // 26: roster.TeamMembershipRef.member:type_name -> roster.TeamMembershipRefByMember
+	26, // 27: roster.TeamMembershipRefByMember.holder:type_name -> roster.HolderRef
+	33, // 28: roster.TeamMembershipRefByMember.team:type_name -> roster.TeamRef
+	29, // 29: roster.TeamMembershipSelect.holder:type_name -> roster.HolderSelect
+	35, // 30: roster.TeamMembershipSelect.team:type_name -> roster.TeamSelect
+	36, // 31: roster.TeamMembershipSelect.role:type_name -> roster.RoleSelect
+	15, // 32: roster.TeamMembershipPatchRequest.ref:type_name -> roster.TeamMembershipRef
+	34, // 33: roster.TeamMembershipPatchRequest.role:type_name -> roster.RoleRef
+	28, // 34: roster.TeamMembershipPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	15, // 35: roster.TeamMembershipApplyRequest.ref:type_name -> roster.TeamMembershipRef
+	31, // 36: roster.TeamMembershipApplyRequest.patch:type_name -> patch.Patch
+	22, // 37: roster.TeamMembershipListRequest.filters:type_name -> roster.TeamMembershipFilter
+	37, // 38: roster.TeamMembershipListResponse.items:type_name -> roster.TeamMembership
+	15, // 39: roster.TeamMembershipFilter.ref:type_name -> roster.TeamMembershipRef
+	22, // 40: roster.TeamMembershipWatchRequest.filters:type_name -> roster.TeamMembershipFilter
+	25, // 41: roster.TeamMembershipWatchResponse.items:type_name -> roster.TeamMembershipWatchItem
+	37, // 42: roster.TeamMembershipWatchItem.value:type_name -> roster.TeamMembership
+	0,  // 43: roster.SiteMembershipService.Add:input_type -> roster.SiteMembershipAddRequest
+	1,  // 44: roster.SiteMembershipService.Get:input_type -> roster.SiteMembershipGetRequest
+	5,  // 45: roster.SiteMembershipService.Patch:input_type -> roster.SiteMembershipPatchRequest
+	6,  // 46: roster.SiteMembershipService.Apply:input_type -> roster.SiteMembershipApplyRequest
+	2,  // 47: roster.SiteMembershipService.Erase:input_type -> roster.SiteMembershipRef
+	7,  // 48: roster.SiteMembershipService.List:input_type -> roster.SiteMembershipListRequest
+	10, // 49: roster.SiteMembershipService.Watch:input_type -> roster.SiteMembershipWatchRequest
+	13, // 50: roster.TeamMembershipService.Add:input_type -> roster.TeamMembershipAddRequest
+	14, // 51: roster.TeamMembershipService.Get:input_type -> roster.TeamMembershipGetRequest
+	18, // 52: roster.TeamMembershipService.Patch:input_type -> roster.TeamMembershipPatchRequest
+	19, // 53: roster.TeamMembershipService.Apply:input_type -> roster.TeamMembershipApplyRequest
+	15, // 54: roster.TeamMembershipService.Erase:input_type -> roster.TeamMembershipRef
+	20, // 55: roster.TeamMembershipService.List:input_type -> roster.TeamMembershipListRequest
+	23, // 56: roster.TeamMembershipService.Watch:input_type -> roster.TeamMembershipWatchRequest
+	32, // 57: roster.SiteMembershipService.Add:output_type -> roster.SiteMembership
+	32, // 58: roster.SiteMembershipService.Get:output_type -> roster.SiteMembership
+	32, // 59: roster.SiteMembershipService.Patch:output_type -> roster.SiteMembership
+	32, // 60: roster.SiteMembershipService.Apply:output_type -> roster.SiteMembership
+	38, // 61: roster.SiteMembershipService.Erase:output_type -> google.protobuf.Empty
+	8,  // 62: roster.SiteMembershipService.List:output_type -> roster.SiteMembershipListResponse
+	11, // 63: roster.SiteMembershipService.Watch:output_type -> roster.SiteMembershipWatchResponse
+	37, // 64: roster.TeamMembershipService.Add:output_type -> roster.TeamMembership
+	37, // 65: roster.TeamMembershipService.Get:output_type -> roster.TeamMembership
+	37, // 66: roster.TeamMembershipService.Patch:output_type -> roster.TeamMembership
+	37, // 67: roster.TeamMembershipService.Apply:output_type -> roster.TeamMembership
+	38, // 68: roster.TeamMembershipService.Erase:output_type -> google.protobuf.Empty
+	21, // 69: roster.TeamMembershipService.List:output_type -> roster.TeamMembershipListResponse
+	24, // 70: roster.TeamMembershipService.Watch:output_type -> roster.TeamMembershipWatchResponse
+	57, // [57:71] is the sub-list for method output_type
+	43, // [43:57] is the sub-list for method input_type
+	43, // [43:43] is the sub-list for extension type_name
+	43, // [43:43] is the sub-list for extension extendee
+	0,  // [0:43] is the sub-list for field type_name
 }
 
 func init() { file_app_membership_svc_g_proto_init() }
@@ -3297,6 +3335,7 @@ func file_app_membership_svc_g_proto_init() {
 		return
 	}
 	file_app_membership_proto_init()
+	file_app_role_svc_g_proto_init()
 	file_app_site_svc_g_proto_init()
 	file_app_team_svc_g_proto_init()
 	file_roster_payday_holder_svc_g_proto_init()

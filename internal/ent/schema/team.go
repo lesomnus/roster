@@ -33,7 +33,7 @@ func (Team) Fields() []ent.Field {
 			Immutable().
 			Optional(),
 		field.UUID("site_id", uuid.UUID{}).
-			Optional(),
+			Immutable(),
 	}
 }
 
@@ -41,7 +41,9 @@ func (Team) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("site", Site.Type).
 			Unique().
-			Field("site_id"),
+			Field("site_id").
+			Required().
+			Immutable(),
 	}
 }
 

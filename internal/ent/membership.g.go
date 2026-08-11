@@ -50,7 +50,13 @@ func (e *TeamMembership) Proto() *rstr.TeamMembership {
 		r.SetId(v[:])
 		x.SetTeam(r)
 	}
-	x.SetRole(e.Role)
+	if v := e.Edges.Role; v != nil {
+		x.SetRole(v.Proto())
+	} else if v := e.RoleID; v != *new(uuid.UUID) {
+		r := &rstr.Role{}
+		r.SetId(v[:])
+		x.SetRole(r)
+	}
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))

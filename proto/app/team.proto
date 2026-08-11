@@ -36,7 +36,7 @@ message Team {
   // that already has rows, and this one will. A team in no site is then
   // invisible to a read narrowed to one, which is fail-closed and is the right
   // way round.
-  Site site = 3 [(orm.edge) = {nullable: true}];
+  Site site = 3 [(orm.edge) = {immutable: true}];
 
   // Unique within the site, so `operators` may exist in every one of them.
   string alias = 4;

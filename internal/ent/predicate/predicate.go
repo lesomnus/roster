@@ -12,11 +12,20 @@ type ApiKey func(*sql.Selector)
 // Audit is the predicate function for audit builders.
 type Audit func(*sql.Selector)
 
+// Binding is the predicate function for binding builders.
+type Binding func(*sql.Selector)
+
 // Credential is the predicate function for credential builders.
 type Credential func(*sql.Selector)
 
 // Email is the predicate function for email builders.
 type Email func(*sql.Selector)
+
+// Group is the predicate function for group builders.
+type Group func(*sql.Selector)
+
+// GroupMembership is the predicate function for groupmembership builders.
+type GroupMembership func(*sql.Selector)
 
 // Holder is the predicate function for holder builders.
 type Holder func(*sql.Selector)
@@ -37,6 +46,9 @@ type Identity func(*sql.Selector)
 
 // Outbox is the predicate function for outbox builders.
 type Outbox func(*sql.Selector)
+
+// Role is the predicate function for role builders.
+type Role func(*sql.Selector)
 
 // Site is the predicate function for site builders.
 type Site func(*sql.Selector)

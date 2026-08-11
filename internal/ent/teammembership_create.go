@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/holder"
+	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/lesomnus/roster/internal/ent/team"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
 )
@@ -21,12 +22,6 @@ type TeamMembershipCreate struct {
 	config
 	mutation *TeamMembershipMutation
 	hooks    []Hook
-}
-
-// SetRole sets the "role" field.
-func (_c *TeamMembershipCreate) SetRole(v string) *TeamMembershipCreate {
-	_c.mutation.SetRole(v)
-	return _c
 }
 
 // SetDateUpdated sets the "date_updated" field.
@@ -75,6 +70,20 @@ func (_c *TeamMembershipCreate) SetTeamID(v uuid.UUID) *TeamMembershipCreate {
 	return _c
 }
 
+// SetRoleID sets the "role_id" field.
+func (_c *TeamMembershipCreate) SetRoleID(v uuid.UUID) *TeamMembershipCreate {
+	_c.mutation.SetRoleID(v)
+	return _c
+}
+
+// SetNillableRoleID sets the "role_id" field if the given value is not nil.
+func (_c *TeamMembershipCreate) SetNillableRoleID(v *uuid.UUID) *TeamMembershipCreate {
+	if v != nil {
+		_c.SetRoleID(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *TeamMembershipCreate) SetID(v uuid.UUID) *TeamMembershipCreate {
 	_c.mutation.SetID(v)
@@ -89,6 +98,11 @@ func (_c *TeamMembershipCreate) SetHolder(v *Holder) *TeamMembershipCreate {
 // SetTeam sets the "team" edge to the Team entity.
 func (_c *TeamMembershipCreate) SetTeam(v *Team) *TeamMembershipCreate {
 	return _c.SetTeamID(v.ID)
+}
+
+// SetRole sets the "role" edge to the Role entity.
+func (_c *TeamMembershipCreate) SetRole(v *Role) *TeamMembershipCreate {
+	return _c.SetRoleID(v.ID)
 }
 
 // Mutation returns the TeamMembershipMutation object of the builder.
@@ -125,9 +139,6 @@ func (_c *TeamMembershipCreate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_c *TeamMembershipCreate) check() error {
-	if _, ok := _c.mutation.Role(); !ok {
-		return &ValidationError{Name: "role", err: errors.New(`ent: missing required field "TeamMembership.role"`)}
-	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "TeamMembership.date_updated"`)}
 	}
@@ -178,10 +189,6 @@ func (_c *TeamMembershipCreate) createSpec() (*TeamMembership, *sqlgraph.CreateS
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := _c.mutation.Role(); ok {
-		_spec.SetField(teammembership.FieldRole, field.TypeString, value)
-		_node.Role = value
-	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(teammembership.FieldDateUpdated, field.TypeTime, value)
 		_node.DateUpdated = value
@@ -226,6 +233,23 @@ func (_c *TeamMembershipCreate) createSpec() (*TeamMembership, *sqlgraph.CreateS
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.TeamID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RoleIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   teammembership.RoleTable,
+			Columns: []string{teammembership.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(role.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.RoleID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

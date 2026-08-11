@@ -446,16 +446,6 @@ func SiteIDNotIn(vs ...uuid.UUID) predicate.Team {
 	return predicate.Team(sql.FieldNotIn(FieldSiteID, vs...))
 }
 
-// SiteIDIsNil applies the IsNil predicate on the "site_id" field.
-func SiteIDIsNil() predicate.Team {
-	return predicate.Team(sql.FieldIsNull(FieldSiteID))
-}
-
-// SiteIDNotNil applies the NotNil predicate on the "site_id" field.
-func SiteIDNotNil() predicate.Team {
-	return predicate.Team(sql.FieldNotNull(FieldSiteID))
-}
-
 // HasSite applies the HasEdge predicate on the "site" edge.
 func HasSite() predicate.Team {
 	return predicate.Team(func(s *sql.Selector) {

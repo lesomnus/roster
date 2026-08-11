@@ -100,6 +100,9 @@ func (_u *SiteMembershipUpdate) check() error {
 	if _u.mutation.HolderCleared() && len(_u.mutation.HolderIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "SiteMembership.holder"`)
 	}
+	if _u.mutation.SiteCleared() && len(_u.mutation.SiteIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "SiteMembership.site"`)
+	}
 	return nil
 }
 
@@ -238,6 +241,9 @@ func (_u *SiteMembershipUpdateOne) ExecX(ctx context.Context) {
 func (_u *SiteMembershipUpdateOne) check() error {
 	if _u.mutation.HolderCleared() && len(_u.mutation.HolderIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "SiteMembership.holder"`)
+	}
+	if _u.mutation.SiteCleared() && len(_u.mutation.SiteIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "SiteMembership.site"`)
 	}
 	return nil
 }

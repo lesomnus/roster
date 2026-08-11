@@ -32,7 +32,6 @@ func (SiteMembership) Fields() []ent.Field {
 		field.UUID("holder_id", uuid.UUID{}).
 			Immutable(),
 		field.UUID("site_id", uuid.UUID{}).
-			Optional().
 			Immutable(),
 	}
 }
@@ -47,6 +46,7 @@ func (SiteMembership) Edges() []ent.Edge {
 		edge.To("site", Site.Type).
 			Unique().
 			Field("site_id").
+			Required().
 			Immutable(),
 	}
 }
@@ -75,7 +75,6 @@ func (TeamMembership) Fields() []ent.Field {
 		field.UUID("id", uuid.UUID{}).
 			Unique().
 			Immutable(),
-		field.String("role"),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().
@@ -87,6 +86,8 @@ func (TeamMembership) Fields() []ent.Field {
 			Immutable(),
 		field.UUID("team_id", uuid.UUID{}).
 			Immutable(),
+		field.UUID("role_id", uuid.UUID{}).
+			Optional(),
 	}
 }
 
@@ -102,6 +103,9 @@ func (TeamMembership) Edges() []ent.Edge {
 			Field("team_id").
 			Required().
 			Immutable(),
+		edge.To("role", Role.Type).
+			Unique().
+			Field("role_id"),
 	}
 }
 

@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/predicate"
+	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/lesomnus/roster/internal/ent/team"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
 )
@@ -27,6 +28,7 @@ type TeamMembershipQuery struct {
 	predicates []predicate.TeamMembership
 	withHolder *HolderQuery
 	withTeam   *TeamQuery
+	withRole   *RoleQuery
 	modifiers  []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -101,6 +103,28 @@ func (_q *TeamMembershipQuery) QueryTeam() *TeamQuery {
 			sqlgraph.From(teammembership.Table, teammembership.FieldID, selector),
 			sqlgraph.To(team.Table, team.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, teammembership.TeamTable, teammembership.TeamColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRole chains the current query on the "role" edge.
+func (_q *TeamMembershipQuery) QueryRole() *RoleQuery {
+	query := (&RoleClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(teammembership.Table, teammembership.FieldID, selector),
+			sqlgraph.To(role.Table, role.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, teammembership.RoleTable, teammembership.RoleColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -302,6 +326,7 @@ func (_q *TeamMembershipQuery) Clone() *TeamMembershipQuery {
 		predicates: append([]predicate.TeamMembership{}, _q.predicates...),
 		withHolder: _q.withHolder.Clone(),
 		withTeam:   _q.withTeam.Clone(),
+		withRole:   _q.withRole.Clone(),
 		// clone intermediate query.
 		sql:       _q.sql.Clone(),
 		path:      _q.path,
@@ -331,18 +356,29 @@ func (_q *TeamMembershipQuery) WithTeam(opts ...func(*TeamQuery)) *TeamMembershi
 	return _q
 }
 
+// WithRole tells the query-builder to eager-load the nodes that are connected to
+// the "role" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *TeamMembershipQuery) WithRole(opts ...func(*RoleQuery)) *TeamMembershipQuery {
+	query := (&RoleClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRole = query
+	return _q
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
 // Example:
 //
 //	var v []struct {
-//		Role string `json:"role,omitempty"`
+//		DateUpdated time.Time `json:"date_updated,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.TeamMembership.Query().
-//		GroupBy(teammembership.FieldRole).
+//		GroupBy(teammembership.FieldDateUpdated).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (_q *TeamMembershipQuery) GroupBy(field string, fields ...string) *TeamMembershipGroupBy {
@@ -360,11 +396,11 @@ func (_q *TeamMembershipQuery) GroupBy(field string, fields ...string) *TeamMemb
 // Example:
 //
 //	var v []struct {
-//		Role string `json:"role,omitempty"`
+//		DateUpdated time.Time `json:"date_updated,omitempty"`
 //	}
 //
 //	client.TeamMembership.Query().
-//		Select(teammembership.FieldRole).
+//		Select(teammembership.FieldDateUpdated).
 //		Scan(ctx, &v)
 func (_q *TeamMembershipQuery) Select(fields ...string) *TeamMembershipSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
@@ -409,9 +445,10 @@ func (_q *TeamMembershipQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 	var (
 		nodes       = []*TeamMembership{}
 		_spec       = _q.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			_q.withHolder != nil,
 			_q.withTeam != nil,
+			_q.withRole != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -444,6 +481,12 @@ func (_q *TeamMembershipQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 	if query := _q.withTeam; query != nil {
 		if err := _q.loadTeam(ctx, query, nodes, nil,
 			func(n *TeamMembership, e *Team) { n.Edges.Team = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withRole; query != nil {
+		if err := _q.loadRole(ctx, query, nodes, nil,
+			func(n *TeamMembership, e *Role) { n.Edges.Role = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -508,6 +551,35 @@ func (_q *TeamMembershipQuery) loadTeam(ctx context.Context, query *TeamQuery, n
 	}
 	return nil
 }
+func (_q *TeamMembershipQuery) loadRole(ctx context.Context, query *RoleQuery, nodes []*TeamMembership, init func(*TeamMembership), assign func(*TeamMembership, *Role)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*TeamMembership)
+	for i := range nodes {
+		fk := nodes[i].RoleID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(role.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "role_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 
 func (_q *TeamMembershipQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -542,6 +614,9 @@ func (_q *TeamMembershipQuery) querySpec() *sqlgraph.QuerySpec {
 		}
 		if _q.withTeam != nil {
 			_spec.Node.AddColumnOnce(teammembership.FieldTeamID)
+		}
+		if _q.withRole != nil {
+			_spec.Node.AddColumnOnce(teammembership.FieldRoleID)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

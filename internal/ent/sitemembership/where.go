@@ -261,16 +261,6 @@ func SiteIDNotIn(vs ...uuid.UUID) predicate.SiteMembership {
 	return predicate.SiteMembership(sql.FieldNotIn(FieldSiteID, vs...))
 }
 
-// SiteIDIsNil applies the IsNil predicate on the "site_id" field.
-func SiteIDIsNil() predicate.SiteMembership {
-	return predicate.SiteMembership(sql.FieldIsNull(FieldSiteID))
-}
-
-// SiteIDNotNil applies the NotNil predicate on the "site_id" field.
-func SiteIDNotNil() predicate.SiteMembership {
-	return predicate.SiteMembership(sql.FieldNotNull(FieldSiteID))
-}
-
 // HasHolder applies the HasEdge predicate on the "holder" edge.
 func HasHolder() predicate.SiteMembership {
 	return predicate.SiteMembership(func(s *sql.Selector) {

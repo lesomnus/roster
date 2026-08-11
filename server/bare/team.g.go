@@ -13,13 +13,11 @@ import (
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	team "github.com/lesomnus/roster/internal/ent/team"
 	rstr "github.com/lesomnus/roster/rstr"
-	graph "github.com/protobuf-orm/protobuf-orm/graph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -107,15 +105,13 @@ func (s TeamServiceServer) Add(ctx context.Context, req *rstr.TeamAddRequest) (*
 	} else {
 		q.SetID(v)
 	}
-	if req.HasSite() {
-		if k, err := SiteGetKey(ctx, st.Db, req.GetSite()); err != nil {
-			return nil, err
-		} else {
-			q.SetSiteID(k)
-			ds = append(ds, func(v *rstr.Team) {
-				v.SetSite(rstr.Site_builder{Id: k[:]}.Build())
-			})
-		}
+	if k, err := SiteGetKey(ctx, st.Db, req.GetSite()); err != nil {
+		return nil, err
+	} else {
+		q.SetSiteID(k)
+		ds = append(ds, func(v *rstr.Team) {
+			v.SetSite(rstr.Site_builder{Id: k[:]}.Build())
+		})
 	}
 	q.SetAlias(req.GetAlias())
 	q.SetName(req.GetName())
@@ -236,17 +232,7 @@ func TeamSelectInit(q *ent.TeamQuery, m *rstr.TeamSelect) {
 }
 
 func (s TeamServiceServer) Patch(ctx context.Context, req *rstr.TeamPatchRequest) (*rstr.Team, error) {
-	doc, err := ormpatch.FromPatchRequest(teamOrmEntity, req.ProtoReflect(), func(ed graph.Edge, ref protoreflect.Message) (protoreflect.Value, error) {
-		switch ed.Number() {
-		case 3:
-			k, err := SiteGetKey(ctx, s.Db, ref.Interface().(*rstr.SiteRef))
-			if err != nil {
-				return protoreflect.Value{}, err
-			}
-			return protoreflect.ValueOfBytes(k[:]), nil
-		}
-		return protoreflect.Value{}, status.Errorf(codes.Internal, "no key resolver for edge: %s", ed.Name())
-	})
+	doc, err := ormpatch.FromPatchRequest(teamOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
 			return nil, err

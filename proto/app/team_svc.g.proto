@@ -75,12 +75,6 @@ message TeamSelect {
 
 message TeamPatchRequest {
   TeamRef ref = 1;
-  SiteRef site = 6;
-  // Clear site instead of writing it.
-  // It takes a field of its own because an unset value already means
-  // "leave it alone", so no value could have meant NULL. It wins
-  // outright: setting both this and site clears.
-  bool site_null = 7;
   string alias = 8;
   string name = 10;
   string desc = 12;

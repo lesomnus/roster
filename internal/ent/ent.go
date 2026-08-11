@@ -14,11 +14,15 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/lesomnus/roster/internal/ent/apikey"
 	"github.com/lesomnus/roster/internal/ent/audit"
+	"github.com/lesomnus/roster/internal/ent/binding"
 	"github.com/lesomnus/roster/internal/ent/credential"
 	"github.com/lesomnus/roster/internal/ent/email"
+	"github.com/lesomnus/roster/internal/ent/group"
+	"github.com/lesomnus/roster/internal/ent/groupmembership"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/identity"
 	"github.com/lesomnus/roster/internal/ent/outbox"
+	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/lesomnus/roster/internal/ent/site"
 	"github.com/lesomnus/roster/internal/ent/sitemembership"
 	"github.com/lesomnus/roster/internal/ent/team"
@@ -84,18 +88,22 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			apikey.Table:         apikey.ValidColumn,
-			audit.Table:          audit.ValidColumn,
-			credential.Table:     credential.ValidColumn,
-			email.Table:          email.ValidColumn,
-			holder.Table:         holder.ValidColumn,
-			identity.Table:       identity.ValidColumn,
-			outbox.Table:         outbox.ValidColumn,
-			site.Table:           site.ValidColumn,
-			sitemembership.Table: sitemembership.ValidColumn,
-			team.Table:           team.ValidColumn,
-			teammembership.Table: teammembership.ValidColumn,
-			tenant.Table:         tenant.ValidColumn,
+			apikey.Table:          apikey.ValidColumn,
+			audit.Table:           audit.ValidColumn,
+			binding.Table:         binding.ValidColumn,
+			credential.Table:      credential.ValidColumn,
+			email.Table:           email.ValidColumn,
+			group.Table:           group.ValidColumn,
+			groupmembership.Table: groupmembership.ValidColumn,
+			holder.Table:          holder.ValidColumn,
+			identity.Table:        identity.ValidColumn,
+			outbox.Table:          outbox.ValidColumn,
+			role.Table:            role.ValidColumn,
+			site.Table:            site.ValidColumn,
+			sitemembership.Table:  sitemembership.ValidColumn,
+			team.Table:            team.ValidColumn,
+			teammembership.Table:  teammembership.ValidColumn,
+			tenant.Table:          tenant.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

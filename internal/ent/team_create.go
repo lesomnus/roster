@@ -80,14 +80,6 @@ func (_c *TeamCreate) SetSiteID(v uuid.UUID) *TeamCreate {
 	return _c
 }
 
-// SetNillableSiteID sets the "site_id" field if the given value is not nil.
-func (_c *TeamCreate) SetNillableSiteID(v *uuid.UUID) *TeamCreate {
-	if v != nil {
-		_c.SetSiteID(*v)
-	}
-	return _c
-}
-
 // SetID sets the "id" field.
 func (_c *TeamCreate) SetID(v uuid.UUID) *TeamCreate {
 	_c.mutation.SetID(v)
@@ -144,6 +136,12 @@ func (_c *TeamCreate) check() error {
 	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Team.date_updated"`)}
+	}
+	if _, ok := _c.mutation.SiteID(); !ok {
+		return &ValidationError{Name: "site_id", err: errors.New(`ent: missing required field "Team.site_id"`)}
+	}
+	if len(_c.mutation.SiteIDs()) == 0 {
+		return &ValidationError{Name: "site", err: errors.New(`ent: missing required edge "Team.site"`)}
 	}
 	return nil
 }
