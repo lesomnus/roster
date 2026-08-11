@@ -50,6 +50,7 @@ message RoleAddRequest {
   string name = 5 [features.field_presence = IMPLICIT];
   string desc = 6 [features.field_presence = IMPLICIT];
   repeated string methods = 8;
+  bool every_method = 9 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -78,6 +79,7 @@ message RoleSelect {
   bool name = 5;
   bool desc = 6;
   bool methods = 8;
+  bool every_method = 9;
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;
@@ -89,6 +91,7 @@ message RolePatchRequest {
   string name = 10;
   string desc = 12;
   repeated string methods = 16;
+  bool every_method = 18;
   // The version this update requires the stored date_updated to be.
   // It is a precondition, not a write: the update applies only if the row
   // still holds this value, and the server stamps the new version itself.

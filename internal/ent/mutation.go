@@ -8461,6 +8461,7 @@ type RoleMutation struct {
 	desc          *string
 	methods       *[]string
 	appendmethods []string
+	every_method  *bool
 	date_updated  *time.Time
 	date_erased   *time.Time
 	date_created  *time.Time
@@ -8749,6 +8750,42 @@ func (m *RoleMutation) ResetMethods() {
 	m.methods = nil
 	m.appendmethods = nil
 	delete(m.clearedFields, role.FieldMethods)
+}
+
+// SetEveryMethod sets the "every_method" field.
+func (m *RoleMutation) SetEveryMethod(b bool) {
+	m.every_method = &b
+}
+
+// EveryMethod returns the value of the "every_method" field in the mutation.
+func (m *RoleMutation) EveryMethod() (r bool, exists bool) {
+	v := m.every_method
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEveryMethod returns the old "every_method" field's value of the Role entity.
+// If the Role object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoleMutation) OldEveryMethod(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEveryMethod is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEveryMethod requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEveryMethod: %w", err)
+	}
+	return oldValue.EveryMethod, nil
+}
+
+// ResetEveryMethod resets all changes to the "every_method" field.
+func (m *RoleMutation) ResetEveryMethod() {
+	m.every_method = nil
 }
 
 // SetDateUpdated sets the "date_updated" field.
@@ -9058,7 +9095,7 @@ func (m *RoleMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RoleMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 10)
 	if m.alias != nil {
 		fields = append(fields, role.FieldAlias)
 	}
@@ -9070,6 +9107,9 @@ func (m *RoleMutation) Fields() []string {
 	}
 	if m.methods != nil {
 		fields = append(fields, role.FieldMethods)
+	}
+	if m.every_method != nil {
+		fields = append(fields, role.FieldEveryMethod)
 	}
 	if m.date_updated != nil {
 		fields = append(fields, role.FieldDateUpdated)
@@ -9102,6 +9142,8 @@ func (m *RoleMutation) Field(name string) (ent.Value, bool) {
 		return m.Desc()
 	case role.FieldMethods:
 		return m.Methods()
+	case role.FieldEveryMethod:
+		return m.EveryMethod()
 	case role.FieldDateUpdated:
 		return m.DateUpdated()
 	case role.FieldDateErased:
@@ -9129,6 +9171,8 @@ func (m *RoleMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldDesc(ctx)
 	case role.FieldMethods:
 		return m.OldMethods(ctx)
+	case role.FieldEveryMethod:
+		return m.OldEveryMethod(ctx)
 	case role.FieldDateUpdated:
 		return m.OldDateUpdated(ctx)
 	case role.FieldDateErased:
@@ -9175,6 +9219,13 @@ func (m *RoleMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetMethods(v)
+		return nil
+	case role.FieldEveryMethod:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEveryMethod(v)
 		return nil
 	case role.FieldDateUpdated:
 		v, ok := value.(time.Time)
@@ -9298,6 +9349,9 @@ func (m *RoleMutation) ResetField(name string) error {
 		return nil
 	case role.FieldMethods:
 		m.ResetMethods()
+		return nil
+	case role.FieldEveryMethod:
+		m.ResetEveryMethod()
 		return nil
 	case role.FieldDateUpdated:
 		m.ResetDateUpdated()

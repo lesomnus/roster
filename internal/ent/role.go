@@ -29,6 +29,8 @@ type Role struct {
 	Desc string `json:"desc,omitempty"`
 	// Methods holds the value of the "methods" field.
 	Methods []string `json:"methods,omitempty"`
+	// EveryMethod holds the value of the "every_method" field.
+	EveryMethod bool `json:"every_method,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -85,6 +87,8 @@ func (*Role) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case role.FieldMethods:
 			values[i] = new([]byte)
+		case role.FieldEveryMethod:
+			values[i] = new(sql.NullBool)
 		case role.FieldAlias, role.FieldName, role.FieldDesc:
 			values[i] = new(sql.NullString)
 		case role.FieldDateUpdated, role.FieldDateErased, role.FieldDateCreated:
@@ -137,6 +141,12 @@ func (_m *Role) assignValues(columns []string, values []any) error {
 				if err := json.Unmarshal(*value, &_m.Methods); err != nil {
 					return fmt.Errorf("unmarshal field methods: %w", err)
 				}
+			}
+		case role.FieldEveryMethod:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field every_method", values[i])
+			} else if value.Valid {
+				_m.EveryMethod = value.Bool
 			}
 		case role.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -226,6 +236,9 @@ func (_m *Role) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("methods=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Methods))
+	builder.WriteString(", ")
+	builder.WriteString("every_method=")
+	builder.WriteString(fmt.Sprintf("%v", _m.EveryMethod))
 	builder.WriteString(", ")
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))

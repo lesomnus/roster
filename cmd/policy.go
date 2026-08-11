@@ -166,9 +166,20 @@ type held struct {
 	methods map[string]struct{}
 	sites   []uuid.UUID
 	anySite bool
+
+	// every is a role that said so rather than a role that listed everything;
+	// see `Role.every_method`. It is a field beside the map rather than the map
+	// being filled in from the descriptors, because the two answers differ
+	// after an upgrade: a list is what was true when it was written and this is
+	// what is true now.
+	every bool
 }
 
 func (h held) allows(method string) bool {
+	if h.every {
+		return true
+	}
+
 	_, ok := h.methods[method]
 
 	return ok
@@ -232,6 +243,9 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 	}
 	for _, v := range ts {
 		if v.Edges.Role != nil {
+			if v.Edges.Role.EveryMethod {
+				h.every = true
+			}
 			for _, m := range v.Edges.Role.Methods {
 				h.methods[m] = struct{}{}
 			}
@@ -253,6 +267,9 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 
 	for _, v := range vs {
 		if v.Edges.Role != nil {
+			if v.Edges.Role.EveryMethod {
+				h.every = true
+			}
 			for _, m := range v.Edges.Role.Methods {
 				h.methods[m] = struct{}{}
 			}
@@ -294,7 +311,7 @@ func Rules(db *ent.Client) core.Rules {
 // Bindings only. A role held in a team is scoped to that team, and letting it
 // be bound tenant-wide would widen a scope rather than pass on a permission.
 func Granted(db *ent.Client) core.Granted {
-	return func(ctx context.Context, who pdid.Id) ([]string, error) {
+	return func(ctx context.Context, who pdid.Id) ([]string, bool, error) {
 		vs, err := db.Binding.Query().
 			Where(
 				binding.DateErasedIsNil(),
@@ -303,17 +320,22 @@ func Granted(db *ent.Client) core.Granted {
 			WithRole().
 			All(ctx)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
 		var ms []string
 		for _, v := range vs {
-			if v.Edges.Role != nil {
-				ms = append(ms, v.Edges.Role.Methods...)
+			if v.Edges.Role == nil {
+				continue
 			}
+			if v.Edges.Role.EveryMethod {
+				return nil, true, nil
+			}
+
+			ms = append(ms, v.Edges.Role.Methods...)
 		}
 
-		return ms, nil
+		return ms, false, nil
 	}
 }
 
@@ -364,6 +386,9 @@ func allows(r *ent.Role, method string) bool {
 	if r == nil {
 		return false
 	}
+	if r.EveryMethod {
+		return true
+	}
 
 	for _, m := range r.Methods {
 		if m == method {
@@ -387,11 +412,18 @@ func Everything(db *ent.Client) me.Held {
 			return nil, nil, false, err
 		}
 
+		// A role that says "everything" is expanded here and nowhere else. A
+		// page needs the list to decide what to draw; the gate reads the flag,
+		// so what is enforced cannot fall behind what this enumerates.
 		ms := make([]string, 0, len(h.methods))
-		for m := range h.methods {
-			ms = append(ms, m)
+		if h.every {
+			ms = everyMethod()
+		} else {
+			for m := range h.methods {
+				ms = append(ms, m)
+			}
+			slices.Sort(ms)
 		}
-		slices.Sort(ms)
 
 		ks := make([]pdid.Id, 0, len(h.sites))
 		for _, v := range h.sites {

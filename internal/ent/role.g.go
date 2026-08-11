@@ -30,6 +30,7 @@ func (e *Role) Proto() *rstr.Role {
 	x.SetName(e.Name)
 	x.SetDesc(e.Desc)
 	x.SetMethods(e.Methods)
+	x.SetEveryMethod(e.EveryMethod)
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))

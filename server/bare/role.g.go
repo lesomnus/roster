@@ -130,6 +130,7 @@ func (s RoleServiceServer) Add(ctx context.Context, req *rstr.RoleAddRequest) (*
 	if u := req.GetMethods(); len(u) > 0 {
 		q.SetMethods(u)
 	}
+	q.SetEveryMethod(req.GetEveryMethod())
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
 		q.SetDateCreated(req.GetDateCreated().AsTime())
@@ -214,6 +215,9 @@ func RoleSelectedFields(m *rstr.RoleSelect) []string {
 	}
 	if m.GetMethods() {
 		vs = append(vs, role.FieldMethods)
+	}
+	if m.GetEveryMethod() {
+		vs = append(vs, role.FieldEveryMethod)
 	}
 	if m.GetDateUpdated() {
 		vs = append(vs, role.FieldDateUpdated)
@@ -301,7 +305,7 @@ func RoleGetKey(ctx context.Context, db *ent.Client, ref *rstr.RoleRef) (uuid.UU
 var roleOrmEntity = ormpatch.MustEntityOf(rstr.File_app_role_proto, "Role")
 
 var rolePatchColumns = entpatch.Columns{
-	1: role.FieldID, 2: role.TenantColumn, 3: role.SiteColumn, 4: role.FieldAlias, 5: role.FieldName, 6: role.FieldDesc, 8: role.FieldMethods, 13: role.FieldDateUpdated, 14: role.FieldDateErased, 15: role.FieldDateCreated}
+	1: role.FieldID, 2: role.TenantColumn, 3: role.SiteColumn, 4: role.FieldAlias, 5: role.FieldName, 6: role.FieldDesc, 8: role.FieldMethods, 9: role.FieldEveryMethod, 13: role.FieldDateUpdated, 14: role.FieldDateErased, 15: role.FieldDateCreated}
 
 func (s RoleServiceServer) Apply(ctx context.Context, req *rstr.RoleApplyRequest) (*rstr.Role, error) {
 	if !req.HasPatch() {

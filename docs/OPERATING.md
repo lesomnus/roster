@@ -37,6 +37,45 @@ roster init --tenant acme --holder admin
 A tenant is not put up from inside one, so the first row cannot arrive over the
 API. `init` writes it through the server instance the process holds.
 
+It also writes the first **role and binding**, and that is not a convenience:
+permissions are deny-by-default, so a tenant and a holder alone are somebody who
+can call one method — the one that tells them they hold nothing. There is no way
+out of that from the API, because writing the first role needs a binding only
+writing the first role could give.
+
+The role is `everything`, and it says so rather than listing it:
+
+```
+holder admin is 019ff2...
+  bound to role "everything" -- **every method there is**, now and after an upgrade
+```
+
+A list written at `init` is a snapshot. The next release adds an RPC the first
+administrator cannot call and cannot grant themselves either, because granting
+is refused for anything the granter does not already hold — so a snapshot is
+repaired by a shell on the box, once per upgrade, forever.
+
+It is still an ordinary row: unbind it and it is gone, erase it and every
+binding to it goes too. What it is not is something anybody can hand out —
+`every_method` may only be written by somebody who already holds it, and the
+first one comes from here.
+
+### And an operator, if there is a control plane
+
+```
+control plane
+  holder ops is 019ff2...
+  bound to role "everything"
+  password  kQ9x...
+```
+
+Shown once and stored as an argon2id hash. There is no `--password` flag on
+purpose: a secret on a command line is in the shell history and the process
+list, which is the same reason `roster key add` will not take a key.
+
+That is the console's bootstrap. A console cannot be what creates the first
+person allowed to use it.
+
 ## A key for a service
 
 ```sh
@@ -145,9 +184,13 @@ reaches everybody in it, so the rule is written once and the membership changes.
 
 ### You cannot hand out what you do not hold
 
-Writing a role or binding one is refused when it names a method you do not hold
-**through a binding**. A role you hold in one team is not yours to bind across
-the tenant.
+Writing a role, patching one, binding one, and putting methods on an API key are
+all refused when they name a method you do not hold **through a binding**. A
+role you hold in one team is not yours to bind across the tenant.
+
+`every_method` is its own refusal, because it cannot be checked as a list —
+"everything" is not the methods that exist today. Only somebody who already
+holds it may hand it out.
 
 So the first binding is `init`'s, and everything else descends from it.
 
@@ -195,6 +238,6 @@ Nothing written down is plaintext, and it warns once.
   customer-minted key safe are in place — the prefix, the holder it resolves to,
   and `mayGrant` on `methods` — and what is missing is the surface that would
   use them.
-- **No escalation-proof `Patch`.** `Role.Patch` would be how a role grows
-  methods after it was written, and it is closed at the transport. A deployment
-  that opens general writes opens that with them.
+- **`Binding` cannot be re-pointed.** Its edges are immutable, so changing who
+  holds what is a delete and an add. That is the safe direction and it is worth
+  knowing before writing a console screen that looks like an edit.

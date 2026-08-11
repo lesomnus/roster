@@ -32,6 +32,7 @@ type RoleAddRequest struct {
 	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
 	xxx_hidden_Methods     []string               `protobuf:"bytes,8,rep,name=methods"`
+	xxx_hidden_EveryMethod bool                   `protobuf:"varint,9,opt,name=every_method,json=everyMethod"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
@@ -113,6 +114,13 @@ func (x *RoleAddRequest) GetMethods() []string {
 	return nil
 }
 
+func (x *RoleAddRequest) GetEveryMethod() bool {
+	if x != nil {
+		return x.xxx_hidden_EveryMethod
+	}
+	return false
+}
+
 func (x *RoleAddRequest) GetDateCreated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateCreated
@@ -125,7 +133,7 @@ func (x *RoleAddRequest) SetId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 9)
 }
 
 func (x *RoleAddRequest) SetTenant(v *TenantRef) {
@@ -150,6 +158,10 @@ func (x *RoleAddRequest) SetDesc(v string) {
 
 func (x *RoleAddRequest) SetMethods(v []string) {
 	x.xxx_hidden_Methods = v
+}
+
+func (x *RoleAddRequest) SetEveryMethod(v bool) {
+	x.xxx_hidden_EveryMethod = v
 }
 
 func (x *RoleAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
@@ -211,6 +223,7 @@ type RoleAddRequest_builder struct {
 	Name        string
 	Desc        string
 	Methods     []string
+	EveryMethod bool
 	DateCreated *timestamppb.Timestamp
 }
 
@@ -219,7 +232,7 @@ func (b0 RoleAddRequest_builder) Build() *RoleAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 9)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Tenant = b.Tenant
@@ -228,6 +241,7 @@ func (b0 RoleAddRequest_builder) Build() *RoleAddRequest {
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Desc = b.Desc
 	x.xxx_hidden_Methods = b.Methods
+	x.xxx_hidden_EveryMethod = b.EveryMethod
 	x.xxx_hidden_DateCreated = b.DateCreated
 	return m0
 }
@@ -607,6 +621,7 @@ type RoleSelect struct {
 	xxx_hidden_Name        bool                   `protobuf:"varint,5,opt,name=name"`
 	xxx_hidden_Desc        bool                   `protobuf:"varint,6,opt,name=desc"`
 	xxx_hidden_Methods     bool                   `protobuf:"varint,8,opt,name=methods"`
+	xxx_hidden_EveryMethod bool                   `protobuf:"varint,9,opt,name=every_method,json=everyMethod"`
 	xxx_hidden_DateUpdated bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
@@ -690,6 +705,13 @@ func (x *RoleSelect) GetMethods() bool {
 	return false
 }
 
+func (x *RoleSelect) GetEveryMethod() bool {
+	if x != nil {
+		return x.xxx_hidden_EveryMethod
+	}
+	return false
+}
+
 func (x *RoleSelect) GetDateUpdated() bool {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -713,7 +735,7 @@ func (x *RoleSelect) GetDateCreated() bool {
 
 func (x *RoleSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 11)
 }
 
 func (x *RoleSelect) SetTenant(v *TenantSelect) {
@@ -726,37 +748,42 @@ func (x *RoleSelect) SetSite(v *SiteSelect) {
 
 func (x *RoleSelect) SetAlias(v bool) {
 	x.xxx_hidden_Alias = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 11)
 }
 
 func (x *RoleSelect) SetName(v bool) {
 	x.xxx_hidden_Name = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 11)
 }
 
 func (x *RoleSelect) SetDesc(v bool) {
 	x.xxx_hidden_Desc = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 11)
 }
 
 func (x *RoleSelect) SetMethods(v bool) {
 	x.xxx_hidden_Methods = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 11)
+}
+
+func (x *RoleSelect) SetEveryMethod(v bool) {
+	x.xxx_hidden_EveryMethod = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 11)
 }
 
 func (x *RoleSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 11)
 }
 
 func (x *RoleSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 11)
 }
 
 func (x *RoleSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 11)
 }
 
 func (x *RoleSelect) HasAll() bool {
@@ -808,25 +835,32 @@ func (x *RoleSelect) HasMethods() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
-func (x *RoleSelect) HasDateUpdated() bool {
+func (x *RoleSelect) HasEveryMethod() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
 }
 
-func (x *RoleSelect) HasDateErased() bool {
+func (x *RoleSelect) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
 }
 
-func (x *RoleSelect) HasDateCreated() bool {
+func (x *RoleSelect) HasDateErased() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
+}
+
+func (x *RoleSelect) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
 }
 
 func (x *RoleSelect) ClearAll() {
@@ -862,18 +896,23 @@ func (x *RoleSelect) ClearMethods() {
 	x.xxx_hidden_Methods = false
 }
 
-func (x *RoleSelect) ClearDateUpdated() {
+func (x *RoleSelect) ClearEveryMethod() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	x.xxx_hidden_EveryMethod = false
+}
+
+func (x *RoleSelect) ClearDateUpdated() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
 	x.xxx_hidden_DateUpdated = false
 }
 
 func (x *RoleSelect) ClearDateErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
 	x.xxx_hidden_DateErased = false
 }
 
 func (x *RoleSelect) ClearDateCreated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
 	x.xxx_hidden_DateCreated = false
 }
 
@@ -887,6 +926,7 @@ type RoleSelect_builder struct {
 	Name        *bool
 	Desc        *bool
 	Methods     *bool
+	EveryMethod *bool
 	DateUpdated *bool
 	DateErased  *bool
 	DateCreated *bool
@@ -897,37 +937,41 @@ func (b0 RoleSelect_builder) Build() *RoleSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 11)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Tenant = b.Tenant
 	x.xxx_hidden_Site = b.Site
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 11)
 		x.xxx_hidden_Alias = *b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 11)
 		x.xxx_hidden_Name = *b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 11)
 		x.xxx_hidden_Desc = *b.Desc
 	}
 	if b.Methods != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 11)
 		x.xxx_hidden_Methods = *b.Methods
 	}
+	if b.EveryMethod != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 11)
+		x.xxx_hidden_EveryMethod = *b.EveryMethod
+	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 11)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 11)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 11)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	return m0
@@ -940,6 +984,7 @@ type RolePatchRequest struct {
 	xxx_hidden_Name             *string                `protobuf:"bytes,10,opt,name=name"`
 	xxx_hidden_Desc             *string                `protobuf:"bytes,12,opt,name=desc"`
 	xxx_hidden_Methods          []string               `protobuf:"bytes,16,rep,name=methods"`
+	xxx_hidden_EveryMethod      bool                   `protobuf:"varint,18,opt,name=every_method,json=everyMethod"`
 	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateUpdatedForce bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
 	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
@@ -1017,6 +1062,13 @@ func (x *RolePatchRequest) GetMethods() []string {
 	return nil
 }
 
+func (x *RolePatchRequest) GetEveryMethod() bool {
+	if x != nil {
+		return x.xxx_hidden_EveryMethod
+	}
+	return false
+}
+
 func (x *RolePatchRequest) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -1037,21 +1089,26 @@ func (x *RolePatchRequest) SetRef(v *RoleRef) {
 
 func (x *RolePatchRequest) SetAlias(v string) {
 	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 8)
 }
 
 func (x *RolePatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 8)
 }
 
 func (x *RolePatchRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 8)
 }
 
 func (x *RolePatchRequest) SetMethods(v []string) {
 	x.xxx_hidden_Methods = v
+}
+
+func (x *RolePatchRequest) SetEveryMethod(v bool) {
+	x.xxx_hidden_EveryMethod = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 8)
 }
 
 func (x *RolePatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -1060,7 +1117,7 @@ func (x *RolePatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *RolePatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 8)
 }
 
 func (x *RolePatchRequest) HasRef() bool {
@@ -1091,6 +1148,13 @@ func (x *RolePatchRequest) HasDesc() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
+func (x *RolePatchRequest) HasEveryMethod() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+}
+
 func (x *RolePatchRequest) HasDateUpdated() bool {
 	if x == nil {
 		return false
@@ -1102,7 +1166,7 @@ func (x *RolePatchRequest) HasDateUpdatedForce() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
 }
 
 func (x *RolePatchRequest) ClearRef() {
@@ -1124,23 +1188,29 @@ func (x *RolePatchRequest) ClearDesc() {
 	x.xxx_hidden_Desc = nil
 }
 
+func (x *RolePatchRequest) ClearEveryMethod() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_EveryMethod = false
+}
+
 func (x *RolePatchRequest) ClearDateUpdated() {
 	x.xxx_hidden_DateUpdated = nil
 }
 
 func (x *RolePatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
 	x.xxx_hidden_DateUpdatedForce = false
 }
 
 type RolePatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref     *RoleRef
-	Alias   *string
-	Name    *string
-	Desc    *string
-	Methods []string
+	Ref         *RoleRef
+	Alias       *string
+	Name        *string
+	Desc        *string
+	Methods     []string
+	EveryMethod *bool
 	// The version this update requires the stored date_updated to be.
 	// It is a precondition, not a write: the update applies only if the row
 	// still holds this value, and the server stamps the new version itself.
@@ -1163,21 +1233,25 @@ func (b0 RolePatchRequest_builder) Build() *RolePatchRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 8)
 		x.xxx_hidden_Alias = b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 8)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 8)
 		x.xxx_hidden_Desc = b.Desc
 	}
 	x.xxx_hidden_Methods = b.Methods
+	if b.EveryMethod != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 8)
+		x.xxx_hidden_EveryMethod = *b.EveryMethod
+	}
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 8)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	return m0
@@ -2685,7 +2759,7 @@ var File_app_role_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_role_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/role_svc.g.proto\x12\x06roster\x1a\x15app/group_svc.g.proto\x1a\x0eapp/role.proto\x1a\x14app/site_svc.g.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\x1a roster/payday/tenant_svc.g.proto\"\x9c\x02\n" +
+	"\x14app/role_svc.g.proto\x12\x06roster\x1a\x15app/group_svc.g.proto\x1a\x0eapp/role.proto\x1a\x14app/site_svc.g.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\x1a roster/payday/tenant_svc.g.proto\"\xc6\x02\n" +
 	"\x0eRoleAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12#\n" +
@@ -2693,7 +2767,8 @@ const file_app_role_svc_g_proto_rawDesc = "" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
 	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12\x18\n" +
-	"\amethods\x18\b \x03(\tR\amethods\x12=\n" +
+	"\amethods\x18\b \x03(\tR\amethods\x12(\n" +
+	"\fevery_method\x18\t \x01(\bB\x05\xaa\x01\x02\b\x02R\veveryMethod\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"_\n" +
 	"\x0eRoleGetRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.roster.RoleRefR\x03ref\x12*\n" +
@@ -2704,7 +2779,7 @@ const file_app_role_svc_g_proto_rawDesc = "" +
 	"\x03key\"Q\n" +
 	"\x0eRoleRefByAlias\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x14\n" +
-	"\x05alias\x18\x04 \x01(\tR\x05alias\"\xb3\x02\n" +
+	"\x05alias\x18\x04 \x01(\tR\x05alias\"\xd6\x02\n" +
 	"\n" +
 	"RoleSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
@@ -2714,17 +2789,19 @@ const file_app_role_svc_g_proto_rawDesc = "" +
 	"\x04name\x18\x05 \x01(\bR\x04name\x12\x12\n" +
 	"\x04desc\x18\x06 \x01(\bR\x04desc\x12\x18\n" +
 	"\amethods\x18\b \x01(\bR\amethods\x12!\n" +
+	"\fevery_method\x18\t \x01(\bR\veveryMethod\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xfa\x01\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\x9d\x02\n" +
 	"\x10RolePatchRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.roster.RoleRefR\x03ref\x12\x14\n" +
 	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
 	"\x04name\x18\n" +
 	" \x01(\tR\x04name\x12\x12\n" +
 	"\x04desc\x18\f \x01(\tR\x04desc\x12\x18\n" +
-	"\amethods\x18\x10 \x03(\tR\amethods\x12=\n" +
+	"\amethods\x18\x10 \x03(\tR\amethods\x12!\n" +
+	"\fevery_method\x18\x12 \x01(\bR\veveryMethod\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"Y\n" +
 	"\x10RoleApplyRequest\x12!\n" +

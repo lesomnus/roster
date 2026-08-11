@@ -27,6 +27,7 @@ func (Role) Fields() []ent.Field {
 		field.String("desc"),
 		field.JSON("methods", []string{}).
 			Optional(),
+		field.Bool("every_method"),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().

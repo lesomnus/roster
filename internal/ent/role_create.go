@@ -47,6 +47,12 @@ func (_c *RoleCreate) SetMethods(v []string) *RoleCreate {
 	return _c
 }
 
+// SetEveryMethod sets the "every_method" field.
+func (_c *RoleCreate) SetEveryMethod(v bool) *RoleCreate {
+	_c.mutation.SetEveryMethod(v)
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *RoleCreate) SetDateUpdated(v time.Time) *RoleCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -160,6 +166,9 @@ func (_c *RoleCreate) check() error {
 	if _, ok := _c.mutation.Desc(); !ok {
 		return &ValidationError{Name: "desc", err: errors.New(`ent: missing required field "Role.desc"`)}
 	}
+	if _, ok := _c.mutation.EveryMethod(); !ok {
+		return &ValidationError{Name: "every_method", err: errors.New(`ent: missing required field "Role.every_method"`)}
+	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Role.date_updated"`)}
 	}
@@ -219,6 +228,10 @@ func (_c *RoleCreate) createSpec() (*Role, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Methods(); ok {
 		_spec.SetField(role.FieldMethods, field.TypeJSON, value)
 		_node.Methods = value
+	}
+	if value, ok := _c.mutation.EveryMethod(); ok {
+		_spec.SetField(role.FieldEveryMethod, field.TypeBool, value)
+		_node.EveryMethod = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(role.FieldDateUpdated, field.TypeTime, value)

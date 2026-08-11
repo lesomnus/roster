@@ -171,8 +171,46 @@ func (s coreRole) Add(ctx context.Context, req *app.RoleAddRequest) (*app.Role, 
 	if err := s.mayGrant(ctx, "methods", req.GetMethods()); err != nil {
 		return nil, err
 	}
+	if req.GetEveryMethod() {
+		if err := s.mayGrantEverything(ctx, "every_method"); err != nil {
+			return nil, err
+		}
+	}
 
 	return s.RoleServiceServer.Add(ctx, req)
+}
+
+// Patch is held to the same rule as Add, and it has to be.
+//
+// A role that can grow methods after it was written is a role whose first
+// version says nothing about what it allows: write "reader", get it bound, then
+// patch `Holder/Erase` into it. Everybody it was ever granted to gains that,
+// at once, without a binding being touched.
+//
+// It was missing, and what hid it is that nothing grants `RoleService/Patch` by
+// default -- deny-by-default meant nobody could reach it, so the hole opened
+// only for a deployment that started using the feature. Found by writing it:
+// somebody holding just `RoleService/Patch` widened their own role to a method
+// they did not hold, and nothing refused.
+//
+// The whole list is checked rather than the difference. Working that out means
+// reading the row, and a caller who may not grant a method they are leaving in
+// place should not be writing this row at all.
+//
+// `every_method` is not patchable into a role for the same reason, and by the
+// same call: `mayGrant` refuses anybody who does not already hold everything,
+// and holding everything is the only way to hand it out.
+func (s coreRole) Patch(ctx context.Context, req *app.RolePatchRequest) (*app.Role, error) {
+	if err := s.mayGrant(ctx, "methods", req.GetMethods()); err != nil {
+		return nil, err
+	}
+	if req.GetEveryMethod() {
+		if err := s.mayGrantEverything(ctx, "every_method"); err != nil {
+			return nil, err
+		}
+	}
+
+	return s.RoleServiceServer.Patch(ctx, req)
 }
 
 type coreGroup struct {
@@ -250,12 +288,20 @@ func (s coreBinding) Add(ctx context.Context, req *app.BindingAddRequest) (*app.
 	// And what it hands out. Being allowed to write bindings was, until this,
 	// being allowed everything: write a role holding anything, bind it to
 	// yourself, and the permission system is a formality.
-	ms, err := s.methodsOf(ctx, req.GetRole())
+	ms, every, err := s.methodsOf(ctx, req.GetRole())
 	if err != nil {
 		return nil, err
 	}
 	if err := s.mayGrant(ctx, "role", ms); err != nil {
 		return nil, err
+	}
+	if every {
+		// A role that says "everything" carries an empty `methods`, so the
+		// check above finds nothing to refuse. Without this, the widest role in
+		// the deployment is the one anybody who may bind at all can hand out.
+		if err := s.mayGrantEverything(ctx, "role"); err != nil {
+			return nil, err
+		}
 	}
 
 	return s.BindingServiceServer.Add(ctx, req)

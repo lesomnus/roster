@@ -90,6 +90,20 @@ func (_u *RoleUpdate) ClearMethods() *RoleUpdate {
 	return _u
 }
 
+// SetEveryMethod sets the "every_method" field.
+func (_u *RoleUpdate) SetEveryMethod(v bool) *RoleUpdate {
+	_u.mutation.SetEveryMethod(v)
+	return _u
+}
+
+// SetNillableEveryMethod sets the "every_method" field if the given value is not nil.
+func (_u *RoleUpdate) SetNillableEveryMethod(v *bool) *RoleUpdate {
+	if v != nil {
+		_u.SetEveryMethod(*v)
+	}
+	return _u
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_u *RoleUpdate) SetDateUpdated(v time.Time) *RoleUpdate {
 	_u.mutation.SetDateUpdated(v)
@@ -202,6 +216,9 @@ func (_u *RoleUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.MethodsCleared() {
 		_spec.ClearField(role.FieldMethods, field.TypeJSON)
 	}
+	if value, ok := _u.mutation.EveryMethod(); ok {
+		_spec.SetField(role.FieldEveryMethod, field.TypeBool, value)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(role.FieldDateUpdated, field.TypeTime, value)
 	}
@@ -293,6 +310,20 @@ func (_u *RoleUpdateOne) AppendMethods(v []string) *RoleUpdateOne {
 // ClearMethods clears the value of the "methods" field.
 func (_u *RoleUpdateOne) ClearMethods() *RoleUpdateOne {
 	_u.mutation.ClearMethods()
+	return _u
+}
+
+// SetEveryMethod sets the "every_method" field.
+func (_u *RoleUpdateOne) SetEveryMethod(v bool) *RoleUpdateOne {
+	_u.mutation.SetEveryMethod(v)
+	return _u
+}
+
+// SetNillableEveryMethod sets the "every_method" field if the given value is not nil.
+func (_u *RoleUpdateOne) SetNillableEveryMethod(v *bool) *RoleUpdateOne {
+	if v != nil {
+		_u.SetEveryMethod(*v)
+	}
 	return _u
 }
 
@@ -437,6 +468,9 @@ func (_u *RoleUpdateOne) sqlSave(ctx context.Context) (_node *Role, err error) {
 	}
 	if _u.mutation.MethodsCleared() {
 		_spec.ClearField(role.FieldMethods, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.EveryMethod(); ok {
+		_spec.SetField(role.FieldEveryMethod, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(role.FieldDateUpdated, field.TypeTime, value)

@@ -58,6 +58,7 @@ type Role struct {
 	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
 	xxx_hidden_Methods     []string               `protobuf:"bytes,8,rep,name=methods"`
+	xxx_hidden_EveryMethod bool                   `protobuf:"varint,9,opt,name=every_method,json=everyMethod"`
 	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
@@ -139,6 +140,13 @@ func (x *Role) GetMethods() []string {
 	return nil
 }
 
+func (x *Role) GetEveryMethod() bool {
+	if x != nil {
+		return x.xxx_hidden_EveryMethod
+	}
+	return false
+}
+
 func (x *Role) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -189,6 +197,10 @@ func (x *Role) SetDesc(v string) {
 
 func (x *Role) SetMethods(v []string) {
 	x.xxx_hidden_Methods = v
+}
+
+func (x *Role) SetEveryMethod(v bool) {
+	x.xxx_hidden_EveryMethod = v
 }
 
 func (x *Role) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -276,7 +288,41 @@ type Role_builder struct {
 	// Empty allows nothing, which is `frame.Grant`'s zero value and the right way
 	// round -- a role somebody has not finished writing grants nothing rather
 	// than everything.
-	Methods     []string
+	//
+	// Ignored when [Role.every_method] is set. That pair is the only place in this schema
+	// where one field makes another irrelevant, and it is written that way
+	// because the alternative is worse: a list kept in step with "everything" is
+	// a list that silently falls behind it.
+	Methods []string
+	// Every RPC there is, including ones this deployment has not been upgraded to
+	// yet.
+	//
+	// # Why a flag and not a list
+	//
+	// Because a list is a **snapshot** and what it is a snapshot of grows.
+	// Enumerate every method when the role is written, and the next release adds
+	// an RPC the role does not allow -- silently, to the one role whose entire
+	// purpose is that nothing is missing from it.
+	//
+	// And it cannot repair itself. Widening a role is refused for any method the
+	// writer does not already hold, and the method they do not hold is exactly
+	// the new one. So a stale enumeration is fixed by a shell on the box, once
+	// per upgrade, forever.
+	//
+	// # Why this is not the privilege `frame.Everything` warns about
+	//
+	// That warning is about a privilege held by being a **kind of identifier**:
+	// there is no row, so there is nothing to revoke and nothing to narrow. This
+	// is a row. Unbind it and it is gone, bind it in a site and it is that site's,
+	// erase it and every binding to it goes too. It is the ordinary mechanism
+	// carrying an unusual value.
+	//
+	// # What it costs
+	//
+	// A wildcard in a permission system is a thing people stop seeing. Nothing
+	// here fixes that except saying so wherever it is granted, which is why
+	// `roster init` prints what it made in the words it made it.
+	EveryMethod bool
 	DateUpdated *timestamppb.Timestamp
 	DateErased  *timestamppb.Timestamp
 	DateCreated *timestamppb.Timestamp
@@ -293,6 +339,7 @@ func (b0 Role_builder) Build() *Role {
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Desc = b.Desc
 	x.xxx_hidden_Methods = b.Methods
+	x.xxx_hidden_EveryMethod = b.EveryMethod
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
@@ -561,7 +608,7 @@ var File_app_role_proto protoreflect.FileDescriptor
 
 const file_app_role_proto_rawDesc = "" +
 	"\n" +
-	"\x0eapp/role.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x1aroster/payday/holder.proto\x1a\x0eapp/site.proto\x1a\x0fapp/group.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xae\x04\n" +
+	"\x0eapp/role.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x1aroster/payday/holder.proto\x1a\x0eapp/site.proto\x1a\x0fapp/group.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xd1\x04\n" +
 	"\x04Role\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12*\n" +
@@ -569,7 +616,8 @@ const file_app_role_proto_rawDesc = "" +
 	"\x05alias\x18\x04 \x01(\tR\x05alias\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
 	"\x04desc\x18\x06 \x01(\tR\x04desc\x12\x18\n" +
-	"\amethods\x18\b \x03(\tR\amethods\x12F\n" +
+	"\amethods\x18\b \x03(\tR\amethods\x12!\n" +
+	"\fevery_method\x18\t \x01(\bR\veveryMethod\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
