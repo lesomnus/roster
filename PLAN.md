@@ -584,7 +584,23 @@ to leave `date_created` (`default: ""`), `date_updated` (`version: {}`) and
 `date_erased` (`erased: {}`) alone, and getting that boundary wrong breaks every
 existing schema.
 
-### F6 · A schema cannot say "written, never read" — **open**
+### F6 · A schema cannot say "written, never read" — **fixed upstream, not adopted here**
+
+payday has `(payday.field).secret` now, and `pd.Secret` is the generated layer
+that clears a marked field on the way out. apptest declares one and the test
+fails with the layer removed.
+
+roster cannot use it yet. The extension is in payday's **buf module**, and this
+app's `buf.yaml` depends on the published `buf.build/payday/payday:dev` -- so
+until that is pushed, `(payday.field)` is an unknown extension here and the
+compile refuses. Adopting it is one line per field and one in the stack, on the
+day payday publishes.
+
+What follows below is what roster does in the meantime, and it stays either way:
+registration is a stronger statement than a cleared field, since a service that
+is not on the wire cannot answer at all.
+
+#### The original finding
 
 `payday.proto` extends `MessageOptions` only. There is no field-level payday
 option at all, so there is nowhere to declare that `Credential.secret` is

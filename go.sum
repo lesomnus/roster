@@ -95,6 +95,8 @@ github.com/lesomnus/payday v0.0.0-20260811113057-daf52ed9f059 h1:KTRLiWPabt0LSzg
 github.com/lesomnus/payday v0.0.0-20260811113057-daf52ed9f059/go.mod h1:kYv6sdpynIhDlBy6SXZFkBvQnsafkhKHBlSD0p6uFhc=
 github.com/lesomnus/payday v0.0.0-20260811113407-d13e6eb1c30f h1:1uLCsJm7xhJiBddlpGcA8isWIf7pLFvECRlZGLi6aM0=
 github.com/lesomnus/payday v0.0.0-20260811113407-d13e6eb1c30f/go.mod h1:kYv6sdpynIhDlBy6SXZFkBvQnsafkhKHBlSD0p6uFhc=
+github.com/lesomnus/payday v0.0.0-20260811143747-751db0e0d2ca h1:DI5F8446zCQLHYTz7VzRbCRLUZAbn23xhN7dk8pPRJw=
+github.com/lesomnus/payday v0.0.0-20260811143747-751db0e0d2ca/go.mod h1:kYv6sdpynIhDlBy6SXZFkBvQnsafkhKHBlSD0p6uFhc=
 github.com/lesomnus/protobuf-patch v0.0.0-20260803175157-e1b7a0c2804f h1:hIDTEG7vZCJ5M+j+OhI97pk6Q1mp1t3gXi1k96IB9f0=
 github.com/lesomnus/protobuf-patch v0.0.0-20260803175157-e1b7a0c2804f/go.mod h1:0sqL1bt/0v8atiVioyoJ25XQnZcn8zA9GYM1DvC4i5o=
 github.com/lesomnus/xli v0.0.0-20260717171524-bf8cac633057 h1:R2XCSr97o/DRfLdUBNM3eYj9CUhTBBXWOYH2y7uP63E=
