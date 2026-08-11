@@ -192,7 +192,13 @@ this with a `default` namespace; here the edge becomes required.
     Role     tenant=2  site=3?  alias=4  methods=8[]
     Group    tenant=2  site=3?  alias=4
     GroupMembership  holder=2  group=8
-    Binding  holder=2?  site=3?  role=8  group=9?  team=10?
+    Binding  holder=2?  site=3?  role=8  group=9?
+    TeamMembership   holder=2  team=8  role=9      <- already here; role becomes an edge
+
+**`Role` is referenced from two places, and the scope is wherever the
+reference lives.** On a `Binding` it is the tenant or a site. On a
+`TeamMembership` it is that team -- which is what that row already says, and
+what its `role` string was reaching for.
 
 **Roles carry methods and nothing else.** A rule set is the list of RPCs it
 allows, written out. Not a resource-and-verb pair, because a gRPC method name
@@ -201,8 +207,15 @@ looked up somewhere, because the somewhere is the thing this does not have.
 
 **A binding names a subject and a scope.** Either a holder or a group, refused
 in a layer when it names both or neither, the way `server/core` already refuses
-the two link mistakes no schema can state. The scope is the narrowest thing it
-names: nothing is the whole tenant, a site is that site, a team is that team.
+the two link mistakes no schema can state. The scope is nothing, meaning the
+whole tenant, or a site.
+
+**A binding does not name a team**, and that was in this design until somebody
+asked whether team rules should be built in instead. They should. "The admin of
+a team manages its members" is a **product invariant** -- true of every
+deployment there will ever be -- and a configurable invariant is one that every
+deployment configures identically until one of them gets it wrong. So it is
+roster's rule, in roster's layer, tested once. The schema got smaller for it.
 
 **A role defined in a site may only be bound in that site.** Kubernetes'
 rule, and it is what keeps somebody who administers one site from writing a
@@ -230,7 +243,10 @@ So it splits, and the split is not a workaround:
 
 - **Reads** narrow through the wall, which means the scope axis. `Site` is that
   axis, so "the teams in my site" is expressible and "this one team" is not --
-  payday has one second axis and Site is it.
+  payday has one second axis and Site is it. A team administrator listing their
+  own team is therefore the app filtering, not the wall narrowing, and that is
+  the kind of thing that leaks by being forgotten. It is written here for that
+  reason.
 - **Writes** are refused in a layer that reads the request. `server/core` is
   already where the judgements no schema can state live, and this is one:
   `TeamMembership.Add` looks at `req.team` and asks whether the caller holds a
@@ -240,6 +256,22 @@ That is worth knowing before designing more of this: **`gate.Policy` is not the
 authorization seam it looks like.** It answers "may this actor call this
 method", which is most of the question and not the interesting part of it. The
 rest is a layer, and payday says so by giving layers the request.
+
+#### It is not Zanzibar, and knowing why is what keeps it small
+
+Zanzibar -- SpiceDB, OpenFGA -- exists for **transitivity**: `viewer = editor +
+parent.viewer`, answered across a graph, at a scale where consistency needs its
+own protocol. "Alice may manage team A because she is an admin of team A" is one
+hop and a join.
+
+What would make it Zanzibar's problem is nesting: teams inside teams, a site
+administrator implying a team administrator, resources that hang off any of
+them. None of that is here, and if it arrives, the graph is the reason to
+reconsider rather than the number of rules.
+
+The built-in also has a limit worth naming: it covers rules roster ships. "May
+manage the teams labelled X" is not one, and the day that is wanted is the day
+to look at a general mechanism again.
 
 #### What this finally uses
 
