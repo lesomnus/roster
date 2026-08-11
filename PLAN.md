@@ -209,8 +209,25 @@ Three things that are decisions rather than implementation:
 - **A lockout is reported and the rest is not.** It tells a caller that the
   person exists, which every other refusal avoids. The alternative is somebody
   locked out being told nothing and trying forever.
-- **An attempt during a lockout is not counted.** Counting it would let anybody
-  hold an account closed indefinitely by typing at it.
+- **An attempt during a lockout is not counted.** Ten consecutive wrong answers
+  close an account for fifteen minutes; while it is closed nothing is compared
+  and nothing is written, so the expiry does not move. Counting those attempts
+  would mean one continuous stream of guesses holds the account closed for as
+  long as it lasts.
+
+  **What this does not fix**, and it is worth being exact because the name of
+  the test that covers it originally overclaimed: an account can still be held
+  closed by somebody else. Ten wrong guesses every fifteen minutes will do it.
+  That is what locking **by name** costs — the thing being counted is the
+  account, and the account is what an attacker names. The ways out are all
+  somewhere else: count by origin rather than by name, ask for something a
+  script will not answer, or rely on `grpcx.Limit` and drop the lockout
+  entirely. None of them is roster's to choose alone, since the origin of a
+  request is the Login App's to know and roster only ever sees the Login App.
+
+  It is a lockout and not a permanent close for the same family of reasons: an
+  account that a stranger can disable until a helpdesk call is a denial of
+  service with a login form in front of it.
 
 The failure counter is a compare-and-swap, so two attempts at once are one
 recorded failure. It defends against *sustained* guessing; the burst is

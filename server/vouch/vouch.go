@@ -104,9 +104,13 @@ func (s *Server) Verify(ctx context.Context, req *app.VouchVerifyRequest) (*app.
 	}
 
 	if until := v.GetDateLocked(); until != nil && until.AsTime().After(time.Now()) {
-		// Not compared at all. Counting an attempt that was never going to be
-		// answered would let somebody hold an account locked forever by typing
-		// at it.
+		// Not compared, and nothing written. An attempt that was never going to
+		// be answered must not move the expiry, or one continuous stream of
+		// guesses keeps the account closed for as long as it lasts.
+		//
+		// It does not make the account un-lockable by somebody else, and
+		// nothing here can: ten wrong guesses every [LockFor] will close it
+		// again, which is what locking by name costs. See PLAN.md, D14.
 		return app.VouchVerifyResponse_builder{LockedUntil: until}.Build(), nil
 	}
 

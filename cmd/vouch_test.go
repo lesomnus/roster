@@ -151,13 +151,17 @@ func TestEnoughWrongAnswersCloseTheAccount(t *testing.T) {
 	x.NotNil(v.GetLockedUntil())
 }
 
-// TestALockedAccountCannotBeHeldLockedForever is why an attempt made during a
-// lockout is not counted.
+// TestTypingAtALockedAccountDoesNotPushTheLockOut is why an attempt made during
+// a lockout is not counted.
 //
-// Counting it would mean somebody typing at a login form keeps pushing the
-// expiry out, and the account is gone for as long as they keep going. So the
+// Counting it would mean one continuous stream of guesses keeps moving the
+// expiry, and the account is gone for as long as somebody keeps going. So the
 // stored count does not move while it is closed.
-func TestALockedAccountCannotBeHeldLockedForever(t *testing.T) {
+//
+// What this does **not** claim is that an account cannot be held locked. It
+// can: ten wrong guesses every fifteen minutes will do it, and that is inherent
+// to locking by name rather than something this avoids. See PLAN.md, D14.
+func TestTypingAtALockedAccountDoesNotPushTheLockOut(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
