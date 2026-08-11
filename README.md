@@ -1,6 +1,37 @@
 # roster
 
-A [payday](https://github.com/lesomnus/payday) app.
+**The store that answers who somebody is.** People, the external identities they
+sign in with, the addresses they use, and the organisations, sites and teams
+they belong to -- held here, in our schema, so that changing identity provider
+is changing a login screen rather than changing the record of who works here.
+
+It is one layer of an identity system and not the whole of one: the protocol is
+[Ory Hydra](https://www.ory.sh/hydra/)'s and the login flow is a Login App's.
+roster owns the records they both ask about, and owns `sub`.
+
+| | |
+| --- | --- |
+| [docs/POSITION.md](docs/POSITION.md) | what roster is, and **where it stops** |
+| [docs/OPERATING.md](docs/OPERATING.md) | running one: keys, roles, TLS |
+| [docs/LOGIN.md](docs/LOGIN.md) | what happens when somebody signs in |
+| [PLAN.md](PLAN.md) | every decision, with the reason that produced it |
+
+## What it does
+
+- **Verifies a password** without handing the hash out -- argon2id, timing-safe,
+  with attempt counting and a lockout, all in the one place that holds the row.
+- **Answers to API keys.** A second roster runs in the same process on its own
+  database, holding the deployment's own services and what each may call.
+- **Roles bound at a scope**, in the shape Kubernetes settled on: a `Site` is a
+  namespace, a role with no site is a `ClusterRole`, and nobody may grant what
+  they do not hold.
+- **`/me`** -- who the caller is and every RPC they may call, in one round trip,
+  from the same union the server enforces.
+
+It is also the second app [payday](https://github.com/lesomnus/payday) is tried
+against, and the more demanding one.
+
+## Built with payday
 
 The generated messages live at the module root, which is why the binary is in
 `cmd/roster/` rather than beside them: an app is **one** Go package for
