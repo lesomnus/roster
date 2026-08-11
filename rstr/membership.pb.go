@@ -434,7 +434,7 @@ var File_app_membership_proto protoreflect.FileDescriptor
 
 const file_app_membership_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/membership.proto\x12\x06roster\x1a\x0eapp/site.proto\x1a\x0eapp/team.proto\x1a\x13payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xe8\x03\n" +
+	"\x14app/membership.proto\x12\x06roster\x1a\x0eapp/site.proto\x1a\x0eapp/team.proto\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xe8\x03\n" +
 	"\x0eSiteMembership\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12*\n" +
@@ -507,7 +507,7 @@ func file_app_membership_proto_init() {
 	}
 	file_app_site_proto_init()
 	file_app_team_proto_init()
-	file_payday_holder_proto_init()
+	file_roster_payday_holder_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

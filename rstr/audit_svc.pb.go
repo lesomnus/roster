@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.12
 // 	protoc        (unknown)
-// source: payday/audit_svc.g.proto
+// source: roster/payday/audit_svc.g.proto
 
 package rstr
 
@@ -43,7 +43,7 @@ type AuditAddRequest struct {
 
 func (x *AuditAddRequest) Reset() {
 	*x = AuditAddRequest{}
-	mi := &file_payday_audit_svc_g_proto_msgTypes[0]
+	mi := &file_roster_payday_audit_svc_g_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -55,7 +55,7 @@ func (x *AuditAddRequest) String() string {
 func (*AuditAddRequest) ProtoMessage() {}
 
 func (x *AuditAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_payday_audit_svc_g_proto_msgTypes[0]
+	mi := &file_roster_payday_audit_svc_g_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -269,7 +269,7 @@ type AuditGetRequest struct {
 
 func (x *AuditGetRequest) Reset() {
 	*x = AuditGetRequest{}
-	mi := &file_payday_audit_svc_g_proto_msgTypes[1]
+	mi := &file_roster_payday_audit_svc_g_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -281,7 +281,7 @@ func (x *AuditGetRequest) String() string {
 func (*AuditGetRequest) ProtoMessage() {}
 
 func (x *AuditGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_payday_audit_svc_g_proto_msgTypes[1]
+	mi := &file_roster_payday_audit_svc_g_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -361,7 +361,7 @@ type AuditRef struct {
 
 func (x *AuditRef) Reset() {
 	*x = AuditRef{}
-	mi := &file_payday_audit_svc_g_proto_msgTypes[2]
+	mi := &file_roster_payday_audit_svc_g_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -373,7 +373,7 @@ func (x *AuditRef) String() string {
 func (*AuditRef) ProtoMessage() {}
 
 func (x *AuditRef) ProtoReflect() protoreflect.Message {
-	mi := &file_payday_audit_svc_g_proto_msgTypes[2]
+	mi := &file_roster_payday_audit_svc_g_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -461,7 +461,7 @@ func (b0 AuditRef_builder) Build() *AuditRef {
 type case_AuditRef_Key protoreflect.FieldNumber
 
 func (x case_AuditRef_Key) String() string {
-	md := file_payday_audit_svc_g_proto_msgTypes[2].Descriptor()
+	md := file_roster_payday_audit_svc_g_proto_msgTypes[2].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -498,7 +498,7 @@ type AuditSelect struct {
 
 func (x *AuditSelect) Reset() {
 	*x = AuditSelect{}
-	mi := &file_payday_audit_svc_g_proto_msgTypes[3]
+	mi := &file_roster_payday_audit_svc_g_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -510,7 +510,7 @@ func (x *AuditSelect) String() string {
 func (*AuditSelect) ProtoMessage() {}
 
 func (x *AuditSelect) ProtoReflect() protoreflect.Message {
-	mi := &file_payday_audit_svc_g_proto_msgTypes[3]
+	mi := &file_roster_payday_audit_svc_g_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -842,7 +842,7 @@ type AuditPatchRequest struct {
 
 func (x *AuditPatchRequest) Reset() {
 	*x = AuditPatchRequest{}
-	mi := &file_payday_audit_svc_g_proto_msgTypes[4]
+	mi := &file_roster_payday_audit_svc_g_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -854,7 +854,7 @@ func (x *AuditPatchRequest) String() string {
 func (*AuditPatchRequest) ProtoMessage() {}
 
 func (x *AuditPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_payday_audit_svc_g_proto_msgTypes[4]
+	mi := &file_roster_payday_audit_svc_g_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1167,7 +1167,7 @@ type AuditApplyRequest struct {
 
 func (x *AuditApplyRequest) Reset() {
 	*x = AuditApplyRequest{}
-	mi := &file_payday_audit_svc_g_proto_msgTypes[5]
+	mi := &file_roster_payday_audit_svc_g_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1179,7 +1179,7 @@ func (x *AuditApplyRequest) String() string {
 func (*AuditApplyRequest) ProtoMessage() {}
 
 func (x *AuditApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_payday_audit_svc_g_proto_msgTypes[5]
+	mi := &file_roster_payday_audit_svc_g_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1261,7 +1261,7 @@ type AuditListRequest struct {
 
 func (x *AuditListRequest) Reset() {
 	*x = AuditListRequest{}
-	mi := &file_payday_audit_svc_g_proto_msgTypes[6]
+	mi := &file_roster_payday_audit_svc_g_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1273,7 +1273,7 @@ func (x *AuditListRequest) String() string {
 func (*AuditListRequest) ProtoMessage() {}
 
 func (x *AuditListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_payday_audit_svc_g_proto_msgTypes[6]
+	mi := &file_roster_payday_audit_svc_g_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1356,7 +1356,7 @@ type AuditListResponse struct {
 
 func (x *AuditListResponse) Reset() {
 	*x = AuditListResponse{}
-	mi := &file_payday_audit_svc_g_proto_msgTypes[7]
+	mi := &file_roster_payday_audit_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1368,7 +1368,7 @@ func (x *AuditListResponse) String() string {
 func (*AuditListResponse) ProtoMessage() {}
 
 func (x *AuditListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_payday_audit_svc_g_proto_msgTypes[7]
+	mi := &file_roster_payday_audit_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1440,7 +1440,7 @@ type AuditFilter struct {
 
 func (x *AuditFilter) Reset() {
 	*x = AuditFilter{}
-	mi := &file_payday_audit_svc_g_proto_msgTypes[8]
+	mi := &file_roster_payday_audit_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1452,7 +1452,7 @@ func (x *AuditFilter) String() string {
 func (*AuditFilter) ProtoMessage() {}
 
 func (x *AuditFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_payday_audit_svc_g_proto_msgTypes[8]
+	mi := &file_roster_payday_audit_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1603,11 +1603,11 @@ func (b0 AuditFilter_builder) Build() *AuditFilter {
 	return m0
 }
 
-var File_payday_audit_svc_g_proto protoreflect.FileDescriptor
+var File_roster_payday_audit_svc_g_proto protoreflect.FileDescriptor
 
-const file_payday_audit_svc_g_proto_rawDesc = "" +
+const file_roster_payday_audit_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x18payday/audit_svc.g.proto\x12\x06roster\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x12payday/audit.proto\"\xf4\x02\n" +
+	"\x1froster/payday/audit_svc.g.proto\x12\x06roster\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x19roster/payday/audit.proto\"\xf4\x02\n" +
 	"\x0fAuditAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\"\n" +
 	"\ttenant_id\x18\x02 \x01(\fB\x05\xaa\x01\x02\b\x02R\btenantId\x12 \n" +
@@ -1671,8 +1671,8 @@ const file_payday_audit_svc_g_proto_rawDesc = "" +
 	"\x05Erase\x12\x10.roster.AuditRef\x1a\x16.google.protobuf.Empty\x12;\n" +
 	"\x04List\x12\x18.roster.AuditListRequest\x1a\x19.roster.AuditListResponseB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_payday_audit_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
-var file_payday_audit_svc_g_proto_goTypes = []any{
+var file_roster_payday_audit_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_roster_payday_audit_svc_g_proto_goTypes = []any{
 	(*AuditAddRequest)(nil),       // 0: roster.AuditAddRequest
 	(*AuditGetRequest)(nil),       // 1: roster.AuditGetRequest
 	(*AuditRef)(nil),              // 2: roster.AuditRef
@@ -1687,7 +1687,7 @@ var file_payday_audit_svc_g_proto_goTypes = []any{
 	(*Audit)(nil),                 // 11: roster.Audit
 	(*emptypb.Empty)(nil),         // 12: google.protobuf.Empty
 }
-var file_payday_audit_svc_g_proto_depIdxs = []int32{
+var file_roster_payday_audit_svc_g_proto_depIdxs = []int32{
 	9,  // 0: roster.AuditAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 1: roster.AuditGetRequest.ref:type_name -> roster.AuditRef
 	3,  // 2: roster.AuditGetRequest.select:type_name -> roster.AuditSelect
@@ -1715,30 +1715,30 @@ var file_payday_audit_svc_g_proto_depIdxs = []int32{
 	0,  // [0:8] is the sub-list for field type_name
 }
 
-func init() { file_payday_audit_svc_g_proto_init() }
-func file_payday_audit_svc_g_proto_init() {
-	if File_payday_audit_svc_g_proto != nil {
+func init() { file_roster_payday_audit_svc_g_proto_init() }
+func file_roster_payday_audit_svc_g_proto_init() {
+	if File_roster_payday_audit_svc_g_proto != nil {
 		return
 	}
-	file_payday_audit_proto_init()
-	file_payday_audit_svc_g_proto_msgTypes[2].OneofWrappers = []any{
+	file_roster_payday_audit_proto_init()
+	file_roster_payday_audit_svc_g_proto_msgTypes[2].OneofWrappers = []any{
 		(*auditRef_Id)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_payday_audit_svc_g_proto_rawDesc), len(file_payday_audit_svc_g_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_roster_payday_audit_svc_g_proto_rawDesc), len(file_roster_payday_audit_svc_g_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_payday_audit_svc_g_proto_goTypes,
-		DependencyIndexes: file_payday_audit_svc_g_proto_depIdxs,
-		MessageInfos:      file_payday_audit_svc_g_proto_msgTypes,
+		GoTypes:           file_roster_payday_audit_svc_g_proto_goTypes,
+		DependencyIndexes: file_roster_payday_audit_svc_g_proto_depIdxs,
+		MessageInfos:      file_roster_payday_audit_svc_g_proto_msgTypes,
 	}.Build()
-	File_payday_audit_svc_g_proto = out.File
-	file_payday_audit_svc_g_proto_goTypes = nil
-	file_payday_audit_svc_g_proto_depIdxs = nil
+	File_roster_payday_audit_svc_g_proto = out.File
+	file_roster_payday_audit_svc_g_proto_goTypes = nil
+	file_roster_payday_audit_svc_g_proto_depIdxs = nil
 }

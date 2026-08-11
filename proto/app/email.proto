@@ -3,7 +3,7 @@ edition = "2023";
 package roster;
 
 import "app/identity.proto";
-import "payday/holder.proto";
+import "roster/payday/holder.proto";
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
 import "payday.proto";

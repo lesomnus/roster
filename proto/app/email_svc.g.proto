@@ -6,7 +6,7 @@ import "app/identity_svc.g.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "patch/patch.proto";
-import "payday/holder_svc.g.proto";
+import "roster/payday/holder_svc.g.proto";
 
 option go_package = "github.com/lesomnus/roster/rstr";
 

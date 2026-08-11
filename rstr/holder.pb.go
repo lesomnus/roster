@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.12
 // 	protoc        (unknown)
-// source: payday/holder.proto
+// source: roster/payday/holder.proto
 
 package rstr
 
@@ -51,7 +51,7 @@ type Holder struct {
 
 func (x *Holder) Reset() {
 	*x = Holder{}
-	mi := &file_payday_holder_proto_msgTypes[0]
+	mi := &file_roster_payday_holder_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -63,7 +63,7 @@ func (x *Holder) String() string {
 func (*Holder) ProtoMessage() {}
 
 func (x *Holder) ProtoReflect() protoreflect.Message {
-	mi := &file_payday_holder_proto_msgTypes[0]
+	mi := &file_roster_payday_holder_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -353,7 +353,7 @@ type Profile struct {
 
 func (x *Profile) Reset() {
 	*x = Profile{}
-	mi := &file_payday_holder_proto_msgTypes[1]
+	mi := &file_roster_payday_holder_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -365,7 +365,7 @@ func (x *Profile) String() string {
 func (*Profile) ProtoMessage() {}
 
 func (x *Profile) ProtoReflect() protoreflect.Message {
-	mi := &file_payday_holder_proto_msgTypes[1]
+	mi := &file_roster_payday_holder_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -455,11 +455,11 @@ func (b0 Profile_builder) Build() *Profile {
 	return m0
 }
 
-var File_payday_holder_proto protoreflect.FileDescriptor
+var File_roster_payday_holder_proto protoreflect.FileDescriptor
 
-const file_payday_holder_proto_rawDesc = "" +
+const file_roster_payday_holder_proto_rawDesc = "" +
 	"\n" +
-	"\x13payday/holder.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x13payday/tenant.proto\"\xe3\x04\n" +
+	"\x1aroster/payday/holder.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x1aroster/payday/tenant.proto\"\xe3\x04\n" +
 	"\x06Holder\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x14\n" +
@@ -490,15 +490,15 @@ const file_payday_holder_proto_rawDesc = "" +
 	"employeeNo\x12\x16\n" +
 	"\x06locale\x18\x05 \x01(\tR\x06localeB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_payday_holder_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
-var file_payday_holder_proto_goTypes = []any{
+var file_roster_payday_holder_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_roster_payday_holder_proto_goTypes = []any{
 	(*Holder)(nil),                // 0: roster.Holder
 	(*Profile)(nil),               // 1: roster.Profile
 	nil,                           // 2: roster.Holder.LabelsEntry
 	(*Tenant)(nil),                // 3: roster.Tenant
 	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
 }
-var file_payday_holder_proto_depIdxs = []int32{
+var file_roster_payday_holder_proto_depIdxs = []int32{
 	3, // 0: roster.Holder.tenant:type_name -> roster.Tenant
 	2, // 1: roster.Holder.labels:type_name -> roster.Holder.LabelsEntry
 	4, // 2: roster.Holder.date_updated:type_name -> google.protobuf.Timestamp
@@ -512,27 +512,27 @@ var file_payday_holder_proto_depIdxs = []int32{
 	0, // [0:6] is the sub-list for field type_name
 }
 
-func init() { file_payday_holder_proto_init() }
-func file_payday_holder_proto_init() {
-	if File_payday_holder_proto != nil {
+func init() { file_roster_payday_holder_proto_init() }
+func file_roster_payday_holder_proto_init() {
+	if File_roster_payday_holder_proto != nil {
 		return
 	}
-	file_payday_tenant_proto_init()
+	file_roster_payday_tenant_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_payday_holder_proto_rawDesc), len(file_payday_holder_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_roster_payday_holder_proto_rawDesc), len(file_roster_payday_holder_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_payday_holder_proto_goTypes,
-		DependencyIndexes: file_payday_holder_proto_depIdxs,
-		MessageInfos:      file_payday_holder_proto_msgTypes,
+		GoTypes:           file_roster_payday_holder_proto_goTypes,
+		DependencyIndexes: file_roster_payday_holder_proto_depIdxs,
+		MessageInfos:      file_roster_payday_holder_proto_msgTypes,
 	}.Build()
-	File_payday_holder_proto = out.File
-	file_payday_holder_proto_goTypes = nil
-	file_payday_holder_proto_depIdxs = nil
+	File_roster_payday_holder_proto = out.File
+	file_roster_payday_holder_proto_goTypes = nil
+	file_roster_payday_holder_proto_depIdxs = nil
 }

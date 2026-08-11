@@ -3058,7 +3058,7 @@ var File_app_membership_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_membership_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1aapp/membership_svc.g.proto\x12\x06roster\x1a\x14app/membership.proto\x1a\x14app/site_svc.g.proto\x1a\x14app/team_svc.g.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x19payday/holder_svc.g.proto\"\xb9\x01\n" +
+	"\x1aapp/membership_svc.g.proto\x12\x06roster\x1a\x14app/membership.proto\x1a\x14app/site_svc.g.proto\x1a\x14app/team_svc.g.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xb9\x01\n" +
 	"\x18SiteMembershipAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12#\n" +
@@ -3299,7 +3299,7 @@ func file_app_membership_svc_g_proto_init() {
 	file_app_membership_proto_init()
 	file_app_site_svc_g_proto_init()
 	file_app_team_svc_g_proto_init()
-	file_payday_holder_svc_g_proto_init()
+	file_roster_payday_holder_svc_g_proto_init()
 	file_app_membership_svc_g_proto_msgTypes[2].OneofWrappers = []any{
 		(*siteMembershipRef_Id)(nil),
 		(*siteMembershipRef_Member)(nil),

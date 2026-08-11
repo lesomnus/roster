@@ -4,7 +4,7 @@ package roster;
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
 import "payday.proto";
-import "payday/tenant.proto";
+import "roster/payday/tenant.proto";
 
 option features.field_presence = IMPLICIT;
 option go_package = "github.com/lesomnus/roster/rstr";

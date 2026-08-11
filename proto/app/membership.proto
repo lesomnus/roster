@@ -4,7 +4,7 @@ package roster;
 
 import "app/site.proto";
 import "app/team.proto";
-import "payday/holder.proto";
+import "roster/payday/holder.proto";
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
 import "payday.proto";

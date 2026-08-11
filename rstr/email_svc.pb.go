@@ -1764,7 +1764,7 @@ var File_app_email_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_email_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x15app/email_svc.g.proto\x12\x06roster\x1a\x0fapp/email.proto\x1a\x18app/identity_svc.g.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x19payday/holder_svc.g.proto\"\xa1\x02\n" +
+	"\x15app/email_svc.g.proto\x12\x06roster\x1a\x0fapp/email.proto\x1a\x18app/identity_svc.g.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xa1\x02\n" +
 	"\x0fEmailAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x1f\n" +
@@ -1911,7 +1911,7 @@ func file_app_email_svc_g_proto_init() {
 	}
 	file_app_email_proto_init()
 	file_app_identity_svc_g_proto_init()
-	file_payday_holder_svc_g_proto_init()
+	file_roster_payday_holder_svc_g_proto_init()
 	file_app_email_svc_g_proto_msgTypes[2].OneofWrappers = []any{
 		(*emailRef_Id)(nil),
 		(*emailRef_Address)(nil),
