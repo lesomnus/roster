@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
@@ -18,6 +19,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/lesomnus/payday/auth"
+	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/gate"
 	"github.com/lesomnus/payday/grpcx"
 	"github.com/lesomnus/payday/migrate"
@@ -31,6 +33,7 @@ import (
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/core"
+	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/pd"
 	"github.com/lesomnus/roster/server/vouch"
 )
@@ -66,6 +69,15 @@ type Server struct {
 	// nobody is asking.
 	Walled  app.Server
 	Ungated app.Server
+
+	// Control is who may call this deployment: roster again, on its own
+	// database, holding keys rather than people. Nil when nothing named one,
+	// which is a deployment that believes its callers.
+	Control *Server
+
+	// Auth is what reads a credential off a request. Nil is `auth.Plain`, and
+	// it says so once in the log -- see [ControlConfig].
+	Auth auth.Handler
 
 	// Spin is whatever this deployment has to run besides answering requests.
 	// It is a slice rather than a method because a server with nothing to run
@@ -166,6 +178,30 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	}
 
 	s := &Server{Db: db, Ent: client, Drv: drv, Dialect: dialect, Watch: w, Walled: stacked, Ungated: ungated}
+
+	// The control plane: roster again, on its own database, holding keys rather
+	// than people. See PLAN.md, D15 and `ControlConfig`.
+	//
+	// Built after this one and from a config with no `control` of its own,
+	// which is what stops the recursion -- one level, and the innermost
+	// instance answers to nothing but the CLI that seeds it.
+	if c.Control.Serves() {
+		control, err := Build(ctx, Config{
+			Db: c.Control.Db,
+
+			// Its own broker. A control plane publishing into the data plane's
+			// would have a key change look like a person changing, to every
+			// client watching.
+			Watch: config.WatchConfig{Broker: config.BrokerMemory},
+		})
+		if err != nil {
+			db.Close()
+			return nil, fmt.Errorf("control: %w", err)
+		}
+
+		s.Control = control
+		s.Auth = auth.Bearer(keys.Store(control.Ungated))
+	}
 	if c.Watch.Outbox && b != nil {
 		// The loop that makes an event durable. It is not a layer and not a
 		// method on any server -- `spin.Run` finds it in whatever is handed
@@ -192,11 +228,19 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// Who is calling comes first, since everything after it reads the frame.
 	// `Plain` believes what the caller writes, which is right for a sandbox
 	// and for tests and is not something to serve where anyone can reach it.
+	// `Plain` unless a control plane was named, which believes whatever a
+	// caller writes -- right for a checkout and not something to serve where
+	// anyone can reach it. It says so once per process.
+	h := s.Auth
+	if h == nil {
+		h = auth.Plain()
+	}
+
 	chain := grpcx.Serving(ctx, grpcx.WithDeadline(c.Server.CallTimeout())).
-		WithUnary(auth.InterceptorUnary(auth.Plain(), Resolver(s.Ungated), public)).
-		WithStream(auth.InterceptorStream(auth.Plain(), Resolver(s.Ungated), public)).
+		WithUnary(auth.InterceptorUnary(h, Resolver(s.Ungated), public)).
+		WithStream(auth.InterceptorStream(h, Resolver(s.Ungated), public)).
 		WithUnary(grpcx.LimitUnary(c.Server.Limiter(), gate.ByTenant())).
-		With(gate.Interceptor(nil)).
+		With(gate.Interceptor(Policy())).
 		With(s.Watch.Interceptor()).
 		WithUnary(grpcx.ClosedUnary(closed(c)))
 
@@ -219,7 +263,11 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// tidiness: `ServerConfig.Guard` fills it from the configuration alone, so a
 	// guard left as it came would let a batch carry the credential reads that
 	// are closed everywhere else.
-	guard := c.Server.Guard(nil)
+	// The same policy the chain got. `batch.Guard` names it as one of the four
+	// rules a batch would otherwise reach past -- and it is not hypothetical
+	// here: a key's scope comes from the policy, so a guard without one would
+	// serve a key in a batch as a caller who may see nothing.
+	guard := c.Server.Guard(Policy())
 	guard.Closed = closed(c)
 
 	if b, err := pd.Batch(s.Walled, s.Drv, guard); err == nil {

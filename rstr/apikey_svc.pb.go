@@ -403,6 +403,15 @@ func (x *ApiKeyRef) GetAlias() *ApiKeyRefByAlias {
 	return nil
 }
 
+func (x *ApiKeyRef) GetSecret() []byte {
+	if x != nil {
+		if x, ok := x.xxx_hidden_Key.(*apiKeyRef_Secret); ok {
+			return x.Secret
+		}
+	}
+	return nil
+}
+
 func (x *ApiKeyRef) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -416,6 +425,13 @@ func (x *ApiKeyRef) SetAlias(v *ApiKeyRefByAlias) {
 		return
 	}
 	x.xxx_hidden_Key = &apiKeyRef_Alias{v}
+}
+
+func (x *ApiKeyRef) SetSecret(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Key = &apiKeyRef_Secret{v}
 }
 
 func (x *ApiKeyRef) HasKey() bool {
@@ -441,6 +457,14 @@ func (x *ApiKeyRef) HasAlias() bool {
 	return ok
 }
 
+func (x *ApiKeyRef) HasSecret() bool {
+	if x == nil {
+		return false
+	}
+	_, ok := x.xxx_hidden_Key.(*apiKeyRef_Secret)
+	return ok
+}
+
 func (x *ApiKeyRef) ClearKey() {
 	x.xxx_hidden_Key = nil
 }
@@ -457,9 +481,16 @@ func (x *ApiKeyRef) ClearAlias() {
 	}
 }
 
+func (x *ApiKeyRef) ClearSecret() {
+	if _, ok := x.xxx_hidden_Key.(*apiKeyRef_Secret); ok {
+		x.xxx_hidden_Key = nil
+	}
+}
+
 const ApiKeyRef_Key_not_set_case case_ApiKeyRef_Key = 0
 const ApiKeyRef_Id_case case_ApiKeyRef_Key = 1
 const ApiKeyRef_Alias_case case_ApiKeyRef_Key = 2
+const ApiKeyRef_Secret_case case_ApiKeyRef_Key = 9
 
 func (x *ApiKeyRef) WhichKey() case_ApiKeyRef_Key {
 	if x == nil {
@@ -470,6 +501,8 @@ func (x *ApiKeyRef) WhichKey() case_ApiKeyRef_Key {
 		return ApiKeyRef_Id_case
 	case *apiKeyRef_Alias:
 		return ApiKeyRef_Alias_case
+	case *apiKeyRef_Secret:
+		return ApiKeyRef_Secret_case
 	default:
 		return ApiKeyRef_Key_not_set_case
 	}
@@ -479,8 +512,9 @@ type ApiKeyRef_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	// Fields of oneof xxx_hidden_Key:
-	Id    []byte
-	Alias *ApiKeyRefByAlias
+	Id     []byte
+	Alias  *ApiKeyRefByAlias
+	Secret []byte
 	// -- end of xxx_hidden_Key
 }
 
@@ -493,6 +527,9 @@ func (b0 ApiKeyRef_builder) Build() *ApiKeyRef {
 	}
 	if b.Alias != nil {
 		x.xxx_hidden_Key = &apiKeyRef_Alias{b.Alias}
+	}
+	if b.Secret != nil {
+		x.xxx_hidden_Key = &apiKeyRef_Secret{b.Secret}
 	}
 	return m0
 }
@@ -519,9 +556,15 @@ type apiKeyRef_Alias struct {
 	Alias *ApiKeyRefByAlias `protobuf:"bytes,2,opt,name=alias,oneof"`
 }
 
+type apiKeyRef_Secret struct {
+	Secret []byte `protobuf:"bytes,9,opt,name=secret,oneof"`
+}
+
 func (*apiKeyRef_Id) isApiKeyRef_Key() {}
 
 func (*apiKeyRef_Alias) isApiKeyRef_Key() {}
+
+func (*apiKeyRef_Secret) isApiKeyRef_Key() {}
 
 type ApiKeyRefByAlias struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
@@ -1719,10 +1762,11 @@ const file_app_apikey_svc_g_proto_rawDesc = "" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"e\n" +
 	"\x10ApiKeyGetRequest\x12#\n" +
 	"\x03ref\x18\x01 \x01(\v2\x11.roster.ApiKeyRefR\x03ref\x12,\n" +
-	"\x06select\x18\x02 \x01(\v2\x14.roster.ApiKeySelectR\x06select\"V\n" +
+	"\x06select\x18\x02 \x01(\v2\x14.roster.ApiKeySelectR\x06select\"p\n" +
 	"\tApiKeyRef\x12\x10\n" +
 	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x120\n" +
-	"\x05alias\x18\x02 \x01(\v2\x18.roster.ApiKeyRefByAliasH\x00R\x05aliasB\x05\n" +
+	"\x05alias\x18\x02 \x01(\v2\x18.roster.ApiKeyRefByAliasH\x00R\x05alias\x12\x18\n" +
+	"\x06secret\x18\t \x01(\fH\x00R\x06secretB\x05\n" +
 	"\x03key\"S\n" +
 	"\x10ApiKeyRefByAlias\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x14\n" +
@@ -1840,6 +1884,7 @@ func file_app_apikey_svc_g_proto_init() {
 	file_app_apikey_svc_g_proto_msgTypes[2].OneofWrappers = []any{
 		(*apiKeyRef_Id)(nil),
 		(*apiKeyRef_Alias)(nil),
+		(*apiKeyRef_Secret)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

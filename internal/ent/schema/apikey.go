@@ -62,6 +62,9 @@ func (ApiKey) Indexes() []ent.Index {
 			Edges("holder").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
+		index.Fields("secret").
+			Unique().
+			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 	}
 }
 

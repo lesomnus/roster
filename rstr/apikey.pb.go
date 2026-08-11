@@ -311,10 +311,26 @@ type ApiKey_builder struct {
 	// Empty allows **nothing**, which is `frame.Grant`'s zero value and the right
 	// way round: a key somebody forgot to fill in opens no door.
 	Methods []string
-	// The verifier, never the key: a hash, and the plaintext is shown once when
-	// it is made and never again. The same rule `Credential` states, for the same
-	// reason -- see `server/vouch`, and note that this field is why `ApiKeyService`
-	// is not registered either.
+	// The verifier, never the key: a hash of it, and the key itself is shown once
+	// when it is made and never again. The same rule `Credential` states, and the
+	// reason `ApiKeyService` is not registered either.
+	//
+	// # Why it is unsalted, and indexed
+	//
+	// It is also how the row is **found**. A salted hash cannot be: with a
+	// different salt per row, matching a presented key means hashing it against
+	// every row there is, which is a table scan on the busiest path this
+	// deployment has.
+	//
+	// So the hash is deterministic and unique, and lookup is one indexed read.
+	// What makes that safe is what makes the fast hash safe: the input is 256
+	// bits from `crypto/rand`. A salt defends against a dictionary and against
+	// one table answering for many rows, and neither exists here -- there is
+	// nothing to look up a random 256-bit value in.
+	//
+	// A password is the opposite case in every one of those respects, which is
+	// why `Credential.secret` is salted, slow, and found by who it belongs to
+	// rather than by itself.
 	Secret []byte
 	// When it was last used, for finding the key nobody needs any more. Written
 	// on a verify, so it is the one field a read path writes.
@@ -350,14 +366,14 @@ var File_app_apikey_proto protoreflect.FileDescriptor
 
 const file_app_apikey_proto_rawDesc = "" +
 	"\n" +
-	"\x10app/apikey.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x98\x05\n" +
+	"\x10app/apikey.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xa0\x05\n" +
 	"\x06ApiKey\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\tR\x05alias\x12\x12\n" +
 	"\x04desc\x18\x06 \x01(\tR\x04desc\x12\x18\n" +
-	"\amethods\x18\b \x03(\tR\amethods\x12\x16\n" +
-	"\x06secret\x18\t \x01(\fR\x06secret\x12?\n" +
+	"\amethods\x18\b \x03(\tR\amethods\x12\x1e\n" +
+	"\x06secret\x18\t \x01(\fB\x06\xea\x82\x16\x020\x01R\x06secret\x12?\n" +
 	"\tdate_used\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\bdateUsed\x12E\n" +
 	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\vdateExpires\x12F\n" +

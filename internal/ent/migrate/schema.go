@@ -50,6 +50,14 @@ var (
 					Where: "date_erased IS NULL",
 				},
 			},
+			{
+				Name:    "apikey_secret",
+				Unique:  true,
+				Columns: []*schema.Column{ApikeyColumns[4]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
 		},
 	}
 	// AuditColumns holds the columns for the "audit" table.

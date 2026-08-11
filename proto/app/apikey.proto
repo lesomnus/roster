@@ -70,11 +70,27 @@ message ApiKey {
   // way round: a key somebody forgot to fill in opens no door.
   repeated string methods = 8;
 
-  // The verifier, never the key: a hash, and the plaintext is shown once when
-  // it is made and never again. The same rule `Credential` states, for the same
-  // reason -- see `server/vouch`, and note that this field is why `ApiKeyService`
-  // is not registered either.
-  bytes secret = 9;
+  // The verifier, never the key: a hash of it, and the key itself is shown once
+  // when it is made and never again. The same rule `Credential` states, and the
+  // reason `ApiKeyService` is not registered either.
+  //
+  // # Why it is unsalted, and indexed
+  //
+  // It is also how the row is **found**. A salted hash cannot be: with a
+  // different salt per row, matching a presented key means hashing it against
+  // every row there is, which is a table scan on the busiest path this
+  // deployment has.
+  //
+  // So the hash is deterministic and unique, and lookup is one indexed read.
+  // What makes that safe is what makes the fast hash safe: the input is 256
+  // bits from `crypto/rand`. A salt defends against a dictionary and against
+  // one table answering for many rows, and neither exists here -- there is
+  // nothing to look up a random 256-bit value in.
+  //
+  // A password is the opposite case in every one of those respects, which is
+  // why `Credential.secret` is salted, slow, and found by who it belongs to
+  // rather than by itself.
+  bytes secret = 9 [(orm.field) = {unique: true}];
 
   // When it was last used, for finding the key nobody needs any more. Written
   // on a verify, so it is the one field a read path writes.

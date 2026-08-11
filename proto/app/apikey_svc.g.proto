@@ -45,6 +45,7 @@ message ApiKeyRef {
   oneof key {
     bytes id = 1;
     ApiKeyRefByAlias alias = 2;
+    bytes secret = 9;
   }
 }
 

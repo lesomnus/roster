@@ -468,6 +468,8 @@ func ApiKeyPick(req *rstr.ApiKeyRef) (predicate.ApiKey, error) {
 		} else {
 			return apikey.IDEQ(v), nil
 		}
+	case rstr.ApiKeyRef_Secret_case:
+		return apikey.SecretEQ(req.GetSecret()), nil
 	case rstr.ApiKeyRef_Alias_case:
 		k := req.GetAlias()
 		ps := make([]predicate.ApiKey, 0, 2)

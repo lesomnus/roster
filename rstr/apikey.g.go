@@ -15,6 +15,9 @@ func (x *ApiKey) Ref() *ApiKeyRef {
 	if v := x.GetId(); len(v) > 0 {
 		return ApiKeyById(v)
 	}
+	if v := x.GetSecret(); len(v) > 0 {
+		return ApiKeyBySecret(v)
+	}
 	{
 		v1 := x.GetHolder()
 		v2 := x.GetAlias()
@@ -34,6 +37,8 @@ func (x *ApiKeyRef) Picks(v *ApiKey) bool {
 	switch x.WhichKey() {
 	case ApiKeyRef_Id_case:
 		return bytes.Equal(x.GetId(), v.GetId())
+	case ApiKeyRef_Secret_case:
+		return bytes.Equal(x.GetSecret(), v.GetSecret())
 	case ApiKeyRef_Alias_case:
 		x := x.GetAlias()
 		return (x.GetHolder().Picks(v.GetHolder())) &&
@@ -60,8 +65,18 @@ func ApiKeyById(v []byte) *ApiKeyRef {
 	return x
 }
 
+func ApiKeyBySecret(v []byte) *ApiKeyRef {
+	x := &ApiKeyRef{}
+	x.SetSecret(v)
+	return x
+}
+
 func ApiKeyGetById(v []byte) *ApiKeyGetRequest {
 	return ApiKeyGetRequest_builder{Ref: ApiKeyById(v)}.Build()
+}
+
+func ApiKeyGetBySecret(v []byte) *ApiKeyGetRequest {
+	return ApiKeyGetRequest_builder{Ref: ApiKeyBySecret(v)}.Build()
 }
 
 func ApiKeyByAlias(holder *HolderRef, alias string) *ApiKeyRef {

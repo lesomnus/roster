@@ -40,7 +40,39 @@ type Config struct {
 	Db     config.DbConfig     `yaml:"db"`
 	Otel   config.OtelConfig   `yaml:"otel"`
 	Watch  config.WatchConfig  `yaml:"watch"`
+
+	// Control is who may call this deployment, and it is roster again -- a
+	// second instance, in this process, on its own database. See PLAN.md, D15.
+	//
+	// Nothing written down is a deployment that believes its callers, which
+	// `auth.Plain` announces once in the log. It is the default custody takes
+	// with no issuer named, and for the same reason: an app that cannot be run
+	// until a control plane exists is an app nobody runs. So it is easy, and it
+	// is loud.
+	Control ControlConfig `yaml:"control"`
 }
+
+// ControlConfig is the second roster: the one holding keys rather than people.
+//
+// # Why a database of its own
+//
+// A key must not live in the tables it protects. Separate, there is no query
+// from the data plane to the keys at all, so a fault in the wall cannot reach
+// one -- which is worth more than the migration it costs.
+//
+// # Why in this process
+//
+// Because the auth interceptor asks it on **every** request. A control plane
+// somewhere else would need a credential to reach, and that credential would
+// need checking somewhere, which is the same question one hop further out. Here
+// the innermost lookup is a Go call against a server with no wall on it, and
+// the recursion ends there.
+type ControlConfig struct {
+	Db config.DbConfig `yaml:"db"`
+}
+
+// Serves reports whether this deployment checks who is calling.
+func (c ControlConfig) Serves() bool { return c.Db.Driver != "" }
 
 // Cmd is this app's own command line: what payday supplies, plus whatever the
 // app has of its own.
