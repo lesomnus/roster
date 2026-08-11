@@ -70,7 +70,7 @@ func (s Core) mayChangeTeam(ctx context.Context, method string, ref *app.TeamRef
 	if ref == nil {
 		return nil
 	}
-	if s.holds == nil {
+	if s.rules.Holds == nil {
 		return statusDenied(method)
 	}
 
@@ -79,7 +79,7 @@ func (s Core) mayChangeTeam(ctx context.Context, method string, ref *app.TeamRef
 		return err
 	}
 
-	ok, err = s.holds(ctx, f.Actor, method, k)
+	ok, err = s.rules.Holds(ctx, f.Actor, method, k)
 	if err != nil {
 		return err
 	}

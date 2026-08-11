@@ -252,3 +252,105 @@ func TestABindingReachesEveryTeam(t *testing.T) {
 		}.Build())
 	x.NoError(err)
 }
+
+const (
+	addBinding = "/roster.BindingService/Add"
+	addRole    = "/roster.RoleService/Add"
+	eraseHold  = "/roster.HolderService/Erase"
+)
+
+// TestNobodyGrantsWhatTheyDoNotHold is the hole this closes, written as the two
+// RPCs it used to take.
+//
+// Being allowed to write bindings was being allowed everything: write a role
+// holding anything, bind it to yourself, done. Two calls, from a permission an
+// administrator grants without hesitating -- "Alice manages who is in what".
+func TestNobodyGrantsWhatTheyDoNotHold(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	// Alice manages memberships, and nothing else.
+	b.binds(t, b.AcmeUser, b.role(t, ctx, "manager", addBinding, addRole), nil)
+
+	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	wire := asOverTheWire(ctx, b.AcmeUser)
+
+	// She cannot write a role holding what she does not hold.
+	_, err := app.NewRoleServiceClient(conn).Add(wire, app.RoleAddRequest_builder{
+		Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Alias:   "sneaky",
+		Methods: []string{eraseHold},
+	}.Build())
+	x.Equal(codes.PermissionDenied, status.Code(err),
+		"she wrote a role holding what she does not")
+
+	// Nor bind one somebody else wrote.
+	theirs := b.role(t, ctx, "eraser", eraseHold)
+	_, err = app.NewBindingServiceClient(conn).Add(wire, app.BindingAddRequest_builder{
+		Role:   app.RoleRef_builder{Id: theirs.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+	}.Build())
+	x.Equal(codes.PermissionDenied, status.Code(err),
+		"she bound herself a role holding what she does not")
+}
+
+// TestWhatYouHoldYouMayPassOn, so that what refused above was the escalation
+// and not the method.
+func TestWhatYouHoldYouMayPassOn(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	b.binds(t, b.AcmeUser, b.role(t, ctx, "manager", addBinding, addRole, getHolder), nil)
+
+	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	wire := asOverTheWire(ctx, b.AcmeUser)
+
+	// A role holding a subset of hers.
+	v, err := app.NewRoleServiceClient(conn).Add(wire, app.RoleAddRequest_builder{
+		Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Alias:   "reader",
+		Methods: []string{getHolder},
+	}.Build())
+	x.NoError(err)
+
+	// And bound to somebody else.
+	other := b.holder(t, ctx, b.Acme, "newcomer")
+	_, err = app.NewBindingServiceClient(conn).Add(wire, app.BindingAddRequest_builder{
+		Role:   app.RoleRef_builder{Id: v.GetId()}.Build(),
+		Holder: app.HolderRef_builder{Id: other.Bytes()}.Build(),
+	}.Build())
+	x.NoError(err)
+}
+
+// TestATeamRoleIsNotYoursToHandOut.
+//
+// What counts is what somebody holds **wide**. A role held in one team is
+// scoped to that team, and binding it across the tenant would widen a scope
+// rather than pass on a permission.
+func TestATeamRoleIsNotYoursToHandOut(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	seoul := b.site(t, ctx, b.Acme, "seoul")
+	mine := b.team(t, ctx, seoul, "mine")
+
+	// She may write bindings, and holds `Holder.Erase` only inside one team.
+	b.binds(t, b.AcmeUser, b.role(t, ctx, "manager", addBinding), nil)
+
+	_, err := b.Ungated.TeamMembership().Add(ctx, app.TeamMembershipAddRequest_builder{
+		Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Team:   app.TeamRef_builder{Id: mine.Bytes()}.Build(),
+		Role:   app.RoleRef_builder{Id: b.role(t, ctx, "team-eraser", eraseHold).Bytes()}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+
+	_, err = app.NewBindingServiceClient(conn).Add(asOverTheWire(ctx, b.AcmeUser),
+		app.BindingAddRequest_builder{
+			Role:   app.RoleRef_builder{Id: b.role(t, ctx, "wide-eraser", eraseHold).Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		}.Build())
+	x.Equal(codes.PermissionDenied, status.Code(err),
+		"a role held in one team was bound across the tenant")
+}

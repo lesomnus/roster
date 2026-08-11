@@ -166,6 +166,12 @@ func (s coreRole) Add(ctx context.Context, req *app.RoleAddRequest) (*app.Role, 
 		return nil, err
 	}
 
+	// A role nobody may bind is a delayed version of binding it, so writing one
+	// is held to the same rule as granting one. See `escalate.go`.
+	if err := s.mayGrant(ctx, "methods", req.GetMethods()); err != nil {
+		return nil, err
+	}
+
 	return s.RoleServiceServer.Add(ctx, req)
 }
 
@@ -238,6 +244,17 @@ func (s coreBinding) Add(ctx context.Context, req *app.BindingAddRequest) (*app.
 		return nil, err
 	}
 	if err := tenantsAgree("role", who, what, role, where); err != nil {
+		return nil, err
+	}
+
+	// And what it hands out. Being allowed to write bindings was, until this,
+	// being allowed everything: write a role holding anything, bind it to
+	// yourself, and the permission system is a formality.
+	ms, err := s.methodsOf(ctx, req.GetRole())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.mayGrant(ctx, "role", ms); err != nil {
 		return nil, err
 	}
 

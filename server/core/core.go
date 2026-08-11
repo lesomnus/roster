@@ -18,19 +18,38 @@ import (
 type Core struct {
 	app.Overlay
 
-	// holds is what a caller's bindings allow, which `cmd` reads for the policy
-	// and hands over rather than this package asking a second time. See [Holds].
-	holds Holds
+	// rules is what a caller holds, which `cmd` reads for `gate.Policy` and
+	// hands over rather than this package asking a second time. See [Rules].
+	rules Rules
 }
 
-func New(next app.Server, holds Holds) Core { return Core{app.NewOverlay(next), holds} }
+// Rules is what this layer has to know about a caller and cannot work out.
+//
+// Both answers come from the same rows `gate.Policy` reads -- bindings, group
+// memberships, team memberships -- and `cmd` reads them against ent, because
+// working out what somebody may do cannot itself require permission. Asking
+// again here would be a second implementation of one question, and two
+// implementations of one question drift.
+//
+// A zero value refuses everything a frame carries, which is the safe direction
+// for a stack somebody assembled without it.
+type Rules struct {
+	// Holds answers whether somebody may call a method, for a team. See [Holds].
+	Holds Holds
+
+	// Granted is every method somebody holds **through a binding**, which is
+	// what they may pass on. See [Granted].
+	Granted Granted
+}
+
+func New(next app.Server, rules Rules) Core { return Core{app.NewOverlay(next), rules} }
 
 // Build makes a builder of this layer so that it can be stacked.
-func Build(holds Holds) app.Builder { return builder{holds} }
+func Build(rules Rules) app.Builder { return builder{rules} }
 
-type builder struct{ holds Holds }
+type builder struct{ rules Rules }
 
-func (b builder) Build(next app.Server) (app.Server, error) { return New(next, b.holds), nil }
+func (b builder) Build(next app.Server) (app.Server, error) { return New(next, b.rules), nil }
 
 var (
 	_ app.Server               = Core{}
@@ -49,5 +68,5 @@ func (s Core) WithDriver(drv dialect.Driver) (app.Server, error) {
 		return nil, err
 	}
 
-	return New(next, s.holds), nil
+	return New(next, s.rules), nil
 }

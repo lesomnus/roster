@@ -165,7 +165,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	// `core` is inside the gate and outside the sink: it reads through the wall
 	// to make its judgements, so it must be behind whatever installs one, and it
 	// refuses before the write happens rather than after.
-	stacked, err := app.Build(walled.WithWatch(w), core.Build(Holds(client)), pd.AuditBuild(), pd.GateBuild())
+	stacked, err := app.Build(walled.WithWatch(w), core.Build(Rules(client)), pd.AuditBuild(), pd.GateBuild())
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -180,7 +180,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	// what this app means -- an identity linked by `init` or by an admin console
 	// is still an identity, and a subject that is an email address is still
 	// wrong.
-	ungated, err := app.Build(sink.WithWatch(w), core.Build(Holds(client)), pd.AuditBuild())
+	ungated, err := app.Build(sink.WithWatch(w), core.Build(Rules(client)), pd.AuditBuild())
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -316,6 +316,10 @@ func register(g grpc.ServiceRegistrar, s app.Server) {
 	app.RegisterEmailServiceServer(g, s.Email())
 	app.RegisterSiteServiceServer(g, s.Site())
 	app.RegisterTeamServiceServer(g, s.Team())
+	app.RegisterRoleServiceServer(g, s.Role())
+	app.RegisterGroupServiceServer(g, s.Group())
+	app.RegisterGroupMembershipServiceServer(g, s.GroupMembership())
+	app.RegisterBindingServiceServer(g, s.Binding())
 	app.RegisterSiteMembershipServiceServer(g, s.SiteMembership())
 	app.RegisterTeamMembershipServiceServer(g, s.TeamMembership())
 	app.RegisterAuditServiceServer(g, s.Audit())

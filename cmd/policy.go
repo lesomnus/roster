@@ -254,6 +254,41 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 // One function rather than two, because it is one question. The gate asks a
 // weaker version of it -- may you ever call this -- and a layer asks this one,
 // and both read the same rows.
+// Rules is what `server/core` needs to know about a caller, from the rows this
+// policy already reads.
+func Rules(db *ent.Client) core.Rules {
+	return core.Rules{Holds: Holds(db), Granted: Granted(db)}
+}
+
+// Granted is every method somebody holds **through a binding**, which is what
+// they may pass on.
+//
+// Bindings only. A role held in a team is scoped to that team, and letting it
+// be bound tenant-wide would widen a scope rather than pass on a permission.
+func Granted(db *ent.Client) core.Granted {
+	return func(ctx context.Context, who pdid.Id) ([]string, error) {
+		vs, err := db.Binding.Query().
+			Where(
+				binding.DateErasedIsNil(),
+				binding.HasHolderWith(holder.IDEQ(who.Uuid())),
+			).
+			WithRole().
+			All(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		var ms []string
+		for _, v := range vs {
+			if v.Edges.Role != nil {
+				ms = append(ms, v.Edges.Role.Methods...)
+			}
+		}
+
+		return ms, nil
+	}
+}
+
 func Holds(db *ent.Client) core.Holds {
 	return func(ctx context.Context, who pdid.Id, method string, team pdid.Id) (bool, error) {
 		vs, err := db.Binding.Query().
