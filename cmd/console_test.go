@@ -1,0 +1,217 @@
+package cmd_test
+
+import (
+	"bytes"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
+
+	"github.com/lesomnus/payday/pdtest"
+
+	"github.com/lesomnus/roster/cmd"
+	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/keys"
+)
+
+// signIn posts a password the way a console does, and answers with the cookie.
+func signIn(t *testing.T, s *cmd.Server, alias, password string) *http.Cookie {
+	t.Helper()
+	x := require.New(t)
+
+	body, err := json.Marshal(map[string]string{"alias": alias, "password": password})
+	x.NoError(err)
+
+	r := httptest.NewRequest(http.MethodPost, "/session", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+	s.Sessions.Serve(cmd.Login(s.Control)).ServeHTTP(w, r)
+
+	res := w.Result()
+	t.Cleanup(func() { _ = res.Body.Close() })
+
+	if res.StatusCode != http.StatusNoContent {
+		return nil
+	}
+	for _, c := range res.Cookies() {
+		if c.Value != "" {
+			return c
+		}
+	}
+
+	return nil
+}
+
+// TestAnOperatorSignsIn is the console's front door, end to end from what
+// `roster init` printed.
+//
+// It is the seam payday left and could not fill: `auth` reads a credential and
+// does not issue one, and issuing is an HTTP endpoint. A browser has nowhere
+// safe to keep a secret, so what it gets is an opaque cookie naming a session
+// this server keeps.
+func TestAnOperatorSignsIn(t *testing.T) {
+	x := require.New(t)
+
+	s, out := inited(t, true)
+	x.NotNil(s.Sessions, "a deployment with a control plane has a console door")
+
+	secret := passwordFrom(t, out)
+
+	t.Run("with what init printed", func(t *testing.T) {
+		x := require.New(t)
+
+		c := signIn(t, s, "ops", secret)
+		x.NotNil(c, "the password init printed does not sign in")
+		x.True(c.HttpOnly, "a cookie script can read is one script can send elsewhere")
+		x.Equal(http.SameSiteLaxMode, c.SameSite)
+		x.NotEmpty(c.Value)
+	})
+
+	t.Run("and not with a wrong password", func(t *testing.T) {
+		x := require.New(t)
+		x.Nil(signIn(t, s, "ops", secret+"x"))
+	})
+
+	t.Run("nor as somebody who is not there", func(t *testing.T) {
+		x := require.New(t)
+		x.Nil(signIn(t, s, "nobody", secret))
+	})
+
+	// The data plane's admin is not an operator. `init` prints them as somebody
+	// to sign in as, and what they sign in to is a product app -- roster's own
+	// console is the deployment's, and a customer's people are the customer's.
+	t.Run("nor as a data plane holder", func(t *testing.T) {
+		x := require.New(t)
+		x.Nil(signIn(t, s, "admin", secret))
+	})
+}
+
+// TestNoControlPlaneNoConsole -- a deployment that believes its callers has
+// nobody to be, so the door is not there to knock on.
+func TestNoControlPlaneNoConsole(t *testing.T) {
+	x := require.New(t)
+
+	s, _ := inited(t, false)
+	x.Nil(s.Control)
+	x.Nil(s.Sessions, "a console door was opened where nobody can sign in")
+}
+
+// TestTheCookieOpensTheControlPlane is the other half: signing in is only worth
+// something if the cookie is a credential the server reads back.
+//
+// It also pins where that is true. A session names a control plane holder, so
+// it resolves only where that row is — put on the data plane's chain it would
+// authenticate and then resolve to nobody, since the two are separate databases
+// with no query between them.
+func TestTheCookieOpensTheControlPlane(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	s, out := inited(t, true)
+	c := signIn(t, s, "ops", passwordFrom(t, out))
+	x.NotNil(c)
+
+	// The control plane on a port, which is what a console reaches.
+	conn := pdtest.Serve(t, s.Control.Grpc(ctx, cmd.Config{}))
+	as := metadata.NewOutgoingContext(ctx,
+		metadata.Pairs("cookie", c.Name+"="+c.Value))
+
+	t.Run("it answers who the operator is", func(t *testing.T) {
+		x := require.New(t)
+
+		v, err := app.NewMeServiceClient(conn).Get(as, app.MeGetRequest_builder{}.Build())
+		x.NoError(err)
+		x.Equal("ops", v.GetAlias())
+
+		// And what init bound them, which is what a console draws its menu from.
+		x.Equal([]string{"/roster.*/*"}, v.GetMethods())
+	})
+
+	t.Run("and lets them administer the deployment", func(t *testing.T) {
+		x := require.New(t)
+
+		_, err := app.NewHolderServiceClient(conn).List(as,
+			app.HolderListRequest_builder{}.Build())
+		x.NoError(err)
+	})
+
+	t.Run("a cookie nobody minted opens nothing", func(t *testing.T) {
+		x := require.New(t)
+
+		bad := metadata.NewOutgoingContext(ctx,
+			metadata.Pairs("cookie", c.Name+"=not-a-session"))
+
+		_, err := app.NewMeServiceClient(conn).Get(bad, app.MeGetRequest_builder{}.Build())
+		x.Error(err)
+		x.Equal(codes.Unauthenticated, status.Code(err))
+	})
+
+	// The same cookie on the data plane names somebody who is not there.
+	t.Run("and it is not a credential for the data plane", func(t *testing.T) {
+		x := require.New(t)
+
+		other := pdtest.Serve(t, s.Grpc(ctx, cmd.Config{}))
+		_, err := app.NewMeServiceClient(other).Get(as, app.MeGetRequest_builder{}.Build())
+		x.Error(err)
+		x.Equal(codes.Unauthenticated, status.Code(err))
+	})
+}
+
+// TestAConsoleManagesKeys is what the control plane's own listener is for.
+//
+// `ApiKeyService` is unregistered and closed on the data plane, because its
+// generated `Get` answers with the verifier column to anybody the wall lets
+// read a row. Here it is the point of the port — which is why that port is an
+// address a console can reach and nothing else can, and why nothing in this
+// process can enforce that.
+func TestAConsoleManagesKeys(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	s, out := inited(t, true)
+	c := signIn(t, s, "ops", passwordFrom(t, out))
+	x.NotNil(c)
+
+	conn := pdtest.Serve(t, s.GrpcControl(ctx, cmd.Config{}))
+	as := metadata.NewOutgoingContext(ctx, metadata.Pairs("cookie", c.Name+"="+c.Value))
+
+	// Nothing on the data plane's port answers about keys, which is what the
+	// second listener exists to change.
+	t.Run("the data plane still says nothing about them", func(t *testing.T) {
+		x := require.New(t)
+
+		other := pdtest.Serve(t, s.Grpc(ctx, cmd.Config{}))
+		_, err := app.NewApiKeyServiceClient(other).List(ctx,
+			app.ApiKeyListRequest_builder{}.Build())
+		x.Error(err)
+		x.Equal(codes.Unimplemented, status.Code(err))
+	})
+
+	t.Run("an operator lists what exists", func(t *testing.T) {
+		x := require.New(t)
+
+		// A key to find, minted the way the CLI does.
+		who, err := cmd.ServiceOf(ctx, s.Control, "custody")
+		x.NoError(err)
+
+		_, sum, err := keys.Mint(keys.PrefixDeployment)
+		x.NoError(err)
+
+		_, err = s.Control.Ungated.ApiKey().Add(ctx, app.ApiKeyAddRequest_builder{
+			Holder:  app.HolderRef_builder{Id: who.Bytes()}.Build(),
+			Alias:   "production",
+			Secret:  sum,
+			Methods: []string{"/roster.VouchService/Verify"},
+		}.Build())
+		x.NoError(err)
+
+		v, err := app.NewApiKeyServiceClient(conn).List(as,
+			app.ApiKeyListRequest_builder{}.Build())
+		x.NoError(err)
+		x.NotEmpty(v.GetItems())
+	})
+}

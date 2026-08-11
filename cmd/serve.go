@@ -19,6 +19,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/lesomnus/payday/auth"
+	"github.com/lesomnus/payday/auth/authsession"
 	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/gate"
 	"github.com/lesomnus/payday/grpcx"
@@ -79,6 +80,32 @@ type Server struct {
 	// Auth is what reads a credential off a request. Nil is `auth.Plain`, and
 	// it says so once in the log -- see [ControlConfig].
 	Auth auth.Handler
+
+	// Keys is whether this instance is the one that holds them, which is the
+	// control plane and nothing else.
+	//
+	// It exists because `closed` cannot work it out. Both planes are the same
+	// `Build` and the same `Grpc`, and `Control == nil` is true of the control
+	// plane *and* of a deployment that has none -- so the one place they differ
+	// has to be said rather than inferred.
+	//
+	// What it changes is one service. `ApiKeyService` is closed everywhere by
+	// default because its generated `Get` answers with the verifier column; on
+	// the port where the deployment's own operator manages keys, that is the
+	// point. `CredentialService` stays closed on both, because a password hash
+	// is nobody's to read.
+	Keys bool
+
+	// Sessions is the console's cookie: the endpoint that mints one and the
+	// handler that reads it back. Nil where there is no control plane, since
+	// the people who sign in are its holders and there would be nobody to be.
+	//
+	// In memory, which is right for one replica and **silently wrong** for two
+	// -- a browser is signed in or out depending on which one the load balancer
+	// picked, per request, with nothing in any log saying so. It is the same
+	// trap the memory broker carries, and it is named here rather than
+	// defaulted somewhere unread.
+	Sessions *authsession.Sessions
 
 	// Spin is whatever this deployment has to run besides answering requests.
 	// It is a slice rather than a method because a server with nothing to run
@@ -209,8 +236,47 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 			return nil, fmt.Errorf("control: %w", err)
 		}
 
+		control.Keys = true
+
 		s.Control = control
 		s.Auth = auth.Bearer(keys.Store(control.Ungated, s.Ungated))
+
+		// And the control plane authenticates with **its own** keys, which is
+		// what makes it servable on a port at all.
+		//
+		// Without this it is `auth.Plain` -- built from a config with no
+		// `control` of its own, which is what stops the recursion -- and
+		// `Plain` believes whatever a caller writes. Right for something only
+		// reachable by a Go call, and not something to put on a listener.
+		//
+		// Self-referential and it terminates for the same reason the outer one
+		// does: looking a key up is a call into `control.Ungated`, not a
+		// request to the port this handler is protecting.
+		//
+		// Only deployment keys, because there is no second plane below this
+		// one. `roster key add` mints them; a customer's `rt_` is a data plane
+		// thing and has no meaning here.
+		s.Sessions = authsession.New(authsession.NewMemStore())
+
+		// A console's cookie in front of a service's key, and **on this plane
+		// only**.
+		//
+		// A session names a control plane holder, so it can be resolved only
+		// where that row is. Put on the data plane's chain it would
+		// authenticate and then resolve to nobody, since the two are separate
+		// databases with no query between them -- which is also the answer to
+		// why an operator has no standing in a customer's tenant. They
+		// administer the deployment; a customer's people are the customer's.
+		//
+		// `Seq` takes the first handler that finds anything. The two read
+		// different places -- a cookie and an `authorization` header -- so a
+		// request carries at most one and the order decides nothing but which
+		// answers a request carrying both. A cookie naming **nobody** does not
+		// fall through: it is a credential that is there and wrong.
+		control.Auth = auth.Seq(
+			s.Sessions.Handler(),
+			auth.Bearer(keys.Store(control.Ungated, nil)),
+		)
 	}
 	if c.Watch.Outbox && b != nil {
 		// The loop that makes an event durable. It is not a layer and not a
@@ -262,7 +328,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 		WithUnary(grpcx.LimitUnary(c.Server.Limiter(), gate.ByTenant())).
 		With(gate.Interceptor(Policy(s.Ent))).
 		With(s.Watch.Interceptor()).
-		WithUnary(grpcx.ClosedUnary(closed(c)))
+		WithUnary(grpcx.ClosedUnary(s.closed(c)))
 
 	os := append(opts, chain.ServerOptions()...)
 	os = append(os, c.Server.GrpcOptions()...)
@@ -309,7 +375,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// here: a key's scope comes from the policy, so a guard without one would
 	// serve a key in a batch as a caller who may see nothing.
 	guard := c.Server.Guard(Policy(s.Ent))
-	guard.Closed = closed(c)
+	guard.Closed = s.closed(c)
 
 	if b, err := pd.Batch(s.Walled, s.Drv, guard); err == nil {
 		pdpb.RegisterBatchServiceServer(g, b)
@@ -368,14 +434,18 @@ func register(g grpc.ServiceRegistrar, s app.Server) {
 //
 // So the two are one function used twice rather than two lists that agree
 // today.
-func closed(c Config) func(method string) bool {
+func (s *Server) closed(c Config) func(method string) bool {
 	was := c.Server.Closed()
 
+	shut := []string{app.CredentialService_ServiceDesc.ServiceName}
+	if !s.Keys {
+		// Everywhere but the one port whose reason for existing is managing
+		// them; see [Server.Keys].
+		shut = append(shut, app.ApiKeyService_ServiceDesc.ServiceName)
+	}
+
 	return func(method string) bool {
-		for _, v := range []string{
-			app.CredentialService_ServiceDesc.ServiceName,
-			app.ApiKeyService_ServiceDesc.ServiceName,
-		} {
+		for _, v := range shut {
 			if strings.HasPrefix(method, "/"+v+"/") {
 				return true
 			}
@@ -417,12 +487,68 @@ func (s *Server) Serve(ctx context.Context, c Config, l net.Listener) error {
 	}
 	defer stop()
 
+	stopControl, err := s.serveControl(ctx, c)
+	if err != nil {
+		return err
+	}
+	defer stopControl()
+
 	go func() {
 		<-ctx.Done()
 		g.GracefulStop()
 	}()
 
 	return g.Serve(l)
+}
+
+// GrpcControl is the control plane's own server, for a console.
+//
+// Separate from [Server.serveControl] for the reason [Server.Grpc] is separate
+// from [Server.Serve]: a test can travel exactly this and answer on a listener
+// that is a channel. It was briefly not, and then the one registration that
+// makes this port worth opening was reachable only by opening it.
+func (s *Server) GrpcControl(ctx context.Context, c Config, opts ...grpc.ServerOption) *grpc.Server {
+	g := s.Control.Grpc(ctx, Config{Server: c.Control.Server}, opts...)
+
+	// The keys themselves, which the data plane refuses to serve and this port
+	// exists to serve. `Get` still answers with the verifier column if it is
+	// asked for -- that is why it is unregistered everywhere else -- so this
+	// port must not be reachable by anybody who is not administering the
+	// deployment. Nothing in this process can enforce that; the address is what
+	// enforces it.
+	app.RegisterApiKeyServiceServer(g, s.Control.Walled.ApiKey())
+
+	return g
+}
+
+// serveControl is the control plane on a port, for a console.
+//
+// Nothing is opened unless an address was written down, and the address should
+// be one only a console can reach. The rows here are the deployment's own --
+// which services may call it, what each may call, who runs it -- and none of
+// them is any customer's business.
+//
+// It is roster again, so it is the same `Grpc` with the same chain: the wall,
+// the gate, the trail. What differs is which database is behind it and one
+// registration, since `ApiKeyService` is the whole point of the port and is
+// closed on the other one.
+func (s *Server) serveControl(ctx context.Context, c Config) (func(), error) {
+	if !c.Control.Answers() || s.Control == nil {
+		return func() {}, nil
+	}
+
+	g := s.GrpcControl(ctx, c)
+
+	l, err := net.Listen("tcp", c.Control.Addr)
+	if err != nil {
+		return nil, err
+	}
+
+	go func() { _ = g.Serve(l) }()
+
+	log.From(ctx).InfoContext(ctx, "control", slog.String("addr", l.Addr().String()))
+
+	return g.GracefulStop, nil
 }
 
 // serveHttp is the second listener, for whatever cannot speak gRPC -- which is
@@ -441,16 +567,22 @@ func (s *Server) serveHttp(ctx context.Context, c Config, g *grpc.Server) (func(
 		return nil, err
 	}
 
-	// Whatever this app serves over HTTP goes here, on the same mux and behind
-	// the same cross-origin answer. A login endpoint is the case payday left a
-	// seam for and cannot fill: `auth` reads a credential and does not issue
-	// one, and issuing is an HTTP endpoint.
-	//
-	//	h.Handle("/login", login(s.Ungated))
+	// The console's sign-in, which is the seam payday left and could not fill:
+	// `auth` reads a credential and does not issue one, and issuing is an HTTP
+	// endpoint. See `Login`.
 	//
 	// A gRPC path is `/<service>/<method>`, so an ordinary route cannot collide
 	// with one -- and `ServeMux` panics rather than shadowing if one somehow
 	// does.
+	//
+	// Only where there is a control plane, because that is where the people who
+	// sign in live. A deployment without one has no console and nobody to be;
+	// serving this there would be an endpoint that can only ever answer no.
+	if s.Sessions != nil && s.Control != nil {
+		v := Login(s.Control)
+		h.Handle("POST /session", s.Sessions.Serve(v))
+		h.Handle("DELETE /session", s.Sessions.Serve(v))
+	}
 
 	l, err := net.Listen("tcp", c.Server.Http.Addr)
 	if err != nil {

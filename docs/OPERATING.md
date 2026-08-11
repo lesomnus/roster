@@ -20,6 +20,20 @@ control:
     dsn: "file:roster-control.db?_pragma=foreign_keys(1)"
 ```
 
+```yaml
+control:
+  db: {...}
+
+  # Where a console reaches it, and **empty is nowhere**. The rows are always
+  # reachable in this process -- that is what the auth interceptor asks on
+  # every request -- and this is what puts them on a port.
+  #
+  # Bind it somewhere only a console can reach. It serves `ApiKeyService`,
+  # which every other port refuses, and a port that is not open is a control
+  # nothing has to get right.
+  addr: "127.0.0.1:50052"
+```
+
 **Leave `control` out and the deployment believes its callers** — `auth.Plain`,
 which says so once in the log. That is right for a checkout and is not something
 to serve anywhere else.
@@ -74,6 +88,37 @@ list, which is the same reason `roster key add` will not take a key.
 
 That is the console's bootstrap. A console cannot be what creates the first
 person allowed to use it.
+
+## The console
+
+An **operator** signs in: a holder of the control plane, which is where the
+people who run this deployment live. `roster init` makes the first one and
+prints their password once.
+
+```
+POST /session      {"alias": "ops", "password": "..."}   -> 204, __Host-pd_session
+DELETE /session                                          -> 204
+```
+
+The cookie is opaque, `HttpOnly`, `SameSite=Lax` and names a session this
+server keeps. What it opens is the **control plane's** listener — `control.addr`
+above — and nothing else:
+
+| | |
+| --- | --- |
+| control listener | who runs this deployment, which services call it, their keys |
+| data plane listener | customers and their people. Keys only; a cookie names nobody here |
+
+That is not a restriction somebody chose. A session names a control plane
+holder and the two planes are separate databases with no query between them, so
+the row simply is not there — which is also the answer to why an operator has
+no standing inside a customer's tenant. They administer the deployment; a
+customer's people are the customer's.
+
+Sessions are held **in this process**, which is right for one replica and
+silently wrong for two: a browser is signed in or out depending on which
+replica the load balancer picked, per request, with nothing in any log saying
+so. Same trap as the memory broker.
 
 ## A key for a service
 

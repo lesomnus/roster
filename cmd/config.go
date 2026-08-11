@@ -69,10 +69,34 @@ type Config struct {
 // the recursion ends there.
 type ControlConfig struct {
 	Db config.DbConfig `yaml:"db"`
+
+	// Addr is where the control plane answers, and **empty is nowhere**.
+	//
+	// The rows are reachable in this process whatever this says -- that is what
+	// the auth interceptor asks on every request. What an address adds is a way
+	// for a console to manage them: which services exist, what keys they hold,
+	// who the operators are.
+	//
+	// Nothing is opened unless it is written down, and it should be written
+	// down as an interface a console can reach and nothing else can. A port
+	// that is not open is a control nothing has to get right, which is the same
+	// argument `AllowPprof` makes about a listener that is.
+	Addr string `yaml:"addr"`
+
+	// Server is that listener's own settings -- its limits, what it closes.
+	//
+	// Its own rather than the data plane's, because they are answering
+	// different callers about different rows. Sharing one would mean a limit
+	// tuned for a product app's traffic applied to a console, and an
+	// `http` block that tried to open the same port twice.
+	Server config.ServerConfig `yaml:"server"`
 }
 
 // Serves reports whether this deployment checks who is calling.
 func (c ControlConfig) Serves() bool { return c.Db.Driver != "" }
+
+// Answers reports whether the control plane is reachable over the network.
+func (c ControlConfig) Answers() bool { return c.Serves() && c.Addr != "" }
 
 // Cmd is this app's own command line: what payday supplies, plus whatever the
 // app has of its own.
