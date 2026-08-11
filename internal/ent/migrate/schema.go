@@ -9,6 +9,49 @@ import (
 )
 
 var (
+	// ApikeyColumns holds the columns for the "apikey" table.
+	ApikeyColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "alias", Type: field.TypeString},
+		{Name: "desc", Type: field.TypeString},
+		{Name: "methods", Type: field.TypeJSON, Nullable: true},
+		{Name: "secret", Type: field.TypeBytes},
+		{Name: "date_used", Type: field.TypeTime, Nullable: true},
+		{Name: "date_expires", Type: field.TypeTime, Nullable: true},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "holder_id", Type: field.TypeUUID},
+	}
+	// ApikeyTable holds the schema information for the "apikey" table.
+	ApikeyTable = &schema.Table{
+		Name:       "apikey",
+		Columns:    ApikeyColumns,
+		PrimaryKey: []*schema.Column{ApikeyColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "apikey_holder_holder",
+				Columns:    []*schema.Column{ApikeyColumns[10]},
+				RefColumns: []*schema.Column{HolderColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "apikey_date_created_id",
+				Unique:  false,
+				Columns: []*schema.Column{ApikeyColumns[9], ApikeyColumns[0]},
+			},
+			{
+				Name:    "apikey_alias_holder_id",
+				Unique:  true,
+				Columns: []*schema.Column{ApikeyColumns[1], ApikeyColumns[10]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
 	// AuditColumns holds the columns for the "audit" table.
 	AuditColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
@@ -435,6 +478,7 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		ApikeyTable,
 		AuditTable,
 		CredentialTable,
 		EmailTable,
@@ -450,6 +494,10 @@ var (
 )
 
 func init() {
+	ApikeyTable.ForeignKeys[0].RefTable = HolderTable
+	ApikeyTable.Annotation = &entsql.Annotation{
+		Table: "apikey",
+	}
 	AuditTable.Annotation = &entsql.Annotation{
 		Table: "audit",
 	}

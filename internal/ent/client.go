@@ -9,13 +9,14 @@ import (
 	"log"
 	"reflect"
 
-	"github.com/google/uuid"
+	uuid "github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/migrate"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/lesomnus/roster/internal/ent/apikey"
 	"github.com/lesomnus/roster/internal/ent/audit"
 	"github.com/lesomnus/roster/internal/ent/credential"
 	"github.com/lesomnus/roster/internal/ent/email"
@@ -34,6 +35,8 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// ApiKey is the client for interacting with the ApiKey builders.
+	ApiKey *ApiKeyClient
 	// Audit is the client for interacting with the Audit builders.
 	Audit *AuditClient
 	// Credential is the client for interacting with the Credential builders.
@@ -67,6 +70,7 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.ApiKey = NewApiKeyClient(c.config)
 	c.Audit = NewAuditClient(c.config)
 	c.Credential = NewCredentialClient(c.config)
 	c.Email = NewEmailClient(c.config)
@@ -170,6 +174,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:            ctx,
 		config:         cfg,
+		ApiKey:         NewApiKeyClient(cfg),
 		Audit:          NewAuditClient(cfg),
 		Credential:     NewCredentialClient(cfg),
 		Email:          NewEmailClient(cfg),
@@ -200,6 +205,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:            ctx,
 		config:         cfg,
+		ApiKey:         NewApiKeyClient(cfg),
 		Audit:          NewAuditClient(cfg),
 		Credential:     NewCredentialClient(cfg),
 		Email:          NewEmailClient(cfg),
@@ -217,7 +223,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Audit.
+//		ApiKey.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -240,8 +246,8 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Audit, c.Credential, c.Email, c.Holder, c.Identity, c.Outbox, c.Site,
-		c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
+		c.ApiKey, c.Audit, c.Credential, c.Email, c.Holder, c.Identity, c.Outbox,
+		c.Site, c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
 	} {
 		n.Use(hooks...)
 	}
@@ -251,8 +257,8 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Audit, c.Credential, c.Email, c.Holder, c.Identity, c.Outbox, c.Site,
-		c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
+		c.ApiKey, c.Audit, c.Credential, c.Email, c.Holder, c.Identity, c.Outbox,
+		c.Site, c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -261,6 +267,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *ApiKeyMutation:
+		return c.ApiKey.mutate(ctx, m)
 	case *AuditMutation:
 		return c.Audit.mutate(ctx, m)
 	case *CredentialMutation:
@@ -285,6 +293,155 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Tenant.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// ApiKeyClient is a client for the ApiKey schema.
+type ApiKeyClient struct {
+	config
+}
+
+// NewApiKeyClient returns a client for the ApiKey from the given config.
+func NewApiKeyClient(c config) *ApiKeyClient {
+	return &ApiKeyClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `apikey.Hooks(f(g(h())))`.
+func (c *ApiKeyClient) Use(hooks ...Hook) {
+	c.hooks.ApiKey = append(c.hooks.ApiKey, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `apikey.Intercept(f(g(h())))`.
+func (c *ApiKeyClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ApiKey = append(c.inters.ApiKey, interceptors...)
+}
+
+// Create returns a builder for creating a ApiKey entity.
+func (c *ApiKeyClient) Create() *ApiKeyCreate {
+	mutation := newApiKeyMutation(c.config, OpCreate)
+	return &ApiKeyCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ApiKey entities.
+func (c *ApiKeyClient) CreateBulk(builders ...*ApiKeyCreate) *ApiKeyCreateBulk {
+	return &ApiKeyCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ApiKeyClient) MapCreateBulk(slice any, setFunc func(*ApiKeyCreate, int)) *ApiKeyCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ApiKeyCreateBulk{err: fmt.Errorf("calling to ApiKeyClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ApiKeyCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ApiKeyCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ApiKey.
+func (c *ApiKeyClient) Update() *ApiKeyUpdate {
+	mutation := newApiKeyMutation(c.config, OpUpdate)
+	return &ApiKeyUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ApiKeyClient) UpdateOne(_m *ApiKey) *ApiKeyUpdateOne {
+	mutation := newApiKeyMutation(c.config, OpUpdateOne, withApiKey(_m))
+	return &ApiKeyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ApiKeyClient) UpdateOneID(id uuid.UUID) *ApiKeyUpdateOne {
+	mutation := newApiKeyMutation(c.config, OpUpdateOne, withApiKeyID(id))
+	return &ApiKeyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ApiKey.
+func (c *ApiKeyClient) Delete() *ApiKeyDelete {
+	mutation := newApiKeyMutation(c.config, OpDelete)
+	return &ApiKeyDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ApiKeyClient) DeleteOne(_m *ApiKey) *ApiKeyDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ApiKeyClient) DeleteOneID(id uuid.UUID) *ApiKeyDeleteOne {
+	builder := c.Delete().Where(apikey.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ApiKeyDeleteOne{builder}
+}
+
+// Query returns a query builder for ApiKey.
+func (c *ApiKeyClient) Query() *ApiKeyQuery {
+	return &ApiKeyQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeApiKey},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ApiKey entity by its id.
+func (c *ApiKeyClient) Get(ctx context.Context, id uuid.UUID) (*ApiKey, error) {
+	return c.Query().Where(apikey.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ApiKeyClient) GetX(ctx context.Context, id uuid.UUID) *ApiKey {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryHolder queries the holder edge of a ApiKey.
+func (c *ApiKeyClient) QueryHolder(_m *ApiKey) *HolderQuery {
+	query := (&HolderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apikey.Table, apikey.FieldID, id),
+			sqlgraph.To(holder.Table, holder.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, apikey.HolderTable, apikey.HolderColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ApiKeyClient) Hooks() []Hook {
+	return c.hooks.ApiKey
+}
+
+// Interceptors returns the client interceptors.
+func (c *ApiKeyClient) Interceptors() []Interceptor {
+	return c.inters.ApiKey
+}
+
+func (c *ApiKeyClient) mutate(ctx context.Context, m *ApiKeyMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ApiKeyCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ApiKeyUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ApiKeyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ApiKeyDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ApiKey mutation op: %q", m.Op())
 	}
 }
 
@@ -1930,11 +2087,11 @@ func (c *TenantClient) mutate(ctx context.Context, m *TenantMutation) (Value, er
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Audit, Credential, Email, Holder, Identity, Outbox, Site, SiteMembership, Team,
-		TeamMembership, Tenant []ent.Hook
+		ApiKey, Audit, Credential, Email, Holder, Identity, Outbox, Site,
+		SiteMembership, Team, TeamMembership, Tenant []ent.Hook
 	}
 	inters struct {
-		Audit, Credential, Email, Holder, Identity, Outbox, Site, SiteMembership, Team,
-		TeamMembership, Tenant []ent.Interceptor
+		ApiKey, Audit, Credential, Email, Holder, Identity, Outbox, Site,
+		SiteMembership, Team, TeamMembership, Tenant []ent.Interceptor
 	}
 )

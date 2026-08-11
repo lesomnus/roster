@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
+	"github.com/lesomnus/roster/internal/ent/apikey"
 	"github.com/lesomnus/roster/internal/ent/audit"
 	"github.com/lesomnus/roster/internal/ent/credential"
 	"github.com/lesomnus/roster/internal/ent/email"
@@ -36,6 +37,7 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
+	TypeApiKey         = "ApiKey"
 	TypeAudit          = "Audit"
 	TypeCredential     = "Credential"
 	TypeEmail          = "Email"
@@ -48,6 +50,993 @@ const (
 	TypeTeamMembership = "TeamMembership"
 	TypeTenant         = "Tenant"
 )
+
+// ApiKeyMutation represents an operation that mutates the ApiKey nodes in the graph.
+type ApiKeyMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *uuid.UUID
+	alias         *string
+	desc          *string
+	methods       *[]string
+	appendmethods []string
+	secret        *[]byte
+	date_used     *time.Time
+	date_expires  *time.Time
+	date_updated  *time.Time
+	date_erased   *time.Time
+	date_created  *time.Time
+	clearedFields map[string]struct{}
+	holder        *uuid.UUID
+	clearedholder bool
+	done          bool
+	oldValue      func(context.Context) (*ApiKey, error)
+	predicates    []predicate.ApiKey
+}
+
+var _ ent.Mutation = (*ApiKeyMutation)(nil)
+
+// apikeyOption allows management of the mutation configuration using functional options.
+type apikeyOption func(*ApiKeyMutation)
+
+// newApiKeyMutation creates new mutation for the ApiKey entity.
+func newApiKeyMutation(c config, op Op, opts ...apikeyOption) *ApiKeyMutation {
+	m := &ApiKeyMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeApiKey,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withApiKeyID sets the ID field of the mutation.
+func withApiKeyID(id uuid.UUID) apikeyOption {
+	return func(m *ApiKeyMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ApiKey
+		)
+		m.oldValue = func(ctx context.Context) (*ApiKey, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ApiKey.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withApiKey sets the old ApiKey of the mutation.
+func withApiKey(node *ApiKey) apikeyOption {
+	return func(m *ApiKeyMutation) {
+		m.oldValue = func(context.Context) (*ApiKey, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ApiKeyMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ApiKeyMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of ApiKey entities.
+func (m *ApiKeyMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ApiKeyMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ApiKeyMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ApiKey.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetAlias sets the "alias" field.
+func (m *ApiKeyMutation) SetAlias(s string) {
+	m.alias = &s
+}
+
+// Alias returns the value of the "alias" field in the mutation.
+func (m *ApiKeyMutation) Alias() (r string, exists bool) {
+	v := m.alias
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAlias returns the old "alias" field's value of the ApiKey entity.
+// If the ApiKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiKeyMutation) OldAlias(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAlias is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAlias requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAlias: %w", err)
+	}
+	return oldValue.Alias, nil
+}
+
+// ResetAlias resets all changes to the "alias" field.
+func (m *ApiKeyMutation) ResetAlias() {
+	m.alias = nil
+}
+
+// SetDesc sets the "desc" field.
+func (m *ApiKeyMutation) SetDesc(s string) {
+	m.desc = &s
+}
+
+// Desc returns the value of the "desc" field in the mutation.
+func (m *ApiKeyMutation) Desc() (r string, exists bool) {
+	v := m.desc
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDesc returns the old "desc" field's value of the ApiKey entity.
+// If the ApiKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiKeyMutation) OldDesc(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDesc is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDesc requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDesc: %w", err)
+	}
+	return oldValue.Desc, nil
+}
+
+// ResetDesc resets all changes to the "desc" field.
+func (m *ApiKeyMutation) ResetDesc() {
+	m.desc = nil
+}
+
+// SetMethods sets the "methods" field.
+func (m *ApiKeyMutation) SetMethods(s []string) {
+	m.methods = &s
+	m.appendmethods = nil
+}
+
+// Methods returns the value of the "methods" field in the mutation.
+func (m *ApiKeyMutation) Methods() (r []string, exists bool) {
+	v := m.methods
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMethods returns the old "methods" field's value of the ApiKey entity.
+// If the ApiKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiKeyMutation) OldMethods(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMethods is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMethods requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMethods: %w", err)
+	}
+	return oldValue.Methods, nil
+}
+
+// AppendMethods adds s to the "methods" field.
+func (m *ApiKeyMutation) AppendMethods(s []string) {
+	m.appendmethods = append(m.appendmethods, s...)
+}
+
+// AppendedMethods returns the list of values that were appended to the "methods" field in this mutation.
+func (m *ApiKeyMutation) AppendedMethods() ([]string, bool) {
+	if len(m.appendmethods) == 0 {
+		return nil, false
+	}
+	return m.appendmethods, true
+}
+
+// ClearMethods clears the value of the "methods" field.
+func (m *ApiKeyMutation) ClearMethods() {
+	m.methods = nil
+	m.appendmethods = nil
+	m.clearedFields[apikey.FieldMethods] = struct{}{}
+}
+
+// MethodsCleared returns if the "methods" field was cleared in this mutation.
+func (m *ApiKeyMutation) MethodsCleared() bool {
+	_, ok := m.clearedFields[apikey.FieldMethods]
+	return ok
+}
+
+// ResetMethods resets all changes to the "methods" field.
+func (m *ApiKeyMutation) ResetMethods() {
+	m.methods = nil
+	m.appendmethods = nil
+	delete(m.clearedFields, apikey.FieldMethods)
+}
+
+// SetSecret sets the "secret" field.
+func (m *ApiKeyMutation) SetSecret(b []byte) {
+	m.secret = &b
+}
+
+// Secret returns the value of the "secret" field in the mutation.
+func (m *ApiKeyMutation) Secret() (r []byte, exists bool) {
+	v := m.secret
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSecret returns the old "secret" field's value of the ApiKey entity.
+// If the ApiKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiKeyMutation) OldSecret(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSecret is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSecret requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSecret: %w", err)
+	}
+	return oldValue.Secret, nil
+}
+
+// ResetSecret resets all changes to the "secret" field.
+func (m *ApiKeyMutation) ResetSecret() {
+	m.secret = nil
+}
+
+// SetDateUsed sets the "date_used" field.
+func (m *ApiKeyMutation) SetDateUsed(t time.Time) {
+	m.date_used = &t
+}
+
+// DateUsed returns the value of the "date_used" field in the mutation.
+func (m *ApiKeyMutation) DateUsed() (r time.Time, exists bool) {
+	v := m.date_used
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDateUsed returns the old "date_used" field's value of the ApiKey entity.
+// If the ApiKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiKeyMutation) OldDateUsed(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDateUsed is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDateUsed requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateUsed: %w", err)
+	}
+	return oldValue.DateUsed, nil
+}
+
+// ClearDateUsed clears the value of the "date_used" field.
+func (m *ApiKeyMutation) ClearDateUsed() {
+	m.date_used = nil
+	m.clearedFields[apikey.FieldDateUsed] = struct{}{}
+}
+
+// DateUsedCleared returns if the "date_used" field was cleared in this mutation.
+func (m *ApiKeyMutation) DateUsedCleared() bool {
+	_, ok := m.clearedFields[apikey.FieldDateUsed]
+	return ok
+}
+
+// ResetDateUsed resets all changes to the "date_used" field.
+func (m *ApiKeyMutation) ResetDateUsed() {
+	m.date_used = nil
+	delete(m.clearedFields, apikey.FieldDateUsed)
+}
+
+// SetDateExpires sets the "date_expires" field.
+func (m *ApiKeyMutation) SetDateExpires(t time.Time) {
+	m.date_expires = &t
+}
+
+// DateExpires returns the value of the "date_expires" field in the mutation.
+func (m *ApiKeyMutation) DateExpires() (r time.Time, exists bool) {
+	v := m.date_expires
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDateExpires returns the old "date_expires" field's value of the ApiKey entity.
+// If the ApiKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiKeyMutation) OldDateExpires(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDateExpires is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDateExpires requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateExpires: %w", err)
+	}
+	return oldValue.DateExpires, nil
+}
+
+// ClearDateExpires clears the value of the "date_expires" field.
+func (m *ApiKeyMutation) ClearDateExpires() {
+	m.date_expires = nil
+	m.clearedFields[apikey.FieldDateExpires] = struct{}{}
+}
+
+// DateExpiresCleared returns if the "date_expires" field was cleared in this mutation.
+func (m *ApiKeyMutation) DateExpiresCleared() bool {
+	_, ok := m.clearedFields[apikey.FieldDateExpires]
+	return ok
+}
+
+// ResetDateExpires resets all changes to the "date_expires" field.
+func (m *ApiKeyMutation) ResetDateExpires() {
+	m.date_expires = nil
+	delete(m.clearedFields, apikey.FieldDateExpires)
+}
+
+// SetDateUpdated sets the "date_updated" field.
+func (m *ApiKeyMutation) SetDateUpdated(t time.Time) {
+	m.date_updated = &t
+}
+
+// DateUpdated returns the value of the "date_updated" field in the mutation.
+func (m *ApiKeyMutation) DateUpdated() (r time.Time, exists bool) {
+	v := m.date_updated
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDateUpdated returns the old "date_updated" field's value of the ApiKey entity.
+// If the ApiKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiKeyMutation) OldDateUpdated(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDateUpdated is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDateUpdated requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateUpdated: %w", err)
+	}
+	return oldValue.DateUpdated, nil
+}
+
+// ResetDateUpdated resets all changes to the "date_updated" field.
+func (m *ApiKeyMutation) ResetDateUpdated() {
+	m.date_updated = nil
+}
+
+// SetDateErased sets the "date_erased" field.
+func (m *ApiKeyMutation) SetDateErased(t time.Time) {
+	m.date_erased = &t
+}
+
+// DateErased returns the value of the "date_erased" field in the mutation.
+func (m *ApiKeyMutation) DateErased() (r time.Time, exists bool) {
+	v := m.date_erased
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDateErased returns the old "date_erased" field's value of the ApiKey entity.
+// If the ApiKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiKeyMutation) OldDateErased(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDateErased is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDateErased requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateErased: %w", err)
+	}
+	return oldValue.DateErased, nil
+}
+
+// ClearDateErased clears the value of the "date_erased" field.
+func (m *ApiKeyMutation) ClearDateErased() {
+	m.date_erased = nil
+	m.clearedFields[apikey.FieldDateErased] = struct{}{}
+}
+
+// DateErasedCleared returns if the "date_erased" field was cleared in this mutation.
+func (m *ApiKeyMutation) DateErasedCleared() bool {
+	_, ok := m.clearedFields[apikey.FieldDateErased]
+	return ok
+}
+
+// ResetDateErased resets all changes to the "date_erased" field.
+func (m *ApiKeyMutation) ResetDateErased() {
+	m.date_erased = nil
+	delete(m.clearedFields, apikey.FieldDateErased)
+}
+
+// SetDateCreated sets the "date_created" field.
+func (m *ApiKeyMutation) SetDateCreated(t time.Time) {
+	m.date_created = &t
+}
+
+// DateCreated returns the value of the "date_created" field in the mutation.
+func (m *ApiKeyMutation) DateCreated() (r time.Time, exists bool) {
+	v := m.date_created
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDateCreated returns the old "date_created" field's value of the ApiKey entity.
+// If the ApiKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiKeyMutation) OldDateCreated(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDateCreated is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDateCreated requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateCreated: %w", err)
+	}
+	return oldValue.DateCreated, nil
+}
+
+// ClearDateCreated clears the value of the "date_created" field.
+func (m *ApiKeyMutation) ClearDateCreated() {
+	m.date_created = nil
+	m.clearedFields[apikey.FieldDateCreated] = struct{}{}
+}
+
+// DateCreatedCleared returns if the "date_created" field was cleared in this mutation.
+func (m *ApiKeyMutation) DateCreatedCleared() bool {
+	_, ok := m.clearedFields[apikey.FieldDateCreated]
+	return ok
+}
+
+// ResetDateCreated resets all changes to the "date_created" field.
+func (m *ApiKeyMutation) ResetDateCreated() {
+	m.date_created = nil
+	delete(m.clearedFields, apikey.FieldDateCreated)
+}
+
+// SetHolderID sets the "holder_id" field.
+func (m *ApiKeyMutation) SetHolderID(u uuid.UUID) {
+	m.holder = &u
+}
+
+// HolderID returns the value of the "holder_id" field in the mutation.
+func (m *ApiKeyMutation) HolderID() (r uuid.UUID, exists bool) {
+	v := m.holder
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldHolderID returns the old "holder_id" field's value of the ApiKey entity.
+// If the ApiKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiKeyMutation) OldHolderID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldHolderID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldHolderID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldHolderID: %w", err)
+	}
+	return oldValue.HolderID, nil
+}
+
+// ResetHolderID resets all changes to the "holder_id" field.
+func (m *ApiKeyMutation) ResetHolderID() {
+	m.holder = nil
+}
+
+// ClearHolder clears the "holder" edge to the Holder entity.
+func (m *ApiKeyMutation) ClearHolder() {
+	m.clearedholder = true
+	m.clearedFields[apikey.FieldHolderID] = struct{}{}
+}
+
+// HolderCleared reports if the "holder" edge to the Holder entity was cleared.
+func (m *ApiKeyMutation) HolderCleared() bool {
+	return m.clearedholder
+}
+
+// HolderIDs returns the "holder" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// HolderID instead. It exists only for internal usage by the builders.
+func (m *ApiKeyMutation) HolderIDs() (ids []uuid.UUID) {
+	if id := m.holder; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetHolder resets all changes to the "holder" edge.
+func (m *ApiKeyMutation) ResetHolder() {
+	m.holder = nil
+	m.clearedholder = false
+}
+
+// Where appends a list predicates to the ApiKeyMutation builder.
+func (m *ApiKeyMutation) Where(ps ...predicate.ApiKey) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ApiKeyMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ApiKeyMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ApiKey, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ApiKeyMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ApiKeyMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ApiKey).
+func (m *ApiKeyMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ApiKeyMutation) Fields() []string {
+	fields := make([]string, 0, 10)
+	if m.alias != nil {
+		fields = append(fields, apikey.FieldAlias)
+	}
+	if m.desc != nil {
+		fields = append(fields, apikey.FieldDesc)
+	}
+	if m.methods != nil {
+		fields = append(fields, apikey.FieldMethods)
+	}
+	if m.secret != nil {
+		fields = append(fields, apikey.FieldSecret)
+	}
+	if m.date_used != nil {
+		fields = append(fields, apikey.FieldDateUsed)
+	}
+	if m.date_expires != nil {
+		fields = append(fields, apikey.FieldDateExpires)
+	}
+	if m.date_updated != nil {
+		fields = append(fields, apikey.FieldDateUpdated)
+	}
+	if m.date_erased != nil {
+		fields = append(fields, apikey.FieldDateErased)
+	}
+	if m.date_created != nil {
+		fields = append(fields, apikey.FieldDateCreated)
+	}
+	if m.holder != nil {
+		fields = append(fields, apikey.FieldHolderID)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ApiKeyMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case apikey.FieldAlias:
+		return m.Alias()
+	case apikey.FieldDesc:
+		return m.Desc()
+	case apikey.FieldMethods:
+		return m.Methods()
+	case apikey.FieldSecret:
+		return m.Secret()
+	case apikey.FieldDateUsed:
+		return m.DateUsed()
+	case apikey.FieldDateExpires:
+		return m.DateExpires()
+	case apikey.FieldDateUpdated:
+		return m.DateUpdated()
+	case apikey.FieldDateErased:
+		return m.DateErased()
+	case apikey.FieldDateCreated:
+		return m.DateCreated()
+	case apikey.FieldHolderID:
+		return m.HolderID()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ApiKeyMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case apikey.FieldAlias:
+		return m.OldAlias(ctx)
+	case apikey.FieldDesc:
+		return m.OldDesc(ctx)
+	case apikey.FieldMethods:
+		return m.OldMethods(ctx)
+	case apikey.FieldSecret:
+		return m.OldSecret(ctx)
+	case apikey.FieldDateUsed:
+		return m.OldDateUsed(ctx)
+	case apikey.FieldDateExpires:
+		return m.OldDateExpires(ctx)
+	case apikey.FieldDateUpdated:
+		return m.OldDateUpdated(ctx)
+	case apikey.FieldDateErased:
+		return m.OldDateErased(ctx)
+	case apikey.FieldDateCreated:
+		return m.OldDateCreated(ctx)
+	case apikey.FieldHolderID:
+		return m.OldHolderID(ctx)
+	}
+	return nil, fmt.Errorf("unknown ApiKey field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ApiKeyMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case apikey.FieldAlias:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAlias(v)
+		return nil
+	case apikey.FieldDesc:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDesc(v)
+		return nil
+	case apikey.FieldMethods:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMethods(v)
+		return nil
+	case apikey.FieldSecret:
+		v, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSecret(v)
+		return nil
+	case apikey.FieldDateUsed:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDateUsed(v)
+		return nil
+	case apikey.FieldDateExpires:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDateExpires(v)
+		return nil
+	case apikey.FieldDateUpdated:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDateUpdated(v)
+		return nil
+	case apikey.FieldDateErased:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDateErased(v)
+		return nil
+	case apikey.FieldDateCreated:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDateCreated(v)
+		return nil
+	case apikey.FieldHolderID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetHolderID(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ApiKey field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ApiKeyMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ApiKeyMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ApiKeyMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown ApiKey numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ApiKeyMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(apikey.FieldMethods) {
+		fields = append(fields, apikey.FieldMethods)
+	}
+	if m.FieldCleared(apikey.FieldDateUsed) {
+		fields = append(fields, apikey.FieldDateUsed)
+	}
+	if m.FieldCleared(apikey.FieldDateExpires) {
+		fields = append(fields, apikey.FieldDateExpires)
+	}
+	if m.FieldCleared(apikey.FieldDateErased) {
+		fields = append(fields, apikey.FieldDateErased)
+	}
+	if m.FieldCleared(apikey.FieldDateCreated) {
+		fields = append(fields, apikey.FieldDateCreated)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ApiKeyMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ApiKeyMutation) ClearField(name string) error {
+	switch name {
+	case apikey.FieldMethods:
+		m.ClearMethods()
+		return nil
+	case apikey.FieldDateUsed:
+		m.ClearDateUsed()
+		return nil
+	case apikey.FieldDateExpires:
+		m.ClearDateExpires()
+		return nil
+	case apikey.FieldDateErased:
+		m.ClearDateErased()
+		return nil
+	case apikey.FieldDateCreated:
+		m.ClearDateCreated()
+		return nil
+	}
+	return fmt.Errorf("unknown ApiKey nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ApiKeyMutation) ResetField(name string) error {
+	switch name {
+	case apikey.FieldAlias:
+		m.ResetAlias()
+		return nil
+	case apikey.FieldDesc:
+		m.ResetDesc()
+		return nil
+	case apikey.FieldMethods:
+		m.ResetMethods()
+		return nil
+	case apikey.FieldSecret:
+		m.ResetSecret()
+		return nil
+	case apikey.FieldDateUsed:
+		m.ResetDateUsed()
+		return nil
+	case apikey.FieldDateExpires:
+		m.ResetDateExpires()
+		return nil
+	case apikey.FieldDateUpdated:
+		m.ResetDateUpdated()
+		return nil
+	case apikey.FieldDateErased:
+		m.ResetDateErased()
+		return nil
+	case apikey.FieldDateCreated:
+		m.ResetDateCreated()
+		return nil
+	case apikey.FieldHolderID:
+		m.ResetHolderID()
+		return nil
+	}
+	return fmt.Errorf("unknown ApiKey field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ApiKeyMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.holder != nil {
+		edges = append(edges, apikey.EdgeHolder)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ApiKeyMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case apikey.EdgeHolder:
+		if id := m.holder; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ApiKeyMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ApiKeyMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ApiKeyMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedholder {
+		edges = append(edges, apikey.EdgeHolder)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ApiKeyMutation) EdgeCleared(name string) bool {
+	switch name {
+	case apikey.EdgeHolder:
+		return m.clearedholder
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ApiKeyMutation) ClearEdge(name string) error {
+	switch name {
+	case apikey.EdgeHolder:
+		m.ClearHolder()
+		return nil
+	}
+	return fmt.Errorf("unknown ApiKey unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ApiKeyMutation) ResetEdge(name string) error {
+	switch name {
+	case apikey.EdgeHolder:
+		m.ResetHolder()
+		return nil
+	}
+	return fmt.Errorf("unknown ApiKey edge %s", name)
+}
 
 // AuditMutation represents an operation that mutates the Audit nodes in the graph.
 type AuditMutation struct {

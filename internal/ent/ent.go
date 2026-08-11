@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/lesomnus/roster/internal/ent/apikey"
 	"github.com/lesomnus/roster/internal/ent/audit"
 	"github.com/lesomnus/roster/internal/ent/credential"
 	"github.com/lesomnus/roster/internal/ent/email"
@@ -83,6 +84,7 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
+			apikey.Table:         apikey.ValidColumn,
 			audit.Table:          audit.ValidColumn,
 			credential.Table:     credential.ValidColumn,
 			email.Table:          email.ValidColumn,

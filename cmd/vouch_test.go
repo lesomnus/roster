@@ -400,6 +400,24 @@ func TestNobodyVerifiesAPasswordAnonymously(t *testing.T) {
 	x.True(v.GetOk())
 }
 
+// TestTheApiKeyServiceCannotBeReachedEither, for the same reason: it holds a
+// verifier too.
+//
+// **Reached** and not "registered", because from out here the two doors are one
+// answer -- `grpcx.ErrClosed` is `Unimplemented` and so is a method gRPC cannot
+// dispatch. Which is right for a caller and worth saying for a reader: this
+// passes with either door shut, and it was checked by opening both.
+func TestTheApiKeyServiceCannotBeReachedEither(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	ctx = auth.PlainProvider(b.AcmeUser.String()).Provide(ctx)
+
+	_, err := app.NewApiKeyServiceClient(conn).List(ctx, app.ApiKeyListRequest_builder{}.Build())
+	x.Equal(codes.Unimplemented, status.Code(err), "the key service answered")
+}
+
 // TestABatchCannotCarryACredentialRead is the other door.
 //
 // A batch arrives as one method carrying many, so "not registered" does not

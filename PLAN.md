@@ -162,6 +162,73 @@ one predicate rather than three reads.
 A role therefore means something *in a site*: operator in Seoul, reader in
 Frankfurt, one person. A role held on the person could not say that.
 
+### D15 · roster's own access control is a second roster
+
+roster sells access control. If it cannot express its own, that is evidence
+about the product rather than a detail of the deployment. So it runs **twice in
+one process**, on two databases:
+
+```
+  data plane      Tenant = K's customers      Holder = end users
+                  Credential = passwords
+
+  control plane   Tenant = one, K's own       Holder = K's services
+                  ApiKey  = what each may call
+```
+
+custody is a `Holder` in the control plane, and that is the whole of what
+dissolves the question this went round three times. A `Holder` in the data plane
+is a person; a `Holder` in the control plane is a caller. The schema does not
+change meaning -- the *instance* does, and they are separate instances.
+
+**Why one process.** The control plane is consulted by the auth interceptor, on
+every request. A separate deployment would need a credential to reach it, and
+that credential would need checking somewhere. In one process the innermost
+lookup is a Go call against `Ungated` rather than an RPC, and the recursion
+terminates there.
+
+**Why two databases.** A key must not live in the same tables as the data it
+protects. Separate, a fault in the wall cannot reach the keys at all -- there is
+no query from one to the other.
+
+Two instances of one app in one process was checked before any of this was
+written, on SQLite and on PostgreSQL: they register their protos and their
+domains once, because they are the same app, and neither sees the other's rows.
+What collided earlier today was two **different** apps, which is F8.
+
+**What replaces `auth.Plain`.** A deployment that names no control plane serves
+`Plain` and says so in the log, the way custody does with no issuer -- easy and
+loud, because an app that cannot be run until a control plane exists is an app
+nobody runs.
+
+### D16 · An ApiKey is its own entity, and carries the grant
+
+Not a `Credential` of `kind: "api-key"`, and three things say so.
+
+`(holder, kind)` is unique, so a credential is **one per kind per person** --
+which is right for a password and fatal for a key, because rotating without
+downtime needs two live at once. An `ApiKey` hangs off a `Holder` 1:N.
+
+A credential proves **who**; a key grants **what**. There is nowhere on a
+credential to write the second, and `frame.Grant` is the shape it needs: a set
+of methods, checked by the interceptor before the handler, and an attenuation
+that a resolver cannot widen.
+
+And the cost is wrong. argon2id at 19 MiB is right for a password, where the
+attack is a dictionary. A 256-bit random key has no dictionary, and every API
+call from every service would pay 19 MiB to prove it. The kind selects the cost.
+
+**The actor on the frame is the key**, not the Holder it hangs off and not
+`pdid.Nil`. The trail then names which key asked, revoking is a delete, and no
+person-row is involved -- which is what `frame.Everything` warns about: *a
+privilege granted by being a particular row cannot be revoked, cannot be
+narrowed, and belongs to whoever finds the row.* A key row is the opposite case:
+it exists to be revoked.
+
+`Id.Domain()` is how the resolver tells the two apart before it reads anything.
+An identifier says what kind of thing it names, so a caller that is a key and a
+caller that is a person are distinguishable without a lookup.
+
 ### D13 · A credential never travels, and it is registration that says so
 
 `CredentialService` is generated like every other entity's, and its `Get`
@@ -399,6 +466,39 @@ The two ways out are a decision, not a field: make addresses globally unique and
 give up the consultant case, or take the tenant from somewhere the form did not
 type — a hostname, a selector, the URL a Login App was reached at. The second
 keeps the schema and is what a multi-tenant product does anyway.
+
+### F8 · Two payday apps could not be linked into one process — **fixed**
+
+Found by trying it: custody imported this module to call `VouchService`, and its
+own binary stopped starting. `--help` panicked.
+
+Three collisions, one after another, each hidden behind the last:
+
+- **`app.Holder` twice.** `pd new` writes `package app;` and roster kept it, so
+  every message here had the name custody's did. Fixed here — `package roster;`
+  — and `Layout.ProtoPkg` is read from the schema, so payday's copied entities
+  followed.
+- **`payday/holder.proto` twice.** The package was rewritten and the **file**
+  never was, and a protobuf registry is per process and keys files by path.
+  Fixed in payday: the copies land at `<pkg>/payday/` now, so an app's schema
+  imports `roster/payday/holder.proto`.
+- **`pdid` domain 7.** custody's asset, roster's site. The registry is global
+  and panicked from an init. Fixed in payday: a number two apps mean
+  differently keeps working and loses its name.
+
+The common cause is worth keeping: **payday had process-global registries that
+assumed one app per process.** None of the three was reachable by reading; each
+appeared only when the one before it was fixed.
+
+A fourth was in the harness. `pdtest.DB` named a schema after the test, so two
+calls from one test got one schema and the second's `DROP SCHEMA` removed the
+first app's tables. It passed on SQLite and failed only under
+`PDTEST_POSTGRES`, which is the direction that hides a mistake and the reason
+that variable exists.
+
+The rule left behind: **two payday apps can share a process when their proto
+packages differ.** Two instances of the *same* app always could, which is what
+D15 relies on.
 
 ---
 

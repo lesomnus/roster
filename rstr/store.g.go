@@ -28,6 +28,7 @@ import (
 type Server interface {
 	Tenant() TenantServiceServer
 	Holder() HolderServiceServer
+	ApiKey() ApiKeyServiceServer
 	Credential() CredentialServiceServer
 	Identity() IdentityServiceServer
 	Email() EmailServiceServer
@@ -46,6 +47,7 @@ type Server interface {
 func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterTenantServiceServer(g, s.Tenant())
 	RegisterHolderServiceServer(g, s.Holder())
+	RegisterApiKeyServiceServer(g, s.ApiKey())
 	RegisterCredentialServiceServer(g, s.Credential())
 	RegisterIdentityServiceServer(g, s.Identity())
 	RegisterEmailServiceServer(g, s.Email())
@@ -60,6 +62,7 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 type UnimplementedServer struct {
 	TenantServer         TenantServiceServer
 	HolderServer         HolderServiceServer
+	ApiKeyServer         ApiKeyServiceServer
 	CredentialServer     CredentialServiceServer
 	IdentityServer       IdentityServiceServer
 	EmailServer          EmailServiceServer
@@ -73,6 +76,7 @@ type UnimplementedServer struct {
 
 func (UnimplementedServer) Tenant() TenantServiceServer { return UnimplementedTenantServiceServer{} }
 func (UnimplementedServer) Holder() HolderServiceServer { return UnimplementedHolderServiceServer{} }
+func (UnimplementedServer) ApiKey() ApiKeyServiceServer { return UnimplementedApiKeyServiceServer{} }
 func (UnimplementedServer) Credential() CredentialServiceServer {
 	return UnimplementedCredentialServiceServer{}
 }
@@ -94,6 +98,7 @@ func (UnimplementedServer) Outbox() OutboxServiceServer { return UnimplementedOu
 type StaticServer struct {
 	TenantServer         TenantServiceServer
 	HolderServer         HolderServiceServer
+	ApiKeyServer         ApiKeyServiceServer
 	CredentialServer     CredentialServiceServer
 	IdentityServer       IdentityServiceServer
 	EmailServer          EmailServiceServer
@@ -107,6 +112,7 @@ type StaticServer struct {
 
 func (s StaticServer) Tenant() TenantServiceServer                 { return s.TenantServer }
 func (s StaticServer) Holder() HolderServiceServer                 { return s.HolderServer }
+func (s StaticServer) ApiKey() ApiKeyServiceServer                 { return s.ApiKeyServer }
 func (s StaticServer) Credential() CredentialServiceServer         { return s.CredentialServer }
 func (s StaticServer) Identity() IdentityServiceServer             { return s.IdentityServer }
 func (s StaticServer) Email() EmailServiceServer                   { return s.EmailServer }
@@ -120,6 +126,7 @@ func (s StaticServer) Outbox() OutboxServiceServer                 { return s.Ou
 type Client interface {
 	Tenant() TenantServiceClient
 	Holder() HolderServiceClient
+	ApiKey() ApiKeyServiceClient
 	Credential() CredentialServiceClient
 	Identity() IdentityServiceClient
 	Email() EmailServiceClient
@@ -135,6 +142,7 @@ func NewClient(c *grpc.ClientConn) Client {
 	return &client{
 		_Tenant:         NewTenantServiceClient(c),
 		_Holder:         NewHolderServiceClient(c),
+		_ApiKey:         NewApiKeyServiceClient(c),
 		_Credential:     NewCredentialServiceClient(c),
 		_Identity:       NewIdentityServiceClient(c),
 		_Email:          NewEmailServiceClient(c),
@@ -150,6 +158,7 @@ func NewClient(c *grpc.ClientConn) Client {
 type client struct {
 	_Tenant         TenantServiceClient
 	_Holder         HolderServiceClient
+	_ApiKey         ApiKeyServiceClient
 	_Credential     CredentialServiceClient
 	_Identity       IdentityServiceClient
 	_Email          EmailServiceClient
@@ -163,6 +172,7 @@ type client struct {
 
 func (c *client) Tenant() TenantServiceClient                 { return c._Tenant }
 func (c *client) Holder() HolderServiceClient                 { return c._Holder }
+func (c *client) ApiKey() ApiKeyServiceClient                 { return c._ApiKey }
 func (c *client) Credential() CredentialServiceClient         { return c._Credential }
 func (c *client) Identity() IdentityServiceClient             { return c._Identity }
 func (c *client) Email() EmailServiceClient                   { return c._Email }

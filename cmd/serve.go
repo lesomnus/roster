@@ -235,17 +235,18 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 }
 
 // register puts every service on the wire, and it is written out rather than
-// being `app.RegisterServer` because of the one that is missing.
+// being `app.RegisterServer` because of the ones that are missing.
 //
-// `CredentialService` is not here. Its generated `Get` answers with whatever
-// columns it was asked for and one of them is the password hash, so serving it
-// is publishing verifiers to anybody the wall lets read a row. The row still
-// exists and this app still reads it -- `server/vouch` does, in process -- but
-// there is no method on this server that returns one.
+// `CredentialService` and `ApiKeyService` are not here. Each has a generated
+// `Get` that answers with whatever columns it was asked for, and in both cases
+// one of them is a verifier -- a password hash, a key hash. Serving them is
+// publishing those to anybody the wall lets read a row. The rows still exist
+// and this app still reads them, in process, but there is no method on this
+// server that answers with one.
 //
 // It is said here rather than in the schema because there is nowhere in the
 // schema to say it: payday extends `MessageOptions` only, so no field can be
-// declared written-and-never-read. See PLAN.md, D11 and F6.
+// declared written-and-never-read. See PLAN.md, D13 and F6.
 //
 // Written out has a cost worth naming: an entity added to the schema tomorrow
 // is not served until somebody adds a line here. That is the direction to fail
@@ -278,8 +279,13 @@ func closed(c Config) func(method string) bool {
 	was := c.Server.Closed()
 
 	return func(method string) bool {
-		if strings.HasPrefix(method, "/"+app.CredentialService_ServiceDesc.ServiceName+"/") {
-			return true
+		for _, v := range []string{
+			app.CredentialService_ServiceDesc.ServiceName,
+			app.ApiKeyService_ServiceDesc.ServiceName,
+		} {
+			if strings.HasPrefix(method, "/"+v+"/") {
+				return true
+			}
 		}
 
 		return was != nil && was(method)

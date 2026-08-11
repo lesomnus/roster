@@ -1,0 +1,125 @@
+edition = "2023";
+
+package roster;
+
+import "roster/payday/holder.proto";
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/roster/rstr";
+
+// ApiKey is what one service may call this deployment for.
+//
+// # Where these live
+//
+// In the **control plane**: a second roster, in the same process, on its own
+// database. Its one tenant is the deployment's owner, its holders are that
+// owner's services -- custody, and whatever else they run -- and these hang off
+// them. See PLAN.md, D15.
+//
+// Two databases because a key must not live in the same tables as the data it
+// protects: separate, a fault in the wall cannot reach one, since there is no
+// query from the one instance to the other.
+//
+// # Why it is not a Credential
+//
+// A `Credential` is unique per `(holder, kind)`, which is right for a password
+// and fatal for a key -- rotating without downtime needs two live at once, and
+// this is 1:N.
+//
+// A credential proves **who**; a key grants **what**. There is nowhere on a
+// credential to write the second.
+//
+// And the cost differs. argon2id at 19 MiB is right where the attack is a
+// dictionary. There is no dictionary for 256 random bits, and every call from
+// every service would pay it.
+//
+// # The actor is the key
+//
+// A request carrying one is served as **this row** and not as the holder it
+// hangs off. So the trail names which key asked, revoking is a delete, and no
+// person-row grants anything -- which is the case `frame.Everything` warns
+// about: a privilege held by being a particular row cannot be revoked and
+// cannot be narrowed. A key row exists to be revoked.
+message ApiKey {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+
+  // Whose it is: the service, as a Holder of the control plane's one tenant.
+  Holder holder = 2 [(orm.edge) = {immutable: true}];
+
+  // What somebody calls this key when deciding whether to revoke it --
+  // "custody, production". Unique per holder so that a list of them reads.
+  string alias = 4;
+
+  string desc = 6;
+
+  // What this key may be used for: the gRPC methods, in full, as
+  // `frame.Grant.To` takes them.
+  //
+  // A list and not a role. A role is a name for a list that has to be looked up
+  // somewhere, and the somewhere is the thing this deployment does not have
+  // yet. Written out, a key says what it does to anybody reading the row.
+  //
+  // Empty allows **nothing**, which is `frame.Grant`'s zero value and the right
+  // way round: a key somebody forgot to fill in opens no door.
+  repeated string methods = 8;
+
+  // The verifier, never the key: a hash, and the plaintext is shown once when
+  // it is made and never again. The same rule `Credential` states, for the same
+  // reason -- see `server/vouch`, and note that this field is why `ApiKeyService`
+  // is not registered either.
+  bytes secret = 9;
+
+  // When it was last used, for finding the key nobody needs any more. Written
+  // on a verify, so it is the one field a read path writes.
+  google.protobuf.Timestamp date_used = 10 [(orm.field) = {nullable: true}];
+
+  // When it stops working. Null is a key that does not expire, which is what a
+  // service running unattended needs and what makes rotation somebody's job
+  // rather than an outage.
+  google.protobuf.Timestamp date_expires = 11 [(orm.field) = {nullable: true}];
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      },
+      {
+        name: "alias"
+        refs: [
+          {name: "holder", number: 2},
+          {name: "alias", number: 4}
+        ]
+        unique: true
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 14
+    tenanted: {via: "holder.tenant"}
+    list: {
+      order: [{field: "date_created"}, {field: "id"}]
+      by: ["ref"]
+      size: 20
+      max: 100
+    }
+  };
+}
