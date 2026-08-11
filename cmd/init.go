@@ -118,7 +118,7 @@ func NewCmdInit(c *Config) *xli.Command {
 
 			cmd.Printf("tenant %s is %s\n", tenant, k)
 			cmd.Printf("holder %s is %s\n", holder, j)
-			cmd.Printf("  bound to role %q -- **every method there is**, now and after an upgrade\n", everything)
+			cmd.Printf("  bound to role %q = %s -- every RPC roster serves, now and after an upgrade\n", everything, everyRosterMethod)
 			cmd.Printf("\nsign in as: @%s/%s\n", tenant, holder)
 
 			if s.Control == nil {
@@ -135,7 +135,7 @@ func NewCmdInit(c *Config) *xli.Command {
 
 			cmd.Printf("\ncontrol plane\n")
 			cmd.Printf("  holder %s is %s\n", operator, who)
-			cmd.Printf("  bound to role %q -- **every method there is**\n", everything)
+			cmd.Printf("  bound to role %q = %s\n", everything, everyRosterMethod)
 			cmd.Printf("  password  %s\n", secret)
 			cmd.Printf("\nthat password is shown once and is not stored. write it down now.\n")
 
@@ -151,6 +151,10 @@ func NewCmdInit(c *Config) *xli.Command {
 // why somebody could do something.
 const everything = "everything"
 
+// everyRosterMethod is what that role holds: this app's own package, whatever
+// is in it now and whatever a later release puts there.
+const everyRosterMethod = "/" + string(protoPackage) + ".*/*"
+
 // allow writes the role that says everything and binds it.
 //
 // Through `Ungated`, where there is no frame, so `mayGrantEverything` waives
@@ -160,11 +164,19 @@ func allow(ctx context.Context, s *Server, in pdid.Id, to pdid.Id) error {
 	r, err := s.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
 		Tenant: app.TenantRef_builder{Id: in.Bytes()}.Build(),
 		Alias:  everything,
-		Desc:   "Every RPC there is, including ones added by a later release.",
+		Desc:   "Every RPC roster serves, including ones added by a later release.",
 
-		// Not a list. See `Role.every_method` for why a snapshot of the
-		// methods that exist today is the wrong thing to write here.
-		EveryMethod: true,
+		// A pattern rather than an enumeration, for the reason in
+		// `Role.methods`: a list written here is what existed the day it was
+		// written, and the first administrator is the one person who must not
+		// have to notice that.
+		//
+		// `/roster.*/*` and not `/*.*/*`, which would take in payday's own --
+		// `BatchService` is a way of calling the methods this already covers,
+		// and `TokenService` is asked by a product app holding a key rather
+		// than by anybody a role is written for. A deployment that wants those
+		// grants them, and does it on purpose.
+		Methods: []string{everyRosterMethod},
 	}.Build())
 	if err != nil {
 		return err

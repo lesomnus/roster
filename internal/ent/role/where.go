@@ -71,11 +71,6 @@ func Desc(v string) predicate.Role {
 	return predicate.Role(sql.FieldEQ(FieldDesc, v))
 }
 
-// EveryMethod applies equality check predicate on the "every_method" field. It's identical to EveryMethodEQ.
-func EveryMethod(v bool) predicate.Role {
-	return predicate.Role(sql.FieldEQ(FieldEveryMethod, v))
-}
-
 // DateUpdated applies equality check predicate on the "date_updated" field. It's identical to DateUpdatedEQ.
 func DateUpdated(v time.Time) predicate.Role {
 	return predicate.Role(sql.FieldEQ(FieldDateUpdated, v))
@@ -304,16 +299,6 @@ func MethodsIsNil() predicate.Role {
 // MethodsNotNil applies the NotNil predicate on the "methods" field.
 func MethodsNotNil() predicate.Role {
 	return predicate.Role(sql.FieldNotNull(FieldMethods))
-}
-
-// EveryMethodEQ applies the EQ predicate on the "every_method" field.
-func EveryMethodEQ(v bool) predicate.Role {
-	return predicate.Role(sql.FieldEQ(FieldEveryMethod, v))
-}
-
-// EveryMethodNEQ applies the NEQ predicate on the "every_method" field.
-func EveryMethodNEQ(v bool) predicate.Role {
-	return predicate.Role(sql.FieldNEQ(FieldEveryMethod, v))
 }
 
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.

@@ -446,7 +446,6 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "desc", Type: field.TypeString},
 		{Name: "methods", Type: field.TypeJSON, Nullable: true},
-		{Name: "every_method", Type: field.TypeBool},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
@@ -461,13 +460,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "role_tenant_tenant",
-				Columns:    []*schema.Column{RoleColumns[9]},
+				Columns:    []*schema.Column{RoleColumns[8]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "role_site_site",
-				Columns:    []*schema.Column{RoleColumns[10]},
+				Columns:    []*schema.Column{RoleColumns[9]},
 				RefColumns: []*schema.Column{SiteColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -476,12 +475,12 @@ var (
 			{
 				Name:    "role_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{RoleColumns[8], RoleColumns[0]},
+				Columns: []*schema.Column{RoleColumns[7], RoleColumns[0]},
 			},
 			{
 				Name:    "role_alias_tenant_id",
 				Unique:  true,
-				Columns: []*schema.Column{RoleColumns[1], RoleColumns[9]},
+				Columns: []*schema.Column{RoleColumns[1], RoleColumns[8]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},

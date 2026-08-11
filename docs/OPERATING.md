@@ -43,11 +43,11 @@ can call one method — the one that tells them they hold nothing. There is no w
 out of that from the API, because writing the first role needs a binding only
 writing the first role could give.
 
-The role is `everything`, and it says so rather than listing it:
+The role is `everything`, and what it holds is a **pattern**:
 
 ```
 holder admin is 019ff2...
-  bound to role "everything" -- **every method there is**, now and after an upgrade
+  bound to role "everything" = /roster.*/* -- every RPC roster serves, now and after an upgrade
 ```
 
 A list written at `init` is a snapshot. The next release adds an RPC the first
@@ -56,9 +56,8 @@ is refused for anything the granter does not already hold — so a snapshot is
 repaired by a shell on the box, once per upgrade, forever.
 
 It is still an ordinary row: unbind it and it is gone, erase it and every
-binding to it goes too. What it is not is something anybody can hand out —
-`every_method` may only be written by somebody who already holds it, and the
-first one comes from here.
+binding to it goes too. And it is not something anybody can hand out — see
+below.
 
 ### And an operator, if there is a control plane
 
@@ -164,12 +163,27 @@ and the rules that make it safe are in place: see below.
 the alternative is that adding the first role silently takes away what everybody
 had.
 
-A role is a list of RPCs:
+A role is a list of RPCs, each a whole name or a pattern:
 
 ```
 Role     alias=operator  methods=[/roster.HolderService/Get, …]  site?
 Binding  role  holder|group  site?
 ```
+
+| | |
+| --- | --- |
+| `/roster.HolderService/Get` | one method |
+| `/roster.HolderService/*` | one service |
+| `/roster.*/List` | that method wherever it appears |
+| `/roster.*/*` | everything roster serves |
+| `/*.*/*` | that and payday's own besides — `BatchService`, `TokenService` |
+
+A whole part or nothing: `*Get*` is not a pattern, it is a method name that
+happens to contain asterisks. See `frame.Covers`.
+
+A pattern rather than a list because a list is a snapshot. Write out every
+method of a service today and the next release adds one the role does not
+allow — silently, to a role whose name says it covers that service.
 
 Scope is where the reference sits:
 
@@ -188,9 +202,11 @@ Writing a role, patching one, binding one, and putting methods on an API key are
 all refused when they name a method you do not hold **through a binding**. A
 role you hold in one team is not yours to bind across the tenant.
 
-`every_method` is its own refusal, because it cannot be checked as a list —
-"everything" is not the methods that exist today. Only somebody who already
-holds it may hand it out.
+A pattern is covered by **one** pattern you hold, never by several together.
+Holding `/roster.HolderService/*` and `/roster.TeamService/*` does not let you
+grant `/roster.*/*`, even in a deployment where those are the only two services
+— the third one added next release would be covered by a grant made before it
+existed.
 
 So the first binding is `init`'s, and everything else descends from it.
 

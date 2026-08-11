@@ -20,8 +20,6 @@ const (
 	FieldDesc = "desc"
 	// FieldMethods holds the string denoting the methods field in the database.
 	FieldMethods = "methods"
-	// FieldEveryMethod holds the string denoting the every_method field in the database.
-	FieldEveryMethod = "every_method"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
@@ -61,7 +59,6 @@ var Columns = []string{
 	FieldName,
 	FieldDesc,
 	FieldMethods,
-	FieldEveryMethod,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
@@ -100,11 +97,6 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 // ByDesc orders the results by the desc field.
 func ByDesc(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDesc, opts...).ToFunc()
-}
-
-// ByEveryMethod orders the results by the every_method field.
-func ByEveryMethod(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldEveryMethod, opts...).ToFunc()
 }
 
 // ByDateUpdated orders the results by the date_updated field.

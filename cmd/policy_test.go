@@ -354,3 +354,97 @@ func TestATeamRoleIsNotYoursToHandOut(t *testing.T) {
 	x.Equal(codes.PermissionDenied, status.Code(err),
 		"a role held in one team was bound across the tenant")
 }
+
+// TestARoleMayNameAServiceOrAPackage is what a pattern buys, which is the whole
+// reason it replaced a boolean.
+//
+// Between "one method" and "everything" there was nothing. A role meaning
+// "manage holders" was eight lines that grew a ninth the day a method was
+// added, and nobody noticed until somebody needed it.
+func TestARoleMayNameAServiceOrAPackage(t *testing.T) {
+	b, ctx := build(t)
+
+	roleOf := func(t *testing.T, alias string, ms ...string) pdid.Id {
+		t.Helper()
+
+		v, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
+			Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+			Alias:   alias,
+			Methods: ms,
+		}.Build())
+		require.NoError(t, err)
+
+		return mustId(t, v.GetId())
+	}
+
+	t.Run("a service pattern reaches its own methods", func(t *testing.T) {
+		x := require.New(t)
+
+		who := b.holder(t, ctx, b.Acme, "holder-admin")
+		b.binds(t, who, roleOf(t, "holders", "/roster.HolderService/*"), nil)
+
+		conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+		as := asOverTheWire(ctx, who)
+
+		_, err := app.NewHolderServiceClient(conn).List(as,
+			app.HolderListRequest_builder{}.Build())
+		x.NoError(err)
+
+		// And stops at the service boundary, which is the part a list of
+		// method names would have got right by accident and a glob has to get
+		// right on purpose.
+		_, err = app.NewTeamServiceClient(conn).List(as,
+			app.TeamListRequest_builder{}.Build())
+		x.Error(err)
+		x.Equal(codes.PermissionDenied, status.Code(err))
+	})
+
+	t.Run("a method pattern reaches across services", func(t *testing.T) {
+		x := require.New(t)
+
+		who := b.holder(t, ctx, b.Acme, "reader")
+		b.binds(t, who, roleOf(t, "read-only", "/roster.*/List"), nil)
+
+		conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+		as := asOverTheWire(ctx, who)
+
+		for _, call := range []func() error{
+			func() error {
+				_, err := app.NewHolderServiceClient(conn).List(as, app.HolderListRequest_builder{}.Build())
+				return err
+			},
+			func() error {
+				_, err := app.NewTeamServiceClient(conn).List(as, app.TeamListRequest_builder{}.Build())
+				return err
+			},
+		} {
+			x.NoError(call())
+		}
+
+		// A different method of a service it does reach.
+		_, err := app.NewHolderServiceClient(conn).Get(as, app.HolderGetRequest_builder{
+			Ref: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		}.Build())
+		x.Error(err)
+		x.Equal(codes.PermissionDenied, status.Code(err))
+	})
+
+	// And the pattern is still only ever an attenuation of the wall: it says
+	// which methods and never which tenants.
+	t.Run("a package pattern does not cross the wall", func(t *testing.T) {
+		x := require.New(t)
+
+		who := b.holder(t, ctx, b.Acme, "everything-here")
+		b.binds(t, who, roleOf(t, "all-of-roster", "/roster.*/*"), nil)
+
+		conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+
+		v, err := app.NewHolderServiceClient(conn).List(asOverTheWire(ctx, who),
+			app.HolderListRequest_builder{}.Build())
+		x.NoError(err)
+
+		for _, h := range v.GetItems() {
+			x.NotEqual(b.Hooli.Bytes(), h.GetTenant().GetId())
+		}
+	})
+}

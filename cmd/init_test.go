@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -73,9 +72,11 @@ func TestInitLeavesADeploymentThatWorks(t *testing.T) {
 
 	x.Contains(out, "sign in as: @acme/admin")
 
-	// The wildcard is said out loud where it is granted. A permission nobody
-	// reads about is one nobody remembers is there.
-	x.Contains(out, "every method there is")
+	// The wildcard is said out loud where it is granted, in the words it was
+	// granted in. A permission nobody reads about is one nobody remembers is
+	// there, and a pattern printed as prose is one nobody can grep for.
+	x.Contains(out, "/roster.*/*")
+	x.Contains(out, "every RPC roster serves")
 
 	conn := pdtest.Serve(t, s.Grpc(ctx, cmd.Config{}))
 	asAdmin := metadata.NewOutgoingContext(ctx, as(t, "@acme/admin"))
@@ -108,14 +109,18 @@ func TestInitLeavesADeploymentThatWorks(t *testing.T) {
 	// The list a page draws is the enumeration, so a console can decide what to
 	// show. What the gate reads is the flag, which is why the two cannot
 	// disagree after an upgrade.
-	t.Run("Me answers with every method, expanded", func(t *testing.T) {
+	// The pattern itself, not what it expands to.
+	//
+	// A page evaluates it the same three ways the server does. An expansion
+	// would be the methods that exist in **this** binary, so during a rolling
+	// deploy two replicas would tell a page two different things about one
+	// person.
+	t.Run("Me answers with the pattern", func(t *testing.T) {
 		x := require.New(t)
 
 		v, err := app.NewMeServiceClient(conn).Get(asAdmin, app.MeGetRequest_builder{}.Build())
 		x.NoError(err)
-		x.Contains(v.GetMethods(), "/roster.HolderService/Get")
-		x.Contains(v.GetMethods(), "/roster.RoleService/Add")
-		x.Greater(len(v.GetMethods()), 50)
+		x.Equal([]string{"/roster.*/*"}, v.GetMethods())
 	})
 }
 
@@ -215,9 +220,9 @@ func TestNobodyGrantsEverythingWhoDoesNotHoldIt(t *testing.T) {
 		x := require.New(t)
 
 		_, err := b.Walled.Role().Add(as, app.RoleAddRequest_builder{
-			Tenant:      app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
-			Alias:       "sneaky",
-			EveryMethod: true,
+			Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+			Alias:   "sneaky",
+			Methods: []string{"/roster.*/*"},
 		}.Build())
 		x.Error(err)
 		x.Equal(codes.PermissionDenied, status.Code(err))
@@ -233,7 +238,7 @@ func TestNobodyGrantsEverythingWhoDoesNotHoldIt(t *testing.T) {
 
 		_, err = b.Walled.Role().Patch(as, app.RolePatchRequest_builder{
 			Ref:         app.RoleRef_builder{Id: r.GetId()}.Build(),
-			EveryMethod: z.Ptr(true),
+			Methods:     []string{"/roster.*/*"},
 			DateUpdated: v.GetDateUpdated(),
 		}.Build())
 		x.Error(err)
@@ -247,12 +252,17 @@ func TestNobodyGrantsEverythingWhoDoesNotHoldIt(t *testing.T) {
 		x := require.New(t)
 
 		w, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
-			Tenant:      app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
-			Alias:       everythingAlias,
-			EveryMethod: true,
+			Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+			Alias:   everythingAlias,
+			Methods: []string{"/roster.*/*"},
 		}.Build())
 		x.NoError(err)
-		x.Empty(w.GetMethods(), "the trap is that this column is empty")
+
+		// The widest role in the deployment is a value in the column somebody
+		// is checking. It used to be a flag beside an **empty** column, so a
+		// check that read only `methods` found nothing to refuse -- which is
+		// the whole reason the flag is gone.
+		x.Equal([]string{"/roster.*/*"}, w.GetMethods())
 
 		_, err = b.Walled.Binding().Add(as, app.BindingAddRequest_builder{
 			Role:   app.RoleRef_builder{Id: w.GetId()}.Build(),

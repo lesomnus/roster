@@ -58,47 +58,48 @@ message Role {
   string name = 5;
   string desc = 6;
 
-  // The RPCs this allows, in full: "/roster.HolderService/Get".
+  // The RPCs this allows: a whole method name, or a pattern naming a service
+  // or a package.
+  //
+  //	/roster.HolderService/Get     one method
+  //	/roster.HolderService/*       one service
+  //	/roster.*/*                   everything roster serves
+  //	/*.*/*                        that and payday's own besides
   //
   // Empty allows nothing, which is `frame.Grant`'s zero value and the right way
   // round -- a role somebody has not finished writing grants nothing rather
   // than everything.
   //
-  // Ignored when [Role.every_method] is set. That pair is the only place in this schema
-  // where one field makes another irrelevant, and it is written that way
-  // because the alternative is worse: a list kept in step with "everything" is
-  // a list that silently falls behind it.
-  repeated string methods = 8;
-
-  // Every RPC there is, including ones this deployment has not been upgraded to
-  // yet.
+  // # Why a pattern rather than a list
   //
-  // # Why a flag and not a list
+  // Because a list is a **snapshot** of something that grows. Write out every
+  // method of a service today and the next release adds one the role does not
+  // allow -- silently, and to a role whose name says it covers that service.
   //
-  // Because a list is a **snapshot** and what it is a snapshot of grows.
-  // Enumerate every method when the role is written, and the next release adds
-  // an RPC the role does not allow -- silently, to the one role whose entire
-  // purpose is that nothing is missing from it.
+  // It cannot repair itself either. Widening a role is refused for any pattern
+  // the writer does not already hold, and the pattern they do not hold is the
+  // new method. So a stale enumeration is fixed by a shell on the box, once per
+  // upgrade, forever.
   //
-  // And it cannot repair itself. Widening a role is refused for any method the
-  // writer does not already hold, and the method they do not hold is exactly
-  // the new one. So a stale enumeration is fixed by a shell on the box, once
-  // per upgrade, forever.
-  //
-  // # Why this is not the privilege `frame.Everything` warns about
-  //
-  // That warning is about a privilege held by being a **kind of identifier**:
-  // there is no row, so there is nothing to revoke and nothing to narrow. This
-  // is a row. Unbind it and it is gone, bind it in a site and it is that site's,
-  // erase it and every binding to it goes too. It is the ordinary mechanism
-  // carrying an unusual value.
+  // This field held a `bool every_method` beside it for exactly one release,
+  // for the same reason and covering only the widest case. A pattern says that
+  // one as `/roster.*/*` and says the four useful things between it and a
+  // single method as well.
   //
   // # What it costs
   //
   // A wildcard in a permission system is a thing people stop seeing. Nothing
   // here fixes that except saying so wherever it is granted, which is why
-  // `roster init` prints what it made in the words it made it.
-  bool every_method = 9;
+  // `roster init` prints what it made in the words it made it. See
+  // `frame.Covers` for what a pattern may and may not say -- a whole part or
+  // nothing, never `*Get*`.
+  repeated string methods = 8;
+
+  // 9 held a `bool every_method`, for the one release between the widest grant
+  // becoming expressible and it becoming a pattern. Reserved rather than
+  // reused: nothing was ever stored in it here, and a number that once meant
+  // "allows everything" is not one to hand to something else.
+  reserved 9;
 
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];

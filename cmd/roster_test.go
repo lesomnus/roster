@@ -10,8 +10,6 @@ import (
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/pdtest"
-	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/reflect/protoregistry"
 
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
@@ -143,7 +141,7 @@ func (b *built) mayAnything(actor, tenant pdid.Id) {
 	v, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
 		Tenant:  app.TenantRef_builder{Id: tenant.Bytes()}.Build(),
 		Alias:   "everything-" + actor.String()[:8],
-		Methods: everyMethod(),
+		Methods: []string{"/roster.*/*"},
 	}.Build())
 	if err != nil {
 		panic(err)
@@ -156,32 +154,6 @@ func (b *built) mayAnything(actor, tenant pdid.Id) {
 	if err != nil {
 		panic(err)
 	}
-}
-
-// everyMethod is every RPC this app has, from the descriptors it was generated
-// with.
-func everyMethod() []string {
-	var vs []string
-
-	fs := protoregistry.GlobalFiles
-	fs.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
-		if fd.Package() != "roster" {
-			return true
-		}
-
-		ss := fd.Services()
-		for i := range ss.Len() {
-			s := ss.Get(i)
-			ms := s.Methods()
-			for j := range ms.Len() {
-				vs = append(vs, "/"+string(s.FullName())+"/"+string(ms.Get(j).Name()))
-			}
-		}
-
-		return true
-	})
-
-	return vs
 }
 
 func mustId(t *testing.T, b []byte) pdid.Id {

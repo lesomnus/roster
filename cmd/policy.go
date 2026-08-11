@@ -166,23 +166,25 @@ type held struct {
 	methods map[string]struct{}
 	sites   []uuid.UUID
 	anySite bool
-
-	// every is a role that said so rather than a role that listed everything;
-	// see `Role.every_method`. It is a field beside the map rather than the map
-	// being filled in from the descriptors, because the two answers differ
-	// after an upgrade: a list is what was true when it was written and this is
-	// what is true now.
-	every bool
 }
 
+// allows asks each pattern rather than looking the method up.
+//
+// A map lookup is what this was, and it is what a set of whole method names
+// deserves. What it cannot do is answer for `/roster.HolderService/*`, and the
+// point of a pattern is that it covers a method nobody had written down when
+// the role was -- so the answer has to be computed and cannot be indexed.
+//
+// The cost is a walk over what one caller holds, per call, and that is small:
+// it is the roles of one person, not of a deployment.
 func (h held) allows(method string) bool {
-	if h.every {
-		return true
+	for m := range h.methods {
+		if frame.Covers(m, method) {
+			return true
+		}
 	}
 
-	_, ok := h.methods[method]
-
-	return ok
+	return false
 }
 
 // of reads the bindings a holder has, by being them or by being in a group.
@@ -243,9 +245,6 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 	}
 	for _, v := range ts {
 		if v.Edges.Role != nil {
-			if v.Edges.Role.EveryMethod {
-				h.every = true
-			}
 			for _, m := range v.Edges.Role.Methods {
 				h.methods[m] = struct{}{}
 			}
@@ -267,9 +266,6 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 
 	for _, v := range vs {
 		if v.Edges.Role != nil {
-			if v.Edges.Role.EveryMethod {
-				h.every = true
-			}
 			for _, m := range v.Edges.Role.Methods {
 				h.methods[m] = struct{}{}
 			}
@@ -311,7 +307,7 @@ func Rules(db *ent.Client) core.Rules {
 // Bindings only. A role held in a team is scoped to that team, and letting it
 // be bound tenant-wide would widen a scope rather than pass on a permission.
 func Granted(db *ent.Client) core.Granted {
-	return func(ctx context.Context, who pdid.Id) ([]string, bool, error) {
+	return func(ctx context.Context, who pdid.Id) ([]string, error) {
 		vs, err := db.Binding.Query().
 			Where(
 				binding.DateErasedIsNil(),
@@ -320,7 +316,7 @@ func Granted(db *ent.Client) core.Granted {
 			WithRole().
 			All(ctx)
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
 
 		var ms []string
@@ -328,14 +324,10 @@ func Granted(db *ent.Client) core.Granted {
 			if v.Edges.Role == nil {
 				continue
 			}
-			if v.Edges.Role.EveryMethod {
-				return nil, true, nil
-			}
-
 			ms = append(ms, v.Edges.Role.Methods...)
 		}
 
-		return ms, false, nil
+		return ms, nil
 	}
 }
 
@@ -386,12 +378,9 @@ func allows(r *ent.Role, method string) bool {
 	if r == nil {
 		return false
 	}
-	if r.EveryMethod {
-		return true
-	}
 
 	for _, m := range r.Methods {
-		if m == method {
+		if frame.Covers(m, method) {
 			return true
 		}
 	}
@@ -412,18 +401,19 @@ func Everything(db *ent.Client) me.Held {
 			return nil, nil, false, err
 		}
 
-		// A role that says "everything" is expanded here and nowhere else. A
-		// page needs the list to decide what to draw; the gate reads the flag,
-		// so what is enforced cannot fall behind what this enumerates.
+		// The patterns themselves, not what they expand to.
+		//
+		// Expanding was what this did while "everything" was a flag with no
+		// wire form: a page cannot act on a boolean it does not understand. A
+		// pattern it can -- `frame.Covers` is the same three comparisons in
+		// TypeScript -- and an expansion here would be a list of what exists in
+		// **this** binary, which during a rolling deploy is not the same list
+		// every replica would give.
 		ms := make([]string, 0, len(h.methods))
-		if h.every {
-			ms = everyMethod()
-		} else {
-			for m := range h.methods {
-				ms = append(ms, m)
-			}
-			slices.Sort(ms)
+		for m := range h.methods {
+			ms = append(ms, m)
 		}
+		slices.Sort(ms)
 
 		ks := make([]pdid.Id, 0, len(h.sites))
 		for _, v := range h.sites {

@@ -53,18 +53,14 @@ import (
 // the chain and in `batch.Guard`. A deployment that opens them opens this with
 // them, which is worth knowing and is not a hole this can close from here.
 
-// Granted is every method somebody holds through a binding, and therefore may
+// Granted is every pattern somebody holds through a binding, and therefore may
 // pass on.
 //
-// The bool is "all of them", which is a second return rather than a list with
-// everything in it -- the same shape `frame.Narrow` and `frame.Sets` use, for
-// the same reason. An empty list has to mean **none**, or the safe answer and
-// the open one are one value and a bug that loses the list opens the door.
-//
-// It is what `Role.every_method` becomes here: a role that says "everything"
-// rather than listing it, so that a method added by an upgrade is covered by a
-// binding written before it existed.
-type Granted func(ctx context.Context, who pdid.Id) ([]string, bool, error)
+// Patterns rather than methods, so "everything" is a value in this list rather
+// than a second return beside it. It briefly was one, while the widest grant
+// was a boolean on the row; `frame.Covers` made the boolean unnecessary and
+// says four useful things between one method and all of them besides.
+type Granted func(ctx context.Context, who pdid.Id) ([]string, error)
 
 // mayGrant refuses a caller handing out a method they do not hold.
 //
@@ -85,16 +81,18 @@ func (s Core) mayGrant(ctx context.Context, field string, methods []string) erro
 			"this server cannot say what you hold, so it will not let you grant anything")
 	}
 
-	held, every, err := s.rules.Granted(ctx, f.Actor)
+	held, err := s.rules.Granted(ctx, f.Actor)
 	if err != nil {
 		return err
 	}
-	if every {
-		return nil
-	}
 
 	for _, m := range methods {
-		if !slices.Contains(held, m) {
+		// One of theirs has to cover it **on its own**. Asking whether the
+		// union covers it would let somebody holding every service of a package
+		// hand out the package -- true today and wrong the moment a service is
+		// added, which is the widening this exists to refuse. See
+		// `frame.Covers`.
+		if !slices.ContainsFunc(held, func(v string) bool { return frame.Covers(v, m) }) {
 			return status.Errorf(codes.PermissionDenied,
 				"%s: you do not hold %s, so you may not grant it", field, m)
 		}
@@ -103,56 +101,22 @@ func (s Core) mayGrant(ctx context.Context, field string, methods []string) erro
 	return nil
 }
 
-// mayGrantEverything refuses a caller writing `Role.every_method` unless they
-// already hold it.
-//
-// It is separate from [Core.mayGrant] because it cannot be expressed as a list.
-// "Everything" is not the methods that exist today -- that is the whole reason
-// the flag is a flag -- so it cannot be compared element by element against
-// what somebody holds. Only somebody who already holds everything holds this.
-//
-// Which makes it the one privilege that never widens by being passed on: the
-// first comes from `roster init`, through an unwalled server where there is no
-// frame, and every one after it descends from somebody who had it.
-func (s Core) mayGrantEverything(ctx context.Context, field string) error {
-	f, ok := frame.From(ctx)
-	if !ok {
-		return nil
-	}
-	if s.rules.Granted == nil {
-		return status.Error(codes.PermissionDenied,
-			"this server cannot say what you hold, so it will not let you grant anything")
-	}
-
-	_, every, err := s.rules.Granted(ctx, f.Actor)
-	if err != nil {
-		return err
-	}
-	if !every {
-		return status.Errorf(codes.PermissionDenied,
-			"%s: you do not hold every method, so you may not grant it", field)
-	}
-
-	return nil
-}
-
 // methodsOf is what a role allows, read through this stack so that a caller who
 // cannot see the role cannot bind it either.
 //
-// The bool is `Role.every_method`, and it has to come back separately for the
-// reason that flag exists at all: such a role's `methods` column is **empty**,
-// so a caller checking only the list would find nothing to refuse and bind the
-// widest role there is to anybody. It is the empty-list-means-two-things trap
-// one layer up from `frame.Grant`, and it is answered the same way.
-func (s Core) methodsOf(ctx context.Context, ref *app.RoleRef) ([]string, bool, error) {
+// What comes back are patterns, and the widest role in a deployment is one of
+// them rather than an empty column beside a flag. That is the whole gain: a
+// caller checking `methods` cannot find nothing to refuse and hand out
+// everything, because "everything" is in the list it is checking.
+func (s Core) methodsOf(ctx context.Context, ref *app.RoleRef) ([]string, error) {
 	if ref == nil {
-		return nil, false, nil
+		return nil, nil
 	}
 
 	v, err := s.Next().Role().Get(ctx, app.RoleGetRequest_builder{Ref: ref}.Build())
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
-	return v.GetMethods(), v.GetEveryMethod(), nil
+	return v.GetMethods(), nil
 }
