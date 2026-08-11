@@ -1,0 +1,254 @@
+package cmd_test
+
+import (
+	"context"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
+	"github.com/lesomnus/payday/pdid"
+	"github.com/lesomnus/payday/pdtest"
+
+	"github.com/lesomnus/payday/auth"
+
+	"github.com/lesomnus/roster/cmd"
+	app "github.com/lesomnus/roster/rstr"
+)
+
+const getHolder = "/roster.HolderService/Get"
+
+// binds grants a role to somebody, in a site or across the tenant.
+func (b *built) binds(t *testing.T, who pdid.Id, role pdid.Id, site *pdid.Id) {
+	t.Helper()
+
+	req := app.BindingAddRequest_builder{
+		Role:   app.RoleRef_builder{Id: role.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
+	}
+	if site != nil {
+		req.Site = app.SiteRef_builder{Id: site.Bytes()}.Build()
+	}
+
+	_, err := b.Ungated.Binding().Add(t.Context(), req.Build())
+	require.NoError(t, err)
+}
+
+// TestSomebodyWithNoBindingMayCallNothing, which is the only defensible default
+// for a store of people.
+//
+// The alternative is that adding the first role **takes away** permissions
+// everybody silently had -- a change nobody can review, because there is no
+// before-state written down anywhere.
+func TestSomebodyWithNoBindingMayCallNothing(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	ctx = asOverTheWire(ctx, b.AcmeUser)
+
+	_, err := app.NewHolderServiceClient(conn).Get(ctx, app.HolderGetRequest_builder{
+		Ref: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+	}.Build())
+	x.Equal(codes.PermissionDenied, status.Code(err))
+}
+
+// TestARoleIsWhatOpensIt, and only the methods it names.
+func TestARoleIsWhatOpensIt(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	b.binds(t, b.AcmeUser, b.role(t, ctx, "reader", getHolder), nil)
+
+	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	ctx = asOverTheWire(ctx, b.AcmeUser)
+
+	v, err := app.NewHolderServiceClient(conn).Get(ctx, app.HolderGetRequest_builder{
+		Ref: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+	}.Build())
+	x.NoError(err)
+	x.Equal("someone", v.GetAlias())
+
+	// And nothing else it does not name.
+	_, err = app.NewHolderServiceClient(conn).Erase(ctx,
+		app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build())
+	x.Equal(codes.PermissionDenied, status.Code(err))
+}
+
+// TestAGroupCarriesItToo, which is what a group is for: the binding is written
+// once and the membership changes.
+func TestAGroupCarriesItToo(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	g, err := b.Ungated.Group().Add(ctx, app.GroupAddRequest_builder{
+		Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Alias:  "readers",
+	}.Build())
+	x.NoError(err)
+
+	_, err = b.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
+		Role:  app.RoleRef_builder{Id: b.role(t, ctx, "reader", getHolder).Bytes()}.Build(),
+		Group: app.GroupRef_builder{Id: g.GetId()}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	wire := asOverTheWire(ctx, b.AcmeUser)
+
+	get := func() error {
+		_, err := app.NewHolderServiceClient(conn).Get(wire, app.HolderGetRequest_builder{
+			Ref: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		}.Build())
+
+		return err
+	}
+
+	// Not a member yet.
+	x.Equal(codes.PermissionDenied, status.Code(get()))
+
+	_, err = b.Ungated.GroupMembership().Add(ctx, app.GroupMembershipAddRequest_builder{
+		Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Group:  app.GroupRef_builder{Id: g.GetId()}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	x.NoError(get())
+}
+
+// TestABindingInASiteNarrowsTheSecondAxis is what `pd.Grouped` was generated
+// for and what nothing had answered until now.
+//
+// A binding with a site is that site and no other. A binding without one is the
+// tenant's whole width. Both are read out of the same rows the permission check
+// reads, which is the point: what narrows a query and what permits a call are
+// one set of facts.
+func TestABindingInASiteNarrowsTheSecondAxis(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	seoul := b.site(t, ctx, b.Acme, "seoul")
+	frankfurt := b.site(t, ctx, b.Acme, "frankfurt")
+	b.team(t, ctx, seoul, "operators")
+	b.team(t, ctx, frankfurt, "operators")
+
+	// Bound in Seoul only.
+	b.binds(t, b.AcmeUser, b.role(t, ctx, "reader", "/roster.TeamService/List"), &seoul)
+
+	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	wire := asOverTheWire(ctx, b.AcmeUser)
+
+	vs, err := app.NewTeamServiceClient(conn).List(wire, app.TeamListRequest_builder{}.Build())
+	x.NoError(err)
+	x.Len(vs.GetItems(), 1, "a caller bound in one site saw another's team")
+
+	// Somebody bound across the tenant sees both.
+	other := b.holder(t, ctx, b.Acme, "wide")
+	b.binds(t, other, b.role(t, ctx, "wide-reader", "/roster.TeamService/List"), nil)
+
+	vs, err = app.NewTeamServiceClient(conn).List(asOverTheWire(ctx, other),
+		app.TeamListRequest_builder{}.Build())
+	x.NoError(err)
+	x.Len(vs.GetItems(), 2)
+}
+
+// TestARoleDoesNotCrossTheWall. A binding narrows within a tenant and there is
+// no row that widens past one.
+func TestARoleDoesNotCrossTheWall(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	b.binds(t, b.AcmeUser, b.role(t, ctx, "reader", "/roster.TeamService/List"), nil)
+
+	b.team(t, ctx, b.site(t, ctx, b.Acme, "ours"), "ours")
+	theirs := b.team(t, ctx, b.site(t, ctx, b.Hooli, "theirs"), "theirs")
+
+	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+
+	vs, err := app.NewTeamServiceClient(conn).List(asOverTheWire(ctx, b.AcmeUser),
+		app.TeamListRequest_builder{}.Build())
+	x.NoError(err)
+	x.Len(vs.GetItems(), 1)
+
+	for _, v := range vs.GetItems() {
+		x.NotEqual(theirs.Bytes(), v.GetId(), "a role reached into another tenant")
+	}
+}
+
+// asOverTheWire is a call made as somebody, the way `auth.Plain` takes one.
+func asOverTheWire(ctx context.Context, who pdid.Id) context.Context {
+	return auth.PlainProvider(who.String()).Provide(ctx)
+}
+
+const addMember = "/roster.TeamMembershipService/Add"
+
+// TestATeamAdministratorManagesTheirOwnTeam, and no other.
+//
+// This is the half `gate.Policy` cannot answer. It sees the actor, their
+// tenant, the actor's own row and the method -- and never what the call is
+// about. So the gate lets a team's administrator through for the method at all,
+// and `server/core` refuses the wrong team, and the two are one answer in two
+// places.
+func TestATeamAdministratorManagesTheirOwnTeam(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	seoul := b.site(t, ctx, b.Acme, "seoul")
+	mine := b.team(t, ctx, seoul, "mine")
+	yours := b.team(t, ctx, seoul, "yours")
+
+	admin := b.role(t, ctx, "team-admin", addMember)
+
+	// Alice administers `mine`, and holds no binding at all.
+	_, err := b.Ungated.TeamMembership().Add(ctx, app.TeamMembershipAddRequest_builder{
+		Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Team:   app.TeamRef_builder{Id: mine.Bytes()}.Build(),
+		Role:   app.RoleRef_builder{Id: admin.Bytes()}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	wire := asOverTheWire(ctx, b.AcmeUser)
+
+	somebody := b.holder(t, ctx, b.Acme, "newcomer")
+	add := func(team pdid.Id) error {
+		_, err := app.NewTeamMembershipServiceClient(conn).Add(wire,
+			app.TeamMembershipAddRequest_builder{
+				Holder: app.HolderRef_builder{Id: somebody.Bytes()}.Build(),
+				Team:   app.TeamRef_builder{Id: team.Bytes()}.Build(),
+			}.Build())
+
+		return err
+	}
+
+	// Her own team: allowed.
+	x.NoError(add(mine))
+
+	// The one next to it, in the same site and the same tenant: refused.
+	err = add(yours)
+	x.Equal(codes.PermissionDenied, status.Code(err),
+		"a team administrator added somebody to a team they do not administer")
+}
+
+// TestABindingReachesEveryTeam, so that what refused above was the team and not
+// the method.
+func TestABindingReachesEveryTeam(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	seoul := b.site(t, ctx, b.Acme, "seoul")
+	yours := b.team(t, ctx, seoul, "yours")
+
+	b.binds(t, b.AcmeUser, b.role(t, ctx, "staffer", addMember), nil)
+
+	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	somebody := b.holder(t, ctx, b.Acme, "newcomer")
+
+	_, err := app.NewTeamMembershipServiceClient(conn).Add(asOverTheWire(ctx, b.AcmeUser),
+		app.TeamMembershipAddRequest_builder{
+			Holder: app.HolderRef_builder{Id: somebody.Bytes()}.Build(),
+			Team:   app.TeamRef_builder{Id: yours.Bytes()}.Build(),
+		}.Build())
+	x.NoError(err)
+}

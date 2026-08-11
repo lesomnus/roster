@@ -10,6 +10,8 @@ import (
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/pdtest"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
@@ -22,6 +24,10 @@ type built struct {
 	Acme     pdid.Id
 	AcmeUser pdid.Id
 	Hooli    pdid.Id
+
+	// allowed is who has already been given the all-methods role, so that `as`
+	// is idempotent the way a caller expects it to be.
+	allowed map[pdid.Id]bool
 }
 
 func build(t *testing.T) (*built, context.Context) {
@@ -96,12 +102,86 @@ func (b *built) identity(t *testing.T, ctx context.Context, of pdid.Id, provider
 	return v
 }
 
-// as is a request from somebody, with the scope a customer-facing server gives
-// them: their own tenant and nothing else.
+// as is a request from somebody who may do things.
+//
+// It binds them an all-methods role first, because the policy denies by default
+// and a test that skipped this would be testing the refusal rather than
+// whatever it meant to. `roster init` does the same thing for a real
+// deployment's first person.
+//
+// [built.asNobody] is the other half: somebody real, holding nothing.
 func (b *built) as(ctx context.Context, actor, tenant pdid.Id) context.Context {
+	b.mayAnything(actor, tenant)
+
+	return b.asNobody(ctx, actor, tenant)
+}
+
+// asNobody is a request from somebody who holds no binding at all.
+func (b *built) asNobody(ctx context.Context, actor, tenant pdid.Id) context.Context {
 	f := frame.New(actor, tenant, frame.Whole()).WithScope(frame.Only(tenant))
 
 	return frame.Into(ctx, f)
+}
+
+// mayAnything binds an all-methods role to somebody, once.
+//
+// Every RPC this app serves, listed off the server's own descriptors rather
+// than written out -- a list written by hand is one that is right on the day it
+// is written, and a method added tomorrow would silently be denied to every
+// test.
+func (b *built) mayAnything(actor, tenant pdid.Id) {
+	if b.allowed == nil {
+		b.allowed = map[pdid.Id]bool{}
+	}
+	if b.allowed[actor] {
+		return
+	}
+	b.allowed[actor] = true
+
+	ctx := context.Background()
+
+	v, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
+		Tenant:  app.TenantRef_builder{Id: tenant.Bytes()}.Build(),
+		Alias:   "everything-" + actor.String()[:8],
+		Methods: everyMethod(),
+	}.Build())
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = b.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
+		Role:   app.RoleRef_builder{Id: v.GetId()}.Build(),
+		Holder: app.HolderRef_builder{Id: actor.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		panic(err)
+	}
+}
+
+// everyMethod is every RPC this app has, from the descriptors it was generated
+// with.
+func everyMethod() []string {
+	var vs []string
+
+	fs := protoregistry.GlobalFiles
+	fs.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
+		if fd.Package() != "roster" {
+			return true
+		}
+
+		ss := fd.Services()
+		for i := range ss.Len() {
+			s := ss.Get(i)
+			ms := s.Methods()
+			for j := range ms.Len() {
+				vs = append(vs, "/"+string(s.FullName())+"/"+string(ms.Get(j).Name()))
+			}
+		}
+
+		return true
+	})
+
+	return vs
 }
 
 func mustId(t *testing.T, b []byte) pdid.Id {

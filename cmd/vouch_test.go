@@ -389,7 +389,11 @@ func TestNobodyVerifiesAPasswordAnonymously(t *testing.T) {
 		"a stranger could guess passwords at this deployment")
 
 	// And with one, it answers -- so this is a closed door and not a broken
-	// service.
+	// service. The role is what `roster init` binds to a deployment's first
+	// person; the policy denies by default, so without it this would refuse for
+	// the wrong reason.
+	b.mayAnything(b.AcmeUser, b.Acme)
+
 	v, err := app.NewVouchServiceClient(conn).Verify(
 		auth.PlainProvider(b.AcmeUser.String()).Provide(ctx),
 		app.VouchVerifyRequest_builder{

@@ -17,16 +17,20 @@ import (
 // Core is the layer that answers what this app decided.
 type Core struct {
 	app.Overlay
+
+	// holds is what a caller's bindings allow, which `cmd` reads for the policy
+	// and hands over rather than this package asking a second time. See [Holds].
+	holds Holds
 }
 
-func New(next app.Server) Core { return Core{app.NewOverlay(next)} }
+func New(next app.Server, holds Holds) Core { return Core{app.NewOverlay(next), holds} }
 
 // Build makes a builder of this layer so that it can be stacked.
-func Build() app.Builder { return builder{} }
+func Build(holds Holds) app.Builder { return builder{holds} }
 
-type builder struct{}
+type builder struct{ holds Holds }
 
-func (builder) Build(next app.Server) (app.Server, error) { return New(next), nil }
+func (b builder) Build(next app.Server) (app.Server, error) { return New(next, b.holds), nil }
 
 var (
 	_ app.Server               = Core{}
@@ -45,5 +49,5 @@ func (s Core) WithDriver(drv dialect.Driver) (app.Server, error) {
 		return nil, err
 	}
 
-	return New(next), nil
+	return New(next, s.holds), nil
 }

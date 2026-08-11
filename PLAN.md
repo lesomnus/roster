@@ -665,8 +665,8 @@ D15 relies on.
 | 1b · Team, on the second axis | **done**, 21 tests, both databases |
 | 1c · memberships, Credential | **done**, 27 tests, both databases |
 | 2 · payday fixes | F1, F2, F4 done · F3, F6, F7 open · F5 written down |
-| 3 · app layer | linking rules and **credential verification** done, 52 tests, both databases · `/api/v1/me`, policy next |
-| 4 · keys, sync, console | — |
+| 3 · app layer | linking rules, credential verification, **roles and the second axis** done · `/api/v1/me` next |
+| 4 · keys, sync, console | **keys done** · sync channel, console — |
 
 ### Open questions for whoever reads this next
 
@@ -677,9 +677,15 @@ D15 relies on.
 - **The second axis is demonstrated.** `Team` carries the edge, and a caller
   narrowed to one site sees one team out of two in the same tenant. D4 is no
   longer a claim.
-- **`Sets` is still handed in by the test, not by the app.** `cmd.Build`
-  installs the wall only. The membership table it should read now exists, so
-  wiring `pd.Grouped` over `SiteMembership` is the next real step.
+- **`Sets` is the app's now.** `cmd.Sets` reads a caller's bindings and their
+  team memberships, and `bare.Scopes{pd.Wall(), pd.Grouped(...)}` composes the
+  two axes. Checked by removing `pd.Grouped`: a caller bound in one site sees
+  the other's teams again.
+- **Escalation prevention is missing rather than rejected.** Nothing stops
+  somebody binding a role they do not hold themselves.
+- **A team member sees their team's **site**.** One second axis, and `Site` is
+  it, so being in a team means seeing the site's rows. Narrower than that is the
+  app filtering; see D17.
 - **`/api/v1/me` is not written.** It needs an overlay RPC. `VouchService` is
   now the worked example of one, so this is no longer the first of its kind.
 - **Credential verification is done** — `server/vouch`, D13 and D14. What is

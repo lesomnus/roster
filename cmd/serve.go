@@ -145,7 +145,16 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		return nil, err
 	}
 
-	walled, err := pd.NewSink(client, append(opts, bare.WithScope(pd.Wall()))...)
+	// The wall and the second axis, composed here because payday refuses two
+	// `WithScope` calls -- which is what makes a stack that narrows by two
+	// things a line somebody wrote rather than an accident of ordering.
+	//
+	// `pd.Grouped` has existed since the first generation and had nothing to
+	// ask until now. What answers it is a caller's bindings: no site means the
+	// whole tenant, and otherwise the sites they were bound in.
+	narrow := bare.Scopes{pd.Wall(), pd.Grouped(Sets(client))}
+
+	walled, err := pd.NewSink(client, append(opts, bare.WithScope(narrow))...)
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -156,7 +165,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	// `core` is inside the gate and outside the sink: it reads through the wall
 	// to make its judgements, so it must be behind whatever installs one, and it
 	// refuses before the write happens rather than after.
-	stacked, err := app.Build(walled.WithWatch(w), core.Build(), pd.AuditBuild(), pd.GateBuild())
+	stacked, err := app.Build(walled.WithWatch(w), core.Build(Holds(client)), pd.AuditBuild(), pd.GateBuild())
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -171,7 +180,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	// what this app means -- an identity linked by `init` or by an admin console
 	// is still an identity, and a subject that is an email address is still
 	// wrong.
-	ungated, err := app.Build(sink.WithWatch(w), core.Build(), pd.AuditBuild())
+	ungated, err := app.Build(sink.WithWatch(w), core.Build(Holds(client)), pd.AuditBuild())
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -240,7 +249,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 		WithUnary(auth.InterceptorUnary(h, Resolver(s.Ungated), public)).
 		WithStream(auth.InterceptorStream(h, Resolver(s.Ungated), public)).
 		WithUnary(grpcx.LimitUnary(c.Server.Limiter(), gate.ByTenant())).
-		With(gate.Interceptor(Policy())).
+		With(gate.Interceptor(Policy(s.Ent))).
 		With(s.Watch.Interceptor()).
 		WithUnary(grpcx.ClosedUnary(closed(c)))
 
@@ -267,7 +276,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// rules a batch would otherwise reach past -- and it is not hypothetical
 	// here: a key's scope comes from the policy, so a guard without one would
 	// serve a key in a batch as a caller who may see nothing.
-	guard := c.Server.Guard(Policy())
+	guard := c.Server.Guard(Policy(s.Ent))
 	guard.Closed = closed(c)
 
 	if b, err := pd.Batch(s.Walled, s.Drv, guard); err == nil {
