@@ -38,6 +38,7 @@ message Holder {
   // they have a screen to draw, cached for a minute or two -- which is the same
   // reason it is not in the token: a profile changes and a token does not.
   Profile profile = 9;
+
 }
 
 // Profile is what a person is called, and it is replaced whole.
