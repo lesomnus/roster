@@ -89,6 +89,43 @@ list, which is the same reason `roster key add` will not take a key.
 That is the console's bootstrap. A console cannot be what creates the first
 person allowed to use it.
 
+## Locally, in one command
+
+```sh
+docker compose up
+# http://localhost:5173 — admin / admin
+```
+
+roster on Postgres, both planes, and the console on a vite dev server with hot
+reload. Not the sandbox: this is the console talking to a roster that is really
+there, which is where the differences from SQLite show up — and they have shown
+up more than once.
+
+The first operator comes from the environment, applied **once** by the image's
+entrypoint and not by the CLI:
+
+| | |
+| --- | --- |
+| `ROSTER_ROOT_USER` | `admin` |
+| `ROSTER_ROOT_PASSWORD` | `admin` |
+
+`roster init` takes no `--password` flag and will not grow one — an argument is
+in the shell history and in the process list, which is why `roster key add` will
+not take a key either. The entrypoint reads the variable and hands it over on a
+pipe (`--password-stdin`), which is what `POSTGRES_PASSWORD` and
+`KEYCLOAK_ADMIN_PASSWORD` do in their images.
+
+Once, decided by a marker beside the databases — the same way Postgres looks for
+`PG_VERSION` in its data directory. Running `init` twice is an error rather than
+a no-op, deliberately, so the marker is what stops it rather than swallowing the
+error.
+
+**A password in an environment variable is visible** in `docker inspect`, in the
+process environment and in the compose file. Postgres says the same about its
+own and offers a `_FILE` variant for anything real; this image has none because
+it is a development image. `ROSTER_ADMIN_*` is *not* the prefix — that one is
+roster's own, for the admin listener.
+
 ## The console
 
 ```sh

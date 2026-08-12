@@ -4,7 +4,11 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"fmt"
+	"io"
+	"os"
+	"strings"
 
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/flg"
@@ -56,6 +60,7 @@ func NewCmdInit(c *Config) *xli.Command {
 			&flg.String{Name: "tenant", Brief: "the alias of the tenant to create"},
 			&flg.String{Name: "holder", Brief: "the alias of the holder to create in it"},
 			&flg.String{Name: "operator", Brief: "the alias of the control plane holder who runs the console"},
+			&flg.Switch{Name: "password-stdin", Brief: "read the operator's password from stdin instead of generating one"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
@@ -80,7 +85,32 @@ func NewCmdInit(c *Config) *xli.Command {
 			}
 			defer s.Close()
 
-			v, err := Seed(ctx, s, tenant, holder, operator)
+			// A password from **stdin**, for a container that was told one.
+			//
+			// There is no `--password` flag and there will not be: an argument
+			// is in the shell history and in the process list, which is the
+			// same reason `roster key add` will not take a key. A pipe is
+			// neither, and it is the shape `docker login --password-stdin` and
+			// `gh auth login --with-token` already have.
+			//
+			// What reads the environment is the container's entrypoint, not
+			// this. `ROSTER_ADMIN_PASSWORD` is a convention of the image the
+			// way `POSTGRES_PASSWORD` is of that one, and a CLI that grew a
+			// flag for it would be answering a question only a container asks.
+			var given string
+			if ok, _ := flg.Find[bool](cmd, "password-stdin"); ok {
+				b, err := io.ReadAll(io.LimitReader(os.Stdin, 4<<10))
+				if err != nil {
+					return fmt.Errorf("the password on stdin: %w", err)
+				}
+
+				given = strings.TrimRight(string(b), "\r\n")
+				if given == "" {
+					return errors.New("--password-stdin was given and stdin was empty")
+				}
+			}
+
+			v, err := Seed(ctx, s, tenant, holder, operator, given)
 			if err != nil {
 				return err
 			}
@@ -129,7 +159,12 @@ type Seeded struct {
 // they are wanted. The sandbox wants them and has no terminal to print a
 // generated password on; anything else that wanted a deployment somebody can
 // use would otherwise write these calls again and drift from them.
-func Seed(ctx context.Context, s *Server, tenant, holder, operator string) (Seeded, error) {
+// `password` is the operator's, and empty means generate one. A caller that
+// supplies it is one that has somewhere to have got it from and somewhere to
+// put it -- a container told by its environment. Nothing else should: a
+// password chosen by anything but the person is one somebody else knows, and
+// what makes the generated one safe is that it is shown once and then changed.
+func Seed(ctx context.Context, s *Server, tenant, holder, operator, password string) (Seeded, error) {
 	// The schema, so that a fresh database is one this can run against. A
 	// deployment with migrations of its own does that instead; see payday's
 	// `migrate`.
@@ -171,7 +206,7 @@ func Seed(ctx context.Context, s *Server, tenant, holder, operator string) (Seed
 		return v, nil
 	}
 
-	v.Operator, v.Password, err = seedOperator(ctx, s.Control, operator)
+	v.Operator, v.Password, err = seedOperator(ctx, s.Control, operator, password)
 	if err != nil {
 		return Seeded{}, fmt.Errorf("operator %q: %w", operator, err)
 	}
@@ -250,7 +285,7 @@ func allow(ctx context.Context, s *Server, in pdid.Id, to pdid.Id) error {
 // refuses to take a key for the same reason. What this prints is shown once and
 // stored as an argon2id hash, so the deployment cannot tell anybody what it was
 // any more than it can tell them their key.
-func seedOperator(ctx context.Context, s *Server, alias string) (pdid.Id, string, error) {
+func seedOperator(ctx context.Context, s *Server, alias, given string) (pdid.Id, string, error) {
 	if err := s.Ent.Schema.Create(ctx); err != nil {
 		return pdid.Nil, "", err
 	}
@@ -270,9 +305,12 @@ func seedOperator(ctx context.Context, s *Server, alias string) (pdid.Id, string
 		return pdid.Nil, "", err
 	}
 
-	secret, err := passphrase()
-	if err != nil {
-		return pdid.Nil, "", err
+	secret := given
+	if secret == "" {
+		secret, err = passphrase()
+		if err != nil {
+			return pdid.Nil, "", err
+		}
 	}
 
 	// Hashed by the service that will later check it, so the argon2 parameters

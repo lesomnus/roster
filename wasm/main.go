@@ -34,7 +34,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	drpc "github.com/lesomnus/grpc-dgram"
@@ -140,20 +139,15 @@ func main() {
 	log.Fatal(gw.Serve(ctx, srv))
 }
 
-// seed is `roster init`, and then a password somebody can actually type.
+// seed is `roster init` with a password somebody can actually type.
 //
 // The command generates one and prints it once, which is right where there is a
-// terminal to print to and useless where there is not. This overwrites it with
-// a constant, through the RPC that hashes one, so the argon2 parameters stay in
-// one place.
+// terminal to print to and useless where there is not.
 func seed(ctx context.Context, s *cmd.Server) error {
-	v, err := cmd.Seed(ctx, s, "acme", "admin", operator)
-	if err != nil {
+	// The password is given rather than generated, because a page has no
+	// terminal to print a generated one on.
+	if _, err := cmd.Seed(ctx, s, "acme", "admin", operator, password); err != nil {
 		return err
-	}
-
-	if err := console.SetPassword(ctx, s.Control.Ungated, v.Operator, password); err != nil {
-		return fmt.Errorf("their password: %w", err)
 	}
 
 	return nil

@@ -1,0 +1,10 @@
+-- The control plane's database, beside the data plane's.
+--
+-- Two databases because a key must not live in the tables it protects: with
+-- them separate there is no query from the data plane to the keys at all, so a
+-- fault in the wall cannot reach one. See PLAN.md, D15.
+--
+-- One Postgres server holds both here, which is a development convenience and
+-- not a weakening of that: nothing in roster opens a connection that could
+-- join across them, and the two `*_DB_DSN` variables are what it is told.
+CREATE DATABASE control OWNER roster;

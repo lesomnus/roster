@@ -1,0 +1,112 @@
+# roster and its console, locally, against a real server.
+#
+#	docker compose up
+#	open http://localhost:5173
+#	sign in as admin / admin
+#
+# Not the sandbox. `npm run dev:sandbox` compiles the server into the page and
+# needs none of this; what this is for is the console talking to a roster that
+# is really there, over the transcoder, with Postgres underneath -- which is
+# where the differences from SQLite show up, and they have shown up more than
+# once.
+#
+# Not a production compose either. The passwords are in this file, there is no
+# TLS, and every port is published to the host including the two that should be
+# reachable only by a console. Each of those is a line that would have to change
+# and none of them is hidden.
+
+name: roster
+
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: roster
+      POSTGRES_PASSWORD: roster
+      POSTGRES_DB: roster
+    volumes:
+      - db:/var/lib/postgresql/data
+      # Both planes are databases, deliberately -- a key must not live in the
+      # tables it protects. One server holds them; there is still no query from
+      # one to the other, because nothing in roster opens a connection that
+      # could make one.
+      - ./docker/planes.sql:/docker-entrypoint-initdb.d/planes.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U roster"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  roster:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Seeded once by the entrypoint, not by the CLI. See `docker/entrypoint.sh`.
+      # `ROSTER_ROOT_*` and not `ROSTER_ADMIN_*`: the second is roster's own
+      # prefix for the admin listener, three variables further down.
+      ROSTER_ROOT_USER: ${ROSTER_ROOT_USER:-admin}
+      ROSTER_ROOT_PASSWORD: ${ROSTER_ROOT_PASSWORD:-admin}
+
+      ROSTER_DB_DRIVER: postgres
+      ROSTER_DB_DSN: postgres://roster:roster@db:5432/roster?sslmode=disable
+      ROSTER_DB_MIGRATE: "true"
+
+      ROSTER_CONTROL_DB_DRIVER: postgres
+      ROSTER_CONTROL_DB_DSN: postgres://roster:roster@db:5432/control?sslmode=disable
+      ROSTER_CONTROL_DB_MIGRATE: "true"
+
+      ROSTER_SERVER_ADDR: ":50051"
+      ROSTER_SERVER_HTTP_ADDR: ":8080"
+      ROSTER_SERVER_HTTP_ALLOW_WEB: "true"
+
+      # What the console talks to. `origins` is the vite dev server, which is a
+      # different origin from this one -- without it the browser refuses every
+      # call and says nothing useful about why.
+      ROSTER_CONTROL_ADDR: ":50052"
+      ROSTER_CONTROL_HTTP_ADDR: ":8082"
+      ROSTER_CONTROL_HTTP_ALLOW_WEB: "true"
+      ROSTER_CONTROL_HTTP_ORIGINS: http://localhost:5173
+
+      # Customers, for the screens that come after the first ones.
+      ROSTER_ADMIN_ADDR: ":50053"
+      ROSTER_ADMIN_HTTP_ADDR: ":8081"
+      ROSTER_ADMIN_HTTP_ALLOW_WEB: "true"
+      ROSTER_ADMIN_HTTP_ORIGINS: http://localhost:5173
+
+      ROSTER_WATCH_BROKER: memory
+    volumes:
+      # Where the entrypoint keeps its "already seeded" marker. Without it every
+      # restart tries to seed again and fails on the alias that is already
+      # there.
+      - state:/var/lib/roster
+    ports:
+      - "50051:50051" # product apps
+      - "8080:8080"   # their transcoder
+      - "50052:50052" # operators
+      - "8082:8082"   # the console
+      - "50053:50053" # customers
+      - "8081:8081"   # their transcoder
+
+  ui:
+    image: node:24-alpine
+    working_dir: /app
+    depends_on: [roster]
+    environment:
+      # The control listener's HTTP, which is what this console is.
+      VITE_ADDR: http://localhost:8082
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    volumes:
+      - ./ts:/app
+      # Kept in the container: `npm install` on a host mount installs the host's
+      # platform binaries, and vite has some. A named volume means the container
+      # has its own and the source is still live.
+      - modules:/app/node_modules
+    ports:
+      - "5173:5173"
+
+volumes:
+  db:
+  state:
+  modules:

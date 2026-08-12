@@ -352,3 +352,52 @@ func TestNobodyWidensARoleTheyHold(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 }
+
+// TestAGivenPasswordIsTheOneThatSignsIn is the container's half of `init`.
+//
+// `roster init` generates a password and prints it once, which is right where
+// there is a terminal and useless in an image that has to be up before anybody
+// looks. So the image reads its environment and hands it over on a **pipe** —
+// there is no `--password` flag and there will not be, because an argument is
+// in the shell history and in the process list.
+//
+// What matters is that the thing typed into the console is the thing the
+// environment said, which is one call to check and easy to get subtly wrong.
+func TestAGivenPasswordIsTheOneThatSignsIn(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	drv, dsn := pdtest.DB(t)
+	cdrv, cdsn := pdtest.DB(t)
+
+	c := cmd.Config{
+		Db:      config.DbConfig{Driver: drv, Dsn: dsn},
+		Watch:   config.WatchConfig{Broker: config.BrokerMemory},
+		Control: cmd.ControlConfig{Db: config.DbConfig{Driver: cdrv, Dsn: cdsn}},
+	}
+
+	s, err := cmd.Build(ctx, c)
+	x.NoError(err)
+	t.Cleanup(func() { s.Close() })
+	x.NoError(s.Control.Ent.Schema.Create(ctx))
+
+	const given = "correct horse battery staple"
+
+	v, err := cmd.Seed(ctx, s, "acme", "admin", "ops", given)
+	x.NoError(err)
+	x.Equal(given, v.Password, "what was handed over is not what came back")
+
+	// And it is what signs in, which is the only claim that matters.
+	x.NotNil(signIn(t, s, "ops", given))
+	x.Nil(signIn(t, s, "ops", "admin"), "the default signed in over a given one")
+}
+
+// TestAnEmptyPasswordIsGeneratedInstead, so that a caller who has none is not
+// silently given an empty one.
+func TestAnEmptyPasswordIsGeneratedInstead(t *testing.T) {
+	x := require.New(t)
+
+	s, out := inited(t, true)
+	x.NotEmpty(passwordFrom(t, out), "nothing was generated")
+	_ = s
+}
