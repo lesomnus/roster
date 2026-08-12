@@ -107,6 +107,7 @@ server keeps. It opens **two** listeners, and there are three in all:
 | --- | --- | --- |
 | `server.addr` | product apps | walled and gated. Keys only — a cookie names nobody here |
 | `control.addr` | operators | who runs this deployment, which services call it, their keys |
+| `control.http.addr` | **the console** | the same, transcoded. This is what the UI talks to |
 | `admin.addr` | operators | **customers**: the data plane, no wall, behind a session |
 | `admin.http.addr` | a console | the same, transcoded. This is what a browser talks to |
 

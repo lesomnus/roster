@@ -26,13 +26,17 @@ import './style.css'
  * this page may call it -- `origins:` under `server.http`. A build served by
  * the app itself is same-origin and needs none of that.
  *
- * The **admin** listener's HTTP, which is `admin.http` and not `server.http`.
- * A console administers customers through the data plane with no wall, and the
- * transcoder in front of the walled data plane would answer its session with
- * nobody -- an operator is a holder of the control plane, and the two are
- * separate databases with no query between them.
+ * The **control** listener's HTTP, which is what this console is: who runs the
+ * deployment, which services call it, what each key may do. None of that is on
+ * either other port.
+ *
+ * Not `server.http`, which fronts the walled data plane -- an operator is a
+ * holder of the control plane, and the two are separate databases with no query
+ * between them, so a session names nobody there. And not `admin.http` either:
+ * that one reaches **customers**, which is a later screen and a different set
+ * of rows.
  */
-const ADDR = import.meta.env['VITE_ADDR'] ?? 'http://localhost:8081'
+const ADDR = import.meta.env['VITE_ADDR'] ?? 'http://localhost:8082'
 
 const root = createRoot(document.getElementById('root') as HTMLElement)
 

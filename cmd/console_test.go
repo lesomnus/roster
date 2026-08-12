@@ -485,3 +485,96 @@ func TestAConsoleReachesTheAdminPortOverHttp(t *testing.T) {
 	x.NoError(err)
 	x.Equal(2, n, "acme from init, and the one the console made")
 }
+
+// TestAConsoleReachesTheControlPlaneOverHttp is the **first** console's path.
+//
+// What an operator manages before any customer exists is the deployment itself:
+// who else may sign in, which services call it, what each of their keys may do.
+// All of that is control plane, none of it is on the other two ports, and a
+// browser needs a transcoder in front of it like anything else.
+func TestAConsoleReachesTheControlPlaneOverHttp(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	s, out := inited(t, true)
+
+	h, err := web.New(config.HttpConfig{AllowWeb: true}, s.GrpcControl(ctx, cmd.Config{}))
+	x.NoError(err)
+
+	v := cmd.Login(s.Control)
+	h.Handle("POST /session", s.Sessions.Serve(v))
+
+	srv := httptest.NewServer(h)
+	t.Cleanup(srv.Close)
+
+	jar, err := cookiejar.New(nil)
+	x.NoError(err)
+	c := &http.Client{Jar: jar}
+
+	post := func(path, body string) (int, string) {
+		t.Helper()
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL+path, strings.NewReader(body))
+		x.NoError(err)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Connect-Protocol-Version", "1")
+
+		res, err := c.Do(req)
+		x.NoError(err)
+		defer res.Body.Close()
+
+		b, _ := io.ReadAll(res.Body)
+
+		return res.StatusCode, string(b)
+	}
+
+	code, _ := post("/roster.MeService/Get", `{}`)
+	x.Equal(http.StatusUnauthorized, code, "anonymous reached the control plane")
+
+	code, body := post("/session", `{"alias":"ops","password":"`+passwordFrom(t, out)+`"}`)
+	x.Equal(http.StatusNoContent, code, body)
+
+	// The three screens the first console is, in the order it would draw them.
+	t.Run("who am I", func(t *testing.T) {
+		x := require.New(t)
+
+		code, body := post("/roster.MeService/Get", `{}`)
+		x.Equal(http.StatusOK, code, body)
+		x.Contains(body, `"ops"`)
+	})
+
+	t.Run("who else runs this deployment", func(t *testing.T) {
+		x := require.New(t)
+
+		code, body := post("/roster.HolderService/List", `{}`)
+		x.Equal(http.StatusOK, code, body)
+		x.Contains(body, `"ops"`)
+	})
+
+	t.Run("and what may call it", func(t *testing.T) {
+		x := require.New(t)
+
+		// A service and a key, the way `roster key add` makes them.
+		who, err := cmd.ServiceOf(ctx, s.Control, "custody")
+		x.NoError(err)
+
+		_, sum, err := keys.Mint(keys.PrefixDeployment)
+		x.NoError(err)
+
+		_, err = s.Control.Ungated.ApiKey().Add(ctx, app.ApiKeyAddRequest_builder{
+			Holder:  app.HolderRef_builder{Id: who.Bytes()}.Build(),
+			Alias:   "production",
+			Secret:  sum,
+			Methods: []string{"/roster.VouchService/Verify"},
+		}.Build())
+		x.NoError(err)
+
+		code, body := post("/roster.ApiKeyService/List", `{}`)
+		x.Equal(http.StatusOK, code, body)
+		x.Contains(body, `"production"`)
+
+		// And the verifier is not in the answer, which is why this service is
+		// on this port and no other.
+		x.NotContains(body, string(sum))
+	})
+}

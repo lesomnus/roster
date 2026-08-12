@@ -34,6 +34,12 @@ server:
 #     driver: sqlite3
 #     dsn: "file:roster-control.db?_pragma=foreign_keys(1)"
 #   addr: "127.0.0.1:50052"
+#   # What the console talks to. A browser cannot speak gRPC, and this is the
+#   # port that has the rows a console is for.
+#   http:
+#     addr: "127.0.0.1:8082"
+#     allow_web: true
+#     origins: ["http://localhost:5173"]
 
 # Where an operator administers **customers**: the data plane with no wall,
 # behind a session. Its `http` is what a console talks to -- a browser cannot

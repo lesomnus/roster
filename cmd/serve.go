@@ -495,11 +495,22 @@ func (s *Server) Serve(ctx context.Context, c Config, l net.Listener) error {
 	}
 	defer stop()
 
-	stopControl, err := s.serveControl(ctx, c)
+	var control *grpc.Server
+	if s.Control != nil {
+		control = s.GrpcControl(ctx, c)
+	}
+
+	stopControl, err := s.serveControl(ctx, c, control)
 	if err != nil {
 		return err
 	}
 	defer stopControl()
+
+	stopControlHttp, err := s.serveControlHttp(ctx, c, control)
+	if err != nil {
+		return err
+	}
+	defer stopControlHttp()
 
 	admin, err := s.GrpcAdmin(ctx, c)
 	if err != nil {
@@ -533,7 +544,7 @@ func (s *Server) Serve(ctx context.Context, c Config, l net.Listener) error {
 // that is a channel. It was briefly not, and then the one registration that
 // makes this port worth opening was reachable only by opening it.
 func (s *Server) GrpcControl(ctx context.Context, c Config, opts ...grpc.ServerOption) *grpc.Server {
-	g := s.Control.Grpc(ctx, Config{Server: c.Control.Server}, opts...)
+	g := s.Control.Grpc(ctx, Config{Server: c.Control.ServerConfig}, opts...)
 
 	// The keys themselves, which the data plane refuses to serve and this port
 	// exists to serve. `Get` still answers with the verifier column if it is
@@ -557,12 +568,10 @@ func (s *Server) GrpcControl(ctx context.Context, c Config, opts ...grpc.ServerO
 // the gate, the trail. What differs is which database is behind it and one
 // registration, since `ApiKeyService` is the whole point of the port and is
 // closed on the other one.
-func (s *Server) serveControl(ctx context.Context, c Config) (func(), error) {
-	if !c.Control.Answers() || s.Control == nil {
+func (s *Server) serveControl(ctx context.Context, c Config, g *grpc.Server) (func(), error) {
+	if !c.Control.Answers() || g == nil {
 		return func() {}, nil
 	}
-
-	g := s.GrpcControl(ctx, c)
 
 	l, err := net.Listen("tcp", c.Control.Addr)
 	if err != nil {
@@ -602,6 +611,19 @@ func (s *Server) serveAdmin(ctx context.Context, c Config, g *grpc.Server) (func
 // There is no second stack here for a rule to be missing from.
 func (s *Server) serveHttp(ctx context.Context, c Config, g *grpc.Server) (func(), error) {
 	return s.http(ctx, "http", c.Server.Http, g)
+}
+
+// serveControlHttp is the control plane's own browser surface.
+//
+// The first console is this one: who runs the deployment, which services call
+// it, what each key may do. All of that is here and none of it is on either of
+// the other two ports.
+func (s *Server) serveControlHttp(ctx context.Context, c Config, g *grpc.Server) (func(), error) {
+	if g == nil {
+		return func() {}, nil
+	}
+
+	return s.http(ctx, "control.http", c.Control.Http, g)
 }
 
 // serveAdminHttp is the same for the admin listener, and it is what a console

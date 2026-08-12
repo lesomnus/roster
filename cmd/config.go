@@ -81,7 +81,7 @@ type Config struct {
 type ControlConfig struct {
 	Db config.DbConfig `yaml:"db"`
 
-	// Addr is where the control plane answers, and **empty is nowhere**.
+	// Where the control plane answers, and **empty is nowhere**.
 	//
 	// The rows are reachable in this process whatever this says -- that is what
 	// the auth interceptor asks on every request. What an address adds is a way
@@ -92,15 +92,17 @@ type ControlConfig struct {
 	// down as an interface a console can reach and nothing else can. A port
 	// that is not open is a control nothing has to get right, which is the same
 	// argument `AllowPprof` makes about a listener that is.
-	Addr string `yaml:"addr"`
-
-	// Server is that listener's own settings -- its limits, what it closes.
 	//
-	// Its own rather than the data plane's, because they are answering
-	// different callers about different rows. Sharing one would mean a limit
-	// tuned for a product app's traffic applied to a console, and an
-	// `http` block that tried to open the same port twice.
-	Server config.ServerConfig `yaml:"server"`
+	// Inlined, so this reads `control.addr` and `control.http` the way `admin`
+	// reads `admin.addr` and `admin.http`. It was `control.server.addr` for one
+	// commit, which put the two listeners' settings at different depths for no
+	// reason anybody could have named.
+	//
+	// Its own settings rather than the data plane's, because they answer
+	// different callers about different rows: a limit tuned for a product app's
+	// traffic is not one for a console, and one `http` block cannot open two
+	// ports.
+	config.ServerConfig `yaml:",inline"`
 }
 
 // Serves reports whether this deployment checks who is calling.
