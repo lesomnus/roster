@@ -357,3 +357,61 @@ func TestTheTwoTrailsAreJoined(t *testing.T) {
 	x.NoError(err, "the operator does not resolve in the plane that recorded them")
 	x.Equal("ops", who.Alias)
 }
+
+// TestNoVerifierReachesTheTrail is where `(payday.field).secret` was found to
+// be half true.
+//
+// `CredentialService` and `ApiKeyService` are unregistered and closed so that
+// nothing answers with a verifier. The trail went around all of it: the
+// recorder reads the bare server on purpose -- a row is recorded as it was
+// written, not as somebody was allowed to see it -- so an argon2id hash sat in
+// `Audit.value`, in the one table nothing erases, readable by anybody who may
+// read the trail.
+//
+// The declaration on the field is what the recorder reads. The layer only
+// covers the way out, and `vouch` and `keys` read these columns through an
+// unwalled server on purpose, so the layer could never have covered this.
+func TestNoVerifierReachesTheTrail(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	s, out := inited(t, true)
+	x.NotEmpty(passwordFrom(t, out))
+
+	// The operator's password, hashed by the RPC that hashes it.
+	cred, err := s.Control.Ent.Credential.Query().Only(ctx)
+	x.NoError(err)
+	x.NotEmpty(cred.Secret, "nothing was stored, so this proves nothing")
+
+	// And a key, which is the other verifier.
+	who, err := cmd.ServiceOf(ctx, s.Control, "custody")
+	x.NoError(err)
+
+	_, sum, err := keys.Mint(keys.PrefixDeployment)
+	x.NoError(err)
+
+	_, err = s.Control.Ungated.ApiKey().Add(ctx, app.ApiKeyAddRequest_builder{
+		Holder:  app.HolderRef_builder{Id: who.Bytes()}.Build(),
+		Alias:   "production",
+		Secret:  sum,
+		Methods: []string{"/roster.VouchService/Verify"},
+	}.Build())
+	x.NoError(err)
+
+	vs, err := s.Control.Ent.Audit.Query().All(ctx)
+	x.NoError(err)
+
+	values := 0
+	for _, v := range vs {
+		x.NotContains(string(v.Value), string(cred.Secret), "the trail holds a password hash")
+		x.NotContains(string(v.Value), string(sum), "the trail holds a key hash")
+		if len(v.Value) > 0 {
+			values++
+		}
+	}
+	x.NotZero(values, "no row carried a value, so the checks above never looked at one")
+
+	// The columns really are still there to be read, through the server that
+	// exists to read them. Clearing the trail must not have cleared the row.
+	x.NotEmpty(cred.Secret)
+}

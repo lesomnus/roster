@@ -128,7 +128,20 @@ Found by running it: with that backwards, an operator creates a customer and a
 holder and is then refused the role, because the check for what they may hand
 on looks in the wrong database.
 
-### What an operator's write leaves behind
+### Verifiers are not in either trail
+
+`Credential.secret` and `ApiKey.secret` are declared `(payday.field).secret`,
+which does two separate things. The layer clears them on the way out of the
+walled stack — `vouch` and `roster key` read the same columns through an
+unwalled one, deliberately, because comparing a verifier is their whole job.
+
+And the **recorder** reads the declaration for itself, which is the half that
+was missing: it sits behind every layer on purpose, so an argon2id hash was
+being copied into `Audit.value` — in the one table nothing erases, readable by
+anybody who may read the trail, in a deployment whose `CredentialService` is
+unregistered precisely so that could not happen.
+
+### What an operator'''s write leaves behind
 
 Two rows, in two databases, joined by the trace.
 

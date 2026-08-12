@@ -280,6 +280,12 @@ type Credential_builder struct {
 	// The verifier, never the secret: an argon2id encoded hash for a password, an
 	// encrypted seed for TOTP. Bytes rather than a string because neither is
 	// text this app should be tempted to print.
+	//
+	// Declared `secret`, which is what keeps it out of the **trail**. The layer
+	// that clears it on the way out is only on the walled stack -- `vouch` reads
+	// it through an unwalled one, deliberately, because comparing it is the whole
+	// job -- and the recorder is behind every layer, so without this declaration
+	// a verifier is copied into `Audit.value` on every write. Found by writing it.
 	Secret []byte
 	// How many times in a row somebody has failed, and until when they may not
 	// try again. Both live here because the thing being protected is here --
@@ -315,13 +321,13 @@ var File_app_credential_proto protoreflect.FileDescriptor
 
 const file_app_credential_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/credential.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x96\x05\n" +
+	"\x14app/credential.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x9e\x05\n" +
 	"\n" +
 	"Credential\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\x12\n" +
-	"\x04kind\x18\b \x01(\tR\x04kind\x12\x16\n" +
-	"\x06secret\x18\t \x01(\fR\x06secret\x12\x1a\n" +
+	"\x04kind\x18\b \x01(\tR\x04kind\x12\x1e\n" +
+	"\x06secret\x18\t \x01(\fB\x06\xaa\xc1\x16\x02\b\x01R\x06secret\x12\x1a\n" +
 	"\bfailures\x18\n" +
 	" \x01(\x05R\bfailures\x12C\n" +
 	"\vdate_locked\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\n" +

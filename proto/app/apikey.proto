@@ -90,7 +90,14 @@ message ApiKey {
   // A password is the opposite case in every one of those respects, which is
   // why `Credential.secret` is salted, slow, and found by who it belongs to
   // rather than by itself.
-  bytes secret = 9 [(orm.field) = {unique: true}];
+  //
+  // Declared `secret` for the same reason `Credential.secret` is: `keys.Store`
+  // finds a key **by** this value through an unwalled server, and the trail
+  // must not end up holding a second copy of it.
+  bytes secret = 9 [
+    (orm.field) = {unique: true},
+    (payday.field) = {secret: true}
+  ];
 
   // When it was last used, for finding the key nobody needs any more. Written
   // on a verify, so it is the one field a read path writes.

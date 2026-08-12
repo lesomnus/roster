@@ -193,7 +193,15 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	// `core` is inside the gate and outside the sink: it reads through the wall
 	// to make its judgements, so it must be behind whatever installs one, and it
 	// refuses before the write happens rather than after.
-	stacked, err := app.Build(walled.WithWatch(w), core.Build(Rules(client)), pd.AuditBuild(), pd.GateBuild())
+	// `pd.Secret` is on the walled stack and on no other. What it clears is
+	// what a caller is answered with; `vouch` and `keys` read the same columns
+	// through `Ungated`, deliberately, because comparing a verifier is the whole
+	// of their job.
+	//
+	// What keeps it out of the **trail** is not this layer -- the recorder is
+	// behind every layer -- but the declaration on the field, which the recorder
+	// reads for itself. See `Credential.secret`.
+	stacked, err := app.Build(walled.WithWatch(w), core.Build(Rules(client)), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
 	if err != nil {
 		db.Close()
 		return nil, err
