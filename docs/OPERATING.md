@@ -101,13 +101,53 @@ DELETE /session                                          -> 204
 ```
 
 The cookie is opaque, `HttpOnly`, `SameSite=Lax` and names a session this
-server keeps. What it opens is the **control plane's** listener — `control.addr`
-above — and nothing else:
+server keeps. It opens **two** listeners, and there are three in all:
 
-| | |
-| --- | --- |
-| control listener | who runs this deployment, which services call it, their keys |
-| data plane listener | customers and their people. Keys only; a cookie names nobody here |
+| | | |
+| --- | --- | --- |
+| `server.addr` | product apps | walled and gated. Keys only — a cookie names nobody here |
+| `control.addr` | operators | who runs this deployment, which services call it, their keys |
+| `admin.addr` | operators | **customers**: the data plane, no wall, behind a session |
+
+```yaml
+admin:
+  addr: "127.0.0.1:50053"
+```
+
+Three because it can be nothing else. The product port is walled and an
+operator has no tenant in that database, so it shows them nothing; and the
+control port already registers `roster.HolderService` over its own rows, so the
+customer-facing one cannot join it under the same name.
+
+The rule the admin port runs on is one sentence:
+
+> **Who is calling** and **what they hold** are control plane questions. What
+> they are operating on is the data plane.
+
+Found by running it: with that backwards, an operator creates a customer and a
+holder and is then refused the role, because the check for what they may hand
+on looks in the wrong database.
+
+### What an operator's write leaves behind
+
+Two rows, in two databases, joined by the trace.
+
+```
+control plane   ops called /roster.TenantService/Add        trace=a1b2…
+data plane      TenantService/Add on 019ff4…  actor=<ops>   trace=a1b2…
+```
+
+The control plane's is written **first** and is about the decision, so an
+attempt that then fails is still on record — which is the one an audit most
+wants. They are not one transaction and cannot be: two databases, deliberately.
+
+The data plane's row names an actor that resolves in neither database from
+there, and that is what the trace is for. Do **not** infer it from the actor's
+tenant failing to resolve: a hard-erased tenant looks exactly the same.
+
+The trace is made by the admin port when there is none, rather than relying on
+`otel:`. Observability is a thing a deployment may turn off; an audit that comes
+apart when it does is not an audit.
 
 That is not a restriction somebody chose. A session names a control plane
 holder and the two planes are separate databases with no query between them, so

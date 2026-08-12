@@ -493,6 +493,12 @@ func (s *Server) Serve(ctx context.Context, c Config, l net.Listener) error {
 	}
 	defer stopControl()
 
+	stopAdmin, err := s.serveAdmin(ctx, c)
+	if err != nil {
+		return err
+	}
+	defer stopAdmin()
+
 	go func() {
 		<-ctx.Done()
 		g.GracefulStop()
@@ -547,6 +553,29 @@ func (s *Server) serveControl(ctx context.Context, c Config) (func(), error) {
 	go func() { _ = g.Serve(l) }()
 
 	log.From(ctx).InfoContext(ctx, "control", slog.String("addr", l.Addr().String()))
+
+	return g.GracefulStop, nil
+}
+
+// serveAdmin is where an operator administers customers; see `admin.go`.
+func (s *Server) serveAdmin(ctx context.Context, c Config) (func(), error) {
+	if c.Admin.Addr == "" || s.Control == nil {
+		return func() {}, nil
+	}
+
+	g, err := s.GrpcAdmin(ctx, c)
+	if err != nil {
+		return nil, err
+	}
+
+	l, err := net.Listen("tcp", c.Admin.Addr)
+	if err != nil {
+		return nil, err
+	}
+
+	go func() { _ = g.Serve(l) }()
+
+	log.From(ctx).InfoContext(ctx, "admin", slog.String("addr", l.Addr().String()))
 
 	return g.GracefulStop, nil
 }

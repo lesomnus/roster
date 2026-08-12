@@ -12,7 +12,10 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
+	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/pdtest"
+
+	"github.com/lesomnus/roster/internal/ent"
 
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
@@ -214,4 +217,143 @@ func TestAConsoleManagesKeys(t *testing.T) {
 		x.NoError(err)
 		x.NotEmpty(v.GetItems())
 	})
+}
+
+// TestAnOperatorAdministersCustomers is the third listener doing what neither
+// of the others can.
+//
+// The data plane's port is walled and an operator has no tenant there, so it
+// shows them nothing. The control plane's port has their own rows and not a
+// customer's. This is the one that reaches a customer from outside every
+// tenant.
+func TestAnOperatorAdministersCustomers(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	s, out := inited(t, true)
+	c := signIn(t, s, "ops", passwordFrom(t, out))
+	x.NotNil(c)
+
+	g, err := s.GrpcAdmin(ctx, cmd.Config{})
+	x.NoError(err)
+	conn := pdtest.Serve(t, g)
+
+	as := metadata.NewOutgoingContext(ctx, metadata.Pairs("cookie", c.Name+"="+c.Value))
+
+	// The whole of setting a customer up, which is what `roster init` does for
+	// the first one. The last two are what fails when `core` reads the wrong
+	// database: `Granted` looks for the operator's bindings in the data plane
+	// and finds none.
+	tn, err := app.NewTenantServiceClient(conn).Add(as,
+		app.TenantAddRequest_builder{Alias: "newco"}.Build())
+	x.NoError(err)
+
+	h, err := app.NewHolderServiceClient(conn).Add(as, app.HolderAddRequest_builder{
+		Tenant: app.TenantRef_builder{Id: tn.GetId()}.Build(),
+		Alias:  "admin",
+	}.Build())
+	x.NoError(err)
+
+	r, err := app.NewRoleServiceClient(conn).Add(as, app.RoleAddRequest_builder{
+		Tenant:  app.TenantRef_builder{Id: tn.GetId()}.Build(),
+		Alias:   "everything",
+		Methods: []string{"/roster.*/*"},
+	}.Build())
+	x.NoError(err, "the operator could not give the new customer's admin anything")
+
+	_, err = app.NewBindingServiceClient(conn).Add(as, app.BindingAddRequest_builder{
+		Role:   app.RoleRef_builder{Id: r.GetId()}.Build(),
+		Holder: app.HolderRef_builder{Id: h.GetId()}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	// And what neither port serves, however private this one is: its generated
+	// `Get` answers with the verifier column.
+	t.Run("and still not a password hash", func(t *testing.T) {
+		x := require.New(t)
+
+		_, err := app.NewCredentialServiceClient(conn).List(as,
+			app.CredentialListRequest_builder{}.Build())
+		x.Error(err)
+		x.Equal(codes.Unimplemented, status.Code(err))
+	})
+
+	t.Run("nobody without a session gets in", func(t *testing.T) {
+		x := require.New(t)
+
+		_, err := app.NewTenantServiceClient(conn).Add(ctx,
+			app.TenantAddRequest_builder{Alias: "nope"}.Build())
+		x.Error(err)
+		x.Equal(codes.Unauthenticated, status.Code(err))
+	})
+}
+
+// TestTheTwoTrailsAreJoined is the property the whole arrangement rests on.
+//
+// The two planes are separate databases with no query between them, so an
+// operator's write leaves two rows: the decision, in the control plane where
+// the operator resolves, and what changed, in the data plane where the customer
+// does. Neither is complete alone -- the data plane's names an actor that
+// resolves in neither database -- and what joins them is the trace.
+//
+// It must not depend on `otel:` being configured. Observability is a thing a
+// deployment may turn off; an audit trail that comes apart when it does is not
+// an audit trail. Confirmed by running it: with no otel configured, every row
+// used to come back with an empty trace.
+func TestTheTwoTrailsAreJoined(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	s, out := inited(t, true)
+	c := signIn(t, s, "ops", passwordFrom(t, out))
+	x.NotNil(c)
+
+	g, err := s.GrpcAdmin(ctx, cmd.Config{})
+	x.NoError(err)
+	conn := pdtest.Serve(t, g)
+	as := metadata.NewOutgoingContext(ctx, metadata.Pairs("cookie", c.Name+"="+c.Value))
+
+	before, err := s.Control.Ent.Audit.Query().Count(ctx)
+	x.NoError(err)
+
+	tn, err := app.NewTenantServiceClient(conn).Add(as,
+		app.TenantAddRequest_builder{Alias: "newco"}.Build())
+	x.NoError(err)
+	newco := mustId(t, tn.GetId())
+
+	// The data plane's row: what changed, and an actor that resolves nowhere
+	// here.
+	ds, err := s.Ent.Audit.Query().All(ctx)
+	x.NoError(err)
+
+	var data *ent.Audit
+	for _, v := range ds {
+		if pdid.Id(v.ObjectID) == newco {
+			data = v
+		}
+	}
+	x.NotNil(data, "the data plane recorded nothing about the customer")
+	x.NotEmpty(data.TraceID, "no trace, so nothing to join it to")
+
+	// The control plane's row: who decided, written before the attempt.
+	cs, err := s.Control.Ent.Audit.Query().All(ctx)
+	x.NoError(err)
+	x.Equal(before+1, len(cs), "the decision was not recorded")
+
+	var intent *ent.Audit
+	for _, v := range cs {
+		if string(v.TraceID) == string(data.TraceID) {
+			intent = v
+		}
+	}
+	x.NotNil(intent, "the two trails carry different traces and cannot be joined")
+
+	// And the join is worth making: the actor the data plane could not resolve
+	// is a row here.
+	x.Equal("/roster.TenantService/Add", intent.Action)
+	x.Equal(data.ActorID, intent.ActorID)
+
+	who, err := s.Control.Ent.Holder.Get(ctx, intent.ActorID)
+	x.NoError(err, "the operator does not resolve in the plane that recorded them")
+	x.Equal("ops", who.Alias)
 }

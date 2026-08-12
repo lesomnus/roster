@@ -50,6 +50,17 @@ type Config struct {
 	// until a control plane exists is an app nobody runs. So it is easy, and it
 	// is loud.
 	Control ControlConfig `yaml:"control"`
+
+	// Admin is where an operator administers **customers**: the data plane,
+	// with no wall, behind a session. Empty is nowhere.
+	//
+	// A third listener because it can be nothing else. The data plane's port is
+	// walled and an operator has no tenant there, so it shows them nothing; and
+	// the control plane's port already registers `roster.HolderService` over its
+	// own rows, so this cannot join it under the same name.
+	//
+	// Bind it where only a console reaches. It answers with no wall at all.
+	Admin config.ServerConfig `yaml:"admin"`
 }
 
 // ControlConfig is the second roster: the one holding keys rather than people.
