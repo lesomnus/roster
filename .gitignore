@@ -2,3 +2,9 @@
 dist/
 node_modules/
 *.db
+
+# The sandbox's build: the whole server compiled into the page, and the JS half
+# of the Go runtime that goes with it. Both come from `npm run wasm`, and the
+# second is version-coupled to whichever compiler built the first -- a
+# committed copy pins the wrong one.
+ts/public/

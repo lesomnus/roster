@@ -80,68 +80,103 @@ func NewCmdInit(c *Config) *xli.Command {
 			}
 			defer s.Close()
 
-			// The schema, so that a fresh database is one this can run against.
-			// A deployment with migrations of its own does that instead; see
-			// payday's `migrate`.
-			if err := s.Ent.Schema.Create(ctx); err != nil {
-				return err
-			}
-
-			t, err := s.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{
-				Alias: tenant,
-			}.Build())
-			if err != nil {
-				return fmt.Errorf("tenant %q: %w", tenant, err)
-			}
-
-			k, err := pdid.From(t.GetId())
+			v, err := Seed(ctx, s, tenant, holder, operator)
 			if err != nil {
 				return err
 			}
 
-			h, err := s.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{
-				Tenant: app.TenantRef_builder{Id: t.GetId()}.Build(),
-				Alias:  holder,
-			}.Build())
-			if err != nil {
-				return fmt.Errorf("holder %q: %w", holder, err)
-			}
-
-			j, err := pdid.From(h.GetId())
-			if err != nil {
-				return err
-			}
-
-			if err := allow(ctx, s, k, j); err != nil {
-				return fmt.Errorf("the first binding: %w", err)
-			}
-
-			cmd.Printf("tenant %s is %s\n", tenant, k)
-			cmd.Printf("holder %s is %s\n", holder, j)
+			cmd.Printf("tenant %s is %s\n", tenant, v.Tenant)
+			cmd.Printf("holder %s is %s\n", holder, v.Holder)
 			cmd.Printf("  bound to role %q = %s -- every RPC roster serves, now and after an upgrade\n", everything, everyRosterMethod)
 			cmd.Printf("\nsign in as: @%s/%s\n", tenant, holder)
 
-			if s.Control == nil {
+			if v.Operator == pdid.Nil {
 				cmd.Printf("\nno control plane is configured, so this deployment believes its callers.\n")
 				cmd.Printf("see docs/OPERATING.md before serving it anywhere.\n")
 
 				return nil
 			}
 
-			who, secret, err := seedOperator(ctx, s.Control, operator)
-			if err != nil {
-				return fmt.Errorf("operator %q: %w", operator, err)
-			}
-
 			cmd.Printf("\ncontrol plane\n")
-			cmd.Printf("  holder %s is %s\n", operator, who)
+			cmd.Printf("  holder %s is %s\n", operator, v.Operator)
 			cmd.Printf("  bound to role %q = %s\n", everything, everyRosterMethod)
-			cmd.Printf("  password  %s\n", secret)
+			cmd.Printf("  password  %s\n", v.Password)
 			cmd.Printf("\nthat password is shown once and is not stored. write it down now.\n")
 
 			return nil
 		}),
 	}
+}
+
+// Seeded is what a fresh deployment is: the two identifiers `init` prints, and
+// the operator it made in the control plane.
+//
+// `Operator` is [pdid.Nil] and `Password` is empty where there was no control
+// plane, which is a deployment that believes its callers and has no console.
+type Seeded struct {
+	Tenant   pdid.Id
+	Holder   pdid.Id
+	Operator pdid.Id
+
+	// Shown once and not stored. What is stored is an argon2id hash.
+	Password string
+}
+
+// Seed writes every row `init` writes, without the printing.
+//
+// Separate from the command because the command **is** the printing: what it
+// adds is telling somebody what was made, and the rows are the same wherever
+// they are wanted. The sandbox wants them and has no terminal to print a
+// generated password on; anything else that wanted a deployment somebody can
+// use would otherwise write these calls again and drift from them.
+func Seed(ctx context.Context, s *Server, tenant, holder, operator string) (Seeded, error) {
+	// The schema, so that a fresh database is one this can run against. A
+	// deployment with migrations of its own does that instead; see payday's
+	// `migrate`.
+	if err := s.Ent.Schema.Create(ctx); err != nil {
+		return Seeded{}, err
+	}
+
+	t, err := s.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{
+		Alias: tenant,
+	}.Build())
+	if err != nil {
+		return Seeded{}, fmt.Errorf("tenant %q: %w", tenant, err)
+	}
+
+	k, err := pdid.From(t.GetId())
+	if err != nil {
+		return Seeded{}, err
+	}
+
+	h, err := s.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{
+		Tenant: app.TenantRef_builder{Id: t.GetId()}.Build(),
+		Alias:  holder,
+	}.Build())
+	if err != nil {
+		return Seeded{}, fmt.Errorf("holder %q: %w", holder, err)
+	}
+
+	j, err := pdid.From(h.GetId())
+	if err != nil {
+		return Seeded{}, err
+	}
+
+	if err := allow(ctx, s, k, j); err != nil {
+		return Seeded{}, fmt.Errorf("the first binding: %w", err)
+	}
+
+	v := Seeded{Tenant: k, Holder: j}
+	if s.Control == nil {
+		return v, nil
+	}
+
+	v.Operator, v.Password, err = seedOperator(ctx, s.Control, operator)
+	if err != nil {
+		return Seeded{}, fmt.Errorf("operator %q: %w", operator, err)
+	}
+
+	return v, nil
 }
 
 // everything is what the first role is called, on both planes.

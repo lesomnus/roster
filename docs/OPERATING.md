@@ -91,6 +91,23 @@ person allowed to use it.
 
 ## The console
 
+```sh
+npm --prefix ts install
+npm --prefix ts run dev:sandbox    # no backend at all
+npm --prefix ts run dev            # against a running roster
+```
+
+`dev:sandbox` compiles the whole server into the page — `GOOS=js GOARCH=wasm`,
+SQLite in a Worker, a message port instead of HTTP/2. A reload is a fresh
+deployment: two new databases, `roster init` run again, nothing left over. It
+signs in as `ops` with the password `sandbox`.
+
+The password is checked there by the same `vouch`, so a wrong one is refused —
+but the **cookie** cannot work over a message port, and the server behind it is
+`auth.Plain`, so nothing after the sign-in is checking a session. That is a
+sandbox being a sandbox; see `wasm/main.go`.
+
+
 An **operator** signs in: a holder of the control plane, which is where the
 people who run this deployment live. `roster init` makes the first one and
 prints their password once.

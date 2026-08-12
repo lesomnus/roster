@@ -213,6 +213,21 @@ func (i issuer) IssuePassword(ctx context.Context, req *app.IssuePasswordRequest
 	return app.IssuePasswordResponse_builder{Password: secret}.Build(), nil
 }
 
+// SetPassword writes somebody's password, hashed by the service that checks it.
+//
+// Exported for the sandbox, which needs one somebody can type: `roster init`
+// generates one and prints it, which is right where there is a terminal and
+// useless in a page. It is not for a deployment -- a password chosen by
+// anything but the person is one somebody else knows.
+func SetPassword(ctx context.Context, s app.Server, who pdid.Id, secret string) error {
+	_, err := vouch.New(s, s).Set(ctx, app.VouchSetRequest_builder{
+		Who:    app.VouchWho_builder{Id: who.Bytes()}.Build(),
+		Secret: []byte(secret),
+	}.Build())
+
+	return err
+}
+
 // holder is somebody of this plane's one tenant, made if they are not there.
 //
 // Made rather than refused, for the reason `roster key add` gives: naming a

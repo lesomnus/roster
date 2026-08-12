@@ -9,7 +9,7 @@
  * @module
  */
 
-import { createClient } from '@connectrpc/connect'
+import { createClient, type Client, type Transport } from '@connectrpc/connect'
 import { createConnectTransport } from '@connectrpc/connect-web'
 import { StrictMode, useState } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -41,14 +41,29 @@ const root = createRoot(document.getElementById('root') as HTMLElement)
  * The transport, and the only thing that changes between a real server and a
  * sandbox.
  *
- * `credentials: 'include'` on every call, or the browser neither receives the
- * cookie a sign-in sets nor sends it back — a login that works in `curl` and
- * does nothing here, with no error anywhere.
+ * `npm run dev:sandbox` compiles the whole server into the page: a reload is a
+ * fresh deployment, no backend to start, nothing to migrate. Everything above
+ * this line is transport-blind, which is what makes the sandbox worth having --
+ * code that only ever ran against a fake is code that has never run.
+ *
+ * `credentials: 'include'` on every real call, or the browser neither receives
+ * the cookie a sign-in sets nor sends it back — a login that works in `curl`
+ * and does nothing here, with no error anywhere. The sandbox needs none of it;
+ * see `sandbox.ts` for why the cookie cannot work over a message port and why
+ * nothing above notices.
  */
-const transport = createConnectTransport({
-	baseUrl: ADDR,
-	fetch: (input, init) => fetch(input, { ...init, credentials: 'include' }),
-})
+async function connect(): Promise<Transport> {
+	if (import.meta.env['VITE_SANDBOX'] === undefined) {
+		return createConnectTransport({
+			baseUrl: ADDR,
+			fetch: (input, init) => fetch(input, { ...init, credentials: 'include' }),
+		})
+	}
+
+	const { start } = await import('./sandbox.js')
+
+	return (await start()).transport
+}
 
 /**
  * Signing in is an **RPC**, like everything else this app offers.
@@ -61,7 +76,7 @@ const transport = createConnectTransport({
  * sends and never shows this page — script that can read one is script that can
  * send it somewhere else.
  */
-const auth = createClient(AuthService, transport)
+let auth: Client<typeof AuthService>
 
 function SignIn(props: { onDone: () => void }): React.ReactNode {
 	const [bad, setBad] = useState(false)
@@ -106,7 +121,7 @@ function SignIn(props: { onDone: () => void }): React.ReactNode {
 	)
 }
 
-async function boot(): Promise<void> {
+async function boot(transport: Transport): Promise<void> {
 	// Opened per **session** rather than per credential, because this page holds
 	// none: what it would key on is who the server says the caller is, and that
 	// is a call away.
@@ -125,7 +140,7 @@ async function boot(): Promise<void> {
 		void auth.signOut({}).finally(() => {
 			app.store.forget()
 			app.store.close()
-			start()
+			start(transport)
 		})
 	}
 
@@ -138,12 +153,15 @@ async function boot(): Promise<void> {
 	)
 }
 
-function start(): void {
+function start(transport: Transport): void {
 	root.render(
 		<StrictMode>
-			<SignIn onDone={() => void boot()} />
+			<SignIn onDone={() => void boot(transport)} />
 		</StrictMode>,
 	)
 }
 
-start()
+void connect().then((transport) => {
+	auth = createClient(AuthService, transport)
+	start(transport)
+})
