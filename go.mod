@@ -27,14 +27,17 @@ tool (
 require (
 	entgo.io/ent v0.14.6
 	github.com/google/uuid v1.6.0
+	github.com/lesomnus/grpc-dgram v0.0.0-20260808164022-d993065403e1
 	github.com/lesomnus/otx v0.0.0-20260807173743-977a5687d6ba
-	github.com/lesomnus/payday v0.0.0-20260812120930-161847746f4b
+	github.com/lesomnus/payday v0.0.0-20260812203639-5cd093616310
 	github.com/lesomnus/protobuf-patch v0.0.0-20260803175157-e1b7a0c2804f
 	github.com/lesomnus/xli v0.0.0-20260717171524-bf8cac633057
 	github.com/lesomnus/z v0.0.0-20260531102454-3f1853bb4278
 	github.com/protobuf-orm/protobuf-orm v0.0.0-20260807003431-ce1156ba9f29
 	github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20260810164648-915f5f574429
 	github.com/stretchr/testify v1.11.1
+	go.opentelemetry.io/otel/trace v1.45.0
+	golang.org/x/crypto v0.54.0
 	golang.org/x/sync v0.22.0
 	google.golang.org/grpc v1.83.0
 	google.golang.org/protobuf v1.36.12
@@ -67,7 +70,6 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/pgx/v5 v5.10.0 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
-	github.com/lesomnus/grpc-dgram v0.0.0-20260808164022-d993065403e1 // indirect
 	github.com/lesomnus/mkot v0.0.0-20260801183340-9c83100aa7c2 // indirect
 	github.com/lesomnus/mkot/mkotx v0.0.0-20260801183340-9c83100aa7c2 // indirect
 	github.com/lesomnus/mkot/pretty v0.0.0-20260801183340-9c83100aa7c2 // indirect
@@ -105,8 +107,6 @@ require (
 	go.opentelemetry.io/otel/sdk v1.44.0 // indirect
 	go.opentelemetry.io/otel/sdk/log v0.20.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.44.0 // indirect
-	go.opentelemetry.io/otel/trace v1.45.0 // indirect
-	golang.org/x/crypto v0.54.0 // indirect
 	golang.org/x/exp v0.0.0-20250911091902-df9299821621 // indirect
 	golang.org/x/mod v0.37.0 // indirect
 	golang.org/x/net v0.57.0 // indirect
