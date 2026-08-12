@@ -11,6 +11,7 @@ import (
 	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	anypb "google.golang.org/protobuf/types/known/anypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	unsafe "unsafe"
@@ -45,6 +46,7 @@ type Holder struct {
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	xxx_hidden_IdpSubject  string                 `protobuf:"bytes,8,opt,name=idp_subject,json=idpSubject"`
 	xxx_hidden_Profile     *Profile               `protobuf:"bytes,9,opt,name=profile"`
+	xxx_hidden_Data        *anypb.Any             `protobuf:"bytes,10,opt,name=data"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -151,6 +153,13 @@ func (x *Holder) GetProfile() *Profile {
 	return nil
 }
 
+func (x *Holder) GetData() *anypb.Any {
+	if x != nil {
+		return x.xxx_hidden_Data
+	}
+	return nil
+}
+
 func (x *Holder) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -198,6 +207,10 @@ func (x *Holder) SetProfile(v *Profile) {
 	x.xxx_hidden_Profile = v
 }
 
+func (x *Holder) SetData(v *anypb.Any) {
+	x.xxx_hidden_Data = v
+}
+
 func (x *Holder) HasTenant() bool {
 	if x == nil {
 		return false
@@ -233,6 +246,13 @@ func (x *Holder) HasProfile() bool {
 	return x.xxx_hidden_Profile != nil
 }
 
+func (x *Holder) HasData() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Data != nil
+}
+
 func (x *Holder) ClearTenant() {
 	x.xxx_hidden_Tenant = nil
 }
@@ -251,6 +271,10 @@ func (x *Holder) ClearDateCreated() {
 
 func (x *Holder) ClearProfile() {
 	x.xxx_hidden_Profile = nil
+}
+
+func (x *Holder) ClearData() {
+	x.xxx_hidden_Data = nil
 }
 
 type Holder_builder struct {
@@ -310,6 +334,33 @@ type Holder_builder struct {
 	// they have a screen to draw, cached for a minute or two -- which is the same
 	// reason it is not in the token: a profile changes and a token does not.
 	Profile *Profile
+	// Whatever the app that put it here keeps about this holder, and roster does
+	// not read it.
+	//
+	// # Why it is opaque and `Profile` is not
+	//
+	// They answer different questions. `Profile` is what a **person** is called,
+	// in this app's vocabulary, readable by everything that draws a screen and
+	// mappable onto OIDC's standard claims -- which is the whole reason it is
+	// here rather than in an identity provider: *the metadata is ours, and the
+	// schema has to be ours to change*.
+	//
+	// This is not that. A robot arrives with a serial number, a `Holder` is
+	// whoever a request is from, and there is no reason roster should have an
+	// opinion about what a robot is. It carries its own type, so whoever reads it
+	// knows what they got; whoever cannot resolve the type reads nothing, which
+	// is a graceful thing for a field roster was never going to interpret.
+	//
+	// # What it costs, and it is the same cost `Profile` pays
+	//
+	// One value to the database -- no filter, no index. Anything that has to be
+	// **looked up** goes flat beside it, which is the rule `Profile` already
+	// states and the reason [Identity] exists.
+	//
+	// How two apps writing here avoid each other is not roster's question. It is
+	// one slot on a row, and who writes to it is a decision a deployment makes
+	// the way it decides who may call anything else.
+	Data *anypb.Any
 }
 
 func (b0 Holder_builder) Build() *Holder {
@@ -327,6 +378,7 @@ func (b0 Holder_builder) Build() *Holder {
 	x.xxx_hidden_DateCreated = b.DateCreated
 	x.xxx_hidden_IdpSubject = b.IdpSubject
 	x.xxx_hidden_Profile = b.Profile
+	x.xxx_hidden_Data = b.Data
 	return m0
 }
 
@@ -459,7 +511,7 @@ var File_roster_payday_holder_proto protoreflect.FileDescriptor
 
 const file_roster_payday_holder_proto_rawDesc = "" +
 	"\n" +
-	"\x1aroster/payday/holder.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x1aroster/payday/tenant.proto\"\x8c\x05\n" +
+	"\x1aroster/payday/holder.proto\x12\x06roster\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x1aroster/payday/tenant.proto\"\xb6\x05\n" +
 	"\x06Holder\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x14\n" +
@@ -473,7 +525,9 @@ const file_roster_payday_holder_proto_rawDesc = "" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x12)\n" +
 	"\vidp_subject\x18\b \x01(\tB\b\xea\x82\x16\x040\x018\x01R\n" +
 	"idpSubject\x12)\n" +
-	"\aprofile\x18\t \x01(\v2\x0f.roster.ProfileR\aprofile\x1a9\n" +
+	"\aprofile\x18\t \x01(\v2\x0f.roster.ProfileR\aprofile\x12(\n" +
+	"\x04data\x18\n" +
+	" \x01(\v2\x14.google.protobuf.AnyR\x04data\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:Z\xca\xfc\x15%\x12\x02\x10\x01\x1a\x1f\x12\x04slug\x1a\t\n" +
@@ -504,6 +558,7 @@ var file_roster_payday_holder_proto_goTypes = []any{
 	nil,                           // 2: roster.Holder.LabelsEntry
 	(*Tenant)(nil),                // 3: roster.Tenant
 	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
+	(*anypb.Any)(nil),             // 5: google.protobuf.Any
 }
 var file_roster_payday_holder_proto_depIdxs = []int32{
 	3, // 0: roster.Holder.tenant:type_name -> roster.Tenant
@@ -512,11 +567,12 @@ var file_roster_payday_holder_proto_depIdxs = []int32{
 	4, // 3: roster.Holder.date_erased:type_name -> google.protobuf.Timestamp
 	4, // 4: roster.Holder.date_created:type_name -> google.protobuf.Timestamp
 	1, // 5: roster.Holder.profile:type_name -> roster.Profile
-	6, // [6:6] is the sub-list for method output_type
-	6, // [6:6] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	5, // 6: roster.Holder.data:type_name -> google.protobuf.Any
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_roster_payday_holder_proto_init() }

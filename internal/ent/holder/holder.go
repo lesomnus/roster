@@ -7,6 +7,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/lesomnus/roster/rstr"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 const (
@@ -32,6 +33,8 @@ const (
 	FieldIdpSubject = "idp_subject"
 	// FieldProfile holds the string denoting the profile field in the database.
 	FieldProfile = "profile"
+	// FieldData holds the string denoting the data field in the database.
+	FieldData = "data"
 	// FieldTenantID holds the string denoting the tenant_id field in the database.
 	FieldTenantID = "tenant_id"
 	// EdgeTenant holds the string denoting the tenant edge name in mutations.
@@ -59,6 +62,7 @@ var Columns = []string{
 	FieldDateCreated,
 	FieldIdpSubject,
 	FieldProfile,
+	FieldData,
 	FieldTenantID,
 }
 
@@ -76,6 +80,7 @@ var (
 	// ValueScanner of all Holder fields.
 	ValueScanner struct {
 		Profile field.TypeValueScanner[*rstr.Profile]
+		Data    field.TypeValueScanner[*anypb.Any]
 	}
 )
 
@@ -125,6 +130,11 @@ func ByIdpSubject(opts ...sql.OrderTermOption) OrderOption {
 // ByProfile orders the results by the profile field.
 func ByProfile(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldProfile, opts...).ToFunc()
+}
+
+// ByData orders the results by the data field.
+func ByData(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldData, opts...).ToFunc()
 }
 
 // ByTenantID orders the results by the tenant_id field.

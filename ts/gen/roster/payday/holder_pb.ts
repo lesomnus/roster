@@ -5,8 +5,8 @@
 
 import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
-import type { Timestamp } from "@bufbuild/protobuf/wkt";
-import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
+import type { Any, Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_any, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_orm } from "../../orm_pb.js";
 import { file_payday } from "../../payday_pb.js";
 import type { Tenant } from "./tenant_pb.js";
@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/holder.proto.
  */
 export const file_roster_payday_holder: GenFile = /*@__PURE__*/
-  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L2hvbGRlci5wcm90bxIGcm9zdGVyIp4ECgZIb2xkZXISFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBGRlc2MYBiABKAkSKgoGbGFiZWxzGAcgAygLMhoucm9zdGVyLkhvbGRlci5MYWJlbHNFbnRyeRI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASHQoLaWRwX3N1YmplY3QYCCABKAlCCOqCFgQwATgBEiAKB3Byb2ZpbGUYCSABKAsyDy5yb3N0ZXIuUHJvZmlsZRotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOlrK/BUlEgIQARofEgRzbHVnGgkKBWFsaWFzEAQaCgoGdGVuYW50EAIwAYq7Fi0IAjIlChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmIBQoZDoASAIiaQoHUHJvZmlsZRIUCgxkaXNwbGF5X25hbWUYASABKAkSDwoHcGljdHVyZRgCIAEoCRISCgpkZXBhcnRtZW50GAMgASgJEhMKC2VtcGxveWVlX25vGAQgASgJEg4KBmxvY2FsZRgFIAEoCUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp, file_orm, file_payday, file_roster_payday_tenant]);
+  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L2hvbGRlci5wcm90bxIGcm9zdGVyIsIECgZIb2xkZXISFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBGRlc2MYBiABKAkSKgoGbGFiZWxzGAcgAygLMhoucm9zdGVyLkhvbGRlci5MYWJlbHNFbnRyeRI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASHQoLaWRwX3N1YmplY3QYCCABKAlCCOqCFgQwATgBEiAKB3Byb2ZpbGUYCSABKAsyDy5yb3N0ZXIuUHJvZmlsZRIiCgRkYXRhGAogASgLMhQuZ29vZ2xlLnByb3RvYnVmLkFueRotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOlrK/BUlEgIQARofEgRzbHVnGgkKBWFsaWFzEAQaCgoGdGVuYW50EAIwAYq7Fi0IAjIlChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmIBQoZDoASAIiaQoHUHJvZmlsZRIUCgxkaXNwbGF5X25hbWUYASABKAkSDwoHcGljdHVyZRgCIAEoCRISCgpkZXBhcnRtZW50GAMgASgJEhMKC2VtcGxveWVlX25vGAQgASgJEg4KBmxvY2FsZRgFIAEoCUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_any, file_google_protobuf_timestamp, file_orm, file_payday, file_roster_payday_tenant]);
 
 /**
  * Holder is who a request is from.
@@ -136,6 +136,38 @@ export type Holder = Message<"roster.Holder"> & {
    * @generated from field: roster.Profile profile = 9;
    */
   profile?: Profile | undefined;
+
+  /**
+   * Whatever the app that put it here keeps about this holder, and roster does
+   * not read it.
+   *
+   * # Why it is opaque and `Profile` is not
+   *
+   * They answer different questions. `Profile` is what a **person** is called,
+   * in this app's vocabulary, readable by everything that draws a screen and
+   * mappable onto OIDC's standard claims -- which is the whole reason it is
+   * here rather than in an identity provider: *the metadata is ours, and the
+   * schema has to be ours to change*.
+   *
+   * This is not that. A robot arrives with a serial number, a `Holder` is
+   * whoever a request is from, and there is no reason roster should have an
+   * opinion about what a robot is. It carries its own type, so whoever reads it
+   * knows what they got; whoever cannot resolve the type reads nothing, which
+   * is a graceful thing for a field roster was never going to interpret.
+   *
+   * # What it costs, and it is the same cost `Profile` pays
+   *
+   * One value to the database -- no filter, no index. Anything that has to be
+   * **looked up** goes flat beside it, which is the rule `Profile` already
+   * states and the reason [Identity] exists.
+   *
+   * How two apps writing here avoid each other is not roster's question. It is
+   * one slot on a row, and who writes to it is a decision a deployment makes
+   * the way it decides who may call anything else.
+   *
+   * @generated from field: google.protobuf.Any data = 10;
+   */
+  data?: Any | undefined;
 };
 
 /**

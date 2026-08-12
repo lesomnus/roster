@@ -1,0 +1,49 @@
+edition = "2023";
+
+package roster;
+
+import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
+import "roster/payday/holder.proto";
+
+
+// What this app adds to the generated contract for `Holder`.
+//
+// An overlay may only **add**. Generation refuses one that redeclares
+// something payday generated, for the reason the entity overlays are refused:
+// the merge would take the overlay's word.
+service HolderService {
+  // Update is the narrow write, and the one a caller is given.
+  //
+  // `Patch` and `Apply` write anything the schema holds, which is why they are
+  // closed at the transport unless a deployment says otherwise -- *what a
+  // caller may change, and under what conditions, is not something a general
+  // write can be told*.
+  //
+  // This can be told. Two fields, both of them things a holder carries about
+  // itself and neither of them anything the wall, the trail or a permission
+  // reads: what a person is called, and whatever the app that put it there
+  // keeps. Nothing here can move somebody between tenants, rename them into
+  // somebody else's alias, or change what they may do.
+  //
+  // It is on `HolderService` rather than in a service of its own because it is
+  // a write on a holder, and a second service would be one more name for the
+  // same rows. The overlay mechanism exists for exactly this and nothing had
+  // used it.
+  rpc Update(HolderUpdateRequest) returns (Holder);
+}
+
+message HolderUpdateRequest {
+  HolderRef ref = 1;
+
+  // Optimistic locking, as `Patch` takes it: the version this caller read. A
+  // write against a row that has moved is refused rather than applied to
+  // whatever it became.
+  google.protobuf.Timestamp date_updated = 13;
+
+  // Replaced **whole**, both of them, which is the shape each was chosen for:
+  // one fact from one moment, whatever last told us. Sending neither changes
+  // neither.
+  Profile profile = 9;
+  google.protobuf.Any data = 10;
+}

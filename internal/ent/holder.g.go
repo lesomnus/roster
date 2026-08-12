@@ -34,5 +34,8 @@ func (e *Holder) Proto() *rstr.Holder {
 	if e.Profile != nil {
 		x.SetProfile(e.Profile)
 	}
+	if e.Data != nil {
+		x.SetData(e.Data)
+	}
 	return x
 }

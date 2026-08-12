@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/predicate"
 	"github.com/lesomnus/roster/rstr"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // ID filters vertices based on their ID field.
@@ -97,6 +98,12 @@ func IdpSubject(v string) predicate.Holder {
 func Profile(v *rstr.Profile) predicate.Holder {
 	vc, err := ValueScanner.Profile.Value(v)
 	return predicate.HolderOrErr(sql.FieldEQ(FieldProfile, vc), err)
+}
+
+// Data applies equality check predicate on the "data" field. It's identical to DataEQ.
+func Data(v *anypb.Any) predicate.Holder {
+	vc, err := ValueScanner.Data.Value(v)
+	return predicate.HolderOrErr(sql.FieldEQ(FieldData, vc), err)
 }
 
 // TenantID applies equality check predicate on the "tenant_id" field. It's identical to TenantIDEQ.
@@ -646,6 +653,130 @@ func ProfileContainsFold(v *rstr.Profile) predicate.Holder {
 		err = fmt.Errorf("profile value is not a string: %T", vc)
 	}
 	return predicate.HolderOrErr(sql.FieldContainsFold(FieldProfile, vcs), err)
+}
+
+// DataEQ applies the EQ predicate on the "data" field.
+func DataEQ(v *anypb.Any) predicate.Holder {
+	vc, err := ValueScanner.Data.Value(v)
+	return predicate.HolderOrErr(sql.FieldEQ(FieldData, vc), err)
+}
+
+// DataNEQ applies the NEQ predicate on the "data" field.
+func DataNEQ(v *anypb.Any) predicate.Holder {
+	vc, err := ValueScanner.Data.Value(v)
+	return predicate.HolderOrErr(sql.FieldNEQ(FieldData, vc), err)
+}
+
+// DataIn applies the In predicate on the "data" field.
+func DataIn(vs ...*anypb.Any) predicate.Holder {
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.Data.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.HolderOrErr(sql.FieldIn(FieldData, v...), err)
+}
+
+// DataNotIn applies the NotIn predicate on the "data" field.
+func DataNotIn(vs ...*anypb.Any) predicate.Holder {
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.Data.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.HolderOrErr(sql.FieldNotIn(FieldData, v...), err)
+}
+
+// DataGT applies the GT predicate on the "data" field.
+func DataGT(v *anypb.Any) predicate.Holder {
+	vc, err := ValueScanner.Data.Value(v)
+	return predicate.HolderOrErr(sql.FieldGT(FieldData, vc), err)
+}
+
+// DataGTE applies the GTE predicate on the "data" field.
+func DataGTE(v *anypb.Any) predicate.Holder {
+	vc, err := ValueScanner.Data.Value(v)
+	return predicate.HolderOrErr(sql.FieldGTE(FieldData, vc), err)
+}
+
+// DataLT applies the LT predicate on the "data" field.
+func DataLT(v *anypb.Any) predicate.Holder {
+	vc, err := ValueScanner.Data.Value(v)
+	return predicate.HolderOrErr(sql.FieldLT(FieldData, vc), err)
+}
+
+// DataLTE applies the LTE predicate on the "data" field.
+func DataLTE(v *anypb.Any) predicate.Holder {
+	vc, err := ValueScanner.Data.Value(v)
+	return predicate.HolderOrErr(sql.FieldLTE(FieldData, vc), err)
+}
+
+// DataContains applies the Contains predicate on the "data" field.
+func DataContains(v *anypb.Any) predicate.Holder {
+	vc, err := ValueScanner.Data.Value(v)
+	vcs, ok := vc.(string)
+	if err == nil && !ok {
+		err = fmt.Errorf("data value is not a string: %T", vc)
+	}
+	return predicate.HolderOrErr(sql.FieldContains(FieldData, vcs), err)
+}
+
+// DataHasPrefix applies the HasPrefix predicate on the "data" field.
+func DataHasPrefix(v *anypb.Any) predicate.Holder {
+	vc, err := ValueScanner.Data.Value(v)
+	vcs, ok := vc.(string)
+	if err == nil && !ok {
+		err = fmt.Errorf("data value is not a string: %T", vc)
+	}
+	return predicate.HolderOrErr(sql.FieldHasPrefix(FieldData, vcs), err)
+}
+
+// DataHasSuffix applies the HasSuffix predicate on the "data" field.
+func DataHasSuffix(v *anypb.Any) predicate.Holder {
+	vc, err := ValueScanner.Data.Value(v)
+	vcs, ok := vc.(string)
+	if err == nil && !ok {
+		err = fmt.Errorf("data value is not a string: %T", vc)
+	}
+	return predicate.HolderOrErr(sql.FieldHasSuffix(FieldData, vcs), err)
+}
+
+// DataIsNil applies the IsNil predicate on the "data" field.
+func DataIsNil() predicate.Holder {
+	return predicate.Holder(sql.FieldIsNull(FieldData))
+}
+
+// DataNotNil applies the NotNil predicate on the "data" field.
+func DataNotNil() predicate.Holder {
+	return predicate.Holder(sql.FieldNotNull(FieldData))
+}
+
+// DataEqualFold applies the EqualFold predicate on the "data" field.
+func DataEqualFold(v *anypb.Any) predicate.Holder {
+	vc, err := ValueScanner.Data.Value(v)
+	vcs, ok := vc.(string)
+	if err == nil && !ok {
+		err = fmt.Errorf("data value is not a string: %T", vc)
+	}
+	return predicate.HolderOrErr(sql.FieldEqualFold(FieldData, vcs), err)
+}
+
+// DataContainsFold applies the ContainsFold predicate on the "data" field.
+func DataContainsFold(v *anypb.Any) predicate.Holder {
+	vc, err := ValueScanner.Data.Value(v)
+	vcs, ok := vc.(string)
+	if err == nil && !ok {
+		err = fmt.Errorf("data value is not a string: %T", vc)
+	}
+	return predicate.HolderOrErr(sql.FieldContainsFold(FieldData, vcs), err)
 }
 
 // TenantIDEQ applies the EQ predicate on the "tenant_id" field.

@@ -1,6 +1,7 @@
 edition = "2023";
 package roster;
 
+import "google/protobuf/any.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "patch/patch.proto";
@@ -34,6 +35,24 @@ service HolderService {
   // once in that first message and once as a change that happened while it was
   // being read -- and that is harmless for the same reason.
   rpc Watch(HolderWatchRequest) returns (stream HolderWatchResponse);
+  // Update is the narrow write, and the one a caller is given.
+  //
+  // `Patch` and `Apply` write anything the schema holds, which is why they are
+  // closed at the transport unless a deployment says otherwise -- *what a
+  // caller may change, and under what conditions, is not something a general
+  // write can be told*.
+  //
+  // This can be told. Two fields, both of them things a holder carries about
+  // itself and neither of them anything the wall, the trail or a permission
+  // reads: what a person is called, and whatever the app that put it there
+  // keeps. Nothing here can move somebody between tenants, rename them into
+  // somebody else's alias, or change what they may do.
+  //
+  // It is on `HolderService` rather than in a service of its own because it is
+  // a write on a holder, and a second service would be one more name for the
+  // same rows. The overlay mechanism exists for exactly this and nothing had
+  // used it.
+  rpc Update(HolderUpdateRequest) returns (Holder);
 }
 
 message HolderAddRequest {
@@ -46,6 +65,7 @@ message HolderAddRequest {
   google.protobuf.Timestamp date_created = 15;
   string idp_subject = 8;
   Profile profile = 9;
+  google.protobuf.Any data = 10;
 }
 
 message HolderGetRequest {
@@ -78,6 +98,7 @@ message HolderSelect {
   bool date_created = 15;
   bool idp_subject = 8;
   bool profile = 9;
+  bool data = 10;
 }
 
 message HolderPatchRequest {
@@ -112,6 +133,12 @@ message HolderPatchRequest {
   // "leave it alone", so no value could have meant NULL. It wins
   // outright: setting both this and profile clears.
   bool profile_null = 19;
+  google.protobuf.Any data = 20;
+  // Clear data instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and data clears.
+  bool data_null = 21;
 }
 
 message HolderApplyRequest {
@@ -199,4 +226,19 @@ message HolderWatchItem {
   // Empty in the first message, which is not something anybody asked for -- it
   // is what is already there.
   string action = 3 [features.field_presence = IMPLICIT];
+}
+
+message HolderUpdateRequest {
+  HolderRef ref = 1;
+
+  // Optimistic locking, as `Patch` takes it: the version this caller read. A
+  // write against a row that has moved is refused rather than applied to
+  // whatever it became.
+  google.protobuf.Timestamp date_updated = 13;
+
+  // Replaced **whole**, both of them, which is the shape each was chosen for:
+  // one fact from one moment, whatever last told us. Sending neither changes
+  // neither.
+  Profile profile = 9;
+  google.protobuf.Any data = 10;
 }

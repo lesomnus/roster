@@ -6,6 +6,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/schema"
 	"github.com/lesomnus/roster/rstr"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	"entgo.io/ent/schema/field"
 )
@@ -19,4 +20,7 @@ func init() {
 	// holderDescProfile is the schema descriptor for profile field.
 	holderDescProfile := holderFields[9].Descriptor()
 	holder.ValueScanner.Profile = holderDescProfile.ValueScanner.(field.TypeValueScanner[*rstr.Profile])
+	// holderDescData is the schema descriptor for data field.
+	holderDescData := holderFields[10].Descriptor()
+	holder.ValueScanner.Data = holderDescData.ValueScanner.(field.TypeValueScanner[*anypb.Any])
 }

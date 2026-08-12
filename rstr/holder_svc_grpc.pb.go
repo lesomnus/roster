@@ -20,13 +20,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	HolderService_Add_FullMethodName   = "/roster.HolderService/Add"
-	HolderService_Get_FullMethodName   = "/roster.HolderService/Get"
-	HolderService_Patch_FullMethodName = "/roster.HolderService/Patch"
-	HolderService_Apply_FullMethodName = "/roster.HolderService/Apply"
-	HolderService_Erase_FullMethodName = "/roster.HolderService/Erase"
-	HolderService_List_FullMethodName  = "/roster.HolderService/List"
-	HolderService_Watch_FullMethodName = "/roster.HolderService/Watch"
+	HolderService_Add_FullMethodName    = "/roster.HolderService/Add"
+	HolderService_Get_FullMethodName    = "/roster.HolderService/Get"
+	HolderService_Patch_FullMethodName  = "/roster.HolderService/Patch"
+	HolderService_Apply_FullMethodName  = "/roster.HolderService/Apply"
+	HolderService_Erase_FullMethodName  = "/roster.HolderService/Erase"
+	HolderService_List_FullMethodName   = "/roster.HolderService/List"
+	HolderService_Watch_FullMethodName  = "/roster.HolderService/Watch"
+	HolderService_Update_FullMethodName = "/roster.HolderService/Update"
 )
 
 // HolderServiceClient is the client API for HolderService service.
@@ -57,6 +58,24 @@ type HolderServiceClient interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(ctx context.Context, in *HolderWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[HolderWatchResponse], error)
+	// Update is the narrow write, and the one a caller is given.
+	//
+	// `Patch` and `Apply` write anything the schema holds, which is why they are
+	// closed at the transport unless a deployment says otherwise -- *what a
+	// caller may change, and under what conditions, is not something a general
+	// write can be told*.
+	//
+	// This can be told. Two fields, both of them things a holder carries about
+	// itself and neither of them anything the wall, the trail or a permission
+	// reads: what a person is called, and whatever the app that put it there
+	// keeps. Nothing here can move somebody between tenants, rename them into
+	// somebody else's alias, or change what they may do.
+	//
+	// It is on `HolderService` rather than in a service of its own because it is
+	// a write on a holder, and a second service would be one more name for the
+	// same rows. The overlay mechanism exists for exactly this and nothing had
+	// used it.
+	Update(ctx context.Context, in *HolderUpdateRequest, opts ...grpc.CallOption) (*Holder, error)
 }
 
 type holderServiceClient struct {
@@ -146,6 +165,16 @@ func (c *holderServiceClient) Watch(ctx context.Context, in *HolderWatchRequest,
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type HolderService_WatchClient = grpc.ServerStreamingClient[HolderWatchResponse]
 
+func (c *holderServiceClient) Update(ctx context.Context, in *HolderUpdateRequest, opts ...grpc.CallOption) (*Holder, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Holder)
+	err := c.cc.Invoke(ctx, HolderService_Update_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // HolderServiceServer is the server API for HolderService service.
 // All implementations must embed UnimplementedHolderServiceServer
 // for forward compatibility.
@@ -174,6 +203,24 @@ type HolderServiceServer interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(*HolderWatchRequest, grpc.ServerStreamingServer[HolderWatchResponse]) error
+	// Update is the narrow write, and the one a caller is given.
+	//
+	// `Patch` and `Apply` write anything the schema holds, which is why they are
+	// closed at the transport unless a deployment says otherwise -- *what a
+	// caller may change, and under what conditions, is not something a general
+	// write can be told*.
+	//
+	// This can be told. Two fields, both of them things a holder carries about
+	// itself and neither of them anything the wall, the trail or a permission
+	// reads: what a person is called, and whatever the app that put it there
+	// keeps. Nothing here can move somebody between tenants, rename them into
+	// somebody else's alias, or change what they may do.
+	//
+	// It is on `HolderService` rather than in a service of its own because it is
+	// a write on a holder, and a second service would be one more name for the
+	// same rows. The overlay mechanism exists for exactly this and nothing had
+	// used it.
+	Update(context.Context, *HolderUpdateRequest) (*Holder, error)
 	mustEmbedUnimplementedHolderServiceServer()
 }
 
@@ -204,6 +251,9 @@ func (UnimplementedHolderServiceServer) List(context.Context, *HolderListRequest
 }
 func (UnimplementedHolderServiceServer) Watch(*HolderWatchRequest, grpc.ServerStreamingServer[HolderWatchResponse]) error {
 	return status.Error(codes.Unimplemented, "method Watch not implemented")
+}
+func (UnimplementedHolderServiceServer) Update(context.Context, *HolderUpdateRequest) (*Holder, error) {
+	return nil, status.Error(codes.Unimplemented, "method Update not implemented")
 }
 func (UnimplementedHolderServiceServer) mustEmbedUnimplementedHolderServiceServer() {}
 func (UnimplementedHolderServiceServer) testEmbeddedByValue()                       {}
@@ -345,6 +395,24 @@ func _HolderService_Watch_Handler(srv interface{}, stream grpc.ServerStream) err
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type HolderService_WatchServer = grpc.ServerStreamingServer[HolderWatchResponse]
 
+func _HolderService_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HolderUpdateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HolderServiceServer).Update(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HolderService_Update_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HolderServiceServer).Update(ctx, req.(*HolderUpdateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // HolderService_ServiceDesc is the grpc.ServiceDesc for HolderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -375,6 +443,10 @@ var HolderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _HolderService_List_Handler,
+		},
+		{
+			MethodName: "Update",
+			Handler:    _HolderService_Update_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

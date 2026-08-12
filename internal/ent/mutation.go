@@ -30,6 +30,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/teammembership"
 	"github.com/lesomnus/roster/internal/ent/tenant"
 	"github.com/lesomnus/roster/rstr"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 const (
@@ -6120,6 +6121,7 @@ type HolderMutation struct {
 	date_created  *time.Time
 	idp_subject   *string
 	profile       **rstr.Profile
+	data          **anypb.Any
 	clearedFields map[string]struct{}
 	tenant        *uuid.UUID
 	clearedtenant bool
@@ -6621,6 +6623,55 @@ func (m *HolderMutation) ResetProfile() {
 	delete(m.clearedFields, holder.FieldProfile)
 }
 
+// SetData sets the "data" field.
+func (m *HolderMutation) SetData(a *anypb.Any) {
+	m.data = &a
+}
+
+// Data returns the value of the "data" field in the mutation.
+func (m *HolderMutation) Data() (r *anypb.Any, exists bool) {
+	v := m.data
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldData returns the old "data" field's value of the Holder entity.
+// If the Holder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HolderMutation) OldData(ctx context.Context) (v *anypb.Any, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldData is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldData requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldData: %w", err)
+	}
+	return oldValue.Data, nil
+}
+
+// ClearData clears the value of the "data" field.
+func (m *HolderMutation) ClearData() {
+	m.data = nil
+	m.clearedFields[holder.FieldData] = struct{}{}
+}
+
+// DataCleared returns if the "data" field was cleared in this mutation.
+func (m *HolderMutation) DataCleared() bool {
+	_, ok := m.clearedFields[holder.FieldData]
+	return ok
+}
+
+// ResetData resets all changes to the "data" field.
+func (m *HolderMutation) ResetData() {
+	m.data = nil
+	delete(m.clearedFields, holder.FieldData)
+}
+
 // SetTenantID sets the "tenant_id" field.
 func (m *HolderMutation) SetTenantID(u uuid.UUID) {
 	m.tenant = &u
@@ -6718,7 +6769,7 @@ func (m *HolderMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *HolderMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m.alias != nil {
 		fields = append(fields, holder.FieldAlias)
 	}
@@ -6745,6 +6796,9 @@ func (m *HolderMutation) Fields() []string {
 	}
 	if m.profile != nil {
 		fields = append(fields, holder.FieldProfile)
+	}
+	if m.data != nil {
+		fields = append(fields, holder.FieldData)
 	}
 	if m.tenant != nil {
 		fields = append(fields, holder.FieldTenantID)
@@ -6775,6 +6829,8 @@ func (m *HolderMutation) Field(name string) (ent.Value, bool) {
 		return m.IdpSubject()
 	case holder.FieldProfile:
 		return m.Profile()
+	case holder.FieldData:
+		return m.Data()
 	case holder.FieldTenantID:
 		return m.TenantID()
 	}
@@ -6804,6 +6860,8 @@ func (m *HolderMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldIdpSubject(ctx)
 	case holder.FieldProfile:
 		return m.OldProfile(ctx)
+	case holder.FieldData:
+		return m.OldData(ctx)
 	case holder.FieldTenantID:
 		return m.OldTenantID(ctx)
 	}
@@ -6878,6 +6936,13 @@ func (m *HolderMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetProfile(v)
 		return nil
+	case holder.FieldData:
+		v, ok := value.(*anypb.Any)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetData(v)
+		return nil
 	case holder.FieldTenantID:
 		v, ok := value.(uuid.UUID)
 		if !ok {
@@ -6930,6 +6995,9 @@ func (m *HolderMutation) ClearedFields() []string {
 	if m.FieldCleared(holder.FieldProfile) {
 		fields = append(fields, holder.FieldProfile)
 	}
+	if m.FieldCleared(holder.FieldData) {
+		fields = append(fields, holder.FieldData)
+	}
 	return fields
 }
 
@@ -6958,6 +7026,9 @@ func (m *HolderMutation) ClearField(name string) error {
 		return nil
 	case holder.FieldProfile:
 		m.ClearProfile()
+		return nil
+	case holder.FieldData:
+		m.ClearData()
 		return nil
 	}
 	return fmt.Errorf("unknown Holder nullable field %s", name)
@@ -6993,6 +7064,9 @@ func (m *HolderMutation) ResetField(name string) error {
 		return nil
 	case holder.FieldProfile:
 		m.ResetProfile()
+		return nil
+	case holder.FieldData:
+		m.ResetData()
 		return nil
 	case holder.FieldTenantID:
 		m.ResetTenantID()

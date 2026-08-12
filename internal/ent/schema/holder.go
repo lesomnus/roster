@@ -14,6 +14,7 @@ import (
 	uuid "github.com/google/uuid"
 	rstr "github.com/lesomnus/roster/rstr"
 	entpb "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpb"
+	anypb "google.golang.org/protobuf/types/known/anypb"
 )
 
 type Holder struct {
@@ -41,6 +42,8 @@ func (Holder) Fields() []ent.Field {
 			Nillable().
 			Optional(),
 		field.String("profile").GoType(&rstr.Profile{}).ValueScanner(entpb.ValueScanner[*rstr.Profile]{}).SchemaType(map[string]string{dialect.Postgres: "jsonb", dialect.MySQL: "json"}).
+			Optional(),
+		field.String("data").GoType(&anypb.Any{}).ValueScanner(entpb.ValueScanner[*anypb.Any]{}).SchemaType(map[string]string{dialect.Postgres: "jsonb", dialect.MySQL: "json"}).
 			Optional(),
 		field.UUID("tenant_id", uuid.UUID{}).
 			Immutable(),

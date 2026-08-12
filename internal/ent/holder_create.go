@@ -14,6 +14,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/tenant"
 	"github.com/lesomnus/roster/rstr"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // HolderCreate is the builder for creating a Holder entity.
@@ -98,6 +99,12 @@ func (_c *HolderCreate) SetNillableIdpSubject(v *string) *HolderCreate {
 // SetProfile sets the "profile" field.
 func (_c *HolderCreate) SetProfile(v *rstr.Profile) *HolderCreate {
 	_c.mutation.SetProfile(v)
+	return _c
+}
+
+// SetData sets the "data" field.
+func (_c *HolderCreate) SetData(v *anypb.Any) *HolderCreate {
+	_c.mutation.SetData(v)
 	return _c
 }
 
@@ -247,6 +254,14 @@ func (_c *HolderCreate) createSpec() (*Holder, *sqlgraph.CreateSpec, error) {
 		}
 		_spec.SetField(holder.FieldProfile, field.TypeString, vv)
 		_node.Profile = value
+	}
+	if value, ok := _c.mutation.Data(); ok {
+		vv, err := holder.ValueScanner.Data.Value(value)
+		if err != nil {
+			return nil, nil, err
+		}
+		_spec.SetField(holder.FieldData, field.TypeString, vv)
+		_node.Data = value
 	}
 	if nodes := _c.mutation.TenantIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

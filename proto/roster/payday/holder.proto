@@ -1,6 +1,7 @@
 edition = "2023";
 package roster;
 
+import "google/protobuf/any.proto";
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
 import "payday.proto";
@@ -145,6 +146,33 @@ message Holder {
   // they have a screen to draw, cached for a minute or two -- which is the same
   // reason it is not in the token: a profile changes and a token does not.
   Profile profile = 9;
+  // Whatever the app that put it here keeps about this holder, and roster does
+  // not read it.
+  //
+  // # Why it is opaque and `Profile` is not
+  //
+  // They answer different questions. `Profile` is what a **person** is called,
+  // in this app's vocabulary, readable by everything that draws a screen and
+  // mappable onto OIDC's standard claims -- which is the whole reason it is
+  // here rather than in an identity provider: *the metadata is ours, and the
+  // schema has to be ours to change*.
+  //
+  // This is not that. A robot arrives with a serial number, a `Holder` is
+  // whoever a request is from, and there is no reason roster should have an
+  // opinion about what a robot is. It carries its own type, so whoever reads it
+  // knows what they got; whoever cannot resolve the type reads nothing, which
+  // is a graceful thing for a field roster was never going to interpret.
+  //
+  // # What it costs, and it is the same cost `Profile` pays
+  //
+  // One value to the database -- no filter, no index. Anything that has to be
+  // **looked up** goes flat beside it, which is the rule `Profile` already
+  // states and the reason [Identity] exists.
+  //
+  // How two apps writing here avoid each other is not roster's question. It is
+  // one slot on a row, and who writes to it is a decision a deployment makes
+  // the way it decides who may call anything else.
+  google.protobuf.Any data = 10;
 }
 
 // Profile is what a person is called, and it is replaced whole.

@@ -14,6 +14,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/predicate"
 	"github.com/lesomnus/roster/rstr"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // HolderUpdate is the builder for updating Holder entities.
@@ -150,6 +151,18 @@ func (_u *HolderUpdate) ClearProfile() *HolderUpdate {
 	return _u
 }
 
+// SetData sets the "data" field.
+func (_u *HolderUpdate) SetData(v *anypb.Any) *HolderUpdate {
+	_u.mutation.SetData(v)
+	return _u
+}
+
+// ClearData clears the value of the "data" field.
+func (_u *HolderUpdate) ClearData() *HolderUpdate {
+	_u.mutation.ClearData()
+	return _u
+}
+
 // Mutation returns the HolderMutation object of the builder.
 func (_u *HolderUpdate) Mutation() *HolderMutation {
 	return _u.mutation
@@ -250,6 +263,16 @@ func (_u *HolderUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.ProfileCleared() {
 		_spec.ClearField(holder.FieldProfile, field.TypeString)
+	}
+	if value, ok := _u.mutation.Data(); ok {
+		vv, err := holder.ValueScanner.Data.Value(value)
+		if err != nil {
+			return 0, err
+		}
+		_spec.SetField(holder.FieldData, field.TypeString, vv)
+	}
+	if _u.mutation.DataCleared() {
+		_spec.ClearField(holder.FieldData, field.TypeString)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -393,6 +416,18 @@ func (_u *HolderUpdateOne) ClearProfile() *HolderUpdateOne {
 	return _u
 }
 
+// SetData sets the "data" field.
+func (_u *HolderUpdateOne) SetData(v *anypb.Any) *HolderUpdateOne {
+	_u.mutation.SetData(v)
+	return _u
+}
+
+// ClearData clears the value of the "data" field.
+func (_u *HolderUpdateOne) ClearData() *HolderUpdateOne {
+	_u.mutation.ClearData()
+	return _u
+}
+
 // Mutation returns the HolderMutation object of the builder.
 func (_u *HolderUpdateOne) Mutation() *HolderMutation {
 	return _u.mutation
@@ -523,6 +558,16 @@ func (_u *HolderUpdateOne) sqlSave(ctx context.Context) (_node *Holder, err erro
 	}
 	if _u.mutation.ProfileCleared() {
 		_spec.ClearField(holder.FieldProfile, field.TypeString)
+	}
+	if value, ok := _u.mutation.Data(); ok {
+		vv, err := holder.ValueScanner.Data.Value(value)
+		if err != nil {
+			return nil, err
+		}
+		_spec.SetField(holder.FieldData, field.TypeString, vv)
+	}
+	if _u.mutation.DataCleared() {
+		_spec.ClearField(holder.FieldData, field.TypeString)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Holder{config: _u.config}

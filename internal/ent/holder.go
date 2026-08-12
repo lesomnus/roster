@@ -14,6 +14,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/tenant"
 	"github.com/lesomnus/roster/rstr"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // Holder is the model entity for the Holder schema.
@@ -39,6 +40,8 @@ type Holder struct {
 	IdpSubject *string `json:"idp_subject,omitempty"`
 	// Profile holds the value of the "profile" field.
 	Profile *rstr.Profile `json:"profile,omitempty"`
+	// Data holds the value of the "data" field.
+	Data *anypb.Any `json:"data,omitempty"`
 	// TenantID holds the value of the "tenant_id" field.
 	TenantID uuid.UUID `json:"tenant_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -82,6 +85,8 @@ func (*Holder) scanValues(columns []string) ([]any, error) {
 			values[i] = new(uuid.UUID)
 		case holder.FieldProfile:
 			values[i] = holder.ValueScanner.Profile.ScanValue()
+		case holder.FieldData:
+			values[i] = holder.ValueScanner.Data.ScanValue()
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -161,6 +166,12 @@ func (_m *Holder) assignValues(columns []string, values []any) error {
 			} else {
 				_m.Profile = value
 			}
+		case holder.FieldData:
+			if value, err := holder.ValueScanner.Data.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.Data = value
+			}
 		case holder.FieldTenantID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
@@ -238,6 +249,9 @@ func (_m *Holder) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("profile=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Profile))
+	builder.WriteString(", ")
+	builder.WriteString("data=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Data))
 	builder.WriteString(", ")
 	builder.WriteString("tenant_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.TenantID))
