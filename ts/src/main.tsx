@@ -9,12 +9,14 @@
  * @module
  */
 
+import { createClient } from '@connectrpc/connect'
 import { createConnectTransport } from '@connectrpc/connect-web'
 import { StrictMode, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import { Provider } from '@lesomnus/payday/react'
 
+import { AuthService } from '../gen/app/auth_pb.js'
 import { open } from './store.js'
 import { Page } from './page.js'
 import './style.css'
@@ -23,56 +25,43 @@ import './style.css'
  * Where the app answers.
  *
  * `npm run dev` is a different origin from the server, so the server has to say
- * this page may call it -- `origins:` under `server.http`. A build served by
+ * this page may call it — `origins:` under `control.http`. A build served by
  * the app itself is same-origin and needs none of that.
  *
- * The **control** listener's HTTP, which is what this console is: who runs the
- * deployment, which services call it, what each key may do. None of that is on
- * either other port.
- *
- * Not `server.http`, which fronts the walled data plane -- an operator is a
- * holder of the control plane, and the two are separate databases with no query
- * between them, so a session names nobody there. And not `admin.http` either:
- * that one reaches **customers**, which is a later screen and a different set
- * of rows.
+ * The **control** listener, which is what this console is: who runs the
+ * deployment, which services call it, what each key may do. Not `server.http`,
+ * which fronts the walled data plane where an operator's session names nobody;
+ * and not `admin.http`, which reaches customers and is a later screen.
  */
 const ADDR = import.meta.env['VITE_ADDR'] ?? 'http://localhost:8082'
 
 const root = createRoot(document.getElementById('root') as HTMLElement)
 
 /**
- * Signing in, which is a **cookie** and not something this page can hold.
+ * The transport, and the only thing that changes between a real server and a
+ * sandbox.
  *
- * A browser has nowhere safe to keep a credential -- script that can read one
- * is script that can send it somewhere else -- so what it gets is an opaque
- * cookie naming a session the server keeps. This page never sees it: the
- * browser stores it, sends it, and `credentials: 'include'` is the whole of
- * what this file has to say about it.
- *
- * Which is why there is no `localStorage` here any more. The scaffold this
- * replaced kept `@acme/admin` there and sent it as `auth.Plain`, which believes
- * whatever a caller writes -- right for a sandbox and not something to serve
- * where anyone can reach it.
+ * `credentials: 'include'` on every call, or the browser neither receives the
+ * cookie a sign-in sets nor sends it back — a login that works in `curl` and
+ * does nothing here, with no error anywhere.
  */
-async function signIn(alias: string, password: string): Promise<boolean> {
-	const res = await fetch(`${ADDR}/session`, {
-		method: 'POST',
-		headers: { 'content-type': 'application/json' },
-		credentials: 'include',
-		body: JSON.stringify({ alias, password }),
-	})
-
-	return res.status === 204
-}
+const transport = createConnectTransport({
+	baseUrl: ADDR,
+	fetch: (input, init) => fetch(input, { ...init, credentials: 'include' }),
+})
 
 /**
- * Signing out deletes the row, which is the part that matters: the key is dead
- * in every tab that had it, immediately, which is the thing a self-contained
- * token cannot do.
+ * Signing in is an **RPC**, like everything else this app offers.
+ *
+ * It was an HTTP endpoint, which made it the one call every client implemented
+ * by reading a document rather than generating from the schema. It is
+ * `AuthService` now and this file calls it with a generated client.
+ *
+ * What comes back is empty. The credential is a cookie the browser stores,
+ * sends and never shows this page — script that can read one is script that can
+ * send it somewhere else.
  */
-async function signOut(): Promise<void> {
-	await fetch(`${ADDR}/session`, { method: 'DELETE', credentials: 'include' })
-}
+const auth = createClient(AuthService, transport)
 
 function SignIn(props: { onDone: () => void }): React.ReactNode {
 	const [bad, setBad] = useState(false)
@@ -84,13 +73,13 @@ function SignIn(props: { onDone: () => void }): React.ReactNode {
 				e.preventDefault()
 
 				const f = new FormData(e.currentTarget)
-				const alias = String(f.get('alias') ?? '')
-				const password = String(f.get('password') ?? '')
-
-				void signIn(alias, password).then((ok) => {
-					if (ok) props.onDone()
-					else setBad(true)
-				})
+				void auth
+					.signIn({
+						alias: String(f.get('alias') ?? ''),
+						password: String(f.get('password') ?? ''),
+					})
+					.then(() => props.onDone())
+					.catch(() => setBad(true))
 			}}
 		>
 			<h1>roster</h1>
@@ -118,29 +107,22 @@ function SignIn(props: { onDone: () => void }): React.ReactNode {
 }
 
 async function boot(): Promise<void> {
-	const transport = createConnectTransport({
-		baseUrl: ADDR,
-
-		// On every call, or the browser neither receives the cookie a sign-in
-		// sets nor sends it back -- a login that works in `curl` and does
-		// nothing here, with no error anywhere.
-		fetch: (input, init) => fetch(input, { ...init, credentials: 'include' }),
-	})
-
-	// Opened per **session** rather than per credential, because this page no
-	// longer holds one: what it would key on is who the server says the caller
-	// is, and that is a call away.
+	// Opened per **session** rather than per credential, because this page holds
+	// none: what it would key on is who the server says the caller is, and that
+	// is a call away.
 	const app = await open(transport, 'console')
 
 	/**
-	 * Signing out ends the session and drops this caller's copy -- the rows,
-	 * the answers and the mirror. Nothing there is a secret, since the server
-	 * only ever sent what that caller could see, but it is *that caller's*, and
-	 * leaving it where the next one opens the same page is the kind of thing
-	 * that looks like a leak whether or not it is one.
+	 * Signing out deletes the row, which is the part that matters: the key is
+	 * dead in every tab that had it, immediately, which is the thing a
+	 * self-contained token cannot do.
+	 *
+	 * And it drops this caller's copy — the rows, the answers, the mirror.
+	 * Nothing there is a secret, since the server only ever sent what that
+	 * caller could see, but it is *that caller's*.
 	 */
 	const out = (): void => {
-		void signOut().then(() => {
+		void auth.signOut({}).finally(() => {
 			app.store.forget()
 			app.store.close()
 			start()

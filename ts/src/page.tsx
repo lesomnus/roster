@@ -6,12 +6,15 @@
  * signs in — those are customers' people, in the other database — it is
  * somebody who runs this deployment, or a service that calls it.
  *
- * So the vocabulary on screen is deliberately not the schema's:
+ * And a `Holder` is **not** a person or a machine. Nothing in the schema says
+ * which, and nothing should: it is somebody or something registered here that
+ * may exercise a permission, and how it proves itself is a separate row beside
+ * it. A person with a `rt_` key holds both, which is exactly what that key is
+ * for.
  *
- *	Tenant  the owner. There is one, and it is not shown
- *	Holder  an operator, if a Credential hangs off them
- *	Holder  a service, if ApiKeys do
- *	ApiKey  what one service may call, and when it last did
+ * So the two screens below split by **how a caller arrives**, not by what it
+ * is, and say so on the page. That they line up with people and services today
+ * is how this deployment happens to be used, not a rule.
  *
  * @module
  */
@@ -87,8 +90,8 @@ export function Page(props: { onSignOut: () => void }): React.ReactNode {
 	// either way, and a client that treated this as the decision would be one an
 	// altered client could talk out of.
 	const screens: { at: Screen; name: string; ok: boolean }[] = [
-		{ at: 'operators', name: 'operators', ok: may('/roster.HolderService/List') },
-		{ at: 'services', name: 'services', ok: may('/roster.ApiKeyService/List') },
+		{ at: 'operators', name: 'signs in', ok: may('/roster.HolderService/List') },
+		{ at: 'services', name: 'calls in', ok: may('/roster.ApiKeyService/List') },
 		{ at: 'you', name: 'you', ok: true },
 	]
 
@@ -120,11 +123,11 @@ export function Page(props: { onSignOut: () => void }): React.ReactNode {
 }
 
 /**
- * Operators: everybody who can sign in to this console.
+ * Everybody registered here, which is what a `Holder` is.
  *
- * A `Holder` of the owner tenant. Whether they are a person or a service is not
- * a column — it is what hangs off them, a `Credential` or an `ApiKey` — so this
- * lists both and `Services` is the same rows read from the other end.
+ * Titled by how they arrive rather than by what they are, because the schema
+ * does not say what they are and neither should this. `Services` below is the
+ * same rows read from the other end: a holder with keys.
  */
 function Operators(): React.ReactNode {
 	const vs = useQuery(HolderService.method.list, {})
@@ -134,7 +137,7 @@ function Operators(): React.ReactNode {
 
 	return (
 		<section>
-			<h2>operators</h2>
+			<h2>signs in</h2>
 			<table>
 				<thead>
 					<tr>
@@ -156,16 +159,16 @@ function Operators(): React.ReactNode {
 				</tbody>
 			</table>
 			<p className="note">
-				A password is set by <code>roster init</code> and cannot be read back
-				— this deployment cannot tell anybody what theirs was any more than it
-				can tell them their key.
+				Everybody registered in this plane. A <code>Holder</code> is not a
+				person or a machine — nothing here says which — so this is the same
+				list <em>calls in</em> draws, seen from the other end.
 			</p>
 		</section>
 	)
 }
 
 /**
- * Services: what may call this deployment, and what each may call.
+ * The keys, which is how something calls in rather than signing in.
  *
  * `ApiKeyService` is served on this port and no other, because its generated
  * `Get` answers with the verifier column. The column is declared
@@ -180,7 +183,7 @@ function Services(): React.ReactNode {
 
 	return (
 		<section>
-			<h2>services</h2>
+			<h2>calls in</h2>
 			<table>
 				<thead>
 					<tr>

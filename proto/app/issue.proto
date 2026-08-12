@@ -1,0 +1,93 @@
+edition = "2023";
+
+package roster;
+
+import "app/apikey.proto";
+import "google/protobuf/timestamp.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/roster/rstr";
+
+// IssueService makes a secret, stores what verifies it, and answers with it
+// **once**.
+//
+// # Why the generated Add cannot do this
+//
+// `ApiKey.secret` is declared `(payday.field).secret`, so the layer in front of
+// the sink clears it on the way out -- including out of `Add`'s own answer. A
+// server that minted a key there could not hand it back.
+//
+// That is not a limitation to work around. It is the declaration doing its job:
+// the column is written and never answered with, and the one exception is the
+// moment it is created. An exception belongs in its own RPC rather than as a
+// hole in a rule that holds everywhere else.
+//
+// So `Add` stays what the servers write through and this is what a caller asks.
+// The same convention `Patch` and `Apply` already have -- *not served; it is how
+// the servers write, not how a caller asks* -- extended to one more method of
+// one entity.
+//
+// # Why the caller does not send the secret
+//
+// It could: `ApiKeyAddRequest` takes a verifier, so a console could generate
+// thirty-two bytes, hash them and send the hash. Then key generation is in a
+// browser, its quality is whatever that page's `crypto` gave it, and the prefix
+// that says which plane a key belongs to is chosen by the caller.
+//
+// Here it is `crypto/rand` on the server, the prefix is not a claim anybody
+// makes, and the row holds a hash before the answer leaves.
+service IssueService {
+  // IssueKey mints a key for a service and answers with it once.
+  rpc IssueKey(IssueKeyRequest) returns (IssueKeyResponse);
+
+  // IssuePassword sets somebody's password to a generated one and answers with
+  // it once.
+  //
+  // For the operator a console has just created, who has no way in yet. What
+  // they do with it is change it -- which is `VouchService.Set`, and needs the
+  // old one, and is therefore not this.
+  rpc IssuePassword(IssuePasswordRequest) returns (IssuePasswordResponse);
+}
+
+message IssueKeyRequest {
+  // The holder it is for, by alias within this plane's one tenant. Naming one
+  // that is not there creates it: a service is not something somebody sets up
+  // on purpose before they need it, which is what `roster key add` already
+  // decided.
+  string service = 1;
+
+  // What somebody calls this key when deciding whether to revoke it.
+  string alias = 2;
+
+  // What it may be used for, in full: "/roster.VouchService/Verify".
+  //
+  // Empty is refused rather than defaulted in either direction. Everything
+  // hands out more than was asked for; nothing mints a key that silently does
+  // not work.
+  repeated string methods = 3;
+
+  // When it stops working, unset for one that does not.
+  google.protobuf.Timestamp expires = 4;
+}
+
+message IssueKeyResponse {
+  // The key, and the only time it is ever readable. What is stored is a hash,
+  // for the reason every password store has one.
+  string token = 1;
+
+  // The row, so that a console can list it beside the others without asking
+  // again. Its `secret` is cleared like any other answer.
+  ApiKey key = 2;
+}
+
+message IssuePasswordRequest {
+  // Whose, by alias within this plane's one tenant.
+  string alias = 1;
+}
+
+message IssuePasswordResponse {
+  // Shown once and not stored. What is stored is an argon2id hash, so this
+  // deployment cannot tell anybody what theirs was any more than it can tell
+  // them their key.
+  string password = 1;
+}

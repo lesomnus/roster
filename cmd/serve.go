@@ -33,6 +33,7 @@ import (
 	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/bare"
+	"github.com/lesomnus/roster/server/console"
 	"github.com/lesomnus/roster/server/core"
 	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/me"
@@ -446,6 +447,15 @@ func (s *Server) closed(c Config) func(method string) bool {
 	was := c.Server.Closed()
 
 	shut := []string{app.CredentialService_ServiceDesc.ServiceName}
+
+	// `ApiKey.Add` takes a verifier from the caller, so serving it beside
+	// `IssueService` would be offering the thing `Issue` exists to stop: a key
+	// whose secret somebody else chose, in a prefix they picked.
+	//
+	// It stays what the servers write through, which is the convention `Patch`
+	// and `Apply` already have. One more method of one entity joining them is
+	// not a new rule.
+	byMethod := []string{app.ApiKeyService_Add_FullMethodName}
 	if !s.Keys {
 		// Everywhere but the one port whose reason for existing is managing
 		// them; see [Server.Keys].
@@ -455,6 +465,11 @@ func (s *Server) closed(c Config) func(method string) bool {
 	return func(method string) bool {
 		for _, v := range shut {
 			if strings.HasPrefix(method, "/"+v+"/") {
+				return true
+			}
+		}
+		for _, v := range byMethod {
+			if method == v {
 				return true
 			}
 		}
@@ -483,7 +498,24 @@ func (s *Server) closed(c Config) func(method string) bool {
 //
 // The lockout in `server/vouch` is unaffected and was never meant to be the
 // first line.
-func public(method string) bool { return auth.PublicDefault(method) }
+func public(method string) bool {
+	// Signing in, and only on the port that serves it. A caller asking for a
+	// credential does not have one, which is the whole of the argument -- the
+	// same one `/session` made when this was an HTTP endpoint.
+	//
+	// What it costs is what that cost: anybody who reaches the port may guess
+	// passwords, and `grpcx.Limit` counts per tenant off a frame a public call
+	// has none of. The answers are the port being private and the lockout in
+	// `server/vouch`, which is what makes guessing expensive rather than this.
+	//
+	// `SignOut` is **not** here. Ending a session needs the session, so a caller
+	// without one is asking about somebody else's.
+	if method == app.AuthService_SignIn_FullMethodName {
+		return true
+	}
+
+	return auth.PublicDefault(method)
+}
 
 // Serve answers on `l` until the context is done.
 func (s *Server) Serve(ctx context.Context, c Config, l net.Listener) error {
@@ -553,6 +585,16 @@ func (s *Server) GrpcControl(ctx context.Context, c Config, opts ...grpc.ServerO
 	// deployment. Nothing in this process can enforce that; the address is what
 	// enforces it.
 	app.RegisterApiKeyServiceServer(g, s.Control.Walled.ApiKey())
+
+	// What a console asks that no entity answers: a session, and a secret that
+	// is readable exactly once. See `server/console`.
+	//
+	// `Auth` reads the **ungated** server, because a sign-in runs before there
+	// is anybody to be walled by. `Issue` reads the walled one, so that minting
+	// a key is held to the rule every other grant is -- nobody hands out a
+	// method they do not hold.
+	app.RegisterAuthServiceServer(g, console.Auth(s.Control.Ungated, s.Control.Ent, s.Sessions))
+	app.RegisterIssueServiceServer(g, console.Issue(s.Control.Walled, s.Control.Ent))
 
 	return g
 }

@@ -1,0 +1,85 @@
+edition = "2023";
+
+package roster;
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/roster/rstr";
+
+// AuthService is how an operator gets a credential, and gives it up.
+//
+// # Why it is a service and not an HTTP endpoint
+//
+// Because everything else this app offers is one, and a sign-in that is not is
+// the single call every client implements by reading a document instead of
+// generating from this file. One definition, and Go and TypeScript and whatever
+// comes next get the same semantics without agreeing about them separately.
+//
+// payday leaves the seam here rather than filling it -- `auth` reads a
+// credential and does not issue one -- and for a while that read as "issuing is
+// HTTP". It is not: a cookie is a response header, `set-cookie` is response
+// metadata, and `web.Transcode` hands one to the browser as the other.
+// `authsession.Mint` is the half that does it. See payday's
+// `docs/guide/signing-in.md`.
+//
+// # What it does not do
+//
+// Answer who you are. `MeService` does, it is already what a page asks first,
+// and a second way to ask would be a second answer to keep in step. This
+// service makes a credential and ends one; asking about it is somebody else's.
+//
+// # Where it is served
+//
+// The **control plane's** listener, because that is where the people who sign
+// in live. An operator is a holder of that plane; on the data plane their
+// session names nobody, since the two are separate databases with no query
+// between them.
+//
+// And it is the one method here served without a credential, which it has to be
+// -- that is what is being asked for. What that costs is the same thing an HTTP
+// `/session` cost: anybody who reaches the port may guess passwords, and the
+// rate limit counts per tenant off a frame a public call has none of. The
+// answer is the same too: the port is private, and `server/vouch` closes an
+// account that has been guessed at.
+service AuthService {
+  // SignIn checks a secret and sets the cookie.
+  //
+  // The cookie is the whole answer. It is `HttpOnly`, so the page that called
+  // this cannot read it -- which is the point, since script that can read a
+  // credential is script that can send it somewhere else.
+  rpc SignIn(AuthSignInRequest) returns (AuthSignInResponse);
+
+  // SignOut deletes the session and clears the cookie.
+  //
+  // Deleting the row is the part that matters: the key is dead in every browser
+  // that had it, immediately, which is the thing a self-contained token cannot
+  // do.
+  rpc SignOut(AuthSignOutRequest) returns (AuthSignOutResponse);
+}
+
+message AuthSignInRequest {
+  // Who, within the one tenant this plane has.
+  //
+  // No tenant field. A control plane has exactly one, so asking which to sign
+  // in to would be asking a question with a single answer -- and a field with
+  // one answer is one somebody eventually fills in wrongly.
+  string alias = 1;
+
+  // The secret, as typed. Not a hash: hashing is the store's, because
+  // parameters chosen by a caller are parameters it cannot vouch for.
+  string password = 2;
+}
+
+// AuthSignInResponse is empty, and that is the answer.
+//
+// What a page needs about the person is a request it should make, against the
+// same server, behind the same rules -- `MeService`. An answer composed here
+// would be a second place that has to change when the app's idea of a person
+// does.
+//
+// And the credential is not in it. It is in the cookie, which this page never
+// sees.
+message AuthSignInResponse {}
+
+message AuthSignOutRequest {}
+
+message AuthSignOutResponse {}
