@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/apikey.proto.
  */
 export const file_app_apikey: GenFile = /*@__PURE__*/
-  fileDesc("ChBhcHAvYXBpa2V5LnByb3RvEgZyb3N0ZXIiwwQKBkFwaUtleRIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJgoGaG9sZGVyGAIgASgLMg4ucm9zdGVyLkhvbGRlckIG8oIWAkABEg0KBWFsaWFzGAQgASgJEgwKBGRlc2MYBiABKAkSDwoHbWV0aG9kcxgIIAMoCRIWCgZzZWNyZXQYCSABKAxCBuqCFgIwARI1CglkYXRlX3VzZWQYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESOAoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADqOAcr8FUgSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARogEgVhbGlhcxoKCgZob2xkZXIQAhoJCgVhbGlhcxAEMAGKuxY+CA4yKQoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYgFChkIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChBhcHAvYXBpa2V5LnByb3RvEgZyb3N0ZXIiyQQKBkFwaUtleRIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJgoGaG9sZGVyGAIgASgLMg4ucm9zdGVyLkhvbGRlckIG8oIWAkABEg0KBWFsaWFzGAQgASgJEgwKBGRlc2MYBiABKAkSDwoHbWV0aG9kcxgIIAMoCRIcCgZzZWNyZXQYCSABKAxCDOqCFgIwAarBFgIIARI1CglkYXRlX3VzZWQYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESOAoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADqOAcr8FUgSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARogEgVhbGlhcxoKCgZob2xkZXIQAhoJCgVhbGlhcxAEMAGKuxY+CA4yKQoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYgFChkIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * ApiKey is what one service may call this deployment for.
@@ -118,6 +118,10 @@ export type ApiKey = Message<"roster.ApiKey"> & {
    * A password is the opposite case in every one of those respects, which is
    * why `Credential.secret` is salted, slow, and found by who it belongs to
    * rather than by itself.
+   *
+   * Declared `secret` for the same reason `Credential.secret` is: `keys.Store`
+   * finds a key **by** this value through an unwalled server, and the trail
+   * must not end up holding a second copy of it.
    *
    * @generated from field: bytes secret = 9;
    */

@@ -26,6 +26,27 @@ server:
     # 5173, and a different origin.
     origins: ["http://localhost:5173"]
 
+# Who may call this deployment, and who runs it. Without this the deployment
+# believes its callers and there is no console; see docs/OPERATING.md.
+#
+# control:
+#   db:
+#     driver: sqlite3
+#     dsn: "file:roster-control.db?_pragma=foreign_keys(1)"
+#   addr: "127.0.0.1:50052"
+
+# Where an operator administers **customers**: the data plane with no wall,
+# behind a session. Its `http` is what a console talks to -- a browser cannot
+# speak gRPC, and the transcoder above is in front of the data plane, where an
+# operator's session names nobody.
+#
+# admin:
+#   addr: "127.0.0.1:50053"
+#   http:
+#     addr: "127.0.0.1:8081"
+#     allow_web: true
+#     origins: ["http://localhost:5173"]
+
 watch:
   # Named rather than defaulted, and it is the one field this app is refused for
   # leaving out. `memory` publishes inside this process, which is right for one

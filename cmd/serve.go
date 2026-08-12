@@ -501,11 +501,22 @@ func (s *Server) Serve(ctx context.Context, c Config, l net.Listener) error {
 	}
 	defer stopControl()
 
-	stopAdmin, err := s.serveAdmin(ctx, c)
+	admin, err := s.GrpcAdmin(ctx, c)
+	if err != nil {
+		return err
+	}
+
+	stopAdmin, err := s.serveAdmin(ctx, c, admin)
 	if err != nil {
 		return err
 	}
 	defer stopAdmin()
+
+	stopAdminHttp, err := s.serveAdminHttp(ctx, c, admin)
+	if err != nil {
+		return err
+	}
+	defer stopAdminHttp()
 
 	go func() {
 		<-ctx.Done()
@@ -566,14 +577,9 @@ func (s *Server) serveControl(ctx context.Context, c Config) (func(), error) {
 }
 
 // serveAdmin is where an operator administers customers; see `admin.go`.
-func (s *Server) serveAdmin(ctx context.Context, c Config) (func(), error) {
-	if c.Admin.Addr == "" || s.Control == nil {
+func (s *Server) serveAdmin(ctx context.Context, c Config, g *grpc.Server) (func(), error) {
+	if c.Admin.Addr == "" || g == nil {
 		return func() {}, nil
-	}
-
-	g, err := s.GrpcAdmin(ctx, c)
-	if err != nil {
-		return nil, err
 	}
 
 	l, err := net.Listen("tcp", c.Admin.Addr)
@@ -595,11 +601,34 @@ func (s *Server) serveAdmin(ctx context.Context, c Config) (func(), error) {
 // through the interceptors a gRPC client goes through, behind the same wall.
 // There is no second stack here for a rule to be missing from.
 func (s *Server) serveHttp(ctx context.Context, c Config, g *grpc.Server) (func(), error) {
-	if !c.Server.Http.Serves() {
+	return s.http(ctx, "http", c.Server.Http, g)
+}
+
+// serveAdminHttp is the same for the admin listener, and it is what a console
+// actually talks to.
+//
+// A browser cannot speak gRPC, so a port without one of these is a port a
+// console cannot reach -- and until this, the only transcoder was in front of
+// the **data plane**, where an operator's session names nobody. The console
+// could sign in and then had nothing to call.
+//
+// A second listener rather than a route on the first, because both servers
+// register `roster.HolderService` and a transcoder routes by the method's own
+// path. There is nowhere to put a prefix that the name does not already occupy.
+func (s *Server) serveAdminHttp(ctx context.Context, c Config, g *grpc.Server) (func(), error) {
+	if g == nil {
 		return func() {}, nil
 	}
 
-	h, err := web.New(c.Server.Http, g)
+	return s.http(ctx, "admin.http", c.Admin.Http, g)
+}
+
+func (s *Server) http(ctx context.Context, name string, c config.HttpConfig, g *grpc.Server) (func(), error) {
+	if !c.Serves() {
+		return func() {}, nil
+	}
+
+	h, err := web.New(c, g)
 	if err != nil {
 		return nil, err
 	}
@@ -612,6 +641,11 @@ func (s *Server) serveHttp(ctx context.Context, c Config, g *grpc.Server) (func(
 	// with one -- and `ServeMux` panics rather than shadowing if one somehow
 	// does.
 	//
+	// On every listener that has one, because a console reaches exactly one
+	// origin and signing in has to be there. What it is a session **for**
+	// differs -- the data plane's port serves it and then answers nobody with
+	// it, which is worth knowing rather than discovering.
+	//
 	// Only where there is a control plane, because that is where the people who
 	// sign in live. A deployment without one has no console and nobody to be;
 	// serving this there would be an endpoint that can only ever answer no.
@@ -621,7 +655,7 @@ func (s *Server) serveHttp(ctx context.Context, c Config, g *grpc.Server) (func(
 		h.Handle("DELETE /session", s.Sessions.Serve(v))
 	}
 
-	l, err := net.Listen("tcp", c.Server.Http.Addr)
+	l, err := net.Listen("tcp", c.Addr)
 	if err != nil {
 		return nil, err
 	}
@@ -629,11 +663,11 @@ func (s *Server) serveHttp(ctx context.Context, c Config, g *grpc.Server) (func(
 	srv := &http.Server{Handler: h}
 	go func() {
 		if err := srv.Serve(l); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.From(ctx).ErrorContext(ctx, "http", slog.String("err", err.Error()))
+			log.From(ctx).ErrorContext(ctx, name, slog.String("err", err.Error()))
 		}
 	}()
 
-	log.From(ctx).InfoContext(ctx, "http", slog.String("addr", l.Addr().String()))
+	log.From(ctx).InfoContext(ctx, name, slog.String("addr", l.Addr().String()))
 
 	return func() { srv.Close() }, nil
 }

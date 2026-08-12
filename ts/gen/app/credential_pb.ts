@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/credential.proto.
  */
 export const file_app_credential: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcHAvY3JlZGVudGlhbC5wcm90bxIGcm9zdGVyIrMECgpDcmVkZW50aWFsEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSEAoIZmFpbHVyZXMYCiABKAUSNwoLZGF0ZV9sb2NrZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESOAoMZGF0ZV9yb3RhdGVkGAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADqOAcr8FUYSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARoeEgRraW5kGgoKBmhvbGRlchACGggKBGtpbmQQCDABirsWQAgNMikKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmIBQoZDoAIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChRhcHAvY3JlZGVudGlhbC5wcm90bxIGcm9zdGVyIrsECgpDcmVkZW50aWFsEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESDAoEa2luZBgIIAEoCRIWCgZzZWNyZXQYCSABKAxCBqrBFgIIARIQCghmYWlsdXJlcxgKIAEoBRI3CgtkYXRlX2xvY2tlZBgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI4CgxkYXRlX3JvdGF0ZWQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOo4ByvwVRhICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGh4SBGtpbmQaCgoGaG9sZGVyEAIaCAoEa2luZBAIMAGKuxZACA0yKQoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYgFChkOgAiDwoNaG9sZGVyLnRlbmFudEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Credential is a secret somebody proves themselves with here, rather than at a
@@ -69,6 +69,12 @@ export type Credential = Message<"roster.Credential"> & {
    * The verifier, never the secret: an argon2id encoded hash for a password, an
    * encrypted seed for TOTP. Bytes rather than a string because neither is
    * text this app should be tempted to print.
+   *
+   * Declared `secret`, which is what keeps it out of the **trail**. The layer
+   * that clears it on the way out is only on the walled stack -- `vouch` reads
+   * it through an unwalled one, deliberately, because comparing it is the whole
+   * job -- and the recorder is behind every layer, so without this declaration
+   * a verifier is copied into `Audit.value` on every write. Found by writing it.
    *
    * @generated from field: bytes secret = 9;
    */

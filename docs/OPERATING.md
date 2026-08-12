@@ -108,11 +108,25 @@ server keeps. It opens **two** listeners, and there are three in all:
 | `server.addr` | product apps | walled and gated. Keys only — a cookie names nobody here |
 | `control.addr` | operators | who runs this deployment, which services call it, their keys |
 | `admin.addr` | operators | **customers**: the data plane, no wall, behind a session |
+| `admin.http.addr` | a console | the same, transcoded. This is what a browser talks to |
 
 ```yaml
 admin:
   addr: "127.0.0.1:50053"
+  http:
+    addr: "127.0.0.1:8081"
+    allow_web: true
+    origins: ["http://localhost:5173"]
 ```
+
+A browser cannot speak gRPC, so a port without `http` is a port a console
+cannot reach — and `server.http` is the wrong one: it fronts the **walled**
+data plane, where an operator's session names nobody. Sign in there and there
+is nothing to call.
+
+`/session` is served on every listener that has HTTP, because a console
+reaches one origin and signing in has to be there. Which listener the session
+is a credential *for* is what differs.
 
 Three because it can be nothing else. The product port is walled and an
 operator has no tenant in that database, so it shows them nothing; and the

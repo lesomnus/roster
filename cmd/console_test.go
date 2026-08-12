@@ -3,8 +3,11 @@ package cmd_test
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
+	"net/http/cookiejar"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -12,8 +15,10 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
+	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/pdtest"
+	"github.com/lesomnus/payday/web"
 
 	"github.com/lesomnus/roster/internal/ent"
 
@@ -414,4 +419,69 @@ func TestNoVerifierReachesTheTrail(t *testing.T) {
 	// The columns really are still there to be read, through the server that
 	// exists to read them. Clearing the trail must not have cleared the row.
 	x.NotEmpty(cred.Secret)
+}
+
+// TestAConsoleReachesTheAdminPortOverHttp is what a browser can actually do.
+//
+// A browser cannot speak gRPC, so a port with no transcoder is a port a console
+// cannot reach. Until this, the only one was in front of the **data plane**,
+// where an operator's session names nobody -- so a console could sign in and
+// then had nothing to call.
+func TestAConsoleReachesTheAdminPortOverHttp(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	s, out := inited(t, true)
+
+	g, err := s.GrpcAdmin(ctx, cmd.Config{})
+	x.NoError(err)
+
+	h, err := web.New(config.HttpConfig{AllowWeb: true}, g)
+	x.NoError(err)
+
+	v := cmd.Login(s.Control)
+	h.Handle("POST /session", s.Sessions.Serve(v))
+
+	srv := httptest.NewServer(h)
+	t.Cleanup(srv.Close)
+
+	jar, err := cookiejar.New(nil)
+	x.NoError(err)
+	c := &http.Client{Jar: jar}
+
+	post := func(path, body string) (int, string) {
+		t.Helper()
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL+path, strings.NewReader(body))
+		x.NoError(err)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Connect-Protocol-Version", "1")
+
+		res, err := c.Do(req)
+		x.NoError(err)
+		defer res.Body.Close()
+
+		b, _ := io.ReadAll(res.Body)
+
+		return res.StatusCode, string(b)
+	}
+
+	// Anonymous first, so what changes is the sign-in.
+	code, _ := post("/roster.TenantService/Add", `{"alias":"newco"}`)
+	x.Equal(http.StatusUnauthorized, code)
+
+	code, body := post("/session",
+		`{"alias":"ops","password":"`+passwordFrom(t, out)+`"}`)
+	x.Equal(http.StatusNoContent, code, body)
+
+	// And now the thing a console is for, over JSON, with the cookie the
+	// browser is carrying.
+	code, body = post("/roster.TenantService/Add", `{"alias":"newco"}`)
+	x.Equal(http.StatusOK, code, body)
+	x.Contains(body, "newco")
+
+	// The customer really is there.
+	n, err := s.Ent.Tenant.Query().Count(ctx)
+	x.NoError(err)
+	x.Equal(2, n, "acme from init, and the one the console made")
 }
