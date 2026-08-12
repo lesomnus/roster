@@ -60,6 +60,7 @@ func NewCmdInit(c *Config) *xli.Command {
 			&flg.String{Name: "tenant", Brief: "the alias of the tenant to create"},
 			&flg.String{Name: "holder", Brief: "the alias of the holder to create in it"},
 			&flg.String{Name: "operator", Brief: "the alias of the control plane holder who runs the console"},
+			&flg.String{Name: "tenant-id", Brief: "the identifier to give the first tenant; one is minted by default"},
 			&flg.Switch{Name: "password-stdin", Brief: "read the operator's password from stdin instead of generating one"},
 		},
 
@@ -77,6 +78,20 @@ func NewCmdInit(c *Config) *xli.Command {
 			operator, ok := flg.Find[string](cmd, "operator")
 			if !ok || operator == "" {
 				operator = "ops"
+			}
+
+			// The identifier for the first tenant, when an app served by this
+			// roster already has one written down for the same organisation.
+			// See [Seeding.TenantId] for what goes wrong when the two disagree,
+			// which is nothing loud.
+			var at pdid.Id
+			if v, ok := flg.Find[string](cmd, "tenant-id"); ok && v != "" {
+				k, err := pdid.Parse(v)
+				if err != nil {
+					return fmt.Errorf("--tenant-id: %w", err)
+				}
+
+				at = k
 			}
 
 			s, err := Build(ctx, *c)
@@ -110,7 +125,13 @@ func NewCmdInit(c *Config) *xli.Command {
 				}
 			}
 
-			v, err := Seed(ctx, s, tenant, holder, operator, given)
+			v, err := Seed(ctx, s, Seeding{
+				Tenant:   tenant,
+				Holder:   holder,
+				Operator: operator,
+				Password: given,
+				TenantId: at,
+			})
 			if err != nil {
 				return err
 			}
@@ -152,6 +173,48 @@ type Seeded struct {
 	Password string
 }
 
+// Seeding is what [Seed] is asked for.
+//
+// A struct rather than the positional strings this had grown to, because the
+// last two additions -- a password, and now an identifier -- are both things a
+// reader of a call site could not tell apart from the aliases beside them.
+type Seeding struct {
+	// Tenant, Holder and Operator are the aliases of the three rows made: the
+	// first tenant, the first person in it, and the one who administers this
+	// deployment from the control plane.
+	Tenant   string
+	Holder   string
+	Operator string
+
+	// Password is the **operator's**, and empty means generate one.
+	//
+	// A caller that supplies it is one that has somewhere to have got it from
+	// and somewhere to put it -- a container told by its environment. Nothing
+	// else should: a password chosen by anything but the person is one somebody
+	// else knows, and what makes the generated one safe is that it is shown
+	// once and then changed.
+	Password string
+
+	// TenantId is the identifier the first tenant is given, and the nil one
+	// mints a fresh one.
+	//
+	// It is here for the deployment that is not the only one who knows this
+	// organisation. An app served by this roster anchors its own rows on the
+	// identifier a credential carries, so the two have to agree about which
+	// tenant somebody is in -- and when that app also has the tenant written
+	// down as a constant, the agreement has to start here.
+	//
+	// **What happens without it is not an error**, which is why it is worth a
+	// field rather than a note. Both sides come up, somebody signs in, and the
+	// app makes a *second* tenant for them because the identifier it was handed
+	// is not one it has: two rows for one organisation, and the rows that
+	// belong together split across them, with nothing failing.
+	//
+	// It has to be a tenant-domain identifier, and `Tenant().Add` refuses
+	// anything else -- so the check is payday's rather than one written here.
+	TenantId pdid.Id
+}
+
 // Seed writes every row `init` writes, without the printing.
 //
 // Separate from the command because the command **is** the printing: what it
@@ -159,12 +222,7 @@ type Seeded struct {
 // they are wanted. The sandbox wants them and has no terminal to print a
 // generated password on; anything else that wanted a deployment somebody can
 // use would otherwise write these calls again and drift from them.
-// `password` is the operator's, and empty means generate one. A caller that
-// supplies it is one that has somewhere to have got it from and somewhere to
-// put it -- a container told by its environment. Nothing else should: a
-// password chosen by anything but the person is one somebody else knows, and
-// what makes the generated one safe is that it is shown once and then changed.
-func Seed(ctx context.Context, s *Server, tenant, holder, operator, password string) (Seeded, error) {
+func Seed(ctx context.Context, s *Server, in Seeding) (Seeded, error) {
 	// The schema, so that a fresh database is one this can run against. A
 	// deployment with migrations of its own does that instead; see payday's
 	// `migrate`.
@@ -172,9 +230,14 @@ func Seed(ctx context.Context, s *Server, tenant, holder, operator, password str
 		return Seeded{}, err
 	}
 
-	t, err := s.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{
-		Alias: tenant,
-	}.Build())
+	tenant, holder, operator, password := in.Tenant, in.Holder, in.Operator, in.Password
+
+	req := app.TenantAddRequest_builder{Alias: tenant}
+	if in.TenantId != pdid.Nil {
+		req.Id = in.TenantId.Bytes()
+	}
+
+	t, err := s.Ungated.Tenant().Add(ctx, req.Build())
 	if err != nil {
 		return Seeded{}, fmt.Errorf("tenant %q: %w", tenant, err)
 	}

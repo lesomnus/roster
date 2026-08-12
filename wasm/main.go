@@ -146,7 +146,7 @@ func main() {
 func seed(ctx context.Context, s *cmd.Server) error {
 	// The password is given rather than generated, because a page has no
 	// terminal to print a generated one on.
-	if _, err := cmd.Seed(ctx, s, "acme", "admin", operator, password); err != nil {
+	if _, err := cmd.Seed(ctx, s, cmd.Seeding{Tenant: "acme", Holder: "admin", Operator: operator, Password: password}); err != nil {
 		return err
 	}
 

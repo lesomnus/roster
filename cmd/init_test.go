@@ -383,13 +383,85 @@ func TestAGivenPasswordIsTheOneThatSignsIn(t *testing.T) {
 
 	const given = "correct horse battery staple"
 
-	v, err := cmd.Seed(ctx, s, "acme", "admin", "ops", given)
+	v, err := cmd.Seed(ctx, s, cmd.Seeding{Tenant: "acme", Holder: "admin", Operator: "ops", Password: given})
 	x.NoError(err)
 	x.Equal(given, v.Password, "what was handed over is not what came back")
 
 	// And it is what signs in, which is the only claim that matters.
 	x.NotNil(signIn(t, s, "ops", given))
 	x.Nil(signIn(t, s, "ops", "admin"), "the default signed in over a given one")
+}
+
+// TestTheFirstTenantCanBeGivenItsIdentifier.
+//
+// For the deployment that is not the only one who knows this organisation. An
+// app served by this roster anchors its own rows on the identifier a credential
+// carries, so the two have to agree about which tenant somebody is in.
+//
+// **What happens without it is nothing loud**, which is why this exists. Both
+// sides come up, somebody signs in, and the app makes a second tenant because
+// the identifier it was handed is not one it has -- two rows for one
+// organisation, and no error anywhere. It was found that way: an app with its
+// tenant written down as a constant, a person who signed in, and a third row in
+// the table with a name nobody chose.
+func TestTheFirstTenantCanBeGivenItsIdentifier(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	fresh := func(t *testing.T) *cmd.Server {
+		t.Helper()
+
+		drv, dsn := pdtest.DB(t)
+		s, err := cmd.Build(ctx, cmd.Config{
+			Db:    config.DbConfig{Driver: drv, Dsn: dsn},
+			Watch: config.WatchConfig{Broker: config.BrokerMemory},
+		})
+		require.NoError(t, err)
+		t.Cleanup(func() { s.Close() })
+
+		return s
+	}
+
+	// The shape an app writes down: a constant somebody composed, not one
+	// roster minted.
+	at := pdid.MustParse("00000000-0000-8000-8001-686461790000")
+
+	s := fresh(t)
+
+	v, err := cmd.Seed(ctx, s, cmd.Seeding{
+		Tenant: "hday", Holder: "admin", Operator: "ops",
+		TenantId: at,
+	})
+	x.NoError(err)
+	x.Equal(at, v.Tenant, "the tenant was minted instead of taken")
+
+	// The row and not just the answer.
+	got, err := s.Ungated.Tenant().Get(ctx, app.TenantGetRequest_builder{
+		Ref: app.TenantRef_builder{Alias: strPtr("hday")}.Build(),
+	}.Build())
+	x.NoError(err)
+	x.Equal(at.Bytes(), got.GetId())
+
+	t.Run("and nothing said still mints one", func(t *testing.T) {
+		x := require.New(t)
+
+		v, err := cmd.Seed(ctx, fresh(t), cmd.Seeding{Tenant: "acme", Holder: "admin", Operator: "ops"})
+		x.NoError(err)
+		x.NotEqual(pdid.Nil, v.Tenant)
+		x.NotEqual(at, v.Tenant)
+	})
+
+	// An identifier of the wrong kind is refused, and by payday's minter rather
+	// than by anything written here.
+	t.Run("and one that names something else is refused", func(t *testing.T) {
+		x := require.New(t)
+
+		_, err := cmd.Seed(ctx, fresh(t), cmd.Seeding{
+			Tenant: "acme", Holder: "admin", Operator: "ops",
+			TenantId: pdid.New(2),
+		})
+		x.Error(err)
+	})
 }
 
 // TestAnEmptyPasswordIsGeneratedInstead, so that a caller who has none is not
