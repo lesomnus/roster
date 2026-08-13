@@ -83,6 +83,20 @@ func (_c *AuditCreate) SetValue(v []byte) *AuditCreate {
 	return _c
 }
 
+// SetCounterpartTenantID sets the "counterpart_tenant_id" field.
+func (_c *AuditCreate) SetCounterpartTenantID(v uuid.UUID) *AuditCreate {
+	_c.mutation.SetCounterpartTenantID(v)
+	return _c
+}
+
+// SetNillableCounterpartTenantID sets the "counterpart_tenant_id" field if the given value is not nil.
+func (_c *AuditCreate) SetNillableCounterpartTenantID(v *uuid.UUID) *AuditCreate {
+	if v != nil {
+		_c.SetCounterpartTenantID(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *AuditCreate) SetID(v uuid.UUID) *AuditCreate {
 	_c.mutation.SetID(v)
@@ -217,6 +231,10 @@ func (_c *AuditCreate) createSpec() (*Audit, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Value(); ok {
 		_spec.SetField(audit.FieldValue, field.TypeBytes, value)
 		_node.Value = value
+	}
+	if value, ok := _c.mutation.CounterpartTenantID(); ok {
+		_spec.SetField(audit.FieldCounterpartTenantID, field.TypeUUID, value)
+		_node.CounterpartTenantID = value
 	}
 	return _node, _spec
 }

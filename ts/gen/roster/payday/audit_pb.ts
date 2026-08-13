@@ -15,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/audit.proto.
  */
 export const file_roster_payday_audit: GenFile = /*@__PURE__*/
-  fileDesc("Chlyb3N0ZXIvcGF5ZGF5L2F1ZGl0LnByb3RvEgZyb3N0ZXIizAQKBUF1ZGl0EhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIZCgl0ZW5hbnRfaWQYAiABKAxCBuqCFgIQQBIYCghhY3Rvcl9pZBgIIAEoDEIG6oIWAhBAEhAKCHRyYWNlX2lkGAkgASgMEg4KBmFjdGlvbhgKIAEoCRIZCglvYmplY3RfaWQYCyABKAxCBuqCFgIQQBINCgVwYXRjaBgMIAEoDBI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASHwoPYWN0b3JfdGVuYW50X2lkGBAgASgMQgbqghYCEEASDQoFdmFsdWUYESABKAw6uwLK/BWtARICEAEaFxIGb2JqZWN0Gg0KCW9iamVjdF9pZBALGigSBXRyYWlsGg0KCXRlbmFudF9pZBACGhAKDGRhdGVfY3JlYXRlZBAPGjgSD2J5X2FjdG9yX3RlbmFudBoTCg9hY3Rvcl90ZW5hbnRfaWQQEBoQCgxkYXRlX2NyZWF0ZWQQDxoqEghieV9hY3RvchoMCghhY3Rvcl9pZBAIGhAKDGRhdGVfY3JlYXRlZBAPirsWhAEIAzJcChIKDgoMZGF0ZV9jcmVhdGVkEAEKCAoECgJpZBABGgsKCW9iamVjdF9pZBoKCghhY3Rvcl9pZBoLCgl0ZW5hbnRfaWQaEQoPYWN0b3JfdGVuYW50X2lkIDIoyAFCAgoASAMiHBIJdGVuYW50X2lkEg9hY3Rvcl90ZW5hbnRfaWRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Chlyb3N0ZXIvcGF5ZGF5L2F1ZGl0LnByb3RvEgZyb3N0ZXIi5QUKBUF1ZGl0EhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIZCgl0ZW5hbnRfaWQYAiABKAxCBuqCFgIQQBIYCghhY3Rvcl9pZBgIIAEoDEIG6oIWAhBAEhAKCHRyYWNlX2lkGAkgASgMEg4KBmFjdGlvbhgKIAEoCRIZCglvYmplY3RfaWQYCyABKAxCBuqCFgIQQBINCgVwYXRjaBgMIAEoDBI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASHwoPYWN0b3JfdGVuYW50X2lkGBAgASgMQgbqghYCEEASDQoFdmFsdWUYESABKAwSKAoVY291bnRlcnBhcnRfdGVuYW50X2lkGBIgASgMQgnqghYFEECCAQA6qgPK/BXsARICEAEaFxIGb2JqZWN0Gg0KCW9iamVjdF9pZBALGigSBXRyYWlsGg0KCXRlbmFudF9pZBACGhAKDGRhdGVfY3JlYXRlZBAPGjgSD2J5X2FjdG9yX3RlbmFudBoTCg9hY3Rvcl90ZW5hbnRfaWQQEBoQCgxkYXRlX2NyZWF0ZWQQDxo9Eg5ieV9jb3VudGVycGFydBoZChVjb3VudGVycGFydF90ZW5hbnRfaWQQEhoQCgxkYXRlX2NyZWF0ZWQQDxoqEghieV9hY3RvchoMCghhY3Rvcl9pZBAIGhAKDGRhdGVfY3JlYXRlZBAPirsWtAEIAzJ1ChIKDgoMZGF0ZV9jcmVhdGVkEAEKCAoECgJpZBABGgsKCW9iamVjdF9pZBoKCghhY3Rvcl9pZBoLCgl0ZW5hbnRfaWQaEQoPYWN0b3JfdGVuYW50X2lkGhcKFWNvdW50ZXJwYXJ0X3RlbmFudF9pZCAyKMgBQgIKAEgDIjMSCXRlbmFudF9pZBIPYWN0b3JfdGVuYW50X2lkEhVjb3VudGVycGFydF90ZW5hbnRfaWRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Audit is one write that happened, and who made it.
@@ -185,6 +185,44 @@ export type Audit = Message<"roster.Audit"> & {
    * @generated from field: bytes value = 17;
    */
   value: Uint8Array;
+
+  /**
+   * The **other** tenant this write was about, and unset for nearly every one.
+   *
+   * Some writes have two sides. A row moves from one tenant to another, and the
+   * record of it is filed under where it ended up: `tenant_id` is read off the
+   * row after the write, so the tenant that received it can see what happened
+   * and the tenant that let it go **cannot see the event that took it away**.
+   * The one row it most needs is the one it is not a party to.
+   *
+   * So this is where the other party goes, and the wall counts it. It is not
+   * "the previous tenant": that would be a field about transfers, and the shape
+   * is more general than transfers -- one write, two tenants with a right to
+   * read it. What the pair means is the app's to say, in the operation that
+   * knows.
+   *
+   * It is **not** a list, and that is a decision rather than a first version.
+   * The wall on this table is the OR of equalities, which is what the indexes
+   * below cover; a list would make it a containment test on the one table that
+   * never stops growing, and would make "who can read this row" a property of
+   * the row rather than of the schema. A third party to a single write has not
+   * turned up yet, and if it does it can be argued for then.
+   *
+   * Set through `audit.Concerning`, so it is server-side and never a field of a
+   * request: a caller that could name it could grant a stranger a read.
+   *
+   * It has a default, which the other two identifiers here do not, and that is
+   * about who writes a trail row. The recorder is not the only one: an app that
+   * records something the servers cannot see -- roster writes the operator's
+   * intent before the attempt, through ent, because every server refuses a
+   * write to the trail -- composes the row itself. A column with no default is
+   * one every such writer has to learn about on the day it is added, and what
+   * it learns is a runtime refusal on a deployment that upgraded. Unset is the
+   * honest value for nearly every row anyway.
+   *
+   * @generated from field: bytes counterpart_tenant_id = 18;
+   */
+  counterpartTenantId: Uint8Array;
 };
 
 /**

@@ -32,6 +32,8 @@ func (Audit) Fields() []ent.Field {
 			Optional(),
 		field.UUID("actor_tenant_id", uuid.UUID{}),
 		field.Bytes("value"),
+		field.UUID("counterpart_tenant_id", uuid.UUID{}).
+			Optional(),
 	}
 }
 
@@ -40,6 +42,7 @@ func (Audit) Indexes() []ent.Index {
 		index.Fields("object_id"),
 		index.Fields("tenant_id", "date_created"),
 		index.Fields("actor_tenant_id", "date_created"),
+		index.Fields("counterpart_tenant_id", "date_created"),
 		index.Fields("actor_id", "date_created"),
 	}
 }

@@ -1050,22 +1050,23 @@ func (m *ApiKeyMutation) ResetEdge(name string) error {
 // AuditMutation represents an operation that mutates the Audit nodes in the graph.
 type AuditMutation struct {
 	config
-	op              Op
-	typ             string
-	id              *uuid.UUID
-	tenant_id       *uuid.UUID
-	actor_id        *uuid.UUID
-	trace_id        *[]byte
-	action          *string
-	object_id       *uuid.UUID
-	patch           *[]byte
-	date_created    *time.Time
-	actor_tenant_id *uuid.UUID
-	value           *[]byte
-	clearedFields   map[string]struct{}
-	done            bool
-	oldValue        func(context.Context) (*Audit, error)
-	predicates      []predicate.Audit
+	op                    Op
+	typ                   string
+	id                    *uuid.UUID
+	tenant_id             *uuid.UUID
+	actor_id              *uuid.UUID
+	trace_id              *[]byte
+	action                *string
+	object_id             *uuid.UUID
+	patch                 *[]byte
+	date_created          *time.Time
+	actor_tenant_id       *uuid.UUID
+	value                 *[]byte
+	counterpart_tenant_id *uuid.UUID
+	clearedFields         map[string]struct{}
+	done                  bool
+	oldValue              func(context.Context) (*Audit, error)
+	predicates            []predicate.Audit
 }
 
 var _ ent.Mutation = (*AuditMutation)(nil)
@@ -1509,6 +1510,55 @@ func (m *AuditMutation) ResetValue() {
 	m.value = nil
 }
 
+// SetCounterpartTenantID sets the "counterpart_tenant_id" field.
+func (m *AuditMutation) SetCounterpartTenantID(u uuid.UUID) {
+	m.counterpart_tenant_id = &u
+}
+
+// CounterpartTenantID returns the value of the "counterpart_tenant_id" field in the mutation.
+func (m *AuditMutation) CounterpartTenantID() (r uuid.UUID, exists bool) {
+	v := m.counterpart_tenant_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCounterpartTenantID returns the old "counterpart_tenant_id" field's value of the Audit entity.
+// If the Audit object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AuditMutation) OldCounterpartTenantID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCounterpartTenantID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCounterpartTenantID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCounterpartTenantID: %w", err)
+	}
+	return oldValue.CounterpartTenantID, nil
+}
+
+// ClearCounterpartTenantID clears the value of the "counterpart_tenant_id" field.
+func (m *AuditMutation) ClearCounterpartTenantID() {
+	m.counterpart_tenant_id = nil
+	m.clearedFields[audit.FieldCounterpartTenantID] = struct{}{}
+}
+
+// CounterpartTenantIDCleared returns if the "counterpart_tenant_id" field was cleared in this mutation.
+func (m *AuditMutation) CounterpartTenantIDCleared() bool {
+	_, ok := m.clearedFields[audit.FieldCounterpartTenantID]
+	return ok
+}
+
+// ResetCounterpartTenantID resets all changes to the "counterpart_tenant_id" field.
+func (m *AuditMutation) ResetCounterpartTenantID() {
+	m.counterpart_tenant_id = nil
+	delete(m.clearedFields, audit.FieldCounterpartTenantID)
+}
+
 // Where appends a list predicates to the AuditMutation builder.
 func (m *AuditMutation) Where(ps ...predicate.Audit) {
 	m.predicates = append(m.predicates, ps...)
@@ -1543,7 +1593,7 @@ func (m *AuditMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AuditMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 10)
 	if m.tenant_id != nil {
 		fields = append(fields, audit.FieldTenantID)
 	}
@@ -1571,6 +1621,9 @@ func (m *AuditMutation) Fields() []string {
 	if m.value != nil {
 		fields = append(fields, audit.FieldValue)
 	}
+	if m.counterpart_tenant_id != nil {
+		fields = append(fields, audit.FieldCounterpartTenantID)
+	}
 	return fields
 }
 
@@ -1597,6 +1650,8 @@ func (m *AuditMutation) Field(name string) (ent.Value, bool) {
 		return m.ActorTenantID()
 	case audit.FieldValue:
 		return m.Value()
+	case audit.FieldCounterpartTenantID:
+		return m.CounterpartTenantID()
 	}
 	return nil, false
 }
@@ -1624,6 +1679,8 @@ func (m *AuditMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldActorTenantID(ctx)
 	case audit.FieldValue:
 		return m.OldValue(ctx)
+	case audit.FieldCounterpartTenantID:
+		return m.OldCounterpartTenantID(ctx)
 	}
 	return nil, fmt.Errorf("unknown Audit field %s", name)
 }
@@ -1696,6 +1753,13 @@ func (m *AuditMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetValue(v)
 		return nil
+	case audit.FieldCounterpartTenantID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCounterpartTenantID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Audit field %s", name)
 }
@@ -1729,6 +1793,9 @@ func (m *AuditMutation) ClearedFields() []string {
 	if m.FieldCleared(audit.FieldDateCreated) {
 		fields = append(fields, audit.FieldDateCreated)
 	}
+	if m.FieldCleared(audit.FieldCounterpartTenantID) {
+		fields = append(fields, audit.FieldCounterpartTenantID)
+	}
 	return fields
 }
 
@@ -1745,6 +1812,9 @@ func (m *AuditMutation) ClearField(name string) error {
 	switch name {
 	case audit.FieldDateCreated:
 		m.ClearDateCreated()
+		return nil
+	case audit.FieldCounterpartTenantID:
+		m.ClearCounterpartTenantID()
 		return nil
 	}
 	return fmt.Errorf("unknown Audit nullable field %s", name)
@@ -1780,6 +1850,9 @@ func (m *AuditMutation) ResetField(name string) error {
 		return nil
 	case audit.FieldValue:
 		m.ResetValue()
+		return nil
+	case audit.FieldCounterpartTenantID:
+		m.ResetCounterpartTenantID()
 		return nil
 	}
 	return fmt.Errorf("unknown Audit field %s", name)
