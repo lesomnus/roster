@@ -15,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/audit.proto.
  */
 export const file_roster_payday_audit: GenFile = /*@__PURE__*/
-  fileDesc("Chlyb3N0ZXIvcGF5ZGF5L2F1ZGl0LnByb3RvEgZyb3N0ZXIi5QUKBUF1ZGl0EhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIZCgl0ZW5hbnRfaWQYAiABKAxCBuqCFgIQQBIYCghhY3Rvcl9pZBgIIAEoDEIG6oIWAhBAEhAKCHRyYWNlX2lkGAkgASgMEg4KBmFjdGlvbhgKIAEoCRIZCglvYmplY3RfaWQYCyABKAxCBuqCFgIQQBINCgVwYXRjaBgMIAEoDBI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASHwoPYWN0b3JfdGVuYW50X2lkGBAgASgMQgbqghYCEEASDQoFdmFsdWUYESABKAwSKAoVY291bnRlcnBhcnRfdGVuYW50X2lkGBIgASgMQgnqghYFEECCAQA6qgPK/BXsARICEAEaFxIGb2JqZWN0Gg0KCW9iamVjdF9pZBALGigSBXRyYWlsGg0KCXRlbmFudF9pZBACGhAKDGRhdGVfY3JlYXRlZBAPGjgSD2J5X2FjdG9yX3RlbmFudBoTCg9hY3Rvcl90ZW5hbnRfaWQQEBoQCgxkYXRlX2NyZWF0ZWQQDxo9Eg5ieV9jb3VudGVycGFydBoZChVjb3VudGVycGFydF90ZW5hbnRfaWQQEhoQCgxkYXRlX2NyZWF0ZWQQDxoqEghieV9hY3RvchoMCghhY3Rvcl9pZBAIGhAKDGRhdGVfY3JlYXRlZBAPirsWtAEIAzJ1ChIKDgoMZGF0ZV9jcmVhdGVkEAEKCAoECgJpZBABGgsKCW9iamVjdF9pZBoKCghhY3Rvcl9pZBoLCgl0ZW5hbnRfaWQaEQoPYWN0b3JfdGVuYW50X2lkGhcKFWNvdW50ZXJwYXJ0X3RlbmFudF9pZCAyKMgBQgIKAEgDIjMSCXRlbmFudF9pZBIPYWN0b3JfdGVuYW50X2lkEhVjb3VudGVycGFydF90ZW5hbnRfaWRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Chlyb3N0ZXIvcGF5ZGF5L2F1ZGl0LnByb3RvEgZyb3N0ZXIi5AUKBUF1ZGl0EhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIZCgl0ZW5hbnRfaWQYAiABKAxCBuqCFgIQQBIYCghhY3Rvcl9pZBgIIAEoDEIG6oIWAhBAEhAKCHRyYWNlX2lkGAkgASgMEg4KBmFjdGlvbhgKIAEoCRIZCglvYmplY3RfaWQYCyABKAxCBuqCFgIQQBINCgVwYXRjaBgMIAEoDBI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASHwoPYWN0b3JfdGVuYW50X2lkGBAgASgMQgbqghYCEEASDQoFdmFsdWUYESABKAwSJwoVY291bnRlcnBhcnRfdGVuYW50X2lkGBIgASgMQgjqghYEEEA4ATqqA8r8FewBEgIQARoXEgZvYmplY3QaDQoJb2JqZWN0X2lkEAsaKBIFdHJhaWwaDQoJdGVuYW50X2lkEAIaEAoMZGF0ZV9jcmVhdGVkEA8aOBIPYnlfYWN0b3JfdGVuYW50GhMKD2FjdG9yX3RlbmFudF9pZBAQGhAKDGRhdGVfY3JlYXRlZBAPGj0SDmJ5X2NvdW50ZXJwYXJ0GhkKFWNvdW50ZXJwYXJ0X3RlbmFudF9pZBASGhAKDGRhdGVfY3JlYXRlZBAPGioSCGJ5X2FjdG9yGgwKCGFjdG9yX2lkEAgaEAoMZGF0ZV9jcmVhdGVkEA+Kuxa0AQgDMnUKEgoOCgxkYXRlX2NyZWF0ZWQQAQoICgQKAmlkEAEaCwoJb2JqZWN0X2lkGgoKCGFjdG9yX2lkGgsKCXRlbmFudF9pZBoRCg9hY3Rvcl90ZW5hbnRfaWQaFwoVY291bnRlcnBhcnRfdGVuYW50X2lkIDIoyAFCAgoASAMiMxIJdGVuYW50X2lkEg9hY3Rvcl90ZW5hbnRfaWQSFWNvdW50ZXJwYXJ0X3RlbmFudF9pZEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Audit is one write that happened, and who made it.
@@ -211,14 +211,23 @@ export type Audit = Message<"roster.Audit"> & {
    * Set through `audit.Concerning`, so it is server-side and never a field of a
    * request: a caller that could name it could grant a stranger a read.
    *
-   * It has a default, which the other two identifiers here do not, and that is
-   * about who writes a trail row. The recorder is not the only one: an app that
-   * records something the servers cannot see -- roster writes the operator's
-   * intent before the attempt, through ent, because every server refuses a
-   * write to the trail -- composes the row itself. A column with no default is
-   * one every such writer has to learn about on the day it is added, and what
-   * it learns is a runtime refusal on a deployment that upgraded. Unset is the
-   * honest value for nearly every row anyway.
+   * **Nullable**, which the other two identifiers here are not, and it is the
+   * only honest shape: nearly every write is about one tenant, and a column
+   * that has to hold something would be holding a lie about who may read the
+   * row. NULL matches no scope, so an unset one is a row with two readers
+   * rather than three.
+   *
+   * Not a default, which was the first attempt and was wrong: a default on a
+   * uuid column means *the server picks one*, so every ordinary trail row would
+   * have carried a **random tenant identifier** in the column that decides who
+   * can read it. It matched nobody and was still the wrong value to write.
+   *
+   * Nullable is also what keeps the other writers working. The recorder is not
+   * the only one: an app that records something the servers cannot see --
+   * roster writes an operator's intent before the attempt, through ent, because
+   * every server refuses a write to the trail -- composes the row itself, and a
+   * column it must fill in is one it learns about from a runtime refusal on the
+   * day somebody upgrades.
    *
    * @generated from field: bytes counterpart_tenant_id = 18;
    */
