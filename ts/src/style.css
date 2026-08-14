@@ -81,3 +81,21 @@ td:last-child {
 	opacity: 0.7;
 	font-size: 0.9rem;
 }
+
+/* The customers screen nests three deep -- tenant, person, what they sign in
+   with -- and without the indent the three tables read as one. This is the
+   least that makes the nesting visible, not a style for the console. */
+.within {
+	margin-left: 1.5rem;
+	border-left: 2px solid #ddd;
+	padding-left: 1rem;
+}
+
+/* A provider's subject is an opaque identifier somebody compares by eye. */
+.mono {
+	font-family: ui-monospace, monospace;
+}
+
+.none {
+	color: #888;
+}

@@ -22,10 +22,13 @@
 import { useState } from 'react'
 
 import { useQuery } from '@lesomnus/payday/react'
+import type { App } from '@lesomnus/payday/react'
 
 import { MeService } from '../gen/app/me_pb.js'
 import { HolderService } from '../gen/roster/payday/holder_svc_pb.js'
 import { ApiKeyService } from '../gen/app/apikey_svc_pb.js'
+
+import { Customers } from './customers.js'
 
 /**
  * covers is `frame.Covers` in the browser: three parts, each `*` or a name.
@@ -67,9 +70,15 @@ function parts(v: string): [string, string, string] | null {
 	return [pkg, service, method]
 }
 
-type Screen = 'operators' | 'services' | 'you'
+type Screen = 'operators' | 'services' | 'customers' | 'you'
 
-export function Page(props: { onSignOut: () => void }): React.ReactNode {
+export function Page(props: {
+	onSignOut: () => void
+
+	// The customers screen's store, on the admin listener. Null where there is
+	// no such listener -- the sandbox -- and the screen is not offered.
+	customers: App | null
+}): React.ReactNode {
 	const me = useQuery(MeService.method.get, {})
 	const [at, go] = useState<Screen>('operators')
 
@@ -92,6 +101,15 @@ export function Page(props: { onSignOut: () => void }): React.ReactNode {
 	const screens: { at: Screen; name: string; ok: boolean }[] = [
 		{ at: 'operators', name: 'signs in', ok: may('/roster.HolderService/List') },
 		{ at: 'services', name: 'calls in', ok: may('/roster.ApiKeyService/List') },
+
+		// The data plane, through the admin listener. Two conditions rather than
+		// one: the method an operator may call, and whether this deployment has
+		// that listener at all.
+		{
+			at: 'customers',
+			name: 'customers',
+			ok: props.customers !== null && may('/roster.TenantService/List'),
+		},
 		{ at: 'you', name: 'you', ok: true },
 	]
 
@@ -116,6 +134,7 @@ export function Page(props: { onSignOut: () => void }): React.ReactNode {
 			<main>
 				{at === 'operators' && <Operators />}
 				{at === 'services' && <Services />}
+				{at === 'customers' && <Customers app={props.customers} />}
 				{at === 'you' && <You methods={held} />}
 			</main>
 		</div>

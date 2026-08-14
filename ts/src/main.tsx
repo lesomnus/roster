@@ -15,6 +15,7 @@ import { StrictMode, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import { Provider } from '@lesomnus/payday/react'
+import type { App } from '@lesomnus/payday/react'
 
 import { AuthService } from '../gen/app/auth_pb.js'
 import { open } from './store.js'
@@ -34,6 +35,25 @@ import './style.css'
  * and not `admin.http`, which reaches customers and is a later screen.
  */
 const ADDR = import.meta.env['VITE_ADDR'] ?? 'http://localhost:8082'
+
+/**
+ * Where the **customers** are.
+ *
+ * `admin.http`, the third listener, and the one the comment above called a
+ * later screen. It is a second address rather than a second path because it is
+ * a second server: the rows are the data plane's, in another database, and
+ * `roster.HolderService` means a different thing on each -- an operator there,
+ * a customer's person here. They cannot share a port, because both would
+ * register that service under one name.
+ *
+ * The session cookie is the same one; `cmd/admin.go` reads it. What a
+ * deployment has to add is `origins:` under `admin.http`, for the reason
+ * `control.http` needs it.
+ *
+ * The sandbox has one server and no third listener, so this is undefined there
+ * and the screen is not offered.
+ */
+const ADMIN = import.meta.env['VITE_ADMIN_ADDR'] ?? 'http://localhost:8081'
 
 const root = createRoot(document.getElementById('root') as HTMLElement)
 
@@ -121,11 +141,37 @@ function SignIn(props: { onDone: () => void }): React.ReactNode {
 	)
 }
 
+/**
+ * customers opens a second store, on the admin listener.
+ *
+ * Second because a `Store` holds rows by entity and `roster.Holder` is two
+ * different tables across these two ports; one store would have them overwrite
+ * each other by identifier. Null in the sandbox, where there is no such
+ * listener and the screen is not offered.
+ */
+async function customers(): Promise<App | null> {
+	if (import.meta.env['VITE_SANDBOX'] !== undefined) return null
+
+	const transport = createConnectTransport({
+		baseUrl: ADMIN,
+		fetch: (input, init) => fetch(input, { ...init, credentials: 'include' }),
+	})
+
+	// Keyed apart from the console's own store for the same reason there are two
+	// of them: what they hold is not the same rows.
+	return open(transport, 'console:admin')
+}
+
 async function boot(transport: Transport): Promise<void> {
 	// Opened per **session** rather than per credential, because this page holds
 	// none: what it would key on is who the server says the caller is, and that
 	// is a call away.
 	const app = await open(transport, 'console')
+
+	// Opened beside it rather than inside the screen, so that a page which
+	// never opens the customers tab still pays for it once and a page that does
+	// draws immediately. It is a store, not a call.
+	const theirs = await customers()
 
 	/**
 	 * Signing out deletes the row, which is the part that matters: the key is
@@ -147,7 +193,7 @@ async function boot(transport: Transport): Promise<void> {
 	root.render(
 		<StrictMode>
 			<Provider app={app}>
-				<Page onSignOut={out} />
+				<Page onSignOut={out} customers={theirs} />
 			</Provider>
 		</StrictMode>,
 	)

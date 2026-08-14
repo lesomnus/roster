@@ -96,6 +96,11 @@ services:
     environment:
       # The control listener's HTTP, which is what this console is.
       VITE_ADDR: http://localhost:8082
+      # And the admin listener's, which is where the customers screen reads:
+      # the data plane, with no wall, behind the same session. A second address
+      # rather than a second path because it is a second server -- both would
+      # otherwise register `roster.HolderService` under one name.
+      VITE_ADMIN_ADDR: http://localhost:8081
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
     volumes:
       - ./ts:/app
