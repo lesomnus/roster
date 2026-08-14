@@ -1802,10 +1802,11 @@ func (b0 HolderListResponse_builder) Build() *HolderListResponse {
 }
 
 type HolderFilter struct {
-	state          protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref *HolderRef             `protobuf:"bytes,1,opt,name=ref"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref    *HolderRef             `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Tenant *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *HolderFilter) Reset() {
@@ -1840,8 +1841,19 @@ func (x *HolderFilter) GetRef() *HolderRef {
 	return nil
 }
 
+func (x *HolderFilter) GetTenant() *TenantRef {
+	if x != nil {
+		return x.xxx_hidden_Tenant
+	}
+	return nil
+}
+
 func (x *HolderFilter) SetRef(v *HolderRef) {
 	x.xxx_hidden_Ref = v
+}
+
+func (x *HolderFilter) SetTenant(v *TenantRef) {
+	x.xxx_hidden_Tenant = v
 }
 
 func (x *HolderFilter) HasRef() bool {
@@ -1851,14 +1863,26 @@ func (x *HolderFilter) HasRef() bool {
 	return x.xxx_hidden_Ref != nil
 }
 
+func (x *HolderFilter) HasTenant() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Tenant != nil
+}
+
 func (x *HolderFilter) ClearRef() {
 	x.xxx_hidden_Ref = nil
+}
+
+func (x *HolderFilter) ClearTenant() {
+	x.xxx_hidden_Tenant = nil
 }
 
 type HolderFilter_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref *HolderRef
+	Ref    *HolderRef
+	Tenant *TenantRef
 }
 
 func (b0 HolderFilter_builder) Build() *HolderFilter {
@@ -1866,6 +1890,7 @@ func (b0 HolderFilter_builder) Build() *HolderFilter {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Tenant = b.Tenant
 	return m0
 }
 
@@ -2374,9 +2399,10 @@ const file_roster_payday_holder_svc_g_proto_rawDesc = "" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"U\n" +
 	"\x12HolderListResponse\x12$\n" +
 	"\x05items\x18\x01 \x03(\v2\x0e.roster.HolderR\x05items\x12\x19\n" +
-	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"3\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"^\n" +
 	"\fHolderFilter\x12#\n" +
-	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\"p\n" +
+	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\x12)\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\"p\n" +
 	"\x12HolderWatchRequest\x12.\n" +
 	"\afilters\x18\x01 \x03(\v2\x14.roster.HolderFilterR\afilters\x12*\n" +
 	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"D\n" +
@@ -2450,34 +2476,35 @@ var file_roster_payday_holder_svc_g_proto_depIdxs = []int32{
 	9,  // 17: roster.HolderListRequest.filters:type_name -> roster.HolderFilter
 	22, // 18: roster.HolderListResponse.items:type_name -> roster.Holder
 	2,  // 19: roster.HolderFilter.ref:type_name -> roster.HolderRef
-	9,  // 20: roster.HolderWatchRequest.filters:type_name -> roster.HolderFilter
-	12, // 21: roster.HolderWatchResponse.items:type_name -> roster.HolderWatchItem
-	22, // 22: roster.HolderWatchItem.value:type_name -> roster.Holder
-	2,  // 23: roster.HolderUpdateRequest.ref:type_name -> roster.HolderRef
-	17, // 24: roster.HolderUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
-	18, // 25: roster.HolderUpdateRequest.profile:type_name -> roster.Profile
-	19, // 26: roster.HolderUpdateRequest.data:type_name -> google.protobuf.Any
-	0,  // 27: roster.HolderService.Add:input_type -> roster.HolderAddRequest
-	1,  // 28: roster.HolderService.Get:input_type -> roster.HolderGetRequest
-	5,  // 29: roster.HolderService.Patch:input_type -> roster.HolderPatchRequest
-	6,  // 30: roster.HolderService.Apply:input_type -> roster.HolderApplyRequest
-	2,  // 31: roster.HolderService.Erase:input_type -> roster.HolderRef
-	7,  // 32: roster.HolderService.List:input_type -> roster.HolderListRequest
-	10, // 33: roster.HolderService.Watch:input_type -> roster.HolderWatchRequest
-	13, // 34: roster.HolderService.Update:input_type -> roster.HolderUpdateRequest
-	22, // 35: roster.HolderService.Add:output_type -> roster.Holder
-	22, // 36: roster.HolderService.Get:output_type -> roster.Holder
-	22, // 37: roster.HolderService.Patch:output_type -> roster.Holder
-	22, // 38: roster.HolderService.Apply:output_type -> roster.Holder
-	23, // 39: roster.HolderService.Erase:output_type -> google.protobuf.Empty
-	8,  // 40: roster.HolderService.List:output_type -> roster.HolderListResponse
-	11, // 41: roster.HolderService.Watch:output_type -> roster.HolderWatchResponse
-	22, // 42: roster.HolderService.Update:output_type -> roster.Holder
-	35, // [35:43] is the sub-list for method output_type
-	27, // [27:35] is the sub-list for method input_type
-	27, // [27:27] is the sub-list for extension type_name
-	27, // [27:27] is the sub-list for extension extendee
-	0,  // [0:27] is the sub-list for field type_name
+	16, // 20: roster.HolderFilter.tenant:type_name -> roster.TenantRef
+	9,  // 21: roster.HolderWatchRequest.filters:type_name -> roster.HolderFilter
+	12, // 22: roster.HolderWatchResponse.items:type_name -> roster.HolderWatchItem
+	22, // 23: roster.HolderWatchItem.value:type_name -> roster.Holder
+	2,  // 24: roster.HolderUpdateRequest.ref:type_name -> roster.HolderRef
+	17, // 25: roster.HolderUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
+	18, // 26: roster.HolderUpdateRequest.profile:type_name -> roster.Profile
+	19, // 27: roster.HolderUpdateRequest.data:type_name -> google.protobuf.Any
+	0,  // 28: roster.HolderService.Add:input_type -> roster.HolderAddRequest
+	1,  // 29: roster.HolderService.Get:input_type -> roster.HolderGetRequest
+	5,  // 30: roster.HolderService.Patch:input_type -> roster.HolderPatchRequest
+	6,  // 31: roster.HolderService.Apply:input_type -> roster.HolderApplyRequest
+	2,  // 32: roster.HolderService.Erase:input_type -> roster.HolderRef
+	7,  // 33: roster.HolderService.List:input_type -> roster.HolderListRequest
+	10, // 34: roster.HolderService.Watch:input_type -> roster.HolderWatchRequest
+	13, // 35: roster.HolderService.Update:input_type -> roster.HolderUpdateRequest
+	22, // 36: roster.HolderService.Add:output_type -> roster.Holder
+	22, // 37: roster.HolderService.Get:output_type -> roster.Holder
+	22, // 38: roster.HolderService.Patch:output_type -> roster.Holder
+	22, // 39: roster.HolderService.Apply:output_type -> roster.Holder
+	23, // 40: roster.HolderService.Erase:output_type -> google.protobuf.Empty
+	8,  // 41: roster.HolderService.List:output_type -> roster.HolderListResponse
+	11, // 42: roster.HolderService.Watch:output_type -> roster.HolderWatchResponse
+	22, // 43: roster.HolderService.Update:output_type -> roster.Holder
+	36, // [36:44] is the sub-list for method output_type
+	28, // [28:36] is the sub-list for method input_type
+	28, // [28:28] is the sub-list for extension type_name
+	28, // [28:28] is the sub-list for extension extendee
+	0,  // [0:28] is the sub-list for field type_name
 }
 
 func init() { file_roster_payday_holder_svc_g_proto_init() }

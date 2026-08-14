@@ -1276,10 +1276,11 @@ func (b0 IdentityListResponse_builder) Build() *IdentityListResponse {
 }
 
 type IdentityFilter struct {
-	state          protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref *IdentityRef           `protobuf:"bytes,1,opt,name=ref"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref    *IdentityRef           `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Holder *HolderRef             `protobuf:"bytes,2,opt,name=holder"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *IdentityFilter) Reset() {
@@ -1314,8 +1315,19 @@ func (x *IdentityFilter) GetRef() *IdentityRef {
 	return nil
 }
 
+func (x *IdentityFilter) GetHolder() *HolderRef {
+	if x != nil {
+		return x.xxx_hidden_Holder
+	}
+	return nil
+}
+
 func (x *IdentityFilter) SetRef(v *IdentityRef) {
 	x.xxx_hidden_Ref = v
+}
+
+func (x *IdentityFilter) SetHolder(v *HolderRef) {
+	x.xxx_hidden_Holder = v
 }
 
 func (x *IdentityFilter) HasRef() bool {
@@ -1325,14 +1337,26 @@ func (x *IdentityFilter) HasRef() bool {
 	return x.xxx_hidden_Ref != nil
 }
 
+func (x *IdentityFilter) HasHolder() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Holder != nil
+}
+
 func (x *IdentityFilter) ClearRef() {
 	x.xxx_hidden_Ref = nil
+}
+
+func (x *IdentityFilter) ClearHolder() {
+	x.xxx_hidden_Holder = nil
 }
 
 type IdentityFilter_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref *IdentityRef
+	Ref    *IdentityRef
+	Holder *HolderRef
 }
 
 func (b0 IdentityFilter_builder) Build() *IdentityFilter {
@@ -1340,6 +1364,7 @@ func (b0 IdentityFilter_builder) Build() *IdentityFilter {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Holder = b.Holder
 	return m0
 }
 
@@ -1667,9 +1692,10 @@ const file_app_identity_svc_g_proto_rawDesc = "" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"Y\n" +
 	"\x14IdentityListResponse\x12&\n" +
 	"\x05items\x18\x01 \x03(\v2\x10.roster.IdentityR\x05items\x12\x19\n" +
-	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"7\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"b\n" +
 	"\x0eIdentityFilter\x12%\n" +
-	"\x03ref\x18\x01 \x01(\v2\x13.roster.IdentityRefR\x03ref\"t\n" +
+	"\x03ref\x18\x01 \x01(\v2\x13.roster.IdentityRefR\x03ref\x12)\n" +
+	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\"t\n" +
 	"\x14IdentityWatchRequest\x120\n" +
 	"\afilters\x18\x01 \x03(\v2\x16.roster.IdentityFilterR\afilters\x12*\n" +
 	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"H\n" +
@@ -1724,28 +1750,29 @@ var file_app_identity_svc_g_proto_depIdxs = []int32{
 	9,  // 10: roster.IdentityListRequest.filters:type_name -> roster.IdentityFilter
 	17, // 11: roster.IdentityListResponse.items:type_name -> roster.Identity
 	2,  // 12: roster.IdentityFilter.ref:type_name -> roster.IdentityRef
-	9,  // 13: roster.IdentityWatchRequest.filters:type_name -> roster.IdentityFilter
-	12, // 14: roster.IdentityWatchResponse.items:type_name -> roster.IdentityWatchItem
-	17, // 15: roster.IdentityWatchItem.value:type_name -> roster.Identity
-	0,  // 16: roster.IdentityService.Add:input_type -> roster.IdentityAddRequest
-	1,  // 17: roster.IdentityService.Get:input_type -> roster.IdentityGetRequest
-	5,  // 18: roster.IdentityService.Patch:input_type -> roster.IdentityPatchRequest
-	6,  // 19: roster.IdentityService.Apply:input_type -> roster.IdentityApplyRequest
-	2,  // 20: roster.IdentityService.Erase:input_type -> roster.IdentityRef
-	7,  // 21: roster.IdentityService.List:input_type -> roster.IdentityListRequest
-	10, // 22: roster.IdentityService.Watch:input_type -> roster.IdentityWatchRequest
-	17, // 23: roster.IdentityService.Add:output_type -> roster.Identity
-	17, // 24: roster.IdentityService.Get:output_type -> roster.Identity
-	17, // 25: roster.IdentityService.Patch:output_type -> roster.Identity
-	17, // 26: roster.IdentityService.Apply:output_type -> roster.Identity
-	18, // 27: roster.IdentityService.Erase:output_type -> google.protobuf.Empty
-	8,  // 28: roster.IdentityService.List:output_type -> roster.IdentityListResponse
-	11, // 29: roster.IdentityService.Watch:output_type -> roster.IdentityWatchResponse
-	23, // [23:30] is the sub-list for method output_type
-	16, // [16:23] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	13, // 13: roster.IdentityFilter.holder:type_name -> roster.HolderRef
+	9,  // 14: roster.IdentityWatchRequest.filters:type_name -> roster.IdentityFilter
+	12, // 15: roster.IdentityWatchResponse.items:type_name -> roster.IdentityWatchItem
+	17, // 16: roster.IdentityWatchItem.value:type_name -> roster.Identity
+	0,  // 17: roster.IdentityService.Add:input_type -> roster.IdentityAddRequest
+	1,  // 18: roster.IdentityService.Get:input_type -> roster.IdentityGetRequest
+	5,  // 19: roster.IdentityService.Patch:input_type -> roster.IdentityPatchRequest
+	6,  // 20: roster.IdentityService.Apply:input_type -> roster.IdentityApplyRequest
+	2,  // 21: roster.IdentityService.Erase:input_type -> roster.IdentityRef
+	7,  // 22: roster.IdentityService.List:input_type -> roster.IdentityListRequest
+	10, // 23: roster.IdentityService.Watch:input_type -> roster.IdentityWatchRequest
+	17, // 24: roster.IdentityService.Add:output_type -> roster.Identity
+	17, // 25: roster.IdentityService.Get:output_type -> roster.Identity
+	17, // 26: roster.IdentityService.Patch:output_type -> roster.Identity
+	17, // 27: roster.IdentityService.Apply:output_type -> roster.Identity
+	18, // 28: roster.IdentityService.Erase:output_type -> google.protobuf.Empty
+	8,  // 29: roster.IdentityService.List:output_type -> roster.IdentityListResponse
+	11, // 30: roster.IdentityService.Watch:output_type -> roster.IdentityWatchResponse
+	24, // [24:31] is the sub-list for method output_type
+	17, // [17:24] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_app_identity_svc_g_proto_init() }

@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/lesomnus/payday/pderr"
+	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
 )
@@ -232,4 +233,51 @@ func TestAHolderWithNoProfileHasNone(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 	x.False(v.HasProfile())
+}
+
+// TestIdentitiesCanBeListedByHolder is the question anybody looking at a person
+// asks: what do they sign in with.
+//
+// The pair that names one row is no use for it -- a `ref` names one identity,
+// and what is wanted is every identity of somebody. So `list.by` carries
+// `holder`.
+func TestIdentitiesCanBeListedByHolder(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	other := b.holder(t, ctx, b.Acme, "somebody-else")
+
+	b.identity(t, ctx, b.AcmeUser, "entra", "8f14e45f-ea1e-4f0e-9a1b-2c3d4e5f6a7b")
+	b.identity(t, ctx, b.AcmeUser, "github", "1074321")
+	b.identity(t, ctx, other, "github", "2200002")
+
+	of := func(who pdid.Id) *app.IdentityListRequest {
+		return app.IdentityListRequest_builder{
+			Filters: []*app.IdentityFilter{
+				app.IdentityFilter_builder{
+					Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
+				}.Build(),
+			},
+		}.Build()
+	}
+
+	as := b.as(ctx, b.AcmeUser, b.Acme)
+
+	vs, err := b.Walled.Identity().List(as, of(b.AcmeUser))
+	x.NoError(err)
+
+	got := []string{}
+	for _, v := range vs.GetItems() {
+		got = append(got, v.GetProvider())
+	}
+	x.ElementsMatch([]string{"entra", "github"}, got)
+
+	// And it is a filter, not a way in. Somebody in hooli naming an acme holder
+	// is answered with nothing: the wall reaches this entity through
+	// `holder.tenant` and runs first.
+	hooliUser := b.holder(t, ctx, b.Hooli, "outsider")
+
+	vs, err = b.Walled.Identity().List(b.as(ctx, hooliUser, b.Hooli), of(b.AcmeUser))
+	x.NoError(err)
+	x.Empty(vs.GetItems(), "a filter can only cut the scope down, never widen it")
 }

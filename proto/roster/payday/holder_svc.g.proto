@@ -178,6 +178,7 @@ message HolderListResponse {
 
 message HolderFilter {
   HolderRef ref = 1;
+  TenantRef tenant = 2;
 }
 
 message HolderWatchRequest {

@@ -92,7 +92,15 @@ message Identity {
         {field: {name: "date_created", number: 15}},
         {field: {name: "id", number: 1}}
       ]
-      by: [{name: "ref"}]
+      // `holder` as well as `ref`, because "what does this person sign in
+      // with" is the question anybody looking at a person asks, and the pair
+      // that names one row is no use for it: a `ref` names one identity, and
+      // what is wanted is every identity of somebody.
+      //
+      // It grants nothing. The wall reaches this entity through
+      // `holder.tenant`, so the list is already narrowed to the tenants the
+      // caller may see, and naming a holder outside that answers with nothing.
+      by: [{name: "ref"}, {name: "holder"}]
       size: 20
       max: 100
     }
