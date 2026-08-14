@@ -23,6 +23,14 @@
 // endpoints -- survives being wrapped and would just be configuration for a
 // wrapper instead of configuration for the library.
 //
+// # One operator's front door
+//
+// This app authenticates to roster as a Holder, and a Holder belongs to one
+// tenant -- so the wall narrows what it may read to that one. That is right for
+// a front door serving one operator and is the reason this example is written
+// as one. A deployment fronting several needs a credential whose actor is not
+// inside a tenant, which is an API key rather than a person.
+//
 // # What is actually this deployment's to decide
 //
 // One thing, and it is the reason this example exists: a provider says
@@ -51,6 +59,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -104,18 +113,18 @@ type Config struct {
 	// different question and often a different organisation -- one of acme's
 	// people can perfectly well have a personal Google account.
 	//
-	// # It is a check and not only a lookup
+	// # It is how a row is named, not a check applied afterwards
 	//
-	// `Identity` is unique on (provider, subject) across the whole roster
-	// instance, so one account is one Holder in one tenant. Somebody who signs
-	// in at acme's door and then at beta's is found both times, and the second
-	// time the row that comes back is **acme's**. Without this map there is
-	// nothing to compare it against, and beta's door would mint a session for
-	// somebody from another tenant. See [App.find].
+	// `Identity` is unique on (tenant, provider, subject), so the tenant is
+	// part of naming one. Somebody who signs in at acme's door and then at
+	// beta's is two Holders with two histories -- one human signing up to two
+	// operators' services, which is what a tenant being the wall already means.
+	// Nothing relates them and nothing should.
 	//
-	// Empty means this deployment serves one tenant under any name it is
-	// reached at, and nothing is compared. That is right for a single-operator
-	// deployment and wrong the moment there are two.
+	// Required. An identity is unique **within a tenant**, so a sign-in cannot
+	// look anybody up until it knows which one -- there is no mode where this
+	// is skipped. A deployment serving one tenant names the one host it answers
+	// on.
 	Tenants map[string]string
 }
 
@@ -148,12 +157,11 @@ type Caller struct {
 	Host string
 
 	// Tenant is the operator whose service this is, worked out from
-	// [Config.Tenants] before any policy runs -- so a policy never has to
-	// decide it, and cannot decide it differently from the check that guards
-	// the lookup.
+	// [Config.Tenants] before anything is looked up -- so a policy never has to
+	// decide it, and cannot decide it differently from the lookup.
 	//
-	// Empty when the deployment named no hosts, which means it serves one
-	// tenant. A policy that needs a tenant and finds none says so.
+	// Never empty by the time a policy sees it: a request that arrived under a
+	// name this deployment does not serve is refused before that.
 	Tenant string
 }
 
@@ -203,6 +211,12 @@ func New(ctx context.Context, c Config, roster rstr.Client, s *authsession.Sessi
 	}
 	if enrol == nil {
 		return nil, errors.New("sso: Enrol: say what happens to somebody nobody has invited; Invited() is the refusing one")
+	}
+	if len(c.Tenants) == 0 {
+		// An identity is unique within a tenant, so there is no lookup to make
+		// until one is named. A deployment serving a single tenant names the
+		// one host it answers on, which is a line rather than a mode.
+		return nil, errors.New("sso: Tenants: name the hosts this deployment serves and the tenant each belongs to")
 	}
 
 	p, err := oidc.NewProvider(ctx, c.Issuer)
@@ -294,17 +308,15 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	who.Host = r.Host
-	if len(a.tenants) > 0 {
-		t, ok := a.tenants[hostname(r.Host)]
-		if !ok {
-			// Reached under a name this deployment does not serve. There is no
-			// tenant to sign in to and nothing to guess.
-			http.Error(w, "this account has not been invited", http.StatusForbidden)
-			return
-		}
-
-		who.Tenant = t
+	t, ok := a.tenants[hostname(r.Host)]
+	if !ok {
+		// Reached under a name this deployment does not serve. There is no
+		// tenant to sign in to and nothing to guess.
+		http.Error(w, "this account has not been invited", http.StatusForbidden)
+		return
 	}
+
+	who.Tenant = t
 
 	holder, tenant, err := a.find(ctx, who)
 	switch {
@@ -312,6 +324,10 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "this account has not been invited", http.StatusForbidden)
 		return
 	case err != nil:
+		// Said to the log and not to the browser: what went wrong here is this
+		// deployment's, and a page that repeated it would be telling whoever
+		// asked how roster is wired.
+		fmt.Fprintf(os.Stderr, "sso: %s/%s: %v\n", who.Provider, who.Subject, err)
 		http.Error(w, "cannot sign in", http.StatusInternalServerError)
 		return
 	}
@@ -383,38 +399,48 @@ func (a *App) who(ctx context.Context, code string) (Caller, error) {
 // find is roster's half: who this subject already is, or who [Enrol] says they
 // become.
 func (a *App) find(ctx context.Context, c Caller) (holder pdid.Id, tenant pdid.Id, err error) {
-	// The pair is a unique index, so payday generated a way to name a row by it
-	// -- there is nothing to list and filter here.
+	// Which tenant's rows to look in. An identity is unique **within a
+	// tenant**, so this is not a check applied afterwards -- it is part of
+	// naming the row at all, and there is no lookup to make without it.
+	//
+	// Resolved per sign-in because that is what an example should show; a
+	// deployment that serves a fixed set of names holds these.
+	t, err := a.roster.Tenant().Get(ctx, rstr.TenantGetRequest_builder{
+		Ref: rstr.TenantRef_builder{Alias: proto.String(c.Tenant)}.Build(),
+	}.Build())
+	if err != nil {
+		return pdid.Nil, pdid.Nil, fmt.Errorf("tenant %q: %w", c.Tenant, err)
+	}
+
+	// The three together are a unique index, so payday generated a way to name
+	// a row by them -- there is nothing to list and filter here.
 	v, err := a.roster.Identity().Get(ctx, rstr.IdentityGetRequest_builder{
 		Ref: rstr.IdentityRef_builder{
 			Subject: rstr.IdentityRefBySubject_builder{
+				TenantId: t.GetId(),
 				Provider: proto.String(c.Provider),
 				Subject:  proto.String(c.Subject),
 			}.Build(),
 		}.Build(),
 		Select: rstr.IdentitySelect_builder{
 			Holder: rstr.HolderSelect_builder{
-				Tenant: rstr.TenantSelect_builder{Alias: proto.Bool(true)}.Build(),
+				Tenant: rstr.TenantSelect_builder{}.Build(),
 			}.Build(),
 		}.Build(),
 	}.Build())
 
 	switch status.Code(err) {
 	case codes.OK:
-		// Found, and that is not the end of it. See [Config.Tenants]: the row
-		// is unique across the instance, so what came back may be somebody
-		// else's operator, and a login that stopped here would mint a session
-		// for a holder of another tenant. The wall would then refuse them
-		// everything, which reads as a broken deployment rather than as a
-		// wrong sign-in.
-		if c.Tenant != "" && v.GetHolder().GetTenant().GetAlias() != c.Tenant {
-			return pdid.Nil, pdid.Nil, ErrUnknown
-		}
-
+		// Found, and that is the end of it. The row was looked up inside this
+		// tenant, so it cannot be somebody else's -- which is why there is no
+		// comparison here and no way to forget one.
 		return ids(v.GetHolder().GetId(), v.GetHolder().GetTenant().GetId())
 
 	case codes.NotFound:
-		// Somebody the provider vouches for and roster has never seen. This is
+		// Somebody the provider vouches for that **this tenant** has never
+		// seen. They may well have an account with another operator on this
+		// same roster, with the same Google account -- that is one human
+		// signing up to two services and nothing here relates the two. This is
 		// the decision, and it is not this package's.
 
 	default:
@@ -517,12 +543,6 @@ func Invited() Enrol {
 // string the person typed.
 func Enrolling(c rstr.Client) Enrol {
 	return func(ctx context.Context, caller Caller) (pdid.Id, error) {
-		if caller.Tenant == "" {
-			// No host mapping, so no tenant to put them in. A deployment that
-			// serves one tenant names it in `Config.Tenants` like any other.
-			return pdid.Nil, fmt.Errorf("enrol %s/%s: no tenant; name the hosts this deployment serves", caller.Provider, caller.Subject)
-		}
-
 		// The local part of the email is what somebody types to name this
 		// person. It is unique within a tenant and not across them, so two
 		// operators can each have a `frank` -- which is what the wall is for. A

@@ -16,10 +16,11 @@ func (x *Identity) Ref() *IdentityRef {
 		return IdentityById(v)
 	}
 	{
-		v1 := x.GetProvider()
-		v2 := x.GetSubject()
-		if len(v1) > 0 && len(v2) > 0 {
-			return IdentityBySubject(v1, v2)
+		v1 := x.GetTenantId()
+		v2 := x.GetProvider()
+		v3 := x.GetSubject()
+		if len(v1) > 0 && len(v2) > 0 && len(v3) > 0 {
+			return IdentityBySubject(v1, v2, v3)
 		}
 	}
 
@@ -36,7 +37,8 @@ func (x *IdentityRef) Picks(v *Identity) bool {
 		return bytes.Equal(x.GetId(), v.GetId())
 	case IdentityRef_Subject_case:
 		x := x.GetSubject()
-		return (x.GetProvider() == v.GetProvider()) &&
+		return (bytes.Equal(x.GetTenantId(), v.GetTenantId())) &&
+			(x.GetProvider() == v.GetProvider()) &&
 			(x.GetSubject() == v.GetSubject())
 	default:
 		return false
@@ -64,13 +66,14 @@ func IdentityGetById(v []byte) *IdentityGetRequest {
 	return IdentityGetRequest_builder{Ref: IdentityById(v)}.Build()
 }
 
-func IdentityBySubject(provider string, subject string) *IdentityRef {
+func IdentityBySubject(tenant_id []byte, provider string, subject string) *IdentityRef {
 	x := &IdentityRefBySubject{}
+	x.SetTenantId(tenant_id)
 	x.SetProvider(provider)
 	x.SetSubject(subject)
 	return IdentityRef_builder{Subject: x}.Build()
 }
 
-func IdentityGetBySubject(provider string, subject string) *IdentityGetRequest {
-	return IdentityGetRequest_builder{Ref: IdentityBySubject(provider, subject)}.Build()
+func IdentityGetBySubject(tenant_id []byte, provider string, subject string) *IdentityGetRequest {
+	return IdentityGetRequest_builder{Ref: IdentityBySubject(tenant_id, provider, subject)}.Build()
 }

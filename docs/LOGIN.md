@@ -104,52 +104,52 @@ many**. An air-gapped single app needs neither.
 
 ## A person who uses two operators' services
 
-They are two people here, and roster is deliberate about it.
+They have two accounts, and that is the whole answer.
 
-`Identity` is unique on `(provider, subject)` **across the whole instance** --
-there is no tenant column in that index -- and a `Holder` belongs to one tenant
-and cannot be moved. So one Google account is one Holder in one tenant, and
-somebody who is a user of acme's deployment and of beta's needs a second
-account, with a second identity, at a second provider or a second address.
+`Identity` is unique on `(tenant, provider, subject)`. The same Google account
+signs up to acme's service and to beta's, and those are two Holders with two
+histories and two sets of permissions. Nothing here relates them, and nothing
+should: a row that spanned tenants would have no owner, no answer to who may
+erase it, and no tenant whose trail it belongs to. A tenant is the wall, and
+something that crosses it is not a person any more.
 
-That is not an oversight to be worked around. The alternative -- one human
-spanning tenants -- makes every question afterwards ambiguous: which tenant does
-their audit trail belong to, which one's operator may erase them, whose seat
-count do they take. A tenant is the wall, and something that crosses it is not a
-person any more.
+The tenant is in the key rather than checked afterwards, which is the part worth
+being exact about. It means a lookup **cannot** be made without naming a tenant,
+so a front door that forgot to think about which one does not compile a wrong
+answer -- it has nothing to look anybody up with.
 
-### What it means for a front door
+Without it, one account at a provider would belong to exactly one tenant across
+the whole deployment, and the second operator a person signed up to would be
+told the identity was taken, by somebody they cannot see.
 
-A login that only asks roster "who is this subject" is **wrong** in a
-multi-tenant deployment, and wrong in the quiet direction. Somebody who signs in
-at acme's name and then at beta's is found both times, and the second time the
-row that comes back is acme's -- so beta's door mints a session for a holder of
-another tenant. Nothing downstream reads that as a mistake: the wall refuses
-them everything, which looks like a broken deployment rather than a wrong
-sign-in.
+### What a front door has to know
 
-So the front door has two jobs, not one:
+Which tenant it is. That is what a tenant *is*: the same service under a
+different operator's own domain, so the name the browser arrived at is the
+operator whose service they are signing in to.
 
-| | |
-| --- | --- |
-| which tenant is this | the name the browser reached it at. That is what a tenant *is*: the same service under a different operator's own domain |
-| is this person that tenant's | the row roster answers with has to belong to it, or they are refused |
+The email domain answers a different question -- where somebody
+**authenticates**, often at another organisation entirely. One of acme's people
+can perfectly well have a personal Google account.
 
-The email domain answers neither. It says where somebody **authenticates**,
-which is a different question and often a different organisation -- one of
-acme's people can perfectly well have a personal Google account.
+### And what its own credential has to reach
 
-`examples/sso` is that, running: `Config.Tenants` maps the names a deployment
-serves, the lookup is compared against it, and
-`TestSomebodyFromAnotherTenant` is the case above. Removing the comparison makes
-it answer 200.
+A login app that fronts **several** operators cannot authenticate as a Holder.
+A Holder belongs to one tenant and the wall narrows what it may read to that, so
+it would resolve its own tenant and get NotFound for every other. What such a
+deployment needs is an API key, whose actor is not inside a tenant.
+
+`examples/sso` runs as one operator's front door for exactly this reason, and
+says so where it wires the credential.
 
 ### What roster does offer
 
-Within one tenant, several ways in for the same person. `Identity` is one-to-many
-by design -- the same human arrives through the company's Entra tenant on Monday
-and through GitHub on Saturday, and both land on one Holder with one history and
-one set of permissions. That is the convenience it is for.
+Within one tenant, several ways in for the same person. `Identity` is
+one-to-many by design -- the same human arrives through the company's Entra
+tenant on Monday and through GitHub on Saturday, and both land on one Holder
+with one history and one set of permissions. That is the convenience it is for,
+and putting the tenant in the key does not touch it: two Holders of one tenant
+claiming the same subject at the same provider is still refused.
 
 ## This is not deployable yet
 

@@ -414,9 +414,9 @@ var (
 				Columns: []*schema.Column{IdentityColumns[6], IdentityColumns[0]},
 			},
 			{
-				Name:    "identity_provider_subject",
+				Name:    "identity_tenant_id_provider_subject",
 				Unique:  true,
-				Columns: []*schema.Column{IdentityColumns[1], IdentityColumns[2]},
+				Columns: []*schema.Column{IdentityColumns[3], IdentityColumns[1], IdentityColumns[2]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},

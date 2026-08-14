@@ -464,7 +464,12 @@ func IdentityPick(req *rstr.IdentityRef) (predicate.Identity, error) {
 		}
 	case rstr.IdentityRef_Subject_case:
 		k := req.GetSubject()
-		ps := make([]predicate.Identity, 0, 2)
+		ps := make([]predicate.Identity, 0, 3)
+		if v, err := uuid.FromBytes(k.GetTenantId()); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "subject.tenant_id: %s", err)
+		} else {
+			ps = append(ps, identity.TenantIDEQ(v))
+		}
 		ps = append(ps, identity.ProviderEQ(k.GetProvider()))
 		ps = append(ps, identity.SubjectEQ(k.GetSubject()))
 		return identity.And(ps...), nil

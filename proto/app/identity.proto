@@ -94,12 +94,27 @@ message Identity {
           {name: "id", number: 1}
         ]
       },
-      // The pair is the identity. Unique, because two Holders claiming the same
-      // subject at the same provider is the account-takeover shape: whoever
-      // logs in next becomes whichever row was found first.
+      // The identity, **within a tenant**. Unique, because two Holders of one
+      // tenant claiming the same subject at the same provider is the
+      // account-takeover shape: whoever logs in next becomes whichever row was
+      // found first.
+      //
+      // The tenant is in the key and that is the decision. The same human can
+      // sign up to two operators' services with the same Google account, and
+      // those are two Holders with two histories and two sets of permissions --
+      // which is what a tenant being the wall already means. Nothing here
+      // relates them, and nothing should: a row that spanned tenants would have
+      // no owner, no answer to who may erase it, and no tenant whose trail it
+      // belongs to.
+      //
+      // Without the tenant in the key, one account at a provider could belong
+      // to exactly one tenant across the whole deployment -- so the second
+      // operator a person signs up to would be told the identity was taken, by
+      // somebody they cannot see.
       {
         name: "subject"
         refs: [
+          {name: "tenant_id", number: 10},
           {name: "provider", number: 8},
           {name: "subject", number: 9}
         ]

@@ -395,7 +395,7 @@ func (x *IdentityRef) ClearSubject() {
 
 const IdentityRef_Key_not_set_case case_IdentityRef_Key = 0
 const IdentityRef_Id_case case_IdentityRef_Key = 1
-const IdentityRef_Subject_case case_IdentityRef_Key = 8
+const IdentityRef_Subject_case case_IdentityRef_Key = 10
 
 func (x *IdentityRef) WhichKey() case_IdentityRef_Key {
 	if x == nil {
@@ -452,7 +452,7 @@ type identityRef_Id struct {
 }
 
 type identityRef_Subject struct {
-	Subject *IdentityRefBySubject `protobuf:"bytes,8,opt,name=subject,oneof"`
+	Subject *IdentityRefBySubject `protobuf:"bytes,10,opt,name=subject,oneof"`
 }
 
 func (*identityRef_Id) isIdentityRef_Key() {}
@@ -461,6 +461,7 @@ func (*identityRef_Subject) isIdentityRef_Key() {}
 
 type IdentityRefBySubject struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_TenantId    []byte                 `protobuf:"bytes,10,opt,name=tenant_id,json=tenantId"`
 	xxx_hidden_Provider    *string                `protobuf:"bytes,8,opt,name=provider"`
 	xxx_hidden_Subject     *string                `protobuf:"bytes,9,opt,name=subject"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
@@ -494,6 +495,13 @@ func (x *IdentityRefBySubject) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
+func (x *IdentityRefBySubject) GetTenantId() []byte {
+	if x != nil {
+		return x.xxx_hidden_TenantId
+	}
+	return nil
+}
+
 func (x *IdentityRefBySubject) GetProvider() string {
 	if x != nil {
 		if x.xxx_hidden_Provider != nil {
@@ -514,43 +522,64 @@ func (x *IdentityRefBySubject) GetSubject() string {
 	return ""
 }
 
+func (x *IdentityRefBySubject) SetTenantId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_TenantId = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 3)
+}
+
 func (x *IdentityRefBySubject) SetProvider(v string) {
 	x.xxx_hidden_Provider = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 2)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 3)
 }
 
 func (x *IdentityRefBySubject) SetSubject(v string) {
 	x.xxx_hidden_Subject = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 2)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 3)
 }
 
-func (x *IdentityRefBySubject) HasProvider() bool {
+func (x *IdentityRefBySubject) HasTenantId() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
 }
 
-func (x *IdentityRefBySubject) HasSubject() bool {
+func (x *IdentityRefBySubject) HasProvider() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
 }
 
-func (x *IdentityRefBySubject) ClearProvider() {
+func (x *IdentityRefBySubject) HasSubject() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *IdentityRefBySubject) ClearTenantId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_TenantId = nil
+}
+
+func (x *IdentityRefBySubject) ClearProvider() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
 	x.xxx_hidden_Provider = nil
 }
 
 func (x *IdentityRefBySubject) ClearSubject() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
 	x.xxx_hidden_Subject = nil
 }
 
 type IdentityRefBySubject_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
+	TenantId []byte
 	Provider *string
 	Subject  *string
 }
@@ -559,12 +588,16 @@ func (b0 IdentityRefBySubject_builder) Build() *IdentityRefBySubject {
 	m0 := &IdentityRefBySubject{}
 	b, x := &b0, m0
 	_, _ = b, x
+	if b.TenantId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 3)
+		x.xxx_hidden_TenantId = b.TenantId
+	}
 	if b.Provider != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 2)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 3)
 		x.xxx_hidden_Provider = b.Provider
 	}
 	if b.Subject != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 2)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 3)
 		x.xxx_hidden_Subject = b.Subject
 	}
 	return m0
@@ -1780,9 +1813,12 @@ const file_app_identity_svc_g_proto_rawDesc = "" +
 	"\x06select\x18\x02 \x01(\v2\x16.roster.IdentitySelectR\x06select\"`\n" +
 	"\vIdentityRef\x12\x10\n" +
 	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x128\n" +
-	"\asubject\x18\b \x01(\v2\x1c.roster.IdentityRefBySubjectH\x00R\asubjectB\x05\n" +
-	"\x03key\"L\n" +
-	"\x14IdentityRefBySubject\x12\x1a\n" +
+	"\asubject\x18\n" +
+	" \x01(\v2\x1c.roster.IdentityRefBySubjectH\x00R\asubjectB\x05\n" +
+	"\x03key\"i\n" +
+	"\x14IdentityRefBySubject\x12\x1b\n" +
+	"\ttenant_id\x18\n" +
+	" \x01(\fR\btenantId\x12\x1a\n" +
 	"\bprovider\x18\b \x01(\tR\bprovider\x12\x18\n" +
 	"\asubject\x18\t \x01(\tR\asubject\"\x8a\x02\n" +
 	"\x0eIdentitySelect\x12\x10\n" +

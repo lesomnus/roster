@@ -53,11 +53,12 @@ message IdentityGetRequest {
 message IdentityRef {
   oneof key {
     bytes id = 1;
-    IdentityRefBySubject subject = 8;
+    IdentityRefBySubject subject = 10;
   }
 }
 
 message IdentityRefBySubject {
+  bytes tenant_id = 10;
   string provider = 8;
   string subject = 9;
 }

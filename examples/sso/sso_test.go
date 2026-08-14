@@ -157,7 +157,12 @@ type deployment struct {
 	app *httptest.Server
 }
 
-func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants ...map[string]string) *deployment {
+// serve builds roster and the app in front of it.
+//
+// `enrol` is a constructor rather than an [sso.Enrol] because the policies that
+// write rows need the client, and the client does not exist until this has
+// built it.
+func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]string) *deployment {
 	t.Helper()
 	x := require.New(t)
 	ctx := t.Context()
@@ -196,6 +201,9 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants ...map[strin
 		Tenant: rstr.TenantRef_builder{Id: seeded.Tenant.Bytes()}.Build(),
 		Alias:  "login-app",
 		Methods: []string{
+			// The tenant is part of naming an identity now, so the login app
+			// has to be able to resolve the one its front door names.
+			"/roster.TenantService/Get",
 			"/roster.IdentityService/Get",
 			"/roster.IdentityService/Add",
 			"/roster.HolderService/Get",
@@ -228,11 +236,6 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants ...map[strin
 	front := httptest.NewUnstartedServer(nil)
 	addr := "http://" + front.Listener.Addr().String()
 
-	of := map[string]string{}
-	if len(tenants) > 0 {
-		of = tenants[0]
-	}
-
 	a, err := sso.New(ctx, sso.Config{
 		Issuer:       d.idp.URL,
 		ClientID:     clientID,
@@ -240,7 +243,7 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants ...map[strin
 		RedirectURL:  addr + "/callback",
 		Provider:     "example",
 		Scopes:       []string{"email"},
-		Tenants:      of,
+		Tenants:      tenants,
 	}, client, sessions, enrol(client))
 	x.NoError(err)
 
@@ -326,7 +329,7 @@ func TestSomebodyRosterAlreadyKnows(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	d := serve(t, func(c rstr.Client) sso.Enrol { return sso.Invited() })
+	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "acme"})
 	d.idp.subject = "1078"
 
 	// Invited: the Holder is put there first, and the identity linked to it.
@@ -362,7 +365,7 @@ func TestSomebodyRosterAlreadyKnows(t *testing.T) {
 func TestSomebodyNobodyInvited(t *testing.T) {
 	x := require.New(t)
 
-	d := serve(t, func(c rstr.Client) sso.Enrol { return sso.Invited() })
+	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "acme"})
 	d.idp.subject = "2000"
 
 	res := d.signIn(t)
@@ -400,6 +403,7 @@ func TestEnrolled(t *testing.T) {
 		v, err := d.roster.Identity().Get(ctx, rstr.IdentityGetRequest_builder{
 			Ref: rstr.IdentityRef_builder{
 				Subject: rstr.IdentityRefBySubject_builder{
+					TenantId: d.tenant.Bytes(),
 					Provider: proto.String("example"),
 					Subject:  proto.String("6000"),
 				}.Build(),
@@ -433,36 +437,38 @@ func TestEnrolled(t *testing.T) {
 	})
 }
 
-// TestSomebodyFromAnotherTenant is the hole this example had, found by asking
-// what roster does for a person who uses two operators' services.
+// TestTheSameAccountAtTwoOperators is what a tenant being the wall means,
+// followed through.
 //
-// It does not have them. `Identity` is unique on (provider, subject) across the
-// whole instance -- there is no tenant column in that index -- so one account is
-// one Holder in one tenant, and there is no second Holder for the same human
-// elsewhere. That is deliberate: the entity's own comment is "one person,
-// several [providers]", all landing on one Holder.
+// `Identity` is unique on (tenant, provider, subject), so the same Google
+// account can sign up to acme's service and to beta's. Those are two Holders
+// with two histories and two sets of permissions, and nothing relates them --
+// which is the point rather than a limitation: a row that spanned tenants would
+// have no owner, no answer to who may erase it, and no tenant whose trail it
+// belongs to.
 //
-// Which makes the lookup dangerous rather than merely limited. Arriving at
-// beta's front door with an account linked in acme, `Identity.Get` answers with
-// the acme Holder, and a login that stopped there would mint a session for
-// somebody from another tenant. Nothing downstream would read it as a mistake:
-// the wall would refuse them everything, which looks like a broken deployment
-// rather than a wrong sign-in.
-func TestSomebodyFromAnotherTenant(t *testing.T) {
+// The lookup is inside a tenant, so beta's door does not find acme's row at
+// all. There is no comparison to make and none to forget.
+func TestTheSameAccountAtTwoOperators(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	// One roster, two operators, and this app is beta's front door.
-	d := serve(t, sso.Enrolling, map[string]string{"127.0.0.1": "beta"})
+	// This app is acme's front door. It is acme's and only acme's, because its
+	// credential is a Holder of acme and the wall narrows what it may read to
+	// that -- see the note on `serve`. A login app that fronts several
+	// operators needs a credential whose scope covers them, which is an API
+	// key rather than a person.
+	d := serve(t, sso.Enrolling, map[string]string{"127.0.0.1": "acme"})
 
-	_, err := d.ungated.Tenant().Add(ctx, rstr.TenantAddRequest_builder{
+	beta, err := d.ungated.Tenant().Add(ctx, rstr.TenantAddRequest_builder{
 		Alias: "beta",
 	}.Build())
 	x.NoError(err)
 
-	// Somebody whose account is acme's, linked the way an invitation would.
+	// The same human already has an account with **beta**, linked the way an
+	// invitation would link it.
 	h, err := d.ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
-		Tenant: rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),
+		Tenant: rstr.TenantRef_builder{Id: beta.GetId()}.Build(),
 		Alias:  "heidi",
 	}.Build())
 	x.NoError(err)
@@ -474,12 +480,68 @@ func TestSomebodyFromAnotherTenant(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
+	// They arrive at acme with the same Google account.
 	d.idp.subject = "8000"
-	d.idp.claims = map[string]any{"email": "heidi@somewhere.example", "email_verified": true}
+	d.idp.claims = map[string]any{
+		"email": "heidi@somewhere.example", "email_verified": true, "name": "Heidi",
+	}
 
 	res := d.signIn(t)
-	x.Equal(http.StatusForbidden, res.StatusCode,
-		"their account is acme's, and beta's front door must not sign them in as it")
+	x.Equal(http.StatusOK, res.StatusCode, "they sign up to acme as well")
+
+	// And beta's row is untouched: acme's door never saw it, because the
+	// lookup names a tenant and that one was acme's.
+	got, err := d.ungated.Identity().List(ctx, rstr.IdentityListRequest_builder{
+		Filters: []*rstr.IdentityFilter{
+			rstr.IdentityFilter_builder{
+				Holder: rstr.HolderRef_builder{Id: h.GetId()}.Build(),
+			}.Build(),
+		},
+	}.Build())
+	x.NoError(err)
+	x.Len(got.GetItems(), 1, "beta's holder still has exactly the one")
+
+	all, err := d.ungated.Identity().List(ctx, rstr.IdentityListRequest_builder{}.Build())
+	x.NoError(err)
+	x.Len(all.GetItems(), 2, "and there are two rows for one human, in two tenants")
+}
+
+// TestTwoInOneTenantIsStillRefused: the account-takeover shape has not moved.
+//
+// Putting the tenant in the key widens what is allowed **across** tenants and
+// changes nothing inside one -- two Holders of acme claiming the same subject
+// at the same provider is still whoever-logs-in-next-wins.
+func TestTwoInOneTenantIsStillRefused(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "acme"})
+
+	one, err := d.ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),
+		Alias:  "one",
+	}.Build())
+	x.NoError(err)
+
+	two, err := d.ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),
+		Alias:  "two",
+	}.Build())
+	x.NoError(err)
+
+	_, err = d.ungated.Identity().Add(ctx, rstr.IdentityAddRequest_builder{
+		Holder:   rstr.HolderRef_builder{Id: one.GetId()}.Build(),
+		Provider: "example",
+		Subject:  "9000",
+	}.Build())
+	x.NoError(err)
+
+	_, err = d.ungated.Identity().Add(ctx, rstr.IdentityAddRequest_builder{
+		Holder:   rstr.HolderRef_builder{Id: two.GetId()}.Build(),
+		Provider: "example",
+		Subject:  "9000",
+	}.Build())
+	x.Error(err, "two Holders of one tenant cannot be one subject")
 }
 
 // TestTheStateIsChecked is the CSRF defence, and it is worth its own test
@@ -487,7 +549,7 @@ func TestSomebodyFromAnotherTenant(t *testing.T) {
 func TestTheStateIsChecked(t *testing.T) {
 	x := require.New(t)
 
-	d := serve(t, func(c rstr.Client) sso.Enrol { return sso.Invited() })
+	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "acme"})
 
 	// Straight to the callback, the way somebody else's page would send a
 	// browser: a code, a state, and no cookie from `/login`.
