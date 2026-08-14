@@ -49,6 +49,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -88,9 +89,34 @@ type Config struct {
 	// would make the same person a new person.
 	Provider string
 
-	// Scopes beyond `openid`. `email` is usual and is what
-	// [ByEmailDomain] needs.
+	// Scopes beyond `openid`. `email` is usual and is what [Enrolling] needs to
+	// name somebody.
 	Scopes []string
+
+	// Tenants is which tenant each name this deployment serves belongs to:
+	// "acme.example.com" -> "acme".
+	//
+	// # Why the host and not the email
+	//
+	// A tenant is the same service under a different operator's own domain, so
+	// the front door somebody came to *is* the operator whose service they are
+	// signing in to. Their email says where they authenticate, which is a
+	// different question and often a different organisation -- one of acme's
+	// people can perfectly well have a personal Google account.
+	//
+	// # It is a check and not only a lookup
+	//
+	// `Identity` is unique on (provider, subject) across the whole roster
+	// instance, so one account is one Holder in one tenant. Somebody who signs
+	// in at acme's door and then at beta's is found both times, and the second
+	// time the row that comes back is **acme's**. Without this map there is
+	// nothing to compare it against, and beta's door would mint a session for
+	// somebody from another tenant. See [App.find].
+	//
+	// Empty means this deployment serves one tenant under any name it is
+	// reached at, and nothing is compared. That is right for a single-operator
+	// deployment and wrong the moment there are two.
+	Tenants map[string]string
 }
 
 // Caller is who the provider said signed in, before this deployment has
@@ -110,9 +136,25 @@ type Caller struct {
 	Name  string
 
 	// Verified is the provider's word on whether it checked the email. A
-	// policy that maps a domain to a tenant has to look at this: an unverified
-	// address is a string the person typed.
+	// policy that reads the address at all has to look at this: an unverified
+	// one is a string the person typed.
 	Verified bool
+
+	// Host is the name the browser reached this app at.
+	//
+	// It is `r.Host`, which is whatever the client sent, so it is a claim like
+	// the rest of this struct. Behind a proxy that rewrites it, the
+	// deployment's trusted header is what belongs here.
+	Host string
+
+	// Tenant is the operator whose service this is, worked out from
+	// [Config.Tenants] before any policy runs -- so a policy never has to
+	// decide it, and cannot decide it differently from the check that guards
+	// the lookup.
+	//
+	// Empty when the deployment named no hosts, which means it serves one
+	// tenant. A policy that needs a tenant and finds none says so.
+	Tenant string
 }
 
 // Enrol decides what happens when somebody signs in and roster has never seen
@@ -144,6 +186,7 @@ type App struct {
 	roster   rstr.Client
 	sessions *authsession.Sessions
 	enrol    Enrol
+	tenants  map[string]string
 
 	// after is where the browser goes once it is signed in.
 	after string
@@ -184,6 +227,7 @@ func New(ctx context.Context, c Config, roster rstr.Client, s *authsession.Sessi
 		roster:   roster,
 		sessions: s,
 		enrol:    enrol,
+		tenants:  c.Tenants,
 		after:    "/",
 	}, nil
 }
@@ -247,6 +291,19 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "no", http.StatusBadRequest)
 		return
+	}
+
+	who.Host = r.Host
+	if len(a.tenants) > 0 {
+		t, ok := a.tenants[hostname(r.Host)]
+		if !ok {
+			// Reached under a name this deployment does not serve. There is no
+			// tenant to sign in to and nothing to guess.
+			http.Error(w, "this account has not been invited", http.StatusForbidden)
+			return
+		}
+
+		who.Tenant = t
 	}
 
 	holder, tenant, err := a.find(ctx, who)
@@ -337,13 +394,23 @@ func (a *App) find(ctx context.Context, c Caller) (holder pdid.Id, tenant pdid.I
 		}.Build(),
 		Select: rstr.IdentitySelect_builder{
 			Holder: rstr.HolderSelect_builder{
-				Tenant: rstr.TenantSelect_builder{}.Build(),
+				Tenant: rstr.TenantSelect_builder{Alias: proto.Bool(true)}.Build(),
 			}.Build(),
 		}.Build(),
 	}.Build())
 
 	switch status.Code(err) {
 	case codes.OK:
+		// Found, and that is not the end of it. See [Config.Tenants]: the row
+		// is unique across the instance, so what came back may be somebody
+		// else's operator, and a login that stopped here would mint a session
+		// for a holder of another tenant. The wall would then refuse them
+		// everything, which reads as a broken deployment rather than as a
+		// wrong sign-in.
+		if c.Tenant != "" && v.GetHolder().GetTenant().GetAlias() != c.Tenant {
+			return pdid.Nil, pdid.Nil, ErrUnknown
+		}
+
 		return ids(v.GetHolder().GetId(), v.GetHolder().GetTenant().GetId())
 
 	case codes.NotFound:
@@ -419,48 +486,55 @@ func Invited() Enrol {
 	}
 }
 
-// ByEmailDomain gives a new person a Holder in the tenant its email domain
-// names.
+// Enrolling gives a new person a Holder in the tenant whose front door they
+// came to.
 //
-// This is the other end of the range, and it is written out so the cost is
-// visible rather than to be copied. What it means is: anybody the provider will
-// authenticate, whose address ends in a domain on this list, gets an account
-// here without anybody approving it. For a company's own Google Workspace that
-// is often exactly right. For a provider that lets anybody register an address
-// it is a way in.
+// What it means, said plainly: anybody the provider will authenticate, arriving
+// at a name this deployment serves, gets an account without anybody approving
+// it. For a company running this for its own people behind its own Workspace
+// that is often exactly right. For a provider anybody can register at, it is a
+// way in.
 //
-// Two things it does not skip:
+// A deployment that wants less than that wraps it, which is why [Enrol] is a
+// function and not a setting:
 //
-//   - `email_verified`. An unverified address is a string the person typed at
-//     the provider, and mapping it to a tenant would let them choose one.
-//   - the domain list. There is no fallback tenant, because a person who
-//     arrives from a domain nobody mapped is exactly the case somebody should
-//     look at.
-func ByEmailDomain(c rstr.Client, of map[string]string) Enrol {
+//	func onlyFrom(next sso.Enrol, domains ...string) sso.Enrol {
+//		return func(ctx context.Context, c sso.Caller) (pdid.Id, error) {
+//			if !c.Verified {
+//				return pdid.Nil, sso.ErrUnknown
+//			}
+//			_, d, _ := strings.Cut(c.Email, "@")
+//			if !slices.Contains(domains, strings.ToLower(d)) {
+//				return pdid.Nil, sso.ErrUnknown
+//			}
+//			return next(ctx, c)
+//		}
+//	}
+//
+// That check is about **who this person is**, which is a different question
+// from which operator they are signing in to -- and the reason the two are not
+// one setting. `email_verified` is in it because an unverified address is a
+// string the person typed.
+func Enrolling(c rstr.Client) Enrol {
 	return func(ctx context.Context, caller Caller) (pdid.Id, error) {
-		if !caller.Verified || caller.Email == "" {
-			return pdid.Nil, ErrUnknown
+		if caller.Tenant == "" {
+			// No host mapping, so no tenant to put them in. A deployment that
+			// serves one tenant names it in `Config.Tenants` like any other.
+			return pdid.Nil, fmt.Errorf("enrol %s/%s: no tenant; name the hosts this deployment serves", caller.Provider, caller.Subject)
 		}
 
-		_, domain, ok := strings.Cut(caller.Email, "@")
-		if !ok {
-			return pdid.Nil, ErrUnknown
+		// The local part of the email is what somebody types to name this
+		// person. It is unique within a tenant and not across them, so two
+		// operators can each have a `frank` -- which is what the wall is for. A
+		// deployment that would rather people were not guessable writes
+		// something else here, and one whose provider gives no email has to.
+		alias, _, ok := strings.Cut(caller.Email, "@")
+		if !ok || alias == "" {
+			return pdid.Nil, fmt.Errorf("enrol %s/%s: no email to name them by", caller.Provider, caller.Subject)
 		}
-
-		tenant, ok := of[strings.ToLower(domain)]
-		if !ok {
-			return pdid.Nil, ErrUnknown
-		}
-
-		// The alias is the local part, which is a decision this policy is
-		// making and a deployment may not want: it is what somebody types to
-		// name this person, and two tenants can have the same one. A
-		// deployment that would rather they were unrecognisable writes
-		// something else here.
-		alias, _, _ := strings.Cut(caller.Email, "@")
 
 		v, err := c.Holder().Add(ctx, rstr.HolderAddRequest_builder{
-			Tenant: rstr.TenantRef_builder{Alias: proto.String(tenant)}.Build(),
+			Tenant: rstr.TenantRef_builder{Alias: proto.String(caller.Tenant)}.Build(),
 			Alias:  alias,
 			Name:   caller.Name,
 		}.Build())
@@ -470,4 +544,14 @@ func ByEmailDomain(c rstr.Client, of map[string]string) Enrol {
 
 		return pdid.From(v.GetId())
 	}
+}
+
+// hostname drops the port, which is part of an address and not of a name a
+// deployment maps.
+func hostname(v string) string {
+	if h, _, err := net.SplitHostPort(v); err == nil {
+		v = h
+	}
+
+	return strings.ToLower(v)
 }

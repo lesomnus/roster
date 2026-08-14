@@ -148,11 +148,16 @@ type deployment struct {
 	roster rstr.Client
 	tenant pdid.Id
 
+	// ungated is what the deployment does its own work through -- putting a
+	// tenant there, inviting somebody. The login app's credential cannot and
+	// must not, which is itself worth seeing.
+	ungated rstr.Server
+
 	idp *idp
 	app *httptest.Server
 }
 
-func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol) *deployment {
+func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants ...map[string]string) *deployment {
 	t.Helper()
 	x := require.New(t)
 	ctx := t.Context()
@@ -214,7 +219,7 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol) *deployment {
 	conn := serveRoster(t, s.Grpc(ctx, cmd.Config{}), auth.PlainProvider(who.String()))
 	client := rstr.NewClient(conn)
 
-	d := &deployment{roster: client, tenant: seeded.Tenant, idp: newIdp(t)}
+	d := &deployment{roster: client, tenant: seeded.Tenant, ungated: s.Ungated, idp: newIdp(t)}
 
 	sessions := authsession.New(authsession.NewMemStore(), authsession.Insecure())
 
@@ -223,6 +228,11 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol) *deployment {
 	front := httptest.NewUnstartedServer(nil)
 	addr := "http://" + front.Listener.Addr().String()
 
+	of := map[string]string{}
+	if len(tenants) > 0 {
+		of = tenants[0]
+	}
+
 	a, err := sso.New(ctx, sso.Config{
 		Issuer:       d.idp.URL,
 		ClientID:     clientID,
@@ -230,6 +240,7 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol) *deployment {
 		RedirectURL:  addr + "/callback",
 		Provider:     "example",
 		Scopes:       []string{"email"},
+		Tenants:      of,
 	}, client, sessions, enrol(client))
 	x.NoError(err)
 
@@ -284,6 +295,13 @@ func serveRoster(t *testing.T, g *grpc.Server, as auth.Provider) *grpc.ClientCon
 // signIn walks a browser from /login to wherever it ends up.
 func (d *deployment) signIn(t *testing.T) *http.Response {
 	t.Helper()
+	return d.signInAs(t, "")
+}
+
+// signInAs is the same, arriving under a given name -- which is how a
+// multi-tenant deployment tells its operators apart.
+func (d *deployment) signInAs(t *testing.T, host string) *http.Response {
+	t.Helper()
 	x := require.New(t)
 
 	jar, err := cookiejar.New(nil)
@@ -291,7 +309,13 @@ func (d *deployment) signIn(t *testing.T) *http.Response {
 
 	c := &http.Client{Jar: jar}
 
-	res, err := c.Get(d.app.URL + "/login")
+	req, err := http.NewRequest(http.MethodGet, d.app.URL+"/login", nil)
+	x.NoError(err)
+	if host != "" {
+		req.Host = host
+	}
+
+	res, err := c.Do(req)
 	x.NoError(err)
 	t.Cleanup(func() { res.Body.Close() })
 
@@ -346,34 +370,38 @@ func TestSomebodyNobodyInvited(t *testing.T) {
 		"a valid account at the provider is not an account here")
 }
 
-// TestEnrolledByEmailDomain is the other end of the range.
-func TestEnrolledByEmailDomain(t *testing.T) {
+// TestEnrolled is the usual shape: the front door names the tenant.
+//
+// A tenant is the same service under a different operator's domain, so which
+// one somebody is signing in to is which name they came to -- not what their
+// email says, which is where they authenticate and often a different
+// organisation entirely.
+func TestEnrolled(t *testing.T) {
 	ctx := t.Context()
 
-	d := serve(t, func(c rstr.Client) sso.Enrol {
-		return sso.ByEmailDomain(c, map[string]string{"acme.example": "acme"})
-	})
+	// The app is reached on 127.0.0.1 in this test, so that is acme's front
+	// door. A deployment maps the names it actually serves.
+	d := serve(t, sso.Enrolling, map[string]string{"127.0.0.1": "acme"})
 
-	t.Run("a verified address on a mapped domain", func(t *testing.T) {
+	t.Run("a name this deployment serves", func(t *testing.T) {
 		x := require.New(t)
 
-		d.idp.subject = "3000"
+		d.idp.subject = "6000"
 		d.idp.claims = map[string]any{
-			"email":          "frank@acme.example",
+			"email":          "grace@somewhere-else.example",
 			"email_verified": true,
-			"name":           "Frank",
+			"name":           "Grace",
 		}
 
 		res := d.signIn(t)
-		x.Equal(http.StatusOK, res.StatusCode)
+		x.Equal(http.StatusOK, res.StatusCode,
+			"their email is at another organisation entirely, which is not this question")
 
-		// And the row it made is in the tenant the domain named, linked to the
-		// subject -- which is what makes the second sign-in find them.
 		v, err := d.roster.Identity().Get(ctx, rstr.IdentityGetRequest_builder{
 			Ref: rstr.IdentityRef_builder{
 				Subject: rstr.IdentityRefBySubject_builder{
 					Provider: proto.String("example"),
-					Subject:  proto.String("3000"),
+					Subject:  proto.String("6000"),
 				}.Build(),
 			}.Build(),
 			Select: rstr.IdentitySelect_builder{
@@ -384,37 +412,74 @@ func TestEnrolledByEmailDomain(t *testing.T) {
 			}.Build(),
 		}.Build())
 		x.NoError(err)
-		x.Equal("frank", v.GetHolder().GetAlias())
 		x.Equal("acme", v.GetHolder().GetTenant().GetAlias())
+		x.Equal("grace", v.GetHolder().GetAlias())
 	})
 
-	t.Run("and an unverified one is not", func(t *testing.T) {
+	t.Run("and one it does not serve", func(t *testing.T) {
 		x := require.New(t)
 
-		d.idp.subject = "4000"
-		d.idp.claims = map[string]any{
-			"email":          "mallory@acme.example",
-			"email_verified": false,
-		}
+		// Asked of the app rather than driven through a browser: a second host
+		// would need its own `redirect_uri` registered with the provider, so a
+		// test that only rewrote the `Host` header would be stopped by the state
+		// cookie belonging to the other name -- 400, for the wrong reason.
+		d2 := serve(t, sso.Enrolling, map[string]string{"acme.example.com": "acme"})
+		d2.idp.subject = "6100"
+		d2.idp.claims = map[string]any{"email": "eve@x.example", "email_verified": true}
 
-		res := d.signIn(t)
+		res := d2.signIn(t)
 		x.Equal(http.StatusForbidden, res.StatusCode,
-			"an unverified address is a string the person typed")
+			"127.0.0.1 is not a name this deployment serves")
 	})
+}
 
-	t.Run("and a domain nobody mapped is not", func(t *testing.T) {
-		x := require.New(t)
+// TestSomebodyFromAnotherTenant is the hole this example had, found by asking
+// what roster does for a person who uses two operators' services.
+//
+// It does not have them. `Identity` is unique on (provider, subject) across the
+// whole instance -- there is no tenant column in that index -- so one account is
+// one Holder in one tenant, and there is no second Holder for the same human
+// elsewhere. That is deliberate: the entity's own comment is "one person,
+// several [providers]", all landing on one Holder.
+//
+// Which makes the lookup dangerous rather than merely limited. Arriving at
+// beta's front door with an account linked in acme, `Identity.Get` answers with
+// the acme Holder, and a login that stopped there would mint a session for
+// somebody from another tenant. Nothing downstream would read it as a mistake:
+// the wall would refuse them everything, which looks like a broken deployment
+// rather than a wrong sign-in.
+func TestSomebodyFromAnotherTenant(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
 
-		d.idp.subject = "5000"
-		d.idp.claims = map[string]any{
-			"email":          "grace@other.example",
-			"email_verified": true,
-		}
+	// One roster, two operators, and this app is beta's front door.
+	d := serve(t, sso.Enrolling, map[string]string{"127.0.0.1": "beta"})
 
-		res := d.signIn(t)
-		x.Equal(http.StatusForbidden, res.StatusCode,
-			"there is no fallback tenant, because that case is one to look at")
-	})
+	_, err := d.ungated.Tenant().Add(ctx, rstr.TenantAddRequest_builder{
+		Alias: "beta",
+	}.Build())
+	x.NoError(err)
+
+	// Somebody whose account is acme's, linked the way an invitation would.
+	h, err := d.ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),
+		Alias:  "heidi",
+	}.Build())
+	x.NoError(err)
+
+	_, err = d.ungated.Identity().Add(ctx, rstr.IdentityAddRequest_builder{
+		Holder:   rstr.HolderRef_builder{Id: h.GetId()}.Build(),
+		Provider: "example",
+		Subject:  "8000",
+	}.Build())
+	x.NoError(err)
+
+	d.idp.subject = "8000"
+	d.idp.claims = map[string]any{"email": "heidi@somewhere.example", "email_verified": true}
+
+	res := d.signIn(t)
+	x.Equal(http.StatusForbidden, res.StatusCode,
+		"their account is acme's, and beta's front door must not sign them in as it")
 }
 
 // TestTheStateIsChecked is the CSRF defence, and it is worth its own test

@@ -102,6 +102,55 @@ writing Hydra.
 So the question is never "password or OIDC". It is **one relying party or
 many**. An air-gapped single app needs neither.
 
+## A person who uses two operators' services
+
+They are two people here, and roster is deliberate about it.
+
+`Identity` is unique on `(provider, subject)` **across the whole instance** --
+there is no tenant column in that index -- and a `Holder` belongs to one tenant
+and cannot be moved. So one Google account is one Holder in one tenant, and
+somebody who is a user of acme's deployment and of beta's needs a second
+account, with a second identity, at a second provider or a second address.
+
+That is not an oversight to be worked around. The alternative -- one human
+spanning tenants -- makes every question afterwards ambiguous: which tenant does
+their audit trail belong to, which one's operator may erase them, whose seat
+count do they take. A tenant is the wall, and something that crosses it is not a
+person any more.
+
+### What it means for a front door
+
+A login that only asks roster "who is this subject" is **wrong** in a
+multi-tenant deployment, and wrong in the quiet direction. Somebody who signs in
+at acme's name and then at beta's is found both times, and the second time the
+row that comes back is acme's -- so beta's door mints a session for a holder of
+another tenant. Nothing downstream reads that as a mistake: the wall refuses
+them everything, which looks like a broken deployment rather than a wrong
+sign-in.
+
+So the front door has two jobs, not one:
+
+| | |
+| --- | --- |
+| which tenant is this | the name the browser reached it at. That is what a tenant *is*: the same service under a different operator's own domain |
+| is this person that tenant's | the row roster answers with has to belong to it, or they are refused |
+
+The email domain answers neither. It says where somebody **authenticates**,
+which is a different question and often a different organisation -- one of
+acme's people can perfectly well have a personal Google account.
+
+`examples/sso` is that, running: `Config.Tenants` maps the names a deployment
+serves, the lookup is compared against it, and
+`TestSomebodyFromAnotherTenant` is the case above. Removing the comparison makes
+it answer 200.
+
+### What roster does offer
+
+Within one tenant, several ways in for the same person. `Identity` is one-to-many
+by design -- the same human arrives through the company's Entra tenant on Monday
+and through GitHub on Saturday, and both land on one Holder with one history and
+one set of permissions. That is the convenience it is for.
+
 ## This is not deployable yet
 
 custody names itself to roster with `auth.Plain`, which is believed. Anybody who
@@ -117,8 +166,11 @@ custody needs a **row** here — and what that row is has not been decided:
   every tenant it has users in.
 - `grpcx.Limit` counts per tenant, off the frame. All of custody's verifies
   would count against whichever tenant held it.
-- Nothing today says custody may call `Vouch.Verify` and not `Holder.Erase`.
-  roster installs no `gate.Policy`.
+- What a service may call is now answerable: `cmd.Policy` is installed
+  (`cmd/serve.go`), a `Role` names methods and a `Binding` grants it, and a
+  holder with no binding may call nothing. `examples/sso` wires exactly that for
+  its login app. What is still undecided is the row above -- what a **machine**
+  is in this schema.
 
 Whether the credential arrives as a certificate or an API key is the small half
 of that question, and `auth.Seq` makes it swappable. The large half is what a
@@ -131,5 +183,9 @@ which is why the wiring was built first.
 
 - [PLAN.md](../PLAN.md) — D13, D14 and the open questions
 - [`server/vouch`](../server/vouch) — the package comment is the detail
+- [`examples/sso`](../examples/sso) — a relying party that signs somebody in
+  with Google, Entra or GitHub and finds out who they are here. The package
+  comment is the detail; the tests are the flow, run against a provider that
+  answers over HTTP
 - payday's [guide/signing-in.md](https://github.com/lesomnus/payday/blob/main/docs/guide/signing-in.md)
   — how to put one of these in front of any payday app
