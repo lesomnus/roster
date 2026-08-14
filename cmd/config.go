@@ -16,8 +16,15 @@ import (
 
 	"github.com/lesomnus/payday/config"
 
-	// The one driver this app runs on. It is blank-imported here rather than
-	// by payday so that an app does not carry an engine it never opens.
+	// The two engines this app runs on, blank-imported here rather than by
+	// payday so that an app does not carry one it never opens.
+	//
+	// Both, because both are used: `compose.yaml` runs it on PostgreSQL and a
+	// test runs it on SQLite. Linking only the second made `docker compose up`
+	// -- the quickstart `docs/OPERATING.md` gives -- fail at
+	// `unknown driver "pgx"`, which is a sentence about a name rather than
+	// about a missing import and reads as a typo in the configuration.
+	_ "github.com/lesomnus/payday/config/dbpgx"
 	_ "github.com/lesomnus/payday/config/dbsqlite3"
 )
 

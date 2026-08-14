@@ -49,7 +49,11 @@ services:
       ROSTER_ROOT_USER: ${ROSTER_ROOT_USER:-admin}
       ROSTER_ROOT_PASSWORD: ${ROSTER_ROOT_PASSWORD:-admin}
 
-      ROSTER_DB_DRIVER: postgres
+      # `pgx` and not `postgres`: the driver is named by what is registered,
+      # and `config/dbpgx` registers it under the name of the package that
+      # opens it. An unknown name is refused at startup and says which are
+      # known.
+      ROSTER_DB_DRIVER: pgx
       ROSTER_DB_DSN: postgres://roster:roster@db:5432/roster?sslmode=disable
       ROSTER_DB_MIGRATE: "true"
 

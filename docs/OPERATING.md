@@ -427,9 +427,6 @@ Nothing written down is plaintext, and it warns once.
 
 ## What is not here
 
-- **No admin console.** Keys and roles are the CLI's, which means a shell on the
-  box. A console would itself need a key, and the first key has to come from
-  somewhere that is not one.
 - **Nothing mints a `rt_` key over the wire.** `ApiKeyService` is unregistered,
   so issuing one takes `Ungated` and therefore a shell. The rules that make a
   customer-minted key safe are in place — the prefix, the holder it resolves to,

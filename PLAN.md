@@ -263,8 +263,10 @@ rule that applies outside it.
 - **No aggregation.** It is a convenience that makes "where did this rule come
   from" unanswerable by reading.
 - **No `resourceNames` yet.** See below; it needs a seam that does not exist.
-- **Escalation prevention later.** Nobody should be able to grant what they do
-  not hold, and it is not the first thing to build.
+- ~~**Escalation prevention later.**~~ Done, and wider than this entry
+  expected: `server/core/escalate.go`, on `Role.Add`, `Role.Patch`,
+  `Binding.Add` and an API key's methods, plus the rule that a role scoped to a
+  site is bound only in that site.
 
 #### Team-scoped permission, and where it has to live
 
@@ -584,16 +586,18 @@ to leave `date_created` (`default: ""`), `date_updated` (`version: {}`) and
 `date_erased` (`erased: {}`) alone, and getting that boundary wrong breaks every
 existing schema.
 
-### F6 · A schema cannot say "written, never read" — **fixed upstream, not adopted here**
+### F6 · A schema cannot say "written, never read" — **fixed, and adopted**
 
 payday has `(payday.field).secret` now, and `pd.Secret` is the generated layer
 that clears a marked field on the way out. apptest declares one and the test
 fails with the layer removed.
 
-roster cannot use it yet. The extension is in payday's **buf module**, and this
-app's `buf.yaml` depends on the published `buf.build/payday/payday:dev` -- so
-until that is pushed, `(payday.field)` is an unknown extension here and the
-compile refuses. Adopting it is one line per field and one in the stack, on the
+The wait was the registry rather than the code: the extension is in payday's
+**buf module**, and this app depends on the published
+`buf.build/payday/payday:dev`, so `(payday.field)` was an unknown extension here
+until that was pushed. It has been, and two fields declare it --
+`Credential.secret` (proto/app/credential.proto:58) and `ApiKey.secret`
+(proto/app/apikey.proto:99). What it took was one line per field and one in the
 day payday publishes.
 
 What follows below is what roster does in the meantime, and it stays either way:
@@ -681,7 +685,7 @@ D15 relies on.
 | 1b · Team, on the second axis | **done**, 21 tests, both databases |
 | 1c · memberships, Credential | **done**, 27 tests, both databases |
 | 2 · payday fixes | F1, F2, F4 done · F3, F6, F7 open · F5 written down |
-| 3 · app layer | linking rules, credential verification, **roles and the second axis** done · `/api/v1/me` next |
+| 3 · app layer | linking rules, credential verification, roles and the second axis, `MeService`, escalation prevention, the console · **done** |
 | 4 · keys, sync, console | **keys done** · sync channel, console — |
 
 ### Open questions for whoever reads this next
@@ -697,13 +701,15 @@ D15 relies on.
   team memberships, and `bare.Scopes{pd.Wall(), pd.Grouped(...)}` composes the
   two axes. Checked by removing `pd.Grouped`: a caller bound in one site sees
   the other's teams again.
-- **Escalation prevention is missing rather than rejected.** Nothing stops
-  somebody binding a role they do not hold themselves.
+- ~~**Escalation prevention is missing rather than rejected.**~~ It is there;
+  `server/core/escalate.go`, and `cmd/policy_test.go:269` is the two-RPC
+  scenario this entry described, refused.
 - **A team member sees their team's **site**.** One second axis, and `Site` is
   it, so being in a team means seeing the site's rows. Narrower than that is the
   app filtering; see D17.
-- **`/api/v1/me` is not written.** It needs an overlay RPC. `VouchService` is
-  now the worked example of one, so this is no longer the first of its kind.
+- ~~**`/api/v1/me` is not written.**~~ `MeService` is (proto/app/me.proto:36),
+  and the console reads it: `ts/src/page.tsx` asks it what the operator may do
+  before deciding what to draw.
 - **Credential verification is done** — `server/vouch`, D13 and D14. What is
   *not* done is what happens after it says yes.
 

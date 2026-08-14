@@ -55,7 +55,7 @@ go tool pd doctor .       # what would go wrong, before it does
 | --- | --- |
 | `*.g.go`, `*.pb.go` | wherever `go_package` puts them |
 | `server/bare/`, `server/pd/`, `internal/ent/` | in whole |
-| `proto/payday/` | in whole — payday's entities, **copied** in |
+| `proto/roster/payday/` | in whole — payday's entities, **copied** in |
 | `proto/**/*_svc.g.proto` | the generated contract of an entity |
 | `ts/gen/` | in whole |
 
@@ -63,7 +63,7 @@ go tool pd doctor .       # what would go wrong, before it does
 `proto/app/*.proto`, `proto/ext/**` (overlays), `cmd/`, and `ts/src/`.
 
 To add a field to one of payday's entities, write an **overlay** in
-`proto/ext/payday/`. Editing `proto/payday/` directly is undone by the next
+`proto/ext/payday/`. Editing `proto/roster/payday/` directly is undone by the next
 generation.
 
 ## Adding an entity

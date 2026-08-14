@@ -100,9 +100,13 @@ they are traversed.
 | `resourceNames` | `gate.Policy` cannot see what a call is **about**; only who is asking. So object rules are layers, and a declarative form needs a seam payday does not have | a payday change |
 | nested groups | one join becomes a traversal, which is the line above | see Zanzibar |
 | conditions / ABAC | "during working hours", "from this network" — an expression language, and then a debugger for it | a language |
-| escalation prevention | nobody granting what they do not hold. **This one we should have**, and it is not first | a check on `Binding.Add` |
 
-The last row is the honest one: it is missing rather than rejected.
+Escalation prevention **is** here, and used to be the last row of that table.
+Nobody hands out what they do not hold: `server/core/escalate.go`, on
+`Role.Add`, `Role.Patch`, `Binding.Add` and the methods of an API key -- four
+places rather than the one that row estimated -- plus the rule that a role
+scoped to a site is bound only in that site. `OPERATING.md` has the operator's
+half of it.
 
 ## Two planes, one schema
 

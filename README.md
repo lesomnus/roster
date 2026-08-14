@@ -33,7 +33,7 @@ against, and the more demanding one.
 
 ## Built with payday
 
-The generated messages live at the module root, which is why the binary is in
+The generated messages live in `rstr/`, which is why the binary is in
 `cmd/roster/` rather than beside them: an app is **one** Go package for
 everything generated -- the ent schemas of two packages cannot have an edge
 between them, and the tenant wall is an edge.
@@ -62,13 +62,13 @@ Two rules, and between them they say whether a file is yours.
 | `proto/app/*.proto` | **yours** -- the entities, and any service you write |
 | `proto/ext/**` | **yours** -- overlays, merged into a generated contract |
 | `proto/**/*_svc.g.proto` | generated: the contract of an entity |
-| `proto/payday/` | generated in whole; payday's own entities, copied in |
+| `proto/roster/payday/` | generated in whole; payday's own entities, copied in |
 | `internal/ent/`, `server/bare/`, `server/pd/` | generated |
 | `*.g.go`, `*.pb.go` | generated, wherever `go_package` puts them |
 | `ts/gen/` | generated in whole |
 | everything else | yours |
 
-So: **`.g` means a generator wrote it**, and `proto/payday/` is the one
+So: **`.g` means a generator wrote it**, and `proto/roster/payday/` is the one
 directory where that is true of every file rather than of the ones marked.
 Nothing else needs remembering; `pd gen` rewrites all of it and `pd gen --check`
 says when a commit did not carry it.
@@ -83,7 +83,7 @@ true of everything in sight and says nothing.
 which server the wall is on -- and it is deliberately not hidden behind a
 `payday.Serve(cfg)`. Everything else in `cmd/` is small.
 
-`proto/app/thing.proto` is the other half. The `(payday.entity)` option at the
+`proto/app/identity.proto` is the other half. The `(payday.entity)` option at the
 bottom of it is where the domain byte, the tenant wall, the `List` and the
 `Watch` all come from.
 
@@ -101,7 +101,7 @@ a generated file that was not regenerated compiles perfectly and is wrong.
 `pd gen` also pins the buf dependencies the first time, and that is not a
 convenience. `buf dep update` compiles the workspace before it writes the lock,
 and this app's schema names `Tenant` — which does not exist until a
-generation has copied payday's entities into `proto/payday/`. So run by hand it
+generation has copied payday's entities into `proto/roster/payday/`. So run by hand it
 fails on a tree nothing has generated yet, and there is exactly one moment it
 can run: inside `pd gen`, between those two things. Once `buf.lock` has entries
 in it they are yours, and nothing here moves them.
