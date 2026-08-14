@@ -1,0 +1,135 @@
+# roster had none of this until now, and `CLAUDE.md` already said it did --
+# "`go tool pd gen --check .` # what CI runs". Nothing ran it. This is that file.
+#
+# The check worth having a machine for is the last one in the `go` job. Build
+# failures and test failures are found at a desk; a generated file that was not
+# regenerated **compiles perfectly and is wrong**, and `pd gen --check` is the
+# only thing that looks. payday's own `main` sat red for four commits on exactly
+# that, so this is not a hypothetical about an app that generates most of itself.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      # The whole history, because `buf breaking` below compares against the
+      # branch tip and a shallow checkout has no ref to compare against.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: bufbuild/buf-action@v1
+        with:
+          setup_only: true
+
+      # One baseline, and only one: roster's buf module has no name, so it is
+      # published nowhere and there is no BSR ref to compare against. That does
+      # not make the check pointless -- roster's protos are an API, and kamino2
+      # is already a caller of it. Breaking the wire on purpose is a migration
+      # and should be argued for in a review rather than discovered downstream.
+      #
+      # `ref=origin/main` rather than `branch=main`: a pull request is checked
+      # out detached and has no local `main`.
+      - run: buf breaking --against '.git#ref=origin/main'
+
+      # No `buf lint`. roster's `buf.yaml` configures it, but it exits 100 on
+      # the generated contracts -- `audit_svc.g.proto` is not lower_snake_case
+      # to buf, because of the `.g.` that marks who wrote the file. That naming
+      # is payday's and is not roster's to change, so linting here would mean
+      # arguing with the generator on every push. Left out deliberately; the
+      # `lint:` block in `buf.yaml` is what a `buf lint` run by hand obeys.
+
+      - name: formatted
+        run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
+      - run: go vet ./...
+      - run: go test ./... -count=1
+
+      # What no compiler and no test can see.
+      #
+      # `doctor` is the one that finds a layer with no `WithDriver` -- which
+      # fails at run time, only inside a transaction, and only once somebody
+      # calls a multi-write RPC.
+      #
+      # `--ts` as well, so the TypeScript half is held to the same rule. It
+      # needs the plugin from `ts/`, which is why the install comes first.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --prefix ts
+      - run: go tool pd doctor .
+      - run: go tool pd gen --check --ts .
+
+      # And that roster still builds for the browser. `ts/package.json` has a
+      # `wasm` script and a sandbox that loads what it produces, so this is a
+      # promise the repository already makes -- kept only by being checked.
+      - run: GOOS=js GOARCH=wasm go build ./...
+
+  # The same suite, on the database roster is actually deployed on.
+  #
+  # SQLite needs no server, which is why the job above uses it and why it should
+  # stay that way -- a suite nobody can run without a database is a suite nobody
+  # runs. But SQLite is permissive in the directions that hide mistakes: it has
+  # no real types, it sorts NULLs the other way round, and its driver turns a
+  # nil []byte into an empty blob where pgx sends SQL NULL.
+  #
+  # That last one was not hypothetical for payday: the first time its suite met
+  # PostgreSQL, ten tests failed on two NOT NULL columns the trail and the outbox
+  # had been writing nil into since they were written. roster generates the same
+  # SQL from the same generator and has never been run against PostgreSQL at all.
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app
+        ports: ["5432:5432"]
+        # Without this the container is up before the database accepts, and the
+        # first test is the one that finds out.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - run: go test ./... -count=1
+        env:
+          PDTEST_POSTGRES: postgres://app:app@127.0.0.1:5432/app?sslmode=disable
+
+  # The TypeScript half: it type-checks, and it builds.
+  #
+  # There is no `npm test` here because `ts/package.json` declares no test
+  # script. What that means is worth stating rather than leaving to be inferred:
+  # the console is checked by the compiler and by nothing else. The `go` job
+  # covers whether `ts/gen/` matches the schema; this covers whether the code
+  # written against it still compiles and bundles.
+  ts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm ci
+        working-directory: ts
+      - run: npm run check
+        working-directory: ts
+      - run: npm run build
+        working-directory: ts
