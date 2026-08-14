@@ -16,6 +16,8 @@ const (
 	FieldProvider = "provider"
 	// FieldSubject holds the string denoting the subject field in the database.
 	FieldSubject = "subject"
+	// FieldTenantID holds the string denoting the tenant_id field in the database.
+	FieldTenantID = "tenant_id"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
@@ -42,6 +44,7 @@ var Columns = []string{
 	FieldID,
 	FieldProvider,
 	FieldSubject,
+	FieldTenantID,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
@@ -74,6 +77,11 @@ func ByProvider(opts ...sql.OrderTermOption) OrderOption {
 // BySubject orders the results by the subject field.
 func BySubject(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSubject, opts...).ToFunc()
+}
+
+// ByTenantID orders the results by the tenant_id field.
+func ByTenantID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTenantID, opts...).ToFunc()
 }
 
 // ByDateUpdated orders the results by the date_updated field.

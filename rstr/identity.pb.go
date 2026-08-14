@@ -46,6 +46,7 @@ type Identity struct {
 	xxx_hidden_Holder      *Holder                `protobuf:"bytes,2,opt,name=holder"`
 	xxx_hidden_Provider    string                 `protobuf:"bytes,8,opt,name=provider"`
 	xxx_hidden_Subject     string                 `protobuf:"bytes,9,opt,name=subject"`
+	xxx_hidden_TenantId    []byte                 `protobuf:"bytes,10,opt,name=tenant_id,json=tenantId"`
 	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
@@ -106,6 +107,13 @@ func (x *Identity) GetSubject() string {
 	return ""
 }
 
+func (x *Identity) GetTenantId() []byte {
+	if x != nil {
+		return x.xxx_hidden_TenantId
+	}
+	return nil
+}
+
 func (x *Identity) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -144,6 +152,13 @@ func (x *Identity) SetProvider(v string) {
 
 func (x *Identity) SetSubject(v string) {
 	x.xxx_hidden_Subject = v
+}
+
+func (x *Identity) SetTenantId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_TenantId = v
 }
 
 func (x *Identity) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -218,7 +233,29 @@ type Identity_builder struct {
 	// Never a username and never an email address. Both get changed, and an email
 	// gets reassigned to somebody else entirely -- which would silently hand one
 	// person another person's account.
-	Subject     string
+	Subject string
+	// The tenant `holder.tenant` reaches, kept here. payday stamps it.
+	//
+	// # Why it is worth a column
+	//
+	// Two things, and the second is the one that was actually in the way.
+	//
+	// The wall reaches this entity through the holder, so without a stamp every
+	// read of an identity is `HasHolderWith(holder.TenantIDIn(...))` -- a
+	// correlated subquery, on the table a sign-in reads.
+	//
+	// And a `list.by` filter reaches **one hop**, so "every identity in this
+	// tenant" could not be asked for at all: `holder.tenant` is two, and the
+	// generator refuses that by name. With the column it is a filter like any
+	// other, which is what an operator console needs.
+	//
+	// # It is not a second answer to be kept in step
+	//
+	// `holder` is immutable and so is `Holder.tenant`, so the value is decided
+	// when the row is written and no step of that path can move afterwards --
+	// which is what `pd gen` refuses a stamp without. Nothing refreshes it
+	// because nothing can put it out of date.
+	TenantId    []byte
 	DateUpdated *timestamppb.Timestamp
 	DateErased  *timestamppb.Timestamp
 	DateCreated *timestamppb.Timestamp
@@ -232,6 +269,7 @@ func (b0 Identity_builder) Build() *Identity {
 	x.xxx_hidden_Holder = b.Holder
 	x.xxx_hidden_Provider = b.Provider
 	x.xxx_hidden_Subject = b.Subject
+	x.xxx_hidden_TenantId = b.TenantId
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
@@ -242,20 +280,22 @@ var File_app_identity_proto protoreflect.FileDescriptor
 
 const file_app_identity_proto_rawDesc = "" +
 	"\n" +
-	"\x12app/identity.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x88\x04\n" +
+	"\x12app/identity.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xc5\x04\n" +
 	"\bIdentity\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\x1a\n" +
 	"\bprovider\x18\b \x01(\tR\bprovider\x12\x18\n" +
-	"\asubject\x18\t \x01(\tR\asubject\x12F\n" +
+	"\asubject\x18\t \x01(\tR\asubject\x12#\n" +
+	"\ttenant_id\x18\n" +
+	" \x01(\fB\x06\xea\x82\x16\x02\x10@R\btenantId\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:\xa0\x01\xca\xfc\x15N\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:\xb8\x01\xca\xfc\x15N\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
 	"\x02id\x10\x01\x1a&\x12\asubject\x1a\f\n" +
 	"\bprovider\x10\b\x1a\v\n" +
-	"\asubject\x10\t0\x01\x8a\xbb\x16J\b\b23\n" +
+	"\asubject\x10\t0\x01\x8a\xbb\x16b\b\b2@\n" +
 	"\x12\n" +
 	"\x10\n" +
 	"\fdate_created\x10\x0f\n" +
@@ -263,8 +303,9 @@ const file_app_identity_proto_rawDesc = "" +
 	"\x06\n" +
 	"\x02id\x10\x01\x1a\x05\n" +
 	"\x03ref\x1a\b\n" +
-	"\x06holder \x14(d:\x00\"\x0f\n" +
-	"\rholder.tenantB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
+	"\x06holder\x1a\v\n" +
+	"\ttenant_id \x14(d:\x00\"\x1a\n" +
+	"\rholder.tenant\x1a\ttenant_idB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
 var file_app_identity_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_app_identity_proto_goTypes = []any{

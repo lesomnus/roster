@@ -388,6 +388,7 @@ var (
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "provider", Type: field.TypeString},
 		{Name: "subject", Type: field.TypeString},
+		{Name: "tenant_id", Type: field.TypeUUID},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
@@ -401,7 +402,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "identity_holder_holder",
-				Columns:    []*schema.Column{IdentityColumns[6]},
+				Columns:    []*schema.Column{IdentityColumns[7]},
 				RefColumns: []*schema.Column{HolderColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -410,7 +411,7 @@ var (
 			{
 				Name:    "identity_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{IdentityColumns[5], IdentityColumns[0]},
+				Columns: []*schema.Column{IdentityColumns[6], IdentityColumns[0]},
 			},
 			{
 				Name:    "identity_provider_subject",

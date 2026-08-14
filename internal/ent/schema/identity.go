@@ -24,6 +24,7 @@ func (Identity) Fields() []ent.Field {
 			Immutable(),
 		field.String("provider"),
 		field.String("subject"),
+		field.UUID("tenant_id", uuid.UUID{}),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().

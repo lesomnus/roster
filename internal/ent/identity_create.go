@@ -34,6 +34,12 @@ func (_c *IdentityCreate) SetSubject(v string) *IdentityCreate {
 	return _c
 }
 
+// SetTenantID sets the "tenant_id" field.
+func (_c *IdentityCreate) SetTenantID(v uuid.UUID) *IdentityCreate {
+	_c.mutation.SetTenantID(v)
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *IdentityCreate) SetDateUpdated(v time.Time) *IdentityCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -125,6 +131,9 @@ func (_c *IdentityCreate) check() error {
 	if _, ok := _c.mutation.Subject(); !ok {
 		return &ValidationError{Name: "subject", err: errors.New(`ent: missing required field "Identity.subject"`)}
 	}
+	if _, ok := _c.mutation.TenantID(); !ok {
+		return &ValidationError{Name: "tenant_id", err: errors.New(`ent: missing required field "Identity.tenant_id"`)}
+	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Identity.date_updated"`)}
 	}
@@ -176,6 +185,10 @@ func (_c *IdentityCreate) createSpec() (*Identity, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Subject(); ok {
 		_spec.SetField(identity.FieldSubject, field.TypeString, value)
 		_node.Subject = value
+	}
+	if value, ok := _c.mutation.TenantID(); ok {
+		_spec.SetField(identity.FieldTenantID, field.TypeUUID, value)
+		_node.TenantID = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(identity.FieldDateUpdated, field.TypeTime, value)

@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/identity.proto.
  */
 export const file_app_identity: GenFile = /*@__PURE__*/
-  fileDesc("ChJhcHAvaWRlbnRpdHkucHJvdG8SBnJvc3RlciLDAwoISWRlbnRpdHkSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBmhvbGRlchgCIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgJAARIQCghwcm92aWRlchgIIAEoCRIPCgdzdWJqZWN0GAkgASgJEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADqgAcr8FU4SAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARomEgdzdWJqZWN0GgwKCHByb3ZpZGVyEAgaCwoHc3ViamVjdBAJMAGKuxZKCAgyMwoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaCAoGaG9sZGVyIBQoZDoAIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChJhcHAvaWRlbnRpdHkucHJvdG8SBnJvc3RlciL2AwoISWRlbnRpdHkSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBmhvbGRlchgCIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgJAARIQCghwcm92aWRlchgIIAEoCRIPCgdzdWJqZWN0GAkgASgJEhkKCXRlbmFudF9pZBgKIAEoDEIG6oIWAhBAEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADq4Acr8FU4SAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARomEgdzdWJqZWN0GgwKCHByb3ZpZGVyEAgaCwoHc3ViamVjdBAJMAGKuxZiCAgyQAoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaCAoGaG9sZGVyGgsKCXRlbmFudF9pZCAUKGQ6ACIaCg1ob2xkZXIudGVuYW50Ggl0ZW5hbnRfaWRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Identity is one way a person signs in: a subject at a provider, pointing at
@@ -72,6 +72,33 @@ export type Identity = Message<"roster.Identity"> & {
    * @generated from field: string subject = 9;
    */
   subject: string;
+
+  /**
+   * The tenant `holder.tenant` reaches, kept here. payday stamps it.
+   *
+   * # Why it is worth a column
+   *
+   * Two things, and the second is the one that was actually in the way.
+   *
+   * The wall reaches this entity through the holder, so without a stamp every
+   * read of an identity is `HasHolderWith(holder.TenantIDIn(...))` -- a
+   * correlated subquery, on the table a sign-in reads.
+   *
+   * And a `list.by` filter reaches **one hop**, so "every identity in this
+   * tenant" could not be asked for at all: `holder.tenant` is two, and the
+   * generator refuses that by name. With the column it is a filter like any
+   * other, which is what an operator console needs.
+   *
+   * # It is not a second answer to be kept in step
+   *
+   * `holder` is immutable and so is `Holder.tenant`, so the value is decided
+   * when the row is written and no step of that path can move afterwards --
+   * which is what `pd gen` refuses a stamp without. Nothing refreshes it
+   * because nothing can put it out of date.
+   *
+   * @generated from field: bytes tenant_id = 10;
+   */
+  tenantId: Uint8Array;
 
   /**
    * @generated from field: google.protobuf.Timestamp date_updated = 13;

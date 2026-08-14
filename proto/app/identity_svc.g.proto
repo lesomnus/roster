@@ -41,6 +41,7 @@ message IdentityAddRequest {
   HolderRef holder = 2;
   string provider = 8 [features.field_presence = IMPLICIT];
   string subject = 9 [features.field_presence = IMPLICIT];
+  bytes tenant_id = 10 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -66,6 +67,7 @@ message IdentitySelect {
   HolderSelect holder = 2;
   bool provider = 8;
   bool subject = 9;
+  bool tenant_id = 10;
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;
@@ -75,6 +77,7 @@ message IdentityPatchRequest {
   IdentityRef ref = 1;
   string provider = 16;
   string subject = 18;
+  bytes tenant_id = 20;
   // The version this update requires the stored date_updated to be.
   // It is a precondition, not a write: the update applies only if the row
   // still holds this value, and the server stamps the new version itself.
@@ -129,6 +132,7 @@ message IdentityListResponse {
 message IdentityFilter {
   IdentityRef ref = 1;
   HolderRef holder = 2;
+  bytes tenant_id = 3;
 }
 
 message IdentityWatchRequest {

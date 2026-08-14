@@ -7230,6 +7230,7 @@ type IdentityMutation struct {
 	id            *uuid.UUID
 	provider      *string
 	subject       *string
+	tenant_id     *uuid.UUID
 	date_updated  *time.Time
 	date_erased   *time.Time
 	date_created  *time.Time
@@ -7415,6 +7416,42 @@ func (m *IdentityMutation) OldSubject(ctx context.Context) (v string, err error)
 // ResetSubject resets all changes to the "subject" field.
 func (m *IdentityMutation) ResetSubject() {
 	m.subject = nil
+}
+
+// SetTenantID sets the "tenant_id" field.
+func (m *IdentityMutation) SetTenantID(u uuid.UUID) {
+	m.tenant_id = &u
+}
+
+// TenantID returns the value of the "tenant_id" field in the mutation.
+func (m *IdentityMutation) TenantID() (r uuid.UUID, exists bool) {
+	v := m.tenant_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTenantID returns the old "tenant_id" field's value of the Identity entity.
+// If the Identity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *IdentityMutation) OldTenantID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTenantID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTenantID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTenantID: %w", err)
+	}
+	return oldValue.TenantID, nil
+}
+
+// ResetTenantID resets all changes to the "tenant_id" field.
+func (m *IdentityMutation) ResetTenantID() {
+	m.tenant_id = nil
 }
 
 // SetDateUpdated sets the "date_updated" field.
@@ -7648,12 +7685,15 @@ func (m *IdentityMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *IdentityMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 7)
 	if m.provider != nil {
 		fields = append(fields, identity.FieldProvider)
 	}
 	if m.subject != nil {
 		fields = append(fields, identity.FieldSubject)
+	}
+	if m.tenant_id != nil {
+		fields = append(fields, identity.FieldTenantID)
 	}
 	if m.date_updated != nil {
 		fields = append(fields, identity.FieldDateUpdated)
@@ -7679,6 +7719,8 @@ func (m *IdentityMutation) Field(name string) (ent.Value, bool) {
 		return m.Provider()
 	case identity.FieldSubject:
 		return m.Subject()
+	case identity.FieldTenantID:
+		return m.TenantID()
 	case identity.FieldDateUpdated:
 		return m.DateUpdated()
 	case identity.FieldDateErased:
@@ -7700,6 +7742,8 @@ func (m *IdentityMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldProvider(ctx)
 	case identity.FieldSubject:
 		return m.OldSubject(ctx)
+	case identity.FieldTenantID:
+		return m.OldTenantID(ctx)
 	case identity.FieldDateUpdated:
 		return m.OldDateUpdated(ctx)
 	case identity.FieldDateErased:
@@ -7730,6 +7774,13 @@ func (m *IdentityMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetSubject(v)
+		return nil
+	case identity.FieldTenantID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTenantID(v)
 		return nil
 	case identity.FieldDateUpdated:
 		v, ok := value.(time.Time)
@@ -7828,6 +7879,9 @@ func (m *IdentityMutation) ResetField(name string) error {
 		return nil
 	case identity.FieldSubject:
 		m.ResetSubject()
+		return nil
+	case identity.FieldTenantID:
+		m.ResetTenantID()
 		return nil
 	case identity.FieldDateUpdated:
 		m.ResetDateUpdated()

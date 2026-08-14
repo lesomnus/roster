@@ -115,6 +115,11 @@ func (s IdentityServiceServer) Add(ctx context.Context, req *rstr.IdentityAddReq
 	}
 	q.SetProvider(req.GetProvider())
 	q.SetSubject(req.GetSubject())
+	if v, err := uuid.FromBytes(req.GetTenantId()); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "tenant_id: %s", err)
+	} else {
+		q.SetTenantID(v)
+	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
 		q.SetDateCreated(req.GetDateCreated().AsTime())
@@ -193,6 +198,9 @@ func IdentitySelectedFields(m *rstr.IdentitySelect) []string {
 	}
 	if m.GetSubject() {
 		vs = append(vs, identity.FieldSubject)
+	}
+	if m.GetTenantId() {
+		vs = append(vs, identity.FieldTenantID)
 	}
 	if m.GetDateUpdated() {
 		vs = append(vs, identity.FieldDateUpdated)
@@ -274,7 +282,7 @@ func IdentityGetKey(ctx context.Context, db *ent.Client, ref *rstr.IdentityRef) 
 var identityOrmEntity = ormpatch.MustEntityOf(rstr.File_app_identity_proto, "Identity")
 
 var identityPatchColumns = entpatch.Columns{
-	1: identity.FieldID, 2: identity.HolderColumn, 8: identity.FieldProvider, 9: identity.FieldSubject, 13: identity.FieldDateUpdated, 14: identity.FieldDateErased, 15: identity.FieldDateCreated}
+	1: identity.FieldID, 2: identity.HolderColumn, 8: identity.FieldProvider, 9: identity.FieldSubject, 10: identity.FieldTenantID, 13: identity.FieldDateUpdated, 14: identity.FieldDateErased, 15: identity.FieldDateCreated}
 
 func (s IdentityServiceServer) Apply(ctx context.Context, req *rstr.IdentityApplyRequest) (*rstr.Identity, error) {
 	if !req.HasPatch() {

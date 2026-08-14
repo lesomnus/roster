@@ -21,6 +21,7 @@ func (e *Identity) Proto() *rstr.Identity {
 	}
 	x.SetProvider(e.Provider)
 	x.SetSubject(e.Subject)
+	x.SetTenantId(e.TenantID[:])
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))

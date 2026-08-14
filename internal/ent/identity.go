@@ -23,6 +23,8 @@ type Identity struct {
 	Provider string `json:"provider,omitempty"`
 	// Subject holds the value of the "subject" field.
 	Subject string `json:"subject,omitempty"`
+	// TenantID holds the value of the "tenant_id" field.
+	TenantID uuid.UUID `json:"tenant_id,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -66,7 +68,7 @@ func (*Identity) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case identity.FieldDateUpdated, identity.FieldDateErased, identity.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case identity.FieldID, identity.FieldHolderID:
+		case identity.FieldID, identity.FieldTenantID, identity.FieldHolderID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -100,6 +102,12 @@ func (_m *Identity) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field subject", values[i])
 			} else if value.Valid {
 				_m.Subject = value.String
+			}
+		case identity.FieldTenantID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
+			} else if value != nil {
+				_m.TenantID = *value
 			}
 		case identity.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -172,6 +180,9 @@ func (_m *Identity) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("subject=")
 	builder.WriteString(_m.Subject)
+	builder.WriteString(", ")
+	builder.WriteString("tenant_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.TenantID))
 	builder.WriteString(", ")
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))

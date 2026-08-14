@@ -29,6 +29,7 @@ type IdentityAddRequest struct {
 	xxx_hidden_Holder      *HolderRef             `protobuf:"bytes,2,opt,name=holder"`
 	xxx_hidden_Provider    string                 `protobuf:"bytes,8,opt,name=provider"`
 	xxx_hidden_Subject     string                 `protobuf:"bytes,9,opt,name=subject"`
+	xxx_hidden_TenantId    []byte                 `protobuf:"bytes,10,opt,name=tenant_id,json=tenantId"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
@@ -89,6 +90,13 @@ func (x *IdentityAddRequest) GetSubject() string {
 	return ""
 }
 
+func (x *IdentityAddRequest) GetTenantId() []byte {
+	if x != nil {
+		return x.xxx_hidden_TenantId
+	}
+	return nil
+}
+
 func (x *IdentityAddRequest) GetDateCreated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateCreated
@@ -101,7 +109,7 @@ func (x *IdentityAddRequest) SetId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 5)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 6)
 }
 
 func (x *IdentityAddRequest) SetHolder(v *HolderRef) {
@@ -114,6 +122,13 @@ func (x *IdentityAddRequest) SetProvider(v string) {
 
 func (x *IdentityAddRequest) SetSubject(v string) {
 	x.xxx_hidden_Subject = v
+}
+
+func (x *IdentityAddRequest) SetTenantId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_TenantId = v
 }
 
 func (x *IdentityAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
@@ -161,6 +176,7 @@ type IdentityAddRequest_builder struct {
 	Holder      *HolderRef
 	Provider    string
 	Subject     string
+	TenantId    []byte
 	DateCreated *timestamppb.Timestamp
 }
 
@@ -169,12 +185,13 @@ func (b0 IdentityAddRequest_builder) Build() *IdentityAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 5)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 6)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Holder = b.Holder
 	x.xxx_hidden_Provider = b.Provider
 	x.xxx_hidden_Subject = b.Subject
+	x.xxx_hidden_TenantId = b.TenantId
 	x.xxx_hidden_DateCreated = b.DateCreated
 	return m0
 }
@@ -559,6 +576,7 @@ type IdentitySelect struct {
 	xxx_hidden_Holder      *HolderSelect          `protobuf:"bytes,2,opt,name=holder"`
 	xxx_hidden_Provider    bool                   `protobuf:"varint,8,opt,name=provider"`
 	xxx_hidden_Subject     bool                   `protobuf:"varint,9,opt,name=subject"`
+	xxx_hidden_TenantId    bool                   `protobuf:"varint,10,opt,name=tenant_id,json=tenantId"`
 	xxx_hidden_DateUpdated bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
@@ -621,6 +639,13 @@ func (x *IdentitySelect) GetSubject() bool {
 	return false
 }
 
+func (x *IdentitySelect) GetTenantId() bool {
+	if x != nil {
+		return x.xxx_hidden_TenantId
+	}
+	return false
+}
+
 func (x *IdentitySelect) GetDateUpdated() bool {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -644,7 +669,7 @@ func (x *IdentitySelect) GetDateCreated() bool {
 
 func (x *IdentitySelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 8)
 }
 
 func (x *IdentitySelect) SetHolder(v *HolderSelect) {
@@ -653,27 +678,32 @@ func (x *IdentitySelect) SetHolder(v *HolderSelect) {
 
 func (x *IdentitySelect) SetProvider(v bool) {
 	x.xxx_hidden_Provider = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 8)
 }
 
 func (x *IdentitySelect) SetSubject(v bool) {
 	x.xxx_hidden_Subject = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 8)
+}
+
+func (x *IdentitySelect) SetTenantId(v bool) {
+	x.xxx_hidden_TenantId = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 8)
 }
 
 func (x *IdentitySelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 8)
 }
 
 func (x *IdentitySelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 8)
 }
 
 func (x *IdentitySelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 8)
 }
 
 func (x *IdentitySelect) HasAll() bool {
@@ -704,25 +734,32 @@ func (x *IdentitySelect) HasSubject() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
-func (x *IdentitySelect) HasDateUpdated() bool {
+func (x *IdentitySelect) HasTenantId() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
 }
 
-func (x *IdentitySelect) HasDateErased() bool {
+func (x *IdentitySelect) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
-func (x *IdentitySelect) HasDateCreated() bool {
+func (x *IdentitySelect) HasDateErased() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+}
+
+func (x *IdentitySelect) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
 }
 
 func (x *IdentitySelect) ClearAll() {
@@ -744,18 +781,23 @@ func (x *IdentitySelect) ClearSubject() {
 	x.xxx_hidden_Subject = false
 }
 
-func (x *IdentitySelect) ClearDateUpdated() {
+func (x *IdentitySelect) ClearTenantId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_TenantId = false
+}
+
+func (x *IdentitySelect) ClearDateUpdated() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
 	x.xxx_hidden_DateUpdated = false
 }
 
 func (x *IdentitySelect) ClearDateErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
 	x.xxx_hidden_DateErased = false
 }
 
 func (x *IdentitySelect) ClearDateCreated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
 	x.xxx_hidden_DateCreated = false
 }
 
@@ -766,6 +808,7 @@ type IdentitySelect_builder struct {
 	Holder      *HolderSelect
 	Provider    *bool
 	Subject     *bool
+	TenantId    *bool
 	DateUpdated *bool
 	DateErased  *bool
 	DateCreated *bool
@@ -776,28 +819,32 @@ func (b0 IdentitySelect_builder) Build() *IdentitySelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 8)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Holder = b.Holder
 	if b.Provider != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 8)
 		x.xxx_hidden_Provider = *b.Provider
 	}
 	if b.Subject != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 8)
 		x.xxx_hidden_Subject = *b.Subject
 	}
+	if b.TenantId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 8)
+		x.xxx_hidden_TenantId = *b.TenantId
+	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 8)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 8)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 8)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	return m0
@@ -808,6 +855,7 @@ type IdentityPatchRequest struct {
 	xxx_hidden_Ref              *IdentityRef           `protobuf:"bytes,1,opt,name=ref"`
 	xxx_hidden_Provider         *string                `protobuf:"bytes,16,opt,name=provider"`
 	xxx_hidden_Subject          *string                `protobuf:"bytes,18,opt,name=subject"`
+	xxx_hidden_TenantId         []byte                 `protobuf:"bytes,20,opt,name=tenant_id,json=tenantId"`
 	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateUpdatedForce bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
 	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
@@ -868,6 +916,13 @@ func (x *IdentityPatchRequest) GetSubject() string {
 	return ""
 }
 
+func (x *IdentityPatchRequest) GetTenantId() []byte {
+	if x != nil {
+		return x.xxx_hidden_TenantId
+	}
+	return nil
+}
+
 func (x *IdentityPatchRequest) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -888,12 +943,20 @@ func (x *IdentityPatchRequest) SetRef(v *IdentityRef) {
 
 func (x *IdentityPatchRequest) SetProvider(v string) {
 	x.xxx_hidden_Provider = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 5)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 6)
 }
 
 func (x *IdentityPatchRequest) SetSubject(v string) {
 	x.xxx_hidden_Subject = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 5)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 6)
+}
+
+func (x *IdentityPatchRequest) SetTenantId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_TenantId = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 6)
 }
 
 func (x *IdentityPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -902,7 +965,7 @@ func (x *IdentityPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *IdentityPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 5)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 6)
 }
 
 func (x *IdentityPatchRequest) HasRef() bool {
@@ -926,6 +989,13 @@ func (x *IdentityPatchRequest) HasSubject() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
 }
 
+func (x *IdentityPatchRequest) HasTenantId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
 func (x *IdentityPatchRequest) HasDateUpdated() bool {
 	if x == nil {
 		return false
@@ -937,7 +1007,7 @@ func (x *IdentityPatchRequest) HasDateUpdatedForce() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
 func (x *IdentityPatchRequest) ClearRef() {
@@ -954,12 +1024,17 @@ func (x *IdentityPatchRequest) ClearSubject() {
 	x.xxx_hidden_Subject = nil
 }
 
+func (x *IdentityPatchRequest) ClearTenantId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_TenantId = nil
+}
+
 func (x *IdentityPatchRequest) ClearDateUpdated() {
 	x.xxx_hidden_DateUpdated = nil
 }
 
 func (x *IdentityPatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
 	x.xxx_hidden_DateUpdatedForce = false
 }
 
@@ -969,6 +1044,7 @@ type IdentityPatchRequest_builder struct {
 	Ref      *IdentityRef
 	Provider *string
 	Subject  *string
+	TenantId []byte
 	// The version this update requires the stored date_updated to be.
 	// It is a precondition, not a write: the update applies only if the row
 	// still holds this value, and the server stamps the new version itself.
@@ -991,16 +1067,20 @@ func (b0 IdentityPatchRequest_builder) Build() *IdentityPatchRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	if b.Provider != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 5)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 6)
 		x.xxx_hidden_Provider = b.Provider
 	}
 	if b.Subject != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 5)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 6)
 		x.xxx_hidden_Subject = b.Subject
+	}
+	if b.TenantId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 6)
+		x.xxx_hidden_TenantId = b.TenantId
 	}
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 5)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 6)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	return m0
@@ -1276,11 +1356,14 @@ func (b0 IdentityListResponse_builder) Build() *IdentityListResponse {
 }
 
 type IdentityFilter struct {
-	state             protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref    *IdentityRef           `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Holder *HolderRef             `protobuf:"bytes,2,opt,name=holder"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref         *IdentityRef           `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Holder      *HolderRef             `protobuf:"bytes,2,opt,name=holder"`
+	xxx_hidden_TenantId    []byte                 `protobuf:"bytes,3,opt,name=tenant_id,json=tenantId"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *IdentityFilter) Reset() {
@@ -1322,12 +1405,27 @@ func (x *IdentityFilter) GetHolder() *HolderRef {
 	return nil
 }
 
+func (x *IdentityFilter) GetTenantId() []byte {
+	if x != nil {
+		return x.xxx_hidden_TenantId
+	}
+	return nil
+}
+
 func (x *IdentityFilter) SetRef(v *IdentityRef) {
 	x.xxx_hidden_Ref = v
 }
 
 func (x *IdentityFilter) SetHolder(v *HolderRef) {
 	x.xxx_hidden_Holder = v
+}
+
+func (x *IdentityFilter) SetTenantId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_TenantId = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 3)
 }
 
 func (x *IdentityFilter) HasRef() bool {
@@ -1344,6 +1442,13 @@ func (x *IdentityFilter) HasHolder() bool {
 	return x.xxx_hidden_Holder != nil
 }
 
+func (x *IdentityFilter) HasTenantId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
 func (x *IdentityFilter) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
@@ -1352,11 +1457,17 @@ func (x *IdentityFilter) ClearHolder() {
 	x.xxx_hidden_Holder = nil
 }
 
+func (x *IdentityFilter) ClearTenantId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_TenantId = nil
+}
+
 type IdentityFilter_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref    *IdentityRef
-	Holder *HolderRef
+	Ref      *IdentityRef
+	Holder   *HolderRef
+	TenantId []byte
 }
 
 func (b0 IdentityFilter_builder) Build() *IdentityFilter {
@@ -1365,6 +1476,10 @@ func (b0 IdentityFilter_builder) Build() *IdentityFilter {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	x.xxx_hidden_Holder = b.Holder
+	if b.TenantId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 3)
+		x.xxx_hidden_TenantId = b.TenantId
+	}
 	return m0
 }
 
@@ -1651,12 +1766,14 @@ var File_app_identity_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_identity_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x18app/identity_svc.g.proto\x12\x06roster\x1a\x12app/identity.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xd2\x01\n" +
+	"\x18app/identity_svc.g.proto\x12\x06roster\x1a\x12app/identity.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xf6\x01\n" +
 	"\x12IdentityAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12!\n" +
 	"\bprovider\x18\b \x01(\tB\x05\xaa\x01\x02\b\x02R\bprovider\x12\x1f\n" +
-	"\asubject\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\asubject\x12=\n" +
+	"\asubject\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\asubject\x12\"\n" +
+	"\ttenant_id\x18\n" +
+	" \x01(\fB\x05\xaa\x01\x02\b\x02R\btenantId\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"k\n" +
 	"\x12IdentityGetRequest\x12%\n" +
 	"\x03ref\x18\x01 \x01(\v2\x13.roster.IdentityRefR\x03ref\x12.\n" +
@@ -1667,20 +1784,23 @@ const file_app_identity_svc_g_proto_rawDesc = "" +
 	"\x03key\"L\n" +
 	"\x14IdentityRefBySubject\x12\x1a\n" +
 	"\bprovider\x18\b \x01(\tR\bprovider\x12\x18\n" +
-	"\asubject\x18\t \x01(\tR\asubject\"\xed\x01\n" +
+	"\asubject\x18\t \x01(\tR\asubject\"\x8a\x02\n" +
 	"\x0eIdentitySelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
 	"\x06holder\x18\x02 \x01(\v2\x14.roster.HolderSelectR\x06holder\x12\x1a\n" +
 	"\bprovider\x18\b \x01(\bR\bprovider\x12\x18\n" +
-	"\asubject\x18\t \x01(\bR\asubject\x12!\n" +
+	"\asubject\x18\t \x01(\bR\asubject\x12\x1b\n" +
+	"\ttenant_id\x18\n" +
+	" \x01(\bR\btenantId\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xe0\x01\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xfd\x01\n" +
 	"\x14IdentityPatchRequest\x12%\n" +
 	"\x03ref\x18\x01 \x01(\v2\x13.roster.IdentityRefR\x03ref\x12\x1a\n" +
 	"\bprovider\x18\x10 \x01(\tR\bprovider\x12\x18\n" +
-	"\asubject\x18\x12 \x01(\tR\asubject\x12=\n" +
+	"\asubject\x18\x12 \x01(\tR\asubject\x12\x1b\n" +
+	"\ttenant_id\x18\x14 \x01(\fR\btenantId\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"a\n" +
 	"\x14IdentityApplyRequest\x12%\n" +
@@ -1692,10 +1812,11 @@ const file_app_identity_svc_g_proto_rawDesc = "" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"Y\n" +
 	"\x14IdentityListResponse\x12&\n" +
 	"\x05items\x18\x01 \x03(\v2\x10.roster.IdentityR\x05items\x12\x19\n" +
-	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"b\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\x7f\n" +
 	"\x0eIdentityFilter\x12%\n" +
 	"\x03ref\x18\x01 \x01(\v2\x13.roster.IdentityRefR\x03ref\x12)\n" +
-	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\"t\n" +
+	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x1b\n" +
+	"\ttenant_id\x18\x03 \x01(\fR\btenantId\"t\n" +
 	"\x14IdentityWatchRequest\x120\n" +
 	"\afilters\x18\x01 \x03(\v2\x16.roster.IdentityFilterR\afilters\x12*\n" +
 	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"H\n" +

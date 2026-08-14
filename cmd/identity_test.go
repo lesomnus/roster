@@ -281,3 +281,68 @@ func TestIdentitiesCanBeListedByHolder(t *testing.T) {
 	x.NoError(err)
 	x.Empty(vs.GetItems(), "a filter can only cut the scope down, never widen it")
 }
+
+// TestIdentitiesCanBeListedByTenant is what the stamp made possible, and it
+// could not be asked for at all before it.
+//
+// A `list.by` filter reaches one hop and `holder.tenant` is two, so there was
+// nothing here for "every identity in this tenant" to name -- the generator
+// refuses `holder.tenant` by name. The column is one hop from anywhere.
+func TestIdentitiesCanBeListedByTenant(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	hooliUser := b.holder(t, ctx, b.Hooli, "outsider")
+
+	b.identity(t, ctx, b.AcmeUser, "entra", "8f14e45f-ea1e-4f0e-9a1b-2c3d4e5f6a7b")
+	b.identity(t, ctx, b.AcmeUser, "github", "1074321")
+	b.identity(t, ctx, hooliUser, "github", "9900001")
+
+	of := func(tenant pdid.Id) *app.IdentityListRequest {
+		return app.IdentityListRequest_builder{
+			Filters: []*app.IdentityFilter{
+				app.IdentityFilter_builder{TenantId: tenant.Bytes()}.Build(),
+			},
+		}.Build()
+	}
+
+	// The deployment, from outside every tenant, asks who signs in to acme and
+	// with what.
+	vs, err := b.Ungated.Identity().List(ctx, of(b.Acme))
+	x.NoError(err)
+
+	got := []string{}
+	for _, v := range vs.GetItems() {
+		got = append(got, v.GetProvider())
+	}
+	x.ElementsMatch([]string{"entra", "github"}, got)
+
+	// And it is a filter, not a way in: somebody in hooli naming acme is
+	// answered with nothing. The wall reads the same column and ran first.
+	vs, err = b.Walled.Identity().List(b.as(ctx, hooliUser, b.Hooli), of(b.Acme))
+	x.NoError(err)
+	x.Empty(vs.GetItems(), "a filter can only cut the scope down, never widen it")
+}
+
+// TestTheStampIsTheServersToWrite: what a caller puts in the column is
+// overwritten, including through the server the wall was never installed on.
+//
+// It matters here more than on most entities. The wall reads this column now,
+// so a caller who could write it could put somebody's sign-in behind another
+// tenant's wall.
+func TestTheStampIsTheServersToWrite(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	v, err := b.Ungated.Identity().Add(ctx, app.IdentityAddRequest_builder{
+		Holder:   app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Provider: "github",
+		Subject:  "7700007",
+		TenantId: b.Hooli.Bytes(),
+	}.Build())
+	x.NoError(err)
+
+	got, err := pdid.From(v.GetTenantId())
+	x.NoError(err)
+	x.Equal(b.Acme, got, "what holder.tenant reaches, not what the caller wrote")
+}

@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/identity"
 	"github.com/lesomnus/roster/internal/ent/predicate"
 )
@@ -53,6 +54,20 @@ func (_u *IdentityUpdate) SetSubject(v string) *IdentityUpdate {
 func (_u *IdentityUpdate) SetNillableSubject(v *string) *IdentityUpdate {
 	if v != nil {
 		_u.SetSubject(*v)
+	}
+	return _u
+}
+
+// SetTenantID sets the "tenant_id" field.
+func (_u *IdentityUpdate) SetTenantID(v uuid.UUID) *IdentityUpdate {
+	_u.mutation.SetTenantID(v)
+	return _u
+}
+
+// SetNillableTenantID sets the "tenant_id" field if the given value is not nil.
+func (_u *IdentityUpdate) SetNillableTenantID(v *uuid.UUID) *IdentityUpdate {
+	if v != nil {
+		_u.SetTenantID(*v)
 	}
 	return _u
 }
@@ -155,6 +170,9 @@ func (_u *IdentityUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Subject(); ok {
 		_spec.SetField(identity.FieldSubject, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.TenantID(); ok {
+		_spec.SetField(identity.FieldTenantID, field.TypeUUID, value)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(identity.FieldDateUpdated, field.TypeTime, value)
 	}
@@ -213,6 +231,20 @@ func (_u *IdentityUpdateOne) SetSubject(v string) *IdentityUpdateOne {
 func (_u *IdentityUpdateOne) SetNillableSubject(v *string) *IdentityUpdateOne {
 	if v != nil {
 		_u.SetSubject(*v)
+	}
+	return _u
+}
+
+// SetTenantID sets the "tenant_id" field.
+func (_u *IdentityUpdateOne) SetTenantID(v uuid.UUID) *IdentityUpdateOne {
+	_u.mutation.SetTenantID(v)
+	return _u
+}
+
+// SetNillableTenantID sets the "tenant_id" field if the given value is not nil.
+func (_u *IdentityUpdateOne) SetNillableTenantID(v *uuid.UUID) *IdentityUpdateOne {
+	if v != nil {
+		_u.SetTenantID(*v)
 	}
 	return _u
 }
@@ -344,6 +376,9 @@ func (_u *IdentityUpdateOne) sqlSave(ctx context.Context) (_node *Identity, err 
 	}
 	if value, ok := _u.mutation.Subject(); ok {
 		_spec.SetField(identity.FieldSubject, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.TenantID(); ok {
+		_spec.SetField(identity.FieldTenantID, field.TypeUUID, value)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(identity.FieldDateUpdated, field.TypeTime, value)

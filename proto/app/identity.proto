@@ -54,6 +54,29 @@ message Identity {
   // person another person's account.
   string subject = 9;
 
+  // The tenant `holder.tenant` reaches, kept here. payday stamps it.
+  //
+  // # Why it is worth a column
+  //
+  // Two things, and the second is the one that was actually in the way.
+  //
+  // The wall reaches this entity through the holder, so without a stamp every
+  // read of an identity is `HasHolderWith(holder.TenantIDIn(...))` -- a
+  // correlated subquery, on the table a sign-in reads.
+  //
+  // And a `list.by` filter reaches **one hop**, so "every identity in this
+  // tenant" could not be asked for at all: `holder.tenant` is two, and the
+  // generator refuses that by name. With the column it is a filter like any
+  // other, which is what an operator console needs.
+  //
+  // # It is not a second answer to be kept in step
+  //
+  // `holder` is immutable and so is `Holder.tenant`, so the value is decided
+  // when the row is written and no step of that path can move afterwards --
+  // which is what `pd gen` refuses a stamp without. Nothing refreshes it
+  // because nothing can put it out of date.
+  bytes tenant_id = 10 [(orm.field) = {type: TYPE_UUID}];
+
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {
@@ -86,7 +109,7 @@ message Identity {
   };
   option (payday.entity) = {
     domain: 8
-    tenanted: {via: "holder.tenant"}
+    tenanted: {via: "holder.tenant", stamp: "tenant_id"}
     list: {
       order: [
         {field: {name: "date_created", number: 15}},
@@ -100,7 +123,10 @@ message Identity {
       // It grants nothing. The wall reaches this entity through
       // `holder.tenant`, so the list is already narrowed to the tenants the
       // caller may see, and naming a holder outside that answers with nothing.
-      by: [{name: "ref"}, {name: "holder"}]
+      // And `tenant_id`, which the stamp is what made possible: a filter
+      // reaches one hop and `holder.tenant` is two, so before the column there
+      // was nothing here for "every identity in this tenant" to name.
+      by: [{name: "ref"}, {name: "holder"}, {name: "tenant_id"}]
       size: 20
       max: 100
     }
