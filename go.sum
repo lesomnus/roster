@@ -101,6 +101,8 @@ github.com/lesomnus/payday v0.0.0-20260814184218-8331aadb10af h1:SpkGgENMRiW6P7v
 github.com/lesomnus/payday v0.0.0-20260814184218-8331aadb10af/go.mod h1:kYv6sdpynIhDlBy6SXZFkBvQnsafkhKHBlSD0p6uFhc=
 github.com/lesomnus/payday v0.0.0-20260814194726-b68559a58554 h1:Mws6LCeoKK/1g/o2CIdDm+dhbFsZoOCNaqZJIJBZ1HY=
 github.com/lesomnus/payday v0.0.0-20260814194726-b68559a58554/go.mod h1:kYv6sdpynIhDlBy6SXZFkBvQnsafkhKHBlSD0p6uFhc=
+github.com/lesomnus/payday v0.0.0-20260814205552-a3b1662dabbc h1:FM5ZDHkg6hmbNbCg1aIQOoz2b+x3LcuR1p/Ggc14SDI=
+github.com/lesomnus/payday v0.0.0-20260814205552-a3b1662dabbc/go.mod h1:bMYXsDg6adm5doPcIOQAWM3R7Clskph/ZZJ3vLqxWSM=
 github.com/lesomnus/protobuf-patch v0.0.0-20260803175157-e1b7a0c2804f h1:hIDTEG7vZCJ5M+j+OhI97pk6Q1mp1t3gXi1k96IB9f0=
 github.com/lesomnus/protobuf-patch v0.0.0-20260803175157-e1b7a0c2804f/go.mod h1:0sqL1bt/0v8atiVioyoJ25XQnZcn8zA9GYM1DvC4i5o=
 github.com/lesomnus/sqlite3-wasm v0.0.0-20260726134538-bebcaebf933e h1:S272MwPLsKMFJ7Xl75vVixiZ6QpN9tLuJXH4Q3GsKJk=
@@ -148,6 +150,8 @@ github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20260813070911-e7e8636
 github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20260813070911-e7e86369ded5/go.mod h1:vwF56xpIrJT1Oei3VmLl1d2RelAadDO029SJ7jL82mE=
 github.com/protobuf-orm/protoc-gen-orm-go v0.0.0-20260808062124-7336db3ccda7 h1:xj+WO4fsr0arc9NVh9ZAMOVk/u9gfGLEWOCipgqlR/s=
 github.com/protobuf-orm/protoc-gen-orm-go v0.0.0-20260808062124-7336db3ccda7/go.mod h1:EUiEHkmQI53u+32lC+9OiiECSY2xJ1hrgHk7Km9yn20=
+github.com/protobuf-orm/protoc-gen-orm-go v0.0.0-20260814204207-b3aac775fe3e h1:+Qdm1VcxUB+YTKWGQyHnL/2IN3VkNmCaVCh4m/XbxZ0=
+github.com/protobuf-orm/protoc-gen-orm-go v0.0.0-20260814204207-b3aac775fe3e/go.mod h1:EUiEHkmQI53u+32lC+9OiiECSY2xJ1hrgHk7Km9yn20=
 github.com/protobuf-orm/protoc-gen-orm-service v0.0.0-20260807210724-9ecafa02f5f7 h1:7YBXuUfZp9fpOTkmmb4D3NVSH5b2ICLwqv1Wqj52jLs=
 github.com/protobuf-orm/protoc-gen-orm-service v0.0.0-20260807210724-9ecafa02f5f7/go.mod h1:SQY3h37mQDfyaoPw1Og7uBG6D8guwsB2g5SqCHua+bs=
 github.com/protocolbuffers/protoscope v0.0.0-20221109213918-8e7a6aafa2c9 h1:arwj11zP0yJIxIRiDn22E0H8PxfF7TsTrc2wIPFIsf4=
