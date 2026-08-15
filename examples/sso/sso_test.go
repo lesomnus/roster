@@ -224,7 +224,10 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 	who, err := pdid.From(svc.GetId())
 	x.NoError(err)
 
-	conn := serveRoster(t, s.Grpc(ctx, cmd.Config{}), auth.PlainProvider(who.String()))
+	g, err := s.Grpc(ctx, cmd.Config{})
+	x.NoError(err)
+
+	conn := serveRoster(t, g, auth.PlainProvider(who.String()))
 	client := rstr.NewClient(conn)
 
 	d := &deployment{roster: client, tenant: seeded.Tenant, ungated: s.Ungated, idp: newIdp(t)}

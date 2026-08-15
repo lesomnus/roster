@@ -85,7 +85,7 @@ func keyFor(t *testing.T, methods ...string) *keyedBuilt {
 
 	return &keyedBuilt{
 		Server: s,
-		Conn:   pdtest.Serve(t, s.Grpc(ctx, cmd.Config{})),
+		Conn:   served(t, s),
 		Acme:   acme, Who: who, Token: token,
 	}
 }

@@ -88,7 +88,7 @@ func TestPlainDoesNotHandOutEveryTenant(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	conn := pdtest.Serve(t, s.Grpc(ctx, cmd.Config{}))
+	conn := served(t, s)
 	c := app.NewHolderServiceClient(conn)
 
 	list := func(md metadata.MD) (*app.HolderListResponse, error) {

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
 
 	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/frame"
@@ -52,6 +53,56 @@ func build(t *testing.T) (*built, context.Context) {
 	b.AcmeUser = b.holder(t, ctx, b.Acme, "someone")
 
 	return b, ctx
+}
+
+// served is this app's data plane on a listener that is a channel, dialed.
+//
+// A helper because [cmd.Server.Grpc] answers with an error now -- a certificate
+// that cannot be read is a server that must not start -- and unpacking that at
+// twenty call sites would say the same thing twenty times. It takes the server
+// rather than being a method so that it reads the same whatever the receiver in
+// a given test is called.
+func served(t *testing.T, s *cmd.Server, opts ...grpc.ServerOption) *grpc.ClientConn {
+	t.Helper()
+
+	g, err := s.Grpc(t.Context(), cmd.Config{}, opts...)
+	require.NoError(t, err)
+
+	return pdtest.Serve(t, g)
+}
+
+// servedControl is the same for the control plane.
+func servedControl(t *testing.T, s *cmd.Server, opts ...grpc.ServerOption) *grpc.ClientConn {
+	t.Helper()
+
+	g, err := s.GrpcControl(t.Context(), cmd.Config{}, opts...)
+	require.NoError(t, err)
+
+	return pdtest.Serve(t, g)
+}
+
+// grpc is this app's served stack, built.
+//
+// A helper because [cmd.Server.Grpc] answers with an error now -- a certificate
+// that cannot be read is a server that must not start -- and unpacking that at
+// twenty call sites would say the same thing twenty times.
+func (b *built) grpc(t *testing.T, opts ...grpc.ServerOption) *grpc.Server {
+	t.Helper()
+
+	g, err := b.Grpc(t.Context(), cmd.Config{}, opts...)
+	require.NoError(t, err)
+
+	return g
+}
+
+// grpcControl is the same for the control plane.
+func (b *built) grpcControl(t *testing.T, opts ...grpc.ServerOption) *grpc.Server {
+	t.Helper()
+
+	g, err := b.GrpcControl(t.Context(), cmd.Config{}, opts...)
+	require.NoError(t, err)
+
+	return g
 }
 
 func (b *built) tenant(t *testing.T, ctx context.Context, alias string) pdid.Id {

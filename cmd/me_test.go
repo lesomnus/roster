@@ -7,9 +7,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/lesomnus/payday/pdtest"
-
-	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
 )
 
@@ -39,7 +36,7 @@ func TestMeAnswersAboutTheCaller(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	conn := served(t, b.Server)
 
 	v, err := app.NewMeServiceClient(conn).Get(asOverTheWire(ctx, b.AcmeUser),
 		app.MeGetRequest_builder{}.Build())
@@ -74,7 +71,7 @@ func TestMeSaysWhatTheGateSays(t *testing.T) {
 
 	b.binds(t, b.AcmeUser, b.role(t, ctx, "reader", getHolder), nil)
 
-	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	conn := served(t, b.Server)
 	wire := asOverTheWire(ctx, b.AcmeUser)
 
 	v, err := app.NewMeServiceClient(conn).Get(wire, app.MeGetRequest_builder{}.Build())
@@ -99,7 +96,7 @@ func TestMeNeedsSomebody(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	conn := served(t, b.Server)
 
 	_, err := app.NewMeServiceClient(conn).Get(ctx, app.MeGetRequest_builder{}.Build())
 	x.Equal(codes.Unauthenticated, status.Code(err))
@@ -114,7 +111,7 @@ func TestSomebodyWithNothingCanStillAskWhatTheyHave(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	conn := served(t, b.Server)
 
 	v, err := app.NewMeServiceClient(conn).Get(asOverTheWire(ctx, b.AcmeUser),
 		app.MeGetRequest_builder{}.Build())

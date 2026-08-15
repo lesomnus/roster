@@ -15,9 +15,7 @@ import (
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/pdpb"
-	"github.com/lesomnus/payday/pdtest"
 
-	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/pd"
 	"github.com/lesomnus/roster/server/vouch"
@@ -341,7 +339,7 @@ func TestTheCredentialServiceIsNotOnTheWire(t *testing.T) {
 
 	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
 
-	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	conn := served(t, b.Server)
 
 	// As somebody real, and somebody whose own row this is. Anonymously the
 	// call is refused before it is dispatched, which would make this test pass
@@ -377,7 +375,7 @@ func TestNobodyVerifiesAPasswordAnonymously(t *testing.T) {
 
 	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
 
-	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	conn := served(t, b.Server)
 
 	// No credential at all, which is what a stranger has.
 	_, err := app.NewVouchServiceClient(conn).Verify(ctx, app.VouchVerifyRequest_builder{
@@ -415,7 +413,7 @@ func TestTheApiKeyServiceCannotBeReachedEither(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	conn := served(t, b.Server)
 	ctx = auth.PlainProvider(b.AcmeUser.String()).Provide(ctx)
 
 	_, err := app.NewApiKeyServiceClient(conn).List(ctx, app.ApiKeyListRequest_builder{}.Build())
@@ -435,7 +433,7 @@ func TestABatchCannotCarryACredentialRead(t *testing.T) {
 
 	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
 
-	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	conn := served(t, b.Server)
 	ctx = auth.PlainProvider(b.AcmeUser.String()).Provide(ctx)
 
 	req, err := anypb.New(app.CredentialGetRequest_builder{

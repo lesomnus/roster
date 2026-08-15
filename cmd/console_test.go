@@ -124,7 +124,10 @@ func TestTheCookieOpensTheControlPlane(t *testing.T) {
 	x.NotNil(c)
 
 	// The control plane on a port, which is what a console reaches.
-	conn := pdtest.Serve(t, s.Control.Grpc(ctx, cmd.Config{}))
+	g, err := s.Control.Grpc(ctx, cmd.Config{})
+	require.NoError(t, err)
+
+	conn := pdtest.Serve(t, g)
 	as := metadata.NewOutgoingContext(ctx,
 		metadata.Pairs("cookie", c.Name+"="+c.Value))
 
@@ -162,7 +165,7 @@ func TestTheCookieOpensTheControlPlane(t *testing.T) {
 	t.Run("and it is not a credential for the data plane", func(t *testing.T) {
 		x := require.New(t)
 
-		other := pdtest.Serve(t, s.Grpc(ctx, cmd.Config{}))
+		other := served(t, s)
 		_, err := app.NewMeServiceClient(other).Get(as, app.MeGetRequest_builder{}.Build())
 		x.Error(err)
 		x.Equal(codes.Unauthenticated, status.Code(err))
@@ -184,7 +187,7 @@ func TestAConsoleManagesKeys(t *testing.T) {
 	c := signIn(t, s, "ops", passwordFrom(t, out))
 	x.NotNil(c)
 
-	conn := pdtest.Serve(t, s.GrpcControl(ctx, cmd.Config{}))
+	conn := servedControl(t, s)
 	as := metadata.NewOutgoingContext(ctx, metadata.Pairs("cookie", c.Name+"="+c.Value))
 
 	// Nothing on the data plane's port answers about keys, which is what the
@@ -192,7 +195,7 @@ func TestAConsoleManagesKeys(t *testing.T) {
 	t.Run("the data plane still says nothing about them", func(t *testing.T) {
 		x := require.New(t)
 
-		other := pdtest.Serve(t, s.Grpc(ctx, cmd.Config{}))
+		other := served(t, s)
 		_, err := app.NewApiKeyServiceClient(other).List(ctx,
 			app.ApiKeyListRequest_builder{}.Build())
 		x.Error(err)
@@ -498,7 +501,10 @@ func TestAConsoleReachesTheControlPlaneOverHttp(t *testing.T) {
 
 	s, out := inited(t, true)
 
-	h, err := web.New(config.HttpConfig{AllowWeb: true}, s.GrpcControl(ctx, cmd.Config{}))
+	wg, err := s.GrpcControl(ctx, cmd.Config{})
+	require.NoError(t, err)
+
+	h, err := web.New(config.HttpConfig{AllowWeb: true}, wg)
 	x.NoError(err)
 
 	v := cmd.Login(s.Control)

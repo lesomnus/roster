@@ -8,9 +8,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	"github.com/lesomnus/payday/pdtest"
-
-	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
 )
 
@@ -39,7 +36,7 @@ func TestUpdateIsTheNarrowWrite(t *testing.T) {
 	x.NoError(err)
 	b.binds(t, b.AcmeUser, mustId(t, r.GetId()), nil)
 
-	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	conn := served(t, b.Server)
 	c := app.NewHolderServiceClient(conn)
 	as := asOverTheWire(ctx, b.AcmeUser)
 

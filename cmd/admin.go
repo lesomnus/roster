@@ -249,8 +249,13 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 		With(s.Watch.Interceptor()).
 		WithUnary(grpcx.ClosedUnary(s.closed(Config{Server: c.Admin})))
 
+	vs, err := c.Admin.GrpcOptions()
+	if err != nil {
+		return nil, err
+	}
+
 	os := append(opts, chain.ServerOptions()...)
-	os = append(os, c.Admin.GrpcOptions()...)
+	os = append(os, vs...)
 
 	g := grpc.NewServer(os...)
 	register(g, admin)

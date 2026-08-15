@@ -10,7 +10,6 @@ import (
 
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
-	"github.com/lesomnus/payday/pdtest"
 
 	"github.com/lesomnus/payday/auth"
 
@@ -46,7 +45,7 @@ func TestSomebodyWithNoBindingMayCallNothing(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	conn := served(t, b.Server)
 	ctx = asOverTheWire(ctx, b.AcmeUser)
 
 	_, err := app.NewHolderServiceClient(conn).Get(ctx, app.HolderGetRequest_builder{
@@ -62,7 +61,7 @@ func TestARoleIsWhatOpensIt(t *testing.T) {
 
 	b.binds(t, b.AcmeUser, b.role(t, ctx, "reader", getHolder), nil)
 
-	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	conn := served(t, b.Server)
 	ctx = asOverTheWire(ctx, b.AcmeUser)
 
 	v, err := app.NewHolderServiceClient(conn).Get(ctx, app.HolderGetRequest_builder{
@@ -95,7 +94,7 @@ func TestAGroupCarriesItToo(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	conn := served(t, b.Server)
 	wire := asOverTheWire(ctx, b.AcmeUser)
 
 	get := func() error {
@@ -137,7 +136,7 @@ func TestABindingInASiteNarrowsTheSecondAxis(t *testing.T) {
 	// Bound in Seoul only.
 	b.binds(t, b.AcmeUser, b.role(t, ctx, "reader", "/roster.TeamService/List"), &seoul)
 
-	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	conn := served(t, b.Server)
 	wire := asOverTheWire(ctx, b.AcmeUser)
 
 	vs, err := app.NewTeamServiceClient(conn).List(wire, app.TeamListRequest_builder{}.Build())
@@ -165,7 +164,7 @@ func TestARoleDoesNotCrossTheWall(t *testing.T) {
 	b.team(t, ctx, b.site(t, ctx, b.Acme, "ours"), "ours")
 	theirs := b.team(t, ctx, b.site(t, ctx, b.Hooli, "theirs"), "theirs")
 
-	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	conn := served(t, b.Server)
 
 	vs, err := app.NewTeamServiceClient(conn).List(asOverTheWire(ctx, b.AcmeUser),
 		app.TeamListRequest_builder{}.Build())
@@ -209,7 +208,7 @@ func TestATeamAdministratorManagesTheirOwnTeam(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	conn := served(t, b.Server)
 	wire := asOverTheWire(ctx, b.AcmeUser)
 
 	somebody := b.holder(t, ctx, b.Acme, "newcomer")
@@ -243,7 +242,7 @@ func TestABindingReachesEveryTeam(t *testing.T) {
 
 	b.binds(t, b.AcmeUser, b.role(t, ctx, "staffer", addMember), nil)
 
-	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	conn := served(t, b.Server)
 	somebody := b.holder(t, ctx, b.Acme, "newcomer")
 
 	_, err := app.NewTeamMembershipServiceClient(conn).Add(asOverTheWire(ctx, b.AcmeUser),
@@ -273,7 +272,7 @@ func TestNobodyGrantsWhatTheyDoNotHold(t *testing.T) {
 	// Alice manages memberships, and nothing else.
 	b.binds(t, b.AcmeUser, b.role(t, ctx, "manager", addBinding, addRole), nil)
 
-	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	conn := served(t, b.Server)
 	wire := asOverTheWire(ctx, b.AcmeUser)
 
 	// She cannot write a role holding what she does not hold.
@@ -303,7 +302,7 @@ func TestWhatYouHoldYouMayPassOn(t *testing.T) {
 
 	b.binds(t, b.AcmeUser, b.role(t, ctx, "manager", addBinding, addRole, getHolder), nil)
 
-	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	conn := served(t, b.Server)
 	wire := asOverTheWire(ctx, b.AcmeUser)
 
 	// A role holding a subset of hers.
@@ -345,7 +344,7 @@ func TestATeamRoleIsNotYoursToHandOut(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+	conn := served(t, b.Server)
 
 	_, err = app.NewBindingServiceClient(conn).Add(asOverTheWire(ctx, b.AcmeUser),
 		app.BindingAddRequest_builder{
@@ -384,7 +383,7 @@ func TestARoleMayNameAServiceOrAPackage(t *testing.T) {
 		who := b.holder(t, ctx, b.Acme, "holder-admin")
 		b.binds(t, who, roleOf(t, "holders", "/roster.HolderService/*"), nil)
 
-		conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+		conn := served(t, b.Server)
 		as := asOverTheWire(ctx, who)
 
 		_, err := app.NewHolderServiceClient(conn).List(as,
@@ -406,7 +405,7 @@ func TestARoleMayNameAServiceOrAPackage(t *testing.T) {
 		who := b.holder(t, ctx, b.Acme, "reader")
 		b.binds(t, who, roleOf(t, "read-only", "/roster.*/List"), nil)
 
-		conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+		conn := served(t, b.Server)
 		as := asOverTheWire(ctx, who)
 
 		for _, call := range []func() error{
@@ -438,7 +437,7 @@ func TestARoleMayNameAServiceOrAPackage(t *testing.T) {
 		who := b.holder(t, ctx, b.Acme, "everything-here")
 		b.binds(t, who, roleOf(t, "all-of-roster", "/roster.*/*"), nil)
 
-		conn := pdtest.Serve(t, b.Grpc(ctx, cmd.Config{}))
+		conn := served(t, b.Server)
 
 		v, err := app.NewHolderServiceClient(conn).List(asOverTheWire(ctx, who),
 			app.HolderListRequest_builder{}.Build())

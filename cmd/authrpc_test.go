@@ -30,7 +30,10 @@ func TestTheConsoleSignsInAsAnRpc(t *testing.T) {
 	s, out := inited(t, true)
 	secret := passwordFrom(t, out)
 
-	h, err := web.New(config.HttpConfig{AllowWeb: true}, s.GrpcControl(ctx, cmd.Config{}))
+	g, err := s.GrpcControl(ctx, cmd.Config{})
+	x.NoError(err)
+
+	h, err := web.New(config.HttpConfig{AllowWeb: true}, g)
 	x.NoError(err)
 
 	srv := httptest.NewServer(h)

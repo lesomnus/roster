@@ -78,7 +78,7 @@ func TestInitLeavesADeploymentThatWorks(t *testing.T) {
 	x.Contains(out, "/roster.*/*")
 	x.Contains(out, "every RPC roster serves")
 
-	conn := pdtest.Serve(t, s.Grpc(ctx, cmd.Config{}))
+	conn := served(t, s)
 	asAdmin := metadata.NewOutgoingContext(ctx, as(t, "@acme/admin"))
 
 	t.Run("the admin may write the second role", func(t *testing.T) {

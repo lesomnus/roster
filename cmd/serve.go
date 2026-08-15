@@ -309,7 +309,7 @@ func (s *Server) Close() error { return s.Db.Close() }
 //
 // It is separate from [Server.Serve] so that a test can travel exactly this
 // and answer on a listener that is a channel; see pdtest.
-func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) *grpc.Server {
+func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) (*grpc.Server, error) {
 	// Who is calling comes first, since everything after it reads the frame.
 	// `Plain` believes what the caller writes, which is right for a sandbox
 	// and for tests and is not something to serve where anyone can reach it.
@@ -339,8 +339,16 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 		With(s.Watch.Interceptor()).
 		WithUnary(grpcx.ClosedUnary(s.closed(c)))
 
+	// A certificate that cannot be read is a server that must not start, which
+	// is why this answers with an error: `GrpcOptions` reads the files
+	// `server.tls` names. `GrpcAdmin` has had the shape all along.
+	vs, err := c.Server.GrpcOptions()
+	if err != nil {
+		return nil, err
+	}
+
 	os := append(opts, chain.ServerOptions()...)
-	os = append(os, c.Server.GrpcOptions()...)
+	os = append(os, vs...)
 
 	g := grpc.NewServer(os...)
 	register(g, s.Walled)
@@ -395,7 +403,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 		log.From(ctx).WarnContext(ctx, "no batch", slog.String("why", err.Error()))
 	}
 
-	return g
+	return g, nil
 }
 
 // register puts every service on the wire, and it is written out rather than
@@ -519,7 +527,10 @@ func public(method string) bool {
 
 // Serve answers on `l` until the context is done.
 func (s *Server) Serve(ctx context.Context, c Config, l net.Listener) error {
-	g := s.Grpc(ctx, c)
+	g, err := s.Grpc(ctx, c)
+	if err != nil {
+		return err
+	}
 
 	stop, err := s.serveHttp(ctx, c, g)
 	if err != nil {
@@ -529,7 +540,10 @@ func (s *Server) Serve(ctx context.Context, c Config, l net.Listener) error {
 
 	var control *grpc.Server
 	if s.Control != nil {
-		control = s.GrpcControl(ctx, c)
+		control, err = s.GrpcControl(ctx, c)
+		if err != nil {
+			return err
+		}
 	}
 
 	stopControl, err := s.serveControl(ctx, c, control)
@@ -575,8 +589,11 @@ func (s *Server) Serve(ctx context.Context, c Config, l net.Listener) error {
 // from [Server.Serve]: a test can travel exactly this and answer on a listener
 // that is a channel. It was briefly not, and then the one registration that
 // makes this port worth opening was reachable only by opening it.
-func (s *Server) GrpcControl(ctx context.Context, c Config, opts ...grpc.ServerOption) *grpc.Server {
-	g := s.Control.Grpc(ctx, Config{Server: c.Control.ServerConfig}, opts...)
+func (s *Server) GrpcControl(ctx context.Context, c Config, opts ...grpc.ServerOption) (*grpc.Server, error) {
+	g, err := s.Control.Grpc(ctx, Config{Server: c.Control.ServerConfig}, opts...)
+	if err != nil {
+		return nil, err
+	}
 
 	// The keys themselves, which the data plane refuses to serve and this port
 	// exists to serve. `Get` still answers with the verifier column if it is
@@ -596,7 +613,7 @@ func (s *Server) GrpcControl(ctx context.Context, c Config, opts ...grpc.ServerO
 	app.RegisterAuthServiceServer(g, console.Auth(s.Control.Ungated, s.Control.Ent, s.Sessions))
 	app.RegisterIssueServiceServer(g, console.Issue(s.Control.Walled, s.Control.Ent))
 
-	return g
+	return g, nil
 }
 
 // serveControl is the control plane on a port, for a console.
