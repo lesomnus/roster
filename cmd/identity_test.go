@@ -1,11 +1,13 @@
 package cmd_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
@@ -158,6 +160,73 @@ func TestASecondAccountAtOneProviderIsRefused(t *testing.T) {
 
 	_, err := b.Ungated.Identity().Add(ctx, app.IdentityAddRequest_builder{
 		Holder:   app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Provider: "github",
+		Subject:  "2222222",
+	}.Build())
+	x.Equal(codes.InvalidArgument, status.Code(err))
+	x.Contains(err.Error(), "already has a github identity")
+}
+
+// TestASecondAccountIsRefusedBehindAFullPage is the same rule, for somebody who
+// is not among the first people a deployment ever had.
+//
+// The check read a page of the tenant's identities and sifted them here. A page
+// is 20 rows ordered by `date_created` ascending, so what it read was the
+// twenty **oldest** -- and whether somebody was checked at all depended on when
+// they joined. This puts twenty identities in the tenant first, so the person
+// being checked is off the end of that page.
+//
+// It is written with a number rather than "a lot" on purpose: 20 is
+// `list.size` in `proto/app/identity.proto`, and if that line moves this test
+// should be read again rather than quietly go on passing.
+func TestASecondAccountIsRefusedBehindAFullPage(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	// Twenty, on twenty other people, all older than the one below. Different
+	// holders because the rule under test is about one holder, and putting them
+	// on this one would be twenty violations of it.
+	for i := range 20 {
+		who := b.holder(t, ctx, b.Acme, fmt.Sprintf("early-%02d", i))
+		b.identity(t, ctx, who, "github", fmt.Sprintf("90000%02d", i))
+	}
+
+	b.identity(t, ctx, b.AcmeUser, "github", "1074321")
+
+	_, err := b.Ungated.Identity().Add(ctx, app.IdentityAddRequest_builder{
+		Holder:   app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Provider: "github",
+		Subject:  "2222222",
+	}.Build())
+	x.Equal(codes.InvalidArgument, status.Code(err))
+	x.Contains(err.Error(), "already has a github identity")
+}
+
+// TestASecondAccountIsRefusedWhoeverTheRefNames, which is every way a holder
+// can be named and not the one way.
+//
+// [app.HolderRef] is a oneof: an identifier, a slug, or the IdP subject the
+// person is already known by. Enrolment uses the last two -- what an OIDC
+// callback holds is a subject and a tenant, not a row identifier -- so a check
+// that only understood identifiers was inert on exactly the path that creates
+// identities.
+//
+// The ref is handed to the filter as it arrived rather than resolved here,
+// which is what makes all three work without this test naming any of them
+// twice.
+func TestASecondAccountIsRefusedWhoeverTheRefNames(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	b.identity(t, ctx, b.AcmeUser, "github", "1074321")
+
+	_, err := b.Ungated.Identity().Add(ctx, app.IdentityAddRequest_builder{
+		Holder: app.HolderRef_builder{
+			Slug: app.HolderRefBySlug_builder{
+				Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+				Alias:  proto.String("someone"),
+			}.Build(),
+		}.Build(),
 		Provider: "github",
 		Subject:  "2222222",
 	}.Build())

@@ -76,6 +76,27 @@ func subjectIsStable(v string) error {
 // A person genuinely has one account at each provider. If they have two, one of
 // them belongs to somebody else, and the design is explicit that a failed link
 // must not quietly become a new record: an explicit failure is better.
+//
+// # Why it asks the database and does not sift here
+//
+// It used to list every identity the caller could see and compare in Go, and
+// that was inert for almost everybody in two separate ways.
+//
+// A page is 20 rows ordered by `date_created` ascending and the loop ignored
+// the cursor, so what it actually read was the twenty **oldest** identities of
+// the whole tenant. Whether somebody was checked depended on when they joined,
+// and the twenty-first person onwards was never checked at all. The failure was
+// silent and got worse as a deployment grew.
+//
+// And the comparison was against `holder.id` bytes, so a request naming the
+// holder any other way -- [app.HolderRef] carries a slug and an IdP subject as
+// well, and enrolment uses those -- matched nothing and the check passed.
+//
+// The filter is the fix for both: the ref goes to the server as it arrived, so
+// every shape of it resolves, and what comes back is one person's identities
+// rather than a page of the tenant's. The pages are still followed, because a
+// person may have more of them than a page holds and a check that is right only
+// for the first twenty is the bug this is replacing.
 func (s coreIdentity) oneAccountPerProvider(ctx context.Context, req *app.IdentityAddRequest) error {
 	ref := req.GetHolder()
 	if ref == nil {
@@ -85,32 +106,34 @@ func (s coreIdentity) oneAccountPerProvider(ctx context.Context, req *app.Identi
 	// Read through this stack rather than around it, so the wall applies: an
 	// identity of somebody the caller cannot see is not a reason they can
 	// discover.
-	vs, err := s.Next().Identity().List(ctx, app.IdentityListRequest_builder{}.Build())
-	if err != nil {
-		return err
-	}
-
-	for _, v := range vs.GetItems() {
-		if v.GetProvider() != req.GetProvider() {
-			continue
+	after := ""
+	for {
+		vs, err := s.Next().Identity().List(ctx, app.IdentityListRequest_builder{
+			Filters: []*app.IdentityFilter{
+				app.IdentityFilter_builder{Holder: ref}.Build(),
+			},
+			After: after,
+		}.Build())
+		if err != nil {
+			return err
 		}
-		if !sameHolder(v, ref) {
-			continue
+
+		for _, v := range vs.GetItems() {
+			if v.GetProvider() != req.GetProvider() {
+				continue
+			}
+
+			return pderr.Invalidf("provider",
+				"this person already has a %s identity; a second one is a link that found the wrong row, "+
+					"and linking it would join two people into one", req.GetProvider())
 		}
 
-		return pderr.Invalidf("provider",
-			"this person already has a %s identity; a second one is a link that found the wrong row, "+
-				"and linking it would join two people into one", req.GetProvider())
+		// Empty when the last page was the last one, which the generated List
+		// answers without a second query: it asks for one row more than the
+		// page and drops it.
+		after = vs.GetNext()
+		if after == "" {
+			return nil
+		}
 	}
-
-	return nil
-}
-
-func sameHolder(v *app.Identity, ref *app.HolderRef) bool {
-	id := ref.GetId()
-	if len(id) == 0 {
-		return false
-	}
-
-	return string(v.GetHolder().GetId()) == string(id)
 }
