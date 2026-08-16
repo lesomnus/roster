@@ -81,10 +81,25 @@ server:
 #   # than inferred from the address, because inferring it is how a production
 #   # address gets served in plaintext by a default nobody read.
 #   insecure: true
-#   # The key, read as `authorization: Bearer`. `token_file` is the same thing
-#   # from a mount and wins over `token`; a file that is named and not there is
-#   # an error rather than a call as nobody.
-#   token_file: /run/secrets/roster-key
+#   auth:
+#     # bearer | plain | none -- the word before the credential in
+#     # `authorization`. It is a setting because this app serves more than one,
+#     # and which it serves depends on the `control` block above:
+#     #
+#     #   bearer  an API key, checked against the control plane.
+#     #   plain   the caller says who it is and is believed, so the credential
+#     #           is a slug: "@acme/admin". This is what a deployment with **no
+#     #           control plane** serves, which is most of them on a first day
+#     #           -- and is not something to serve where anyone can reach it.
+#     #   none    send nothing, for a port that authenticates at the transport.
+#     #
+#     # Empty with a credential given is `bearer`. A name that is none of the
+#     # three is refused rather than ignored.
+#     scheme: bearer
+#     # `credential_file` is the same thing from a mount and wins over
+#     # `credential`; a file that is named and not there is an error rather than
+#     # a call as nobody.
+#     credential_file: /run/secrets/roster-key
 
 watch:
   # Named rather than defaulted, and it is the one field this app is refused for

@@ -18,6 +18,7 @@ import (
 
 	"github.com/lesomnus/payday/pdcmd"
 
+	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/config"
 
 	// The two engines this app runs on, blank-imported here rather than by
@@ -112,30 +113,110 @@ type ClientConfig struct {
 	// by a default nobody read.
 	Insecure bool `yaml:"insecure"`
 
-	// Token is the credential, read as `authorization: Bearer`.
-	//
-	// TokenFile is the same thing from a file, which is what a deployment that
-	// mounts a secret has. Both may be set and the file wins, so that a
-	// development default in a checked-in file is overridden by the mount
-	// rather than silently competing with it.
-	Token     string `yaml:"token"`
-	TokenFile string `yaml:"token_file"`
+	// Auth is how a call says who is making it.
+	Auth ClientAuthConfig `yaml:"auth"`
 }
 
-// Bearer is the credential to send, from whichever of the two said one.
+// ClientAuthConfig is the credential a command presents, and how.
 //
-// The file wins, and a file that is named and not there is an error rather than
-// an empty token: a deployment that mounted a secret and got the mount path
-// wrong must not fall through to calling as nobody, which reads as a permission
-// problem three layers away.
-func (c ClientConfig) Bearer() (string, error) {
-	if c.TokenFile == "" {
-		return c.Token, nil
+// The scheme is a setting because roster serves more than one and which it
+// serves depends on the rest of this file: with a control plane the data plane
+// reads `Bearer` and checks an API key, and without one it reads `Plain` and
+// believes whatever the caller writes. A command that could only send one of
+// them would work against half the deployments this app supports.
+type ClientAuthConfig struct {
+	// Scheme is `bearer`, `plain`, or `none`, and it is the word that goes
+	// before the credential in `authorization`.
+	//
+	//	bearer  an API key, checked against the control plane. What a
+	//	        deployment serving anybody uses.
+	//	plain   the caller says who it is and is believed, so the credential is
+	//	        a slug: "@acme/admin". It is what this app serves with **no
+	//	        control plane configured**, which is a sandbox and not something
+	//	        to serve where anyone can reach it.
+	//	none    send nothing. For a port that authenticates at the transport --
+	//	        a client certificate -- or one that is open.
+	//
+	// Empty with a credential given is `bearer`, which is the production
+	// scheme. Defaulted rather than refused because the wrong answer here is
+	// loud: a scheme the server does not read comes back `Unauthenticated` on
+	// the first call, and there is nothing to notice weeks later.
+	//
+	// A name that is none of the three is refused rather than ignored.
+	Scheme string `yaml:"scheme"`
+
+	// Credential is what goes after the scheme -- a key for `bearer`, a slug
+	// for `plain`.
+	//
+	// CredentialFile is the same thing from a file, which is what a deployment
+	// that mounts a secret has. Both may be set and the file wins, so that a
+	// development default in a checked-in file is overridden by the mount
+	// rather than silently competing with it.
+	Credential     string `yaml:"credential"`
+	CredentialFile string `yaml:"credential_file"`
+}
+
+// Provider is how a command says who it is, or nil when it says nothing.
+//
+// It is worked out here rather than where the connection is made, so that a
+// configuration this cannot be built from is refused before anything is dialed
+// and with the name of the field that is wrong.
+func (c ClientAuthConfig) Provider() (auth.Provider, error) {
+	v, err := c.value()
+	if err != nil {
+		return nil, err
 	}
 
-	b, err := os.ReadFile(c.TokenFile)
+	scheme := strings.ToLower(c.Scheme)
+	if scheme == "" && v != "" {
+		scheme = "bearer"
+	}
+
+	switch scheme {
+	case "", "none":
+		if v != "" {
+			return nil, fmt.Errorf("client.auth: a credential is given and the scheme is %q, which sends none", scheme)
+		}
+
+		return nil, nil
+
+	case "bearer":
+		if v == "" {
+			return nil, fmt.Errorf("client.auth.scheme: bearer, and no credential to send")
+		}
+
+		return auth.BearerProvider(v), nil
+
+	case "plain":
+		if v == "" {
+			return nil, fmt.Errorf("client.auth.scheme: plain, and nobody to say this call is from")
+		}
+
+		// Believed by whoever reads it, which is a deployment with no control
+		// plane. Nothing here can tell whether that is what is at the other
+		// end, so this is not refused -- but it is the one scheme worth
+		// noticing in a file somebody reviews.
+		return auth.PlainProvider(v), nil
+
+	default:
+		return nil, fmt.Errorf("client.auth.scheme: %q is not one of bearer, plain, none", c.Scheme)
+	}
+}
+
+// value is the credential, from whichever of the two said one.
+//
+// The file wins, and a file that is named and not there is an error rather than
+// an empty credential: a deployment that mounted a secret and got the mount
+// path wrong must not fall through to calling as nobody, which reads as a
+// permission problem three layers away.
+func (c ClientAuthConfig) value() (string, error) {
+	if c.CredentialFile == "" {
+		return c.Credential, nil
+	}
+
+	b, err := os.ReadFile(c.CredentialFile)
 	if err != nil {
-		return "", fmt.Errorf("client.token_file: %w", err)
+		return "", fmt.Errorf("client.auth.credential_file: %w", err)
 	}
 
 	return strings.TrimSpace(string(b)), nil

@@ -173,14 +173,21 @@ func (l local) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
 //
 // # The credential
 //
-// `client.token`, or `client.token_file` for a deployment that mounts it as a
-// secret. There is no `--token` flag and there will not be, for the reason
+// `client.auth`, which says the scheme as well as the value -- because roster
+// serves more than one and which it serves depends on the rest of the file: a
+// deployment with a control plane reads `Bearer` and checks an API key, and one
+// without reads `Plain` and believes what the caller writes.
+//
+// There is no `--credential` flag and there will not be, for the reason
 // `roster key add` takes no key: an argument is in the shell history and in the
-// process list.
+// process list. `client.auth.credential_file` is what a mounted secret uses.
 type remote struct{ c *Config }
 
 func (r remote) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
-	token, err := r.c.Client.Bearer()
+	// Before anything is dialed, so a configuration this cannot be built from
+	// is refused with the name of the field that is wrong rather than with a
+	// refusal from the far end.
+	p, err := r.c.Client.Auth.Provider()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -191,8 +198,8 @@ func (r remote) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
 	} else {
 		opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(nil)))
 	}
-	if token != "" {
-		opts = append(opts, auth.Inject(auth.BearerProvider(token))...)
+	if p != nil {
+		opts = append(opts, auth.Inject(p)...)
 	}
 
 	conn, err := grpc.NewClient(r.c.Client.Addr, opts...)

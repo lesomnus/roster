@@ -10,6 +10,7 @@ import (
 
 	"github.com/lesomnus/xli"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/pdtest"
@@ -56,7 +57,14 @@ func seeded(t *testing.T) *cmd.Config {
 	b := &built{Server: s}
 	b.Acme = b.tenant(t, ctx, "acme")
 	b.Hooli = b.tenant(t, ctx, "hooli")
-	b.holder(t, ctx, b.Acme, "admin")
+	admin := b.holder(t, ctx, b.Acme, "admin")
+
+	// What `roster init` binds: the whole of what this app serves. Without it
+	// the admin is somebody who can call one method and be told they hold
+	// nothing, which is the state `init` exists to avoid -- and a test that
+	// reaches this deployment over the wire would be testing that refusal
+	// rather than what it meant to.
+	b.mayAnything(admin, b.Acme)
 
 	// Closed, because each command opens a server of its own on this database
 	// -- which is the thing being tested.
@@ -239,7 +247,11 @@ func TestClientAddrChoosesTheWire(t *testing.T) {
 
 	// Over the wire as a key belonging to somebody in acme: acme, and not
 	// hooli.
-	c.Client = cmd.ClientConfig{Addr: lis.Addr().String(), Insecure: true, Token: token}
+	c.Client = cmd.ClientConfig{
+		Addr:     lis.Addr().String(),
+		Insecure: true,
+		Auth:     cmd.ClientAuthConfig{Scheme: "bearer", Credential: token},
+	}
 
 	out, err = entities(t, &c, "tenant", "ls")
 	x.NoError(err)
@@ -249,32 +261,156 @@ func TestClientAddrChoosesTheWire(t *testing.T) {
 
 const listTenants = "/roster.TenantService/List"
 
-// TestATokenFileThatIsNotThereIsRefused.
+// TestPlainReachesADeploymentWithNoControlPlane is why the scheme is a setting
+// and not a constant.
+//
+// With no `control` block this app serves `auth.Plain`: a caller says who it is
+// and is believed. That is a sandbox and not something to serve where anyone
+// can reach it -- and it is also what every `roster.yaml` that has not set a
+// control plane up is running, which is most of them on a first day. A command
+// that could only send `Bearer` would be a command that does not work there.
+func TestPlainReachesADeploymentWithNoControlPlane(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	c := seeded(t)
+
+	s, err := cmd.Build(ctx, *c)
+	x.NoError(err)
+	t.Cleanup(func() { s.Close() })
+
+	g, err := s.Grpc(ctx, *c)
+	x.NoError(err)
+
+	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	x.NoError(err)
+	go g.Serve(lis)
+	t.Cleanup(g.Stop)
+
+	c.Client = cmd.ClientConfig{
+		Addr:     lis.Addr().String(),
+		Insecure: true,
+		Auth:     cmd.ClientAuthConfig{Scheme: "plain", Credential: "@acme/admin"},
+	}
+
+	out, err := entities(t, c, "holder", "ls")
+	x.NoError(err)
+	x.Contains(out, "admin")
+
+	// And `bearer` against the same server does not, which is the half of the
+	// claim that says the setting is doing something.
+	c.Client.Auth = cmd.ClientAuthConfig{Scheme: "bearer", Credential: "@acme/admin"}
+
+	_, err = entities(t, c, "holder", "ls")
+	x.Error(err)
+}
+
+// TestACredentialFileThatIsNotThereIsRefused.
 //
 // A deployment that mounted a secret and got the path wrong must not fall
 // through to calling as nobody: that arrives as a permission problem three
 // layers away, about a credential nobody meant to omit.
-func TestATokenFileThatIsNotThereIsRefused(t *testing.T) {
+func TestACredentialFileThatIsNotThereIsRefused(t *testing.T) {
 	x := require.New(t)
 
 	c := seeded(t)
-	c.Client = cmd.ClientConfig{Addr: "127.0.0.1:1", Insecure: true, TokenFile: "/nowhere/at/all"}
+	c.Client = cmd.ClientConfig{
+		Addr:     "127.0.0.1:1",
+		Insecure: true,
+		Auth:     cmd.ClientAuthConfig{Scheme: "bearer", CredentialFile: "/nowhere/at/all"},
+	}
 
 	_, err := entities(t, c, "tenant", "ls")
-	x.ErrorContains(err, "client.token_file")
+	x.ErrorContains(err, "client.auth.credential_file")
 }
 
-// TestTheTokenFileWinsOverTheLiteral, so that a development default in a
+// TestTheCredentialFileWinsOverTheLiteral, so that a development default in a
 // checked-in file is overridden by the mount rather than competing with it.
-func TestTheTokenFileWinsOverTheLiteral(t *testing.T) {
+func TestTheCredentialFileWinsOverTheLiteral(t *testing.T) {
 	x := require.New(t)
 
-	at := filepath.Join(t.TempDir(), "token")
-	x.NoError(os.WriteFile(at, []byte("  @acme/admin\n"), 0o600))
+	at := filepath.Join(t.TempDir(), "credential")
+	x.NoError(os.WriteFile(at, []byte("  a-key\n"), 0o600))
 
-	c := cmd.ClientConfig{Token: "@acme/somebody-else", TokenFile: at}
+	c := cmd.ClientAuthConfig{Scheme: "bearer", Credential: "another-key", CredentialFile: at}
 
-	v, err := c.Bearer()
+	p, err := c.Provider()
 	x.NoError(err)
-	x.Equal("@acme/admin", v, "and it is trimmed, because a file ends in a newline")
+
+	// What it actually puts on the wire, since that is the only thing that
+	// settles which of the two won -- and it is trimmed, because a file ends in
+	// a newline.
+	md, ok := metadata.FromOutgoingContext(p.Provide(t.Context()))
+	x.True(ok)
+	x.Equal([]string{"Bearer a-key"}, md.Get("authorization"))
+}
+
+// TestTheSchemeSaysHowTheCredentialIsSent.
+//
+// roster serves more than one and which it serves depends on the rest of the
+// configuration: with a control plane the data plane reads `Bearer` and checks
+// an API key, without one it reads `Plain` and believes what the caller writes.
+// A command that could only send one would work against half the deployments
+// this app supports.
+func TestTheSchemeSaysHowTheCredentialIsSent(t *testing.T) {
+	sent := func(t *testing.T, c cmd.ClientAuthConfig) []string {
+		t.Helper()
+
+		p, err := c.Provider()
+		require.NoError(t, err)
+		if p == nil {
+			return nil
+		}
+
+		md, ok := metadata.FromOutgoingContext(p.Provide(t.Context()))
+		require.True(t, ok)
+
+		return md.Get("authorization")
+	}
+
+	t.Run("bearer is an api key", func(t *testing.T) {
+		x := require.New(t)
+		x.Equal([]string{"Bearer a-key"},
+			sent(t, cmd.ClientAuthConfig{Scheme: "bearer", Credential: "a-key"}))
+	})
+
+	t.Run("plain is a slug, and the server believes it", func(t *testing.T) {
+		x := require.New(t)
+		x.Equal([]string{"Plain @acme/admin"},
+			sent(t, cmd.ClientAuthConfig{Scheme: "plain", Credential: "@acme/admin"}))
+	})
+
+	t.Run("none sends nothing", func(t *testing.T) {
+		x := require.New(t)
+		x.Nil(sent(t, cmd.ClientAuthConfig{Scheme: "none"}))
+	})
+
+	t.Run("a credential with no scheme is bearer", func(t *testing.T) {
+		x := require.New(t)
+		x.Equal([]string{"Bearer a-key"},
+			sent(t, cmd.ClientAuthConfig{Credential: "a-key"}))
+	})
+
+	t.Run("nothing at all sends nothing", func(t *testing.T) {
+		x := require.New(t)
+		x.Nil(sent(t, cmd.ClientAuthConfig{}))
+	})
+}
+
+// TestASchemeThatIsNotOneIsRefused, and refused **here** rather than by the far
+// end: a typo answers `Unauthenticated` from a server, which reads as a
+// credential that is wrong rather than as a word this app does not know.
+func TestASchemeThatIsNotOneIsRefused(t *testing.T) {
+	x := require.New(t)
+
+	_, err := (cmd.ClientAuthConfig{Scheme: "basic", Credential: "x"}).Provider()
+	x.ErrorContains(err, "not one of bearer, plain, none")
+
+	// And the two halves of one that says nothing to send, or nothing to send
+	// it as.
+	_, err = (cmd.ClientAuthConfig{Scheme: "bearer"}).Provider()
+	x.ErrorContains(err, "no credential to send")
+
+	_, err = (cmd.ClientAuthConfig{Scheme: "none", Credential: "x"}).Provider()
+	x.ErrorContains(err, "sends none")
 }
