@@ -142,13 +142,13 @@ func Cmd(c *Config) *xli.Command {
 
 		Flags: flg.Flags{pdcmd.ConfigFlag()},
 
-		Commands: []*xli.Command{
+		Commands: append([]*xli.Command{
 			pdcmd.NewCmdVersion(),
 			pdcmd.NewCmdConfig(Loader, c),
 			NewCmdInit(c),
 			NewCmdKey(c),
 			NewCmdServe(c),
-		},
+		}, NewCmdEntities(c)...),
 
 		Handler: xli.Chain(pdcmd.Load(Loader, c), xli.RequireSubcommand()),
 	}
