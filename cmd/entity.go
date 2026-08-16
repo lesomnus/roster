@@ -42,13 +42,13 @@ import (
 // the ungated server is registered on a listener with no address, torn down
 // when the command finishes.
 //
-// # Why the connection is opened by a function
+// # Why the connection is made by a [pdcmd.Connector]
 //
 // Because the tree is built here, while the command set is being assembled, and
 // the configuration has not been read yet -- `pdcmd.Load` runs on the root and
-// this is a child of it. So `c` is a pointer to a `Config` that is still empty
-// at this moment and filled in by the time [pdcmd.Opener] is asked, which is
-// when somebody actually runs one of these.
+// this is a child of it. So the `*Config` [local] holds is still empty at this
+// moment and filled in by the time `Connect` is called, which is when somebody
+// actually runs one of these.
 //
 // It also means `roster tenant ls --help` opens no database.
 func NewCmdEntities(c *Config) xli.Commands {
@@ -56,50 +56,55 @@ func NewCmdEntities(c *Config) xli.Commands {
 	// one payday app, and roster links exactly one -- but saying it here means
 	// a second one arriving is a compile-time fact rather than an error at
 	// startup.
-	return pdcmd.NewIn(openLocal(c), "roster").Commands()
+	return pdcmd.NewIn(local{c}, "roster").Commands()
 }
 
-// openLocal builds this deployment's server and answers with a connection to
-// it over an in-process pipe.
+// local is this deployment, in this process: the server built from the
+// configuration, on a pipe with no address.
 //
-// The whole stack, which is what makes these commands worth having: an `add`
-// goes through the same layers, the same minter and the same trail a request
-// does. A command that reached the ent client directly would be a second way to
-// write a row, and the first thing a second way does is disagree with the
-// first.
-func openLocal(c *Config) pdcmd.Opener {
-	return func(ctx context.Context) (pdcmd.Conn, func(), error) {
-		s, err := Build(ctx, *c)
-		if err != nil {
-			return nil, nil, err
-		}
+// It is the whole stack, which is what makes these commands worth having. An
+// `add` goes through the same layers, the same minter and the same trail a
+// request does -- a command that reached the ent client directly would be a
+// second way to write a row, and the first thing a second way does is disagree
+// with the first.
+//
+// A type rather than a closure because this is where the three decisions
+// `pdcmd` refuses to make for an app are written down: no address, no
+// credential, and the ungated stack. A reader looking for "what do these
+// commands connect to" finds them here.
+type local struct{ c *Config }
 
-		g := grpc.NewServer()
-		app.RegisterServer(g, s.Ungated)
-
-		lis := bufconn.Listen(1 << 20)
-		go g.Serve(lis)
-
-		conn, err := grpc.NewClient("passthrough:///bufconn",
-			grpc.WithContextDialer(func(ctx context.Context, _ string) (net.Conn, error) {
-				return lis.DialContext(ctx)
-			}),
-			grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err != nil {
-			g.Stop()
-			s.Close()
-
-			return nil, nil, err
-		}
-
-		// In this order: the client first, so nothing is in flight; then the
-		// server, so the listener is done with; then the database. Closing the
-		// database under a server that is still answering is a panic rather
-		// than an error.
-		return conn, func() {
-			conn.Close()
-			g.Stop()
-			s.Close()
-		}, nil
+func (l local) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
+	s, err := Build(ctx, *l.c)
+	if err != nil {
+		return nil, nil, err
 	}
+
+	g := grpc.NewServer()
+	app.RegisterServer(g, s.Ungated)
+
+	lis := bufconn.Listen(1 << 20)
+	go g.Serve(lis)
+
+	conn, err := grpc.NewClient("passthrough:///bufconn",
+		grpc.WithContextDialer(func(ctx context.Context, _ string) (net.Conn, error) {
+			return lis.DialContext(ctx)
+		}),
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		g.Stop()
+		s.Close()
+
+		return nil, nil, err
+	}
+
+	// In this order: the client first, so nothing is in flight; then the
+	// server, so the listener is done with; then the database. Closing the
+	// database under a server that is still answering is a panic rather than
+	// an error.
+	return conn, func() {
+		conn.Close()
+		g.Stop()
+		s.Close()
+	}, nil
 }
