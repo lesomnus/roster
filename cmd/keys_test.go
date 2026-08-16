@@ -37,6 +37,11 @@ import (
 type keyedBuilt struct {
 	*cmd.Server
 
+	// Config is what built it, kept because a test that stands the same
+	// deployment up on a port -- or runs a command against it -- needs the same
+	// databases rather than two fresh ones.
+	Config cmd.Config
+
 	Conn  *grpc.ClientConn
 	Acme  pdid.Id
 	Who   pdid.Id
@@ -52,11 +57,13 @@ func keyFor(t *testing.T, methods ...string) *keyedBuilt {
 	drv, dsn := pdtest.DB(t)
 	cdrv, cdsn := pdtest.DB(t)
 
-	s, err := cmd.Build(ctx, cmd.Config{
+	c := cmd.Config{
 		Db:      config.DbConfig{Driver: drv, Dsn: dsn},
 		Watch:   config.WatchConfig{Broker: config.BrokerMemory},
 		Control: cmd.ControlConfig{Db: config.DbConfig{Driver: cdrv, Dsn: cdsn}},
-	})
+	}
+
+	s, err := cmd.Build(ctx, c)
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })
 
@@ -85,6 +92,7 @@ func keyFor(t *testing.T, methods ...string) *keyedBuilt {
 
 	return &keyedBuilt{
 		Server: s,
+		Config: c,
 		Conn:   served(t, s),
 		Acme:   acme, Who: who, Token: token,
 	}
@@ -364,11 +372,13 @@ func TestTheFirstKeyMakesWhatItNeeds(t *testing.T) {
 	drv, dsn := pdtest.DB(t)
 	cdrv, cdsn := pdtest.DB(t)
 
-	s, err := cmd.Build(ctx, cmd.Config{
+	c := cmd.Config{
 		Db:      config.DbConfig{Driver: drv, Dsn: dsn},
 		Watch:   config.WatchConfig{Broker: config.BrokerMemory},
 		Control: cmd.ControlConfig{Db: config.DbConfig{Driver: cdrv, Dsn: cdsn}},
-	})
+	}
+
+	s, err := cmd.Build(ctx, c)
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })
 	x.NoError(s.Control.Ent.Schema.Create(ctx))

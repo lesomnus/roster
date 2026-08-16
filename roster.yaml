@@ -53,6 +53,39 @@ server:
 #     allow_web: true
 #     origins: ["http://localhost:5173"]
 
+# Where `roster tenant ls`, `roster holder get` and the rest send their calls.
+#
+# **Empty, which is the default, is this process**: the command opens the
+# database, builds the server, and reads it over a pipe with no address. That is
+# the same answer `roster init` and `roster key` give -- neither has a remote
+# form, because what they write is not served -- and it is why the default here
+# is the local one rather than the wire. Going local writes a line to the log
+# saying so.
+#
+# Set, it is a caller like any other, so the wall runs and what comes back is
+# what the credential may see. Which port to name is the part with a real
+# answer:
+#
+#   server.addr   the data plane, walled. A tenant key sees its own tenant, so
+#                 `tenant ls` answers with one. Right for a service, not for an
+#                 operator.
+#   admin.addr    the data plane with no wall -- the operator's view -- and a
+#                 command cannot reach it yet. That port takes a session
+#                 cookie, which is what a console holds after signing in, and
+#                 nothing here signs in. Until that is decided, an operator's
+#                 `tenant ls` is the local one.
+#
+# client:
+#   addr: "dns:///roster.internal:50051"
+#   # Without TLS, for a network only this deployment is on. Written down rather
+#   # than inferred from the address, because inferring it is how a production
+#   # address gets served in plaintext by a default nobody read.
+#   insecure: true
+#   # The key, read as `authorization: Bearer`. `token_file` is the same thing
+#   # from a mount and wins over `token`; a file that is named and not there is
+#   # an error rather than a call as nobody.
+#   token_file: /run/secrets/roster-key
+
 watch:
   # Named rather than defaulted, and it is the one field this app is refused for
   # leaving out. `memory` publishes inside this process, which is right for one

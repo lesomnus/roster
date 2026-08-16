@@ -9,6 +9,10 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
+	"strings"
+
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/flg"
 
@@ -68,6 +72,73 @@ type Config struct {
 	//
 	// Bind it where only a console reaches. It answers with no wall at all.
 	Admin config.ServerConfig `yaml:"admin"`
+
+	// Client is where the entity commands -- `tenant ls`, `holder get` -- send
+	// their calls. **Empty is this process**, which is the default.
+	//
+	// It is the app's and not payday's for the reason `pdcmd` takes a
+	// connector rather than a connection: where to connect, as whom, and what
+	// that credential may do are the three decisions that make an admin command
+	// safe or unsafe, and a framework making them would make them the same way
+	// for every app.
+	Client ClientConfig `yaml:"client"`
+}
+
+// ClientConfig is how a command reaches this deployment, when it is not this
+// process.
+//
+// # Empty is local, and that is the default
+//
+// The opposite of what `oas` does, and the reason is the commands beside these:
+// `roster init` and `roster key` have no remote form at all, since what they
+// write is not served. A binary whose commands disagree about where they run is
+// worse than one that is consistently the awkward way round.
+//
+// So a deployment that wants the wire says so, and one that does not gets a
+// line in the log every time saying what it is doing.
+type ClientConfig struct {
+	// Addr is what to dial, and empty is this process. It is a gRPC target:
+	// "dns:///roster.internal:8080".
+	//
+	// Which port to name is a decision with an answer that is not obvious; see
+	// the note on `cmd/entity.go`'s `remote`. In short: `server.addr` is the
+	// data plane and is walled, so what comes back is what the credential's
+	// tenant holds -- not every tenant.
+	Addr string `yaml:"addr"`
+
+	// Insecure sends without TLS, for a deployment reached over a network only
+	// it is on. It is written down rather than inferred from the address,
+	// because inferring it is how a production address gets served in plaintext
+	// by a default nobody read.
+	Insecure bool `yaml:"insecure"`
+
+	// Token is the credential, read as `authorization: Bearer`.
+	//
+	// TokenFile is the same thing from a file, which is what a deployment that
+	// mounts a secret has. Both may be set and the file wins, so that a
+	// development default in a checked-in file is overridden by the mount
+	// rather than silently competing with it.
+	Token     string `yaml:"token"`
+	TokenFile string `yaml:"token_file"`
+}
+
+// Bearer is the credential to send, from whichever of the two said one.
+//
+// The file wins, and a file that is named and not there is an error rather than
+// an empty token: a deployment that mounted a secret and got the mount path
+// wrong must not fall through to calling as nobody, which reads as a permission
+// problem three layers away.
+func (c ClientConfig) Bearer() (string, error) {
+	if c.TokenFile == "" {
+		return c.Token, nil
+	}
+
+	b, err := os.ReadFile(c.TokenFile)
+	if err != nil {
+		return "", fmt.Errorf("client.token_file: %w", err)
+	}
+
+	return strings.TrimSpace(string(b)), nil
 }
 
 // ControlConfig is the second roster: the one holding keys rather than people.
