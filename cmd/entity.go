@@ -26,7 +26,7 @@ import (
 // exists for an entity that declared `list:` and not otherwise, so the commands
 // and the schema cannot disagree; see `payday/pdcmd`.
 //
-// # Two ways in, and `client.addr` chooses
+// # Two ways in, and `client.addr` chooses -- or `--HAL` does
 //
 // Empty, which is the default, is [local]: a server this process builds, on a
 // pipe with no address, reading the database directly. The same answer
@@ -36,6 +36,11 @@ import (
 // Set, it is [remote]: this deployment over the wire, as whoever `client.token`
 // names. Nothing is read directly, and what comes back is what that credential
 // may see.
+//
+// `--HAL` on the root forces the local one whatever the file says, for
+// somebody with a shell on the box who wants to look at the rows under a
+// deployment configured for the wire. Editing the configuration to do that is a
+// change that outlives the look.
 //
 // Local is the default rather than remote -- which is the opposite of what
 // `oas` does -- because the two commands beside these already are. `roster
@@ -85,8 +90,28 @@ func NewCmdEntities(c *Config) xli.Commands {
 type connector struct{ c *Config }
 
 func (v connector) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
+	// `--HAL` first, so it means what it says: the wire is skipped whatever the
+	// file has in it, including a credential. Somebody who passed it is asking
+	// for the database and knows they are.
+	if v.c.Client.Local {
+		return local{v.c}.Connect(ctx)
+	}
+
 	if v.c.Client.Addr != "" {
 		return remote{v.c}.Connect(ctx)
+	}
+
+	// A credential and nowhere to send it. Refused rather than run, because
+	// what it would otherwise do is read the database directly while the
+	// deployment believes it is calling a server -- a mounted secret going
+	// unused, and one line on stderr to say so.
+	//
+	// Naming `auth` is what says the intent was the wire. A file with no
+	// `client` block at all means the local one and is left alone.
+	if v.c.Client.Auth.IsSet() {
+		return nil, nil, fmt.Errorf(
+			"client.auth is set and client.addr is not, so there is nowhere to send it; " +
+				"name an address, or drop client.auth to read the database directly")
 	}
 
 	return local{v.c}.Connect(ctx)
@@ -118,8 +143,16 @@ func (l local) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
 	// bare context discards -- so a warning written that way is one nobody ever
 	// sees, which is worse than none. Stderr also keeps it out of a pipe, so
 	// `roster tenant ls -o json | jq` is unaffected.
+	why := "set client.addr to go over the wire"
+	if l.c.Client.Addr != "" {
+		// `--HAL` against a deployment that is configured for the wire, which
+		// is the case the flag exists for and the one worth naming: the file
+		// says one thing and this invocation is doing another.
+		why = "--HAL, so " + l.c.Client.Addr + " was not used"
+	}
+
 	fmt.Fprintln(os.Stderr,
-		"roster: reading this deployment's database directly; set client.addr to go over the wire")
+		"roster: reading this deployment's database directly; "+why)
 
 	s, err := Build(ctx, *l.c)
 	if err != nil {

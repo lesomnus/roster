@@ -414,3 +414,58 @@ func TestASchemeThatIsNotOneIsRefused(t *testing.T) {
 	_, err = (cmd.ClientAuthConfig{Scheme: "none", Credential: "x"}).Provider()
 	x.ErrorContains(err, "sends none")
 }
+
+// TestACredentialWithNowhereToSendItIsRefused.
+//
+// A `client.auth` block is somebody saying the wire was the intent. Without an
+// address there is nowhere to send it, and what would otherwise happen is the
+// database read directly while the deployment believes it is calling a server
+// -- a mounted secret going unused, with one line on stderr to say so.
+func TestACredentialWithNowhereToSendItIsRefused(t *testing.T) {
+	x := require.New(t)
+
+	c := seeded(t)
+	c.Client = cmd.ClientConfig{
+		Auth: cmd.ClientAuthConfig{Scheme: "bearer", Credential: "a-key"},
+	}
+
+	_, err := entities(t, c, "tenant", "ls")
+	x.ErrorContains(err, "nowhere to send it")
+
+	// And a file that says nothing about a client is left alone: that is the
+	// default and it is what every deployment starts as.
+	c.Client = cmd.ClientConfig{}
+
+	out, err := entities(t, c, "tenant", "ls")
+	x.NoError(err)
+	x.Contains(out, "acme")
+}
+
+// TestHalReadsTheDatabaseWhateverTheFileSays.
+//
+// The flag exists for somebody with a shell on the box who wants to look at the
+// rows under a deployment configured for the wire. Editing the configuration to
+// do that is a change that outlives the look.
+//
+// It is asserted against an address that answers nothing, so a run that reached
+// the wire would fail rather than quietly agree.
+func TestHalReadsTheDatabaseWhateverTheFileSays(t *testing.T) {
+	x := require.New(t)
+
+	c := seeded(t)
+	c.Client = cmd.ClientConfig{
+		Addr:     "127.0.0.1:1",
+		Insecure: true,
+		Auth:     cmd.ClientAuthConfig{Scheme: "bearer", Credential: "a-key"},
+	}
+
+	// Without it: the wire, and nothing is listening there.
+	_, err := entities(t, c, "tenant", "ls")
+	x.Error(err)
+
+	// With it: the database, and the credential is deliberately unused.
+	out, err := entities(t, c, "--HAL", "tenant", "ls")
+	x.NoError(err)
+	x.Contains(out, "acme")
+	x.Contains(out, "hooli", "the local one has no wall, which is what it is for")
+}

@@ -60,11 +60,17 @@ server:
 # the same answer `roster init` and `roster key` give -- neither has a remote
 # form, because what they write is not served -- and it is why the default here
 # is the local one rather than the wire. Going local writes a line to the log
-# saying so.
+# saying so on stderr.
+#
+# `--HAL` on the root forces the local one whatever this says, for somebody with
+# a shell on the box who wants to look at the rows under a deployment configured
+# for the wire.
 #
 # Set, it is a caller like any other, so the wall runs and what comes back is
-# what the credential may see. Which port to name is the part with a real
-# answer:
+# what the credential may see. Naming `auth` with no `addr` is **refused**: a
+# credential with nowhere to send it would otherwise read the database directly
+# while the deployment believes it is calling a server. Which port to name is
+# the part with a real answer:
 #
 #   server.addr   the data plane, walled. A tenant key sees its own tenant, so
 #                 `tenant ls` answers with one. Right for a service, not for an

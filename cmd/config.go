@@ -9,12 +9,14 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/flg"
+	"github.com/lesomnus/xli/mode"
 
 	"github.com/lesomnus/payday/pdcmd"
 
@@ -115,6 +117,22 @@ type ClientConfig struct {
 
 	// Auth is how a call says who is making it.
 	Auth ClientAuthConfig `yaml:"auth"`
+
+	// Local is `--HAL`: read the database directly whatever the rest of this
+	// says.
+	//
+	// Not in the file, and it is the one field here that is not. What it is for
+	// is the moment somebody with a shell on the box wants to look at the rows
+	// under a deployment that is configured to go over the wire -- and editing
+	// the configuration to do that is a change that outlives the look.
+	//
+	// It is a flag alone, where `oas` requires a flag **and** a setting
+	// allowing it. The difference is which way round the default is: there,
+	// remote is the default and reading the database is the privileged path, so
+	// it is locked twice. Here local is already what a file with no `client`
+	// block does, and anybody who can pass this flag is already holding the
+	// file the `db` block is in. A second lock would guard nothing.
+	Local bool `yaml:"-"`
 }
 
 // ClientAuthConfig is the credential a command presents, and how.
@@ -154,6 +172,14 @@ type ClientAuthConfig struct {
 	// rather than silently competing with it.
 	Credential     string `yaml:"credential"`
 	CredentialFile string `yaml:"credential_file"`
+}
+
+// IsSet reports whether this says anything at all.
+//
+// It is what makes `client.auth` with no `client.addr` a refusal rather than a
+// credential that is quietly never sent; see `cmd/entity.go`.
+func (c ClientAuthConfig) IsSet() bool {
+	return c.Scheme != "" || c.Credential != "" || c.CredentialFile != ""
 }
 
 // Provider is how a command says who it is, or nil when it says nothing.
@@ -292,7 +318,18 @@ func Cmd(c *Config) *xli.Command {
 		Name:  Name,
 		Brief: "roster",
 
-		Flags: flg.Flags{pdcmd.ConfigFlag()},
+		Flags: flg.Flags{
+			pdcmd.ConfigFlag(),
+
+			// Named after the one `oas` has, which is named after the computer
+			// that would not open the pod bay doors. What it does is skip the
+			// wire: whatever `client.addr` says, the entity commands open the
+			// database in `db` and read it directly.
+			//
+			// A switch on the root rather than on each command, because it is
+			// about where this invocation runs and not about what it asks for.
+			&flg.Switch{Name: "HAL", Brief: "read the database directly, whatever client.addr says"},
+		},
 
 		Commands: append([]*xli.Command{
 			pdcmd.NewCmdVersion(),
@@ -302,6 +339,26 @@ func Cmd(c *Config) *xli.Command {
 			NewCmdServe(c),
 		}, NewCmdEntities(c)...),
 
-		Handler: xli.Chain(pdcmd.Load(Loader, c), xli.RequireSubcommand()),
+		Handler: xli.Chain(pdcmd.Load(Loader, c), hal(c), xli.RequireSubcommand()),
 	}
+}
+
+// hal is `--HAL`, read on the way down.
+//
+// A handler and not something the connector asks for itself, because a
+// connector is handed a context and not the command -- and the flag is on the
+// root, several commands above whichever one is running. This is the same seam
+// `pdcmd.Load` uses to put the configuration where a leaf can find it.
+func hal(c *Config) xli.Handler {
+	// `xli.On(mode.Run)` and not `OnRun`, which is exact: a root with a
+	// subcommand under it runs as `Run|Pass`, so the exact form never fires
+	// there -- and this is only ever on a root. `pdcmd.Load` is gated the same
+	// way, for the same reason.
+	return xli.On(mode.Run, func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
+		if v, ok := flg.Find[bool](cmd, "HAL"); ok && v {
+			c.Client.Local = true
+		}
+
+		return next(ctx)
+	})
 }
