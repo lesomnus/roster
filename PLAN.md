@@ -64,9 +64,58 @@ tokens.
 
 ### Not roster
 
-Hydra, the Login App, `AuthProvider` implementations (Entra/LDAP/SAML/magic
-link), MFA flows, the login UI, the session proxy. Devices, certificate
-authorities, ownership transfer — those belong to the product.
+Hydra, the Login App, the login UI, the session proxy, and the flows that run
+over them — which provider to offer, when to ask for a second factor, whether to
+remember a browser. Devices, certificate authorities, ownership transfer — those
+belong to the product.
+
+This list said `AuthProvider` implementations and MFA flows for a while, and
+that was one word too wide: roster verifies a password and will verify a TOTP
+code, and both read like implementing a provider. What is not roster's is the
+**flow**, not the check. D19 is the line stated so that it can be applied rather
+than remembered.
+
+### Where roster sits when Hydra is in front
+
+The diagram above is the shape, and it is worth writing out as steps, because
+"Hydra does single sign-on" reads as though roster gets smaller. It does not:
+Hydra's central design decision is that **it has no user database and does not
+authenticate anybody**. It hands a `login_challenge` to a Login App and waits to
+be told a `subject`. Where that string comes from is the hole, and the hole is
+roster-shaped.
+
+```
+browser → product app → Hydra /oauth2/auth
+                          │ login_challenge
+                          ↓
+                      Login App
+                          │ Entra / GitHub → (provider, subject)
+                    ①     ├──> roster · Identity → Holder.id     ← this is `sub`
+                    ②     ├──> roster · VouchService.Verify      (password, link)
+                    ③     ├──> roster · the tenant, and the token's other claims
+                          │ acceptLoginRequest{subject: Holder.id}
+                          ↓
+                       Hydra ── code ──> product app
+                                            │ exchange, verify, keep a session
+                    ④                       └──> roster · MeService, names, teams
+```
+
+- **① is the one that cannot be moved.** Use Entra's `oid` as `sub` and the same
+  human arriving through GitHub is a second person to every system downstream.
+  D1 exists for this and this is where it is spent.
+- **② only if this deployment has a password or a magic link at all.** A
+  provider-only deployment does not call it.
+- **③** because Hydra does not know what a tenant is either.
+- **④** is not sign-in. It is the ordinary reading LOGIN.md already describes —
+  a product app anchors a row and reads names when there is a screen to draw.
+
+**roster is in the flow once, at sign-in, and beside it afterwards. It is not in
+the per-request path.** No session check and no token check reaches it. That is
+the property somebody wants when they ask for "accepted everywhere without
+another call to roster", and it is had without roster signing anything.
+
+The caller list is unchanged by any of this, which is the sign it is the right
+shape: the Login App and admin consoles. A browser never sees roster.
 
 ---
 
@@ -88,6 +137,408 @@ over memberships, credential verification.
 Recorded as they are made, with the reason, so that a later disagreement argues
 with the reason rather than rediscovering the question.
 
+### D19 · The line is issuance, not authentication
+
+This was written down after a conversation that went round twice, because the
+boundary had been stated two ways and only one of them was true.
+
+The wrong statement was a **list of things roster does not implement** —
+providers, MFA, magic links. It is falsified by the code: `VouchService` checks
+a password, which is exactly what a provider does, and D5 has always planned for
+a TOTP secret. Read that way roster looks like it has already overrun its own
+boundary, and the next feature has to be argued from scratch.
+
+The true statement is one sentence:
+
+> **roster stores facts and verifies claims about them. It never issues anything
+> a third party verifies.**
+
+The test is a question with one answer: **who checks this?** If roster is the
+only thing that can, roster may hold it and hand it out. If anybody else has to
+be able to check it without asking, it is not roster's to make.
+
+What that admits, and each of these is already true or is simply consistent:
+
+| | why it is inside |
+| --- | --- |
+| a password (`Credential`, D14) | roster holds the verifier, so roster compares |
+| a magic link | a single-use opaque nonce roster mints and roster checks. **Sending** the mail is not roster's |
+| a second factor (D20) | the same argument one factor along |
+| an `rt_` API key (D16) | opaque. A product app learns what it means by asking `TokenService/Introspect` |
+| the console's own cookie | there roster **is** the server the browser is talking to |
+
+What it refuses:
+
+| | why it is outside |
+| --- | --- |
+| a signed token — JWT — for other systems | issuer, JWKS, rotation, expiry against revocation, audience, front-channel logout. That list is Hydra's feature list, and writing it is writing Hydra |
+| a session cookie for a product app | a cookie is set by the server the browser is talking to, and roster has no browser, no cookie domain and no CSRF story. See LOGIN.md |
+| deciding *when* a second factor is needed | a flow, and flows are the Login App's |
+
+**The two are not the same size, and that is the point.** Verifying is a
+question answered in one place, now. Issuing is a credential that outlives the
+answer and has to be believed by people who cannot ask.
+
+#### What replaced the wrong version of this
+
+- **`auth.Issuer` was deleted from payday**, and `payday/auth/authsession` is
+  what stands in its place: an opaque key from `crypto/rand`, a row in a store
+  the serving app owns, no claims and no signing key. Its own package comment
+  makes the same distinction this decision does.
+- **Cross-app single sign-on is Hydra's**, and roster does not shrink for it —
+  see "Where roster sits when Hydra is in front", above. Hydra has no user
+  database at all, so the `subject` it writes into every token is somebody
+  else's answer. That somebody is roster, and D1 is why.
+
+#### The name is a check on the design
+
+`roster` means a list of people and what each is assigned to. Everything above
+that is inside the line — identities, addresses, memberships, roles, and the
+checks that say somebody is who they claim — is still that list. The one change
+that would make the name wrong is roster signing something for the world, and
+that is the same change the rule already refuses. When the name stops fitting,
+look at the design before looking at the name.
+
+### D20 · A second factor is roster's; the flow over it is not
+
+D19 applied to 2FA, and it splits in the same place everything else does.
+
+**roster's half.** The factor is a `Credential` row — D5 said "the password
+hash, and later a TOTP secret" from the beginning — and roster verifies it, for
+D14's reason: a secret that leaves the store puts the comparison, the attempt
+counter and the lockout in two places that will disagree. Replay is the same
+argument again: a TOTP step that has been used must not work twice, and the only
+place that can be recorded is the row.
+
+WebAuthn is the interesting case because a public key **is not a secret**, so
+D14's "it must not travel" does not apply to it. What still keeps verification
+here is the **signature counter**: it is state that has to move forward exactly
+once per assertion, and state belongs to whoever holds the row. So roster
+verifies, taking the relying-party id, origin and challenge as arguments — they
+are the browser-facing half and roster does not know them.
+
+**Not roster's.** Whether this deployment requires a second factor, whether this
+person is exempt, whether this browser is remembered, what order the prompts
+come in, and what `amr`/`acr` the Login App reports to Hydra. Those are the
+flow, and the flow is where the browser is.
+
+The seam already exists on both sides. `authsession.Session.Expires` may be set
+by a `Verify`, and payday's comment says why: *"which is how an app gives a
+short session to somebody who has not finished a second factor."* And roster can
+answer **what factors somebody has** without deciding anything — that is a fact
+about a person, which is the thing this app is.
+
+**One thing this entry got wrong** by saying "the flow is where the browser is"
+and stopping there: *which browser* is mid-flow is the app's, but *what has been
+proven so far about this person* is not. D21 is the correction, and it matters
+because the difference is invisible until somebody tries to write the second
+form.
+
+### D21 · What was proven is roster's; which browser proved it is not
+
+D20 drew this line one notch too coarse. Both halves of a two-step sign-in look
+like "flow state" and only one of them is.
+
+The question that found it: **an app that shows a second form has to remember
+who passed the first one.** An app developer wants to know who somebody is and
+does not want to be in the sign-in business at all, so making them carry that is
+handing them the one part of the process they were trying to avoid.
+
+#### The split
+
+| | whose | why |
+| --- | --- | --- |
+| which browser is in the middle of a sign-in | the **app's** cookie | it is bound to a browser, and the browser is the app's |
+| holder H satisfied `password` at T, and has `totp` available | **roster's** row | it is bound to an *attempt*, and roster is the only thing that can say either half |
+
+The second one never made roster see a browser, which is what the earlier
+version assumed. The app carries an opaque string in a request body; no cookie
+is set by roster, nothing about CSRF changes, and the caller list is still
+machines.
+
+#### It passes D19's own test
+
+**Who checks it?** Only roster: the continuation is opaque, resolves nowhere
+else, and revoking it is a delete. That is the same category as a magic-link
+nonce, and it is inside the line for the same reason.
+
+#### Three answers and three refusals
+
+The line inside the answer, since "tell the app about the flow" is a request
+that keeps arriving one field at a time:
+
+> roster answers **what has been satisfied, what this person has, and what it
+> is waiting for.** It does not answer **how many are needed, which one to
+> offer, or what to call them.**
+
+The first three are facts — about an attempt, about a person, about a challenge
+roster itself minted. The last three are policy and presentation, and each has
+an owner that is not roster.
+
+| asked for | answered by | |
+| --- | --- | --- |
+| how far along am I | `satisfied` | its length is "how many so far" |
+| what may they use next | `available` | the credentials this person has registered |
+| what is outstanding | `pending` | a challenge, where the method has one |
+| how many steps in total | **nothing here** | "two is enough" is sufficiency, and D20 leaves that to the caller |
+| which to put on the screen | **nothing here** | a product rule — "TOTP is not enough for an admin" is the app's to hold |
+| what the step is called | **nothing here** | the screen, which is where D21 stops |
+
+Note what falls out: **"step 2 of 2" is not answerable and does not need to
+be.** `len(satisfied)` and whether `pending` is set draw the same screen without
+roster claiming a total it does not own.
+
+#### The shape
+
+    Vouch.Begin(who, method, secret)
+      → {ok, holder, tenant,
+         satisfied:    [password],
+         available:    [totp, webauthn],
+         pending:      {method: webauthn, challenge: "…"},
+         continuation: "vc_…"}
+
+    Vouch.Continue(continuation, method, secret)
+      → the same shape, with `satisfied` grown
+
+`pending` is there because a challenge-response factor needs one, and the
+challenge has to be minted and spent by whoever verifies the assertion — which
+D20 already said is roster, on account of the signature counter. It is a nonce
+and takes a nonce's rules: single-use, short-lived, bound to this continuation.
+A factor with no challenge, TOTP being the obvious one, leaves it empty.
+
+What the app writes is two forms and one string passed back. It never holds an
+identity that is half proven, and it never learns anything about the process.
+
+**D20 survives intact**, and that is the check that this is the right shape:
+roster answers what was **satisfied** and what **exists**, both of which are
+facts about a person. Whether two were required is still the caller's policy,
+and roster does not read it.
+
+#### Five things it has to do, and each is a way to get it wrong
+
+- **`available` is answered only once something is satisfied.** Otherwise it is
+  an account-enumeration oracle: anybody could ask which factors a stranger has
+  registered, and D14 spent real effort making every refusal cost the same so
+  that nothing answers "does this account exist". The shape enforces it rather
+  than a rule doing so — a continuation exists only after a factor has passed,
+  so putting `available` on the responses that carry one leaves nowhere to ask
+  it early.
+- **Short-lived and single-use.** Minutes. A continuation is a bearer credential
+  for a half-proven identity, and the only thing that makes that acceptable is
+  that it is barely alive.
+- **Bound to the caller that was issued it.** Resolvable by that key and no
+  other. Without this, one product app can pick up an authentication another one
+  started.
+- **The lockout counter spans the steps.** D14's accounting has to be one count
+  across `Begin` and `Continue`, or the second factor is an unmetered guessing
+  surface reached by passing the first.
+- **`Vouch` becomes a small state machine.** It is a pure question today. This
+  adds a table and an expiry sweep, and that is a real cost to a service whose
+  simplicity was a feature.
+
+The stateless version — sign the continuation so no row is needed — is the thing
+D19 refuses. The row is the answer.
+
+#### Where this stops, and the precedent for stopping there
+
+Ory Kratos does exactly this: a self-service flow is a server-side object with
+an id, and the UI carries the id. That much is proven.
+
+**Kratos' flow also carries the UI — which fields to draw, which messages to
+show — and that is the part not to copy.** It is why using Kratos means the
+shape of your form belongs to Kratos. So:
+
+> **The flow's identity state is roster's. The flow's screen is not.**
+
+roster answers "`password` is satisfied, `totp` is available". What that looks
+like, what it is called and what colour it is are the app's — which is the whole
+point of roster not being the login app, and it would be given away by the one
+extra field that seemed helpful.
+
+### D22 · The login flow ships as a package, and never as a service
+
+The wish behind this is right: somebody building an app wants to put up their
+brand and write their business logic, not to learn what a second factor costs.
+Handing them a store and a list of RPCs leaves the hardest, most security-shaped
+part of the job on their desk.
+
+The answer is to write that part **and ship it as something they import.** The
+answer is not to serve it.
+
+#### Why the package does not move the line
+
+D19 is about what roster **the service** issues. A library running in the app's
+own process issues nothing on roster's behalf — it is the same people writing
+the other side of the same seam. `examples/sso` is already this one size down,
+and the exported `authsession.Verify` in the "after it says yes" section is its
+first proper step.
+
+D21 is what makes the package thin enough to be worth having. The attempt state
+— what has been proven about this person — is roster's, so the package does
+not carry it. What the package carries is the browser binding and the screens,
+which is the half that has to be where the browser is.
+
+#### Why the service does
+
+A hosted login page takes on a browser, a cookie domain, CSRF, template
+rendering and an XSS surface. That is the cost, and it is not what decides it.
+What decides it is already written down in LOGIN.md:
+
+> Which tenant it is. That is what a tenant *is*: the same service under a
+> different operator's own domain.
+
+A multi-tenant front door lives on the **operator's** domain. roster serving it
+means roster serving many domains, with their certificates and their branding,
+which is a hosting product and not a store. And F7's way out — read the tenant
+from the hostname — assumes the hostname belongs to the front door.
+
+Then everything leaning on *roster never sees a browser* has to be re-argued:
+D13, D14 and D19 all rest on it.
+
+One thing genuinely would improve. D14 records that roster cannot count failures
+by origin, *because it only ever sees the Login App*. A front door can. But so
+can a package running in the front door, so this buys nothing that costs a
+boundary.
+
+#### What it is
+
+- **A Go package** — an `authsession.Verify` and the step machine over
+  `Vouch.Begin` / `Continue`, mounted on the app's mux. The app's domain, the
+  app's cookie, the app's CSRF.
+- **A TS package** — headless components and a default theme. Components rather
+  than a hosted page, because that is what makes the brand actually the app's,
+  which was the whole motivation.
+
+#### The failure mode to watch
+
+It will be tempting to add "one endpoint" to roster to make the package simpler.
+D21 draws where that is allowed: the **attempt** may live here, the **browser**
+may not, and the screen never. A field that describes what to render is the one
+to refuse, however small it looks.
+
+#### It cannot be called roster
+
+A login flow is not a list of people. Needing a second name is the signal that
+this is a second product in one repository rather than roster growing — which is
+the honest description and the one that keeps each of them arguable on its own.
+
+The shape is settled elsewhere too: Ory ships Kratos as the API and its UI
+separately, and Clerk sells drop-in components. Flow as a library, store as a
+service.
+
+### D23 · A product app calls roster as one of its users
+
+There is no way for custody to ask roster a question **as** somebody it has
+signed in. Nothing in the tree does it; the gap was found by trying to design a
+screen that needs it.
+
+Every screen that shows a person their own record needs it — my identities, my
+addresses, sign me out everywhere — and so does an operator listing the people
+in their tenant. So this is the prerequisite for all of that rather than one
+feature among them.
+
+#### Why the two obvious ways are wrong
+
+- **custody's own `rk_` key.** It belongs to the deployment and sees every
+  tenant there is (D16). Drawing one page with the widest credential in the
+  system is a habit that gets copied.
+- **custody filtering in app code.** D17 already named this and named the cost:
+  *"that is the kind of thing that leaks by being forgotten."* On a self-service
+  screen it is worse than a leak of rows — one bug in one app exposes
+  everybody's identities, and roster answered every one of those reads
+  correctly.
+
+#### The shape
+
+`VouchService.Verify` has already proven the person to roster's satisfaction, so
+the answer rides back with the yes: a short-lived opaque **delegation token**
+beside `{ok, holder, tenant}`. custody calls with it, and roster applies that
+person's wall, bindings and sites — which is D16's `rt_` rule, on a token that
+lives for minutes instead of until it is revoked.
+
+It is inside D19 for the reason the continuation is: opaque, resolvable only
+here, and revoking it is a delete. Practically it is *an `rt_` key with a short
+life, minted for the person an app just authenticated.*
+
+Conditions, and they are the same family as D21's:
+
+- **Short-lived**, and refreshed by signing in rather than by extending.
+- **Bound to the caller it was issued to.** One product app must not be able to
+  use another's.
+- **Never wider than the person.** Its narrowing is theirs; a method they cannot
+  call is refused through it too, exactly as with an `rt_` key.
+- **The trail says the person, not the token** — D16's note about what an `rt_`
+  costs applies here unchanged, and it is worth knowing before it is used for
+  writes.
+
+#### What is not answered
+
+A deployment with Hydra in front does not call `Vouch` at all, so there is
+nothing for the token to ride back on. Exchanging an `id_token` for one is the
+obvious route and it is not designed. Anything built on this should assume the
+`Vouch` case first and leave the seam.
+
+### D24 · A reference app, and it is to roster what roster is to payday
+
+D22 says the login flow ships as a package. A package with no consumer is
+guesswork about what a consumer needs, so the consumer gets written first and in
+this repository.
+
+`examples/sso` is already the seed: a relying party that signs somebody in with
+Google, Entra or GitHub and finds out who they are here.
+
+#### What it exists to find
+
+Not to demonstrate — to **specify**. Four things on the current list cannot be
+designed without an app that wants them:
+
+- **The delegation token** (D23). Its lifetime, its scope and where it is
+  refreshed are decided by a page that uses it, not by reasoning.
+- **A tenant from a hostname** (1, in the list below). Untestable without a
+  front door. It is theory until something is actually served at a customer's
+  name.
+- **A read that answers which methods somebody has** (7 below). D13 leaves
+  nothing that can, and the screen is what says which fields it needs.
+- **Refusing to remove a last login method** (8 below). The rule only becomes
+  necessary once there is a button that would.
+
+#### The rule that keeps it honest
+
+The same one, one layer down:
+
+> **When roster is in the way, stop and fix roster. Do not work around it in the
+> reference app.**
+
+Without it the app quietly fills in whatever roster lacks, which is precisely
+what this project forbids itself against payday, and the finding is lost. With
+it, the app is an instrument.
+
+#### Where it stops
+
+**Running it as a service for other people's customers is a different
+decision.** Forked or embedded, it is a reference. Hosted by us on our domain
+for a customer's users, it is "roster serves browsers" arriving under another
+name — and D22's argument applies to it in full.
+
+#### The order, and why components are last
+
+1. the delegation token (D23) — everything else is built wrong without it
+2. the app's spine: sign-in and a session, grown from `examples/sso`
+3. a tenant from a hostname, now that something can prove it
+4. self-service: my record, add and remove an SSO method, sign out everywhere
+5. the operator screen: who is in my tenant, and how they sign in
+6. extract the components
+
+Six is last because extracting first means guessing what to extract. What 4 and
+5 turn out to need is the specification, and it is not knowable in advance.
+
+Two notes on 4, since it is the screen that splits: **adding** an SSO method is
+half a login flow — the OIDC round trip that produces `(provider, subject)` is
+the package's, and the linking rules that accept or refuse it are D9's, here.
+**Removing** the last one locks somebody out of their own account, which is an
+invariant no deployment would want configured differently — so it belongs in a
+layer, the way D17 put the team rules there.
+
 ### D1 · `sub` is `Holder.id`
 
 roster owns the identifier the whole system knows a person by. Hydra puts it in
@@ -105,9 +556,15 @@ table.
 One person, many external identities: Entra at work and GitHub for the same
 human is the stated case. A column is one-to-one and cannot hold it.
 
-The unique key is the pair `(provider, subject)`, and `subject` is whatever that
-provider calls immutable — a numeric ID for GitHub, `objectGUID`/`entryUUID`
-for LDAP. Never a username and never an email.
+`subject` is whatever that provider calls immutable — a numeric ID for GitHub,
+`objectGUID`/`entryUUID` for LDAP. Never a username and never an email.
+
+The unique key is `(tenant, provider, subject)`. It was written here as the pair
+alone, and the tenant was added to it deliberately: without it one account at a
+provider would belong to exactly one tenant across the whole deployment, and the
+second operator a person signed up to would be told the identity was taken, by
+somebody they cannot see. LOGIN.md, "A person who uses two operators' services",
+is the long form.
 
 ### D3 · Email is an entity, and is not unique
 
@@ -374,9 +831,10 @@ And the cost is wrong. argon2id at 19 MiB is right for a password, where the
 attack is a dictionary. A 256-bit random key has no dictionary, and every API
 call from every service would pay 19 MiB to prove it. The kind selects the cost.
 
-**The actor on the frame is the key**, not the Holder it hangs off and not
-`pdid.Nil`. The trail then names which key asked, revoking is a delete, and no
-person-row is involved -- which is what `frame.Everything` warns about: *a
+**The actor on the frame is the key** -- for a control-plane key; see below,
+because the other plane answers differently -- not the Holder it hangs off and
+not `pdid.Nil`. The trail then names which key asked, revoking is a delete, and
+no person-row is involved -- which is what `frame.Everything` warns about: *a
 privilege granted by being a particular row cannot be revoked, cannot be
 narrowed, and belongs to whoever finds the row.* A key row is the opposite case:
 it exists to be revoked.
@@ -384,6 +842,37 @@ it exists to be revoked.
 `Id.Domain()` is how the resolver tells the two apart before it reads anything.
 An identifier says what kind of thing it names, so a caller that is a key and a
 caller that is a person are distinguishable without a lookup.
+
+#### Which actor, and it is not the same answer in both planes
+
+The paragraph above says "the actor is the key" without qualifying it, and that
+is true of a **control-plane** key and false of a **data-plane** one. They are
+two cases with two right answers, and stating one of them as the rule is how the
+other comes to look like a bug.
+
+| | `rk_` · the deployment's | `rt_` · a person's |
+| --- | --- | --- |
+| hangs off | a control-plane `Holder`, which is a service | a data-plane `Holder`, which is a person |
+| the actor is | the **key** | the **holder** |
+| tenant | none; it is every tenant there is | the person's, with the wall, the bindings and the sites applying exactly as when they call |
+| who asks about it | nobody — it is presented *to* roster | a product app, over `TokenService/Introspect` |
+
+The asymmetry is the point rather than an inconsistency. An `rk_` caller is not
+a person, so resolving it to one would invent a `sub`; the trail should say
+which key asked, and revoking is a delete. An `rt_` caller **is** a person
+acting through a key, and the whole guarantee is that it is never wider than
+they are — so it resolves to them, and its `methods` only narrow that further.
+
+Each answer costs the other's benefit, and the `rt_` side of that is worth
+knowing before enabling it: **its writes are recorded as the person's**, so
+`Audit` says who and not which of their keys. Revoking still works, since the
+row is what the token resolves through.
+
+**A product app sees the same pair either way.** `Introspect` answers with the
+holder and the tenant, which is what `VouchService.Verify` answers with, so an
+app that already resolves a signed-in person resolves a token-bearing one with
+the same code. What it must not do is give it a session: there is no browser
+here, and nothing to keep.
 
 ### D13 · A credential never travels, and it is registration that says so
 
@@ -686,7 +1175,96 @@ D15 relies on.
 | 1c · memberships, Credential | **done**, 27 tests, both databases |
 | 2 · payday fixes | F1, F2, F4 done · F3, F6, F7 open · F5 written down |
 | 3 · app layer | linking rules, credential verification, roles and the second axis, `MeService`, escalation prevention, the console · **done** |
-| 4 · keys, sync, console | **keys done** · sync channel, console — |
+| 4 · keys, sync, console | **keys done** (both planes; no wire surface to mint an `rt_`) · sync channel, console — |
+| 5 · the line, written down | **done** — D19, D20, and POSITION.md rewritten around them |
+
+### What is still roster's to build for a sign-in
+
+D19 through D24 say where the line is. This is what is on the near side of it
+and not written yet, in the order the first one unblocks the rest. None of these
+is decided; each takes a `D` when it is.
+
+1. **A tenant from a hostname.** A multi-tenant app served at
+   `acme.example.com` has to turn that into a tenant, and roster has no way to
+   answer. It is an overlay on `Tenant` in `proto/ext/payday/`, since that
+   entity is payday's.
+
+   **This closes F7.** With the tenant known from the host, an address resolves
+   to one person again, which is what "sign in with your email" and a magic link
+   both need. Half of this list is waiting on it.
+
+2. **Home-realm discovery, by domain.** "Addresses at `@acme.com` go to Entra."
+   Identifier-first sign-in is the thing every multi-tenant front door rewrites,
+   and it is a fact about a tenant's domains.
+
+   **It must hang off the domain and not off a person.** Answered per person it
+   is the enumeration oracle D21 spent a condition avoiding; answered per
+   domain it says nothing about any individual.
+
+3. **Recovery.** The same machine as a magic link — a single-use opaque nonce
+   roster mints and roster checks, delivered by somebody else. Inside the line
+   for the same reason, and it is where account takeover lives, so the rules
+   belong beside the row rather than in each app.
+
+4. **The sync channel, as an invalidation signal.** `Outbox`/`Drain` has been
+   Phase 4 as "the sync channel" from the start. Its first real subject is
+   *this person's credentials changed, stop trusting what you were told* — see
+   6 below, which is the same feature.
+
+   **The app dials roster and holds the stream**, rather than roster calling
+   out. roster already speaks server streaming, and the direction is what keeps
+   this small: no subscription URLs to manage, no outbound requests from roster
+   to wherever an app said, and a reconnect in place of a retry-and-dead-letter
+   machine. What is wanted is an event stream rather than an entity `Watch`,
+   since a `Holder` changes for reasons nobody needs to hear about.
+
+5. **A breached-password check.** roster is the only thing that sees the
+   plaintext, so it is the only thing that can. Length and complexity rules are
+   policy and stay with the caller; "this one is in a corpus of leaks" is a
+   fact.
+
+6. **"Sign out everywhere", as a fact rather than a list.** A registry of every
+   app's live sessions is a copy of state whose truth is elsewhere: it grows
+   ghosts when an app dies, disagrees with the app's own store, and puts other
+   people's browser metadata in roster.
+
+   One timestamp on `Holder` does the whole job. *Everything issued before this
+   moment is invalid* — signing out everywhere is one write, and an app compares
+   it when it resolves a session. 3 requires it anyway, since a password reset
+   that leaves old sessions alive is not a reset.
+
+   **The timestamp is the truth and a delivered event is only a hint.** Anything
+   pushed can be missed — a disconnect, a restart, an app that was down — and if
+   the push were the mechanism, one lost message would be a session that never
+   dies, with nothing anywhere saying so. Because the value travels and is
+   monotonic, a duplicate is a no-op and an old one cannot un-revoke; what a
+   missed message costs is latency rather than correctness.
+
+   **roster answers "invalid since when". The app answers "what is still
+   alive".** Each says only what it holds the truth of. A list with device names
+   is the app's, per app; across apps it is what OIDC back-channel logout is
+   for, and that is Hydra again.
+
+7. **A read that answers which methods somebody has**, without the verifier.
+   `CredentialService` is unregistered because its `Get` answers with the
+   secret (D13), so nothing today can say "this person has a password and a
+   TOTP" — which both a self-service screen and an operator's list need.
+   `MeService` already does it for the caller; this is the same answer about
+   somebody else, narrowed by the wall and by D23's token.
+
+8. **Refusing to remove a last login method.** Removing it locks somebody out of
+   their own account, and no deployment would want that configured differently
+   — so it is a layer, the way D17 put the built-in team rules in one rather
+   than in a policy.
+
+9. **Per-tenant provider connections**, and this one has a boundary question
+   rather than a schema question. "acme uses Entra, beta uses Google" is a fact
+   about a tenant and every app would otherwise hold a stale copy — but a
+   connection carries a client secret, and handing one back would make it the
+   first secret roster returns rather than checks. D13 is the entry it argues
+   with. The likely answer is that the connection is roster's and the secret is
+   the deployment's, with a reference here, but that is a decision and not an
+   assumption.
 
 ### Open questions for whoever reads this next
 
@@ -712,6 +1290,24 @@ D15 relies on.
   before deciding what to draw.
 - **Credential verification is done** — `server/vouch`, D13 and D14. What is
   *not* done is what happens after it says yes.
+- **Nothing mints an `rt_` key over the wire.** A data-plane holder's key
+  resolves to that holder and is narrowed by their own permissions, and
+  `TokenService/Introspect` already serves it to product apps — so the half that
+  answers is done and the half that issues is a shell (`cmd/key.go`,
+  OPERATING.md). What it needs is the `VouchService` trick: a narrow service
+  that takes a secret in, answers with the plaintext exactly once, and can never
+  read one back.
+- **Two-step verification is decided and not written.** D20 and D21 say what it
+  is — a `Credential` row, a `continuation` handle, one lockout count across
+  both steps — and nothing implements it. D21's four conditions are the ones
+  that are cheap to leave out and expensive to find.
+- **Magic link is inside the line and is not written.** D19 admits it — an
+  opaque single-use nonce roster mints and checks, with delivery somewhere else
+  — but F7 blocks the usual front door for it, since most links are asked for by
+  typing an address.
+- **The console's sessions are in `MemStore`** (`cmd/serve.go`), which is right
+  for one replica and silently wrong for two. See the "after it says yes"
+  section below; this is a table.
 
 ### What "after it says yes" means, since it came up
 
@@ -729,12 +1325,39 @@ Which makes the shapes:
 So the boundary is not id/pw versus OIDC — it is **one relying party versus
 many**. An air-gapped single-app deployment needs no Hydra and no token.
 
-The half that is missing is payday's, and payday already left the seam: `web.New`
-answers a mux the app mounts on, and `cmd.serveHttp` carries a commented
-`h.Handle("/login", …)` saying exactly this. What is not written is an
-`auth/authsession` beside `authoidc` — a handler that mints the cookie and an
-`auth.Handler` that reads it back into an `auth.Identity`. It does not
-re-introduce the deleted `auth.Issuer`: that minted tokens **other parties
-verify**, which is an IdP's job, and a session cookie is an opaque handle
-meaningful only to the server that minted it. The store it needs carries the
-`broker: memory` trap exactly — right for one replica, silently wrong for two.
+**That half is written now**, and it is payday's: `auth/authsession`, beside
+`authoidc`. It is the shape this entry predicted — a handler that mints the
+cookie and an `auth.Handler` that reads it back into an `auth.Identity` — and it
+did not re-introduce the deleted `auth.Issuer`, for the reason given here and
+restated as D19.
+
+What it actually is, since "session" is a word people fill in differently:
+
+- the cookie value is **32 bytes from `crypto/rand`**, base64url. No claims, no
+  signature, no expiry a client can read
+- the `Session` row — actor, tenant, `frame.Grant`, absolute expiry, idle — is
+  in a `Store` the serving app owns. **Revoking is a delete**, and it is
+  immediate
+- two clocks, and payday argues for both: an idle timeout under an absolute cap
+- the cookie is `__Host-` prefixed by default, so a deployment that gets the
+  attributes wrong finds out at the browser rather than later
+- `Verify` is the one thing the app supplies, and payday's comment names this
+  deployment: *"In a deployment with roster behind it this is one call to
+  `VouchService.Verify` and nothing else."*
+
+**Which means an opaque session key is worth nothing to a second app**, by
+construction. That is not a shortcoming to fix here; it is the reason the table
+above ends in Hydra, and D19 is why roster does not go there instead.
+
+Two things this leaves:
+
+- **`MemStore` is the only store payday ships**, and its own comment says it is
+  right for one replica and *silently wrong* for two. `cmd/serve.go` uses it for
+  the console. A table with an index on the key is what replaces it, and roster
+  is an app that makes tables.
+- **A product app should not have to write a login endpoint.** The seam is a
+  `Verify`, and roster is already meant to be imported (D10). An exported
+  `authsession.Verify` backed by `VouchService` would make custody's whole
+  sign-in one line, with no new service and no new network surface. That is the
+  right answer to "does every app really have to care about cookies" — a
+  package, not an endpoint.

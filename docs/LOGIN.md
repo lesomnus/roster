@@ -90,6 +90,32 @@ does. Whether that is worth the extra moving parts is a deployment's decision,
 and both shapes work: `custody/cmd/config.go` takes either a `roster` or an
 `auth.issuer`.
 
+## What the cookie actually is
+
+Worth being exact, because "session" is a word people fill in differently and
+the mechanism decides what is possible afterwards.
+
+The value in the cookie is **32 bytes from `crypto/rand`**, base64url. It is not
+a token, not a hash of one, and not readable by anybody: it carries no claims,
+no signature and no expiry a client can see. It is a **handle**.
+
+What it handles is a row in custody's own store — `payday/auth/authsession` —
+holding the actor, the tenant, a `frame.Grant`, an absolute expiry and an idle
+one. On every later request custody looks the row up by that key. Nothing is
+compared and nothing is decoded; a key naming no row is simply not a session.
+
+Two consequences follow, and both are the point:
+
+- **Signing somebody out is a delete**, and it is immediate everywhere that
+  cookie was used. There is nothing to wait out.
+- **The cookie is worthless to any other app.** It names a row in custody, and
+  the next product has no such row. That is not a gap to patch — it is why the
+  next section ends where it does.
+
+Nothing about the person is copied into the row, so a session cannot be a stale
+copy of somebody: the name, the teams and the permissions are read when there is
+a screen to draw.
+
 ## Do I need Hydra?
 
 **One app: no.** The picture above is complete, and nothing is signed.
@@ -101,6 +127,83 @@ writing Hydra.
 
 So the question is never "password or OIDC". It is **one relying party or
 many**. An air-gapped single app needs neither.
+
+### What changes when Hydra is in front
+
+Less than it looks like, and **roster does not get smaller** — Hydra has no user
+database and does not authenticate anybody. It hands a `login_challenge` to a
+Login App and waits to be told a `subject`, and choosing that string is the
+problem roster exists for.
+
+```
+  browser        product app          Hydra            Login App        roster
+     │                │                 │                  │              │
+     ├── /login ─────>│── 302 ─────────>│                  │              │
+     │                │                 ├─ challenge ─────>│              │
+     │                │                 │                  │  Entra / GitHub
+     │                │                 │                  ├─ identity ──>│
+     │                │                 │                  │<─ Holder.id ─┤
+     │                │                 │<─ accept{sub} ───┤              │
+     │                │<── code ────────┤                  │              │
+     │                ├─ exchange ─────>│                  │              │
+     │                │<─ id_token ─────┤                  │              │
+     │  Set-Cookie ───┤ (the same opaque cookie as above)  │              │
+```
+
+Line by line, against the no-Hydra picture:
+
+| | without Hydra | with Hydra |
+| --- | --- | --- |
+| who asks roster | the product app | the **Login App** |
+| what it asks | `VouchService.Verify` | `Identity` → `Holder.id`, and `Vouch` only if there is a password |
+| what the product app gets back | `{ok, holder, tenant}` | an `id_token` carrying the same `sub` |
+| the cookie | custody's, opaque | **unchanged** — custody's, opaque |
+| a second product | has to sign in again | is already signed in, at Hydra |
+
+The token is used **once**, at the callback, to find out who this is. It is not
+stored, not compared on later requests and not given to the browser — there is
+nowhere safe in a browser to keep one, which is the argument `authsession` opens
+with. After that, the picture is the one at the top of this document.
+
+So the app-side code barely moves. `authsession` asks for a `Verify` either way;
+what changes is what fills it — a call to roster, or the completion of an OIDC
+callback.
+
+One thing to add on the day you do this: **back-channel logout.** A session
+ended at Hydra does not end custody's row by itself, and the OIDC logout
+endpoints are how that propagates. Handling it is one `store.Del`.
+
+## A second factor, and whose it is
+
+roster holds it and checks it; the Login App decides when to ask.
+
+The secret is a `Credential` row beside the password, verified here for the
+reason the password is — a secret that leaves the store puts the comparison, the
+counter and the lockout in two places. Replay is the same: a TOTP step that has
+been spent must not work twice, and the row is where that is recorded.
+
+What roster does not decide is whether one was required, whether this browser is
+remembered, or what order the prompts come in. That is the flow, and the flow is
+wherever the browser is — the Login App with Hydra in front, the product app
+without.
+
+payday already left the seam for the half-signed-in state: a `Verify` may set
+`Session.Expires` itself, which is how an app gives a short session to somebody
+who has not finished a second factor.
+
+What the app does **not** have to keep is who passed the first step. `Vouch`
+answers with an opaque `continuation` — short-lived, single-use, resolvable only
+by the caller it was issued to — and the app hands it back with the second
+secret. So the two forms are the app's and the fact that both were the same
+person is roster's, which is the only half an app developer wanted.
+
+Beside it come the three things needed to draw the second form: what is
+`satisfied` so far, what is `available` to this person, and what is `pending` —
+a challenge, where the method has one. What does **not** come is how many steps
+there are in total, which of the available methods to offer, or what to call
+them. Those are the app's, and D21 says why.
+
+See PLAN.md D20 and D21.
 
 ## A person who uses two operators' services
 
@@ -151,33 +254,37 @@ with one history and one set of permissions. That is the convenience it is for,
 and putting the tenant in the key does not touch it: two Holders of one tenant
 claiming the same subject at the same provider is still refused.
 
-## This is not deployable yet
+## What a calling machine is, and where it lives
 
-custody names itself to roster with `auth.Plain`, which is believed. Anybody who
-can reach roster can claim to be custody and then guess passwords at every
-tenant in the organisation.
+This section used to say the question was open. It is not any more, and the
+answer is D15's: **a machine is a `Holder` in the control plane.**
 
-Replacing it is not a longer string. roster answers nothing anonymously, so
-custody needs a **row** here — and what that row is has not been decided:
+The question was real. A caller has to be a row, because roster answers nothing
+anonymously — and every way of putting custody in the *data plane* was wrong:
 
-- `Holder` is a person. custody is not one, and D1 makes `Holder.id` the `sub`
-  of every token, so a service in that table has a `sub`.
+- `Holder` is a person, and D1 makes `Holder.id` the `sub` of every token. A
+  service in that table has a `sub`.
 - A `Holder` belongs to **one tenant** and is walled by it. custody acts across
   every tenant it has users in.
-- `grpcx.Limit` counts per tenant, off the frame. All of custody's verifies
-  would count against whichever tenant held it.
-- What a service may call is now answerable: `cmd.Policy` is installed
-  (`cmd/serve.go`), a `Role` names methods and a `Binding` grants it, and a
-  holder with no binding may call nothing. `examples/sso` wires exactly that for
-  its login app. What is still undecided is the row above -- what a **machine**
-  is in this schema.
+- `grpcx.Limit` counts per tenant, off the frame, so all of custody's verifies
+  would count against whichever tenant happened to hold it.
 
-Whether the credential arrives as a certificate or an API key is the small half
-of that question, and `auth.Seq` makes it swappable. The large half is what a
-machine **is** in a schema whose central entity is a person.
+Every one of those is an argument against the *table*, not against the *schema*.
+The control plane is the same schema on its own database with its own single
+tenant, so a `Holder` there is a caller rather than a person, its `rk_` key
+holds no tenant and sees every tenant there is, and none of the three objections
+survives. `roster key add` mints it; `OPERATING.md` is the operator's half.
 
-That is the next piece of work, and the list above is what it has to answer —
-which is why the wiring was built first.
+What is left is deployment wiring rather than a decision: a deployment that
+names no control plane still serves `auth.Plain`, which believes whatever a
+caller writes. That is right for tests and a sandbox, and it is loud in the log
+for the reason payday's other easy defaults are — an app nobody can start until
+a control plane exists is an app nobody runs. Anything reachable by more than
+the machine it runs on needs the control plane configured and TLS under it.
+
+`examples/sso` is the whole of it working: a login app that signs somebody in
+with Google, Entra or GitHub, holds its own key, and finds out here who they
+are.
 
 ## See also
 

@@ -9,6 +9,16 @@ It is one layer of an identity system and not the whole of one: the protocol is
 [Ory Hydra](https://www.ory.sh/hydra/)'s and the login flow is a Login App's.
 roster owns the records they both ask about, and owns `sub`.
 
+The line, so that it is on the first screen:
+
+> **roster stores facts and verifies claims about them. It never issues anything
+> a third party verifies.**
+
+So it checks a password and will check a second factor, and it does not run a
+login flow, mint a session for somebody else's browser, or sign a token another
+system verifies alone. [docs/POSITION.md](docs/POSITION.md) is that applied;
+[PLAN.md](PLAN.md) D19 is why it is worded as a test rather than as a list.
+
 | | |
 | --- | --- |
 | [docs/POSITION.md](docs/POSITION.md) | what roster is, and **where it stops** |
@@ -27,6 +37,9 @@ roster owns the records they both ask about, and owns `sub`.
   they do not hold.
 - **`/me`** -- who the caller is and every RPC they may call, in one round trip,
   from the same union the server enforces.
+- **Answers about a token it issued.** `TokenService/Introspect`, so a product
+  app handed an `rt_` key learns which person it stands for and what it was
+  narrowed to. Opaque on purpose: revoking is a delete, and it works now.
 
 It is also the second app [payday](https://github.com/lesomnus/payday) is tried
 against, and the more demanding one.

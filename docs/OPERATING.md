@@ -144,6 +144,23 @@ but the **cookie** cannot work over a message port, and the server behind it is
 `auth.Plain`, so nothing after the sign-in is checking a session. That is a
 sandbox being a sandbox; see `wasm/main.go`.
 
+### Where the console's sessions live
+
+Signing in to the console mints an opaque cookie — 32 random bytes naming a row,
+so signing out is a delete that takes effect at once. The row is held by
+`payday/auth/authsession`, and today that is `MemStore`: **in this process.**
+
+Which is right for one replica and silently wrong for two. A browser whose
+cookie was minted on one is anonymous on the other, intermittently, in
+proportion to how the load balancer feels, with nothing in any log saying why —
+and a single-replica deployment works perfectly, so it arrives on the day
+somebody scales up and looks like anything but this. It is also lost on restart:
+a deploy signs everybody out.
+
+So: **run one replica of the control plane's console, or put the sessions in a
+table.** There is no third option today, and PLAN.md's "after it says yes"
+section records that the table is the intended fix.
+
 
 An **operator** signs in: a holder of the control plane, which is where the
 people who run this deployment live. `roster init` makes the first one and
@@ -435,3 +452,16 @@ Nothing written down is plaintext, and it warns once.
 - **`Binding` cannot be re-pointed.** Its edges are immutable, so changing who
   holds what is a delete and an add. That is the safe direction and it is worth
   knowing before writing a console screen that looks like an edit.
+- **No second factor.** It is roster's to hold and to check when it exists — see
+  PLAN.md D20 and D21 — and today there is only a password. Deciding *when* to
+  demand one is not roster's either way; that belongs wherever the browser is.
+  What will be roster's alongside it is the `continuation`: an opaque handle
+  carrying "this person satisfied the first factor" between the two calls, so an
+  app serving two forms holds nothing but a string.
+- **No magic link.** Inside the line and unwritten, and the thing in the way is
+  F7: an address does not resolve to one person by design, so the usual front
+  door for a link has nothing to look anybody up with.
+- **The console's sessions are in memory.** See above. One replica, or a table.
+- **Nothing here signs a token.** If several products need one sign-in, that is
+  Hydra in front and roster answering it — LOGIN.md, "What changes when Hydra is
+  in front". Do not reach for a JWT minted here; PLAN.md D19 is why.

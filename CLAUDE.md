@@ -33,6 +33,21 @@ runs the flow; roster is what they ask. So its callers are machines -- the Login
 App, admin consoles -- and its own authentication is mTLS or an API key, never
 `authoidc`. See `PLAN.md`.
 
+### The other rule
+
+> **roster stores facts and verifies claims about them. It never issues anything
+> a third party verifies.**
+
+Apply it by asking **who checks this?** Only roster can -- a password, a magic
+link, a TOTP code, an `rt_` key somebody introspects here -- then it is roster's
+to hold. Somebody else has to be able to check it without asking -- a signed
+token, a session cookie for another app's browser -- then it is not roster's to
+make, and the answer is Hydra or the app's own `authsession`.
+
+Do not restate this as a list of things roster does not implement. That version
+existed, said "no providers, no MFA", and was already false: `VouchService`
+checks a password. `PLAN.md` D19 and D20, `docs/POSITION.md`.
+
 ## Regenerate after touching the schema
 
 ```sh
