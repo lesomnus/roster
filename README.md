@@ -25,6 +25,7 @@ system verifies alone. [docs/POSITION.md](docs/POSITION.md) is that applied;
 | [docs/OPERATING.md](docs/OPERATING.md) | running one: keys, roles, TLS |
 | [docs/LOGIN.md](docs/LOGIN.md) | what happens when somebody signs in |
 | [PLAN.md](PLAN.md) | every decision, with the reason that produced it |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | what is being built next, in order, and how far it has got |
 
 ## What it does
 

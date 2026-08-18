@@ -4,7 +4,9 @@ A [payday](https://github.com/lesomnus/payday) app. Most of it is **generated
 from `proto/`**, so the usual shape of a change is: edit the schema, regenerate,
 then write the part no schema can state.
 
-`PLAN.md` is what roster is for and every decision taken so far. `README.md` is
+`PLAN.md` is what roster is for and every decision taken so far.
+`docs/ROADMAP.md` is what is being built next, in order, and how far it has got
+-- **update its progress table in the same commit as the work.** `README.md` is
 the long version of the mechanics below.
 
 ## The one rule

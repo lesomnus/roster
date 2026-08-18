@@ -1178,13 +1178,22 @@ D15 relies on.
 | 4 · keys, sync, console | **keys done** (both planes; no wire surface to mint an `rt_`) · sync channel, console — |
 | 5 · the line, written down | **done** — D19, D20, and POSITION.md rewritten around them |
 
+The phases above are how this was built. What is built **next** is
+[docs/ROADMAP.md](docs/ROADMAP.md), which carries its own progress table.
+
 ### What is still roster's to build for a sign-in
 
 D19 through D24 say where the line is. This is what is on the near side of it
-and not written yet, roughly in the order the first ones unblock the rest. None
-of these is decided; each takes a `D` when it is. Where an entry names a
-preferred answer, that is a recommendation carried over from the discussion that
-found it, not a decision taken.
+and not written yet. None of these is decided; each takes a `D` when it is.
+Where an entry names a preferred answer, that is a recommendation carried over
+from the discussion that found it, not a decision taken.
+
+These are **subjects and not pieces of work**, and reading them together shows
+why: three of them are one table, two of them are one field each, and one of
+them does not close what it says it closes. The order they are built in, what
+forces it, and how far it has got are [docs/ROADMAP.md](docs/ROADMAP.md) --
+kept there so that this list stays what it is, which is the question rather than
+the schedule.
 
 1. **A tenant from a hostname.** A multi-tenant app served at
    `acme.example.com` has to turn that into a tenant, and roster has no way to
