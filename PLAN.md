@@ -1181,8 +1181,10 @@ D15 relies on.
 ### What is still roster's to build for a sign-in
 
 D19 through D24 say where the line is. This is what is on the near side of it
-and not written yet, in the order the first one unblocks the rest. None of these
-is decided; each takes a `D` when it is.
+and not written yet, roughly in the order the first ones unblock the rest. None
+of these is decided; each takes a `D` when it is. Where an entry names a
+preferred answer, that is a recommendation carried over from the discussion that
+found it, not a decision taken.
 
 1. **A tenant from a hostname.** A multi-tenant app served at
    `acme.example.com` has to turn that into a tenant, and roster has no way to
@@ -1205,6 +1207,17 @@ is decided; each takes a `D` when it is.
    roster mints and roster checks, delivered by somebody else. Inside the line
    for the same reason, and it is where account takeover lives, so the rules
    belong beside the row rather than in each app.
+
+   **In an air-gapped deployment the somebody else is a person.** There is no
+   mail, so the code is read out or written down by a local operator — which
+   makes recovery and an operator-initiated reset (10) the *same mechanism* with
+   two ways of reaching somebody. D19 already put the delivery outside, and this
+   is why that was worth separating.
+
+   Air gap costs something else on the way past: nothing can set
+   `Email.date_verified`, so an address is unverified forever unless an operator
+   asserts it. D3 gave that field the job of deciding whether an address may be
+   trusted at all, and here it can only ever say no.
 
 4. **The sync channel, as an invalidation signal.** `Outbox`/`Drain` has been
    Phase 4 as "the sync channel" from the start. Its first real subject is
@@ -1265,6 +1278,51 @@ is decided; each takes a `D` when it is.
    with. The likely answer is that the connection is roster's and the secret is
    the deployment's, with a reference here, but that is a decision and not an
    assumption.
+
+10. **A write surface for `Credential`.** D13 closed the whole service — not
+    registered, closed to the batch — so nothing on the wire can set a password,
+    and `init` plus a shell is the only way. That is right for the read and
+    wrong for the write, and an air-gapped deployment with a local operator per
+    tenant needs three of them: **reset a password**, **release a lockout**, and
+    create one alongside a new `Holder`.
+
+    The answer is the shape D13 named when it closed the door: the
+    `VouchService` trick, a narrow service that takes secrets in and never
+    answers with one. Not reopening `CredentialService`, whose generated `Get`
+    is the reason it is shut.
+
+    A lockout releases itself after fifteen minutes (D14), so the operator's
+    version is a convenience rather than a necessity — but it is also the answer
+    to the limitation D14 recorded and could not close from here: *an account
+    can still be held closed by somebody else.* A person on site can simply
+    open it.
+
+11. **Escalation prevention over credential writes.** Resetting somebody's
+    password is a way to **become** them, so an operator who may reset anybody
+    in their tenant effectively holds every permission in it — two operations,
+    and it is the same shape as the hole `server/core/escalate.go` exists to
+    close. That file covers `Role.Add`, `Role.Patch`, `Binding.Add` and an API
+    key's methods, and not this, because this does not exist yet.
+
+    So it goes in before the surface does, and the rule is the one already
+    written: **you may only reset somebody whose permissions are a subset of
+    yours.** Conservative on purpose, for escalate.go's own stated reason — the
+    failure it produces is somebody being told they may not, which is a
+    conversation, and the other direction is silent.
+
+    The alternative is to accept it and say so plainly: a tenant operator is a
+    tenant administrator. That is honest, and it makes "operator" a smaller
+    word than the permission it carries.
+
+12. **A disabled state, which is neither a lockout nor an erasure.** A lockout
+    is temporary and automatic; `date_erased` is deletion. Nothing today says
+    *this person is not to sign in, and their rows stay.* Somebody who left,
+    somebody suspended — that is likely what a local operator reaches for most,
+    and it is missing.
+
+    It has to reach the apps, which makes it the same subject as 4 and 6: a
+    session already issued outlives the row that stopped being allowed to have
+    one — the argument `payday/holder.proto` uses to justify `watch: {}`.
 
 ### Open questions for whoever reads this next
 
