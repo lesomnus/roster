@@ -113,6 +113,7 @@ func (s CredentialServiceServer) Add(ctx context.Context, req *rstr.CredentialAd
 			v.SetHolder(rstr.Holder_builder{Id: k[:]}.Build())
 		})
 	}
+	q.SetName(req.GetName())
 	q.SetKind(req.GetKind())
 	q.SetSecret(req.GetSecret())
 	q.SetFailures(req.GetFailures())
@@ -122,6 +123,7 @@ func (s CredentialServiceServer) Add(ctx context.Context, req *rstr.CredentialAd
 	if req.HasDateRotated() {
 		q.SetDateRotated(req.GetDateRotated().AsTime())
 	}
+	q.SetLastStep(req.GetLastStep())
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
 		q.SetDateCreated(req.GetDateCreated().AsTime())
@@ -195,6 +197,9 @@ func CredentialSelectedFields(m *rstr.CredentialSelect) []string {
 	{
 		vs = append(vs, credential.FieldID)
 	}
+	if m.GetName() {
+		vs = append(vs, credential.FieldName)
+	}
 	if m.GetKind() {
 		vs = append(vs, credential.FieldKind)
 	}
@@ -209,6 +214,9 @@ func CredentialSelectedFields(m *rstr.CredentialSelect) []string {
 	}
 	if m.GetDateRotated() {
 		vs = append(vs, credential.FieldDateRotated)
+	}
+	if m.GetLastStep() {
+		vs = append(vs, credential.FieldLastStep)
 	}
 	if m.GetDateUpdated() {
 		vs = append(vs, credential.FieldDateUpdated)
@@ -290,7 +298,7 @@ func CredentialGetKey(ctx context.Context, db *ent.Client, ref *rstr.CredentialR
 var credentialOrmEntity = ormpatch.MustEntityOf(rstr.File_app_credential_proto, "Credential")
 
 var credentialPatchColumns = entpatch.Columns{
-	1: credential.FieldID, 2: credential.HolderColumn, 8: credential.FieldKind, 9: credential.FieldSecret, 10: credential.FieldFailures, 11: credential.FieldDateLocked, 12: credential.FieldDateRotated, 13: credential.FieldDateUpdated, 14: credential.FieldDateErased, 15: credential.FieldDateCreated}
+	1: credential.FieldID, 2: credential.HolderColumn, 5: credential.FieldName, 8: credential.FieldKind, 9: credential.FieldSecret, 10: credential.FieldFailures, 11: credential.FieldDateLocked, 12: credential.FieldDateRotated, 16: credential.FieldLastStep, 13: credential.FieldDateUpdated, 14: credential.FieldDateErased, 15: credential.FieldDateCreated}
 
 func (s CredentialServiceServer) Apply(ctx context.Context, req *rstr.CredentialApplyRequest) (*rstr.Credential, error) {
 	if !req.HasPatch() {
@@ -490,13 +498,14 @@ func pickCredential(req *rstr.CredentialRef) (predicate.Credential, error) {
 		}
 	case rstr.CredentialRef_Kind_case:
 		k := req.GetKind()
-		ps := make([]predicate.Credential, 0, 2)
+		ps := make([]predicate.Credential, 0, 3)
 		if p, err := HolderPick(k.GetHolder()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "kind.holder: %s", err)
 		} else {
 			ps = append(ps, credential.HasHolderWith(p))
 		}
 		ps = append(ps, credential.KindEQ(k.GetKind()))
+		ps = append(ps, credential.NameEQ(k.GetName()))
 		return credential.And(ps...), nil
 	case rstr.CredentialRef_Key_not_set_case:
 		return nil, status.Errorf(codes.InvalidArgument, "key not set: Credential")

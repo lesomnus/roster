@@ -18,7 +18,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/credential_svc.g.proto.
  */
 export const file_app_credential_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChphcHAvY3JlZGVudGlhbF9zdmMuZy5wcm90bxIGcm9zdGVyIp8CChRDcmVkZW50aWFsQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhMKBGtpbmQYCCABKAlCBaoBAggCEhUKBnNlY3JldBgJIAEoDEIFqgECCAISFwoIZmFpbHVyZXMYCiABKAVCBaoBAggCEi8KC2RhdGVfbG9ja2VkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX3JvdGF0ZWQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiZAoUQ3JlZGVudGlhbEdldFJlcXVlc3QSIgoDcmVmGAEgASgLMhUucm9zdGVyLkNyZWRlbnRpYWxSZWYSKAoGc2VsZWN0GAIgASgLMhgucm9zdGVyLkNyZWRlbnRpYWxTZWxlY3QiUQoNQ3JlZGVudGlhbFJlZhIMCgJpZBgBIAEoDEgAEisKBGtpbmQYAiABKAsyGy5yb3N0ZXIuQ3JlZGVudGlhbFJlZkJ5S2luZEgAQgUKA2tleSJGChNDcmVkZW50aWFsUmVmQnlLaW5kEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSDAoEa2luZBgIIAEoCSLhAQoQQ3JlZGVudGlhbFNlbGVjdBILCgNhbGwYASABKAgSJAoGaG9sZGVyGAIgASgLMhQucm9zdGVyLkhvbGRlclNlbGVjdBIMCgRraW5kGAggASgIEg4KBnNlY3JldBgJIAEoCBIQCghmYWlsdXJlcxgKIAEoCBITCgtkYXRlX2xvY2tlZBgLIAEoCBIUCgxkYXRlX3JvdGF0ZWQYDCABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCLSAgoWQ3JlZGVudGlhbFBhdGNoUmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuQ3JlZGVudGlhbFJlZhIMCgRraW5kGBAgASgJEg4KBnNlY3JldBgSIAEoDBIQCghmYWlsdXJlcxgUIAEoBRIvCgtkYXRlX2xvY2tlZBgWIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGAoQZGF0ZV9sb2NrZWRfbnVsbBgXIAEoCBIwCgxkYXRlX3JvdGF0ZWQYGCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhkKEWRhdGVfcm90YXRlZF9udWxsGBkgASgIEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIlkKFkNyZWRlbnRpYWxBcHBseVJlcXVlc3QSIgoDcmVmGAEgASgLMhUucm9zdGVyLkNyZWRlbnRpYWxSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCJtChVDcmVkZW50aWFsTGlzdFJlcXVlc3QSKQoHZmlsdGVycxgBIAMoCzIYLnJvc3Rlci5DcmVkZW50aWFsRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAiJQChZDcmVkZW50aWFsTGlzdFJlc3BvbnNlEiEKBWl0ZW1zGAEgAygLMhIucm9zdGVyLkNyZWRlbnRpYWwSEwoEbmV4dBgCIAEoCUIFqgECCAIiWQoQQ3JlZGVudGlhbEZpbHRlchIiCgNyZWYYASABKAsyFS5yb3N0ZXIuQ3JlZGVudGlhbFJlZhIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmImEKFkNyZWRlbnRpYWxXYXRjaFJlcXVlc3QSKQoHZmlsdGVycxgBIAMoCzIYLnJvc3Rlci5DcmVkZW50aWFsRmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCIkUKF0NyZWRlbnRpYWxXYXRjaFJlc3BvbnNlEioKBWl0ZW1zGAEgAygLMhsucm9zdGVyLkNyZWRlbnRpYWxXYXRjaEl0ZW0iWwoTQ3JlZGVudGlhbFdhdGNoSXRlbRIKCgJpZBgBIAEoDBIhCgV2YWx1ZRgCIAEoCzISLnJvc3Rlci5DcmVkZW50aWFsEhUKBmFjdGlvbhgDIAEoCUIFqgECCAIyygMKEUNyZWRlbnRpYWxTZXJ2aWNlEjcKA0FkZBIcLnJvc3Rlci5DcmVkZW50aWFsQWRkUmVxdWVzdBoSLnJvc3Rlci5DcmVkZW50aWFsEjcKA0dldBIcLnJvc3Rlci5DcmVkZW50aWFsR2V0UmVxdWVzdBoSLnJvc3Rlci5DcmVkZW50aWFsEjsKBVBhdGNoEh4ucm9zdGVyLkNyZWRlbnRpYWxQYXRjaFJlcXVlc3QaEi5yb3N0ZXIuQ3JlZGVudGlhbBI7CgVBcHBseRIeLnJvc3Rlci5DcmVkZW50aWFsQXBwbHlSZXF1ZXN0GhIucm9zdGVyLkNyZWRlbnRpYWwSNgoFRXJhc2USFS5yb3N0ZXIuQ3JlZGVudGlhbFJlZhoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eRJFCgRMaXN0Eh0ucm9zdGVyLkNyZWRlbnRpYWxMaXN0UmVxdWVzdBoeLnJvc3Rlci5DcmVkZW50aWFsTGlzdFJlc3BvbnNlEkoKBVdhdGNoEh4ucm9zdGVyLkNyZWRlbnRpYWxXYXRjaFJlcXVlc3QaHy5yb3N0ZXIuQ3JlZGVudGlhbFdhdGNoUmVzcG9uc2UwAUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_credential, file_google_protobuf_empty, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChphcHAvY3JlZGVudGlhbF9zdmMuZy5wcm90bxIGcm9zdGVyIs4CChRDcmVkZW50aWFsQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGtpbmQYCCABKAlCBaoBAggCEhUKBnNlY3JldBgJIAEoDEIFqgECCAISFwoIZmFpbHVyZXMYCiABKAVCBaoBAggCEi8KC2RhdGVfbG9ja2VkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX3JvdGF0ZWQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhgKCWxhc3Rfc3RlcBgQIAEoA0IFqgECCAISMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJkChRDcmVkZW50aWFsR2V0UmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuQ3JlZGVudGlhbFJlZhIoCgZzZWxlY3QYAiABKAsyGC5yb3N0ZXIuQ3JlZGVudGlhbFNlbGVjdCJRCg1DcmVkZW50aWFsUmVmEgwKAmlkGAEgASgMSAASKwoEa2luZBgCIAEoCzIbLnJvc3Rlci5DcmVkZW50aWFsUmVmQnlLaW5kSABCBQoDa2V5IlQKE0NyZWRlbnRpYWxSZWZCeUtpbmQSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkiggIKEENyZWRlbnRpYWxTZWxlY3QSCwoDYWxsGAEgASgIEiQKBmhvbGRlchgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSDAoEbmFtZRgFIAEoCBIMCgRraW5kGAggASgIEg4KBnNlY3JldBgJIAEoCBIQCghmYWlsdXJlcxgKIAEoCBITCgtkYXRlX2xvY2tlZBgLIAEoCBIUCgxkYXRlX3JvdGF0ZWQYDCABKAgSEQoJbGFzdF9zdGVwGBAgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgi8wIKFkNyZWRlbnRpYWxQYXRjaFJlcXVlc3QSIgoDcmVmGAEgASgLMhUucm9zdGVyLkNyZWRlbnRpYWxSZWYSDAoEbmFtZRgKIAEoCRIMCgRraW5kGBAgASgJEg4KBnNlY3JldBgSIAEoDBIQCghmYWlsdXJlcxgUIAEoBRIvCgtkYXRlX2xvY2tlZBgWIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGAoQZGF0ZV9sb2NrZWRfbnVsbBgXIAEoCBIwCgxkYXRlX3JvdGF0ZWQYGCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhkKEWRhdGVfcm90YXRlZF9udWxsGBkgASgIEhEKCWxhc3Rfc3RlcBggIAEoAxIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCCJZChZDcmVkZW50aWFsQXBwbHlSZXF1ZXN0EiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5DcmVkZW50aWFsUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2gibQoVQ3JlZGVudGlhbExpc3RSZXF1ZXN0EikKB2ZpbHRlcnMYASADKAsyGC5yb3N0ZXIuQ3JlZGVudGlhbEZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAIiUAoWQ3JlZGVudGlhbExpc3RSZXNwb25zZRIhCgVpdGVtcxgBIAMoCzISLnJvc3Rlci5DcmVkZW50aWFsEhMKBG5leHQYAiABKAlCBaoBAggCIlkKEENyZWRlbnRpYWxGaWx0ZXISIgoDcmVmGAEgASgLMhUucm9zdGVyLkNyZWRlbnRpYWxSZWYSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZiJhChZDcmVkZW50aWFsV2F0Y2hSZXF1ZXN0EikKB2ZpbHRlcnMYASADKAsyGC5yb3N0ZXIuQ3JlZGVudGlhbEZpbHRlchIcCg1za2lwX3NuYXBzaG90GAIgASgIQgWqAQIIAiJFChdDcmVkZW50aWFsV2F0Y2hSZXNwb25zZRIqCgVpdGVtcxgBIAMoCzIbLnJvc3Rlci5DcmVkZW50aWFsV2F0Y2hJdGVtIlsKE0NyZWRlbnRpYWxXYXRjaEl0ZW0SCgoCaWQYASABKAwSIQoFdmFsdWUYAiABKAsyEi5yb3N0ZXIuQ3JlZGVudGlhbBIVCgZhY3Rpb24YAyABKAlCBaoBAggCMsoDChFDcmVkZW50aWFsU2VydmljZRI3CgNBZGQSHC5yb3N0ZXIuQ3JlZGVudGlhbEFkZFJlcXVlc3QaEi5yb3N0ZXIuQ3JlZGVudGlhbBI3CgNHZXQSHC5yb3N0ZXIuQ3JlZGVudGlhbEdldFJlcXVlc3QaEi5yb3N0ZXIuQ3JlZGVudGlhbBI7CgVQYXRjaBIeLnJvc3Rlci5DcmVkZW50aWFsUGF0Y2hSZXF1ZXN0GhIucm9zdGVyLkNyZWRlbnRpYWwSOwoFQXBwbHkSHi5yb3N0ZXIuQ3JlZGVudGlhbEFwcGx5UmVxdWVzdBoSLnJvc3Rlci5DcmVkZW50aWFsEjYKBUVyYXNlEhUucm9zdGVyLkNyZWRlbnRpYWxSZWYaFi5nb29nbGUucHJvdG9idWYuRW1wdHkSRQoETGlzdBIdLnJvc3Rlci5DcmVkZW50aWFsTGlzdFJlcXVlc3QaHi5yb3N0ZXIuQ3JlZGVudGlhbExpc3RSZXNwb25zZRJKCgVXYXRjaBIeLnJvc3Rlci5DcmVkZW50aWFsV2F0Y2hSZXF1ZXN0Gh8ucm9zdGVyLkNyZWRlbnRpYWxXYXRjaFJlc3BvbnNlMAFCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_credential, file_google_protobuf_empty, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.CredentialAddRequest
@@ -33,6 +33,11 @@ export type CredentialAddRequest = Message<"roster.CredentialAddRequest"> & {
    * @generated from field: roster.HolderRef holder = 2;
    */
   holder?: HolderRef | undefined;
+
+  /**
+   * @generated from field: string name = 5 [features.field_presence = IMPLICIT];
+   */
+  name: string;
 
   /**
    * @generated from field: string kind = 8 [features.field_presence = IMPLICIT];
@@ -58,6 +63,11 @@ export type CredentialAddRequest = Message<"roster.CredentialAddRequest"> & {
    * @generated from field: google.protobuf.Timestamp date_rotated = 12;
    */
   dateRotated?: Timestamp | undefined;
+
+  /**
+   * @generated from field: int64 last_step = 16 [features.field_presence = IMPLICIT];
+   */
+  lastStep: bigint;
 
   /**
    * @generated from field: google.protobuf.Timestamp date_created = 15;
@@ -136,6 +146,11 @@ export type CredentialRefByKind = Message<"roster.CredentialRefByKind"> & {
    * @generated from field: string kind = 8;
    */
   kind: string;
+
+  /**
+   * @generated from field: string name = 5;
+   */
+  name: string;
 };
 
 /**
@@ -158,6 +173,11 @@ export type CredentialSelect = Message<"roster.CredentialSelect"> & {
    * @generated from field: roster.HolderSelect holder = 2;
    */
   holder?: HolderSelect | undefined;
+
+  /**
+   * @generated from field: bool name = 5;
+   */
+  name: boolean;
 
   /**
    * @generated from field: bool kind = 8;
@@ -183,6 +203,11 @@ export type CredentialSelect = Message<"roster.CredentialSelect"> & {
    * @generated from field: bool date_rotated = 12;
    */
   dateRotated: boolean;
+
+  /**
+   * @generated from field: bool last_step = 16;
+   */
+  lastStep: boolean;
 
   /**
    * @generated from field: bool date_updated = 13;
@@ -215,6 +240,11 @@ export type CredentialPatchRequest = Message<"roster.CredentialPatchRequest"> & 
    * @generated from field: roster.CredentialRef ref = 1;
    */
   ref?: CredentialRef | undefined;
+
+  /**
+   * @generated from field: string name = 10;
+   */
+  name: string;
 
   /**
    * @generated from field: string kind = 16;
@@ -260,6 +290,11 @@ export type CredentialPatchRequest = Message<"roster.CredentialPatchRequest"> & 
    * @generated from field: bool date_rotated_null = 25;
    */
   dateRotatedNull: boolean;
+
+  /**
+   * @generated from field: int64 last_step = 32;
+   */
+  lastStep: bigint;
 
   /**
    * The version this update requires the stored date_updated to be.

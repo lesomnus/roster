@@ -29,6 +29,20 @@ func (_u *CredentialUpdate) Where(ps ...predicate.Credential) *CredentialUpdate 
 	return _u
 }
 
+// SetName sets the "name" field.
+func (_u *CredentialUpdate) SetName(v string) *CredentialUpdate {
+	_u.mutation.SetName(v)
+	return _u
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (_u *CredentialUpdate) SetNillableName(v *string) *CredentialUpdate {
+	if v != nil {
+		_u.SetName(*v)
+	}
+	return _u
+}
+
 // SetKind sets the "kind" field.
 func (_u *CredentialUpdate) SetKind(v string) *CredentialUpdate {
 	_u.mutation.SetKind(v)
@@ -107,6 +121,27 @@ func (_u *CredentialUpdate) SetNillableDateRotated(v *time.Time) *CredentialUpda
 // ClearDateRotated clears the value of the "date_rotated" field.
 func (_u *CredentialUpdate) ClearDateRotated() *CredentialUpdate {
 	_u.mutation.ClearDateRotated()
+	return _u
+}
+
+// SetLastStep sets the "last_step" field.
+func (_u *CredentialUpdate) SetLastStep(v int64) *CredentialUpdate {
+	_u.mutation.ResetLastStep()
+	_u.mutation.SetLastStep(v)
+	return _u
+}
+
+// SetNillableLastStep sets the "last_step" field if the given value is not nil.
+func (_u *CredentialUpdate) SetNillableLastStep(v *int64) *CredentialUpdate {
+	if v != nil {
+		_u.SetLastStep(*v)
+	}
+	return _u
+}
+
+// AddLastStep adds value to the "last_step" field.
+func (_u *CredentialUpdate) AddLastStep(v int64) *CredentialUpdate {
+	_u.mutation.AddLastStep(v)
 	return _u
 }
 
@@ -202,6 +237,9 @@ func (_u *CredentialUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 			}
 		}
 	}
+	if value, ok := _u.mutation.Name(); ok {
+		_spec.SetField(credential.FieldName, field.TypeString, value)
+	}
 	if value, ok := _u.mutation.Kind(); ok {
 		_spec.SetField(credential.FieldKind, field.TypeString, value)
 	}
@@ -225,6 +263,12 @@ func (_u *CredentialUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	}
 	if _u.mutation.DateRotatedCleared() {
 		_spec.ClearField(credential.FieldDateRotated, field.TypeTime)
+	}
+	if value, ok := _u.mutation.LastStep(); ok {
+		_spec.SetField(credential.FieldLastStep, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedLastStep(); ok {
+		_spec.AddField(credential.FieldLastStep, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(credential.FieldDateUpdated, field.TypeTime, value)
@@ -258,6 +302,20 @@ type CredentialUpdateOne struct {
 	hooks     []Hook
 	mutation  *CredentialMutation
 	modifiers []func(*sql.UpdateBuilder)
+}
+
+// SetName sets the "name" field.
+func (_u *CredentialUpdateOne) SetName(v string) *CredentialUpdateOne {
+	_u.mutation.SetName(v)
+	return _u
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (_u *CredentialUpdateOne) SetNillableName(v *string) *CredentialUpdateOne {
+	if v != nil {
+		_u.SetName(*v)
+	}
+	return _u
 }
 
 // SetKind sets the "kind" field.
@@ -338,6 +396,27 @@ func (_u *CredentialUpdateOne) SetNillableDateRotated(v *time.Time) *CredentialU
 // ClearDateRotated clears the value of the "date_rotated" field.
 func (_u *CredentialUpdateOne) ClearDateRotated() *CredentialUpdateOne {
 	_u.mutation.ClearDateRotated()
+	return _u
+}
+
+// SetLastStep sets the "last_step" field.
+func (_u *CredentialUpdateOne) SetLastStep(v int64) *CredentialUpdateOne {
+	_u.mutation.ResetLastStep()
+	_u.mutation.SetLastStep(v)
+	return _u
+}
+
+// SetNillableLastStep sets the "last_step" field if the given value is not nil.
+func (_u *CredentialUpdateOne) SetNillableLastStep(v *int64) *CredentialUpdateOne {
+	if v != nil {
+		_u.SetLastStep(*v)
+	}
+	return _u
+}
+
+// AddLastStep adds value to the "last_step" field.
+func (_u *CredentialUpdateOne) AddLastStep(v int64) *CredentialUpdateOne {
+	_u.mutation.AddLastStep(v)
 	return _u
 }
 
@@ -463,6 +542,9 @@ func (_u *CredentialUpdateOne) sqlSave(ctx context.Context) (_node *Credential, 
 			}
 		}
 	}
+	if value, ok := _u.mutation.Name(); ok {
+		_spec.SetField(credential.FieldName, field.TypeString, value)
+	}
 	if value, ok := _u.mutation.Kind(); ok {
 		_spec.SetField(credential.FieldKind, field.TypeString, value)
 	}
@@ -486,6 +568,12 @@ func (_u *CredentialUpdateOne) sqlSave(ctx context.Context) (_node *Credential, 
 	}
 	if _u.mutation.DateRotatedCleared() {
 		_spec.ClearField(credential.FieldDateRotated, field.TypeTime)
+	}
+	if value, ok := _u.mutation.LastStep(); ok {
+		_spec.SetField(credential.FieldLastStep, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedLastStep(); ok {
+		_spec.AddField(credential.FieldLastStep, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(credential.FieldDateUpdated, field.TypeTime, value)

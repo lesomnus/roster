@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/credential.proto.
  */
 export const file_app_credential: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcHAvY3JlZGVudGlhbC5wcm90bxIGcm9zdGVyIsUECgpDcmVkZW50aWFsEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESDAoEa2luZBgIIAEoCRIWCgZzZWNyZXQYCSABKAxCBqrBFgIIARIQCghmYWlsdXJlcxgKIAEoBRI3CgtkYXRlX2xvY2tlZBgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI4CgxkYXRlX3JvdGF0ZWQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOpgByvwVRhICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGh4SBGtpbmQaCgoGaG9sZGVyEAIaCAoEa2luZBAIMAGKuxZKCA0yMwoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaCAoGaG9sZGVyIBQoZDoAIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChRhcHAvY3JlZGVudGlhbC5wcm90bxIGcm9zdGVyIvAECgpDcmVkZW50aWFsEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESDAoEbmFtZRgFIAEoCRIMCgRraW5kGAggASgJEhYKBnNlY3JldBgJIAEoDEIGqsEWAggBEhAKCGZhaWx1cmVzGAogASgFEjcKC2RhdGVfbG9ja2VkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBEjgKDGRhdGVfcm90YXRlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARIRCglsYXN0X3N0ZXAYECABKAMSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOqIByvwVUBICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGigSBGtpbmQaCgoGaG9sZGVyEAIaCAoEa2luZBAIGggKBG5hbWUQBTABirsWSggNMjMKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmGggKBmhvbGRlciAUKGQ6ACIPCg1ob2xkZXIudGVuYW50QiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Credential is a secret somebody proves themselves with here, rather than at a
@@ -58,8 +58,39 @@ export type Credential = Message<"roster.Credential"> & {
   holder?: Holder | undefined;
 
   /**
-   * What kind of secret it is -- "password", "totp". One of each per person,
-   * which the index below is what enforces.
+   * What somebody calls this one, when there is more than one of a kind to tell
+   * apart: "the phone", "the yubikey in the drawer".
+   *
+   * # Why it is here now and was not
+   *
+   * The index used to be `(holder, kind)` and the comment said *one of each per
+   * person*, which is right for a password, defensible for a TOTP seed, and
+   * wrong for the thing after it. Registering a **second** security key is the
+   * standard advice for WebAuthn, and a passkey lands one per device -- so an
+   * entity that permits exactly one row per kind forecloses the recovery story
+   * of the factor most likely to be added next.
+   *
+   * Empty is the single-instance case, which is what a password and a TOTP seed
+   * are, so nothing about them changes.
+   *
+   * # Why it is `name` and not `alias`
+   *
+   * Field 4 is the number the convention reserves for what a row is named by,
+   * and it is the wrong one here: payday **makes an alias up** when a caller
+   * gives none -- seven characters, so that every row has a slug -- and this
+   * wants the opposite, an empty value meaning *the only one*. Found by adding
+   * it: every existing lookup stopped matching, because the rows had aliases
+   * nobody had asked for.
+   *
+   * `name` carries no such machinery and says the same thing to a person.
+   *
+   * @generated from field: string name = 5;
+   */
+  name: string;
+
+  /**
+   * What kind of secret it is -- "password", "totp". One of each **name** per
+   * person, which the index below is what enforces.
    *
    * @generated from field: string kind = 8;
    */
@@ -101,6 +132,26 @@ export type Credential = Message<"roster.Credential"> & {
    * @generated from field: google.protobuf.Timestamp date_rotated = 12;
    */
   dateRotated?: Timestamp | undefined;
+
+  /**
+   * The last step this credential accepted, for the kinds that count.
+   *
+   * D20 says it in as many words: *a TOTP step that has been used must not work
+   * twice, and the only place that can be recorded is the row.* A code watched
+   * over a shoulder or captured by a page pretending to be the front door
+   * otherwise works for the rest of its thirty seconds, which is most of what
+   * an attacker with one needs.
+   *
+   * It is the same class of state as WebAuthn's signature counter, and D20 uses
+   * that counter to argue verification is roster's at all -- so this is not an
+   * extra column, it is the column that argument was about.
+   *
+   * Zero for a kind that does not count anything, which is every kind that
+   * exists today except `totp`.
+   *
+   * @generated from field: int64 last_step = 16;
+   */
+  lastStep: bigint;
 
   /**
    * @generated from field: google.protobuf.Timestamp date_updated = 13;

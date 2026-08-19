@@ -112,6 +112,30 @@ service VouchService {
   // permission nobody could explain.
   rpc Unlock(VouchUnlockRequest) returns (VouchUnlockResponse);
 
+  // Enrol makes a second factor and answers with it **once**.
+  //
+  // # Why Set cannot do it
+  //
+  // `Set` argon2-hashes whatever it is handed, which is the one thing a TOTP
+  // seed must not be: computing the code somebody is about to type means
+  // holding the seed, so the row **is** the secret rather than a verifier of
+  // one. A seed put through `Set` is a seed nobody can ever read back.
+  //
+  // # Why the caller does not choose it
+  //
+  // `IssueService`'s argument about a key, unchanged: a secret the caller chose
+  // is a secret the caller knows, and one generated in a browser is only as
+  // good as that page's `crypto`. Here it is `crypto/rand` on the server, and
+  // what leaves is a base32 seed and an `otpauth://` URI for a QR code.
+  //
+  // # It does not count until it is proved
+  //
+  // The row is written unconfirmed, and one code has to verify before it is a
+  // factor anybody may be asked for. A seed that counted the moment it was
+  // written would make a mis-scanned QR something somebody discovers when they
+  // are already half signed in and cannot finish.
+  rpc Enrol(VouchEnrolRequest) returns (VouchEnrolResponse);
+
   // Revoke ends a delegation before its expiry.
   //
   // D23 says *revoking it is a delete* and for a while nothing could:
@@ -273,6 +297,34 @@ message VouchDelegateResponse {
 
   // When it stops working, which is always set when a token is.
   google.protobuf.Timestamp expires = 11;
+}
+
+message VouchEnrolRequest {
+  VouchWho who = 1;
+
+  // Which kind. Only "totp" today: a password is `Set` or `Reset`, and neither
+  // of those is something a person's phone holds.
+  string kind = 8;
+
+  // What they call it, when there is more than one to tell apart -- "the
+  // phone", "the yubikey in the drawer". Empty is the only one of its kind.
+  string name = 5;
+
+  // What the authenticator app shows in its list, and it is the deployment's
+  // name rather than the tenant's: a person with accounts at two operators
+  // needs to tell the two entries apart, and both are this roster.
+  string issuer = 9;
+}
+
+message VouchEnrolResponse {
+  // The seed, base32, uppercase and unpadded -- the only time it is readable.
+  //
+  // Padding is legal and some apps refuse it, which is the sort of thing only
+  // discovered in front of a phone that will not scan.
+  string seed = 1;
+
+  // The same thing as a QR code's worth of URI.
+  string uri = 2;
 }
 
 message VouchRevokeRequest {

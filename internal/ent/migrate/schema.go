@@ -160,11 +160,13 @@ var (
 	// CredentialColumns holds the columns for the "credential" table.
 	CredentialColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "name", Type: field.TypeString},
 		{Name: "kind", Type: field.TypeString},
 		{Name: "secret", Type: field.TypeBytes},
 		{Name: "failures", Type: field.TypeInt32},
 		{Name: "date_locked", Type: field.TypeTime, Nullable: true},
 		{Name: "date_rotated", Type: field.TypeTime, Nullable: true},
+		{Name: "last_step", Type: field.TypeInt64},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
@@ -178,7 +180,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "credential_holder_holder",
-				Columns:    []*schema.Column{CredentialColumns[9]},
+				Columns:    []*schema.Column{CredentialColumns[11]},
 				RefColumns: []*schema.Column{HolderColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -187,12 +189,12 @@ var (
 			{
 				Name:    "credential_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{CredentialColumns[8], CredentialColumns[0]},
+				Columns: []*schema.Column{CredentialColumns[10], CredentialColumns[0]},
 			},
 			{
-				Name:    "credential_kind_holder_id",
+				Name:    "credential_kind_name_holder_id",
 				Unique:  true,
-				Columns: []*schema.Column{CredentialColumns[1], CredentialColumns[9]},
+				Columns: []*schema.Column{CredentialColumns[2], CredentialColumns[1], CredentialColumns[11]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},

@@ -56,6 +56,11 @@ func IDLTE(id uuid.UUID) predicate.Credential {
 	return predicate.Credential(sql.FieldLTE(FieldID, id))
 }
 
+// Name applies equality check predicate on the "name" field. It's identical to NameEQ.
+func Name(v string) predicate.Credential {
+	return predicate.Credential(sql.FieldEQ(FieldName, v))
+}
+
 // Kind applies equality check predicate on the "kind" field. It's identical to KindEQ.
 func Kind(v string) predicate.Credential {
 	return predicate.Credential(sql.FieldEQ(FieldKind, v))
@@ -81,6 +86,11 @@ func DateRotated(v time.Time) predicate.Credential {
 	return predicate.Credential(sql.FieldEQ(FieldDateRotated, v))
 }
 
+// LastStep applies equality check predicate on the "last_step" field. It's identical to LastStepEQ.
+func LastStep(v int64) predicate.Credential {
+	return predicate.Credential(sql.FieldEQ(FieldLastStep, v))
+}
+
 // DateUpdated applies equality check predicate on the "date_updated" field. It's identical to DateUpdatedEQ.
 func DateUpdated(v time.Time) predicate.Credential {
 	return predicate.Credential(sql.FieldEQ(FieldDateUpdated, v))
@@ -99,6 +109,71 @@ func DateCreated(v time.Time) predicate.Credential {
 // HolderID applies equality check predicate on the "holder_id" field. It's identical to HolderIDEQ.
 func HolderID(v uuid.UUID) predicate.Credential {
 	return predicate.Credential(sql.FieldEQ(FieldHolderID, v))
+}
+
+// NameEQ applies the EQ predicate on the "name" field.
+func NameEQ(v string) predicate.Credential {
+	return predicate.Credential(sql.FieldEQ(FieldName, v))
+}
+
+// NameNEQ applies the NEQ predicate on the "name" field.
+func NameNEQ(v string) predicate.Credential {
+	return predicate.Credential(sql.FieldNEQ(FieldName, v))
+}
+
+// NameIn applies the In predicate on the "name" field.
+func NameIn(vs ...string) predicate.Credential {
+	return predicate.Credential(sql.FieldIn(FieldName, vs...))
+}
+
+// NameNotIn applies the NotIn predicate on the "name" field.
+func NameNotIn(vs ...string) predicate.Credential {
+	return predicate.Credential(sql.FieldNotIn(FieldName, vs...))
+}
+
+// NameGT applies the GT predicate on the "name" field.
+func NameGT(v string) predicate.Credential {
+	return predicate.Credential(sql.FieldGT(FieldName, v))
+}
+
+// NameGTE applies the GTE predicate on the "name" field.
+func NameGTE(v string) predicate.Credential {
+	return predicate.Credential(sql.FieldGTE(FieldName, v))
+}
+
+// NameLT applies the LT predicate on the "name" field.
+func NameLT(v string) predicate.Credential {
+	return predicate.Credential(sql.FieldLT(FieldName, v))
+}
+
+// NameLTE applies the LTE predicate on the "name" field.
+func NameLTE(v string) predicate.Credential {
+	return predicate.Credential(sql.FieldLTE(FieldName, v))
+}
+
+// NameContains applies the Contains predicate on the "name" field.
+func NameContains(v string) predicate.Credential {
+	return predicate.Credential(sql.FieldContains(FieldName, v))
+}
+
+// NameHasPrefix applies the HasPrefix predicate on the "name" field.
+func NameHasPrefix(v string) predicate.Credential {
+	return predicate.Credential(sql.FieldHasPrefix(FieldName, v))
+}
+
+// NameHasSuffix applies the HasSuffix predicate on the "name" field.
+func NameHasSuffix(v string) predicate.Credential {
+	return predicate.Credential(sql.FieldHasSuffix(FieldName, v))
+}
+
+// NameEqualFold applies the EqualFold predicate on the "name" field.
+func NameEqualFold(v string) predicate.Credential {
+	return predicate.Credential(sql.FieldEqualFold(FieldName, v))
+}
+
+// NameContainsFold applies the ContainsFold predicate on the "name" field.
+func NameContainsFold(v string) predicate.Credential {
+	return predicate.Credential(sql.FieldContainsFold(FieldName, v))
 }
 
 // KindEQ applies the EQ predicate on the "kind" field.
@@ -344,6 +419,46 @@ func DateRotatedIsNil() predicate.Credential {
 // DateRotatedNotNil applies the NotNil predicate on the "date_rotated" field.
 func DateRotatedNotNil() predicate.Credential {
 	return predicate.Credential(sql.FieldNotNull(FieldDateRotated))
+}
+
+// LastStepEQ applies the EQ predicate on the "last_step" field.
+func LastStepEQ(v int64) predicate.Credential {
+	return predicate.Credential(sql.FieldEQ(FieldLastStep, v))
+}
+
+// LastStepNEQ applies the NEQ predicate on the "last_step" field.
+func LastStepNEQ(v int64) predicate.Credential {
+	return predicate.Credential(sql.FieldNEQ(FieldLastStep, v))
+}
+
+// LastStepIn applies the In predicate on the "last_step" field.
+func LastStepIn(vs ...int64) predicate.Credential {
+	return predicate.Credential(sql.FieldIn(FieldLastStep, vs...))
+}
+
+// LastStepNotIn applies the NotIn predicate on the "last_step" field.
+func LastStepNotIn(vs ...int64) predicate.Credential {
+	return predicate.Credential(sql.FieldNotIn(FieldLastStep, vs...))
+}
+
+// LastStepGT applies the GT predicate on the "last_step" field.
+func LastStepGT(v int64) predicate.Credential {
+	return predicate.Credential(sql.FieldGT(FieldLastStep, v))
+}
+
+// LastStepGTE applies the GTE predicate on the "last_step" field.
+func LastStepGTE(v int64) predicate.Credential {
+	return predicate.Credential(sql.FieldGTE(FieldLastStep, v))
+}
+
+// LastStepLT applies the LT predicate on the "last_step" field.
+func LastStepLT(v int64) predicate.Credential {
+	return predicate.Credential(sql.FieldLT(FieldLastStep, v))
+}
+
+// LastStepLTE applies the LTE predicate on the "last_step" field.
+func LastStepLTE(v int64) predicate.Credential {
+	return predicate.Credential(sql.FieldLTE(FieldLastStep, v))
 }
 
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.

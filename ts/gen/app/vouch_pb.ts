@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/vouch.proto.
  */
 export const file_app_vouch: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJGCghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCSJRChJWb3VjaFZlcmlmeVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMInMKE1ZvdWNoVmVyaWZ5UmVzcG9uc2USCgoCb2sYASABKAgSDgoGaG9sZGVyGAIgASgMEg4KBnRlbmFudBgDIAEoDBIwCgxsb2NrZWRfdW50aWwYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIk4KD1ZvdWNoU2V0UmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwiEgoQVm91Y2hTZXRSZXNwb25zZSKRAQoUVm91Y2hEZWxlZ2F0ZVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMEg8KB21ldGhvZHMYCiADKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiggEKFVZvdWNoRGVsZWdhdGVSZXNwb25zZRItCgh2ZXJpZmllZBgBIAEoCzIbLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlEg0KBXRva2VuGAogASgJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIiMKElZvdWNoUmV2b2tlUmVxdWVzdBINCgV0b2tlbhgBIAEoCSIVChNWb3VjaFJldm9rZVJlc3BvbnNlIkAKEVZvdWNoUmVzZXRSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJIiQKElZvdWNoUmVzZXRSZXNwb25zZRIOCgZzZWNyZXQYASABKAkiQQoSVm91Y2hVbmxvY2tSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJIksKE1ZvdWNoVW5sb2NrUmVzcG9uc2USNAoQd2FzX2xvY2tlZF91bnRpbBgBIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAymgMKDFZvdWNoU2VydmljZRJBCgZWZXJpZnkSGi5yb3N0ZXIuVm91Y2hWZXJpZnlSZXF1ZXN0Ghsucm9zdGVyLlZvdWNoVmVyaWZ5UmVzcG9uc2USOAoDU2V0Ehcucm9zdGVyLlZvdWNoU2V0UmVxdWVzdBoYLnJvc3Rlci5Wb3VjaFNldFJlc3BvbnNlEkcKCERlbGVnYXRlEhwucm9zdGVyLlZvdWNoRGVsZWdhdGVSZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoRGVsZWdhdGVSZXNwb25zZRI+CgVSZXNldBIZLnJvc3Rlci5Wb3VjaFJlc2V0UmVxdWVzdBoaLnJvc3Rlci5Wb3VjaFJlc2V0UmVzcG9uc2USQQoGVW5sb2NrEhoucm9zdGVyLlZvdWNoVW5sb2NrUmVxdWVzdBobLnJvc3Rlci5Wb3VjaFVubG9ja1Jlc3BvbnNlEkEKBlJldm9rZRIaLnJvc3Rlci5Wb3VjaFJldm9rZVJlcXVlc3QaGy5yb3N0ZXIuVm91Y2hSZXZva2VSZXNwb25zZUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp]);
+  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJGCghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCSJRChJWb3VjaFZlcmlmeVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMInMKE1ZvdWNoVmVyaWZ5UmVzcG9uc2USCgoCb2sYASABKAgSDgoGaG9sZGVyGAIgASgMEg4KBnRlbmFudBgDIAEoDBIwCgxsb2NrZWRfdW50aWwYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIk4KD1ZvdWNoU2V0UmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwiEgoQVm91Y2hTZXRSZXNwb25zZSKRAQoUVm91Y2hEZWxlZ2F0ZVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMEg8KB21ldGhvZHMYCiADKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiggEKFVZvdWNoRGVsZWdhdGVSZXNwb25zZRItCgh2ZXJpZmllZBgBIAEoCzIbLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlEg0KBXRva2VuGAogASgJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIl4KEVZvdWNoRW5yb2xSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSDgoGaXNzdWVyGAkgASgJIi8KElZvdWNoRW5yb2xSZXNwb25zZRIMCgRzZWVkGAEgASgJEgsKA3VyaRgCIAEoCSIjChJWb3VjaFJldm9rZVJlcXVlc3QSDQoFdG9rZW4YASABKAkiFQoTVm91Y2hSZXZva2VSZXNwb25zZSJAChFWb3VjaFJlc2V0UmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCSIkChJWb3VjaFJlc2V0UmVzcG9uc2USDgoGc2VjcmV0GAEgASgJIkEKElZvdWNoVW5sb2NrUmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCSJLChNWb3VjaFVubG9ja1Jlc3BvbnNlEjQKEHdhc19sb2NrZWRfdW50aWwYASABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wMtoDCgxWb3VjaFNlcnZpY2USQQoGVmVyaWZ5Ehoucm9zdGVyLlZvdWNoVmVyaWZ5UmVxdWVzdBobLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlEjgKA1NldBIXLnJvc3Rlci5Wb3VjaFNldFJlcXVlc3QaGC5yb3N0ZXIuVm91Y2hTZXRSZXNwb25zZRJHCghEZWxlZ2F0ZRIcLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVxdWVzdBodLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVzcG9uc2USPgoFUmVzZXQSGS5yb3N0ZXIuVm91Y2hSZXNldFJlcXVlc3QaGi5yb3N0ZXIuVm91Y2hSZXNldFJlc3BvbnNlEkEKBlVubG9jaxIaLnJvc3Rlci5Wb3VjaFVubG9ja1JlcXVlc3QaGy5yb3N0ZXIuVm91Y2hVbmxvY2tSZXNwb25zZRI+CgVFbnJvbBIZLnJvc3Rlci5Wb3VjaEVucm9sUmVxdWVzdBoaLnJvc3Rlci5Wb3VjaEVucm9sUmVzcG9uc2USQQoGUmV2b2tlEhoucm9zdGVyLlZvdWNoUmV2b2tlUmVxdWVzdBobLnJvc3Rlci5Wb3VjaFJldm9rZVJlc3BvbnNlQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp]);
 
 /**
  * VouchWho names somebody in the words a sign-in form collects.
@@ -323,6 +323,77 @@ export const VouchDelegateResponseSchema: GenMessage<VouchDelegateResponse> = /*
   messageDesc(file_app_vouch, 6);
 
 /**
+ * @generated from message roster.VouchEnrolRequest
+ */
+export type VouchEnrolRequest = Message<"roster.VouchEnrolRequest"> & {
+  /**
+   * @generated from field: roster.VouchWho who = 1;
+   */
+  who?: VouchWho | undefined;
+
+  /**
+   * Which kind. Only "totp" today: a password is `Set` or `Reset`, and neither
+   * of those is something a person's phone holds.
+   *
+   * @generated from field: string kind = 8;
+   */
+  kind: string;
+
+  /**
+   * What they call it, when there is more than one to tell apart -- "the
+   * phone", "the yubikey in the drawer". Empty is the only one of its kind.
+   *
+   * @generated from field: string name = 5;
+   */
+  name: string;
+
+  /**
+   * What the authenticator app shows in its list, and it is the deployment's
+   * name rather than the tenant's: a person with accounts at two operators
+   * needs to tell the two entries apart, and both are this roster.
+   *
+   * @generated from field: string issuer = 9;
+   */
+  issuer: string;
+};
+
+/**
+ * Describes the message roster.VouchEnrolRequest.
+ * Use `create(VouchEnrolRequestSchema)` to create a new message.
+ */
+export const VouchEnrolRequestSchema: GenMessage<VouchEnrolRequest> = /*@__PURE__*/
+  messageDesc(file_app_vouch, 7);
+
+/**
+ * @generated from message roster.VouchEnrolResponse
+ */
+export type VouchEnrolResponse = Message<"roster.VouchEnrolResponse"> & {
+  /**
+   * The seed, base32, uppercase and unpadded -- the only time it is readable.
+   *
+   * Padding is legal and some apps refuse it, which is the sort of thing only
+   * discovered in front of a phone that will not scan.
+   *
+   * @generated from field: string seed = 1;
+   */
+  seed: string;
+
+  /**
+   * The same thing as a QR code's worth of URI.
+   *
+   * @generated from field: string uri = 2;
+   */
+  uri: string;
+};
+
+/**
+ * Describes the message roster.VouchEnrolResponse.
+ * Use `create(VouchEnrolResponseSchema)` to create a new message.
+ */
+export const VouchEnrolResponseSchema: GenMessage<VouchEnrolResponse> = /*@__PURE__*/
+  messageDesc(file_app_vouch, 8);
+
+/**
  * @generated from message roster.VouchRevokeRequest
  */
 export type VouchRevokeRequest = Message<"roster.VouchRevokeRequest"> & {
@@ -339,7 +410,7 @@ export type VouchRevokeRequest = Message<"roster.VouchRevokeRequest"> & {
  * Use `create(VouchRevokeRequestSchema)` to create a new message.
  */
 export const VouchRevokeRequestSchema: GenMessage<VouchRevokeRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 7);
+  messageDesc(file_app_vouch, 9);
 
 /**
  * @generated from message roster.VouchRevokeResponse
@@ -352,7 +423,7 @@ export type VouchRevokeResponse = Message<"roster.VouchRevokeResponse"> & {
  * Use `create(VouchRevokeResponseSchema)` to create a new message.
  */
 export const VouchRevokeResponseSchema: GenMessage<VouchRevokeResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 8);
+  messageDesc(file_app_vouch, 10);
 
 /**
  * @generated from message roster.VouchResetRequest
@@ -378,7 +449,7 @@ export type VouchResetRequest = Message<"roster.VouchResetRequest"> & {
  * Use `create(VouchResetRequestSchema)` to create a new message.
  */
 export const VouchResetRequestSchema: GenMessage<VouchResetRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 9);
+  messageDesc(file_app_vouch, 11);
 
 /**
  * @generated from message roster.VouchResetResponse
@@ -399,7 +470,7 @@ export type VouchResetResponse = Message<"roster.VouchResetResponse"> & {
  * Use `create(VouchResetResponseSchema)` to create a new message.
  */
 export const VouchResetResponseSchema: GenMessage<VouchResetResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 10);
+  messageDesc(file_app_vouch, 12);
 
 /**
  * @generated from message roster.VouchUnlockRequest
@@ -421,7 +492,7 @@ export type VouchUnlockRequest = Message<"roster.VouchUnlockRequest"> & {
  * Use `create(VouchUnlockRequestSchema)` to create a new message.
  */
 export const VouchUnlockRequestSchema: GenMessage<VouchUnlockRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 11);
+  messageDesc(file_app_vouch, 13);
 
 /**
  * @generated from message roster.VouchUnlockResponse
@@ -443,7 +514,7 @@ export type VouchUnlockResponse = Message<"roster.VouchUnlockResponse"> & {
  * Use `create(VouchUnlockResponseSchema)` to create a new message.
  */
 export const VouchUnlockResponseSchema: GenMessage<VouchUnlockResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 12);
+  messageDesc(file_app_vouch, 14);
 
 /**
  * VouchService is how a secret is used without ever leaving the store.
@@ -588,6 +659,37 @@ export const VouchService: GenService<{
     methodKind: "unary";
     input: typeof VouchUnlockRequestSchema;
     output: typeof VouchUnlockResponseSchema;
+  },
+  /**
+   * Enrol makes a second factor and answers with it **once**.
+   *
+   * # Why Set cannot do it
+   *
+   * `Set` argon2-hashes whatever it is handed, which is the one thing a TOTP
+   * seed must not be: computing the code somebody is about to type means
+   * holding the seed, so the row **is** the secret rather than a verifier of
+   * one. A seed put through `Set` is a seed nobody can ever read back.
+   *
+   * # Why the caller does not choose it
+   *
+   * `IssueService`'s argument about a key, unchanged: a secret the caller chose
+   * is a secret the caller knows, and one generated in a browser is only as
+   * good as that page's `crypto`. Here it is `crypto/rand` on the server, and
+   * what leaves is a base32 seed and an `otpauth://` URI for a QR code.
+   *
+   * # It does not count until it is proved
+   *
+   * The row is written unconfirmed, and one code has to verify before it is a
+   * factor anybody may be asked for. A seed that counted the moment it was
+   * written would make a mis-scanned QR something somebody discovers when they
+   * are already half signed in and cannot finish.
+   *
+   * @generated from rpc roster.VouchService.Enrol
+   */
+  enrol: {
+    methodKind: "unary";
+    input: typeof VouchEnrolRequestSchema;
+    output: typeof VouchEnrolResponseSchema;
   },
   /**
    * Revoke ends a delegation before its expiry.

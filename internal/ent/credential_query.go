@@ -301,12 +301,12 @@ func (_q *CredentialQuery) WithHolder(opts ...func(*HolderQuery)) *CredentialQue
 // Example:
 //
 //	var v []struct {
-//		Kind string `json:"kind,omitempty"`
+//		Name string `json:"name,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Credential.Query().
-//		GroupBy(credential.FieldKind).
+//		GroupBy(credential.FieldName).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (_q *CredentialQuery) GroupBy(field string, fields ...string) *CredentialGroupBy {
@@ -324,11 +324,11 @@ func (_q *CredentialQuery) GroupBy(field string, fields ...string) *CredentialGr
 // Example:
 //
 //	var v []struct {
-//		Kind string `json:"kind,omitempty"`
+//		Name string `json:"name,omitempty"`
 //	}
 //
 //	client.Credential.Query().
-//		Select(credential.FieldKind).
+//		Select(credential.FieldName).
 //		Scan(ctx, &v)
 func (_q *CredentialQuery) Select(fields ...string) *CredentialSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)

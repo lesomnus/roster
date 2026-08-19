@@ -74,6 +74,7 @@ type Server struct {
 	open   app.Server
 	walled app.Server
 	reach  Reach
+	keys   Keyring
 }
 
 // Reach answers whether the caller may write this person's credential, and
@@ -98,6 +99,14 @@ type Option func(*Server)
 
 // WithReach gives the service the rule about who may write whose credential.
 func WithReach(v Reach) Option { return func(s *Server) { s.reach = v } }
+
+// WithKeys gives the service what it needs to hold a secret it must read back.
+//
+// A TOTP seed is not a verifier: computing the code somebody is about to type
+// means holding the seed, so the row **is** the secret. Without a keyring this
+// service refuses that kind outright rather than storing one in the clear --
+// see `server/vouch/seed.go` for what the key buys and what it does not.
+func WithKeys(v Keyring) Option { return func(s *Server) { s.keys = v } }
 
 // New makes the service from the two stacks it needs.
 //
@@ -158,6 +167,14 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind string, sec
 		}
 	}
 
+	by, err := s.verifierOf(kind)
+	if err != nil {
+		// A kind this deployment cannot check at all, refused before anybody is
+		// read: it is a fact about the deployment rather than about the person,
+		// so it must not depend on whether they exist.
+		return nil, nil, err
+	}
+
 	v, err := s.credential(ctx, s.open, ref, kind)
 	if err != nil {
 		if status.Code(err) != codes.NotFound {
@@ -165,8 +182,11 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind string, sec
 		}
 
 		// Nobody, or nobody with this kind of secret. Do the work anyway, so
-		// that the answer takes as long as a wrong password does.
-		Burn(secret)
+		// that the answer takes as long as a real comparison does -- and the
+		// **kind's** work, because an argon2 burn against a microsecond TOTP
+		// compare inverts the difference rather than closing it. See
+		// `server/vouch/kind.go`.
+		by.Burn(secret)
 
 		return no(), nil, nil
 	}
@@ -180,7 +200,7 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind string, sec
 		// The other half of this is in `cmd.Resolver`, which is where a
 		// credential already issued arrives. Neither covers the other: nothing
 		// signed in reaches here, and nothing here has a frame yet.
-		Burn(secret)
+		by.Burn(secret)
 
 		return no(), nil, nil
 	}
@@ -202,7 +222,7 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind string, sec
 		// because this is the read the guarantee is about. A sentence that is
 		// true only because of how somebody else composes a predicate is a
 		// sentence that stops being true without anything here changing.
-		Burn(secret)
+		by.Burn(secret)
 
 		return no(), nil, nil
 	}
@@ -218,7 +238,7 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind string, sec
 		return app.VouchVerifyResponse_builder{LockedUntil: until}.Build(), nil, nil
 	}
 
-	ok, err := Compare(v.GetSecret(), secret)
+	ok, step, err := by.Compare(v.GetSecret(), secret, v.GetLastStep())
 	if err != nil {
 		// A row this cannot read is this deployment's problem and not the
 		// caller's, and answering "no" would hide it behind somebody being
@@ -231,7 +251,7 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind string, sec
 		return res, nil, err
 	}
 
-	if err := s.passed(ctx, v); err != nil {
+	if err := s.passed(ctx, v, step); err != nil {
 		return nil, nil, err
 	}
 
@@ -400,19 +420,34 @@ func raced(err error) bool {
 // The check is not an optimisation. Every successful sign-in would otherwise be
 // a write -- a row version bumped, an audit entry, a watch event -- for a fact
 // that did not change.
-func (s *Server) passed(ctx context.Context, v *app.Credential) error {
-	if v.GetFailures() == 0 && v.GetDateLocked() == nil {
+func (s *Server) passed(ctx context.Context, v *app.Credential, step int64) error {
+	clean := v.GetFailures() == 0 && v.GetDateLocked() == nil
+
+	// A step that has to be spent is a write whatever else is true, and it is
+	// the one write on this path that is not an optimisation to skip: D20 puts
+	// replay in roster's half, and the row is the only place a spent code can
+	// be recorded.
+	if clean && step <= v.GetLastStep() {
 		return nil
 	}
 
-	_, err := s.open.Credential().Patch(ctx, app.CredentialPatchRequest_builder{
+	patch := app.CredentialPatchRequest_builder{
 		Ref:            app.CredentialRef_builder{Id: v.GetId()}.Build(),
 		Failures:       z.Ptr(int32(0)),
 		DateLockedNull: z.Ptr(true),
 		DateUpdated:    v.GetDateUpdated(),
-	}.Build())
+	}
+	if step > v.GetLastStep() {
+		patch.LastStep = z.Ptr(step)
+	}
+
+	_, err := s.open.Credential().Patch(ctx, patch.Build())
 	if raced(err) {
-		// Another request cleared it, which is the same outcome.
+		// Another request got there first. For the counter that is the same
+		// outcome; for the step it is **also** the same outcome, because the
+		// request that won wrote the same step or a later one -- two attempts
+		// with one code cannot both be the winner, which is the property this
+		// is for.
 		return nil
 	}
 
@@ -436,6 +471,7 @@ func (s *Server) credential(ctx context.Context, from app.Server, ref *app.Holde
 			Secret:     z.Ptr(true),
 			Failures:   z.Ptr(true),
 			DateLocked: z.Ptr(true),
+			LastStep:   z.Ptr(true),
 
 			// The version, because every write below is a compare-and-swap and
 			// payday refuses one that did not say what it expected to find.

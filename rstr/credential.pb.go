@@ -50,11 +50,13 @@ type Credential struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
 	xxx_hidden_Holder      *Holder                `protobuf:"bytes,2,opt,name=holder"`
+	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_Kind        string                 `protobuf:"bytes,8,opt,name=kind"`
 	xxx_hidden_Secret      []byte                 `protobuf:"bytes,9,opt,name=secret"`
 	xxx_hidden_Failures    int32                  `protobuf:"varint,10,opt,name=failures"`
 	xxx_hidden_DateLocked  *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_locked,json=dateLocked"`
 	xxx_hidden_DateRotated *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_rotated,json=dateRotated"`
+	xxx_hidden_LastStep    int64                  `protobuf:"varint,16,opt,name=last_step,json=lastStep"`
 	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
@@ -101,6 +103,13 @@ func (x *Credential) GetHolder() *Holder {
 	return nil
 }
 
+func (x *Credential) GetName() string {
+	if x != nil {
+		return x.xxx_hidden_Name
+	}
+	return ""
+}
+
 func (x *Credential) GetKind() string {
 	if x != nil {
 		return x.xxx_hidden_Kind
@@ -136,6 +145,13 @@ func (x *Credential) GetDateRotated() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *Credential) GetLastStep() int64 {
+	if x != nil {
+		return x.xxx_hidden_LastStep
+	}
+	return 0
+}
+
 func (x *Credential) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -168,6 +184,10 @@ func (x *Credential) SetHolder(v *Holder) {
 	x.xxx_hidden_Holder = v
 }
 
+func (x *Credential) SetName(v string) {
+	x.xxx_hidden_Name = v
+}
+
 func (x *Credential) SetKind(v string) {
 	x.xxx_hidden_Kind = v
 }
@@ -189,6 +209,10 @@ func (x *Credential) SetDateLocked(v *timestamppb.Timestamp) {
 
 func (x *Credential) SetDateRotated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateRotated = v
+}
+
+func (x *Credential) SetLastStep(v int64) {
+	x.xxx_hidden_LastStep = v
 }
 
 func (x *Credential) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -274,8 +298,34 @@ type Credential_builder struct {
 
 	Id     []byte
 	Holder *Holder
-	// What kind of secret it is -- "password", "totp". One of each per person,
-	// which the index below is what enforces.
+	// What somebody calls this one, when there is more than one of a kind to tell
+	// apart: "the phone", "the yubikey in the drawer".
+	//
+	// # Why it is here now and was not
+	//
+	// The index used to be `(holder, kind)` and the comment said *one of each per
+	// person*, which is right for a password, defensible for a TOTP seed, and
+	// wrong for the thing after it. Registering a **second** security key is the
+	// standard advice for WebAuthn, and a passkey lands one per device -- so an
+	// entity that permits exactly one row per kind forecloses the recovery story
+	// of the factor most likely to be added next.
+	//
+	// Empty is the single-instance case, which is what a password and a TOTP seed
+	// are, so nothing about them changes.
+	//
+	// # Why it is `name` and not `alias`
+	//
+	// Field 4 is the number the convention reserves for what a row is named by,
+	// and it is the wrong one here: payday **makes an alias up** when a caller
+	// gives none -- seven characters, so that every row has a slug -- and this
+	// wants the opposite, an empty value meaning *the only one*. Found by adding
+	// it: every existing lookup stopped matching, because the rows had aliases
+	// nobody had asked for.
+	//
+	// `name` carries no such machinery and says the same thing to a person.
+	Name string
+	// What kind of secret it is -- "password", "totp". One of each **name** per
+	// person, which the index below is what enforces.
 	Kind string
 	// The verifier, never the secret: an argon2id encoded hash for a password, an
 	// encrypted seed for TOTP. Bytes rather than a string because neither is
@@ -295,6 +345,21 @@ type Credential_builder struct {
 	// When it was last changed, for a policy that expires them and for showing
 	// somebody why they are being asked.
 	DateRotated *timestamppb.Timestamp
+	// The last step this credential accepted, for the kinds that count.
+	//
+	// D20 says it in as many words: *a TOTP step that has been used must not work
+	// twice, and the only place that can be recorded is the row.* A code watched
+	// over a shoulder or captured by a page pretending to be the front door
+	// otherwise works for the rest of its thirty seconds, which is most of what
+	// an attacker with one needs.
+	//
+	// It is the same class of state as WebAuthn's signature counter, and D20 uses
+	// that counter to argue verification is roster's at all -- so this is not an
+	// extra column, it is the column that argument was about.
+	//
+	// Zero for a kind that does not count anything, which is every kind that
+	// exists today except `totp`.
+	LastStep    int64
 	DateUpdated *timestamppb.Timestamp
 	DateErased  *timestamppb.Timestamp
 	DateCreated *timestamppb.Timestamp
@@ -306,11 +371,13 @@ func (b0 Credential_builder) Build() *Credential {
 	_, _ = b, x
 	x.xxx_hidden_Id = b.Id
 	x.xxx_hidden_Holder = b.Holder
+	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Kind = b.Kind
 	x.xxx_hidden_Secret = b.Secret
 	x.xxx_hidden_Failures = b.Failures
 	x.xxx_hidden_DateLocked = b.DateLocked
 	x.xxx_hidden_DateRotated = b.DateRotated
+	x.xxx_hidden_LastStep = b.LastStep
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
@@ -321,27 +388,30 @@ var File_app_credential_proto protoreflect.FileDescriptor
 
 const file_app_credential_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/credential.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xa8\x05\n" +
+	"\x14app/credential.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xe3\x05\n" +
 	"\n" +
 	"Credential\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\x12\n" +
+	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
 	"\x04kind\x18\b \x01(\tR\x04kind\x12\x1e\n" +
 	"\x06secret\x18\t \x01(\fB\x06\xaa\xc1\x16\x02\b\x01R\x06secret\x12\x1a\n" +
 	"\bfailures\x18\n" +
 	" \x01(\x05R\bfailures\x12C\n" +
 	"\vdate_locked\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\n" +
 	"dateLocked\x12E\n" +
-	"\fdate_rotated\x18\f \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\vdateRotated\x12F\n" +
+	"\fdate_rotated\x18\f \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\vdateRotated\x12\x1b\n" +
+	"\tlast_step\x18\x10 \x01(\x03R\blastStep\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:\x98\x01\xca\xfc\x15F\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:\xa2\x01\xca\xfc\x15P\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
-	"\x02id\x10\x01\x1a\x1e\x12\x04kind\x1a\n" +
+	"\x02id\x10\x01\x1a(\x12\x04kind\x1a\n" +
 	"\n" +
 	"\x06holder\x10\x02\x1a\b\n" +
-	"\x04kind\x10\b0\x01\x8a\xbb\x16J\b\r23\n" +
+	"\x04kind\x10\b\x1a\b\n" +
+	"\x04name\x10\x050\x01\x8a\xbb\x16J\b\r23\n" +
 	"\x12\n" +
 	"\x10\n" +
 	"\fdate_created\x10\x0f\n" +

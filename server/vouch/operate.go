@@ -3,6 +3,7 @@ package vouch
 import (
 	"context"
 	"crypto/rand"
+	"encoding/base32"
 	"encoding/base64"
 
 	"github.com/lesomnus/z"
@@ -46,11 +47,13 @@ import (
 // Reset gives somebody a new password and answers with it once.
 func (s *Server) Reset(ctx context.Context, req *app.VouchResetRequest) (*app.VouchResetResponse, error) {
 	if k := kindOf(req.GetKind()); k != KindPassword {
-		// There is nothing sensible to generate for a TOTP seed that the person
-		// could then read out, and a caller asking for one has misunderstood
-		// what this does rather than asked for something unimplemented.
+		// A second factor is [Server.Enrol], which generates a seed and answers
+		// with it once -- the same shape as this and a different act, because
+		// what somebody does with a seed is scan it rather than type it. This
+		// comment used to say there was nothing sensible to generate for one,
+		// which was wrong and was the reason `Enrol` did not exist.
 		return nil, status.Errorf(codes.InvalidArgument,
-			"kind: %q is not something to hand somebody", k)
+			"kind: %q is not a password; a second factor is Enrol", k)
 	}
 
 	secret, err := passphrase()
@@ -139,4 +142,86 @@ func passphrase() (string, error) {
 	}
 
 	return base64.RawURLEncoding.EncodeToString(b), nil
+}
+
+// Enrol makes a second factor and answers with it once.
+//
+// # It does not count until it is proved
+//
+// The row goes in with `last_step` at zero, which is what **unconfirmed** means
+// for this kind: one code has to verify before the column moves. A seed that
+// counted the moment it was written would make a mis-scanned QR something
+// somebody discovers when they are already half signed in and cannot finish.
+//
+// An unconfirmed factor still **verifies** -- that is how it gets confirmed --
+// and it does not appear in what a person *has*. The two are different
+// questions and only the second one is about whether to ask for it.
+func (s *Server) Enrol(ctx context.Context, req *app.VouchEnrolRequest) (*app.VouchEnrolResponse, error) {
+	if kindOf(req.GetKind()) != KindTotp {
+		// A password is `Set` or `Reset`, and neither of those is a thing a
+		// phone holds. Refused rather than routed, because a caller asking for
+		// one here has misunderstood which act they are doing.
+		return nil, status.Errorf(codes.InvalidArgument,
+			"kind: %q is not something to enrol; a password is Set or Reset", req.GetKind())
+	}
+	if s.keys.Current == "" {
+		return nil, status.Error(codes.Unimplemented,
+			"this deployment holds no key to wrap a seed with, so it cannot hold a second factor")
+	}
+
+	ref, err := refOf(req.GetWho())
+	if err != nil {
+		return nil, err
+	}
+	if ref == nil {
+		ref, err = s.byAddress(ctx, req.GetWho().GetTenant(), req.GetWho().GetAddress())
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	who, err := s.walled.Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref:    ref,
+		Select: app.HolderSelect_builder{Alias: z.Ptr(true)}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	// Adding a way in for somebody is not quite writing their credential, and
+	// it is close enough: an operator who could enrol a factor on an
+	// administrator's account would hold one of the two things that person
+	// signs in with. Same rule, same place.
+	if err := s.mayReach(ctx, who.GetId()); err != nil {
+		return nil, err
+	}
+
+	seed, err := totpSeed()
+	if err != nil {
+		return nil, status.Error(codes.Internal, "a seed cannot be made just now")
+	}
+
+	stored, err := s.keys.Wrap(seed)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "a seed cannot be stored just now")
+	}
+
+	if _, err := s.walled.Credential().Add(ctx, app.CredentialAddRequest_builder{
+		Holder: ref,
+		Kind:   KindTotp,
+		Name:   req.GetName(),
+		Secret: stored,
+	}.Build()); err != nil {
+		return nil, err
+	}
+
+	issuer := req.GetIssuer()
+	if issuer == "" {
+		issuer = "roster"
+	}
+
+	return app.VouchEnrolResponse_builder{
+		Seed: base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(seed),
+		Uri:  TotpUri(issuer, who.GetAlias(), seed),
+	}.Build(), nil
 }

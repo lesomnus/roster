@@ -137,6 +137,101 @@ over memberships, credential verification.
 Recorded as they are made, with the reason, so that a later disagreement argues
 with the reason rather than rediscovering the question.
 
+### D29 · A kind is checked its own way, and one of them roster must read back
+
+P7's first two increments, and the finding that would have been hardest to see
+without looking for it.
+
+#### Every refusal costs the same, **per kind**
+
+D14 built the equal-cost refusal: *an unknown person, a person with no
+credential of this kind and a wrong secret are one response*, and the first two
+`Burn` an argon2 comparison so they take as long as the third.
+
+That works because every kind stored an argon2 hash. A TOTP comparison is three
+HMAC-SHA1s and a decrypt -- microseconds -- so the moment a second kind exists,
+*this person has no second factor* costs forty milliseconds and *wrong code*
+costs nothing, and **the sign of the difference is inverted from what D14
+built**. It is a cleaner oracle than the one D14 closed, and it answers exactly
+the question D21 built its whole shape around.
+
+So the cost belongs to the kind. Each verifier burns what its own comparison
+would have cost, and the seam is one switch that was needed for the decrypt
+anyway.
+
+A kind this deployment cannot check at all is refused **before anybody is
+read**, and as `Unimplemented` rather than as a `no`: it is a fact about the
+deployment rather than about the person, so it must not depend on whether they
+exist -- and a deployment answering "wrong code" to every attempt is one where
+nobody can tell a misconfiguration from a mistake.
+
+#### The first secret roster has to read back
+
+Everything else here is a **verifier**. A password is compared against a hash
+and the store never learns it; a key and a delegation are found by a digest of
+themselves. In each case a copy of the database is a copy of things nobody can
+use.
+
+A TOTP seed is not that. Computing the code somebody is about to type means
+holding the seed, so the row **is** the secret.
+
+So it is wrapped, with a key the deployment keeps where the database is not, and
+it is worth being exact about what that buys: **not** protection against a
+compromised process, which has the key in memory by construction, but against a
+copy of the rows. A deployment with no key refuses to hold a second factor at
+all rather than storing one in the clear.
+
+Ciphertext carries the **name** of the key that made it, authenticated, so a
+deployment may hold several and roll forward. Nothing re-wraps in the
+background: a sweep that rewrites every credential row is a sweep whose
+half-finished state is a deployment that cannot verify anybody. A key that is
+gone is every second factor gone with it, and there should be no recovery from
+that -- a wrapped seed a deployment can unwrap without its key is one that was
+not wrapped.
+
+#### Replay, which D20 required and nothing recorded
+
+*A TOTP step that has been used must not work twice, and the only place that can
+be recorded is the row.* `Credential.last_step` is that place, written by the
+same compare-and-swap the failure count already uses. Without it a code watched
+over a shoulder is good for the rest of its thirty seconds, which is most of
+what somebody holding one needs.
+
+#### `name`, and the alias that could not be one
+
+The index was `(holder, kind)` and the comment said *one of each per person*.
+Right for a password, defensible for a seed, and wrong for the factor most
+likely to be added next: registering a **second** security key is the standard
+advice for WebAuthn, and a passkey lands one per device.
+
+So `(holder, kind, name)`, with empty meaning the only one. It is `name` at
+field 5 and not `alias` at field 4, and finding that out cost a broken test
+suite: payday **makes an alias up** when a caller gives none, seven characters
+so that every row has a slug, and this wanted the opposite -- an empty value
+meaning *the only one*. Every existing lookup stopped matching at once, because
+the rows had aliases nobody had asked for.
+
+#### And enrolment, which P7 was written as already having
+
+`Set` argon2-hashes whatever it is handed, so a seed through it is a seed nobody
+can read back. `Reset` refused a non-password kind in a sentence that was wrong:
+*there is nothing sensible to generate for a TOTP seed that the person could
+then read out.* A seed **is** the sensible thing to generate, and it **is** read
+out -- as a QR code.
+
+So `Vouch.Enrol`: `crypto/rand` on the server for `IssueService`'s reason, the
+base32 and an `otpauth://` URI answered exactly once, and the same escalation
+rule D28 put on the other credential writes -- an operator who could enrol a
+factor on an administrator's account would hold one of the two things that
+person signs in with.
+
+It goes in **unconfirmed**, which for this kind is `last_step` at zero. One code
+has to verify before the column moves, and a factor that counted the moment it
+was written would make a mis-scanned QR something somebody discovers when they
+are already half signed in and cannot finish. An unconfirmed factor still
+verifies -- that is how it gets confirmed -- and does not appear in what a
+person *has*.
+
 ### D28 · You may write the credential of somebody no wider than you
 
 Items 11 and 10, in that order, which is the only pair in the list where the

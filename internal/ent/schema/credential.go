@@ -22,6 +22,7 @@ func (Credential) Fields() []ent.Field {
 		field.UUID("id", uuid.UUID{}).
 			Unique().
 			Immutable(),
+		field.String("name"),
 		field.String("kind"),
 		field.Bytes("secret"),
 		field.Int32("failures"),
@@ -31,6 +32,7 @@ func (Credential) Fields() []ent.Field {
 		field.Time("date_rotated").
 			Nillable().
 			Optional(),
+		field.Int64("last_step"),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().
@@ -56,7 +58,7 @@ func (Credential) Edges() []ent.Edge {
 func (Credential) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("date_created", "id"),
-		index.Fields("kind").
+		index.Fields("kind", "name").
 			Edges("holder").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),

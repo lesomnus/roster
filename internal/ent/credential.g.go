@@ -19,6 +19,7 @@ func (e *Credential) Proto() *rstr.Credential {
 		r.SetId(v[:])
 		x.SetHolder(r)
 	}
+	x.SetName(e.Name)
 	x.SetKind(e.Kind)
 	x.SetSecret(e.Secret)
 	x.SetFailures(e.Failures)
@@ -28,6 +29,7 @@ func (e *Credential) Proto() *rstr.Credential {
 	if e.DateRotated != nil {
 		x.SetDateRotated(timestamppb.New(*e.DateRotated))
 	}
+	x.SetLastStep(e.LastStep)
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))

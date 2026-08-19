@@ -2864,12 +2864,15 @@ type CredentialMutation struct {
 	op            Op
 	typ           string
 	id            *uuid.UUID
+	name          *string
 	kind          *string
 	secret        *[]byte
 	failures      *int32
 	addfailures   *int32
 	date_locked   *time.Time
 	date_rotated  *time.Time
+	last_step     *int64
+	addlast_step  *int64
 	date_updated  *time.Time
 	date_erased   *time.Time
 	date_created  *time.Time
@@ -2983,6 +2986,42 @@ func (m *CredentialMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
+}
+
+// SetName sets the "name" field.
+func (m *CredentialMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *CredentialMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the Credential entity.
+// If the Credential object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CredentialMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *CredentialMutation) ResetName() {
+	m.name = nil
 }
 
 // SetKind sets the "kind" field.
@@ -3209,6 +3248,62 @@ func (m *CredentialMutation) DateRotatedCleared() bool {
 func (m *CredentialMutation) ResetDateRotated() {
 	m.date_rotated = nil
 	delete(m.clearedFields, credential.FieldDateRotated)
+}
+
+// SetLastStep sets the "last_step" field.
+func (m *CredentialMutation) SetLastStep(i int64) {
+	m.last_step = &i
+	m.addlast_step = nil
+}
+
+// LastStep returns the value of the "last_step" field in the mutation.
+func (m *CredentialMutation) LastStep() (r int64, exists bool) {
+	v := m.last_step
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastStep returns the old "last_step" field's value of the Credential entity.
+// If the Credential object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CredentialMutation) OldLastStep(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastStep is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastStep requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastStep: %w", err)
+	}
+	return oldValue.LastStep, nil
+}
+
+// AddLastStep adds i to the "last_step" field.
+func (m *CredentialMutation) AddLastStep(i int64) {
+	if m.addlast_step != nil {
+		*m.addlast_step += i
+	} else {
+		m.addlast_step = &i
+	}
+}
+
+// AddedLastStep returns the value that was added to the "last_step" field in this mutation.
+func (m *CredentialMutation) AddedLastStep() (r int64, exists bool) {
+	v := m.addlast_step
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetLastStep resets all changes to the "last_step" field.
+func (m *CredentialMutation) ResetLastStep() {
+	m.last_step = nil
+	m.addlast_step = nil
 }
 
 // SetDateUpdated sets the "date_updated" field.
@@ -3442,7 +3537,10 @@ func (m *CredentialMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CredentialMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 11)
+	if m.name != nil {
+		fields = append(fields, credential.FieldName)
+	}
 	if m.kind != nil {
 		fields = append(fields, credential.FieldKind)
 	}
@@ -3457,6 +3555,9 @@ func (m *CredentialMutation) Fields() []string {
 	}
 	if m.date_rotated != nil {
 		fields = append(fields, credential.FieldDateRotated)
+	}
+	if m.last_step != nil {
+		fields = append(fields, credential.FieldLastStep)
 	}
 	if m.date_updated != nil {
 		fields = append(fields, credential.FieldDateUpdated)
@@ -3478,6 +3579,8 @@ func (m *CredentialMutation) Fields() []string {
 // schema.
 func (m *CredentialMutation) Field(name string) (ent.Value, bool) {
 	switch name {
+	case credential.FieldName:
+		return m.Name()
 	case credential.FieldKind:
 		return m.Kind()
 	case credential.FieldSecret:
@@ -3488,6 +3591,8 @@ func (m *CredentialMutation) Field(name string) (ent.Value, bool) {
 		return m.DateLocked()
 	case credential.FieldDateRotated:
 		return m.DateRotated()
+	case credential.FieldLastStep:
+		return m.LastStep()
 	case credential.FieldDateUpdated:
 		return m.DateUpdated()
 	case credential.FieldDateErased:
@@ -3505,6 +3610,8 @@ func (m *CredentialMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *CredentialMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
+	case credential.FieldName:
+		return m.OldName(ctx)
 	case credential.FieldKind:
 		return m.OldKind(ctx)
 	case credential.FieldSecret:
@@ -3515,6 +3622,8 @@ func (m *CredentialMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldDateLocked(ctx)
 	case credential.FieldDateRotated:
 		return m.OldDateRotated(ctx)
+	case credential.FieldLastStep:
+		return m.OldLastStep(ctx)
 	case credential.FieldDateUpdated:
 		return m.OldDateUpdated(ctx)
 	case credential.FieldDateErased:
@@ -3532,6 +3641,13 @@ func (m *CredentialMutation) OldField(ctx context.Context, name string) (ent.Val
 // type.
 func (m *CredentialMutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case credential.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
 	case credential.FieldKind:
 		v, ok := value.(string)
 		if !ok {
@@ -3566,6 +3682,13 @@ func (m *CredentialMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDateRotated(v)
+		return nil
+	case credential.FieldLastStep:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastStep(v)
 		return nil
 	case credential.FieldDateUpdated:
 		v, ok := value.(time.Time)
@@ -3606,6 +3729,9 @@ func (m *CredentialMutation) AddedFields() []string {
 	if m.addfailures != nil {
 		fields = append(fields, credential.FieldFailures)
 	}
+	if m.addlast_step != nil {
+		fields = append(fields, credential.FieldLastStep)
+	}
 	return fields
 }
 
@@ -3616,6 +3742,8 @@ func (m *CredentialMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case credential.FieldFailures:
 		return m.AddedFailures()
+	case credential.FieldLastStep:
+		return m.AddedLastStep()
 	}
 	return nil, false
 }
@@ -3631,6 +3759,13 @@ func (m *CredentialMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddFailures(v)
+		return nil
+	case credential.FieldLastStep:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddLastStep(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Credential numeric field %s", name)
@@ -3686,6 +3821,9 @@ func (m *CredentialMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *CredentialMutation) ResetField(name string) error {
 	switch name {
+	case credential.FieldName:
+		m.ResetName()
+		return nil
 	case credential.FieldKind:
 		m.ResetKind()
 		return nil
@@ -3700,6 +3838,9 @@ func (m *CredentialMutation) ResetField(name string) error {
 		return nil
 	case credential.FieldDateRotated:
 		m.ResetDateRotated()
+		return nil
+	case credential.FieldLastStep:
+		m.ResetLastStep()
 		return nil
 	case credential.FieldDateUpdated:
 		m.ResetDateUpdated()

@@ -22,6 +22,12 @@ type CredentialCreate struct {
 	hooks    []Hook
 }
 
+// SetName sets the "name" field.
+func (_c *CredentialCreate) SetName(v string) *CredentialCreate {
+	_c.mutation.SetName(v)
+	return _c
+}
+
 // SetKind sets the "kind" field.
 func (_c *CredentialCreate) SetKind(v string) *CredentialCreate {
 	_c.mutation.SetKind(v)
@@ -65,6 +71,12 @@ func (_c *CredentialCreate) SetNillableDateRotated(v *time.Time) *CredentialCrea
 	if v != nil {
 		_c.SetDateRotated(*v)
 	}
+	return _c
+}
+
+// SetLastStep sets the "last_step" field.
+func (_c *CredentialCreate) SetLastStep(v int64) *CredentialCreate {
+	_c.mutation.SetLastStep(v)
 	return _c
 }
 
@@ -153,6 +165,9 @@ func (_c *CredentialCreate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_c *CredentialCreate) check() error {
+	if _, ok := _c.mutation.Name(); !ok {
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Credential.name"`)}
+	}
 	if _, ok := _c.mutation.Kind(); !ok {
 		return &ValidationError{Name: "kind", err: errors.New(`ent: missing required field "Credential.kind"`)}
 	}
@@ -161,6 +176,9 @@ func (_c *CredentialCreate) check() error {
 	}
 	if _, ok := _c.mutation.Failures(); !ok {
 		return &ValidationError{Name: "failures", err: errors.New(`ent: missing required field "Credential.failures"`)}
+	}
+	if _, ok := _c.mutation.LastStep(); !ok {
+		return &ValidationError{Name: "last_step", err: errors.New(`ent: missing required field "Credential.last_step"`)}
 	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Credential.date_updated"`)}
@@ -206,6 +224,10 @@ func (_c *CredentialCreate) createSpec() (*Credential, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
+	if value, ok := _c.mutation.Name(); ok {
+		_spec.SetField(credential.FieldName, field.TypeString, value)
+		_node.Name = value
+	}
 	if value, ok := _c.mutation.Kind(); ok {
 		_spec.SetField(credential.FieldKind, field.TypeString, value)
 		_node.Kind = value
@@ -225,6 +247,10 @@ func (_c *CredentialCreate) createSpec() (*Credential, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.DateRotated(); ok {
 		_spec.SetField(credential.FieldDateRotated, field.TypeTime, value)
 		_node.DateRotated = &value
+	}
+	if value, ok := _c.mutation.LastStep(); ok {
+		_spec.SetField(credential.FieldLastStep, field.TypeInt64, value)
+		_node.LastStep = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(credential.FieldDateUpdated, field.TypeTime, value)

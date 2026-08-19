@@ -18,8 +18,9 @@ func (x *Credential) Ref() *CredentialRef {
 	{
 		v1 := x.GetHolder()
 		v2 := x.GetKind()
-		if v1 != nil && len(v2) > 0 {
-			return CredentialByKind(v1.Ref(), v2)
+		v3 := x.GetName()
+		if v1 != nil && len(v2) > 0 && len(v3) > 0 {
+			return CredentialByKind(v1.Ref(), v2, v3)
 		}
 	}
 
@@ -37,7 +38,8 @@ func (x *CredentialRef) Picks(v *Credential) bool {
 	case CredentialRef_Kind_case:
 		x := x.GetKind()
 		return (x.GetHolder().Picks(v.GetHolder())) &&
-			(x.GetKind() == v.GetKind())
+			(x.GetKind() == v.GetKind()) &&
+			(x.GetName() == v.GetName())
 	default:
 		return false
 	}
@@ -64,13 +66,14 @@ func CredentialGetById(v []byte) *CredentialGetRequest {
 	return CredentialGetRequest_builder{Ref: CredentialById(v)}.Build()
 }
 
-func CredentialByKind(holder *HolderRef, kind string) *CredentialRef {
+func CredentialByKind(holder *HolderRef, kind string, name string) *CredentialRef {
 	x := &CredentialRefByKind{}
 	x.SetHolder(holder)
 	x.SetKind(kind)
+	x.SetName(name)
 	return CredentialRef_builder{Kind: x}.Build()
 }
 
-func CredentialGetByKind(holder *HolderRef, kind string) *CredentialGetRequest {
-	return CredentialGetRequest_builder{Ref: CredentialByKind(holder, kind)}.Build()
+func CredentialGetByKind(holder *HolderRef, kind string, name string) *CredentialGetRequest {
+	return CredentialGetRequest_builder{Ref: CredentialByKind(holder, kind, name)}.Build()
 }

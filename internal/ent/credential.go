@@ -19,6 +19,8 @@ type Credential struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
+	// Name holds the value of the "name" field.
+	Name string `json:"name,omitempty"`
 	// Kind holds the value of the "kind" field.
 	Kind string `json:"kind,omitempty"`
 	// Secret holds the value of the "secret" field.
@@ -29,6 +31,8 @@ type Credential struct {
 	DateLocked *time.Time `json:"date_locked,omitempty"`
 	// DateRotated holds the value of the "date_rotated" field.
 	DateRotated *time.Time `json:"date_rotated,omitempty"`
+	// LastStep holds the value of the "last_step" field.
+	LastStep int64 `json:"last_step,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -70,9 +74,9 @@ func (*Credential) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case credential.FieldSecret:
 			values[i] = new([]byte)
-		case credential.FieldFailures:
+		case credential.FieldFailures, credential.FieldLastStep:
 			values[i] = new(sql.NullInt64)
-		case credential.FieldKind:
+		case credential.FieldName, credential.FieldKind:
 			values[i] = new(sql.NullString)
 		case credential.FieldDateLocked, credential.FieldDateRotated, credential.FieldDateUpdated, credential.FieldDateErased, credential.FieldDateCreated:
 			values[i] = new(sql.NullTime)
@@ -98,6 +102,12 @@ func (_m *Credential) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				_m.ID = *value
+			}
+		case credential.FieldName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field name", values[i])
+			} else if value.Valid {
+				_m.Name = value.String
 			}
 		case credential.FieldKind:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -130,6 +140,12 @@ func (_m *Credential) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.DateRotated = new(time.Time)
 				*_m.DateRotated = value.Time
+			}
+		case credential.FieldLastStep:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field last_step", values[i])
+			} else if value.Valid {
+				_m.LastStep = value.Int64
 			}
 		case credential.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -197,6 +213,9 @@ func (_m *Credential) String() string {
 	var builder strings.Builder
 	builder.WriteString("Credential(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
+	builder.WriteString("name=")
+	builder.WriteString(_m.Name)
+	builder.WriteString(", ")
 	builder.WriteString("kind=")
 	builder.WriteString(_m.Kind)
 	builder.WriteString(", ")
@@ -215,6 +234,9 @@ func (_m *Credential) String() string {
 		builder.WriteString("date_rotated=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("last_step=")
+	builder.WriteString(fmt.Sprintf("%v", _m.LastStep))
 	builder.WriteString(", ")
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))

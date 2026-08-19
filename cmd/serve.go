@@ -98,6 +98,13 @@ type Server struct {
 	// is nobody's to read.
 	Keys bool
 
+	// Keyring is what this deployment can wrap a seed with, from `vouch.keys`.
+	//
+	// Zero is a deployment that holds no second factor, which is every one that
+	// has not said otherwise -- and asking it to hold one is refused rather
+	// than answered with a seed in the clear.
+	Keyring vouch.Keyring
+
 	// Sessions is the console's cookie: the endpoint that mints one and the
 	// handler that reads it back. Nil where there is no control plane, since
 	// the people who sign in are its holders and there would be nobody to be.
@@ -224,7 +231,18 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		return nil, err
 	}
 
-	s := &Server{Db: db, Ent: client, Drv: drv, Dialect: dialect, Watch: w, Walled: stacked, Ungated: ungated}
+	// Read here rather than where it is used, so that a deployment whose keys
+	// are malformed finds out when it starts rather than when somebody enrols.
+	keyring, err := vouch.NewKeyring(c.Vouch.Keys)
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+
+	s := &Server{
+		Db: db, Ent: client, Drv: drv, Dialect: dialect, Watch: w,
+		Walled: stacked, Ungated: ungated, Keyring: keyring,
+	}
 
 	// The control plane: roster again, on its own database, holding keys rather
 	// than people. See PLAN.md, D15 and `ControlConfig`.
@@ -379,7 +397,8 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// because `VouchService` is hand-written and no layer wraps it. Same rules
 	// the gate reads, handed over rather than asked for a second time.
 	app.RegisterVouchServiceServer(g, vouch.New(s.Ungated, s.Walled,
-		vouch.WithReach(core.Reaching(Rules(s.Ent)))))
+		vouch.WithReach(core.Reaching(Rules(s.Ent))),
+		vouch.WithKeys(s.Keyring)))
 
 	// What a front door asks before it knows anything, and therefore through
 	// the server the wall was never installed on. Neither RPC answers with a

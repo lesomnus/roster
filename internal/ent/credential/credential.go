@@ -12,6 +12,8 @@ const (
 	Label = "credential"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldName holds the string denoting the name field in the database.
+	FieldName = "name"
 	// FieldKind holds the string denoting the kind field in the database.
 	FieldKind = "kind"
 	// FieldSecret holds the string denoting the secret field in the database.
@@ -22,6 +24,8 @@ const (
 	FieldDateLocked = "date_locked"
 	// FieldDateRotated holds the string denoting the date_rotated field in the database.
 	FieldDateRotated = "date_rotated"
+	// FieldLastStep holds the string denoting the last_step field in the database.
+	FieldLastStep = "last_step"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
@@ -46,11 +50,13 @@ const (
 // Columns holds all SQL columns for credential fields.
 var Columns = []string{
 	FieldID,
+	FieldName,
 	FieldKind,
 	FieldSecret,
 	FieldFailures,
 	FieldDateLocked,
 	FieldDateRotated,
+	FieldLastStep,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
@@ -75,6 +81,11 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
+// ByName orders the results by the name field.
+func ByName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldName, opts...).ToFunc()
+}
+
 // ByKind orders the results by the kind field.
 func ByKind(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldKind, opts...).ToFunc()
@@ -93,6 +104,11 @@ func ByDateLocked(opts ...sql.OrderTermOption) OrderOption {
 // ByDateRotated orders the results by the date_rotated field.
 func ByDateRotated(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDateRotated, opts...).ToFunc()
+}
+
+// ByLastStep orders the results by the last_step field.
+func ByLastStep(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLastStep, opts...).ToFunc()
 }
 
 // ByDateUpdated orders the results by the date_updated field.

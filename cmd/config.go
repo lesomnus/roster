@@ -85,6 +85,32 @@ type Config struct {
 	// safe or unsafe, and a framework making them would make them the same way
 	// for every app.
 	Client ClientConfig `yaml:"client"`
+
+	// Vouch is what this deployment needs to hold a secret it must read back.
+	//
+	// Only one thing so far and it is the first of its kind: a TOTP seed is not
+	// a verifier -- computing the code somebody is about to type means holding
+	// the seed -- so the row **is** the secret, and it is wrapped with a key
+	// this deployment keeps somewhere the database is not.
+	//
+	// Empty is a deployment that holds no second factor, and asking it to is
+	// refused rather than answered with a seed in the clear.
+	Vouch VouchConfig `yaml:"vouch"`
+}
+
+// VouchConfig is what checking secrets needs beyond the rows.
+type VouchConfig struct {
+	// Keys wrap the seeds, written `name:base64` with the current one first.
+	//
+	// A list rather than one key because rotation is the only reason a
+	// ciphertext carries a name at all: new rows take the first, and old rows
+	// go on reading with whichever made them. A deployment with one key writes
+	// one line and never thinks about it again.
+	//
+	// Thirty-two bytes each, base64. `server/vouch/seed.go` says what the key
+	// buys -- protection against a copy of the rows, and not against a
+	// compromised process -- and what a lost one costs.
+	Keys []string `yaml:"keys"`
 }
 
 // ClientConfig is how a command reaches this deployment, when it is not this
