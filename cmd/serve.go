@@ -300,6 +300,12 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 			auth.Bearer(keys.Store(control.Ungated, nil)),
 		)
 	}
+	// Collecting expired delegations, and only where there are any: they are
+	// minted on this plane and the control plane has no such rows. It is not
+	// what makes an expired one refused -- [keys.findDelegation] is -- and the
+	// comment on `Sweep` says which half is which.
+	s.Spin = append(s.Spin, keys.Sweep(s.Ent, keys.Swept))
+
 	if c.Watch.Outbox && b != nil {
 		// The loop that makes an event durable. It is not a layer and not a
 		// method on any server -- `spin.Run` finds it in whatever is handed

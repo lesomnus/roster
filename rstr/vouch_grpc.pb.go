@@ -19,8 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	VouchService_Verify_FullMethodName = "/roster.VouchService/Verify"
-	VouchService_Set_FullMethodName    = "/roster.VouchService/Set"
+	VouchService_Verify_FullMethodName   = "/roster.VouchService/Verify"
+	VouchService_Set_FullMethodName      = "/roster.VouchService/Set"
+	VouchService_Delegate_FullMethodName = "/roster.VouchService/Delegate"
+	VouchService_Revoke_FullMethodName   = "/roster.VouchService/Revoke"
 )
 
 // VouchServiceClient is the client API for VouchService service.
@@ -35,7 +37,14 @@ const (
 // was asked for, and one of those fields is the hash. That is the right shape
 // for a row this app reads itself and the wrong shape for anything on a wire,
 // so `CredentialService` is **not registered** -- see `cmd/serve.go`. What is
-// registered is this: two RPCs that take a secret in and never hand one back.
+// registered is this: RPCs that take a secret in and never hand back one this
+// store was already holding.
+//
+// [VouchService.Delegate] answers with a string and is not an exception to
+// that. What it hands back is a secret roster **made**, whose verifier goes
+// into a row before the answer leaves -- which is `IssueService`'s established
+// shape, and the opposite of answering with a verifier somebody else's password
+// is checked against.
 //
 // The distinction is the same one `Credential` states about comparison. A hash
 // that has left the store puts timing-safe comparison, attempt counting and
@@ -63,6 +72,36 @@ type VouchServiceClient interface {
 	Verify(ctx context.Context, in *VouchVerifyRequest, opts ...grpc.CallOption) (*VouchVerifyResponse, error)
 	// Set writes a secret, hashing it here.
 	Set(ctx context.Context, in *VouchSetRequest, opts ...grpc.CallOption) (*VouchSetResponse, error)
+	// Delegate is Verify, and on a yes it also mints a credential for the person
+	// it just proved. PLAN.md D23 and D25.
+	//
+	// # Why it is not a field on Verify
+	//
+	// A role here is a list of methods, so what a deployment can grant is
+	// exactly what it can name -- the argument D26 made one entry earlier. As a
+	// field, granting `Verify` would grant the power to mint a person-scoped
+	// credential, and there would be no way to tell a Login App, which needs to
+	// check a password and must never mint, from a product app, which needs the
+	// token. It would also be invisible in a role, in an `Audit` row, and in
+	// `roster key add --allow`.
+	//
+	// # And why it is not Verify-then-something
+	//
+	// That is the alternative this is measured against, and it is worse two ways:
+	// two round trips, two argon2 comparisons and two entries in one lockout
+	// count -- or, if the second call takes no secret, a credential minted for
+	// somebody nobody just proved, which is the thing `keys.Delegate` refuses in
+	// as many words. This is one call, one hash, one count, sharing Verify's path
+	// verbatim.
+	Delegate(ctx context.Context, in *VouchDelegateRequest, opts ...grpc.CallOption) (*VouchDelegateResponse, error)
+	// Revoke ends a delegation before its expiry.
+	//
+	// D23 says *revoking it is a delete* and for a while nothing could:
+	// `DelegationService` is unregistered and closed, so a person clicking sign
+	// out left the app holding a credential that went on working. This is the
+	// delete, and the caller who may make it is the one that can prove it holds
+	// the token -- which is the same pair `roster-as` already carries.
+	Revoke(ctx context.Context, in *VouchRevokeRequest, opts ...grpc.CallOption) (*VouchRevokeResponse, error)
 }
 
 type vouchServiceClient struct {
@@ -93,6 +132,26 @@ func (c *vouchServiceClient) Set(ctx context.Context, in *VouchSetRequest, opts 
 	return out, nil
 }
 
+func (c *vouchServiceClient) Delegate(ctx context.Context, in *VouchDelegateRequest, opts ...grpc.CallOption) (*VouchDelegateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(VouchDelegateResponse)
+	err := c.cc.Invoke(ctx, VouchService_Delegate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *vouchServiceClient) Revoke(ctx context.Context, in *VouchRevokeRequest, opts ...grpc.CallOption) (*VouchRevokeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(VouchRevokeResponse)
+	err := c.cc.Invoke(ctx, VouchService_Revoke_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // VouchServiceServer is the server API for VouchService service.
 // All implementations must embed UnimplementedVouchServiceServer
 // for forward compatibility.
@@ -105,7 +164,14 @@ func (c *vouchServiceClient) Set(ctx context.Context, in *VouchSetRequest, opts 
 // was asked for, and one of those fields is the hash. That is the right shape
 // for a row this app reads itself and the wrong shape for anything on a wire,
 // so `CredentialService` is **not registered** -- see `cmd/serve.go`. What is
-// registered is this: two RPCs that take a secret in and never hand one back.
+// registered is this: RPCs that take a secret in and never hand back one this
+// store was already holding.
+//
+// [VouchService.Delegate] answers with a string and is not an exception to
+// that. What it hands back is a secret roster **made**, whose verifier goes
+// into a row before the answer leaves -- which is `IssueService`'s established
+// shape, and the opposite of answering with a verifier somebody else's password
+// is checked against.
 //
 // The distinction is the same one `Credential` states about comparison. A hash
 // that has left the store puts timing-safe comparison, attempt counting and
@@ -133,6 +199,36 @@ type VouchServiceServer interface {
 	Verify(context.Context, *VouchVerifyRequest) (*VouchVerifyResponse, error)
 	// Set writes a secret, hashing it here.
 	Set(context.Context, *VouchSetRequest) (*VouchSetResponse, error)
+	// Delegate is Verify, and on a yes it also mints a credential for the person
+	// it just proved. PLAN.md D23 and D25.
+	//
+	// # Why it is not a field on Verify
+	//
+	// A role here is a list of methods, so what a deployment can grant is
+	// exactly what it can name -- the argument D26 made one entry earlier. As a
+	// field, granting `Verify` would grant the power to mint a person-scoped
+	// credential, and there would be no way to tell a Login App, which needs to
+	// check a password and must never mint, from a product app, which needs the
+	// token. It would also be invisible in a role, in an `Audit` row, and in
+	// `roster key add --allow`.
+	//
+	// # And why it is not Verify-then-something
+	//
+	// That is the alternative this is measured against, and it is worse two ways:
+	// two round trips, two argon2 comparisons and two entries in one lockout
+	// count -- or, if the second call takes no secret, a credential minted for
+	// somebody nobody just proved, which is the thing `keys.Delegate` refuses in
+	// as many words. This is one call, one hash, one count, sharing Verify's path
+	// verbatim.
+	Delegate(context.Context, *VouchDelegateRequest) (*VouchDelegateResponse, error)
+	// Revoke ends a delegation before its expiry.
+	//
+	// D23 says *revoking it is a delete* and for a while nothing could:
+	// `DelegationService` is unregistered and closed, so a person clicking sign
+	// out left the app holding a credential that went on working. This is the
+	// delete, and the caller who may make it is the one that can prove it holds
+	// the token -- which is the same pair `roster-as` already carries.
+	Revoke(context.Context, *VouchRevokeRequest) (*VouchRevokeResponse, error)
 	mustEmbedUnimplementedVouchServiceServer()
 }
 
@@ -148,6 +244,12 @@ func (UnimplementedVouchServiceServer) Verify(context.Context, *VouchVerifyReque
 }
 func (UnimplementedVouchServiceServer) Set(context.Context, *VouchSetRequest) (*VouchSetResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Set not implemented")
+}
+func (UnimplementedVouchServiceServer) Delegate(context.Context, *VouchDelegateRequest) (*VouchDelegateResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Delegate not implemented")
+}
+func (UnimplementedVouchServiceServer) Revoke(context.Context, *VouchRevokeRequest) (*VouchRevokeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Revoke not implemented")
 }
 func (UnimplementedVouchServiceServer) mustEmbedUnimplementedVouchServiceServer() {}
 func (UnimplementedVouchServiceServer) testEmbeddedByValue()                      {}
@@ -206,6 +308,42 @@ func _VouchService_Set_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _VouchService_Delegate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VouchDelegateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VouchServiceServer).Delegate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: VouchService_Delegate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VouchServiceServer).Delegate(ctx, req.(*VouchDelegateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _VouchService_Revoke_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VouchRevokeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VouchServiceServer).Revoke(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: VouchService_Revoke_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VouchServiceServer).Revoke(ctx, req.(*VouchRevokeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // VouchService_ServiceDesc is the grpc.ServiceDesc for VouchService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -220,6 +358,14 @@ var VouchService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Set",
 			Handler:    _VouchService_Set_Handler,
+		},
+		{
+			MethodName: "Delegate",
+			Handler:    _VouchService_Delegate_Handler,
+		},
+		{
+			MethodName: "Revoke",
+			Handler:    _VouchService_Revoke_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

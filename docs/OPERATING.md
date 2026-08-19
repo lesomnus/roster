@@ -287,6 +287,8 @@ roster key revoke --id <id>     # a delete, so the next call carrying it fails
 | | |
 | --- | --- |
 | `/roster.VouchService/Verify` | checking a password |
+| `/roster.VouchService/Delegate` | checking one **and** getting a credential to act for that person. A separate grant from `Verify`, on purpose: an app that only signs people in never needs it |
+| `/roster.VouchService/Revoke` | ending one when somebody signs out |
 | `/roster.HolderService/Get` | who somebody still is — a name for a screen, and the periodic recheck that ends a session after somebody leaves |
 | `/payday.TokenService/Introspect` | only if the app takes API tokens, or asks about a delegation it was given; see below |
 
@@ -504,11 +506,10 @@ Nothing written down is plaintext, and it warns once.
   customer-minted key safe are in place — the prefix, the holder it resolves to,
   and `mayGrant` on `methods` — and what is missing is the surface that would
   use them.
-- **Nor a delegation.** The rows, the prefix, the issuer binding and the
-  expiry are all here; what mints one is a Go call (`keys.Delegate`) because the
-  RPC that would ask for it is `VouchService.Verify` answering with it, and the
-  page that decides how long one should live has not been written. PLAN.md D24
-  is why that order and D25 is the shape.
+- **A reference app that uses a delegation.** `VouchService.Delegate` mints one
+  and `Revoke` ends it, but nothing in `examples/sso` calls either yet: it signs
+  people in with OIDC and never calls `Vouch` at all. PLAN.md D24 and
+  `docs/ROADMAP.md` P3.
 - **`Binding` cannot be re-pointed.** Its edges are immutable, so changing who
   holds what is a delete and an add. That is the safe direction and it is worth
   knowing before writing a console screen that looks like an edit.

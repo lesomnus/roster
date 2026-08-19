@@ -69,6 +69,12 @@ export const file_app_delegation: GenFile = /*@__PURE__*/
  * receives the token and nothing else -- no caller, no peer, no frame -- so a
  * comparison written there compiles, runs, and binds nothing.
  *
+ * Which is why this **never travels in `authorization`**. A credential there
+ * arrives alone, and a delegation is not one: it says who a call is *about*
+ * while the caller goes on saying who they are. Both are on the request, so the
+ * comparison has something to compare, and one that leaks is worth nothing
+ * without the key it was minted for. `keys.Acting` reads the pair.
+ *
  * @generated from message roster.Delegation
  */
 export type Delegation = Message<"roster.Delegation"> & {

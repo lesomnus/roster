@@ -302,7 +302,7 @@ Each takes a `D` in PLAN.md when it is taken. None is taken here.
 | P0 | F9 — a reference reached erased rows | **done** — fixed in `protoc-gen-orm-ent@3843c60`, pin moved, both symptoms tested here |
 | P1 | `Delegation` | **done** — the entity, `rd_`, the issuer binding, and `keys.Delegate`. PLAN.md D25. Nothing mints one over the wire; D24 puts the page first |
 | P2 | `Holder` epoch and disabled, and the refusals | **done** — PLAN.md D26. Closes list items 6 and 12, and item 4's first increment came free |
-| P3 | the reference app's spine | **in progress** — designed and stress-tested; the P1 defect it found is fixed |
+| P3 | the reference app's spine | **in progress** — the roster half is done: `Vouch.Delegate`, `Vouch.Revoke`, `keys.Sweep`, and the lifetime settled. Left: identities on `MeGetResponse`, and the app itself |
 | P4 | hostname, mail domain, and F7 | — |
 | P5 | escalation over credential writes, then the write surface | — |
 | P6 | the reads a screen needs, and the screens | — · item 7 moves into P3, which cannot draw a page without it |

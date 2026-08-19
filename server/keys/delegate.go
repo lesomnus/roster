@@ -242,3 +242,34 @@ func issued(v *bearer, to pdid.Id) error {
 
 	return nil
 }
+
+// Undelegate ends a delegation, if it is the caller's to end.
+//
+// Erased rather than deleted, so that a trail naming the row still finds
+// something; `<Entity>Pick` narrows to the live rows, so it is out of reach the
+// moment this returns, and [Sweep] collects it when its own clock runs out.
+//
+// # Everything answers the same
+//
+// A token that was never here, one that expired, one issued to somebody else:
+// all of them return nil and remove nothing. That is the rule the generated
+// `Erase` states -- *erasing what is not there succeeds*, and out of reach is
+// not there -- and here it does a second job, which is to say nothing to
+// whoever is holding a string they found.
+func Undelegate(ctx context.Context, s app.Server, token string, by pdid.Id) error {
+	v, err := findDelegation(ctx, s, token)
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil
+		}
+
+		return err
+	}
+	if issued(v, by) != nil {
+		return nil
+	}
+
+	_, err = s.Delegation().Erase(ctx, app.DelegationRef_builder{Id: v.Id}.Build())
+
+	return err
+}

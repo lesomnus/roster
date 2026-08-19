@@ -19,6 +19,13 @@ import (
 
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
+	"github.com/lesomnus/roster/server/vouch"
+)
+
+const (
+	delegate    = "/roster.VouchService/Delegate"
+	revoke      = "/roster.VouchService/Revoke"
+	listHolders = "/roster.HolderService/List"
 )
 
 // issuerOf is the identifier a request carrying `b.Token` arrives as.
@@ -472,4 +479,234 @@ func keyed(t *testing.T, ctx context.Context, b *keyedBuilt, alias string, metho
 	x.NoError(err)
 
 	return token
+}
+
+// signsIn is what a product app does: one call that proves the person and
+// answers with the credential to act for them.
+func signsIn(t *testing.T, ctx context.Context, b *keyedBuilt, who pdid.Id, secret string, methods []string) *app.VouchDelegateResponse {
+	t.Helper()
+
+	res, err := app.NewVouchServiceClient(b.Conn).Delegate(bearing(ctx, b.Token),
+		app.VouchDelegateRequest_builder{
+			Who:     app.VouchWho_builder{Id: who.Bytes()}.Build(),
+			Secret:  []byte(secret),
+			Methods: methods,
+		}.Build())
+	require.NoError(t, err)
+
+	return res
+}
+
+// TestDelegateIsVerifyAndOneMoreThing is D23's "the answer rides back with the
+// yes", as one call.
+//
+// It is a method of its own rather than a field on `Verify` for the reason D26
+// gave one entry earlier: a role is a list of methods, so what a deployment can
+// grant is exactly what it can name -- and a Login App that checks passwords
+// and must never mint is a different grant from a product app that needs the
+// token.
+func TestDelegateIsVerifyAndOneMoreThing(t *testing.T) {
+	x := require.New(t)
+	b := keyFor(t, delegate, listHolders)
+	ctx := t.Context()
+
+	mayList(t, ctx, b, b.Who, listHolders)
+
+	v := vouch.New(b.Ungated, b.Ungated)
+	_, err := v.Set(ctx, app.VouchSetRequest_builder{
+		Who:    app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
+		Secret: []byte("correct horse battery staple"),
+	}.Build())
+	x.NoError(err)
+
+	t.Run("a yes carries a credential for the person it proved", func(t *testing.T) {
+		x := require.New(t)
+
+		res := signsIn(t, ctx, b, b.Who, "correct horse battery staple", []string{listHolders})
+		x.True(res.GetVerified().GetOk())
+		x.Equal(b.Who.Bytes(), res.GetVerified().GetHolder())
+		x.NotEmpty(res.GetToken())
+		x.NotNil(res.GetExpires(), "a delegation that never expires is not one")
+
+		_, err := app.NewHolderServiceClient(b.Conn).List(
+			acting(ctx, b.Token, res.GetToken()), app.HolderListRequest_builder{}.Build())
+		x.NoError(err, "the token the sign-in answered with did not work")
+	})
+
+	t.Run("and a no carries nothing at all", func(t *testing.T) {
+		x := require.New(t)
+
+		res := signsIn(t, ctx, b, b.Who, "wrong", []string{listHolders})
+		x.False(res.GetVerified().GetOk())
+		x.Empty(res.GetToken(), "a refusal handed out a credential")
+	})
+
+	t.Run("and a delegation that allows nothing is refused", func(t *testing.T) {
+		x := require.New(t)
+
+		_, err := app.NewVouchServiceClient(b.Conn).Delegate(bearing(ctx, b.Token),
+			app.VouchDelegateRequest_builder{
+				Who:    app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
+				Secret: []byte("correct horse battery staple"),
+			}.Build())
+		x.Equal(codes.InvalidArgument, status.Code(err))
+	})
+}
+
+// TestOverAskingIsRefusedBeforeThePasswordIsCompared is the check's position
+// being the design rather than an implementation detail.
+//
+// D14 made every refusal cost the same, so that a response cannot answer *does
+// this account exist*. A caller that asks for more than it holds gets refused
+// either way -- but if that refusal ran **after** the comparison it would come
+// back as `PermissionDenied` for a right password and `ok:false` for a wrong
+// one, which is the same oracle as a timing difference and exact rather than
+// statistical.
+func TestOverAskingIsRefusedBeforeThePasswordIsCompared(t *testing.T) {
+	x := require.New(t)
+
+	// A key that may sign people in and may not erase anybody.
+	b := keyFor(t, delegate)
+	ctx := t.Context()
+
+	v := vouch.New(b.Ungated, b.Ungated)
+	_, err := v.Set(ctx, app.VouchSetRequest_builder{
+		Who:    app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
+		Secret: []byte("correct horse battery staple"),
+	}.Build())
+	x.NoError(err)
+
+	over := func(secret string) error {
+		_, err := app.NewVouchServiceClient(b.Conn).Delegate(bearing(ctx, b.Token),
+			app.VouchDelegateRequest_builder{
+				Who:     app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
+				Secret:  []byte(secret),
+				Methods: []string{"/roster.HolderService/Erase"},
+			}.Build())
+
+		return err
+	}
+
+	right, wrong := over("correct horse battery staple"), over("wrong")
+
+	x.Equal(codes.PermissionDenied, status.Code(right),
+		"an app minted a method its own key does not carry")
+	x.Equal(status.Code(right), status.Code(wrong),
+		"over-asking answered differently for a right password and a wrong one")
+
+	// And a stranger is the same answer again, so the two above are about the
+	// request rather than about the person.
+	_, err = app.NewVouchServiceClient(b.Conn).Delegate(bearing(ctx, b.Token),
+		app.VouchDelegateRequest_builder{
+			Who:     app.VouchWho_builder{Tenant: "acme", Alias: "nobody-at-all"}.Build(),
+			Secret:  []byte("whatever"),
+			Methods: []string{"/roster.HolderService/Erase"},
+		}.Build())
+	x.Equal(codes.PermissionDenied, status.Code(err))
+}
+
+// TestRevokeIsTheDeleteD23PromisedAndDidNotHave.
+//
+// Without it, signing out of an app left that app holding a credential that
+// went on working: the generated service is unregistered and closed, and
+// `HolderService/Invalidate` is the wrong instrument -- it voids every
+// delegation the person has and touches nobody's session.
+func TestRevokeIsTheDeleteD23PromisedAndDidNotHave(t *testing.T) {
+	x := require.New(t)
+	b := keyFor(t, delegate, listHolders, revoke)
+	ctx := t.Context()
+
+	mayList(t, ctx, b, b.Who, listHolders)
+
+	v := vouch.New(b.Ungated, b.Ungated)
+	_, err := v.Set(ctx, app.VouchSetRequest_builder{
+		Who:    app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
+		Secret: []byte("correct horse battery staple"),
+	}.Build())
+	x.NoError(err)
+
+	res := signsIn(t, ctx, b, b.Who, "correct horse battery staple", []string{listHolders})
+	token := res.GetToken()
+
+	list := func() error {
+		_, err := app.NewHolderServiceClient(b.Conn).List(
+			acting(ctx, b.Token, token), app.HolderListRequest_builder{}.Build())
+
+		return err
+	}
+	x.NoError(list(), "the control")
+
+	c := app.NewVouchServiceClient(b.Conn)
+
+	// A second app revoking it changes nothing, and is not told so -- every
+	// answer here is the same answer, for the reason `Erase` gives.
+	t.Run("another app's revoke does nothing and says nothing", func(t *testing.T) {
+		x := require.New(t)
+
+		theirs := keyed(t, ctx, b, "someone-else", []string{revoke})
+
+		_, err := c.Revoke(bearing(ctx, theirs), app.VouchRevokeRequest_builder{Token: token}.Build())
+		x.NoError(err, "and the answer says nothing about whose it was")
+		x.NoError(list(), "one app revoked what another was issued")
+	})
+
+	t.Run("and the app it was issued to ends it", func(t *testing.T) {
+		x := require.New(t)
+
+		_, err := c.Revoke(bearing(ctx, b.Token), app.VouchRevokeRequest_builder{Token: token}.Build())
+		x.NoError(err)
+
+		x.Equal(codes.Unauthenticated, status.Code(list()), "a revoked delegation went on working")
+	})
+
+	t.Run("and revoking what is gone succeeds", func(t *testing.T) {
+		x := require.New(t)
+
+		_, err := c.Revoke(bearing(ctx, b.Token), app.VouchRevokeRequest_builder{Token: token}.Build())
+		x.NoError(err)
+
+		_, err = c.Revoke(bearing(ctx, b.Token),
+			app.VouchRevokeRequest_builder{Token: "rd_nothing-at-all"}.Build())
+		x.NoError(err, "a token that was never here told the caller it was never here")
+	})
+}
+
+// TestExpiredDelegationsAreCollected is the other half of the sentence the
+// design wrote down: *expiry is enforced on read, never by a sweep -- a sweep
+// that is the mechanism is a sweep whose outage is a security incident.*
+//
+// The read was built and the collector was not, so the table grew by one row
+// per sign-in and nothing ever removed one. Nothing waits on this and no
+// refusal depends on it; what it stops is a credential table that is a log.
+func TestExpiredDelegationsAreCollected(t *testing.T) {
+	x := require.New(t)
+	b := keyFor(t, verify)
+	ctx := t.Context()
+
+	live := wrote(t, ctx, b, b.Who, []string{listHolders},
+		timestamppb.New(time.Now().Add(time.Hour)))
+	dead := wrote(t, ctx, b, b.Who, []string{listHolders},
+		timestamppb.New(time.Now().Add(-time.Minute)))
+
+	n, err := b.Ent.Delegation.Query().Count(ctx)
+	x.NoError(err)
+	x.Equal(2, n)
+
+	gone, err := keys.Collect(ctx, b.Ent)
+	x.NoError(err)
+	x.Equal(1, gone)
+
+	// Hard, not erased: a soft erase would leave the row, which is the whole
+	// thing this exists to stop. What it costs is that a trail naming an
+	// expired delegation resolves to nothing, which `Tenant` already pays.
+	n, err = b.Ent.Delegation.Query().Count(ctx)
+	x.NoError(err)
+	x.Equal(1, n, "the live one was collected too")
+
+	// And it is the live one that is left, rather than one of two.
+	left, err := b.Ent.Delegation.Query().Only(ctx)
+	x.NoError(err)
+	x.True(left.DateExpires.After(time.Now()))
+
+	_, _ = dead, live
 }

@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/vouch.proto.
  */
 export const file_app_vouch: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciI1CghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkiUQoSVm91Y2hWZXJpZnlSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJEg4KBnNlY3JldBgJIAEoDCJzChNWb3VjaFZlcmlmeVJlc3BvbnNlEgoKAm9rGAEgASgIEg4KBmhvbGRlchgCIAEoDBIOCgZ0ZW5hbnQYAyABKAwSMAoMbG9ja2VkX3VudGlsGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJOCg9Wb3VjaFNldFJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMIhIKEFZvdWNoU2V0UmVzcG9uc2UyiwEKDFZvdWNoU2VydmljZRJBCgZWZXJpZnkSGi5yb3N0ZXIuVm91Y2hWZXJpZnlSZXF1ZXN0Ghsucm9zdGVyLlZvdWNoVmVyaWZ5UmVzcG9uc2USOAoDU2V0Ehcucm9zdGVyLlZvdWNoU2V0UmVxdWVzdBoYLnJvc3Rlci5Wb3VjaFNldFJlc3BvbnNlQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp]);
+  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciI1CghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkiUQoSVm91Y2hWZXJpZnlSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJEg4KBnNlY3JldBgJIAEoDCJzChNWb3VjaFZlcmlmeVJlc3BvbnNlEgoKAm9rGAEgASgIEg4KBmhvbGRlchgCIAEoDBIOCgZ0ZW5hbnQYAyABKAwSMAoMbG9ja2VkX3VudGlsGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJOCg9Wb3VjaFNldFJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMIhIKEFZvdWNoU2V0UmVzcG9uc2UikQEKFFZvdWNoRGVsZWdhdGVSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJEg4KBnNlY3JldBgJIAEoDBIPCgdtZXRob2RzGAogAygJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIoIBChVWb3VjaERlbGVnYXRlUmVzcG9uc2USLQoIdmVyaWZpZWQYASABKAsyGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZRINCgV0b2tlbhgKIAEoCRIrCgdleHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIjChJWb3VjaFJldm9rZVJlcXVlc3QSDQoFdG9rZW4YASABKAkiFQoTVm91Y2hSZXZva2VSZXNwb25zZTKXAgoMVm91Y2hTZXJ2aWNlEkEKBlZlcmlmeRIaLnJvc3Rlci5Wb3VjaFZlcmlmeVJlcXVlc3QaGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZRI4CgNTZXQSFy5yb3N0ZXIuVm91Y2hTZXRSZXF1ZXN0Ghgucm9zdGVyLlZvdWNoU2V0UmVzcG9uc2USRwoIRGVsZWdhdGUSHC5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlEkEKBlJldm9rZRIaLnJvc3Rlci5Wb3VjaFJldm9rZVJlcXVlc3QaGy5yb3N0ZXIuVm91Y2hSZXZva2VSZXNwb25zZUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp]);
 
 /**
  * VouchWho names somebody in the words a sign-in form collects.
@@ -178,6 +178,149 @@ export const VouchSetResponseSchema: GenMessage<VouchSetResponse> = /*@__PURE__*
   messageDesc(file_app_vouch, 4);
 
 /**
+ * @generated from message roster.VouchDelegateRequest
+ */
+export type VouchDelegateRequest = Message<"roster.VouchDelegateRequest"> & {
+  /**
+   * @generated from field: roster.VouchWho who = 1;
+   */
+  who?: VouchWho | undefined;
+
+  /**
+   * @generated from field: string kind = 8;
+   */
+  kind: string;
+
+  /**
+   * @generated from field: bytes secret = 9;
+   */
+  secret: Uint8Array;
+
+  /**
+   * What the delegation may be used for, in full:
+   * "/roster.IdentityService/List".
+   *
+   * Refused when empty, the way `roster key add --allow` is: everything hands
+   * out more than was asked for, and nothing mints a credential that silently
+   * does not work.
+   *
+   * **No wider than the caller.** Each of these has to be covered by what the
+   * calling key itself may do -- otherwise an app allowed only to check
+   * passwords could mint a token that erases holders and use it through
+   * somebody who may. The check bites exactly as hard as the caller's own
+   * credential is narrow: under `auth.Plain` or mTLS a caller carries
+   * `frame.Whole`, so it refuses nothing, because there is nothing there to be
+   * wider than.
+   *
+   * It is checked **before the secret is compared**, which is not a detail. Run
+   * after, a caller that over-asks would get one answer for a wrong password
+   * and another for a right one -- D14's equal-cost refusal undone as a status
+   * code, which is worse than a timing leak because it is exact.
+   *
+   * @generated from field: repeated string methods = 10;
+   */
+  methods: string[];
+
+  /**
+   * When it stops working, and unset takes this deployment's default.
+   *
+   * A moment rather than a duration, because the caller is the one that knows:
+   * a delegation is held for a session and the app is what decides when that
+   * ends. roster has no opinion to impose -- it does not hold the truth of
+   * anybody's session -- so there is no cap here, and the safety is elsewhere:
+   * it is never wider than the person, and it is worth nothing without the key
+   * it was minted for.
+   *
+   * A time in the past is refused rather than clamped.
+   *
+   * @generated from field: google.protobuf.Timestamp expires = 11;
+   */
+  expires?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.VouchDelegateRequest.
+ * Use `create(VouchDelegateRequestSchema)` to create a new message.
+ */
+export const VouchDelegateRequestSchema: GenMessage<VouchDelegateRequest> = /*@__PURE__*/
+  messageDesc(file_app_vouch, 5);
+
+/**
+ * @generated from message roster.VouchDelegateResponse
+ */
+export type VouchDelegateResponse = Message<"roster.VouchDelegateResponse"> & {
+  /**
+   * The same answer `Verify` gives, because it is the same question asked
+   * first: `ok`, who it was, and a lockout if there is one.
+   *
+   * Nested rather than copied so that the two cannot drift. An app that already
+   * reads a `Verify` reads this with the code it has.
+   *
+   * @generated from field: roster.VouchVerifyResponse verified = 1;
+   */
+  verified?: VouchVerifyResponse | undefined;
+
+  /**
+   * The delegation, and the only time it is ever readable. What is stored is a
+   * hash, for the reason every password store has one.
+   *
+   * Set only when `verified.ok`. It does **not** go in `authorization`: it says
+   * who a call is *about* while the caller goes on saying who they are, and it
+   * travels in `roster-as` beside the key it was minted for. See
+   * `keys.HeaderActing` for why that is what makes it bindable at all.
+   *
+   * @generated from field: string token = 10;
+   */
+  token: string;
+
+  /**
+   * When it stops working, which is always set when a token is.
+   *
+   * @generated from field: google.protobuf.Timestamp expires = 11;
+   */
+  expires?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.VouchDelegateResponse.
+ * Use `create(VouchDelegateResponseSchema)` to create a new message.
+ */
+export const VouchDelegateResponseSchema: GenMessage<VouchDelegateResponse> = /*@__PURE__*/
+  messageDesc(file_app_vouch, 6);
+
+/**
+ * @generated from message roster.VouchRevokeRequest
+ */
+export type VouchRevokeRequest = Message<"roster.VouchRevokeRequest"> & {
+  /**
+   * The delegation to end, as it was handed over.
+   *
+   * @generated from field: string token = 1;
+   */
+  token: string;
+};
+
+/**
+ * Describes the message roster.VouchRevokeRequest.
+ * Use `create(VouchRevokeRequestSchema)` to create a new message.
+ */
+export const VouchRevokeRequestSchema: GenMessage<VouchRevokeRequest> = /*@__PURE__*/
+  messageDesc(file_app_vouch, 7);
+
+/**
+ * @generated from message roster.VouchRevokeResponse
+ */
+export type VouchRevokeResponse = Message<"roster.VouchRevokeResponse"> & {
+};
+
+/**
+ * Describes the message roster.VouchRevokeResponse.
+ * Use `create(VouchRevokeResponseSchema)` to create a new message.
+ */
+export const VouchRevokeResponseSchema: GenMessage<VouchRevokeResponse> = /*@__PURE__*/
+  messageDesc(file_app_vouch, 8);
+
+/**
  * VouchService is how a secret is used without ever leaving the store.
  *
  * # Why it is not `CredentialService`
@@ -186,7 +329,14 @@ export const VouchSetResponseSchema: GenMessage<VouchSetResponse> = /*@__PURE__*
  * was asked for, and one of those fields is the hash. That is the right shape
  * for a row this app reads itself and the wrong shape for anything on a wire,
  * so `CredentialService` is **not registered** -- see `cmd/serve.go`. What is
- * registered is this: two RPCs that take a secret in and never hand one back.
+ * registered is this: RPCs that take a secret in and never hand back one this
+ * store was already holding.
+ *
+ * [VouchService.Delegate] answers with a string and is not an exception to
+ * that. What it hands back is a secret roster **made**, whose verifier goes
+ * into a row before the answer leaves -- which is `IssueService`'s established
+ * shape, and the opposite of answering with a verifier somebody else's password
+ * is checked against.
  *
  * The distinction is the same one `Credential` states about comparison. A hash
  * that has left the store puts timing-safe comparison, attempt counting and
@@ -232,6 +382,52 @@ export const VouchService: GenService<{
     methodKind: "unary";
     input: typeof VouchSetRequestSchema;
     output: typeof VouchSetResponseSchema;
+  },
+  /**
+   * Delegate is Verify, and on a yes it also mints a credential for the person
+   * it just proved. PLAN.md D23 and D25.
+   *
+   * # Why it is not a field on Verify
+   *
+   * A role here is a list of methods, so what a deployment can grant is
+   * exactly what it can name -- the argument D26 made one entry earlier. As a
+   * field, granting `Verify` would grant the power to mint a person-scoped
+   * credential, and there would be no way to tell a Login App, which needs to
+   * check a password and must never mint, from a product app, which needs the
+   * token. It would also be invisible in a role, in an `Audit` row, and in
+   * `roster key add --allow`.
+   *
+   * # And why it is not Verify-then-something
+   *
+   * That is the alternative this is measured against, and it is worse two ways:
+   * two round trips, two argon2 comparisons and two entries in one lockout
+   * count -- or, if the second call takes no secret, a credential minted for
+   * somebody nobody just proved, which is the thing `keys.Delegate` refuses in
+   * as many words. This is one call, one hash, one count, sharing Verify's path
+   * verbatim.
+   *
+   * @generated from rpc roster.VouchService.Delegate
+   */
+  delegate: {
+    methodKind: "unary";
+    input: typeof VouchDelegateRequestSchema;
+    output: typeof VouchDelegateResponseSchema;
+  },
+  /**
+   * Revoke ends a delegation before its expiry.
+   *
+   * D23 says *revoking it is a delete* and for a while nothing could:
+   * `DelegationService` is unregistered and closed, so a person clicking sign
+   * out left the app holding a credential that went on working. This is the
+   * delete, and the caller who may make it is the one that can prove it holds
+   * the token -- which is the same pair `roster-as` already carries.
+   *
+   * @generated from rpc roster.VouchService.Revoke
+   */
+  revoke: {
+    methodKind: "unary";
+    input: typeof VouchRevokeRequestSchema;
+    output: typeof VouchRevokeResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_app_vouch, 0);

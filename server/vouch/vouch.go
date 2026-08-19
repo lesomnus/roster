@@ -91,23 +91,38 @@ func New(open, walled app.Server) *Server {
 // cost the same time. The one exception is a lockout, and `VouchVerifyResponse`
 // says why that trade was taken.
 func (s *Server) Verify(ctx context.Context, req *app.VouchVerifyRequest) (*app.VouchVerifyResponse, error) {
-	ref, err := refOf(req.GetWho())
+	res, _, err := s.verify(ctx, req.GetWho(), req.GetKind(), req.GetSecret())
+
+	return res, err
+}
+
+// verify is the whole of the check, and it answers twice over.
+//
+// The response is what a caller is told. The credential beside it is what
+// [Server.Delegate] needs and nothing else does -- the holder and their tenant,
+// already read -- and it is nil for every answer that is not a yes, so there is
+// no way to read one off a refusal.
+//
+// One function rather than two, because the second copy is the one that forgets
+// the lockout, or the erasure check, or that every refusal has to cost the
+// same.
+func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind string, secret []byte) (*app.VouchVerifyResponse, *app.Credential, error) {
+	ref, err := refOf(who)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	secret := req.GetSecret()
-	v, err := s.credential(ctx, s.open, ref, req.GetKind())
+	v, err := s.credential(ctx, s.open, ref, kind)
 	if err != nil {
 		if status.Code(err) != codes.NotFound {
-			return nil, err
+			return nil, nil, err
 		}
 
 		// Nobody, or nobody with this kind of secret. Do the work anyway, so
 		// that the answer takes as long as a wrong password does.
 		Burn(secret)
 
-		return no(), nil
+		return no(), nil, nil
 	}
 
 	if v.GetHolder().GetDateDisabled() != nil {
@@ -121,7 +136,7 @@ func (s *Server) Verify(ctx context.Context, req *app.VouchVerifyRequest) (*app.
 		// signed in reaches here, and nothing here has a frame yet.
 		Burn(secret)
 
-		return no(), nil
+		return no(), nil, nil
 	}
 
 	if v.GetHolder().GetDateErased() != nil {
@@ -143,7 +158,7 @@ func (s *Server) Verify(ctx context.Context, req *app.VouchVerifyRequest) (*app.
 		// sentence that stops being true without anything here changing.
 		Burn(secret)
 
-		return no(), nil
+		return no(), nil, nil
 	}
 
 	if until := v.GetDateLocked(); until != nil && until.AsTime().After(time.Now()) {
@@ -154,7 +169,7 @@ func (s *Server) Verify(ctx context.Context, req *app.VouchVerifyRequest) (*app.
 		// It does not make the account un-lockable by somebody else, and
 		// nothing here can: ten wrong guesses every [LockFor] will close it
 		// again, which is what locking by name costs. See PLAN.md, D14.
-		return app.VouchVerifyResponse_builder{LockedUntil: until}.Build(), nil
+		return app.VouchVerifyResponse_builder{LockedUntil: until}.Build(), nil, nil
 	}
 
 	ok, err := Compare(v.GetSecret(), secret)
@@ -162,30 +177,32 @@ func (s *Server) Verify(ctx context.Context, req *app.VouchVerifyRequest) (*app.
 		// A row this cannot read is this deployment's problem and not the
 		// caller's, and answering "no" would hide it behind somebody being
 		// told their own password is wrong.
-		return nil, status.Error(codes.Internal, "the stored verifier cannot be read")
+		return nil, nil, status.Error(codes.Internal, "the stored verifier cannot be read")
 	}
 	if !ok {
-		return s.failed(ctx, v)
+		res, err := s.failed(ctx, v)
+
+		return res, nil, err
 	}
 
 	if err := s.passed(ctx, v); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	holder, err := pdid.From(v.GetHolder().GetId())
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	tenant, err := pdid.From(v.GetHolder().GetTenant().GetId())
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	return app.VouchVerifyResponse_builder{
 		Ok:     true,
 		Holder: holder.Bytes(),
 		Tenant: tenant.Bytes(),
-	}.Build(), nil
+	}.Build(), v, nil
 }
 
 // Set writes a secret, hashing it here.

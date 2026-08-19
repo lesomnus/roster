@@ -329,19 +329,74 @@ to the holder instead needs a select change in `keyed` and a read on every
 request, and it would make a rotation invisible where an invalidation is
 arguably the honest answer.
 
-#### What is decided provisionally, and by whom
+#### What mints one, and what ends it
 
-The lifetime. D24 is explicit that *its lifetime, its scope and where it is
-refreshed are decided by a page that uses it, not by reasoning*, so
-`keys.DelegateFor` is a constant with a note on it and the reference app is what
-settles it.
+`VouchService.Delegate`: `Verify` plus a token, in one call. A **method** and
+not a field on `Verify`, for the reason D26 gave one entry earlier -- a role is
+a list of methods, so what a deployment can grant is exactly what it can name,
+and a Login App that checks passwords and must never mint is a different grant
+from a product app that needs the token. On a field it would also be invisible
+in a role, in an `Audit` row and in `roster key add --allow`.
 
-#### What is not built
+The alternative it is measured against is not verify-then-something: that is two
+round trips, two argon2 comparisons and two entries in one lockout count -- or,
+if the second call takes no secret, a credential for somebody nobody just
+proved. It is `Delegate` **instead of** `Verify`, sharing the verification path
+verbatim.
 
-**Nothing mints one over the wire**, and that is the same shape `rt_` is in:
-the half that answers is done and the half that issues waits. D23 says it rides
-back on `VouchService.Verify`, which is a field on that response and a decision
-about who may ask for one -- and D24 puts the page that needs it before both.
+Two things about it are the design rather than the implementation:
+
+- **What may be minted is checked before the secret is compared.** Run after, a
+  caller that over-asks gets `PermissionDenied` for a right password and
+  `ok:false` for a wrong one -- D14's equal-cost refusal undone as a status
+  code, which is worse than a timing leak because it is exact. There is a test,
+  and moving the check three lines down fails it.
+- **No wider than the caller.** Each method asked for has to be covered by the
+  calling key's own grant, or an app allowed only to check passwords could mint
+  a token carrying `HolderService/Erase` and spend it through somebody who may.
+  It is **not** `escalate.go`'s rule: that one reads bindings, because it guards
+  a row that hands permissions to a person; this reads `f.Grant`, because the
+  caller is a machine whose bindings are in another database. And it bites
+  exactly as hard as that credential is narrow -- under `auth.Plain` or mTLS a
+  caller carries `frame.Whole` and this refuses nothing, correctly, because
+  there is nothing there to be wider than.
+
+`VouchService.Revoke` is the delete D23 promised and did not have. Without it,
+signing out of an app left that app holding a credential that went on working:
+the generated service is unregistered and closed, and `Invalidate` is the wrong
+instrument -- it voids every delegation a person has and touches nobody's
+session. Every answer is the same answer, for `Erase`'s reason and for a second
+one: it says nothing to whoever is holding a string they found.
+
+#### The lifetime, and it moved
+
+D25 first said 15 minutes, *provisional*, with D24's rule that a page decides.
+The page did not decide it -- the **binding fix** did.
+
+D21's *barely alive* was the argument for a standalone bearer credential. A
+delegation is not one: it is half of a pair whose other half is the app's own
+key, so one that leaks is worth nothing to anybody who does not already hold
+that key, and anybody who does is already past every wall this has.
+
+So the caller names when it stops, roster defaults, and there is **no cap**.
+roster does not hold the truth of anybody's session and has no opinion to
+impose; what bounds a delegation is that it is never wider than the person and
+worth nothing without the key. A time in the past is refused rather than
+clamped, and an absent expiry on the row is still refused at every read.
+
+#### And the table is collected
+
+Expiry is enforced on read and never by a sweep -- *a sweep that is the
+mechanism is a sweep whose outage is a security incident*. That sentence has a
+second half which was not built: nothing removed a row, so the table grew by one
+per sign-in since the deployment started. `keys.Sweep` is the collector, hard
+deleting rather than erasing because a soft erase leaves the row, and running
+beside the outbox drain.
+
+Which matters more than it sounds, because `Delegate` **writes on the sign-in
+path** -- a row, a version, an audit entry and a watch event per delegated
+sign-in. `passed` goes out of its way to avoid exactly that, and this is a
+reason to call `Verify` where no delegation is wanted.
 
 ### D19 · The line is issuance, not authentication
 
