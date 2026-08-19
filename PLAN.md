@@ -2002,12 +2002,18 @@ the schedule.
    is the app's, per app; across apps it is what OIDC back-channel logout is
    for, and that is Hydra again.
 
-7. **A read that answers which methods somebody has**, without the verifier.
-   **Half done** in P3: `MeService` answers a person's own identities and
-   credential kinds, which is the half a self-service screen needs and the only
-   half that is safe without a subject argument. What is left is the same
-   answer **about somebody else**, for an operator's list, narrowed by the wall
-   and by a delegation.
+7. ~~**A read that answers which methods somebody has**, without the
+   verifier.~~ **Done**, in two halves. `MeService` answers a person's own,
+   which is safe without a subject argument and is what a self-service screen
+   draws. `HolderService.SignsIn` answers the same about **somebody else**,
+   behind the wall and needing a role that names it, which is what an
+   operator's list draws.
+
+   Two RPCs and one pair of shapes: `SignInIdentity` and `SignInCredential` are
+   named for what they describe rather than for the RPC that first answered
+   with one, because two shapes saying one thing would be two that drift --
+   and the drift would be between what a person sees about themselves and what
+   an operator sees about them.
 
    The original entry:
    `CredentialService` is unregistered because its `Get` answers with the

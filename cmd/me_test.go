@@ -173,3 +173,56 @@ func TestMeAnswersHowSomebodySignsIn(t *testing.T) {
 	x.NotContains(string(raw), "argon2", "the verifier reached a page")
 	x.NotContains(string(raw), "secret")
 }
+
+// TestAnOperatorSeesHowSomebodyElseSignsIn is the other half of item 7, and it
+// is the same answer asked the ordinary way.
+//
+// `MeService` is safe to read through no wall because it takes nothing: it
+// cannot be pointed at anybody else. This takes a subject, so it goes behind
+// the wall and needs a role that names it — and it is what an operator's list
+// of "who is here and how do they get in" is drawn from.
+func TestAnOperatorSeesHowSomebodyElseSignsIn(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	b.identity(t, ctx, b.AcmeUser, "github", "1078")
+	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+
+	ref := app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build()
+
+	v, err := b.Ungated.Holder().SignsIn(ctx, app.HolderSignsInRequest_builder{Ref: ref}.Build())
+	x.NoError(err)
+
+	x.Len(v.GetIdentities(), 1)
+	x.Equal("github", v.GetIdentities()[0].GetProvider())
+	x.Len(v.GetCredentials(), 1)
+	x.Equal(vouch.KindPassword, v.GetCredentials()[0].GetKind())
+
+	// And nothing that could be presented. The fields are written out, so the
+	// verifier is absent rather than deselected.
+	raw, err := protojson.Marshal(v)
+	x.NoError(err)
+	x.NotContains(string(raw), "argon2")
+	x.NotContains(string(raw), "secret")
+
+	// The wall decides whether this holder is one the caller may see at all,
+	// and somebody outside the tenant is NotFound rather than an empty list --
+	// which would say "here, and with no way in" about a person the caller
+	// cannot see.
+	t.Run("and the wall answers first", func(t *testing.T) {
+		x := require.New(t)
+
+		them := b.holder(t, ctx, b.Hooli, "erlich")
+		b.identity(t, ctx, them, "github", "2049")
+
+		admin := b.holder(t, ctx, b.Acme, "admin")
+		b.mayAnything(admin, b.Acme)
+
+		_, err := b.Walled.Holder().SignsIn(b.as(ctx, admin, b.Acme),
+			app.HolderSignsInRequest_builder{
+				Ref: app.HolderRef_builder{Id: them.Bytes()}.Build(),
+			}.Build())
+		x.Equal(codes.NotFound, status.Code(err),
+			"one tenant read how another tenant's person signs in")
+	})
+}

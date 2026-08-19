@@ -75,8 +75,8 @@ type MeGetResponse struct {
 	xxx_hidden_Methods     []string               `protobuf:"bytes,10,rep,name=methods"`
 	xxx_hidden_Sites       [][]byte               `protobuf:"bytes,11,rep,name=sites"`
 	xxx_hidden_EverySite   bool                   `protobuf:"varint,12,opt,name=every_site,json=everySite"`
-	xxx_hidden_Identities  *[]*MeIdentity         `protobuf:"bytes,13,rep,name=identities"`
-	xxx_hidden_Credentials *[]*MeCredential       `protobuf:"bytes,14,rep,name=credentials"`
+	xxx_hidden_Identities  *[]*SignInIdentity     `protobuf:"bytes,13,rep,name=identities"`
+	xxx_hidden_Credentials *[]*SignInCredential   `protobuf:"bytes,14,rep,name=credentials"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -173,7 +173,7 @@ func (x *MeGetResponse) GetEverySite() bool {
 	return false
 }
 
-func (x *MeGetResponse) GetIdentities() []*MeIdentity {
+func (x *MeGetResponse) GetIdentities() []*SignInIdentity {
 	if x != nil {
 		if x.xxx_hidden_Identities != nil {
 			return *x.xxx_hidden_Identities
@@ -182,7 +182,7 @@ func (x *MeGetResponse) GetIdentities() []*MeIdentity {
 	return nil
 }
 
-func (x *MeGetResponse) GetCredentials() []*MeCredential {
+func (x *MeGetResponse) GetCredentials() []*SignInCredential {
 	if x != nil {
 		if x.xxx_hidden_Credentials != nil {
 			return *x.xxx_hidden_Credentials
@@ -233,11 +233,11 @@ func (x *MeGetResponse) SetEverySite(v bool) {
 	x.xxx_hidden_EverySite = v
 }
 
-func (x *MeGetResponse) SetIdentities(v []*MeIdentity) {
+func (x *MeGetResponse) SetIdentities(v []*SignInIdentity) {
 	x.xxx_hidden_Identities = &v
 }
 
-func (x *MeGetResponse) SetCredentials(v []*MeCredential) {
+func (x *MeGetResponse) SetCredentials(v []*SignInCredential) {
 	x.xxx_hidden_Credentials = &v
 }
 
@@ -293,8 +293,8 @@ type MeGetResponse_builder struct {
 	// This message is the one shape narrowed to the person **by construction**:
 	// it takes no subject, so there is nothing to point at somebody else. That is
 	// also why `cmd.Policy` can waive a binding for it and for nothing else.
-	Identities  []*MeIdentity
-	Credentials []*MeCredential
+	Identities  []*SignInIdentity
+	Credentials []*SignInCredential
 }
 
 func (b0 MeGetResponse_builder) Build() *MeGetResponse {
@@ -315,8 +315,14 @@ func (b0 MeGetResponse_builder) Build() *MeGetResponse {
 	return m0
 }
 
-// MeIdentity is one way somebody arrives from outside.
-type MeIdentity struct {
+// SignInIdentity is one way somebody arrives from outside.
+//
+// Named for what it describes rather than for the RPC that first answered with
+// it, because there are two now: this one about the caller, and
+// `HolderService.SignsIn` about somebody else. Two shapes saying one thing is
+// two that drift, and the drift would be between what a person sees about
+// themselves and what an operator sees about them.
+type SignInIdentity struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
 	xxx_hidden_Provider    string                 `protobuf:"bytes,8,opt,name=provider"`
@@ -326,20 +332,20 @@ type MeIdentity struct {
 	sizeCache              protoimpl.SizeCache
 }
 
-func (x *MeIdentity) Reset() {
-	*x = MeIdentity{}
+func (x *SignInIdentity) Reset() {
+	*x = SignInIdentity{}
 	mi := &file_app_me_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *MeIdentity) String() string {
+func (x *SignInIdentity) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*MeIdentity) ProtoMessage() {}
+func (*SignInIdentity) ProtoMessage() {}
 
-func (x *MeIdentity) ProtoReflect() protoreflect.Message {
+func (x *SignInIdentity) ProtoReflect() protoreflect.Message {
 	mi := &file_app_me_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -351,65 +357,65 @@ func (x *MeIdentity) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *MeIdentity) GetId() []byte {
+func (x *SignInIdentity) GetId() []byte {
 	if x != nil {
 		return x.xxx_hidden_Id
 	}
 	return nil
 }
 
-func (x *MeIdentity) GetProvider() string {
+func (x *SignInIdentity) GetProvider() string {
 	if x != nil {
 		return x.xxx_hidden_Provider
 	}
 	return ""
 }
 
-func (x *MeIdentity) GetSubject() string {
+func (x *SignInIdentity) GetSubject() string {
 	if x != nil {
 		return x.xxx_hidden_Subject
 	}
 	return ""
 }
 
-func (x *MeIdentity) GetDateCreated() *timestamppb.Timestamp {
+func (x *SignInIdentity) GetDateCreated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateCreated
 	}
 	return nil
 }
 
-func (x *MeIdentity) SetId(v []byte) {
+func (x *SignInIdentity) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
 }
 
-func (x *MeIdentity) SetProvider(v string) {
+func (x *SignInIdentity) SetProvider(v string) {
 	x.xxx_hidden_Provider = v
 }
 
-func (x *MeIdentity) SetSubject(v string) {
+func (x *SignInIdentity) SetSubject(v string) {
 	x.xxx_hidden_Subject = v
 }
 
-func (x *MeIdentity) SetDateCreated(v *timestamppb.Timestamp) {
+func (x *SignInIdentity) SetDateCreated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateCreated = v
 }
 
-func (x *MeIdentity) HasDateCreated() bool {
+func (x *SignInIdentity) HasDateCreated() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateCreated != nil
 }
 
-func (x *MeIdentity) ClearDateCreated() {
+func (x *SignInIdentity) ClearDateCreated() {
 	x.xxx_hidden_DateCreated = nil
 }
 
-type MeIdentity_builder struct {
+type SignInIdentity_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	// The row, so that a screen with a remove button has something to name.
@@ -426,8 +432,8 @@ type MeIdentity_builder struct {
 	DateCreated *timestamppb.Timestamp
 }
 
-func (b0 MeIdentity_builder) Build() *MeIdentity {
-	m0 := &MeIdentity{}
+func (b0 SignInIdentity_builder) Build() *SignInIdentity {
+	m0 := &SignInIdentity{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Id = b.Id
@@ -437,35 +443,36 @@ func (b0 MeIdentity_builder) Build() *MeIdentity {
 	return m0
 }
 
-// MeCredential is one secret roster holds for somebody, and never the secret.
+// SignInCredential is one secret roster holds for somebody, and never the secret.
 //
 // The kind and its dates. `Credential.secret` is not here and there is nowhere
 // to ask for it: this is a message with the fields written out, so the column
 // is absent rather than deselected. That is the same statement D13 makes by not
 // registering the service, said again where a page can hear it.
-type MeCredential struct {
+type SignInCredential struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Kind        string                 `protobuf:"bytes,8,opt,name=kind"`
+	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_DateRotated *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_rotated,json=dateRotated"`
 	xxx_hidden_DateLocked  *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_locked,json=dateLocked"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
 
-func (x *MeCredential) Reset() {
-	*x = MeCredential{}
+func (x *SignInCredential) Reset() {
+	*x = SignInCredential{}
 	mi := &file_app_me_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *MeCredential) String() string {
+func (x *SignInCredential) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*MeCredential) ProtoMessage() {}
+func (*SignInCredential) ProtoMessage() {}
 
-func (x *MeCredential) ProtoReflect() protoreflect.Message {
+func (x *SignInCredential) ProtoReflect() protoreflect.Message {
 	mi := &file_app_me_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -477,66 +484,80 @@ func (x *MeCredential) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *MeCredential) GetKind() string {
+func (x *SignInCredential) GetKind() string {
 	if x != nil {
 		return x.xxx_hidden_Kind
 	}
 	return ""
 }
 
-func (x *MeCredential) GetDateRotated() *timestamppb.Timestamp {
+func (x *SignInCredential) GetName() string {
+	if x != nil {
+		return x.xxx_hidden_Name
+	}
+	return ""
+}
+
+func (x *SignInCredential) GetDateRotated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateRotated
 	}
 	return nil
 }
 
-func (x *MeCredential) GetDateLocked() *timestamppb.Timestamp {
+func (x *SignInCredential) GetDateLocked() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateLocked
 	}
 	return nil
 }
 
-func (x *MeCredential) SetKind(v string) {
+func (x *SignInCredential) SetKind(v string) {
 	x.xxx_hidden_Kind = v
 }
 
-func (x *MeCredential) SetDateRotated(v *timestamppb.Timestamp) {
+func (x *SignInCredential) SetName(v string) {
+	x.xxx_hidden_Name = v
+}
+
+func (x *SignInCredential) SetDateRotated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateRotated = v
 }
 
-func (x *MeCredential) SetDateLocked(v *timestamppb.Timestamp) {
+func (x *SignInCredential) SetDateLocked(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateLocked = v
 }
 
-func (x *MeCredential) HasDateRotated() bool {
+func (x *SignInCredential) HasDateRotated() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateRotated != nil
 }
 
-func (x *MeCredential) HasDateLocked() bool {
+func (x *SignInCredential) HasDateLocked() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateLocked != nil
 }
 
-func (x *MeCredential) ClearDateRotated() {
+func (x *SignInCredential) ClearDateRotated() {
 	x.xxx_hidden_DateRotated = nil
 }
 
-func (x *MeCredential) ClearDateLocked() {
+func (x *SignInCredential) ClearDateLocked() {
 	x.xxx_hidden_DateLocked = nil
 }
 
-type MeCredential_builder struct {
+type SignInCredential_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	// "password", "totp".
 	Kind string
+	// What they call this one, when there is more than one of a kind. Empty is
+	// the only one, which is what a password and a first authenticator are.
+	Name string
 	// When it was last changed, for a policy that expires them and for showing
 	// somebody why they are being asked.
 	DateRotated *timestamppb.Timestamp
@@ -546,11 +567,12 @@ type MeCredential_builder struct {
 	DateLocked *timestamppb.Timestamp
 }
 
-func (b0 MeCredential_builder) Build() *MeCredential {
-	m0 := &MeCredential{}
+func (b0 SignInCredential_builder) Build() *SignInCredential {
+	m0 := &SignInCredential{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Kind = b.Kind
+	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_DateRotated = b.DateRotated
 	x.xxx_hidden_DateLocked = b.DateLocked
 	return m0
@@ -777,7 +799,7 @@ var File_app_me_proto protoreflect.FileDescriptor
 const file_app_me_proto_rawDesc = "" +
 	"\n" +
 	"\fapp/me.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\"\x0e\n" +
-	"\fMeGetRequest\"\xeb\x02\n" +
+	"\fMeGetRequest\"\xf3\x02\n" +
 	"\rMeGetResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x16\n" +
 	"\x06tenant\x18\x02 \x01(\fR\x06tenant\x12\x14\n" +
@@ -789,19 +811,19 @@ const file_app_me_proto_rawDesc = "" +
 	" \x03(\tR\amethods\x12\x14\n" +
 	"\x05sites\x18\v \x03(\fR\x05sites\x12\x1d\n" +
 	"\n" +
-	"every_site\x18\f \x01(\bR\teverySite\x122\n" +
+	"every_site\x18\f \x01(\bR\teverySite\x126\n" +
 	"\n" +
-	"identities\x18\r \x03(\v2\x12.roster.MeIdentityR\n" +
-	"identities\x126\n" +
-	"\vcredentials\x18\x0e \x03(\v2\x14.roster.MeCredentialR\vcredentials\"\x91\x01\n" +
-	"\n" +
-	"MeIdentity\x12\x0e\n" +
+	"identities\x18\r \x03(\v2\x16.roster.SignInIdentityR\n" +
+	"identities\x12:\n" +
+	"\vcredentials\x18\x0e \x03(\v2\x18.roster.SignInCredentialR\vcredentials\"\x95\x01\n" +
+	"\x0eSignInIdentity\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1a\n" +
 	"\bprovider\x18\b \x01(\tR\bprovider\x12\x18\n" +
 	"\asubject\x18\t \x01(\tR\asubject\x12=\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"\x9e\x01\n" +
-	"\fMeCredential\x12\x12\n" +
-	"\x04kind\x18\b \x01(\tR\x04kind\x12=\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"\xb6\x01\n" +
+	"\x10SignInCredential\x12\x12\n" +
+	"\x04kind\x18\b \x01(\tR\x04kind\x12\x12\n" +
+	"\x04name\x18\x05 \x01(\tR\x04name\x12=\n" +
 	"\fdate_rotated\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\vdateRotated\x12;\n" +
 	"\vdate_locked\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"dateLocked\"d\n" +
@@ -824,8 +846,8 @@ var file_app_me_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_app_me_proto_goTypes = []any{
 	(*MeGetRequest)(nil),          // 0: roster.MeGetRequest
 	(*MeGetResponse)(nil),         // 1: roster.MeGetResponse
-	(*MeIdentity)(nil),            // 2: roster.MeIdentity
-	(*MeCredential)(nil),          // 3: roster.MeCredential
+	(*SignInIdentity)(nil),        // 2: roster.SignInIdentity
+	(*SignInCredential)(nil),      // 3: roster.SignInCredential
 	(*MeEmail)(nil),               // 4: roster.MeEmail
 	(*MeTeam)(nil),                // 5: roster.MeTeam
 	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
@@ -833,11 +855,11 @@ var file_app_me_proto_goTypes = []any{
 var file_app_me_proto_depIdxs = []int32{
 	4, // 0: roster.MeGetResponse.emails:type_name -> roster.MeEmail
 	5, // 1: roster.MeGetResponse.teams:type_name -> roster.MeTeam
-	2, // 2: roster.MeGetResponse.identities:type_name -> roster.MeIdentity
-	3, // 3: roster.MeGetResponse.credentials:type_name -> roster.MeCredential
-	6, // 4: roster.MeIdentity.date_created:type_name -> google.protobuf.Timestamp
-	6, // 5: roster.MeCredential.date_rotated:type_name -> google.protobuf.Timestamp
-	6, // 6: roster.MeCredential.date_locked:type_name -> google.protobuf.Timestamp
+	2, // 2: roster.MeGetResponse.identities:type_name -> roster.SignInIdentity
+	3, // 3: roster.MeGetResponse.credentials:type_name -> roster.SignInCredential
+	6, // 4: roster.SignInIdentity.date_created:type_name -> google.protobuf.Timestamp
+	6, // 5: roster.SignInCredential.date_rotated:type_name -> google.protobuf.Timestamp
+	6, // 6: roster.SignInCredential.date_locked:type_name -> google.protobuf.Timestamp
 	6, // 7: roster.MeEmail.date_verified:type_name -> google.protobuf.Timestamp
 	0, // 8: roster.MeService.Get:input_type -> roster.MeGetRequest
 	1, // 9: roster.MeService.Get:output_type -> roster.MeGetResponse

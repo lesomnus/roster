@@ -7933,6 +7933,19 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 
 		return anypb.New(res)
 
+	case rstr.HolderService_SignsIn_FullMethodName:
+		v := &rstr.HolderSignsInRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Holder().SignsIn(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
 	case rstr.ApiKeyService_Add_FullMethodName:
 		v := &rstr.ApiKeyAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {

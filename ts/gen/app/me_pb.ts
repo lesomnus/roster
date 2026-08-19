@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/me.proto.
  */
 export const file_app_me: GenFile = /*@__PURE__*/
-  fileDesc("CgxhcHAvbWUucHJvdG8SBnJvc3RlciIOCgxNZUdldFJlcXVlc3QijwIKDU1lR2V0UmVzcG9uc2USCgoCaWQYASABKAwSDgoGdGVuYW50GAIgASgMEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSHwoGZW1haWxzGAggAygLMg8ucm9zdGVyLk1lRW1haWwSHQoFdGVhbXMYCSADKAsyDi5yb3N0ZXIuTWVUZWFtEg8KB21ldGhvZHMYCiADKAkSDQoFc2l0ZXMYCyADKAwSEgoKZXZlcnlfc2l0ZRgMIAEoCBImCgppZGVudGl0aWVzGA0gAygLMhIucm9zdGVyLk1lSWRlbnRpdHkSKQoLY3JlZGVudGlhbHMYDiADKAsyFC5yb3N0ZXIuTWVDcmVkZW50aWFsIm0KCk1lSWRlbnRpdHkSCgoCaWQYASABKAwSEAoIcHJvdmlkZXIYCCABKAkSDwoHc3ViamVjdBgJIAEoCRIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIn8KDE1lQ3JlZGVudGlhbBIMCgRraW5kGAggASgJEjAKDGRhdGVfcm90YXRlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLwoLZGF0ZV9sb2NrZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIk0KB01lRW1haWwSDwoHYWRkcmVzcxgIIAEoCRIxCg1kYXRlX3ZlcmlmaWVkGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJhCgZNZVRlYW0SCgoCaWQYASABKAwSDQoFYWxpYXMYBCABKAkSDAoEbmFtZRgFIAEoCRIMCgRzaXRlGAggASgMEhIKCnNpdGVfYWxpYXMYCSABKAkSDAoEcm9sZRgKIAEoCTI/CglNZVNlcnZpY2USMgoDR2V0EhQucm9zdGVyLk1lR2V0UmVxdWVzdBoVLnJvc3Rlci5NZUdldFJlc3BvbnNlQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp]);
+  fileDesc("CgxhcHAvbWUucHJvdG8SBnJvc3RlciIOCgxNZUdldFJlcXVlc3QilwIKDU1lR2V0UmVzcG9uc2USCgoCaWQYASABKAwSDgoGdGVuYW50GAIgASgMEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSHwoGZW1haWxzGAggAygLMg8ucm9zdGVyLk1lRW1haWwSHQoFdGVhbXMYCSADKAsyDi5yb3N0ZXIuTWVUZWFtEg8KB21ldGhvZHMYCiADKAkSDQoFc2l0ZXMYCyADKAwSEgoKZXZlcnlfc2l0ZRgMIAEoCBIqCgppZGVudGl0aWVzGA0gAygLMhYucm9zdGVyLlNpZ25JbklkZW50aXR5Ei0KC2NyZWRlbnRpYWxzGA4gAygLMhgucm9zdGVyLlNpZ25JbkNyZWRlbnRpYWwicQoOU2lnbkluSWRlbnRpdHkSCgoCaWQYASABKAwSEAoIcHJvdmlkZXIYCCABKAkSDwoHc3ViamVjdBgJIAEoCRIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIpEBChBTaWduSW5DcmVkZW50aWFsEgwKBGtpbmQYCCABKAkSDAoEbmFtZRgFIAEoCRIwCgxkYXRlX3JvdGF0ZWQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi8KC2RhdGVfbG9ja2VkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJNCgdNZUVtYWlsEg8KB2FkZHJlc3MYCCABKAkSMQoNZGF0ZV92ZXJpZmllZBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiYQoGTWVUZWFtEgoKAmlkGAEgASgMEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSDAoEc2l0ZRgIIAEoDBISCgpzaXRlX2FsaWFzGAkgASgJEgwKBHJvbGUYCiABKAkyPwoJTWVTZXJ2aWNlEjIKA0dldBIULnJvc3Rlci5NZUdldFJlcXVlc3QaFS5yb3N0ZXIuTWVHZXRSZXNwb25zZUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp]);
 
 /**
  * @generated from message roster.MeGetRequest
@@ -124,14 +124,14 @@ export type MeGetResponse = Message<"roster.MeGetResponse"> & {
    * it takes no subject, so there is nothing to point at somebody else. That is
    * also why `cmd.Policy` can waive a binding for it and for nothing else.
    *
-   * @generated from field: repeated roster.MeIdentity identities = 13;
+   * @generated from field: repeated roster.SignInIdentity identities = 13;
    */
-  identities: MeIdentity[];
+  identities: SignInIdentity[];
 
   /**
-   * @generated from field: repeated roster.MeCredential credentials = 14;
+   * @generated from field: repeated roster.SignInCredential credentials = 14;
    */
-  credentials: MeCredential[];
+  credentials: SignInCredential[];
 };
 
 /**
@@ -142,11 +142,17 @@ export const MeGetResponseSchema: GenMessage<MeGetResponse> = /*@__PURE__*/
   messageDesc(file_app_me, 1);
 
 /**
- * MeIdentity is one way somebody arrives from outside.
+ * SignInIdentity is one way somebody arrives from outside.
  *
- * @generated from message roster.MeIdentity
+ * Named for what it describes rather than for the RPC that first answered with
+ * it, because there are two now: this one about the caller, and
+ * `HolderService.SignsIn` about somebody else. Two shapes saying one thing is
+ * two that drift, and the drift would be between what a person sees about
+ * themselves and what an operator sees about them.
+ *
+ * @generated from message roster.SignInIdentity
  */
-export type MeIdentity = Message<"roster.MeIdentity"> & {
+export type SignInIdentity = Message<"roster.SignInIdentity"> & {
   /**
    * The row, so that a screen with a remove button has something to name.
    *
@@ -180,29 +186,37 @@ export type MeIdentity = Message<"roster.MeIdentity"> & {
 };
 
 /**
- * Describes the message roster.MeIdentity.
- * Use `create(MeIdentitySchema)` to create a new message.
+ * Describes the message roster.SignInIdentity.
+ * Use `create(SignInIdentitySchema)` to create a new message.
  */
-export const MeIdentitySchema: GenMessage<MeIdentity> = /*@__PURE__*/
+export const SignInIdentitySchema: GenMessage<SignInIdentity> = /*@__PURE__*/
   messageDesc(file_app_me, 2);
 
 /**
- * MeCredential is one secret roster holds for somebody, and never the secret.
+ * SignInCredential is one secret roster holds for somebody, and never the secret.
  *
  * The kind and its dates. `Credential.secret` is not here and there is nowhere
  * to ask for it: this is a message with the fields written out, so the column
  * is absent rather than deselected. That is the same statement D13 makes by not
  * registering the service, said again where a page can hear it.
  *
- * @generated from message roster.MeCredential
+ * @generated from message roster.SignInCredential
  */
-export type MeCredential = Message<"roster.MeCredential"> & {
+export type SignInCredential = Message<"roster.SignInCredential"> & {
   /**
    * "password", "totp".
    *
    * @generated from field: string kind = 8;
    */
   kind: string;
+
+  /**
+   * What they call this one, when there is more than one of a kind. Empty is
+   * the only one, which is what a password and a first authenticator are.
+   *
+   * @generated from field: string name = 5;
+   */
+  name: string;
 
   /**
    * When it was last changed, for a policy that expires them and for showing
@@ -223,10 +237,10 @@ export type MeCredential = Message<"roster.MeCredential"> & {
 };
 
 /**
- * Describes the message roster.MeCredential.
- * Use `create(MeCredentialSchema)` to create a new message.
+ * Describes the message roster.SignInCredential.
+ * Use `create(SignInCredentialSchema)` to create a new message.
  */
-export const MeCredentialSchema: GenMessage<MeCredential> = /*@__PURE__*/
+export const SignInCredentialSchema: GenMessage<SignInCredential> = /*@__PURE__*/
   messageDesc(file_app_me, 3);
 
 /**

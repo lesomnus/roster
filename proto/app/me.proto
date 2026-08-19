@@ -95,12 +95,18 @@ message MeGetResponse {
   // This message is the one shape narrowed to the person **by construction**:
   // it takes no subject, so there is nothing to point at somebody else. That is
   // also why `cmd.Policy` can waive a binding for it and for nothing else.
-  repeated MeIdentity identities = 13;
-  repeated MeCredential credentials = 14;
+  repeated SignInIdentity identities = 13;
+  repeated SignInCredential credentials = 14;
 }
 
-// MeIdentity is one way somebody arrives from outside.
-message MeIdentity {
+// SignInIdentity is one way somebody arrives from outside.
+//
+// Named for what it describes rather than for the RPC that first answered with
+// it, because there are two now: this one about the caller, and
+// `HolderService.SignsIn` about somebody else. Two shapes saying one thing is
+// two that drift, and the drift would be between what a person sees about
+// themselves and what an operator sees about them.
+message SignInIdentity {
   // The row, so that a screen with a remove button has something to name.
   bytes id = 1;
 
@@ -117,15 +123,19 @@ message MeIdentity {
   google.protobuf.Timestamp date_created = 15;
 }
 
-// MeCredential is one secret roster holds for somebody, and never the secret.
+// SignInCredential is one secret roster holds for somebody, and never the secret.
 //
 // The kind and its dates. `Credential.secret` is not here and there is nowhere
 // to ask for it: this is a message with the fields written out, so the column
 // is absent rather than deselected. That is the same statement D13 makes by not
 // registering the service, said again where a page can hear it.
-message MeCredential {
+message SignInCredential {
   // "password", "totp".
   string kind = 8;
+
+  // What they call this one, when there is more than one of a kind. Empty is
+  // the only one, which is what a password and a first authenticator are.
+  string name = 5;
 
   // When it was last changed, for a policy that expires them and for showing
   // somebody why they are being asked.

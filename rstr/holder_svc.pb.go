@@ -2830,11 +2830,157 @@ func (b0 HolderInvalidateRequest_builder) Build() *HolderInvalidateRequest {
 	return m0
 }
 
+type HolderSignsInRequest struct {
+	state          protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref *HolderRef             `protobuf:"bytes,1,opt,name=ref"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *HolderSignsInRequest) Reset() {
+	*x = HolderSignsInRequest{}
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HolderSignsInRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HolderSignsInRequest) ProtoMessage() {}
+
+func (x *HolderSignsInRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *HolderSignsInRequest) GetRef() *HolderRef {
+	if x != nil {
+		return x.xxx_hidden_Ref
+	}
+	return nil
+}
+
+func (x *HolderSignsInRequest) SetRef(v *HolderRef) {
+	x.xxx_hidden_Ref = v
+}
+
+func (x *HolderSignsInRequest) HasRef() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Ref != nil
+}
+
+func (x *HolderSignsInRequest) ClearRef() {
+	x.xxx_hidden_Ref = nil
+}
+
+type HolderSignsInRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Ref *HolderRef
+}
+
+func (b0 HolderSignsInRequest_builder) Build() *HolderSignsInRequest {
+	m0 := &HolderSignsInRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ref = b.Ref
+	return m0
+}
+
+type HolderSignsInResponse struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Identities  *[]*SignInIdentity     `protobuf:"bytes,13,rep,name=identities"`
+	xxx_hidden_Credentials *[]*SignInCredential   `protobuf:"bytes,14,rep,name=credentials"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *HolderSignsInResponse) Reset() {
+	*x = HolderSignsInResponse{}
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HolderSignsInResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HolderSignsInResponse) ProtoMessage() {}
+
+func (x *HolderSignsInResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *HolderSignsInResponse) GetIdentities() []*SignInIdentity {
+	if x != nil {
+		if x.xxx_hidden_Identities != nil {
+			return *x.xxx_hidden_Identities
+		}
+	}
+	return nil
+}
+
+func (x *HolderSignsInResponse) GetCredentials() []*SignInCredential {
+	if x != nil {
+		if x.xxx_hidden_Credentials != nil {
+			return *x.xxx_hidden_Credentials
+		}
+	}
+	return nil
+}
+
+func (x *HolderSignsInResponse) SetIdentities(v []*SignInIdentity) {
+	x.xxx_hidden_Identities = &v
+}
+
+func (x *HolderSignsInResponse) SetCredentials(v []*SignInCredential) {
+	x.xxx_hidden_Credentials = &v
+}
+
+type HolderSignsInResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The same shapes `MeService` answers with, deliberately. Two of them saying
+	// one thing would be two that drift, and the drift would be between what a
+	// person sees about themselves and what an operator sees about them.
+	Identities  []*SignInIdentity
+	Credentials []*SignInCredential
+}
+
+func (b0 HolderSignsInResponse_builder) Build() *HolderSignsInResponse {
+	m0 := &HolderSignsInResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Identities = &b.Identities
+	x.xxx_hidden_Credentials = &b.Credentials
+	return m0
+}
+
 var File_roster_payday_holder_svc_g_proto protoreflect.FileDescriptor
 
 const file_roster_payday_holder_svc_g_proto_rawDesc = "" +
 	"\n" +
-	" roster/payday/holder_svc.g.proto\x12\x06roster\x1a\x19google/protobuf/any.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x1aroster/payday/holder.proto\x1a roster/payday/tenant_svc.g.proto\"\xd6\x04\n" +
+	" roster/payday/holder_svc.g.proto\x12\x06roster\x1a\fapp/me.proto\x1a\x19google/protobuf/any.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x1aroster/payday/holder.proto\x1a roster/payday/tenant_svc.g.proto\"\xd6\x04\n" +
 	"\x10HolderAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x1b\n" +
@@ -2942,7 +3088,14 @@ const file_roster_payday_holder_svc_g_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\"}\n" +
 	"\x17HolderInvalidateRequest\x12#\n" +
 	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\x12=\n" +
-	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated2\xf8\x04\n" +
+	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\";\n" +
+	"\x14HolderSignsInRequest\x12#\n" +
+	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\"\x8b\x01\n" +
+	"\x15HolderSignsInResponse\x126\n" +
+	"\n" +
+	"identities\x18\r \x03(\v2\x16.roster.SignInIdentityR\n" +
+	"identities\x12:\n" +
+	"\vcredentials\x18\x0e \x03(\v2\x18.roster.SignInCredentialR\vcredentials2\xc0\x05\n" +
 	"\rHolderService\x12/\n" +
 	"\x03Add\x12\x18.roster.HolderAddRequest\x1a\x0e.roster.Holder\x12/\n" +
 	"\x03Get\x12\x18.roster.HolderGetRequest\x1a\x0e.roster.Holder\x123\n" +
@@ -2955,9 +3108,10 @@ const file_roster_payday_holder_svc_g_proto_rawDesc = "" +
 	"\aDisable\x12\x1c.roster.HolderDisableRequest\x1a\x0e.roster.Holder\x125\n" +
 	"\x06Enable\x12\x1b.roster.HolderEnableRequest\x1a\x0e.roster.Holder\x12=\n" +
 	"\n" +
-	"Invalidate\x12\x1f.roster.HolderInvalidateRequest\x1a\x0e.roster.HolderB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
+	"Invalidate\x12\x1f.roster.HolderInvalidateRequest\x1a\x0e.roster.Holder\x12F\n" +
+	"\aSignsIn\x12\x1c.roster.HolderSignsInRequest\x1a\x1d.roster.HolderSignsInResponseB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_roster_payday_holder_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_roster_payday_holder_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
 var file_roster_payday_holder_svc_g_proto_goTypes = []any{
 	(*HolderAddRequest)(nil),        // 0: roster.HolderAddRequest
 	(*HolderGetRequest)(nil),        // 1: roster.HolderGetRequest
@@ -2976,83 +3130,92 @@ var file_roster_payday_holder_svc_g_proto_goTypes = []any{
 	(*HolderDisableRequest)(nil),    // 14: roster.HolderDisableRequest
 	(*HolderEnableRequest)(nil),     // 15: roster.HolderEnableRequest
 	(*HolderInvalidateRequest)(nil), // 16: roster.HolderInvalidateRequest
-	nil,                             // 17: roster.HolderAddRequest.LabelsEntry
-	nil,                             // 18: roster.HolderPatchRequest.LabelsEntry
-	(*TenantRef)(nil),               // 19: roster.TenantRef
-	(*timestamppb.Timestamp)(nil),   // 20: google.protobuf.Timestamp
-	(*Profile)(nil),                 // 21: roster.Profile
-	(*anypb.Any)(nil),               // 22: google.protobuf.Any
-	(*TenantSelect)(nil),            // 23: roster.TenantSelect
-	(*patchpb.Patch)(nil),           // 24: patch.Patch
-	(*Holder)(nil),                  // 25: roster.Holder
-	(*emptypb.Empty)(nil),           // 26: google.protobuf.Empty
+	(*HolderSignsInRequest)(nil),    // 17: roster.HolderSignsInRequest
+	(*HolderSignsInResponse)(nil),   // 18: roster.HolderSignsInResponse
+	nil,                             // 19: roster.HolderAddRequest.LabelsEntry
+	nil,                             // 20: roster.HolderPatchRequest.LabelsEntry
+	(*TenantRef)(nil),               // 21: roster.TenantRef
+	(*timestamppb.Timestamp)(nil),   // 22: google.protobuf.Timestamp
+	(*Profile)(nil),                 // 23: roster.Profile
+	(*anypb.Any)(nil),               // 24: google.protobuf.Any
+	(*TenantSelect)(nil),            // 25: roster.TenantSelect
+	(*patchpb.Patch)(nil),           // 26: patch.Patch
+	(*Holder)(nil),                  // 27: roster.Holder
+	(*SignInIdentity)(nil),          // 28: roster.SignInIdentity
+	(*SignInCredential)(nil),        // 29: roster.SignInCredential
+	(*emptypb.Empty)(nil),           // 30: google.protobuf.Empty
 }
 var file_roster_payday_holder_svc_g_proto_depIdxs = []int32{
-	19, // 0: roster.HolderAddRequest.tenant:type_name -> roster.TenantRef
-	17, // 1: roster.HolderAddRequest.labels:type_name -> roster.HolderAddRequest.LabelsEntry
-	20, // 2: roster.HolderAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	21, // 3: roster.HolderAddRequest.profile:type_name -> roster.Profile
-	22, // 4: roster.HolderAddRequest.data:type_name -> google.protobuf.Any
-	20, // 5: roster.HolderAddRequest.date_invalidated:type_name -> google.protobuf.Timestamp
-	20, // 6: roster.HolderAddRequest.date_disabled:type_name -> google.protobuf.Timestamp
+	21, // 0: roster.HolderAddRequest.tenant:type_name -> roster.TenantRef
+	19, // 1: roster.HolderAddRequest.labels:type_name -> roster.HolderAddRequest.LabelsEntry
+	22, // 2: roster.HolderAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	23, // 3: roster.HolderAddRequest.profile:type_name -> roster.Profile
+	24, // 4: roster.HolderAddRequest.data:type_name -> google.protobuf.Any
+	22, // 5: roster.HolderAddRequest.date_invalidated:type_name -> google.protobuf.Timestamp
+	22, // 6: roster.HolderAddRequest.date_disabled:type_name -> google.protobuf.Timestamp
 	2,  // 7: roster.HolderGetRequest.ref:type_name -> roster.HolderRef
 	4,  // 8: roster.HolderGetRequest.select:type_name -> roster.HolderSelect
 	3,  // 9: roster.HolderRef.slug:type_name -> roster.HolderRefBySlug
-	19, // 10: roster.HolderRefBySlug.tenant:type_name -> roster.TenantRef
-	23, // 11: roster.HolderSelect.tenant:type_name -> roster.TenantSelect
+	21, // 10: roster.HolderRefBySlug.tenant:type_name -> roster.TenantRef
+	25, // 11: roster.HolderSelect.tenant:type_name -> roster.TenantSelect
 	2,  // 12: roster.HolderPatchRequest.ref:type_name -> roster.HolderRef
-	18, // 13: roster.HolderPatchRequest.labels:type_name -> roster.HolderPatchRequest.LabelsEntry
-	20, // 14: roster.HolderPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	21, // 15: roster.HolderPatchRequest.profile:type_name -> roster.Profile
-	22, // 16: roster.HolderPatchRequest.data:type_name -> google.protobuf.Any
-	20, // 17: roster.HolderPatchRequest.date_invalidated:type_name -> google.protobuf.Timestamp
-	20, // 18: roster.HolderPatchRequest.date_disabled:type_name -> google.protobuf.Timestamp
+	20, // 13: roster.HolderPatchRequest.labels:type_name -> roster.HolderPatchRequest.LabelsEntry
+	22, // 14: roster.HolderPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	23, // 15: roster.HolderPatchRequest.profile:type_name -> roster.Profile
+	24, // 16: roster.HolderPatchRequest.data:type_name -> google.protobuf.Any
+	22, // 17: roster.HolderPatchRequest.date_invalidated:type_name -> google.protobuf.Timestamp
+	22, // 18: roster.HolderPatchRequest.date_disabled:type_name -> google.protobuf.Timestamp
 	2,  // 19: roster.HolderApplyRequest.ref:type_name -> roster.HolderRef
-	24, // 20: roster.HolderApplyRequest.patch:type_name -> patch.Patch
+	26, // 20: roster.HolderApplyRequest.patch:type_name -> patch.Patch
 	9,  // 21: roster.HolderListRequest.filters:type_name -> roster.HolderFilter
-	25, // 22: roster.HolderListResponse.items:type_name -> roster.Holder
+	27, // 22: roster.HolderListResponse.items:type_name -> roster.Holder
 	2,  // 23: roster.HolderFilter.ref:type_name -> roster.HolderRef
-	19, // 24: roster.HolderFilter.tenant:type_name -> roster.TenantRef
+	21, // 24: roster.HolderFilter.tenant:type_name -> roster.TenantRef
 	9,  // 25: roster.HolderWatchRequest.filters:type_name -> roster.HolderFilter
 	12, // 26: roster.HolderWatchResponse.items:type_name -> roster.HolderWatchItem
-	25, // 27: roster.HolderWatchItem.value:type_name -> roster.Holder
+	27, // 27: roster.HolderWatchItem.value:type_name -> roster.Holder
 	2,  // 28: roster.HolderUpdateRequest.ref:type_name -> roster.HolderRef
-	20, // 29: roster.HolderUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
-	21, // 30: roster.HolderUpdateRequest.profile:type_name -> roster.Profile
-	22, // 31: roster.HolderUpdateRequest.data:type_name -> google.protobuf.Any
+	22, // 29: roster.HolderUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
+	23, // 30: roster.HolderUpdateRequest.profile:type_name -> roster.Profile
+	24, // 31: roster.HolderUpdateRequest.data:type_name -> google.protobuf.Any
 	2,  // 32: roster.HolderDisableRequest.ref:type_name -> roster.HolderRef
-	20, // 33: roster.HolderDisableRequest.date_updated:type_name -> google.protobuf.Timestamp
+	22, // 33: roster.HolderDisableRequest.date_updated:type_name -> google.protobuf.Timestamp
 	2,  // 34: roster.HolderEnableRequest.ref:type_name -> roster.HolderRef
-	20, // 35: roster.HolderEnableRequest.date_updated:type_name -> google.protobuf.Timestamp
+	22, // 35: roster.HolderEnableRequest.date_updated:type_name -> google.protobuf.Timestamp
 	2,  // 36: roster.HolderInvalidateRequest.ref:type_name -> roster.HolderRef
-	20, // 37: roster.HolderInvalidateRequest.date_updated:type_name -> google.protobuf.Timestamp
-	0,  // 38: roster.HolderService.Add:input_type -> roster.HolderAddRequest
-	1,  // 39: roster.HolderService.Get:input_type -> roster.HolderGetRequest
-	5,  // 40: roster.HolderService.Patch:input_type -> roster.HolderPatchRequest
-	6,  // 41: roster.HolderService.Apply:input_type -> roster.HolderApplyRequest
-	2,  // 42: roster.HolderService.Erase:input_type -> roster.HolderRef
-	7,  // 43: roster.HolderService.List:input_type -> roster.HolderListRequest
-	10, // 44: roster.HolderService.Watch:input_type -> roster.HolderWatchRequest
-	13, // 45: roster.HolderService.Update:input_type -> roster.HolderUpdateRequest
-	14, // 46: roster.HolderService.Disable:input_type -> roster.HolderDisableRequest
-	15, // 47: roster.HolderService.Enable:input_type -> roster.HolderEnableRequest
-	16, // 48: roster.HolderService.Invalidate:input_type -> roster.HolderInvalidateRequest
-	25, // 49: roster.HolderService.Add:output_type -> roster.Holder
-	25, // 50: roster.HolderService.Get:output_type -> roster.Holder
-	25, // 51: roster.HolderService.Patch:output_type -> roster.Holder
-	25, // 52: roster.HolderService.Apply:output_type -> roster.Holder
-	26, // 53: roster.HolderService.Erase:output_type -> google.protobuf.Empty
-	8,  // 54: roster.HolderService.List:output_type -> roster.HolderListResponse
-	11, // 55: roster.HolderService.Watch:output_type -> roster.HolderWatchResponse
-	25, // 56: roster.HolderService.Update:output_type -> roster.Holder
-	25, // 57: roster.HolderService.Disable:output_type -> roster.Holder
-	25, // 58: roster.HolderService.Enable:output_type -> roster.Holder
-	25, // 59: roster.HolderService.Invalidate:output_type -> roster.Holder
-	49, // [49:60] is the sub-list for method output_type
-	38, // [38:49] is the sub-list for method input_type
-	38, // [38:38] is the sub-list for extension type_name
-	38, // [38:38] is the sub-list for extension extendee
-	0,  // [0:38] is the sub-list for field type_name
+	22, // 37: roster.HolderInvalidateRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 38: roster.HolderSignsInRequest.ref:type_name -> roster.HolderRef
+	28, // 39: roster.HolderSignsInResponse.identities:type_name -> roster.SignInIdentity
+	29, // 40: roster.HolderSignsInResponse.credentials:type_name -> roster.SignInCredential
+	0,  // 41: roster.HolderService.Add:input_type -> roster.HolderAddRequest
+	1,  // 42: roster.HolderService.Get:input_type -> roster.HolderGetRequest
+	5,  // 43: roster.HolderService.Patch:input_type -> roster.HolderPatchRequest
+	6,  // 44: roster.HolderService.Apply:input_type -> roster.HolderApplyRequest
+	2,  // 45: roster.HolderService.Erase:input_type -> roster.HolderRef
+	7,  // 46: roster.HolderService.List:input_type -> roster.HolderListRequest
+	10, // 47: roster.HolderService.Watch:input_type -> roster.HolderWatchRequest
+	13, // 48: roster.HolderService.Update:input_type -> roster.HolderUpdateRequest
+	14, // 49: roster.HolderService.Disable:input_type -> roster.HolderDisableRequest
+	15, // 50: roster.HolderService.Enable:input_type -> roster.HolderEnableRequest
+	16, // 51: roster.HolderService.Invalidate:input_type -> roster.HolderInvalidateRequest
+	17, // 52: roster.HolderService.SignsIn:input_type -> roster.HolderSignsInRequest
+	27, // 53: roster.HolderService.Add:output_type -> roster.Holder
+	27, // 54: roster.HolderService.Get:output_type -> roster.Holder
+	27, // 55: roster.HolderService.Patch:output_type -> roster.Holder
+	27, // 56: roster.HolderService.Apply:output_type -> roster.Holder
+	30, // 57: roster.HolderService.Erase:output_type -> google.protobuf.Empty
+	8,  // 58: roster.HolderService.List:output_type -> roster.HolderListResponse
+	11, // 59: roster.HolderService.Watch:output_type -> roster.HolderWatchResponse
+	27, // 60: roster.HolderService.Update:output_type -> roster.Holder
+	27, // 61: roster.HolderService.Disable:output_type -> roster.Holder
+	27, // 62: roster.HolderService.Enable:output_type -> roster.Holder
+	27, // 63: roster.HolderService.Invalidate:output_type -> roster.Holder
+	18, // 64: roster.HolderService.SignsIn:output_type -> roster.HolderSignsInResponse
+	53, // [53:65] is the sub-list for method output_type
+	41, // [41:53] is the sub-list for method input_type
+	41, // [41:41] is the sub-list for extension type_name
+	41, // [41:41] is the sub-list for extension extendee
+	0,  // [0:41] is the sub-list for field type_name
 }
 
 func init() { file_roster_payday_holder_svc_g_proto_init() }
@@ -3060,6 +3223,7 @@ func file_roster_payday_holder_svc_g_proto_init() {
 	if File_roster_payday_holder_svc_g_proto != nil {
 		return
 	}
+	file_app_me_proto_init()
 	file_roster_payday_holder_proto_init()
 	file_roster_payday_tenant_svc_g_proto_init()
 	file_roster_payday_holder_svc_g_proto_msgTypes[2].OneofWrappers = []any{
@@ -3073,7 +3237,7 @@ func file_roster_payday_holder_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_roster_payday_holder_svc_g_proto_rawDesc), len(file_roster_payday_holder_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   19,
+			NumMessages:   21,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

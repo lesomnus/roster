@@ -4,6 +4,7 @@ package roster;
 
 import "google/protobuf/any.proto";
 import "google/protobuf/timestamp.proto";
+import "app/me.proto";
 import "roster/payday/holder.proto";
 
 
@@ -56,6 +57,40 @@ service HolderService {
   // omission: this is what a password reset and a "sign me out everywhere"
   // button both do, and a credential that can be brought back is not revoked.
   rpc Invalidate(HolderInvalidateRequest) returns (Holder);
+
+  // SignsIn answers how somebody signs in, without the verifier.
+  //
+  // # Why it cannot be read any other way
+  //
+  // `CredentialService` is not registered at all, because its generated `Get`
+  // answers with the verifier (D13). And `IdentityService` narrows by the
+  // **tenant**, so an operator's list of one person's identities is that whole
+  // tenant's, filtered in the app -- which is the leak D17 named and D23 exists
+  // to remove.
+  //
+  // # Why it is not MeService
+  //
+  // `MeService` takes nothing, which is the property that makes it safe to read
+  // unwalled and the reason `cmd.Policy` waives a binding for it. This takes a
+  // subject, so it is the ordinary question with the ordinary answer: behind
+  // the wall, and needing a role that names it.
+  //
+  // It is on `HolderService` and not a service of its own for `Update`'s
+  // reason: it is a read of a holder, and a second service would be a second
+  // name for the same rows.
+  rpc SignsIn(HolderSignsInRequest) returns (HolderSignsInResponse);
+}
+
+message HolderSignsInRequest {
+  HolderRef ref = 1;
+}
+
+message HolderSignsInResponse {
+  // The same shapes `MeService` answers with, deliberately. Two of them saying
+  // one thing would be two that drift, and the drift would be between what a
+  // person sees about themselves and what an operator sees about them.
+  repeated SignInIdentity identities = 13;
+  repeated SignInCredential credentials = 14;
 }
 
 message HolderDisableRequest {

@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"time"
 
 	"github.com/lesomnus/z"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -162,4 +163,79 @@ func (s coreHolder) Invalidate(ctx context.Context, req *app.HolderInvalidateReq
 	lock(&patch, req.GetDateUpdated())
 
 	return s.HolderServiceServer.Patch(ctx, patch.Build())
+}
+
+// SignsIn answers how somebody signs in, without the verifier.
+//
+// # Why it is here rather than in `server/me`
+//
+// `MeService` reads through no wall, and what makes that safe is that it takes
+// nothing: it cannot be pointed at anybody else. This takes a subject, so it is
+// the ordinary question and gets the ordinary answer -- behind the wall, which
+// is what this layer is already inside.
+//
+// # And why it reads through the stack rather than through ent
+//
+// `server/me` goes to the ent client because it is answering about the caller
+// and there is nothing to narrow. Here there is: the wall has to decide whether
+// this holder is one the caller may see at all, and whether their rows are.
+// Reading through `Next()` is how that happens without this file knowing what a
+// tenant is.
+func (s coreHolder) SignsIn(ctx context.Context, req *app.HolderSignsInRequest) (*app.HolderSignsInResponse, error) {
+	// The holder first, so that somebody outside the caller's tenant is
+	// `NotFound` rather than an empty list -- which would say "here, and with
+	// no way in" about a person the caller cannot see.
+	v, err := s.HolderServiceServer.Get(ctx, app.HolderGetRequest_builder{
+		Ref:    req.GetRef(),
+		Select: app.HolderSelect_builder{}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	who := app.HolderRef_builder{Id: v.GetId()}.Build()
+
+	ids, err := s.Next().Identity().List(ctx, app.IdentityListRequest_builder{
+		Filters: []*app.IdentityFilter{
+			app.IdentityFilter_builder{Holder: who}.Build(),
+		},
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	creds, err := s.Next().Credential().List(ctx, app.CredentialListRequest_builder{
+		Filters: []*app.CredentialFilter{
+			app.CredentialFilter_builder{Holder: who}.Build(),
+		},
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	res := app.HolderSignsInResponse_builder{}
+	for _, i := range ids.GetItems() {
+		res.Identities = append(res.Identities, app.SignInIdentity_builder{
+			Id:          i.GetId(),
+			Provider:    i.GetProvider(),
+			Subject:     i.GetSubject(),
+			DateCreated: i.GetDateCreated(),
+		}.Build())
+	}
+	for _, c := range creds.GetItems() {
+		// The fields are written out, so the verifier is absent rather than
+		// deselected -- there is no `Select` here to get wrong, and the shape
+		// itself is the statement D13 makes by not registering the service.
+		f := app.SignInCredential_builder{Kind: c.GetKind(), Name: c.GetName()}
+		if u := c.GetDateRotated(); u != nil {
+			f.DateRotated = u
+		}
+		if u := c.GetDateLocked(); u != nil && u.AsTime().After(time.Now()) {
+			f.DateLocked = u
+		}
+
+		res.Credentials = append(res.Credentials, f.Build())
+	}
+
+	return res.Build(), nil
 }

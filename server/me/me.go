@@ -212,7 +212,7 @@ func (s *Server) teams(ctx context.Context, who pdid.Id) ([]*app.MeTeam, error) 
 // through it reads their whole tenant's and filters -- the leak D17 named and
 // D23 exists to remove. This one takes no subject, so there is nothing to point
 // at anybody else.
-func (s *Server) identities(ctx context.Context, who pdid.Id) ([]*app.MeIdentity, error) {
+func (s *Server) identities(ctx context.Context, who pdid.Id) ([]*app.SignInIdentity, error) {
 	vs, err := s.db.Identity.Query().
 		Where(identity.DateErasedIsNil(), identity.HasHolderWith(holder.IDEQ(who.Uuid()))).
 		All(ctx)
@@ -220,9 +220,9 @@ func (s *Server) identities(ctx context.Context, who pdid.Id) ([]*app.MeIdentity
 		return nil, err
 	}
 
-	out := make([]*app.MeIdentity, 0, len(vs))
+	out := make([]*app.SignInIdentity, 0, len(vs))
 	for _, v := range vs {
-		out = append(out, app.MeIdentity_builder{
+		out = append(out, app.SignInIdentity_builder{
 			Id:          v.ID[:],
 			Provider:    v.Provider,
 			Subject:     v.Subject,
@@ -239,7 +239,7 @@ func (s *Server) identities(ctx context.Context, who pdid.Id) ([]*app.MeIdentity
 // there is no `Select` here to get wrong, and nothing downstream that could ask
 // for one. `CredentialService` is unregistered for the same fact and this is
 // the read that replaces it for the one case that is safe: somebody's own.
-func (s *Server) credentials(ctx context.Context, who pdid.Id) ([]*app.MeCredential, error) {
+func (s *Server) credentials(ctx context.Context, who pdid.Id) ([]*app.SignInCredential, error) {
 	vs, err := s.db.Credential.Query().
 		Where(credential.DateErasedIsNil(), credential.HasHolderWith(holder.IDEQ(who.Uuid()))).
 		All(ctx)
@@ -247,9 +247,9 @@ func (s *Server) credentials(ctx context.Context, who pdid.Id) ([]*app.MeCredent
 		return nil, err
 	}
 
-	out := make([]*app.MeCredential, 0, len(vs))
+	out := make([]*app.SignInCredential, 0, len(vs))
 	for _, v := range vs {
-		c := app.MeCredential_builder{Kind: v.Kind}
+		c := app.SignInCredential_builder{Kind: v.Kind, Name: v.Name}
 		if v.DateRotated != nil {
 			c.DateRotated = timestamppb.New(*v.DateRotated)
 		}

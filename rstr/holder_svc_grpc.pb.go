@@ -31,6 +31,7 @@ const (
 	HolderService_Disable_FullMethodName    = "/roster.HolderService/Disable"
 	HolderService_Enable_FullMethodName     = "/roster.HolderService/Enable"
 	HolderService_Invalidate_FullMethodName = "/roster.HolderService/Invalidate"
+	HolderService_SignsIn_FullMethodName    = "/roster.HolderService/SignsIn"
 )
 
 // HolderServiceClient is the client API for HolderService service.
@@ -101,6 +102,27 @@ type HolderServiceClient interface {
 	// omission: this is what a password reset and a "sign me out everywhere"
 	// button both do, and a credential that can be brought back is not revoked.
 	Invalidate(ctx context.Context, in *HolderInvalidateRequest, opts ...grpc.CallOption) (*Holder, error)
+	// SignsIn answers how somebody signs in, without the verifier.
+	//
+	// # Why it cannot be read any other way
+	//
+	// `CredentialService` is not registered at all, because its generated `Get`
+	// answers with the verifier (D13). And `IdentityService` narrows by the
+	// **tenant**, so an operator's list of one person's identities is that whole
+	// tenant's, filtered in the app -- which is the leak D17 named and D23 exists
+	// to remove.
+	//
+	// # Why it is not MeService
+	//
+	// `MeService` takes nothing, which is the property that makes it safe to read
+	// unwalled and the reason `cmd.Policy` waives a binding for it. This takes a
+	// subject, so it is the ordinary question with the ordinary answer: behind
+	// the wall, and needing a role that names it.
+	//
+	// It is on `HolderService` and not a service of its own for `Update`'s
+	// reason: it is a read of a holder, and a second service would be a second
+	// name for the same rows.
+	SignsIn(ctx context.Context, in *HolderSignsInRequest, opts ...grpc.CallOption) (*HolderSignsInResponse, error)
 }
 
 type holderServiceClient struct {
@@ -230,6 +252,16 @@ func (c *holderServiceClient) Invalidate(ctx context.Context, in *HolderInvalida
 	return out, nil
 }
 
+func (c *holderServiceClient) SignsIn(ctx context.Context, in *HolderSignsInRequest, opts ...grpc.CallOption) (*HolderSignsInResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HolderSignsInResponse)
+	err := c.cc.Invoke(ctx, HolderService_SignsIn_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // HolderServiceServer is the server API for HolderService service.
 // All implementations must embed UnimplementedHolderServiceServer
 // for forward compatibility.
@@ -298,6 +330,27 @@ type HolderServiceServer interface {
 	// omission: this is what a password reset and a "sign me out everywhere"
 	// button both do, and a credential that can be brought back is not revoked.
 	Invalidate(context.Context, *HolderInvalidateRequest) (*Holder, error)
+	// SignsIn answers how somebody signs in, without the verifier.
+	//
+	// # Why it cannot be read any other way
+	//
+	// `CredentialService` is not registered at all, because its generated `Get`
+	// answers with the verifier (D13). And `IdentityService` narrows by the
+	// **tenant**, so an operator's list of one person's identities is that whole
+	// tenant's, filtered in the app -- which is the leak D17 named and D23 exists
+	// to remove.
+	//
+	// # Why it is not MeService
+	//
+	// `MeService` takes nothing, which is the property that makes it safe to read
+	// unwalled and the reason `cmd.Policy` waives a binding for it. This takes a
+	// subject, so it is the ordinary question with the ordinary answer: behind
+	// the wall, and needing a role that names it.
+	//
+	// It is on `HolderService` and not a service of its own for `Update`'s
+	// reason: it is a read of a holder, and a second service would be a second
+	// name for the same rows.
+	SignsIn(context.Context, *HolderSignsInRequest) (*HolderSignsInResponse, error)
 	mustEmbedUnimplementedHolderServiceServer()
 }
 
@@ -340,6 +393,9 @@ func (UnimplementedHolderServiceServer) Enable(context.Context, *HolderEnableReq
 }
 func (UnimplementedHolderServiceServer) Invalidate(context.Context, *HolderInvalidateRequest) (*Holder, error) {
 	return nil, status.Error(codes.Unimplemented, "method Invalidate not implemented")
+}
+func (UnimplementedHolderServiceServer) SignsIn(context.Context, *HolderSignsInRequest) (*HolderSignsInResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SignsIn not implemented")
 }
 func (UnimplementedHolderServiceServer) mustEmbedUnimplementedHolderServiceServer() {}
 func (UnimplementedHolderServiceServer) testEmbeddedByValue()                       {}
@@ -553,6 +609,24 @@ func _HolderService_Invalidate_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HolderService_SignsIn_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HolderSignsInRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HolderServiceServer).SignsIn(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HolderService_SignsIn_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HolderServiceServer).SignsIn(ctx, req.(*HolderSignsInRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // HolderService_ServiceDesc is the grpc.ServiceDesc for HolderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -599,6 +673,10 @@ var HolderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Invalidate",
 			Handler:    _HolderService_Invalidate_Handler,
+		},
+		{
+			MethodName: "SignsIn",
+			Handler:    _HolderService_SignsIn_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
