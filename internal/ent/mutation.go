@@ -16,6 +16,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/audit"
 	"github.com/lesomnus/roster/internal/ent/binding"
 	"github.com/lesomnus/roster/internal/ent/credential"
+	"github.com/lesomnus/roster/internal/ent/delegation"
 	"github.com/lesomnus/roster/internal/ent/email"
 	"github.com/lesomnus/roster/internal/ent/group"
 	"github.com/lesomnus/roster/internal/ent/groupmembership"
@@ -46,6 +47,7 @@ const (
 	TypeAudit           = "Audit"
 	TypeBinding         = "Binding"
 	TypeCredential      = "Credential"
+	TypeDelegation      = "Delegation"
 	TypeEmail           = "Email"
 	TypeGroup           = "Group"
 	TypeGroupMembership = "GroupMembership"
@@ -3783,6 +3785,866 @@ func (m *CredentialMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown Credential edge %s", name)
+}
+
+// DelegationMutation represents an operation that mutates the Delegation nodes in the graph.
+type DelegationMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *uuid.UUID
+	methods       *[]string
+	appendmethods []string
+	secret        *[]byte
+	issuer        *[]byte
+	date_expires  *time.Time
+	date_updated  *time.Time
+	date_erased   *time.Time
+	date_created  *time.Time
+	clearedFields map[string]struct{}
+	holder        *uuid.UUID
+	clearedholder bool
+	done          bool
+	oldValue      func(context.Context) (*Delegation, error)
+	predicates    []predicate.Delegation
+}
+
+var _ ent.Mutation = (*DelegationMutation)(nil)
+
+// delegationOption allows management of the mutation configuration using functional options.
+type delegationOption func(*DelegationMutation)
+
+// newDelegationMutation creates new mutation for the Delegation entity.
+func newDelegationMutation(c config, op Op, opts ...delegationOption) *DelegationMutation {
+	m := &DelegationMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeDelegation,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withDelegationID sets the ID field of the mutation.
+func withDelegationID(id uuid.UUID) delegationOption {
+	return func(m *DelegationMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Delegation
+		)
+		m.oldValue = func(ctx context.Context) (*Delegation, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Delegation.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withDelegation sets the old Delegation of the mutation.
+func withDelegation(node *Delegation) delegationOption {
+	return func(m *DelegationMutation) {
+		m.oldValue = func(context.Context) (*Delegation, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m DelegationMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m DelegationMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Delegation entities.
+func (m *DelegationMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *DelegationMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *DelegationMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Delegation.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetMethods sets the "methods" field.
+func (m *DelegationMutation) SetMethods(s []string) {
+	m.methods = &s
+	m.appendmethods = nil
+}
+
+// Methods returns the value of the "methods" field in the mutation.
+func (m *DelegationMutation) Methods() (r []string, exists bool) {
+	v := m.methods
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMethods returns the old "methods" field's value of the Delegation entity.
+// If the Delegation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DelegationMutation) OldMethods(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMethods is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMethods requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMethods: %w", err)
+	}
+	return oldValue.Methods, nil
+}
+
+// AppendMethods adds s to the "methods" field.
+func (m *DelegationMutation) AppendMethods(s []string) {
+	m.appendmethods = append(m.appendmethods, s...)
+}
+
+// AppendedMethods returns the list of values that were appended to the "methods" field in this mutation.
+func (m *DelegationMutation) AppendedMethods() ([]string, bool) {
+	if len(m.appendmethods) == 0 {
+		return nil, false
+	}
+	return m.appendmethods, true
+}
+
+// ClearMethods clears the value of the "methods" field.
+func (m *DelegationMutation) ClearMethods() {
+	m.methods = nil
+	m.appendmethods = nil
+	m.clearedFields[delegation.FieldMethods] = struct{}{}
+}
+
+// MethodsCleared returns if the "methods" field was cleared in this mutation.
+func (m *DelegationMutation) MethodsCleared() bool {
+	_, ok := m.clearedFields[delegation.FieldMethods]
+	return ok
+}
+
+// ResetMethods resets all changes to the "methods" field.
+func (m *DelegationMutation) ResetMethods() {
+	m.methods = nil
+	m.appendmethods = nil
+	delete(m.clearedFields, delegation.FieldMethods)
+}
+
+// SetSecret sets the "secret" field.
+func (m *DelegationMutation) SetSecret(b []byte) {
+	m.secret = &b
+}
+
+// Secret returns the value of the "secret" field in the mutation.
+func (m *DelegationMutation) Secret() (r []byte, exists bool) {
+	v := m.secret
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSecret returns the old "secret" field's value of the Delegation entity.
+// If the Delegation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DelegationMutation) OldSecret(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSecret is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSecret requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSecret: %w", err)
+	}
+	return oldValue.Secret, nil
+}
+
+// ResetSecret resets all changes to the "secret" field.
+func (m *DelegationMutation) ResetSecret() {
+	m.secret = nil
+}
+
+// SetIssuer sets the "issuer" field.
+func (m *DelegationMutation) SetIssuer(b []byte) {
+	m.issuer = &b
+}
+
+// Issuer returns the value of the "issuer" field in the mutation.
+func (m *DelegationMutation) Issuer() (r []byte, exists bool) {
+	v := m.issuer
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIssuer returns the old "issuer" field's value of the Delegation entity.
+// If the Delegation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DelegationMutation) OldIssuer(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIssuer is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIssuer requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIssuer: %w", err)
+	}
+	return oldValue.Issuer, nil
+}
+
+// ResetIssuer resets all changes to the "issuer" field.
+func (m *DelegationMutation) ResetIssuer() {
+	m.issuer = nil
+}
+
+// SetDateExpires sets the "date_expires" field.
+func (m *DelegationMutation) SetDateExpires(t time.Time) {
+	m.date_expires = &t
+}
+
+// DateExpires returns the value of the "date_expires" field in the mutation.
+func (m *DelegationMutation) DateExpires() (r time.Time, exists bool) {
+	v := m.date_expires
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDateExpires returns the old "date_expires" field's value of the Delegation entity.
+// If the Delegation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DelegationMutation) OldDateExpires(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDateExpires is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDateExpires requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateExpires: %w", err)
+	}
+	return oldValue.DateExpires, nil
+}
+
+// ClearDateExpires clears the value of the "date_expires" field.
+func (m *DelegationMutation) ClearDateExpires() {
+	m.date_expires = nil
+	m.clearedFields[delegation.FieldDateExpires] = struct{}{}
+}
+
+// DateExpiresCleared returns if the "date_expires" field was cleared in this mutation.
+func (m *DelegationMutation) DateExpiresCleared() bool {
+	_, ok := m.clearedFields[delegation.FieldDateExpires]
+	return ok
+}
+
+// ResetDateExpires resets all changes to the "date_expires" field.
+func (m *DelegationMutation) ResetDateExpires() {
+	m.date_expires = nil
+	delete(m.clearedFields, delegation.FieldDateExpires)
+}
+
+// SetDateUpdated sets the "date_updated" field.
+func (m *DelegationMutation) SetDateUpdated(t time.Time) {
+	m.date_updated = &t
+}
+
+// DateUpdated returns the value of the "date_updated" field in the mutation.
+func (m *DelegationMutation) DateUpdated() (r time.Time, exists bool) {
+	v := m.date_updated
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDateUpdated returns the old "date_updated" field's value of the Delegation entity.
+// If the Delegation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DelegationMutation) OldDateUpdated(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDateUpdated is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDateUpdated requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateUpdated: %w", err)
+	}
+	return oldValue.DateUpdated, nil
+}
+
+// ResetDateUpdated resets all changes to the "date_updated" field.
+func (m *DelegationMutation) ResetDateUpdated() {
+	m.date_updated = nil
+}
+
+// SetDateErased sets the "date_erased" field.
+func (m *DelegationMutation) SetDateErased(t time.Time) {
+	m.date_erased = &t
+}
+
+// DateErased returns the value of the "date_erased" field in the mutation.
+func (m *DelegationMutation) DateErased() (r time.Time, exists bool) {
+	v := m.date_erased
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDateErased returns the old "date_erased" field's value of the Delegation entity.
+// If the Delegation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DelegationMutation) OldDateErased(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDateErased is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDateErased requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateErased: %w", err)
+	}
+	return oldValue.DateErased, nil
+}
+
+// ClearDateErased clears the value of the "date_erased" field.
+func (m *DelegationMutation) ClearDateErased() {
+	m.date_erased = nil
+	m.clearedFields[delegation.FieldDateErased] = struct{}{}
+}
+
+// DateErasedCleared returns if the "date_erased" field was cleared in this mutation.
+func (m *DelegationMutation) DateErasedCleared() bool {
+	_, ok := m.clearedFields[delegation.FieldDateErased]
+	return ok
+}
+
+// ResetDateErased resets all changes to the "date_erased" field.
+func (m *DelegationMutation) ResetDateErased() {
+	m.date_erased = nil
+	delete(m.clearedFields, delegation.FieldDateErased)
+}
+
+// SetDateCreated sets the "date_created" field.
+func (m *DelegationMutation) SetDateCreated(t time.Time) {
+	m.date_created = &t
+}
+
+// DateCreated returns the value of the "date_created" field in the mutation.
+func (m *DelegationMutation) DateCreated() (r time.Time, exists bool) {
+	v := m.date_created
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDateCreated returns the old "date_created" field's value of the Delegation entity.
+// If the Delegation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DelegationMutation) OldDateCreated(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDateCreated is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDateCreated requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateCreated: %w", err)
+	}
+	return oldValue.DateCreated, nil
+}
+
+// ClearDateCreated clears the value of the "date_created" field.
+func (m *DelegationMutation) ClearDateCreated() {
+	m.date_created = nil
+	m.clearedFields[delegation.FieldDateCreated] = struct{}{}
+}
+
+// DateCreatedCleared returns if the "date_created" field was cleared in this mutation.
+func (m *DelegationMutation) DateCreatedCleared() bool {
+	_, ok := m.clearedFields[delegation.FieldDateCreated]
+	return ok
+}
+
+// ResetDateCreated resets all changes to the "date_created" field.
+func (m *DelegationMutation) ResetDateCreated() {
+	m.date_created = nil
+	delete(m.clearedFields, delegation.FieldDateCreated)
+}
+
+// SetHolderID sets the "holder_id" field.
+func (m *DelegationMutation) SetHolderID(u uuid.UUID) {
+	m.holder = &u
+}
+
+// HolderID returns the value of the "holder_id" field in the mutation.
+func (m *DelegationMutation) HolderID() (r uuid.UUID, exists bool) {
+	v := m.holder
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldHolderID returns the old "holder_id" field's value of the Delegation entity.
+// If the Delegation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DelegationMutation) OldHolderID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldHolderID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldHolderID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldHolderID: %w", err)
+	}
+	return oldValue.HolderID, nil
+}
+
+// ResetHolderID resets all changes to the "holder_id" field.
+func (m *DelegationMutation) ResetHolderID() {
+	m.holder = nil
+}
+
+// ClearHolder clears the "holder" edge to the Holder entity.
+func (m *DelegationMutation) ClearHolder() {
+	m.clearedholder = true
+	m.clearedFields[delegation.FieldHolderID] = struct{}{}
+}
+
+// HolderCleared reports if the "holder" edge to the Holder entity was cleared.
+func (m *DelegationMutation) HolderCleared() bool {
+	return m.clearedholder
+}
+
+// HolderIDs returns the "holder" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// HolderID instead. It exists only for internal usage by the builders.
+func (m *DelegationMutation) HolderIDs() (ids []uuid.UUID) {
+	if id := m.holder; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetHolder resets all changes to the "holder" edge.
+func (m *DelegationMutation) ResetHolder() {
+	m.holder = nil
+	m.clearedholder = false
+}
+
+// Where appends a list predicates to the DelegationMutation builder.
+func (m *DelegationMutation) Where(ps ...predicate.Delegation) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the DelegationMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *DelegationMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Delegation, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *DelegationMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *DelegationMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Delegation).
+func (m *DelegationMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *DelegationMutation) Fields() []string {
+	fields := make([]string, 0, 8)
+	if m.methods != nil {
+		fields = append(fields, delegation.FieldMethods)
+	}
+	if m.secret != nil {
+		fields = append(fields, delegation.FieldSecret)
+	}
+	if m.issuer != nil {
+		fields = append(fields, delegation.FieldIssuer)
+	}
+	if m.date_expires != nil {
+		fields = append(fields, delegation.FieldDateExpires)
+	}
+	if m.date_updated != nil {
+		fields = append(fields, delegation.FieldDateUpdated)
+	}
+	if m.date_erased != nil {
+		fields = append(fields, delegation.FieldDateErased)
+	}
+	if m.date_created != nil {
+		fields = append(fields, delegation.FieldDateCreated)
+	}
+	if m.holder != nil {
+		fields = append(fields, delegation.FieldHolderID)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *DelegationMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case delegation.FieldMethods:
+		return m.Methods()
+	case delegation.FieldSecret:
+		return m.Secret()
+	case delegation.FieldIssuer:
+		return m.Issuer()
+	case delegation.FieldDateExpires:
+		return m.DateExpires()
+	case delegation.FieldDateUpdated:
+		return m.DateUpdated()
+	case delegation.FieldDateErased:
+		return m.DateErased()
+	case delegation.FieldDateCreated:
+		return m.DateCreated()
+	case delegation.FieldHolderID:
+		return m.HolderID()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *DelegationMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case delegation.FieldMethods:
+		return m.OldMethods(ctx)
+	case delegation.FieldSecret:
+		return m.OldSecret(ctx)
+	case delegation.FieldIssuer:
+		return m.OldIssuer(ctx)
+	case delegation.FieldDateExpires:
+		return m.OldDateExpires(ctx)
+	case delegation.FieldDateUpdated:
+		return m.OldDateUpdated(ctx)
+	case delegation.FieldDateErased:
+		return m.OldDateErased(ctx)
+	case delegation.FieldDateCreated:
+		return m.OldDateCreated(ctx)
+	case delegation.FieldHolderID:
+		return m.OldHolderID(ctx)
+	}
+	return nil, fmt.Errorf("unknown Delegation field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DelegationMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case delegation.FieldMethods:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMethods(v)
+		return nil
+	case delegation.FieldSecret:
+		v, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSecret(v)
+		return nil
+	case delegation.FieldIssuer:
+		v, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIssuer(v)
+		return nil
+	case delegation.FieldDateExpires:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDateExpires(v)
+		return nil
+	case delegation.FieldDateUpdated:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDateUpdated(v)
+		return nil
+	case delegation.FieldDateErased:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDateErased(v)
+		return nil
+	case delegation.FieldDateCreated:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDateCreated(v)
+		return nil
+	case delegation.FieldHolderID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetHolderID(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Delegation field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *DelegationMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *DelegationMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DelegationMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Delegation numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *DelegationMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(delegation.FieldMethods) {
+		fields = append(fields, delegation.FieldMethods)
+	}
+	if m.FieldCleared(delegation.FieldDateExpires) {
+		fields = append(fields, delegation.FieldDateExpires)
+	}
+	if m.FieldCleared(delegation.FieldDateErased) {
+		fields = append(fields, delegation.FieldDateErased)
+	}
+	if m.FieldCleared(delegation.FieldDateCreated) {
+		fields = append(fields, delegation.FieldDateCreated)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *DelegationMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *DelegationMutation) ClearField(name string) error {
+	switch name {
+	case delegation.FieldMethods:
+		m.ClearMethods()
+		return nil
+	case delegation.FieldDateExpires:
+		m.ClearDateExpires()
+		return nil
+	case delegation.FieldDateErased:
+		m.ClearDateErased()
+		return nil
+	case delegation.FieldDateCreated:
+		m.ClearDateCreated()
+		return nil
+	}
+	return fmt.Errorf("unknown Delegation nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *DelegationMutation) ResetField(name string) error {
+	switch name {
+	case delegation.FieldMethods:
+		m.ResetMethods()
+		return nil
+	case delegation.FieldSecret:
+		m.ResetSecret()
+		return nil
+	case delegation.FieldIssuer:
+		m.ResetIssuer()
+		return nil
+	case delegation.FieldDateExpires:
+		m.ResetDateExpires()
+		return nil
+	case delegation.FieldDateUpdated:
+		m.ResetDateUpdated()
+		return nil
+	case delegation.FieldDateErased:
+		m.ResetDateErased()
+		return nil
+	case delegation.FieldDateCreated:
+		m.ResetDateCreated()
+		return nil
+	case delegation.FieldHolderID:
+		m.ResetHolderID()
+		return nil
+	}
+	return fmt.Errorf("unknown Delegation field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *DelegationMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.holder != nil {
+		edges = append(edges, delegation.EdgeHolder)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *DelegationMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case delegation.EdgeHolder:
+		if id := m.holder; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *DelegationMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *DelegationMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *DelegationMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedholder {
+		edges = append(edges, delegation.EdgeHolder)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *DelegationMutation) EdgeCleared(name string) bool {
+	switch name {
+	case delegation.EdgeHolder:
+		return m.clearedholder
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *DelegationMutation) ClearEdge(name string) error {
+	switch name {
+	case delegation.EdgeHolder:
+		m.ClearHolder()
+		return nil
+	}
+	return fmt.Errorf("unknown Delegation unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *DelegationMutation) ResetEdge(name string) error {
+	switch name {
+	case delegation.EdgeHolder:
+		m.ResetHolder()
+		return nil
+	}
+	return fmt.Errorf("unknown Delegation edge %s", name)
 }
 
 // EmailMutation represents an operation that mutates the Email nodes in the graph.

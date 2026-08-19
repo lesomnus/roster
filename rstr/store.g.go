@@ -30,6 +30,7 @@ type Server interface {
 	Holder() HolderServiceServer
 	ApiKey() ApiKeyServiceServer
 	Credential() CredentialServiceServer
+	Delegation() DelegationServiceServer
 	Identity() IdentityServiceServer
 	Email() EmailServiceServer
 	Site() SiteServiceServer
@@ -53,6 +54,7 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterHolderServiceServer(g, s.Holder())
 	RegisterApiKeyServiceServer(g, s.ApiKey())
 	RegisterCredentialServiceServer(g, s.Credential())
+	RegisterDelegationServiceServer(g, s.Delegation())
 	RegisterIdentityServiceServer(g, s.Identity())
 	RegisterEmailServiceServer(g, s.Email())
 	RegisterSiteServiceServer(g, s.Site())
@@ -72,6 +74,7 @@ type UnimplementedServer struct {
 	HolderServer          HolderServiceServer
 	ApiKeyServer          ApiKeyServiceServer
 	CredentialServer      CredentialServiceServer
+	DelegationServer      DelegationServiceServer
 	IdentityServer        IdentityServiceServer
 	EmailServer           EmailServiceServer
 	SiteServer            SiteServiceServer
@@ -91,6 +94,9 @@ func (UnimplementedServer) Holder() HolderServiceServer { return UnimplementedHo
 func (UnimplementedServer) ApiKey() ApiKeyServiceServer { return UnimplementedApiKeyServiceServer{} }
 func (UnimplementedServer) Credential() CredentialServiceServer {
 	return UnimplementedCredentialServiceServer{}
+}
+func (UnimplementedServer) Delegation() DelegationServiceServer {
+	return UnimplementedDelegationServiceServer{}
 }
 func (UnimplementedServer) Identity() IdentityServiceServer {
 	return UnimplementedIdentityServiceServer{}
@@ -118,6 +124,7 @@ type StaticServer struct {
 	HolderServer          HolderServiceServer
 	ApiKeyServer          ApiKeyServiceServer
 	CredentialServer      CredentialServiceServer
+	DelegationServer      DelegationServiceServer
 	IdentityServer        IdentityServiceServer
 	EmailServer           EmailServiceServer
 	SiteServer            SiteServiceServer
@@ -136,6 +143,7 @@ func (s StaticServer) Tenant() TenantServiceServer                   { return s.
 func (s StaticServer) Holder() HolderServiceServer                   { return s.HolderServer }
 func (s StaticServer) ApiKey() ApiKeyServiceServer                   { return s.ApiKeyServer }
 func (s StaticServer) Credential() CredentialServiceServer           { return s.CredentialServer }
+func (s StaticServer) Delegation() DelegationServiceServer           { return s.DelegationServer }
 func (s StaticServer) Identity() IdentityServiceServer               { return s.IdentityServer }
 func (s StaticServer) Email() EmailServiceServer                     { return s.EmailServer }
 func (s StaticServer) Site() SiteServiceServer                       { return s.SiteServer }
@@ -154,6 +162,7 @@ type Client interface {
 	Holder() HolderServiceClient
 	ApiKey() ApiKeyServiceClient
 	Credential() CredentialServiceClient
+	Delegation() DelegationServiceClient
 	Identity() IdentityServiceClient
 	Email() EmailServiceClient
 	Site() SiteServiceClient
@@ -174,6 +183,7 @@ func NewClient(c *grpc.ClientConn) Client {
 		_Holder:          NewHolderServiceClient(c),
 		_ApiKey:          NewApiKeyServiceClient(c),
 		_Credential:      NewCredentialServiceClient(c),
+		_Delegation:      NewDelegationServiceClient(c),
 		_Identity:        NewIdentityServiceClient(c),
 		_Email:           NewEmailServiceClient(c),
 		_Site:            NewSiteServiceClient(c),
@@ -194,6 +204,7 @@ type client struct {
 	_Holder          HolderServiceClient
 	_ApiKey          ApiKeyServiceClient
 	_Credential      CredentialServiceClient
+	_Delegation      DelegationServiceClient
 	_Identity        IdentityServiceClient
 	_Email           EmailServiceClient
 	_Site            SiteServiceClient
@@ -212,6 +223,7 @@ func (c *client) Tenant() TenantServiceClient                   { return c._Tena
 func (c *client) Holder() HolderServiceClient                   { return c._Holder }
 func (c *client) ApiKey() ApiKeyServiceClient                   { return c._ApiKey }
 func (c *client) Credential() CredentialServiceClient           { return c._Credential }
+func (c *client) Delegation() DelegationServiceClient           { return c._Delegation }
 func (c *client) Identity() IdentityServiceClient               { return c._Identity }
 func (c *client) Email() EmailServiceClient                     { return c._Email }
 func (c *client) Site() SiteServiceClient                       { return c._Site }

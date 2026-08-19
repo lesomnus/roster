@@ -20,6 +20,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/audit"
 	"github.com/lesomnus/roster/internal/ent/binding"
 	"github.com/lesomnus/roster/internal/ent/credential"
+	"github.com/lesomnus/roster/internal/ent/delegation"
 	"github.com/lesomnus/roster/internal/ent/email"
 	"github.com/lesomnus/roster/internal/ent/group"
 	"github.com/lesomnus/roster/internal/ent/groupmembership"
@@ -47,6 +48,8 @@ type Client struct {
 	Binding *BindingClient
 	// Credential is the client for interacting with the Credential builders.
 	Credential *CredentialClient
+	// Delegation is the client for interacting with the Delegation builders.
+	Delegation *DelegationClient
 	// Email is the client for interacting with the Email builders.
 	Email *EmailClient
 	// Group is the client for interacting with the Group builders.
@@ -86,6 +89,7 @@ func (c *Client) init() {
 	c.Audit = NewAuditClient(c.config)
 	c.Binding = NewBindingClient(c.config)
 	c.Credential = NewCredentialClient(c.config)
+	c.Delegation = NewDelegationClient(c.config)
 	c.Email = NewEmailClient(c.config)
 	c.Group = NewGroupClient(c.config)
 	c.GroupMembership = NewGroupMembershipClient(c.config)
@@ -194,6 +198,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Audit:           NewAuditClient(cfg),
 		Binding:         NewBindingClient(cfg),
 		Credential:      NewCredentialClient(cfg),
+		Delegation:      NewDelegationClient(cfg),
 		Email:           NewEmailClient(cfg),
 		Group:           NewGroupClient(cfg),
 		GroupMembership: NewGroupMembershipClient(cfg),
@@ -229,6 +234,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Audit:           NewAuditClient(cfg),
 		Binding:         NewBindingClient(cfg),
 		Credential:      NewCredentialClient(cfg),
+		Delegation:      NewDelegationClient(cfg),
 		Email:           NewEmailClient(cfg),
 		Group:           NewGroupClient(cfg),
 		GroupMembership: NewGroupMembershipClient(cfg),
@@ -270,9 +276,9 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.ApiKey, c.Audit, c.Binding, c.Credential, c.Email, c.Group, c.GroupMembership,
-		c.Holder, c.Identity, c.Outbox, c.Role, c.Site, c.SiteMembership, c.Team,
-		c.TeamMembership, c.Tenant,
+		c.ApiKey, c.Audit, c.Binding, c.Credential, c.Delegation, c.Email, c.Group,
+		c.GroupMembership, c.Holder, c.Identity, c.Outbox, c.Role, c.Site,
+		c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
 	} {
 		n.Use(hooks...)
 	}
@@ -282,9 +288,9 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.ApiKey, c.Audit, c.Binding, c.Credential, c.Email, c.Group, c.GroupMembership,
-		c.Holder, c.Identity, c.Outbox, c.Role, c.Site, c.SiteMembership, c.Team,
-		c.TeamMembership, c.Tenant,
+		c.ApiKey, c.Audit, c.Binding, c.Credential, c.Delegation, c.Email, c.Group,
+		c.GroupMembership, c.Holder, c.Identity, c.Outbox, c.Role, c.Site,
+		c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -301,6 +307,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Binding.mutate(ctx, m)
 	case *CredentialMutation:
 		return c.Credential.mutate(ctx, m)
+	case *DelegationMutation:
+		return c.Delegation.mutate(ctx, m)
 	case *EmailMutation:
 		return c.Email.mutate(ctx, m)
 	case *GroupMutation:
@@ -955,6 +963,155 @@ func (c *CredentialClient) mutate(ctx context.Context, m *CredentialMutation) (V
 		return (&CredentialDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Credential mutation op: %q", m.Op())
+	}
+}
+
+// DelegationClient is a client for the Delegation schema.
+type DelegationClient struct {
+	config
+}
+
+// NewDelegationClient returns a client for the Delegation from the given config.
+func NewDelegationClient(c config) *DelegationClient {
+	return &DelegationClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `delegation.Hooks(f(g(h())))`.
+func (c *DelegationClient) Use(hooks ...Hook) {
+	c.hooks.Delegation = append(c.hooks.Delegation, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `delegation.Intercept(f(g(h())))`.
+func (c *DelegationClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Delegation = append(c.inters.Delegation, interceptors...)
+}
+
+// Create returns a builder for creating a Delegation entity.
+func (c *DelegationClient) Create() *DelegationCreate {
+	mutation := newDelegationMutation(c.config, OpCreate)
+	return &DelegationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Delegation entities.
+func (c *DelegationClient) CreateBulk(builders ...*DelegationCreate) *DelegationCreateBulk {
+	return &DelegationCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *DelegationClient) MapCreateBulk(slice any, setFunc func(*DelegationCreate, int)) *DelegationCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &DelegationCreateBulk{err: fmt.Errorf("calling to DelegationClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*DelegationCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &DelegationCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Delegation.
+func (c *DelegationClient) Update() *DelegationUpdate {
+	mutation := newDelegationMutation(c.config, OpUpdate)
+	return &DelegationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *DelegationClient) UpdateOne(_m *Delegation) *DelegationUpdateOne {
+	mutation := newDelegationMutation(c.config, OpUpdateOne, withDelegation(_m))
+	return &DelegationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *DelegationClient) UpdateOneID(id uuid.UUID) *DelegationUpdateOne {
+	mutation := newDelegationMutation(c.config, OpUpdateOne, withDelegationID(id))
+	return &DelegationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Delegation.
+func (c *DelegationClient) Delete() *DelegationDelete {
+	mutation := newDelegationMutation(c.config, OpDelete)
+	return &DelegationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *DelegationClient) DeleteOne(_m *Delegation) *DelegationDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *DelegationClient) DeleteOneID(id uuid.UUID) *DelegationDeleteOne {
+	builder := c.Delete().Where(delegation.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &DelegationDeleteOne{builder}
+}
+
+// Query returns a query builder for Delegation.
+func (c *DelegationClient) Query() *DelegationQuery {
+	return &DelegationQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeDelegation},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Delegation entity by its id.
+func (c *DelegationClient) Get(ctx context.Context, id uuid.UUID) (*Delegation, error) {
+	return c.Query().Where(delegation.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *DelegationClient) GetX(ctx context.Context, id uuid.UUID) *Delegation {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryHolder queries the holder edge of a Delegation.
+func (c *DelegationClient) QueryHolder(_m *Delegation) *HolderQuery {
+	query := (&HolderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(delegation.Table, delegation.FieldID, id),
+			sqlgraph.To(holder.Table, holder.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, delegation.HolderTable, delegation.HolderColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *DelegationClient) Hooks() []Hook {
+	return c.hooks.Delegation
+}
+
+// Interceptors returns the client interceptors.
+func (c *DelegationClient) Interceptors() []Interceptor {
+	return c.inters.Delegation
+}
+
+func (c *DelegationClient) mutate(ctx context.Context, m *DelegationMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&DelegationCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&DelegationUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&DelegationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&DelegationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Delegation mutation op: %q", m.Op())
 	}
 }
 
@@ -2845,13 +3002,13 @@ func (c *TenantClient) mutate(ctx context.Context, m *TenantMutation) (Value, er
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		ApiKey, Audit, Binding, Credential, Email, Group, GroupMembership, Holder,
-		Identity, Outbox, Role, Site, SiteMembership, Team, TeamMembership,
+		ApiKey, Audit, Binding, Credential, Delegation, Email, Group, GroupMembership,
+		Holder, Identity, Outbox, Role, Site, SiteMembership, Team, TeamMembership,
 		Tenant []ent.Hook
 	}
 	inters struct {
-		ApiKey, Audit, Binding, Credential, Email, Group, GroupMembership, Holder,
-		Identity, Outbox, Role, Site, SiteMembership, Team, TeamMembership,
+		ApiKey, Audit, Binding, Credential, Delegation, Email, Group, GroupMembership,
+		Holder, Identity, Outbox, Role, Site, SiteMembership, Team, TeamMembership,
 		Tenant []ent.Interceptor
 	}
 )

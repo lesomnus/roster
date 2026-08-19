@@ -32,6 +32,7 @@ import (
 	audit "github.com/lesomnus/roster/internal/ent/audit"
 	binding "github.com/lesomnus/roster/internal/ent/binding"
 	credential "github.com/lesomnus/roster/internal/ent/credential"
+	delegation "github.com/lesomnus/roster/internal/ent/delegation"
 	email "github.com/lesomnus/roster/internal/ent/email"
 	group "github.com/lesomnus/roster/internal/ent/group"
 	groupmembership "github.com/lesomnus/roster/internal/ent/groupmembership"
@@ -87,6 +88,7 @@ const (
 	AuditDomain           pdid.Domain = 3  // "audit"
 	BindingDomain         pdid.Domain = 18 // "binding"
 	CredentialDomain      pdid.Domain = 13 // "credential"
+	DelegationDomain      pdid.Domain = 19 // "delegation"
 	EmailDomain           pdid.Domain = 9  // "email"
 	GroupDomain           pdid.Domain = 16 // "group"
 	GroupMembershipDomain pdid.Domain = 17 // "group-membership"
@@ -106,6 +108,7 @@ func init() {
 	pdid.Register("roster.Audit", AuditDomain, "audit")
 	pdid.Register("roster.Binding", BindingDomain, "binding")
 	pdid.Register("roster.Credential", CredentialDomain, "credential")
+	pdid.Register("roster.Delegation", DelegationDomain, "delegation")
 	pdid.Register("roster.Email", EmailDomain, "email")
 	pdid.Register("roster.Group", GroupDomain, "group")
 	pdid.Register("roster.GroupMembership", GroupMembershipDomain, "group-membership")
@@ -129,6 +132,7 @@ var Domains = map[string]pdid.Domain{
 	"roster.Audit":           AuditDomain,
 	"roster.Binding":         BindingDomain,
 	"roster.Credential":      CredentialDomain,
+	"roster.Delegation":      DelegationDomain,
 	"roster.Email":           EmailDomain,
 	"roster.Group":           GroupDomain,
 	"roster.GroupMembership": GroupMembershipDomain,
@@ -223,6 +227,16 @@ func (wall) CredentialScope(ctx context.Context) (predicate.Credential, error) {
 	}
 
 	return credential.HasHolderWith(holder.TenantIDIn(vs...)), nil
+}
+
+// DelegationScope: a row belongs to the tenant its "holder.tenant" reaches.
+func (wall) DelegationScope(ctx context.Context) (predicate.Delegation, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return delegation.HasHolderWith(holder.TenantIDIn(vs...)), nil
 }
 
 // EmailScope: a row belongs to the tenant its "holder.tenant" reaches.
@@ -399,6 +413,11 @@ func (x grouped) BindingScope(ctx context.Context) (predicate.Binding, error) {
 
 // CredentialScope: in no set -- it declared no field 3, so this narrows nothing.
 func (x grouped) CredentialScope(ctx context.Context) (predicate.Credential, error) {
+	return nil, nil
+}
+
+// DelegationScope: in no set -- it declared no field 3, so this narrows nothing.
+func (x grouped) DelegationScope(ctx context.Context) (predicate.Delegation, error) {
 	return nil, nil
 }
 
@@ -1437,6 +1456,149 @@ func (s sinkCredential) watchCredentialKeys(
 	}
 
 	return ks, nil
+}
+
+type sinkDelegation struct {
+	rstr.DelegationServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) Delegation() rstr.DelegationServiceServer {
+	return sinkDelegation{s.Server.Delegation(), s.Server.Store, s.w, s.namer, s.joined}
+}
+
+// orderDelegation is how Delegations come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderDelegation = []entpage.Order{
+	{Column: delegation.FieldDateCreated, Desc: false},
+	{Column: delegation.FieldID, Desc: false},
+}
+
+const (
+	// DelegationPageSize is what a request that did not say gets, and
+	// DelegationPageLimit is the most it gets however loudly it asks.
+	DelegationPageSize  = 20
+	DelegationPageLimit = 100
+
+	// DelegationFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	DelegationFilterLimit = 32
+)
+
+// List answers with the Delegations that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkDelegation) List(ctx context.Context, req *rstr.DelegationListRequest) (*rstr.DelegationListResponse, error) {
+	q := s.store.Db.Delegation.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.DelegationNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > DelegationFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), DelegationFilterLimit)
+		}
+
+		ps := make([]predicate.Delegation, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterDelegation(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(delegation.Or(ps...))
+	}
+
+	if v := req.GetAfter(); v != "" {
+		var (
+			at0 time.Time
+			at1 uuid.UUID
+		)
+		if err := entpage.Decode(v, &at0, &at1); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		p, err := entpage.After(orderDelegation, []any{at0, at1})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := entpage.Size(int(req.GetSize()), DelegationPageSize, DelegationPageLimit)
+	us, err := q.Order(delegation.ByDateCreated(), delegation.ByID()).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*rstr.Delegation, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := rstr.DelegationListResponse_builder{Items: items}.Build()
+	if more {
+		last := us[len(us)-1]
+		next, err := entpage.Encode(last.DateCreated, last.ID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(next)
+	}
+
+	return res, nil
+}
+
+// filterDelegation turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterDelegation(f *rstr.DelegationFilter) (predicate.Delegation, error) {
+	ps := make([]predicate.Delegation, 0, 1)
+	if f.HasRef() {
+		p, err := bare.DelegationPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return delegation.And(ps...), nil
 }
 
 type sinkEmail struct {
@@ -5072,6 +5234,42 @@ func (s gateCredential) Add(ctx context.Context, req *rstr.CredentialAddRequest)
 	return s.CredentialServiceServer.Add(ctx, req)
 }
 
+type gateDelegation struct {
+	Gate
+	rstr.DelegationServiceServer
+}
+
+func (s Gate) Delegation() rstr.DelegationServiceServer {
+	return gateDelegation{s, s.Next().Delegation()}
+}
+
+// Add refuses a Delegation put into a Holder this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `holder` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Holder, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.Add`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+func (s gateDelegation) Add(ctx context.Context, req *rstr.DelegationAddRequest) (*rstr.Delegation, error) {
+	if ref := req.GetHolder(); ref != nil {
+		if _, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Holder")
+			}
+
+			return nil, err
+		}
+	}
+
+	return s.DelegationServiceServer.Add(ctx, req)
+}
+
 type gateEmail struct {
 	Gate
 	rstr.EmailServiceServer
@@ -5704,6 +5902,41 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 
 		return k, b, nil
 
+	case DelegationDomain:
+		row, err := s.Delegation().Get(ctx, rstr.DelegationGetRequest_builder{
+			Ref: rstr.DelegationRef_builder{Id: key.Bytes()}.Build(),
+		}.Build())
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				return uuid.Nil, []byte{}, nil
+			}
+
+			return uuid.Nil, nil, err
+		}
+
+		hideDelegation(row)
+
+		b, err := proto.Marshal(row)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		if !row.HasHolder() {
+			return uuid.Nil, b, nil
+		}
+
+		up, err := pdid.From(row.GetHolder().GetId())
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		k, _, err := subject(ctx, s, up)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		return k, b, nil
+
 	case EmailDomain:
 		row, err := s.Email().Get(ctx, rstr.EmailGetRequest_builder{
 			Ref: rstr.EmailRef_builder{Id: key.Bytes()}.Build(),
@@ -6197,6 +6430,66 @@ func (s secretCredential) List(ctx context.Context, req *rstr.CredentialListRequ
 // A nil row passes through, because an error is answered with one and the
 // caller of this is handing both on.
 func hideCredential(v *rstr.Credential) *rstr.Credential {
+	if v == nil {
+		return nil
+	}
+
+	v.SetSecret(nil)
+
+	return v
+}
+
+func (s Secret) Delegation() rstr.DelegationServiceServer {
+	return secretDelegation{s, s.Next().Delegation()}
+}
+
+type secretDelegation struct {
+	Secret
+	rstr.DelegationServiceServer
+}
+
+func (s secretDelegation) Add(ctx context.Context, req *rstr.DelegationAddRequest) (*rstr.Delegation, error) {
+	v, err := s.DelegationServiceServer.Add(ctx, req)
+
+	return hideDelegation(v), err
+}
+
+func (s secretDelegation) Get(ctx context.Context, req *rstr.DelegationGetRequest) (*rstr.Delegation, error) {
+	v, err := s.DelegationServiceServer.Get(ctx, req)
+
+	return hideDelegation(v), err
+}
+
+func (s secretDelegation) Patch(ctx context.Context, req *rstr.DelegationPatchRequest) (*rstr.Delegation, error) {
+	v, err := s.DelegationServiceServer.Patch(ctx, req)
+
+	return hideDelegation(v), err
+}
+
+func (s secretDelegation) Apply(ctx context.Context, req *rstr.DelegationApplyRequest) (*rstr.Delegation, error) {
+	v, err := s.DelegationServiceServer.Apply(ctx, req)
+
+	return hideDelegation(v), err
+}
+
+func (s secretDelegation) List(ctx context.Context, req *rstr.DelegationListRequest) (*rstr.DelegationListResponse, error) {
+	v, err := s.DelegationServiceServer.List(ctx, req)
+	if v == nil {
+		return v, err
+	}
+
+	for _, w := range v.GetItems() {
+		hideDelegation(w)
+	}
+
+	return v, err
+}
+
+// hideDelegation clears what this entity declared it never answers with.
+//
+// A nil row passes through, because an error is answered with one and the
+// caller of this is handing both on.
+func hideDelegation(v *rstr.Delegation) *rstr.Delegation {
 	if v == nil {
 		return nil
 	}
@@ -6876,6 +7169,84 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 		}
 
 		res, err := s.Credential().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.DelegationService_Add_FullMethodName:
+		v := &rstr.DelegationAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Delegation().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.DelegationService_Get_FullMethodName:
+		v := &rstr.DelegationGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Delegation().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.DelegationService_Patch_FullMethodName:
+		v := &rstr.DelegationPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Delegation().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.DelegationService_Apply_FullMethodName:
+		v := &rstr.DelegationApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Delegation().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.DelegationService_Erase_FullMethodName:
+		v := &rstr.DelegationRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Delegation().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.DelegationService_List_FullMethodName:
+		v := &rstr.DelegationListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Delegation().List(ctx, v)
 		if err != nil {
 			return nil, err
 		}

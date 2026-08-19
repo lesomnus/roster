@@ -1,0 +1,116 @@
+edition = "2023";
+package roster;
+
+import "app/delegation.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "patch/patch.proto";
+import "roster/payday/holder_svc.g.proto";
+
+option go_package = "github.com/lesomnus/roster/rstr";
+
+service DelegationService {
+  // Add creates a new Delegation
+  rpc Add(DelegationAddRequest) returns (Delegation);
+  // Get retrieves a Delegation
+  rpc Get(DelegationGetRequest) returns (Delegation);
+  // Patch updates an existing Delegation
+  rpc Patch(DelegationPatchRequest) returns (Delegation);
+  // Apply applies a patch document to an existing Delegation
+  rpc Apply(DelegationApplyRequest) returns (Delegation);
+  // Erase deletes a Delegation
+  rpc Erase(DelegationRef) returns (google.protobuf.Empty);
+  // List reads Delegations a page at a time.
+  rpc List(DelegationListRequest) returns (DelegationListResponse);
+}
+
+message DelegationAddRequest {
+  bytes id = 1;
+  HolderRef holder = 2;
+  repeated string methods = 8;
+  bytes secret = 9 [features.field_presence = IMPLICIT];
+  bytes issuer = 10 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_expires = 11;
+  google.protobuf.Timestamp date_created = 15;
+}
+
+message DelegationGetRequest {
+  DelegationRef ref = 1;
+  DelegationSelect select = 2;
+}
+
+message DelegationRef {
+  oneof key {
+    bytes id = 1;
+    bytes secret = 9;
+  }
+}
+
+message DelegationSelect {
+  bool all = 1;
+  HolderSelect holder = 2;
+  bool methods = 8;
+  bool secret = 9;
+  bool issuer = 10;
+  bool date_expires = 11;
+  bool date_updated = 13;
+  bool date_erased = 14;
+  bool date_created = 15;
+}
+
+message DelegationPatchRequest {
+  DelegationRef ref = 1;
+  // The version this update requires the stored date_updated to be.
+  // It is a precondition, not a write: the update applies only if the row
+  // still holds this value, and the server stamps the new version itself.
+  // Setting it together with date_updated_force is an error --
+  // the version is the token every client's compare-and-swap is measured
+  // against, so it is not the caller's to choose.
+  google.protobuf.Timestamp date_updated = 26;
+  // Update whatever the stored date_updated is, with no precondition.
+  // The server still stamps a new version, so other clients' tokens are
+  // invalidated as usual; this declines the check for THIS update only.
+  // One of date_updated or this must be set. An omitted version is
+  // refused rather than assumed, because an unset field cannot be told
+  // apart from a caller who never considered locking at all.
+  bool date_updated_force = 27;
+}
+
+message DelegationApplyRequest {
+  DelegationRef ref = 1;
+  patch.Patch patch = 2;
+}
+
+message DelegationListRequest {
+  // Bounded because the work is: each filter is a predicate in the same query,
+  // so this is what says how much of the database one request may read.
+  repeated DelegationFilter filters = 1;
+
+  // How many to answer with. Nothing said is what the schema declared, and more
+  // than the cap is the cap -- a caller asking for more than there is meant no
+  // harm, so it is not an error and it is not the whole table either.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+
+  // Where to carry on from: the "next" of the answer before. It names the last
+  // row of that page rather than counting rows from the start, so a row added
+  // ahead of the page does not shift it and a caller reading through never sees
+  // one twice or misses one.
+  string after = 3 [features.field_presence = IMPLICIT];
+}
+
+message DelegationListResponse {
+  repeated Delegation items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  //
+  // Empty means there is no more *for now*: a list is read as it is, and one
+  // that has grown since answers a fresh call. It is not empty merely because
+  // the page came back short -- a page is short when the last row of it was the
+  // last row there was, which is a thing the server can only know by having
+  // looked.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message DelegationFilter {
+  DelegationRef ref = 1;
+}

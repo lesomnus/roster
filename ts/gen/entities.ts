@@ -17,6 +17,7 @@ import { ApiKeySchema } from './app/apikey_pb.js'
 import { AuditSchema } from './roster/payday/audit_pb.js'
 import { BindingSchema, RoleSchema } from './app/role_pb.js'
 import { CredentialSchema } from './app/credential_pb.js'
+import { DelegationSchema } from './app/delegation_pb.js'
 import { EmailSchema } from './app/email_pb.js'
 import { GroupSchema, GroupMembershipSchema } from './app/group_pb.js'
 import { HolderSchema } from './roster/payday/holder_pb.js'
@@ -57,6 +58,15 @@ export const Credential = {
 	typeName: "roster.Credential",
 	schema: CredentialSchema,
 	domain: 13,
+	version: "dateUpdated",
+	refs: [{ field: "holder", to: "roster.Holder" }],
+} as const satisfies EntityDesc
+
+/** roster.Delegation, as the store holds it. */
+export const Delegation = {
+	typeName: "roster.Delegation",
+	schema: DelegationSchema,
+	domain: 19,
 	version: "dateUpdated",
 	refs: [{ field: "holder", to: "roster.Holder" }],
 } as const satisfies EntityDesc
@@ -167,5 +177,5 @@ export const Tenant = {
 } as const satisfies EntityDesc
 
 /** Every entity of this app, which is what a store is opened over. */
-export const entities = [ApiKey, Audit, Binding, Credential, Email, Group, GroupMembership, Holder, Identity, Outbox, Role, Site, SiteMembership, Team, TeamMembership, Tenant] as const
+export const entities = [ApiKey, Audit, Binding, Credential, Delegation, Email, Group, GroupMembership, Holder, Identity, Outbox, Role, Site, SiteMembership, Team, TeamMembership, Tenant] as const
 

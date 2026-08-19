@@ -78,14 +78,20 @@ import (
 //     tenant. It resolves to that **holder**, so the wall, the bindings and the
 //     second axis all apply exactly as they do when that person calls, and the
 //     key's methods narrow the answer further.
+//   - [PrefixDelegation] is this plane as well, and a different **table**: a
+//     product app calling as somebody it has just signed in. It resolves to the
+//     holder exactly as a tenant key does, and everything else about it is the
+//     short life -- minted per sign-in, expiring in minutes, bound to the caller
+//     it was given to. PLAN.md D23, and `delegation.proto`.
 //
 // Which is the whole of the difference, and it is why they cannot share a
-// prefix: the first is the deployment and the second is a customer, and telling
+// prefix: the first is the deployment and the rest are a customer, and telling
 // them apart by looking at the row would mean already having decided which
-// database to look in.
+// database -- and now which table -- to look in.
 const (
 	PrefixDeployment = "rk_"
 	PrefixTenant     = "rt_"
+	PrefixDelegation = "rd_"
 )
 
 // Method is what this calls itself in [auth.Identity.Method].
@@ -108,7 +114,7 @@ const Touched = time.Hour
 // wrong one silently.
 func Mint(prefix string) (string, []byte, error) {
 	switch prefix {
-	case PrefixDeployment, PrefixTenant:
+	case PrefixDeployment, PrefixTenant, PrefixDelegation:
 	default:
 		return "", nil, fmt.Errorf("keys: %q is not a kind of key", prefix)
 	}
@@ -183,12 +189,19 @@ func Store(deployment app.Server, tenant app.Server) auth.TokenStore {
 		var (
 			s     app.Server
 			whose bool // the holder is the caller, rather than the key
+			find  func(context.Context, app.Server, string) (*bearer, error)
 		)
 		switch {
 		case strings.HasPrefix(token, PrefixDeployment):
-			s = deployment
+			s, find = deployment, findKey
 		case strings.HasPrefix(token, PrefixTenant):
-			s, whose = tenant, true
+			s, whose, find = tenant, true, findKey
+		case strings.HasPrefix(token, PrefixDelegation):
+			// The same plane and a different table, which is why the switch
+			// chooses a lookup and not only a server. A chain built with no
+			// `tenant` reaches neither -- a console must not be able to present
+			// a customer's credential of either kind.
+			s, whose, find = tenant, true, findDelegation
 		}
 		if s == nil {
 			// Not one of ours, or one of a kind this deployment does not issue.
@@ -196,7 +209,7 @@ func Store(deployment app.Server, tenant app.Server) auth.TokenStore {
 			return auth.Identity{}, status.Error(codes.Unauthenticated, "no")
 		}
 
-		v, err := lookup(ctx, s, token)
+		v, err := find(ctx, s, token)
 		if err != nil {
 			if status.Code(err) == codes.NotFound {
 				return auth.Identity{}, status.Error(codes.Unauthenticated, "no")
@@ -212,16 +225,16 @@ func Store(deployment app.Server, tenant app.Server) auth.TokenStore {
 			// What it may call, and nothing wider. An empty `methods` is
 			// `Grant`'s zero for actions, which allows nothing -- a key
 			// somebody forgot to fill in opens no door.
-			Grant: frame.Whole().To(v.GetMethods()...),
+			Grant: frame.Whole().To(v.Methods...),
 
 			// Carried so that a stream ends when the key does; see
 			// `auth.InterceptorStream`.
-			Expires: expiryOf(v),
+			Expires: v.Expires,
 		}
 
-		who := v.GetId()
+		who := v.Id
 		if whose {
-			h := v.GetHolder()
+			h := v.Holder
 			if h == nil || len(h.GetId()) == 0 {
 				// The edge is required and immutable, so this is a row that
 				// should not exist. Serving it as the key would hand a customer

@@ -14,6 +14,7 @@ import (
 	audit "github.com/lesomnus/roster/internal/ent/audit"
 	binding "github.com/lesomnus/roster/internal/ent/binding"
 	credential "github.com/lesomnus/roster/internal/ent/credential"
+	delegation "github.com/lesomnus/roster/internal/ent/delegation"
 	email "github.com/lesomnus/roster/internal/ent/email"
 	group "github.com/lesomnus/roster/internal/ent/group"
 	groupmembership "github.com/lesomnus/roster/internal/ent/groupmembership"
@@ -327,6 +328,7 @@ type Scope interface {
 	HolderScope(ctx context.Context) (predicate.Holder, error)
 	ApiKeyScope(ctx context.Context) (predicate.ApiKey, error)
 	CredentialScope(ctx context.Context) (predicate.Credential, error)
+	DelegationScope(ctx context.Context) (predicate.Delegation, error)
 	IdentityScope(ctx context.Context) (predicate.Identity, error)
 	EmailScope(ctx context.Context) (predicate.Email, error)
 	SiteScope(ctx context.Context) (predicate.Site, error)
@@ -363,6 +365,9 @@ func (Unscoped) ApiKeyScope(_ context.Context) (predicate.ApiKey, error) {
 	return nil, nil
 }
 func (Unscoped) CredentialScope(_ context.Context) (predicate.Credential, error) {
+	return nil, nil
+}
+func (Unscoped) DelegationScope(_ context.Context) (predicate.Delegation, error) {
 	return nil, nil
 }
 func (Unscoped) IdentityScope(_ context.Context) (predicate.Identity, error) {
@@ -499,6 +504,26 @@ func (ss Scopes) CredentialScope(ctx context.Context) (predicate.Credential, err
 	}
 
 	return credential.And(ps...), nil
+}
+
+func (ss Scopes) DelegationScope(ctx context.Context) (predicate.Delegation, error) {
+	ps := make([]predicate.Delegation, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.DelegationScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return delegation.And(ps...), nil
 }
 
 func (ss Scopes) IdentityScope(ctx context.Context) (predicate.Identity, error) {
@@ -821,7 +846,7 @@ func (s Store) now() time.Time {
 // is rendered for that dialect, not just what this server writes.
 //
 // That set is also what a soft erasure needs, so this is the whole
-// check. ApiKey, Binding, Credential, Email, Group, GroupMembership, Holder, Identity, Role, Site, SiteMembership, Team and TeamMembership free the names they held when a row
+// check. ApiKey, Binding, Credential, Delegation, Email, Group, GroupMembership, Holder, Identity, Role, Site, SiteMembership, Team and TeamMembership free the names they held when a row
 // is erased, which is a unique index covering only the rows that are
 // still there -- a partial index, and the dialects above are the ones
 // that have one. MySQL does not, and ent writes the annotation out for
@@ -864,6 +889,9 @@ func (s Server) Holder() rstr.HolderServiceServer { return HolderServiceServer{S
 func (s Server) ApiKey() rstr.ApiKeyServiceServer { return ApiKeyServiceServer{Store: s.Store} }
 func (s Server) Credential() rstr.CredentialServiceServer {
 	return CredentialServiceServer{Store: s.Store}
+}
+func (s Server) Delegation() rstr.DelegationServiceServer {
+	return DelegationServiceServer{Store: s.Store}
 }
 func (s Server) Identity() rstr.IdentityServiceServer { return IdentityServiceServer{Store: s.Store} }
 func (s Server) Email() rstr.EmailServiceServer       { return EmailServiceServer{Store: s.Store} }

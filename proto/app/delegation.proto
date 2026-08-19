@@ -1,0 +1,191 @@
+edition = "2023";
+
+package roster;
+
+import "roster/payday/holder.proto";
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/roster/rstr";
+
+// Delegation is a product app calling roster **as** somebody it just signed in.
+//
+// PLAN.md D23 is the decision and the gap it closes: nothing in the tree lets
+// custody ask roster a question on behalf of one of its users. Every screen
+// that shows a person their own record needs it -- my identities, my addresses,
+// sign me out everywhere -- and the two obvious ways are both wrong. The app's
+// own `rk_` key sees every tenant there is, and the app filtering in its own
+// code is the thing D17 already named: *that is the kind of thing that leaks by
+// being forgotten*, and on a self-service screen one bug in one app exposes
+// everybody's identities while roster answered every read correctly.
+//
+// So the answer rides back with the yes. `VouchService.Verify` has already
+// proved the person to this deployment's satisfaction; this is a credential for
+// them, valid for minutes, that the app puts in `authorization` and roster
+// resolves to the person -- with their wall, their bindings and their sites.
+//
+// # Why it is not an ApiKey
+//
+// It is close enough that the comparison has to be made rather than skipped:
+// D23 says outright that *practically it is an `rt_` key with a short life,
+// minted for the person an app just authenticated*, and every column below
+// except one is `ApiKey`'s.
+//
+// What separates them is who the row is **for**. An `ApiKey` is a thing a
+// person makes and manages: its `alias` is unique per holder and is *what
+// somebody calls this key when deciding whether to revoke it*, and the screen
+// that lists them is one of the reasons D23 exists at all. A delegation is
+// minted once per sign-in by an app the person never sees. One table would make
+// that screen a list of rows nobody named, arriving faster than anybody could
+// read them, with the two or three the person actually made lost in it.
+//
+// D16 is the entry that decides this kind of question, and it splits the other
+// way here than it did for `Credential`: a delegation and a key are the same
+// **cost** and the same **cardinality**, and differ in who names the row.
+//
+// # The issuer is a column and cannot be an edge
+//
+// D21 and D23 both require the same condition -- *bound to the caller it was
+// issued to*, so that one product app cannot pick up what another was given.
+// That caller is a **control-plane** `Holder` or the key hanging off one, and
+// this row is in the data plane. D15 put a database boundary between them and
+// said there is no query from one to the other, so what is written here is an
+// identifier and not a reference. Nothing enforces it but the code that
+// compares it, which is what makes it a rule rather than a constraint.
+//
+// It also cannot be checked where the token is looked up. `auth.TokenStore`
+// receives the token and nothing else -- no caller, no peer, no frame -- so a
+// comparison written there compiles, runs, and binds nothing.
+message Delegation {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+
+  // Whose it is: the person the app authenticated, in their own tenant.
+  Holder holder = 2 [(orm.edge) = {immutable: true}];
+
+  // 4 to 7 are empty, and that is the difference from `ApiKey` written out.
+  // Nobody names one of these, describes one, or labels one -- it is minted by
+  // a machine, lives for minutes, and is never on a screen. An entity that does
+  // not want those numbers leaves them empty rather than spending them.
+
+  // What this delegation may be used for: the gRPC methods, in full, as
+  // `frame.Grant.To` takes them.
+  //
+  // It is an attenuation and never a widening. The token resolves to the
+  // holder, so what it may actually do is the intersection of this with what
+  // that person may do -- a method here that they cannot call is still refused.
+  //
+  // Empty allows **nothing**, which is `frame.Grant`'s zero for actions. A
+  // delegation minted with no methods authenticates and is then refused
+  // everywhere, which reads as a permissions problem and is a minting one.
+  repeated string methods = 8 [(orm.field) = {immutable: true}];
+
+  // The verifier, never the token, and also how the row is found -- the same
+  // pair of jobs `ApiKey.secret` does, for the same reasons: 256 bits from
+  // `crypto/rand` have no dictionary, so the hash is fast and unsalted, and a
+  // per-row salt could not be applied before the row is known.
+  //
+  // Immutable as well as `secret`, so that it is not in the generated
+  // `Patch` at all. A delegation is not rotated; it is reissued.
+  bytes secret = 9 [
+    (orm.field) = {
+      unique: true
+      immutable: true
+    },
+    (payday.field) = {secret: true}
+  ];
+
+  // Which caller was given this, so that another cannot present it.
+  //
+  // Opaque bytes: an identifier from the other plane, compared and never
+  // resolved. See the note above for why it is not an edge.
+  //
+  // Empty is not a state this can hold. A zero-length value compares equal to
+  // an unresolved caller -- `subtle.ConstantTimeCompare` answers 1 for two
+  // empty slices -- so "bound to nobody" and "bound to whoever forgot to say"
+  // would be one thing. Whatever mints one refuses an empty issuer instead.
+  bytes issuer = 10 [(orm.field) = {immutable: true}];
+
+  // When it stops working, and there is no such thing as one that does not.
+  //
+  // Nullable because the generator has no way to say required -- a singular
+  // message field with neither `nullable` nor a default generates a NOT NULL
+  // column while the API still answers `HasDateExpires`, which is the thing D6
+  // is about and F3 has open. So "always set" is the minting path's rule, and
+  // the read refuses an absent one rather than treating it as forever.
+  //
+  // Enforced on read, never by a sweep. A sweep that is the mechanism is a
+  // sweep whose outage is a security incident; what a sweep is for is the rows.
+  //
+  // Immutable, which leaves the generated `Patch` with nothing to write at all
+  // -- and that is the declaration. This row is minted once and erased; a
+  // delegation is never extended, because extending one is how a credential
+  // that was meant to live for minutes comes to live for a day.
+  google.protobuf.Timestamp date_expires = 11 [(orm.field) = {
+    nullable: true
+    immutable: true
+  }];
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+
+  // Revoking is an erase, and it is what "sign out everywhere" reaches for
+  // first. Softly, so that a trail naming this row still finds something.
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {
+            name: "date_created"
+            number: 15
+          },
+          {
+            name: "id"
+            number: 1
+          }
+        ]
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 19
+
+    tenanted: {via: "holder.tenant"}
+
+    // A page of them, which is what the sweep reads and what an operator asking
+    // "what is live for this person" reads. `by: {name: "ref"}` is the filter
+    // that makes the second question answerable at all.
+    list: {
+      order: [
+        {
+          field: {name: "date_created"}
+        },
+        {
+          field: {name: "id"}
+        }
+      ]
+      by: [{name: "ref"}]
+      size: 20
+      max: 100
+    }
+
+    // And **no** `watch:`, deliberately. payday's `Secret` layer overrides
+    // Add/Get/Patch/Apply/List and not Watch, and this app installs
+    // `grpcx.ClosedUnary` rather than `grpcx.Closed`, so a watchable entity
+    // with a verifier streams it and neither control can stop it. `Credential`
+    // already has that shape and is saved only by never being registered.
+  };
+}

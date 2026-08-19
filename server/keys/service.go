@@ -2,6 +2,7 @@ package keys
 
 import (
 	"context"
+	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -59,18 +60,64 @@ type service struct {
 }
 
 // Introspect answers who a token stands for.
+//
+// # Two tables, and the prefix says which
+//
+// A key and a delegation are both this plane's, so the switch is about the
+// table rather than the database. It is written out rather than left to the
+// hash: `Sum` covers the prefix, so a token looked up in the wrong table finds
+// nothing anyway -- but that is a second line of defence, and letting it be the
+// first one means the day somebody changes how a token is hashed is the day
+// this quietly stops distinguishing anything.
+//
+// Anything that is not a delegation goes to the key table, which is what this
+// did before there was a second table and is what the control listener needs:
+// `Service` is built on whichever plane it is serving, so there the keys it
+// answers about are `rk_`.
+//
+// # And the delegation is bound to whoever was given it
+//
+// This is where that is checked, and it is the only place it can be. D21 and
+// D23 both require it -- one product app must not be able to use what another
+// was issued -- and `auth.TokenStore.Lookup` is handed the token and nothing
+// else, so the in-process path has no caller to compare against. This one runs
+// behind roster's own authentication, so `frame.From` names the app asking.
+//
+// What it compares against is the **frame's actor**, which for a deployment key
+// is the key row rather than the service holding it (`cmd.Resolver`). So
+// rotating an app's key invalidates the delegations it issued. That is a
+// deliberate reading of "the caller": a delegation lives for minutes, and a
+// caller whose credential has been replaced is not obviously the same caller.
 func (v service) Introspect(ctx context.Context, req *pdpb.TokenIntrospectRequest) (*pdpb.TokenIntrospectResponse, error) {
-	k, err := lookup(ctx, v.s, req.GetToken())
+	token := req.GetToken()
+
+	find := findKey
+	if strings.HasPrefix(token, PrefixDelegation) {
+		find = findDelegation
+	}
+
+	k, err := find(ctx, v.s, token)
 	if err != nil {
-		// Whatever `lookup` refused with is already the shape the contract
+		// Whatever the lookup refused with is already the shape the contract
 		// asks for: `NotFound` for anything about the token, and everything
 		// else -- a database that would not answer -- passed on as itself so
 		// that the app in front tells its caller to come back rather than
 		// telling them their token is bad.
 		return nil, err
 	}
+	if len(k.Issuer) > 0 {
+		f, ok := frame.From(ctx)
+		if !ok {
+			// Nothing said who is asking, so nothing can be bound. Refused the
+			// way a token that was never here is refused.
+			return nil, status.Error(codes.NotFound, "no such token")
+		}
+		if err := issued(k, f.Actor); err != nil {
+			return nil, err
+		}
+	}
 
-	h := k.GetHolder()
+	h := k.Holder
 	if h == nil || len(h.GetId()) == 0 {
 		// A key with no holder is a row that should not exist: the edge is
 		// required and immutable. If one is ever read, answering with a token
@@ -89,10 +136,10 @@ func (v service) Introspect(ctx context.Context, req *pdpb.TokenIntrospectReques
 		// `auth.Identity.TenantId`.
 		TenantId: h.GetTenant().GetId(),
 
-		Grant: grantOf(k),
+		Grant: grantOf(k.Methods),
 	}
-	if u := k.GetDateExpires(); u != nil {
-		res.Expires = timestamppb.New(u.AsTime())
+	if !k.Expires.IsZero() {
+		res.Expires = timestamppb.New(k.Expires)
 	}
 
 	return res.Build(), nil
@@ -106,13 +153,13 @@ func (v service) Introspect(ctx context.Context, req *pdpb.TokenIntrospectReques
 // the encoder is where that rule is applied for everybody. Written out here it
 // would be applied twice, and the copy that gets it wrong hands out a token
 // that allows everything.
-func grantOf(k *app.ApiKey) *pdpb.Grant {
+func grantOf(methods []string) *pdpb.Grant {
 	// Only the method axis. A key does not narrow tenants or sets today: what
 	// it may reach is decided by the app in front, meeting this against its own
 	// policy, and an empty `methods` is Grant's zero for actions, which allows
 	// nothing.
 	id, err := auth.Introspection(auth.Identity{
-		Grant: frame.Whole().To(k.GetMethods()...),
+		Grant: frame.Whole().To(methods...),
 	})
 	if err != nil {
 		// Introspection only fails on an identifier it cannot parse, and no

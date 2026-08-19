@@ -57,6 +57,18 @@ func (f CredentialFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, 
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CredentialMutation", m)
 }
 
+// The DelegationFunc type is an adapter to allow the use of ordinary
+// function as Delegation mutator.
+type DelegationFunc func(context.Context, *ent.DelegationMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f DelegationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.DelegationMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.DelegationMutation", m)
+}
+
 // The EmailFunc type is an adapter to allow the use of ordinary
 // function as Email mutator.
 type EmailFunc func(context.Context, *ent.EmailMutation) (ent.Value, error)

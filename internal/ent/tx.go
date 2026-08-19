@@ -20,6 +20,8 @@ type Tx struct {
 	Binding *BindingClient
 	// Credential is the client for interacting with the Credential builders.
 	Credential *CredentialClient
+	// Delegation is the client for interacting with the Delegation builders.
+	Delegation *DelegationClient
 	// Email is the client for interacting with the Email builders.
 	Email *EmailClient
 	// Group is the client for interacting with the Group builders.
@@ -179,6 +181,7 @@ func (tx *Tx) init() {
 	tx.Audit = NewAuditClient(tx.config)
 	tx.Binding = NewBindingClient(tx.config)
 	tx.Credential = NewCredentialClient(tx.config)
+	tx.Delegation = NewDelegationClient(tx.config)
 	tx.Email = NewEmailClient(tx.config)
 	tx.Group = NewGroupClient(tx.config)
 	tx.GroupMembership = NewGroupMembershipClient(tx.config)

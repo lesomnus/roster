@@ -199,6 +199,47 @@ var (
 			},
 		},
 	}
+	// DelegationColumns holds the columns for the "delegation" table.
+	DelegationColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "methods", Type: field.TypeJSON, Nullable: true},
+		{Name: "secret", Type: field.TypeBytes},
+		{Name: "issuer", Type: field.TypeBytes},
+		{Name: "date_expires", Type: field.TypeTime, Nullable: true},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "holder_id", Type: field.TypeUUID},
+	}
+	// DelegationTable holds the schema information for the "delegation" table.
+	DelegationTable = &schema.Table{
+		Name:       "delegation",
+		Columns:    DelegationColumns,
+		PrimaryKey: []*schema.Column{DelegationColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "delegation_holder_holder",
+				Columns:    []*schema.Column{DelegationColumns[8]},
+				RefColumns: []*schema.Column{HolderColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "delegation_date_created_id",
+				Unique:  false,
+				Columns: []*schema.Column{DelegationColumns[7], DelegationColumns[0]},
+			},
+			{
+				Name:    "delegation_secret",
+				Unique:  true,
+				Columns: []*schema.Column{DelegationColumns[2]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
 	// EmailColumns holds the columns for the "email" table.
 	EmailColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
@@ -700,6 +741,7 @@ var (
 		AuditTable,
 		BindingTable,
 		CredentialTable,
+		DelegationTable,
 		EmailTable,
 		GroupTable,
 		GroupmembershipTable,
@@ -733,6 +775,10 @@ func init() {
 	CredentialTable.ForeignKeys[0].RefTable = HolderTable
 	CredentialTable.Annotation = &entsql.Annotation{
 		Table: "credential",
+	}
+	DelegationTable.ForeignKeys[0].RefTable = HolderTable
+	DelegationTable.Annotation = &entsql.Annotation{
+		Table: "delegation",
 	}
 	EmailTable.ForeignKeys[0].RefTable = HolderTable
 	EmailTable.ForeignKeys[1].RefTable = IdentityTable

@@ -18,6 +18,9 @@ type Binding func(*sql.Selector)
 // Credential is the predicate function for credential builders.
 type Credential func(*sql.Selector)
 
+// Delegation is the predicate function for delegation builders.
+type Delegation func(*sql.Selector)
+
 // Email is the predicate function for email builders.
 type Email func(*sql.Selector)
 

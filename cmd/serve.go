@@ -409,12 +409,19 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 // register puts every service on the wire, and it is written out rather than
 // being `app.RegisterServer` because of the ones that are missing.
 //
-// `CredentialService` and `ApiKeyService` are not here. Each has a generated
-// `Get` that answers with whatever columns it was asked for, and in both cases
-// one of them is a verifier -- a password hash, a key hash. Serving them is
-// publishing those to anybody the wall lets read a row. The rows still exist
-// and this app still reads them, in process, but there is no method on this
-// server that answers with one.
+// `CredentialService`, `ApiKeyService` and `DelegationService` are not here.
+// Each has a generated `Get` that answers with whatever columns it was asked
+// for, and in all three cases one of them is a verifier -- a password hash, a
+// key hash, the hash of a delegation. Serving them is publishing those to
+// anybody the wall lets read a row. The rows still exist and this app still
+// reads them, in process, but there is no method on this server that answers
+// with one.
+//
+// For `DelegationService` this is the **only** control that closes it, and that
+// is worth knowing before somebody adds a line here for tidiness. `closed`
+// below reaches unary methods, because `grpcx.ClosedUnary` is what this app
+// installs; a `Watch` would slip past it. `Delegation` declares no `watch:` for
+// that reason, and not registering it is what covers the rest.
 //
 // It is said here rather than in the schema because there is nowhere in the
 // schema to say it: payday extends `MessageOptions` only, so no field can be
@@ -454,7 +461,14 @@ func register(g grpc.ServiceRegistrar, s app.Server) {
 func (s *Server) closed(c Config) func(method string) bool {
 	was := c.Server.Closed()
 
-	shut := []string{app.CredentialService_ServiceDesc.ServiceName}
+	// And `DelegationService` beside it, for the same reason and with no
+	// exception: unlike `ApiKeyService` there is no port whose reason for
+	// existing is managing these. Nobody manages a credential that lives for
+	// minutes; what a person does with one is stop using it.
+	shut := []string{
+		app.CredentialService_ServiceDesc.ServiceName,
+		app.DelegationService_ServiceDesc.ServiceName,
+	}
 
 	// `ApiKey.Add` takes a verifier from the caller, so serving it beside
 	// `IssueService` would be offering the thing `Issue` exists to stop: a key

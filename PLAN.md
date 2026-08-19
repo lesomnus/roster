@@ -137,6 +137,109 @@ over memberships, credential verification.
 Recorded as they are made, with the reason, so that a later disagreement argues
 with the reason rather than rediscovering the question.
 
+### D25 · A delegation is its own row, and the prefix is what reaches it
+
+D23 said what this is and left every question about where it lives. This is
+those answers, and the first of them reverses something `docs/ROADMAP.md` had
+written down.
+
+#### It is not one table with the continuation and the nonce
+
+The three of them are described with the same four words -- opaque,
+short-lived, single-use, bound to the caller -- and D19's question has one
+answer for all three, so they read as one entity with a `kind`. **D16 refutes
+it**, in the words it used about `ApiKey` and `Credential`:
+
+- **What is proved is not what is granted.** This carries `methods`, read by the
+  interceptor before the handler. D21's continuation carries `satisfied`, grants
+  nothing, and must never be a bearer at all. One table means a `methods` column
+  that is load-bearing for one kind and must be empty for the others, which is
+  an invariant no schema states -- so it becomes a hand-written check in every
+  place that reads the table, and the one that forgets serves a half-proven
+  identity as a caller.
+- **The kind selects the cost.** This and a continuation are 256 bits from
+  `crypto/rand`, so the hash is fast and unsalted. An air-gapped recovery code
+  is *read out or written down by a local operator*: short, and therefore
+  argon2id with an attempt counter and a lockout. That is `Credential`'s
+  machinery and not `ApiKey`'s.
+
+D16's first leg -- uniqueness -- does not transfer, and saying so is part of the
+decision: all three are many-per-holder and found by their own verifier.
+
+#### And it is not an `ApiKey`
+
+The nearer comparison, and D23 makes it itself: *practically it is an `rt_` key
+with a short life, minted for the person an app just authenticated.* Every
+column is `ApiKey`'s except one.
+
+What separates them is **who names the row**. An `ApiKey`'s `alias` is unique
+per holder and is *what somebody calls this key when deciding whether to revoke
+it*; the screen that lists them is one of the reasons D23 exists. A delegation
+is minted once per sign-in by an app the person never sees. One table makes that
+screen a list of rows nobody named, arriving faster than anybody reads them,
+with the two or three a person actually made lost in it.
+
+So `Delegation` leaves 4 to 7 empty, which is that difference written in the
+schema rather than in a comment.
+
+#### `rd_`, and the prefix now decides a table as well
+
+OPERATING.md already says the prefix *decides which database holds the row and
+who the token is served as*. This is that rule's next entry: same database as
+`rt_`, different table, and the same answer about who -- the **holder**, with
+their wall, their bindings and their sites, narrowed further by the row's
+`methods` and never widened by them.
+
+It is one prefix for one kind of thing, which is what keeps it an entry rather
+than an exception. A continuation is not a bearer credential and does not get
+one; D21 already gave it `vc_` and a request body.
+
+#### The issuer is a column, and the check is not where the lookup is
+
+D21 and D23 both require *bound to the caller it was issued to*. Two things
+follow that a schema cannot say:
+
+- **It cannot be an edge.** The caller is a control-plane row and this is a data
+  plane row, and D15 put a database between them with no query across it. So it
+  is an identifier written down and compared.
+- **It cannot be checked in the token store.** `auth.TokenStore.Lookup` is handed
+  the token and nothing else -- no caller, no peer, no frame. A comparison
+  written there compiles, runs, and binds nothing. It lives in
+  `TokenService/Introspect` and in whatever mints one, both of which run behind
+  roster's own authentication.
+
+And **empty is not a state the column may hold**, because
+`subtle.ConstantTimeCompare` answers 1 for two empty slices: a delegation bound
+to nobody would match a caller whose own identifier failed to resolve. `Delegate`
+refuses to write one, and the comparison refuses an unresolved caller, so
+neither is left to the compare.
+
+#### What the issuer names, and what that costs
+
+The **key row**, not the service holder it hangs off, because that is what
+`cmd.Resolver` makes the actor of a deployment key. So rotating an app's key
+invalidates the delegations it issued.
+
+Taken deliberately rather than inherited: these live for minutes, and a caller
+whose credential has been replaced is not obviously the same caller. Resolving
+to the holder instead needs a select change in `keyed` and a read on every
+request, and it would make a rotation invisible where an invalidation is
+arguably the honest answer.
+
+#### What is decided provisionally, and by whom
+
+The lifetime. D24 is explicit that *its lifetime, its scope and where it is
+refreshed are decided by a page that uses it, not by reasoning*, so
+`keys.DelegateFor` is a constant with a note on it and the reference app is what
+settles it.
+
+#### What is not built
+
+**Nothing mints one over the wire**, and that is the same shape `rt_` is in:
+the half that answers is done and the half that issues waits. D23 says it rides
+back on `VouchService.Verify`, which is a field on that response and a decision
+about who may ask for one -- and D24 puts the page that needs it before both.
+
 ### D19 · The line is issuance, not authentication
 
 This was written down after a conversation that went round twice, because the
@@ -1219,7 +1322,7 @@ D15 relies on.
 | 1c · memberships, Credential | **done**, 27 tests, both databases |
 | 2 · payday fixes | F1, F2, F4 done · F9 fixed upstream, pin to move · F3, F6, F7 open · F5 written down |
 | 3 · app layer | linking rules, credential verification, roles and the second axis, `MeService`, escalation prevention, the console · **done** |
-| 4 · keys, sync, console | **keys done** (both planes; no wire surface to mint an `rt_`) · sync channel, console — |
+| 4 · keys, sync, console | **keys done** (both planes; no wire surface to mint an `rt_`) · **delegation done** (D25; no wire surface either) · sync channel, console — |
 | 5 · the line, written down | **done** — D19, D20, and POSITION.md rewritten around them |
 
 The phases above are how this was built. What is built **next** is
@@ -1408,6 +1511,10 @@ the schedule.
   OPERATING.md). What it needs is the `VouchService` trick: a narrow service
   that takes a secret in, answers with the plaintext exactly once, and can never
   read one back.
+- **And nothing mints a delegation over the wire either**, for a different
+  reason: D24 puts the page that would ask for one before the RPC that answers.
+  `keys.Delegate` is the mint and it is a Go call; D23 says where it belongs,
+  which is riding back on `VouchService.Verify`.
 - **Two-step verification is decided and not written.** D20 and D21 say what it
   is — a `Credential` row, a `continuation` handle, one lockout count across
   both steps — and nothing implements it. D21's four conditions are the ones

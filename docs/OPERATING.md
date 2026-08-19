@@ -288,7 +288,7 @@ roster key revoke --id <id>     # a delete, so the next call carrying it fails
 | --- | --- |
 | `/roster.VouchService/Verify` | checking a password |
 | `/roster.HolderService/Get` | who somebody still is — a name for a screen, and the periodic recheck that ends a session after somebody leaves |
-| `/payday.TokenService/Introspect` | only if the app takes API tokens; see below |
+| `/payday.TokenService/Introspect` | only if the app takes API tokens, or asks about a delegation it was given; see below |
 
 Not `VouchService/Set` — changing a password belongs to whatever account portal
 owns the person — and no `Holder` writes, since a product does not own the
@@ -319,19 +319,30 @@ Three things about it are worth knowing before allowing it:
   add` mints — live in the other database, and there is no query from one to the
   other. They are not refused here; they are invisible.
 
-### Two kinds of key
+### Three kinds of key
 
 The prefix is which, and it is not decoration — it decides which database holds
-the row and who the token is served as.
+the row, which table in it, and who the token is served as.
 
 | | | |
 | --- | --- | --- |
 | `rk_` | the deployment's | `roster key add`. Resolves to the **key**, holds no tenant, sees every tenant there is |
 | `rt_` | a tenant's | belongs to a holder. Resolves to that **holder**, so the wall, the bindings and the sites all apply exactly as when that person calls |
+| `rd_` | a **delegation** | a product app calling as somebody it just signed in. Resolves to that holder in the same way, and differs in the short life: minutes, and bound to the app it was issued to |
 
 A `rt_` key is therefore never wider than the person it hangs off. Its `methods`
 narrow that further and can never widen it — a method on the key that its holder
-cannot call is still refused.
+cannot call is still refused. The same is true of an `rd_`, which is the point
+of it: an app drawing a person their own record calls with the person's reach
+and not with its own.
+
+Two things about `rd_` an operator should know before allowing `Introspect` on
+an app's key. A delegation **must** carry an expiry — an absent one is refused
+rather than read as forever, which is the opposite of how `rk_` and `rt_` read
+that column — and it is **bound to the caller it was issued to**, so an app
+presenting another app's is answered the same `NotFound` a token that was never
+here gets. Rotating an app's key invalidates the delegations it issued; PLAN.md
+D25 says why that was the answer taken.
 
 What a tenant key costs is the trail: its writes are recorded as the person's,
 so `Audit` says who and not which of their keys. Revoking still works, since the
@@ -340,6 +351,11 @@ row is what the token resolves through.
 Nothing mints a `rt_` key over the wire yet — `ApiKeyService` is unregistered,
 so it takes `Ungated`, which means a shell. The console is what changes that,
 and the rules that make it safe are in place: see below.
+
+Nor a delegation, and for a different reason: what would mint one is
+`VouchService.Verify` answering with it, and the page that decides how long it
+should live has not been written. PLAN.md D24 is why that order, D25 is the
+shape.
 
 ## Who may do what
 
