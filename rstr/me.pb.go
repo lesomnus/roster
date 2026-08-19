@@ -65,18 +65,20 @@ func (b0 MeGetRequest_builder) Build() *MeGetRequest {
 }
 
 type MeGetResponse struct {
-	state                protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Id        []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_Tenant    []byte                 `protobuf:"bytes,2,opt,name=tenant"`
-	xxx_hidden_Alias     string                 `protobuf:"bytes,4,opt,name=alias"`
-	xxx_hidden_Name      string                 `protobuf:"bytes,5,opt,name=name"`
-	xxx_hidden_Emails    *[]*MeEmail            `protobuf:"bytes,8,rep,name=emails"`
-	xxx_hidden_Teams     *[]*MeTeam             `protobuf:"bytes,9,rep,name=teams"`
-	xxx_hidden_Methods   []string               `protobuf:"bytes,10,rep,name=methods"`
-	xxx_hidden_Sites     [][]byte               `protobuf:"bytes,11,rep,name=sites"`
-	xxx_hidden_EverySite bool                   `protobuf:"varint,12,opt,name=every_site,json=everySite"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Tenant      []byte                 `protobuf:"bytes,2,opt,name=tenant"`
+	xxx_hidden_Alias       string                 `protobuf:"bytes,4,opt,name=alias"`
+	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
+	xxx_hidden_Emails      *[]*MeEmail            `protobuf:"bytes,8,rep,name=emails"`
+	xxx_hidden_Teams       *[]*MeTeam             `protobuf:"bytes,9,rep,name=teams"`
+	xxx_hidden_Methods     []string               `protobuf:"bytes,10,rep,name=methods"`
+	xxx_hidden_Sites       [][]byte               `protobuf:"bytes,11,rep,name=sites"`
+	xxx_hidden_EverySite   bool                   `protobuf:"varint,12,opt,name=every_site,json=everySite"`
+	xxx_hidden_Identities  *[]*MeIdentity         `protobuf:"bytes,13,rep,name=identities"`
+	xxx_hidden_Credentials *[]*MeCredential       `protobuf:"bytes,14,rep,name=credentials"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *MeGetResponse) Reset() {
@@ -171,6 +173,24 @@ func (x *MeGetResponse) GetEverySite() bool {
 	return false
 }
 
+func (x *MeGetResponse) GetIdentities() []*MeIdentity {
+	if x != nil {
+		if x.xxx_hidden_Identities != nil {
+			return *x.xxx_hidden_Identities
+		}
+	}
+	return nil
+}
+
+func (x *MeGetResponse) GetCredentials() []*MeCredential {
+	if x != nil {
+		if x.xxx_hidden_Credentials != nil {
+			return *x.xxx_hidden_Credentials
+		}
+	}
+	return nil
+}
+
 func (x *MeGetResponse) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -213,6 +233,14 @@ func (x *MeGetResponse) SetEverySite(v bool) {
 	x.xxx_hidden_EverySite = v
 }
 
+func (x *MeGetResponse) SetIdentities(v []*MeIdentity) {
+	x.xxx_hidden_Identities = &v
+}
+
+func (x *MeGetResponse) SetCredentials(v []*MeCredential) {
+	x.xxx_hidden_Credentials = &v
+}
+
 type MeGetResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -244,6 +272,22 @@ type MeGetResponse_builder struct {
 	// tenant. It is `frame.Sets` as an answer; see `cmd.Sets`.
 	Sites     [][]byte
 	EverySite bool
+	// How they sign in elsewhere, and how they sign in here.
+	//
+	// # Why they are here and not read from their own services
+	//
+	// Because neither can be. `IdentityService` narrows by the **tenant**, so a
+	// person asking for their own identities through it is asking for their whole
+	// tenant's and filtering -- which is the leak D17 named and D23 exists to
+	// remove, and it is exactly the shape a self-service screen would reach for.
+	// `CredentialService` is not registered at all, because its generated `Get`
+	// answers with the verifier (D13).
+	//
+	// This message is the one shape narrowed to the person **by construction**:
+	// it takes no subject, so there is nothing to point at somebody else. That is
+	// also why `cmd.Policy` can waive a binding for it and for nothing else.
+	Identities  []*MeIdentity
+	Credentials []*MeCredential
 }
 
 func (b0 MeGetResponse_builder) Build() *MeGetResponse {
@@ -259,6 +303,249 @@ func (b0 MeGetResponse_builder) Build() *MeGetResponse {
 	x.xxx_hidden_Methods = b.Methods
 	x.xxx_hidden_Sites = b.Sites
 	x.xxx_hidden_EverySite = b.EverySite
+	x.xxx_hidden_Identities = &b.Identities
+	x.xxx_hidden_Credentials = &b.Credentials
+	return m0
+}
+
+// MeIdentity is one way somebody arrives from outside.
+type MeIdentity struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Provider    string                 `protobuf:"bytes,8,opt,name=provider"`
+	xxx_hidden_Subject     string                 `protobuf:"bytes,9,opt,name=subject"`
+	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *MeIdentity) Reset() {
+	*x = MeIdentity{}
+	mi := &file_app_me_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MeIdentity) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MeIdentity) ProtoMessage() {}
+
+func (x *MeIdentity) ProtoReflect() protoreflect.Message {
+	mi := &file_app_me_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *MeIdentity) GetId() []byte {
+	if x != nil {
+		return x.xxx_hidden_Id
+	}
+	return nil
+}
+
+func (x *MeIdentity) GetProvider() string {
+	if x != nil {
+		return x.xxx_hidden_Provider
+	}
+	return ""
+}
+
+func (x *MeIdentity) GetSubject() string {
+	if x != nil {
+		return x.xxx_hidden_Subject
+	}
+	return ""
+}
+
+func (x *MeIdentity) GetDateCreated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateCreated
+	}
+	return nil
+}
+
+func (x *MeIdentity) SetId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Id = v
+}
+
+func (x *MeIdentity) SetProvider(v string) {
+	x.xxx_hidden_Provider = v
+}
+
+func (x *MeIdentity) SetSubject(v string) {
+	x.xxx_hidden_Subject = v
+}
+
+func (x *MeIdentity) SetDateCreated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateCreated = v
+}
+
+func (x *MeIdentity) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateCreated != nil
+}
+
+func (x *MeIdentity) ClearDateCreated() {
+	x.xxx_hidden_DateCreated = nil
+}
+
+type MeIdentity_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The row, so that a screen with a remove button has something to name.
+	Id []byte
+	// Which provider, and what that provider calls them.
+	//
+	// The subject is here rather than hidden. It is not a secret -- it is a
+	// numeric account id or a directory GUID, and the person can read it at the
+	// provider -- and a screen that lists two GitHub accounts with nothing
+	// telling them apart is a screen somebody removes the wrong one from.
+	Provider string
+	Subject  string
+	// When it was linked, which is what a page shows beside it.
+	DateCreated *timestamppb.Timestamp
+}
+
+func (b0 MeIdentity_builder) Build() *MeIdentity {
+	m0 := &MeIdentity{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Id = b.Id
+	x.xxx_hidden_Provider = b.Provider
+	x.xxx_hidden_Subject = b.Subject
+	x.xxx_hidden_DateCreated = b.DateCreated
+	return m0
+}
+
+// MeCredential is one secret roster holds for somebody, and never the secret.
+//
+// The kind and its dates. `Credential.secret` is not here and there is nowhere
+// to ask for it: this is a message with the fields written out, so the column
+// is absent rather than deselected. That is the same statement D13 makes by not
+// registering the service, said again where a page can hear it.
+type MeCredential struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Kind        string                 `protobuf:"bytes,8,opt,name=kind"`
+	xxx_hidden_DateRotated *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_rotated,json=dateRotated"`
+	xxx_hidden_DateLocked  *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_locked,json=dateLocked"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *MeCredential) Reset() {
+	*x = MeCredential{}
+	mi := &file_app_me_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MeCredential) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MeCredential) ProtoMessage() {}
+
+func (x *MeCredential) ProtoReflect() protoreflect.Message {
+	mi := &file_app_me_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *MeCredential) GetKind() string {
+	if x != nil {
+		return x.xxx_hidden_Kind
+	}
+	return ""
+}
+
+func (x *MeCredential) GetDateRotated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateRotated
+	}
+	return nil
+}
+
+func (x *MeCredential) GetDateLocked() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateLocked
+	}
+	return nil
+}
+
+func (x *MeCredential) SetKind(v string) {
+	x.xxx_hidden_Kind = v
+}
+
+func (x *MeCredential) SetDateRotated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateRotated = v
+}
+
+func (x *MeCredential) SetDateLocked(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateLocked = v
+}
+
+func (x *MeCredential) HasDateRotated() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateRotated != nil
+}
+
+func (x *MeCredential) HasDateLocked() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateLocked != nil
+}
+
+func (x *MeCredential) ClearDateRotated() {
+	x.xxx_hidden_DateRotated = nil
+}
+
+func (x *MeCredential) ClearDateLocked() {
+	x.xxx_hidden_DateLocked = nil
+}
+
+type MeCredential_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// "password", "totp".
+	Kind string
+	// When it was last changed, for a policy that expires them and for showing
+	// somebody why they are being asked.
+	DateRotated *timestamppb.Timestamp
+	// Until when they may not try again, and null for an account that is open.
+	// Shown because somebody locked out being told nothing is somebody who tries
+	// forever -- the trade `VouchVerifyResponse` already took.
+	DateLocked *timestamppb.Timestamp
+}
+
+func (b0 MeCredential_builder) Build() *MeCredential {
+	m0 := &MeCredential{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Kind = b.Kind
+	x.xxx_hidden_DateRotated = b.DateRotated
+	x.xxx_hidden_DateLocked = b.DateLocked
 	return m0
 }
 
@@ -272,7 +559,7 @@ type MeEmail struct {
 
 func (x *MeEmail) Reset() {
 	*x = MeEmail{}
-	mi := &file_app_me_proto_msgTypes[2]
+	mi := &file_app_me_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -284,7 +571,7 @@ func (x *MeEmail) String() string {
 func (*MeEmail) ProtoMessage() {}
 
 func (x *MeEmail) ProtoReflect() protoreflect.Message {
-	mi := &file_app_me_proto_msgTypes[2]
+	mi := &file_app_me_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -358,7 +645,7 @@ type MeTeam struct {
 
 func (x *MeTeam) Reset() {
 	*x = MeTeam{}
-	mi := &file_app_me_proto_msgTypes[3]
+	mi := &file_app_me_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -370,7 +657,7 @@ func (x *MeTeam) String() string {
 func (*MeTeam) ProtoMessage() {}
 
 func (x *MeTeam) ProtoReflect() protoreflect.Message {
-	mi := &file_app_me_proto_msgTypes[3]
+	mi := &file_app_me_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -483,7 +770,7 @@ var File_app_me_proto protoreflect.FileDescriptor
 const file_app_me_proto_rawDesc = "" +
 	"\n" +
 	"\fapp/me.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\"\x0e\n" +
-	"\fMeGetRequest\"\xff\x01\n" +
+	"\fMeGetRequest\"\xeb\x02\n" +
 	"\rMeGetResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x16\n" +
 	"\x06tenant\x18\x02 \x01(\fR\x06tenant\x12\x14\n" +
@@ -495,7 +782,22 @@ const file_app_me_proto_rawDesc = "" +
 	" \x03(\tR\amethods\x12\x14\n" +
 	"\x05sites\x18\v \x03(\fR\x05sites\x12\x1d\n" +
 	"\n" +
-	"every_site\x18\f \x01(\bR\teverySite\"d\n" +
+	"every_site\x18\f \x01(\bR\teverySite\x122\n" +
+	"\n" +
+	"identities\x18\r \x03(\v2\x12.roster.MeIdentityR\n" +
+	"identities\x126\n" +
+	"\vcredentials\x18\x0e \x03(\v2\x14.roster.MeCredentialR\vcredentials\"\x91\x01\n" +
+	"\n" +
+	"MeIdentity\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1a\n" +
+	"\bprovider\x18\b \x01(\tR\bprovider\x12\x18\n" +
+	"\asubject\x18\t \x01(\tR\asubject\x12=\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"\x9e\x01\n" +
+	"\fMeCredential\x12\x12\n" +
+	"\x04kind\x18\b \x01(\tR\x04kind\x12=\n" +
+	"\fdate_rotated\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\vdateRotated\x12;\n" +
+	"\vdate_locked\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"dateLocked\"d\n" +
 	"\aMeEmail\x12\x18\n" +
 	"\aaddress\x18\b \x01(\tR\aaddress\x12?\n" +
 	"\rdate_verified\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\fdateVerified\"\x89\x01\n" +
@@ -511,25 +813,32 @@ const file_app_me_proto_rawDesc = "" +
 	"\tMeService\x122\n" +
 	"\x03Get\x12\x14.roster.MeGetRequest\x1a\x15.roster.MeGetResponseB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_app_me_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_app_me_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_app_me_proto_goTypes = []any{
 	(*MeGetRequest)(nil),          // 0: roster.MeGetRequest
 	(*MeGetResponse)(nil),         // 1: roster.MeGetResponse
-	(*MeEmail)(nil),               // 2: roster.MeEmail
-	(*MeTeam)(nil),                // 3: roster.MeTeam
-	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
+	(*MeIdentity)(nil),            // 2: roster.MeIdentity
+	(*MeCredential)(nil),          // 3: roster.MeCredential
+	(*MeEmail)(nil),               // 4: roster.MeEmail
+	(*MeTeam)(nil),                // 5: roster.MeTeam
+	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
 }
 var file_app_me_proto_depIdxs = []int32{
-	2, // 0: roster.MeGetResponse.emails:type_name -> roster.MeEmail
-	3, // 1: roster.MeGetResponse.teams:type_name -> roster.MeTeam
-	4, // 2: roster.MeEmail.date_verified:type_name -> google.protobuf.Timestamp
-	0, // 3: roster.MeService.Get:input_type -> roster.MeGetRequest
-	1, // 4: roster.MeService.Get:output_type -> roster.MeGetResponse
-	4, // [4:5] is the sub-list for method output_type
-	3, // [3:4] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	4, // 0: roster.MeGetResponse.emails:type_name -> roster.MeEmail
+	5, // 1: roster.MeGetResponse.teams:type_name -> roster.MeTeam
+	2, // 2: roster.MeGetResponse.identities:type_name -> roster.MeIdentity
+	3, // 3: roster.MeGetResponse.credentials:type_name -> roster.MeCredential
+	6, // 4: roster.MeIdentity.date_created:type_name -> google.protobuf.Timestamp
+	6, // 5: roster.MeCredential.date_rotated:type_name -> google.protobuf.Timestamp
+	6, // 6: roster.MeCredential.date_locked:type_name -> google.protobuf.Timestamp
+	6, // 7: roster.MeEmail.date_verified:type_name -> google.protobuf.Timestamp
+	0, // 8: roster.MeService.Get:input_type -> roster.MeGetRequest
+	1, // 9: roster.MeService.Get:output_type -> roster.MeGetResponse
+	9, // [9:10] is the sub-list for method output_type
+	8, // [8:9] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_app_me_proto_init() }
@@ -543,7 +852,7 @@ func file_app_me_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_me_proto_rawDesc), len(file_app_me_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

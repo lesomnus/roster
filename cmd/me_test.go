@@ -7,7 +7,12 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"google.golang.org/protobuf/encoding/protojson"
+
+	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/me"
+	"github.com/lesomnus/roster/server/vouch"
 )
 
 // TestMeAnswersAboutTheCaller, and takes nothing to say who that is.
@@ -118,4 +123,53 @@ func TestSomebodyWithNothingCanStillAskWhatTheyHave(t *testing.T) {
 	x.NoError(err)
 	x.Equal(b.AcmeUser.Bytes(), v.GetId())
 	x.Empty(v.GetMethods(), "somebody who holds nothing was told they hold something")
+}
+
+// TestMeAnswersHowSomebodySignsIn is item 7 of PLAN.md's list, for the one case
+// that is safe to answer: somebody's own.
+//
+// Neither half could be read any other way. `IdentityService` narrows by the
+// **tenant**, so a person reading their own identities through it reads their
+// whole tenant's and filters -- which is the leak D17 named and D23 exists to
+// remove, and it is the first thing a self-service screen reaches for.
+// `CredentialService` is not registered at all, because its generated `Get`
+// answers with the verifier.
+//
+// This message takes no subject, so there is nothing to point at anybody else,
+// which is the same property that lets `cmd.Policy` waive a binding for it.
+func TestMeAnswersHowSomebodySignsIn(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	b.identity(t, ctx, b.AcmeUser, "github", "1078")
+	b.identity(t, ctx, b.AcmeUser, "entra", "8bf1e0a2")
+	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+
+	// Somebody else, in the same tenant, with an identity of their own -- so
+	// that "their own" is a claim with something to be wrong about.
+	other := b.holder(t, ctx, b.Acme, "somebody-else")
+	b.identity(t, ctx, other, "github", "2049")
+
+	v, err := me.New(b.Ent, cmd.Everything(b.Ent)).Get(
+		b.as(ctx, b.AcmeUser, b.Acme), app.MeGetRequest_builder{}.Build())
+	x.NoError(err)
+
+	var providers []string
+	for _, i := range v.GetIdentities() {
+		providers = append(providers, i.GetProvider())
+		x.NotEmpty(i.GetId(), "a screen with a remove button has nothing to name")
+		x.NotEqual("2049", i.GetSubject(), "somebody else's identity was answered with")
+	}
+	x.ElementsMatch([]string{"github", "entra"}, providers)
+
+	x.Len(v.GetCredentials(), 1)
+	x.Equal(vouch.KindPassword, v.GetCredentials()[0].GetKind())
+
+	// And the thing that must never be here. There is no field to ask for --
+	// which is a compile-time fact as much as a runtime one -- so what this
+	// pins is that nothing else on the message is carrying it either.
+	raw, err := protojson.Marshal(v)
+	x.NoError(err)
+	x.NotContains(string(raw), "argon2", "the verifier reached a page")
+	x.NotContains(string(raw), "secret")
 }

@@ -73,6 +73,61 @@ message MeGetResponse {
   // tenant. It is `frame.Sets` as an answer; see `cmd.Sets`.
   repeated bytes sites = 11;
   bool every_site = 12;
+
+  // How they sign in elsewhere, and how they sign in here.
+  //
+  // # Why they are here and not read from their own services
+  //
+  // Because neither can be. `IdentityService` narrows by the **tenant**, so a
+  // person asking for their own identities through it is asking for their whole
+  // tenant's and filtering -- which is the leak D17 named and D23 exists to
+  // remove, and it is exactly the shape a self-service screen would reach for.
+  // `CredentialService` is not registered at all, because its generated `Get`
+  // answers with the verifier (D13).
+  //
+  // This message is the one shape narrowed to the person **by construction**:
+  // it takes no subject, so there is nothing to point at somebody else. That is
+  // also why `cmd.Policy` can waive a binding for it and for nothing else.
+  repeated MeIdentity identities = 13;
+  repeated MeCredential credentials = 14;
+}
+
+// MeIdentity is one way somebody arrives from outside.
+message MeIdentity {
+  // The row, so that a screen with a remove button has something to name.
+  bytes id = 1;
+
+  // Which provider, and what that provider calls them.
+  //
+  // The subject is here rather than hidden. It is not a secret -- it is a
+  // numeric account id or a directory GUID, and the person can read it at the
+  // provider -- and a screen that lists two GitHub accounts with nothing
+  // telling them apart is a screen somebody removes the wrong one from.
+  string provider = 8;
+  string subject = 9;
+
+  // When it was linked, which is what a page shows beside it.
+  google.protobuf.Timestamp date_created = 15;
+}
+
+// MeCredential is one secret roster holds for somebody, and never the secret.
+//
+// The kind and its dates. `Credential.secret` is not here and there is nowhere
+// to ask for it: this is a message with the fields written out, so the column
+// is absent rather than deselected. That is the same statement D13 makes by not
+// registering the service, said again where a page can hear it.
+message MeCredential {
+  // "password", "totp".
+  string kind = 8;
+
+  // When it was last changed, for a policy that expires them and for showing
+  // somebody why they are being asked.
+  google.protobuf.Timestamp date_rotated = 12;
+
+  // Until when they may not try again, and null for an account that is open.
+  // Shown because somebody locked out being told nothing is somebody who tries
+  // forever -- the trade `VouchVerifyResponse` already took.
+  google.protobuf.Timestamp date_locked = 11;
 }
 
 message MeEmail {

@@ -55,13 +55,19 @@ const HeaderActing = "roster-as"
 // and wrong must stop the search -- the same rule [Store] states about a token
 // with an unknown prefix.
 //
-// # Only a deployment key may present one
+// # It takes a key, and it has to
 //
-// The issuer stamped on a delegation is a control-plane key row, because that
-// is what `cmd.Resolver` makes the actor of a deployment key. A tenant key or a
-// person presenting one has nothing that could match, and refusing them here
-// rather than letting the comparison fail is the difference between a rule and
-// an accident.
+// Either kind: an `rk_` presents as the key row and an `rt_` as its holder,
+// which is what [Store] answers for each and therefore what a delegation minted
+// by one has stamped on it.
+//
+// What cannot present one is `auth.Plain` or mTLS. Both name a caller and
+// neither resolves to an identifier **here** -- a header carries an alias and a
+// certificate carries a subject, and turning either into a row is
+// `cmd.Resolver`'s work, which runs after this. So there is nothing to compare
+// at the moment the comparison has to happen. That is a real limit and it is
+// the honest one: a delegation is bound to a caller, and a credential that
+// cannot say which row it is cannot be that caller.
 func Acting(deployment app.Server, tenant app.Server) auth.Handler {
 	return auth.HandlerFunc(func(ctx context.Context) (auth.Identity, error) {
 		md, ok := metadata.FromIncomingContext(ctx)
@@ -89,7 +95,7 @@ func Acting(deployment app.Server, tenant app.Server) auth.Handler {
 			return auth.Identity{}, status.Error(codes.Unauthenticated, "no")
 		}
 
-		if deployment == nil || tenant == nil {
+		if tenant == nil {
 			return no()
 		}
 
@@ -99,14 +105,28 @@ func Acting(deployment app.Server, tenant app.Server) auth.Handler {
 				token = rest
 			}
 		}
-		if token == "" || !strings.HasPrefix(token, PrefixDeployment) {
-			return no()
-		}
-		if !strings.HasPrefix(as, PrefixDelegation) {
+		if token == "" || !strings.HasPrefix(as, PrefixDelegation) {
 			return no()
 		}
 
-		k, err := findKey(ctx, deployment, token)
+		// The same switch [Store] makes, because the answer has to be the same
+		// actor: a delegation is stamped with whoever asked for it, and that is
+		// what the frame said at the time.
+		var (
+			from  app.Server
+			whose bool
+		)
+		switch {
+		case strings.HasPrefix(token, PrefixDeployment):
+			from = deployment
+		case strings.HasPrefix(token, PrefixTenant):
+			from, whose = tenant, true
+		}
+		if from == nil {
+			return no()
+		}
+
+		k, err := findKey(ctx, from, token)
 		if err != nil {
 			if status.Code(err) == codes.NotFound {
 				return no()
@@ -115,7 +135,16 @@ func Acting(deployment app.Server, tenant app.Server) auth.Handler {
 			return auth.Identity{}, err
 		}
 
-		who, err := pdid.From(k.Id)
+		raw := k.Id
+		if whose {
+			if k.Holder == nil || len(k.Holder.GetId()) == 0 {
+				return no()
+			}
+
+			raw = k.Holder.GetId()
+		}
+
+		who, err := pdid.From(raw)
 		if err != nil {
 			return auth.Identity{}, err
 		}

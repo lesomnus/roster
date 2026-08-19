@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/me.proto.
  */
 export const file_app_me: GenFile = /*@__PURE__*/
-  fileDesc("CgxhcHAvbWUucHJvdG8SBnJvc3RlciIOCgxNZUdldFJlcXVlc3QivAEKDU1lR2V0UmVzcG9uc2USCgoCaWQYASABKAwSDgoGdGVuYW50GAIgASgMEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSHwoGZW1haWxzGAggAygLMg8ucm9zdGVyLk1lRW1haWwSHQoFdGVhbXMYCSADKAsyDi5yb3N0ZXIuTWVUZWFtEg8KB21ldGhvZHMYCiADKAkSDQoFc2l0ZXMYCyADKAwSEgoKZXZlcnlfc2l0ZRgMIAEoCCJNCgdNZUVtYWlsEg8KB2FkZHJlc3MYCCABKAkSMQoNZGF0ZV92ZXJpZmllZBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiYQoGTWVUZWFtEgoKAmlkGAEgASgMEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSDAoEc2l0ZRgIIAEoDBISCgpzaXRlX2FsaWFzGAkgASgJEgwKBHJvbGUYCiABKAkyPwoJTWVTZXJ2aWNlEjIKA0dldBIULnJvc3Rlci5NZUdldFJlcXVlc3QaFS5yb3N0ZXIuTWVHZXRSZXNwb25zZUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp]);
+  fileDesc("CgxhcHAvbWUucHJvdG8SBnJvc3RlciIOCgxNZUdldFJlcXVlc3QijwIKDU1lR2V0UmVzcG9uc2USCgoCaWQYASABKAwSDgoGdGVuYW50GAIgASgMEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSHwoGZW1haWxzGAggAygLMg8ucm9zdGVyLk1lRW1haWwSHQoFdGVhbXMYCSADKAsyDi5yb3N0ZXIuTWVUZWFtEg8KB21ldGhvZHMYCiADKAkSDQoFc2l0ZXMYCyADKAwSEgoKZXZlcnlfc2l0ZRgMIAEoCBImCgppZGVudGl0aWVzGA0gAygLMhIucm9zdGVyLk1lSWRlbnRpdHkSKQoLY3JlZGVudGlhbHMYDiADKAsyFC5yb3N0ZXIuTWVDcmVkZW50aWFsIm0KCk1lSWRlbnRpdHkSCgoCaWQYASABKAwSEAoIcHJvdmlkZXIYCCABKAkSDwoHc3ViamVjdBgJIAEoCRIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIn8KDE1lQ3JlZGVudGlhbBIMCgRraW5kGAggASgJEjAKDGRhdGVfcm90YXRlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLwoLZGF0ZV9sb2NrZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIk0KB01lRW1haWwSDwoHYWRkcmVzcxgIIAEoCRIxCg1kYXRlX3ZlcmlmaWVkGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJhCgZNZVRlYW0SCgoCaWQYASABKAwSDQoFYWxpYXMYBCABKAkSDAoEbmFtZRgFIAEoCRIMCgRzaXRlGAggASgMEhIKCnNpdGVfYWxpYXMYCSABKAkSDAoEcm9sZRgKIAEoCTI/CglNZVNlcnZpY2USMgoDR2V0EhQucm9zdGVyLk1lR2V0UmVxdWVzdBoVLnJvc3Rlci5NZUdldFJlc3BvbnNlQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp]);
 
 /**
  * @generated from message roster.MeGetRequest
@@ -100,6 +100,31 @@ export type MeGetResponse = Message<"roster.MeGetResponse"> & {
    * @generated from field: bool every_site = 12;
    */
   everySite: boolean;
+
+  /**
+   * How they sign in elsewhere, and how they sign in here.
+   *
+   * # Why they are here and not read from their own services
+   *
+   * Because neither can be. `IdentityService` narrows by the **tenant**, so a
+   * person asking for their own identities through it is asking for their whole
+   * tenant's and filtering -- which is the leak D17 named and D23 exists to
+   * remove, and it is exactly the shape a self-service screen would reach for.
+   * `CredentialService` is not registered at all, because its generated `Get`
+   * answers with the verifier (D13).
+   *
+   * This message is the one shape narrowed to the person **by construction**:
+   * it takes no subject, so there is nothing to point at somebody else. That is
+   * also why `cmd.Policy` can waive a binding for it and for nothing else.
+   *
+   * @generated from field: repeated roster.MeIdentity identities = 13;
+   */
+  identities: MeIdentity[];
+
+  /**
+   * @generated from field: repeated roster.MeCredential credentials = 14;
+   */
+  credentials: MeCredential[];
 };
 
 /**
@@ -108,6 +133,94 @@ export type MeGetResponse = Message<"roster.MeGetResponse"> & {
  */
 export const MeGetResponseSchema: GenMessage<MeGetResponse> = /*@__PURE__*/
   messageDesc(file_app_me, 1);
+
+/**
+ * MeIdentity is one way somebody arrives from outside.
+ *
+ * @generated from message roster.MeIdentity
+ */
+export type MeIdentity = Message<"roster.MeIdentity"> & {
+  /**
+   * The row, so that a screen with a remove button has something to name.
+   *
+   * @generated from field: bytes id = 1;
+   */
+  id: Uint8Array;
+
+  /**
+   * Which provider, and what that provider calls them.
+   *
+   * The subject is here rather than hidden. It is not a secret -- it is a
+   * numeric account id or a directory GUID, and the person can read it at the
+   * provider -- and a screen that lists two GitHub accounts with nothing
+   * telling them apart is a screen somebody removes the wrong one from.
+   *
+   * @generated from field: string provider = 8;
+   */
+  provider: string;
+
+  /**
+   * @generated from field: string subject = 9;
+   */
+  subject: string;
+
+  /**
+   * When it was linked, which is what a page shows beside it.
+   *
+   * @generated from field: google.protobuf.Timestamp date_created = 15;
+   */
+  dateCreated?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.MeIdentity.
+ * Use `create(MeIdentitySchema)` to create a new message.
+ */
+export const MeIdentitySchema: GenMessage<MeIdentity> = /*@__PURE__*/
+  messageDesc(file_app_me, 2);
+
+/**
+ * MeCredential is one secret roster holds for somebody, and never the secret.
+ *
+ * The kind and its dates. `Credential.secret` is not here and there is nowhere
+ * to ask for it: this is a message with the fields written out, so the column
+ * is absent rather than deselected. That is the same statement D13 makes by not
+ * registering the service, said again where a page can hear it.
+ *
+ * @generated from message roster.MeCredential
+ */
+export type MeCredential = Message<"roster.MeCredential"> & {
+  /**
+   * "password", "totp".
+   *
+   * @generated from field: string kind = 8;
+   */
+  kind: string;
+
+  /**
+   * When it was last changed, for a policy that expires them and for showing
+   * somebody why they are being asked.
+   *
+   * @generated from field: google.protobuf.Timestamp date_rotated = 12;
+   */
+  dateRotated?: Timestamp | undefined;
+
+  /**
+   * Until when they may not try again, and null for an account that is open.
+   * Shown because somebody locked out being told nothing is somebody who tries
+   * forever -- the trade `VouchVerifyResponse` already took.
+   *
+   * @generated from field: google.protobuf.Timestamp date_locked = 11;
+   */
+  dateLocked?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.MeCredential.
+ * Use `create(MeCredentialSchema)` to create a new message.
+ */
+export const MeCredentialSchema: GenMessage<MeCredential> = /*@__PURE__*/
+  messageDesc(file_app_me, 3);
 
 /**
  * @generated from message roster.MeEmail
@@ -129,7 +242,7 @@ export type MeEmail = Message<"roster.MeEmail"> & {
  * Use `create(MeEmailSchema)` to create a new message.
  */
 export const MeEmailSchema: GenMessage<MeEmail> = /*@__PURE__*/
-  messageDesc(file_app_me, 2);
+  messageDesc(file_app_me, 4);
 
 /**
  * @generated from message roster.MeTeam
@@ -173,7 +286,7 @@ export type MeTeam = Message<"roster.MeTeam"> & {
  * Use `create(MeTeamSchema)` to create a new message.
  */
 export const MeTeamSchema: GenMessage<MeTeam> = /*@__PURE__*/
-  messageDesc(file_app_me, 3);
+  messageDesc(file_app_me, 5);
 
 /**
  * MeService answers what a caller is, in one round trip.

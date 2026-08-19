@@ -24,6 +24,7 @@ package me
 
 import (
 	"context"
+	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -33,8 +34,10 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	"github.com/lesomnus/roster/internal/ent"
+	"github.com/lesomnus/roster/internal/ent/credential"
 	"github.com/lesomnus/roster/internal/ent/email"
 	"github.com/lesomnus/roster/internal/ent/holder"
+	"github.com/lesomnus/roster/internal/ent/identity"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
 	app "github.com/lesomnus/roster/rstr"
 )
@@ -89,6 +92,12 @@ func (s *Server) Get(ctx context.Context, _ *app.MeGetRequest) (*app.MeGetRespon
 		return nil, err
 	}
 	if res.Teams, err = s.teams(ctx, f.Actor); err != nil {
+		return nil, err
+	}
+	if res.Identities, err = s.identities(ctx, f.Actor); err != nil {
+		return nil, err
+	}
+	if res.Credentials, err = s.credentials(ctx, f.Actor); err != nil {
 		return nil, err
 	}
 
@@ -173,6 +182,67 @@ func (s *Server) teams(ctx context.Context, who pdid.Id) ([]*app.MeTeam, error) 
 		}
 
 		out = append(out, m.Build())
+	}
+
+	return out, nil
+}
+
+// identities is how they arrive from outside, and it is here because it cannot
+// be anywhere else.
+//
+// `IdentityService` narrows by the tenant, so a person reading their own
+// through it reads their whole tenant's and filters -- the leak D17 named and
+// D23 exists to remove. This one takes no subject, so there is nothing to point
+// at anybody else.
+func (s *Server) identities(ctx context.Context, who pdid.Id) ([]*app.MeIdentity, error) {
+	vs, err := s.db.Identity.Query().
+		Where(identity.DateErasedIsNil(), identity.HasHolderWith(holder.IDEQ(who.Uuid()))).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]*app.MeIdentity, 0, len(vs))
+	for _, v := range vs {
+		out = append(out, app.MeIdentity_builder{
+			Id:          v.ID[:],
+			Provider:    v.Provider,
+			Subject:     v.Subject,
+			DateCreated: timestamppb.New(v.DateCreated),
+		}.Build())
+	}
+
+	return out, nil
+}
+
+// credentials is what roster holds for them, and never what it holds.
+//
+// The fields are written out, so `secret` is absent rather than deselected --
+// there is no `Select` here to get wrong, and nothing downstream that could ask
+// for one. `CredentialService` is unregistered for the same fact and this is
+// the read that replaces it for the one case that is safe: somebody's own.
+func (s *Server) credentials(ctx context.Context, who pdid.Id) ([]*app.MeCredential, error) {
+	vs, err := s.db.Credential.Query().
+		Where(credential.DateErasedIsNil(), credential.HasHolderWith(holder.IDEQ(who.Uuid()))).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]*app.MeCredential, 0, len(vs))
+	for _, v := range vs {
+		c := app.MeCredential_builder{Kind: v.Kind}
+		if v.DateRotated != nil {
+			c.DateRotated = timestamppb.New(*v.DateRotated)
+		}
+		if v.DateLocked != nil && v.DateLocked.After(time.Now()) {
+			// Only while it is closed. A stamp left over from a lockout that
+			// has expired would put "locked until" on a page for an account
+			// somebody can sign into right now.
+			c.DateLocked = timestamppb.New(*v.DateLocked)
+		}
+
+		out = append(out, c.Build())
 	}
 
 	return out, nil
