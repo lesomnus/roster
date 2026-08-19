@@ -2,6 +2,8 @@ package cmd_test
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"testing"
 	"time"
 
@@ -61,6 +63,10 @@ func keyFor(t *testing.T, methods ...string) *keyedBuilt {
 		Db:      config.DbConfig{Driver: drv, Dsn: dsn},
 		Watch:   config.WatchConfig{Broker: config.BrokerMemory},
 		Control: cmd.ControlConfig{Db: config.DbConfig{Driver: cdrv, Dsn: cdsn}},
+
+		// With a keyring, because a deployment that holds second factors has
+		// one and this harness is what the two-step tests build on.
+		Vouch: cmd.VouchConfig{Keys: []string{"one:" + base64.StdEncoding.EncodeToString(freshKey(t))}},
 	}
 
 	s, err := cmd.Build(ctx, c)
@@ -415,4 +421,15 @@ func TestTheFirstKeyMakesWhatItNeeds(t *testing.T) {
 	n, err = s.Control.Ent.Holder.Query().Count(ctx)
 	x.NoError(err)
 	x.Equal(1, n, "a second key made a second service")
+}
+
+// freshKey is thirty-two bytes, the way a deployment writes one.
+func freshKey(t *testing.T) []byte {
+	t.Helper()
+
+	b := make([]byte, 32)
+	_, err := rand.Read(b)
+	require.NoError(t, err)
+
+	return b
 }

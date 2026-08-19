@@ -18,6 +18,8 @@ type Tx struct {
 	Audit *AuditClient
 	// Binding is the client for interacting with the Binding builders.
 	Binding *BindingClient
+	// Continuation is the client for interacting with the Continuation builders.
+	Continuation *ContinuationClient
 	// Credential is the client for interacting with the Credential builders.
 	Credential *CredentialClient
 	// Delegation is the client for interacting with the Delegation builders.
@@ -184,6 +186,7 @@ func (tx *Tx) init() {
 	tx.ApiKey = NewApiKeyClient(tx.config)
 	tx.Audit = NewAuditClient(tx.config)
 	tx.Binding = NewBindingClient(tx.config)
+	tx.Continuation = NewContinuationClient(tx.config)
 	tx.Credential = NewCredentialClient(tx.config)
 	tx.Delegation = NewDelegationClient(tx.config)
 	tx.Email = NewEmailClient(tx.config)

@@ -46,6 +46,14 @@ import (
 // all, it is why `keys.Sweep` is not optional, and it is a reason to call
 // `Verify` instead where no delegation is wanted.
 func (s *Server) Delegate(ctx context.Context, req *app.VouchDelegateRequest) (*app.VouchDelegateResponse, error) {
+	// The shape of the request first, because it is not about anybody: a
+	// caller that named two ways of proving somebody has not decided, and
+	// telling them so cannot say anything about who exists.
+	if req.GetContinuation() != "" && req.GetWho() != nil {
+		return nil, status.Error(codes.InvalidArgument,
+			"named both somebody and a continuation; exactly one of them is meant")
+	}
+
 	methods := req.GetMethods()
 	if len(methods) == 0 {
 		return nil, status.Error(codes.InvalidArgument,
@@ -69,13 +77,32 @@ func (s *Server) Delegate(ctx context.Context, req *app.VouchDelegateRequest) (*
 		return nil, err
 	}
 
-	res, v, err := s.verify(ctx, req.GetWho(), req.GetKind(), req.GetSecret())
+	// Either way of proving somebody, and exactly one of them.
+	//
+	// The continuation form is what makes a two-step sign-in end in a token
+	// without a second argon2 comparison and without minting for somebody
+	// nobody just proved -- the two things this method's own comment refuses.
+	// It is safe here for the reason it is not safe in general: a continuation
+	// is single-use, alive for minutes, and belongs to the caller spending it.
+	var (
+		res *app.VouchVerifyResponse
+		v   *app.Credential
+	)
+	switch handle := req.GetContinuation(); {
+	case handle != "":
+		res, v, err = s.step(ctx, handle, req.GetKind(), req.GetName(), req.GetSecret())
+
+	default:
+		res, v, err = s.verify(ctx, req.GetWho(), req.GetKind(), req.GetSecret())
+	}
 	if err != nil {
 		return nil, err
 	}
 	if v == nil {
-		// Every refusal `Verify` makes, unchanged and carrying nothing extra.
-		// A caller reading `verified.ok` reads the same field either way.
+		// Every refusal, unchanged -- and every answer that is only **half** a
+		// sign-in, which carries its continuation and no token. A caller
+		// reading `verified.ok` reads the same field either way, and one that
+		// gates on the token gates on the thing that is actually a credential.
 		return app.VouchDelegateResponse_builder{Verified: res}.Build(), nil
 	}
 

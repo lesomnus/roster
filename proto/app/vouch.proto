@@ -112,6 +112,28 @@ service VouchService {
   // permission nobody could explain.
   rpc Unlock(VouchUnlockRequest) returns (VouchUnlockResponse);
 
+  // Continue proves the next factor, from where the last one left off.
+  //
+  // # Why it is a method and Begin is not
+  //
+  // D26's argument -- a role is a list of methods, so what a deployment can
+  // grant is exactly what it can name -- lands on **proving a second factor**,
+  // which is a distinct thing to hand out and takes a continuation rather than
+  // a `who`. It does not land on starting: making `Verify` and `Delegate` grow
+  // instead means a deployment with one factor pays exactly what it pays today,
+  // and the single-factor path stays one round trip. A `Begin` would move every
+  // sign-in in every deployment onto a new method for a feature most of them do
+  // not use.
+  //
+  // # What it does not mint
+  //
+  // A token. Proving is one thing and minting is another, and there is exactly
+  // one method in this service that mints: `Delegate`, which takes a
+  // continuation in place of a `who` and a secret. So a two-step sign-in is
+  // `Delegate` -> `Continue` -> `Delegate`, and the last call spends what the
+  // first two proved.
+  rpc Continue(VouchContinueRequest) returns (VouchContinueResponse);
+
   // Enrol makes a second factor and answers with it **once**.
   //
   // # Why Set cannot do it
@@ -210,7 +232,35 @@ message VouchVerifyRequest {
   bytes secret = 9;
 }
 
+// VouchFactor is one way somebody can prove themselves, and when.
+//
+// A message rather than a bare kind, for the reason `MeCredential` is one: a
+// person may be locked out of their second factor with their password fine, and
+// a page told only the kind draws a form that is already dead. Both fields are
+// **facts**; a display name, an order or a "required" flag is where D21's
+// warning about Kratos bites, and the shape is what makes that boundary
+// visible rather than tempting.
+message VouchFactor {
+  // "password", "totp".
+  string kind = 8;
+
+  // What they call this one, when there is more than one of a kind. Empty is
+  // the only one.
+  string name = 5;
+
+  // When they may try this one again, and unset for one that is open.
+  google.protobuf.Timestamp locked_until = 4;
+}
+
 message VouchVerifyResponse {
+  // Whether the secret was the one held for them.
+  //
+  // **Never set together with a continuation.** They are mutually exclusive,
+  // and that is not tidiness: every caller in the tree reads `ok` as *signed
+  // in* and mints a session on it, so a version of this that meant *this factor
+  // was proved* would sign people in on one factor, silently, in the open
+  // direction -- the one shape a sign-in path must not have. An app that has
+  // not heard of second factors goes on gating on `ok` and fails **closed**.
   bool ok = 1;
 
   // Who it was, set only when `ok`. This is what the Login App puts in the
@@ -227,6 +277,44 @@ message VouchVerifyResponse {
   // product where somebody locked out is told nothing and tries forever, and
   // being locked out is already something they can discover by succeeding.
   google.protobuf.Timestamp locked_until = 4;
+
+  // What has been proved so far, and what else this person has.
+  //
+  // Set only on an answer that carries a continuation, which is D21's first
+  // condition made structural rather than written as a rule: *available is
+  // answered only once something is satisfied*, or anybody could ask which
+  // factors a stranger has registered. A continuation exists only after a
+  // factor has passed, so there is nowhere to ask it early.
+  //
+  // What is deliberately absent: how many are needed, which one to offer, and
+  // what to call them. `len(satisfied)` and whether a continuation is set draw
+  // "step two of two" without roster claiming a total it does not own.
+  repeated string satisfied = 10;
+  repeated VouchFactor available = 11;
+
+  // The handle that carries all of it to the next call.
+  //
+  // Set when this person has more they could prove. Absent when they do not --
+  // so a deployment with one factor gets byte for byte the answer it got
+  // before, and pays no row for a continuation nobody would spend.
+  string continuation = 12;
+}
+
+message VouchContinueRequest {
+  // What the last call answered with.
+  string continuation = 1;
+
+  string kind = 8;
+  bytes secret = 9;
+
+  // Which one, when this person has two of a kind. Empty is the only one.
+  string name = 5;
+}
+
+message VouchContinueResponse {
+  // The same answer, one factor further on: `satisfied` grown, `available`
+  // narrowed, and a fresh continuation -- the old one is spent.
+  VouchVerifyResponse verified = 1;
 }
 
 message VouchSetRequest {
@@ -239,10 +327,28 @@ message VouchSetRequest {
 message VouchSetResponse {}
 
 message VouchDelegateRequest {
+  // Whoever is signing in, and the secret they typed -- **or** a continuation
+  // that has already proved them.
+  //
+  // Exactly one of the two ways, refused rather than resolved in some order
+  // this comment would then have to define, which is the rule `VouchWho`
+  // already applies to its own three.
+  //
+  // The continuation form is what makes a two-step sign-in end in a token
+  // without a second argon2 comparison and without minting for somebody nobody
+  // just proved -- the two things the note above refuses. It is safe here for
+  // the reason it is not safe in general: a continuation is single-use, alive
+  // for minutes, and belongs to the caller spending it.
   VouchWho who = 1;
 
   string kind = 8;
   bytes secret = 9;
+
+  string continuation = 12;
+
+  // Which one, when this person has two of a kind. Only read with a
+  // continuation; a first factor is its kind's only one by construction.
+  string name = 5;
 
   // What the delegation may be used for, in full:
   // "/roster.IdentityService/List".

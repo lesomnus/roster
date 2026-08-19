@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/vouch.proto.
  */
 export const file_app_vouch: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJGCghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCSJRChJWb3VjaFZlcmlmeVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMInMKE1ZvdWNoVmVyaWZ5UmVzcG9uc2USCgoCb2sYASABKAgSDgoGaG9sZGVyGAIgASgMEg4KBnRlbmFudBgDIAEoDBIwCgxsb2NrZWRfdW50aWwYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIk4KD1ZvdWNoU2V0UmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwiEgoQVm91Y2hTZXRSZXNwb25zZSKRAQoUVm91Y2hEZWxlZ2F0ZVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMEg8KB21ldGhvZHMYCiADKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiggEKFVZvdWNoRGVsZWdhdGVSZXNwb25zZRItCgh2ZXJpZmllZBgBIAEoCzIbLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlEg0KBXRva2VuGAogASgJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIl4KEVZvdWNoRW5yb2xSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSDgoGaXNzdWVyGAkgASgJIi8KElZvdWNoRW5yb2xSZXNwb25zZRIMCgRzZWVkGAEgASgJEgsKA3VyaRgCIAEoCSIjChJWb3VjaFJldm9rZVJlcXVlc3QSDQoFdG9rZW4YASABKAkiFQoTVm91Y2hSZXZva2VSZXNwb25zZSJAChFWb3VjaFJlc2V0UmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCSIkChJWb3VjaFJlc2V0UmVzcG9uc2USDgoGc2VjcmV0GAEgASgJIkEKElZvdWNoVW5sb2NrUmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCSJLChNWb3VjaFVubG9ja1Jlc3BvbnNlEjQKEHdhc19sb2NrZWRfdW50aWwYASABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wMtoDCgxWb3VjaFNlcnZpY2USQQoGVmVyaWZ5Ehoucm9zdGVyLlZvdWNoVmVyaWZ5UmVxdWVzdBobLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlEjgKA1NldBIXLnJvc3Rlci5Wb3VjaFNldFJlcXVlc3QaGC5yb3N0ZXIuVm91Y2hTZXRSZXNwb25zZRJHCghEZWxlZ2F0ZRIcLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVxdWVzdBodLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVzcG9uc2USPgoFUmVzZXQSGS5yb3N0ZXIuVm91Y2hSZXNldFJlcXVlc3QaGi5yb3N0ZXIuVm91Y2hSZXNldFJlc3BvbnNlEkEKBlVubG9jaxIaLnJvc3Rlci5Wb3VjaFVubG9ja1JlcXVlc3QaGy5yb3N0ZXIuVm91Y2hVbmxvY2tSZXNwb25zZRI+CgVFbnJvbBIZLnJvc3Rlci5Wb3VjaEVucm9sUmVxdWVzdBoaLnJvc3Rlci5Wb3VjaEVucm9sUmVzcG9uc2USQQoGUmV2b2tlEhoucm9zdGVyLlZvdWNoUmV2b2tlUmVxdWVzdBobLnJvc3Rlci5Wb3VjaFJldm9rZVJlc3BvbnNlQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp]);
+  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJGCghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCSJRChJWb3VjaFZlcmlmeVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMIlsKC1ZvdWNoRmFjdG9yEgwKBGtpbmQYCCABKAkSDAoEbmFtZRgFIAEoCRIwCgxsb2NrZWRfdW50aWwYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIsQBChNWb3VjaFZlcmlmeVJlc3BvbnNlEgoKAm9rGAEgASgIEg4KBmhvbGRlchgCIAEoDBIOCgZ0ZW5hbnQYAyABKAwSMAoMbG9ja2VkX3VudGlsGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIRCglzYXRpc2ZpZWQYCiADKAkSJgoJYXZhaWxhYmxlGAsgAygLMhMucm9zdGVyLlZvdWNoRmFjdG9yEhQKDGNvbnRpbnVhdGlvbhgMIAEoCSJYChRWb3VjaENvbnRpbnVlUmVxdWVzdBIUCgxjb250aW51YXRpb24YASABKAkSDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSDAoEbmFtZRgFIAEoCSJGChVWb3VjaENvbnRpbnVlUmVzcG9uc2USLQoIdmVyaWZpZWQYASABKAsyGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZSJOCg9Wb3VjaFNldFJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMIhIKEFZvdWNoU2V0UmVzcG9uc2UitQEKFFZvdWNoRGVsZWdhdGVSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJEg4KBnNlY3JldBgJIAEoDBIUCgxjb250aW51YXRpb24YDCABKAkSDAoEbmFtZRgFIAEoCRIPCgdtZXRob2RzGAogAygJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIoIBChVWb3VjaERlbGVnYXRlUmVzcG9uc2USLQoIdmVyaWZpZWQYASABKAsyGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZRINCgV0b2tlbhgKIAEoCRIrCgdleHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJeChFWb3VjaEVucm9sUmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCRIMCgRuYW1lGAUgASgJEg4KBmlzc3VlchgJIAEoCSIvChJWb3VjaEVucm9sUmVzcG9uc2USDAoEc2VlZBgBIAEoCRILCgN1cmkYAiABKAkiIwoSVm91Y2hSZXZva2VSZXF1ZXN0Eg0KBXRva2VuGAEgASgJIhUKE1ZvdWNoUmV2b2tlUmVzcG9uc2UiQAoRVm91Y2hSZXNldFJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkiJAoSVm91Y2hSZXNldFJlc3BvbnNlEg4KBnNlY3JldBgBIAEoCSJBChJWb3VjaFVubG9ja1JlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkiSwoTVm91Y2hVbmxvY2tSZXNwb25zZRI0ChB3YXNfbG9ja2VkX3VudGlsGAEgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcDKjBAoMVm91Y2hTZXJ2aWNlEkEKBlZlcmlmeRIaLnJvc3Rlci5Wb3VjaFZlcmlmeVJlcXVlc3QaGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZRI4CgNTZXQSFy5yb3N0ZXIuVm91Y2hTZXRSZXF1ZXN0Ghgucm9zdGVyLlZvdWNoU2V0UmVzcG9uc2USRwoIRGVsZWdhdGUSHC5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlEj4KBVJlc2V0Ehkucm9zdGVyLlZvdWNoUmVzZXRSZXF1ZXN0Ghoucm9zdGVyLlZvdWNoUmVzZXRSZXNwb25zZRJBCgZVbmxvY2sSGi5yb3N0ZXIuVm91Y2hVbmxvY2tSZXF1ZXN0Ghsucm9zdGVyLlZvdWNoVW5sb2NrUmVzcG9uc2USRwoIQ29udGludWUSHC5yb3N0ZXIuVm91Y2hDb250aW51ZVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hDb250aW51ZVJlc3BvbnNlEj4KBUVucm9sEhkucm9zdGVyLlZvdWNoRW5yb2xSZXF1ZXN0Ghoucm9zdGVyLlZvdWNoRW5yb2xSZXNwb25zZRJBCgZSZXZva2USGi5yb3N0ZXIuVm91Y2hSZXZva2VSZXF1ZXN0Ghsucm9zdGVyLlZvdWNoUmV2b2tlUmVzcG9uc2VCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp]);
 
 /**
  * VouchWho names somebody in the words a sign-in form collects.
@@ -128,10 +128,62 @@ export const VouchVerifyRequestSchema: GenMessage<VouchVerifyRequest> = /*@__PUR
   messageDesc(file_app_vouch, 1);
 
 /**
+ * VouchFactor is one way somebody can prove themselves, and when.
+ *
+ * A message rather than a bare kind, for the reason `MeCredential` is one: a
+ * person may be locked out of their second factor with their password fine, and
+ * a page told only the kind draws a form that is already dead. Both fields are
+ * **facts**; a display name, an order or a "required" flag is where D21's
+ * warning about Kratos bites, and the shape is what makes that boundary
+ * visible rather than tempting.
+ *
+ * @generated from message roster.VouchFactor
+ */
+export type VouchFactor = Message<"roster.VouchFactor"> & {
+  /**
+   * "password", "totp".
+   *
+   * @generated from field: string kind = 8;
+   */
+  kind: string;
+
+  /**
+   * What they call this one, when there is more than one of a kind. Empty is
+   * the only one.
+   *
+   * @generated from field: string name = 5;
+   */
+  name: string;
+
+  /**
+   * When they may try this one again, and unset for one that is open.
+   *
+   * @generated from field: google.protobuf.Timestamp locked_until = 4;
+   */
+  lockedUntil?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.VouchFactor.
+ * Use `create(VouchFactorSchema)` to create a new message.
+ */
+export const VouchFactorSchema: GenMessage<VouchFactor> = /*@__PURE__*/
+  messageDesc(file_app_vouch, 2);
+
+/**
  * @generated from message roster.VouchVerifyResponse
  */
 export type VouchVerifyResponse = Message<"roster.VouchVerifyResponse"> & {
   /**
+   * Whether the secret was the one held for them.
+   *
+   * **Never set together with a continuation.** They are mutually exclusive,
+   * and that is not tidiness: every caller in the tree reads `ok` as *signed
+   * in* and mints a session on it, so a version of this that meant *this factor
+   * was proved* would sign people in on one factor, silently, in the open
+   * direction -- the one shape a sign-in path must not have. An app that has
+   * not heard of second factors goes on gating on `ok` and fails **closed**.
+   *
    * @generated from field: bool ok = 1;
    */
   ok: boolean;
@@ -162,6 +214,39 @@ export type VouchVerifyResponse = Message<"roster.VouchVerifyResponse"> & {
    * @generated from field: google.protobuf.Timestamp locked_until = 4;
    */
   lockedUntil?: Timestamp | undefined;
+
+  /**
+   * What has been proved so far, and what else this person has.
+   *
+   * Set only on an answer that carries a continuation, which is D21's first
+   * condition made structural rather than written as a rule: *available is
+   * answered only once something is satisfied*, or anybody could ask which
+   * factors a stranger has registered. A continuation exists only after a
+   * factor has passed, so there is nowhere to ask it early.
+   *
+   * What is deliberately absent: how many are needed, which one to offer, and
+   * what to call them. `len(satisfied)` and whether a continuation is set draw
+   * "step two of two" without roster claiming a total it does not own.
+   *
+   * @generated from field: repeated string satisfied = 10;
+   */
+  satisfied: string[];
+
+  /**
+   * @generated from field: repeated roster.VouchFactor available = 11;
+   */
+  available: VouchFactor[];
+
+  /**
+   * The handle that carries all of it to the next call.
+   *
+   * Set when this person has more they could prove. Absent when they do not --
+   * so a deployment with one factor gets byte for byte the answer it got
+   * before, and pays no row for a continuation nobody would spend.
+   *
+   * @generated from field: string continuation = 12;
+   */
+  continuation: string;
 };
 
 /**
@@ -169,7 +254,63 @@ export type VouchVerifyResponse = Message<"roster.VouchVerifyResponse"> & {
  * Use `create(VouchVerifyResponseSchema)` to create a new message.
  */
 export const VouchVerifyResponseSchema: GenMessage<VouchVerifyResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 2);
+  messageDesc(file_app_vouch, 3);
+
+/**
+ * @generated from message roster.VouchContinueRequest
+ */
+export type VouchContinueRequest = Message<"roster.VouchContinueRequest"> & {
+  /**
+   * What the last call answered with.
+   *
+   * @generated from field: string continuation = 1;
+   */
+  continuation: string;
+
+  /**
+   * @generated from field: string kind = 8;
+   */
+  kind: string;
+
+  /**
+   * @generated from field: bytes secret = 9;
+   */
+  secret: Uint8Array;
+
+  /**
+   * Which one, when this person has two of a kind. Empty is the only one.
+   *
+   * @generated from field: string name = 5;
+   */
+  name: string;
+};
+
+/**
+ * Describes the message roster.VouchContinueRequest.
+ * Use `create(VouchContinueRequestSchema)` to create a new message.
+ */
+export const VouchContinueRequestSchema: GenMessage<VouchContinueRequest> = /*@__PURE__*/
+  messageDesc(file_app_vouch, 4);
+
+/**
+ * @generated from message roster.VouchContinueResponse
+ */
+export type VouchContinueResponse = Message<"roster.VouchContinueResponse"> & {
+  /**
+   * The same answer, one factor further on: `satisfied` grown, `available`
+   * narrowed, and a fresh continuation -- the old one is spent.
+   *
+   * @generated from field: roster.VouchVerifyResponse verified = 1;
+   */
+  verified?: VouchVerifyResponse | undefined;
+};
+
+/**
+ * Describes the message roster.VouchContinueResponse.
+ * Use `create(VouchContinueResponseSchema)` to create a new message.
+ */
+export const VouchContinueResponseSchema: GenMessage<VouchContinueResponse> = /*@__PURE__*/
+  messageDesc(file_app_vouch, 5);
 
 /**
  * @generated from message roster.VouchSetRequest
@@ -196,7 +337,7 @@ export type VouchSetRequest = Message<"roster.VouchSetRequest"> & {
  * Use `create(VouchSetRequestSchema)` to create a new message.
  */
 export const VouchSetRequestSchema: GenMessage<VouchSetRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 3);
+  messageDesc(file_app_vouch, 6);
 
 /**
  * @generated from message roster.VouchSetResponse
@@ -209,13 +350,26 @@ export type VouchSetResponse = Message<"roster.VouchSetResponse"> & {
  * Use `create(VouchSetResponseSchema)` to create a new message.
  */
 export const VouchSetResponseSchema: GenMessage<VouchSetResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 4);
+  messageDesc(file_app_vouch, 7);
 
 /**
  * @generated from message roster.VouchDelegateRequest
  */
 export type VouchDelegateRequest = Message<"roster.VouchDelegateRequest"> & {
   /**
+   * Whoever is signing in, and the secret they typed -- **or** a continuation
+   * that has already proved them.
+   *
+   * Exactly one of the two ways, refused rather than resolved in some order
+   * this comment would then have to define, which is the rule `VouchWho`
+   * already applies to its own three.
+   *
+   * The continuation form is what makes a two-step sign-in end in a token
+   * without a second argon2 comparison and without minting for somebody nobody
+   * just proved -- the two things the note above refuses. It is safe here for
+   * the reason it is not safe in general: a continuation is single-use, alive
+   * for minutes, and belongs to the caller spending it.
+   *
    * @generated from field: roster.VouchWho who = 1;
    */
   who?: VouchWho | undefined;
@@ -229,6 +383,19 @@ export type VouchDelegateRequest = Message<"roster.VouchDelegateRequest"> & {
    * @generated from field: bytes secret = 9;
    */
   secret: Uint8Array;
+
+  /**
+   * @generated from field: string continuation = 12;
+   */
+  continuation: string;
+
+  /**
+   * Which one, when this person has two of a kind. Only read with a
+   * continuation; a first factor is its kind's only one by construction.
+   *
+   * @generated from field: string name = 5;
+   */
+  name: string;
 
   /**
    * What the delegation may be used for, in full:
@@ -277,7 +444,7 @@ export type VouchDelegateRequest = Message<"roster.VouchDelegateRequest"> & {
  * Use `create(VouchDelegateRequestSchema)` to create a new message.
  */
 export const VouchDelegateRequestSchema: GenMessage<VouchDelegateRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 5);
+  messageDesc(file_app_vouch, 8);
 
 /**
  * @generated from message roster.VouchDelegateResponse
@@ -320,7 +487,7 @@ export type VouchDelegateResponse = Message<"roster.VouchDelegateResponse"> & {
  * Use `create(VouchDelegateResponseSchema)` to create a new message.
  */
 export const VouchDelegateResponseSchema: GenMessage<VouchDelegateResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 6);
+  messageDesc(file_app_vouch, 9);
 
 /**
  * @generated from message roster.VouchEnrolRequest
@@ -362,7 +529,7 @@ export type VouchEnrolRequest = Message<"roster.VouchEnrolRequest"> & {
  * Use `create(VouchEnrolRequestSchema)` to create a new message.
  */
 export const VouchEnrolRequestSchema: GenMessage<VouchEnrolRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 7);
+  messageDesc(file_app_vouch, 10);
 
 /**
  * @generated from message roster.VouchEnrolResponse
@@ -391,7 +558,7 @@ export type VouchEnrolResponse = Message<"roster.VouchEnrolResponse"> & {
  * Use `create(VouchEnrolResponseSchema)` to create a new message.
  */
 export const VouchEnrolResponseSchema: GenMessage<VouchEnrolResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 8);
+  messageDesc(file_app_vouch, 11);
 
 /**
  * @generated from message roster.VouchRevokeRequest
@@ -410,7 +577,7 @@ export type VouchRevokeRequest = Message<"roster.VouchRevokeRequest"> & {
  * Use `create(VouchRevokeRequestSchema)` to create a new message.
  */
 export const VouchRevokeRequestSchema: GenMessage<VouchRevokeRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 9);
+  messageDesc(file_app_vouch, 12);
 
 /**
  * @generated from message roster.VouchRevokeResponse
@@ -423,7 +590,7 @@ export type VouchRevokeResponse = Message<"roster.VouchRevokeResponse"> & {
  * Use `create(VouchRevokeResponseSchema)` to create a new message.
  */
 export const VouchRevokeResponseSchema: GenMessage<VouchRevokeResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 10);
+  messageDesc(file_app_vouch, 13);
 
 /**
  * @generated from message roster.VouchResetRequest
@@ -449,7 +616,7 @@ export type VouchResetRequest = Message<"roster.VouchResetRequest"> & {
  * Use `create(VouchResetRequestSchema)` to create a new message.
  */
 export const VouchResetRequestSchema: GenMessage<VouchResetRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 11);
+  messageDesc(file_app_vouch, 14);
 
 /**
  * @generated from message roster.VouchResetResponse
@@ -470,7 +637,7 @@ export type VouchResetResponse = Message<"roster.VouchResetResponse"> & {
  * Use `create(VouchResetResponseSchema)` to create a new message.
  */
 export const VouchResetResponseSchema: GenMessage<VouchResetResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 12);
+  messageDesc(file_app_vouch, 15);
 
 /**
  * @generated from message roster.VouchUnlockRequest
@@ -492,7 +659,7 @@ export type VouchUnlockRequest = Message<"roster.VouchUnlockRequest"> & {
  * Use `create(VouchUnlockRequestSchema)` to create a new message.
  */
 export const VouchUnlockRequestSchema: GenMessage<VouchUnlockRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 13);
+  messageDesc(file_app_vouch, 16);
 
 /**
  * @generated from message roster.VouchUnlockResponse
@@ -514,7 +681,7 @@ export type VouchUnlockResponse = Message<"roster.VouchUnlockResponse"> & {
  * Use `create(VouchUnlockResponseSchema)` to create a new message.
  */
 export const VouchUnlockResponseSchema: GenMessage<VouchUnlockResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 14);
+  messageDesc(file_app_vouch, 17);
 
 /**
  * VouchService is how a secret is used without ever leaving the store.
@@ -659,6 +826,35 @@ export const VouchService: GenService<{
     methodKind: "unary";
     input: typeof VouchUnlockRequestSchema;
     output: typeof VouchUnlockResponseSchema;
+  },
+  /**
+   * Continue proves the next factor, from where the last one left off.
+   *
+   * # Why it is a method and Begin is not
+   *
+   * D26's argument -- a role is a list of methods, so what a deployment can
+   * grant is exactly what it can name -- lands on **proving a second factor**,
+   * which is a distinct thing to hand out and takes a continuation rather than
+   * a `who`. It does not land on starting: making `Verify` and `Delegate` grow
+   * instead means a deployment with one factor pays exactly what it pays today,
+   * and the single-factor path stays one round trip. A `Begin` would move every
+   * sign-in in every deployment onto a new method for a feature most of them do
+   * not use.
+   *
+   * # What it does not mint
+   *
+   * A token. Proving is one thing and minting is another, and there is exactly
+   * one method in this service that mints: `Delegate`, which takes a
+   * continuation in place of a `who` and a secret. So a two-step sign-in is
+   * `Delegate` -> `Continue` -> `Delegate`, and the last call spends what the
+   * first two proved.
+   *
+   * @generated from rpc roster.VouchService.Continue
+   */
+  continue: {
+    methodKind: "unary";
+    input: typeof VouchContinueRequestSchema;
+    output: typeof VouchContinueResponseSchema;
   },
   /**
    * Enrol makes a second factor and answers with it **once**.

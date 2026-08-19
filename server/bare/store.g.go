@@ -13,6 +13,7 @@ import (
 	apikey "github.com/lesomnus/roster/internal/ent/apikey"
 	audit "github.com/lesomnus/roster/internal/ent/audit"
 	binding "github.com/lesomnus/roster/internal/ent/binding"
+	continuation "github.com/lesomnus/roster/internal/ent/continuation"
 	credential "github.com/lesomnus/roster/internal/ent/credential"
 	delegation "github.com/lesomnus/roster/internal/ent/delegation"
 	email "github.com/lesomnus/roster/internal/ent/email"
@@ -329,6 +330,7 @@ type Scope interface {
 	TenantScope(ctx context.Context) (predicate.Tenant, error)
 	HolderScope(ctx context.Context) (predicate.Holder, error)
 	ApiKeyScope(ctx context.Context) (predicate.ApiKey, error)
+	ContinuationScope(ctx context.Context) (predicate.Continuation, error)
 	CredentialScope(ctx context.Context) (predicate.Credential, error)
 	DelegationScope(ctx context.Context) (predicate.Delegation, error)
 	IdentityScope(ctx context.Context) (predicate.Identity, error)
@@ -366,6 +368,9 @@ func (Unscoped) HolderScope(_ context.Context) (predicate.Holder, error) {
 	return nil, nil
 }
 func (Unscoped) ApiKeyScope(_ context.Context) (predicate.ApiKey, error) {
+	return nil, nil
+}
+func (Unscoped) ContinuationScope(_ context.Context) (predicate.Continuation, error) {
 	return nil, nil
 }
 func (Unscoped) CredentialScope(_ context.Context) (predicate.Credential, error) {
@@ -494,6 +499,26 @@ func (ss Scopes) ApiKeyScope(ctx context.Context) (predicate.ApiKey, error) {
 	}
 
 	return apikey.And(ps...), nil
+}
+
+func (ss Scopes) ContinuationScope(ctx context.Context) (predicate.Continuation, error) {
+	ps := make([]predicate.Continuation, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.ContinuationScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return continuation.And(ps...), nil
 }
 
 func (ss Scopes) CredentialScope(ctx context.Context) (predicate.Credential, error) {
@@ -896,7 +921,7 @@ func (s Store) now() time.Time {
 // is rendered for that dialect, not just what this server writes.
 //
 // That set is also what a soft erasure needs, so this is the whole
-// check. ApiKey, Binding, Credential, Delegation, Email, Group, GroupMembership, Holder, Host, Identity, MailDomain, Role, Site, SiteMembership, Team and TeamMembership free the names they held when a row
+// check. ApiKey, Binding, Continuation, Credential, Delegation, Email, Group, GroupMembership, Holder, Host, Identity, MailDomain, Role, Site, SiteMembership, Team and TeamMembership free the names they held when a row
 // is erased, which is a unique index covering only the rows that are
 // still there -- a partial index, and the dialects above are the ones
 // that have one. MySQL does not, and ent writes the annotation out for
@@ -937,6 +962,9 @@ func (s Server) WithDriver(drv dialect.Driver) (rstr.Server, error) {
 func (s Server) Tenant() rstr.TenantServiceServer { return TenantServiceServer{Store: s.Store} }
 func (s Server) Holder() rstr.HolderServiceServer { return HolderServiceServer{Store: s.Store} }
 func (s Server) ApiKey() rstr.ApiKeyServiceServer { return ApiKeyServiceServer{Store: s.Store} }
+func (s Server) Continuation() rstr.ContinuationServiceServer {
+	return ContinuationServiceServer{Store: s.Store}
+}
 func (s Server) Credential() rstr.CredentialServiceServer {
 	return CredentialServiceServer{Store: s.Store}
 }

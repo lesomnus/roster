@@ -323,7 +323,10 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	// minted on this plane and the control plane has no such rows. It is not
 	// what makes an expired one refused -- [keys.findDelegation] is -- and the
 	// comment on `Sweep` says which half is which.
-	s.Spin = append(s.Spin, keys.Sweep(s.Ent, keys.Swept))
+	s.Spin = append(s.Spin,
+		keys.Sweep(s.Ent, keys.Swept),
+		vouch.Sweep(s.Ent, vouch.Swept),
+	)
 
 	if c.Watch.Outbox && b != nil {
 		// The loop that makes an event durable. It is not a layer and not a

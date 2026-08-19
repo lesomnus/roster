@@ -45,6 +45,18 @@ func (f BindingFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, err
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BindingMutation", m)
 }
 
+// The ContinuationFunc type is an adapter to allow the use of ordinary
+// function as Continuation mutator.
+type ContinuationFunc func(context.Context, *ent.ContinuationMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ContinuationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ContinuationMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ContinuationMutation", m)
+}
+
 // The CredentialFunc type is an adapter to allow the use of ordinary
 // function as Credential mutator.
 type CredentialFunc func(context.Context, *ent.CredentialMutation) (ent.Value, error)

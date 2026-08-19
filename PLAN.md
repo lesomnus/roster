@@ -137,6 +137,79 @@ over memberships, credential verification.
 Recorded as they are made, with the reason, so that a later disagreement argues
 with the reason rather than rediscovering the question.
 
+### D30 · The attempt is roster's, and one new RPC is what it costs
+
+D21 written down, after a stress test found that the obvious shape breaks four
+things. `docs/ROADMAP.md` P7 has the four; these are the answers.
+
+#### One new RPC, and two that grow
+
+`Continue(continuation, kind, secret)` is new, because proving a second factor is
+a distinct thing for a role to name and it takes a continuation rather than a
+`who`. That is D26's argument, and it lands here.
+
+It does **not** land on starting. A `Begin` would move every sign-in in every
+deployment onto a new method for a feature most of them do not use, so `Verify`
+and `Delegate` grow the answer instead -- and mint a continuation **only when
+there is more to prove**, so a deployment with one factor gets byte for byte the
+answer it got before and pays no row for a handle nobody would spend.
+
+Minting stays on `Delegate`, which takes a continuation in place of a `who` and
+a secret. So a two-step sign-in is `Delegate` -> `Continue` -> `Delegate`, and
+there is exactly one method in the service that mints.
+
+#### `ok` and a continuation are mutually exclusive
+
+Not tidiness. D21 forbids roster deciding sufficiency, so `ok` on a passed first
+factor would have to mean *this factor was proved* -- and every caller in the
+tree reads it as *signed in* and mints a session on it. That version signs
+people in on one factor, silently, in the open direction.
+
+So `ok` is set only when there is nothing left, and an app that has never heard
+of second factors goes on gating on it and fails **closed**. Better still, an
+app that gates on the **token** gates on the thing that is actually a
+credential.
+
+#### The count really is one count, and it took two fixes
+
+D21's fourth condition is *one count across the steps, or the second factor is
+an unmetered guessing surface reached by passing the first*. Two things were in
+the way, and the second was only found by a test.
+
+- **The counters are per credential.** `Credential` is unique on
+  `(holder, kind, name)`, so a password row and a TOTP row carry two. So a
+  continuation records **which row the attempt is metered on**, and a failed
+  second step counts against the row the first step used: exhausting the second
+  factor closes the door the attempt came through.
+- **A successful first factor cleared it.** `passed` clears the count because
+  *somebody who has just proved they can sign in is not the person the lockout
+  was protecting against* -- and somebody who has proved one of two things has
+  not proved that yet. So the counter is cleared only when the sign-in
+  **finished**. Without it, every wrong code was paid for by a fresh first
+  factor that settled the bill, and the test that guessed ten codes watched the
+  password stay open.
+
+#### Its lifetime is roster's, which is not the answer D25 gave
+
+D25 let a caller name a delegation's expiry, with no cap, because D21's *barely
+alive* was an argument about a **standalone** bearer and a delegation is half of
+a pair. A continuation is exactly the standalone bearer that argument was carved
+out from, so it does not inherit it: minutes, fixed, and no field to say
+otherwise.
+
+#### And single use has one mechanism
+
+Spending it is an erase. *Used* is *not there* -- `<Entity>Pick` narrows to the
+live rows -- which is `Undelegate`'s answer, and two concurrent spends resolve
+to one winner through the ordinary compare-and-swap. A `date_used` beside it
+would be a second column recording one fact.
+
+`available` is a **message** and not a list of kinds, for `MeCredential`'s
+reason: a person may be locked out of their second factor with their password
+fine, and a page told only the kind draws a form that is already dead. Both
+fields are facts; a display name or a "required" flag is where D21's warning
+about Kratos bites.
+
 ### D29 · A kind is checked its own way, and one of them roster must read back
 
 P7's first two increments, and the finding that would have been hardest to see

@@ -251,10 +251,6 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind string, sec
 		return res, nil, err
 	}
 
-	if err := s.passed(ctx, v, step); err != nil {
-		return nil, nil, err
-	}
-
 	holder, err := pdid.From(v.GetHolder().GetId())
 	if err != nil {
 		return nil, nil, err
@@ -264,11 +260,46 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind string, sec
 		return nil, nil, err
 	}
 
-	return app.VouchVerifyResponse_builder{
-		Ok:     true,
-		Holder: holder.Bytes(),
-		Tenant: tenant.Bytes(),
-	}.Build(), v, nil
+	// And now the part that is not a yes or a no: what else this person could
+	// prove. `answer` mints a continuation when there is something, and sets
+	// `ok` when there is not -- the two are mutually exclusive, which is what
+	// keeps a caller that has never heard of second factors failing closed.
+	//
+	// A caller with no frame -- `init`, the sandbox -- cannot be issued one and
+	// does not want one, so it gets the answer this always gave.
+	issuer, err := issuerOf(ctx)
+	if err != nil {
+		if err := s.passed(ctx, v, step, true); err != nil {
+			return nil, nil, err
+		}
+
+		return app.VouchVerifyResponse_builder{
+			Ok:     true,
+			Holder: holder.Bytes(),
+			Tenant: tenant.Bytes(),
+		}.Build(), v, nil
+	}
+
+	metered, err := pdid.From(v.GetId())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	res, err := s.answer(ctx, v.GetHolder(), []string{kindOf(kind)}, metered, issuer)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if err := s.passed(ctx, v, step, res.GetOk()); err != nil {
+		return nil, nil, err
+	}
+	if !res.GetOk() {
+		// Half way. Nothing may be minted from this, which is what the nil
+		// credential says to [Server.Delegate].
+		return res, nil, nil
+	}
+
+	return res, v, nil
 }
 
 // Set writes a secret, hashing it here.
@@ -420,24 +451,41 @@ func raced(err error) bool {
 // The check is not an optimisation. Every successful sign-in would otherwise be
 // a write -- a row version bumped, an audit entry, a watch event -- for a fact
 // that did not change.
-func (s *Server) passed(ctx context.Context, v *app.Credential, step int64) error {
-	clean := v.GetFailures() == 0 && v.GetDateLocked() == nil
+// `done` is whether the whole sign-in finished, which is not the same as
+// whether this factor did.
+//
+// It decides whether the counter is cleared, and getting that wrong is a real
+// hole rather than an inefficiency. The counter exists so that guessing costs
+// something, and D21's fourth condition meters a **second** factor against the
+// row the **first** one used -- so if passing the first factor cleared that row,
+// every wrong code would be paid for by a fresh first factor that cleared the
+// bill. Found by a test that guessed ten codes and watched the password stay
+// open.
+//
+// So: somebody who has proved they can sign in is not the person the lockout
+// was protecting against, and somebody who has proved one of two things has not
+// proved that yet.
+func (s *Server) passed(ctx context.Context, v *app.Credential, step int64, done bool) error {
+	clears := done && (v.GetFailures() != 0 || v.GetDateLocked() != nil)
+	moves := step > v.GetLastStep()
 
 	// A step that has to be spent is a write whatever else is true, and it is
 	// the one write on this path that is not an optimisation to skip: D20 puts
 	// replay in roster's half, and the row is the only place a spent code can
 	// be recorded.
-	if clean && step <= v.GetLastStep() {
+	if !clears && !moves {
 		return nil
 	}
 
 	patch := app.CredentialPatchRequest_builder{
-		Ref:            app.CredentialRef_builder{Id: v.GetId()}.Build(),
-		Failures:       z.Ptr(int32(0)),
-		DateLockedNull: z.Ptr(true),
-		DateUpdated:    v.GetDateUpdated(),
+		Ref:         app.CredentialRef_builder{Id: v.GetId()}.Build(),
+		DateUpdated: v.GetDateUpdated(),
 	}
-	if step > v.GetLastStep() {
+	if clears {
+		patch.Failures = z.Ptr(int32(0))
+		patch.DateLockedNull = z.Ptr(true)
+	}
+	if moves {
 		patch.LastStep = z.Ptr(step)
 	}
 

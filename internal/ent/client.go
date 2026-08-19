@@ -19,6 +19,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/apikey"
 	"github.com/lesomnus/roster/internal/ent/audit"
 	"github.com/lesomnus/roster/internal/ent/binding"
+	"github.com/lesomnus/roster/internal/ent/continuation"
 	"github.com/lesomnus/roster/internal/ent/credential"
 	"github.com/lesomnus/roster/internal/ent/delegation"
 	"github.com/lesomnus/roster/internal/ent/email"
@@ -48,6 +49,8 @@ type Client struct {
 	Audit *AuditClient
 	// Binding is the client for interacting with the Binding builders.
 	Binding *BindingClient
+	// Continuation is the client for interacting with the Continuation builders.
+	Continuation *ContinuationClient
 	// Credential is the client for interacting with the Credential builders.
 	Credential *CredentialClient
 	// Delegation is the client for interacting with the Delegation builders.
@@ -94,6 +97,7 @@ func (c *Client) init() {
 	c.ApiKey = NewApiKeyClient(c.config)
 	c.Audit = NewAuditClient(c.config)
 	c.Binding = NewBindingClient(c.config)
+	c.Continuation = NewContinuationClient(c.config)
 	c.Credential = NewCredentialClient(c.config)
 	c.Delegation = NewDelegationClient(c.config)
 	c.Email = NewEmailClient(c.config)
@@ -205,6 +209,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ApiKey:          NewApiKeyClient(cfg),
 		Audit:           NewAuditClient(cfg),
 		Binding:         NewBindingClient(cfg),
+		Continuation:    NewContinuationClient(cfg),
 		Credential:      NewCredentialClient(cfg),
 		Delegation:      NewDelegationClient(cfg),
 		Email:           NewEmailClient(cfg),
@@ -243,6 +248,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ApiKey:          NewApiKeyClient(cfg),
 		Audit:           NewAuditClient(cfg),
 		Binding:         NewBindingClient(cfg),
+		Continuation:    NewContinuationClient(cfg),
 		Credential:      NewCredentialClient(cfg),
 		Delegation:      NewDelegationClient(cfg),
 		Email:           NewEmailClient(cfg),
@@ -288,9 +294,10 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.ApiKey, c.Audit, c.Binding, c.Credential, c.Delegation, c.Email, c.Group,
-		c.GroupMembership, c.Holder, c.Host, c.Identity, c.MailDomain, c.Outbox,
-		c.Role, c.Site, c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
+		c.ApiKey, c.Audit, c.Binding, c.Continuation, c.Credential, c.Delegation,
+		c.Email, c.Group, c.GroupMembership, c.Holder, c.Host, c.Identity,
+		c.MailDomain, c.Outbox, c.Role, c.Site, c.SiteMembership, c.Team,
+		c.TeamMembership, c.Tenant,
 	} {
 		n.Use(hooks...)
 	}
@@ -300,9 +307,10 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.ApiKey, c.Audit, c.Binding, c.Credential, c.Delegation, c.Email, c.Group,
-		c.GroupMembership, c.Holder, c.Host, c.Identity, c.MailDomain, c.Outbox,
-		c.Role, c.Site, c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
+		c.ApiKey, c.Audit, c.Binding, c.Continuation, c.Credential, c.Delegation,
+		c.Email, c.Group, c.GroupMembership, c.Holder, c.Host, c.Identity,
+		c.MailDomain, c.Outbox, c.Role, c.Site, c.SiteMembership, c.Team,
+		c.TeamMembership, c.Tenant,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -317,6 +325,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Audit.mutate(ctx, m)
 	case *BindingMutation:
 		return c.Binding.mutate(ctx, m)
+	case *ContinuationMutation:
+		return c.Continuation.mutate(ctx, m)
 	case *CredentialMutation:
 		return c.Credential.mutate(ctx, m)
 	case *DelegationMutation:
@@ -830,6 +840,155 @@ func (c *BindingClient) mutate(ctx context.Context, m *BindingMutation) (Value, 
 		return (&BindingDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Binding mutation op: %q", m.Op())
+	}
+}
+
+// ContinuationClient is a client for the Continuation schema.
+type ContinuationClient struct {
+	config
+}
+
+// NewContinuationClient returns a client for the Continuation from the given config.
+func NewContinuationClient(c config) *ContinuationClient {
+	return &ContinuationClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `continuation.Hooks(f(g(h())))`.
+func (c *ContinuationClient) Use(hooks ...Hook) {
+	c.hooks.Continuation = append(c.hooks.Continuation, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `continuation.Intercept(f(g(h())))`.
+func (c *ContinuationClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Continuation = append(c.inters.Continuation, interceptors...)
+}
+
+// Create returns a builder for creating a Continuation entity.
+func (c *ContinuationClient) Create() *ContinuationCreate {
+	mutation := newContinuationMutation(c.config, OpCreate)
+	return &ContinuationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Continuation entities.
+func (c *ContinuationClient) CreateBulk(builders ...*ContinuationCreate) *ContinuationCreateBulk {
+	return &ContinuationCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ContinuationClient) MapCreateBulk(slice any, setFunc func(*ContinuationCreate, int)) *ContinuationCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ContinuationCreateBulk{err: fmt.Errorf("calling to ContinuationClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ContinuationCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ContinuationCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Continuation.
+func (c *ContinuationClient) Update() *ContinuationUpdate {
+	mutation := newContinuationMutation(c.config, OpUpdate)
+	return &ContinuationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ContinuationClient) UpdateOne(_m *Continuation) *ContinuationUpdateOne {
+	mutation := newContinuationMutation(c.config, OpUpdateOne, withContinuation(_m))
+	return &ContinuationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ContinuationClient) UpdateOneID(id uuid.UUID) *ContinuationUpdateOne {
+	mutation := newContinuationMutation(c.config, OpUpdateOne, withContinuationID(id))
+	return &ContinuationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Continuation.
+func (c *ContinuationClient) Delete() *ContinuationDelete {
+	mutation := newContinuationMutation(c.config, OpDelete)
+	return &ContinuationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ContinuationClient) DeleteOne(_m *Continuation) *ContinuationDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ContinuationClient) DeleteOneID(id uuid.UUID) *ContinuationDeleteOne {
+	builder := c.Delete().Where(continuation.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ContinuationDeleteOne{builder}
+}
+
+// Query returns a query builder for Continuation.
+func (c *ContinuationClient) Query() *ContinuationQuery {
+	return &ContinuationQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeContinuation},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Continuation entity by its id.
+func (c *ContinuationClient) Get(ctx context.Context, id uuid.UUID) (*Continuation, error) {
+	return c.Query().Where(continuation.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ContinuationClient) GetX(ctx context.Context, id uuid.UUID) *Continuation {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryHolder queries the holder edge of a Continuation.
+func (c *ContinuationClient) QueryHolder(_m *Continuation) *HolderQuery {
+	query := (&HolderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(continuation.Table, continuation.FieldID, id),
+			sqlgraph.To(holder.Table, holder.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, continuation.HolderTable, continuation.HolderColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ContinuationClient) Hooks() []Hook {
+	return c.hooks.Continuation
+}
+
+// Interceptors returns the client interceptors.
+func (c *ContinuationClient) Interceptors() []Interceptor {
+	return c.inters.Continuation
+}
+
+func (c *ContinuationClient) mutate(ctx context.Context, m *ContinuationMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ContinuationCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ContinuationUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ContinuationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ContinuationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Continuation mutation op: %q", m.Op())
 	}
 }
 
@@ -3316,13 +3475,13 @@ func (c *TenantClient) mutate(ctx context.Context, m *TenantMutation) (Value, er
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		ApiKey, Audit, Binding, Credential, Delegation, Email, Group, GroupMembership,
-		Holder, Host, Identity, MailDomain, Outbox, Role, Site, SiteMembership, Team,
-		TeamMembership, Tenant []ent.Hook
+		ApiKey, Audit, Binding, Continuation, Credential, Delegation, Email, Group,
+		GroupMembership, Holder, Host, Identity, MailDomain, Outbox, Role, Site,
+		SiteMembership, Team, TeamMembership, Tenant []ent.Hook
 	}
 	inters struct {
-		ApiKey, Audit, Binding, Credential, Delegation, Email, Group, GroupMembership,
-		Holder, Host, Identity, MailDomain, Outbox, Role, Site, SiteMembership, Team,
-		TeamMembership, Tenant []ent.Interceptor
+		ApiKey, Audit, Binding, Continuation, Credential, Delegation, Email, Group,
+		GroupMembership, Holder, Host, Identity, MailDomain, Outbox, Role, Site,
+		SiteMembership, Team, TeamMembership, Tenant []ent.Interceptor
 	}
 )

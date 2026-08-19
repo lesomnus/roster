@@ -15,6 +15,9 @@ type Audit func(*sql.Selector)
 // Binding is the predicate function for binding builders.
 type Binding func(*sql.Selector)
 
+// Continuation is the predicate function for continuation builders.
+type Continuation func(*sql.Selector)
+
 // Credential is the predicate function for credential builders.
 type Credential func(*sql.Selector)
 

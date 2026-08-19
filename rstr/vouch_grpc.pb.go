@@ -24,6 +24,7 @@ const (
 	VouchService_Delegate_FullMethodName = "/roster.VouchService/Delegate"
 	VouchService_Reset_FullMethodName    = "/roster.VouchService/Reset"
 	VouchService_Unlock_FullMethodName   = "/roster.VouchService/Unlock"
+	VouchService_Continue_FullMethodName = "/roster.VouchService/Continue"
 	VouchService_Enrol_FullMethodName    = "/roster.VouchService/Enrol"
 	VouchService_Revoke_FullMethodName   = "/roster.VouchService/Revoke"
 )
@@ -132,6 +133,27 @@ type VouchServiceClient interface {
 	// it is a step of the same walk and refusing it separately would be a
 	// permission nobody could explain.
 	Unlock(ctx context.Context, in *VouchUnlockRequest, opts ...grpc.CallOption) (*VouchUnlockResponse, error)
+	// Continue proves the next factor, from where the last one left off.
+	//
+	// # Why it is a method and Begin is not
+	//
+	// D26's argument -- a role is a list of methods, so what a deployment can
+	// grant is exactly what it can name -- lands on **proving a second factor**,
+	// which is a distinct thing to hand out and takes a continuation rather than
+	// a `who`. It does not land on starting: making `Verify` and `Delegate` grow
+	// instead means a deployment with one factor pays exactly what it pays today,
+	// and the single-factor path stays one round trip. A `Begin` would move every
+	// sign-in in every deployment onto a new method for a feature most of them do
+	// not use.
+	//
+	// # What it does not mint
+	//
+	// A token. Proving is one thing and minting is another, and there is exactly
+	// one method in this service that mints: `Delegate`, which takes a
+	// continuation in place of a `who` and a secret. So a two-step sign-in is
+	// `Delegate` -> `Continue` -> `Delegate`, and the last call spends what the
+	// first two proved.
+	Continue(ctx context.Context, in *VouchContinueRequest, opts ...grpc.CallOption) (*VouchContinueResponse, error)
 	// Enrol makes a second factor and answers with it **once**.
 	//
 	// # Why Set cannot do it
@@ -217,6 +239,16 @@ func (c *vouchServiceClient) Unlock(ctx context.Context, in *VouchUnlockRequest,
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(VouchUnlockResponse)
 	err := c.cc.Invoke(ctx, VouchService_Unlock_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *vouchServiceClient) Continue(ctx context.Context, in *VouchContinueRequest, opts ...grpc.CallOption) (*VouchContinueResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(VouchContinueResponse)
+	err := c.cc.Invoke(ctx, VouchService_Continue_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -347,6 +379,27 @@ type VouchServiceServer interface {
 	// it is a step of the same walk and refusing it separately would be a
 	// permission nobody could explain.
 	Unlock(context.Context, *VouchUnlockRequest) (*VouchUnlockResponse, error)
+	// Continue proves the next factor, from where the last one left off.
+	//
+	// # Why it is a method and Begin is not
+	//
+	// D26's argument -- a role is a list of methods, so what a deployment can
+	// grant is exactly what it can name -- lands on **proving a second factor**,
+	// which is a distinct thing to hand out and takes a continuation rather than
+	// a `who`. It does not land on starting: making `Verify` and `Delegate` grow
+	// instead means a deployment with one factor pays exactly what it pays today,
+	// and the single-factor path stays one round trip. A `Begin` would move every
+	// sign-in in every deployment onto a new method for a feature most of them do
+	// not use.
+	//
+	// # What it does not mint
+	//
+	// A token. Proving is one thing and minting is another, and there is exactly
+	// one method in this service that mints: `Delegate`, which takes a
+	// continuation in place of a `who` and a secret. So a two-step sign-in is
+	// `Delegate` -> `Continue` -> `Delegate`, and the last call spends what the
+	// first two proved.
+	Continue(context.Context, *VouchContinueRequest) (*VouchContinueResponse, error)
 	// Enrol makes a second factor and answers with it **once**.
 	//
 	// # Why Set cannot do it
@@ -402,6 +455,9 @@ func (UnimplementedVouchServiceServer) Reset(context.Context, *VouchResetRequest
 }
 func (UnimplementedVouchServiceServer) Unlock(context.Context, *VouchUnlockRequest) (*VouchUnlockResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Unlock not implemented")
+}
+func (UnimplementedVouchServiceServer) Continue(context.Context, *VouchContinueRequest) (*VouchContinueResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Continue not implemented")
 }
 func (UnimplementedVouchServiceServer) Enrol(context.Context, *VouchEnrolRequest) (*VouchEnrolResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Enrol not implemented")
@@ -520,6 +576,24 @@ func _VouchService_Unlock_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _VouchService_Continue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VouchContinueRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VouchServiceServer).Continue(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: VouchService_Continue_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VouchServiceServer).Continue(ctx, req.(*VouchContinueRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _VouchService_Enrol_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(VouchEnrolRequest)
 	if err := dec(in); err != nil {
@@ -582,6 +656,10 @@ var VouchService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Unlock",
 			Handler:    _VouchService_Unlock_Handler,
+		},
+		{
+			MethodName: "Continue",
+			Handler:    _VouchService_Continue_Handler,
 		},
 		{
 			MethodName: "Enrol",

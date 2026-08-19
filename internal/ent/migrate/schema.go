@@ -157,6 +157,48 @@ var (
 			},
 		},
 	}
+	// ContinuationColumns holds the columns for the "continuation" table.
+	ContinuationColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "satisfied", Type: field.TypeJSON, Nullable: true},
+		{Name: "secret", Type: field.TypeBytes},
+		{Name: "issuer", Type: field.TypeBytes},
+		{Name: "metered_by", Type: field.TypeUUID},
+		{Name: "date_expires", Type: field.TypeTime, Nullable: true},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "holder_id", Type: field.TypeUUID},
+	}
+	// ContinuationTable holds the schema information for the "continuation" table.
+	ContinuationTable = &schema.Table{
+		Name:       "continuation",
+		Columns:    ContinuationColumns,
+		PrimaryKey: []*schema.Column{ContinuationColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "continuation_holder_holder",
+				Columns:    []*schema.Column{ContinuationColumns[9]},
+				RefColumns: []*schema.Column{HolderColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "continuation_date_created_id",
+				Unique:  false,
+				Columns: []*schema.Column{ContinuationColumns[8], ContinuationColumns[0]},
+			},
+			{
+				Name:    "continuation_secret",
+				Unique:  true,
+				Columns: []*schema.Column{ContinuationColumns[2]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
 	// CredentialColumns holds the columns for the "credential" table.
 	CredentialColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
@@ -832,6 +874,7 @@ var (
 		ApikeyTable,
 		AuditTable,
 		BindingTable,
+		ContinuationTable,
 		CredentialTable,
 		DelegationTable,
 		EmailTable,
@@ -865,6 +908,10 @@ func init() {
 	BindingTable.ForeignKeys[3].RefTable = GroupTable
 	BindingTable.Annotation = &entsql.Annotation{
 		Table: "binding",
+	}
+	ContinuationTable.ForeignKeys[0].RefTable = HolderTable
+	ContinuationTable.Annotation = &entsql.Annotation{
+		Table: "continuation",
 	}
 	CredentialTable.ForeignKeys[0].RefTable = HolderTable
 	CredentialTable.Annotation = &entsql.Annotation{

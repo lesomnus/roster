@@ -15,6 +15,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/apikey"
 	"github.com/lesomnus/roster/internal/ent/audit"
 	"github.com/lesomnus/roster/internal/ent/binding"
+	"github.com/lesomnus/roster/internal/ent/continuation"
 	"github.com/lesomnus/roster/internal/ent/credential"
 	"github.com/lesomnus/roster/internal/ent/delegation"
 	"github.com/lesomnus/roster/internal/ent/email"
@@ -48,6 +49,7 @@ const (
 	TypeApiKey          = "ApiKey"
 	TypeAudit           = "Audit"
 	TypeBinding         = "Binding"
+	TypeContinuation    = "Continuation"
 	TypeCredential      = "Credential"
 	TypeDelegation      = "Delegation"
 	TypeEmail           = "Email"
@@ -2856,6 +2858,920 @@ func (m *BindingMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown Binding edge %s", name)
+}
+
+// ContinuationMutation represents an operation that mutates the Continuation nodes in the graph.
+type ContinuationMutation struct {
+	config
+	op              Op
+	typ             string
+	id              *uuid.UUID
+	satisfied       *[]string
+	appendsatisfied []string
+	secret          *[]byte
+	issuer          *[]byte
+	metered_by      *uuid.UUID
+	date_expires    *time.Time
+	date_updated    *time.Time
+	date_erased     *time.Time
+	date_created    *time.Time
+	clearedFields   map[string]struct{}
+	holder          *uuid.UUID
+	clearedholder   bool
+	done            bool
+	oldValue        func(context.Context) (*Continuation, error)
+	predicates      []predicate.Continuation
+}
+
+var _ ent.Mutation = (*ContinuationMutation)(nil)
+
+// continuationOption allows management of the mutation configuration using functional options.
+type continuationOption func(*ContinuationMutation)
+
+// newContinuationMutation creates new mutation for the Continuation entity.
+func newContinuationMutation(c config, op Op, opts ...continuationOption) *ContinuationMutation {
+	m := &ContinuationMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeContinuation,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withContinuationID sets the ID field of the mutation.
+func withContinuationID(id uuid.UUID) continuationOption {
+	return func(m *ContinuationMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Continuation
+		)
+		m.oldValue = func(ctx context.Context) (*Continuation, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Continuation.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withContinuation sets the old Continuation of the mutation.
+func withContinuation(node *Continuation) continuationOption {
+	return func(m *ContinuationMutation) {
+		m.oldValue = func(context.Context) (*Continuation, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ContinuationMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ContinuationMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Continuation entities.
+func (m *ContinuationMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ContinuationMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ContinuationMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Continuation.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetSatisfied sets the "satisfied" field.
+func (m *ContinuationMutation) SetSatisfied(s []string) {
+	m.satisfied = &s
+	m.appendsatisfied = nil
+}
+
+// Satisfied returns the value of the "satisfied" field in the mutation.
+func (m *ContinuationMutation) Satisfied() (r []string, exists bool) {
+	v := m.satisfied
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSatisfied returns the old "satisfied" field's value of the Continuation entity.
+// If the Continuation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ContinuationMutation) OldSatisfied(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSatisfied is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSatisfied requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSatisfied: %w", err)
+	}
+	return oldValue.Satisfied, nil
+}
+
+// AppendSatisfied adds s to the "satisfied" field.
+func (m *ContinuationMutation) AppendSatisfied(s []string) {
+	m.appendsatisfied = append(m.appendsatisfied, s...)
+}
+
+// AppendedSatisfied returns the list of values that were appended to the "satisfied" field in this mutation.
+func (m *ContinuationMutation) AppendedSatisfied() ([]string, bool) {
+	if len(m.appendsatisfied) == 0 {
+		return nil, false
+	}
+	return m.appendsatisfied, true
+}
+
+// ClearSatisfied clears the value of the "satisfied" field.
+func (m *ContinuationMutation) ClearSatisfied() {
+	m.satisfied = nil
+	m.appendsatisfied = nil
+	m.clearedFields[continuation.FieldSatisfied] = struct{}{}
+}
+
+// SatisfiedCleared returns if the "satisfied" field was cleared in this mutation.
+func (m *ContinuationMutation) SatisfiedCleared() bool {
+	_, ok := m.clearedFields[continuation.FieldSatisfied]
+	return ok
+}
+
+// ResetSatisfied resets all changes to the "satisfied" field.
+func (m *ContinuationMutation) ResetSatisfied() {
+	m.satisfied = nil
+	m.appendsatisfied = nil
+	delete(m.clearedFields, continuation.FieldSatisfied)
+}
+
+// SetSecret sets the "secret" field.
+func (m *ContinuationMutation) SetSecret(b []byte) {
+	m.secret = &b
+}
+
+// Secret returns the value of the "secret" field in the mutation.
+func (m *ContinuationMutation) Secret() (r []byte, exists bool) {
+	v := m.secret
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSecret returns the old "secret" field's value of the Continuation entity.
+// If the Continuation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ContinuationMutation) OldSecret(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSecret is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSecret requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSecret: %w", err)
+	}
+	return oldValue.Secret, nil
+}
+
+// ResetSecret resets all changes to the "secret" field.
+func (m *ContinuationMutation) ResetSecret() {
+	m.secret = nil
+}
+
+// SetIssuer sets the "issuer" field.
+func (m *ContinuationMutation) SetIssuer(b []byte) {
+	m.issuer = &b
+}
+
+// Issuer returns the value of the "issuer" field in the mutation.
+func (m *ContinuationMutation) Issuer() (r []byte, exists bool) {
+	v := m.issuer
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIssuer returns the old "issuer" field's value of the Continuation entity.
+// If the Continuation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ContinuationMutation) OldIssuer(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIssuer is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIssuer requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIssuer: %w", err)
+	}
+	return oldValue.Issuer, nil
+}
+
+// ResetIssuer resets all changes to the "issuer" field.
+func (m *ContinuationMutation) ResetIssuer() {
+	m.issuer = nil
+}
+
+// SetMeteredBy sets the "metered_by" field.
+func (m *ContinuationMutation) SetMeteredBy(u uuid.UUID) {
+	m.metered_by = &u
+}
+
+// MeteredBy returns the value of the "metered_by" field in the mutation.
+func (m *ContinuationMutation) MeteredBy() (r uuid.UUID, exists bool) {
+	v := m.metered_by
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMeteredBy returns the old "metered_by" field's value of the Continuation entity.
+// If the Continuation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ContinuationMutation) OldMeteredBy(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMeteredBy is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMeteredBy requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMeteredBy: %w", err)
+	}
+	return oldValue.MeteredBy, nil
+}
+
+// ResetMeteredBy resets all changes to the "metered_by" field.
+func (m *ContinuationMutation) ResetMeteredBy() {
+	m.metered_by = nil
+}
+
+// SetDateExpires sets the "date_expires" field.
+func (m *ContinuationMutation) SetDateExpires(t time.Time) {
+	m.date_expires = &t
+}
+
+// DateExpires returns the value of the "date_expires" field in the mutation.
+func (m *ContinuationMutation) DateExpires() (r time.Time, exists bool) {
+	v := m.date_expires
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDateExpires returns the old "date_expires" field's value of the Continuation entity.
+// If the Continuation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ContinuationMutation) OldDateExpires(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDateExpires is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDateExpires requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateExpires: %w", err)
+	}
+	return oldValue.DateExpires, nil
+}
+
+// ClearDateExpires clears the value of the "date_expires" field.
+func (m *ContinuationMutation) ClearDateExpires() {
+	m.date_expires = nil
+	m.clearedFields[continuation.FieldDateExpires] = struct{}{}
+}
+
+// DateExpiresCleared returns if the "date_expires" field was cleared in this mutation.
+func (m *ContinuationMutation) DateExpiresCleared() bool {
+	_, ok := m.clearedFields[continuation.FieldDateExpires]
+	return ok
+}
+
+// ResetDateExpires resets all changes to the "date_expires" field.
+func (m *ContinuationMutation) ResetDateExpires() {
+	m.date_expires = nil
+	delete(m.clearedFields, continuation.FieldDateExpires)
+}
+
+// SetDateUpdated sets the "date_updated" field.
+func (m *ContinuationMutation) SetDateUpdated(t time.Time) {
+	m.date_updated = &t
+}
+
+// DateUpdated returns the value of the "date_updated" field in the mutation.
+func (m *ContinuationMutation) DateUpdated() (r time.Time, exists bool) {
+	v := m.date_updated
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDateUpdated returns the old "date_updated" field's value of the Continuation entity.
+// If the Continuation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ContinuationMutation) OldDateUpdated(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDateUpdated is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDateUpdated requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateUpdated: %w", err)
+	}
+	return oldValue.DateUpdated, nil
+}
+
+// ResetDateUpdated resets all changes to the "date_updated" field.
+func (m *ContinuationMutation) ResetDateUpdated() {
+	m.date_updated = nil
+}
+
+// SetDateErased sets the "date_erased" field.
+func (m *ContinuationMutation) SetDateErased(t time.Time) {
+	m.date_erased = &t
+}
+
+// DateErased returns the value of the "date_erased" field in the mutation.
+func (m *ContinuationMutation) DateErased() (r time.Time, exists bool) {
+	v := m.date_erased
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDateErased returns the old "date_erased" field's value of the Continuation entity.
+// If the Continuation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ContinuationMutation) OldDateErased(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDateErased is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDateErased requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateErased: %w", err)
+	}
+	return oldValue.DateErased, nil
+}
+
+// ClearDateErased clears the value of the "date_erased" field.
+func (m *ContinuationMutation) ClearDateErased() {
+	m.date_erased = nil
+	m.clearedFields[continuation.FieldDateErased] = struct{}{}
+}
+
+// DateErasedCleared returns if the "date_erased" field was cleared in this mutation.
+func (m *ContinuationMutation) DateErasedCleared() bool {
+	_, ok := m.clearedFields[continuation.FieldDateErased]
+	return ok
+}
+
+// ResetDateErased resets all changes to the "date_erased" field.
+func (m *ContinuationMutation) ResetDateErased() {
+	m.date_erased = nil
+	delete(m.clearedFields, continuation.FieldDateErased)
+}
+
+// SetDateCreated sets the "date_created" field.
+func (m *ContinuationMutation) SetDateCreated(t time.Time) {
+	m.date_created = &t
+}
+
+// DateCreated returns the value of the "date_created" field in the mutation.
+func (m *ContinuationMutation) DateCreated() (r time.Time, exists bool) {
+	v := m.date_created
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDateCreated returns the old "date_created" field's value of the Continuation entity.
+// If the Continuation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ContinuationMutation) OldDateCreated(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDateCreated is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDateCreated requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateCreated: %w", err)
+	}
+	return oldValue.DateCreated, nil
+}
+
+// ClearDateCreated clears the value of the "date_created" field.
+func (m *ContinuationMutation) ClearDateCreated() {
+	m.date_created = nil
+	m.clearedFields[continuation.FieldDateCreated] = struct{}{}
+}
+
+// DateCreatedCleared returns if the "date_created" field was cleared in this mutation.
+func (m *ContinuationMutation) DateCreatedCleared() bool {
+	_, ok := m.clearedFields[continuation.FieldDateCreated]
+	return ok
+}
+
+// ResetDateCreated resets all changes to the "date_created" field.
+func (m *ContinuationMutation) ResetDateCreated() {
+	m.date_created = nil
+	delete(m.clearedFields, continuation.FieldDateCreated)
+}
+
+// SetHolderID sets the "holder_id" field.
+func (m *ContinuationMutation) SetHolderID(u uuid.UUID) {
+	m.holder = &u
+}
+
+// HolderID returns the value of the "holder_id" field in the mutation.
+func (m *ContinuationMutation) HolderID() (r uuid.UUID, exists bool) {
+	v := m.holder
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldHolderID returns the old "holder_id" field's value of the Continuation entity.
+// If the Continuation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ContinuationMutation) OldHolderID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldHolderID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldHolderID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldHolderID: %w", err)
+	}
+	return oldValue.HolderID, nil
+}
+
+// ResetHolderID resets all changes to the "holder_id" field.
+func (m *ContinuationMutation) ResetHolderID() {
+	m.holder = nil
+}
+
+// ClearHolder clears the "holder" edge to the Holder entity.
+func (m *ContinuationMutation) ClearHolder() {
+	m.clearedholder = true
+	m.clearedFields[continuation.FieldHolderID] = struct{}{}
+}
+
+// HolderCleared reports if the "holder" edge to the Holder entity was cleared.
+func (m *ContinuationMutation) HolderCleared() bool {
+	return m.clearedholder
+}
+
+// HolderIDs returns the "holder" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// HolderID instead. It exists only for internal usage by the builders.
+func (m *ContinuationMutation) HolderIDs() (ids []uuid.UUID) {
+	if id := m.holder; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetHolder resets all changes to the "holder" edge.
+func (m *ContinuationMutation) ResetHolder() {
+	m.holder = nil
+	m.clearedholder = false
+}
+
+// Where appends a list predicates to the ContinuationMutation builder.
+func (m *ContinuationMutation) Where(ps ...predicate.Continuation) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ContinuationMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ContinuationMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Continuation, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ContinuationMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ContinuationMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Continuation).
+func (m *ContinuationMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ContinuationMutation) Fields() []string {
+	fields := make([]string, 0, 9)
+	if m.satisfied != nil {
+		fields = append(fields, continuation.FieldSatisfied)
+	}
+	if m.secret != nil {
+		fields = append(fields, continuation.FieldSecret)
+	}
+	if m.issuer != nil {
+		fields = append(fields, continuation.FieldIssuer)
+	}
+	if m.metered_by != nil {
+		fields = append(fields, continuation.FieldMeteredBy)
+	}
+	if m.date_expires != nil {
+		fields = append(fields, continuation.FieldDateExpires)
+	}
+	if m.date_updated != nil {
+		fields = append(fields, continuation.FieldDateUpdated)
+	}
+	if m.date_erased != nil {
+		fields = append(fields, continuation.FieldDateErased)
+	}
+	if m.date_created != nil {
+		fields = append(fields, continuation.FieldDateCreated)
+	}
+	if m.holder != nil {
+		fields = append(fields, continuation.FieldHolderID)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ContinuationMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case continuation.FieldSatisfied:
+		return m.Satisfied()
+	case continuation.FieldSecret:
+		return m.Secret()
+	case continuation.FieldIssuer:
+		return m.Issuer()
+	case continuation.FieldMeteredBy:
+		return m.MeteredBy()
+	case continuation.FieldDateExpires:
+		return m.DateExpires()
+	case continuation.FieldDateUpdated:
+		return m.DateUpdated()
+	case continuation.FieldDateErased:
+		return m.DateErased()
+	case continuation.FieldDateCreated:
+		return m.DateCreated()
+	case continuation.FieldHolderID:
+		return m.HolderID()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ContinuationMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case continuation.FieldSatisfied:
+		return m.OldSatisfied(ctx)
+	case continuation.FieldSecret:
+		return m.OldSecret(ctx)
+	case continuation.FieldIssuer:
+		return m.OldIssuer(ctx)
+	case continuation.FieldMeteredBy:
+		return m.OldMeteredBy(ctx)
+	case continuation.FieldDateExpires:
+		return m.OldDateExpires(ctx)
+	case continuation.FieldDateUpdated:
+		return m.OldDateUpdated(ctx)
+	case continuation.FieldDateErased:
+		return m.OldDateErased(ctx)
+	case continuation.FieldDateCreated:
+		return m.OldDateCreated(ctx)
+	case continuation.FieldHolderID:
+		return m.OldHolderID(ctx)
+	}
+	return nil, fmt.Errorf("unknown Continuation field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ContinuationMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case continuation.FieldSatisfied:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSatisfied(v)
+		return nil
+	case continuation.FieldSecret:
+		v, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSecret(v)
+		return nil
+	case continuation.FieldIssuer:
+		v, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIssuer(v)
+		return nil
+	case continuation.FieldMeteredBy:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMeteredBy(v)
+		return nil
+	case continuation.FieldDateExpires:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDateExpires(v)
+		return nil
+	case continuation.FieldDateUpdated:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDateUpdated(v)
+		return nil
+	case continuation.FieldDateErased:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDateErased(v)
+		return nil
+	case continuation.FieldDateCreated:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDateCreated(v)
+		return nil
+	case continuation.FieldHolderID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetHolderID(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Continuation field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ContinuationMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ContinuationMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ContinuationMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Continuation numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ContinuationMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(continuation.FieldSatisfied) {
+		fields = append(fields, continuation.FieldSatisfied)
+	}
+	if m.FieldCleared(continuation.FieldDateExpires) {
+		fields = append(fields, continuation.FieldDateExpires)
+	}
+	if m.FieldCleared(continuation.FieldDateErased) {
+		fields = append(fields, continuation.FieldDateErased)
+	}
+	if m.FieldCleared(continuation.FieldDateCreated) {
+		fields = append(fields, continuation.FieldDateCreated)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ContinuationMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ContinuationMutation) ClearField(name string) error {
+	switch name {
+	case continuation.FieldSatisfied:
+		m.ClearSatisfied()
+		return nil
+	case continuation.FieldDateExpires:
+		m.ClearDateExpires()
+		return nil
+	case continuation.FieldDateErased:
+		m.ClearDateErased()
+		return nil
+	case continuation.FieldDateCreated:
+		m.ClearDateCreated()
+		return nil
+	}
+	return fmt.Errorf("unknown Continuation nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ContinuationMutation) ResetField(name string) error {
+	switch name {
+	case continuation.FieldSatisfied:
+		m.ResetSatisfied()
+		return nil
+	case continuation.FieldSecret:
+		m.ResetSecret()
+		return nil
+	case continuation.FieldIssuer:
+		m.ResetIssuer()
+		return nil
+	case continuation.FieldMeteredBy:
+		m.ResetMeteredBy()
+		return nil
+	case continuation.FieldDateExpires:
+		m.ResetDateExpires()
+		return nil
+	case continuation.FieldDateUpdated:
+		m.ResetDateUpdated()
+		return nil
+	case continuation.FieldDateErased:
+		m.ResetDateErased()
+		return nil
+	case continuation.FieldDateCreated:
+		m.ResetDateCreated()
+		return nil
+	case continuation.FieldHolderID:
+		m.ResetHolderID()
+		return nil
+	}
+	return fmt.Errorf("unknown Continuation field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ContinuationMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.holder != nil {
+		edges = append(edges, continuation.EdgeHolder)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ContinuationMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case continuation.EdgeHolder:
+		if id := m.holder; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ContinuationMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ContinuationMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ContinuationMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedholder {
+		edges = append(edges, continuation.EdgeHolder)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ContinuationMutation) EdgeCleared(name string) bool {
+	switch name {
+	case continuation.EdgeHolder:
+		return m.clearedholder
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ContinuationMutation) ClearEdge(name string) error {
+	switch name {
+	case continuation.EdgeHolder:
+		m.ClearHolder()
+		return nil
+	}
+	return fmt.Errorf("unknown Continuation unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ContinuationMutation) ResetEdge(name string) error {
+	switch name {
+	case continuation.EdgeHolder:
+		m.ResetHolder()
+		return nil
+	}
+	return fmt.Errorf("unknown Continuation edge %s", name)
 }
 
 // CredentialMutation represents an operation that mutates the Credential nodes in the graph.

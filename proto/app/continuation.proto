@@ -1,0 +1,173 @@
+edition = "2023";
+
+package roster;
+
+import "roster/payday/holder.proto";
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/roster/rstr";
+
+// Continuation is what has been proved about somebody, part way through.
+//
+// PLAN.md D21 is the decision, and the question that found it: **an app showing
+// a second form has to remember who passed the first one.** An app developer
+// wants to know who somebody is and does not want to be in the sign-in business
+// at all, so making them carry that is handing them the one part of the process
+// they were trying to avoid.
+//
+// D21 splits it in the one place it splits:
+//
+//   - *which browser* is mid-sign-in is the **app's**, because it is bound to a
+//     browser and the browser is the app's;
+//   - *holder H satisfied `password` at T, and has `totp` available* is
+//     **roster's**, because it is bound to an attempt and roster is the only
+//     thing that can say either half.
+//
+// This is the second one, and it never makes roster see a browser: the app
+// carries an opaque string in a request body, no cookie is set here, and the
+// caller list is still machines.
+//
+// # Why it is not a Delegation
+//
+// They are the same lifecycle and the opposite thing, which D25 already had to
+// decide once. A delegation **grants** -- it carries `methods`, read by the
+// interceptor before the handler. This grants nothing and must not: it names an
+// identity that is only **half** proved, and the whole of what makes that
+// acceptable is that it can do nothing at all except be handed back to the one
+// method that spends it.
+//
+// # Its lifetime is roster's, and that is not the answer D25 gave
+//
+// D25 let the caller name a delegation's expiry, with no cap, on the grounds
+// that D21's *barely alive* was an argument about a **standalone** bearer and a
+// delegation is half of a pair. This is exactly the standalone bearer that
+// argument was carved out from, so it does not inherit it: minutes, fixed here,
+// and there is no field for a caller to say otherwise.
+//
+// # Single use, and there is one mechanism for it
+//
+// Spending it is an erase. *Used* is *not there* -- `<Entity>Pick` narrows to
+// the live rows, so a spent one is out of reach the moment the erase lands, and
+// two concurrent spends resolve to one winner through the ordinary
+// compare-and-swap. A second column recording the same fact is a second thing
+// to drift.
+message Continuation {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+
+  // Who is half way in.
+  Holder holder = 2 [(orm.edge) = {immutable: true}];
+
+  // 4 to 7 are empty, for `Delegation`'s reason: nobody names one of these,
+  // describes one, or labels one. It exists for minutes inside one sign-in.
+
+  // What has been proved so far, by kind: "password".
+  //
+  // Its **length** is how far along somebody is, and that is all a page needs
+  // to draw "step two". What is deliberately not here is how many there are in
+  // total: *two is enough* is sufficiency and D20 leaves that to the caller.
+  repeated string satisfied = 8 [(orm.field) = {immutable: true}];
+
+  // The verifier, never the handle -- the shape `ApiKey` argued and
+  // `Delegation` repeated: 256 bits from `crypto/rand` have no dictionary, so
+  // the hash is fast and unsalted, and it is also how the row is found.
+  bytes secret = 9 [
+    (orm.field) = {
+      unique: true
+      immutable: true
+    },
+    (payday.field) = {secret: true}
+  ];
+
+  // Which caller was given it, so that one product app cannot pick up an
+  // authentication another one started.
+  //
+  // D21's third condition, and it is checkable here for the reason it is
+  // checkable on a delegation: this is spent through an RPC that runs behind
+  // roster's own authentication, so there is a frame naming who is asking.
+  // Opaque bytes, and never an edge -- see `delegation.proto`.
+  bytes issuer = 10 [(orm.field) = {immutable: true}];
+
+  // Which credential row the attempt is **metered on**.
+  //
+  // D21's fourth condition is *one count across `Begin` and `Continue`, or the
+  // second factor is an unmetered guessing surface reached by passing the
+  // first* -- and the obvious reading of it is wrong. `Credential` is unique on
+  // `(holder, kind, name)`, so a password row and a TOTP row carry two
+  // independent counters: ten wrong codes would close the second factor and
+  // leave the first untouched, and a fresh first factor costs nothing because a
+  // **successful** verify is never counted.
+  //
+  // So a failed second step counts against the row the **first** step used.
+  // Exhausting the second factor closes the door the attempt came through,
+  // which is what makes the count one count.
+  bytes metered_by = 12 [(orm.field) = {
+    type: TYPE_UUID
+    immutable: true
+  }];
+
+  // When it stops working, and there is no such thing as one that does not.
+  //
+  // Nullable because the generator has no way to say required -- D6, and F3 is
+  // open -- so an absent one is refused on read rather than read as forever.
+  // Nobody may name it: see the note above about whose lifetime this is.
+  google.protobuf.Timestamp date_expires = 11 [(orm.field) = {
+    nullable: true
+    immutable: true
+  }];
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {
+            name: "date_created"
+            number: 15
+          },
+          {
+            name: "id"
+            number: 1
+          }
+        ]
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 22
+
+    tenanted: {via: "holder.tenant"}
+
+    // A page of them, which is what the sweep reads. And **no** `watch:`, for
+    // `Delegation`'s reason: payday's `Secret` layer does not cover `Watch` and
+    // this app installs `grpcx.ClosedUnary` rather than `grpcx.Closed`, so a
+    // watchable entity with a verifier streams it and neither control stops it.
+    list: {
+      order: [
+        {
+          field: {name: "date_created"}
+        },
+        {
+          field: {name: "id"}
+        }
+      ]
+      by: [{name: "ref"}]
+      size: 20
+      max: 100
+    }
+  };
+}

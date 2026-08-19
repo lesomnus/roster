@@ -16,6 +16,7 @@ import type { EntityDesc } from '@lesomnus/payday/store'
 import { ApiKeySchema } from './app/apikey_pb.js'
 import { AuditSchema } from './roster/payday/audit_pb.js'
 import { BindingSchema, RoleSchema } from './app/role_pb.js'
+import { ContinuationSchema } from './app/continuation_pb.js'
 import { CredentialSchema } from './app/credential_pb.js'
 import { DelegationSchema } from './app/delegation_pb.js'
 import { EmailSchema } from './app/email_pb.js'
@@ -52,6 +53,15 @@ export const Binding = {
 	domain: 18,
 	version: "dateUpdated",
 	refs: [{ field: "role", to: "roster.Role" }, { field: "site", to: "roster.Site" }, { field: "holder", to: "roster.Holder" }, { field: "group", to: "roster.Group" }],
+} as const satisfies EntityDesc
+
+/** roster.Continuation, as the store holds it. */
+export const Continuation = {
+	typeName: "roster.Continuation",
+	schema: ContinuationSchema,
+	domain: 22,
+	version: "dateUpdated",
+	refs: [{ field: "holder", to: "roster.Holder" }],
 } as const satisfies EntityDesc
 
 /** roster.Credential, as the store holds it. */
@@ -196,5 +206,5 @@ export const Tenant = {
 } as const satisfies EntityDesc
 
 /** Every entity of this app, which is what a store is opened over. */
-export const entities = [ApiKey, Audit, Binding, Credential, Delegation, Email, Group, GroupMembership, Holder, Host, Identity, MailDomain, Outbox, Role, Site, SiteMembership, Team, TeamMembership, Tenant] as const
+export const entities = [ApiKey, Audit, Binding, Continuation, Credential, Delegation, Email, Group, GroupMembership, Holder, Host, Identity, MailDomain, Outbox, Role, Site, SiteMembership, Team, TeamMembership, Tenant] as const
 

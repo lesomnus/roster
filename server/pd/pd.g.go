@@ -31,6 +31,7 @@ import (
 	apikey "github.com/lesomnus/roster/internal/ent/apikey"
 	audit "github.com/lesomnus/roster/internal/ent/audit"
 	binding "github.com/lesomnus/roster/internal/ent/binding"
+	continuation "github.com/lesomnus/roster/internal/ent/continuation"
 	credential "github.com/lesomnus/roster/internal/ent/credential"
 	delegation "github.com/lesomnus/roster/internal/ent/delegation"
 	email "github.com/lesomnus/roster/internal/ent/email"
@@ -89,6 +90,7 @@ const (
 	ApiKeyDomain          pdid.Domain = 14 // "api-key"
 	AuditDomain           pdid.Domain = 3  // "audit"
 	BindingDomain         pdid.Domain = 18 // "binding"
+	ContinuationDomain    pdid.Domain = 22 // "continuation"
 	CredentialDomain      pdid.Domain = 13 // "credential"
 	DelegationDomain      pdid.Domain = 19 // "delegation"
 	EmailDomain           pdid.Domain = 9  // "email"
@@ -111,6 +113,7 @@ func init() {
 	pdid.Register("roster.ApiKey", ApiKeyDomain, "api-key")
 	pdid.Register("roster.Audit", AuditDomain, "audit")
 	pdid.Register("roster.Binding", BindingDomain, "binding")
+	pdid.Register("roster.Continuation", ContinuationDomain, "continuation")
 	pdid.Register("roster.Credential", CredentialDomain, "credential")
 	pdid.Register("roster.Delegation", DelegationDomain, "delegation")
 	pdid.Register("roster.Email", EmailDomain, "email")
@@ -137,6 +140,7 @@ var Domains = map[string]pdid.Domain{
 	"roster.ApiKey":          ApiKeyDomain,
 	"roster.Audit":           AuditDomain,
 	"roster.Binding":         BindingDomain,
+	"roster.Continuation":    ContinuationDomain,
 	"roster.Credential":      CredentialDomain,
 	"roster.Delegation":      DelegationDomain,
 	"roster.Email":           EmailDomain,
@@ -225,6 +229,16 @@ func (wall) BindingScope(ctx context.Context) (predicate.Binding, error) {
 	}
 
 	return binding.HasRoleWith(role.TenantIDIn(vs...)), nil
+}
+
+// ContinuationScope: a row belongs to the tenant its "holder.tenant" reaches.
+func (wall) ContinuationScope(ctx context.Context) (predicate.Continuation, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return continuation.HasHolderWith(holder.TenantIDIn(vs...)), nil
 }
 
 // CredentialScope: a row belongs to the tenant its "holder.tenant" reaches.
@@ -438,6 +452,11 @@ func (x grouped) BindingScope(ctx context.Context) (predicate.Binding, error) {
 	}
 
 	return binding.SiteIDIn(vs...), nil
+}
+
+// ContinuationScope: in no set -- it declared no field 3, so this narrows nothing.
+func (x grouped) ContinuationScope(ctx context.Context) (predicate.Continuation, error) {
+	return nil, nil
 }
 
 // CredentialScope: in no set -- it declared no field 3, so this narrows nothing.
@@ -1170,6 +1189,149 @@ func filterBinding(f *rstr.BindingFilter) (predicate.Binding, error) {
 	}
 
 	return binding.And(ps...), nil
+}
+
+type sinkContinuation struct {
+	rstr.ContinuationServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) Continuation() rstr.ContinuationServiceServer {
+	return sinkContinuation{s.Server.Continuation(), s.Server.Store, s.w, s.namer, s.joined}
+}
+
+// orderContinuation is how Continuations come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderContinuation = []entpage.Order{
+	{Column: continuation.FieldDateCreated, Desc: false},
+	{Column: continuation.FieldID, Desc: false},
+}
+
+const (
+	// ContinuationPageSize is what a request that did not say gets, and
+	// ContinuationPageLimit is the most it gets however loudly it asks.
+	ContinuationPageSize  = 20
+	ContinuationPageLimit = 100
+
+	// ContinuationFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	ContinuationFilterLimit = 32
+)
+
+// List answers with the Continuations that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkContinuation) List(ctx context.Context, req *rstr.ContinuationListRequest) (*rstr.ContinuationListResponse, error) {
+	q := s.store.Db.Continuation.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.ContinuationNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > ContinuationFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), ContinuationFilterLimit)
+		}
+
+		ps := make([]predicate.Continuation, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterContinuation(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(continuation.Or(ps...))
+	}
+
+	if v := req.GetAfter(); v != "" {
+		var (
+			at0 time.Time
+			at1 uuid.UUID
+		)
+		if err := entpage.Decode(v, &at0, &at1); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		p, err := entpage.After(orderContinuation, []any{at0, at1})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := entpage.Size(int(req.GetSize()), ContinuationPageSize, ContinuationPageLimit)
+	us, err := q.Order(continuation.ByDateCreated(), continuation.ByID()).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*rstr.Continuation, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := rstr.ContinuationListResponse_builder{Items: items}.Build()
+	if more {
+		last := us[len(us)-1]
+		next, err := entpage.Encode(last.DateCreated, last.ID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(next)
+	}
+
+	return res, nil
+}
+
+// filterContinuation turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterContinuation(f *rstr.ContinuationFilter) (predicate.Continuation, error) {
+	ps := make([]predicate.Continuation, 0, 1)
+	if f.HasRef() {
+		p, err := bare.ContinuationPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return continuation.And(ps...), nil
 }
 
 type sinkCredential struct {
@@ -5652,6 +5814,42 @@ func (s gateBinding) Add(ctx context.Context, req *rstr.BindingAddRequest) (*rst
 	return s.BindingServiceServer.Add(ctx, req)
 }
 
+type gateContinuation struct {
+	Gate
+	rstr.ContinuationServiceServer
+}
+
+func (s Gate) Continuation() rstr.ContinuationServiceServer {
+	return gateContinuation{s, s.Next().Continuation()}
+}
+
+// Add refuses a Continuation put into a Holder this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `holder` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Holder, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.Add`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+func (s gateContinuation) Add(ctx context.Context, req *rstr.ContinuationAddRequest) (*rstr.Continuation, error) {
+	if ref := req.GetHolder(); ref != nil {
+		if _, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Holder")
+			}
+
+			return nil, err
+		}
+	}
+
+	return s.ContinuationServiceServer.Add(ctx, req)
+}
+
 type gateCredential struct {
 	Gate
 	rstr.CredentialServiceServer
@@ -6393,6 +6591,41 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 
 		return k, b, nil
 
+	case ContinuationDomain:
+		row, err := s.Continuation().Get(ctx, rstr.ContinuationGetRequest_builder{
+			Ref: rstr.ContinuationRef_builder{Id: key.Bytes()}.Build(),
+		}.Build())
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				return uuid.Nil, []byte{}, nil
+			}
+
+			return uuid.Nil, nil, err
+		}
+
+		hideContinuation(row)
+
+		b, err := proto.Marshal(row)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		if !row.HasHolder() {
+			return uuid.Nil, b, nil
+		}
+
+		up, err := pdid.From(row.GetHolder().GetId())
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		k, _, err := subject(ctx, s, up)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		return k, b, nil
+
 	case CredentialDomain:
 		row, err := s.Credential().Get(ctx, rstr.CredentialGetRequest_builder{
 			Ref: rstr.CredentialRef_builder{Id: key.Bytes()}.Build(),
@@ -6952,6 +7185,66 @@ func (s secretApiKey) List(ctx context.Context, req *rstr.ApiKeyListRequest) (*r
 // A nil row passes through, because an error is answered with one and the
 // caller of this is handing both on.
 func hideApiKey(v *rstr.ApiKey) *rstr.ApiKey {
+	if v == nil {
+		return nil
+	}
+
+	v.SetSecret(nil)
+
+	return v
+}
+
+func (s Secret) Continuation() rstr.ContinuationServiceServer {
+	return secretContinuation{s, s.Next().Continuation()}
+}
+
+type secretContinuation struct {
+	Secret
+	rstr.ContinuationServiceServer
+}
+
+func (s secretContinuation) Add(ctx context.Context, req *rstr.ContinuationAddRequest) (*rstr.Continuation, error) {
+	v, err := s.ContinuationServiceServer.Add(ctx, req)
+
+	return hideContinuation(v), err
+}
+
+func (s secretContinuation) Get(ctx context.Context, req *rstr.ContinuationGetRequest) (*rstr.Continuation, error) {
+	v, err := s.ContinuationServiceServer.Get(ctx, req)
+
+	return hideContinuation(v), err
+}
+
+func (s secretContinuation) Patch(ctx context.Context, req *rstr.ContinuationPatchRequest) (*rstr.Continuation, error) {
+	v, err := s.ContinuationServiceServer.Patch(ctx, req)
+
+	return hideContinuation(v), err
+}
+
+func (s secretContinuation) Apply(ctx context.Context, req *rstr.ContinuationApplyRequest) (*rstr.Continuation, error) {
+	v, err := s.ContinuationServiceServer.Apply(ctx, req)
+
+	return hideContinuation(v), err
+}
+
+func (s secretContinuation) List(ctx context.Context, req *rstr.ContinuationListRequest) (*rstr.ContinuationListResponse, error) {
+	v, err := s.ContinuationServiceServer.List(ctx, req)
+	if v == nil {
+		return v, err
+	}
+
+	for _, w := range v.GetItems() {
+		hideContinuation(w)
+	}
+
+	return v, err
+}
+
+// hideContinuation clears what this entity declared it never answers with.
+//
+// A nil row passes through, because an error is answered with one and the
+// caller of this is handing both on.
+func hideContinuation(v *rstr.Continuation) *rstr.Continuation {
 	if v == nil {
 		return nil
 	}
@@ -7712,6 +8005,84 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 		}
 
 		res, err := s.ApiKey().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.ContinuationService_Add_FullMethodName:
+		v := &rstr.ContinuationAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Continuation().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.ContinuationService_Get_FullMethodName:
+		v := &rstr.ContinuationGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Continuation().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.ContinuationService_Patch_FullMethodName:
+		v := &rstr.ContinuationPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Continuation().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.ContinuationService_Apply_FullMethodName:
+		v := &rstr.ContinuationApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Continuation().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.ContinuationService_Erase_FullMethodName:
+		v := &rstr.ContinuationRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Continuation().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.ContinuationService_List_FullMethodName:
+		v := &rstr.ContinuationListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Continuation().List(ctx, v)
 		if err != nil {
 			return nil, err
 		}
