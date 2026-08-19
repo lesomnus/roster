@@ -136,7 +136,93 @@ pair of paths F9 was about.
 **Forces the order:** D24 exists to *specify* rather than demonstrate, and the
 token's lifetime, scope and refresh point are decided by a page that uses it.
 
-Grown from `examples/sso`.
+Grown from `examples/sso`. The design was stress-tested against the code before
+any of it was written, which found one defect in what P1 had already shipped
+(now fixed: a delegation is not a bearer credential) and reshaped the rest of
+this phase. What follows is what survived.
+
+#### What P3 has to decide, because D25 left it
+
+**The lifetime, and it is longer than it looks.** `keys.DelegateFor` is 15
+minutes with a comment saying *provisional*, and D23's *refreshed by signing in
+rather than by extending* was read as "and therefore there is no refresh". Under
+a 12-hour session with a 30-minute idle clock, that is a re-authentication
+prompt several times an hour to read your own addresses. Nobody ships it, and
+there is nothing to refresh with: the app must not keep the secret.
+
+What changes the answer is the fix above. D21's *barely alive* was the argument
+for a **standalone** bearer. A delegation is now half of a pair whose other half
+is the app's own key -- so one that leaks is worth nothing to anybody who does
+not already hold the key, and anybody who does is already past every wall this
+has. So: **the delegation's expiry is the session's**, never longer, and
+revocation rather than the clock is the lever.
+
+**Which means a revoke has to exist.** D23 says *revoking it is a delete* and
+there is no delete: `DelegationService` is unregistered and in `closed`, and
+nothing outside `keys` touches the table. Today a person clicks sign out, the
+session row goes, and the delegation the app holds stays good. The narrow shape
+is the one caller who can prove they hold it -- the issuer, presenting it, the
+same pair `Acting` already reads.
+
+#### What P3 pulls forward from P6, because the page cannot be built without it
+
+A delegation narrows **methods**, not rows. So "my identities" through one is
+`IdentityService/List` answering with the whole tenant and the app filtering --
+which is precisely the leak D23 exists to remove, reinstated inside the app
+written to refuse it. And `MeService` cannot answer instead: `MeGetResponse` has
+emails and no identities.
+
+There is a second wall behind that one. A delegation resolves to the holder, so
+`policy.May` wants a `Binding` for every method except the one `aboutYourself`
+waives -- and `sso.Enrolling` creates a Holder and no binding. So the only thing
+a delegation can call in the reference app today is `MeService/Get`, which is
+the read that has no identities in it.
+
+**So item 7 comes here rather than in P6**: identities on `MeGetResponse`. It is
+the only shape narrowed to the person by construction, which is why
+`aboutYourself` can waive it at all.
+
+#### And the sign-in it rides on is a specimen, deliberately
+
+`examples/sso` signs people in with OIDC and never calls `Vouch`, so there is
+nothing for a delegation to ride back on in its main flow. D23 already recorded
+this and said what to do: *a deployment with Hydra in front does not call
+`Vouch` at all... Anything built on this should assume the `Vouch` case first
+and leave the seam.*
+
+So P3 adds a password route to the reference app, and says in `sso.go` that the
+my-record page is reachable from it and not from the OIDC half. Exchanging an
+`id_token` for a delegation is the seam, and it is a D19 question -- roster
+accepting somebody else's assertion as proof -- so it takes its own entry rather
+than being slipped in here.
+
+#### Three things about the mint, found before they were written
+
+- **A separate RPC, not a field on `Verify`.** D26 just argued three methods
+  rather than one field for the reason that applies here unchanged: a role is a
+  list of methods, so granting `VouchService/Verify` would be granting the power
+  to mint a person-scoped credential, with no way to tell a Login App (which
+  must never mint) from a product app (which must). The alternative it is scored
+  against is not verify-then-delegate -- which is two hashes and two lockout
+  counts -- but `Delegate(who, secret, methods)` **instead of** `Verify`: one
+  round trip, one hash, one lockout, sharing the verification path verbatim.
+  It also removes an overload, since on a field an empty method list has to mean
+  "do not mint" while `keys.Delegate` refuses an empty list outright.
+- **Any check on what may be minted goes before the secret is compared.**
+  Evaluated after, a caller that over-asks gets one answer for a wrong password
+  and another for a right one -- D14's equal-cost refusal, undone as a status
+  code, which is worse than a timing leak because it is exact.
+- **The mint is a write on the sign-in path**, which `vouch.passed` goes out of
+  its way to avoid -- *every successful sign-in would otherwise be a write, for
+  a fact that did not change*. It is now a row, a version, an audit entry and a
+  watch event per sign-in. Worth knowing before it is measured rather than
+  after, and it is what makes the sweep below not optional.
+
+#### What P3 owes the table it filled
+
+**A sweep.** Expiry is enforced on read, deliberately, and nothing collects the
+rows -- so the table grows by one row per sign-in forever. `spin.Run` already
+carries the outbox drain and is where this goes.
 
 ### P4 · A tenant from a hostname, a domain to a provider, and F7
 
@@ -216,10 +302,10 @@ Each takes a `D` in PLAN.md when it is taken. None is taken here.
 | P0 | F9 — a reference reached erased rows | **done** — fixed in `protoc-gen-orm-ent@3843c60`, pin moved, both symptoms tested here |
 | P1 | `Delegation` | **done** — the entity, `rd_`, the issuer binding, and `keys.Delegate`. PLAN.md D25. Nothing mints one over the wire; D24 puts the page first |
 | P2 | `Holder` epoch and disabled, and the refusals | **done** — PLAN.md D26. Closes list items 6 and 12, and item 4's first increment came free |
-| P3 | the reference app's spine | — |
+| P3 | the reference app's spine | **in progress** — designed and stress-tested; the P1 defect it found is fixed |
 | P4 | hostname, mail domain, and F7 | — |
 | P5 | escalation over credential writes, then the write surface | — |
-| P6 | the reads a screen needs, and the screens | — |
+| P6 | the reads a screen needs, and the screens | — · item 7 moves into P3, which cannot draw a page without it |
 | P7 | two-step verification | — |
 | P8 | recovery and the magic link | — |
 | P9 | the rest | — |
