@@ -18,6 +18,7 @@ import { Provider } from '@lesomnus/payday/react'
 import type { App } from '@lesomnus/payday/react'
 
 import { AuthService } from '../gen/app/auth_pb.js'
+import { admin, type Admin } from './client.js'
 import { open } from './store.js'
 import { Page } from './page.js'
 import './style.css'
@@ -149,7 +150,7 @@ function SignIn(props: { onDone: () => void }): React.ReactNode {
  * each other by identifier. Null in the sandbox, where there is no such
  * listener and the screen is not offered.
  */
-async function customers(): Promise<App | null> {
+async function customers(): Promise<{ app: App; admin: Admin } | null> {
 	if (import.meta.env['VITE_SANDBOX'] !== undefined) return null
 
 	const transport = createConnectTransport({
@@ -159,7 +160,11 @@ async function customers(): Promise<App | null> {
 
 	// Keyed apart from the console's own store for the same reason there are two
 	// of them: what they hold is not the same rows.
-	return open(transport, 'console:admin')
+	//
+	// The clients come back beside the store because not everything is a read
+	// of a row: a reset answers with a secret that is never written down, so
+	// there is nothing for the store to hold and nothing for it to redraw.
+	return { app: await open(transport, 'console:admin'), admin: admin(transport) }
 }
 
 async function boot(transport: Transport): Promise<void> {
@@ -193,7 +198,11 @@ async function boot(transport: Transport): Promise<void> {
 	root.render(
 		<StrictMode>
 			<Provider app={app}>
-				<Page onSignOut={out} customers={theirs} />
+				<Page
+					onSignOut={out}
+					customers={theirs?.app ?? null}
+					admin={theirs?.admin ?? null}
+				/>
 			</Provider>
 		</StrictMode>,
 	)

@@ -396,7 +396,7 @@ Each takes a `D` in PLAN.md when it is taken. None is taken here.
 | P3 | the reference app's spine | **done** — `Vouch.Delegate`/`Revoke`, `keys.Sweep`, the lifetime settled, identities and credentials on `MeGetResponse`, and `examples/sso` signing in with a password and reading its own record as the person |
 | P4 | hostname, mail domain, and F7 | **done** — PLAN.md D27. `Host`, `MailDomain`, `FrontService`, `Email` stamped and unique per tenant, `VouchWho.address`, and `examples/sso` asking roster rather than holding a map |
 | P5 | escalation over credential writes, then the write surface | **done** — PLAN.md D28. `core.Reaching`, `Vouch.Reset`, `Vouch.Unlock`, and the rule over `Vouch.Set`. Not done: minting an `rt_` over the wire |
-| P6 | the reads a screen needs, and the screens | **the reads are done** — items 7 and 8. Left: the screens, which are D24 §4 and §5 and are last for D24's own reason |
+| P6 | the reads a screen needs, and the screens | reads done (items 7, 8) · **§5, the operator screen, done** — what somebody signs in with, and the four acts. Left: §4, self-service |
 | P7 | two-step verification | **done** — PLAN.md D29 and D30, and `examples/sso` showing two forms with a half-session between them |
 | P8 | recovery and the magic link | **done** — PLAN.md D31. `Vouch.Link`/`Redeem`, a reset voiding what came before it, and the sweep over both short-lived tables. The air-gap half was already D28's |
 | P9 | the rest | **the session table is done** · left: the event stream, the breached-password check, provider connections (undecided), and the components. None of them blocks the screens |

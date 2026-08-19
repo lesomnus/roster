@@ -99,3 +99,54 @@ td:last-child {
 .none {
 	color: #888;
 }
+
+/* The person panel: what somebody signs in with, and the four acts an operator
+   has when they cannot.
+
+   They sit together because they are one decision -- you look at the ways in,
+   and then you do something about them -- and separating them into a menu
+   somewhere would make the state and the act two screens apart. */
+.person .state {
+	margin: 0.75rem 0;
+}
+
+.person .acts {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin-bottom: 0.75rem;
+}
+
+/* A disabled button is a permission this operator does not hold, and it stays
+   on the page rather than disappearing: a screen that hid what somebody may not
+   do would leave them wondering whether the feature exists. */
+.person .acts button[disabled] {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+/* The one place this app puts a secret on a screen.
+
+   Loud on purpose. It is shown once, it is not stored, and the operator is
+   about to read it out to somebody -- so it has to be selectable, legible at a
+   glance, and obviously not part of the page around it. */
+.secret {
+	border: 2px solid #b58900;
+	background: #fffbeb;
+	padding: 0.75rem 1rem;
+	margin: 0.5rem 0;
+}
+
+.secret code {
+	display: block;
+	font-family: ui-monospace, monospace;
+	font-size: 1.25rem;
+	word-break: break-all;
+	user-select: all;
+	margin: 0.5rem 0;
+}
+
+.secret p {
+	margin: 0;
+	font-size: 0.9rem;
+}

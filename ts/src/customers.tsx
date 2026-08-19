@@ -40,7 +40,9 @@ import type { App } from '@lesomnus/payday/react'
 
 import { TenantService } from '../gen/roster/payday/tenant_svc_pb.js'
 import { HolderService } from '../gen/roster/payday/holder_svc_pb.js'
-import { IdentityService } from '../gen/app/identity_svc_pb.js'
+
+import type { Admin } from './client.js'
+import { Person } from './people.js'
 
 /** uuid is the bytes an identifier arrives as, written the way a person reads one. */
 function uuid(v: Uint8Array | undefined): string {
@@ -64,17 +66,21 @@ function when(v: { seconds: bigint } | undefined): string {
  * state machine: the disk mirror is read before the first query runs, so a
  * spinner here is the only honest thing to draw.
  */
-export function Customers(props: { app: App | null }): React.ReactNode {
-	if (props.app === null) return <p className="loading">…</p>
+export function Customers(props: {
+	app: App | null
+	admin: Admin | null
+	may: (method: string) => boolean
+}): React.ReactNode {
+	if (props.app === null || props.admin === null) return <p className="loading">…</p>
 
 	return (
 		<Provider app={props.app}>
-			<Tenants />
+			<Tenants admin={props.admin} may={props.may} />
 		</Provider>
 	)
 }
 
-function Tenants(): React.ReactNode {
+function Tenants(props: { admin: Admin; may: (method: string) => boolean }): React.ReactNode {
 	const vs = useQuery(TenantService.method.list, {})
 	const [at, go] = useState<string | null>(null)
 
@@ -118,7 +124,13 @@ function Tenants(): React.ReactNode {
 				</tbody>
 			</table>
 
-			{at !== null && <People tenant={items.find((v) => uuid(v.id) === at)} />}
+			{at !== null && (
+				<People
+					tenant={items.find((v) => uuid(v.id) === at)}
+					admin={props.admin}
+					may={props.may}
+				/>
+			)}
 		</section>
 	)
 }
@@ -131,7 +143,11 @@ function Tenants(): React.ReactNode {
  * the ones it wanted would be reading every customer's people to draw one
  * customer's.
  */
-function People(props: { tenant: { id?: Uint8Array; alias?: string } | undefined }): React.ReactNode {
+function People(props: {
+	tenant: { id?: Uint8Array; alias?: string } | undefined
+	admin: Admin
+	may: (method: string) => boolean
+}): React.ReactNode {
 	const id = props.tenant?.id
 	const vs = useQuery(HolderService.method.list, {
 		filters: id === undefined ? [] : [{ tenant: { key: { case: 'id', value: id } } }],
@@ -178,58 +194,13 @@ function People(props: { tenant: { id?: Uint8Array; alias?: string } | undefined
 				</tbody>
 			</table>
 
-			{at !== null && <Identities holder={items.find((v) => uuid(v.id) === at)} />}
-		</section>
-	)
-}
-
-/**
- * Identities is what one person signs in with.
- *
- * The subject is shown as the provider gave it and is not a name: it is
- * whatever that provider treats as immutable -- a numeric id for GitHub, an
- * `oid` for Entra. Somebody reading this screen is checking *which account*,
- * and the answer has to be the one the provider would answer with.
- */
-function Identities(props: { holder: { id?: Uint8Array; alias?: string } | undefined }): React.ReactNode {
-	const id = props.holder?.id
-	const vs = useQuery(IdentityService.method.list, {
-		filters: id === undefined ? [] : [{ holder: { key: { case: 'id', value: id } } }],
-	})
-
-	if (vs.state === 'pending') return <p className="loading">…</p>
-	if (vs.state === 'error') return <Failed at={vs.error} />
-
-	const items = vs.data?.items ?? []
-
-	return (
-		<section className="within">
-			<h4>{props.holder?.alias} signs in with</h4>
-
-			{items.length === 0 && (
-				<p className="none">
-					nothing — they have a password here, or no way in at all
-				</p>
+			{at !== null && (
+				<Person
+					holder={items.find((v) => uuid(v.id) === at)}
+					admin={props.admin}
+					may={props.may}
+				/>
 			)}
-
-			<table>
-				<thead>
-					<tr>
-						<th>provider</th>
-						<th>subject</th>
-						<th>since</th>
-					</tr>
-				</thead>
-				<tbody>
-					{items.map((v) => (
-						<tr key={uuid(v.id)}>
-							<td>{v.provider}</td>
-							<td className="mono">{v.subject}</td>
-							<td>{when(v.dateCreated)}</td>
-						</tr>
-					))}
-				</tbody>
-			</table>
 		</section>
 	)
 }

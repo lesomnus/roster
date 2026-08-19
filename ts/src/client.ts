@@ -25,6 +25,7 @@ import { SiteService } from '../gen/app/site_svc_pb.js'
 import { MeService } from '../gen/app/me_pb.js'
 import { TenantService } from '../gen/roster/payday/tenant_svc_pb.js'
 import { HolderService } from '../gen/roster/payday/holder_svc_pb.js'
+import { VouchService } from '../gen/app/vouch_pb.js'
 import { BatchService } from '@lesomnus/payday/pdpb'
 
 export interface App {
@@ -54,5 +55,29 @@ export function app(transport: Transport): App {
 		apiKey: createClient(ApiKeyService, transport),
 		me: createClient(MeService, transport),
 		batch: createClient(BatchService, transport),
+	}
+}
+
+/**
+ * Admin is what a page calls on the **admin** listener, which is where a
+ * deployment's operator reaches its customers.
+ *
+ * Two services and not the whole of `App`, because this is not a second copy of
+ * the console: it is the three or four writes an operator makes about one
+ * person, and a page reads through the store for everything else.
+ *
+ * `VouchService` is on that port for the reason PLAN.md item 10 gives -- an air
+ * gap has an operator instead of a mail server -- and `cmd/admin.go` says what
+ * it costs and what bounds it.
+ */
+export interface Admin {
+	readonly holder: Client<typeof HolderService>
+	readonly vouch: Client<typeof VouchService>
+}
+
+export function admin(transport: Transport): Admin {
+	return {
+		holder: createClient(HolderService, transport),
+		vouch: createClient(VouchService, transport),
 	}
 }

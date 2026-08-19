@@ -20,6 +20,7 @@ import (
 	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/core"
 	"github.com/lesomnus/roster/server/pd"
+	"github.com/lesomnus/roster/server/vouch"
 )
 
 // The port an operator administers customers through.
@@ -259,6 +260,29 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 
 	g := grpc.NewServer(os...)
 	register(g, admin)
+
+	// And the credential writes, which is what an operator with no mail has
+	// instead of one: reset a password, open an account ten wrong answers
+	// closed. PLAN.md's list, item 10, and D28 is the shape.
+	//
+	// # Without `WithReach`, and that is the decision rather than an omission
+	//
+	// D28 refuses somebody writing the credential of a person who holds more
+	// than they do. It is a rule about escalation **inside a tenant**, and it
+	// reads what the caller holds through their bindings -- which a session on
+	// this port does not have any of, because it names a control plane holder
+	// and the bindings are in the other database.
+	//
+	// So the rule would refuse every reset of anybody with a role, which is not
+	// conservatism but an accident of which database the actor is in. This port
+	// already says the same thing about permissions generally: *an operator has
+	// no standing in a customer's tenant. They administer the deployment; a
+	// customer's people are the customer's.* Administering is what this is.
+	//
+	// What bounds it instead is the port: no wall, bound where only a console
+	// reaches, behind a control-plane session, and every write recorded twice
+	// and joined by the trace.
+	app.RegisterVouchServiceServer(g, vouch.New(admin, admin, vouch.WithKeys(s.Keyring)))
 
 	return g, nil
 }

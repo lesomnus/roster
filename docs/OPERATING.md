@@ -483,6 +483,23 @@ Always the tenant **and** the address. There is no form that takes an address
 alone, because a lookup that could be made without naming a tenant is one a
 front door that forgot to think about which one compiles a wrong answer for.
 
+### The screen for it
+
+The console's **customers** tab: a tenant, the people in it, and one person's
+ways in — `HolderService/SignsIn`, which is the read that exists for this
+screen. Beside them the four acts below, each drawn only when the operator holds
+the method that makes it.
+
+It reaches `admin.http`, which is where the deployment operates on customers,
+and `VouchService` is served there for the reason this section exists: an air
+gap has an operator instead of a mail server. `cmd/admin.go` says what that
+costs — the rule about writing somebody's credential is **not** applied on that
+port, because it reads bindings the caller has none of, and an operator's
+standing there comes from the port rather than from a role.
+
+A new password appears **once**, in the page, to be read out. There is no field
+to type one into: a secret the caller chose is a secret the caller knows.
+
 ### What a local operator does
 
 For a deployment with no mail, where the person who delivers a recovery code is
