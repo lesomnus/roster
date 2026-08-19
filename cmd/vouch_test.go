@@ -457,3 +457,72 @@ func TestABatchCannotCarryACredentialRead(t *testing.T) {
 	x.Error(err, "a batch read the credential the wire will not serve")
 	x.NotEqual(codes.OK, status.Code(err))
 }
+
+// TestAnErasedHolderCannotAuthenticate, which is a guarantee `holder.proto`
+// makes and nothing here was making true.
+//
+// The comment on `Holder.date_erased` says an erased holder "cannot be read,
+// cannot be changed, and **cannot authenticate**", and gives the reason: every
+// read is narrowed by that column. It is right about `auth`, which resolves a
+// caller by reading the Holder and gets NotFound. It was wrong about this read.
+// A credential is found by naming its holder -- `CredentialRefByKind` -- and a
+// reference composed through an edge narrowed nothing, so the row came back and
+// the password verified `ok: true` for somebody who had been erased.
+//
+// Without this test the guarantee is a sentence in a comment.
+func TestAnErasedHolderCannotAuthenticate(t *testing.T) {
+	erase := func(t *testing.T, b *built, ctx context.Context, who pdid.Id) {
+		t.Helper()
+
+		_, err := b.Ungated.Holder().Erase(ctx, app.HolderRef_builder{Id: who.Bytes()}.Build())
+		require.NoError(t, err)
+	}
+
+	t.Run("the secret that worked yesterday does not", func(t *testing.T) {
+		x := require.New(t)
+		b, ctx := build(t)
+
+		b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+		x.True(b.verifies(t, ctx, b.AcmeUser, "correct horse battery staple").GetOk(), "the control")
+
+		erase(t, b, ctx, b.AcmeUser)
+
+		v := b.verifies(t, ctx, b.AcmeUser, "correct horse battery staple")
+		x.False(v.GetOk(), "an erased holder authenticated")
+		x.Nil(v.GetHolder(), "and was told who they were")
+	})
+
+	// The refusal is the ordinary one. Somebody who is gone is a stranger, and
+	// the one refusal this service distinguishes is a lockout -- which says the
+	// account exists, and this one must not.
+	t.Run("and the refusal says nothing else", func(t *testing.T) {
+		x := require.New(t)
+		b, ctx := build(t)
+
+		b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+		erase(t, b, ctx, b.AcmeUser)
+
+		for range vouch.MaxFailures + 1 {
+			v := b.verifies(t, ctx, b.AcmeUser, "wrong")
+			x.False(v.GetOk())
+			x.Nil(v.GetLockedUntil(), "a lockout tells a caller the account is there")
+		}
+	})
+
+	// And nothing writes them a new one. The Add branch of `Set` resolves the
+	// holder by the reference alone, and a reference carrying a key is answered
+	// without a query -- so this is a hole the read cannot close by itself.
+	t.Run("and nothing gives them a new secret", func(t *testing.T) {
+		x := require.New(t)
+		b, ctx := build(t)
+
+		who := b.holder(t, ctx, b.Acme, "leaver")
+		erase(t, b, ctx, who)
+
+		_, err := b.vouched().Set(ctx, app.VouchSetRequest_builder{
+			Who:    app.VouchWho_builder{Id: who.Bytes()}.Build(),
+			Secret: []byte("a fresh one"),
+		}.Build())
+		x.Equal(codes.NotFound, status.Code(err), "somebody who is gone was given a password")
+	})
+}

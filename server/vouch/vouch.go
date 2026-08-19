@@ -110,6 +110,28 @@ func (s *Server) Verify(ctx context.Context, req *app.VouchVerifyRequest) (*app.
 		return no(), nil
 	}
 
+	if v.GetHolder().GetDateErased() != nil {
+		// Somebody who is gone is nobody, and the answer is the one every
+		// stranger gets -- including its cost, which is why this burns.
+		//
+		// `holder.proto` states this as a guarantee: an erased holder "cannot
+		// be read, cannot be changed, and **cannot authenticate**". It states
+		// it as a consequence of the wall -- *every read is narrowed by this
+		// column* -- and that was true of the read `auth` makes and not of this
+		// one. A credential is found by naming its holder, and a reference
+		// composed through an edge narrowed nothing, so the row came back and
+		// the password verified.
+		//
+		// Fixed in the generator as well (protoc-gen-orm-ent, "a reference
+		// reaches only the rows that are still there"), and asserted here
+		// because this is the read the guarantee is about. A sentence that is
+		// true only because of how somebody else composes a predicate is a
+		// sentence that stops being true without anything here changing.
+		Burn(secret)
+
+		return no(), nil
+	}
+
 	if until := v.GetDateLocked(); until != nil && until.AsTime().After(time.Now()) {
 		// Not compared, and nothing written. An attempt that was never going to
 		// be answered must not move the expiry, or one continuous stream of
@@ -169,6 +191,18 @@ func (s *Server) Set(ctx context.Context, req *app.VouchSetRequest) (*app.VouchS
 	sum, err := Hash(req.GetSecret())
 	if err != nil {
 		return nil, status.Error(codes.Internal, "the secret cannot be stored just now")
+	}
+
+	// Read the person before writing their secret, because the write below may
+	// be an Add and an Add resolves its edge by the reference alone -- a
+	// reference carrying a key is answered without a query at all, so nothing
+	// on that path would notice that they are gone. See [Server.Verify] for the
+	// half of this that matters more.
+	if _, err := s.walled.Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref:    ref,
+		Select: app.HolderSelect_builder{All: z.Ptr(true)}.Build(),
+	}.Build()); err != nil {
+		return nil, err
 	}
 
 	now := timestamppb.Now()
@@ -323,6 +357,10 @@ func (s *Server) credential(ctx context.Context, from app.Server, ref *app.Holde
 
 			Holder: app.HolderSelect_builder{
 				Tenant: app.TenantSelect_builder{}.Build(),
+
+				// Whether they are still here, which this has to ask for
+				// rather than rely on. See [Server.Verify].
+				DateErased: z.Ptr(true),
 			}.Build(),
 		}.Build(),
 	}.Build())

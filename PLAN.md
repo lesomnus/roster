@@ -1130,6 +1130,50 @@ give up the consultant case, or take the tenant from somewhere the form did not
 type — a hostname, a selector, the URL a Login App was reached at. The second
 keeps the schema and is what a multi-tenant product does anyway.
 
+### F9 · A reference through an edge reached rows that were erased — **fixed upstream, pin not moved**
+
+Not payday's, and the rule reads the same: this is `protoc-gen-orm-ent`, which
+writes `server/bare/`.
+
+`<Entity>Narrow` is documented as *"the one place a read of this entity is
+narrowed, so that every query narrows the same way and none of them can be the
+one that forgot"*. A **reference** was the one that forgot. A unique index over
+an edge generates `Has<Target>With(<Target>Pick(...))`, and that composition
+never reaches a Narrow of the target -- what the read narrows is the child.
+
+Two symptoms, and the first is why it was looked for at all:
+
+- **`VouchService.Verify` answered `ok: true` for an erased holder.** A
+  credential is found by `CredentialRefByKind{holder, kind}`, so the holder is
+  named through an edge. `holder.proto` says in as many words that an erased
+  holder *cannot authenticate*, and gives the wall as the reason. The wall was
+  never in that path.
+- **`Email.Get` by `(erased holder, address)` answered through the walled
+  server.** Erase somebody and their address stays readable by anybody who may
+  read that tenant's mail, while the person themselves answers NotFound. The
+  incoherence is what gives it away: a tenancy path narrows the child, and
+  nothing narrows the parent's liveness.
+
+Fixed there rather than here -- `<Entity>Pick` answers among the live rows and
+the switch it used to be moves to `pick<Entity>` -- with a test that fails
+without it. Narrow keeps its own copy: it is still the one place a read that
+names the row directly is narrowed, and a predicate that holds twice costs a
+pair of parentheses.
+
+**What is left**, and it is a decision rather than an oversight: `<Entity>Id`
+answers a reference that carries a key without a query at all, so an `Add` can
+still point an edge at an erased row by naming its id. Closing it costs a read
+on every write that names an edge.
+
+**And the pin has not moved**, so this deployment still has the second symptom.
+The commit is in the checkout and unpushed; F5 is why it will be moved by sha
+and not by `@main`.
+
+What is closed here regardless is the first one, in `server/vouch`, and it is
+worth keeping after the pin moves: a guarantee that holds only because of how
+somebody else composes a predicate is a guarantee that stops holding without
+anything here changing.
+
 ### F8 · Two payday apps could not be linked into one process — **fixed**
 
 Found by trying it: custody imported this module to call `VouchService`, and its
@@ -1173,7 +1217,7 @@ D15 relies on.
 | 1 · schema — Site, Identity, Email | **done**, 15 tests, both databases |
 | 1b · Team, on the second axis | **done**, 21 tests, both databases |
 | 1c · memberships, Credential | **done**, 27 tests, both databases |
-| 2 · payday fixes | F1, F2, F4 done · F3, F6, F7 open · F5 written down |
+| 2 · payday fixes | F1, F2, F4 done · F9 fixed upstream, pin to move · F3, F6, F7 open · F5 written down |
 | 3 · app layer | linking rules, credential verification, roles and the second axis, `MeService`, escalation prevention, the console · **done** |
 | 4 · keys, sync, console | **keys done** (both planes; no wire surface to mint an `rt_`) · sync channel, console — |
 | 5 · the line, written down | **done** — D19, D20, and POSITION.md rewritten around them |

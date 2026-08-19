@@ -13,10 +13,32 @@ about a sequence, this one is.
 The twelve items were written as they were found, so they are twelve subjects
 and not twelve pieces of work. Reading them together, four collapse.
 
-**Three of them are one table.** D21's `continuation`, D23's delegation token
-and item 3's magic-link nonce are each described with the same four words —
-opaque, short-lived, single-use, bound to the caller it was issued to. Built
-separately they are three expiry sweeps and three ways to get single-use wrong.
+**Three of them share a test, and it turned out not to be a table.** D21's
+`continuation`, D23's delegation token and item 3's magic-link nonce are each
+described with the same four words — opaque, short-lived, single-use, bound to
+the caller it was issued to — and D19's question has one answer for all three.
+This file said they were therefore one entity with a `kind`, and D16 refutes
+that in its own words:
+
+- **What is proved is not what is granted.** The delegation token carries
+  `methods`, read by the interceptor before the handler; D23 calls it *an `rt_`
+  key with a short life*. The continuation carries `satisfied` and grants
+  nothing, and must never be a bearer at all — D21 calls it *a bearer credential
+  for a half-proven identity, and the only thing that makes that acceptable is
+  that it is barely alive*. One table means a `methods` column that is
+  load-bearing for one kind and must be empty for the others, which is an
+  invariant no schema states.
+- **The kind selects the cost.** A delegation token and a continuation are 256
+  bits from `crypto/rand`, so a fast deterministic hash is right. An air-gapped
+  recovery code is *read out or written down by a local operator* — short, and
+  therefore argon2 with an attempt counter and a lockout. That is `Credential`'s
+  machinery, not `ApiKey`'s, and it is the third leg of D16 landing exactly
+  where D16 said it would.
+
+So the consolidation was wrong and the category is real. What follows from it is
+smaller and better: **P1 builds the delegation token and nothing else**, which
+is also what D24 put first and what D24 says must be specified by a page rather
+than reasoned about.
 
 **Two of them are two fields, and a third is already half-built.** Item 6 (an
 epoch: everything issued before this is void) and item 12 (disabled) are
@@ -50,16 +72,25 @@ constrains within one.
 
 Each phase names what forces its position. Anything not named is free to move.
 
-### P1 · `Ticket`, the table three things wait on
+### P1 · `Delegation`, and the prefix that reaches it
 
-**Forces the order:** D24 puts the delegation token first, and the token is a
-row in this table.
+**Forces the order:** D24 names it as the one thing everything else is built
+wrong without.
 
 Modelled on `ApiKey`, which has already argued every question this asks:
 256 bits from `crypto/rand`, a **deterministic unsalted hash with a unique
 index** because the verifier is also how the row is found, `(payday.field) =
 {secret: true}` so the trail does not keep a second copy, and the generated
 service closed the way `CredentialService` is.
+
+It is close enough to `ApiKey` that the comparison has to be made rather than
+skipped, and D23 makes it: *practically it is an `rt_` key with a short life,
+minted for the person an app just authenticated*. What keeps it a second entity
+is that an `ApiKey` is a thing a **person** names and manages — `alias` is
+unique per holder and is *what somebody calls this key when deciding whether to
+revoke it* — and a delegation token is minted per sign-in by an app the person
+never sees. One list would be full of rows nobody named, which is the screen
+item 7 and D24 §5 are for.
 
 Three things that are not `ApiKey`'s:
 
@@ -74,19 +105,31 @@ Three things that are not `ApiKey`'s:
 - **Single-use is a compare-and-swap**, for D14's reason one row over: two
   concurrent uses must be one success.
 
-### P2 · The delegation token (D23), and two fields on `Holder`
-
-**Forces the order:** everything that draws a screen about a person needs the
-token (D23 says so, and D24 §4 and §5 are the screens).
-
 The prefix is not a new idea. OPERATING.md already says *the prefix decides
 which database holds the row and who the token is served as*, so a third value
-is that rule's next entry rather than an exception to it. It resolves to the
-holder, exactly as `rt_` does, and is never wider than they are.
+is that rule's next entry rather than an exception to it — and it is that rule's
+next entry only because this is one kind of thing. It resolves to the holder,
+exactly as `rt_` does, and is never wider than they are.
 
-Beside it, the two `Holder` fields — item 6 and item 12. They are here rather
-than later because item 3 needs the first one anyway: a password reset that
+The issuer binding cannot live where the lookup does. `auth.TokenStore.Lookup`
+is handed the token and nothing else — no caller, no peer, no frame — so a
+comparison written there compiles, runs and binds nothing. It goes where a frame
+exists: `Introspect`, and whatever mints one.
+
+### P2 · Two fields on `Holder`, and the refusals that make them mean something
+
+**Forces the order:** item 3 needs the first one anyway — a password reset that
 leaves old sessions alive is not a reset.
+
+Item 6 (an epoch) and item 12 (disabled), at the two numbers payday leaves free.
+Both timestamps and neither a bool: item 6's correctness argument *is*
+monotonicity, and item 12 rides the same stream, where a flag that flips has no
+such safety and cannot answer *since when*.
+
+A column is inert on arrival. Nothing in the wall, the gate or the erased
+machinery reads a new timestamp, so the phase is not done when the field
+generates — it is done when `vouch` and `cmd.Resolver` refuse, which is the same
+pair of paths F9 was about.
 
 ### P3 · The reference app's spine (D24 §2)
 
@@ -152,11 +195,10 @@ own reason).
 
 Each takes a `D` in PLAN.md when it is taken. None is taken here.
 
-1. **Is `Ticket` one entity or several?** D16 refused `ApiKey` as a `Credential`
-   of `kind: "api-key"` and gave three reasons — uniqueness, what is being
-   proved versus what is being granted, and the cost of the hash. Whether that
-   argument lands here in the same shape is the question, and it is the first
-   thing P1 has to answer rather than assume.
+1. ~~**Is `Ticket` one entity or several?**~~ Answered, above: two of D16's
+   three reasons land, so the delegation token is its own entity and the
+   continuation and the nonce are not settled by that choice. It takes a `D`
+   once P1 is written.
 2. **The rule for item 11.** *Only somebody whose permissions are a subset of
    yours*, or *a tenant operator is a tenant administrator, and we say so*.
 3. **Item 9's boundary.** A provider connection carries a client secret, and
@@ -171,8 +213,9 @@ Each takes a `D` in PLAN.md when it is taken. None is taken here.
 
 | | | |
 | --- | --- | --- |
-| P1 | `Ticket` | **in progress** |
-| P2 | delegation token · `Holder` epoch and disabled | — |
+| P0 | F9 — a reference reached erased rows | **done** — fixed in `protoc-gen-orm-ent`; `vouch` refuses; pin still to move |
+| P1 | `Delegation` | **in progress** |
+| P2 | `Holder` epoch and disabled, and the refusals | — |
 | P3 | the reference app's spine | — |
 | P4 | hostname, mail domain, and F7 | — |
 | P5 | escalation over credential writes, then the write surface | — |
