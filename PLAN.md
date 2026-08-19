@@ -1811,19 +1811,36 @@ that already had the fix.
 
 Use the commit, or `GOPROXY=direct`. Written in `CLAUDE.md`.
 
-### F3 · A non-nullable message field lies about presence — **open**
+### F3 · A non-nullable message field lied about presence — **fixed**
 
 The one above (D6) as a payday question rather than a roster one. A
 `google.protobuf.Timestamp` with no `nullable`, no `default` and no marker
-generates a NOT NULL column, while the API it generates beside it has `Has…`.
-The two cannot both be true, and the caller is told a value it never set is set.
+generated a NOT NULL column, while the API generated beside it had `Has…`. The
+two cannot both be true, and the caller is the one told the lie: they ask
+whether a value is set, are told yes, and read a zero somebody wrote because the
+column would not take null. It is not a failure anywhere -- it is a row that
+says a thing happened at the beginning of the epoch.
 
-It should be a generation failure, the way everything else that fails quietly
-is: *this field has presence in the API and nowhere to keep it — say
-`nullable: true` or give it a default.* Not attempted yet, because the rule has
-to leave `date_created` (`default: ""`), `date_updated` (`version: {}`) and
-`date_erased` (`erased: {}`) alone, and getting that boundary wrong breaks every
-existing schema.
+It is a generation failure now -- `pdgen.checkPresence` -- naming the field, the
+`Has` that lies, and the two ways to say what was meant. Refused rather than
+picked between, because `nullable: true` and a default mean different things and
+a generator choosing one would be deciding what an app meant.
+
+#### The boundary, which is why this one waited
+
+The rule has to leave `date_created` (`default: ""`), `date_updated`
+(`version: {}`) and `date_erased` (`erased: {}`) alone, and getting that wrong
+breaks every existing schema. What makes it safe is that the exemption is stated
+as those three **declarations** and not those three **names**: each is stamped
+by the server rather than given by a caller, so its presence is not a claim
+about what somebody sent -- and an app whose version field is spelled
+differently is not caught by a rule about spelling. Edges are out for the same
+reason: an edge is a message field too, and its presence is the foreign key
+being there.
+
+Confirmed against this app: a bare `google.protobuf.Timestamp date_seen = 8` on
+`Host` is refused, by name, with both fixes offered. And it surfaces through
+`pd doctor` now as well as `pd gen`, which is F12.
 
 ### F6 · A schema cannot say "written, never read" — **fixed, and adopted**
 
@@ -2074,7 +2091,7 @@ Confirmed here: `proto/app/host.proto` moved onto `MailDomain`'s domain, and
 | 1 · schema — Site, Identity, Email | **done**, 15 tests, both databases |
 | 1b · Team, on the second axis | **done**, 21 tests, both databases |
 | 1c · memberships, Credential | **done**, 27 tests, both databases |
-| 2 · payday fixes | F1, F2, F4, F6, F9, F10, F11, F12 done · F7 closed by D27 · **F3 open** · F5 written down |
+| 2 · payday fixes | **all closed** — F1, F2, F3, F4, F6, F8, F9, F10, F11, F12 fixed · F7 by D27 · F5 is operational and written down |
 | 3 · app layer | linking rules, credential verification, roles and the second axis, `MeService`, escalation prevention, the console · **done** |
 | 4 · keys, sync, console | **keys done** (both planes; no wire surface to mint an `rt_`) · **delegation done** (D25; no wire surface either) · sync channel, console — |
 | 5 · the line, written down | **done** — D19, D20, and POSITION.md rewritten around them |
