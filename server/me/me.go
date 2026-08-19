@@ -107,7 +107,25 @@ func (s *Server) Get(ctx context.Context, _ *app.MeGetRequest) (*app.MeGetRespon
 			return nil, err
 		}
 
-		res.Methods = ms
+		// Narrowed to what this **credential** may do, not only to what the
+		// person may.
+		//
+		// The field is here so that *what a page shows and what it is allowed
+		// to do cannot drift*, and a caller reached through a delegation or an
+		// api key can call less than its holder: the row's `methods` are an
+		// attenuation the gate applies on every call. Answering with the
+		// person's whole union would draw buttons that are refused when
+		// pressed -- the drift this exists to prevent, in the other direction.
+		//
+		// `frame.Whole` allows everything, so somebody signing in the ordinary
+		// way sees no difference.
+		res.Methods = ms[:0]
+		for _, m := range ms {
+			if f.Grant.Allows(m) {
+				res.Methods = append(res.Methods, m)
+			}
+		}
+
 		res.EverySite = every
 		for _, k := range sites {
 			res.Sites = append(res.Sites, k.Bytes())

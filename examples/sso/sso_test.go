@@ -29,6 +29,8 @@ import (
 	"github.com/lesomnus/roster/cmd"
 	"github.com/lesomnus/roster/examples/sso"
 	rstr "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/keys"
+	"github.com/lesomnus/roster/server/vouch"
 )
 
 // The whole flow, run.
@@ -168,13 +170,22 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 	ctx := t.Context()
 
 	drv, dsn := pdtest.DB(t)
+	cdrv, cdsn := pdtest.DB(t)
+
+	// With a control plane, which is what the deployment this example describes
+	// has. Without one roster serves `auth.Plain` and believes whatever a
+	// caller writes -- fine for the provider half, and no use at all for the
+	// password half: a delegation is bound to the caller it was issued to, and
+	// `Plain` names a caller that cannot say which row it is.
 	s, err := cmd.Build(ctx, cmd.Config{
-		Db:    config.DbConfig{Driver: drv, Dsn: dsn},
-		Watch: config.WatchConfig{Broker: config.BrokerMemory},
+		Db:      config.DbConfig{Driver: drv, Dsn: dsn},
+		Watch:   config.WatchConfig{Broker: config.BrokerMemory},
+		Control: cmd.ControlConfig{Db: config.DbConfig{Driver: cdrv, Dsn: cdsn}},
 	})
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })
 	x.NoError(s.Ent.Schema.Create(ctx))
+	x.NoError(s.Control.Ent.Schema.Create(ctx))
 
 	seeded, err := cmd.Seed(ctx, s, cmd.Seeding{
 		Tenant:   "acme",
@@ -188,9 +199,9 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 	// answer to "which credential does the login app call roster with", and
 	// writing the methods out is the answer to "and what may it do with it".
 	//
-	// A deployment mints an API key for this holder (`roster key add`) and the
-	// connection carries it. Here it is `auth.Plain`, which believes what the
-	// caller writes -- right for a test, and never for a deployment.
+	// A deployment mints an API key for this holder and the connection carries
+	// it, which is what happens below: an `rt_`, because this app is one
+	// operator's front door and therefore somebody inside that tenant.
 	svc, err := s.Ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
 		Tenant: rstr.TenantRef_builder{Id: seeded.Tenant.Bytes()}.Build(),
 		Alias:  "login-app",
@@ -208,6 +219,13 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 			"/roster.IdentityService/Add",
 			"/roster.HolderService/Get",
 			"/roster.HolderService/Add",
+
+			// The password half, and the page it exists for. Written out
+			// rather than a pattern, so that what this app may do reads as a
+			// list somebody chose.
+			"/roster.VouchService/Delegate",
+			"/roster.VouchService/Revoke",
+			"/roster.MeService/Get",
 		},
 	}.Build())
 	x.NoError(err)
@@ -219,15 +237,30 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 	x.NoError(err)
 
 	// The credential is a property of the connection, not of every call. That
-	// is what lets the app below hold a plain `rstr.Client` and know nothing
-	// about how this deployment authenticates.
-	who, err := pdid.From(svc.GetId())
+	// is what lets the app below know nothing about how this deployment
+	// authenticates -- and it is why a delegation travels in a header of its
+	// own rather than in `authorization`, which this connection has already
+	// filled in.
+	token, sum, err := keys.Mint(keys.PrefixTenant)
+	x.NoError(err)
+
+	_, err = s.Ungated.ApiKey().Add(ctx, rstr.ApiKeyAddRequest_builder{
+		Holder: rstr.HolderRef_builder{Id: svc.GetId()}.Build(),
+		Alias:  "front-door",
+		Secret: sum,
+
+		// A key holds no more than its holder, so this list is an attenuation
+		// of the role above rather than a second grant. Written out to the same
+		// thing, because there is nothing this app does that its key should
+		// not.
+		Methods: []string{"/roster.*/*"},
+	}.Build())
 	x.NoError(err)
 
 	g, err := s.Grpc(ctx, cmd.Config{})
 	x.NoError(err)
 
-	conn := serveRoster(t, g, auth.PlainProvider(who.String()))
+	conn := serveRoster(t, g, auth.BearerProvider(token))
 	client := rstr.NewClient(conn)
 
 	d := &deployment{roster: client, tenant: seeded.Tenant, ungated: s.Ungated, idp: newIdp(t)}
@@ -247,7 +280,7 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 		Provider:     "example",
 		Scopes:       []string{"email"},
 		Tenants:      tenants,
-	}, client, sessions, enrol(client))
+	}, conn, sessions, enrol(client))
 	x.NoError(err)
 
 	// The example's mux is `/login` and `/callback` and nothing else, which is
@@ -255,6 +288,8 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 	m := http.NewServeMux()
 	m.Handle("/login", a.Handler())
 	m.Handle("/callback", a.Handler())
+	m.Handle("/session", a.Handler())
+	m.Handle("/me", a.Handler())
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("home")) })
 
 	front.Config.Handler = m
@@ -566,4 +601,198 @@ func TestTheStateIsChecked(t *testing.T) {
 	n, _ := res.Body.Read(b)
 	x.NotContains(strings.ToLower(string(b[:n])), "state",
 		"and it does not say which half was wrong")
+}
+
+// TestAPasswordSignInReadsItsOwnRecord is what D24 says this app is for:
+// specifying the delegation rather than demonstrating it.
+//
+// It is the whole of PLAN.md D23 in one flow. The app holds a credential that
+// can read every tenant it serves; the page below is somebody's own record, and
+// it is read with a credential narrowed to that person and to one method. The
+// two ways it is not done are the two D23 refuses -- the app's own key, and the
+// app filtering rows it should not have been handed.
+func TestAPasswordSignInReadsItsOwnRecord(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "acme"})
+
+	h, err := d.ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),
+		Alias:  "erin",
+		Name:   "Erin",
+	}.Build())
+	x.NoError(err)
+
+	_, err = d.ungated.Email().Add(ctx, rstr.EmailAddRequest_builder{
+		Holder:  rstr.HolderRef_builder{Id: h.GetId()}.Build(),
+		Address: "erin@acme.example",
+	}.Build())
+	x.NoError(err)
+
+	_, err = d.ungated.Identity().Add(ctx, rstr.IdentityAddRequest_builder{
+		Holder:   rstr.HolderRef_builder{Id: h.GetId()}.Build(),
+		Provider: "example",
+		Subject:  "1078",
+	}.Build())
+	x.NoError(err)
+
+	// Erin may do two things, so that what the page shows can be narrower than
+	// what she holds -- which is the whole point of the assertion below.
+	role, err := d.ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
+		Tenant:  rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),
+		Alias:   "reader",
+		Methods: []string{"/roster.MeService/Get", "/roster.HolderService/Get"},
+	}.Build())
+	x.NoError(err)
+
+	_, err = d.ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
+		Role:   rstr.RoleRef_builder{Id: role.GetId()}.Build(),
+		Holder: rstr.HolderRef_builder{Id: h.GetId()}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	// The deployment's own work: setting somebody's first password is not
+	// something the front door may do, and `VouchService/Set` is not on its
+	// role. See `roster init` and PLAN.md's list, item 10.
+	_, err = vouch.New(d.ungated, d.ungated).Set(ctx, rstr.VouchSetRequest_builder{
+		Who:    rstr.VouchWho_builder{Id: h.GetId()}.Build(),
+		Secret: []byte("correct horse battery staple"),
+	}.Build())
+	x.NoError(err)
+
+	jar, err := cookiejar.New(nil)
+	x.NoError(err)
+
+	c := &http.Client{Jar: jar}
+
+	post := func(alias, password string) *http.Response {
+		t.Helper()
+
+		body := strings.NewReader(`{"alias":"` + alias + `","password":"` + password + `"}`)
+		res, err := c.Post(d.app.URL+"/session", "application/json", body)
+		x.NoError(err)
+		t.Cleanup(func() { res.Body.Close() })
+
+		return res
+	}
+
+	t.Run("a wrong password is one answer and no cookie", func(t *testing.T) {
+		x := require.New(t)
+
+		res := post("erin", "hunter2")
+		x.Equal(http.StatusUnauthorized, res.StatusCode)
+		x.Empty(res.Cookies())
+
+		// And a person who is not there is the same answer, which is the thing
+		// roster went to trouble to make one and this must not undo.
+		x.Equal(http.StatusUnauthorized, post("nobody-at-all", "hunter2").StatusCode)
+	})
+
+	res := post("erin", "correct horse battery staple")
+	x.Equal(http.StatusNoContent, res.StatusCode)
+	x.NotEmpty(res.Cookies(), "a session was minted")
+
+	t.Run("and the page is read as the person", func(t *testing.T) {
+		x := require.New(t)
+
+		got, err := c.Get(d.app.URL + "/me")
+		x.NoError(err)
+		defer got.Body.Close()
+		x.Equal(http.StatusOK, got.StatusCode)
+
+		var v struct {
+			Alias     string   `json:"alias"`
+			Name      string   `json:"name"`
+			Emails    []string `json:"emails"`
+			Providers []string `json:"providers"`
+			SignsInBy []string `json:"signs_in_by"`
+			MayCall   []string `json:"may_call"`
+		}
+		x.NoError(json.NewDecoder(got.Body).Decode(&v))
+
+		x.Equal("erin", v.Alias)
+		x.Equal("Erin", v.Name)
+		x.Equal([]string{"erin@acme.example"}, v.Emails)
+		x.Equal([]string{"example"}, v.Providers)
+		x.Equal([]string{"password"}, v.SignsInBy)
+
+		// Erin holds two methods and the delegation was minted for one, so this
+		// is what she may do **through this app** rather than everything she
+		// may do. A page drawn from the wider list would show a button that is
+		// refused when pressed, which is the drift the field exists to prevent
+		// -- in the direction nobody had looked.
+		x.Equal([]string{"/roster.MeService/Get"}, v.MayCall)
+	})
+
+	t.Run("and signing out revokes it rather than forgetting it", func(t *testing.T) {
+		x := require.New(t)
+
+		// One before, so that "none after" is a count that moved.
+		n, err := d.ungated.Delegation().List(ctx, rstr.DelegationListRequest_builder{}.Build())
+		x.NoError(err)
+		x.Len(n.GetItems(), 1)
+
+		req, err := http.NewRequest(http.MethodDelete, d.app.URL+"/session", nil)
+		x.NoError(err)
+
+		out, err := c.Do(req)
+		x.NoError(err)
+		defer out.Body.Close()
+		x.Equal(http.StatusNoContent, out.StatusCode)
+
+		// Gone from roster, not merely dropped here. Forgetting it would leave
+		// a live credential for that person until its own clock ran out, which
+		// is the case D23 said "revoking it is a delete" about and which
+		// nothing could do until `VouchService/Revoke` existed.
+		after, err := d.ungated.Delegation().List(ctx, rstr.DelegationListRequest_builder{}.Build())
+		x.NoError(err)
+		x.Empty(after.GetItems(), "signing out left a live delegation behind")
+
+		// And the page is closed to this browser.
+		got, err := c.Get(d.app.URL + "/me")
+		x.NoError(err)
+		defer got.Body.Close()
+		x.Equal(http.StatusForbidden, got.StatusCode)
+	})
+}
+
+// TestTheProviderHalfHasNoDelegation is the seam D23 left, said out loud.
+//
+// A sign-in through the provider never calls `Vouch` -- the secret is somebody
+// else's to check -- so there is nothing for a delegation to ride back on.
+// Exchanging an `id_token` for one is a different decision: it is roster
+// accepting somebody else's assertion as proof, which is a D19 question.
+//
+// So the page answers a refusal rather than quietly falling back to the app's
+// own credential, which is the failure this whole phase exists to avoid.
+func TestTheProviderHalfHasNoDelegation(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	d := serve(t, func(c rstr.Client) sso.Enrol { return sso.Enrolling(c) }, map[string]string{"127.0.0.1": "acme"})
+	d.idp.subject = "2049"
+	d.idp.claims = map[string]any{"email": "newcomer@acme.example", "email_verified": true}
+
+	jar, err := cookiejar.New(nil)
+	x.NoError(err)
+
+	c := &http.Client{Jar: jar}
+
+	res, err := c.Get(d.app.URL + "/login")
+	x.NoError(err)
+	defer res.Body.Close()
+	x.Equal(http.StatusOK, res.StatusCode, "signed in and followed the redirect home")
+
+	got, err := c.Get(d.app.URL + "/me")
+	x.NoError(err)
+	defer got.Body.Close()
+	x.Equal(http.StatusForbidden, got.StatusCode,
+		"the provider half drew a page it has no credential for")
+
+	// And nothing was minted, so the refusal is the absence of one rather than
+	// a check in front of one.
+	n, err := d.ungated.Delegation().List(ctx, rstr.DelegationListRequest_builder{}.Build())
+	x.NoError(err)
+	x.Empty(n.GetItems())
 }

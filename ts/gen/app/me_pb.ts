@@ -84,6 +84,13 @@ export type MeGetResponse = Message<"roster.MeGetResponse"> & {
    * allowed -- that is the server, on every call, and a client that treated
    * this as the decision would be one an altered client could talk out of.
    *
+   * Narrowed to what the **credential** may do and not only to what the person
+   * may. A caller reached through a delegation or an api key can call less than
+   * its holder, since the row's `methods` are an attenuation the gate applies
+   * on every call -- so the person's whole union would draw buttons that are
+   * refused when pressed. That is the same drift, in the direction nobody had
+   * looked.
+   *
    * @generated from field: repeated string methods = 10;
    */
   methods: string[];

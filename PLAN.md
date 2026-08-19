@@ -1637,6 +1637,13 @@ the schedule.
    for, and that is Hydra again.
 
 7. **A read that answers which methods somebody has**, without the verifier.
+   **Half done** in P3: `MeService` answers a person's own identities and
+   credential kinds, which is the half a self-service screen needs and the only
+   half that is safe without a subject argument. What is left is the same
+   answer **about somebody else**, for an operator's list, narrowed by the wall
+   and by a delegation.
+
+   The original entry:
    `CredentialService` is unregistered because its `Get` answers with the
    secret (D13), so nothing today can say "this person has a password and a
    TOTP" — which both a self-service screen and an operator's list need.

@@ -65,6 +65,7 @@ import (
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -196,6 +197,14 @@ type App struct {
 	enrol    Enrol
 	tenants  map[string]string
 
+	// The two hand-written services, which `rstr.Client` does not carry: it
+	// bundles the entity services, and these are not entities.
+	vouch rstr.VouchServiceClient
+	me_   rstr.MeServiceClient
+
+	// What this app is holding on somebody's behalf; see `password.go`.
+	held delegations
+
 	// after is where the browser goes once it is signed in.
 	after string
 }
@@ -205,7 +214,14 @@ type App struct {
 // It is done here rather than per request because it is an HTTP round trip to
 // somebody else's server: an app that did it on every sign-in would be down
 // whenever they were slow.
-func New(ctx context.Context, c Config, roster rstr.Client, s *authsession.Sessions, enrol Enrol) (*App, error) {
+// `conn` is the same connection `roster` was built on, and it is taken as well
+// because `rstr.Client` bundles the **entity** services -- `VouchService` and
+// `MeService` are written by hand and are not among them. One argument rather
+// than two clients so that a caller cannot hand over two connections
+// authenticating as two different callers.
+func New(ctx context.Context, c Config, conn *grpc.ClientConn, s *authsession.Sessions, enrol Enrol) (*App, error) {
+	roster := rstr.NewClient(conn)
+
 	if c.Provider == "" {
 		return nil, errors.New("sso: Provider: what roster should call this provider")
 	}
@@ -243,14 +259,25 @@ func New(ctx context.Context, c Config, roster rstr.Client, s *authsession.Sessi
 		enrol:    enrol,
 		tenants:  c.Tenants,
 		after:    "/",
+
+		vouch: rstr.NewVouchServiceClient(conn),
+		me_:   rstr.NewMeServiceClient(conn),
 	}, nil
 }
 
-// Handler is `/login` and `/callback`.
+// Handler is the whole of this app's surface.
+//
+// `/login` and `/callback` are the provider's round trip. `/session` is the
+// other front door -- a password, checked by roster -- and `/me` is the one
+// page that spends what it answers with. `password.go` says why the second
+// pair is here at all, and what it does not reach.
 func (a *App) Handler() http.Handler {
 	m := http.NewServeMux()
 	m.HandleFunc("/login", a.login)
 	m.HandleFunc("/callback", a.callback)
+	m.HandleFunc("POST /session", a.signIn)
+	m.HandleFunc("DELETE /session", a.signOut)
+	m.HandleFunc("GET /me", a.me)
 
 	return m
 }
