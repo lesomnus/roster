@@ -137,6 +137,93 @@ over memberships, credential verification.
 Recorded as they are made, with the reason, so that a later disagreement argues
 with the reason rather than rediscovering the question.
 
+### D26 · Two timestamps on a Holder, and the refusals are the feature
+
+Items 6 and 12 of the list below, taken together because they are two columns at
+the two numbers payday leaves this app free, and because everything hard about
+them is the same thing: **nothing generated reads a new timestamp.** Not the
+wall, not the gate, not the erasure machinery. The app compiles and serves with
+both columns in place and neither meaning anything, so the schema is the small
+half and the refusals are the decision.
+
+#### Both are timestamps, and a flag would lose the argument
+
+`date_invalidated` says *everything issued before this moment is void*, and its
+whole correctness case is monotonicity: the value travels, a duplicate is a
+no-op, a stale one cannot un-revoke, and a message that never arrives costs
+latency rather than correctness. A boolean that flips has none of that.
+
+`date_disabled` rides the same stream, so it takes the same shape -- and *since
+when* is a question an operator asks about a suspension anyway.
+
+#### Three methods, and not a field on `Update`
+
+`HolderService.Update` is the narrow write a person makes **about themselves**.
+These are somebody else's decision about them, so they are their own methods --
+and roles here are lists of methods, which means a separate name is the only way
+a deployment can grant one without granting the other. As a field on `Update`,
+suspending somebody would be something anybody who may edit a profile may do,
+with nothing to ask for instead.
+
+`Disable` and `Enable` rather than one method taking a value, for the same
+reason one notch down. `Invalidate` has no opposite, by construction: it takes
+no time from anybody and the server stamps `now`, so an older value cannot be
+written and there is nothing to undo. A credential that can be brought back is
+not revoked.
+
+#### They decline the version, and `Update` cannot
+
+payday refuses a `Patch` with no version rather than assuming one, *because an
+unset field cannot be told apart from a caller who never considered locking at
+all*. That is right for `Update`, which replaces a value the caller read.
+
+It is wrong here, and not slightly: requiring a version means a suspension that
+**fails because somebody edited a profile**, which makes editing a profile in a
+loop a way to avoid being suspended. A security action that can lose a race is
+one that can be prevented. So a caller who has read the row may send the version
+and get the check, and one who has not gets the write.
+
+#### Where each is enforced, and why neither place covers the other
+
+| | where | why it cannot be the other place |
+| --- | --- | --- |
+| `date_disabled` | `cmd.Resolver`, and `vouch.Verify` | the resolver is where every credential that resolves to a holder arrives -- a session, an `rt_`, a delegation -- and it never sees a password. `vouch` is where somebody signs in and there is no frame yet |
+| `date_invalidated` | the credential's own lookup | the resolver sees the holder and not the credential, so it cannot know **when** the thing in front of it was issued. Only the row does |
+
+That split is the whole of why this is two changes and not one.
+
+#### What the epoch voids, and what it deliberately does not
+
+A `Delegation`, which is a sign-in in miniature. **Not** an `ApiKey`.
+
+The other reading is defensible -- somebody signing out everywhere after a
+compromise wants everything dead -- and this is what was chosen instead: a key
+is named, listed and revoked one at a time, and killing somebody's scripts
+silently under "sign out everywhere" is an outage with nothing anywhere saying
+why. Revoking a key is a second act and it has a second name. It is what every
+provider that has both does, and the day it is wrong here is the day to write
+`InvalidateKeys` rather than to widen this.
+
+#### And item 4's first increment came free
+
+`Holder` already declares `watch: {}`, justified in `holder.proto` because *the
+one fact about somebody that has to travel is that they are **gone***. Two more
+facts about somebody that have to travel are now on the same row, so they arrive
+on a stream that already exists. The event stream item 4 argues for is a second
+increment, worth taking when the noise is measured rather than predicted.
+
+#### What is not here
+
+**Escalation.** Suspending an administrator is a denial of service, and
+`server/core/escalate.go` covers roles, bindings and an API key's methods and
+not this. It is the same subject as item 11 and it is taken there, where the
+rule is chosen rather than assumed.
+
+**A password change does not invalidate.** *A password reset that leaves old
+sessions alive is not a reset* is true and belongs with the recovery work that
+has the reset in it. Wired here it would mean somebody changing their own
+password signs themselves out of everything, with nothing having said so.
+
 ### D25 · A delegation is its own row, and the prefix is what reaches it
 
 D23 said what this is and left every question about where it lives. This is
@@ -1392,7 +1479,13 @@ the schedule.
    policy and stay with the caller; "this one is in a corpus of leaks" is a
    fact.
 
-6. **"Sign out everywhere", as a fact rather than a list.** A registry of every
+6. ~~**"Sign out everywhere", as a fact rather than a list.**~~ **Done**, D26.
+   `Holder.date_invalidated`, `HolderService.Invalidate`, and a delegation
+   issued before it is refused where it is looked up. What is left of this
+   entry is what it always said belonged to somebody else: an app compares the
+   value when it resolves a session.
+
+   The original entry: A registry of every
    app's live sessions is a copy of state whose truth is elsewhere: it grows
    ghosts when an app dies, disagrees with the app's own store, and puts other
    people's browser metadata in roster.
@@ -1470,7 +1563,12 @@ the schedule.
     tenant administrator. That is honest, and it makes "operator" a smaller
     word than the permission it carries.
 
-12. **A disabled state, which is neither a lockout nor an erasure.** A lockout
+12. ~~**A disabled state, which is neither a lockout nor an erasure.**~~
+    **Done**, D26. `Holder.date_disabled`, `Disable`/`Enable`, refused in
+    `cmd.Resolver` and in `vouch.Verify` -- so a token minted before the
+    suspension stops working, which is the half this entry said was the point.
+
+    The original entry: A lockout
     is temporary and automatic; `date_erased` is deletion. Nothing today says
     *this person is not to sign in, and their rows stay.* Somebody who left,
     somebody suspended — that is likely what a local operator reaches for most,

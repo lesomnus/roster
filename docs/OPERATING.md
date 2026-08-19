@@ -424,6 +424,38 @@ existed.
 
 So the first binding is `init`'s, and everything else descends from it.
 
+### Suspending somebody, and signing them out of everything
+
+Two facts an operator writes about a person, and three methods because a role is
+a list of methods -- what you can grant is exactly what you can name.
+
+| | |
+| --- | --- |
+| `/roster.HolderService/Disable` | they are not to sign in, and their rows stay. A session, a tenant key and a delegation they already held all stop working |
+| `/roster.HolderService/Enable` | the other direction, and a separate grant on purpose |
+| `/roster.HolderService/Invalidate` | everything issued **before now** is void. There is no undo and no time to give: the server stamps it |
+
+Neither is a lockout, which is temporary and automatic and belongs to a
+password, and neither is `Erase`, which is deletion.
+
+Three things to know before handing these out:
+
+- **`Invalidate` does not touch an API key.** A key is named, listed and revoked
+  one at a time; killing somebody's scripts silently under "sign out everywhere"
+  is an outage with nothing saying why. Use `roster key revoke`, or erase the
+  row.
+- **They do not require a version.** Every other write here is a
+  compare-and-swap; these take one if you have read the row and proceed without
+  one if you have not, because a suspension that fails when somebody edits a
+  profile is a suspension that editing a profile in a loop can prevent.
+- **Nothing stops you suspending an administrator.** Escalation prevention
+  covers roles, bindings and an API key's methods, and not this. PLAN.md's list,
+  item 11.
+
+What an app in front does with `date_invalidated` is its own half: roster
+answers *invalid since when*, and the app answers *what is still alive*. It
+arrives on `HolderService/Watch` like anything else about a person.
+
 ### What a page shows
 
 ```
@@ -465,6 +497,11 @@ Nothing written down is plaintext, and it warns once.
   customer-minted key safe are in place — the prefix, the holder it resolves to,
   and `mayGrant` on `methods` — and what is missing is the surface that would
   use them.
+- **Nor a delegation.** The rows, the prefix, the issuer binding and the
+  expiry are all here; what mints one is a Go call (`keys.Delegate`) because the
+  RPC that would ask for it is `VouchService.Verify` answering with it, and the
+  page that decides how long one should live has not been written. PLAN.md D24
+  is why that order and D25 is the shape.
 - **`Binding` cannot be re-pointed.** Its edges are immutable, so changing who
   holds what is a delete and an add. That is the safe direction and it is worth
   knowing before writing a console screen that looks like an edit.

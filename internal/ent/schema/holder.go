@@ -45,6 +45,12 @@ func (Holder) Fields() []ent.Field {
 			Optional(),
 		field.String("data").GoType(&anypb.Any{}).ValueScanner(entpb.ValueScanner[*anypb.Any]{}).SchemaType(map[string]string{dialect.Postgres: "jsonb", dialect.MySQL: "json"}).
 			Optional(),
+		field.Time("date_invalidated").
+			Nillable().
+			Optional(),
+		field.Time("date_disabled").
+			Nillable().
+			Optional(),
 		field.UUID("tenant_id", uuid.UUID{}).
 			Immutable(),
 	}

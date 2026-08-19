@@ -34,21 +34,23 @@ const (
 // from 16, in a `holder.ext.proto` beside this. Adding an email or the subject
 // an external identity provider knows them by is exactly what that is for.
 type Holder struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_Tenant      *Tenant                `protobuf:"bytes,2,opt,name=tenant"`
-	xxx_hidden_Alias       string                 `protobuf:"bytes,4,opt,name=alias"`
-	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
-	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
-	xxx_hidden_Labels      map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
-	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
-	xxx_hidden_IdpSubject  string                 `protobuf:"bytes,8,opt,name=idp_subject,json=idpSubject"`
-	xxx_hidden_Profile     *Profile               `protobuf:"bytes,9,opt,name=profile"`
-	xxx_hidden_Data        *anypb.Any             `protobuf:"bytes,10,opt,name=data"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                      protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id              []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Tenant          *Tenant                `protobuf:"bytes,2,opt,name=tenant"`
+	xxx_hidden_Alias           string                 `protobuf:"bytes,4,opt,name=alias"`
+	xxx_hidden_Name            string                 `protobuf:"bytes,5,opt,name=name"`
+	xxx_hidden_Desc            string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Labels          map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_DateUpdated     *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateErased      *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateCreated     *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	xxx_hidden_IdpSubject      string                 `protobuf:"bytes,8,opt,name=idp_subject,json=idpSubject"`
+	xxx_hidden_Profile         *Profile               `protobuf:"bytes,9,opt,name=profile"`
+	xxx_hidden_Data            *anypb.Any             `protobuf:"bytes,10,opt,name=data"`
+	xxx_hidden_DateInvalidated *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_invalidated,json=dateInvalidated"`
+	xxx_hidden_DateDisabled    *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_disabled,json=dateDisabled"`
+	unknownFields              protoimpl.UnknownFields
+	sizeCache                  protoimpl.SizeCache
 }
 
 func (x *Holder) Reset() {
@@ -160,6 +162,20 @@ func (x *Holder) GetData() *anypb.Any {
 	return nil
 }
 
+func (x *Holder) GetDateInvalidated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateInvalidated
+	}
+	return nil
+}
+
+func (x *Holder) GetDateDisabled() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateDisabled
+	}
+	return nil
+}
+
 func (x *Holder) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -211,6 +227,14 @@ func (x *Holder) SetData(v *anypb.Any) {
 	x.xxx_hidden_Data = v
 }
 
+func (x *Holder) SetDateInvalidated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateInvalidated = v
+}
+
+func (x *Holder) SetDateDisabled(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateDisabled = v
+}
+
 func (x *Holder) HasTenant() bool {
 	if x == nil {
 		return false
@@ -253,6 +277,20 @@ func (x *Holder) HasData() bool {
 	return x.xxx_hidden_Data != nil
 }
 
+func (x *Holder) HasDateInvalidated() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateInvalidated != nil
+}
+
+func (x *Holder) HasDateDisabled() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateDisabled != nil
+}
+
 func (x *Holder) ClearTenant() {
 	x.xxx_hidden_Tenant = nil
 }
@@ -275,6 +313,14 @@ func (x *Holder) ClearProfile() {
 
 func (x *Holder) ClearData() {
 	x.xxx_hidden_Data = nil
+}
+
+func (x *Holder) ClearDateInvalidated() {
+	x.xxx_hidden_DateInvalidated = nil
+}
+
+func (x *Holder) ClearDateDisabled() {
+	x.xxx_hidden_DateDisabled = nil
 }
 
 type Holder_builder struct {
@@ -361,6 +407,51 @@ type Holder_builder struct {
 	// one slot on a row, and who writes to it is a decision a deployment makes
 	// the way it decides who may call anything else.
 	Data *anypb.Any
+	// Everything issued before this moment is void.
+	//
+	// "Sign out everywhere" as a **fact** rather than as a list. The alternative
+	// is a registry of every app's live sessions, which is a copy of state whose
+	// truth is somewhere else: it grows ghosts when an app dies, disagrees with
+	// that app's own store, and puts other people's browser metadata in roster.
+	// One timestamp does the whole job, and the two halves stay where each is
+	// true -- roster answers *invalid since when*, an app answers *what is still
+	// alive*.
+	//
+	// **A timestamp and not a flag**, and the reason is the whole correctness
+	// argument. The value travels, and it is monotonic: a duplicate is a no-op, a
+	// stale one cannot un-revoke, and a message that never arrives costs latency
+	// rather than correctness. A flag that flips has none of that, and cannot
+	// answer the question an app actually asks, which is whether the session in
+	// front of it predates the write.
+	//
+	// What it voids **here** is a `Delegation`, which is a sign-in in miniature.
+	// It deliberately does not void an `ApiKey`: a key is named, listed and
+	// revoked one at a time, and killing somebody's scripts silently under
+	// "sign out everywhere" is an outage with nothing anywhere saying why. That
+	// is a second act and it has a second name.
+	//
+	// Never cleared, and nothing takes it as an argument -- the server stamps it.
+	// A caller who could write an older value could un-revoke, and a caller who
+	// could write a future one could lock somebody out of a deployment that has
+	// no way to say so.
+	DateInvalidated *timestamppb.Timestamp
+	// This person is not to sign in, and their rows stay.
+	//
+	// Neither of the two things that already existed. A lockout is temporary and
+	// automatic and belongs to `Credential`; `date_erased` is deletion, and comes
+	// with soft erasure's whole story about the trail. Somebody who left, somebody
+	// suspended, somebody being investigated -- that is this, and it was missing.
+	//
+	// It has to reach further than a sign-in, which is the part that is easy to
+	// get wrong: a session or a token already issued outlives the row that
+	// stopped being allowed to have one. So it is read where a caller is
+	// resolved, not only where one is authenticated -- and it travels on the same
+	// stream `date_invalidated` does, which is the argument `holder.proto` uses
+	// to justify `watch:` in the first place.
+	//
+	// A timestamp for the reason above, and because *since when* is a question an
+	// operator asks.
+	DateDisabled *timestamppb.Timestamp
 }
 
 func (b0 Holder_builder) Build() *Holder {
@@ -379,6 +470,8 @@ func (b0 Holder_builder) Build() *Holder {
 	x.xxx_hidden_IdpSubject = b.IdpSubject
 	x.xxx_hidden_Profile = b.Profile
 	x.xxx_hidden_Data = b.Data
+	x.xxx_hidden_DateInvalidated = b.DateInvalidated
+	x.xxx_hidden_DateDisabled = b.DateDisabled
 	return m0
 }
 
@@ -511,7 +604,7 @@ var File_roster_payday_holder_proto protoreflect.FileDescriptor
 
 const file_roster_payday_holder_proto_rawDesc = "" +
 	"\n" +
-	"\x1aroster/payday/holder.proto\x12\x06roster\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x1aroster/payday/tenant.proto\"\xc0\x05\n" +
+	"\x1aroster/payday/holder.proto\x12\x06roster\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x1aroster/payday/tenant.proto\"\xd8\x06\n" +
 	"\x06Holder\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x14\n" +
@@ -527,7 +620,9 @@ const file_roster_payday_holder_proto_rawDesc = "" +
 	"idpSubject\x12)\n" +
 	"\aprofile\x18\t \x01(\v2\x0f.roster.ProfileR\aprofile\x12(\n" +
 	"\x04data\x18\n" +
-	" \x01(\v2\x14.google.protobuf.AnyR\x04data\x1a9\n" +
+	" \x01(\v2\x14.google.protobuf.AnyR\x04data\x12M\n" +
+	"\x10date_invalidated\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\x0fdateInvalidated\x12G\n" +
+	"\rdate_disabled\x18\f \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\fdateDisabled\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:d\xca\xfc\x15%\x12\x02\x10\x01\x1a\x1f\x12\x04slug\x1a\t\n" +
@@ -569,11 +664,13 @@ var file_roster_payday_holder_proto_depIdxs = []int32{
 	4, // 4: roster.Holder.date_created:type_name -> google.protobuf.Timestamp
 	1, // 5: roster.Holder.profile:type_name -> roster.Profile
 	5, // 6: roster.Holder.data:type_name -> google.protobuf.Any
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	4, // 7: roster.Holder.date_invalidated:type_name -> google.protobuf.Timestamp
+	4, // 8: roster.Holder.date_disabled:type_name -> google.protobuf.Timestamp
+	9, // [9:9] is the sub-list for method output_type
+	9, // [9:9] is the sub-list for method input_type
+	9, // [9:9] is the sub-list for extension type_name
+	9, // [9:9] is the sub-list for extension extendee
+	0, // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_roster_payday_holder_proto_init() }

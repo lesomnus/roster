@@ -7019,6 +7019,45 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 
 		return anypb.New(res)
 
+	case rstr.HolderService_Disable_FullMethodName:
+		v := &rstr.HolderDisableRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Holder().Disable(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.HolderService_Enable_FullMethodName:
+		v := &rstr.HolderEnableRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Holder().Enable(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.HolderService_Invalidate_FullMethodName:
+		v := &rstr.HolderInvalidateRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Holder().Invalidate(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
 	case rstr.ApiKeyService_Add_FullMethodName:
 		v := &rstr.ApiKeyAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {

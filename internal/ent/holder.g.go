@@ -37,5 +37,11 @@ func (e *Holder) Proto() *rstr.Holder {
 	if e.Data != nil {
 		x.SetData(e.Data)
 	}
+	if e.DateInvalidated != nil {
+		x.SetDateInvalidated(timestamppb.New(*e.DateInvalidated))
+	}
+	if e.DateDisabled != nil {
+		x.SetDateDisabled(timestamppb.New(*e.DateDisabled))
+	}
 	return x
 }

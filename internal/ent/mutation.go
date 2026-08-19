@@ -7044,25 +7044,27 @@ func (m *GroupMembershipMutation) ResetEdge(name string) error {
 // HolderMutation represents an operation that mutates the Holder nodes in the graph.
 type HolderMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *uuid.UUID
-	alias         *string
-	name          *string
-	desc          *string
-	labels        *map[string]string
-	date_updated  *time.Time
-	date_erased   *time.Time
-	date_created  *time.Time
-	idp_subject   *string
-	profile       **rstr.Profile
-	data          **anypb.Any
-	clearedFields map[string]struct{}
-	tenant        *uuid.UUID
-	clearedtenant bool
-	done          bool
-	oldValue      func(context.Context) (*Holder, error)
-	predicates    []predicate.Holder
+	op               Op
+	typ              string
+	id               *uuid.UUID
+	alias            *string
+	name             *string
+	desc             *string
+	labels           *map[string]string
+	date_updated     *time.Time
+	date_erased      *time.Time
+	date_created     *time.Time
+	idp_subject      *string
+	profile          **rstr.Profile
+	data             **anypb.Any
+	date_invalidated *time.Time
+	date_disabled    *time.Time
+	clearedFields    map[string]struct{}
+	tenant           *uuid.UUID
+	clearedtenant    bool
+	done             bool
+	oldValue         func(context.Context) (*Holder, error)
+	predicates       []predicate.Holder
 }
 
 var _ ent.Mutation = (*HolderMutation)(nil)
@@ -7607,6 +7609,104 @@ func (m *HolderMutation) ResetData() {
 	delete(m.clearedFields, holder.FieldData)
 }
 
+// SetDateInvalidated sets the "date_invalidated" field.
+func (m *HolderMutation) SetDateInvalidated(t time.Time) {
+	m.date_invalidated = &t
+}
+
+// DateInvalidated returns the value of the "date_invalidated" field in the mutation.
+func (m *HolderMutation) DateInvalidated() (r time.Time, exists bool) {
+	v := m.date_invalidated
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDateInvalidated returns the old "date_invalidated" field's value of the Holder entity.
+// If the Holder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HolderMutation) OldDateInvalidated(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDateInvalidated is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDateInvalidated requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateInvalidated: %w", err)
+	}
+	return oldValue.DateInvalidated, nil
+}
+
+// ClearDateInvalidated clears the value of the "date_invalidated" field.
+func (m *HolderMutation) ClearDateInvalidated() {
+	m.date_invalidated = nil
+	m.clearedFields[holder.FieldDateInvalidated] = struct{}{}
+}
+
+// DateInvalidatedCleared returns if the "date_invalidated" field was cleared in this mutation.
+func (m *HolderMutation) DateInvalidatedCleared() bool {
+	_, ok := m.clearedFields[holder.FieldDateInvalidated]
+	return ok
+}
+
+// ResetDateInvalidated resets all changes to the "date_invalidated" field.
+func (m *HolderMutation) ResetDateInvalidated() {
+	m.date_invalidated = nil
+	delete(m.clearedFields, holder.FieldDateInvalidated)
+}
+
+// SetDateDisabled sets the "date_disabled" field.
+func (m *HolderMutation) SetDateDisabled(t time.Time) {
+	m.date_disabled = &t
+}
+
+// DateDisabled returns the value of the "date_disabled" field in the mutation.
+func (m *HolderMutation) DateDisabled() (r time.Time, exists bool) {
+	v := m.date_disabled
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDateDisabled returns the old "date_disabled" field's value of the Holder entity.
+// If the Holder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HolderMutation) OldDateDisabled(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDateDisabled is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDateDisabled requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateDisabled: %w", err)
+	}
+	return oldValue.DateDisabled, nil
+}
+
+// ClearDateDisabled clears the value of the "date_disabled" field.
+func (m *HolderMutation) ClearDateDisabled() {
+	m.date_disabled = nil
+	m.clearedFields[holder.FieldDateDisabled] = struct{}{}
+}
+
+// DateDisabledCleared returns if the "date_disabled" field was cleared in this mutation.
+func (m *HolderMutation) DateDisabledCleared() bool {
+	_, ok := m.clearedFields[holder.FieldDateDisabled]
+	return ok
+}
+
+// ResetDateDisabled resets all changes to the "date_disabled" field.
+func (m *HolderMutation) ResetDateDisabled() {
+	m.date_disabled = nil
+	delete(m.clearedFields, holder.FieldDateDisabled)
+}
+
 // SetTenantID sets the "tenant_id" field.
 func (m *HolderMutation) SetTenantID(u uuid.UUID) {
 	m.tenant = &u
@@ -7704,7 +7804,7 @@ func (m *HolderMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *HolderMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 13)
 	if m.alias != nil {
 		fields = append(fields, holder.FieldAlias)
 	}
@@ -7734,6 +7834,12 @@ func (m *HolderMutation) Fields() []string {
 	}
 	if m.data != nil {
 		fields = append(fields, holder.FieldData)
+	}
+	if m.date_invalidated != nil {
+		fields = append(fields, holder.FieldDateInvalidated)
+	}
+	if m.date_disabled != nil {
+		fields = append(fields, holder.FieldDateDisabled)
 	}
 	if m.tenant != nil {
 		fields = append(fields, holder.FieldTenantID)
@@ -7766,6 +7872,10 @@ func (m *HolderMutation) Field(name string) (ent.Value, bool) {
 		return m.Profile()
 	case holder.FieldData:
 		return m.Data()
+	case holder.FieldDateInvalidated:
+		return m.DateInvalidated()
+	case holder.FieldDateDisabled:
+		return m.DateDisabled()
 	case holder.FieldTenantID:
 		return m.TenantID()
 	}
@@ -7797,6 +7907,10 @@ func (m *HolderMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldProfile(ctx)
 	case holder.FieldData:
 		return m.OldData(ctx)
+	case holder.FieldDateInvalidated:
+		return m.OldDateInvalidated(ctx)
+	case holder.FieldDateDisabled:
+		return m.OldDateDisabled(ctx)
 	case holder.FieldTenantID:
 		return m.OldTenantID(ctx)
 	}
@@ -7878,6 +7992,20 @@ func (m *HolderMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetData(v)
 		return nil
+	case holder.FieldDateInvalidated:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDateInvalidated(v)
+		return nil
+	case holder.FieldDateDisabled:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDateDisabled(v)
+		return nil
 	case holder.FieldTenantID:
 		v, ok := value.(uuid.UUID)
 		if !ok {
@@ -7933,6 +8061,12 @@ func (m *HolderMutation) ClearedFields() []string {
 	if m.FieldCleared(holder.FieldData) {
 		fields = append(fields, holder.FieldData)
 	}
+	if m.FieldCleared(holder.FieldDateInvalidated) {
+		fields = append(fields, holder.FieldDateInvalidated)
+	}
+	if m.FieldCleared(holder.FieldDateDisabled) {
+		fields = append(fields, holder.FieldDateDisabled)
+	}
 	return fields
 }
 
@@ -7964,6 +8098,12 @@ func (m *HolderMutation) ClearField(name string) error {
 		return nil
 	case holder.FieldData:
 		m.ClearData()
+		return nil
+	case holder.FieldDateInvalidated:
+		m.ClearDateInvalidated()
+		return nil
+	case holder.FieldDateDisabled:
+		m.ClearDateDisabled()
 		return nil
 	}
 	return fmt.Errorf("unknown Holder nullable field %s", name)
@@ -8002,6 +8142,12 @@ func (m *HolderMutation) ResetField(name string) error {
 		return nil
 	case holder.FieldData:
 		m.ResetData()
+		return nil
+	case holder.FieldDateInvalidated:
+		m.ResetDateInvalidated()
+		return nil
+	case holder.FieldDateDisabled:
+		m.ResetDateDisabled()
 		return nil
 	case holder.FieldTenantID:
 		m.ResetTenantID()

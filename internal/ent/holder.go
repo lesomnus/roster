@@ -42,6 +42,10 @@ type Holder struct {
 	Profile *rstr.Profile `json:"profile,omitempty"`
 	// Data holds the value of the "data" field.
 	Data *anypb.Any `json:"data,omitempty"`
+	// DateInvalidated holds the value of the "date_invalidated" field.
+	DateInvalidated *time.Time `json:"date_invalidated,omitempty"`
+	// DateDisabled holds the value of the "date_disabled" field.
+	DateDisabled *time.Time `json:"date_disabled,omitempty"`
 	// TenantID holds the value of the "tenant_id" field.
 	TenantID uuid.UUID `json:"tenant_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -79,7 +83,7 @@ func (*Holder) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case holder.FieldAlias, holder.FieldName, holder.FieldDesc, holder.FieldIdpSubject:
 			values[i] = new(sql.NullString)
-		case holder.FieldDateUpdated, holder.FieldDateErased, holder.FieldDateCreated:
+		case holder.FieldDateUpdated, holder.FieldDateErased, holder.FieldDateCreated, holder.FieldDateInvalidated, holder.FieldDateDisabled:
 			values[i] = new(sql.NullTime)
 		case holder.FieldID, holder.FieldTenantID:
 			values[i] = new(uuid.UUID)
@@ -172,6 +176,20 @@ func (_m *Holder) assignValues(columns []string, values []any) error {
 			} else {
 				_m.Data = value
 			}
+		case holder.FieldDateInvalidated:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field date_invalidated", values[i])
+			} else if value.Valid {
+				_m.DateInvalidated = new(time.Time)
+				*_m.DateInvalidated = value.Time
+			}
+		case holder.FieldDateDisabled:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field date_disabled", values[i])
+			} else if value.Valid {
+				_m.DateDisabled = new(time.Time)
+				*_m.DateDisabled = value.Time
+			}
 		case holder.FieldTenantID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
@@ -252,6 +270,16 @@ func (_m *Holder) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("data=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Data))
+	builder.WriteString(", ")
+	if v := _m.DateInvalidated; v != nil {
+		builder.WriteString("date_invalidated=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.DateDisabled; v != nil {
+		builder.WriteString("date_disabled=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("tenant_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.TenantID))

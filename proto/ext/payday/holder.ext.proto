@@ -3,6 +3,7 @@ edition = "2023";
 package payday;
 
 import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
 
 // What this app adds to payday's Holder.
 //
@@ -68,6 +69,53 @@ message Holder {
   // one slot on a row, and who writes to it is a decision a deployment makes
   // the way it decides who may call anything else.
   google.protobuf.Any data = 10;
+
+  // Everything issued before this moment is void.
+  //
+  // "Sign out everywhere" as a **fact** rather than as a list. The alternative
+  // is a registry of every app's live sessions, which is a copy of state whose
+  // truth is somewhere else: it grows ghosts when an app dies, disagrees with
+  // that app's own store, and puts other people's browser metadata in roster.
+  // One timestamp does the whole job, and the two halves stay where each is
+  // true -- roster answers *invalid since when*, an app answers *what is still
+  // alive*.
+  //
+  // **A timestamp and not a flag**, and the reason is the whole correctness
+  // argument. The value travels, and it is monotonic: a duplicate is a no-op, a
+  // stale one cannot un-revoke, and a message that never arrives costs latency
+  // rather than correctness. A flag that flips has none of that, and cannot
+  // answer the question an app actually asks, which is whether the session in
+  // front of it predates the write.
+  //
+  // What it voids **here** is a `Delegation`, which is a sign-in in miniature.
+  // It deliberately does not void an `ApiKey`: a key is named, listed and
+  // revoked one at a time, and killing somebody's scripts silently under
+  // "sign out everywhere" is an outage with nothing anywhere saying why. That
+  // is a second act and it has a second name.
+  //
+  // Never cleared, and nothing takes it as an argument -- the server stamps it.
+  // A caller who could write an older value could un-revoke, and a caller who
+  // could write a future one could lock somebody out of a deployment that has
+  // no way to say so.
+  google.protobuf.Timestamp date_invalidated = 11 [(orm.field) = {nullable: true}];
+
+  // This person is not to sign in, and their rows stay.
+  //
+  // Neither of the two things that already existed. A lockout is temporary and
+  // automatic and belongs to `Credential`; `date_erased` is deletion, and comes
+  // with soft erasure's whole story about the trail. Somebody who left, somebody
+  // suspended, somebody being investigated -- that is this, and it was missing.
+  //
+  // It has to reach further than a sign-in, which is the part that is easy to
+  // get wrong: a session or a token already issued outlives the row that
+  // stopped being allowed to have one. So it is read where a caller is
+  // resolved, not only where one is authenticated -- and it travels on the same
+  // stream `date_invalidated` does, which is the argument `holder.proto` uses
+  // to justify `watch:` in the first place.
+  //
+  // A timestamp for the reason above, and because *since when* is a question an
+  // operator asks.
+  google.protobuf.Timestamp date_disabled = 12 [(orm.field) = {nullable: true}];
 }
 
 // Profile is what a person is called, and it is replaced whole.

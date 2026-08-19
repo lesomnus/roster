@@ -20,14 +20,17 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	HolderService_Add_FullMethodName    = "/roster.HolderService/Add"
-	HolderService_Get_FullMethodName    = "/roster.HolderService/Get"
-	HolderService_Patch_FullMethodName  = "/roster.HolderService/Patch"
-	HolderService_Apply_FullMethodName  = "/roster.HolderService/Apply"
-	HolderService_Erase_FullMethodName  = "/roster.HolderService/Erase"
-	HolderService_List_FullMethodName   = "/roster.HolderService/List"
-	HolderService_Watch_FullMethodName  = "/roster.HolderService/Watch"
-	HolderService_Update_FullMethodName = "/roster.HolderService/Update"
+	HolderService_Add_FullMethodName        = "/roster.HolderService/Add"
+	HolderService_Get_FullMethodName        = "/roster.HolderService/Get"
+	HolderService_Patch_FullMethodName      = "/roster.HolderService/Patch"
+	HolderService_Apply_FullMethodName      = "/roster.HolderService/Apply"
+	HolderService_Erase_FullMethodName      = "/roster.HolderService/Erase"
+	HolderService_List_FullMethodName       = "/roster.HolderService/List"
+	HolderService_Watch_FullMethodName      = "/roster.HolderService/Watch"
+	HolderService_Update_FullMethodName     = "/roster.HolderService/Update"
+	HolderService_Disable_FullMethodName    = "/roster.HolderService/Disable"
+	HolderService_Enable_FullMethodName     = "/roster.HolderService/Enable"
+	HolderService_Invalidate_FullMethodName = "/roster.HolderService/Invalidate"
 )
 
 // HolderServiceClient is the client API for HolderService service.
@@ -76,6 +79,28 @@ type HolderServiceClient interface {
 	// same rows. The overlay mechanism exists for exactly this and nothing had
 	// used it.
 	Update(ctx context.Context, in *HolderUpdateRequest, opts ...grpc.CallOption) (*Holder, error)
+	// Disable stops somebody signing in, and leaves their rows where they are.
+	//
+	// Its own method rather than a field on `Update`, because it is not a thing
+	// a holder carries about itself -- it is somebody else's decision about them,
+	// and roles are lists of methods, so a separate name is the only way a
+	// deployment can grant one without granting the other.
+	Disable(ctx context.Context, in *HolderDisableRequest, opts ...grpc.CallOption) (*Holder, error)
+	// Enable is the other direction, and is a second method for the same reason
+	// the first is one: what a role may do is what it names.
+	Enable(ctx context.Context, in *HolderEnableRequest, opts ...grpc.CallOption) (*Holder, error)
+	// Invalidate voids everything issued before now.
+	//
+	// No time is taken and none can be. A caller who could write an older value
+	// could un-revoke; one who could write a future value could shut somebody out
+	// of a deployment with no way to say so. The server stamps it, which is also
+	// what makes it monotonic, which is what makes a duplicate a no-op and a
+	// missed message a matter of latency rather than correctness.
+	//
+	// There is no undo, by construction. That is the point rather than an
+	// omission: this is what a password reset and a "sign me out everywhere"
+	// button both do, and a credential that can be brought back is not revoked.
+	Invalidate(ctx context.Context, in *HolderInvalidateRequest, opts ...grpc.CallOption) (*Holder, error)
 }
 
 type holderServiceClient struct {
@@ -175,6 +200,36 @@ func (c *holderServiceClient) Update(ctx context.Context, in *HolderUpdateReques
 	return out, nil
 }
 
+func (c *holderServiceClient) Disable(ctx context.Context, in *HolderDisableRequest, opts ...grpc.CallOption) (*Holder, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Holder)
+	err := c.cc.Invoke(ctx, HolderService_Disable_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *holderServiceClient) Enable(ctx context.Context, in *HolderEnableRequest, opts ...grpc.CallOption) (*Holder, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Holder)
+	err := c.cc.Invoke(ctx, HolderService_Enable_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *holderServiceClient) Invalidate(ctx context.Context, in *HolderInvalidateRequest, opts ...grpc.CallOption) (*Holder, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Holder)
+	err := c.cc.Invoke(ctx, HolderService_Invalidate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // HolderServiceServer is the server API for HolderService service.
 // All implementations must embed UnimplementedHolderServiceServer
 // for forward compatibility.
@@ -221,6 +276,28 @@ type HolderServiceServer interface {
 	// same rows. The overlay mechanism exists for exactly this and nothing had
 	// used it.
 	Update(context.Context, *HolderUpdateRequest) (*Holder, error)
+	// Disable stops somebody signing in, and leaves their rows where they are.
+	//
+	// Its own method rather than a field on `Update`, because it is not a thing
+	// a holder carries about itself -- it is somebody else's decision about them,
+	// and roles are lists of methods, so a separate name is the only way a
+	// deployment can grant one without granting the other.
+	Disable(context.Context, *HolderDisableRequest) (*Holder, error)
+	// Enable is the other direction, and is a second method for the same reason
+	// the first is one: what a role may do is what it names.
+	Enable(context.Context, *HolderEnableRequest) (*Holder, error)
+	// Invalidate voids everything issued before now.
+	//
+	// No time is taken and none can be. A caller who could write an older value
+	// could un-revoke; one who could write a future value could shut somebody out
+	// of a deployment with no way to say so. The server stamps it, which is also
+	// what makes it monotonic, which is what makes a duplicate a no-op and a
+	// missed message a matter of latency rather than correctness.
+	//
+	// There is no undo, by construction. That is the point rather than an
+	// omission: this is what a password reset and a "sign me out everywhere"
+	// button both do, and a credential that can be brought back is not revoked.
+	Invalidate(context.Context, *HolderInvalidateRequest) (*Holder, error)
 	mustEmbedUnimplementedHolderServiceServer()
 }
 
@@ -254,6 +331,15 @@ func (UnimplementedHolderServiceServer) Watch(*HolderWatchRequest, grpc.ServerSt
 }
 func (UnimplementedHolderServiceServer) Update(context.Context, *HolderUpdateRequest) (*Holder, error) {
 	return nil, status.Error(codes.Unimplemented, "method Update not implemented")
+}
+func (UnimplementedHolderServiceServer) Disable(context.Context, *HolderDisableRequest) (*Holder, error) {
+	return nil, status.Error(codes.Unimplemented, "method Disable not implemented")
+}
+func (UnimplementedHolderServiceServer) Enable(context.Context, *HolderEnableRequest) (*Holder, error) {
+	return nil, status.Error(codes.Unimplemented, "method Enable not implemented")
+}
+func (UnimplementedHolderServiceServer) Invalidate(context.Context, *HolderInvalidateRequest) (*Holder, error) {
+	return nil, status.Error(codes.Unimplemented, "method Invalidate not implemented")
 }
 func (UnimplementedHolderServiceServer) mustEmbedUnimplementedHolderServiceServer() {}
 func (UnimplementedHolderServiceServer) testEmbeddedByValue()                       {}
@@ -413,6 +499,60 @@ func _HolderService_Update_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HolderService_Disable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HolderDisableRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HolderServiceServer).Disable(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HolderService_Disable_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HolderServiceServer).Disable(ctx, req.(*HolderDisableRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HolderService_Enable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HolderEnableRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HolderServiceServer).Enable(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HolderService_Enable_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HolderServiceServer).Enable(ctx, req.(*HolderEnableRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HolderService_Invalidate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HolderInvalidateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HolderServiceServer).Invalidate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HolderService_Invalidate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HolderServiceServer).Invalidate(ctx, req.(*HolderInvalidateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // HolderService_ServiceDesc is the grpc.ServiceDesc for HolderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -447,6 +587,18 @@ var HolderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Update",
 			Handler:    _HolderService_Update_Handler,
+		},
+		{
+			MethodName: "Disable",
+			Handler:    _HolderService_Disable_Handler,
+		},
+		{
+			MethodName: "Enable",
+			Handler:    _HolderService_Enable_Handler,
+		},
+		{
+			MethodName: "Invalidate",
+			Handler:    _HolderService_Invalidate_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

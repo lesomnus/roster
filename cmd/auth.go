@@ -71,6 +71,20 @@ func Resolver(s app.Server, keys app.Server) auth.Resolver {
 			return nil, err
 		}
 
+		if v.GetDateDisabled() != nil {
+			// Somebody who is not to sign in is somebody whose credential from
+			// yesterday does not work either, and this is the one place that
+			// covers both -- a session, a tenant key and a delegation all
+			// arrive here, because each of them resolves to a holder.
+			//
+			// Answered as `ErrNoCredential`, which is the same answer an erased
+			// holder gets and for the same reason: the client that hears it
+			// goes and authenticates again rather than retrying, and a person
+			// who has been suspended will find out from the thing that refuses
+			// to sign them in.
+			return nil, fmt.Errorf("%w: this holder is disabled", auth.ErrNoCredential)
+		}
+
 		actor, err := pdid.From(v.GetId())
 		if err != nil {
 			return nil, err

@@ -35,6 +35,10 @@ const (
 	FieldProfile = "profile"
 	// FieldData holds the string denoting the data field in the database.
 	FieldData = "data"
+	// FieldDateInvalidated holds the string denoting the date_invalidated field in the database.
+	FieldDateInvalidated = "date_invalidated"
+	// FieldDateDisabled holds the string denoting the date_disabled field in the database.
+	FieldDateDisabled = "date_disabled"
 	// FieldTenantID holds the string denoting the tenant_id field in the database.
 	FieldTenantID = "tenant_id"
 	// EdgeTenant holds the string denoting the tenant edge name in mutations.
@@ -63,6 +67,8 @@ var Columns = []string{
 	FieldIdpSubject,
 	FieldProfile,
 	FieldData,
+	FieldDateInvalidated,
+	FieldDateDisabled,
 	FieldTenantID,
 }
 
@@ -135,6 +141,16 @@ func ByProfile(opts ...sql.OrderTermOption) OrderOption {
 // ByData orders the results by the data field.
 func ByData(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldData, opts...).ToFunc()
+}
+
+// ByDateInvalidated orders the results by the date_invalidated field.
+func ByDateInvalidated(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDateInvalidated, opts...).ToFunc()
+}
+
+// ByDateDisabled orders the results by the date_disabled field.
+func ByDateDisabled(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDateDisabled, opts...).ToFunc()
 }
 
 // ByTenantID orders the results by the tenant_id field.

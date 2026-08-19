@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/holder.proto.
  */
 export const file_roster_payday_holder: GenFile = /*@__PURE__*/
-  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L2hvbGRlci5wcm90bxIGcm9zdGVyIswECgZIb2xkZXISFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBGRlc2MYBiABKAkSKgoGbGFiZWxzGAcgAygLMhoucm9zdGVyLkhvbGRlci5MYWJlbHNFbnRyeRI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASHQoLaWRwX3N1YmplY3QYCCABKAlCCOqCFgQwATgBEiAKB3Byb2ZpbGUYCSABKAsyDy5yb3N0ZXIuUHJvZmlsZRIiCgRkYXRhGAogASgLMhQuZ29vZ2xlLnByb3RvYnVmLkFueRotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOmTK/BUlEgIQARofEgRzbHVnGgkKBWFsaWFzEAQaCgoGdGVuYW50EAIwAYq7FjcIAjIvChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudCAUKGQ6AEgCImkKB1Byb2ZpbGUSFAoMZGlzcGxheV9uYW1lGAEgASgJEg8KB3BpY3R1cmUYAiABKAkSEgoKZGVwYXJ0bWVudBgDIAEoCRITCgtlbXBsb3llZV9ubxgEIAEoCRIOCgZsb2NhbGUYBSABKAlCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_any, file_google_protobuf_timestamp, file_orm, file_payday, file_roster_payday_tenant]);
+  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L2hvbGRlci5wcm90bxIGcm9zdGVyIsUFCgZIb2xkZXISFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBGRlc2MYBiABKAkSKgoGbGFiZWxzGAcgAygLMhoucm9zdGVyLkhvbGRlci5MYWJlbHNFbnRyeRI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASHQoLaWRwX3N1YmplY3QYCCABKAlCCOqCFgQwATgBEiAKB3Byb2ZpbGUYCSABKAsyDy5yb3N0ZXIuUHJvZmlsZRIiCgRkYXRhGAogASgLMhQuZ29vZ2xlLnByb3RvYnVmLkFueRI8ChBkYXRlX2ludmFsaWRhdGVkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBEjkKDWRhdGVfZGlzYWJsZWQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAEaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATpkyvwVJRICEAEaHxIEc2x1ZxoJCgVhbGlhcxAEGgoKBnRlbmFudBACMAGKuxY3CAIyLwoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZ0ZW5hbnQgFChkOgBIAiJpCgdQcm9maWxlEhQKDGRpc3BsYXlfbmFtZRgBIAEoCRIPCgdwaWN0dXJlGAIgASgJEhIKCmRlcGFydG1lbnQYAyABKAkSEwoLZW1wbG95ZWVfbm8YBCABKAkSDgoGbG9jYWxlGAUgASgJQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_any, file_google_protobuf_timestamp, file_orm, file_payday, file_roster_payday_tenant]);
 
 /**
  * Holder is who a request is from.
@@ -168,6 +168,61 @@ export type Holder = Message<"roster.Holder"> & {
    * @generated from field: google.protobuf.Any data = 10;
    */
   data?: Any | undefined;
+
+  /**
+   * Everything issued before this moment is void.
+   *
+   * "Sign out everywhere" as a **fact** rather than as a list. The alternative
+   * is a registry of every app's live sessions, which is a copy of state whose
+   * truth is somewhere else: it grows ghosts when an app dies, disagrees with
+   * that app's own store, and puts other people's browser metadata in roster.
+   * One timestamp does the whole job, and the two halves stay where each is
+   * true -- roster answers *invalid since when*, an app answers *what is still
+   * alive*.
+   *
+   * **A timestamp and not a flag**, and the reason is the whole correctness
+   * argument. The value travels, and it is monotonic: a duplicate is a no-op, a
+   * stale one cannot un-revoke, and a message that never arrives costs latency
+   * rather than correctness. A flag that flips has none of that, and cannot
+   * answer the question an app actually asks, which is whether the session in
+   * front of it predates the write.
+   *
+   * What it voids **here** is a `Delegation`, which is a sign-in in miniature.
+   * It deliberately does not void an `ApiKey`: a key is named, listed and
+   * revoked one at a time, and killing somebody's scripts silently under
+   * "sign out everywhere" is an outage with nothing anywhere saying why. That
+   * is a second act and it has a second name.
+   *
+   * Never cleared, and nothing takes it as an argument -- the server stamps it.
+   * A caller who could write an older value could un-revoke, and a caller who
+   * could write a future one could lock somebody out of a deployment that has
+   * no way to say so.
+   *
+   * @generated from field: google.protobuf.Timestamp date_invalidated = 11;
+   */
+  dateInvalidated?: Timestamp | undefined;
+
+  /**
+   * This person is not to sign in, and their rows stay.
+   *
+   * Neither of the two things that already existed. A lockout is temporary and
+   * automatic and belongs to `Credential`; `date_erased` is deletion, and comes
+   * with soft erasure's whole story about the trail. Somebody who left, somebody
+   * suspended, somebody being investigated -- that is this, and it was missing.
+   *
+   * It has to reach further than a sign-in, which is the part that is easy to
+   * get wrong: a session or a token already issued outlives the row that
+   * stopped being allowed to have one. So it is read where a caller is
+   * resolved, not only where one is authenticated -- and it travels on the same
+   * stream `date_invalidated` does, which is the argument `holder.proto` uses
+   * to justify `watch:` in the first place.
+   *
+   * A timestamp for the reason above, and because *since when* is a question an
+   * operator asks.
+   *
+   * @generated from field: google.protobuf.Timestamp date_disabled = 12;
+   */
+  dateDisabled?: Timestamp | undefined;
 };
 
 /**

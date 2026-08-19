@@ -110,6 +110,20 @@ func (s *Server) Verify(ctx context.Context, req *app.VouchVerifyRequest) (*app.
 		return no(), nil
 	}
 
+	if v.GetHolder().GetDateDisabled() != nil {
+		// Not to sign in, and their rows stay -- so unlike an erasure this is a
+		// person who is still here and still readable. What it costs is the
+		// same as everything else that is not somebody proving themselves: one
+		// answer, and it takes as long as a wrong password.
+		//
+		// The other half of this is in `cmd.Resolver`, which is where a
+		// credential already issued arrives. Neither covers the other: nothing
+		// signed in reaches here, and nothing here has a frame yet.
+		Burn(secret)
+
+		return no(), nil
+	}
+
 	if v.GetHolder().GetDateErased() != nil {
 		// Somebody who is gone is nobody, and the answer is the one every
 		// stranger gets -- including its cost, which is why this burns.
@@ -361,6 +375,11 @@ func (s *Server) credential(ctx context.Context, from app.Server, ref *app.Holde
 				// Whether they are still here, which this has to ask for
 				// rather than rely on. See [Server.Verify].
 				DateErased: z.Ptr(true),
+
+				// And whether they are allowed to be, which nothing generated
+				// reads at all -- a new column is inert until somebody writes
+				// the refusal.
+				DateDisabled: z.Ptr(true),
 			}.Build(),
 		}.Build(),
 	}.Build())

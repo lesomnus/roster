@@ -108,6 +108,34 @@ func (_c *HolderCreate) SetData(v *anypb.Any) *HolderCreate {
 	return _c
 }
 
+// SetDateInvalidated sets the "date_invalidated" field.
+func (_c *HolderCreate) SetDateInvalidated(v time.Time) *HolderCreate {
+	_c.mutation.SetDateInvalidated(v)
+	return _c
+}
+
+// SetNillableDateInvalidated sets the "date_invalidated" field if the given value is not nil.
+func (_c *HolderCreate) SetNillableDateInvalidated(v *time.Time) *HolderCreate {
+	if v != nil {
+		_c.SetDateInvalidated(*v)
+	}
+	return _c
+}
+
+// SetDateDisabled sets the "date_disabled" field.
+func (_c *HolderCreate) SetDateDisabled(v time.Time) *HolderCreate {
+	_c.mutation.SetDateDisabled(v)
+	return _c
+}
+
+// SetNillableDateDisabled sets the "date_disabled" field if the given value is not nil.
+func (_c *HolderCreate) SetNillableDateDisabled(v *time.Time) *HolderCreate {
+	if v != nil {
+		_c.SetDateDisabled(*v)
+	}
+	return _c
+}
+
 // SetTenantID sets the "tenant_id" field.
 func (_c *HolderCreate) SetTenantID(v uuid.UUID) *HolderCreate {
 	_c.mutation.SetTenantID(v)
@@ -262,6 +290,14 @@ func (_c *HolderCreate) createSpec() (*Holder, *sqlgraph.CreateSpec, error) {
 		}
 		_spec.SetField(holder.FieldData, field.TypeString, vv)
 		_node.Data = value
+	}
+	if value, ok := _c.mutation.DateInvalidated(); ok {
+		_spec.SetField(holder.FieldDateInvalidated, field.TypeTime, value)
+		_node.DateInvalidated = &value
+	}
+	if value, ok := _c.mutation.DateDisabled(); ok {
+		_spec.SetField(holder.FieldDateDisabled, field.TypeTime, value)
+		_node.DateDisabled = &value
 	}
 	if nodes := _c.mutation.TenantIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

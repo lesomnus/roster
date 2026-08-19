@@ -31,6 +31,50 @@ service HolderService {
   // same rows. The overlay mechanism exists for exactly this and nothing had
   // used it.
   rpc Update(HolderUpdateRequest) returns (Holder);
+
+  // Disable stops somebody signing in, and leaves their rows where they are.
+  //
+  // Its own method rather than a field on `Update`, because it is not a thing
+  // a holder carries about itself -- it is somebody else's decision about them,
+  // and roles are lists of methods, so a separate name is the only way a
+  // deployment can grant one without granting the other.
+  rpc Disable(HolderDisableRequest) returns (Holder);
+
+  // Enable is the other direction, and is a second method for the same reason
+  // the first is one: what a role may do is what it names.
+  rpc Enable(HolderEnableRequest) returns (Holder);
+
+  // Invalidate voids everything issued before now.
+  //
+  // No time is taken and none can be. A caller who could write an older value
+  // could un-revoke; one who could write a future value could shut somebody out
+  // of a deployment with no way to say so. The server stamps it, which is also
+  // what makes it monotonic, which is what makes a duplicate a no-op and a
+  // missed message a matter of latency rather than correctness.
+  //
+  // There is no undo, by construction. That is the point rather than an
+  // omission: this is what a password reset and a "sign me out everywhere"
+  // button both do, and a credential that can be brought back is not revoked.
+  rpc Invalidate(HolderInvalidateRequest) returns (Holder);
+}
+
+message HolderDisableRequest {
+  HolderRef ref = 1;
+
+  // Optimistic locking, as `Update` takes it.
+  google.protobuf.Timestamp date_updated = 13;
+}
+
+message HolderEnableRequest {
+  HolderRef ref = 1;
+
+  google.protobuf.Timestamp date_updated = 13;
+}
+
+message HolderInvalidateRequest {
+  HolderRef ref = 1;
+
+  google.protobuf.Timestamp date_updated = 13;
 }
 
 message HolderUpdateRequest {

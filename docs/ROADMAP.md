@@ -215,7 +215,7 @@ Each takes a `D` in PLAN.md when it is taken. None is taken here.
 | --- | --- | --- |
 | P0 | F9 — a reference reached erased rows | **done** — fixed in `protoc-gen-orm-ent`; `vouch` refuses; pin still to move |
 | P1 | `Delegation` | **done** — the entity, `rd_`, the issuer binding, and `keys.Delegate`. PLAN.md D25. Nothing mints one over the wire; D24 puts the page first |
-| P2 | `Holder` epoch and disabled, and the refusals | — |
+| P2 | `Holder` epoch and disabled, and the refusals | **done** — PLAN.md D26. Closes list items 6 and 12, and item 4's first increment came free |
 | P3 | the reference app's spine | — |
 | P4 | hostname, mail domain, and F7 | — |
 | P5 | escalation over credential writes, then the write surface | — |

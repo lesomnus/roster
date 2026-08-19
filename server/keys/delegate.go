@@ -163,6 +163,13 @@ func findKey(ctx context.Context, s app.Server, token string) (*bearer, error) {
 // a write on every request to answer it would be the more expensive half of
 // this whole path.
 //
+// **The holder's epoch is read here**, and it can only be read here: `Holder`'s
+// `date_invalidated` says everything issued before a moment is void, and the
+// only thing that knows when this credential was issued is this row. So the
+// comparison is between two columns that are never in the same place again --
+// which is also why the resolver, which sees the holder and not the credential,
+// covers `date_disabled` and cannot cover this.
+//
 // **The issuer comes back unchecked**, because there is nothing here to check
 // it against: `auth.TokenStore.Lookup` is handed the token and nothing else --
 // no caller, no peer, no frame. A comparison written here compiles, runs, and
@@ -175,9 +182,11 @@ func findDelegation(ctx context.Context, s app.Server, token string) (*bearer, e
 			Methods:     z.Ptr(true),
 			Issuer:      z.Ptr(true),
 			DateExpires: z.Ptr(true),
+			DateCreated: z.Ptr(true),
 
 			Holder: app.HolderSelect_builder{
-				Tenant: app.TenantSelect_builder{}.Build(),
+				Tenant:          app.TenantSelect_builder{}.Build(),
+				DateInvalidated: z.Ptr(true),
 			}.Build(),
 		}.Build(),
 	}.Build())
@@ -194,6 +203,15 @@ func findDelegation(ctx context.Context, s app.Server, token string) (*bearer, e
 
 	u := v.GetDateExpires()
 	if u == nil || !time.Now().Before(u.AsTime()) {
+		return nil, status.Error(codes.NotFound, "no such token")
+	}
+
+	// Everything issued before the holder's epoch is void, which is what "sign
+	// out everywhere" writes and what a password reset will. Not before or
+	// equal: two writes in the same millisecond are a delegation minted by the
+	// sign-in that the invalidation was about, and the safe reading of a tie is
+	// that it is too old.
+	if w := v.GetHolder().GetDateInvalidated(); w != nil && !v.GetDateCreated().AsTime().After(w.AsTime()) {
 		return nil, status.Error(codes.NotFound, "no such token")
 	}
 

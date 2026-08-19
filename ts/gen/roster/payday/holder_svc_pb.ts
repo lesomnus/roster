@@ -18,7 +18,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/holder_svc.g.proto.
  */
 export const file_roster_payday_holder_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("CiByb3N0ZXIvcGF5ZGF5L2hvbGRlcl9zdmMuZy5wcm90bxIGcm9zdGVyIvMCChBIb2xkZXJBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSFAoFYWxpYXMYBCABKAlCBaoBAggCEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGRlc2MYBiABKAlCBaoBAggCEjQKBmxhYmVscxgHIAMoCzIkLnJvc3Rlci5Ib2xkZXJBZGRSZXF1ZXN0LkxhYmVsc0VudHJ5EjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEwoLaWRwX3N1YmplY3QYCCABKAkSIAoHcHJvZmlsZRgJIAEoCzIPLnJvc3Rlci5Qcm9maWxlEiIKBGRhdGEYCiABKAsyFC5nb29nbGUucHJvdG9idWYuQW55Gi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiWAoQSG9sZGVyR2V0UmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEiQKBnNlbGVjdBgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QiYAoJSG9sZGVyUmVmEgwKAmlkGAEgASgMSAASJwoEc2x1ZxgEIAEoCzIXLnJvc3Rlci5Ib2xkZXJSZWZCeVNsdWdIABIVCgtpZHBfc3ViamVjdBgIIAEoCUgAQgUKA2tleSJDCg9Ib2xkZXJSZWZCeVNsdWcSDQoFYWxpYXMYBCABKAkSIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZiLxAQoMSG9sZGVyU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZ0ZW5hbnQYAiABKAsyFC5yb3N0ZXIuVGVuYW50U2VsZWN0Eg0KBWFsaWFzGAQgASgIEgwKBG5hbWUYBSABKAgSDAoEZGVzYxgGIAEoCBIOCgZsYWJlbHMYByABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCBITCgtpZHBfc3ViamVjdBgIIAEoCBIPCgdwcm9maWxlGAkgASgIEgwKBGRhdGEYCiABKAgisgMKEkhvbGRlclBhdGNoUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEg0KBWFsaWFzGAggASgJEgwKBG5hbWUYCiABKAkSDAoEZGVzYxgMIAEoCRI2CgZsYWJlbHMYDiADKAsyJi5yb3N0ZXIuSG9sZGVyUGF0Y2hSZXF1ZXN0LkxhYmVsc0VudHJ5EjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIEhMKC2lkcF9zdWJqZWN0GBAgASgJEhgKEGlkcF9zdWJqZWN0X251bGwYESABKAgSIAoHcHJvZmlsZRgSIAEoCzIPLnJvc3Rlci5Qcm9maWxlEhQKDHByb2ZpbGVfbnVsbBgTIAEoCBIiCgRkYXRhGBQgASgLMhQuZ29vZ2xlLnByb3RvYnVmLkFueRIRCglkYXRhX251bGwYFSABKAgaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJRChJIb2xkZXJBcHBseVJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLkhvbGRlclJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoImUKEUhvbGRlckxpc3RSZXF1ZXN0EiUKB2ZpbHRlcnMYASADKAsyFC5yb3N0ZXIuSG9sZGVyRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAiJIChJIb2xkZXJMaXN0UmVzcG9uc2USHQoFaXRlbXMYASADKAsyDi5yb3N0ZXIuSG9sZGVyEhMKBG5leHQYAiABKAlCBaoBAggCIlEKDEhvbGRlckZpbHRlchIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYiWQoSSG9sZGVyV2F0Y2hSZXF1ZXN0EiUKB2ZpbHRlcnMYASADKAsyFC5yb3N0ZXIuSG9sZGVyRmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCIj0KE0hvbGRlcldhdGNoUmVzcG9uc2USJgoFaXRlbXMYASADKAsyFy5yb3N0ZXIuSG9sZGVyV2F0Y2hJdGVtIlMKD0hvbGRlcldhdGNoSXRlbRIKCgJpZBgBIAEoDBIdCgV2YWx1ZRgCIAEoCzIOLnJvc3Rlci5Ib2xkZXISFQoGYWN0aW9uGAMgASgJQgWqAQIIAiKtAQoTSG9sZGVyVXBkYXRlUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEjAKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASIAoHcHJvZmlsZRgJIAEoCzIPLnJvc3Rlci5Qcm9maWxlEiIKBGRhdGEYCiABKAsyFC5nb29nbGUucHJvdG9idWYuQW55MskDCg1Ib2xkZXJTZXJ2aWNlEi8KA0FkZBIYLnJvc3Rlci5Ib2xkZXJBZGRSZXF1ZXN0Gg4ucm9zdGVyLkhvbGRlchIvCgNHZXQSGC5yb3N0ZXIuSG9sZGVyR2V0UmVxdWVzdBoOLnJvc3Rlci5Ib2xkZXISMwoFUGF0Y2gSGi5yb3N0ZXIuSG9sZGVyUGF0Y2hSZXF1ZXN0Gg4ucm9zdGVyLkhvbGRlchIzCgVBcHBseRIaLnJvc3Rlci5Ib2xkZXJBcHBseVJlcXVlc3QaDi5yb3N0ZXIuSG9sZGVyEjIKBUVyYXNlEhEucm9zdGVyLkhvbGRlclJlZhoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eRI9CgRMaXN0Ehkucm9zdGVyLkhvbGRlckxpc3RSZXF1ZXN0Ghoucm9zdGVyLkhvbGRlckxpc3RSZXNwb25zZRJCCgVXYXRjaBIaLnJvc3Rlci5Ib2xkZXJXYXRjaFJlcXVlc3QaGy5yb3N0ZXIuSG9sZGVyV2F0Y2hSZXNwb25zZTABEjUKBlVwZGF0ZRIbLnJvc3Rlci5Ib2xkZXJVcGRhdGVSZXF1ZXN0Gg4ucm9zdGVyLkhvbGRlckIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_google_protobuf_any, file_google_protobuf_empty, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder, file_roster_payday_tenant_svc_g]);
+  fileDesc("CiByb3N0ZXIvcGF5ZGF5L2hvbGRlcl9zdmMuZy5wcm90bxIGcm9zdGVyItwDChBIb2xkZXJBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSFAoFYWxpYXMYBCABKAlCBaoBAggCEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGRlc2MYBiABKAlCBaoBAggCEjQKBmxhYmVscxgHIAMoCzIkLnJvc3Rlci5Ib2xkZXJBZGRSZXF1ZXN0LkxhYmVsc0VudHJ5EjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEwoLaWRwX3N1YmplY3QYCCABKAkSIAoHcHJvZmlsZRgJIAEoCzIPLnJvc3Rlci5Qcm9maWxlEiIKBGRhdGEYCiABKAsyFC5nb29nbGUucHJvdG9idWYuQW55EjQKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjEKDWRhdGVfZGlzYWJsZWQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiWAoQSG9sZGVyR2V0UmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEiQKBnNlbGVjdBgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QiYAoJSG9sZGVyUmVmEgwKAmlkGAEgASgMSAASJwoEc2x1ZxgEIAEoCzIXLnJvc3Rlci5Ib2xkZXJSZWZCeVNsdWdIABIVCgtpZHBfc3ViamVjdBgIIAEoCUgAQgUKA2tleSJDCg9Ib2xkZXJSZWZCeVNsdWcSDQoFYWxpYXMYBCABKAkSIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZiKiAgoMSG9sZGVyU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZ0ZW5hbnQYAiABKAsyFC5yb3N0ZXIuVGVuYW50U2VsZWN0Eg0KBWFsaWFzGAQgASgIEgwKBG5hbWUYBSABKAgSDAoEZGVzYxgGIAEoCBIOCgZsYWJlbHMYByABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCBITCgtpZHBfc3ViamVjdBgIIAEoCBIPCgdwcm9maWxlGAkgASgIEgwKBGRhdGEYCiABKAgSGAoQZGF0ZV9pbnZhbGlkYXRlZBgLIAEoCBIVCg1kYXRlX2Rpc2FibGVkGAwgASgIItYEChJIb2xkZXJQYXRjaFJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLkhvbGRlclJlZhINCgVhbGlhcxgIIAEoCRIMCgRuYW1lGAogASgJEgwKBGRlc2MYDCABKAkSNgoGbGFiZWxzGA4gAygLMiYucm9zdGVyLkhvbGRlclBhdGNoUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBITCgtpZHBfc3ViamVjdBgQIAEoCRIYChBpZHBfc3ViamVjdF9udWxsGBEgASgIEiAKB3Byb2ZpbGUYEiABKAsyDy5yb3N0ZXIuUHJvZmlsZRIUCgxwcm9maWxlX251bGwYEyABKAgSIgoEZGF0YRgUIAEoCzIULmdvb2dsZS5wcm90b2J1Zi5BbnkSEQoJZGF0YV9udWxsGBUgASgIEjQKEGRhdGVfaW52YWxpZGF0ZWQYFiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEh0KFWRhdGVfaW52YWxpZGF0ZWRfbnVsbBgXIAEoCBIxCg1kYXRlX2Rpc2FibGVkGBggASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX2Rpc2FibGVkX251bGwYGSABKAgaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJRChJIb2xkZXJBcHBseVJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLkhvbGRlclJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoImUKEUhvbGRlckxpc3RSZXF1ZXN0EiUKB2ZpbHRlcnMYASADKAsyFC5yb3N0ZXIuSG9sZGVyRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAiJIChJIb2xkZXJMaXN0UmVzcG9uc2USHQoFaXRlbXMYASADKAsyDi5yb3N0ZXIuSG9sZGVyEhMKBG5leHQYAiABKAlCBaoBAggCIlEKDEhvbGRlckZpbHRlchIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYiWQoSSG9sZGVyV2F0Y2hSZXF1ZXN0EiUKB2ZpbHRlcnMYASADKAsyFC5yb3N0ZXIuSG9sZGVyRmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCIj0KE0hvbGRlcldhdGNoUmVzcG9uc2USJgoFaXRlbXMYASADKAsyFy5yb3N0ZXIuSG9sZGVyV2F0Y2hJdGVtIlMKD0hvbGRlcldhdGNoSXRlbRIKCgJpZBgBIAEoDBIdCgV2YWx1ZRgCIAEoCzIOLnJvc3Rlci5Ib2xkZXISFQoGYWN0aW9uGAMgASgJQgWqAQIIAiKtAQoTSG9sZGVyVXBkYXRlUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEjAKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASIAoHcHJvZmlsZRgJIAEoCzIPLnJvc3Rlci5Qcm9maWxlEiIKBGRhdGEYCiABKAsyFC5nb29nbGUucHJvdG9idWYuQW55ImgKFEhvbGRlckRpc2FibGVSZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSMAoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJnChNIb2xkZXJFbmFibGVSZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSMAoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJrChdIb2xkZXJJbnZhbGlkYXRlUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEjAKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAy+AQKDUhvbGRlclNlcnZpY2USLwoDQWRkEhgucm9zdGVyLkhvbGRlckFkZFJlcXVlc3QaDi5yb3N0ZXIuSG9sZGVyEi8KA0dldBIYLnJvc3Rlci5Ib2xkZXJHZXRSZXF1ZXN0Gg4ucm9zdGVyLkhvbGRlchIzCgVQYXRjaBIaLnJvc3Rlci5Ib2xkZXJQYXRjaFJlcXVlc3QaDi5yb3N0ZXIuSG9sZGVyEjMKBUFwcGx5Ehoucm9zdGVyLkhvbGRlckFwcGx5UmVxdWVzdBoOLnJvc3Rlci5Ib2xkZXISMgoFRXJhc2USES5yb3N0ZXIuSG9sZGVyUmVmGhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5Ej0KBExpc3QSGS5yb3N0ZXIuSG9sZGVyTGlzdFJlcXVlc3QaGi5yb3N0ZXIuSG9sZGVyTGlzdFJlc3BvbnNlEkIKBVdhdGNoEhoucm9zdGVyLkhvbGRlcldhdGNoUmVxdWVzdBobLnJvc3Rlci5Ib2xkZXJXYXRjaFJlc3BvbnNlMAESNQoGVXBkYXRlEhsucm9zdGVyLkhvbGRlclVwZGF0ZVJlcXVlc3QaDi5yb3N0ZXIuSG9sZGVyEjcKB0Rpc2FibGUSHC5yb3N0ZXIuSG9sZGVyRGlzYWJsZVJlcXVlc3QaDi5yb3N0ZXIuSG9sZGVyEjUKBkVuYWJsZRIbLnJvc3Rlci5Ib2xkZXJFbmFibGVSZXF1ZXN0Gg4ucm9zdGVyLkhvbGRlchI9CgpJbnZhbGlkYXRlEh8ucm9zdGVyLkhvbGRlckludmFsaWRhdGVSZXF1ZXN0Gg4ucm9zdGVyLkhvbGRlckIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_google_protobuf_any, file_google_protobuf_empty, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder, file_roster_payday_tenant_svc_g]);
 
 /**
  * @generated from message roster.HolderAddRequest
@@ -73,6 +73,16 @@ export type HolderAddRequest = Message<"roster.HolderAddRequest"> & {
    * @generated from field: google.protobuf.Any data = 10;
    */
   data?: Any | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_invalidated = 11;
+   */
+  dateInvalidated?: Timestamp | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_disabled = 12;
+   */
+  dateDisabled?: Timestamp | undefined;
 };
 
 /**
@@ -224,6 +234,16 @@ export type HolderSelect = Message<"roster.HolderSelect"> & {
    * @generated from field: bool data = 10;
    */
   data: boolean;
+
+  /**
+   * @generated from field: bool date_invalidated = 11;
+   */
+  dateInvalidated: boolean;
+
+  /**
+   * @generated from field: bool date_disabled = 12;
+   */
+  dateDisabled: boolean;
 };
 
 /**
@@ -330,6 +350,36 @@ export type HolderPatchRequest = Message<"roster.HolderPatchRequest"> & {
    * @generated from field: bool data_null = 21;
    */
   dataNull: boolean;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_invalidated = 22;
+   */
+  dateInvalidated?: Timestamp | undefined;
+
+  /**
+   * Clear date_invalidated instead of writing it.
+   * It takes a field of its own because an unset value already means
+   * "leave it alone", so no value could have meant NULL. It wins
+   * outright: setting both this and date_invalidated clears.
+   *
+   * @generated from field: bool date_invalidated_null = 23;
+   */
+  dateInvalidatedNull: boolean;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_disabled = 24;
+   */
+  dateDisabled?: Timestamp | undefined;
+
+  /**
+   * Clear date_disabled instead of writing it.
+   * It takes a field of its own because an unset value already means
+   * "leave it alone", so no value could have meant NULL. It wins
+   * outright: setting both this and date_disabled clears.
+   *
+   * @generated from field: bool date_disabled_null = 25;
+   */
+  dateDisabledNull: boolean;
 };
 
 /**
@@ -595,6 +645,74 @@ export const HolderUpdateRequestSchema: GenMessage<HolderUpdateRequest> = /*@__P
   messageDesc(file_roster_payday_holder_svc_g, 13);
 
 /**
+ * @generated from message roster.HolderDisableRequest
+ */
+export type HolderDisableRequest = Message<"roster.HolderDisableRequest"> & {
+  /**
+   * @generated from field: roster.HolderRef ref = 1;
+   */
+  ref?: HolderRef | undefined;
+
+  /**
+   * Optimistic locking, as `Update` takes it.
+   *
+   * @generated from field: google.protobuf.Timestamp date_updated = 13;
+   */
+  dateUpdated?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.HolderDisableRequest.
+ * Use `create(HolderDisableRequestSchema)` to create a new message.
+ */
+export const HolderDisableRequestSchema: GenMessage<HolderDisableRequest> = /*@__PURE__*/
+  messageDesc(file_roster_payday_holder_svc_g, 14);
+
+/**
+ * @generated from message roster.HolderEnableRequest
+ */
+export type HolderEnableRequest = Message<"roster.HolderEnableRequest"> & {
+  /**
+   * @generated from field: roster.HolderRef ref = 1;
+   */
+  ref?: HolderRef | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_updated = 13;
+   */
+  dateUpdated?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.HolderEnableRequest.
+ * Use `create(HolderEnableRequestSchema)` to create a new message.
+ */
+export const HolderEnableRequestSchema: GenMessage<HolderEnableRequest> = /*@__PURE__*/
+  messageDesc(file_roster_payday_holder_svc_g, 15);
+
+/**
+ * @generated from message roster.HolderInvalidateRequest
+ */
+export type HolderInvalidateRequest = Message<"roster.HolderInvalidateRequest"> & {
+  /**
+   * @generated from field: roster.HolderRef ref = 1;
+   */
+  ref?: HolderRef | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_updated = 13;
+   */
+  dateUpdated?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.HolderInvalidateRequest.
+ * Use `create(HolderInvalidateRequestSchema)` to create a new message.
+ */
+export const HolderInvalidateRequestSchema: GenMessage<HolderInvalidateRequest> = /*@__PURE__*/
+  messageDesc(file_roster_payday_holder_svc_g, 16);
+
+/**
  * @generated from service roster.HolderService
  */
 export const HolderService: GenService<{
@@ -702,6 +820,52 @@ export const HolderService: GenService<{
   update: {
     methodKind: "unary";
     input: typeof HolderUpdateRequestSchema;
+    output: typeof HolderSchema;
+  },
+  /**
+   * Disable stops somebody signing in, and leaves their rows where they are.
+   *
+   * Its own method rather than a field on `Update`, because it is not a thing
+   * a holder carries about itself -- it is somebody else's decision about them,
+   * and roles are lists of methods, so a separate name is the only way a
+   * deployment can grant one without granting the other.
+   *
+   * @generated from rpc roster.HolderService.Disable
+   */
+  disable: {
+    methodKind: "unary";
+    input: typeof HolderDisableRequestSchema;
+    output: typeof HolderSchema;
+  },
+  /**
+   * Enable is the other direction, and is a second method for the same reason
+   * the first is one: what a role may do is what it names.
+   *
+   * @generated from rpc roster.HolderService.Enable
+   */
+  enable: {
+    methodKind: "unary";
+    input: typeof HolderEnableRequestSchema;
+    output: typeof HolderSchema;
+  },
+  /**
+   * Invalidate voids everything issued before now.
+   *
+   * No time is taken and none can be. A caller who could write an older value
+   * could un-revoke; one who could write a future value could shut somebody out
+   * of a deployment with no way to say so. The server stamps it, which is also
+   * what makes it monotonic, which is what makes a duplicate a no-op and a
+   * missed message a matter of latency rather than correctness.
+   *
+   * There is no undo, by construction. That is the point rather than an
+   * omission: this is what a password reset and a "sign me out everywhere"
+   * button both do, and a credential that can be brought back is not revoked.
+   *
+   * @generated from rpc roster.HolderService.Invalidate
+   */
+  invalidate: {
+    methodKind: "unary";
+    input: typeof HolderInvalidateRequestSchema;
     output: typeof HolderSchema;
   },
 }> = /*@__PURE__*/

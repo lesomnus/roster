@@ -3,6 +3,9 @@ package core
 import (
 	"context"
 
+	"github.com/lesomnus/z"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	app "github.com/lesomnus/roster/rstr"
 )
 
@@ -63,6 +66,100 @@ func (s coreHolder) Update(ctx context.Context, req *app.HolderUpdateRequest) (*
 	if req.HasData() {
 		patch.Data = req.GetData()
 	}
+
+	return s.HolderServiceServer.Patch(ctx, patch.Build())
+}
+
+// Disable, Enable and Invalidate are the two facts an operator writes about
+// somebody, and neither is a thing that holder carries about itself.
+//
+// They are three methods rather than one taking a value, because a role is a
+// list of methods: what a deployment can grant is exactly what it can name, and
+// "may suspend somebody" and "may reinstate them" are two names. Written as one
+// method with a boolean they would be one grant, and a deployment that wanted
+// them apart would have nothing to ask for.
+//
+// # Why they are implemented with `Patch`
+//
+// [coreHolder.Update]'s reason unchanged: payday closes `Patch` at the
+// transport and not in the stack, so the narrowing is the request shape and the
+// write underneath is the one that already knows about versions, the trail and
+// the wall.
+//
+// # What is deliberately not here
+//
+// **Escalation.** Suspending an administrator is a denial of service and
+// resetting their credential is a way to become them, and `escalate.go` covers
+// neither. That is one subject and it is `docs/ROADMAP.md` P5's, where the rule
+// is chosen rather than assumed -- writing half of it here would leave the
+// half that matters more looking as though somebody had considered it.
+//
+// **A password change does not invalidate.** *A password reset that leaves old
+// sessions alive is not a reset* is true, and it belongs with the recovery
+// work that has the reset in it: coupling it here would make somebody changing
+// their own password sign themselves out of everything with nothing having said
+// so.
+func (s coreHolder) Disable(ctx context.Context, req *app.HolderDisableRequest) (*app.Holder, error) {
+	patch := app.HolderPatchRequest_builder{
+		Ref:          req.GetRef(),
+		DateDisabled: timestamppb.Now(),
+	}
+	lock(&patch, req.GetDateUpdated())
+
+	return s.HolderServiceServer.Patch(ctx, patch.Build())
+}
+
+func (s coreHolder) Enable(ctx context.Context, req *app.HolderEnableRequest) (*app.Holder, error) {
+	patch := app.HolderPatchRequest_builder{
+		Ref:              req.GetRef(),
+		DateDisabledNull: z.Ptr(true),
+	}
+	lock(&patch, req.GetDateUpdated())
+
+	return s.HolderServiceServer.Patch(ctx, patch.Build())
+}
+
+// lock carries the caller's version through, or declines the check when they
+// gave none.
+//
+// `Update` cannot do this and these three cannot do otherwise, and the
+// difference is what the write is. `Update` replaces a value the caller read,
+// so a version is the only thing standing between two editors and a lost one --
+// payday refuses an omitted one rather than assuming, *because an unset field
+// cannot be told apart from a caller who never considered locking at all*.
+//
+// These are not that. They write one column each, to a value that does not
+// depend on what was there, and each of them is somebody deciding something
+// about a person rather than editing them. Requiring a version would mean a
+// suspension or a sign-out-everywhere that **fails because somebody edited a
+// profile** -- which makes editing a profile in a loop a way to prevent being
+// suspended. A security action that can lose a race is one that can be
+// prevented.
+//
+// A caller who has read the row may still send the version and get the check,
+// which is why this is a fallback rather than a rule.
+func lock(patch *app.HolderPatchRequest_builder, was *timestamppb.Timestamp) {
+	if was != nil {
+		patch.DateUpdated = was
+
+		return
+	}
+
+	patch.DateUpdatedForce = z.Ptr(true)
+}
+
+// Invalidate stamps now, and takes no time from anybody.
+//
+// Monotonic without reading the row first, which is what the missing argument
+// buys: nothing can have written a value in the future, so `now` is never
+// behind what is stored. A caller-supplied time would need the read, and would
+// still leave un-revoking expressible.
+func (s coreHolder) Invalidate(ctx context.Context, req *app.HolderInvalidateRequest) (*app.Holder, error) {
+	patch := app.HolderPatchRequest_builder{
+		Ref:             req.GetRef(),
+		DateInvalidated: timestamppb.Now(),
+	}
+	lock(&patch, req.GetDateUpdated())
 
 	return s.HolderServiceServer.Patch(ctx, patch.Build())
 }

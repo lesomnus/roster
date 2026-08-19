@@ -106,6 +106,16 @@ func Data(v *anypb.Any) predicate.Holder {
 	return predicate.HolderOrErr(sql.FieldEQ(FieldData, vc), err)
 }
 
+// DateInvalidated applies equality check predicate on the "date_invalidated" field. It's identical to DateInvalidatedEQ.
+func DateInvalidated(v time.Time) predicate.Holder {
+	return predicate.Holder(sql.FieldEQ(FieldDateInvalidated, v))
+}
+
+// DateDisabled applies equality check predicate on the "date_disabled" field. It's identical to DateDisabledEQ.
+func DateDisabled(v time.Time) predicate.Holder {
+	return predicate.Holder(sql.FieldEQ(FieldDateDisabled, v))
+}
+
 // TenantID applies equality check predicate on the "tenant_id" field. It's identical to TenantIDEQ.
 func TenantID(v uuid.UUID) predicate.Holder {
 	return predicate.Holder(sql.FieldEQ(FieldTenantID, v))
@@ -777,6 +787,106 @@ func DataContainsFold(v *anypb.Any) predicate.Holder {
 		err = fmt.Errorf("data value is not a string: %T", vc)
 	}
 	return predicate.HolderOrErr(sql.FieldContainsFold(FieldData, vcs), err)
+}
+
+// DateInvalidatedEQ applies the EQ predicate on the "date_invalidated" field.
+func DateInvalidatedEQ(v time.Time) predicate.Holder {
+	return predicate.Holder(sql.FieldEQ(FieldDateInvalidated, v))
+}
+
+// DateInvalidatedNEQ applies the NEQ predicate on the "date_invalidated" field.
+func DateInvalidatedNEQ(v time.Time) predicate.Holder {
+	return predicate.Holder(sql.FieldNEQ(FieldDateInvalidated, v))
+}
+
+// DateInvalidatedIn applies the In predicate on the "date_invalidated" field.
+func DateInvalidatedIn(vs ...time.Time) predicate.Holder {
+	return predicate.Holder(sql.FieldIn(FieldDateInvalidated, vs...))
+}
+
+// DateInvalidatedNotIn applies the NotIn predicate on the "date_invalidated" field.
+func DateInvalidatedNotIn(vs ...time.Time) predicate.Holder {
+	return predicate.Holder(sql.FieldNotIn(FieldDateInvalidated, vs...))
+}
+
+// DateInvalidatedGT applies the GT predicate on the "date_invalidated" field.
+func DateInvalidatedGT(v time.Time) predicate.Holder {
+	return predicate.Holder(sql.FieldGT(FieldDateInvalidated, v))
+}
+
+// DateInvalidatedGTE applies the GTE predicate on the "date_invalidated" field.
+func DateInvalidatedGTE(v time.Time) predicate.Holder {
+	return predicate.Holder(sql.FieldGTE(FieldDateInvalidated, v))
+}
+
+// DateInvalidatedLT applies the LT predicate on the "date_invalidated" field.
+func DateInvalidatedLT(v time.Time) predicate.Holder {
+	return predicate.Holder(sql.FieldLT(FieldDateInvalidated, v))
+}
+
+// DateInvalidatedLTE applies the LTE predicate on the "date_invalidated" field.
+func DateInvalidatedLTE(v time.Time) predicate.Holder {
+	return predicate.Holder(sql.FieldLTE(FieldDateInvalidated, v))
+}
+
+// DateInvalidatedIsNil applies the IsNil predicate on the "date_invalidated" field.
+func DateInvalidatedIsNil() predicate.Holder {
+	return predicate.Holder(sql.FieldIsNull(FieldDateInvalidated))
+}
+
+// DateInvalidatedNotNil applies the NotNil predicate on the "date_invalidated" field.
+func DateInvalidatedNotNil() predicate.Holder {
+	return predicate.Holder(sql.FieldNotNull(FieldDateInvalidated))
+}
+
+// DateDisabledEQ applies the EQ predicate on the "date_disabled" field.
+func DateDisabledEQ(v time.Time) predicate.Holder {
+	return predicate.Holder(sql.FieldEQ(FieldDateDisabled, v))
+}
+
+// DateDisabledNEQ applies the NEQ predicate on the "date_disabled" field.
+func DateDisabledNEQ(v time.Time) predicate.Holder {
+	return predicate.Holder(sql.FieldNEQ(FieldDateDisabled, v))
+}
+
+// DateDisabledIn applies the In predicate on the "date_disabled" field.
+func DateDisabledIn(vs ...time.Time) predicate.Holder {
+	return predicate.Holder(sql.FieldIn(FieldDateDisabled, vs...))
+}
+
+// DateDisabledNotIn applies the NotIn predicate on the "date_disabled" field.
+func DateDisabledNotIn(vs ...time.Time) predicate.Holder {
+	return predicate.Holder(sql.FieldNotIn(FieldDateDisabled, vs...))
+}
+
+// DateDisabledGT applies the GT predicate on the "date_disabled" field.
+func DateDisabledGT(v time.Time) predicate.Holder {
+	return predicate.Holder(sql.FieldGT(FieldDateDisabled, v))
+}
+
+// DateDisabledGTE applies the GTE predicate on the "date_disabled" field.
+func DateDisabledGTE(v time.Time) predicate.Holder {
+	return predicate.Holder(sql.FieldGTE(FieldDateDisabled, v))
+}
+
+// DateDisabledLT applies the LT predicate on the "date_disabled" field.
+func DateDisabledLT(v time.Time) predicate.Holder {
+	return predicate.Holder(sql.FieldLT(FieldDateDisabled, v))
+}
+
+// DateDisabledLTE applies the LTE predicate on the "date_disabled" field.
+func DateDisabledLTE(v time.Time) predicate.Holder {
+	return predicate.Holder(sql.FieldLTE(FieldDateDisabled, v))
+}
+
+// DateDisabledIsNil applies the IsNil predicate on the "date_disabled" field.
+func DateDisabledIsNil() predicate.Holder {
+	return predicate.Holder(sql.FieldIsNull(FieldDateDisabled))
+}
+
+// DateDisabledNotNil applies the NotNil predicate on the "date_disabled" field.
+func DateDisabledNotNil() predicate.Holder {
+	return predicate.Holder(sql.FieldNotNull(FieldDateDisabled))
 }
 
 // TenantIDEQ applies the EQ predicate on the "tenant_id" field.

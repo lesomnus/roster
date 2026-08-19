@@ -163,6 +163,46 @@ func (_u *HolderUpdate) ClearData() *HolderUpdate {
 	return _u
 }
 
+// SetDateInvalidated sets the "date_invalidated" field.
+func (_u *HolderUpdate) SetDateInvalidated(v time.Time) *HolderUpdate {
+	_u.mutation.SetDateInvalidated(v)
+	return _u
+}
+
+// SetNillableDateInvalidated sets the "date_invalidated" field if the given value is not nil.
+func (_u *HolderUpdate) SetNillableDateInvalidated(v *time.Time) *HolderUpdate {
+	if v != nil {
+		_u.SetDateInvalidated(*v)
+	}
+	return _u
+}
+
+// ClearDateInvalidated clears the value of the "date_invalidated" field.
+func (_u *HolderUpdate) ClearDateInvalidated() *HolderUpdate {
+	_u.mutation.ClearDateInvalidated()
+	return _u
+}
+
+// SetDateDisabled sets the "date_disabled" field.
+func (_u *HolderUpdate) SetDateDisabled(v time.Time) *HolderUpdate {
+	_u.mutation.SetDateDisabled(v)
+	return _u
+}
+
+// SetNillableDateDisabled sets the "date_disabled" field if the given value is not nil.
+func (_u *HolderUpdate) SetNillableDateDisabled(v *time.Time) *HolderUpdate {
+	if v != nil {
+		_u.SetDateDisabled(*v)
+	}
+	return _u
+}
+
+// ClearDateDisabled clears the value of the "date_disabled" field.
+func (_u *HolderUpdate) ClearDateDisabled() *HolderUpdate {
+	_u.mutation.ClearDateDisabled()
+	return _u
+}
+
 // Mutation returns the HolderMutation object of the builder.
 func (_u *HolderUpdate) Mutation() *HolderMutation {
 	return _u.mutation
@@ -273,6 +313,18 @@ func (_u *HolderUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.DataCleared() {
 		_spec.ClearField(holder.FieldData, field.TypeString)
+	}
+	if value, ok := _u.mutation.DateInvalidated(); ok {
+		_spec.SetField(holder.FieldDateInvalidated, field.TypeTime, value)
+	}
+	if _u.mutation.DateInvalidatedCleared() {
+		_spec.ClearField(holder.FieldDateInvalidated, field.TypeTime)
+	}
+	if value, ok := _u.mutation.DateDisabled(); ok {
+		_spec.SetField(holder.FieldDateDisabled, field.TypeTime, value)
+	}
+	if _u.mutation.DateDisabledCleared() {
+		_spec.ClearField(holder.FieldDateDisabled, field.TypeTime)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -428,6 +480,46 @@ func (_u *HolderUpdateOne) ClearData() *HolderUpdateOne {
 	return _u
 }
 
+// SetDateInvalidated sets the "date_invalidated" field.
+func (_u *HolderUpdateOne) SetDateInvalidated(v time.Time) *HolderUpdateOne {
+	_u.mutation.SetDateInvalidated(v)
+	return _u
+}
+
+// SetNillableDateInvalidated sets the "date_invalidated" field if the given value is not nil.
+func (_u *HolderUpdateOne) SetNillableDateInvalidated(v *time.Time) *HolderUpdateOne {
+	if v != nil {
+		_u.SetDateInvalidated(*v)
+	}
+	return _u
+}
+
+// ClearDateInvalidated clears the value of the "date_invalidated" field.
+func (_u *HolderUpdateOne) ClearDateInvalidated() *HolderUpdateOne {
+	_u.mutation.ClearDateInvalidated()
+	return _u
+}
+
+// SetDateDisabled sets the "date_disabled" field.
+func (_u *HolderUpdateOne) SetDateDisabled(v time.Time) *HolderUpdateOne {
+	_u.mutation.SetDateDisabled(v)
+	return _u
+}
+
+// SetNillableDateDisabled sets the "date_disabled" field if the given value is not nil.
+func (_u *HolderUpdateOne) SetNillableDateDisabled(v *time.Time) *HolderUpdateOne {
+	if v != nil {
+		_u.SetDateDisabled(*v)
+	}
+	return _u
+}
+
+// ClearDateDisabled clears the value of the "date_disabled" field.
+func (_u *HolderUpdateOne) ClearDateDisabled() *HolderUpdateOne {
+	_u.mutation.ClearDateDisabled()
+	return _u
+}
+
 // Mutation returns the HolderMutation object of the builder.
 func (_u *HolderUpdateOne) Mutation() *HolderMutation {
 	return _u.mutation
@@ -568,6 +660,18 @@ func (_u *HolderUpdateOne) sqlSave(ctx context.Context) (_node *Holder, err erro
 	}
 	if _u.mutation.DataCleared() {
 		_spec.ClearField(holder.FieldData, field.TypeString)
+	}
+	if value, ok := _u.mutation.DateInvalidated(); ok {
+		_spec.SetField(holder.FieldDateInvalidated, field.TypeTime, value)
+	}
+	if _u.mutation.DateInvalidatedCleared() {
+		_spec.ClearField(holder.FieldDateInvalidated, field.TypeTime)
+	}
+	if value, ok := _u.mutation.DateDisabled(); ok {
+		_spec.SetField(holder.FieldDateDisabled, field.TypeTime, value)
+	}
+	if _u.mutation.DateDisabledCleared() {
+		_spec.ClearField(holder.FieldDateDisabled, field.TypeTime)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Holder{config: _u.config}
