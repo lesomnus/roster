@@ -35,9 +35,62 @@ option go_package = "github.com/lesomnus/roster/rstr";
 // answer is true when it was made.
 service MeService {
   rpc Get(MeGetRequest) returns (MeGetResponse);
+
+  // Unlink removes one of the caller's own ways in.
+  //
+  // # Why it is here and not on IdentityService
+  //
+  // The same reason `MeGetResponse` carries identities at all: `Identity` is
+  // narrowed by the **tenant**, so a person removing their own through that
+  // service would be doing it with a permission that reaches everybody else's
+  // -- which is the leak D17 named and D23 exists to remove, arriving on the
+  // one screen it is most tempting on.
+  //
+  // This takes an identifier and refuses one that is not the caller's, so the
+  // argument is a *which*, never a *whose*. That is what keeps it in the same
+  // category as `Get`: it cannot be pointed at anybody else.
+  //
+  // # What it does not let go of
+  //
+  // The last one. `server/core` refuses the removal of somebody's only way in,
+  // and this goes through it -- so a person cannot lock themselves out with a
+  // button, which is a rule no deployment would want configured differently.
+  rpc Unlink(MeUnlinkRequest) returns (MeUnlinkResponse);
+
+  // SignOutEverywhere voids everything issued to the caller before now.
+  //
+  // The self-service half of D26. `HolderService.Invalidate` takes a subject
+  // and is therefore an operator's; this takes nothing and is the person's own,
+  // which is the same split `Get` makes and for the same reason.
+  //
+  // What it does **not** do is end the session the caller is holding. That
+  // session belongs to whatever app they are talking to, and roster does not
+  // know it exists -- so the app that draws this button ends its own cookie
+  // beside it. roster answers *invalid since when*; an app answers *what is
+  // still alive*.
+  rpc SignOutEverywhere(MeSignOutEverywhereRequest) returns (MeSignOutEverywhereResponse);
 }
 
 message MeGetRequest {}
+
+message MeUnlinkRequest {
+  // Which one, by the identifier `MeGetResponse` answers with.
+  //
+  // A *which* and never a *whose*: one that is not the caller's is `NotFound`,
+  // told apart from nothing, so this cannot be used to ask whether somebody
+  // else's identity exists.
+  bytes id = 1;
+}
+
+message MeUnlinkResponse {}
+
+message MeSignOutEverywhereRequest {}
+
+message MeSignOutEverywhereResponse {
+  // The moment everything before it became void, which is what an app compares
+  // a session against.
+  google.protobuf.Timestamp date_invalidated = 11;
+}
 
 message MeGetResponse {
   // The caller, by the identifier every product knows them by -- `sub`.

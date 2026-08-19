@@ -100,10 +100,35 @@ func (p policy) May(ctx context.Context, c gate.Call) error {
 //
 // A list of methods and not a prefix, which is the opposite of custody's
 // catalogue. There every RPC is public and a second one added tomorrow should
-// be too. Here it is exactly this one, and a method added to `MeService`
-// tomorrow should need a decision rather than inherit one.
+// be too. Here they are named one at a time, and a method added to `MeService`
+// tomorrow needs a decision rather than inheriting one.
+//
+// # The two writes, and why they are on the list
+//
+// `Unlink` and `SignOutEverywhere` write, which is the part worth stopping on.
+// They are here for `Get`'s reason and not by extension of it: neither takes a
+// subject, so neither can be pointed at anybody else, and what each does is
+// something a person may do to their own account by definition.
+//
+// The alternative is a role, and a role is the wrong shape twice over. It would
+// have to reach every identity in the tenant, since `Identity` narrows by
+// tenant and there is no permission smaller than that -- so "may remove their
+// own way in" would be granted as "may remove anybody's". And requiring one at
+// all means somebody who has just been given an account cannot sign themselves
+// out of a session they no longer trust, which is the moment they most want to.
+//
+// What keeps them safe is the same absence that keeps `Get` safe, plus the
+// rules in the layer: `server/core` refuses the removal of a last way in, so
+// the button cannot lock somebody out of their own account.
 func aboutYourself(method string) bool {
-	return method == app.MeService_Get_FullMethodName
+	switch method {
+	case app.MeService_Get_FullMethodName,
+		app.MeService_Unlink_FullMethodName,
+		app.MeService_SignOutEverywhere_FullMethodName:
+		return true
+	}
+
+	return false
 }
 
 // Where is which tenants this caller sees.

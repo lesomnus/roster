@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/me.proto.
  */
 export const file_app_me: GenFile = /*@__PURE__*/
-  fileDesc("CgxhcHAvbWUucHJvdG8SBnJvc3RlciIOCgxNZUdldFJlcXVlc3QilwIKDU1lR2V0UmVzcG9uc2USCgoCaWQYASABKAwSDgoGdGVuYW50GAIgASgMEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSHwoGZW1haWxzGAggAygLMg8ucm9zdGVyLk1lRW1haWwSHQoFdGVhbXMYCSADKAsyDi5yb3N0ZXIuTWVUZWFtEg8KB21ldGhvZHMYCiADKAkSDQoFc2l0ZXMYCyADKAwSEgoKZXZlcnlfc2l0ZRgMIAEoCBIqCgppZGVudGl0aWVzGA0gAygLMhYucm9zdGVyLlNpZ25JbklkZW50aXR5Ei0KC2NyZWRlbnRpYWxzGA4gAygLMhgucm9zdGVyLlNpZ25JbkNyZWRlbnRpYWwicQoOU2lnbkluSWRlbnRpdHkSCgoCaWQYASABKAwSEAoIcHJvdmlkZXIYCCABKAkSDwoHc3ViamVjdBgJIAEoCRIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIpEBChBTaWduSW5DcmVkZW50aWFsEgwKBGtpbmQYCCABKAkSDAoEbmFtZRgFIAEoCRIwCgxkYXRlX3JvdGF0ZWQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi8KC2RhdGVfbG9ja2VkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJNCgdNZUVtYWlsEg8KB2FkZHJlc3MYCCABKAkSMQoNZGF0ZV92ZXJpZmllZBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiYQoGTWVUZWFtEgoKAmlkGAEgASgMEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSDAoEc2l0ZRgIIAEoDBISCgpzaXRlX2FsaWFzGAkgASgJEgwKBHJvbGUYCiABKAkyPwoJTWVTZXJ2aWNlEjIKA0dldBIULnJvc3Rlci5NZUdldFJlcXVlc3QaFS5yb3N0ZXIuTWVHZXRSZXNwb25zZUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp]);
+  fileDesc("CgxhcHAvbWUucHJvdG8SBnJvc3RlciIOCgxNZUdldFJlcXVlc3QiHQoPTWVVbmxpbmtSZXF1ZXN0EgoKAmlkGAEgASgMIhIKEE1lVW5saW5rUmVzcG9uc2UiHAoaTWVTaWduT3V0RXZlcnl3aGVyZVJlcXVlc3QiUwobTWVTaWduT3V0RXZlcnl3aGVyZVJlc3BvbnNlEjQKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIpcCCg1NZUdldFJlc3BvbnNlEgoKAmlkGAEgASgMEg4KBnRlbmFudBgCIAEoDBINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEh8KBmVtYWlscxgIIAMoCzIPLnJvc3Rlci5NZUVtYWlsEh0KBXRlYW1zGAkgAygLMg4ucm9zdGVyLk1lVGVhbRIPCgdtZXRob2RzGAogAygJEg0KBXNpdGVzGAsgAygMEhIKCmV2ZXJ5X3NpdGUYDCABKAgSKgoKaWRlbnRpdGllcxgNIAMoCzIWLnJvc3Rlci5TaWduSW5JZGVudGl0eRItCgtjcmVkZW50aWFscxgOIAMoCzIYLnJvc3Rlci5TaWduSW5DcmVkZW50aWFsInEKDlNpZ25JbklkZW50aXR5EgoKAmlkGAEgASgMEhAKCHByb3ZpZGVyGAggASgJEg8KB3N1YmplY3QYCSABKAkSMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKRAQoQU2lnbkluQ3JlZGVudGlhbBIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSMAoMZGF0ZV9yb3RhdGVkGAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIvCgtkYXRlX2xvY2tlZBgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiTQoHTWVFbWFpbBIPCgdhZGRyZXNzGAggASgJEjEKDWRhdGVfdmVyaWZpZWQYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wImEKBk1lVGVhbRIKCgJpZBgBIAEoDBINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBHNpdGUYCCABKAwSEgoKc2l0ZV9hbGlhcxgJIAEoCRIMCgRyb2xlGAogASgJMtoBCglNZVNlcnZpY2USMgoDR2V0EhQucm9zdGVyLk1lR2V0UmVxdWVzdBoVLnJvc3Rlci5NZUdldFJlc3BvbnNlEjsKBlVubGluaxIXLnJvc3Rlci5NZVVubGlua1JlcXVlc3QaGC5yb3N0ZXIuTWVVbmxpbmtSZXNwb25zZRJcChFTaWduT3V0RXZlcnl3aGVyZRIiLnJvc3Rlci5NZVNpZ25PdXRFdmVyeXdoZXJlUmVxdWVzdBojLnJvc3Rlci5NZVNpZ25PdXRFdmVyeXdoZXJlUmVzcG9uc2VCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp]);
 
 /**
  * @generated from message roster.MeGetRequest
@@ -27,6 +27,75 @@ export type MeGetRequest = Message<"roster.MeGetRequest"> & {
  */
 export const MeGetRequestSchema: GenMessage<MeGetRequest> = /*@__PURE__*/
   messageDesc(file_app_me, 0);
+
+/**
+ * @generated from message roster.MeUnlinkRequest
+ */
+export type MeUnlinkRequest = Message<"roster.MeUnlinkRequest"> & {
+  /**
+   * Which one, by the identifier `MeGetResponse` answers with.
+   *
+   * A *which* and never a *whose*: one that is not the caller's is `NotFound`,
+   * told apart from nothing, so this cannot be used to ask whether somebody
+   * else's identity exists.
+   *
+   * @generated from field: bytes id = 1;
+   */
+  id: Uint8Array;
+};
+
+/**
+ * Describes the message roster.MeUnlinkRequest.
+ * Use `create(MeUnlinkRequestSchema)` to create a new message.
+ */
+export const MeUnlinkRequestSchema: GenMessage<MeUnlinkRequest> = /*@__PURE__*/
+  messageDesc(file_app_me, 1);
+
+/**
+ * @generated from message roster.MeUnlinkResponse
+ */
+export type MeUnlinkResponse = Message<"roster.MeUnlinkResponse"> & {
+};
+
+/**
+ * Describes the message roster.MeUnlinkResponse.
+ * Use `create(MeUnlinkResponseSchema)` to create a new message.
+ */
+export const MeUnlinkResponseSchema: GenMessage<MeUnlinkResponse> = /*@__PURE__*/
+  messageDesc(file_app_me, 2);
+
+/**
+ * @generated from message roster.MeSignOutEverywhereRequest
+ */
+export type MeSignOutEverywhereRequest = Message<"roster.MeSignOutEverywhereRequest"> & {
+};
+
+/**
+ * Describes the message roster.MeSignOutEverywhereRequest.
+ * Use `create(MeSignOutEverywhereRequestSchema)` to create a new message.
+ */
+export const MeSignOutEverywhereRequestSchema: GenMessage<MeSignOutEverywhereRequest> = /*@__PURE__*/
+  messageDesc(file_app_me, 3);
+
+/**
+ * @generated from message roster.MeSignOutEverywhereResponse
+ */
+export type MeSignOutEverywhereResponse = Message<"roster.MeSignOutEverywhereResponse"> & {
+  /**
+   * The moment everything before it became void, which is what an app compares
+   * a session against.
+   *
+   * @generated from field: google.protobuf.Timestamp date_invalidated = 11;
+   */
+  dateInvalidated?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.MeSignOutEverywhereResponse.
+ * Use `create(MeSignOutEverywhereResponseSchema)` to create a new message.
+ */
+export const MeSignOutEverywhereResponseSchema: GenMessage<MeSignOutEverywhereResponse> = /*@__PURE__*/
+  messageDesc(file_app_me, 4);
 
 /**
  * @generated from message roster.MeGetResponse
@@ -139,7 +208,7 @@ export type MeGetResponse = Message<"roster.MeGetResponse"> & {
  * Use `create(MeGetResponseSchema)` to create a new message.
  */
 export const MeGetResponseSchema: GenMessage<MeGetResponse> = /*@__PURE__*/
-  messageDesc(file_app_me, 1);
+  messageDesc(file_app_me, 5);
 
 /**
  * SignInIdentity is one way somebody arrives from outside.
@@ -190,7 +259,7 @@ export type SignInIdentity = Message<"roster.SignInIdentity"> & {
  * Use `create(SignInIdentitySchema)` to create a new message.
  */
 export const SignInIdentitySchema: GenMessage<SignInIdentity> = /*@__PURE__*/
-  messageDesc(file_app_me, 2);
+  messageDesc(file_app_me, 6);
 
 /**
  * SignInCredential is one secret roster holds for somebody, and never the secret.
@@ -241,7 +310,7 @@ export type SignInCredential = Message<"roster.SignInCredential"> & {
  * Use `create(SignInCredentialSchema)` to create a new message.
  */
 export const SignInCredentialSchema: GenMessage<SignInCredential> = /*@__PURE__*/
-  messageDesc(file_app_me, 3);
+  messageDesc(file_app_me, 7);
 
 /**
  * @generated from message roster.MeEmail
@@ -263,7 +332,7 @@ export type MeEmail = Message<"roster.MeEmail"> & {
  * Use `create(MeEmailSchema)` to create a new message.
  */
 export const MeEmailSchema: GenMessage<MeEmail> = /*@__PURE__*/
-  messageDesc(file_app_me, 4);
+  messageDesc(file_app_me, 8);
 
 /**
  * @generated from message roster.MeTeam
@@ -307,7 +376,7 @@ export type MeTeam = Message<"roster.MeTeam"> & {
  * Use `create(MeTeamSchema)` to create a new message.
  */
 export const MeTeamSchema: GenMessage<MeTeam> = /*@__PURE__*/
-  messageDesc(file_app_me, 5);
+  messageDesc(file_app_me, 9);
 
 /**
  * MeService answers what a caller is, in one round trip.
@@ -347,6 +416,54 @@ export const MeService: GenService<{
     methodKind: "unary";
     input: typeof MeGetRequestSchema;
     output: typeof MeGetResponseSchema;
+  },
+  /**
+   * Unlink removes one of the caller's own ways in.
+   *
+   * # Why it is here and not on IdentityService
+   *
+   * The same reason `MeGetResponse` carries identities at all: `Identity` is
+   * narrowed by the **tenant**, so a person removing their own through that
+   * service would be doing it with a permission that reaches everybody else's
+   * -- which is the leak D17 named and D23 exists to remove, arriving on the
+   * one screen it is most tempting on.
+   *
+   * This takes an identifier and refuses one that is not the caller's, so the
+   * argument is a *which*, never a *whose*. That is what keeps it in the same
+   * category as `Get`: it cannot be pointed at anybody else.
+   *
+   * # What it does not let go of
+   *
+   * The last one. `server/core` refuses the removal of somebody's only way in,
+   * and this goes through it -- so a person cannot lock themselves out with a
+   * button, which is a rule no deployment would want configured differently.
+   *
+   * @generated from rpc roster.MeService.Unlink
+   */
+  unlink: {
+    methodKind: "unary";
+    input: typeof MeUnlinkRequestSchema;
+    output: typeof MeUnlinkResponseSchema;
+  },
+  /**
+   * SignOutEverywhere voids everything issued to the caller before now.
+   *
+   * The self-service half of D26. `HolderService.Invalidate` takes a subject
+   * and is therefore an operator's; this takes nothing and is the person's own,
+   * which is the same split `Get` makes and for the same reason.
+   *
+   * What it does **not** do is end the session the caller is holding. That
+   * session belongs to whatever app they are talking to, and roster does not
+   * know it exists -- so the app that draws this button ends its own cookie
+   * beside it. roster answers *invalid since when*; an app answers *what is
+   * still alive*.
+   *
+   * @generated from rpc roster.MeService.SignOutEverywhere
+   */
+  signOutEverywhere: {
+    methodKind: "unary";
+    input: typeof MeSignOutEverywhereRequestSchema;
+    output: typeof MeSignOutEverywhereResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_app_me, 0);

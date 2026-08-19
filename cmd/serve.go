@@ -419,7 +419,10 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 
 	// And what a caller is, in one round trip. It takes nothing, so there is
 	// nobody but the caller to ask about; see `server/me`.
-	app.RegisterMeServiceServer(g, me.New(s.Ent, Everything(s.Ent)))
+	// With the stack its two writes go through. The reads go to ent because the
+	// missing subject has already narrowed them; the writes have rules on them,
+	// and the rules live in a layer.
+	app.RegisterMeServiceServer(g, me.New(s.Ent, Everything(s.Ent), me.WithWrites(s.Walled)))
 
 	// What a token stands for, for a product app that was handed one.
 	//

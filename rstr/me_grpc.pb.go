@@ -19,7 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	MeService_Get_FullMethodName = "/roster.MeService/Get"
+	MeService_Get_FullMethodName               = "/roster.MeService/Get"
+	MeService_Unlink_FullMethodName            = "/roster.MeService/Unlink"
+	MeService_SignOutEverywhere_FullMethodName = "/roster.MeService/SignOutEverywhere"
 )
 
 // MeServiceClient is the client API for MeService service.
@@ -54,6 +56,38 @@ const (
 // answer is true when it was made.
 type MeServiceClient interface {
 	Get(ctx context.Context, in *MeGetRequest, opts ...grpc.CallOption) (*MeGetResponse, error)
+	// Unlink removes one of the caller's own ways in.
+	//
+	// # Why it is here and not on IdentityService
+	//
+	// The same reason `MeGetResponse` carries identities at all: `Identity` is
+	// narrowed by the **tenant**, so a person removing their own through that
+	// service would be doing it with a permission that reaches everybody else's
+	// -- which is the leak D17 named and D23 exists to remove, arriving on the
+	// one screen it is most tempting on.
+	//
+	// This takes an identifier and refuses one that is not the caller's, so the
+	// argument is a *which*, never a *whose*. That is what keeps it in the same
+	// category as `Get`: it cannot be pointed at anybody else.
+	//
+	// # What it does not let go of
+	//
+	// The last one. `server/core` refuses the removal of somebody's only way in,
+	// and this goes through it -- so a person cannot lock themselves out with a
+	// button, which is a rule no deployment would want configured differently.
+	Unlink(ctx context.Context, in *MeUnlinkRequest, opts ...grpc.CallOption) (*MeUnlinkResponse, error)
+	// SignOutEverywhere voids everything issued to the caller before now.
+	//
+	// The self-service half of D26. `HolderService.Invalidate` takes a subject
+	// and is therefore an operator's; this takes nothing and is the person's own,
+	// which is the same split `Get` makes and for the same reason.
+	//
+	// What it does **not** do is end the session the caller is holding. That
+	// session belongs to whatever app they are talking to, and roster does not
+	// know it exists -- so the app that draws this button ends its own cookie
+	// beside it. roster answers *invalid since when*; an app answers *what is
+	// still alive*.
+	SignOutEverywhere(ctx context.Context, in *MeSignOutEverywhereRequest, opts ...grpc.CallOption) (*MeSignOutEverywhereResponse, error)
 }
 
 type meServiceClient struct {
@@ -68,6 +102,26 @@ func (c *meServiceClient) Get(ctx context.Context, in *MeGetRequest, opts ...grp
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(MeGetResponse)
 	err := c.cc.Invoke(ctx, MeService_Get_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *meServiceClient) Unlink(ctx context.Context, in *MeUnlinkRequest, opts ...grpc.CallOption) (*MeUnlinkResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MeUnlinkResponse)
+	err := c.cc.Invoke(ctx, MeService_Unlink_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *meServiceClient) SignOutEverywhere(ctx context.Context, in *MeSignOutEverywhereRequest, opts ...grpc.CallOption) (*MeSignOutEverywhereResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MeSignOutEverywhereResponse)
+	err := c.cc.Invoke(ctx, MeService_SignOutEverywhere_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -106,6 +160,38 @@ func (c *meServiceClient) Get(ctx context.Context, in *MeGetRequest, opts ...grp
 // answer is true when it was made.
 type MeServiceServer interface {
 	Get(context.Context, *MeGetRequest) (*MeGetResponse, error)
+	// Unlink removes one of the caller's own ways in.
+	//
+	// # Why it is here and not on IdentityService
+	//
+	// The same reason `MeGetResponse` carries identities at all: `Identity` is
+	// narrowed by the **tenant**, so a person removing their own through that
+	// service would be doing it with a permission that reaches everybody else's
+	// -- which is the leak D17 named and D23 exists to remove, arriving on the
+	// one screen it is most tempting on.
+	//
+	// This takes an identifier and refuses one that is not the caller's, so the
+	// argument is a *which*, never a *whose*. That is what keeps it in the same
+	// category as `Get`: it cannot be pointed at anybody else.
+	//
+	// # What it does not let go of
+	//
+	// The last one. `server/core` refuses the removal of somebody's only way in,
+	// and this goes through it -- so a person cannot lock themselves out with a
+	// button, which is a rule no deployment would want configured differently.
+	Unlink(context.Context, *MeUnlinkRequest) (*MeUnlinkResponse, error)
+	// SignOutEverywhere voids everything issued to the caller before now.
+	//
+	// The self-service half of D26. `HolderService.Invalidate` takes a subject
+	// and is therefore an operator's; this takes nothing and is the person's own,
+	// which is the same split `Get` makes and for the same reason.
+	//
+	// What it does **not** do is end the session the caller is holding. That
+	// session belongs to whatever app they are talking to, and roster does not
+	// know it exists -- so the app that draws this button ends its own cookie
+	// beside it. roster answers *invalid since when*; an app answers *what is
+	// still alive*.
+	SignOutEverywhere(context.Context, *MeSignOutEverywhereRequest) (*MeSignOutEverywhereResponse, error)
 	mustEmbedUnimplementedMeServiceServer()
 }
 
@@ -118,6 +204,12 @@ type UnimplementedMeServiceServer struct{}
 
 func (UnimplementedMeServiceServer) Get(context.Context, *MeGetRequest) (*MeGetResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Get not implemented")
+}
+func (UnimplementedMeServiceServer) Unlink(context.Context, *MeUnlinkRequest) (*MeUnlinkResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Unlink not implemented")
+}
+func (UnimplementedMeServiceServer) SignOutEverywhere(context.Context, *MeSignOutEverywhereRequest) (*MeSignOutEverywhereResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SignOutEverywhere not implemented")
 }
 func (UnimplementedMeServiceServer) mustEmbedUnimplementedMeServiceServer() {}
 func (UnimplementedMeServiceServer) testEmbeddedByValue()                   {}
@@ -158,6 +250,42 @@ func _MeService_Get_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MeService_Unlink_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MeUnlinkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MeServiceServer).Unlink(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MeService_Unlink_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MeServiceServer).Unlink(ctx, req.(*MeUnlinkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MeService_SignOutEverywhere_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MeSignOutEverywhereRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MeServiceServer).SignOutEverywhere(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MeService_SignOutEverywhere_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MeServiceServer).SignOutEverywhere(ctx, req.(*MeSignOutEverywhereRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MeService_ServiceDesc is the grpc.ServiceDesc for MeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -168,6 +296,14 @@ var MeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Get",
 			Handler:    _MeService_Get_Handler,
+		},
+		{
+			MethodName: "Unlink",
+			Handler:    _MeService_Unlink_Handler,
+		},
+		{
+			MethodName: "SignOutEverywhere",
+			Handler:    _MeService_SignOutEverywhere_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

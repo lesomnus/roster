@@ -33,6 +33,8 @@ import (
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 
+	"github.com/google/uuid"
+
 	"github.com/lesomnus/roster/internal/ent"
 	"github.com/lesomnus/roster/internal/ent/credential"
 	"github.com/lesomnus/roster/internal/ent/email"
@@ -55,9 +57,34 @@ type Server struct {
 
 	db   *ent.Client
 	held Held
+
+	// walled is the stack the two writes go through.
+	//
+	// The reads here go to ent because the missing subject has already narrowed
+	// them and there is nothing left for a wall to do. A write is different: the
+	// rules that make one safe -- refusing the removal of somebody's only way in
+	// -- live in a layer, and going around them would be a button that locks
+	// somebody out of their own account.
+	//
+	// Nil is a server that answers and does not write, which is what `cmd`
+	// hands the admin port and what a caller gets `Unimplemented` from.
+	walled app.Server
 }
 
-func New(db *ent.Client, held Held) *Server { return &Server{db: db, held: held} }
+func New(db *ent.Client, held Held, opts ...Option) *Server {
+	s := &Server{db: db, held: held}
+	for _, opt := range opts {
+		opt(s)
+	}
+
+	return s
+}
+
+// Option is how a deployment says what this service may do.
+type Option func(*Server)
+
+// WithWrites gives the service the stack its two writes go through.
+func WithWrites(v app.Server) Option { return func(s *Server) { s.walled = v } }
 
 // Get answers about the caller, and takes nothing.
 func (s *Server) Get(ctx context.Context, _ *app.MeGetRequest) (*app.MeGetResponse, error) {
@@ -264,4 +291,87 @@ func (s *Server) credentials(ctx context.Context, who pdid.Id) ([]*app.SignInCre
 	}
 
 	return out, nil
+}
+
+// Unlink removes one of the caller's own ways in.
+//
+// # A which, never a whose
+//
+// The identifier names one of **their** rows and the query says so: the read
+// that finds it is narrowed by the caller before it is narrowed by the
+// identifier, so one that belongs to somebody else is `NotFound` rather than
+// refused. Told apart, this would answer whether an identity exists.
+//
+// # And it goes through the stack rather than around it
+//
+// Unlike everything else in this file. The read here goes to ent because there
+// is nothing to narrow that the missing subject has not already narrowed; the
+// **write** has a rule on it -- `server/core` refuses the removal of somebody's
+// only way in -- and that rule lives in a layer. Going around it would be a
+// button that locks somebody out of their own account.
+func (s *Server) Unlink(ctx context.Context, req *app.MeUnlinkRequest) (*app.MeUnlinkResponse, error) {
+	f, ok := frame.From(ctx)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "who is asking?")
+	}
+	if s.walled == nil {
+		return nil, status.Error(codes.Unimplemented, "this server cannot write")
+	}
+
+	id, err := uuid.FromBytes(req.GetId())
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+	}
+
+	// Theirs, or nothing. The holder is the first predicate and the identifier
+	// the second, which is the order that makes the answer about the caller.
+	n, err := s.db.Identity.Query().
+		Where(
+			identity.DateErasedIsNil(),
+			identity.HasHolderWith(holder.IDEQ(f.Actor.Uuid())),
+			identity.IDEQ(id),
+		).
+		Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if n == 0 {
+		return nil, status.Error(codes.NotFound, "no such way in")
+	}
+
+	if _, err := s.walled.Identity().Erase(ctx,
+		app.IdentityRef_builder{Id: req.GetId()}.Build()); err != nil {
+		return nil, err
+	}
+
+	return app.MeUnlinkResponse_builder{}.Build(), nil
+}
+
+// SignOutEverywhere voids everything issued to the caller before now.
+//
+// The self-service half of D26: `HolderService.Invalidate` takes a subject and
+// is an operator's, and this takes nothing and is the person's own.
+//
+// It does not end the session the caller is holding, and cannot: that session
+// belongs to whatever app they are talking to and roster does not know it
+// exists. The app that draws the button ends its own cookie beside this call.
+func (s *Server) SignOutEverywhere(ctx context.Context, _ *app.MeSignOutEverywhereRequest) (*app.MeSignOutEverywhereResponse, error) {
+	f, ok := frame.From(ctx)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "who is asking?")
+	}
+	if s.walled == nil {
+		return nil, status.Error(codes.Unimplemented, "this server cannot write")
+	}
+
+	v, err := s.walled.Holder().Invalidate(ctx, app.HolderInvalidateRequest_builder{
+		Ref: app.HolderRef_builder{Id: f.Actor.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	return app.MeSignOutEverywhereResponse_builder{
+		DateInvalidated: v.GetDateInvalidated(),
+	}.Build(), nil
 }

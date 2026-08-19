@@ -137,6 +137,63 @@ over memberships, credential verification.
 Recorded as they are made, with the reason, so that a later disagreement argues
 with the reason rather than rediscovering the question.
 
+### D32 · A screen somebody draws about themselves takes no subject
+
+D24 §4 and §5, and the rule both screens turned out to be about.
+
+#### The two screens are two ports and two credentials
+
+**§5, the operator's**, is the console's customers tab, on the admin listener,
+holding a control-plane session. **§4, a person's own**, is a page in the
+reference app, holding that app's cookie and reaching roster with a delegation.
+Neither is the other with a different stylesheet, and the split is D24's own:
+one is somebody administering a deployment and the other is somebody looking at
+themselves.
+
+#### And the second one needed two writes that take nothing
+
+`MeService.Get` is safe to read through no wall because it takes nothing: it
+cannot be pointed at anybody else, which is why `cmd.Policy` waives a binding
+for it. Removing your own way in and signing yourself out have the same
+property, and needed it for the same reason -- **the alternative is a role, and
+a role is the wrong shape twice over.**
+
+`Identity` narrows by the tenant, so "may remove their own way in" would have to
+be granted as "may remove anybody's": the leak D17 named, arriving on the one
+screen it is most tempting on. And requiring a role at all means somebody who
+has just been given an account cannot sign themselves out of a session they no
+longer trust, which is the moment they most want to.
+
+So `MeService.Unlink` and `MeService.SignOutEverywhere`, both waived like `Get`
+and both refusing anything that is not the caller's own. The argument on
+`Unlink` is a **which** and never a **whose**: one that belongs to somebody else
+is `NotFound`, told apart from nothing.
+
+What keeps them from being a hole is the same absence that keeps `Get` safe,
+plus the rules already in the layer -- `server/core` refuses the removal of a
+last way in, so the button cannot lock somebody out of their own account.
+
+#### The operator screen found a port with a hole in it
+
+Which is what D24 says a reference consumer is for. The admin listener served
+the entity services and not `VouchService`, so an operator could suspend
+somebody and could not give them a new password -- in the deployment shape that
+whole surface exists for.
+
+It is served there **without** D28's rule, and that is a decision: D28 reads
+what the caller holds through their bindings, and a session on that port names a
+control-plane holder whose bindings are in the other database. The rule would
+refuse every reset of anybody with a role, which is not conservatism but an
+accident of which database the actor is in.
+
+#### The screen is one file of HTML, and that is D24 §6 waiting
+
+*Extracting first means guessing what to extract, and what 4 and 5 turn out to
+need is the specification.* A page with a build step and a component library
+would be that guess with three more moving parts. One form, one table, three
+buttons, and the calls written out -- whoever extracts the components has this
+to read.
+
 ### D31 · A link is a way in, and it goes where a password goes
 
 Item 3, and the half of it P5 did not already answer.

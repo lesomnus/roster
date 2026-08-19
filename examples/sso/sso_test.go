@@ -7,6 +7,7 @@ import (
 	"encoding/base32"
 	"encoding/base64"
 	"encoding/json"
+	"io"
 	"net"
 	"net/http"
 	"net/http/cookiejar"
@@ -242,6 +243,8 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 			"/roster.VouchService/Delegate",
 			"/roster.VouchService/Revoke",
 			"/roster.MeService/Get",
+			"/roster.MeService/Unlink",
+			"/roster.MeService/SignOutEverywhere",
 
 			// What the front door asks before it knows anything, which is how
 			// it stops holding a copy of which tenant serves which name.
@@ -315,6 +318,8 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 	m.Handle("/session", a.Handler())
 	m.Handle("/session/continue", a.Handler())
 	m.Handle("/me", a.Handler())
+	m.Handle("/me/", a.Handler())
+	m.Handle("/account", a.Handler())
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("home")) })
 
 	front.Config.Handler = m
@@ -726,21 +731,20 @@ func TestAPasswordSignInReadsItsOwnRecord(t *testing.T) {
 		defer got.Body.Close()
 		x.Equal(http.StatusOK, got.StatusCode)
 
-		var v struct {
-			Alias     string   `json:"alias"`
-			Name      string   `json:"name"`
-			Emails    []string `json:"emails"`
-			Providers []string `json:"providers"`
-			SignsInBy []string `json:"signs_in_by"`
-			MayCall   []string `json:"may_call"`
-		}
+		var v record
 		x.NoError(json.NewDecoder(got.Body).Decode(&v))
 
 		x.Equal("erin", v.Alias)
 		x.Equal("Erin", v.Name)
 		x.Equal([]string{"erin@acme.example"}, v.Emails)
-		x.Equal([]string{"example"}, v.Providers)
-		x.Equal([]string{"password"}, v.SignsInBy)
+
+		// One list rather than two, because a person reading this is asking
+		// *how can I get in* and the answer does not sort itself into what
+		// roster holds and what somebody else does.
+		x.Len(v.SignsIn, 2)
+		x.Equal("password", v.SignsIn[0].Kind)
+		x.Equal("example", v.SignsIn[1].Kind)
+		x.NotEmpty(v.SignsIn[1].Id, "a screen with a remove button has nothing to name")
 
 		// Erin holds two methods and the delegation was minted for one, so this
 		// is what she may do **through this app** rather than everything she
@@ -1055,4 +1059,124 @@ func TestAWrongSecondFactorCostsTheFirstFormAgain(t *testing.T) {
 	again.Body.Close()
 	x.Equal(http.StatusUnauthorized, again.StatusCode,
 		"a browser kept guessing the second factor without paying for the first")
+}
+
+// record is the shape the account page reads, mirrored here rather than
+// exported: what the app answers with is its own, and a test that shared the
+// type would stop noticing when it changed.
+type record struct {
+	Alias   string   `json:"alias"`
+	Name    string   `json:"name"`
+	Emails  []string `json:"emails"`
+	SignsIn []struct {
+		Kind  string `json:"kind"`
+		Id    string `json:"id"`
+		Which string `json:"which"`
+	} `json:"signs_in"`
+	MayCall []string `json:"may_call"`
+}
+
+// TestTheAccountScreenIsServed is D24 §4 reachable, and it is the whole of what
+// a test can say about a page.
+//
+// What it draws is the three calls beside it, and those have tests of their own:
+// the record, the unlink, and signing out everywhere. This says the screen
+// exists, says nothing about it that a browser would have to agree with, and
+// leaves the rest where it can be asserted.
+func TestTheAccountScreenIsServed(t *testing.T) {
+	x := require.New(t)
+
+	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "acme"})
+
+	res, err := http.Get(d.app.URL + "/account")
+	x.NoError(err)
+	defer res.Body.Close()
+
+	x.Equal(http.StatusOK, res.StatusCode)
+	x.Contains(res.Header.Get("content-type"), "text/html")
+
+	// A copy in a proxy is a copy of one person's record served to the next.
+	x.Equal("no-store", res.Header.Get("cache-control"))
+
+	b, err := io.ReadAll(res.Body)
+	x.NoError(err)
+	x.Contains(string(b), "how you sign in")
+}
+
+// TestSomebodyRemovesAWayInFromTheirOwnPage is the act the screen's one button
+// makes, end to end.
+func TestSomebodyRemovesAWayInFromTheirOwnPage(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "acme"})
+
+	h, err := d.ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),
+		Alias:  "erin",
+	}.Build())
+	x.NoError(err)
+
+	_, err = d.ungated.Identity().Add(ctx, rstr.IdentityAddRequest_builder{
+		Holder:   rstr.HolderRef_builder{Id: h.GetId()}.Build(),
+		Provider: "example",
+		Subject:  "1078",
+	}.Build())
+	x.NoError(err)
+
+	_, err = vouch.New(d.ungated, d.ungated).Set(ctx, rstr.VouchSetRequest_builder{
+		Who:    rstr.VouchWho_builder{Id: h.GetId()}.Build(),
+		Secret: []byte("correct horse battery staple"),
+	}.Build())
+	x.NoError(err)
+
+	jar, err := cookiejar.New(nil)
+	x.NoError(err)
+
+	c := &http.Client{Jar: jar}
+
+	res, err := c.Post(d.app.URL+"/session", "application/json",
+		strings.NewReader(`{"alias":"erin","password":"correct horse battery staple"}`))
+	x.NoError(err)
+	res.Body.Close()
+	x.Equal(http.StatusNoContent, res.StatusCode)
+
+	read := func() record {
+		t.Helper()
+
+		got, err := c.Get(d.app.URL + "/me")
+		x.NoError(err)
+		defer got.Body.Close()
+
+		var v record
+		x.NoError(json.NewDecoder(got.Body).Decode(&v))
+
+		return v
+	}
+
+	v := read()
+	x.Len(v.SignsIn, 2)
+
+	id := ""
+	for _, w := range v.SignsIn {
+		if w.Id != "" {
+			id = w.Id
+		}
+	}
+	x.NotEmpty(id)
+
+	req, err := http.NewRequest(http.MethodDelete, d.app.URL+"/me/ways/"+id, nil)
+	x.NoError(err)
+
+	out, err := c.Do(req)
+	x.NoError(err)
+	out.Body.Close()
+	x.Equal(http.StatusNoContent, out.StatusCode)
+
+	x.Len(read().SignsIn, 1, "the way in did not go")
+
+	// And the password is what is left, so the rule has something to refuse
+	// next -- which is the state a person reaches by removing things until
+	// there is one.
+	x.Equal("password", read().SignsIn[0].Kind)
 }

@@ -272,9 +272,10 @@ func New(ctx context.Context, c Config, conn *grpc.ClientConn, s *authsession.Se
 // Handler is the whole of this app's surface.
 //
 // `/login` and `/callback` are the provider's round trip. `/session` is the
-// other front door -- a password, checked by roster -- and `/me` is the one
-// page that spends what it answers with. `password.go` says why the second
-// pair is here at all, and what it does not reach.
+// other front door -- a password, checked by roster -- and `/me` is what it
+// answers with spent. `/account` is the screen over all of it, which is D24 §4;
+// `password.go` says why the second front door is here at all and what it does
+// not reach, and `account.go` says why the screen is one file of HTML.
 func (a *App) Handler() http.Handler {
 	m := http.NewServeMux()
 	m.HandleFunc("/login", a.login)
@@ -283,6 +284,9 @@ func (a *App) Handler() http.Handler {
 	m.HandleFunc("POST /session/continue", a.finish)
 	m.HandleFunc("DELETE /session", a.signOut)
 	m.HandleFunc("GET /me", a.me)
+	m.HandleFunc("DELETE /me/ways/{id}", a.unlink)
+	m.HandleFunc("POST /me/sign-out-everywhere", a.everywhere)
+	m.HandleFunc("GET /account", a.Account)
 
 	return m
 }

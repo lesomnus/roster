@@ -1,0 +1,221 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>your account</title>
+<style>
+	body {
+		font: 15px/1.5 system-ui, sans-serif;
+		margin: 2rem auto;
+		max-width: 34rem;
+		padding: 0 1rem;
+	}
+	h1 { font-size: 1.4rem; }
+	h2 { font-size: 1.05rem; margin-top: 2rem; }
+	form { display: flex; flex-direction: column; gap: 0.6rem; max-width: 18rem; }
+	label { display: flex; gap: 0.5rem; justify-content: space-between; }
+	table { border-collapse: collapse; width: 100%; }
+	td, th { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid #eee; }
+	code { font-family: ui-monospace, monospace; }
+	.none { color: #888; }
+	.bad { color: #b00; }
+	.acts { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+	[hidden] { display: none !important; }
+</style>
+
+<h1>your account</h1>
+
+<!--
+	The first form. What comes back is a cookie and nothing else: what a page
+	needs *about* the person is a request it should make, against this same
+	server and behind this same session.
+-->
+<form id="in">
+	<label>who <input name="alias" autofocus /></label>
+	<label>password <input name="password" type="password" /></label>
+	<button>sign in</button>
+	<p class="bad" id="in-bad" hidden>no</p>
+</form>
+
+<!--
+	The second form, drawn only when roster said there is more to prove.
+
+	The cookie the first form set names nobody this browser may act as until
+	this one is answered -- so stopping here is not being half signed in, it is
+	not being signed in.
+-->
+<form id="next" hidden>
+	<p>one more: <span id="next-kind"></span></p>
+	<label>code <input name="secret" autocomplete="one-time-code" /></label>
+	<button>continue</button>
+	<p class="bad" id="next-bad" hidden>no</p>
+</form>
+
+<div id="me" hidden>
+	<p><strong id="who"></strong> <span class="none" id="name"></span></p>
+
+	<h2>how you sign in</h2>
+	<table>
+		<tbody id="ways"></tbody>
+	</table>
+	<p class="none" id="last" hidden>
+		The last one stays. Removing it would lock you out of your own account,
+		which is a rule the server keeps rather than this page.
+	</p>
+
+	<h2>addresses</h2>
+	<ul id="emails"></ul>
+
+	<div class="acts">
+		<!--
+			Two halves in two places. roster answers *invalid since when*, which
+			is one write and reaches every app; this app answers *what is still
+			alive*, which is its own cookie. The button ends both.
+		-->
+		<button id="everywhere">sign out everywhere</button>
+		<button id="out">sign out</button>
+	</div>
+	<p class="bad" id="me-bad" hidden></p>
+</div>
+
+<script type="module">
+	const $ = (id) => document.getElementById(id)
+	const show = (el, on) => el.toggleAttribute('hidden', !on)
+
+	// Every call goes to **this app**, which then calls roster with the
+	// delegation. The browser never holds one and never sees roster.
+	const post = (path, body) =>
+		fetch(path, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: body === undefined ? undefined : JSON.stringify(body),
+		})
+
+	async function draw() {
+		const res = await fetch('/me')
+		if (!res.ok) {
+			show($('me'), false)
+			show($('in'), true)
+			return
+		}
+
+		const v = await res.json()
+		$('who').textContent = v.alias
+		$('name').textContent = v.name ?? ''
+
+		$('ways').replaceChildren(
+			...v.signs_in.map((w) => {
+				const tr = document.createElement('tr')
+
+				const kind = document.createElement('td')
+				kind.textContent = w.kind
+
+				const which = document.createElement('td')
+				which.className = 'none'
+				// A provider's subject is not a name -- it is whatever that
+				// provider treats as immutable -- so it is shown as given, for
+				// somebody checking *which account*.
+				which.textContent = w.which ?? ''
+
+				const act = document.createElement('td')
+				if (w.id) {
+					const b = document.createElement('button')
+					b.textContent = 'remove'
+					b.onclick = () => remove(w.id)
+					act.append(b)
+				}
+
+				tr.append(kind, which, act)
+				return tr
+			}),
+		)
+
+		// Only when there is one way in, because that is the only time the rule
+		// is about to be met.
+		show($('last'), v.signs_in.length === 1)
+
+		$('emails').replaceChildren(
+			...(v.emails.length === 0
+				? [Object.assign(document.createElement('li'), { className: 'none', textContent: 'none' })]
+				: v.emails.map((a) => Object.assign(document.createElement('li'), { textContent: a }))),
+		)
+
+		show($('in'), false)
+		show($('next'), false)
+		show($('me'), true)
+	}
+
+	async function remove(id) {
+		show($('me-bad'), false)
+
+		const res = await fetch(`/me/ways/${id}`, { method: 'DELETE' })
+		if (res.status === 409) {
+			// The one refusal a person can act on, so it is the one they are
+			// told: somebody told "removed" and finding tomorrow that they
+			// cannot sign in is the failure the rule exists to prevent.
+			$('me-bad').textContent = 'that is the only way you can sign in'
+			show($('me-bad'), true)
+			return
+		}
+		if (!res.ok) {
+			$('me-bad').textContent = 'no'
+			show($('me-bad'), true)
+			return
+		}
+
+		await draw()
+	}
+
+	$('in').onsubmit = async (e) => {
+		e.preventDefault()
+		show($('in-bad'), false)
+
+		const f = new FormData(e.target)
+		const res = await post('/session', {
+			alias: f.get('alias'),
+			password: f.get('password'),
+		})
+
+		// 204 is signed in. 200 is one factor proved and more to prove, which
+		// is a third answer and not a refusal -- and it is why this page reads
+		// the status rather than a boolean in a body.
+		if (res.status === 204) return draw()
+		if (res.status === 200) {
+			const v = await res.json()
+			$('next-kind').textContent = v.available.join(' or ')
+			show($('in'), false)
+			show($('next'), true)
+			return
+		}
+
+		show($('in-bad'), true)
+	}
+
+	$('next').onsubmit = async (e) => {
+		e.preventDefault()
+		show($('next-bad'), false)
+
+		const f = new FormData(e.target)
+		const res = await post('/session/continue', {
+			kind: $('next-kind').textContent.split(' ')[0],
+			secret: f.get('secret'),
+		})
+		if (res.status === 204) return draw()
+
+		// A wrong code costs the first form again: the half session went with
+		// the attempt, and starting over is where the lockout counts.
+		show($('next-bad'), true)
+		show($('next'), false)
+		show($('in'), true)
+	}
+
+	$('everywhere').onclick = async () => {
+		await post('/me/sign-out-everywhere')
+		location.reload()
+	}
+
+	$('out').onclick = async () => {
+		await fetch('/session', { method: 'DELETE' })
+		location.reload()
+	}
+
+	void draw()
+</script>

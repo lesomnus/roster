@@ -64,6 +64,227 @@ func (b0 MeGetRequest_builder) Build() *MeGetRequest {
 	return m0
 }
 
+type MeUnlinkRequest struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id []byte                 `protobuf:"bytes,1,opt,name=id"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MeUnlinkRequest) Reset() {
+	*x = MeUnlinkRequest{}
+	mi := &file_app_me_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MeUnlinkRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MeUnlinkRequest) ProtoMessage() {}
+
+func (x *MeUnlinkRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_app_me_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *MeUnlinkRequest) GetId() []byte {
+	if x != nil {
+		return x.xxx_hidden_Id
+	}
+	return nil
+}
+
+func (x *MeUnlinkRequest) SetId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Id = v
+}
+
+type MeUnlinkRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Which one, by the identifier `MeGetResponse` answers with.
+	//
+	// A *which* and never a *whose*: one that is not the caller's is `NotFound`,
+	// told apart from nothing, so this cannot be used to ask whether somebody
+	// else's identity exists.
+	Id []byte
+}
+
+func (b0 MeUnlinkRequest_builder) Build() *MeUnlinkRequest {
+	m0 := &MeUnlinkRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Id = b.Id
+	return m0
+}
+
+type MeUnlinkResponse struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MeUnlinkResponse) Reset() {
+	*x = MeUnlinkResponse{}
+	mi := &file_app_me_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MeUnlinkResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MeUnlinkResponse) ProtoMessage() {}
+
+func (x *MeUnlinkResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_app_me_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type MeUnlinkResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 MeUnlinkResponse_builder) Build() *MeUnlinkResponse {
+	m0 := &MeUnlinkResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
+type MeSignOutEverywhereRequest struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MeSignOutEverywhereRequest) Reset() {
+	*x = MeSignOutEverywhereRequest{}
+	mi := &file_app_me_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MeSignOutEverywhereRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MeSignOutEverywhereRequest) ProtoMessage() {}
+
+func (x *MeSignOutEverywhereRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_app_me_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type MeSignOutEverywhereRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 MeSignOutEverywhereRequest_builder) Build() *MeSignOutEverywhereRequest {
+	m0 := &MeSignOutEverywhereRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
+type MeSignOutEverywhereResponse struct {
+	state                      protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_DateInvalidated *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_invalidated,json=dateInvalidated"`
+	unknownFields              protoimpl.UnknownFields
+	sizeCache                  protoimpl.SizeCache
+}
+
+func (x *MeSignOutEverywhereResponse) Reset() {
+	*x = MeSignOutEverywhereResponse{}
+	mi := &file_app_me_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MeSignOutEverywhereResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MeSignOutEverywhereResponse) ProtoMessage() {}
+
+func (x *MeSignOutEverywhereResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_app_me_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *MeSignOutEverywhereResponse) GetDateInvalidated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateInvalidated
+	}
+	return nil
+}
+
+func (x *MeSignOutEverywhereResponse) SetDateInvalidated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateInvalidated = v
+}
+
+func (x *MeSignOutEverywhereResponse) HasDateInvalidated() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateInvalidated != nil
+}
+
+func (x *MeSignOutEverywhereResponse) ClearDateInvalidated() {
+	x.xxx_hidden_DateInvalidated = nil
+}
+
+type MeSignOutEverywhereResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The moment everything before it became void, which is what an app compares
+	// a session against.
+	DateInvalidated *timestamppb.Timestamp
+}
+
+func (b0 MeSignOutEverywhereResponse_builder) Build() *MeSignOutEverywhereResponse {
+	m0 := &MeSignOutEverywhereResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_DateInvalidated = b.DateInvalidated
+	return m0
+}
+
 type MeGetResponse struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
@@ -83,7 +304,7 @@ type MeGetResponse struct {
 
 func (x *MeGetResponse) Reset() {
 	*x = MeGetResponse{}
-	mi := &file_app_me_proto_msgTypes[1]
+	mi := &file_app_me_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -95,7 +316,7 @@ func (x *MeGetResponse) String() string {
 func (*MeGetResponse) ProtoMessage() {}
 
 func (x *MeGetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_me_proto_msgTypes[1]
+	mi := &file_app_me_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -334,7 +555,7 @@ type SignInIdentity struct {
 
 func (x *SignInIdentity) Reset() {
 	*x = SignInIdentity{}
-	mi := &file_app_me_proto_msgTypes[2]
+	mi := &file_app_me_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -346,7 +567,7 @@ func (x *SignInIdentity) String() string {
 func (*SignInIdentity) ProtoMessage() {}
 
 func (x *SignInIdentity) ProtoReflect() protoreflect.Message {
-	mi := &file_app_me_proto_msgTypes[2]
+	mi := &file_app_me_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -461,7 +682,7 @@ type SignInCredential struct {
 
 func (x *SignInCredential) Reset() {
 	*x = SignInCredential{}
-	mi := &file_app_me_proto_msgTypes[3]
+	mi := &file_app_me_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -473,7 +694,7 @@ func (x *SignInCredential) String() string {
 func (*SignInCredential) ProtoMessage() {}
 
 func (x *SignInCredential) ProtoReflect() protoreflect.Message {
-	mi := &file_app_me_proto_msgTypes[3]
+	mi := &file_app_me_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -588,7 +809,7 @@ type MeEmail struct {
 
 func (x *MeEmail) Reset() {
 	*x = MeEmail{}
-	mi := &file_app_me_proto_msgTypes[4]
+	mi := &file_app_me_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -600,7 +821,7 @@ func (x *MeEmail) String() string {
 func (*MeEmail) ProtoMessage() {}
 
 func (x *MeEmail) ProtoReflect() protoreflect.Message {
-	mi := &file_app_me_proto_msgTypes[4]
+	mi := &file_app_me_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -674,7 +895,7 @@ type MeTeam struct {
 
 func (x *MeTeam) Reset() {
 	*x = MeTeam{}
-	mi := &file_app_me_proto_msgTypes[5]
+	mi := &file_app_me_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -686,7 +907,7 @@ func (x *MeTeam) String() string {
 func (*MeTeam) ProtoMessage() {}
 
 func (x *MeTeam) ProtoReflect() protoreflect.Message {
-	mi := &file_app_me_proto_msgTypes[5]
+	mi := &file_app_me_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -799,7 +1020,13 @@ var File_app_me_proto protoreflect.FileDescriptor
 const file_app_me_proto_rawDesc = "" +
 	"\n" +
 	"\fapp/me.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\"\x0e\n" +
-	"\fMeGetRequest\"\xf3\x02\n" +
+	"\fMeGetRequest\"!\n" +
+	"\x0fMeUnlinkRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\"\x12\n" +
+	"\x10MeUnlinkResponse\"\x1c\n" +
+	"\x1aMeSignOutEverywhereRequest\"d\n" +
+	"\x1bMeSignOutEverywhereResponse\x12E\n" +
+	"\x10date_invalidated\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\x0fdateInvalidated\"\xf3\x02\n" +
 	"\rMeGetResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x16\n" +
 	"\x06tenant\x18\x02 \x01(\fR\x06tenant\x12\x14\n" +
@@ -838,36 +1065,47 @@ const file_app_me_proto_rawDesc = "" +
 	"\n" +
 	"site_alias\x18\t \x01(\tR\tsiteAlias\x12\x12\n" +
 	"\x04role\x18\n" +
-	" \x01(\tR\x04role2?\n" +
+	" \x01(\tR\x04role2\xda\x01\n" +
 	"\tMeService\x122\n" +
-	"\x03Get\x12\x14.roster.MeGetRequest\x1a\x15.roster.MeGetResponseB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
+	"\x03Get\x12\x14.roster.MeGetRequest\x1a\x15.roster.MeGetResponse\x12;\n" +
+	"\x06Unlink\x12\x17.roster.MeUnlinkRequest\x1a\x18.roster.MeUnlinkResponse\x12\\\n" +
+	"\x11SignOutEverywhere\x12\".roster.MeSignOutEverywhereRequest\x1a#.roster.MeSignOutEverywhereResponseB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_app_me_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_app_me_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_app_me_proto_goTypes = []any{
-	(*MeGetRequest)(nil),          // 0: roster.MeGetRequest
-	(*MeGetResponse)(nil),         // 1: roster.MeGetResponse
-	(*SignInIdentity)(nil),        // 2: roster.SignInIdentity
-	(*SignInCredential)(nil),      // 3: roster.SignInCredential
-	(*MeEmail)(nil),               // 4: roster.MeEmail
-	(*MeTeam)(nil),                // 5: roster.MeTeam
-	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
+	(*MeGetRequest)(nil),                // 0: roster.MeGetRequest
+	(*MeUnlinkRequest)(nil),             // 1: roster.MeUnlinkRequest
+	(*MeUnlinkResponse)(nil),            // 2: roster.MeUnlinkResponse
+	(*MeSignOutEverywhereRequest)(nil),  // 3: roster.MeSignOutEverywhereRequest
+	(*MeSignOutEverywhereResponse)(nil), // 4: roster.MeSignOutEverywhereResponse
+	(*MeGetResponse)(nil),               // 5: roster.MeGetResponse
+	(*SignInIdentity)(nil),              // 6: roster.SignInIdentity
+	(*SignInCredential)(nil),            // 7: roster.SignInCredential
+	(*MeEmail)(nil),                     // 8: roster.MeEmail
+	(*MeTeam)(nil),                      // 9: roster.MeTeam
+	(*timestamppb.Timestamp)(nil),       // 10: google.protobuf.Timestamp
 }
 var file_app_me_proto_depIdxs = []int32{
-	4, // 0: roster.MeGetResponse.emails:type_name -> roster.MeEmail
-	5, // 1: roster.MeGetResponse.teams:type_name -> roster.MeTeam
-	2, // 2: roster.MeGetResponse.identities:type_name -> roster.SignInIdentity
-	3, // 3: roster.MeGetResponse.credentials:type_name -> roster.SignInCredential
-	6, // 4: roster.SignInIdentity.date_created:type_name -> google.protobuf.Timestamp
-	6, // 5: roster.SignInCredential.date_rotated:type_name -> google.protobuf.Timestamp
-	6, // 6: roster.SignInCredential.date_locked:type_name -> google.protobuf.Timestamp
-	6, // 7: roster.MeEmail.date_verified:type_name -> google.protobuf.Timestamp
-	0, // 8: roster.MeService.Get:input_type -> roster.MeGetRequest
-	1, // 9: roster.MeService.Get:output_type -> roster.MeGetResponse
-	9, // [9:10] is the sub-list for method output_type
-	8, // [8:9] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	10, // 0: roster.MeSignOutEverywhereResponse.date_invalidated:type_name -> google.protobuf.Timestamp
+	8,  // 1: roster.MeGetResponse.emails:type_name -> roster.MeEmail
+	9,  // 2: roster.MeGetResponse.teams:type_name -> roster.MeTeam
+	6,  // 3: roster.MeGetResponse.identities:type_name -> roster.SignInIdentity
+	7,  // 4: roster.MeGetResponse.credentials:type_name -> roster.SignInCredential
+	10, // 5: roster.SignInIdentity.date_created:type_name -> google.protobuf.Timestamp
+	10, // 6: roster.SignInCredential.date_rotated:type_name -> google.protobuf.Timestamp
+	10, // 7: roster.SignInCredential.date_locked:type_name -> google.protobuf.Timestamp
+	10, // 8: roster.MeEmail.date_verified:type_name -> google.protobuf.Timestamp
+	0,  // 9: roster.MeService.Get:input_type -> roster.MeGetRequest
+	1,  // 10: roster.MeService.Unlink:input_type -> roster.MeUnlinkRequest
+	3,  // 11: roster.MeService.SignOutEverywhere:input_type -> roster.MeSignOutEverywhereRequest
+	5,  // 12: roster.MeService.Get:output_type -> roster.MeGetResponse
+	2,  // 13: roster.MeService.Unlink:output_type -> roster.MeUnlinkResponse
+	4,  // 14: roster.MeService.SignOutEverywhere:output_type -> roster.MeSignOutEverywhereResponse
+	12, // [12:15] is the sub-list for method output_type
+	9,  // [9:12] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_app_me_proto_init() }
@@ -881,7 +1119,7 @@ func file_app_me_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_me_proto_rawDesc), len(file_app_me_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

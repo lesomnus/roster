@@ -2,13 +2,16 @@ package sso
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"sync"
 	"time"
 
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 
 	"github.com/lesomnus/payday/auth/authsession"
 	"github.com/lesomnus/payday/frame"
@@ -175,7 +178,16 @@ func (a *App) signIn(w http.ResponseWriter, r *http.Request) {
 		// list a screen needs, not the list the person holds -- the delegation
 		// narrows to the intersection, so asking for less than they may do is
 		// free and asking for more buys nothing.
-		Methods: []string{rstr.MeService_Get_FullMethodName},
+		//
+		// Three, and every one of them takes no subject. That is not a
+		// coincidence: a screen a person draws about themselves is exactly the
+		// place where a method that took one would be a permission over
+		// everybody in their tenant.
+		Methods: []string{
+			rstr.MeService_Get_FullMethodName,
+			rstr.MeService_Unlink_FullMethodName,
+			rstr.MeService_SignOutEverywhere_FullMethodName,
+		},
 	}.Build())
 	if err != nil {
 		// A refusal roster made about the *request* rather than about the
@@ -310,21 +322,121 @@ func (a *App) me(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("content-type", "application/json")
 	w.Header().Set("cache-control", "no-store")
-	_ = json.NewEncoder(w).Encode(struct {
-		Alias      string   `json:"alias"`
-		Name       string   `json:"name"`
-		Emails     []string `json:"emails"`
-		Providers  []string `json:"providers"`
-		SignsInBy  []string `json:"signs_in_by"`
-		MayCallAll []string `json:"may_call"`
-	}{
+	_ = json.NewEncoder(w).Encode(record(v))
+}
+
+// record is the person's own page, as a page needs it.
+//
+// Identities carry their identifier, because the one act on this screen that
+// names a row is removing one. Nothing else here does, and nothing else here
+// carries one.
+type recordOf struct {
+	Alias      string   `json:"alias"`
+	Name       string   `json:"name"`
+	Emails     []string `json:"emails"`
+	SignsIn    []wayIn  `json:"signs_in"`
+	MayCallAll []string `json:"may_call"`
+	Teams      []string `json:"teams"`
+}
+
+type wayIn struct {
+	// Kind is "password" or "totp" for something roster holds, and the provider
+	// for something somebody else does.
+	Kind string `json:"kind"`
+
+	// Id is set only for an identity, which is the only kind this screen can
+	// remove: a password is changed rather than taken away, and taking away a
+	// second factor is an act with its own name.
+	Id string `json:"id,omitempty"`
+
+	Which string `json:"which,omitempty"`
+	Since string `json:"since,omitempty"`
+}
+
+func record(v *rstr.MeGetResponse) recordOf {
+	out := recordOf{
 		Alias:      v.GetAlias(),
 		Name:       v.GetName(),
 		Emails:     addresses(v),
-		Providers:  providers(v),
-		SignsInBy:  kinds(v),
 		MayCallAll: v.GetMethods(),
-	})
+		SignsIn:    []wayIn{},
+		Teams:      []string{},
+	}
+	for _, c := range v.GetCredentials() {
+		out.SignsIn = append(out.SignsIn, wayIn{Kind: c.GetKind(), Which: c.GetName()})
+	}
+	for _, i := range v.GetIdentities() {
+		out.SignsIn = append(out.SignsIn, wayIn{
+			Kind:  i.GetProvider(),
+			Id:    base64.RawURLEncoding.EncodeToString(i.GetId()),
+			Which: i.GetSubject(),
+			Since: i.GetDateCreated().AsTime().Format("2006-01-02"),
+		})
+	}
+	for _, t := range v.GetTeams() {
+		out.Teams = append(out.Teams, t.GetAlias())
+	}
+
+	return out
+}
+
+// unlink is `DELETE /me/ways/{id}`: one of the person's own ways in.
+//
+// Through `MeService`, which is the whole point of it existing: `Identity`
+// narrows by the **tenant**, so removing one through that service would need a
+// permission that reaches everybody else's -- the leak D23 exists to remove,
+// arriving on the one screen it is most tempting on.
+func (a *App) unlink(w http.ResponseWriter, r *http.Request) {
+	ctx, err := a.acting(r.Context(), r)
+	if err != nil {
+		http.Error(w, "no", http.StatusForbidden)
+		return
+	}
+
+	id, err := base64.RawURLEncoding.DecodeString(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, "no", http.StatusBadRequest)
+		return
+	}
+
+	if _, err := a.me_.Unlink(ctx, rstr.MeUnlinkRequest_builder{Id: id}.Build()); err != nil {
+		// The refusals a person may act on and the ones they may not are one
+		// answer here, with one exception: the last way in. Somebody told
+		// "removed" and finding they cannot sign in tomorrow is the failure
+		// this rule exists to prevent, so they are told now.
+		if status.Code(err) == codes.FailedPrecondition {
+			http.Error(w, "this is the only way you can sign in", http.StatusConflict)
+			return
+		}
+
+		http.Error(w, "no", http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// everywhere is `POST /me/sign-out-everywhere`.
+//
+// Two halves that belong to two places. roster answers *invalid since when*,
+// which is one write and reaches every app; this app answers *what is still
+// alive*, which is its own cookie -- so the button ends both, and neither knows
+// how the other did it.
+func (a *App) everywhere(w http.ResponseWriter, r *http.Request) {
+	ctx, err := a.acting(r.Context(), r)
+	if err != nil {
+		http.Error(w, "no", http.StatusForbidden)
+		return
+	}
+
+	if _, err := a.me_.SignOutEverywhere(ctx,
+		rstr.MeSignOutEverywhereRequest_builder{}.Build()); err != nil {
+		http.Error(w, "no", http.StatusBadGateway)
+		return
+	}
+
+	// And this app's own, because roster does not know it exists.
+	a.signOut(w, r)
 }
 
 func addresses(v *rstr.MeGetResponse) []string {
@@ -452,7 +564,11 @@ func (a *App) finish(w http.ResponseWriter, r *http.Request) {
 		Kind:         body.Kind,
 		Name:         body.Name,
 		Secret:       []byte(body.Secret),
-		Methods:      []string{rstr.MeService_Get_FullMethodName},
+		Methods: []string{
+			rstr.MeService_Get_FullMethodName,
+			rstr.MeService_Unlink_FullMethodName,
+			rstr.MeService_SignOutEverywhere_FullMethodName,
+		},
 	}.Build())
 	if err != nil {
 		http.Error(w, "cannot sign in", http.StatusInternalServerError)
