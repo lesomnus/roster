@@ -1256,10 +1256,31 @@ name — and D22's argument applies to it in full.
 3. a tenant from a hostname, now that something can prove it
 4. self-service: my record, add and remove an SSO method, sign out everywhere
 5. the operator screen: who is in my tenant, and how they sign in
-6. extract the components
+6. ~~extract the components~~ — **done**, and see below
 
 Six is last because extracting first means guessing what to extract. What 4 and
 5 turn out to need is the specification, and it is not knowable in advance.
+
+##### And it answered smaller than the guess it was protecting against
+
+The Go half is real and is the whole of what D22 described: `frontdoor` -- two
+forms, a half session, the delegation held beside it, and the header a call to
+roster rides on. It came out of `examples/sso` and is imported back into it, so
+the reference app is the proof of the shape rather than a second copy of it.
+
+The browser half is **one module and not a component library**, and that is the
+finding. Two screens now exist -- a person's own page in plain HTML served by a
+Go app, and an operator's in React over Connect -- and they share **none of
+their markup**. Different framework, different transport, different subject, and
+a component that fitted both would fit by having no opinion left. What they do
+share is the part that is easy to get wrong: three answers where a page expects
+two. So `frontdoor/web/frontdoor.js` is that, in plain JavaScript with a `.d.ts`
+beside it, so the page with no toolchain can import it as it is.
+
+The default theme is not written and should not be. It was a guess about what
+apps would want, made before either screen existed, and both screens answered
+that what they want is their own -- which is what "put your brand on it" meant
+in the first place.
 
 Two notes on 4, since it is the screen that splits: **adding** an SSO method is
 half a login flow — the OIDC round trip that produces `(provider, subject)` is

@@ -77,6 +77,12 @@
 </div>
 
 <script type="module">
+	// The three status codes, and the rule that 200 is not a failure, are
+	// `frontdoor` -- served by this same app at `/frontdoor.js`. What is left
+	// here is this page: which fields it collects, what it calls a factor, and
+	// what it draws when there is more to prove.
+	import { signIn, proceed, signOut } from './frontdoor.js'
+
 	const $ = (id) => document.getElementById(id)
 	const show = (el, on) => el.toggleAttribute('hidden', !on)
 
@@ -169,23 +175,22 @@
 		show($('in-bad'), false)
 
 		const f = new FormData(e.target)
-		const res = await post('/session', {
+		const v = await signIn({
 			alias: f.get('alias'),
 			password: f.get('password'),
 		})
 
-		// 204 is signed in. 200 is one factor proved and more to prove, which
-		// is a third answer and not a refusal -- and it is why this page reads
-		// the status rather than a boolean in a body.
-		if (res.status === 204) return draw()
-		if (res.status === 200) {
-			const v = await res.json()
+		if (v.state === 'in') return draw()
+		if (v.state === 'more') {
+			// Joined with "or" by **this page**, because that sentence is this
+			// page's and roster deliberately does not send one.
 			$('next-kind').textContent = v.available.join(' or ')
 			show($('in'), false)
 			show($('next'), true)
 			return
 		}
 
+		$('in-bad').textContent = v.state === 'broken' ? 'cannot sign in just now' : 'no'
 		show($('in-bad'), true)
 	}
 
@@ -194,11 +199,11 @@
 		show($('next-bad'), false)
 
 		const f = new FormData(e.target)
-		const res = await post('/session/continue', {
+		const v = await proceed({
 			kind: $('next-kind').textContent.split(' ')[0],
 			secret: f.get('secret'),
 		})
-		if (res.status === 204) return draw()
+		if (v.state === 'in') return draw()
 
 		// A wrong code costs the first form again: the half session went with
 		// the attempt, and starting over is where the lockout counts.
@@ -213,7 +218,7 @@
 	}
 
 	$('out').onclick = async () => {
-		await fetch('/session', { method: 'DELETE' })
+		await signOut()
 		location.reload()
 	}
 

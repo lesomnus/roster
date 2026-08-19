@@ -357,6 +357,17 @@ The event stream (item 4's second increment), the breached-password check (item
 5), per-tenant provider connections (item 9, which needs a decision first), and
 extracting the components (D24 §6, last for D24's own reason).
 
+**§6 is done, and it answered smaller than D22 guessed.** The Go half is the
+whole of it -- `frontdoor`, which is the two forms, the half session, the
+delegation held beside it and the header a call to roster rides on, lifted out
+of the reference app and imported back into it. The browser half is **one
+module and not a component library**: what the two screens that now exist share
+is the protocol -- three answers where a page expects two -- and none of their
+markup, because one is a person's page in plain HTML and the other an
+operator's in React over a different transport. D24's reason for putting it last
+held; it just turned out that what there was to extract was smaller than the
+guess it was protecting against.
+
 **The console's session table is done** — it was the one item here that blocked
 running the console rather than improving it, since a deployment could not have
 two replicas until it existed.
@@ -365,6 +376,12 @@ None of the rest blocks the screens. Item 4's second increment is explicitly
 *taken when the noise is measured rather than predicted*; item 5 is a rule about
 what a password may be and changes no shape; item 9 has a boundary question that
 argues with D13 and has not been answered.
+
+**What is left is that one increment**, and it is left on purpose rather than
+unfinished: item 4 says a dedicated stream is taken *when the noise is measured*,
+and nothing has run long enough to measure any. Its first increment -- a console
+that watches `Holder` and redraws when somebody is disabled or their epoch moves
+-- came free with D26 and is what a screen needs today.
 
 ## Decisions to take before the code that needs them
 
@@ -397,10 +414,10 @@ Each takes a `D` in PLAN.md when it is taken. None is taken here.
 | P3 | the reference app's spine | **done** — `Vouch.Delegate`/`Revoke`, `keys.Sweep`, the lifetime settled, identities and credentials on `MeGetResponse`, and `examples/sso` signing in with a password and reading its own record as the person |
 | P4 | hostname, mail domain, and F7 | **done** — PLAN.md D27. `Host`, `MailDomain`, `FrontService`, `Email` stamped and unique per tenant, `VouchWho.address`, and `examples/sso` asking roster rather than holding a map |
 | P5 | escalation over credential writes, then the write surface | **done** — PLAN.md D28. `core.Reaching`, `Vouch.Reset`, `Vouch.Unlock`, and the rule over `Vouch.Set`. Not done: minting an `rt_` over the wire |
-| P6 | the reads a screen needs, and the screens | **done** — the reads (items 7, 8), §5 the operator screen, and §4 self-service in the reference app. Left of D24's order: §6, extracting the components |
+| P6 | the reads a screen needs, and the screens | **done** — the reads (items 7, 8), §5 the operator screen, §4 self-service in the reference app, and §6 the extraction. D24's order is complete |
 | P7 | two-step verification | **done** — PLAN.md D29 and D30, and `examples/sso` showing two forms with a half-session between them |
 | P8 | recovery and the magic link | **done** — PLAN.md D31. `Vouch.Link`/`Redeem`, a reset voiding what came before it, and the sweep over both short-lived tables. The air-gap half was already D28's |
-| P9 | the rest | session table, the breached-password check and **provider connections** done · left: the event stream (deferred by item 4 itself) and the components |
+| P9 | the rest | session table, the breached-password check, **provider connections** and **§6** done · left: the event stream, which item 4 itself defers |
 
 ## See also
 

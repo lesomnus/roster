@@ -1,0 +1,88 @@
+package frontdoor
+
+import (
+	"context"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/lesomnus/payday/auth/authsession"
+
+	rstr "github.com/lesomnus/roster/rstr"
+)
+
+// What this package does end to end is pinned where it is used --
+// `examples/sso` drives both forms, the half session, the wrong second factor
+// and the delegation through a real roster. What is here is what that cannot
+// reach: a misconfiguration that has to be refused before anybody types a
+// password, and a map whose failure mode is to grow forever.
+
+func TestAnAppHasToSayWhatItAsksFor(t *testing.T) {
+	ok := Config{
+		Sessions: authsession.New(authsession.NewMemStore()),
+		Vouch:    rstr.NewVouchServiceClient(nil),
+		Methods:  []string{rstr.MeService_Get_FullMethodName},
+		Tenant:   func(ctx context.Context, host string) (string, error) { return "acme", nil },
+	}
+
+	for _, tc := range []struct {
+		name string
+		with func(*Config)
+		want string
+	}{
+		{"no sessions", func(c *Config) { c.Sessions = nil }, "Sessions"},
+		{"no roster", func(c *Config) { c.Vouch = nil }, "Vouch"},
+		{"no methods", func(c *Config) { c.Methods = nil }, "Methods"},
+		{"no tenant", func(c *Config) { c.Tenant = nil }, "Tenant"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			c := ok
+			tc.with(&c)
+
+			_, err := New(c)
+			require.ErrorContains(t, err, tc.want)
+		})
+	}
+
+	// An empty `Methods` is the one worth stating: it is not a nil check being
+	// thorough. A delegation minted with nothing allows no method at all, so
+	// the app would sign somebody in and then be refused on the first call it
+	// made for them -- and the page would say the session cannot act, which is
+	// a sentence about the person rather than about the deployment.
+	c := ok
+	c.Methods = []string{}
+	_, err := New(c)
+	require.ErrorContains(t, err, "opens no door")
+
+	d, err := New(ok)
+	require.NoError(t, err)
+	require.Equal(t, HalfLife, d.c.Half, "zero takes the default rather than expiring immediately")
+}
+
+func TestWhatIsHeldDoesNotOutliveItself(t *testing.T) {
+	var h held
+
+	now := time.Now()
+	h.put("alive", one{token: "rd_x", expires: now.Add(time.Minute)})
+	h.put("dead", one{token: "rd_y", expires: now.Add(-time.Second)})
+
+	_, ok := h.get("dead")
+	require.False(t, ok, "expired is gone whether or not anything swept it")
+
+	v, ok := h.get("alive")
+	require.True(t, ok)
+	require.Equal(t, "rd_x", v.token)
+
+	// The sweep, which is the whole of what keeps this bounded: nothing in
+	// `authsession` says a session has died, so without this the map grows one
+	// entry per expired session forever.
+	h.put("another", one{token: "rd_z", expires: now.Add(time.Minute)})
+	require.NotContains(t, h.by, "dead")
+
+	// And taken is taken: one attempt at a second form per first form.
+	_, ok = h.take("alive")
+	require.True(t, ok)
+	_, ok = h.take("alive")
+	require.False(t, ok)
+}

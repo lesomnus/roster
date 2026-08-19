@@ -74,6 +74,7 @@ import (
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 
+	"github.com/lesomnus/roster/frontdoor"
 	rstr "github.com/lesomnus/roster/rstr"
 )
 
@@ -205,14 +206,16 @@ type App struct {
 	enrol    Enrol
 	tenants  map[string]string
 
-	// The two hand-written services, which `rstr.Client` does not carry: it
-	// bundles the entity services, and these are not entities.
-	vouch rstr.VouchServiceClient
+	// `MeService` and `FrontService` are hand-written and so are not among the
+	// entity services `rstr.Client` bundles. `VouchService` is not here at all
+	// any more: this app never calls it directly, which is what extracting the
+	// sign-in means.
 	me_   rstr.MeServiceClient
 	front rstr.FrontServiceClient
 
-	// What this app is holding on somebody's behalf; see `password.go`.
-	held delegations
+	// The two forms and the credential they end in, which is not this app's
+	// to write: `frontdoor`, mounted below on this app's own mux.
+	door *frontdoor.Door
 
 	// after is where the browser goes once it is signed in.
 	after string
@@ -230,6 +233,7 @@ type App struct {
 // authenticating as two different callers.
 func New(ctx context.Context, c Config, conn *grpc.ClientConn, s *authsession.Sessions, enrol Enrol) (*App, error) {
 	roster := rstr.NewClient(conn)
+	front := rstr.NewFrontServiceClient(conn)
 
 	if c.Provider == "" {
 		return nil, errors.New("sso: Provider: what roster should call this provider")
@@ -241,6 +245,29 @@ func New(ctx context.Context, c Config, conn *grpc.ClientConn, s *authsession.Se
 	p, err := oidc.NewProvider(ctx, c.Issuer)
 	if err != nil {
 		return nil, fmt.Errorf("sso: %s: %w", c.Issuer, err)
+	}
+
+	door, err := frontdoor.New(frontdoor.Config{
+		Sessions: s,
+		Vouch:    rstr.NewVouchServiceClient(conn),
+
+		// What **this app's screens** need, rather than what the person holds.
+		// A delegation narrows to the intersection, so asking for less than
+		// they may do is free -- and it is why the list is written here, where
+		// somebody can read it beside the handlers that use it, instead of in
+		// the package that mints it.
+		Methods: []string{
+			rstr.MeService_Get_FullMethodName,
+			rstr.MeService_Unlink_FullMethodName,
+			rstr.MeService_SignOutEverywhere_FullMethodName,
+		},
+
+		Tenant: func(ctx context.Context, host string) (string, error) {
+			return tenantOf(ctx, roster, front, c.Tenants, host)
+		},
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return &App{
@@ -263,9 +290,9 @@ func New(ctx context.Context, c Config, conn *grpc.ClientConn, s *authsession.Se
 		tenants:  c.Tenants,
 		after:    "/",
 
-		vouch: rstr.NewVouchServiceClient(conn),
+		door:  door,
 		me_:   rstr.NewMeServiceClient(conn),
-		front: rstr.NewFrontServiceClient(conn),
+		front: front,
 	}, nil
 }
 
@@ -280,13 +307,18 @@ func (a *App) Handler() http.Handler {
 	m := http.NewServeMux()
 	m.HandleFunc("/login", a.login)
 	m.HandleFunc("/callback", a.callback)
-	m.HandleFunc("POST /session", a.signIn)
-	m.HandleFunc("POST /session/continue", a.finish)
-	m.HandleFunc("DELETE /session", a.signOut)
+	m.Handle("/session", a.door.Handler())
+	m.Handle("/session/{rest...}", a.door.Handler())
 	m.HandleFunc("GET /me", a.me)
 	m.HandleFunc("DELETE /me/ways/{id}", a.unlink)
 	m.HandleFunc("POST /me/sign-out-everywhere", a.everywhere)
 	m.HandleFunc("GET /account", a.Account)
+
+	// The module `account.html` imports. Mounted by this app rather than by
+	// `frontdoor` itself, because an app that bundles its own copy should be
+	// able to leave it out -- and it can only do that if it was never mounted
+	// for it.
+	m.HandleFunc("GET /frontdoor.js", frontdoor.Script)
 
 	return m
 }
@@ -345,7 +377,7 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 
 	who.Host = r.Host
 
-	t, err := a.tenantOf(ctx, r.Host)
+	t, err := tenantOf(ctx, a.roster, a.front, a.tenants, r.Host)
 	if err != nil {
 		// Reached under a name this deployment does not serve. There is no
 		// tenant to sign in to and nothing to guess.
@@ -624,9 +656,15 @@ func hostname(v string) string {
 // Read through this app's own credential, before anybody has been resolved to
 // anybody: that is the situation `FrontService` is shaped for, and it answers
 // with a tenant identifier and nothing else.
-func (a *App) tenantOf(ctx context.Context, host string) (string, error) {
-	if len(a.tenants) > 0 {
-		t, ok := a.tenants[hostname(host)]
+func tenantOf(
+	ctx context.Context,
+	roster rstr.Client,
+	front rstr.FrontServiceClient,
+	tenants map[string]string,
+	host string,
+) (string, error) {
+	if len(tenants) > 0 {
+		t, ok := tenants[hostname(host)]
 		if !ok {
 			return "", ErrUnknown
 		}
@@ -634,14 +672,14 @@ func (a *App) tenantOf(ctx context.Context, host string) (string, error) {
 		return t, nil
 	}
 
-	v, err := a.front.WhoseHost(ctx, rstr.FrontWhoseHostRequest_builder{Host: host}.Build())
+	v, err := front.WhoseHost(ctx, rstr.FrontWhoseHostRequest_builder{Host: host}.Build())
 	if err != nil {
 		return "", err
 	}
 
 	// By alias, because that is what `VouchWho` and the identity lookup take.
 	// One read, and it is the same read `find` would have made anyway.
-	t, err := a.roster.Tenant().Get(ctx, rstr.TenantGetRequest_builder{
+	t, err := roster.Tenant().Get(ctx, rstr.TenantGetRequest_builder{
 		Ref:    rstr.TenantRef_builder{Id: v.GetTenant()}.Build(),
 		Select: rstr.TenantSelect_builder{Alias: proto.Bool(true)}.Build(),
 	}.Build())
