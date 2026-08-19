@@ -1397,6 +1397,61 @@ The rule left behind: **two payday apps can share a process when their proto
 packages differ.** Two instances of the *same* app always could, which is what
 D15 relies on.
 
+### F10 · `pd.Secret` does not cover `Watch`, and nothing closed can be a stream — **open**
+
+Two gaps that compose, and together they mean **a watchable entity with a
+verifier streams the verifier**.
+
+- payday's `Secret` layer writes wrappers for `Add`, `Get`, `Patch`, `Apply` and
+  `List`. There is no `Watch` override, so a `WatchItem` carries the whole
+  message -- and a `WatchRequest` has no `select` to leave a column out of.
+- roster installs `grpcx.ClosedUnary` and never `ClosedStream`, so `closed`
+  structurally cannot shut a streaming method. `grpcx.Closed` exists and is not
+  used.
+
+Which leaves **not registering the service** as the only control that covers a
+stream at all. `Credential` declares `watch: {}` today and would stream password
+hashes over `CredentialService/Watch`; the one thing stopping it is D13 having
+taken the service off the wire for a different reason.
+
+`Delegation` therefore declares no `watch:`, and says so in the schema rather
+than relying on this being remembered.
+
+Two fixes, one each side. payday: emit a `Watch` wrapper in `emitSecretOf`, or
+refuse `watch:` on an entity with a `secret:` field -- the second is the loud
+one and is probably right, since a stream that silently omits a column is its
+own surprise. roster: install `grpcx.Closed` instead of `ClosedUnary`, so that
+`closed` means what its name says.
+
+### F11 · A `secret:` field with no `list:` generates code that does not compile — **open**
+
+`emitSecretOf` emits the `List` wrapper unconditionally, with no `if e.List !=
+nil` guard, so the generated `Secret` layer names `<E>ListRequest` and
+`s.<E>ServiceServer.List` for an entity that declared no list. `pd gen` succeeds
+and says nothing; `go build` fails inside a generated file nobody is allowed to
+edit.
+
+It did not block `Delegation`, which wants a `list:` anyway -- a page of them is
+what a sweep reads and what an operator asking "what is live for this person"
+reads. So this is written down rather than worked around, and the fix is four
+characters in payday.
+
+### F12 · `pd doctor` does not read the schema — **open**
+
+`CLAUDE.md` sells it as *what would go wrong, before it does*, and doctor's own
+comment says it *reads the schema the way the generator does, so that everything
+`pd gen` refuses is refused here too*. `doctorSchema` globs payday's shipped
+entity files and checks that the overlay **filenames** match, and returns. It
+never opens the app's own protos.
+
+Checked: with an entity that `pd gen` refuses outright in place, `pd doctor`
+printed *looks like an app that generates* and exited 0.
+
+So `pd gen --check` is the only schema gate, and doctor is for missing go tools,
+a mis-named overlay, and a layer with no `WithDriver`. Either make it run
+`pdgen.Read` or delete the sentence that says it does; the sentence is the part
+that costs something, because it is what makes somebody trust the exit code.
+
 ---
 
 ## Progress
