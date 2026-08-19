@@ -56,9 +56,20 @@ import (
 // expired session forever. What keeps this one bounded is that the thing it
 // holds carries its own expiry, so a pass over it on every write is enough.
 
-// held is the delegation this app is holding for one signed-in browser.
+// held is what this app is holding for one browser, and it is one of two
+// things.
+//
+// A **delegation** for somebody who has finished signing in, and a
+// **continuation** for somebody who is half way. They live in one map because
+// they are the same lifecycle from this app's side -- one string, held for one
+// browser, dropped when its own clock runs out -- and because a browser has
+// exactly one of them at a time: finishing swaps the second for the first.
 type held struct {
-	token   string
+	// token is a delegation, and continuation is an attempt. Exactly one is
+	// set, and which one is what the session in front of it means.
+	token        string
+	continuation string
+
 	expires time.Time
 }
 
@@ -173,6 +184,17 @@ func (a *App) signIn(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "cannot sign in", http.StatusInternalServerError)
 		return
 	}
+	// Half way, which is a third answer and not a refusal.
+	//
+	// `ok` is never set together with a continuation, so this branch cannot be
+	// confused with the one below -- and an app that had never heard of second
+	// factors would fall through to the refusal and fail **closed**, which is
+	// the property that shape exists for.
+	if c := res.GetVerified().GetContinuation(); c != "" {
+		a.half(w, r, res.GetVerified(), c)
+		return
+	}
+
 	if !res.GetVerified().GetOk() {
 		// One answer for a wrong password, an unknown person and somebody with
 		// no password at all, which is the answer roster already took care to
@@ -246,7 +268,12 @@ var errNotDelegated = errors.New("sso: this session has no delegation")
 // which the connection already attaches, and the person it is acting for.
 func (a *App) acting(ctx context.Context, r *http.Request) (context.Context, error) {
 	v, ok := a.held.get(a.keyOf(r))
-	if !ok {
+	if !ok || v.token == "" {
+		// No delegation, which is either a session from the provider half or a
+		// **half** one that never finished. Neither may draw a page as the
+		// person, and the second is the one worth naming: a browser that
+		// stopped at the second form holds a cookie that names nobody it may
+		// act as.
 		return nil, errNotDelegated
 	}
 
@@ -322,6 +349,156 @@ func kinds(v *rstr.MeGetResponse) []string {
 	out := make([]string, 0, len(v.GetCredentials()))
 	for _, c := range v.GetCredentials() {
 		out = append(out, c.GetKind())
+	}
+
+	return out
+}
+
+// half is what a browser gets when one factor is not the whole sign-in.
+//
+// A **session with an empty grant**, which is the shape payday anticipated:
+// `authsession.Session.Expires` may be set by a `Verify`, and its own comment
+// says why -- *which is how an app gives a short session to somebody who has
+// not finished a second factor.*
+//
+// So the browser carries a cookie that names nobody it may act as, and the
+// continuation stays here. That is D21's split written out: *which browser is
+// mid-sign-in* is this app's, and *what has been proved about this person* is
+// roster's, and neither crosses.
+//
+// What goes back is what the second form needs to draw itself and nothing
+// else: what has been satisfied, and what is available. Not how many steps
+// there are, not which to offer, not what to call them -- those are this app's
+// to decide and roster deliberately does not say.
+func (a *App) half(w http.ResponseWriter, r *http.Request, v *rstr.VouchVerifyResponse, c string) {
+	who, tenant, err := ids(v.GetHolder(), v.GetTenant())
+	if err != nil {
+		http.Error(w, "cannot sign in", http.StatusInternalServerError)
+		return
+	}
+
+	s, cookie, err := a.sessions.Mint(r.Context(), authsession.Session{
+		Id:       who.String(),
+		TenantId: tenant.String(),
+
+		// **Nothing.** `frame.Grant`'s zero allows no method at all, so this
+		// cookie is a way of coming back to the second form and not a way of
+		// doing anything. Somebody who stops here has not signed in.
+		Grant: frame.Grant{},
+
+		// As long as the attempt and no longer, so the two cannot disagree
+		// about whether somebody is still mid-sign-in.
+		Expires: time.Now().Add(halfLife),
+	})
+	if err != nil {
+		http.Error(w, "cannot sign in", http.StatusInternalServerError)
+		return
+	}
+
+	a.held.put(s.Key, held{continuation: c, expires: time.Now().Add(halfLife)})
+
+	http.SetCookie(w, cookie)
+	w.Header().Set("content-type", "application/json")
+	w.Header().Set("cache-control", "no-store")
+	_ = json.NewEncoder(w).Encode(struct {
+		Satisfied []string `json:"satisfied"`
+		Available []string `json:"available"`
+	}{
+		Satisfied: v.GetSatisfied(),
+		Available: kindsOf(v.GetAvailable()),
+	})
+}
+
+// halfLife is how long somebody has to finish.
+//
+// Shorter than roster's own hold on the attempt, so that this app is the one
+// that gives up first and the browser is told rather than finding out from a
+// refusal it cannot explain.
+const halfLife = 4 * time.Minute
+
+// finish is `POST /session/continue`: the second form.
+//
+// The browser sends a code and its half-session cookie; this app finds the
+// continuation that cookie stands for and spends it. What comes back is the
+// delegation, and the same cookie is re-minted as a real session -- so the
+// browser never holds two, and a half one cannot be kept alive by not
+// finishing.
+func (a *App) finish(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var body struct {
+		Kind   string `json:"kind"`
+		Name   string `json:"name"`
+		Secret string `json:"secret"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&body); err != nil {
+		http.Error(w, "no", http.StatusBadRequest)
+		return
+	}
+
+	key := a.keyOf(r)
+
+	// Taken rather than read: this browser gets one attempt at the second
+	// form per first form, which is the app's half of a rule roster also
+	// keeps -- a continuation is single-use there too.
+	v, ok := a.held.take(key)
+	if !ok || v.continuation == "" {
+		http.Error(w, "no", http.StatusUnauthorized)
+		return
+	}
+
+	res, err := a.vouch.Delegate(ctx, rstr.VouchDelegateRequest_builder{
+		Continuation: v.continuation,
+		Kind:         body.Kind,
+		Name:         body.Name,
+		Secret:       []byte(body.Secret),
+		Methods:      []string{rstr.MeService_Get_FullMethodName},
+	}.Build())
+	if err != nil {
+		http.Error(w, "cannot sign in", http.StatusInternalServerError)
+		return
+	}
+	if !res.GetVerified().GetOk() || res.GetToken() == "" {
+		// A wrong code, an attempt that expired, one somebody else spent: one
+		// answer, and the half-session is gone with it -- so a wrong code costs
+		// the first form again, which is where the lockout counts.
+		_ = a.sessions.End(ctx, key)
+		http.Error(w, "no", http.StatusUnauthorized)
+		return
+	}
+
+	who, tenant, err := ids(res.GetVerified().GetHolder(), res.GetVerified().GetTenant())
+	if err != nil {
+		http.Error(w, "cannot sign in", http.StatusInternalServerError)
+		return
+	}
+
+	// The half one is ended rather than upgraded, because a session's grant is
+	// written when it is minted and there is nothing that widens one -- which
+	// is the right direction for the one thing a session carries.
+	_ = a.sessions.End(ctx, key)
+
+	s, cookie, err := a.sessions.Mint(ctx, authsession.Session{
+		Id:       who.String(),
+		TenantId: tenant.String(),
+		Grant:    frame.Whole(),
+		Expires:  res.GetExpires().AsTime(),
+	})
+	if err != nil {
+		http.Error(w, "cannot sign in", http.StatusInternalServerError)
+		return
+	}
+
+	a.held.put(s.Key, held{token: res.GetToken(), expires: res.GetExpires().AsTime()})
+
+	http.SetCookie(w, cookie)
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func kindsOf(vs []*rstr.VouchFactor) []string {
+	out := make([]string, 0, len(vs))
+	for _, v := range vs {
+		out = append(out, v.GetKind())
 	}
 
 	return out

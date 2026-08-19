@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"encoding/base32"
+	"encoding/base64"
 	"encoding/json"
 	"net"
 	"net/http"
@@ -12,6 +14,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-jose/go-jose/v4"
 	"github.com/stretchr/testify/require"
@@ -158,6 +161,10 @@ type deployment struct {
 
 	idp *idp
 	app *httptest.Server
+
+	// keyring is what this deployment wraps a seed with, so that a test may
+	// enrol one and the served instance can read it.
+	keyring vouch.Keyring
 }
 
 // serve builds roster and the app in front of it.
@@ -178,10 +185,18 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 	// caller writes -- fine for the provider half, and no use at all for the
 	// password half: a delegation is bound to the caller it was issued to, and
 	// `Plain` names a caller that cannot say which row it is.
+	key := make([]byte, 32)
+	_, err := rand.Read(key)
+	x.NoError(err)
+
 	s, err := cmd.Build(ctx, cmd.Config{
 		Db:      config.DbConfig{Driver: drv, Dsn: dsn},
 		Watch:   config.WatchConfig{Broker: config.BrokerMemory},
 		Control: cmd.ControlConfig{Db: config.DbConfig{Driver: cdrv, Dsn: cdsn}},
+
+		// A keyring, because a deployment that holds second factors has one
+		// and this is the app that shows what two forms look like.
+		Vouch: cmd.VouchConfig{Keys: []string{"one:" + base64.StdEncoding.EncodeToString(key)}},
 	})
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })
@@ -269,7 +284,10 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 	conn := serveRoster(t, g, auth.BearerProvider(token))
 	client := rstr.NewClient(conn)
 
-	d := &deployment{roster: client, tenant: seeded.Tenant, ungated: s.Ungated, idp: newIdp(t)}
+	d := &deployment{
+		roster: client, tenant: seeded.Tenant, ungated: s.Ungated,
+		idp: newIdp(t), keyring: s.Keyring,
+	}
 
 	sessions := authsession.New(authsession.NewMemStore(), authsession.Insecure())
 
@@ -295,6 +313,7 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 	m.Handle("/login", a.Handler())
 	m.Handle("/callback", a.Handler())
 	m.Handle("/session", a.Handler())
+	m.Handle("/session/continue", a.Handler())
 	m.Handle("/me", a.Handler())
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("home")) })
 
@@ -857,4 +876,183 @@ func TestTheTenantComesFromRoster(t *testing.T) {
 
 	x.Equal(http.StatusNoContent, post().StatusCode,
 		"the app could not learn from roster which tenant it is serving")
+}
+
+// TestTwoFormsAndTheAppRemembersNothing is D21's split, in the app it was
+// written about.
+//
+// The question that found D21: **an app showing a second form has to remember
+// who passed the first one.** An app developer wants to know who somebody is
+// and does not want to be in the sign-in business at all, so making them carry
+// that is handing them the one part of the process they were trying to avoid.
+//
+// So this app holds a cookie -- *which browser* is mid-sign-in, which is bound
+// to a browser and therefore its own -- and roster holds the attempt. The
+// browser's cookie names nobody it may act as until the second form is
+// answered.
+func TestTwoFormsAndTheAppRemembersNothing(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "acme"})
+
+	h, err := d.ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),
+		Alias:  "erin",
+	}.Build())
+	x.NoError(err)
+
+	v := vouch.New(d.ungated, d.ungated, vouch.WithKeys(d.keyring))
+
+	_, err = v.Set(ctx, rstr.VouchSetRequest_builder{
+		Who:    rstr.VouchWho_builder{Id: h.GetId()}.Build(),
+		Secret: []byte("correct horse battery staple"),
+	}.Build())
+	x.NoError(err)
+
+	enrolled, err := v.Enrol(ctx, rstr.VouchEnrolRequest_builder{
+		Who:  rstr.VouchWho_builder{Id: h.GetId()}.Build(),
+		Kind: vouch.KindTotp,
+	}.Build())
+	x.NoError(err)
+
+	seed, err := base32.StdEncoding.WithPadding(base32.NoPadding).DecodeString(enrolled.GetSeed())
+	x.NoError(err)
+
+	// Confirmed with the previous step's code, which leaves the current one
+	// unspent for the sign-in below. A factor nobody has proved is deliberately
+	// not offered.
+	got, err := v.Verify(ctx, rstr.VouchVerifyRequest_builder{
+		Who:    rstr.VouchWho_builder{Id: h.GetId()}.Build(),
+		Kind:   vouch.KindTotp,
+		Secret: []byte(vouch.CodeAt(seed, time.Now().Unix()/30-1)),
+	}.Build())
+	x.NoError(err)
+	x.True(got.GetOk())
+
+	jar, err := cookiejar.New(nil)
+	x.NoError(err)
+
+	c := &http.Client{Jar: jar}
+
+	first, err := c.Post(d.app.URL+"/session", "application/json",
+		strings.NewReader(`{"alias":"erin","password":"correct horse battery staple"}`))
+	x.NoError(err)
+	defer first.Body.Close()
+
+	t.Run("the first form is answered and is not a sign-in", func(t *testing.T) {
+		x := require.New(t)
+
+		x.Equal(http.StatusOK, first.StatusCode)
+
+		var body struct {
+			Satisfied []string `json:"satisfied"`
+			Available []string `json:"available"`
+		}
+		x.NoError(json.NewDecoder(first.Body).Decode(&body))
+		x.Equal([]string{"password"}, body.Satisfied)
+		x.Equal([]string{"totp"}, body.Available)
+
+		// The cookie names nobody it may act as, so the page behind it is shut.
+		res, err := c.Get(d.app.URL + "/me")
+		x.NoError(err)
+		defer res.Body.Close()
+		x.Equal(http.StatusForbidden, res.StatusCode,
+			"one factor drew a page it had not finished signing in for")
+	})
+
+	t.Run("and the second one finishes it", func(t *testing.T) {
+		x := require.New(t)
+
+		code := vouch.CodeAt(seed, time.Now().Unix()/30)
+
+		done, err := c.Post(d.app.URL+"/session/continue", "application/json",
+			strings.NewReader(`{"kind":"totp","secret":"`+code+`"}`))
+		x.NoError(err)
+		defer done.Body.Close()
+		x.Equal(http.StatusNoContent, done.StatusCode)
+
+		res, err := c.Get(d.app.URL + "/me")
+		x.NoError(err)
+		defer res.Body.Close()
+		x.Equal(http.StatusOK, res.StatusCode)
+	})
+
+	// And roster is left holding nothing about the attempt: spending it is an
+	// erase, which is the whole of what single-use means there.
+	t.Run("and the attempt is gone", func(t *testing.T) {
+		x := require.New(t)
+
+		n, err := d.ungated.Continuation().List(ctx, rstr.ContinuationListRequest_builder{}.Build())
+		x.NoError(err)
+		x.Empty(n.GetItems())
+	})
+}
+
+// TestAWrongSecondFactorCostsTheFirstFormAgain.
+//
+// The half-session is ended with the attempt, so somebody who gets the code
+// wrong starts over -- and starting over is where the lockout counts, which is
+// what makes the second factor a metered surface rather than an unmetered one.
+func TestAWrongSecondFactorCostsTheFirstFormAgain(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "acme"})
+
+	h, err := d.ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),
+		Alias:  "erin",
+	}.Build())
+	x.NoError(err)
+
+	v := vouch.New(d.ungated, d.ungated, vouch.WithKeys(d.keyring))
+
+	_, err = v.Set(ctx, rstr.VouchSetRequest_builder{
+		Who:    rstr.VouchWho_builder{Id: h.GetId()}.Build(),
+		Secret: []byte("correct horse battery staple"),
+	}.Build())
+	x.NoError(err)
+
+	enrolled, err := v.Enrol(ctx, rstr.VouchEnrolRequest_builder{
+		Who:  rstr.VouchWho_builder{Id: h.GetId()}.Build(),
+		Kind: vouch.KindTotp,
+	}.Build())
+	x.NoError(err)
+
+	seed, err := base32.StdEncoding.WithPadding(base32.NoPadding).DecodeString(enrolled.GetSeed())
+	x.NoError(err)
+
+	_, err = v.Verify(ctx, rstr.VouchVerifyRequest_builder{
+		Who:    rstr.VouchWho_builder{Id: h.GetId()}.Build(),
+		Kind:   vouch.KindTotp,
+		Secret: []byte(vouch.CodeAt(seed, time.Now().Unix()/30-1)),
+	}.Build())
+	x.NoError(err)
+
+	jar, err := cookiejar.New(nil)
+	x.NoError(err)
+
+	c := &http.Client{Jar: jar}
+
+	res, err := c.Post(d.app.URL+"/session", "application/json",
+		strings.NewReader(`{"alias":"erin","password":"correct horse battery staple"}`))
+	x.NoError(err)
+	res.Body.Close()
+	x.Equal(http.StatusOK, res.StatusCode)
+
+	wrong, err := c.Post(d.app.URL+"/session/continue", "application/json",
+		strings.NewReader(`{"kind":"totp","secret":"000000"}`))
+	x.NoError(err)
+	wrong.Body.Close()
+	x.Equal(http.StatusUnauthorized, wrong.StatusCode)
+
+	// The half-session went with it, so a second try at the second form has
+	// nothing to try against.
+	again, err := c.Post(d.app.URL+"/session/continue", "application/json",
+		strings.NewReader(`{"kind":"totp","secret":"`+vouch.CodeAt(seed, time.Now().Unix()/30)+`"}`))
+	x.NoError(err)
+	again.Body.Close()
+	x.Equal(http.StatusUnauthorized, again.StatusCode,
+		"a browser kept guessing the second factor without paying for the first")
 }

@@ -280,6 +280,7 @@ func (a *App) Handler() http.Handler {
 	m.HandleFunc("/login", a.login)
 	m.HandleFunc("/callback", a.callback)
 	m.HandleFunc("POST /session", a.signIn)
+	m.HandleFunc("POST /session/continue", a.finish)
 	m.HandleFunc("DELETE /session", a.signOut)
 	m.HandleFunc("GET /me", a.me)
 

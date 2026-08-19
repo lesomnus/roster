@@ -204,6 +204,27 @@ live rows -- which is `Undelegate`'s answer, and two concurrent spends resolve
 to one winner through the ordinary compare-and-swap. A `date_used` beside it
 would be a second column recording one fact.
 
+#### And the app's half of it, which payday had already anticipated
+
+D21 splits at *which browser* versus *what was proved*, and the reference app is
+where the first half had to be written. `authsession.Session.Expires` may be set
+by a `Verify`, and payday's own comment says why: *which is how an app gives a
+short session to somebody who has not finished a second factor.*
+
+So `POST /session` answers a **session with an empty grant** and what the second
+form needs to draw itself; `POST /session/continue` spends the continuation and
+re-mints the cookie as a real session. The browser holds one cookie throughout
+and it names nobody it may act as until the second form is answered.
+
+Two things fall out that are worth naming:
+
+- **A wrong code costs the first form again.** The half-session is ended with
+  the attempt, so a browser cannot keep guessing -- and starting over is where
+  the lockout counts, which is what makes the second factor a metered surface.
+- **The half one is ended rather than upgraded.** A session's grant is written
+  when it is minted and nothing widens one, which is the right direction for the
+  one thing a session carries.
+
 `available` is a **message** and not a list of kinds, for `MeCredential`'s
 reason: a person may be locked out of their second factor with their password
 fine, and a page told only the kind draws a form that is already dead. Both
