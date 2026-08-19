@@ -3,6 +3,7 @@ package cmd_test
 import (
 	"testing"
 
+	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -276,5 +277,116 @@ func TestSigningInByAddressIsF7Closed(t *testing.T) {
 			Secret: []byte("whatever"),
 		}.Build())
 		x.Equal(codes.InvalidArgument, status.Code(err))
+	})
+}
+
+// TestAConnectionIsRostersAndItsSecretIsNot is item 9's decision, and it is the
+// decision rather than the schema that was open.
+//
+// A connection carries a client secret, and handing one back would make it the
+// first secret roster returns rather than checks — which is what D13 refuses.
+// The way out is not to hold it: everything about a connection that varies per
+// tenant is **public**, and the secret is one string that has to reach the
+// front door anyway, because using it means being the relying party and that is
+// what D19 says roster is not.
+func TestAConnectionIsRostersAndItsSecretIsNot(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	_, err := b.Ungated.Connection().Add(ctx, app.ConnectionAddRequest_builder{
+		Tenant:    app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Name:      "entra",
+		Issuer:    "https://login.microsoftonline.com/acme/v2.0",
+		ClientId:  "a-client-id",
+		Scopes:    []string{"email"},
+		SecretRef: "env:ACME_ENTRA_SECRET",
+	}.Build())
+	x.NoError(err)
+
+	// Read by the pair a front door has: the tenant from the hostname, and the
+	// provider from the address.
+	v, err := b.Ungated.Connection().Get(ctx, app.ConnectionGetRequest_builder{
+		Ref: app.ConnectionRef_builder{
+			At: app.ConnectionRefByAt_builder{
+				Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+				Name:   z.Ptr("entra"),
+			}.Build(),
+		}.Build(),
+		Select: app.ConnectionSelect_builder{All: z.Ptr(true)}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	x.Equal("https://login.microsoftonline.com/acme/v2.0", v.GetIssuer())
+	x.Equal("a-client-id", v.GetClientId())
+	x.Equal([]string{"email"}, v.GetScopes())
+
+	// A reference and never the thing. roster does not read it, and what it
+	// means is the front door's to know.
+	x.Equal("env:ACME_ENTRA_SECRET", v.GetSecretRef())
+
+	// And the name is one per tenant, because two operators may both call one
+	// "entra" and mean two different directories.
+	t.Run("and two operators may both have one", func(t *testing.T) {
+		x := require.New(t)
+
+		_, err := b.Ungated.Connection().Add(ctx, app.ConnectionAddRequest_builder{
+			Tenant:   app.TenantRef_builder{Id: b.Hooli.Bytes()}.Build(),
+			Name:     "entra",
+			Issuer:   "https://login.microsoftonline.com/hooli/v2.0",
+			ClientId: "another-client-id",
+		}.Build())
+		x.NoError(err, "one operator's provider name took another's")
+
+		_, err = b.Ungated.Connection().Add(ctx, app.ConnectionAddRequest_builder{
+			Tenant:   app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+			Name:     "entra",
+			Issuer:   "https://example.test",
+			ClientId: "a-third",
+		}.Build())
+		x.Equal(codes.AlreadyExists, status.Code(err))
+	})
+
+	// The whole path a front door walks: a name, a tenant, an address, a
+	// provider, a connection.
+	t.Run("and it is the end of the path a front door walks", func(t *testing.T) {
+		x := require.New(t)
+
+		_, err := b.Ungated.Host().Add(ctx, app.HostAddRequest_builder{
+			Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+			Name:   "acme.example.com",
+		}.Build())
+		x.NoError(err)
+
+		_, err = b.Ungated.MailDomain().Add(ctx, app.MailDomainAddRequest_builder{
+			Tenant:   app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+			Name:     "acme.com",
+			Provider: "entra",
+		}.Build())
+		x.NoError(err)
+
+		f := front.New(b.Ungated)
+
+		whose, err := f.WhoseHost(ctx, app.FrontWhoseHostRequest_builder{
+			Host: "acme.example.com",
+		}.Build())
+		x.NoError(err)
+
+		where, err := f.WhereFrom(ctx, app.FrontWhereFromRequest_builder{
+			Tenant: whose.GetTenant(), Address: "somebody@acme.com",
+		}.Build())
+		x.NoError(err)
+		x.Equal("entra", where.GetProvider())
+
+		got, err := b.Ungated.Connection().Get(ctx, app.ConnectionGetRequest_builder{
+			Ref: app.ConnectionRef_builder{
+				At: app.ConnectionRefByAt_builder{
+					Tenant: app.TenantRef_builder{Id: whose.GetTenant()}.Build(),
+					Name:   z.Ptr(where.GetProvider()),
+				}.Build(),
+			}.Build(),
+			Select: app.ConnectionSelect_builder{Issuer: z.Ptr(true)}.Build(),
+		}.Build())
+		x.NoError(err)
+		x.Equal("https://login.microsoftonline.com/acme/v2.0", got.GetIssuer())
 	})
 }

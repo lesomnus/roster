@@ -45,6 +45,18 @@ func (f BindingFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, err
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BindingMutation", m)
 }
 
+// The ConnectionFunc type is an adapter to allow the use of ordinary
+// function as Connection mutator.
+type ConnectionFunc func(context.Context, *ent.ConnectionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ConnectionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ConnectionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ConnectionMutation", m)
+}
+
 // The ContinuationFunc type is an adapter to allow the use of ordinary
 // function as Continuation mutator.
 type ContinuationFunc func(context.Context, *ent.ContinuationMutation) (ent.Value, error)

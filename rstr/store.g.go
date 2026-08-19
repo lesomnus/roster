@@ -29,6 +29,7 @@ type Server interface {
 	Tenant() TenantServiceServer
 	Holder() HolderServiceServer
 	ApiKey() ApiKeyServiceServer
+	Connection() ConnectionServiceServer
 	Continuation() ContinuationServiceServer
 	Credential() CredentialServiceServer
 	Delegation() DelegationServiceServer
@@ -58,6 +59,7 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterTenantServiceServer(g, s.Tenant())
 	RegisterHolderServiceServer(g, s.Holder())
 	RegisterApiKeyServiceServer(g, s.ApiKey())
+	RegisterConnectionServiceServer(g, s.Connection())
 	RegisterContinuationServiceServer(g, s.Continuation())
 	RegisterCredentialServiceServer(g, s.Credential())
 	RegisterDelegationServiceServer(g, s.Delegation())
@@ -83,6 +85,7 @@ type UnimplementedServer struct {
 	TenantServer          TenantServiceServer
 	HolderServer          HolderServiceServer
 	ApiKeyServer          ApiKeyServiceServer
+	ConnectionServer      ConnectionServiceServer
 	ContinuationServer    ContinuationServiceServer
 	CredentialServer      CredentialServiceServer
 	DelegationServer      DelegationServiceServer
@@ -107,6 +110,9 @@ type UnimplementedServer struct {
 func (UnimplementedServer) Tenant() TenantServiceServer { return UnimplementedTenantServiceServer{} }
 func (UnimplementedServer) Holder() HolderServiceServer { return UnimplementedHolderServiceServer{} }
 func (UnimplementedServer) ApiKey() ApiKeyServiceServer { return UnimplementedApiKeyServiceServer{} }
+func (UnimplementedServer) Connection() ConnectionServiceServer {
+	return UnimplementedConnectionServiceServer{}
+}
 func (UnimplementedServer) Continuation() ContinuationServiceServer {
 	return UnimplementedContinuationServiceServer{}
 }
@@ -147,6 +153,7 @@ type StaticServer struct {
 	TenantServer          TenantServiceServer
 	HolderServer          HolderServiceServer
 	ApiKeyServer          ApiKeyServiceServer
+	ConnectionServer      ConnectionServiceServer
 	ContinuationServer    ContinuationServiceServer
 	CredentialServer      CredentialServiceServer
 	DelegationServer      DelegationServiceServer
@@ -171,6 +178,7 @@ type StaticServer struct {
 func (s StaticServer) Tenant() TenantServiceServer                   { return s.TenantServer }
 func (s StaticServer) Holder() HolderServiceServer                   { return s.HolderServer }
 func (s StaticServer) ApiKey() ApiKeyServiceServer                   { return s.ApiKeyServer }
+func (s StaticServer) Connection() ConnectionServiceServer           { return s.ConnectionServer }
 func (s StaticServer) Continuation() ContinuationServiceServer       { return s.ContinuationServer }
 func (s StaticServer) Credential() CredentialServiceServer           { return s.CredentialServer }
 func (s StaticServer) Delegation() DelegationServiceServer           { return s.DelegationServer }
@@ -195,6 +203,7 @@ type Client interface {
 	Tenant() TenantServiceClient
 	Holder() HolderServiceClient
 	ApiKey() ApiKeyServiceClient
+	Connection() ConnectionServiceClient
 	Continuation() ContinuationServiceClient
 	Credential() CredentialServiceClient
 	Delegation() DelegationServiceClient
@@ -221,6 +230,7 @@ func NewClient(c *grpc.ClientConn) Client {
 		_Tenant:          NewTenantServiceClient(c),
 		_Holder:          NewHolderServiceClient(c),
 		_ApiKey:          NewApiKeyServiceClient(c),
+		_Connection:      NewConnectionServiceClient(c),
 		_Continuation:    NewContinuationServiceClient(c),
 		_Credential:      NewCredentialServiceClient(c),
 		_Delegation:      NewDelegationServiceClient(c),
@@ -247,6 +257,7 @@ type client struct {
 	_Tenant          TenantServiceClient
 	_Holder          HolderServiceClient
 	_ApiKey          ApiKeyServiceClient
+	_Connection      ConnectionServiceClient
 	_Continuation    ContinuationServiceClient
 	_Credential      CredentialServiceClient
 	_Delegation      DelegationServiceClient
@@ -271,6 +282,7 @@ type client struct {
 func (c *client) Tenant() TenantServiceClient                   { return c._Tenant }
 func (c *client) Holder() HolderServiceClient                   { return c._Holder }
 func (c *client) ApiKey() ApiKeyServiceClient                   { return c._ApiKey }
+func (c *client) Connection() ConnectionServiceClient           { return c._Connection }
 func (c *client) Continuation() ContinuationServiceClient       { return c._Continuation }
 func (c *client) Credential() CredentialServiceClient           { return c._Credential }
 func (c *client) Delegation() DelegationServiceClient           { return c._Delegation }

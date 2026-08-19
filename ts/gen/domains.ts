@@ -21,6 +21,9 @@ export const AuditDomain = 3
 /** The domain identifiers of roster.Binding carry. */
 export const BindingDomain = 18
 
+/** The domain identifiers of roster.Connection carry. */
+export const ConnectionDomain = 25
+
 /** The domain identifiers of roster.Continuation carry. */
 export const ContinuationDomain = 22
 
@@ -83,6 +86,7 @@ export const TenantDomain = 1
 pdid.register("roster.ApiKey", ApiKeyDomain, "api-key")
 pdid.register("roster.Audit", AuditDomain, "audit")
 pdid.register("roster.Binding", BindingDomain, "binding")
+pdid.register("roster.Connection", ConnectionDomain, "connection")
 pdid.register("roster.Continuation", ContinuationDomain, "continuation")
 pdid.register("roster.Credential", CredentialDomain, "credential")
 pdid.register("roster.Delegation", DelegationDomain, "delegation")

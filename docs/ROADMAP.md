@@ -376,9 +376,10 @@ Each takes a `D` in PLAN.md when it is taken. None is taken here.
    once P1 is written.
 2. **The rule for item 11.** *Only somebody whose permissions are a subset of
    yours*, or *a tenant operator is a tenant administrator, and we say so*.
-3. **Item 9's boundary.** A provider connection carries a client secret, and
-   answering with one makes it the first secret roster returns rather than
-   checks. It argues with D13.
+3. ~~**Item 9's boundary.**~~ **Taken**: the connection is roster's and the
+   secret is not. Everything that varies per tenant is public, and the secret
+   has to reach the front door whatever roster does -- so roster holds a
+   reference it does not read, and D13 survives without an exception.
 4. ~~**Where the session table lives.**~~ **roster's**, and the reasoning is in
    `session.proto`. The argument for upstream is real — the next payday app
    writes this one again — and it is not enough: a store payday could ship
@@ -399,7 +400,7 @@ Each takes a `D` in PLAN.md when it is taken. None is taken here.
 | P6 | the reads a screen needs, and the screens | **done** — the reads (items 7, 8), §5 the operator screen, and §4 self-service in the reference app. Left of D24's order: §6, extracting the components |
 | P7 | two-step verification | **done** — PLAN.md D29 and D30, and `examples/sso` showing two forms with a half-session between them |
 | P8 | recovery and the magic link | **done** — PLAN.md D31. `Vouch.Link`/`Redeem`, a reset voiding what came before it, and the sweep over both short-lived tables. The air-gap half was already D28's |
-| P9 | the rest | session table and **the breached-password check** done · left: the event stream, provider connections (undecided), and the components |
+| P9 | the rest | session table, the breached-password check and **provider connections** done · left: the event stream (deferred by item 4 itself) and the components |
 
 ## See also
 

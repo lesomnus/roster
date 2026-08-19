@@ -157,6 +157,49 @@ var (
 			},
 		},
 	}
+	// ConnectionColumns holds the columns for the "connection" table.
+	ConnectionColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "desc", Type: field.TypeString},
+		{Name: "issuer", Type: field.TypeString},
+		{Name: "client_id", Type: field.TypeString},
+		{Name: "scopes", Type: field.TypeJSON, Nullable: true},
+		{Name: "secret_ref", Type: field.TypeString},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "tenant_id", Type: field.TypeUUID},
+	}
+	// ConnectionTable holds the schema information for the "connection" table.
+	ConnectionTable = &schema.Table{
+		Name:       "connection",
+		Columns:    ConnectionColumns,
+		PrimaryKey: []*schema.Column{ConnectionColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "connection_tenant_tenant",
+				Columns:    []*schema.Column{ConnectionColumns[10]},
+				RefColumns: []*schema.Column{TenantColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "connection_date_created_id",
+				Unique:  false,
+				Columns: []*schema.Column{ConnectionColumns[9], ConnectionColumns[0]},
+			},
+			{
+				Name:    "connection_name_tenant_id",
+				Unique:  true,
+				Columns: []*schema.Column{ConnectionColumns[1], ConnectionColumns[10]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
 	// ContinuationColumns holds the columns for the "continuation" table.
 	ContinuationColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
@@ -955,6 +998,7 @@ var (
 		ApikeyTable,
 		AuditTable,
 		BindingTable,
+		ConnectionTable,
 		ContinuationTable,
 		CredentialTable,
 		DelegationTable,
@@ -991,6 +1035,10 @@ func init() {
 	BindingTable.ForeignKeys[3].RefTable = GroupTable
 	BindingTable.Annotation = &entsql.Annotation{
 		Table: "binding",
+	}
+	ConnectionTable.ForeignKeys[0].RefTable = TenantTable
+	ConnectionTable.Annotation = &entsql.Annotation{
+		Table: "connection",
 	}
 	ContinuationTable.ForeignKeys[0].RefTable = HolderTable
 	ContinuationTable.Annotation = &entsql.Annotation{

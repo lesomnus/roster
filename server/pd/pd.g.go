@@ -31,6 +31,7 @@ import (
 	apikey "github.com/lesomnus/roster/internal/ent/apikey"
 	audit "github.com/lesomnus/roster/internal/ent/audit"
 	binding "github.com/lesomnus/roster/internal/ent/binding"
+	connection "github.com/lesomnus/roster/internal/ent/connection"
 	continuation "github.com/lesomnus/roster/internal/ent/continuation"
 	credential "github.com/lesomnus/roster/internal/ent/credential"
 	delegation "github.com/lesomnus/roster/internal/ent/delegation"
@@ -92,6 +93,7 @@ const (
 	ApiKeyDomain          pdid.Domain = 14 // "api-key"
 	AuditDomain           pdid.Domain = 3  // "audit"
 	BindingDomain         pdid.Domain = 18 // "binding"
+	ConnectionDomain      pdid.Domain = 25 // "connection"
 	ContinuationDomain    pdid.Domain = 22 // "continuation"
 	CredentialDomain      pdid.Domain = 13 // "credential"
 	DelegationDomain      pdid.Domain = 19 // "delegation"
@@ -117,6 +119,7 @@ func init() {
 	pdid.Register("roster.ApiKey", ApiKeyDomain, "api-key")
 	pdid.Register("roster.Audit", AuditDomain, "audit")
 	pdid.Register("roster.Binding", BindingDomain, "binding")
+	pdid.Register("roster.Connection", ConnectionDomain, "connection")
 	pdid.Register("roster.Continuation", ContinuationDomain, "continuation")
 	pdid.Register("roster.Credential", CredentialDomain, "credential")
 	pdid.Register("roster.Delegation", DelegationDomain, "delegation")
@@ -146,6 +149,7 @@ var Domains = map[string]pdid.Domain{
 	"roster.ApiKey":          ApiKeyDomain,
 	"roster.Audit":           AuditDomain,
 	"roster.Binding":         BindingDomain,
+	"roster.Connection":      ConnectionDomain,
 	"roster.Continuation":    ContinuationDomain,
 	"roster.Credential":      CredentialDomain,
 	"roster.Delegation":      DelegationDomain,
@@ -237,6 +241,16 @@ func (wall) BindingScope(ctx context.Context) (predicate.Binding, error) {
 	}
 
 	return binding.HasRoleWith(role.TenantIDIn(vs...)), nil
+}
+
+// ConnectionScope: a row belongs to the tenant its "tenant" reaches.
+func (wall) ConnectionScope(ctx context.Context) (predicate.Connection, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return connection.TenantIDIn(vs...), nil
 }
 
 // ContinuationScope: a row belongs to the tenant its "holder.tenant" reaches.
@@ -480,6 +494,11 @@ func (x grouped) BindingScope(ctx context.Context) (predicate.Binding, error) {
 	}
 
 	return binding.SiteIDIn(vs...), nil
+}
+
+// ConnectionScope: in no set -- it declared no field 3, so this narrows nothing.
+func (x grouped) ConnectionScope(ctx context.Context) (predicate.Connection, error) {
+	return nil, nil
 }
 
 // ContinuationScope: in no set -- it declared no field 3, so this narrows nothing.
@@ -1227,6 +1246,174 @@ func filterBinding(f *rstr.BindingFilter) (predicate.Binding, error) {
 	}
 
 	return binding.And(ps...), nil
+}
+
+type sinkConnection struct {
+	rstr.ConnectionServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) Connection() rstr.ConnectionServiceServer {
+	return sinkConnection{s.Server.Connection(), s.Server.Store, s.w, s.namer, s.joined}
+}
+
+// orderConnection is how Connections come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderConnection = []entpage.Order{
+	{Column: connection.FieldDateCreated, Desc: false},
+	{Column: connection.FieldID, Desc: false},
+}
+
+const (
+	// ConnectionPageSize is what a request that did not say gets, and
+	// ConnectionPageLimit is the most it gets however loudly it asks.
+	ConnectionPageSize  = 20
+	ConnectionPageLimit = 100
+
+	// ConnectionFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	ConnectionFilterLimit = 32
+)
+
+// List answers with the Connections that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkConnection) List(ctx context.Context, req *rstr.ConnectionListRequest) (*rstr.ConnectionListResponse, error) {
+	q := s.store.Db.Connection.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.ConnectionNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > ConnectionFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), ConnectionFilterLimit)
+		}
+
+		ps := make([]predicate.Connection, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterConnection(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(connection.Or(ps...))
+	}
+
+	if v := req.GetAfter(); v != "" {
+		var (
+			at0 time.Time
+			at1 uuid.UUID
+		)
+		if err := entpage.Decode(v, &at0, &at1); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		p, err := entpage.After(orderConnection, []any{at0, at1})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := entpage.Size(int(req.GetSize()), ConnectionPageSize, ConnectionPageLimit)
+	us, err := q.Order(connection.ByDateCreated(), connection.ByID()).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*rstr.Connection, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := rstr.ConnectionListResponse_builder{Items: items}.Build()
+	if more {
+		last := us[len(us)-1]
+		next, err := entpage.Encode(last.DateCreated, last.ID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(next)
+	}
+
+	return res, nil
+}
+
+// filterConnection turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterConnection(f *rstr.ConnectionFilter) (predicate.Connection, error) {
+	ps := make([]predicate.Connection, 0, 1)
+	if f.HasRef() {
+		p, err := bare.ConnectionPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if f.HasTenant() {
+		w := f.GetTenant()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := uuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "tenant: %s", err)
+			}
+
+			ps = append(ps, connection.TenantIDEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.TenantPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, connection.HasTenantWith(q))
+		}
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return connection.And(ps...), nil
 }
 
 type sinkContinuation struct {
@@ -6138,6 +6325,42 @@ func (s gateBinding) Add(ctx context.Context, req *rstr.BindingAddRequest) (*rst
 	return s.BindingServiceServer.Add(ctx, req)
 }
 
+type gateConnection struct {
+	Gate
+	rstr.ConnectionServiceServer
+}
+
+func (s Gate) Connection() rstr.ConnectionServiceServer {
+	return gateConnection{s, s.Next().Connection()}
+}
+
+// Add refuses a Connection put into a Tenant this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `tenant` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Tenant, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.Add`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+func (s gateConnection) Add(ctx context.Context, req *rstr.ConnectionAddRequest) (*rstr.Connection, error) {
+	if ref := req.GetTenant(); ref != nil {
+		if _, err := s.Gate.Next().Tenant().Get(ctx, rstr.TenantGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Tenant")
+			}
+
+			return nil, err
+		}
+	}
+
+	return s.ConnectionServiceServer.Add(ctx, req)
+}
+
 type gateContinuation struct {
 	Gate
 	rstr.ContinuationServiceServer
@@ -6981,6 +7204,34 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 		}
 
 		k, _, err := subject(ctx, s, up)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		return k, b, nil
+
+	case ConnectionDomain:
+		row, err := s.Connection().Get(ctx, rstr.ConnectionGetRequest_builder{
+			Ref: rstr.ConnectionRef_builder{Id: key.Bytes()}.Build(),
+		}.Build())
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				return uuid.Nil, []byte{}, nil
+			}
+
+			return uuid.Nil, nil, err
+		}
+
+		b, err := proto.Marshal(row)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		if !row.HasTenant() {
+			return uuid.Nil, b, nil
+		}
+
+		k, err := uuid.FromBytes(row.GetTenant().GetId())
 		if err != nil {
 			return uuid.Nil, nil, err
 		}
@@ -8604,6 +8855,84 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 		}
 
 		res, err := s.ApiKey().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.ConnectionService_Add_FullMethodName:
+		v := &rstr.ConnectionAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Connection().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.ConnectionService_Get_FullMethodName:
+		v := &rstr.ConnectionGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Connection().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.ConnectionService_Patch_FullMethodName:
+		v := &rstr.ConnectionPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Connection().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.ConnectionService_Apply_FullMethodName:
+		v := &rstr.ConnectionApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Connection().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.ConnectionService_Erase_FullMethodName:
+		v := &rstr.ConnectionRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Connection().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.ConnectionService_List_FullMethodName:
+		v := &rstr.ConnectionListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Connection().List(ctx, v)
 		if err != nil {
 			return nil, err
 		}

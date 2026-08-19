@@ -2175,7 +2175,19 @@ the schedule.
    — so it is a layer, the way D17 put the built-in team rules in one rather
    than in a policy.
 
-9. **Per-tenant provider connections**, and this one has a boundary question
+9. ~~**Per-tenant provider connections.**~~ **Done**, and the decision is the
+   one this entry called likely: the connection is roster's and the secret is
+   the deployment's, with a reference here.
+
+   Not holding it is what makes D13 survive without an exception. Everything
+   about a connection that varies per tenant is **public** -- which issuer,
+   which client id, which scopes -- and the secret has to reach the front door
+   whatever roster does, because using it means doing the exchange, which is
+   being the relying party and is what D19 says roster is not. So roster stores
+   a string it does not read, and what it means is the deployment's to know.
+
+   The original entry:
+   ...has a boundary question
    rather than a schema question. "acme uses Entra, beta uses Google" is a fact
    about a tenant and every app would otherwise hold a stale copy — but a
    connection carries a client secret, and handing one back would make it the

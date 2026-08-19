@@ -1,0 +1,132 @@
+edition = "2023";
+package roster;
+
+import "app/connection.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "patch/patch.proto";
+import "roster/payday/tenant_svc.g.proto";
+
+option go_package = "github.com/lesomnus/roster/rstr";
+
+service ConnectionService {
+  // Add creates a new Connection
+  rpc Add(ConnectionAddRequest) returns (Connection);
+  // Get retrieves a Connection
+  rpc Get(ConnectionGetRequest) returns (Connection);
+  // Patch updates an existing Connection
+  rpc Patch(ConnectionPatchRequest) returns (Connection);
+  // Apply applies a patch document to an existing Connection
+  rpc Apply(ConnectionApplyRequest) returns (Connection);
+  // Erase deletes a Connection
+  rpc Erase(ConnectionRef) returns (google.protobuf.Empty);
+  // List reads Connections a page at a time.
+  rpc List(ConnectionListRequest) returns (ConnectionListResponse);
+}
+
+message ConnectionAddRequest {
+  bytes id = 1;
+  TenantRef tenant = 2;
+  string name = 5 [features.field_presence = IMPLICIT];
+  string desc = 6 [features.field_presence = IMPLICIT];
+  string issuer = 8 [features.field_presence = IMPLICIT];
+  string client_id = 9 [features.field_presence = IMPLICIT];
+  repeated string scopes = 10;
+  string secret_ref = 11 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_created = 15;
+}
+
+message ConnectionGetRequest {
+  ConnectionRef ref = 1;
+  ConnectionSelect select = 2;
+}
+
+message ConnectionRef {
+  oneof key {
+    bytes id = 1;
+    ConnectionRefByAt at = 2;
+  }
+}
+
+message ConnectionRefByAt {
+  TenantRef tenant = 2;
+  string name = 5;
+}
+
+message ConnectionSelect {
+  bool all = 1;
+  TenantSelect tenant = 2;
+  bool name = 5;
+  bool desc = 6;
+  bool issuer = 8;
+  bool client_id = 9;
+  bool scopes = 10;
+  bool secret_ref = 11;
+  bool date_updated = 13;
+  bool date_erased = 14;
+  bool date_created = 15;
+}
+
+message ConnectionPatchRequest {
+  ConnectionRef ref = 1;
+  string name = 10;
+  string desc = 12;
+  string issuer = 16;
+  string client_id = 18;
+  repeated string scopes = 20;
+  string secret_ref = 22;
+  // The version this update requires the stored date_updated to be.
+  // It is a precondition, not a write: the update applies only if the row
+  // still holds this value, and the server stamps the new version itself.
+  // Setting it together with date_updated_force is an error --
+  // the version is the token every client's compare-and-swap is measured
+  // against, so it is not the caller's to choose.
+  google.protobuf.Timestamp date_updated = 26;
+  // Update whatever the stored date_updated is, with no precondition.
+  // The server still stamps a new version, so other clients' tokens are
+  // invalidated as usual; this declines the check for THIS update only.
+  // One of date_updated or this must be set. An omitted version is
+  // refused rather than assumed, because an unset field cannot be told
+  // apart from a caller who never considered locking at all.
+  bool date_updated_force = 27;
+}
+
+message ConnectionApplyRequest {
+  ConnectionRef ref = 1;
+  patch.Patch patch = 2;
+}
+
+message ConnectionListRequest {
+  // Bounded because the work is: each filter is a predicate in the same query,
+  // so this is what says how much of the database one request may read.
+  repeated ConnectionFilter filters = 1;
+
+  // How many to answer with. Nothing said is what the schema declared, and more
+  // than the cap is the cap -- a caller asking for more than there is meant no
+  // harm, so it is not an error and it is not the whole table either.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+
+  // Where to carry on from: the "next" of the answer before. It names the last
+  // row of that page rather than counting rows from the start, so a row added
+  // ahead of the page does not shift it and a caller reading through never sees
+  // one twice or misses one.
+  string after = 3 [features.field_presence = IMPLICIT];
+}
+
+message ConnectionListResponse {
+  repeated Connection items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  //
+  // Empty means there is no more *for now*: a list is read as it is, and one
+  // that has grown since answers a fresh call. It is not empty merely because
+  // the page came back short -- a page is short when the last row of it was the
+  // last row there was, which is a thing the server can only know by having
+  // looked.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message ConnectionFilter {
+  ConnectionRef ref = 1;
+  TenantRef tenant = 2;
+}

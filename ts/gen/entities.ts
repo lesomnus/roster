@@ -16,6 +16,7 @@ import type { EntityDesc } from '@lesomnus/payday/store'
 import { ApiKeySchema } from './app/apikey_pb.js'
 import { AuditSchema } from './roster/payday/audit_pb.js'
 import { BindingSchema, RoleSchema } from './app/role_pb.js'
+import { ConnectionSchema } from './app/connection_pb.js'
 import { ContinuationSchema } from './app/continuation_pb.js'
 import { CredentialSchema } from './app/credential_pb.js'
 import { DelegationSchema } from './app/delegation_pb.js'
@@ -55,6 +56,15 @@ export const Binding = {
 	domain: 18,
 	version: "dateUpdated",
 	refs: [{ field: "role", to: "roster.Role" }, { field: "site", to: "roster.Site" }, { field: "holder", to: "roster.Holder" }, { field: "group", to: "roster.Group" }],
+} as const satisfies EntityDesc
+
+/** roster.Connection, as the store holds it. */
+export const Connection = {
+	typeName: "roster.Connection",
+	schema: ConnectionSchema,
+	domain: 25,
+	version: "dateUpdated",
+	refs: [{ field: "tenant", to: "roster.Tenant" }],
 } as const satisfies EntityDesc
 
 /** roster.Continuation, as the store holds it. */
@@ -226,5 +236,5 @@ export const Tenant = {
 } as const satisfies EntityDesc
 
 /** Every entity of this app, which is what a store is opened over. */
-export const entities = [ApiKey, Audit, Binding, Continuation, Credential, Delegation, Email, Group, GroupMembership, Holder, Host, Identity, Link, MailDomain, Outbox, Role, Session, Site, SiteMembership, Team, TeamMembership, Tenant] as const
+export const entities = [ApiKey, Audit, Binding, Connection, Continuation, Credential, Delegation, Email, Group, GroupMembership, Holder, Host, Identity, Link, MailDomain, Outbox, Role, Session, Site, SiteMembership, Team, TeamMembership, Tenant] as const
 

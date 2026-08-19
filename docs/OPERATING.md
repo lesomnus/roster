@@ -473,6 +473,22 @@ Three things to know:
 - **A mail domain is unique within a tenant**, and two operators saying
   something about `@gmail.com` are two facts.
 
+And which provider one operator's people arrive through:
+
+```
+ConnectionService/Add  entra -> https://login.microsoftonline.com/acme/v2.0
+                       client_id, scopes, secret_ref: "env:ACME_ENTRA_SECRET"
+```
+
+**The secret is not here.** roster stores a reference and does not read it —
+what `env:` means is the front door's to know. Everything that varies per tenant
+is public, and the secret has to reach the front door whatever roster does,
+because using it means doing the OIDC exchange, which is being the relying party.
+
+So a front door walks: a hostname → a tenant → an address → a provider → a
+connection, and then resolves one string in whatever way this deployment already
+resolves secrets.
+
 With a host, an address names one person again — so `VouchService` takes one:
 
 ```

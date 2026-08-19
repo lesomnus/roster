@@ -1,0 +1,147 @@
+edition = "2023";
+
+package roster;
+
+import "roster/payday/tenant.proto";
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/roster/rstr";
+
+// Connection is which provider one operator's people arrive through.
+//
+// "acme uses Entra, beta uses Google." A fact about a tenant, which every front
+// door would otherwise hold a stale copy of -- the same argument [Host] makes
+// about a name, one hop further along.
+//
+// # The secret is not here, and that is the decision
+//
+// PLAN.md's item 9 left this open, because a connection carries a **client
+// secret** and handing one back would make it the first secret roster returns
+// rather than checks -- which is what D13 refuses.
+//
+// The way out is not to hold it. Everything about a connection that varies per
+// tenant is **public**: which issuer, which client id, which scopes. The secret
+// is one string, and it has to reach the front door -- roster cannot use it,
+// because using it means doing the OIDC exchange, which is being the relying
+// party and is what D19 says roster is not.
+//
+// So roster holds a **reference** and the deployment resolves it. What that
+// costs is a line of configuration per connection, in the place a deployment's
+// secret story already lives -- an environment variable, a file, whatever
+// mounts one. What it buys is that D13 holds without an exception, and that
+// roster does not become a secret manager, which is a product it is not.
+//
+// # Why it is not a field on Tenant
+//
+// It has to be **looked up** by name, and an operator may have more than one --
+// Entra for staff and Google for contractors is an ordinary shape. Same rule
+// [Host] follows, and the same one `holder.proto` states.
+message Connection {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+
+  Tenant tenant = 2 [(orm.edge) = {immutable: true}];
+
+  // What this provider is called, and it is the name everything else already
+  // uses: `Identity.provider`, and what `MailDomain` routes an address to.
+  //
+  // One name per tenant. Two operators may both call one "entra" and mean two
+  // different directories, which is why the key is the pair -- and the same
+  // reason `MailDomain`'s is.
+  string name = 5;
+
+  string desc = 6;
+
+  // Where discovery is done, as the provider publishes it:
+  // "https://accounts.google.com".
+  //
+  // Separate from [Connection.name] on purpose. An issuer is a URL that can
+  // move -- Entra's carries a directory id -- and a name that moved with it
+  // would make the same person a new person.
+  string issuer = 8;
+
+  // What the provider calls this app.
+  string client_id = 9;
+
+  // Scopes beyond `openid`. `email` is usual and is what enrolment needs to
+  // name somebody.
+  repeated string scopes = 10;
+
+  // Where the deployment keeps the client secret, in whatever words it uses
+  // for that -- "env:ACME_ENTRA_SECRET", "file:/run/secrets/acme-entra".
+  //
+  // **roster does not read this.** It is a string this app stores and answers
+  // with, and what it means is the front door's to know. That is the whole of
+  // how D13 survives a connection: nothing here is a secret, so nothing here is
+  // a secret being handed out.
+  //
+  // Empty is a provider that needs none -- a public client with PKCE, which is
+  // what a front door with no back end has.
+  string secret_ref = 11;
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {
+            name: "date_created"
+            number: 15
+          },
+          {
+            name: "id"
+            number: 1
+          }
+        ]
+      },
+      {
+        name: "at"
+        refs: [
+          {
+            name: "tenant"
+            number: 2
+          },
+          {
+            name: "name"
+            number: 5
+          }
+        ]
+        unique: true
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 25
+
+    list: {
+      order: [
+        {
+          field: {name: "date_created"}
+        },
+        {
+          field: {name: "id"}
+        }
+      ]
+      by: [
+        {name: "ref"},
+        {name: "tenant"}
+      ]
+      size: 20
+      max: 100
+    }
+  };
+}

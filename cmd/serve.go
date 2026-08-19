@@ -520,6 +520,7 @@ func register(g grpc.ServiceRegistrar, s app.Server) {
 	app.RegisterTenantServiceServer(g, s.Tenant())
 	app.RegisterHostServiceServer(g, s.Host())
 	app.RegisterMailDomainServiceServer(g, s.MailDomain())
+	app.RegisterConnectionServiceServer(g, s.Connection())
 	app.RegisterHolderServiceServer(g, s.Holder())
 	app.RegisterIdentityServiceServer(g, s.Identity())
 	app.RegisterEmailServiceServer(g, s.Email())
