@@ -2032,21 +2032,37 @@ It never blocked `Delegation`, which wants a `list:` anyway -- a page of them is
 what a sweep reads and what an operator asking "what is live for this person"
 reads.
 
-### F12 · `pd doctor` does not read the schema — **open**
+### F12 · `pd doctor` did not read the schema — **fixed**
 
 `CLAUDE.md` sells it as *what would go wrong, before it does*, and doctor's own
-comment says it *reads the schema the way the generator does, so that everything
-`pd gen` refuses is refused here too*. `doctorSchema` globs payday's shipped
-entity files and checks that the overlay **filenames** match, and returns. It
-never opens the app's own protos.
+comment said it *reads the schema the way the generator does, so that everything
+`pd gen` refuses is refused here too*. `doctorSchema` globbed payday's shipped
+entity files and checked that the overlay **filenames** matched, and returned.
+It never opened the app's own protos.
 
 Checked: with an entity that `pd gen` refuses outright in place, `pd doctor`
 printed *looks like an app that generates* and exited 0.
 
-So `pd gen --check` is the only schema gate, and doctor is for missing go tools,
-a mis-named overlay, and a layer with no `WithDriver`. Either make it run
-`pdgen.Read` or delete the sentence that says it does; the sentence is the part
-that costs something, because it is what makes somebody trust the exit code.
+#### Fixed by making it true, not by deleting the sentence
+
+The finding said either would do. Making it true is the one worth the work: the
+sentence is why somebody trusts the exit code, and an app finding out from CI
+what a local command could have said is the whole reason doctor exists.
+
+`lesomnus/payday@9a252e5`. It takes the path the plugin takes -- one `buf build`
+for a descriptor set, then `protogen`, the orm graph, and `pdgen.Read` -- rather
+than parsing the files, which would be a second and worse compiler whose
+findings were about its own gaps.
+
+Two states it stays quiet in, and both are states where a finding would be
+noise. An app with no `buf.lock` has never generated, so its imports do not
+resolve and every app in that state has the same useless list -- and the next
+thing they type is the `pd gen` that writes the lock. And a schema that does not
+compile is buf's to report, in buf's own words with a line and a column.
+
+Confirmed here: `proto/app/host.proto` moved onto `MailDomain`'s domain, and
+`pd doctor .` said the same sentence `pd gen` says, before `pd gen` ran.
+
 
 ---
 
@@ -2058,7 +2074,7 @@ that costs something, because it is what makes somebody trust the exit code.
 | 1 · schema — Site, Identity, Email | **done**, 15 tests, both databases |
 | 1b · Team, on the second axis | **done**, 21 tests, both databases |
 | 1c · memberships, Credential | **done**, 27 tests, both databases |
-| 2 · payday fixes | F1, F2, F4, F9, F10, F11 done · F7 closed by D27 · F3, F6, F12 open · F5 written down |
+| 2 · payday fixes | F1, F2, F4, F6, F9, F10, F11, F12 done · F7 closed by D27 · **F3 open** · F5 written down |
 | 3 · app layer | linking rules, credential verification, roles and the second axis, `MeService`, escalation prevention, the console · **done** |
 | 4 · keys, sync, console | **keys done** (both planes; no wire surface to mint an `rt_`) · **delegation done** (D25; no wire surface either) · sync channel, console — |
 | 5 · the line, written down | **done** — D19, D20, and POSITION.md rewritten around them |
