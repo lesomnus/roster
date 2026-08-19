@@ -22,6 +22,8 @@ const (
 	VouchService_Verify_FullMethodName   = "/roster.VouchService/Verify"
 	VouchService_Set_FullMethodName      = "/roster.VouchService/Set"
 	VouchService_Delegate_FullMethodName = "/roster.VouchService/Delegate"
+	VouchService_Reset_FullMethodName    = "/roster.VouchService/Reset"
+	VouchService_Unlock_FullMethodName   = "/roster.VouchService/Unlock"
 	VouchService_Revoke_FullMethodName   = "/roster.VouchService/Revoke"
 )
 
@@ -94,6 +96,41 @@ type VouchServiceClient interface {
 	// as many words. This is one call, one hash, one count, sharing Verify's path
 	// verbatim.
 	Delegate(ctx context.Context, in *VouchDelegateRequest, opts ...grpc.CallOption) (*VouchDelegateResponse, error)
+	// Reset gives somebody a new password and answers with it **once**.
+	//
+	// For a local operator in a deployment with no mail. PLAN.md's list, item 10:
+	// D13 closed `CredentialService` entirely, so nothing on the wire could set
+	// a password and `init` plus a shell was the only way -- which is right for
+	// the read and wrong for the write.
+	//
+	// # Why the operator does not choose it
+	//
+	// The same argument `IssueService` already makes about a key: a secret the
+	// caller chose is a secret the caller knows, and one generated in a console
+	// is only as good as that page's `crypto`. Here it is `crypto/rand` on the
+	// server, and what the operator does is read it out.
+	//
+	// # Who may
+	//
+	// Somebody whose permissions cover the permissions of the person they are
+	// resetting. Resetting a password is a way to **become** somebody, so an
+	// operator who could reset anybody in their tenant would hold every
+	// permission in it -- `server/core/escalate.go` is the rule and it went in
+	// before this did.
+	Reset(ctx context.Context, in *VouchResetRequest, opts ...grpc.CallOption) (*VouchResetResponse, error)
+	// Unlock opens an account that too many wrong answers closed.
+	//
+	// A convenience rather than a necessity -- a lockout releases itself after
+	// fifteen minutes (D14) -- and it is also the answer to the limitation D14
+	// recorded and could not close from where it was: *an account can still be
+	// held closed by somebody else*, ten wrong guesses every fifteen minutes,
+	// for as long as somebody cares to. A person on site can simply open it.
+	//
+	// It does not change the secret, so the same rule guards it for a smaller
+	// reason: being able to open an account is not being able to enter it, but
+	// it is a step of the same walk and refusing it separately would be a
+	// permission nobody could explain.
+	Unlock(ctx context.Context, in *VouchUnlockRequest, opts ...grpc.CallOption) (*VouchUnlockResponse, error)
 	// Revoke ends a delegation before its expiry.
 	//
 	// D23 says *revoking it is a delete* and for a while nothing could:
@@ -136,6 +173,26 @@ func (c *vouchServiceClient) Delegate(ctx context.Context, in *VouchDelegateRequ
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(VouchDelegateResponse)
 	err := c.cc.Invoke(ctx, VouchService_Delegate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *vouchServiceClient) Reset(ctx context.Context, in *VouchResetRequest, opts ...grpc.CallOption) (*VouchResetResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(VouchResetResponse)
+	err := c.cc.Invoke(ctx, VouchService_Reset_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *vouchServiceClient) Unlock(ctx context.Context, in *VouchUnlockRequest, opts ...grpc.CallOption) (*VouchUnlockResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(VouchUnlockResponse)
+	err := c.cc.Invoke(ctx, VouchService_Unlock_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -221,6 +278,41 @@ type VouchServiceServer interface {
 	// as many words. This is one call, one hash, one count, sharing Verify's path
 	// verbatim.
 	Delegate(context.Context, *VouchDelegateRequest) (*VouchDelegateResponse, error)
+	// Reset gives somebody a new password and answers with it **once**.
+	//
+	// For a local operator in a deployment with no mail. PLAN.md's list, item 10:
+	// D13 closed `CredentialService` entirely, so nothing on the wire could set
+	// a password and `init` plus a shell was the only way -- which is right for
+	// the read and wrong for the write.
+	//
+	// # Why the operator does not choose it
+	//
+	// The same argument `IssueService` already makes about a key: a secret the
+	// caller chose is a secret the caller knows, and one generated in a console
+	// is only as good as that page's `crypto`. Here it is `crypto/rand` on the
+	// server, and what the operator does is read it out.
+	//
+	// # Who may
+	//
+	// Somebody whose permissions cover the permissions of the person they are
+	// resetting. Resetting a password is a way to **become** somebody, so an
+	// operator who could reset anybody in their tenant would hold every
+	// permission in it -- `server/core/escalate.go` is the rule and it went in
+	// before this did.
+	Reset(context.Context, *VouchResetRequest) (*VouchResetResponse, error)
+	// Unlock opens an account that too many wrong answers closed.
+	//
+	// A convenience rather than a necessity -- a lockout releases itself after
+	// fifteen minutes (D14) -- and it is also the answer to the limitation D14
+	// recorded and could not close from where it was: *an account can still be
+	// held closed by somebody else*, ten wrong guesses every fifteen minutes,
+	// for as long as somebody cares to. A person on site can simply open it.
+	//
+	// It does not change the secret, so the same rule guards it for a smaller
+	// reason: being able to open an account is not being able to enter it, but
+	// it is a step of the same walk and refusing it separately would be a
+	// permission nobody could explain.
+	Unlock(context.Context, *VouchUnlockRequest) (*VouchUnlockResponse, error)
 	// Revoke ends a delegation before its expiry.
 	//
 	// D23 says *revoking it is a delete* and for a while nothing could:
@@ -247,6 +339,12 @@ func (UnimplementedVouchServiceServer) Set(context.Context, *VouchSetRequest) (*
 }
 func (UnimplementedVouchServiceServer) Delegate(context.Context, *VouchDelegateRequest) (*VouchDelegateResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Delegate not implemented")
+}
+func (UnimplementedVouchServiceServer) Reset(context.Context, *VouchResetRequest) (*VouchResetResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Reset not implemented")
+}
+func (UnimplementedVouchServiceServer) Unlock(context.Context, *VouchUnlockRequest) (*VouchUnlockResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Unlock not implemented")
 }
 func (UnimplementedVouchServiceServer) Revoke(context.Context, *VouchRevokeRequest) (*VouchRevokeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Revoke not implemented")
@@ -326,6 +424,42 @@ func _VouchService_Delegate_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _VouchService_Reset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VouchResetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VouchServiceServer).Reset(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: VouchService_Reset_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VouchServiceServer).Reset(ctx, req.(*VouchResetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _VouchService_Unlock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VouchUnlockRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VouchServiceServer).Unlock(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: VouchService_Unlock_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VouchServiceServer).Unlock(ctx, req.(*VouchUnlockRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _VouchService_Revoke_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(VouchRevokeRequest)
 	if err := dec(in); err != nil {
@@ -362,6 +496,14 @@ var VouchService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Delegate",
 			Handler:    _VouchService_Delegate_Handler,
+		},
+		{
+			MethodName: "Reset",
+			Handler:    _VouchService_Reset_Handler,
+		},
+		{
+			MethodName: "Unlock",
+			Handler:    _VouchService_Unlock_Handler,
 		},
 		{
 			MethodName: "Revoke",

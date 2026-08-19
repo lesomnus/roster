@@ -255,3 +255,132 @@ func (s Core) methodsOf(ctx context.Context, ref *app.RoleRef) ([]string, error)
 
 	return v.GetMethods(), nil
 }
+
+// mayReach refuses somebody writing a credential for a person who holds more
+// than they do.
+//
+// # Why it is here and not obvious
+//
+// Resetting a password is a way to **become** somebody. So an operator who may
+// reset anybody in their tenant effectively holds every permission in it --
+// two operations, and it is exactly the shape [Core.mayGrant] exists to close,
+// arriving through a door nobody had put a lock on because the door did not
+// exist yet.
+//
+// It went in **before** the surface did, which is the order PLAN.md's list
+// insisted on and the only pair in that list where the order is a correctness
+// question rather than a convenience.
+//
+// # The rule, and the one it is not
+//
+// **You may only write the credential of somebody whose permissions are a
+// subset of yours.** Not *whose permissions you may grant* -- the same
+// comparison, in the other direction: [Core.mayGrant] asks whether the caller
+// covers what they are handing out, and this asks whether they cover what the
+// person they are becoming already holds.
+//
+// It is conservative on purpose, for `mayGrant`'s stated reason: the failure it
+// produces is somebody being told they may not, which is a conversation, and
+// the other direction is silent.
+//
+// # The alternative, named because it is defensible
+//
+// Accept it, and say plainly that a tenant operator is a tenant administrator.
+// That is honest and it is what most deployments would find true anyway -- and
+// it makes "operator" a smaller word than the permission it carries, which is
+// the thing that gets forgotten when somebody hands the role out.
+//
+// # What is not covered
+//
+// Suspending somebody (D26) is a denial of service rather than an escalation,
+// and is not here. Somebody who may `Disable` an administrator cannot become
+// them; they can only stop them. That is a real gap and it is a different one.
+func (s Core) mayReach(ctx context.Context, field string, target pdid.Id) error {
+	f, ok := frame.From(ctx)
+	if !ok {
+		// The deployment's own work through an unwalled server -- `init`, a
+		// migration, the sandbox. There is nobody to refuse, and that door is a
+		// line of wiring a reader can find rather than a privilege anybody
+		// holds. Same reading as `mayGrant`.
+		return nil
+	}
+	if target == f.Actor {
+		// Changing your own credential is not becoming somebody else. Without
+		// this, nobody could change their own password unless they held every
+		// permission they held, which is true and is a strange way to write it
+		// -- and is false the moment the union is computed in a different
+		// order.
+		return nil
+	}
+	if s.rules.Granted == nil {
+		return status.Error(codes.PermissionDenied,
+			"this server cannot say what anybody holds, so it will not let you write their credential")
+	}
+
+	theirs, err := s.rules.Granted(ctx, target)
+	if err != nil {
+		return err
+	}
+	if len(theirs) == 0 {
+		// Somebody with no binding holds nothing, so there is nothing to
+		// escalate to. This is the common case and it is worth not paying for
+		// the second read.
+		return nil
+	}
+
+	mine, err := s.rules.Granted(ctx, f.Actor)
+	if err != nil {
+		return err
+	}
+
+	for _, g := range theirs {
+		for _, m := range g.Methods {
+			if !holdsAt(mine, g.Site, m) {
+				return status.Errorf(codes.PermissionDenied,
+					"%s: they hold %s and you do not, so you may not write their credential", field, m)
+			}
+		}
+	}
+
+	return nil
+}
+
+// holdsAt is whether one of `mine` covers `m` where `at` is held.
+//
+// A grant made across the tenant reaches everywhere and one made in a site
+// reaches that site, which is `mayGrant`'s asymmetry unchanged -- and one of
+// them has to cover it **on its own**, for `mayGrant`'s reason: asking whether
+// the union covers it would let somebody holding every service of a package
+// stand in for the package, which is true today and wrong the moment a service
+// is added.
+func holdsAt(mine []Grant, at pdid.Id, m string) bool {
+	for _, h := range mine {
+		if h.Site != pdid.Nil && h.Site != at {
+			continue
+		}
+		if slices.ContainsFunc(h.Methods, func(v string) bool { return frame.Covers(v, m) }) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// Reaching is [Core.mayReach] as a function, for the services that are not
+// layers.
+//
+// `VouchService` is written by hand and is not part of `app.Server`, so no
+// layer wraps it -- and it is the service that writes credentials. Rather than
+// a second implementation of the rule, it is handed this one.
+//
+// The generated `CredentialService` is not covered and does not need to be: it
+// is unregistered and in `closed`, so nothing on the wire or in a batch reaches
+// it. What does reach it is this process, through `Ungated`, where there is no
+// frame and the rule reads that as the deployment's own work.
+func Reaching(rules Rules) func(ctx context.Context, target pdid.Id) error {
+	s := Core{rules: rules}
+
+	return func(ctx context.Context, target pdid.Id) error {
+		return s.mayReach(ctx, "who", target)
+	}
+}

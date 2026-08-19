@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/vouch.proto.
  */
 export const file_app_vouch: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJGCghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCSJRChJWb3VjaFZlcmlmeVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMInMKE1ZvdWNoVmVyaWZ5UmVzcG9uc2USCgoCb2sYASABKAgSDgoGaG9sZGVyGAIgASgMEg4KBnRlbmFudBgDIAEoDBIwCgxsb2NrZWRfdW50aWwYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIk4KD1ZvdWNoU2V0UmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwiEgoQVm91Y2hTZXRSZXNwb25zZSKRAQoUVm91Y2hEZWxlZ2F0ZVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMEg8KB21ldGhvZHMYCiADKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiggEKFVZvdWNoRGVsZWdhdGVSZXNwb25zZRItCgh2ZXJpZmllZBgBIAEoCzIbLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlEg0KBXRva2VuGAogASgJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIiMKElZvdWNoUmV2b2tlUmVxdWVzdBINCgV0b2tlbhgBIAEoCSIVChNWb3VjaFJldm9rZVJlc3BvbnNlMpcCCgxWb3VjaFNlcnZpY2USQQoGVmVyaWZ5Ehoucm9zdGVyLlZvdWNoVmVyaWZ5UmVxdWVzdBobLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlEjgKA1NldBIXLnJvc3Rlci5Wb3VjaFNldFJlcXVlc3QaGC5yb3N0ZXIuVm91Y2hTZXRSZXNwb25zZRJHCghEZWxlZ2F0ZRIcLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVxdWVzdBodLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVzcG9uc2USQQoGUmV2b2tlEhoucm9zdGVyLlZvdWNoUmV2b2tlUmVxdWVzdBobLnJvc3Rlci5Wb3VjaFJldm9rZVJlc3BvbnNlQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp]);
+  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJGCghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCSJRChJWb3VjaFZlcmlmeVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMInMKE1ZvdWNoVmVyaWZ5UmVzcG9uc2USCgoCb2sYASABKAgSDgoGaG9sZGVyGAIgASgMEg4KBnRlbmFudBgDIAEoDBIwCgxsb2NrZWRfdW50aWwYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIk4KD1ZvdWNoU2V0UmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwiEgoQVm91Y2hTZXRSZXNwb25zZSKRAQoUVm91Y2hEZWxlZ2F0ZVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMEg8KB21ldGhvZHMYCiADKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiggEKFVZvdWNoRGVsZWdhdGVSZXNwb25zZRItCgh2ZXJpZmllZBgBIAEoCzIbLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlEg0KBXRva2VuGAogASgJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIiMKElZvdWNoUmV2b2tlUmVxdWVzdBINCgV0b2tlbhgBIAEoCSIVChNWb3VjaFJldm9rZVJlc3BvbnNlIkAKEVZvdWNoUmVzZXRSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJIiQKElZvdWNoUmVzZXRSZXNwb25zZRIOCgZzZWNyZXQYASABKAkiQQoSVm91Y2hVbmxvY2tSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJIksKE1ZvdWNoVW5sb2NrUmVzcG9uc2USNAoQd2FzX2xvY2tlZF91bnRpbBgBIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAymgMKDFZvdWNoU2VydmljZRJBCgZWZXJpZnkSGi5yb3N0ZXIuVm91Y2hWZXJpZnlSZXF1ZXN0Ghsucm9zdGVyLlZvdWNoVmVyaWZ5UmVzcG9uc2USOAoDU2V0Ehcucm9zdGVyLlZvdWNoU2V0UmVxdWVzdBoYLnJvc3Rlci5Wb3VjaFNldFJlc3BvbnNlEkcKCERlbGVnYXRlEhwucm9zdGVyLlZvdWNoRGVsZWdhdGVSZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoRGVsZWdhdGVSZXNwb25zZRI+CgVSZXNldBIZLnJvc3Rlci5Wb3VjaFJlc2V0UmVxdWVzdBoaLnJvc3Rlci5Wb3VjaFJlc2V0UmVzcG9uc2USQQoGVW5sb2NrEhoucm9zdGVyLlZvdWNoVW5sb2NrUmVxdWVzdBobLnJvc3Rlci5Wb3VjaFVubG9ja1Jlc3BvbnNlEkEKBlJldm9rZRIaLnJvc3Rlci5Wb3VjaFJldm9rZVJlcXVlc3QaGy5yb3N0ZXIuVm91Y2hSZXZva2VSZXNwb25zZUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp]);
 
 /**
  * VouchWho names somebody in the words a sign-in form collects.
@@ -355,6 +355,97 @@ export const VouchRevokeResponseSchema: GenMessage<VouchRevokeResponse> = /*@__P
   messageDesc(file_app_vouch, 8);
 
 /**
+ * @generated from message roster.VouchResetRequest
+ */
+export type VouchResetRequest = Message<"roster.VouchResetRequest"> & {
+  /**
+   * @generated from field: roster.VouchWho who = 1;
+   */
+  who?: VouchWho | undefined;
+
+  /**
+   * Which secret, and empty means "password" as everywhere else. A kind that
+   * is not a password is refused: there is nothing sensible to generate for a
+   * TOTP seed that the person could then read out.
+   *
+   * @generated from field: string kind = 8;
+   */
+  kind: string;
+};
+
+/**
+ * Describes the message roster.VouchResetRequest.
+ * Use `create(VouchResetRequestSchema)` to create a new message.
+ */
+export const VouchResetRequestSchema: GenMessage<VouchResetRequest> = /*@__PURE__*/
+  messageDesc(file_app_vouch, 9);
+
+/**
+ * @generated from message roster.VouchResetResponse
+ */
+export type VouchResetResponse = Message<"roster.VouchResetResponse"> & {
+  /**
+   * Shown once and not stored. What is stored is an argon2id hash, so this
+   * deployment cannot tell anybody what theirs was any more than it can tell
+   * them their key.
+   *
+   * @generated from field: string secret = 1;
+   */
+  secret: string;
+};
+
+/**
+ * Describes the message roster.VouchResetResponse.
+ * Use `create(VouchResetResponseSchema)` to create a new message.
+ */
+export const VouchResetResponseSchema: GenMessage<VouchResetResponse> = /*@__PURE__*/
+  messageDesc(file_app_vouch, 10);
+
+/**
+ * @generated from message roster.VouchUnlockRequest
+ */
+export type VouchUnlockRequest = Message<"roster.VouchUnlockRequest"> & {
+  /**
+   * @generated from field: roster.VouchWho who = 1;
+   */
+  who?: VouchWho | undefined;
+
+  /**
+   * @generated from field: string kind = 8;
+   */
+  kind: string;
+};
+
+/**
+ * Describes the message roster.VouchUnlockRequest.
+ * Use `create(VouchUnlockRequestSchema)` to create a new message.
+ */
+export const VouchUnlockRequestSchema: GenMessage<VouchUnlockRequest> = /*@__PURE__*/
+  messageDesc(file_app_vouch, 11);
+
+/**
+ * @generated from message roster.VouchUnlockResponse
+ */
+export type VouchUnlockResponse = Message<"roster.VouchUnlockResponse"> & {
+  /**
+   * When they were locked until, and unset for an account that was already
+   * open. Answered rather than swallowed so that an operator can tell "I opened
+   * it" from "it was not closed" -- which is the question they are about to be
+   * asked by whoever called them.
+   *
+   * @generated from field: google.protobuf.Timestamp was_locked_until = 1;
+   */
+  wasLockedUntil?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.VouchUnlockResponse.
+ * Use `create(VouchUnlockResponseSchema)` to create a new message.
+ */
+export const VouchUnlockResponseSchema: GenMessage<VouchUnlockResponse> = /*@__PURE__*/
+  messageDesc(file_app_vouch, 12);
+
+/**
  * VouchService is how a secret is used without ever leaving the store.
  *
  * # Why it is not `CredentialService`
@@ -446,6 +537,57 @@ export const VouchService: GenService<{
     methodKind: "unary";
     input: typeof VouchDelegateRequestSchema;
     output: typeof VouchDelegateResponseSchema;
+  },
+  /**
+   * Reset gives somebody a new password and answers with it **once**.
+   *
+   * For a local operator in a deployment with no mail. PLAN.md's list, item 10:
+   * D13 closed `CredentialService` entirely, so nothing on the wire could set
+   * a password and `init` plus a shell was the only way -- which is right for
+   * the read and wrong for the write.
+   *
+   * # Why the operator does not choose it
+   *
+   * The same argument `IssueService` already makes about a key: a secret the
+   * caller chose is a secret the caller knows, and one generated in a console
+   * is only as good as that page's `crypto`. Here it is `crypto/rand` on the
+   * server, and what the operator does is read it out.
+   *
+   * # Who may
+   *
+   * Somebody whose permissions cover the permissions of the person they are
+   * resetting. Resetting a password is a way to **become** somebody, so an
+   * operator who could reset anybody in their tenant would hold every
+   * permission in it -- `server/core/escalate.go` is the rule and it went in
+   * before this did.
+   *
+   * @generated from rpc roster.VouchService.Reset
+   */
+  reset: {
+    methodKind: "unary";
+    input: typeof VouchResetRequestSchema;
+    output: typeof VouchResetResponseSchema;
+  },
+  /**
+   * Unlock opens an account that too many wrong answers closed.
+   *
+   * A convenience rather than a necessity -- a lockout releases itself after
+   * fifteen minutes (D14) -- and it is also the answer to the limitation D14
+   * recorded and could not close from where it was: *an account can still be
+   * held closed by somebody else*, ten wrong guesses every fifteen minutes,
+   * for as long as somebody cares to. A person on site can simply open it.
+   *
+   * It does not change the secret, so the same rule guards it for a smaller
+   * reason: being able to open an account is not being able to enter it, but
+   * it is a step of the same walk and refusing it separately would be a
+   * permission nobody could explain.
+   *
+   * @generated from rpc roster.VouchService.Unlock
+   */
+  unlock: {
+    methodKind: "unary";
+    input: typeof VouchUnlockRequestSchema;
+    output: typeof VouchUnlockResponseSchema;
   },
   /**
    * Revoke ends a delegation before its expiry.

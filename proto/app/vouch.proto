@@ -75,6 +75,43 @@ service VouchService {
   // verbatim.
   rpc Delegate(VouchDelegateRequest) returns (VouchDelegateResponse);
 
+  // Reset gives somebody a new password and answers with it **once**.
+  //
+  // For a local operator in a deployment with no mail. PLAN.md's list, item 10:
+  // D13 closed `CredentialService` entirely, so nothing on the wire could set
+  // a password and `init` plus a shell was the only way -- which is right for
+  // the read and wrong for the write.
+  //
+  // # Why the operator does not choose it
+  //
+  // The same argument `IssueService` already makes about a key: a secret the
+  // caller chose is a secret the caller knows, and one generated in a console
+  // is only as good as that page's `crypto`. Here it is `crypto/rand` on the
+  // server, and what the operator does is read it out.
+  //
+  // # Who may
+  //
+  // Somebody whose permissions cover the permissions of the person they are
+  // resetting. Resetting a password is a way to **become** somebody, so an
+  // operator who could reset anybody in their tenant would hold every
+  // permission in it -- `server/core/escalate.go` is the rule and it went in
+  // before this did.
+  rpc Reset(VouchResetRequest) returns (VouchResetResponse);
+
+  // Unlock opens an account that too many wrong answers closed.
+  //
+  // A convenience rather than a necessity -- a lockout releases itself after
+  // fifteen minutes (D14) -- and it is also the answer to the limitation D14
+  // recorded and could not close from where it was: *an account can still be
+  // held closed by somebody else*, ten wrong guesses every fifteen minutes,
+  // for as long as somebody cares to. A person on site can simply open it.
+  //
+  // It does not change the secret, so the same rule guards it for a smaller
+  // reason: being able to open an account is not being able to enter it, but
+  // it is a step of the same walk and refusing it separately would be a
+  // permission nobody could explain.
+  rpc Unlock(VouchUnlockRequest) returns (VouchUnlockResponse);
+
   // Revoke ends a delegation before its expiry.
   //
   // D23 says *revoking it is a delete* and for a while nothing could:
@@ -244,3 +281,33 @@ message VouchRevokeRequest {
 }
 
 message VouchRevokeResponse {}
+
+message VouchResetRequest {
+  VouchWho who = 1;
+
+  // Which secret, and empty means "password" as everywhere else. A kind that
+  // is not a password is refused: there is nothing sensible to generate for a
+  // TOTP seed that the person could then read out.
+  string kind = 8;
+}
+
+message VouchResetResponse {
+  // Shown once and not stored. What is stored is an argon2id hash, so this
+  // deployment cannot tell anybody what theirs was any more than it can tell
+  // them their key.
+  string secret = 1;
+}
+
+message VouchUnlockRequest {
+  VouchWho who = 1;
+
+  string kind = 8;
+}
+
+message VouchUnlockResponse {
+  // When they were locked until, and unset for an account that was already
+  // open. Answered rather than swallowed so that an operator can tell "I opened
+  // it" from "it was not closed" -- which is the question they are about to be
+  // asked by whoever called them.
+  google.protobuf.Timestamp was_locked_until = 1;
+}

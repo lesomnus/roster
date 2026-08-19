@@ -137,6 +137,82 @@ over memberships, credential verification.
 Recorded as they are made, with the reason, so that a later disagreement argues
 with the reason rather than rediscovering the question.
 
+### D28 · You may write the credential of somebody no wider than you
+
+Items 11 and 10, in that order, which is the only pair in the list where the
+order is a **correctness** question rather than a convenience.
+
+#### The rule, and the one it is not
+
+> **You may only write the credential of somebody whose permissions are a subset
+> of yours.**
+
+Resetting a password is a way to **become** somebody, so an operator who may
+reset anybody in their tenant effectively holds every permission in it -- two
+operations, and it is exactly the shape `escalate.go` exists to close, arriving
+through a door nobody had put a lock on because the door did not exist yet.
+
+It is the same comparison `mayGrant` makes, in the other direction: `mayGrant`
+asks whether the caller covers what they are handing out, this asks whether they
+cover what the person they are becoming already holds. Same source -- bindings,
+through `rules.Granted` -- same conservatism, same reading of a missing frame as
+the deployment's own work, and the same "on its own" rule about patterns.
+
+Changing your own is exempt, and has to be: without it nobody could change their
+own password unless they held everything they held, which is true and is a
+strange way to write it.
+
+**The alternative, named because it is defensible**: accept it, and say plainly
+that a tenant operator is a tenant administrator. That is honest and probably
+true of most deployments -- and it makes "operator" a smaller word than the
+permission it carries, which is what gets forgotten when somebody hands the role
+out. This took the conservative one for `escalate.go`'s stated reason: the
+failure it produces is a conversation, and the other direction is silent.
+
+**Where it does not reach**: suspending somebody (D26) is a denial of service
+rather than an escalation, and is not covered. Somebody who may `Disable` an
+administrator cannot become them, only stop them. A real gap and a different
+one.
+
+#### It arrives as a seam, because the service is not a layer
+
+`VouchService` is hand-written and not part of `app.Server`, so no layer wraps
+it -- and it is the service that writes credentials. Rather than a second
+implementation of the rule, it is handed this one: `core.Reaching` over the
+rules `gate.Policy` already reads, the way `me.Held` is handed the union.
+
+The generated `CredentialService` is not covered and does not need to be. It is
+unregistered and in `closed`, so nothing on the wire or in a batch reaches it;
+what does is this process through `Ungated`, where there is no frame.
+
+#### And then the surface
+
+D13 closed `CredentialService` entirely -- unregistered, closed to the batch --
+because its generated `Get` answers with the verifier. That is right for the
+read and it took the write with it: nothing on the wire could set a password,
+and `init` plus a shell was the only way in.
+
+An air-gapped deployment cannot live with that. There is no mail, so the
+somebody else who delivers a recovery code is a **person**, which makes recovery
+and an operator-initiated reset the same mechanism reached two ways. So:
+
+- **`Vouch.Reset`** generates a password and answers with it once. The operator
+  does not choose it, which is `IssueService`'s argument about a key unchanged:
+  a secret the caller chose is a secret the caller knows, and one generated in a
+  console is only as good as that page's `crypto`.
+- **`Vouch.Unlock`** opens an account too many wrong answers closed. A
+  convenience -- a lockout releases itself after fifteen minutes -- and also the
+  answer to the limitation D14 recorded and could not close from where it was:
+  *an account can still be held closed by somebody else*, ten wrong guesses
+  every fifteen minutes, for as long as somebody cares to. A person on site can
+  simply open it.
+- **`Vouch.Set`** already existed and was already on the wire, so the rule
+  closes a hole that was open rather than one this opened.
+
+The shape is the one D13 named when it shut the door: not reopening
+`CredentialService`, but a narrow service that takes secrets in and never
+answers with one it was holding.
+
 ### D27 · A name is a row, and the tenant it names is what F7 was missing
 
 Items 1 and 2 of the list, and F7 closed with them, because all three turned out
@@ -1765,7 +1841,12 @@ the schedule.
    the deployment's, with a reference here, but that is a decision and not an
    assumption.
 
-10. **A write surface for `Credential`.** D13 closed the whole service — not
+10. ~~**A write surface for `Credential`.**~~ **Done**, D28. `Vouch.Reset` and
+    `Vouch.Unlock`, plus the rule over `Vouch.Set`, which was already on the
+    wire. What is left of this entry is creating a credential *alongside* a new
+    `Holder` in one act, which is two calls today and works.
+
+    The original entry: D13 closed the whole service — not
     registered, closed to the batch — so nothing on the wire can set a password,
     and `init` plus a shell is the only way. That is right for the read and
     wrong for the write, and an air-gapped deployment with a local operator per
@@ -1783,7 +1864,11 @@ the schedule.
     can still be held closed by somebody else.* A person on site can simply
     open it.
 
-11. **Escalation prevention over credential writes.** Resetting somebody's
+11. ~~**Escalation prevention over credential writes.**~~ **Done**, D28, and
+    before the surface, which this entry insisted on. The rule taken is the one
+    it recommended; the alternative it named is written down beside it.
+
+    The original entry: Resetting somebody's
     password is a way to **become** them, so an operator who may reset anybody
     in their tenant effectively holds every permission in it — two operations,
     and it is the same shape as the hole `server/core/escalate.go` exists to

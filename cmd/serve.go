@@ -375,7 +375,11 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 
 	// The one service that is not an entity: it answers yes or no about a row
 	// nothing else may read. See `server/vouch`.
-	app.RegisterVouchServiceServer(g, vouch.New(s.Ungated, s.Walled))
+	// The rule about who may write whose credential travels with the service,
+	// because `VouchService` is hand-written and no layer wraps it. Same rules
+	// the gate reads, handed over rather than asked for a second time.
+	app.RegisterVouchServiceServer(g, vouch.New(s.Ungated, s.Walled,
+		vouch.WithReach(core.Reaching(Rules(s.Ent)))))
 
 	// What a front door asks before it knows anything, and therefore through
 	// the server the wall was never installed on. Neither RPC answers with a
