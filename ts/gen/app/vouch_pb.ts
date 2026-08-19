@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/vouch.proto.
  */
 export const file_app_vouch: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJGCghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCSJRChJWb3VjaFZlcmlmeVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMIlsKC1ZvdWNoRmFjdG9yEgwKBGtpbmQYCCABKAkSDAoEbmFtZRgFIAEoCRIwCgxsb2NrZWRfdW50aWwYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIsQBChNWb3VjaFZlcmlmeVJlc3BvbnNlEgoKAm9rGAEgASgIEg4KBmhvbGRlchgCIAEoDBIOCgZ0ZW5hbnQYAyABKAwSMAoMbG9ja2VkX3VudGlsGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIRCglzYXRpc2ZpZWQYCiADKAkSJgoJYXZhaWxhYmxlGAsgAygLMhMucm9zdGVyLlZvdWNoRmFjdG9yEhQKDGNvbnRpbnVhdGlvbhgMIAEoCSJYChRWb3VjaENvbnRpbnVlUmVxdWVzdBIUCgxjb250aW51YXRpb24YASABKAkSDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSDAoEbmFtZRgFIAEoCSJGChVWb3VjaENvbnRpbnVlUmVzcG9uc2USLQoIdmVyaWZpZWQYASABKAsyGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZSJOCg9Wb3VjaFNldFJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMIhIKEFZvdWNoU2V0UmVzcG9uc2UitQEKFFZvdWNoRGVsZWdhdGVSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJEg4KBnNlY3JldBgJIAEoDBIUCgxjb250aW51YXRpb24YDCABKAkSDAoEbmFtZRgFIAEoCRIPCgdtZXRob2RzGAogAygJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIoIBChVWb3VjaERlbGVnYXRlUmVzcG9uc2USLQoIdmVyaWZpZWQYASABKAsyGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZRINCgV0b2tlbhgKIAEoCRIrCgdleHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJeChFWb3VjaEVucm9sUmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCRIMCgRuYW1lGAUgASgJEg4KBmlzc3VlchgJIAEoCSIvChJWb3VjaEVucm9sUmVzcG9uc2USDAoEc2VlZBgBIAEoCRILCgN1cmkYAiABKAkiIwoSVm91Y2hSZXZva2VSZXF1ZXN0Eg0KBXRva2VuGAEgASgJIhUKE1ZvdWNoUmV2b2tlUmVzcG9uc2UiQAoRVm91Y2hSZXNldFJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkiJAoSVm91Y2hSZXNldFJlc3BvbnNlEg4KBnNlY3JldBgBIAEoCSJBChJWb3VjaFVubG9ja1JlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkiSwoTVm91Y2hVbmxvY2tSZXNwb25zZRI0ChB3YXNfbG9ja2VkX3VudGlsGAEgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcDKjBAoMVm91Y2hTZXJ2aWNlEkEKBlZlcmlmeRIaLnJvc3Rlci5Wb3VjaFZlcmlmeVJlcXVlc3QaGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZRI4CgNTZXQSFy5yb3N0ZXIuVm91Y2hTZXRSZXF1ZXN0Ghgucm9zdGVyLlZvdWNoU2V0UmVzcG9uc2USRwoIRGVsZWdhdGUSHC5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlEj4KBVJlc2V0Ehkucm9zdGVyLlZvdWNoUmVzZXRSZXF1ZXN0Ghoucm9zdGVyLlZvdWNoUmVzZXRSZXNwb25zZRJBCgZVbmxvY2sSGi5yb3N0ZXIuVm91Y2hVbmxvY2tSZXF1ZXN0Ghsucm9zdGVyLlZvdWNoVW5sb2NrUmVzcG9uc2USRwoIQ29udGludWUSHC5yb3N0ZXIuVm91Y2hDb250aW51ZVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hDb250aW51ZVJlc3BvbnNlEj4KBUVucm9sEhkucm9zdGVyLlZvdWNoRW5yb2xSZXF1ZXN0Ghoucm9zdGVyLlZvdWNoRW5yb2xSZXNwb25zZRJBCgZSZXZva2USGi5yb3N0ZXIuVm91Y2hSZXZva2VSZXF1ZXN0Ghsucm9zdGVyLlZvdWNoUmV2b2tlUmVzcG9uc2VCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp]);
+  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJGCghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCSJRChJWb3VjaFZlcmlmeVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMIlsKC1ZvdWNoRmFjdG9yEgwKBGtpbmQYCCABKAkSDAoEbmFtZRgFIAEoCRIwCgxsb2NrZWRfdW50aWwYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIsQBChNWb3VjaFZlcmlmeVJlc3BvbnNlEgoKAm9rGAEgASgIEg4KBmhvbGRlchgCIAEoDBIOCgZ0ZW5hbnQYAyABKAwSMAoMbG9ja2VkX3VudGlsGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIRCglzYXRpc2ZpZWQYCiADKAkSJgoJYXZhaWxhYmxlGAsgAygLMhMucm9zdGVyLlZvdWNoRmFjdG9yEhQKDGNvbnRpbnVhdGlvbhgMIAEoCSJYChRWb3VjaENvbnRpbnVlUmVxdWVzdBIUCgxjb250aW51YXRpb24YASABKAkSDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSDAoEbmFtZRgFIAEoCSJGChVWb3VjaENvbnRpbnVlUmVzcG9uc2USLQoIdmVyaWZpZWQYASABKAsyGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZSJOCg9Wb3VjaFNldFJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMIhIKEFZvdWNoU2V0UmVzcG9uc2UitQEKFFZvdWNoRGVsZWdhdGVSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJEg4KBnNlY3JldBgJIAEoDBIUCgxjb250aW51YXRpb24YDCABKAkSDAoEbmFtZRgFIAEoCRIPCgdtZXRob2RzGAogAygJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIoIBChVWb3VjaERlbGVnYXRlUmVzcG9uc2USLQoIdmVyaWZpZWQYASABKAsyGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZRINCgV0b2tlbhgKIAEoCRIrCgdleHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJeChFWb3VjaEVucm9sUmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCRIMCgRuYW1lGAUgASgJEg4KBmlzc3VlchgJIAEoCSIvChJWb3VjaEVucm9sUmVzcG9uc2USDAoEc2VlZBgBIAEoCRILCgN1cmkYAiABKAkiIwoSVm91Y2hSZXZva2VSZXF1ZXN0Eg0KBXRva2VuGAEgASgJIhUKE1ZvdWNoUmV2b2tlUmVzcG9uc2UiQAoRVm91Y2hSZXNldFJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkiJAoSVm91Y2hSZXNldFJlc3BvbnNlEg4KBnNlY3JldBgBIAEoCSJBChJWb3VjaFVubG9ja1JlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkiSwoTVm91Y2hVbmxvY2tSZXNwb25zZRI0ChB3YXNfbG9ja2VkX3VudGlsGAEgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJeChBWb3VjaExpbmtSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIrCgdleHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJPChFWb3VjaExpbmtSZXNwb25zZRINCgV0b2tlbhgBIAEoCRIrCgdleHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJhChJWb3VjaFJlZGVlbVJlcXVlc3QSDQoFdG9rZW4YASABKAkSDwoHbWV0aG9kcxgKIAMoCRIrCgdleHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcDKlBQoMVm91Y2hTZXJ2aWNlEkEKBlZlcmlmeRIaLnJvc3Rlci5Wb3VjaFZlcmlmeVJlcXVlc3QaGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZRI4CgNTZXQSFy5yb3N0ZXIuVm91Y2hTZXRSZXF1ZXN0Ghgucm9zdGVyLlZvdWNoU2V0UmVzcG9uc2USRwoIRGVsZWdhdGUSHC5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlEj4KBVJlc2V0Ehkucm9zdGVyLlZvdWNoUmVzZXRSZXF1ZXN0Ghoucm9zdGVyLlZvdWNoUmVzZXRSZXNwb25zZRJBCgZVbmxvY2sSGi5yb3N0ZXIuVm91Y2hVbmxvY2tSZXF1ZXN0Ghsucm9zdGVyLlZvdWNoVW5sb2NrUmVzcG9uc2USOwoETGluaxIYLnJvc3Rlci5Wb3VjaExpbmtSZXF1ZXN0Ghkucm9zdGVyLlZvdWNoTGlua1Jlc3BvbnNlEkMKBlJlZGVlbRIaLnJvc3Rlci5Wb3VjaFJlZGVlbVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlEkcKCENvbnRpbnVlEhwucm9zdGVyLlZvdWNoQ29udGludWVSZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoQ29udGludWVSZXNwb25zZRI+CgVFbnJvbBIZLnJvc3Rlci5Wb3VjaEVucm9sUmVxdWVzdBoaLnJvc3Rlci5Wb3VjaEVucm9sUmVzcG9uc2USQQoGUmV2b2tlEhoucm9zdGVyLlZvdWNoUmV2b2tlUmVxdWVzdBobLnJvc3Rlci5Wb3VjaFJldm9rZVJlc3BvbnNlQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp]);
 
 /**
  * VouchWho names somebody in the words a sign-in form collects.
@@ -684,6 +684,98 @@ export const VouchUnlockResponseSchema: GenMessage<VouchUnlockResponse> = /*@__P
   messageDesc(file_app_vouch, 17);
 
 /**
+ * @generated from message roster.VouchLinkRequest
+ */
+export type VouchLinkRequest = Message<"roster.VouchLinkRequest"> & {
+  /**
+   * @generated from field: roster.VouchWho who = 1;
+   */
+  who?: VouchWho | undefined;
+
+  /**
+   * When it stops working, and unset takes this deployment's default.
+   *
+   * A caller may ask for less and not for more: a link is delivered through a
+   * channel roster knows nothing about, and how long that channel takes is the
+   * caller's to know -- but how long a way into somebody's account may lie
+   * around is not.
+   *
+   * @generated from field: google.protobuf.Timestamp expires = 11;
+   */
+  expires?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.VouchLinkRequest.
+ * Use `create(VouchLinkRequestSchema)` to create a new message.
+ */
+export const VouchLinkRequestSchema: GenMessage<VouchLinkRequest> = /*@__PURE__*/
+  messageDesc(file_app_vouch, 18);
+
+/**
+ * @generated from message roster.VouchLinkResponse
+ */
+export type VouchLinkResponse = Message<"roster.VouchLinkResponse"> & {
+  /**
+   * The link, and the only time it is readable.
+   *
+   * Answered for a stranger as well, resolving to nobody. See the note on the
+   * method for why: the alternative is a form that answers *is this address
+   * here* to anybody who types into it.
+   *
+   * @generated from field: string token = 1;
+   */
+  token: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp expires = 11;
+   */
+  expires?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.VouchLinkResponse.
+ * Use `create(VouchLinkResponseSchema)` to create a new message.
+ */
+export const VouchLinkResponseSchema: GenMessage<VouchLinkResponse> = /*@__PURE__*/
+  messageDesc(file_app_vouch, 19);
+
+/**
+ * @generated from message roster.VouchRedeemRequest
+ */
+export type VouchRedeemRequest = Message<"roster.VouchRedeemRequest"> & {
+  /**
+   * The link, as it was delivered.
+   *
+   * @generated from field: string token = 1;
+   */
+  token: string;
+
+  /**
+   * What the delegation may be used for, if the redemption finishes the
+   * sign-in. The same rules [VouchService.Delegate] states: refused when empty,
+   * and no wider than the caller.
+   *
+   * @generated from field: repeated string methods = 10;
+   */
+  methods: string[];
+
+  /**
+   * When the delegation stops working. Unset takes the default.
+   *
+   * @generated from field: google.protobuf.Timestamp expires = 11;
+   */
+  expires?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.VouchRedeemRequest.
+ * Use `create(VouchRedeemRequestSchema)` to create a new message.
+ */
+export const VouchRedeemRequestSchema: GenMessage<VouchRedeemRequest> = /*@__PURE__*/
+  messageDesc(file_app_vouch, 20);
+
+/**
  * VouchService is how a secret is used without ever leaving the store.
  *
  * # Why it is not `CredentialService`
@@ -826,6 +918,47 @@ export const VouchService: GenService<{
     methodKind: "unary";
     input: typeof VouchUnlockRequestSchema;
     output: typeof VouchUnlockResponseSchema;
+  },
+  /**
+   * Link mints a way in for somebody and answers with it **once**.
+   *
+   * What roster does not do is send it. D19 puts the delivery outside, and
+   * separating the two is what makes the air-gapped case work at all: with no
+   * mail the somebody else is a person, and what they hand over is a password
+   * from [VouchService.Reset] rather than a link.
+   *
+   * # It says nothing about whether they are here
+   *
+   * A request for somebody who does not exist answers the same as one for
+   * somebody who does: a token, and an expiry. Otherwise the *sending* of a
+   * link answers *is this address here*, which is the question the whole
+   * careful set of equal-cost refusals exists to refuse -- asked through a form
+   * that is meant to be filled in by strangers.
+   *
+   * The token it answers with in that case resolves to nobody, so redeeming it
+   * fails the way every other bad token does.
+   *
+   * @generated from rpc roster.VouchService.Link
+   */
+  link: {
+    methodKind: "unary";
+    input: typeof VouchLinkRequestSchema;
+    output: typeof VouchLinkResponseSchema;
+  },
+  /**
+   * Redeem spends a link, which proves the person and nothing more.
+   *
+   * It answers in [VouchService.Delegate]'s shape, deliberately: if they have a
+   * second factor it is asked for exactly as it would have been after a
+   * password, because a link that skipped one would be a way to turn a mailbox
+   * into an account.
+   *
+   * @generated from rpc roster.VouchService.Redeem
+   */
+  redeem: {
+    methodKind: "unary";
+    input: typeof VouchRedeemRequestSchema;
+    output: typeof VouchDelegateResponseSchema;
   },
   /**
    * Continue proves the next factor, from where the last one left off.

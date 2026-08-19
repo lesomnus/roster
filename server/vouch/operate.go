@@ -72,6 +72,21 @@ func (s *Server) Reset(ctx context.Context, req *app.VouchResetRequest) (*app.Vo
 		return nil, err
 	}
 
+	// And everything issued before now is void.
+	//
+	// D26 left this deliberately: *a password reset that leaves old sessions
+	// alive is not a reset* is true, and coupling it to `Set` would mean
+	// somebody changing their own password signs themselves out of everything
+	// with nothing having said so. This is the other act -- somebody else
+	// giving them a new one -- and it is where recovery from a takeover
+	// happens, so the sessions the takeover opened have to go with it.
+	//
+	// Best effort after the fact: the password is already changed, and failing
+	// the whole call would leave the caller unsure which half happened.
+	if ref, err := refOf(req.GetWho()); err == nil && ref != nil {
+		_, _ = s.walled.Holder().Invalidate(ctx, app.HolderInvalidateRequest_builder{Ref: ref}.Build())
+	}
+
 	return app.VouchResetResponse_builder{Secret: secret}.Build(), nil
 }
 

@@ -9,9 +9,10 @@ import (
 
 	"github.com/lesomnus/roster/internal/ent"
 	"github.com/lesomnus/roster/internal/ent/continuation"
+	"github.com/lesomnus/roster/internal/ent/link"
 )
 
-// Swept is how often expired attempts are collected.
+// Swept is how often expired attempts and links are collected.
 //
 // Not a deadline and not a security control -- an expired continuation is
 // refused the moment it is presented, because *a sweep that is the mechanism is
@@ -40,12 +41,12 @@ func Sweep(db *ent.Client, every time.Duration) spin.Func {
 	return spin.Every(every, func(ctx context.Context) error {
 		n, err := Collect(ctx, db)
 		if err != nil {
-			log.From(ctx).WarnContext(ctx, "sweep: continuations", "err", err)
+			log.From(ctx).WarnContext(ctx, "sweep: attempts and links", "err", err)
 
 			return nil
 		}
 		if n > 0 {
-			log.From(ctx).InfoContext(ctx, "sweep: continuations", "gone", n)
+			log.From(ctx).InfoContext(ctx, "sweep: attempts and links", "gone", n)
 		}
 
 		return nil
@@ -53,8 +54,23 @@ func Sweep(db *ent.Client, every time.Duration) spin.Func {
 }
 
 // Collect is one pass of [Sweep], and answers with how many it removed.
+//
+// Both tables, because they are the same fact one shape apart -- a row that
+// exists for minutes between two requests -- and two loops on two clocks would
+// be two things to notice had stopped.
 func Collect(ctx context.Context, db *ent.Client) (int, error) {
-	return db.Continuation.Delete().
-		Where(continuation.DateExpiresLT(time.Now())).
+	now := time.Now()
+
+	n, err := db.Continuation.Delete().
+		Where(continuation.DateExpiresLT(now)).
 		Exec(ctx)
+	if err != nil {
+		return n, err
+	}
+
+	m, err := db.Link.Delete().
+		Where(link.DateExpiresLT(now)).
+		Exec(ctx)
+
+	return n + m, err
 }

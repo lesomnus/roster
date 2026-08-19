@@ -137,6 +137,67 @@ over memberships, credential verification.
 Recorded as they are made, with the reason, so that a later disagreement argues
 with the reason rather than rediscovering the question.
 
+### D31 · A link is a way in, and it goes where a password goes
+
+Item 3, and the half of it P5 did not already answer.
+
+#### Half of this was done before it was reached
+
+Item 3 said recovery is *the same machine as a magic link -- a single-use opaque
+nonce roster mints and roster checks, delivered by somebody else*, and that **in
+an air gap the somebody else is a person**.
+
+That half is `Vouch.Reset` (D28): the operator generates a password and reads it
+out. So what is left is the channel that is not a person -- a link -- and the
+two are not one mechanism after all. D16's third leg is why: *the kind selects
+the cost.* A code a **person transcribes** is short and needs argon2, a counter
+and a lockout, which is `Credential`'s machinery; a link is machine-made,
+machine-carried and machine-read, which is `ApiKey`'s. Recording that they are
+two is the correction this entry makes to item 3.
+
+#### It is a first factor, not a way around them
+
+Redeeming one proves the person and nothing more. `Vouch.Redeem` answers in
+`Delegate`'s shape, so if they have a second factor it is asked for exactly as
+it would have been after a password -- because a link that skipped one would be
+a way to turn a mailbox into an account, which is most of what a second factor
+is for.
+
+**And it stands where a password stands.** After a link, the password is no
+longer in `available`: asking for it as well would make a link a third factor
+rather than a way round the first, which is not what anybody sends one for.
+That is the only substitution roster knows, and it is not sufficiency -- D21
+puts *what is left to prove* on roster's side and *how many are enough* on the
+caller's, and this is the first.
+
+#### Minting says nothing about whether anybody is there
+
+The property easiest to lose and hardest to notice. A form that asks for an
+address and is filled in by strangers is exactly where an account-existence
+oracle is most useful to whoever is looking for one -- and every other refusal
+here was made equal-cost to avoid answering that question.
+
+So a request for nobody answers **the same**: a token, and an expiry. It
+resolves to nothing, and redeeming it fails the way every bad token does. No row
+is written either, so the table is not a list of every address anybody has ever
+typed.
+
+A caller may ask for **less** than the default lifetime and not for more: how
+long the channel takes is theirs to know, and how long a way into somebody's
+account may lie around is not.
+
+#### And a reset voids what came before it
+
+D26 left this deliberately -- *a password reset that leaves old sessions alive
+is not a reset* is true, and coupling it to `Set` would mean somebody changing
+their own password signs themselves out of everything with nothing having said
+so. This is the other act: somebody **else** giving them a new one, which is
+where recovery from a takeover happens, so the sessions the takeover opened go
+with it.
+
+Best effort after the fact, because the password is already changed and failing
+the whole call would leave the caller unsure which half happened.
+
 ### D30 · The attempt is roster's, and one new RPC is what it costs
 
 D21 written down, after a stress test found that the obvious shape breaks four
@@ -1941,7 +2002,17 @@ the schedule.
    is the enumeration oracle D21 spent a condition avoiding; answered per
    domain it says nothing about any individual.
 
-3. **Recovery.** The same machine as a magic link — a single-use opaque nonce
+3. ~~**Recovery.**~~ **Done**, in two halves that turned out not to be one
+   machine: `Vouch.Reset` for the air gap (D28) and `Vouch.Link`/`Redeem` for a
+   channel (D31). D16's third leg is why they are two -- a transcribed code and
+   a machine-carried token want different costs.
+
+   Air gap still costs what this entry said it would: nothing sets
+   `Email.date_verified`, so an address is unverified forever unless an operator
+   asserts it. Nothing here changes that.
+
+   The original entry:
+   The same machine as a magic link — a single-use opaque nonce
    roster mints and roster checks, delivered by somebody else. Inside the line
    for the same reason, and it is where account takeover lives, so the rules
    belong beside the row rather than in each app.

@@ -24,6 +24,8 @@ const (
 	VouchService_Delegate_FullMethodName = "/roster.VouchService/Delegate"
 	VouchService_Reset_FullMethodName    = "/roster.VouchService/Reset"
 	VouchService_Unlock_FullMethodName   = "/roster.VouchService/Unlock"
+	VouchService_Link_FullMethodName     = "/roster.VouchService/Link"
+	VouchService_Redeem_FullMethodName   = "/roster.VouchService/Redeem"
 	VouchService_Continue_FullMethodName = "/roster.VouchService/Continue"
 	VouchService_Enrol_FullMethodName    = "/roster.VouchService/Enrol"
 	VouchService_Revoke_FullMethodName   = "/roster.VouchService/Revoke"
@@ -133,6 +135,31 @@ type VouchServiceClient interface {
 	// it is a step of the same walk and refusing it separately would be a
 	// permission nobody could explain.
 	Unlock(ctx context.Context, in *VouchUnlockRequest, opts ...grpc.CallOption) (*VouchUnlockResponse, error)
+	// Link mints a way in for somebody and answers with it **once**.
+	//
+	// What roster does not do is send it. D19 puts the delivery outside, and
+	// separating the two is what makes the air-gapped case work at all: with no
+	// mail the somebody else is a person, and what they hand over is a password
+	// from [VouchService.Reset] rather than a link.
+	//
+	// # It says nothing about whether they are here
+	//
+	// A request for somebody who does not exist answers the same as one for
+	// somebody who does: a token, and an expiry. Otherwise the *sending* of a
+	// link answers *is this address here*, which is the question the whole
+	// careful set of equal-cost refusals exists to refuse -- asked through a form
+	// that is meant to be filled in by strangers.
+	//
+	// The token it answers with in that case resolves to nobody, so redeeming it
+	// fails the way every other bad token does.
+	Link(ctx context.Context, in *VouchLinkRequest, opts ...grpc.CallOption) (*VouchLinkResponse, error)
+	// Redeem spends a link, which proves the person and nothing more.
+	//
+	// It answers in [VouchService.Delegate]'s shape, deliberately: if they have a
+	// second factor it is asked for exactly as it would have been after a
+	// password, because a link that skipped one would be a way to turn a mailbox
+	// into an account.
+	Redeem(ctx context.Context, in *VouchRedeemRequest, opts ...grpc.CallOption) (*VouchDelegateResponse, error)
 	// Continue proves the next factor, from where the last one left off.
 	//
 	// # Why it is a method and Begin is not
@@ -239,6 +266,26 @@ func (c *vouchServiceClient) Unlock(ctx context.Context, in *VouchUnlockRequest,
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(VouchUnlockResponse)
 	err := c.cc.Invoke(ctx, VouchService_Unlock_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *vouchServiceClient) Link(ctx context.Context, in *VouchLinkRequest, opts ...grpc.CallOption) (*VouchLinkResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(VouchLinkResponse)
+	err := c.cc.Invoke(ctx, VouchService_Link_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *vouchServiceClient) Redeem(ctx context.Context, in *VouchRedeemRequest, opts ...grpc.CallOption) (*VouchDelegateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(VouchDelegateResponse)
+	err := c.cc.Invoke(ctx, VouchService_Redeem_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -379,6 +426,31 @@ type VouchServiceServer interface {
 	// it is a step of the same walk and refusing it separately would be a
 	// permission nobody could explain.
 	Unlock(context.Context, *VouchUnlockRequest) (*VouchUnlockResponse, error)
+	// Link mints a way in for somebody and answers with it **once**.
+	//
+	// What roster does not do is send it. D19 puts the delivery outside, and
+	// separating the two is what makes the air-gapped case work at all: with no
+	// mail the somebody else is a person, and what they hand over is a password
+	// from [VouchService.Reset] rather than a link.
+	//
+	// # It says nothing about whether they are here
+	//
+	// A request for somebody who does not exist answers the same as one for
+	// somebody who does: a token, and an expiry. Otherwise the *sending* of a
+	// link answers *is this address here*, which is the question the whole
+	// careful set of equal-cost refusals exists to refuse -- asked through a form
+	// that is meant to be filled in by strangers.
+	//
+	// The token it answers with in that case resolves to nobody, so redeeming it
+	// fails the way every other bad token does.
+	Link(context.Context, *VouchLinkRequest) (*VouchLinkResponse, error)
+	// Redeem spends a link, which proves the person and nothing more.
+	//
+	// It answers in [VouchService.Delegate]'s shape, deliberately: if they have a
+	// second factor it is asked for exactly as it would have been after a
+	// password, because a link that skipped one would be a way to turn a mailbox
+	// into an account.
+	Redeem(context.Context, *VouchRedeemRequest) (*VouchDelegateResponse, error)
 	// Continue proves the next factor, from where the last one left off.
 	//
 	// # Why it is a method and Begin is not
@@ -455,6 +527,12 @@ func (UnimplementedVouchServiceServer) Reset(context.Context, *VouchResetRequest
 }
 func (UnimplementedVouchServiceServer) Unlock(context.Context, *VouchUnlockRequest) (*VouchUnlockResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Unlock not implemented")
+}
+func (UnimplementedVouchServiceServer) Link(context.Context, *VouchLinkRequest) (*VouchLinkResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Link not implemented")
+}
+func (UnimplementedVouchServiceServer) Redeem(context.Context, *VouchRedeemRequest) (*VouchDelegateResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Redeem not implemented")
 }
 func (UnimplementedVouchServiceServer) Continue(context.Context, *VouchContinueRequest) (*VouchContinueResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Continue not implemented")
@@ -576,6 +654,42 @@ func _VouchService_Unlock_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _VouchService_Link_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VouchLinkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VouchServiceServer).Link(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: VouchService_Link_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VouchServiceServer).Link(ctx, req.(*VouchLinkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _VouchService_Redeem_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VouchRedeemRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VouchServiceServer).Redeem(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: VouchService_Redeem_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VouchServiceServer).Redeem(ctx, req.(*VouchRedeemRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _VouchService_Continue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(VouchContinueRequest)
 	if err := dec(in); err != nil {
@@ -656,6 +770,14 @@ var VouchService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Unlock",
 			Handler:    _VouchService_Unlock_Handler,
+		},
+		{
+			MethodName: "Link",
+			Handler:    _VouchService_Link_Handler,
+		},
+		{
+			MethodName: "Redeem",
+			Handler:    _VouchService_Redeem_Handler,
 		},
 		{
 			MethodName: "Continue",

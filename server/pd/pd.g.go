@@ -40,6 +40,7 @@ import (
 	holder "github.com/lesomnus/roster/internal/ent/holder"
 	host "github.com/lesomnus/roster/internal/ent/host"
 	identity "github.com/lesomnus/roster/internal/ent/identity"
+	link "github.com/lesomnus/roster/internal/ent/link"
 	maildomain "github.com/lesomnus/roster/internal/ent/maildomain"
 	outbox "github.com/lesomnus/roster/internal/ent/outbox"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
@@ -99,6 +100,7 @@ const (
 	HolderDomain          pdid.Domain = 2  // "holder"
 	HostDomain            pdid.Domain = 20 // "host"
 	IdentityDomain        pdid.Domain = 8  // "identity"
+	LinkDomain            pdid.Domain = 23 // "link"
 	MailDomainDomain      pdid.Domain = 21 // "mail-domain"
 	OutboxDomain          pdid.Domain = 4  // "outbox"
 	RoleDomain            pdid.Domain = 15 // "role"
@@ -122,6 +124,7 @@ func init() {
 	pdid.Register("roster.Holder", HolderDomain, "holder")
 	pdid.Register("roster.Host", HostDomain, "host")
 	pdid.Register("roster.Identity", IdentityDomain, "identity")
+	pdid.Register("roster.Link", LinkDomain, "link")
 	pdid.Register("roster.MailDomain", MailDomainDomain, "mail-domain")
 	pdid.Register("roster.Outbox", OutboxDomain, "outbox")
 	pdid.Register("roster.Role", RoleDomain, "role")
@@ -149,6 +152,7 @@ var Domains = map[string]pdid.Domain{
 	"roster.Holder":          HolderDomain,
 	"roster.Host":            HostDomain,
 	"roster.Identity":        IdentityDomain,
+	"roster.Link":            LinkDomain,
 	"roster.MailDomain":      MailDomainDomain,
 	"roster.Outbox":          OutboxDomain,
 	"roster.Role":            RoleDomain,
@@ -321,6 +325,16 @@ func (wall) IdentityScope(ctx context.Context) (predicate.Identity, error) {
 	}
 
 	return identity.TenantIDIn(vs...), nil
+}
+
+// LinkScope: a row belongs to the tenant its "holder.tenant" reaches.
+func (wall) LinkScope(ctx context.Context) (predicate.Link, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return link.HasHolderWith(holder.TenantIDIn(vs...)), nil
 }
 
 // MailDomainScope: a row belongs to the tenant its "tenant" reaches.
@@ -501,6 +515,11 @@ func (x grouped) HostScope(ctx context.Context) (predicate.Host, error) {
 
 // IdentityScope: in no set -- it declared no field 3, so this narrows nothing.
 func (x grouped) IdentityScope(ctx context.Context) (predicate.Identity, error) {
+	return nil, nil
+}
+
+// LinkScope: in no set -- it declared no field 3, so this narrows nothing.
+func (x grouped) LinkScope(ctx context.Context) (predicate.Link, error) {
 	return nil, nil
 }
 
@@ -3570,6 +3589,149 @@ func (s sinkIdentity) watchIdentityKeys(
 	return ks, nil
 }
 
+type sinkLink struct {
+	rstr.LinkServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) Link() rstr.LinkServiceServer {
+	return sinkLink{s.Server.Link(), s.Server.Store, s.w, s.namer, s.joined}
+}
+
+// orderLink is how Links come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderLink = []entpage.Order{
+	{Column: link.FieldDateCreated, Desc: false},
+	{Column: link.FieldID, Desc: false},
+}
+
+const (
+	// LinkPageSize is what a request that did not say gets, and
+	// LinkPageLimit is the most it gets however loudly it asks.
+	LinkPageSize  = 20
+	LinkPageLimit = 100
+
+	// LinkFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	LinkFilterLimit = 32
+)
+
+// List answers with the Links that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkLink) List(ctx context.Context, req *rstr.LinkListRequest) (*rstr.LinkListResponse, error) {
+	q := s.store.Db.Link.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.LinkNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > LinkFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), LinkFilterLimit)
+		}
+
+		ps := make([]predicate.Link, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterLink(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(link.Or(ps...))
+	}
+
+	if v := req.GetAfter(); v != "" {
+		var (
+			at0 time.Time
+			at1 uuid.UUID
+		)
+		if err := entpage.Decode(v, &at0, &at1); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		p, err := entpage.After(orderLink, []any{at0, at1})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := entpage.Size(int(req.GetSize()), LinkPageSize, LinkPageLimit)
+	us, err := q.Order(link.ByDateCreated(), link.ByID()).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*rstr.Link, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := rstr.LinkListResponse_builder{Items: items}.Build()
+	if more {
+		last := us[len(us)-1]
+		next, err := entpage.Encode(last.DateCreated, last.ID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(next)
+	}
+
+	return res, nil
+}
+
+// filterLink turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterLink(f *rstr.LinkFilter) (predicate.Link, error) {
+	ps := make([]predicate.Link, 0, 1)
+	if f.HasRef() {
+		p, err := bare.LinkPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return link.And(ps...), nil
+}
+
 type sinkMailDomain struct {
 	rstr.MailDomainServiceServer
 	store  bare.Store
@@ -6114,6 +6276,42 @@ func (s gateIdentity) Add(ctx context.Context, req *rstr.IdentityAddRequest) (*r
 	return s.IdentityServiceServer.Add(ctx, req)
 }
 
+type gateLink struct {
+	Gate
+	rstr.LinkServiceServer
+}
+
+func (s Gate) Link() rstr.LinkServiceServer {
+	return gateLink{s, s.Next().Link()}
+}
+
+// Add refuses a Link put into a Holder this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `holder` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Holder, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.Add`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+func (s gateLink) Add(ctx context.Context, req *rstr.LinkAddRequest) (*rstr.Link, error) {
+	if ref := req.GetHolder(); ref != nil {
+		if _, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Holder")
+			}
+
+			return nil, err
+		}
+	}
+
+	return s.LinkServiceServer.Add(ctx, req)
+}
+
 type gateMailDomain struct {
 	Gate
 	rstr.MailDomainServiceServer
@@ -6879,6 +7077,41 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 
 		return k, b, nil
 
+	case LinkDomain:
+		row, err := s.Link().Get(ctx, rstr.LinkGetRequest_builder{
+			Ref: rstr.LinkRef_builder{Id: key.Bytes()}.Build(),
+		}.Build())
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				return uuid.Nil, []byte{}, nil
+			}
+
+			return uuid.Nil, nil, err
+		}
+
+		hideLink(row)
+
+		b, err := proto.Marshal(row)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		if !row.HasHolder() {
+			return uuid.Nil, b, nil
+		}
+
+		up, err := pdid.From(row.GetHolder().GetId())
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		k, _, err := subject(ctx, s, up)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		return k, b, nil
+
 	case MailDomainDomain:
 		row, err := s.MailDomain().Get(ctx, rstr.MailDomainGetRequest_builder{
 			Ref: rstr.MailDomainRef_builder{Id: key.Bytes()}.Build(),
@@ -7365,6 +7598,66 @@ func (s secretDelegation) List(ctx context.Context, req *rstr.DelegationListRequ
 // A nil row passes through, because an error is answered with one and the
 // caller of this is handing both on.
 func hideDelegation(v *rstr.Delegation) *rstr.Delegation {
+	if v == nil {
+		return nil
+	}
+
+	v.SetSecret(nil)
+
+	return v
+}
+
+func (s Secret) Link() rstr.LinkServiceServer {
+	return secretLink{s, s.Next().Link()}
+}
+
+type secretLink struct {
+	Secret
+	rstr.LinkServiceServer
+}
+
+func (s secretLink) Add(ctx context.Context, req *rstr.LinkAddRequest) (*rstr.Link, error) {
+	v, err := s.LinkServiceServer.Add(ctx, req)
+
+	return hideLink(v), err
+}
+
+func (s secretLink) Get(ctx context.Context, req *rstr.LinkGetRequest) (*rstr.Link, error) {
+	v, err := s.LinkServiceServer.Get(ctx, req)
+
+	return hideLink(v), err
+}
+
+func (s secretLink) Patch(ctx context.Context, req *rstr.LinkPatchRequest) (*rstr.Link, error) {
+	v, err := s.LinkServiceServer.Patch(ctx, req)
+
+	return hideLink(v), err
+}
+
+func (s secretLink) Apply(ctx context.Context, req *rstr.LinkApplyRequest) (*rstr.Link, error) {
+	v, err := s.LinkServiceServer.Apply(ctx, req)
+
+	return hideLink(v), err
+}
+
+func (s secretLink) List(ctx context.Context, req *rstr.LinkListRequest) (*rstr.LinkListResponse, error) {
+	v, err := s.LinkServiceServer.List(ctx, req)
+	if v == nil {
+		return v, err
+	}
+
+	for _, w := range v.GetItems() {
+		hideLink(w)
+	}
+
+	return v, err
+}
+
+// hideLink clears what this entity declared it never answers with.
+//
+// A nil row passes through, because an error is answered with one and the
+// caller of this is handing both on.
+func hideLink(v *rstr.Link) *rstr.Link {
 	if v == nil {
 		return nil
 	}
@@ -8798,6 +9091,84 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 		}
 
 		res, err := s.MailDomain().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.LinkService_Add_FullMethodName:
+		v := &rstr.LinkAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Link().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.LinkService_Get_FullMethodName:
+		v := &rstr.LinkGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Link().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.LinkService_Patch_FullMethodName:
+		v := &rstr.LinkPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Link().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.LinkService_Apply_FullMethodName:
+		v := &rstr.LinkApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Link().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.LinkService_Erase_FullMethodName:
+		v := &rstr.LinkRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Link().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.LinkService_List_FullMethodName:
+		v := &rstr.LinkListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Link().List(ctx, v)
 		if err != nil {
 			return nil, err
 		}

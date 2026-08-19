@@ -280,12 +280,7 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind string, sec
 		}.Build(), v, nil
 	}
 
-	metered, err := pdid.From(v.GetId())
-	if err != nil {
-		return nil, nil, err
-	}
-
-	res, err := s.answer(ctx, v.GetHolder(), []string{kindOf(kind)}, metered, issuer)
+	res, err := s.answer(ctx, v.GetHolder(), []string{kindOf(kind)}, v.GetId(), issuer)
 	if err != nil {
 		return nil, nil, err
 	}

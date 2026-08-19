@@ -1,7 +1,7 @@
 edition = "2023";
 package roster;
 
-import "app/continuation.proto";
+import "app/link.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "patch/patch.proto";
@@ -9,59 +9,55 @@ import "roster/payday/holder_svc.g.proto";
 
 option go_package = "github.com/lesomnus/roster/rstr";
 
-service ContinuationService {
-  // Add creates a new Continuation
-  rpc Add(ContinuationAddRequest) returns (Continuation);
-  // Get retrieves a Continuation
-  rpc Get(ContinuationGetRequest) returns (Continuation);
-  // Patch updates an existing Continuation
-  rpc Patch(ContinuationPatchRequest) returns (Continuation);
-  // Apply applies a patch document to an existing Continuation
-  rpc Apply(ContinuationApplyRequest) returns (Continuation);
-  // Erase deletes a Continuation
-  rpc Erase(ContinuationRef) returns (google.protobuf.Empty);
-  // List reads Continuations a page at a time.
-  rpc List(ContinuationListRequest) returns (ContinuationListResponse);
+service LinkService {
+  // Add creates a new Link
+  rpc Add(LinkAddRequest) returns (Link);
+  // Get retrieves a Link
+  rpc Get(LinkGetRequest) returns (Link);
+  // Patch updates an existing Link
+  rpc Patch(LinkPatchRequest) returns (Link);
+  // Apply applies a patch document to an existing Link
+  rpc Apply(LinkApplyRequest) returns (Link);
+  // Erase deletes a Link
+  rpc Erase(LinkRef) returns (google.protobuf.Empty);
+  // List reads Links a page at a time.
+  rpc List(LinkListRequest) returns (LinkListResponse);
 }
 
-message ContinuationAddRequest {
+message LinkAddRequest {
   bytes id = 1;
   HolderRef holder = 2;
-  repeated string satisfied = 8;
   bytes secret = 9 [features.field_presence = IMPLICIT];
   bytes issuer = 10 [features.field_presence = IMPLICIT];
-  bytes metered_by = 12;
   google.protobuf.Timestamp date_expires = 11;
   google.protobuf.Timestamp date_created = 15;
 }
 
-message ContinuationGetRequest {
-  ContinuationRef ref = 1;
-  ContinuationSelect select = 2;
+message LinkGetRequest {
+  LinkRef ref = 1;
+  LinkSelect select = 2;
 }
 
-message ContinuationRef {
+message LinkRef {
   oneof key {
     bytes id = 1;
     bytes secret = 9;
   }
 }
 
-message ContinuationSelect {
+message LinkSelect {
   bool all = 1;
   HolderSelect holder = 2;
-  bool satisfied = 8;
   bool secret = 9;
   bool issuer = 10;
-  bool metered_by = 12;
   bool date_expires = 11;
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;
 }
 
-message ContinuationPatchRequest {
-  ContinuationRef ref = 1;
+message LinkPatchRequest {
+  LinkRef ref = 1;
   // The version this update requires the stored date_updated to be.
   // It is a precondition, not a write: the update applies only if the row
   // still holds this value, and the server stamps the new version itself.
@@ -78,15 +74,15 @@ message ContinuationPatchRequest {
   bool date_updated_force = 27;
 }
 
-message ContinuationApplyRequest {
-  ContinuationRef ref = 1;
+message LinkApplyRequest {
+  LinkRef ref = 1;
   patch.Patch patch = 2;
 }
 
-message ContinuationListRequest {
+message LinkListRequest {
   // Bounded because the work is: each filter is a predicate in the same query,
   // so this is what says how much of the database one request may read.
-  repeated ContinuationFilter filters = 1;
+  repeated LinkFilter filters = 1;
 
   // How many to answer with. Nothing said is what the schema declared, and more
   // than the cap is the cap -- a caller asking for more than there is meant no
@@ -100,8 +96,8 @@ message ContinuationListRequest {
   string after = 3 [features.field_presence = IMPLICIT];
 }
 
-message ContinuationListResponse {
-  repeated Continuation items = 1;
+message LinkListResponse {
+  repeated Link items = 1;
 
   // What to ask for next, and empty when this was the last of them.
   //
@@ -113,6 +109,6 @@ message ContinuationListResponse {
   string next = 2 [features.field_presence = IMPLICIT];
 }
 
-message ContinuationFilter {
-  ContinuationRef ref = 1;
+message LinkFilter {
+  LinkRef ref = 1;
 }

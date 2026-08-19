@@ -112,6 +112,33 @@ service VouchService {
   // permission nobody could explain.
   rpc Unlock(VouchUnlockRequest) returns (VouchUnlockResponse);
 
+  // Link mints a way in for somebody and answers with it **once**.
+  //
+  // What roster does not do is send it. D19 puts the delivery outside, and
+  // separating the two is what makes the air-gapped case work at all: with no
+  // mail the somebody else is a person, and what they hand over is a password
+  // from [VouchService.Reset] rather than a link.
+  //
+  // # It says nothing about whether they are here
+  //
+  // A request for somebody who does not exist answers the same as one for
+  // somebody who does: a token, and an expiry. Otherwise the *sending* of a
+  // link answers *is this address here*, which is the question the whole
+  // careful set of equal-cost refusals exists to refuse -- asked through a form
+  // that is meant to be filled in by strangers.
+  //
+  // The token it answers with in that case resolves to nobody, so redeeming it
+  // fails the way every other bad token does.
+  rpc Link(VouchLinkRequest) returns (VouchLinkResponse);
+
+  // Redeem spends a link, which proves the person and nothing more.
+  //
+  // It answers in [VouchService.Delegate]'s shape, deliberately: if they have a
+  // second factor it is asked for exactly as it would have been after a
+  // password, because a link that skipped one would be a way to turn a mailbox
+  // into an account.
+  rpc Redeem(VouchRedeemRequest) returns (VouchDelegateResponse);
+
   // Continue proves the next factor, from where the last one left off.
   //
   // # Why it is a method and Begin is not
@@ -468,4 +495,40 @@ message VouchUnlockResponse {
   // it" from "it was not closed" -- which is the question they are about to be
   // asked by whoever called them.
   google.protobuf.Timestamp was_locked_until = 1;
+}
+
+message VouchLinkRequest {
+  VouchWho who = 1;
+
+  // When it stops working, and unset takes this deployment's default.
+  //
+  // A caller may ask for less and not for more: a link is delivered through a
+  // channel roster knows nothing about, and how long that channel takes is the
+  // caller's to know -- but how long a way into somebody's account may lie
+  // around is not.
+  google.protobuf.Timestamp expires = 11;
+}
+
+message VouchLinkResponse {
+  // The link, and the only time it is readable.
+  //
+  // Answered for a stranger as well, resolving to nobody. See the note on the
+  // method for why: the alternative is a form that answers *is this address
+  // here* to anybody who types into it.
+  string token = 1;
+
+  google.protobuf.Timestamp expires = 11;
+}
+
+message VouchRedeemRequest {
+  // The link, as it was delivered.
+  string token = 1;
+
+  // What the delegation may be used for, if the redemption finishes the
+  // sign-in. The same rules [VouchService.Delegate] states: refused when empty,
+  // and no wider than the caller.
+  repeated string methods = 10;
+
+  // When the delegation stops working. Unset takes the default.
+  google.protobuf.Timestamp expires = 11;
 }

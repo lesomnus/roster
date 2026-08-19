@@ -36,6 +36,8 @@ type Tx struct {
 	Host *HostClient
 	// Identity is the client for interacting with the Identity builders.
 	Identity *IdentityClient
+	// Link is the client for interacting with the Link builders.
+	Link *LinkClient
 	// MailDomain is the client for interacting with the MailDomain builders.
 	MailDomain *MailDomainClient
 	// Outbox is the client for interacting with the Outbox builders.
@@ -195,6 +197,7 @@ func (tx *Tx) init() {
 	tx.Holder = NewHolderClient(tx.config)
 	tx.Host = NewHostClient(tx.config)
 	tx.Identity = NewIdentityClient(tx.config)
+	tx.Link = NewLinkClient(tx.config)
 	tx.MailDomain = NewMailDomainClient(tx.config)
 	tx.Outbox = NewOutboxClient(tx.config)
 	tx.Role = NewRoleClient(tx.config)

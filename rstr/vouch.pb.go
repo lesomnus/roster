@@ -1809,6 +1809,293 @@ func (b0 VouchUnlockResponse_builder) Build() *VouchUnlockResponse {
 	return m0
 }
 
+type VouchLinkRequest struct {
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Who     *VouchWho              `protobuf:"bytes,1,opt,name=who"`
+	xxx_hidden_Expires *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=expires"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *VouchLinkRequest) Reset() {
+	*x = VouchLinkRequest{}
+	mi := &file_app_vouch_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VouchLinkRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VouchLinkRequest) ProtoMessage() {}
+
+func (x *VouchLinkRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_app_vouch_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *VouchLinkRequest) GetWho() *VouchWho {
+	if x != nil {
+		return x.xxx_hidden_Who
+	}
+	return nil
+}
+
+func (x *VouchLinkRequest) GetExpires() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_Expires
+	}
+	return nil
+}
+
+func (x *VouchLinkRequest) SetWho(v *VouchWho) {
+	x.xxx_hidden_Who = v
+}
+
+func (x *VouchLinkRequest) SetExpires(v *timestamppb.Timestamp) {
+	x.xxx_hidden_Expires = v
+}
+
+func (x *VouchLinkRequest) HasWho() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Who != nil
+}
+
+func (x *VouchLinkRequest) HasExpires() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Expires != nil
+}
+
+func (x *VouchLinkRequest) ClearWho() {
+	x.xxx_hidden_Who = nil
+}
+
+func (x *VouchLinkRequest) ClearExpires() {
+	x.xxx_hidden_Expires = nil
+}
+
+type VouchLinkRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Who *VouchWho
+	// When it stops working, and unset takes this deployment's default.
+	//
+	// A caller may ask for less and not for more: a link is delivered through a
+	// channel roster knows nothing about, and how long that channel takes is the
+	// caller's to know -- but how long a way into somebody's account may lie
+	// around is not.
+	Expires *timestamppb.Timestamp
+}
+
+func (b0 VouchLinkRequest_builder) Build() *VouchLinkRequest {
+	m0 := &VouchLinkRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Who = b.Who
+	x.xxx_hidden_Expires = b.Expires
+	return m0
+}
+
+type VouchLinkResponse struct {
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Token   string                 `protobuf:"bytes,1,opt,name=token"`
+	xxx_hidden_Expires *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=expires"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *VouchLinkResponse) Reset() {
+	*x = VouchLinkResponse{}
+	mi := &file_app_vouch_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VouchLinkResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VouchLinkResponse) ProtoMessage() {}
+
+func (x *VouchLinkResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_app_vouch_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *VouchLinkResponse) GetToken() string {
+	if x != nil {
+		return x.xxx_hidden_Token
+	}
+	return ""
+}
+
+func (x *VouchLinkResponse) GetExpires() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_Expires
+	}
+	return nil
+}
+
+func (x *VouchLinkResponse) SetToken(v string) {
+	x.xxx_hidden_Token = v
+}
+
+func (x *VouchLinkResponse) SetExpires(v *timestamppb.Timestamp) {
+	x.xxx_hidden_Expires = v
+}
+
+func (x *VouchLinkResponse) HasExpires() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Expires != nil
+}
+
+func (x *VouchLinkResponse) ClearExpires() {
+	x.xxx_hidden_Expires = nil
+}
+
+type VouchLinkResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The link, and the only time it is readable.
+	//
+	// Answered for a stranger as well, resolving to nobody. See the note on the
+	// method for why: the alternative is a form that answers *is this address
+	// here* to anybody who types into it.
+	Token   string
+	Expires *timestamppb.Timestamp
+}
+
+func (b0 VouchLinkResponse_builder) Build() *VouchLinkResponse {
+	m0 := &VouchLinkResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Token = b.Token
+	x.xxx_hidden_Expires = b.Expires
+	return m0
+}
+
+type VouchRedeemRequest struct {
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Token   string                 `protobuf:"bytes,1,opt,name=token"`
+	xxx_hidden_Methods []string               `protobuf:"bytes,10,rep,name=methods"`
+	xxx_hidden_Expires *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=expires"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *VouchRedeemRequest) Reset() {
+	*x = VouchRedeemRequest{}
+	mi := &file_app_vouch_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VouchRedeemRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VouchRedeemRequest) ProtoMessage() {}
+
+func (x *VouchRedeemRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_app_vouch_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *VouchRedeemRequest) GetToken() string {
+	if x != nil {
+		return x.xxx_hidden_Token
+	}
+	return ""
+}
+
+func (x *VouchRedeemRequest) GetMethods() []string {
+	if x != nil {
+		return x.xxx_hidden_Methods
+	}
+	return nil
+}
+
+func (x *VouchRedeemRequest) GetExpires() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_Expires
+	}
+	return nil
+}
+
+func (x *VouchRedeemRequest) SetToken(v string) {
+	x.xxx_hidden_Token = v
+}
+
+func (x *VouchRedeemRequest) SetMethods(v []string) {
+	x.xxx_hidden_Methods = v
+}
+
+func (x *VouchRedeemRequest) SetExpires(v *timestamppb.Timestamp) {
+	x.xxx_hidden_Expires = v
+}
+
+func (x *VouchRedeemRequest) HasExpires() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Expires != nil
+}
+
+func (x *VouchRedeemRequest) ClearExpires() {
+	x.xxx_hidden_Expires = nil
+}
+
+type VouchRedeemRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The link, as it was delivered.
+	Token string
+	// What the delegation may be used for, if the redemption finishes the
+	// sign-in. The same rules [VouchService.Delegate] states: refused when empty,
+	// and no wider than the caller.
+	Methods []string
+	// When the delegation stops working. Unset takes the default.
+	Expires *timestamppb.Timestamp
+}
+
+func (b0 VouchRedeemRequest_builder) Build() *VouchRedeemRequest {
+	m0 := &VouchRedeemRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Token = b.Token
+	x.xxx_hidden_Methods = b.Methods
+	x.xxx_hidden_Expires = b.Expires
+	return m0
+}
+
 var File_app_vouch_proto protoreflect.FileDescriptor
 
 const file_app_vouch_proto_rawDesc = "" +
@@ -1882,18 +2169,31 @@ const file_app_vouch_proto_rawDesc = "" +
 	"\x03who\x18\x01 \x01(\v2\x10.roster.VouchWhoR\x03who\x12\x12\n" +
 	"\x04kind\x18\b \x01(\tR\x04kind\"[\n" +
 	"\x13VouchUnlockResponse\x12D\n" +
-	"\x10was_locked_until\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\x0ewasLockedUntil2\xa3\x04\n" +
+	"\x10was_locked_until\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\x0ewasLockedUntil\"l\n" +
+	"\x10VouchLinkRequest\x12\"\n" +
+	"\x03who\x18\x01 \x01(\v2\x10.roster.VouchWhoR\x03who\x124\n" +
+	"\aexpires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\"_\n" +
+	"\x11VouchLinkResponse\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x124\n" +
+	"\aexpires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\"z\n" +
+	"\x12VouchRedeemRequest\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x12\x18\n" +
+	"\amethods\x18\n" +
+	" \x03(\tR\amethods\x124\n" +
+	"\aexpires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\aexpires2\xa5\x05\n" +
 	"\fVouchService\x12A\n" +
 	"\x06Verify\x12\x1a.roster.VouchVerifyRequest\x1a\x1b.roster.VouchVerifyResponse\x128\n" +
 	"\x03Set\x12\x17.roster.VouchSetRequest\x1a\x18.roster.VouchSetResponse\x12G\n" +
 	"\bDelegate\x12\x1c.roster.VouchDelegateRequest\x1a\x1d.roster.VouchDelegateResponse\x12>\n" +
 	"\x05Reset\x12\x19.roster.VouchResetRequest\x1a\x1a.roster.VouchResetResponse\x12A\n" +
-	"\x06Unlock\x12\x1a.roster.VouchUnlockRequest\x1a\x1b.roster.VouchUnlockResponse\x12G\n" +
+	"\x06Unlock\x12\x1a.roster.VouchUnlockRequest\x1a\x1b.roster.VouchUnlockResponse\x12;\n" +
+	"\x04Link\x12\x18.roster.VouchLinkRequest\x1a\x19.roster.VouchLinkResponse\x12C\n" +
+	"\x06Redeem\x12\x1a.roster.VouchRedeemRequest\x1a\x1d.roster.VouchDelegateResponse\x12G\n" +
 	"\bContinue\x12\x1c.roster.VouchContinueRequest\x1a\x1d.roster.VouchContinueResponse\x12>\n" +
 	"\x05Enrol\x12\x19.roster.VouchEnrolRequest\x1a\x1a.roster.VouchEnrolResponse\x12A\n" +
 	"\x06Revoke\x12\x1a.roster.VouchRevokeRequest\x1a\x1b.roster.VouchRevokeResponseB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_app_vouch_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_app_vouch_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
 var file_app_vouch_proto_goTypes = []any{
 	(*VouchWho)(nil),              // 0: roster.VouchWho
 	(*VouchVerifyRequest)(nil),    // 1: roster.VouchVerifyRequest
@@ -1913,44 +2213,55 @@ var file_app_vouch_proto_goTypes = []any{
 	(*VouchResetResponse)(nil),    // 15: roster.VouchResetResponse
 	(*VouchUnlockRequest)(nil),    // 16: roster.VouchUnlockRequest
 	(*VouchUnlockResponse)(nil),   // 17: roster.VouchUnlockResponse
-	(*timestamppb.Timestamp)(nil), // 18: google.protobuf.Timestamp
+	(*VouchLinkRequest)(nil),      // 18: roster.VouchLinkRequest
+	(*VouchLinkResponse)(nil),     // 19: roster.VouchLinkResponse
+	(*VouchRedeemRequest)(nil),    // 20: roster.VouchRedeemRequest
+	(*timestamppb.Timestamp)(nil), // 21: google.protobuf.Timestamp
 }
 var file_app_vouch_proto_depIdxs = []int32{
 	0,  // 0: roster.VouchVerifyRequest.who:type_name -> roster.VouchWho
-	18, // 1: roster.VouchFactor.locked_until:type_name -> google.protobuf.Timestamp
-	18, // 2: roster.VouchVerifyResponse.locked_until:type_name -> google.protobuf.Timestamp
+	21, // 1: roster.VouchFactor.locked_until:type_name -> google.protobuf.Timestamp
+	21, // 2: roster.VouchVerifyResponse.locked_until:type_name -> google.protobuf.Timestamp
 	2,  // 3: roster.VouchVerifyResponse.available:type_name -> roster.VouchFactor
 	3,  // 4: roster.VouchContinueResponse.verified:type_name -> roster.VouchVerifyResponse
 	0,  // 5: roster.VouchSetRequest.who:type_name -> roster.VouchWho
 	0,  // 6: roster.VouchDelegateRequest.who:type_name -> roster.VouchWho
-	18, // 7: roster.VouchDelegateRequest.expires:type_name -> google.protobuf.Timestamp
+	21, // 7: roster.VouchDelegateRequest.expires:type_name -> google.protobuf.Timestamp
 	3,  // 8: roster.VouchDelegateResponse.verified:type_name -> roster.VouchVerifyResponse
-	18, // 9: roster.VouchDelegateResponse.expires:type_name -> google.protobuf.Timestamp
+	21, // 9: roster.VouchDelegateResponse.expires:type_name -> google.protobuf.Timestamp
 	0,  // 10: roster.VouchEnrolRequest.who:type_name -> roster.VouchWho
 	0,  // 11: roster.VouchResetRequest.who:type_name -> roster.VouchWho
 	0,  // 12: roster.VouchUnlockRequest.who:type_name -> roster.VouchWho
-	18, // 13: roster.VouchUnlockResponse.was_locked_until:type_name -> google.protobuf.Timestamp
-	1,  // 14: roster.VouchService.Verify:input_type -> roster.VouchVerifyRequest
-	6,  // 15: roster.VouchService.Set:input_type -> roster.VouchSetRequest
-	8,  // 16: roster.VouchService.Delegate:input_type -> roster.VouchDelegateRequest
-	14, // 17: roster.VouchService.Reset:input_type -> roster.VouchResetRequest
-	16, // 18: roster.VouchService.Unlock:input_type -> roster.VouchUnlockRequest
-	4,  // 19: roster.VouchService.Continue:input_type -> roster.VouchContinueRequest
-	10, // 20: roster.VouchService.Enrol:input_type -> roster.VouchEnrolRequest
-	12, // 21: roster.VouchService.Revoke:input_type -> roster.VouchRevokeRequest
-	3,  // 22: roster.VouchService.Verify:output_type -> roster.VouchVerifyResponse
-	7,  // 23: roster.VouchService.Set:output_type -> roster.VouchSetResponse
-	9,  // 24: roster.VouchService.Delegate:output_type -> roster.VouchDelegateResponse
-	15, // 25: roster.VouchService.Reset:output_type -> roster.VouchResetResponse
-	17, // 26: roster.VouchService.Unlock:output_type -> roster.VouchUnlockResponse
-	5,  // 27: roster.VouchService.Continue:output_type -> roster.VouchContinueResponse
-	11, // 28: roster.VouchService.Enrol:output_type -> roster.VouchEnrolResponse
-	13, // 29: roster.VouchService.Revoke:output_type -> roster.VouchRevokeResponse
-	22, // [22:30] is the sub-list for method output_type
-	14, // [14:22] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	21, // 13: roster.VouchUnlockResponse.was_locked_until:type_name -> google.protobuf.Timestamp
+	0,  // 14: roster.VouchLinkRequest.who:type_name -> roster.VouchWho
+	21, // 15: roster.VouchLinkRequest.expires:type_name -> google.protobuf.Timestamp
+	21, // 16: roster.VouchLinkResponse.expires:type_name -> google.protobuf.Timestamp
+	21, // 17: roster.VouchRedeemRequest.expires:type_name -> google.protobuf.Timestamp
+	1,  // 18: roster.VouchService.Verify:input_type -> roster.VouchVerifyRequest
+	6,  // 19: roster.VouchService.Set:input_type -> roster.VouchSetRequest
+	8,  // 20: roster.VouchService.Delegate:input_type -> roster.VouchDelegateRequest
+	14, // 21: roster.VouchService.Reset:input_type -> roster.VouchResetRequest
+	16, // 22: roster.VouchService.Unlock:input_type -> roster.VouchUnlockRequest
+	18, // 23: roster.VouchService.Link:input_type -> roster.VouchLinkRequest
+	20, // 24: roster.VouchService.Redeem:input_type -> roster.VouchRedeemRequest
+	4,  // 25: roster.VouchService.Continue:input_type -> roster.VouchContinueRequest
+	10, // 26: roster.VouchService.Enrol:input_type -> roster.VouchEnrolRequest
+	12, // 27: roster.VouchService.Revoke:input_type -> roster.VouchRevokeRequest
+	3,  // 28: roster.VouchService.Verify:output_type -> roster.VouchVerifyResponse
+	7,  // 29: roster.VouchService.Set:output_type -> roster.VouchSetResponse
+	9,  // 30: roster.VouchService.Delegate:output_type -> roster.VouchDelegateResponse
+	15, // 31: roster.VouchService.Reset:output_type -> roster.VouchResetResponse
+	17, // 32: roster.VouchService.Unlock:output_type -> roster.VouchUnlockResponse
+	19, // 33: roster.VouchService.Link:output_type -> roster.VouchLinkResponse
+	9,  // 34: roster.VouchService.Redeem:output_type -> roster.VouchDelegateResponse
+	5,  // 35: roster.VouchService.Continue:output_type -> roster.VouchContinueResponse
+	11, // 36: roster.VouchService.Enrol:output_type -> roster.VouchEnrolResponse
+	13, // 37: roster.VouchService.Revoke:output_type -> roster.VouchRevokeResponse
+	28, // [28:38] is the sub-list for method output_type
+	18, // [18:28] is the sub-list for method input_type
+	18, // [18:18] is the sub-list for extension type_name
+	18, // [18:18] is the sub-list for extension extendee
+	0,  // [0:18] is the sub-list for field type_name
 }
 
 func init() { file_app_vouch_proto_init() }
@@ -1964,7 +2275,7 @@ func file_app_vouch_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_vouch_proto_rawDesc), len(file_app_vouch_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   18,
+			NumMessages:   21,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

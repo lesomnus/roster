@@ -123,7 +123,18 @@ func (s *Server) step(ctx context.Context, handle, kind, name string, secret []b
 		// second factor metering itself would be a guessing surface reached by
 		// passing the first and paid for by nobody. Exhausting it closes the
 		// door the attempt came through.
-		res, err := s.failedAt(ctx, c.GetMeteredBy())
+		// Against the row the **first** step used, and against this one when
+		// there was no such row -- which is a link, where the first factor is
+		// not a `Credential` at all. Metering the second factor on itself is
+		// what D21 warns about only because passing the first is usually free;
+		// restarting from a link costs a fresh link, which costs the channel it
+		// is delivered through.
+		metered := c.GetMeteredBy()
+		if len(metered) == 0 {
+			metered = v.GetId()
+		}
+
+		res, err := s.failedAt(ctx, metered)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -140,12 +151,8 @@ func (s *Server) step(ctx context.Context, handle, kind, name string, secret []b
 	}
 
 	done := append(slices.Clone(c.GetSatisfied()), kindOf(kind))
-	metered, err := pdid.From(c.GetMeteredBy())
-	if err != nil {
-		return nil, nil, err
-	}
 
-	res, err := s.answer(ctx, v.GetHolder(), done, metered, issuer)
+	res, err := s.answer(ctx, v.GetHolder(), done, c.GetMeteredBy(), issuer)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -171,7 +178,7 @@ func (s *Server) step(ctx context.Context, handle, kind, name string, secret []b
 // `ok` and a continuation are mutually exclusive, and that is the whole of what
 // keeps an app that has not heard of second factors failing **closed**: it goes
 // on gating on `ok`, and `ok` is set only when there is nothing left.
-func (s *Server) answer(ctx context.Context, h *app.Holder, satisfied []string, metered pdid.Id, issuer pdid.Id) (*app.VouchVerifyResponse, error) {
+func (s *Server) answer(ctx context.Context, h *app.Holder, satisfied []string, metered []byte, issuer pdid.Id) (*app.VouchVerifyResponse, error) {
 	holder, err := pdid.From(h.GetId())
 	if err != nil {
 		return nil, err
@@ -227,7 +234,7 @@ func (s *Server) factors(ctx context.Context, who pdid.Id, satisfied []string) (
 
 	out := []*app.VouchFactor{}
 	for _, v := range vs.GetItems() {
-		if slices.Contains(satisfied, v.GetKind()) {
+		if slices.Contains(satisfied, v.GetKind()) || stoodFor(satisfied, v.GetKind()) {
 			continue
 		}
 		if v.GetKind() == KindTotp && v.GetLastStep() == 0 {
@@ -246,7 +253,7 @@ func (s *Server) factors(ctx context.Context, who pdid.Id, satisfied []string) (
 }
 
 // begin writes the attempt down and answers with the handle.
-func (s *Server) begin(ctx context.Context, who pdid.Id, satisfied []string, metered pdid.Id, issuer pdid.Id) (string, error) {
+func (s *Server) begin(ctx context.Context, who pdid.Id, satisfied []string, metered []byte, issuer pdid.Id) (string, error) {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
 		return "", status.Error(codes.Internal, "a continuation cannot be made just now")
@@ -260,7 +267,7 @@ func (s *Server) begin(ctx context.Context, who pdid.Id, satisfied []string, met
 		Satisfied:   satisfied,
 		Secret:      sum[:],
 		Issuer:      issuer.Bytes(),
-		MeteredBy:   metered.Bytes(),
+		MeteredBy:   metered,
 		DateExpires: timestamppb.New(time.Now().Add(ContinueFor)),
 	}.Build())
 	if err != nil {
@@ -383,4 +390,22 @@ func (s *Server) credentialNamed(ctx context.Context, from app.Server, ref *app.
 			}.Build(),
 		}.Build(),
 	}.Build())
+}
+
+// stoodFor is whether something already satisfied stands where this kind would.
+//
+// # The one substitution, and why it is not sufficiency
+//
+// A link is *a way in*, and it goes where a password goes: click the link, then
+// answer the second form. Asking for the password as well would make a link a
+// third factor rather than a way round the first, which is not what anybody
+// sends one for.
+//
+// This is the only pair, and it is worth saying what it is not. D21 refuses to
+// let roster answer **how many are needed** -- that is sufficiency and it is the
+// caller's. This answers *what is left to prove*, which D21 puts on roster's
+// side in as many words: `available` is *the credentials this person has*, and
+// one they have already come in through is not one of them any more.
+func stoodFor(satisfied []string, kind string) bool {
+	return kind == KindPassword && slices.Contains(satisfied, KindLink)
 }

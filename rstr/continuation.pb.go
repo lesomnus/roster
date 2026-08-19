@@ -322,6 +322,11 @@ type Continuation_builder struct {
 	// So a failed second step counts against the row the **first** step used.
 	// Exhausting the second factor closes the door the attempt came through,
 	// which is what makes the count one count.
+	//
+	// **Empty is a first factor that was not a `Credential` at all** -- a link,
+	// where there is no row to count against. `Vouch.Continue` falls back to the
+	// row it is trying, and the note there says why that is enough: restarting
+	// costs a fresh link, which costs the channel it is delivered through.
 	MeteredBy []byte
 	// When it stops working, and there is no such thing as one that does not.
 	//
@@ -355,16 +360,17 @@ var File_app_continuation_proto protoreflect.FileDescriptor
 
 const file_app_continuation_proto_rawDesc = "" +
 	"\n" +
-	"\x16app/continuation.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xfd\x04\n" +
+	"\x16app/continuation.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xff\x04\n" +
 	"\fContinuation\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12$\n" +
 	"\tsatisfied\x18\b \x03(\tB\x06\xea\x82\x16\x02@\x01R\tsatisfied\x12&\n" +
 	"\x06secret\x18\t \x01(\fB\x0e\xea\x82\x16\x040\x01@\x01\xaa\xc1\x16\x02\b\x01R\x06secret\x12\x1e\n" +
 	"\x06issuer\x18\n" +
-	" \x01(\fB\x06\xea\x82\x16\x02@\x01R\x06issuer\x12'\n" +
+	" \x01(\fB\x06\xea\x82\x16\x02@\x01R\x06issuer\x12)\n" +
 	"\n" +
-	"metered_by\x18\f \x01(\fB\b\xea\x82\x16\x04\x10@@\x01R\tmeteredBy\x12G\n" +
+	"metered_by\x18\f \x01(\fB\n" +
+	"\xea\x82\x16\x06\x10@8\x01@\x01R\tmeteredBy\x12G\n" +
 	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\b\xea\x82\x16\x048\x01@\x01R\vdateExpires\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +

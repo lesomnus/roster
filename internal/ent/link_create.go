@@ -11,57 +11,37 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
-	"github.com/lesomnus/roster/internal/ent/continuation"
 	"github.com/lesomnus/roster/internal/ent/holder"
+	"github.com/lesomnus/roster/internal/ent/link"
 )
 
-// ContinuationCreate is the builder for creating a Continuation entity.
-type ContinuationCreate struct {
+// LinkCreate is the builder for creating a Link entity.
+type LinkCreate struct {
 	config
-	mutation *ContinuationMutation
+	mutation *LinkMutation
 	hooks    []Hook
 }
 
-// SetSatisfied sets the "satisfied" field.
-func (_c *ContinuationCreate) SetSatisfied(v []string) *ContinuationCreate {
-	_c.mutation.SetSatisfied(v)
-	return _c
-}
-
 // SetSecret sets the "secret" field.
-func (_c *ContinuationCreate) SetSecret(v []byte) *ContinuationCreate {
+func (_c *LinkCreate) SetSecret(v []byte) *LinkCreate {
 	_c.mutation.SetSecret(v)
 	return _c
 }
 
 // SetIssuer sets the "issuer" field.
-func (_c *ContinuationCreate) SetIssuer(v []byte) *ContinuationCreate {
+func (_c *LinkCreate) SetIssuer(v []byte) *LinkCreate {
 	_c.mutation.SetIssuer(v)
 	return _c
 }
 
-// SetMeteredBy sets the "metered_by" field.
-func (_c *ContinuationCreate) SetMeteredBy(v uuid.UUID) *ContinuationCreate {
-	_c.mutation.SetMeteredBy(v)
-	return _c
-}
-
-// SetNillableMeteredBy sets the "metered_by" field if the given value is not nil.
-func (_c *ContinuationCreate) SetNillableMeteredBy(v *uuid.UUID) *ContinuationCreate {
-	if v != nil {
-		_c.SetMeteredBy(*v)
-	}
-	return _c
-}
-
 // SetDateExpires sets the "date_expires" field.
-func (_c *ContinuationCreate) SetDateExpires(v time.Time) *ContinuationCreate {
+func (_c *LinkCreate) SetDateExpires(v time.Time) *LinkCreate {
 	_c.mutation.SetDateExpires(v)
 	return _c
 }
 
 // SetNillableDateExpires sets the "date_expires" field if the given value is not nil.
-func (_c *ContinuationCreate) SetNillableDateExpires(v *time.Time) *ContinuationCreate {
+func (_c *LinkCreate) SetNillableDateExpires(v *time.Time) *LinkCreate {
 	if v != nil {
 		_c.SetDateExpires(*v)
 	}
@@ -69,19 +49,19 @@ func (_c *ContinuationCreate) SetNillableDateExpires(v *time.Time) *Continuation
 }
 
 // SetDateUpdated sets the "date_updated" field.
-func (_c *ContinuationCreate) SetDateUpdated(v time.Time) *ContinuationCreate {
+func (_c *LinkCreate) SetDateUpdated(v time.Time) *LinkCreate {
 	_c.mutation.SetDateUpdated(v)
 	return _c
 }
 
 // SetDateErased sets the "date_erased" field.
-func (_c *ContinuationCreate) SetDateErased(v time.Time) *ContinuationCreate {
+func (_c *LinkCreate) SetDateErased(v time.Time) *LinkCreate {
 	_c.mutation.SetDateErased(v)
 	return _c
 }
 
 // SetNillableDateErased sets the "date_erased" field if the given value is not nil.
-func (_c *ContinuationCreate) SetNillableDateErased(v *time.Time) *ContinuationCreate {
+func (_c *LinkCreate) SetNillableDateErased(v *time.Time) *LinkCreate {
 	if v != nil {
 		_c.SetDateErased(*v)
 	}
@@ -89,13 +69,13 @@ func (_c *ContinuationCreate) SetNillableDateErased(v *time.Time) *ContinuationC
 }
 
 // SetDateCreated sets the "date_created" field.
-func (_c *ContinuationCreate) SetDateCreated(v time.Time) *ContinuationCreate {
+func (_c *LinkCreate) SetDateCreated(v time.Time) *LinkCreate {
 	_c.mutation.SetDateCreated(v)
 	return _c
 }
 
 // SetNillableDateCreated sets the "date_created" field if the given value is not nil.
-func (_c *ContinuationCreate) SetNillableDateCreated(v *time.Time) *ContinuationCreate {
+func (_c *LinkCreate) SetNillableDateCreated(v *time.Time) *LinkCreate {
 	if v != nil {
 		_c.SetDateCreated(*v)
 	}
@@ -103,34 +83,34 @@ func (_c *ContinuationCreate) SetNillableDateCreated(v *time.Time) *Continuation
 }
 
 // SetHolderID sets the "holder_id" field.
-func (_c *ContinuationCreate) SetHolderID(v uuid.UUID) *ContinuationCreate {
+func (_c *LinkCreate) SetHolderID(v uuid.UUID) *LinkCreate {
 	_c.mutation.SetHolderID(v)
 	return _c
 }
 
 // SetID sets the "id" field.
-func (_c *ContinuationCreate) SetID(v uuid.UUID) *ContinuationCreate {
+func (_c *LinkCreate) SetID(v uuid.UUID) *LinkCreate {
 	_c.mutation.SetID(v)
 	return _c
 }
 
 // SetHolder sets the "holder" edge to the Holder entity.
-func (_c *ContinuationCreate) SetHolder(v *Holder) *ContinuationCreate {
+func (_c *LinkCreate) SetHolder(v *Holder) *LinkCreate {
 	return _c.SetHolderID(v.ID)
 }
 
-// Mutation returns the ContinuationMutation object of the builder.
-func (_c *ContinuationCreate) Mutation() *ContinuationMutation {
+// Mutation returns the LinkMutation object of the builder.
+func (_c *LinkCreate) Mutation() *LinkMutation {
 	return _c.mutation
 }
 
-// Save creates the Continuation in the database.
-func (_c *ContinuationCreate) Save(ctx context.Context) (*Continuation, error) {
+// Save creates the Link in the database.
+func (_c *LinkCreate) Save(ctx context.Context) (*Link, error) {
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (_c *ContinuationCreate) SaveX(ctx context.Context) *Continuation {
+func (_c *LinkCreate) SaveX(ctx context.Context) *Link {
 	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -139,39 +119,39 @@ func (_c *ContinuationCreate) SaveX(ctx context.Context) *Continuation {
 }
 
 // Exec executes the query.
-func (_c *ContinuationCreate) Exec(ctx context.Context) error {
+func (_c *LinkCreate) Exec(ctx context.Context) error {
 	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_c *ContinuationCreate) ExecX(ctx context.Context) {
+func (_c *LinkCreate) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_c *ContinuationCreate) check() error {
+func (_c *LinkCreate) check() error {
 	if _, ok := _c.mutation.Secret(); !ok {
-		return &ValidationError{Name: "secret", err: errors.New(`ent: missing required field "Continuation.secret"`)}
+		return &ValidationError{Name: "secret", err: errors.New(`ent: missing required field "Link.secret"`)}
 	}
 	if _, ok := _c.mutation.Issuer(); !ok {
-		return &ValidationError{Name: "issuer", err: errors.New(`ent: missing required field "Continuation.issuer"`)}
+		return &ValidationError{Name: "issuer", err: errors.New(`ent: missing required field "Link.issuer"`)}
 	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
-		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Continuation.date_updated"`)}
+		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Link.date_updated"`)}
 	}
 	if _, ok := _c.mutation.HolderID(); !ok {
-		return &ValidationError{Name: "holder_id", err: errors.New(`ent: missing required field "Continuation.holder_id"`)}
+		return &ValidationError{Name: "holder_id", err: errors.New(`ent: missing required field "Link.holder_id"`)}
 	}
 	if len(_c.mutation.HolderIDs()) == 0 {
-		return &ValidationError{Name: "holder", err: errors.New(`ent: missing required edge "Continuation.holder"`)}
+		return &ValidationError{Name: "holder", err: errors.New(`ent: missing required edge "Link.holder"`)}
 	}
 	return nil
 }
 
-func (_c *ContinuationCreate) sqlSave(ctx context.Context) (*Continuation, error) {
+func (_c *LinkCreate) sqlSave(ctx context.Context) (*Link, error) {
 	if err := _c.check(); err != nil {
 		return nil, err
 	}
@@ -194,53 +174,45 @@ func (_c *ContinuationCreate) sqlSave(ctx context.Context) (*Continuation, error
 	return _node, nil
 }
 
-func (_c *ContinuationCreate) createSpec() (*Continuation, *sqlgraph.CreateSpec) {
+func (_c *LinkCreate) createSpec() (*Link, *sqlgraph.CreateSpec) {
 	var (
-		_node = &Continuation{config: _c.config}
-		_spec = sqlgraph.NewCreateSpec(continuation.Table, sqlgraph.NewFieldSpec(continuation.FieldID, field.TypeUUID))
+		_node = &Link{config: _c.config}
+		_spec = sqlgraph.NewCreateSpec(link.Table, sqlgraph.NewFieldSpec(link.FieldID, field.TypeUUID))
 	)
 	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := _c.mutation.Satisfied(); ok {
-		_spec.SetField(continuation.FieldSatisfied, field.TypeJSON, value)
-		_node.Satisfied = value
-	}
 	if value, ok := _c.mutation.Secret(); ok {
-		_spec.SetField(continuation.FieldSecret, field.TypeBytes, value)
+		_spec.SetField(link.FieldSecret, field.TypeBytes, value)
 		_node.Secret = value
 	}
 	if value, ok := _c.mutation.Issuer(); ok {
-		_spec.SetField(continuation.FieldIssuer, field.TypeBytes, value)
+		_spec.SetField(link.FieldIssuer, field.TypeBytes, value)
 		_node.Issuer = value
 	}
-	if value, ok := _c.mutation.MeteredBy(); ok {
-		_spec.SetField(continuation.FieldMeteredBy, field.TypeUUID, value)
-		_node.MeteredBy = &value
-	}
 	if value, ok := _c.mutation.DateExpires(); ok {
-		_spec.SetField(continuation.FieldDateExpires, field.TypeTime, value)
+		_spec.SetField(link.FieldDateExpires, field.TypeTime, value)
 		_node.DateExpires = &value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
-		_spec.SetField(continuation.FieldDateUpdated, field.TypeTime, value)
+		_spec.SetField(link.FieldDateUpdated, field.TypeTime, value)
 		_node.DateUpdated = value
 	}
 	if value, ok := _c.mutation.DateErased(); ok {
-		_spec.SetField(continuation.FieldDateErased, field.TypeTime, value)
+		_spec.SetField(link.FieldDateErased, field.TypeTime, value)
 		_node.DateErased = &value
 	}
 	if value, ok := _c.mutation.DateCreated(); ok {
-		_spec.SetField(continuation.FieldDateCreated, field.TypeTime, value)
+		_spec.SetField(link.FieldDateCreated, field.TypeTime, value)
 		_node.DateCreated = value
 	}
 	if nodes := _c.mutation.HolderIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   continuation.HolderTable,
-			Columns: []string{continuation.HolderColumn},
+			Table:   link.HolderTable,
+			Columns: []string{link.HolderColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(holder.FieldID, field.TypeUUID),
@@ -255,26 +227,26 @@ func (_c *ContinuationCreate) createSpec() (*Continuation, *sqlgraph.CreateSpec)
 	return _node, _spec
 }
 
-// ContinuationCreateBulk is the builder for creating many Continuation entities in bulk.
-type ContinuationCreateBulk struct {
+// LinkCreateBulk is the builder for creating many Link entities in bulk.
+type LinkCreateBulk struct {
 	config
 	err      error
-	builders []*ContinuationCreate
+	builders []*LinkCreate
 }
 
-// Save creates the Continuation entities in the database.
-func (_c *ContinuationCreateBulk) Save(ctx context.Context) ([]*Continuation, error) {
+// Save creates the Link entities in the database.
+func (_c *LinkCreateBulk) Save(ctx context.Context) ([]*Link, error) {
 	if _c.err != nil {
 		return nil, _c.err
 	}
 	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
-	nodes := make([]*Continuation, len(_c.builders))
+	nodes := make([]*Link, len(_c.builders))
 	mutators := make([]Mutator, len(_c.builders))
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				mutation, ok := m.(*ContinuationMutation)
+				mutation, ok := m.(*LinkMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
 				}
@@ -317,7 +289,7 @@ func (_c *ContinuationCreateBulk) Save(ctx context.Context) ([]*Continuation, er
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_c *ContinuationCreateBulk) SaveX(ctx context.Context) []*Continuation {
+func (_c *LinkCreateBulk) SaveX(ctx context.Context) []*Link {
 	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -326,13 +298,13 @@ func (_c *ContinuationCreateBulk) SaveX(ctx context.Context) []*Continuation {
 }
 
 // Exec executes the query.
-func (_c *ContinuationCreateBulk) Exec(ctx context.Context) error {
+func (_c *LinkCreateBulk) Exec(ctx context.Context) error {
 	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_c *ContinuationCreateBulk) ExecX(ctx context.Context) {
+func (_c *LinkCreateBulk) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}

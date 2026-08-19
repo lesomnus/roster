@@ -11,32 +11,32 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/lesomnus/roster/internal/ent/continuation"
+	"github.com/lesomnus/roster/internal/ent/link"
 	"github.com/lesomnus/roster/internal/ent/predicate"
 )
 
-// ContinuationUpdate is the builder for updating Continuation entities.
-type ContinuationUpdate struct {
+// LinkUpdate is the builder for updating Link entities.
+type LinkUpdate struct {
 	config
 	hooks     []Hook
-	mutation  *ContinuationMutation
+	mutation  *LinkMutation
 	modifiers []func(*sql.UpdateBuilder)
 }
 
-// Where appends a list predicates to the ContinuationUpdate builder.
-func (_u *ContinuationUpdate) Where(ps ...predicate.Continuation) *ContinuationUpdate {
+// Where appends a list predicates to the LinkUpdate builder.
+func (_u *LinkUpdate) Where(ps ...predicate.Link) *LinkUpdate {
 	_u.mutation.Where(ps...)
 	return _u
 }
 
 // SetDateUpdated sets the "date_updated" field.
-func (_u *ContinuationUpdate) SetDateUpdated(v time.Time) *ContinuationUpdate {
+func (_u *LinkUpdate) SetDateUpdated(v time.Time) *LinkUpdate {
 	_u.mutation.SetDateUpdated(v)
 	return _u
 }
 
 // SetNillableDateUpdated sets the "date_updated" field if the given value is not nil.
-func (_u *ContinuationUpdate) SetNillableDateUpdated(v *time.Time) *ContinuationUpdate {
+func (_u *LinkUpdate) SetNillableDateUpdated(v *time.Time) *LinkUpdate {
 	if v != nil {
 		_u.SetDateUpdated(*v)
 	}
@@ -44,13 +44,13 @@ func (_u *ContinuationUpdate) SetNillableDateUpdated(v *time.Time) *Continuation
 }
 
 // SetDateErased sets the "date_erased" field.
-func (_u *ContinuationUpdate) SetDateErased(v time.Time) *ContinuationUpdate {
+func (_u *LinkUpdate) SetDateErased(v time.Time) *LinkUpdate {
 	_u.mutation.SetDateErased(v)
 	return _u
 }
 
 // SetNillableDateErased sets the "date_erased" field if the given value is not nil.
-func (_u *ContinuationUpdate) SetNillableDateErased(v *time.Time) *ContinuationUpdate {
+func (_u *LinkUpdate) SetNillableDateErased(v *time.Time) *LinkUpdate {
 	if v != nil {
 		_u.SetDateErased(*v)
 	}
@@ -58,23 +58,23 @@ func (_u *ContinuationUpdate) SetNillableDateErased(v *time.Time) *ContinuationU
 }
 
 // ClearDateErased clears the value of the "date_erased" field.
-func (_u *ContinuationUpdate) ClearDateErased() *ContinuationUpdate {
+func (_u *LinkUpdate) ClearDateErased() *LinkUpdate {
 	_u.mutation.ClearDateErased()
 	return _u
 }
 
-// Mutation returns the ContinuationMutation object of the builder.
-func (_u *ContinuationUpdate) Mutation() *ContinuationMutation {
+// Mutation returns the LinkMutation object of the builder.
+func (_u *LinkUpdate) Mutation() *LinkMutation {
 	return _u.mutation
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (_u *ContinuationUpdate) Save(ctx context.Context) (int, error) {
+func (_u *LinkUpdate) Save(ctx context.Context) (int, error) {
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_u *ContinuationUpdate) SaveX(ctx context.Context) int {
+func (_u *LinkUpdate) SaveX(ctx context.Context) int {
 	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -83,37 +83,37 @@ func (_u *ContinuationUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (_u *ContinuationUpdate) Exec(ctx context.Context) error {
+func (_u *LinkUpdate) Exec(ctx context.Context) error {
 	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_u *ContinuationUpdate) ExecX(ctx context.Context) {
+func (_u *LinkUpdate) ExecX(ctx context.Context) {
 	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_u *ContinuationUpdate) check() error {
+func (_u *LinkUpdate) check() error {
 	if _u.mutation.HolderCleared() && len(_u.mutation.HolderIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Continuation.holder"`)
+		return errors.New(`ent: clearing a required unique edge "Link.holder"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (_u *ContinuationUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ContinuationUpdate {
+func (_u *LinkUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *LinkUpdate {
 	_u.modifiers = append(_u.modifiers, modifiers...)
 	return _u
 }
 
-func (_u *ContinuationUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+func (_u *LinkUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(continuation.Table, continuation.Columns, sqlgraph.NewFieldSpec(continuation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(link.Table, link.Columns, sqlgraph.NewFieldSpec(link.FieldID, field.TypeUUID))
 	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -121,31 +121,25 @@ func (_u *ContinuationUpdate) sqlSave(ctx context.Context) (_node int, err error
 			}
 		}
 	}
-	if _u.mutation.SatisfiedCleared() {
-		_spec.ClearField(continuation.FieldSatisfied, field.TypeJSON)
-	}
-	if _u.mutation.MeteredByCleared() {
-		_spec.ClearField(continuation.FieldMeteredBy, field.TypeUUID)
-	}
 	if _u.mutation.DateExpiresCleared() {
-		_spec.ClearField(continuation.FieldDateExpires, field.TypeTime)
+		_spec.ClearField(link.FieldDateExpires, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
-		_spec.SetField(continuation.FieldDateUpdated, field.TypeTime, value)
+		_spec.SetField(link.FieldDateUpdated, field.TypeTime, value)
 	}
 	if value, ok := _u.mutation.DateErased(); ok {
-		_spec.SetField(continuation.FieldDateErased, field.TypeTime, value)
+		_spec.SetField(link.FieldDateErased, field.TypeTime, value)
 	}
 	if _u.mutation.DateErasedCleared() {
-		_spec.ClearField(continuation.FieldDateErased, field.TypeTime)
+		_spec.ClearField(link.FieldDateErased, field.TypeTime)
 	}
 	if _u.mutation.DateCreatedCleared() {
-		_spec.ClearField(continuation.FieldDateCreated, field.TypeTime)
+		_spec.ClearField(link.FieldDateCreated, field.TypeTime)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
-			err = &NotFoundError{continuation.Label}
+			err = &NotFoundError{link.Label}
 		} else if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -155,23 +149,23 @@ func (_u *ContinuationUpdate) sqlSave(ctx context.Context) (_node int, err error
 	return _node, nil
 }
 
-// ContinuationUpdateOne is the builder for updating a single Continuation entity.
-type ContinuationUpdateOne struct {
+// LinkUpdateOne is the builder for updating a single Link entity.
+type LinkUpdateOne struct {
 	config
 	fields    []string
 	hooks     []Hook
-	mutation  *ContinuationMutation
+	mutation  *LinkMutation
 	modifiers []func(*sql.UpdateBuilder)
 }
 
 // SetDateUpdated sets the "date_updated" field.
-func (_u *ContinuationUpdateOne) SetDateUpdated(v time.Time) *ContinuationUpdateOne {
+func (_u *LinkUpdateOne) SetDateUpdated(v time.Time) *LinkUpdateOne {
 	_u.mutation.SetDateUpdated(v)
 	return _u
 }
 
 // SetNillableDateUpdated sets the "date_updated" field if the given value is not nil.
-func (_u *ContinuationUpdateOne) SetNillableDateUpdated(v *time.Time) *ContinuationUpdateOne {
+func (_u *LinkUpdateOne) SetNillableDateUpdated(v *time.Time) *LinkUpdateOne {
 	if v != nil {
 		_u.SetDateUpdated(*v)
 	}
@@ -179,13 +173,13 @@ func (_u *ContinuationUpdateOne) SetNillableDateUpdated(v *time.Time) *Continuat
 }
 
 // SetDateErased sets the "date_erased" field.
-func (_u *ContinuationUpdateOne) SetDateErased(v time.Time) *ContinuationUpdateOne {
+func (_u *LinkUpdateOne) SetDateErased(v time.Time) *LinkUpdateOne {
 	_u.mutation.SetDateErased(v)
 	return _u
 }
 
 // SetNillableDateErased sets the "date_erased" field if the given value is not nil.
-func (_u *ContinuationUpdateOne) SetNillableDateErased(v *time.Time) *ContinuationUpdateOne {
+func (_u *LinkUpdateOne) SetNillableDateErased(v *time.Time) *LinkUpdateOne {
 	if v != nil {
 		_u.SetDateErased(*v)
 	}
@@ -193,36 +187,36 @@ func (_u *ContinuationUpdateOne) SetNillableDateErased(v *time.Time) *Continuati
 }
 
 // ClearDateErased clears the value of the "date_erased" field.
-func (_u *ContinuationUpdateOne) ClearDateErased() *ContinuationUpdateOne {
+func (_u *LinkUpdateOne) ClearDateErased() *LinkUpdateOne {
 	_u.mutation.ClearDateErased()
 	return _u
 }
 
-// Mutation returns the ContinuationMutation object of the builder.
-func (_u *ContinuationUpdateOne) Mutation() *ContinuationMutation {
+// Mutation returns the LinkMutation object of the builder.
+func (_u *LinkUpdateOne) Mutation() *LinkMutation {
 	return _u.mutation
 }
 
-// Where appends a list predicates to the ContinuationUpdate builder.
-func (_u *ContinuationUpdateOne) Where(ps ...predicate.Continuation) *ContinuationUpdateOne {
+// Where appends a list predicates to the LinkUpdate builder.
+func (_u *LinkUpdateOne) Where(ps ...predicate.Link) *LinkUpdateOne {
 	_u.mutation.Where(ps...)
 	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (_u *ContinuationUpdateOne) Select(field string, fields ...string) *ContinuationUpdateOne {
+func (_u *LinkUpdateOne) Select(field string, fields ...string) *LinkUpdateOne {
 	_u.fields = append([]string{field}, fields...)
 	return _u
 }
 
-// Save executes the query and returns the updated Continuation entity.
-func (_u *ContinuationUpdateOne) Save(ctx context.Context) (*Continuation, error) {
+// Save executes the query and returns the updated Link entity.
+func (_u *LinkUpdateOne) Save(ctx context.Context) (*Link, error) {
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_u *ContinuationUpdateOne) SaveX(ctx context.Context) *Continuation {
+func (_u *LinkUpdateOne) SaveX(ctx context.Context) *Link {
 	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -231,50 +225,50 @@ func (_u *ContinuationUpdateOne) SaveX(ctx context.Context) *Continuation {
 }
 
 // Exec executes the query on the entity.
-func (_u *ContinuationUpdateOne) Exec(ctx context.Context) error {
+func (_u *LinkUpdateOne) Exec(ctx context.Context) error {
 	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_u *ContinuationUpdateOne) ExecX(ctx context.Context) {
+func (_u *LinkUpdateOne) ExecX(ctx context.Context) {
 	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_u *ContinuationUpdateOne) check() error {
+func (_u *LinkUpdateOne) check() error {
 	if _u.mutation.HolderCleared() && len(_u.mutation.HolderIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Continuation.holder"`)
+		return errors.New(`ent: clearing a required unique edge "Link.holder"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (_u *ContinuationUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ContinuationUpdateOne {
+func (_u *LinkUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *LinkUpdateOne {
 	_u.modifiers = append(_u.modifiers, modifiers...)
 	return _u
 }
 
-func (_u *ContinuationUpdateOne) sqlSave(ctx context.Context) (_node *Continuation, err error) {
+func (_u *LinkUpdateOne) sqlSave(ctx context.Context) (_node *Link, err error) {
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(continuation.Table, continuation.Columns, sqlgraph.NewFieldSpec(continuation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(link.Table, link.Columns, sqlgraph.NewFieldSpec(link.FieldID, field.TypeUUID))
 	id, ok := _u.mutation.ID()
 	if !ok {
-		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Continuation.id" for update`)}
+		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Link.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
 	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, continuation.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, link.FieldID)
 		for _, f := range fields {
-			if !continuation.ValidColumn(f) {
+			if !link.ValidColumn(f) {
 				return nil, &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 			}
-			if f != continuation.FieldID {
+			if f != link.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, f)
 			}
 		}
@@ -286,34 +280,28 @@ func (_u *ContinuationUpdateOne) sqlSave(ctx context.Context) (_node *Continuati
 			}
 		}
 	}
-	if _u.mutation.SatisfiedCleared() {
-		_spec.ClearField(continuation.FieldSatisfied, field.TypeJSON)
-	}
-	if _u.mutation.MeteredByCleared() {
-		_spec.ClearField(continuation.FieldMeteredBy, field.TypeUUID)
-	}
 	if _u.mutation.DateExpiresCleared() {
-		_spec.ClearField(continuation.FieldDateExpires, field.TypeTime)
+		_spec.ClearField(link.FieldDateExpires, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
-		_spec.SetField(continuation.FieldDateUpdated, field.TypeTime, value)
+		_spec.SetField(link.FieldDateUpdated, field.TypeTime, value)
 	}
 	if value, ok := _u.mutation.DateErased(); ok {
-		_spec.SetField(continuation.FieldDateErased, field.TypeTime, value)
+		_spec.SetField(link.FieldDateErased, field.TypeTime, value)
 	}
 	if _u.mutation.DateErasedCleared() {
-		_spec.ClearField(continuation.FieldDateErased, field.TypeTime)
+		_spec.ClearField(link.FieldDateErased, field.TypeTime)
 	}
 	if _u.mutation.DateCreatedCleared() {
-		_spec.ClearField(continuation.FieldDateCreated, field.TypeTime)
+		_spec.ClearField(link.FieldDateCreated, field.TypeTime)
 	}
 	_spec.AddModifiers(_u.modifiers...)
-	_node = &Continuation{config: _u.config}
+	_node = &Link{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
 	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
-			err = &NotFoundError{continuation.Label}
+			err = &NotFoundError{link.Label}
 		} else if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}

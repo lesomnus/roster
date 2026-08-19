@@ -53,6 +53,9 @@ type Host func(*sql.Selector)
 // Identity is the predicate function for identity builders.
 type Identity func(*sql.Selector)
 
+// Link is the predicate function for link builders.
+type Link func(*sql.Selector)
+
 // MailDomain is the predicate function for maildomain builders.
 type MailDomain func(*sql.Selector)
 

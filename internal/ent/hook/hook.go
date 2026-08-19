@@ -153,6 +153,18 @@ func (f IdentityFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, er
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.IdentityMutation", m)
 }
 
+// The LinkFunc type is an adapter to allow the use of ordinary
+// function as Link mutator.
+type LinkFunc func(context.Context, *ent.LinkMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f LinkFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.LinkMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.LinkMutation", m)
+}
+
 // The MailDomainFunc type is an adapter to allow the use of ordinary
 // function as MailDomain mutator.
 type MailDomainFunc func(context.Context, *ent.MailDomainMutation) (ent.Value, error)

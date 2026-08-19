@@ -7,6 +7,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 
@@ -63,15 +65,6 @@ func (s *Server) Delegate(ctx context.Context, req *app.VouchDelegateRequest) (*
 		return nil, err
 	}
 
-	expires := time.Now().Add(keys.DelegateFor)
-	if u := req.GetExpires(); u != nil {
-		expires = u.AsTime()
-		if !expires.After(time.Now()) {
-			return nil, status.Error(codes.InvalidArgument,
-				"expires: a delegation cannot have already expired")
-		}
-	}
-
 	issuer, err := issuerOf(ctx)
 	if err != nil {
 		return nil, err
@@ -109,6 +102,24 @@ func (s *Server) Delegate(ctx context.Context, req *app.VouchDelegateRequest) (*
 	who, err := pdid.From(v.GetHolder().GetId())
 	if err != nil {
 		return nil, err
+	}
+
+	return s.mint(ctx, res, who, issuer, methods, req.GetExpires())
+}
+
+// mint is the credential a finished sign-in answers with.
+//
+// One function rather than two, because [Server.Redeem] finishes a sign-in the
+// same way and a second copy is a second set of rules about who it is for and
+// how long it lives.
+func (s *Server) mint(ctx context.Context, res *app.VouchVerifyResponse, who, issuer pdid.Id, methods []string, until *timestamppb.Timestamp) (*app.VouchDelegateResponse, error) {
+	expires := time.Now().Add(keys.DelegateFor)
+	if u := until; u != nil {
+		expires = u.AsTime()
+		if !expires.After(time.Now()) {
+			return nil, status.Error(codes.InvalidArgument,
+				"expires: a delegation cannot have already expired")
+		}
 	}
 
 	token, row, err := keys.Delegate(ctx, s.open, keys.Delegated{

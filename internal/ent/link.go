@@ -3,7 +3,6 @@
 package ent
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -11,23 +10,19 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
-	"github.com/lesomnus/roster/internal/ent/continuation"
 	"github.com/lesomnus/roster/internal/ent/holder"
+	"github.com/lesomnus/roster/internal/ent/link"
 )
 
-// Continuation is the model entity for the Continuation schema.
-type Continuation struct {
+// Link is the model entity for the Link schema.
+type Link struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
-	// Satisfied holds the value of the "satisfied" field.
-	Satisfied []string `json:"satisfied,omitempty"`
 	// Secret holds the value of the "secret" field.
 	Secret []byte `json:"secret,omitempty"`
 	// Issuer holds the value of the "issuer" field.
 	Issuer []byte `json:"issuer,omitempty"`
-	// MeteredBy holds the value of the "metered_by" field.
-	MeteredBy *uuid.UUID `json:"metered_by,omitempty"`
 	// DateExpires holds the value of the "date_expires" field.
 	DateExpires *time.Time `json:"date_expires,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
@@ -39,13 +34,13 @@ type Continuation struct {
 	// HolderID holds the value of the "holder_id" field.
 	HolderID uuid.UUID `json:"holder_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
-	// The values are being populated by the ContinuationQuery when eager-loading is set.
-	Edges        ContinuationEdges `json:"edges"`
+	// The values are being populated by the LinkQuery when eager-loading is set.
+	Edges        LinkEdges `json:"edges"`
 	selectValues sql.SelectValues
 }
 
-// ContinuationEdges holds the relations/edges for other nodes in the graph.
-type ContinuationEdges struct {
+// LinkEdges holds the relations/edges for other nodes in the graph.
+type LinkEdges struct {
 	// Holder holds the value of the holder edge.
 	Holder *Holder `json:"holder,omitempty"`
 	// loadedTypes holds the information for reporting if a
@@ -55,7 +50,7 @@ type ContinuationEdges struct {
 
 // HolderOrErr returns the Holder value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e ContinuationEdges) HolderOrErr() (*Holder, error) {
+func (e LinkEdges) HolderOrErr() (*Holder, error) {
 	if e.Holder != nil {
 		return e.Holder, nil
 	} else if e.loadedTypes[0] {
@@ -65,17 +60,15 @@ func (e ContinuationEdges) HolderOrErr() (*Holder, error) {
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
-func (*Continuation) scanValues(columns []string) ([]any, error) {
+func (*Link) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case continuation.FieldMeteredBy:
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
-		case continuation.FieldSatisfied, continuation.FieldSecret, continuation.FieldIssuer:
+		case link.FieldSecret, link.FieldIssuer:
 			values[i] = new([]byte)
-		case continuation.FieldDateExpires, continuation.FieldDateUpdated, continuation.FieldDateErased, continuation.FieldDateCreated:
+		case link.FieldDateExpires, link.FieldDateUpdated, link.FieldDateErased, link.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case continuation.FieldID, continuation.FieldHolderID:
+		case link.FieldID, link.FieldHolderID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -85,73 +78,58 @@ func (*Continuation) scanValues(columns []string) ([]any, error) {
 }
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
-// to the Continuation fields.
-func (_m *Continuation) assignValues(columns []string, values []any) error {
+// to the Link fields.
+func (_m *Link) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
 	for i := range columns {
 		switch columns[i] {
-		case continuation.FieldID:
+		case link.FieldID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				_m.ID = *value
 			}
-		case continuation.FieldSatisfied:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field satisfied", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &_m.Satisfied); err != nil {
-					return fmt.Errorf("unmarshal field satisfied: %w", err)
-				}
-			}
-		case continuation.FieldSecret:
+		case link.FieldSecret:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field secret", values[i])
 			} else if value != nil {
 				_m.Secret = *value
 			}
-		case continuation.FieldIssuer:
+		case link.FieldIssuer:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field issuer", values[i])
 			} else if value != nil {
 				_m.Issuer = *value
 			}
-		case continuation.FieldMeteredBy:
-			if value, ok := values[i].(*sql.NullScanner); !ok {
-				return fmt.Errorf("unexpected type %T for field metered_by", values[i])
-			} else if value.Valid {
-				_m.MeteredBy = new(uuid.UUID)
-				*_m.MeteredBy = *value.S.(*uuid.UUID)
-			}
-		case continuation.FieldDateExpires:
+		case link.FieldDateExpires:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field date_expires", values[i])
 			} else if value.Valid {
 				_m.DateExpires = new(time.Time)
 				*_m.DateExpires = value.Time
 			}
-		case continuation.FieldDateUpdated:
+		case link.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field date_updated", values[i])
 			} else if value.Valid {
 				_m.DateUpdated = value.Time
 			}
-		case continuation.FieldDateErased:
+		case link.FieldDateErased:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field date_erased", values[i])
 			} else if value.Valid {
 				_m.DateErased = new(time.Time)
 				*_m.DateErased = value.Time
 			}
-		case continuation.FieldDateCreated:
+		case link.FieldDateCreated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field date_created", values[i])
 			} else if value.Valid {
 				_m.DateCreated = value.Time
 			}
-		case continuation.FieldHolderID:
+		case link.FieldHolderID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field holder_id", values[i])
 			} else if value != nil {
@@ -164,53 +142,45 @@ func (_m *Continuation) assignValues(columns []string, values []any) error {
 	return nil
 }
 
-// Value returns the ent.Value that was dynamically selected and assigned to the Continuation.
+// Value returns the ent.Value that was dynamically selected and assigned to the Link.
 // This includes values selected through modifiers, order, etc.
-func (_m *Continuation) Value(name string) (ent.Value, error) {
+func (_m *Link) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
 }
 
-// QueryHolder queries the "holder" edge of the Continuation entity.
-func (_m *Continuation) QueryHolder() *HolderQuery {
-	return NewContinuationClient(_m.config).QueryHolder(_m)
+// QueryHolder queries the "holder" edge of the Link entity.
+func (_m *Link) QueryHolder() *HolderQuery {
+	return NewLinkClient(_m.config).QueryHolder(_m)
 }
 
-// Update returns a builder for updating this Continuation.
-// Note that you need to call Continuation.Unwrap() before calling this method if this Continuation
+// Update returns a builder for updating this Link.
+// Note that you need to call Link.Unwrap() before calling this method if this Link
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (_m *Continuation) Update() *ContinuationUpdateOne {
-	return NewContinuationClient(_m.config).UpdateOne(_m)
+func (_m *Link) Update() *LinkUpdateOne {
+	return NewLinkClient(_m.config).UpdateOne(_m)
 }
 
-// Unwrap unwraps the Continuation entity that was returned from a transaction after it was closed,
+// Unwrap unwraps the Link entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (_m *Continuation) Unwrap() *Continuation {
+func (_m *Link) Unwrap() *Link {
 	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
-		panic("ent: Continuation is not a transactional entity")
+		panic("ent: Link is not a transactional entity")
 	}
 	_m.config.driver = _tx.drv
 	return _m
 }
 
 // String implements the fmt.Stringer.
-func (_m *Continuation) String() string {
+func (_m *Link) String() string {
 	var builder strings.Builder
-	builder.WriteString("Continuation(")
+	builder.WriteString("Link(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
-	builder.WriteString("satisfied=")
-	builder.WriteString(fmt.Sprintf("%v", _m.Satisfied))
-	builder.WriteString(", ")
 	builder.WriteString("secret=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Secret))
 	builder.WriteString(", ")
 	builder.WriteString("issuer=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Issuer))
-	builder.WriteString(", ")
-	if v := _m.MeteredBy; v != nil {
-		builder.WriteString("metered_by=")
-		builder.WriteString(fmt.Sprintf("%v", *v))
-	}
 	builder.WriteString(", ")
 	if v := _m.DateExpires; v != nil {
 		builder.WriteString("date_expires=")
@@ -234,5 +204,5 @@ func (_m *Continuation) String() string {
 	return builder.String()
 }
 
-// Continuations is a parsable slice of Continuation.
-type Continuations []*Continuation
+// Links is a parsable slice of Link.
+type Links []*Link

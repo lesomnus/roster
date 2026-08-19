@@ -28,6 +28,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/host"
 	"github.com/lesomnus/roster/internal/ent/identity"
+	"github.com/lesomnus/roster/internal/ent/link"
 	"github.com/lesomnus/roster/internal/ent/maildomain"
 	"github.com/lesomnus/roster/internal/ent/outbox"
 	"github.com/lesomnus/roster/internal/ent/role"
@@ -67,6 +68,8 @@ type Client struct {
 	Host *HostClient
 	// Identity is the client for interacting with the Identity builders.
 	Identity *IdentityClient
+	// Link is the client for interacting with the Link builders.
+	Link *LinkClient
 	// MailDomain is the client for interacting with the MailDomain builders.
 	MailDomain *MailDomainClient
 	// Outbox is the client for interacting with the Outbox builders.
@@ -106,6 +109,7 @@ func (c *Client) init() {
 	c.Holder = NewHolderClient(c.config)
 	c.Host = NewHostClient(c.config)
 	c.Identity = NewIdentityClient(c.config)
+	c.Link = NewLinkClient(c.config)
 	c.MailDomain = NewMailDomainClient(c.config)
 	c.Outbox = NewOutboxClient(c.config)
 	c.Role = NewRoleClient(c.config)
@@ -218,6 +222,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Holder:          NewHolderClient(cfg),
 		Host:            NewHostClient(cfg),
 		Identity:        NewIdentityClient(cfg),
+		Link:            NewLinkClient(cfg),
 		MailDomain:      NewMailDomainClient(cfg),
 		Outbox:          NewOutboxClient(cfg),
 		Role:            NewRoleClient(cfg),
@@ -257,6 +262,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Holder:          NewHolderClient(cfg),
 		Host:            NewHostClient(cfg),
 		Identity:        NewIdentityClient(cfg),
+		Link:            NewLinkClient(cfg),
 		MailDomain:      NewMailDomainClient(cfg),
 		Outbox:          NewOutboxClient(cfg),
 		Role:            NewRoleClient(cfg),
@@ -295,7 +301,7 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.ApiKey, c.Audit, c.Binding, c.Continuation, c.Credential, c.Delegation,
-		c.Email, c.Group, c.GroupMembership, c.Holder, c.Host, c.Identity,
+		c.Email, c.Group, c.GroupMembership, c.Holder, c.Host, c.Identity, c.Link,
 		c.MailDomain, c.Outbox, c.Role, c.Site, c.SiteMembership, c.Team,
 		c.TeamMembership, c.Tenant,
 	} {
@@ -308,7 +314,7 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.ApiKey, c.Audit, c.Binding, c.Continuation, c.Credential, c.Delegation,
-		c.Email, c.Group, c.GroupMembership, c.Holder, c.Host, c.Identity,
+		c.Email, c.Group, c.GroupMembership, c.Holder, c.Host, c.Identity, c.Link,
 		c.MailDomain, c.Outbox, c.Role, c.Site, c.SiteMembership, c.Team,
 		c.TeamMembership, c.Tenant,
 	} {
@@ -343,6 +349,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Host.mutate(ctx, m)
 	case *IdentityMutation:
 		return c.Identity.mutate(ctx, m)
+	case *LinkMutation:
+		return c.Link.mutate(ctx, m)
 	case *MailDomainMutation:
 		return c.MailDomain.mutate(ctx, m)
 	case *OutboxMutation:
@@ -2232,6 +2240,155 @@ func (c *IdentityClient) mutate(ctx context.Context, m *IdentityMutation) (Value
 	}
 }
 
+// LinkClient is a client for the Link schema.
+type LinkClient struct {
+	config
+}
+
+// NewLinkClient returns a client for the Link from the given config.
+func NewLinkClient(c config) *LinkClient {
+	return &LinkClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `link.Hooks(f(g(h())))`.
+func (c *LinkClient) Use(hooks ...Hook) {
+	c.hooks.Link = append(c.hooks.Link, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `link.Intercept(f(g(h())))`.
+func (c *LinkClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Link = append(c.inters.Link, interceptors...)
+}
+
+// Create returns a builder for creating a Link entity.
+func (c *LinkClient) Create() *LinkCreate {
+	mutation := newLinkMutation(c.config, OpCreate)
+	return &LinkCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Link entities.
+func (c *LinkClient) CreateBulk(builders ...*LinkCreate) *LinkCreateBulk {
+	return &LinkCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *LinkClient) MapCreateBulk(slice any, setFunc func(*LinkCreate, int)) *LinkCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &LinkCreateBulk{err: fmt.Errorf("calling to LinkClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*LinkCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &LinkCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Link.
+func (c *LinkClient) Update() *LinkUpdate {
+	mutation := newLinkMutation(c.config, OpUpdate)
+	return &LinkUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *LinkClient) UpdateOne(_m *Link) *LinkUpdateOne {
+	mutation := newLinkMutation(c.config, OpUpdateOne, withLink(_m))
+	return &LinkUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *LinkClient) UpdateOneID(id uuid.UUID) *LinkUpdateOne {
+	mutation := newLinkMutation(c.config, OpUpdateOne, withLinkID(id))
+	return &LinkUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Link.
+func (c *LinkClient) Delete() *LinkDelete {
+	mutation := newLinkMutation(c.config, OpDelete)
+	return &LinkDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *LinkClient) DeleteOne(_m *Link) *LinkDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *LinkClient) DeleteOneID(id uuid.UUID) *LinkDeleteOne {
+	builder := c.Delete().Where(link.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &LinkDeleteOne{builder}
+}
+
+// Query returns a query builder for Link.
+func (c *LinkClient) Query() *LinkQuery {
+	return &LinkQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeLink},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Link entity by its id.
+func (c *LinkClient) Get(ctx context.Context, id uuid.UUID) (*Link, error) {
+	return c.Query().Where(link.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *LinkClient) GetX(ctx context.Context, id uuid.UUID) *Link {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryHolder queries the holder edge of a Link.
+func (c *LinkClient) QueryHolder(_m *Link) *HolderQuery {
+	query := (&HolderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(link.Table, link.FieldID, id),
+			sqlgraph.To(holder.Table, holder.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, link.HolderTable, link.HolderColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *LinkClient) Hooks() []Hook {
+	return c.hooks.Link
+}
+
+// Interceptors returns the client interceptors.
+func (c *LinkClient) Interceptors() []Interceptor {
+	return c.inters.Link
+}
+
+func (c *LinkClient) mutate(ctx context.Context, m *LinkMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&LinkCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&LinkUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&LinkUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&LinkDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Link mutation op: %q", m.Op())
+	}
+}
+
 // MailDomainClient is a client for the MailDomain schema.
 type MailDomainClient struct {
 	config
@@ -3476,12 +3633,12 @@ func (c *TenantClient) mutate(ctx context.Context, m *TenantMutation) (Value, er
 type (
 	hooks struct {
 		ApiKey, Audit, Binding, Continuation, Credential, Delegation, Email, Group,
-		GroupMembership, Holder, Host, Identity, MailDomain, Outbox, Role, Site,
+		GroupMembership, Holder, Host, Identity, Link, MailDomain, Outbox, Role, Site,
 		SiteMembership, Team, TeamMembership, Tenant []ent.Hook
 	}
 	inters struct {
 		ApiKey, Audit, Binding, Continuation, Credential, Delegation, Email, Group,
-		GroupMembership, Holder, Host, Identity, MailDomain, Outbox, Role, Site,
+		GroupMembership, Holder, Host, Identity, Link, MailDomain, Outbox, Role, Site,
 		SiteMembership, Team, TeamMembership, Tenant []ent.Interceptor
 	}
 )

@@ -226,6 +226,16 @@ func MeteredByLTE(v uuid.UUID) predicate.Continuation {
 	return predicate.Continuation(sql.FieldLTE(FieldMeteredBy, v))
 }
 
+// MeteredByIsNil applies the IsNil predicate on the "metered_by" field.
+func MeteredByIsNil() predicate.Continuation {
+	return predicate.Continuation(sql.FieldIsNull(FieldMeteredBy))
+}
+
+// MeteredByNotNil applies the NotNil predicate on the "metered_by" field.
+func MeteredByNotNil() predicate.Continuation {
+	return predicate.Continuation(sql.FieldNotNull(FieldMeteredBy))
+}
+
 // DateExpiresEQ applies the EQ predicate on the "date_expires" field.
 func DateExpiresEQ(v time.Time) predicate.Continuation {
 	return predicate.Continuation(sql.FieldEQ(FieldDateExpires, v))

@@ -163,7 +163,7 @@ var (
 		{Name: "satisfied", Type: field.TypeJSON, Nullable: true},
 		{Name: "secret", Type: field.TypeBytes},
 		{Name: "issuer", Type: field.TypeBytes},
-		{Name: "metered_by", Type: field.TypeUUID},
+		{Name: "metered_by", Type: field.TypeUUID, Nullable: true},
 		{Name: "date_expires", Type: field.TypeTime, Nullable: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
@@ -558,6 +558,46 @@ var (
 			},
 		},
 	}
+	// LinkColumns holds the columns for the "link" table.
+	LinkColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "secret", Type: field.TypeBytes},
+		{Name: "issuer", Type: field.TypeBytes},
+		{Name: "date_expires", Type: field.TypeTime, Nullable: true},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "holder_id", Type: field.TypeUUID},
+	}
+	// LinkTable holds the schema information for the "link" table.
+	LinkTable = &schema.Table{
+		Name:       "link",
+		Columns:    LinkColumns,
+		PrimaryKey: []*schema.Column{LinkColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "link_holder_holder",
+				Columns:    []*schema.Column{LinkColumns[7]},
+				RefColumns: []*schema.Column{HolderColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "link_date_created_id",
+				Unique:  false,
+				Columns: []*schema.Column{LinkColumns[6], LinkColumns[0]},
+			},
+			{
+				Name:    "link_secret",
+				Unique:  true,
+				Columns: []*schema.Column{LinkColumns[1]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
 	// MaildomainColumns holds the columns for the "maildomain" table.
 	MaildomainColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
@@ -883,6 +923,7 @@ var (
 		HolderTable,
 		HostTable,
 		IdentityTable,
+		LinkTable,
 		MaildomainTable,
 		OutboxTable,
 		RoleTable,
@@ -947,6 +988,10 @@ func init() {
 	IdentityTable.ForeignKeys[0].RefTable = HolderTable
 	IdentityTable.Annotation = &entsql.Annotation{
 		Table: "identity",
+	}
+	LinkTable.ForeignKeys[0].RefTable = HolderTable
+	LinkTable.Annotation = &entsql.Annotation{
+		Table: "link",
 	}
 	MaildomainTable.ForeignKeys[0].RefTable = TenantTable
 	MaildomainTable.Annotation = &entsql.Annotation{

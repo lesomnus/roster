@@ -24,6 +24,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/host"
 	"github.com/lesomnus/roster/internal/ent/identity"
+	"github.com/lesomnus/roster/internal/ent/link"
 	"github.com/lesomnus/roster/internal/ent/maildomain"
 	"github.com/lesomnus/roster/internal/ent/outbox"
 	"github.com/lesomnus/roster/internal/ent/predicate"
@@ -58,6 +59,7 @@ const (
 	TypeHolder          = "Holder"
 	TypeHost            = "Host"
 	TypeIdentity        = "Identity"
+	TypeLink            = "Link"
 	TypeMailDomain      = "MailDomain"
 	TypeOutbox          = "Outbox"
 	TypeRole            = "Role"
@@ -3141,7 +3143,7 @@ func (m *ContinuationMutation) MeteredBy() (r uuid.UUID, exists bool) {
 // OldMeteredBy returns the old "metered_by" field's value of the Continuation entity.
 // If the Continuation object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ContinuationMutation) OldMeteredBy(ctx context.Context) (v uuid.UUID, err error) {
+func (m *ContinuationMutation) OldMeteredBy(ctx context.Context) (v *uuid.UUID, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldMeteredBy is only allowed on UpdateOne operations")
 	}
@@ -3155,9 +3157,22 @@ func (m *ContinuationMutation) OldMeteredBy(ctx context.Context) (v uuid.UUID, e
 	return oldValue.MeteredBy, nil
 }
 
+// ClearMeteredBy clears the value of the "metered_by" field.
+func (m *ContinuationMutation) ClearMeteredBy() {
+	m.metered_by = nil
+	m.clearedFields[continuation.FieldMeteredBy] = struct{}{}
+}
+
+// MeteredByCleared returns if the "metered_by" field was cleared in this mutation.
+func (m *ContinuationMutation) MeteredByCleared() bool {
+	_, ok := m.clearedFields[continuation.FieldMeteredBy]
+	return ok
+}
+
 // ResetMeteredBy resets all changes to the "metered_by" field.
 func (m *ContinuationMutation) ResetMeteredBy() {
 	m.metered_by = nil
+	delete(m.clearedFields, continuation.FieldMeteredBy)
 }
 
 // SetDateExpires sets the "date_expires" field.
@@ -3626,6 +3641,9 @@ func (m *ContinuationMutation) ClearedFields() []string {
 	if m.FieldCleared(continuation.FieldSatisfied) {
 		fields = append(fields, continuation.FieldSatisfied)
 	}
+	if m.FieldCleared(continuation.FieldMeteredBy) {
+		fields = append(fields, continuation.FieldMeteredBy)
+	}
 	if m.FieldCleared(continuation.FieldDateExpires) {
 		fields = append(fields, continuation.FieldDateExpires)
 	}
@@ -3651,6 +3669,9 @@ func (m *ContinuationMutation) ClearField(name string) error {
 	switch name {
 	case continuation.FieldSatisfied:
 		m.ClearSatisfied()
+		return nil
+	case continuation.FieldMeteredBy:
+		m.ClearMeteredBy()
 		return nil
 	case continuation.FieldDateExpires:
 		m.ClearDateExpires()
@@ -10791,6 +10812,776 @@ func (m *IdentityMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown Identity edge %s", name)
+}
+
+// LinkMutation represents an operation that mutates the Link nodes in the graph.
+type LinkMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *uuid.UUID
+	secret        *[]byte
+	issuer        *[]byte
+	date_expires  *time.Time
+	date_updated  *time.Time
+	date_erased   *time.Time
+	date_created  *time.Time
+	clearedFields map[string]struct{}
+	holder        *uuid.UUID
+	clearedholder bool
+	done          bool
+	oldValue      func(context.Context) (*Link, error)
+	predicates    []predicate.Link
+}
+
+var _ ent.Mutation = (*LinkMutation)(nil)
+
+// linkOption allows management of the mutation configuration using functional options.
+type linkOption func(*LinkMutation)
+
+// newLinkMutation creates new mutation for the Link entity.
+func newLinkMutation(c config, op Op, opts ...linkOption) *LinkMutation {
+	m := &LinkMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeLink,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withLinkID sets the ID field of the mutation.
+func withLinkID(id uuid.UUID) linkOption {
+	return func(m *LinkMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Link
+		)
+		m.oldValue = func(ctx context.Context) (*Link, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Link.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withLink sets the old Link of the mutation.
+func withLink(node *Link) linkOption {
+	return func(m *LinkMutation) {
+		m.oldValue = func(context.Context) (*Link, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m LinkMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m LinkMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Link entities.
+func (m *LinkMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *LinkMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *LinkMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Link.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetSecret sets the "secret" field.
+func (m *LinkMutation) SetSecret(b []byte) {
+	m.secret = &b
+}
+
+// Secret returns the value of the "secret" field in the mutation.
+func (m *LinkMutation) Secret() (r []byte, exists bool) {
+	v := m.secret
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSecret returns the old "secret" field's value of the Link entity.
+// If the Link object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LinkMutation) OldSecret(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSecret is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSecret requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSecret: %w", err)
+	}
+	return oldValue.Secret, nil
+}
+
+// ResetSecret resets all changes to the "secret" field.
+func (m *LinkMutation) ResetSecret() {
+	m.secret = nil
+}
+
+// SetIssuer sets the "issuer" field.
+func (m *LinkMutation) SetIssuer(b []byte) {
+	m.issuer = &b
+}
+
+// Issuer returns the value of the "issuer" field in the mutation.
+func (m *LinkMutation) Issuer() (r []byte, exists bool) {
+	v := m.issuer
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIssuer returns the old "issuer" field's value of the Link entity.
+// If the Link object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LinkMutation) OldIssuer(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIssuer is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIssuer requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIssuer: %w", err)
+	}
+	return oldValue.Issuer, nil
+}
+
+// ResetIssuer resets all changes to the "issuer" field.
+func (m *LinkMutation) ResetIssuer() {
+	m.issuer = nil
+}
+
+// SetDateExpires sets the "date_expires" field.
+func (m *LinkMutation) SetDateExpires(t time.Time) {
+	m.date_expires = &t
+}
+
+// DateExpires returns the value of the "date_expires" field in the mutation.
+func (m *LinkMutation) DateExpires() (r time.Time, exists bool) {
+	v := m.date_expires
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDateExpires returns the old "date_expires" field's value of the Link entity.
+// If the Link object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LinkMutation) OldDateExpires(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDateExpires is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDateExpires requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateExpires: %w", err)
+	}
+	return oldValue.DateExpires, nil
+}
+
+// ClearDateExpires clears the value of the "date_expires" field.
+func (m *LinkMutation) ClearDateExpires() {
+	m.date_expires = nil
+	m.clearedFields[link.FieldDateExpires] = struct{}{}
+}
+
+// DateExpiresCleared returns if the "date_expires" field was cleared in this mutation.
+func (m *LinkMutation) DateExpiresCleared() bool {
+	_, ok := m.clearedFields[link.FieldDateExpires]
+	return ok
+}
+
+// ResetDateExpires resets all changes to the "date_expires" field.
+func (m *LinkMutation) ResetDateExpires() {
+	m.date_expires = nil
+	delete(m.clearedFields, link.FieldDateExpires)
+}
+
+// SetDateUpdated sets the "date_updated" field.
+func (m *LinkMutation) SetDateUpdated(t time.Time) {
+	m.date_updated = &t
+}
+
+// DateUpdated returns the value of the "date_updated" field in the mutation.
+func (m *LinkMutation) DateUpdated() (r time.Time, exists bool) {
+	v := m.date_updated
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDateUpdated returns the old "date_updated" field's value of the Link entity.
+// If the Link object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LinkMutation) OldDateUpdated(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDateUpdated is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDateUpdated requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateUpdated: %w", err)
+	}
+	return oldValue.DateUpdated, nil
+}
+
+// ResetDateUpdated resets all changes to the "date_updated" field.
+func (m *LinkMutation) ResetDateUpdated() {
+	m.date_updated = nil
+}
+
+// SetDateErased sets the "date_erased" field.
+func (m *LinkMutation) SetDateErased(t time.Time) {
+	m.date_erased = &t
+}
+
+// DateErased returns the value of the "date_erased" field in the mutation.
+func (m *LinkMutation) DateErased() (r time.Time, exists bool) {
+	v := m.date_erased
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDateErased returns the old "date_erased" field's value of the Link entity.
+// If the Link object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LinkMutation) OldDateErased(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDateErased is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDateErased requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateErased: %w", err)
+	}
+	return oldValue.DateErased, nil
+}
+
+// ClearDateErased clears the value of the "date_erased" field.
+func (m *LinkMutation) ClearDateErased() {
+	m.date_erased = nil
+	m.clearedFields[link.FieldDateErased] = struct{}{}
+}
+
+// DateErasedCleared returns if the "date_erased" field was cleared in this mutation.
+func (m *LinkMutation) DateErasedCleared() bool {
+	_, ok := m.clearedFields[link.FieldDateErased]
+	return ok
+}
+
+// ResetDateErased resets all changes to the "date_erased" field.
+func (m *LinkMutation) ResetDateErased() {
+	m.date_erased = nil
+	delete(m.clearedFields, link.FieldDateErased)
+}
+
+// SetDateCreated sets the "date_created" field.
+func (m *LinkMutation) SetDateCreated(t time.Time) {
+	m.date_created = &t
+}
+
+// DateCreated returns the value of the "date_created" field in the mutation.
+func (m *LinkMutation) DateCreated() (r time.Time, exists bool) {
+	v := m.date_created
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDateCreated returns the old "date_created" field's value of the Link entity.
+// If the Link object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LinkMutation) OldDateCreated(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDateCreated is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDateCreated requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateCreated: %w", err)
+	}
+	return oldValue.DateCreated, nil
+}
+
+// ClearDateCreated clears the value of the "date_created" field.
+func (m *LinkMutation) ClearDateCreated() {
+	m.date_created = nil
+	m.clearedFields[link.FieldDateCreated] = struct{}{}
+}
+
+// DateCreatedCleared returns if the "date_created" field was cleared in this mutation.
+func (m *LinkMutation) DateCreatedCleared() bool {
+	_, ok := m.clearedFields[link.FieldDateCreated]
+	return ok
+}
+
+// ResetDateCreated resets all changes to the "date_created" field.
+func (m *LinkMutation) ResetDateCreated() {
+	m.date_created = nil
+	delete(m.clearedFields, link.FieldDateCreated)
+}
+
+// SetHolderID sets the "holder_id" field.
+func (m *LinkMutation) SetHolderID(u uuid.UUID) {
+	m.holder = &u
+}
+
+// HolderID returns the value of the "holder_id" field in the mutation.
+func (m *LinkMutation) HolderID() (r uuid.UUID, exists bool) {
+	v := m.holder
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldHolderID returns the old "holder_id" field's value of the Link entity.
+// If the Link object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LinkMutation) OldHolderID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldHolderID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldHolderID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldHolderID: %w", err)
+	}
+	return oldValue.HolderID, nil
+}
+
+// ResetHolderID resets all changes to the "holder_id" field.
+func (m *LinkMutation) ResetHolderID() {
+	m.holder = nil
+}
+
+// ClearHolder clears the "holder" edge to the Holder entity.
+func (m *LinkMutation) ClearHolder() {
+	m.clearedholder = true
+	m.clearedFields[link.FieldHolderID] = struct{}{}
+}
+
+// HolderCleared reports if the "holder" edge to the Holder entity was cleared.
+func (m *LinkMutation) HolderCleared() bool {
+	return m.clearedholder
+}
+
+// HolderIDs returns the "holder" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// HolderID instead. It exists only for internal usage by the builders.
+func (m *LinkMutation) HolderIDs() (ids []uuid.UUID) {
+	if id := m.holder; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetHolder resets all changes to the "holder" edge.
+func (m *LinkMutation) ResetHolder() {
+	m.holder = nil
+	m.clearedholder = false
+}
+
+// Where appends a list predicates to the LinkMutation builder.
+func (m *LinkMutation) Where(ps ...predicate.Link) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the LinkMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *LinkMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Link, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *LinkMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *LinkMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Link).
+func (m *LinkMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *LinkMutation) Fields() []string {
+	fields := make([]string, 0, 7)
+	if m.secret != nil {
+		fields = append(fields, link.FieldSecret)
+	}
+	if m.issuer != nil {
+		fields = append(fields, link.FieldIssuer)
+	}
+	if m.date_expires != nil {
+		fields = append(fields, link.FieldDateExpires)
+	}
+	if m.date_updated != nil {
+		fields = append(fields, link.FieldDateUpdated)
+	}
+	if m.date_erased != nil {
+		fields = append(fields, link.FieldDateErased)
+	}
+	if m.date_created != nil {
+		fields = append(fields, link.FieldDateCreated)
+	}
+	if m.holder != nil {
+		fields = append(fields, link.FieldHolderID)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *LinkMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case link.FieldSecret:
+		return m.Secret()
+	case link.FieldIssuer:
+		return m.Issuer()
+	case link.FieldDateExpires:
+		return m.DateExpires()
+	case link.FieldDateUpdated:
+		return m.DateUpdated()
+	case link.FieldDateErased:
+		return m.DateErased()
+	case link.FieldDateCreated:
+		return m.DateCreated()
+	case link.FieldHolderID:
+		return m.HolderID()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *LinkMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case link.FieldSecret:
+		return m.OldSecret(ctx)
+	case link.FieldIssuer:
+		return m.OldIssuer(ctx)
+	case link.FieldDateExpires:
+		return m.OldDateExpires(ctx)
+	case link.FieldDateUpdated:
+		return m.OldDateUpdated(ctx)
+	case link.FieldDateErased:
+		return m.OldDateErased(ctx)
+	case link.FieldDateCreated:
+		return m.OldDateCreated(ctx)
+	case link.FieldHolderID:
+		return m.OldHolderID(ctx)
+	}
+	return nil, fmt.Errorf("unknown Link field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *LinkMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case link.FieldSecret:
+		v, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSecret(v)
+		return nil
+	case link.FieldIssuer:
+		v, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIssuer(v)
+		return nil
+	case link.FieldDateExpires:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDateExpires(v)
+		return nil
+	case link.FieldDateUpdated:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDateUpdated(v)
+		return nil
+	case link.FieldDateErased:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDateErased(v)
+		return nil
+	case link.FieldDateCreated:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDateCreated(v)
+		return nil
+	case link.FieldHolderID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetHolderID(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Link field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *LinkMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *LinkMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *LinkMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Link numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *LinkMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(link.FieldDateExpires) {
+		fields = append(fields, link.FieldDateExpires)
+	}
+	if m.FieldCleared(link.FieldDateErased) {
+		fields = append(fields, link.FieldDateErased)
+	}
+	if m.FieldCleared(link.FieldDateCreated) {
+		fields = append(fields, link.FieldDateCreated)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *LinkMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *LinkMutation) ClearField(name string) error {
+	switch name {
+	case link.FieldDateExpires:
+		m.ClearDateExpires()
+		return nil
+	case link.FieldDateErased:
+		m.ClearDateErased()
+		return nil
+	case link.FieldDateCreated:
+		m.ClearDateCreated()
+		return nil
+	}
+	return fmt.Errorf("unknown Link nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *LinkMutation) ResetField(name string) error {
+	switch name {
+	case link.FieldSecret:
+		m.ResetSecret()
+		return nil
+	case link.FieldIssuer:
+		m.ResetIssuer()
+		return nil
+	case link.FieldDateExpires:
+		m.ResetDateExpires()
+		return nil
+	case link.FieldDateUpdated:
+		m.ResetDateUpdated()
+		return nil
+	case link.FieldDateErased:
+		m.ResetDateErased()
+		return nil
+	case link.FieldDateCreated:
+		m.ResetDateCreated()
+		return nil
+	case link.FieldHolderID:
+		m.ResetHolderID()
+		return nil
+	}
+	return fmt.Errorf("unknown Link field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *LinkMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.holder != nil {
+		edges = append(edges, link.EdgeHolder)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *LinkMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case link.EdgeHolder:
+		if id := m.holder; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *LinkMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *LinkMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *LinkMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedholder {
+		edges = append(edges, link.EdgeHolder)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *LinkMutation) EdgeCleared(name string) bool {
+	switch name {
+	case link.EdgeHolder:
+		return m.clearedholder
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *LinkMutation) ClearEdge(name string) error {
+	switch name {
+	case link.EdgeHolder:
+		m.ClearHolder()
+		return nil
+	}
+	return fmt.Errorf("unknown Link unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *LinkMutation) ResetEdge(name string) error {
+	switch name {
+	case link.EdgeHolder:
+		m.ResetHolder()
+		return nil
+	}
+	return fmt.Errorf("unknown Link edge %s", name)
 }
 
 // MailDomainMutation represents an operation that mutates the MailDomain nodes in the graph.

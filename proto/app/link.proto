@@ -1,0 +1,137 @@
+edition = "2023";
+
+package roster;
+
+import "roster/payday/holder.proto";
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/roster/rstr";
+
+// Link is a way in that roster mints and somebody else delivers.
+//
+// A magic link, and the machine behind a recovery: *a single-use opaque nonce
+// roster mints and roster checks, delivered by somebody else.* D19 admits it for
+// the reason it admits a password -- **who checks this?** Only roster: it
+// resolves nowhere else and revoking it is a delete.
+//
+// # Sending it is not roster's
+//
+// D19 puts the delivery outside in as many words, and separating the two is
+// what makes the air-gapped case work at all: with no mail, the somebody else
+// is a **person**, and what they hand over is a password from `Vouch.Reset`
+// rather than a link. Same category, two channels, and roster does not know
+// about either.
+//
+// # It is a first factor, not a way around them
+//
+// Redeeming one proves the person and nothing more. If they have a second
+// factor it is asked for exactly as it would have been after a password, which
+// is the whole reason `Vouch.Redeem` answers in `Delegate`'s shape: a link that
+// skipped the second factor would be a way to turn one channel into an account.
+//
+// # Where account takeover lives
+//
+// So the rules are beside the row rather than in each app that sends one:
+// single use, minutes, and bound to the caller it was issued to. The first two
+// are what stop a link found in a mailbox six months later; the third is what
+// stops one app spending what another was given.
+message Link {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+
+  // Who it lets in.
+  Holder holder = 2 [(orm.edge) = {immutable: true}];
+
+  // 4 to 7 are empty, for `Delegation`'s reason: nobody names one of these. It
+  // exists for minutes, between a mail being sent and a browser arriving.
+
+  // The verifier, never the link -- the shape `ApiKey` argued and every
+  // short-lived thing here has repeated: 256 bits from `crypto/rand` have no
+  // dictionary, so the hash is fast and unsalted, and it is also how the row is
+  // found.
+  //
+  // **Not argon2**, and that is a decision rather than a copy. D16's third leg
+  // says the kind selects the cost, and a code a **person transcribes** would
+  // be short and would need the slow hash and a counter. This is not that: a
+  // link is machine-made, machine-carried and machine-read. The transcribed
+  // case is `Vouch.Reset`, which hands over a password and meters it on the
+  // `Credential` row like any other.
+  bytes secret = 9 [
+    (orm.field) = {
+      unique: true
+      immutable: true
+    },
+    (payday.field) = {secret: true}
+  ];
+
+  // Which caller was given it, so that one app cannot spend what another was
+  // issued. Opaque bytes and never an edge; see `delegation.proto`.
+  bytes issuer = 10 [(orm.field) = {immutable: true}];
+
+  // When it stops working, and there is no such thing as one that does not.
+  //
+  // Nullable because the generator has no way to say required -- D6, and F3 is
+  // open -- so an absent one is refused on read rather than read as forever.
+  google.protobuf.Timestamp date_expires = 11 [(orm.field) = {
+    nullable: true
+    immutable: true
+  }];
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+
+  // Spending it is an erase, which is the whole of what single-use means here
+  // -- `Undelegate`'s answer, and one mechanism rather than two.
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {
+            name: "date_created"
+            number: 15
+          },
+          {
+            name: "id"
+            number: 1
+          }
+        ]
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 23
+
+    tenanted: {via: "holder.tenant"}
+
+    // No `watch:`, for `Delegation`'s reason: payday's `Secret` layer does not
+    // cover `Watch` and this app installs `grpcx.ClosedUnary` rather than
+    // `grpcx.Closed`, so a watchable entity with a verifier streams it.
+    list: {
+      order: [
+        {
+          field: {name: "date_created"}
+        },
+        {
+          field: {name: "id"}
+        }
+      ]
+      by: [{name: "ref"}]
+      size: 20
+      max: 100
+    }
+  };
+}

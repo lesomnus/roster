@@ -107,8 +107,14 @@ message Continuation {
   // So a failed second step counts against the row the **first** step used.
   // Exhausting the second factor closes the door the attempt came through,
   // which is what makes the count one count.
+  //
+  // **Empty is a first factor that was not a `Credential` at all** -- a link,
+  // where there is no row to count against. `Vouch.Continue` falls back to the
+  // row it is trying, and the note there says why that is enough: restarting
+  // costs a fresh link, which costs the channel it is delivered through.
   bytes metered_by = 12 [(orm.field) = {
     type: TYPE_UUID
+    nullable: true
     immutable: true
   }];
 

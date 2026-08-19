@@ -388,7 +388,7 @@ Each takes a `D` in PLAN.md when it is taken. None is taken here.
 | P5 | escalation over credential writes, then the write surface | **done** — PLAN.md D28. `core.Reaching`, `Vouch.Reset`, `Vouch.Unlock`, and the rule over `Vouch.Set`. Not done: minting an `rt_` over the wire |
 | P6 | the reads a screen needs, and the screens | **the reads are done** — items 7 and 8. Left: the screens, which are D24 §4 and §5 and are last for D24's own reason |
 | P7 | two-step verification | **done** — PLAN.md D29 and D30, and `examples/sso` showing two forms with a half-session between them |
-| P8 | recovery and the magic link | — |
+| P8 | recovery and the magic link | **done** — PLAN.md D31. `Vouch.Link`/`Redeem`, a reset voiding what came before it, and the sweep over both short-lived tables. The air-gap half was already D28's |
 | P9 | the rest | — |
 
 ## See also
