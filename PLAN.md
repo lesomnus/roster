@@ -1827,7 +1827,14 @@ the schedule.
    `MeService` already does it for the caller; this is the same answer about
    somebody else, narrowed by the wall and by D23's token.
 
-8. **Refusing to remove a last login method.** Removing it locks somebody out of
+8. ~~**Refusing to remove a last login method.**~~ **Done**, in
+   `server/core/identity.go`, as a layer for the reason this entry gave. What
+   counts as a way in is an `Identity` **or** a `Credential`, since those are
+   the two things a Login App and `VouchService` between them can turn into a
+   signed-in person. Erasing the *person* is a different act and is not
+   stopped.
+
+   The original entry: Removing it locks somebody out of
    their own account, and no deployment would want that configured differently
    — so it is a layer, the way D17 put the built-in team rules in one rather
    than in a policy.

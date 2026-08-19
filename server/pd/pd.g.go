@@ -1308,6 +1308,31 @@ func filterCredential(f *rstr.CredentialFilter) (predicate.Credential, error) {
 
 		ps = append(ps, p)
 	}
+	if f.HasHolder() {
+		w := f.GetHolder()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := uuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "holder: %s", err)
+			}
+
+			ps = append(ps, credential.HolderIDEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.HolderPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, credential.HasHolderWith(q))
+		}
+	}
 	if len(ps) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
 	}

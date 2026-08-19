@@ -87,6 +87,11 @@ func TestAnUnlinkedSubjectComesFree(t *testing.T) {
 
 	v := b.identity(t, ctx, b.AcmeUser, "github", "1074321")
 
+	// With a password as well, because `server/core` refuses the removal of
+	// somebody's **last** way in -- which is a different rule and has its own
+	// test. This one is about what the subject does afterwards.
+	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+
 	_, err := b.Ungated.Identity().Erase(ctx, v.Ref())
 	x.NoError(err)
 
@@ -414,4 +419,79 @@ func TestTheStampIsTheServersToWrite(t *testing.T) {
 	got, err := pdid.From(v.GetTenantId())
 	x.NoError(err)
 	x.Equal(b.Acme, got, "what holder.tenant reaches, not what the caller wrote")
+}
+
+// TestNobodyRemovesTheirLastWayIn is item 8 of PLAN.md's list.
+//
+// Removing it locks somebody out of their own account, and no deployment would
+// want that configured differently -- so it is a layer, the way D17 put the
+// built-in team rules in one rather than in a policy. *A configurable invariant
+// is one that every deployment configures identically until one of them gets it
+// wrong.*
+//
+// What counts as a way in is an `Identity` **or** a `Credential`: they are the
+// two things a Login App and `VouchService` between them can turn into a
+// signed-in person, so the count is over both.
+func TestNobodyRemovesTheirLastWayIn(t *testing.T) {
+	b, ctx := build(t)
+
+	t.Run("the only identity, and no password", func(t *testing.T) {
+		x := require.New(t)
+
+		who := b.holder(t, ctx, b.Acme, "one-way")
+		v := b.identity(t, ctx, who, "github", "9001")
+
+		_, err := b.Ungated.Identity().Erase(ctx, v.Ref())
+		x.Equal(codes.FailedPrecondition, status.Code(err))
+	})
+
+	t.Run("and the same one once they have a password", func(t *testing.T) {
+		x := require.New(t)
+
+		who := b.holder(t, ctx, b.Acme, "two-ways")
+		v := b.identity(t, ctx, who, "github", "9002")
+		b.sets(t, ctx, who, "correct horse battery staple")
+
+		_, err := b.Ungated.Identity().Erase(ctx, v.Ref())
+		x.NoError(err)
+	})
+
+	t.Run("and one of two providers", func(t *testing.T) {
+		x := require.New(t)
+
+		who := b.holder(t, ctx, b.Acme, "two-providers")
+		v := b.identity(t, ctx, who, "github", "9003")
+		b.identity(t, ctx, who, "entra", "9004")
+
+		_, err := b.Ungated.Identity().Erase(ctx, v.Ref())
+		x.NoError(err)
+	})
+
+	// Erasing the person is a different act with a different name, and it is
+	// not what this stops.
+	t.Run("and erasing the person is not stopped", func(t *testing.T) {
+		x := require.New(t)
+
+		who := b.holder(t, ctx, b.Acme, "leaving")
+		b.identity(t, ctx, who, "github", "9005")
+
+		_, err := b.Ungated.Holder().Erase(ctx, app.HolderRef_builder{Id: who.Bytes()}.Build())
+		x.NoError(err)
+	})
+
+	// And erasing what is not there still succeeds, which is the generated
+	// rule this must not have changed on its way past.
+	t.Run("and erasing what is gone succeeds", func(t *testing.T) {
+		x := require.New(t)
+
+		who := b.holder(t, ctx, b.Acme, "already-gone")
+		v := b.identity(t, ctx, who, "github", "9006")
+		b.sets(t, ctx, who, "correct horse battery staple")
+
+		_, err := b.Ungated.Identity().Erase(ctx, v.Ref())
+		x.NoError(err)
+
+		_, err = b.Ungated.Identity().Erase(ctx, v.Ref())
+		x.NoError(err)
+	})
 }

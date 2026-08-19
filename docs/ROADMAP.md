@@ -305,7 +305,7 @@ Each takes a `D` in PLAN.md when it is taken. None is taken here.
 | P3 | the reference app's spine | **done** — `Vouch.Delegate`/`Revoke`, `keys.Sweep`, the lifetime settled, identities and credentials on `MeGetResponse`, and `examples/sso` signing in with a password and reading its own record as the person |
 | P4 | hostname, mail domain, and F7 | **done** — PLAN.md D27. `Host`, `MailDomain`, `FrontService`, `Email` stamped and unique per tenant, `VouchWho.address`, and `examples/sso` asking roster rather than holding a map |
 | P5 | escalation over credential writes, then the write surface | **done** — PLAN.md D28. `core.Reaching`, `Vouch.Reset`, `Vouch.Unlock`, and the rule over `Vouch.Set`. Not done: minting an `rt_` over the wire |
-| P6 | the reads a screen needs, and the screens | — · item 7 was taken in P3, for the caller's own record; what is left of it is the same answer **about somebody else** |
+| P6 | the reads a screen needs, and the screens | item 7 taken in P3 for the caller's own record · **item 8 done** · left: the same read about somebody else, and the screens themselves |
 | P7 | two-step verification | — |
 | P8 | recovery and the magic link | — |
 | P9 | the rest | — |
