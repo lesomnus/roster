@@ -476,7 +476,25 @@ func (s EmailServiceServer) Erase(ctx context.Context, req *rstr.EmailRef) (*emp
 	return &emptypb.Empty{}, nil
 }
 
+// EmailPick answers with the predicate this reference selects on,
+// among the rows that are still here.
+//
+// Erasure is part of the reference and not only part of a read's scope,
+// because a reference to a Email is composed into the reference of
+// whatever names one: an index over an edge asks this for a predicate and
+// puts it inside `HasEmailWith`, where no narrowing of a Email
+// is ever applied. A child of an erased row would otherwise be readable by
+// naming its parent.
 func EmailPick(req *rstr.EmailRef) (predicate.Email, error) {
+	p, err := pickEmail(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return email.And(email.DateErasedIsNil(), p), nil
+}
+
+func pickEmail(req *rstr.EmailRef) (predicate.Email, error) {
 	switch req.WhichKey() {
 	case rstr.EmailRef_Id_case:
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {

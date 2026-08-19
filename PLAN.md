@@ -1320,7 +1320,7 @@ give up the consultant case, or take the tenant from somewhere the form did not
 type — a hostname, a selector, the URL a Login App was reached at. The second
 keeps the schema and is what a multi-tenant product does anyway.
 
-### F9 · A reference through an edge reached rows that were erased — **fixed upstream, pin not moved**
+### F9 · A reference through an edge reached rows that were erased — **fixed**
 
 Not payday's, and the rule reads the same: this is `protoc-gen-orm-ent`, which
 writes `server/bare/`.
@@ -1355,14 +1355,17 @@ answers a reference that carries a key without a query at all, so an `Add` can
 still point an edge at an erased row by naming its id. Closing it costs a read
 on every write that names an edge.
 
-**And the pin has not moved**, so this deployment still has the second symptom.
-The commit is in the checkout and unpushed; F5 is why it will be moved by sha
-and not by `@main`.
+The pin is moved -- `protoc-gen-orm-ent@3843c60`, by sha, for F5's reason -- and
+both symptoms are closed here. Each has a test in this repository as well as
+upstream, because what is pinned can be un-pinned:
+`TestAnErasedHolderCannotAuthenticate` and
+`TestNothingOfAnErasedHolderIsReadableByNamingThem`.
 
-What is closed here regardless is the first one, in `server/vouch`, and it is
-worth keeping after the pin moves: a guarantee that holds only because of how
+`server/vouch` keeps its own refusal even though the generator now makes it
+redundant, and that is deliberate: a guarantee that holds only because of how
 somebody else composes a predicate is a guarantee that stops holding without
-anything here changing.
+anything here changing. It is also where `date_disabled` is refused (D26), so
+the two live states of a person are decided in one place.
 
 ### F8 · Two payday apps could not be linked into one process — **fixed**
 
@@ -1462,7 +1465,7 @@ that costs something, because it is what makes somebody trust the exit code.
 | 1 · schema — Site, Identity, Email | **done**, 15 tests, both databases |
 | 1b · Team, on the second axis | **done**, 21 tests, both databases |
 | 1c · memberships, Credential | **done**, 27 tests, both databases |
-| 2 · payday fixes | F1, F2, F4 done · F9 fixed upstream, pin to move · F3, F6, F7 open · F5 written down |
+| 2 · payday fixes | F1, F2, F4, F9 done · F3, F6, F7, F10, F11, F12 open · F5 written down |
 | 3 · app layer | linking rules, credential verification, roles and the second axis, `MeService`, escalation prevention, the console · **done** |
 | 4 · keys, sync, console | **keys done** (both planes; no wire surface to mint an `rt_`) · **delegation done** (D25; no wire surface either) · sync channel, console — |
 | 5 · the line, written down | **done** — D19, D20, and POSITION.md rewritten around them |

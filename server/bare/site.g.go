@@ -456,7 +456,25 @@ func (s SiteServiceServer) Erase(ctx context.Context, req *rstr.SiteRef) (*empty
 	return &emptypb.Empty{}, nil
 }
 
+// SitePick answers with the predicate this reference selects on,
+// among the rows that are still here.
+//
+// Erasure is part of the reference and not only part of a read's scope,
+// because a reference to a Site is composed into the reference of
+// whatever names one: an index over an edge asks this for a predicate and
+// puts it inside `HasSiteWith`, where no narrowing of a Site
+// is ever applied. A child of an erased row would otherwise be readable by
+// naming its parent.
 func SitePick(req *rstr.SiteRef) (predicate.Site, error) {
+	p, err := pickSite(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return site.And(site.DateErasedIsNil(), p), nil
+}
+
+func pickSite(req *rstr.SiteRef) (predicate.Site, error) {
 	switch req.WhichKey() {
 	case rstr.SiteRef_Id_case:
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {

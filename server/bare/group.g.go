@@ -467,7 +467,25 @@ func (s GroupServiceServer) Erase(ctx context.Context, req *rstr.GroupRef) (*emp
 	return &emptypb.Empty{}, nil
 }
 
+// GroupPick answers with the predicate this reference selects on,
+// among the rows that are still here.
+//
+// Erasure is part of the reference and not only part of a read's scope,
+// because a reference to a Group is composed into the reference of
+// whatever names one: an index over an edge asks this for a predicate and
+// puts it inside `HasGroupWith`, where no narrowing of a Group
+// is ever applied. A child of an erased row would otherwise be readable by
+// naming its parent.
 func GroupPick(req *rstr.GroupRef) (predicate.Group, error) {
+	p, err := pickGroup(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return group.And(group.DateErasedIsNil(), p), nil
+}
+
+func pickGroup(req *rstr.GroupRef) (predicate.Group, error) {
 	switch req.WhichKey() {
 	case rstr.GroupRef_Id_case:
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
@@ -923,7 +941,25 @@ func (s GroupMembershipServiceServer) Erase(ctx context.Context, req *rstr.Group
 	return &emptypb.Empty{}, nil
 }
 
+// GroupMembershipPick answers with the predicate this reference selects on,
+// among the rows that are still here.
+//
+// Erasure is part of the reference and not only part of a read's scope,
+// because a reference to a GroupMembership is composed into the reference of
+// whatever names one: an index over an edge asks this for a predicate and
+// puts it inside `HasGroupMembershipWith`, where no narrowing of a GroupMembership
+// is ever applied. A child of an erased row would otherwise be readable by
+// naming its parent.
 func GroupMembershipPick(req *rstr.GroupMembershipRef) (predicate.GroupMembership, error) {
+	p, err := pickGroupMembership(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return groupmembership.And(groupmembership.DateErasedIsNil(), p), nil
+}
+
+func pickGroupMembership(req *rstr.GroupMembershipRef) (predicate.GroupMembership, error) {
 	switch req.WhichKey() {
 	case rstr.GroupMembershipRef_Id_case:
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {

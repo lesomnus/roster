@@ -486,7 +486,25 @@ func (s HolderServiceServer) Erase(ctx context.Context, req *rstr.HolderRef) (*e
 	return &emptypb.Empty{}, nil
 }
 
+// HolderPick answers with the predicate this reference selects on,
+// among the rows that are still here.
+//
+// Erasure is part of the reference and not only part of a read's scope,
+// because a reference to a Holder is composed into the reference of
+// whatever names one: an index over an edge asks this for a predicate and
+// puts it inside `HasHolderWith`, where no narrowing of a Holder
+// is ever applied. A child of an erased row would otherwise be readable by
+// naming its parent.
 func HolderPick(req *rstr.HolderRef) (predicate.Holder, error) {
+	p, err := pickHolder(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return holder.And(holder.DateErasedIsNil(), p), nil
+}
+
+func pickHolder(req *rstr.HolderRef) (predicate.Holder, error) {
 	switch req.WhichKey() {
 	case rstr.HolderRef_Id_case:
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {

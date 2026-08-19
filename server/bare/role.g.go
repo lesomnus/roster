@@ -473,7 +473,25 @@ func (s RoleServiceServer) Erase(ctx context.Context, req *rstr.RoleRef) (*empty
 	return &emptypb.Empty{}, nil
 }
 
+// RolePick answers with the predicate this reference selects on,
+// among the rows that are still here.
+//
+// Erasure is part of the reference and not only part of a read's scope,
+// because a reference to a Role is composed into the reference of
+// whatever names one: an index over an edge asks this for a predicate and
+// puts it inside `HasRoleWith`, where no narrowing of a Role
+// is ever applied. A child of an erased row would otherwise be readable by
+// naming its parent.
 func RolePick(req *rstr.RoleRef) (predicate.Role, error) {
+	p, err := pickRole(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return role.And(role.DateErasedIsNil(), p), nil
+}
+
+func pickRole(req *rstr.RoleRef) (predicate.Role, error) {
 	switch req.WhichKey() {
 	case rstr.RoleRef_Id_case:
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
@@ -963,7 +981,25 @@ func (s BindingServiceServer) Erase(ctx context.Context, req *rstr.BindingRef) (
 	return &emptypb.Empty{}, nil
 }
 
+// BindingPick answers with the predicate this reference selects on,
+// among the rows that are still here.
+//
+// Erasure is part of the reference and not only part of a read's scope,
+// because a reference to a Binding is composed into the reference of
+// whatever names one: an index over an edge asks this for a predicate and
+// puts it inside `HasBindingWith`, where no narrowing of a Binding
+// is ever applied. A child of an erased row would otherwise be readable by
+// naming its parent.
 func BindingPick(req *rstr.BindingRef) (predicate.Binding, error) {
+	p, err := pickBinding(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return binding.And(binding.DateErasedIsNil(), p), nil
+}
+
+func pickBinding(req *rstr.BindingRef) (predicate.Binding, error) {
 	switch req.WhichKey() {
 	case rstr.BindingRef_Id_case:
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {

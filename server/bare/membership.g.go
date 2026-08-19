@@ -455,7 +455,25 @@ func (s SiteMembershipServiceServer) Erase(ctx context.Context, req *rstr.SiteMe
 	return &emptypb.Empty{}, nil
 }
 
+// SiteMembershipPick answers with the predicate this reference selects on,
+// among the rows that are still here.
+//
+// Erasure is part of the reference and not only part of a read's scope,
+// because a reference to a SiteMembership is composed into the reference of
+// whatever names one: an index over an edge asks this for a predicate and
+// puts it inside `HasSiteMembershipWith`, where no narrowing of a SiteMembership
+// is ever applied. A child of an erased row would otherwise be readable by
+// naming its parent.
 func SiteMembershipPick(req *rstr.SiteMembershipRef) (predicate.SiteMembership, error) {
+	p, err := pickSiteMembership(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return sitemembership.And(sitemembership.DateErasedIsNil(), p), nil
+}
+
+func pickSiteMembership(req *rstr.SiteMembershipRef) (predicate.SiteMembership, error) {
 	switch req.WhichKey() {
 	case rstr.SiteMembershipRef_Id_case:
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
@@ -941,7 +959,25 @@ func (s TeamMembershipServiceServer) Erase(ctx context.Context, req *rstr.TeamMe
 	return &emptypb.Empty{}, nil
 }
 
+// TeamMembershipPick answers with the predicate this reference selects on,
+// among the rows that are still here.
+//
+// Erasure is part of the reference and not only part of a read's scope,
+// because a reference to a TeamMembership is composed into the reference of
+// whatever names one: an index over an edge asks this for a predicate and
+// puts it inside `HasTeamMembershipWith`, where no narrowing of a TeamMembership
+// is ever applied. A child of an erased row would otherwise be readable by
+// naming its parent.
 func TeamMembershipPick(req *rstr.TeamMembershipRef) (predicate.TeamMembership, error) {
+	p, err := pickTeamMembership(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return teammembership.And(teammembership.DateErasedIsNil(), p), nil
+}
+
+func pickTeamMembership(req *rstr.TeamMembershipRef) (predicate.TeamMembership, error) {
 	switch req.WhichKey() {
 	case rstr.TeamMembershipRef_Id_case:
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {

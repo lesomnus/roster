@@ -458,7 +458,25 @@ func (s DelegationServiceServer) Erase(ctx context.Context, req *rstr.Delegation
 	return &emptypb.Empty{}, nil
 }
 
+// DelegationPick answers with the predicate this reference selects on,
+// among the rows that are still here.
+//
+// Erasure is part of the reference and not only part of a read's scope,
+// because a reference to a Delegation is composed into the reference of
+// whatever names one: an index over an edge asks this for a predicate and
+// puts it inside `HasDelegationWith`, where no narrowing of a Delegation
+// is ever applied. A child of an erased row would otherwise be readable by
+// naming its parent.
 func DelegationPick(req *rstr.DelegationRef) (predicate.Delegation, error) {
+	p, err := pickDelegation(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return delegation.And(delegation.DateErasedIsNil(), p), nil
+}
+
+func pickDelegation(req *rstr.DelegationRef) (predicate.Delegation, error) {
 	switch req.WhichKey() {
 	case rstr.DelegationRef_Id_case:
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
