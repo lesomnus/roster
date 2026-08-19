@@ -45,6 +45,7 @@ import (
 	outbox "github.com/lesomnus/roster/internal/ent/outbox"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	role "github.com/lesomnus/roster/internal/ent/role"
+	session "github.com/lesomnus/roster/internal/ent/session"
 	site "github.com/lesomnus/roster/internal/ent/site"
 	sitemembership "github.com/lesomnus/roster/internal/ent/sitemembership"
 	team "github.com/lesomnus/roster/internal/ent/team"
@@ -104,6 +105,7 @@ const (
 	MailDomainDomain      pdid.Domain = 21 // "mail-domain"
 	OutboxDomain          pdid.Domain = 4  // "outbox"
 	RoleDomain            pdid.Domain = 15 // "role"
+	SessionDomain         pdid.Domain = 24 // "session"
 	SiteDomain            pdid.Domain = 7  // "site"
 	SiteMembershipDomain  pdid.Domain = 11 // "site-membership"
 	TeamDomain            pdid.Domain = 10 // "team"
@@ -128,6 +130,7 @@ func init() {
 	pdid.Register("roster.MailDomain", MailDomainDomain, "mail-domain")
 	pdid.Register("roster.Outbox", OutboxDomain, "outbox")
 	pdid.Register("roster.Role", RoleDomain, "role")
+	pdid.Register("roster.Session", SessionDomain, "session")
 	pdid.Register("roster.Site", SiteDomain, "site")
 	pdid.Register("roster.SiteMembership", SiteMembershipDomain, "site-membership")
 	pdid.Register("roster.Team", TeamDomain, "team")
@@ -156,6 +159,7 @@ var Domains = map[string]pdid.Domain{
 	"roster.MailDomain":      MailDomainDomain,
 	"roster.Outbox":          OutboxDomain,
 	"roster.Role":            RoleDomain,
+	"roster.Session":         SessionDomain,
 	"roster.Site":            SiteDomain,
 	"roster.SiteMembership":  SiteMembershipDomain,
 	"roster.Team":            TeamDomain,
@@ -362,6 +366,16 @@ func (wall) RoleScope(ctx context.Context) (predicate.Role, error) {
 	return role.TenantIDIn(vs...), nil
 }
 
+// SessionScope: a row belongs to the tenant its "holder.tenant" reaches.
+func (wall) SessionScope(ctx context.Context) (predicate.Session, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return session.HasHolderWith(holder.TenantIDIn(vs...)), nil
+}
+
 // SiteScope: a row belongs to the tenant its "tenant" reaches.
 func (wall) SiteScope(ctx context.Context) (predicate.Site, error) {
 	vs, all, err := frame.Narrow(ctx)
@@ -541,6 +555,11 @@ func (x grouped) RoleScope(ctx context.Context) (predicate.Role, error) {
 	}
 
 	return role.SiteIDIn(vs...), nil
+}
+
+// SessionScope: in no set -- it declared no field 3, so this narrows nothing.
+func (x grouped) SessionScope(ctx context.Context) (predicate.Session, error) {
+	return nil, nil
 }
 
 // SiteScope: it is the set, so the sets a caller may see are the rows they may see.
@@ -4117,6 +4136,149 @@ func filterRole(f *rstr.RoleFilter) (predicate.Role, error) {
 	return role.And(ps...), nil
 }
 
+type sinkSession struct {
+	rstr.SessionServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) Session() rstr.SessionServiceServer {
+	return sinkSession{s.Server.Session(), s.Server.Store, s.w, s.namer, s.joined}
+}
+
+// orderSession is how Sessions come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderSession = []entpage.Order{
+	{Column: session.FieldDateCreated, Desc: false},
+	{Column: session.FieldID, Desc: false},
+}
+
+const (
+	// SessionPageSize is what a request that did not say gets, and
+	// SessionPageLimit is the most it gets however loudly it asks.
+	SessionPageSize  = 20
+	SessionPageLimit = 100
+
+	// SessionFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	SessionFilterLimit = 32
+)
+
+// List answers with the Sessions that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkSession) List(ctx context.Context, req *rstr.SessionListRequest) (*rstr.SessionListResponse, error) {
+	q := s.store.Db.Session.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.SessionNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > SessionFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), SessionFilterLimit)
+		}
+
+		ps := make([]predicate.Session, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterSession(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(session.Or(ps...))
+	}
+
+	if v := req.GetAfter(); v != "" {
+		var (
+			at0 time.Time
+			at1 uuid.UUID
+		)
+		if err := entpage.Decode(v, &at0, &at1); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		p, err := entpage.After(orderSession, []any{at0, at1})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := entpage.Size(int(req.GetSize()), SessionPageSize, SessionPageLimit)
+	us, err := q.Order(session.ByDateCreated(), session.ByID()).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*rstr.Session, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := rstr.SessionListResponse_builder{Items: items}.Build()
+	if more {
+		last := us[len(us)-1]
+		next, err := entpage.Encode(last.DateCreated, last.ID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(next)
+	}
+
+	return res, nil
+}
+
+// filterSession turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterSession(f *rstr.SessionFilter) (predicate.Session, error) {
+	ps := make([]predicate.Session, 0, 1)
+	if f.HasRef() {
+		p, err := bare.SessionPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return session.And(ps...), nil
+}
+
 type sinkSite struct {
 	rstr.SiteServiceServer
 	store  bare.Store
@@ -6396,6 +6558,42 @@ func (s gateRole) Add(ctx context.Context, req *rstr.RoleAddRequest) (*rstr.Role
 	return s.RoleServiceServer.Add(ctx, req)
 }
 
+type gateSession struct {
+	Gate
+	rstr.SessionServiceServer
+}
+
+func (s Gate) Session() rstr.SessionServiceServer {
+	return gateSession{s, s.Next().Session()}
+}
+
+// Add refuses a Session put into a Holder this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `holder` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Holder, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.Add`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+func (s gateSession) Add(ctx context.Context, req *rstr.SessionAddRequest) (*rstr.Session, error) {
+	if ref := req.GetHolder(); ref != nil {
+		if _, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Holder")
+			}
+
+			return nil, err
+		}
+	}
+
+	return s.SessionServiceServer.Add(ctx, req)
+}
+
 type gateSite struct {
 	Gate
 	rstr.SiteServiceServer
@@ -7168,6 +7366,41 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 
 		return k, b, nil
 
+	case SessionDomain:
+		row, err := s.Session().Get(ctx, rstr.SessionGetRequest_builder{
+			Ref: rstr.SessionRef_builder{Id: key.Bytes()}.Build(),
+		}.Build())
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				return uuid.Nil, []byte{}, nil
+			}
+
+			return uuid.Nil, nil, err
+		}
+
+		hideSession(row)
+
+		b, err := proto.Marshal(row)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		if !row.HasHolder() {
+			return uuid.Nil, b, nil
+		}
+
+		up, err := pdid.From(row.GetHolder().GetId())
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		k, _, err := subject(ctx, s, up)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		return k, b, nil
+
 	case SiteDomain:
 		row, err := s.Site().Get(ctx, rstr.SiteGetRequest_builder{
 			Ref: rstr.SiteRef_builder{Id: key.Bytes()}.Build(),
@@ -7658,6 +7891,66 @@ func (s secretLink) List(ctx context.Context, req *rstr.LinkListRequest) (*rstr.
 // A nil row passes through, because an error is answered with one and the
 // caller of this is handing both on.
 func hideLink(v *rstr.Link) *rstr.Link {
+	if v == nil {
+		return nil
+	}
+
+	v.SetSecret(nil)
+
+	return v
+}
+
+func (s Secret) Session() rstr.SessionServiceServer {
+	return secretSession{s, s.Next().Session()}
+}
+
+type secretSession struct {
+	Secret
+	rstr.SessionServiceServer
+}
+
+func (s secretSession) Add(ctx context.Context, req *rstr.SessionAddRequest) (*rstr.Session, error) {
+	v, err := s.SessionServiceServer.Add(ctx, req)
+
+	return hideSession(v), err
+}
+
+func (s secretSession) Get(ctx context.Context, req *rstr.SessionGetRequest) (*rstr.Session, error) {
+	v, err := s.SessionServiceServer.Get(ctx, req)
+
+	return hideSession(v), err
+}
+
+func (s secretSession) Patch(ctx context.Context, req *rstr.SessionPatchRequest) (*rstr.Session, error) {
+	v, err := s.SessionServiceServer.Patch(ctx, req)
+
+	return hideSession(v), err
+}
+
+func (s secretSession) Apply(ctx context.Context, req *rstr.SessionApplyRequest) (*rstr.Session, error) {
+	v, err := s.SessionServiceServer.Apply(ctx, req)
+
+	return hideSession(v), err
+}
+
+func (s secretSession) List(ctx context.Context, req *rstr.SessionListRequest) (*rstr.SessionListResponse, error) {
+	v, err := s.SessionServiceServer.List(ctx, req)
+	if v == nil {
+		return v, err
+	}
+
+	for _, w := range v.GetItems() {
+		hideSession(w)
+	}
+
+	return v, err
+}
+
+// hideSession clears what this entity declared it never answers with.
+//
+// A nil row passes through, because an error is answered with one and the
+// caller of this is handing both on.
+func hideSession(v *rstr.Session) *rstr.Session {
 	if v == nil {
 		return nil
 	}
@@ -9559,6 +9852,84 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 		}
 
 		res, err := s.TeamMembership().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.SessionService_Add_FullMethodName:
+		v := &rstr.SessionAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.SessionService_Get_FullMethodName:
+		v := &rstr.SessionGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.SessionService_Patch_FullMethodName:
+		v := &rstr.SessionPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.SessionService_Apply_FullMethodName:
+		v := &rstr.SessionApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.SessionService_Erase_FullMethodName:
+		v := &rstr.SessionRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.SessionService_List_FullMethodName:
+		v := &rstr.SessionListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Session().List(ctx, v)
 		if err != nil {
 			return nil, err
 		}

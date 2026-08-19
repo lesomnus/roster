@@ -44,6 +44,8 @@ type Tx struct {
 	Outbox *OutboxClient
 	// Role is the client for interacting with the Role builders.
 	Role *RoleClient
+	// Session is the client for interacting with the Session builders.
+	Session *SessionClient
 	// Site is the client for interacting with the Site builders.
 	Site *SiteClient
 	// SiteMembership is the client for interacting with the SiteMembership builders.
@@ -201,6 +203,7 @@ func (tx *Tx) init() {
 	tx.MailDomain = NewMailDomainClient(tx.config)
 	tx.Outbox = NewOutboxClient(tx.config)
 	tx.Role = NewRoleClient(tx.config)
+	tx.Session = NewSessionClient(tx.config)
 	tx.Site = NewSiteClient(tx.config)
 	tx.SiteMembership = NewSiteMembershipClient(tx.config)
 	tx.Team = NewTeamClient(tx.config)

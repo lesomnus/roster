@@ -39,6 +39,7 @@ import (
 	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/me"
 	"github.com/lesomnus/roster/server/pd"
+	"github.com/lesomnus/roster/server/session"
 	"github.com/lesomnus/roster/server/vouch"
 )
 
@@ -297,7 +298,14 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		// Only deployment keys, because there is no second plane below this
 		// one. `roster key add` mints them; a customer's `rt_` is a data plane
 		// thing and has no meaning here.
-		s.Sessions = authsession.New(authsession.NewMemStore())
+		// In a **table**, on the plane whose holders sign in.
+		//
+		// `MemStore` is what this was, and payday's own comment says what that
+		// means: right for one replica and *silently wrong* for two, since a
+		// cookie minted on one is unknown to the other -- intermittently, per
+		// request, with nothing in any log saying why. `session.proto` carries
+		// the rest, including why the table is roster's and not payday's.
+		s.Sessions = authsession.New(session.New(control.Ent))
 
 		// A console's cookie in front of a service's key, and **on this plane
 		// only**.

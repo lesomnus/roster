@@ -147,19 +147,27 @@ sandbox being a sandbox; see `wasm/main.go`.
 ### Where the console's sessions live
 
 Signing in to the console mints an opaque cookie — 32 random bytes naming a row,
-so signing out is a delete that takes effect at once. The row is held by
-`payday/auth/authsession`, and today that is `MemStore`: **in this process.**
+so signing out is a delete that takes effect at once.
 
-Which is right for one replica and silently wrong for two. A browser whose
-cookie was minted on one is anonymous on the other, intermittently, in
-proportion to how the load balancer feels, with nothing in any log saying why —
-and a single-replica deployment works perfectly, so it arrives on the day
-somebody scales up and looks like anything but this. It is also lost on restart:
-a deploy signs everybody out.
+**In a table**, on the control plane, which is where the operators who sign in
+live. It used to be in memory, and payday's own store still says what that
+means: right for one replica and *silently wrong* for two, because a cookie
+minted on one is unknown to the other — intermittently, per request, with
+nothing in any log saying why. It was lost on restart besides, so a deploy
+signed everybody out.
 
-So: **run one replica of the control plane's console, or put the sessions in a
-table.** There is no third option today, and PLAN.md's "after it says yes"
-section records that the table is the intended fix.
+Two things about the table worth knowing:
+
+- **The cookie value is not in it.** What is stored is a digest, so a copy of
+  the rows is not a set of live cookies. The lookup is the same one indexed
+  read.
+- **A session dies with the person.** The holder is an edge, so erasing an
+  operator ends their sessions without anybody having to remember to.
+
+Nothing collects expired rows yet: `authsession` checks both clocks when it
+reads one, so an expired session is refused the moment it is presented, and what
+is left is a table that grows. `keys.Sweep` and `vouch.Sweep` are the shape
+that fixes it and this has not been given one.
 
 
 An **operator** signs in: a holder of the control plane, which is where the
@@ -584,7 +592,8 @@ Nothing written down is plaintext, and it warns once.
 - **No magic link.** Inside the line and unwritten, and the thing in the way is
   F7: an address does not resolve to one person by design, so the usual front
   door for a link has nothing to look anybody up with.
-- **The console's sessions are in memory.** See above. One replica, or a table.
+- **Nothing collects expired sessions.** They are refused on read, so this is
+  a table that grows rather than a hole. See above.
 - **Nothing here signs a token.** If several products need one sign-in, that is
   Hydra in front and roster answering it — LOGIN.md, "What changes when Hydra is
   in front". Do not reach for a JWT minted here; PLAN.md D19 is why.

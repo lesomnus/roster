@@ -710,6 +710,47 @@ var (
 			},
 		},
 	}
+	// SessionColumns holds the columns for the "session" table.
+	SessionColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "grant", Type: field.TypeBytes},
+		{Name: "secret", Type: field.TypeBytes},
+		{Name: "date_expires", Type: field.TypeTime, Nullable: true},
+		{Name: "date_idle", Type: field.TypeTime, Nullable: true},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "holder_id", Type: field.TypeUUID},
+	}
+	// SessionTable holds the schema information for the "session" table.
+	SessionTable = &schema.Table{
+		Name:       "session",
+		Columns:    SessionColumns,
+		PrimaryKey: []*schema.Column{SessionColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "session_holder_holder",
+				Columns:    []*schema.Column{SessionColumns[8]},
+				RefColumns: []*schema.Column{HolderColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "session_date_created_id",
+				Unique:  false,
+				Columns: []*schema.Column{SessionColumns[7], SessionColumns[0]},
+			},
+			{
+				Name:    "session_secret",
+				Unique:  true,
+				Columns: []*schema.Column{SessionColumns[2]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
 	// SiteColumns holds the columns for the "site" table.
 	SiteColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
@@ -927,6 +968,7 @@ var (
 		MaildomainTable,
 		OutboxTable,
 		RoleTable,
+		SessionTable,
 		SiteTable,
 		SitemembershipTable,
 		TeamTable,
@@ -1004,6 +1046,10 @@ func init() {
 	RoleTable.ForeignKeys[1].RefTable = SiteTable
 	RoleTable.Annotation = &entsql.Annotation{
 		Table: "role",
+	}
+	SessionTable.ForeignKeys[0].RefTable = HolderTable
+	SessionTable.Annotation = &entsql.Annotation{
+		Table: "session",
 	}
 	SiteTable.ForeignKeys[0].RefTable = TenantTable
 	SiteTable.Annotation = &entsql.Annotation{

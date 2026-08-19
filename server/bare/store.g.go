@@ -27,6 +27,7 @@ import (
 	outbox "github.com/lesomnus/roster/internal/ent/outbox"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	role "github.com/lesomnus/roster/internal/ent/role"
+	session "github.com/lesomnus/roster/internal/ent/session"
 	site "github.com/lesomnus/roster/internal/ent/site"
 	sitemembership "github.com/lesomnus/roster/internal/ent/sitemembership"
 	team "github.com/lesomnus/roster/internal/ent/team"
@@ -347,6 +348,7 @@ type Scope interface {
 	BindingScope(ctx context.Context) (predicate.Binding, error)
 	SiteMembershipScope(ctx context.Context) (predicate.SiteMembership, error)
 	TeamMembershipScope(ctx context.Context) (predicate.TeamMembership, error)
+	SessionScope(ctx context.Context) (predicate.Session, error)
 	AuditScope(ctx context.Context) (predicate.Audit, error)
 	OutboxScope(ctx context.Context) (predicate.Outbox, error)
 }
@@ -418,6 +420,9 @@ func (Unscoped) SiteMembershipScope(_ context.Context) (predicate.SiteMembership
 	return nil, nil
 }
 func (Unscoped) TeamMembershipScope(_ context.Context) (predicate.TeamMembership, error) {
+	return nil, nil
+}
+func (Unscoped) SessionScope(_ context.Context) (predicate.Session, error) {
 	return nil, nil
 }
 func (Unscoped) AuditScope(_ context.Context) (predicate.Audit, error) {
@@ -826,6 +831,26 @@ func (ss Scopes) TeamMembershipScope(ctx context.Context) (predicate.TeamMembers
 	return teammembership.And(ps...), nil
 }
 
+func (ss Scopes) SessionScope(ctx context.Context) (predicate.Session, error) {
+	ps := make([]predicate.Session, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.SessionScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return session.And(ps...), nil
+}
+
 func (ss Scopes) AuditScope(ctx context.Context) (predicate.Audit, error) {
 	ps := make([]predicate.Audit, 0, len(ss))
 	for _, s := range ss {
@@ -946,7 +971,7 @@ func (s Store) now() time.Time {
 // is rendered for that dialect, not just what this server writes.
 //
 // That set is also what a soft erasure needs, so this is the whole
-// check. ApiKey, Binding, Continuation, Credential, Delegation, Email, Group, GroupMembership, Holder, Host, Identity, Link, MailDomain, Role, Site, SiteMembership, Team and TeamMembership free the names they held when a row
+// check. ApiKey, Binding, Continuation, Credential, Delegation, Email, Group, GroupMembership, Holder, Host, Identity, Link, MailDomain, Role, Session, Site, SiteMembership, Team and TeamMembership free the names they held when a row
 // is erased, which is a unique index covering only the rows that are
 // still there -- a partial index, and the dialects above are the ones
 // that have one. MySQL does not, and ent writes the annotation out for
@@ -1017,5 +1042,6 @@ func (s Server) SiteMembership() rstr.SiteMembershipServiceServer {
 func (s Server) TeamMembership() rstr.TeamMembershipServiceServer {
 	return TeamMembershipServiceServer{Store: s.Store}
 }
-func (s Server) Audit() rstr.AuditServiceServer   { return AuditServiceServer{Store: s.Store} }
-func (s Server) Outbox() rstr.OutboxServiceServer { return OutboxServiceServer{Store: s.Store} }
+func (s Server) Session() rstr.SessionServiceServer { return SessionServiceServer{Store: s.Store} }
+func (s Server) Audit() rstr.AuditServiceServer     { return AuditServiceServer{Store: s.Store} }
+func (s Server) Outbox() rstr.OutboxServiceServer   { return OutboxServiceServer{Store: s.Store} }

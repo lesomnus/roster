@@ -28,6 +28,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/maildomain"
 	"github.com/lesomnus/roster/internal/ent/outbox"
 	"github.com/lesomnus/roster/internal/ent/role"
+	"github.com/lesomnus/roster/internal/ent/session"
 	"github.com/lesomnus/roster/internal/ent/site"
 	"github.com/lesomnus/roster/internal/ent/sitemembership"
 	"github.com/lesomnus/roster/internal/ent/team"
@@ -109,6 +110,7 @@ func checkColumn(t, c string) error {
 			maildomain.Table:      maildomain.ValidColumn,
 			outbox.Table:          outbox.ValidColumn,
 			role.Table:            role.ValidColumn,
+			session.Table:         session.ValidColumn,
 			site.Table:            site.ValidColumn,
 			sitemembership.Table:  sitemembership.ValidColumn,
 			team.Table:            team.ValidColumn,

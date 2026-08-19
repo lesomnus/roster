@@ -1,0 +1,158 @@
+edition = "2023";
+
+package roster;
+
+import "roster/payday/holder.proto";
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/roster/rstr";
+
+// Session is a console's cookie, in a table.
+//
+// # What it replaces, and how loudly
+//
+// `payday/auth/authsession` ships one store and its own comment says what it
+// is: *right for one replica and **silently wrong** for two.* A cookie minted
+// on one replica is unknown to the other, so a browser is signed in or out
+// depending on which one the load balancer picked -- intermittently, per
+// request, with nothing in any log saying why. What makes it dangerous is that
+// a single-replica deployment works perfectly, so it arrives on the day
+// somebody scales up and looks like anything but this. It is also lost on
+// restart, so a deploy signs everybody out.
+//
+// # Why roster ships this and payday does not
+//
+// `docs/ROADMAP.md` listed it as a decision, and named the argument for
+// upstream: `MemStore` being the only store payday ships means the next payday
+// app writes this one again. That is true and it is not enough.
+//
+// A store payday could ship would have to be portable across the drivers an app
+// might use, which means a dialect story -- placeholders, a bytes column, an
+// upsert -- that payday does not have and would be acquiring for one table. And
+// the half that actually costs something is the **migration**, which is the
+// app's either way: payday cannot know an app's schema, and an app that got a
+// table from a library would still have to create it.
+//
+// So what payday ships is the seam, which it already does. What roster ships is
+// a table, which is what roster is: *an app that makes tables.*
+//
+// # It lives in the control plane
+//
+// A session names an operator, and an operator is a `Holder` of the control
+// plane -- which is where the people who run this deployment live. The data
+// plane has this table too, because the two planes are one schema run twice,
+// and nothing there ever writes a row.
+//
+// # The key is hashed, unlike the one it replaces
+//
+// `MemStore` is a map keyed by the cookie value, which is right for a map and
+// wrong for a table: a copy of the rows would be a set of live cookies, and a
+// backup somebody walked off with would be a set of signed-in browsers.
+//
+// So what is stored is a digest, and the lookup is the same one indexed read.
+// Unsalted and fast for `ApiKey`'s reason -- the input is 32 bytes from
+// `crypto/rand`, so there is no dictionary and a salt would defend against
+// nothing while making the lookup a scan.
+message Session {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+
+  // Whose it is.
+  //
+  // An edge and not the string `authsession.Session.Id` carries, because a
+  // session for somebody who has been erased is a session nothing should
+  // answer -- and an edge is how that becomes true without anybody remembering
+  // it. `<Entity>Pick` narrows to the live rows.
+  Holder holder = 2 [(orm.edge) = {immutable: true}];
+
+  // 4 to 7 are empty. Nobody names a session; a person's own list of them is
+  // drawn from the times and the device, and neither of those is here yet.
+
+  // What this session allows, as `payday.Grant` on the wire.
+  //
+  // Stored encoded rather than as columns, because the rule that makes a grant
+  // safe -- *every axis carries a flag beside its list, and an empty list means
+  // nothing* -- lives in one encoder, and a second spelling of it here would be
+  // a second place to get the empty case backwards.
+  bytes grant = 8 [(orm.field) = {immutable: true}];
+
+  // The digest of the cookie value, and how the row is found. Never the value.
+  bytes secret = 9 [
+    (orm.field) = {
+      unique: true
+      immutable: true
+    },
+    (payday.field) = {secret: true}
+  ];
+
+  // When it stops working whatever happens, counted from the sign-in.
+  google.protobuf.Timestamp date_expires = 11 [(orm.field) = {
+    nullable: true
+    immutable: true
+  }];
+
+  // When it stops working if it is not used.
+  //
+  // The one column here that moves, and `authsession` moves it rarely on
+  // purpose: at most once per half-window, so that a busy browser is not a
+  // write per request.
+  google.protobuf.Timestamp date_idle = 12 [(orm.field) = {nullable: true}];
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+
+  // Signing out is an erase, which is what makes it immediate everywhere that
+  // cookie was used: `<Entity>Pick` narrows to the live rows, so the next
+  // request finds nothing.
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {
+            name: "date_created"
+            number: 15
+          },
+          {
+            name: "id"
+            number: 1
+          }
+        ]
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 24
+
+    tenanted: {via: "holder.tenant"}
+
+    // No `watch:`, for `Delegation`'s reason: payday's `Secret` layer does not
+    // cover `Watch`, so a watchable entity with a verifier streams it.
+    list: {
+      order: [
+        {
+          field: {name: "date_created"}
+        },
+        {
+          field: {name: "id"}
+        }
+      ]
+      by: [{name: "ref"}]
+      size: 20
+      max: 100
+    }
+  };
+}

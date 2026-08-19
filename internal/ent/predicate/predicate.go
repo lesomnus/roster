@@ -65,6 +65,9 @@ type Outbox func(*sql.Selector)
 // Role is the predicate function for role builders.
 type Role func(*sql.Selector)
 
+// Session is the predicate function for session builders.
+type Session func(*sql.Selector)
+
 // Site is the predicate function for site builders.
 type Site func(*sql.Selector)
 

@@ -354,9 +354,17 @@ of the mail, which is the same mechanism reached differently.
 ### P9 · The rest, in no forced order
 
 The event stream (item 4's second increment), the breached-password check (item
-5), per-tenant provider connections (item 9, which needs a decision first), the
-console's session table, and extracting the components (D24 §6, last for D24's
-own reason).
+5), per-tenant provider connections (item 9, which needs a decision first), and
+extracting the components (D24 §6, last for D24's own reason).
+
+**The console's session table is done** — it was the one item here that blocked
+running the console rather than improving it, since a deployment could not have
+two replicas until it existed.
+
+None of the rest blocks the screens. Item 4's second increment is explicitly
+*taken when the noise is measured rather than predicted*; item 5 is a rule about
+what a password may be and changes no shape; item 9 has a boundary question that
+argues with D13 and has not been answered.
 
 ## Decisions to take before the code that needs them
 
@@ -371,10 +379,12 @@ Each takes a `D` in PLAN.md when it is taken. None is taken here.
 3. **Item 9's boundary.** A provider connection carries a client secret, and
    answering with one makes it the first secret roster returns rather than
    checks. It argues with D13.
-4. **Where the session table lives.** PLAN.md says roster is an app that makes
-   tables, and that is true — but `MemStore` being the only store payday ships
-   means the next payday app rewrites this one too. That is the shape the one
-   rule is about, so it is worth asking upstream first.
+4. ~~**Where the session table lives.**~~ **roster's**, and the reasoning is in
+   `session.proto`. The argument for upstream is real — the next payday app
+   writes this one again — and it is not enough: a store payday could ship
+   would need a dialect story it does not have, acquired for one table, and the
+   half that costs something is the **migration**, which is the app's either
+   way. What payday ships is the seam, which it already does.
 
 ## Progress
 
@@ -389,7 +399,7 @@ Each takes a `D` in PLAN.md when it is taken. None is taken here.
 | P6 | the reads a screen needs, and the screens | **the reads are done** — items 7 and 8. Left: the screens, which are D24 §4 and §5 and are last for D24's own reason |
 | P7 | two-step verification | **done** — PLAN.md D29 and D30, and `examples/sso` showing two forms with a half-session between them |
 | P8 | recovery and the magic link | **done** — PLAN.md D31. `Vouch.Link`/`Redeem`, a reset voiding what came before it, and the sweep over both short-lived tables. The air-gap half was already D28's |
-| P9 | the rest | — |
+| P9 | the rest | **the session table is done** · left: the event stream, the breached-password check, provider connections (undecided), and the components. None of them blocks the screens |
 
 ## See also
 
