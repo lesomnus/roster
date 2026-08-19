@@ -281,19 +281,35 @@ It is one prefix for one kind of thing, which is what keeps it an entry rather
 than an exception. A continuation is not a bearer credential and does not get
 one; D21 already gave it `vc_` and a request body.
 
-#### The issuer is a column, and the check is not where the lookup is
+#### The issuer is a column, and a delegation is not a bearer credential
 
-D21 and D23 both require *bound to the caller it was issued to*. Two things
-follow that a schema cannot say:
+D21 and D23 both require *bound to the caller it was issued to*. Three things
+follow, and the third took a correction.
 
 - **It cannot be an edge.** The caller is a control-plane row and this is a data
   plane row, and D15 put a database between them with no query across it. So it
   is an identifier written down and compared.
 - **It cannot be checked in the token store.** `auth.TokenStore.Lookup` is handed
   the token and nothing else -- no caller, no peer, no frame. A comparison
-  written there compiles, runs, and binds nothing. It lives in
-  `TokenService/Introspect` and in whatever mints one, both of which run behind
-  roster's own authentication.
+  written there compiles, runs, and binds nothing.
+- **So it does not travel in `authorization` at all.** This entry first put it
+  there and checked the binding in `TokenService/Introspect`, which is where an
+  app asks *about* a token. That left the path where an app *spends* one -- the
+  path the whole feature is for -- with no check, because a credential in
+  `authorization` arrives alone and there is nothing on the request saying who
+  presented it. Anything that came by the string could spend it, as the person,
+  for its whole life. The condition was written down and was false.
+
+  What is true instead: the app goes on authenticating as itself, and says who
+  it is acting for in a **second header**. Both are on the request, so the
+  comparison has something to compare, and a delegation that leaks is worth
+  nothing without the key it was minted for. `keys.Acting` is the handler and
+  `keys.HeaderActing` is the header.
+
+  It is the honest shape of what was always happening. A delegation is not a
+  second identity for an app; it is an attenuation of the app's own call down to
+  one person. The app stays the caller `grpcx.Limit` counts and the connection
+  roster trusts, and what changes is who the request is about.
 
 And **empty is not a state the column may hold**, because
 `subtle.ConstantTimeCompare` answers 1 for two empty slices: a delegation bound

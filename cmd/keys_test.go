@@ -124,6 +124,16 @@ func bearing(ctx context.Context, token string) context.Context {
 	return metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+token)
 }
 
+// acting is the pair a delegated call carries: the app's own key saying who is
+// presenting, and the delegation saying who the call is about.
+//
+// Two things and not one, which is what makes the binding checkable at all --
+// see `keys.HeaderActing`. A delegation on its own is refused, and there is a
+// test that says so.
+func acting(ctx context.Context, key, as string) context.Context {
+	return metadata.AppendToOutgoingContext(bearing(ctx, key), keys.HeaderActing, as)
+}
+
 const verify = "/roster.VouchService/Verify"
 
 // TestAKeyReachesWhatItWasMadeFor is the whole of it.

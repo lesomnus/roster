@@ -328,7 +328,7 @@ the row, which table in it, and who the token is served as.
 | --- | --- | --- |
 | `rk_` | the deployment's | `roster key add`. Resolves to the **key**, holds no tenant, sees every tenant there is |
 | `rt_` | a tenant's | belongs to a holder. Resolves to that **holder**, so the wall, the bindings and the sites all apply exactly as when that person calls |
-| `rd_` | a **delegation** | a product app calling as somebody it just signed in. Resolves to that holder in the same way, and differs in the short life: minutes, and bound to the app it was issued to |
+| `rd_` | a **delegation** | a product app calling as somebody it just signed in. Resolves to that holder in the same way — but it does **not** go in `authorization`: it rides in `roster-as`, beside the app's own key |
 
 A `rt_` key is therefore never wider than the person it hangs off. Its `methods`
 narrow that further and can never widen it — a method on the key that its holder
@@ -336,13 +336,20 @@ cannot call is still refused. The same is true of an `rd_`, which is the point
 of it: an app drawing a person their own record calls with the person's reach
 and not with its own.
 
-Two things about `rd_` an operator should know before allowing `Introspect` on
-an app's key. A delegation **must** carry an expiry — an absent one is refused
-rather than read as forever, which is the opposite of how `rk_` and `rt_` read
-that column — and it is **bound to the caller it was issued to**, so an app
-presenting another app's is answered the same `NotFound` a token that was never
-here gets. Rotating an app's key invalidates the delegations it issued; PLAN.md
-D25 says why that was the answer taken.
+Three things about `rd_` an operator should know.
+
+**It is never a credential on its own.** A request carrying one carries two:
+`authorization: Bearer rk_…` saying who is calling, and `roster-as: rd_…` saying
+who the call is about. Presented alone it authenticates nobody, which is what
+makes it safe to hand around inside an app and what makes "bound to the caller
+it was issued to" a rule rather than a sentence — the binding needs both halves
+on the request to be checkable at all.
+
+**It must carry an expiry.** An absent one is refused rather than read as
+forever, which is the opposite of how `rk_` and `rt_` read that column.
+
+**Rotating an app's key invalidates the delegations it issued**, because the
+issuer is the key row. PLAN.md D25 says why that was the answer taken.
 
 What a tenant key costs is the trail: its writes are recorded as the person's,
 so `Audit` says who and not which of their keys. Revoking still works, since the

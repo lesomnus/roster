@@ -71,6 +71,12 @@ const (
 // It also cannot be checked where the token is looked up. `auth.TokenStore`
 // receives the token and nothing else -- no caller, no peer, no frame -- so a
 // comparison written there compiles, runs, and binds nothing.
+//
+// Which is why this **never travels in `authorization`**. A credential there
+// arrives alone, and a delegation is not one: it says who a call is *about*
+// while the caller goes on saying who they are. Both are on the request, so the
+// comparison has something to compare, and one that leaks is worth nothing
+// without the key it was minted for. `keys.Acting` reads the pair.
 type Delegation struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`

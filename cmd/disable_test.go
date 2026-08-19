@@ -2,6 +2,7 @@ package cmd_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/vouch"
 )
 
@@ -78,8 +80,17 @@ func TestADisabledHolderIsNotToSignInAndNotSignedIn(t *testing.T) {
 	key := mintFor(t, ctx, b, b.Who, "hers", []string{listHolders}, time.Time{})
 
 	c := app.NewHolderServiceClient(b.Conn)
+
+	// A delegation goes beside the app's key and a tenant key goes alone, which
+	// is the difference between saying who a call is about and saying who is
+	// making it.
 	list := func(token string) error {
-		_, err := c.List(bearing(ctx, token), app.HolderListRequest_builder{}.Build())
+		ctx := bearing(ctx, token)
+		if strings.HasPrefix(token, keys.PrefixDelegation) {
+			ctx = acting(t.Context(), b.Token, token)
+		}
+
+		_, err := c.List(ctx, app.HolderListRequest_builder{}.Build())
 
 		return err
 	}
@@ -141,8 +152,17 @@ func TestInvalidatingVoidsWhatWasIssuedBefore(t *testing.T) {
 	mayList(t, ctx, b, b.Who, listHolders)
 
 	c := app.NewHolderServiceClient(b.Conn)
+
+	// A delegation goes beside the app's key and a tenant key goes alone, which
+	// is the difference between saying who a call is about and saying who is
+	// making it.
 	list := func(token string) error {
-		_, err := c.List(bearing(ctx, token), app.HolderListRequest_builder{}.Build())
+		ctx := bearing(ctx, token)
+		if strings.HasPrefix(token, keys.PrefixDelegation) {
+			ctx = acting(t.Context(), b.Token, token)
+		}
+
+		_, err := c.List(ctx, app.HolderListRequest_builder{}.Build())
 
 		return err
 	}

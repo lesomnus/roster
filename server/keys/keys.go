@@ -81,13 +81,20 @@ import (
 //   - [PrefixDelegation] is this plane as well, and a different **table**: a
 //     product app calling as somebody it has just signed in. It resolves to the
 //     holder exactly as a tenant key does, and everything else about it is the
-//     short life -- minted per sign-in, expiring in minutes, bound to the caller
-//     it was given to. PLAN.md D23, and `delegation.proto`.
+//     short life and the binding -- minted per sign-in, expiring in minutes,
+//     usable only by the caller it was given to. PLAN.md D23 and D25, and
+//     `delegation.proto`.
 //
 // Which is the whole of the difference, and it is why they cannot share a
 // prefix: the first is the deployment and the rest are a customer, and telling
 // them apart by looking at the row would mean already having decided which
 // database -- and now which table -- to look in.
+//
+// **A delegation does not travel in `authorization`.** The other two are the
+// whole of what a request says about who is calling; a delegation is a
+// narrowing of a call the caller is already authenticated for, so it rides in
+// its own header and [Acting] is what reads the pair. That is what makes its
+// binding checkable at all -- see [HeaderActing].
 const (
 	PrefixDeployment = "rk_"
 	PrefixTenant     = "rt_"
@@ -196,13 +203,14 @@ func Store(deployment app.Server, tenant app.Server) auth.TokenStore {
 			s, find = deployment, findKey
 		case strings.HasPrefix(token, PrefixTenant):
 			s, whose, find = tenant, true, findKey
-		case strings.HasPrefix(token, PrefixDelegation):
-			// The same plane and a different table, which is why the switch
-			// chooses a lookup and not only a server. A chain built with no
-			// `tenant` reaches neither -- a console must not be able to present
-			// a customer's credential of either kind.
-			s, whose, find = tenant, true, findDelegation
 		}
+		// **No `rd_` case, and that is the fix rather than an omission.** A
+		// delegation is not a bearer credential on its own: it says who a call
+		// is *about*, and the caller still has to say who they are. What reads
+		// one is [Acting], which takes it from its own header beside the key it
+		// was minted for -- see [HeaderActing] for what that buys. Presented
+		// here alone it falls through to the refusal below, which is what a
+		// leaked delegation should be worth.
 		if s == nil {
 			// Not one of ours, or one of a kind this deployment does not issue.
 			// Refused rather than passed over, for the reason above.

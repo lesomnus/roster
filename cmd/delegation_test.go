@@ -8,6 +8,7 @@ import (
 	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -135,7 +136,7 @@ func TestADelegationIsThePersonAndNotTheApp(t *testing.T) {
 
 	c := app.NewHolderServiceClient(b.Conn)
 	list := func(token string) (*app.HolderListResponse, error) {
-		return c.List(bearing(ctx, token), app.HolderListRequest_builder{}.Build())
+		return c.List(acting(ctx, b.Token, token), app.HolderListRequest_builder{}.Build())
 	}
 
 	t.Run("it reads the tenant of the person it was minted for", func(t *testing.T) {
@@ -373,4 +374,102 @@ func TestADelegationIsNotOnTheWire(t *testing.T) {
 		x.NoError(err)
 		x.Len(row.GetSecret(), 32, "a sha256 and not a token")
 	})
+}
+
+// TestADelegationAloneIsWorthNothing is the condition D21 and D23 both put on
+// it -- *bound to the caller it was issued to* -- on the path that actually
+// uses one.
+//
+// The first version of this could not hold it. A credential in `authorization`
+// arrives alone: `auth.TokenStore.Lookup` is handed the token and nothing else,
+// so there was nothing to compare an issuer against, and the binding was
+// checked only in `Introspect` -- where an app asks *about* a token rather than
+// spends one. Anything that came by the string could spend it, for its whole
+// life, as the person.
+//
+// So a delegation is not a bearer credential. The app goes on authenticating as
+// itself and says who it is acting for in a header beside it, which is what
+// gives the comparison something to compare.
+func TestADelegationAloneIsWorthNothing(t *testing.T) {
+	b := keyFor(t, verify)
+	ctx := t.Context()
+
+	const listHolders = "/roster.HolderService/List"
+	mayList(t, ctx, b, b.Who, listHolders)
+
+	mine := delegates(t, ctx, b, b.Who, []string{listHolders}, 0)
+
+	c := app.NewHolderServiceClient(b.Conn)
+	list := func(c2 context.Context) error {
+		_, err := c.List(c2, app.HolderListRequest_builder{}.Build())
+
+		return err
+	}
+
+	t.Run("with the key it was minted for, it is the person", func(t *testing.T) {
+		x := require.New(t)
+
+		x.NoError(list(acting(ctx, b.Token, mine)))
+	})
+
+	t.Run("presented on its own, it is nobody", func(t *testing.T) {
+		x := require.New(t)
+
+		x.Equal(codes.Unauthenticated, status.Code(list(bearing(ctx, mine))),
+			"a delegation authenticated a caller that never said who it was")
+	})
+
+	t.Run("and with no key beside it, it is nobody", func(t *testing.T) {
+		x := require.New(t)
+
+		bare := metadata.AppendToOutgoingContext(ctx, keys.HeaderActing, mine)
+		x.Equal(codes.Unauthenticated, status.Code(list(bare)))
+	})
+
+	// The one the whole header exists for: a second app on the same deployment,
+	// holding its own perfectly good key, presenting a delegation it was not
+	// given.
+	t.Run("and another app's key does not spend it", func(t *testing.T) {
+		x := require.New(t)
+
+		theirs := keyed(t, ctx, b, "other-app", []string{listHolders})
+
+		x.Equal(codes.Unauthenticated, status.Code(list(acting(ctx, theirs, mine))),
+			"one app spent what another was issued")
+	})
+
+	// And the app's key on its own still works, so the three refusals above are
+	// about the pairing rather than about the chain being broken.
+	t.Run("and the key on its own is still a caller", func(t *testing.T) {
+		x := require.New(t)
+
+		_, err := app.NewVouchServiceClient(b.Conn).Verify(bearing(ctx, b.Token),
+			app.VouchVerifyRequest_builder{
+				Who:    app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
+				Secret: []byte("whatever"),
+			}.Build())
+		x.NoError(err, "the app was refused for its own call")
+	})
+}
+
+// keyed mints a second deployment key, for the app that is not meant to have
+// what it is holding.
+func keyed(t *testing.T, ctx context.Context, b *keyedBuilt, alias string, methods []string) string {
+	t.Helper()
+	x := require.New(t)
+
+	who := addHolder(t, ctx, b.Control, controlTenantOf(t, ctx, b), alias)
+
+	token, sum, err := keys.Mint(keys.PrefixDeployment)
+	x.NoError(err)
+
+	_, err = b.Control.Ungated.ApiKey().Add(ctx, app.ApiKeyAddRequest_builder{
+		Holder:  app.HolderRef_builder{Id: who.Bytes()}.Build(),
+		Alias:   alias,
+		Secret:  sum,
+		Methods: methods,
+	}.Build())
+	x.NoError(err)
+
+	return token
 }

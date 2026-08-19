@@ -248,7 +248,20 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		control.Keys = true
 
 		s.Control = control
-		s.Auth = auth.Bearer(keys.Store(control.Ungated, s.Ungated))
+		// Two handlers, and the order is the rule `Seq` runs on: the first
+		// that finds anything answers. `Acting` is only interested in a
+		// request carrying `roster-as`, and passes on everything else, so a
+		// request with just a key reaches `Bearer` exactly as before.
+		//
+		// It is first because a request carrying both is a delegated one: the
+		// key in `authorization` is there to say who is presenting, not to be
+		// the caller. Put second, `Bearer` would answer with the app and the
+		// delegation would be ignored -- an app would silently read as itself,
+		// across every tenant, on the page it wrote a delegation to narrow.
+		s.Auth = auth.Seq(
+			keys.Acting(control.Ungated, s.Ungated),
+			auth.Bearer(keys.Store(control.Ungated, s.Ungated)),
+		)
 
 		// And the control plane authenticates with **its own** keys, which is
 		// what makes it servable on a port at all.
