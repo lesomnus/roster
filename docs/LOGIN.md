@@ -205,6 +205,35 @@ them. Those are the app's, and D21 says why.
 
 See PLAN.md D20 and D21.
 
+## Signing in by address, and where the tenant comes from
+
+The path above collects `@tenant/alias`. Most forms collect an email, and for a
+long time this service could not serve one: `Email` is unique **per holder**, so
+that a consultant can be one person in two tenants under one address, which
+meant one address could name two people. F7 was that, open.
+
+What closes it is not a change to `Email`'s rule but a second fact. A tenant is
+the same service under a different operator's own domain, so the **name the
+browser arrived at** says which operator — and roster holds that now:
+
+```
+front door                                  roster
+     │  FrontService/WhoseHost "acme.example.com"  │
+     ├────────────────────────────────────────────>│
+     │<──────────────── acme ──────────────────────┤
+     │  Vouch.Verify {tenant: acme, address: …}    │
+     ├────────────────────────────────────────────>│
+```
+
+Within one tenant an address is unique, so there is one row to find. The
+consultant is untouched: that case is *across* tenants and this constrains
+*within* one.
+
+There is no form of this that takes an address alone. A lookup that could be
+made without naming a tenant is a lookup a front door that forgot to think about
+which one compiles a wrong answer for — which is the same reason the tenant is
+in `Identity`'s key rather than checked afterwards.
+
 ## A person who uses two operators' services
 
 They have two accounts, and that is the whole answer.
@@ -253,6 +282,42 @@ tenant on Monday and through GitHub on Saturday, and both land on one Holder
 with one history and one set of permissions. That is the convenience it is for,
 and putting the tenant in the key does not touch it: two Holders of one tenant
 claiming the same subject at the same provider is still refused.
+
+## Asking roster as the person who just signed in
+
+Every screen that shows somebody their own record needs it — my identities, my
+addresses, sign me out everywhere — and the two obvious ways are both wrong. The
+app's own key belongs to the deployment and sees every tenant it serves, and the
+app filtering rows in its own code is the thing that leaks by being forgotten.
+
+So `Vouch.Delegate` is `Verify` and one more thing: on a yes it answers with a
+short-lived credential for the person it just proved.
+
+```
+POST /session   {alias, password}
+     app ── Vouch.Delegate ──> roster
+     app <── {ok, holder, tenant, token, expires} ──
+
+later, drawing a page
+     app ── authorization: Bearer rk_…        (who is calling)
+            roster-as:     rd_…               (who the call is about)
+         ── MeService/Get ──> roster
+```
+
+**It is not a bearer credential on its own.** A delegation says who a call is
+*about* while the caller goes on saying who they are, and both are on the
+request — which is what makes "bound to the caller it was issued to" a rule
+rather than a sentence. One that leaks is worth nothing without the key it was
+minted for.
+
+What it can do is the intersection: never wider than the person, and never wider
+than the methods it was minted with. Signing out revokes it — `Vouch.Revoke` —
+rather than leaving a live credential until its clock runs out.
+
+`examples/sso` is the whole of it working, and it is honest about what it does
+not reach: a sign-in through the provider never calls `Vouch`, so there is
+nothing for a delegation to ride back on, and the page says so rather than
+falling back to the app's own credential. PLAN.md D23 and D25.
 
 ## What a calling machine is, and where it lives
 

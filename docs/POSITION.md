@@ -47,6 +47,8 @@ that outlives the answer and has to be believed by people who cannot ask.**
 | **How they sign in here** | `Credential` — a password when there is no provider in front, and the second factor beside it. Verified here, never handed out |
 | **Where they belong** | `Tenant`, `Site`, `Team`, and the memberships between |
 | **Who may call this** | `ApiKey` in both planes — `rk_` for the deployment's own services, `rt_` for a person's — and `Role`/`Group`/`Binding` in the data plane |
+| **On whose behalf** | `Delegation` — a short-lived credential an app holds for somebody it just signed in. Never a bearer on its own, and never wider than the person |
+| **Which name is whose** | `Host` — the name a front door answers at, and the tenant it belongs to — and `MailDomain`, where the people at an address authenticate |
 
 The first four are the original sentence. The last two are what it costs to
 serve the first four to more than one product.

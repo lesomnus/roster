@@ -289,6 +289,9 @@ roster key revoke --id <id>     # a delete, so the next call carrying it fails
 | `/roster.VouchService/Verify` | checking a password |
 | `/roster.VouchService/Delegate` | checking one **and** getting a credential to act for that person. A separate grant from `Verify`, on purpose: an app that only signs people in never needs it |
 | `/roster.VouchService/Revoke` | ending one when somebody signs out |
+| `/roster.FrontService/WhoseHost` | which tenant serves the name a browser arrived at |
+| `/roster.FrontService/WhereFrom` | where the people at an address authenticate |
+| `/roster.MeService/Get` | somebody's own record, through a delegation |
 | `/roster.HolderService/Get` | who somebody still is — a name for a screen, and the periodic recheck that ends a session after somebody leaves |
 | `/payday.TokenService/Introspect` | only if the app takes API tokens, or asks about a delegation it was given; see below |
 
@@ -432,6 +435,65 @@ grant `/roster.*/*`, even in a deployment where those are the only two services
 existed.
 
 So the first binding is `init`'s, and everything else descends from it.
+
+### A name a front door answers at
+
+A tenant is the same service under a different operator's own domain, so the
+name a browser arrived at *is* the operator whose service they are signing in
+to. That used to be a map in every app's configuration; it is a row now.
+
+```
+HostService/Add        acme.example.com -> acme
+MailDomainService/Add  acme.com -> entra          (optional; where they authenticate)
+```
+
+A front door asks `FrontService/WhoseHost` before it knows anything, and gets a
+tenant identifier and nothing else. `FrontService/WhereFrom` is the other half —
+identifier-first sign-in, answered per **domain** and never per person, because
+per person it would say whether an account is here.
+
+Three things to know:
+
+- **A host is stored as it is compared**, lowercased and without a port, and one
+  that is not is refused rather than fixed. Fixing it quietly hands back a row
+  that differs from what was typed. What goes wrong without the rule is nothing,
+  for a long time — the row is written, a console lists it, and the only thing
+  that never happens is a match.
+- **A host is unique across the deployment.** Two operators cannot both own one
+  name, so the second is told it is taken by somebody they cannot see. A
+  hostname is a public fact, which is why that is the cheap side of the trade.
+- **A mail domain is unique within a tenant**, and two operators saying
+  something about `@gmail.com` are two facts.
+
+With a host, an address names one person again — so `VouchService` takes one:
+
+```
+Vouch.Verify {who: {tenant: "acme", address: "erin@acme.example"}, secret: …}
+```
+
+Always the tenant **and** the address. There is no form that takes an address
+alone, because a lookup that could be made without naming a tenant is one a
+front door that forgot to think about which one compiles a wrong answer for.
+
+### What a local operator does
+
+For a deployment with no mail, where the person who delivers a recovery code is
+a person.
+
+| | |
+| --- | --- |
+| `/roster.VouchService/Reset` | a new password, generated here and answered with **once**. The operator reads it out |
+| `/roster.VouchService/Unlock` | opens an account ten wrong answers closed, without changing the secret |
+| `/roster.VouchService/Set` | writes a password somebody chose — an account portal's, not an operator's |
+
+**You may only write the credential of somebody whose permissions are a subset
+of yours.** Resetting a password is a way to become somebody, so without that
+rule an operator who may reset anybody in their tenant holds every permission in
+it. The refusal names the method that was in the way.
+
+Changing your own is always allowed. And nothing here stops you **suspending**
+an administrator — that is a denial of service rather than an escalation, and it
+is not covered.
 
 ### Suspending somebody, and signing them out of everything
 
