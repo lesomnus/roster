@@ -261,8 +261,89 @@ phase, and it is where `rt_` finally gets minted over the wire.
 
 ### P7 · Two-step verification (D20, D21)
 
-**Depends on P1** for the continuation and **on P5** for a way to enrol a second
-factor at all.
+Stress-tested before any of it was written, which found that the obvious shape
+breaks four things and that one of its stated dependencies does not exist. What
+follows is what survived, and it is **four increments** rather than one.
+
+#### What the obvious shape gets wrong
+
+- **The lockout does not span the steps.** D21's fourth condition -- *one count
+  across `Begin` and `Continue`, or the second factor is an unmetered guessing
+  surface reached by passing the first* -- was to be satisfied by "the counter
+  is on the `Credential` row". It is on **a** `Credential` row, and the index is
+  unique on `(holder, kind)`: the password row and the totp row carry two
+  counters. So ten wrong codes lock the second factor and leave the first
+  untouched, and a fresh first factor costs nothing because a **successful**
+  verify is never counted. The answer is that `Continue` counts its failures
+  against **the row the first step used**, so exhausting the second factor
+  closes the door the attempt came through.
+- **`ok` would mean two things, and the difference fails open.** D21 forbids
+  roster deciding sufficiency, so `ok` on a first step that passed has to mean
+  *this factor was proved* -- and every caller in the tree reads it as *signed
+  in* and mints a session. An app that does not read the new fields signs people
+  in on one factor, silently, in the open direction.
+- **A two-step sign-in cannot end in a delegation.** Nothing would mint one:
+  `Begin`/`Continue` answer no token, and calling `Delegate` afterwards is the
+  shape `vouch.proto` refuses in as many words -- two hashes and two lockout
+  counts, or a credential for somebody nobody just proved.
+- **There is no way to enrol a second factor**, which P7 was written as
+  depending on P5 for. `Vouch.Set` argon2-hashes whatever it is handed, which is
+  the one thing a TOTP seed must not be, and `Vouch.Reset` refuses a non-password
+  kind in as many words. That sentence is wrong now: a seed **is** the sensible
+  thing to generate and it **is** read out, as a QR code.
+
+#### The shape that survives
+
+> One new RPC. `Verify` and `Delegate` grow.
+
+`Continue(continuation, kind, secret)` is new, because proving a second factor
+is a distinct thing for a role to name and it takes a continuation rather than a
+`who`. `Verify` and `Delegate` grow the answer -- `satisfied`, `available`,
+`pending`, `continuation` -- and **mint a continuation only when there is more
+to prove**, so a deployment with one factor pays exactly what it pays today and
+the single-factor path stays one round trip. Minting stays on `Delegate`, which
+takes a continuation in place of `who`+`secret`.
+
+That also fixes the fail-open: an app gates on **the token being present**
+rather than on a boolean, so one that ignores the new fields fails closed.
+
+`ok` is never set on a response carrying a continuation. They are mutually
+exclusive.
+
+#### Four increments
+
+1. **`Credential` grows up.** `alias` at field 4 and the index at
+   `(holder, kind, alias)` -- because *one of each per person* is right for a
+   password, defensible for TOTP and wrong for WebAuthn, where registering a
+   backup authenticator is the standard advice. It costs nothing now and is a
+   migration later. Plus a **last accepted step**, because D20 requires that a
+   spent TOTP code not work twice and there is nowhere to record it.
+
+   And verification becomes **per kind**, which is the finding that would have
+   been hardest to see: `Burn` costs one argon2 unconditionally, so the moment a
+   TOTP compare is a microsecond, *this person has no second factor* costs 40ms
+   and *wrong code* costs nothing -- D14's equal-cost property inverted into a
+   cleaner oracle than the one it replaced.
+
+2. **TOTP, and the first secret roster must read back.** A seed is not a hash,
+   so it is stored wrapped with a deployment key. Enrolment generates it,
+   answers once with the seed and an `otpauth://` URI, and the factor does not
+   count until one code has verified -- a mis-scanned QR discovered when
+   somebody is already half signed in is the failure to avoid.
+
+3. **The attempt.** `Continuation`: `Delegation`'s shape, `issuer` at 10 for the
+   same reason, no `date_used` -- spending it is an erase, and *used* is *not
+   there*, which is `Undelegate`'s answer and one mechanism rather than two. Its
+   lifetime is **roster's and fixed**: D25's *the caller names it* was carved out
+   for a credential that is half of a pair, and a continuation is exactly the
+   standalone bearer that argument was carved out from.
+
+4. **The reference app's half-session.** payday already anticipated the shape --
+   `authsession.Session.Expires` may be set by a `Verify`, *which is how an app
+   gives a short session to somebody who has not finished a second factor*. So
+   `POST /session` answers the first form's result and a short cookie, and a
+   second route spends it. Two shapes in one app is also the second consumer
+   D24 §6 was waiting for.
 
 ### P8 · Recovery and the magic link (item 3)
 
@@ -306,7 +387,7 @@ Each takes a `D` in PLAN.md when it is taken. None is taken here.
 | P4 | hostname, mail domain, and F7 | **done** — PLAN.md D27. `Host`, `MailDomain`, `FrontService`, `Email` stamped and unique per tenant, `VouchWho.address`, and `examples/sso` asking roster rather than holding a map |
 | P5 | escalation over credential writes, then the write surface | **done** — PLAN.md D28. `core.Reaching`, `Vouch.Reset`, `Vouch.Unlock`, and the rule over `Vouch.Set`. Not done: minting an `rt_` over the wire |
 | P6 | the reads a screen needs, and the screens | item 7 taken in P3 for the caller's own record · **item 8 done** · left: the same read about somebody else, and the screens themselves |
-| P7 | two-step verification | — |
+| P7 | two-step verification | **in progress** — designed and stress-tested; four increments, see above |
 | P8 | recovery and the magic link | — |
 | P9 | the rest | — |
 
