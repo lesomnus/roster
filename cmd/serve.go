@@ -401,13 +401,19 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 
 	r := Resolver(s.Ungated, keyrows)
 
+	// One function, installed twice, because a stream and a unary call are two
+	// interceptors and `closed` is one answer. Built here rather than called
+	// twice below so that the two cannot come to disagree.
+	shut := s.closed(c)
+
 	chain := grpcx.Serving(ctx, grpcx.WithDeadline(c.Server.CallTimeout())).
 		WithUnary(auth.InterceptorUnary(h, r, public)).
 		WithStream(auth.InterceptorStream(h, r, public)).
 		WithUnary(grpcx.LimitUnary(c.Server.Limiter(), gate.ByTenant())).
 		With(gate.Interceptor(Policy(s.Ent))).
 		With(s.Watch.Interceptor()).
-		WithUnary(grpcx.ClosedUnary(s.closed(c)))
+		WithUnary(grpcx.ClosedUnary(shut)).
+		WithStream(grpcx.ClosedStream(shut))
 
 	// A certificate that cannot be read is a server that must not start, which
 	// is why this answers with an error: `GrpcOptions` reads the files
@@ -503,10 +509,13 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 // with one.
 //
 // For `DelegationService` this is the **only** control that closes it, and that
-// is worth knowing before somebody adds a line here for tidiness. `closed`
-// below reaches unary methods, because `grpcx.ClosedUnary` is what this app
-// installs; a `Watch` would slip past it. `Delegation` declares no `watch:` for
-// that reason, and not registering it is what covers the rest.
+// is worth knowing before somebody adds a line here for tidiness.
+//
+// `closed` below now reaches a stream as well, because both interceptors are
+// installed rather than the unary one -- which is F10's roster half, and it was
+// a hole in the one word whose whole job is to mean *not served*.
+// `Delegation` still declares no `watch:`, because a schema that says so is
+// better than a wiring that has to be remembered.
 //
 // It is said here rather than in the schema because there is nowhere in the
 // schema to say it: payday extends `MessageOptions` only, so no field can be
@@ -546,6 +555,13 @@ func register(g grpc.ServiceRegistrar, s app.Server) {
 //
 // So the two are one function used twice rather than two lists that agree
 // today.
+//
+// It is installed as **both** interceptors, in the pair `auth` is installed as
+// two lines above. Only the unary one was here, which was F10: a deployment that
+// closed a registered, watchable service -- `Holder` is one -- closed its reads
+// and left its stream open, and a `WatchItem` carries the whole message with no
+// `select` to narrow it. Nothing said so, in the one word whose whole job is to
+// mean *not served*.
 func (s *Server) closed(c Config) func(method string) bool {
 	was := c.Server.Closed()
 

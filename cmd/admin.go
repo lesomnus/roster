@@ -242,13 +242,16 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 		return nil, nil
 	}
 
+	shut := s.closed(Config{Server: c.Admin})
+
 	chain := grpcx.Serving(ctx, grpcx.WithDeadline(c.Admin.CallTimeout())).
 		WithUnary(auth.InterceptorUnary(s.Sessions.Handler(), Resolver(s.Control.Ungated, nil), public)).
 		WithStream(auth.InterceptorStream(s.Sessions.Handler(), Resolver(s.Control.Ungated, nil), public)).
 		With(gate.Interceptor(Policy(s.Control.Ent))).
 		WithUnary(Intent(s.Control.Ent)).
 		With(s.Watch.Interceptor()).
-		WithUnary(grpcx.ClosedUnary(s.closed(Config{Server: c.Admin})))
+		WithUnary(grpcx.ClosedUnary(shut)).
+		WithStream(grpcx.ClosedStream(shut))
 
 	vs, err := c.Admin.GrpcOptions()
 	if err != nil {

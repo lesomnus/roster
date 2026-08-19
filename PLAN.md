@@ -1968,44 +1968,69 @@ The rule left behind: **two payday apps can share a process when their proto
 packages differ.** Two instances of the *same* app always could, which is what
 D15 relies on.
 
-### F10 · `pd.Secret` does not cover `Watch`, and nothing closed can be a stream — **open**
+### F10 · `pd.Secret` did not cover `Watch`, and nothing closed could be a stream — **fixed**
 
-Two gaps that compose, and together they mean **a watchable entity with a
-verifier streams the verifier**.
+Two gaps that composed, and together they meant **a watchable entity with a
+verifier streamed the verifier**.
 
-- payday's `Secret` layer writes wrappers for `Add`, `Get`, `Patch`, `Apply` and
-  `List`. There is no `Watch` override, so a `WatchItem` carries the whole
+- payday's `Secret` layer wrote wrappers for `Add`, `Get`, `Patch`, `Apply` and
+  `List`. There was no `Watch` override, so a `WatchItem` carried the whole
   message -- and a `WatchRequest` has no `select` to leave a column out of.
-- roster installs `grpcx.ClosedUnary` and never `ClosedStream`, so `closed`
-  structurally cannot shut a streaming method. `grpcx.Closed` exists and is not
-  used.
+- roster installed `grpcx.ClosedUnary` and never `ClosedStream`, so `closed`
+  structurally could not shut a streaming method.
 
-Which leaves **not registering the service** as the only control that covers a
-stream at all. `Credential` declares `watch: {}` today and would stream password
-hashes over `CredentialService/Watch`; the one thing stopping it is D13 having
-taken the service off the wire for a different reason.
+Which left **not registering the service** as the only control that covered a
+stream at all. `Credential` declares `watch: {}` and would have streamed
+password hashes over `CredentialService/Watch`; the one thing stopping it was
+D13 having taken the service off the wire for a different reason.
 
-`Delegation` therefore declares no `watch:`, and says so in the schema rather
-than relying on this being remembered.
+#### Both fixed, and the payday half was not hypothetical
 
-Two fixes, one each side. payday: emit a `Watch` wrapper in `emitSecretOf`, or
-refuse `watch:` on an entity with a `secret:` field -- the second is the loud
-one and is probably right, since a stream that silently omits a column is its
-own surprise. roster: install `grpcx.Closed` instead of `ClosedUnary`, so that
-`closed` means what its name says.
+In payday, `emitSecretOf` (`internal/pdgen/layers.go`) now writes a `Watch` wrapper that clears the column on the way out. `Robot`, in
+payday's **own** reference app, declares both `secret:` and `watch:`, and the
+test added there fails on the old generator with the secret in plaintext on the
+wire. `lesomnus/payday@b57f9a1`, and the pin here moved with it.
 
-### F11 · A `secret:` field with no `list:` generates code that does not compile — **open**
+roster installs both interceptors, in the pair `auth` is installed as two lines
+above it in the same chain. Nothing registered is closed today, so this closes
+no live hole -- it makes `closed` mean what its name says, for the service added
+tomorrow that is both.
 
-`emitSecretOf` emits the `List` wrapper unconditionally, with no `if e.List !=
-nil` guard, so the generated `Secret` layer names `<E>ListRequest` and
-`s.<E>ServiceServer.List` for an entity that declared no list. `pd gen` succeeds
-and says nothing; `go build` fails inside a generated file nobody is allowed to
-edit.
+Pinned here by `cmd/watch_test.go`, because this app is the one with a password
+hash in the column.
 
-It did not block `Delegation`, which wants a `list:` anyway -- a page of them is
+#### Why hidden and not refused
+
+Refusing `watch:` on an entity with a `secret:` field was the other fix, and
+this document previously said it was probably right, *since a stream that
+silently omits a column is its own surprise*.
+
+That was wrong, and item 4 is why. The first real subject of a sync channel is
+**this person's credentials changed, stop trusting what you were told**, and the
+row that changed is exactly the one holding a verifier. Refusing would make the
+one thing worth watching the one thing that cannot be watched. And the surprise
+argument does not survive contact: `Get` omits the column too, so a stream that
+omits it is the consistent answer rather than the odd one.
+
+`Delegation` still declares no `watch:`. Not because it could not now, but
+because a schema that says so is better than a wiring that has to be remembered.
+
+### F11 · A `secret:` field with no `list:` generated code that did not compile — **fixed**
+
+`emitSecretOf` emitted the `List` wrapper unconditionally, with no `if e.List !=
+nil` guard, so the generated `Secret` layer named `<E>ListRequest` and
+`s.<E>ServiceServer.List` for an entity that declared no list. `pd gen`
+succeeded and said nothing; `go build` failed inside a generated file nobody is
+allowed to edit.
+
+Fixed in `lesomnus/payday@b57f9a1`, in the same pass as F10. Its regression test
+is an entity of that shape -- `Seal`, in payday's reference app -- and the test
+is that the package **compiles**: there is nothing to assert, and it fails at
+the only moment the bug ever showed itself.
+
+It never blocked `Delegation`, which wants a `list:` anyway -- a page of them is
 what a sweep reads and what an operator asking "what is live for this person"
-reads. So this is written down rather than worked around, and the fix is four
-characters in payday.
+reads.
 
 ### F12 · `pd doctor` does not read the schema — **open**
 
@@ -2033,7 +2058,7 @@ that costs something, because it is what makes somebody trust the exit code.
 | 1 · schema — Site, Identity, Email | **done**, 15 tests, both databases |
 | 1b · Team, on the second axis | **done**, 21 tests, both databases |
 | 1c · memberships, Credential | **done**, 27 tests, both databases |
-| 2 · payday fixes | F1, F2, F4, F9 done · F7 closed by D27 · F3, F6, F10, F11, F12 open · F5 written down |
+| 2 · payday fixes | F1, F2, F4, F9, F10, F11 done · F7 closed by D27 · F3, F6, F12 open · F5 written down |
 | 3 · app layer | linking rules, credential verification, roles and the second axis, `MeService`, escalation prevention, the console · **done** |
 | 4 · keys, sync, console | **keys done** (both planes; no wire surface to mint an `rt_`) · **delegation done** (D25; no wire surface either) · sync channel, console — |
 | 5 · the line, written down | **done** — D19, D20, and POSITION.md rewritten around them |

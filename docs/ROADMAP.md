@@ -383,6 +383,14 @@ and nothing has run long enough to measure any. Its first increment -- a console
 that watches `Holder` and redraws when somebody is disabled or their epoch moves
 -- came free with D26 and is what a screen needs today.
 
+**"Came free" was asserted and is now run.** `cmd/watch_test.go` opens the
+stream, disables somebody and moves their epoch, and reads both facts off it.
+That is worth the file it took: a column can be added, be right in the database,
+be answered by `Get`, and still not be on the stream, and nothing would say so
+until an app that trusted the stream went on trusting a signed-out session.
+
+Writing it found F10 next door, which is in the table below.
+
 ## Decisions to take before the code that needs them
 
 Each takes a `D` in PLAN.md when it is taken. None is taken here.
@@ -418,6 +426,7 @@ Each takes a `D` in PLAN.md when it is taken. None is taken here.
 | P7 | two-step verification | **done** — PLAN.md D29 and D30, and `examples/sso` showing two forms with a half-session between them |
 | P8 | recovery and the magic link | **done** — PLAN.md D31. `Vouch.Link`/`Redeem`, a reset voiding what came before it, and the sweep over both short-lived tables. The air-gap half was already D28's |
 | P9 | the rest | session table, the breached-password check, **provider connections** and **§6** done · left: the event stream, which item 4 itself defers |
+| — | F10 and F11, upstream | **done** — `pd.Secret` streamed the verifier it hides everywhere else, in payday's own reference app as much as here. `lesomnus/payday@b57f9a1`, pin moved, both halves pinned in `cmd/watch_test.go` |
 
 ## See also
 

@@ -95,8 +95,8 @@ github.com/lesomnus/otx v0.0.0-20260807173743-977a5687d6ba h1:ERVLWGIetM+m0qzy2u
 github.com/lesomnus/otx v0.0.0-20260807173743-977a5687d6ba/go.mod h1:V/UUmEut4XAaAzQ3eaY+giBv3TzRgoQEGZUilY9qJGA=
 github.com/lesomnus/otx/otxgrpc v0.0.0-20260807173743-977a5687d6ba h1:UCZIYVeng2rrhyPUE3eznt8jjVU0Q6llkRpYfXOsEm0=
 github.com/lesomnus/otx/otxgrpc v0.0.0-20260807173743-977a5687d6ba/go.mod h1:v/VS9C5p4/BpSBCqBDFJ+z/9z155Ykq/F02uEteusns=
-github.com/lesomnus/payday v0.0.0-20260816030427-a4275f56461e h1:kn1WiNgpB7knxnfO1zhOY4RvyGxB8W8ywez0ad/Ai/4=
-github.com/lesomnus/payday v0.0.0-20260816030427-a4275f56461e/go.mod h1:bMYXsDg6adm5doPcIOQAWM3R7Clskph/ZZJ3vLqxWSM=
+github.com/lesomnus/payday v0.0.0-20260819064943-b57f9a1c0a10 h1:t9mRfeP1sUIt7UK8un2FZX7I7EjAyR4xk08ZH2WlLNw=
+github.com/lesomnus/payday v0.0.0-20260819064943-b57f9a1c0a10/go.mod h1:bMYXsDg6adm5doPcIOQAWM3R7Clskph/ZZJ3vLqxWSM=
 github.com/lesomnus/protobuf-patch v0.0.0-20260803175157-e1b7a0c2804f h1:hIDTEG7vZCJ5M+j+OhI97pk6Q1mp1t3gXi1k96IB9f0=
 github.com/lesomnus/protobuf-patch v0.0.0-20260803175157-e1b7a0c2804f/go.mod h1:0sqL1bt/0v8atiVioyoJ25XQnZcn8zA9GYM1DvC4i5o=
 github.com/lesomnus/sqlite3-wasm v0.0.0-20260726134538-bebcaebf933e h1:S272MwPLsKMFJ7Xl75vVixiZ6QpN9tLuJXH4Q3GsKJk=
@@ -138,8 +138,6 @@ github.com/protobuf-orm/protobuf-merge v0.0.0-20260628173210-5ad3f89671df h1:BLz
 github.com/protobuf-orm/protobuf-merge v0.0.0-20260628173210-5ad3f89671df/go.mod h1:BUd72lrno943ObVibUbiF5fXPwJlTNJk4zUeZ8htwmY=
 github.com/protobuf-orm/protobuf-orm v0.0.0-20260807003431-ce1156ba9f29 h1:yLrMWcjBT70hljInsE7zssdIZ8pwvotprlUGsLEs4ms=
 github.com/protobuf-orm/protobuf-orm v0.0.0-20260807003431-ce1156ba9f29/go.mod h1:jMdK+un3aGD6fB5zl3rBg0OMahe7vP5Dpfxe6Sws7mM=
-github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20260813070911-e7e86369ded5 h1:DiLErPDnD7nE5CVJ/9QGBGXcz/I0ux51iT3ryEMIgbE=
-github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20260813070911-e7e86369ded5/go.mod h1:d4pEUXdkDMMUV26YLrYmqyE42p0bOR3ZrcML76ABkts=
 github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20260819001812-3843c6053c01 h1:6l4v8K5jhyMWx+SVLigiZGiFDVSxLSxpWj7UvvlsRjQ=
 github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20260819001812-3843c6053c01/go.mod h1:d4pEUXdkDMMUV26YLrYmqyE42p0bOR3ZrcML76ABkts=
 github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20260813070911-e7e86369ded5 h1:rxkuYOzOUlb8T0z7xARsreu8HormQz93K2Q/TOf5RCk=
