@@ -30,8 +30,12 @@ type Tx struct {
 	GroupMembership *GroupMembershipClient
 	// Holder is the client for interacting with the Holder builders.
 	Holder *HolderClient
+	// Host is the client for interacting with the Host builders.
+	Host *HostClient
 	// Identity is the client for interacting with the Identity builders.
 	Identity *IdentityClient
+	// MailDomain is the client for interacting with the MailDomain builders.
+	MailDomain *MailDomainClient
 	// Outbox is the client for interacting with the Outbox builders.
 	Outbox *OutboxClient
 	// Role is the client for interacting with the Role builders.
@@ -186,7 +190,9 @@ func (tx *Tx) init() {
 	tx.Group = NewGroupClient(tx.config)
 	tx.GroupMembership = NewGroupMembershipClient(tx.config)
 	tx.Holder = NewHolderClient(tx.config)
+	tx.Host = NewHostClient(tx.config)
 	tx.Identity = NewIdentityClient(tx.config)
+	tx.MailDomain = NewMailDomainClient(tx.config)
 	tx.Outbox = NewOutboxClient(tx.config)
 	tx.Role = NewRoleClient(tx.config)
 	tx.Site = NewSiteClient(tx.config)

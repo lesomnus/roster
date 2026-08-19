@@ -36,6 +36,8 @@ type Server interface {
 	Site() SiteServiceServer
 	Group() GroupServiceServer
 	GroupMembership() GroupMembershipServiceServer
+	Host() HostServiceServer
+	MailDomain() MailDomainServiceServer
 	Team() TeamServiceServer
 	Role() RoleServiceServer
 	Binding() BindingServiceServer
@@ -60,6 +62,8 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterSiteServiceServer(g, s.Site())
 	RegisterGroupServiceServer(g, s.Group())
 	RegisterGroupMembershipServiceServer(g, s.GroupMembership())
+	RegisterHostServiceServer(g, s.Host())
+	RegisterMailDomainServiceServer(g, s.MailDomain())
 	RegisterTeamServiceServer(g, s.Team())
 	RegisterRoleServiceServer(g, s.Role())
 	RegisterBindingServiceServer(g, s.Binding())
@@ -80,6 +84,8 @@ type UnimplementedServer struct {
 	SiteServer            SiteServiceServer
 	GroupServer           GroupServiceServer
 	GroupMembershipServer GroupMembershipServiceServer
+	HostServer            HostServiceServer
+	MailDomainServer      MailDomainServiceServer
 	TeamServer            TeamServiceServer
 	RoleServer            RoleServiceServer
 	BindingServer         BindingServiceServer
@@ -107,6 +113,10 @@ func (UnimplementedServer) Group() GroupServiceServer { return UnimplementedGrou
 func (UnimplementedServer) GroupMembership() GroupMembershipServiceServer {
 	return UnimplementedGroupMembershipServiceServer{}
 }
+func (UnimplementedServer) Host() HostServiceServer { return UnimplementedHostServiceServer{} }
+func (UnimplementedServer) MailDomain() MailDomainServiceServer {
+	return UnimplementedMailDomainServiceServer{}
+}
 func (UnimplementedServer) Team() TeamServiceServer       { return UnimplementedTeamServiceServer{} }
 func (UnimplementedServer) Role() RoleServiceServer       { return UnimplementedRoleServiceServer{} }
 func (UnimplementedServer) Binding() BindingServiceServer { return UnimplementedBindingServiceServer{} }
@@ -130,6 +140,8 @@ type StaticServer struct {
 	SiteServer            SiteServiceServer
 	GroupServer           GroupServiceServer
 	GroupMembershipServer GroupMembershipServiceServer
+	HostServer            HostServiceServer
+	MailDomainServer      MailDomainServiceServer
 	TeamServer            TeamServiceServer
 	RoleServer            RoleServiceServer
 	BindingServer         BindingServiceServer
@@ -149,6 +161,8 @@ func (s StaticServer) Email() EmailServiceServer                     { return s.
 func (s StaticServer) Site() SiteServiceServer                       { return s.SiteServer }
 func (s StaticServer) Group() GroupServiceServer                     { return s.GroupServer }
 func (s StaticServer) GroupMembership() GroupMembershipServiceServer { return s.GroupMembershipServer }
+func (s StaticServer) Host() HostServiceServer                       { return s.HostServer }
+func (s StaticServer) MailDomain() MailDomainServiceServer           { return s.MailDomainServer }
 func (s StaticServer) Team() TeamServiceServer                       { return s.TeamServer }
 func (s StaticServer) Role() RoleServiceServer                       { return s.RoleServer }
 func (s StaticServer) Binding() BindingServiceServer                 { return s.BindingServer }
@@ -168,6 +182,8 @@ type Client interface {
 	Site() SiteServiceClient
 	Group() GroupServiceClient
 	GroupMembership() GroupMembershipServiceClient
+	Host() HostServiceClient
+	MailDomain() MailDomainServiceClient
 	Team() TeamServiceClient
 	Role() RoleServiceClient
 	Binding() BindingServiceClient
@@ -189,6 +205,8 @@ func NewClient(c *grpc.ClientConn) Client {
 		_Site:            NewSiteServiceClient(c),
 		_Group:           NewGroupServiceClient(c),
 		_GroupMembership: NewGroupMembershipServiceClient(c),
+		_Host:            NewHostServiceClient(c),
+		_MailDomain:      NewMailDomainServiceClient(c),
 		_Team:            NewTeamServiceClient(c),
 		_Role:            NewRoleServiceClient(c),
 		_Binding:         NewBindingServiceClient(c),
@@ -210,6 +228,8 @@ type client struct {
 	_Site            SiteServiceClient
 	_Group           GroupServiceClient
 	_GroupMembership GroupMembershipServiceClient
+	_Host            HostServiceClient
+	_MailDomain      MailDomainServiceClient
 	_Team            TeamServiceClient
 	_Role            RoleServiceClient
 	_Binding         BindingServiceClient
@@ -229,6 +249,8 @@ func (c *client) Email() EmailServiceClient                     { return c._Emai
 func (c *client) Site() SiteServiceClient                       { return c._Site }
 func (c *client) Group() GroupServiceClient                     { return c._Group }
 func (c *client) GroupMembership() GroupMembershipServiceClient { return c._GroupMembership }
+func (c *client) Host() HostServiceClient                       { return c._Host }
+func (c *client) MailDomain() MailDomainServiceClient           { return c._MailDomain }
 func (c *client) Team() TeamServiceClient                       { return c._Team }
 func (c *client) Role() RoleServiceClient                       { return c._Role }
 func (c *client) Binding() BindingServiceClient                 { return c._Binding }

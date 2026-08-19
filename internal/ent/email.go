@@ -24,6 +24,8 @@ type Email struct {
 	Address string `json:"address,omitempty"`
 	// DateVerified holds the value of the "date_verified" field.
 	DateVerified *time.Time `json:"date_verified,omitempty"`
+	// TenantID holds the value of the "tenant_id" field.
+	TenantID uuid.UUID `json:"tenant_id,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -82,7 +84,7 @@ func (*Email) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case email.FieldDateVerified, email.FieldDateUpdated, email.FieldDateErased, email.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case email.FieldID, email.FieldHolderID, email.FieldVouchedByID:
+		case email.FieldID, email.FieldTenantID, email.FieldHolderID, email.FieldVouchedByID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -117,6 +119,12 @@ func (_m *Email) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.DateVerified = new(time.Time)
 				*_m.DateVerified = value.Time
+			}
+		case email.FieldTenantID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
+			} else if value != nil {
+				_m.TenantID = *value
 			}
 		case email.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -202,6 +210,9 @@ func (_m *Email) String() string {
 		builder.WriteString("date_verified=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("tenant_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.TenantID))
 	builder.WriteString(", ")
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))

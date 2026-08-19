@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/vouch.proto.
  */
 export const file_app_vouch: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciI1CghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkiUQoSVm91Y2hWZXJpZnlSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJEg4KBnNlY3JldBgJIAEoDCJzChNWb3VjaFZlcmlmeVJlc3BvbnNlEgoKAm9rGAEgASgIEg4KBmhvbGRlchgCIAEoDBIOCgZ0ZW5hbnQYAyABKAwSMAoMbG9ja2VkX3VudGlsGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJOCg9Wb3VjaFNldFJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMIhIKEFZvdWNoU2V0UmVzcG9uc2UikQEKFFZvdWNoRGVsZWdhdGVSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJEg4KBnNlY3JldBgJIAEoDBIPCgdtZXRob2RzGAogAygJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIoIBChVWb3VjaERlbGVnYXRlUmVzcG9uc2USLQoIdmVyaWZpZWQYASABKAsyGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZRINCgV0b2tlbhgKIAEoCRIrCgdleHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIjChJWb3VjaFJldm9rZVJlcXVlc3QSDQoFdG9rZW4YASABKAkiFQoTVm91Y2hSZXZva2VSZXNwb25zZTKXAgoMVm91Y2hTZXJ2aWNlEkEKBlZlcmlmeRIaLnJvc3Rlci5Wb3VjaFZlcmlmeVJlcXVlc3QaGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZRI4CgNTZXQSFy5yb3N0ZXIuVm91Y2hTZXRSZXF1ZXN0Ghgucm9zdGVyLlZvdWNoU2V0UmVzcG9uc2USRwoIRGVsZWdhdGUSHC5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlEkEKBlJldm9rZRIaLnJvc3Rlci5Wb3VjaFJldm9rZVJlcXVlc3QaGy5yb3N0ZXIuVm91Y2hSZXZva2VSZXNwb25zZUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp]);
+  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJGCghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCSJRChJWb3VjaFZlcmlmeVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMInMKE1ZvdWNoVmVyaWZ5UmVzcG9uc2USCgoCb2sYASABKAgSDgoGaG9sZGVyGAIgASgMEg4KBnRlbmFudBgDIAEoDBIwCgxsb2NrZWRfdW50aWwYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIk4KD1ZvdWNoU2V0UmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwiEgoQVm91Y2hTZXRSZXNwb25zZSKRAQoUVm91Y2hEZWxlZ2F0ZVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMEg8KB21ldGhvZHMYCiADKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiggEKFVZvdWNoRGVsZWdhdGVSZXNwb25zZRItCgh2ZXJpZmllZBgBIAEoCzIbLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlEg0KBXRva2VuGAogASgJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIiMKElZvdWNoUmV2b2tlUmVxdWVzdBINCgV0b2tlbhgBIAEoCSIVChNWb3VjaFJldm9rZVJlc3BvbnNlMpcCCgxWb3VjaFNlcnZpY2USQQoGVmVyaWZ5Ehoucm9zdGVyLlZvdWNoVmVyaWZ5UmVxdWVzdBobLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlEjgKA1NldBIXLnJvc3Rlci5Wb3VjaFNldFJlcXVlc3QaGC5yb3N0ZXIuVm91Y2hTZXRSZXNwb25zZRJHCghEZWxlZ2F0ZRIcLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVxdWVzdBodLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVzcG9uc2USQQoGUmV2b2tlEhoucm9zdGVyLlZvdWNoUmV2b2tlUmVxdWVzdBobLnJvc3Rlci5Wb3VjaFJldm9rZVJlc3BvbnNlQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp]);
 
 /**
  * VouchWho names somebody in the words a sign-in form collects.
@@ -41,7 +41,12 @@ export type VouchWho = Message<"roster.VouchWho"> & {
 
   /**
    * `@tenant/alias`, which is the pair a username field and a tenant selector
-   * make.
+   * make -- or the tenant and an [VouchWho.address], which is what a form that
+   * asks for an email collects.
+   *
+   * The tenant is required by either, and comes from the front door rather than
+   * from the form: `FrontService.WhoseHost` turns the name a browser arrived at
+   * into one.
    *
    * @generated from field: string tenant = 2;
    */
@@ -51,6 +56,35 @@ export type VouchWho = Message<"roster.VouchWho"> & {
    * @generated from field: string alias = 3;
    */
   alias: string;
+
+  /**
+   * An address, within a tenant. What most sign-in forms actually collect.
+   *
+   * # This used to be empty, and F7 is why
+   *
+   * `Email` is unique **per holder**, deliberately, so that a consultant can be
+   * one person in two tenants under one address -- which meant one address
+   * could name two people and a sign-in resolving by it would pick one of them.
+   * The comment here said so and left the field unspent.
+   *
+   * The way out was never a field. It was the second half of the same
+   * sentence: *or a tenant that arrives from somewhere the form did not type.*
+   * A front door has one now, from `FrontService.WhoseHost`, and `Email` has a
+   * unique `(tenant, address)` to go with it -- so within the tenant somebody
+   * arrived at, an address names one person again. D3's consultant is
+   * untouched: that case is across tenants and this constrains within one.
+   *
+   * # It is the tenant **and** the address, always
+   *
+   * Named beside [VouchWho.tenant], which is the same pair an alias uses. There
+   * is no form of this that takes an address alone, and that is the constraint
+   * rather than an omission: a lookup that could be made without naming a
+   * tenant is a lookup a front door that forgot to think about which one
+   * compiles a wrong answer for.
+   *
+   * @generated from field: string address = 4;
+   */
+  address: string;
 };
 
 /**

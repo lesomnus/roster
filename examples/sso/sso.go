@@ -122,10 +122,18 @@ type Config struct {
 	// operators' services, which is what a tenant being the wall already means.
 	// Nothing relates them and nothing should.
 	//
-	// Required. An identity is unique **within a tenant**, so a sign-in cannot
-	// look anybody up until it knows which one -- there is no mode where this
-	// is skipped. A deployment serving one tenant names the one host it answers
-	// on.
+	// **Optional now, and it was not.** Left empty, this asks roster --
+	// `FrontService.WhoseHost` -- which is where the fact belongs: a `Host` row
+	// is the tenant's own, written once by whoever runs the deployment, rather
+	// than a copy in the configuration of every app that fronts it.
+	//
+	// It stays here because a map is right for an app that fronts one operator
+	// and knows it at build time, and because an example that only showed the
+	// remote answer would hide how little is needed for the simple case.
+	//
+	// An identity is unique **within a tenant**, so a sign-in cannot look
+	// anybody up until it knows which one. There is no mode where that is
+	// skipped -- only two places the answer can come from.
 	Tenants map[string]string
 }
 
@@ -201,6 +209,7 @@ type App struct {
 	// bundles the entity services, and these are not entities.
 	vouch rstr.VouchServiceClient
 	me_   rstr.MeServiceClient
+	front rstr.FrontServiceClient
 
 	// What this app is holding on somebody's behalf; see `password.go`.
 	held delegations
@@ -227,12 +236,6 @@ func New(ctx context.Context, c Config, conn *grpc.ClientConn, s *authsession.Se
 	}
 	if enrol == nil {
 		return nil, errors.New("sso: Enrol: say what happens to somebody nobody has invited; Invited() is the refusing one")
-	}
-	if len(c.Tenants) == 0 {
-		// An identity is unique within a tenant, so there is no lookup to make
-		// until one is named. A deployment serving a single tenant names the
-		// one host it answers on, which is a line rather than a mode.
-		return nil, errors.New("sso: Tenants: name the hosts this deployment serves and the tenant each belongs to")
 	}
 
 	p, err := oidc.NewProvider(ctx, c.Issuer)
@@ -262,6 +265,7 @@ func New(ctx context.Context, c Config, conn *grpc.ClientConn, s *authsession.Se
 
 		vouch: rstr.NewVouchServiceClient(conn),
 		me_:   rstr.NewMeServiceClient(conn),
+		front: rstr.NewFrontServiceClient(conn),
 	}, nil
 }
 
@@ -335,8 +339,9 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	who.Host = r.Host
-	t, ok := a.tenants[hostname(r.Host)]
-	if !ok {
+
+	t, err := a.tenantOf(ctx, r.Host)
+	if err != nil {
 		// Reached under a name this deployment does not serve. There is no
 		// tenant to sign in to and nothing to guess.
 		http.Error(w, "this account has not been invited", http.StatusForbidden)
@@ -601,4 +606,43 @@ func hostname(v string) string {
 	}
 
 	return strings.ToLower(v)
+}
+
+// tenantOf is which operator this browser arrived at, by alias.
+//
+// From the configured map when there is one, and otherwise from roster. The
+// second is where the fact belongs -- a `Host` row is written once by whoever
+// runs the deployment, rather than copied into the configuration of every app
+// that fronts it, going stale in each independently -- and it is what
+// `FrontService` exists for.
+//
+// Read through this app's own credential, before anybody has been resolved to
+// anybody: that is the situation `FrontService` is shaped for, and it answers
+// with a tenant identifier and nothing else.
+func (a *App) tenantOf(ctx context.Context, host string) (string, error) {
+	if len(a.tenants) > 0 {
+		t, ok := a.tenants[hostname(host)]
+		if !ok {
+			return "", ErrUnknown
+		}
+
+		return t, nil
+	}
+
+	v, err := a.front.WhoseHost(ctx, rstr.FrontWhoseHostRequest_builder{Host: host}.Build())
+	if err != nil {
+		return "", err
+	}
+
+	// By alias, because that is what `VouchWho` and the identity lookup take.
+	// One read, and it is the same read `find` would have made anyway.
+	t, err := a.roster.Tenant().Get(ctx, rstr.TenantGetRequest_builder{
+		Ref:    rstr.TenantRef_builder{Id: v.GetTenant()}.Build(),
+		Select: rstr.TenantSelect_builder{Alias: proto.Bool(true)}.Build(),
+	}.Build())
+	if err != nil {
+		return "", err
+	}
+
+	return t.GetAlias(), nil
 }

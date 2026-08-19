@@ -1,0 +1,234 @@
+edition = "2023";
+
+package roster;
+
+import "roster/payday/tenant.proto";
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/roster/rstr";
+
+// Host is a name a front door answers at, and the tenant it belongs to.
+//
+// # The question it exists to answer
+//
+// A multi-tenant app served at `acme.example.com` has to turn that name into a
+// tenant before it can look anybody up, and roster had no way to say. Every
+// front door held its own map instead -- `examples/sso` still takes one as
+// configuration -- which is a copy of a fact roster owns, in as many places as
+// there are apps, going stale independently.
+//
+// It is the **host** and not the email domain, and LOGIN.md is explicit about
+// why: *a tenant is the same service under a different operator's own domain,
+// so the name the browser arrived at is the operator whose service they are
+// signing in to.* Where somebody **authenticates** is a different question,
+// often at another organisation entirely -- one of acme's people can perfectly
+// well have a personal Google account. That question is [MailDomain]'s.
+//
+// # Why it is a row rather than a field on Tenant
+//
+// Because it has to be **looked up**. `holder.proto` already wrote the rule
+// this follows -- *anything that has to be looked up goes flat beside it* --
+// and it is the same reason `Identity` is an entity and `Profile` is not. A
+// repeated field on `Tenant` is one value to the database: no index, and a
+// front door resolving a name would read every tenant there is.
+//
+// # It is behind the wall, and the read that matters is not
+//
+// Tenanted like everything else, so that an operator writes their own names and
+// sees nobody else's. But the read a front door makes happens **before anybody
+// has been resolved to a tenant** -- that is the whole point of it -- so it goes
+// through the unwalled server, exactly as `cmd.Resolver` and `vouch.Verify` do
+// and for the same stated reason: working out who somebody is cannot require
+// knowing who they are. `HostService` is what does that, and it answers with a
+// tenant identifier and nothing else.
+//
+// # The name is unique across the deployment
+//
+// Two operators cannot both own `acme.example.com`, so this is one of the few
+// constraints here that crosses the wall. What it costs is a small oracle --
+// the second operator to claim a name is told it is taken, by somebody they
+// cannot see -- and a hostname is a public fact, so that is the cheaper side of
+// the trade. `Email` deliberately went the other way, and D3 says why.
+message Host {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+
+  Tenant tenant = 2 [(orm.edge) = {immutable: true}];
+
+  // 4 and 7 are empty. `alias` is unique **within a tenant** and this is unique
+  // across the deployment, so a slug here would be a name that lies about its
+  // own scope. What the row is called is what it is, which is `name`.
+
+  // The name a browser arrived at, lowercased and without a port:
+  // "acme.example.com".
+  //
+  // Stored as it is compared. A host is case-insensitive and a port is not part
+  // of it, so whatever writes one normalises first -- `server/core` refuses one
+  // that is not already normalised, because a row that differs from what a
+  // front door will look up is a row that silently never matches.
+  string name = 5 [(orm.field) = {unique: true}];
+
+  string desc = 6;
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {
+            name: "date_created"
+            number: 15
+          },
+          {
+            name: "id"
+            number: 1
+          }
+        ]
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 20
+
+    list: {
+      order: [
+        {
+          field: {name: "date_created"}
+        },
+        {
+          field: {name: "id"}
+        }
+      ]
+      by: [
+        {name: "ref"},
+        {name: "tenant"}
+      ]
+      size: 20
+      max: 100
+    }
+  };
+}
+
+// MailDomain is where the people at an address authenticate.
+//
+// "Addresses at `@acme.com` go to Entra." Identifier-first sign-in is the thing
+// every multi-tenant front door rewrites, and it is a fact about a tenant's
+// domains rather than about anybody in particular.
+//
+// # It hangs off the domain and not off a person, deliberately
+//
+// Answered per person it is an account-enumeration oracle: type an address, and
+// which provider comes back says whether that account is here. Answered per
+// domain it says nothing about any individual -- the answer for
+// `nobody@acme.com` is the answer for everybody at acme.
+//
+// # What it names, and what it does not
+//
+// A provider by the name `Identity.provider` already uses. Not a connection: a
+// connection carries a client secret, and handing one back would make it the
+// first secret roster returns rather than checks -- which argues with D13 and
+// is PLAN.md's item 9, undecided. A name needs no secret, so this is the half
+// that can be taken now.
+//
+// # Within a tenant, and only within one
+//
+// Unlike [Host], which is a public name somebody owns, this is a routing hint
+// one operator holds about their own people. Two operators may both say
+// something about `@gmail.com` and they are two facts, so the key is
+// `(tenant, name)` and nothing crosses.
+message MailDomain {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+
+  Tenant tenant = 2 [(orm.edge) = {immutable: true}];
+
+  // The domain, lowercased and without the `@`: "acme.com". Normalised on the
+  // way in for [Host.name]'s reason.
+  string name = 5;
+
+  // Which provider to send them to, by the name `Identity.provider` uses.
+  //
+  // Empty is a domain this deployment knows about and has nothing to say about,
+  // which is a different fact from not having the row: a front door can hold a
+  // list of domains it serves without routing any of them.
+  string provider = 9;
+
+  string desc = 6;
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {
+            name: "date_created"
+            number: 15
+          },
+          {
+            name: "id"
+            number: 1
+          }
+        ]
+      },
+      {
+        name: "at"
+        refs: [
+          {
+            name: "tenant"
+            number: 2
+          },
+          {
+            name: "name"
+            number: 5
+          }
+        ]
+        unique: true
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 21
+
+    list: {
+      order: [
+        {
+          field: {name: "date_created"}
+        },
+        {
+          field: {name: "id"}
+        }
+      ]
+      by: [
+        {name: "ref"},
+        {name: "tenant"}
+      ]
+      size: 20
+      max: 100
+    }
+  };
+}

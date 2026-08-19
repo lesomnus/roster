@@ -49,6 +49,7 @@ type Email struct {
 	xxx_hidden_Address      string                 `protobuf:"bytes,8,opt,name=address"`
 	xxx_hidden_DateVerified *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=date_verified,json=dateVerified"`
 	xxx_hidden_VouchedBy    *Identity              `protobuf:"bytes,10,opt,name=vouched_by,json=vouchedBy"`
+	xxx_hidden_TenantId     []byte                 `protobuf:"bytes,11,opt,name=tenant_id,json=tenantId"`
 	xxx_hidden_DateUpdated  *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased   *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated  *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
@@ -116,6 +117,13 @@ func (x *Email) GetVouchedBy() *Identity {
 	return nil
 }
 
+func (x *Email) GetTenantId() []byte {
+	if x != nil {
+		return x.xxx_hidden_TenantId
+	}
+	return nil
+}
+
 func (x *Email) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -158,6 +166,13 @@ func (x *Email) SetDateVerified(v *timestamppb.Timestamp) {
 
 func (x *Email) SetVouchedBy(v *Identity) {
 	x.xxx_hidden_VouchedBy = v
+}
+
+func (x *Email) SetTenantId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_TenantId = v
 }
 
 func (x *Email) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -259,7 +274,21 @@ type Email_builder struct {
 	// provider's claims is only as good as that provider's own check, and the
 	// design is explicit that an unverified provider address must not be trusted
 	// to link accounts.
-	VouchedBy   *Identity
+	VouchedBy *Identity
+	// The tenant `holder.tenant` reaches, kept here. payday stamps it, and
+	// `Identity` says at length why a column is worth it.
+	//
+	// Here it buys one more thing than it does there, and it is the one F7 was
+	// open on: it is what a **unique index across a tenant** can be written over.
+	// Without it there is nowhere to put the constraint -- the wall reaches this
+	// entity through the holder, and an index cannot follow an edge.
+	//
+	// Immutable, which is not decoration. A stamp is written on `Add` and nothing
+	// refreshes it, so a mutable one lands in the generated `Patch` and a caller
+	// who may patch could move a row behind another tenant's wall. Nothing can
+	// put it out of date -- `holder` is immutable and so is `Holder.tenant` --
+	// and this is what says nothing may.
+	TenantId    []byte
 	DateUpdated *timestamppb.Timestamp
 	DateErased  *timestamppb.Timestamp
 	DateCreated *timestamppb.Timestamp
@@ -274,6 +303,7 @@ func (b0 Email_builder) Build() *Email {
 	x.xxx_hidden_Address = b.Address
 	x.xxx_hidden_DateVerified = b.DateVerified
 	x.xxx_hidden_VouchedBy = b.VouchedBy
+	x.xxx_hidden_TenantId = b.TenantId
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
@@ -284,7 +314,7 @@ var File_app_email_proto protoreflect.FileDescriptor
 
 const file_app_email_proto_rawDesc = "" +
 	"\n" +
-	"\x0fapp/email.proto\x12\x06roster\x1a\x12app/identity.proto\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xdf\x04\n" +
+	"\x0fapp/email.proto\x12\x06roster\x1a\x12app/identity.proto\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xb5\x05\n" +
 	"\x05Email\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\x18\n" +
@@ -292,24 +322,27 @@ const file_app_email_proto_rawDesc = "" +
 	"\rdate_verified\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\fdateVerified\x127\n" +
 	"\n" +
 	"vouched_by\x18\n" +
-	" \x01(\v2\x10.roster.IdentityB\x06\xf2\x82\x16\x028\x01R\tvouchedBy\x12F\n" +
+	" \x01(\v2\x10.roster.IdentityB\x06\xf2\x82\x16\x028\x01R\tvouchedBy\x12%\n" +
+	"\ttenant_id\x18\v \x01(\fB\b\xea\x82\x16\x04\x10@@\x01R\btenantId\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:\x94\x01\xca\xfc\x15L\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:\xc3\x01\xca\xfc\x15p\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
 	"\x02id\x10\x01\x1a$\x12\aaddress\x1a\n" +
 	"\n" +
 	"\x06holder\x10\x02\x1a\v\n" +
-	"\aaddress\x10\b0\x01\x8a\xbb\x16@\b\t2)\n" +
+	"\aaddress\x10\b0\x01\x1a\"\x12\x02at\x1a\r\n" +
+	"\ttenant_id\x10\v\x1a\v\n" +
+	"\aaddress\x10\b0\x01\x8a\xbb\x16K\b\t2)\n" +
 	"\x12\n" +
 	"\x10\n" +
 	"\fdate_created\x10\x0f\n" +
 	"\b\n" +
 	"\x06\n" +
 	"\x02id\x10\x01\x1a\x05\n" +
-	"\x03ref \x14(d:\x00\"\x0f\n" +
-	"\rholder.tenantB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
+	"\x03ref \x14(d:\x00\"\x1a\n" +
+	"\rholder.tenant\x1a\ttenant_idB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
 var file_app_email_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_app_email_proto_goTypes = []any{

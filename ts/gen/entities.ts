@@ -21,6 +21,7 @@ import { DelegationSchema } from './app/delegation_pb.js'
 import { EmailSchema } from './app/email_pb.js'
 import { GroupSchema, GroupMembershipSchema } from './app/group_pb.js'
 import { HolderSchema } from './roster/payday/holder_pb.js'
+import { HostSchema, MailDomainSchema } from './app/host_pb.js'
 import { IdentitySchema } from './app/identity_pb.js'
 import { OutboxSchema } from './roster/payday/outbox_pb.js'
 import { SiteSchema } from './app/site_pb.js'
@@ -107,6 +108,15 @@ export const Holder = {
 	refs: [{ field: "tenant", to: "roster.Tenant" }],
 } as const satisfies EntityDesc
 
+/** roster.Host, as the store holds it. */
+export const Host = {
+	typeName: "roster.Host",
+	schema: HostSchema,
+	domain: 20,
+	version: "dateUpdated",
+	refs: [{ field: "tenant", to: "roster.Tenant" }],
+} as const satisfies EntityDesc
+
 /** roster.Identity, as the store holds it. */
 export const Identity = {
 	typeName: "roster.Identity",
@@ -114,6 +124,15 @@ export const Identity = {
 	domain: 8,
 	version: "dateUpdated",
 	refs: [{ field: "holder", to: "roster.Holder" }],
+} as const satisfies EntityDesc
+
+/** roster.MailDomain, as the store holds it. */
+export const MailDomain = {
+	typeName: "roster.MailDomain",
+	schema: MailDomainSchema,
+	domain: 21,
+	version: "dateUpdated",
+	refs: [{ field: "tenant", to: "roster.Tenant" }],
 } as const satisfies EntityDesc
 
 /** roster.Outbox, as the store holds it. */
@@ -177,5 +196,5 @@ export const Tenant = {
 } as const satisfies EntityDesc
 
 /** Every entity of this app, which is what a store is opened over. */
-export const entities = [ApiKey, Audit, Binding, Credential, Delegation, Email, Group, GroupMembership, Holder, Identity, Outbox, Role, Site, SiteMembership, Team, TeamMembership, Tenant] as const
+export const entities = [ApiKey, Audit, Binding, Credential, Delegation, Email, Group, GroupMembership, Holder, Host, Identity, MailDomain, Outbox, Role, Site, SiteMembership, Team, TeamMembership, Tenant] as const
 

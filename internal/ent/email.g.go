@@ -30,6 +30,7 @@ func (e *Email) Proto() *rstr.Email {
 		r.SetId(v[:])
 		x.SetVouchedBy(r)
 	}
+	x.SetTenantId(e.TenantID[:])
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))

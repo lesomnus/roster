@@ -35,6 +35,7 @@ import (
 	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/console"
 	"github.com/lesomnus/roster/server/core"
+	"github.com/lesomnus/roster/server/front"
 	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/me"
 	"github.com/lesomnus/roster/server/pd"
@@ -376,6 +377,12 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// nothing else may read. See `server/vouch`.
 	app.RegisterVouchServiceServer(g, vouch.New(s.Ungated, s.Walled))
 
+	// What a front door asks before it knows anything, and therefore through
+	// the server the wall was never installed on. Neither RPC answers with a
+	// row -- one identifier or one provider name -- which is what keeps that
+	// from being a hole; `server/front` says it at length.
+	app.RegisterFrontServiceServer(g, front.New(s.Ungated))
+
 	// And what a caller is, in one round trip. It takes nothing, so there is
 	// nobody but the caller to ask about; see `server/me`.
 	app.RegisterMeServiceServer(g, me.New(s.Ent, Everything(s.Ent)))
@@ -452,6 +459,8 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 // publishing something nobody meant to, and it fails silently.
 func register(g grpc.ServiceRegistrar, s app.Server) {
 	app.RegisterTenantServiceServer(g, s.Tenant())
+	app.RegisterHostServiceServer(g, s.Host())
+	app.RegisterMailDomainServiceServer(g, s.MailDomain())
 	app.RegisterHolderServiceServer(g, s.Holder())
 	app.RegisterIdentityServiceServer(g, s.Identity())
 	app.RegisterEmailServiceServer(g, s.Email())

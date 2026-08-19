@@ -1,0 +1,77 @@
+edition = "2023";
+
+package roster;
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/roster/rstr";
+
+// FrontService is what a front door asks before it knows anything.
+//
+// # Why it is not `HostService.Get`
+//
+// The generated one exists and is registered and is the right thing for an
+// operator managing their own names -- behind the wall, answering with rows.
+// This is the other read, and it differs in the one way that decides everything
+// else: it happens **before anybody has been resolved to a tenant.**
+//
+// That is `vouch.Verify`'s situation exactly, and this takes the same shape and
+// for the same stated reason -- *working out who somebody is cannot require
+// knowing who they are.* So it reads the server the wall was never installed
+// on, and what keeps that honest is that it answers with **one identifier and
+// nothing else**. There is no row here to be given away, no `Select` to get
+// wrong, and nothing that could be pointed at anything but a name somebody
+// typed into DNS.
+//
+// # Neither half is public
+//
+// Like `VouchService`, and for the same reason. The person arriving has no
+// credential -- that is what they are asking for -- but they are not the
+// caller. The caller is a front door, holding a key, long before any of this.
+service FrontService {
+  // WhoseHost answers which tenant serves a name.
+  rpc WhoseHost(FrontWhoseHostRequest) returns (FrontWhoseHostResponse);
+
+  // WhereFrom answers where the people at an address authenticate.
+  //
+  // Home-realm discovery, and it hangs off the **domain** rather than off a
+  // person: answered per person it is the account-enumeration oracle D21 spent
+  // a condition avoiding, since typing an address and being told a provider
+  // says whether that account is here. The answer for `nobody@acme.com` is the
+  // answer for everybody at acme.
+  rpc WhereFrom(FrontWhereFromRequest) returns (FrontWhereFromResponse);
+}
+
+message FrontWhoseHostRequest {
+  // The name the browser arrived at. A port is stripped and case is folded
+  // here, so a caller may hand over `r.Host` as it came.
+  string host = 1;
+}
+
+message FrontWhoseHostResponse {
+  // The tenant, and nothing about it. A name this deployment does not serve is
+  // `NotFound` rather than an empty answer: a front door that carried on with
+  // no tenant would look somebody up in whichever one it happened to reach.
+  bytes tenant = 1;
+}
+
+message FrontWhereFromRequest {
+  // Which operator is asking, since the same domain means different things to
+  // two of them. A front door has this from [FrontService.WhoseHost].
+  bytes tenant = 1;
+
+  // An address, or the domain alone. Whichever arrives, what is looked up is
+  // the part after the `@`.
+  string address = 2;
+}
+
+message FrontWhereFromResponse {
+  // The provider to send them to, by the name `Identity.provider` uses, and
+  // **empty for a domain this deployment says nothing about**.
+  //
+  // Empty rather than `NotFound`, which is the opposite of the choice above and
+  // deliberately so: there is nothing here a caller could carry on wrongly
+  // with. A front door that learns nothing offers whatever it offers everybody,
+  // which is the right behaviour for an unknown address and is also what keeps
+  // this from answering *does this domain exist here*.
+  string provider = 1;
+}

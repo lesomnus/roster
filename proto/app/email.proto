@@ -62,6 +62,24 @@ message Email {
   // to link accounts.
   Identity vouched_by = 10 [(orm.edge) = {nullable: true}];
 
+  // The tenant `holder.tenant` reaches, kept here. payday stamps it, and
+  // `Identity` says at length why a column is worth it.
+  //
+  // Here it buys one more thing than it does there, and it is the one F7 was
+  // open on: it is what a **unique index across a tenant** can be written over.
+  // Without it there is nowhere to put the constraint -- the wall reaches this
+  // entity through the holder, and an index cannot follow an edge.
+  //
+  // Immutable, which is not decoration. A stamp is written on `Add` and nothing
+  // refreshes it, so a mutable one lands in the generated `Patch` and a caller
+  // who may patch could move a row behind another tenant's wall. Nothing can
+  // put it out of date -- `holder` is immutable and so is `Holder.tenant` --
+  // and this is what says nothing may.
+  bytes tenant_id = 11 [(orm.field) = {
+    type: TYPE_UUID
+    immutable: true
+  }];
+
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {
@@ -86,12 +104,44 @@ message Email {
           {name: "address", number: 8}
         ]
         unique: true
+      },
+
+      // One address, one person, **within a tenant** -- which is what closes
+      // F7 and is the whole reason the stamp above exists.
+      //
+      // # What it gives up, and what it does not
+      //
+      // D3 refused a constraint across the deployment and the reason stands: a
+      // consultant may legitimately be a person in two tenants under one
+      // address, and a global constraint makes the second one an error nobody
+      // can resolve. That case is *across* tenants and this constrains
+      // *within* one, so it is untouched.
+      //
+      // What it buys is that an address names one person again. `VouchWho`
+      // could not take an address before -- `email.proto` said outright that
+      // *nothing here resolves anybody by address* -- because one might name
+      // two people, and a sign-in that resolved by address would pick one of
+      // them. With a tenant, which a front door now has from
+      // `FrontService.WhoseHost`, there is exactly one row to find.
+      //
+      // # What it costs a deployment
+      //
+      // A migration. Two people in one tenant sharing an address is a shape
+      // this schema used to permit, and the index cannot be taken while one
+      // exists. That is the real price of this phase.
+      {
+        name: "at"
+        refs: [
+          {name: "tenant_id", number: 11},
+          {name: "address", number: 8}
+        ]
+        unique: true
       }
     ]
   };
   option (payday.entity) = {
     domain: 9
-    tenanted: {via: "holder.tenant"}
+    tenanted: {via: "holder.tenant", stamp: "tenant_id"}
     list: {
       order: [
         {field: {name: "date_created", number: 15}},

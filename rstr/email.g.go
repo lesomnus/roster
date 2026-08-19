@@ -22,6 +22,13 @@ func (x *Email) Ref() *EmailRef {
 			return EmailByAddress(v1.Ref(), v2)
 		}
 	}
+	{
+		v1 := x.GetTenantId()
+		v2 := x.GetAddress()
+		if len(v1) > 0 && len(v2) > 0 {
+			return EmailByAt(v1, v2)
+		}
+	}
 
 	return nil
 }
@@ -37,6 +44,10 @@ func (x *EmailRef) Picks(v *Email) bool {
 	case EmailRef_Address_case:
 		x := x.GetAddress()
 		return (x.GetHolder().Picks(v.GetHolder())) &&
+			(x.GetAddress() == v.GetAddress())
+	case EmailRef_At_case:
+		x := x.GetAt()
+		return (bytes.Equal(x.GetTenantId(), v.GetTenantId())) &&
 			(x.GetAddress() == v.GetAddress())
 	default:
 		return false
@@ -73,4 +84,15 @@ func EmailByAddress(holder *HolderRef, address string) *EmailRef {
 
 func EmailGetByAddress(holder *HolderRef, address string) *EmailGetRequest {
 	return EmailGetRequest_builder{Ref: EmailByAddress(holder, address)}.Build()
+}
+
+func EmailByAt(tenant_id []byte, address string) *EmailRef {
+	x := &EmailRefByAt{}
+	x.SetTenantId(tenant_id)
+	x.SetAddress(address)
+	return EmailRef_builder{At: x}.Build()
+}
+
+func EmailGetByAt(tenant_id []byte, address string) *EmailGetRequest {
+	return EmailGetRequest_builder{Ref: EmailByAt(tenant_id, address)}.Build()
 }

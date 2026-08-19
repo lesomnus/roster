@@ -137,6 +137,91 @@ over memberships, credential verification.
 Recorded as they are made, with the reason, so that a later disagreement argues
 with the reason rather than rediscovering the question.
 
+### D27 · A name is a row, and the tenant it names is what F7 was missing
+
+Items 1 and 2 of the list, and F7 closed with them, because all three turned out
+to be the same sentence read in three places.
+
+#### `Host` and `MailDomain` are entities, not fields on `Tenant`
+
+They have to be **looked up**, and `holder.proto` already wrote the rule that
+decides this: *anything that has to be looked up goes flat beside it*, which is
+the reason `Identity` is an entity and `Profile` is not. A repeated field on
+`Tenant` is one value to the database, with no index, so a front door resolving
+a name would read every tenant there is.
+
+**Two entities and not one**, because LOGIN.md is explicit that they answer
+different questions and because they differ in the two ways that decide a
+schema. A host is a public name somebody owns, unique across the deployment; a
+mail domain is one operator's routing hint about their own people, unique within
+their tenant, and two operators saying something about `@gmail.com` are two
+facts.
+
+`Host.name` being unique across the deployment is one of the few constraints
+here that crosses the wall, and it costs a small oracle: the second operator to
+claim a name is told it is taken, by somebody they cannot see. A hostname is a
+public fact, so that is the cheap side of the trade -- and `Email` went the
+other way for the reason D3 gives.
+
+#### `FrontService` reads through no wall, and answers with no row
+
+Both questions are asked **before anybody has been resolved to a tenant** --
+that is what they are for. So they read the server the wall was never installed
+on, which is `vouch.Verify`'s situation and its stated reason: *working out who
+somebody is cannot require knowing who they are.*
+
+What keeps that from being a hole is that neither RPC answers with a **row**.
+One tenant identifier, or one provider name. There is no `Select` to get wrong
+and nothing that could be pointed at anything but a name somebody typed into
+DNS.
+
+The two refusals differ, deliberately. An unserved host is `NotFound`, because a
+front door that carried on with no tenant would look somebody up in whichever
+one it happened to reach. An unrouted domain is an **empty answer**, because
+there is nothing to carry on wrongly with -- and because `NotFound` there would
+answer *does this domain exist here*.
+
+#### A name is stored as it is compared, and it is refused rather than fixed
+
+Normalising on the way in is kinder and is the wrong direction: a caller that
+wrote `Acme.Example.com:8443` and read back `acme.example.com` has had its value
+changed without being told, and the next thing it does is disagree with itself.
+Worse, the caller most likely to write one is a console reading it back to the
+person who typed it.
+
+So `server/core` refuses one that is not already normalised, and says what it
+should have been. What goes wrong without it is nothing, for a long time: the
+row is written, a console lists it, and the only thing that never happens is a
+match -- a sign-in page saying nobody is there, on a tenant that is plainly
+configured.
+
+#### And F7 closes, which needed both halves
+
+F7 said an address could not name anybody, and left `VouchWho` field 4 empty
+with the reason: `Email` is unique **per holder** so that a consultant can be
+one person in two tenants under one address, so one address could name two
+people.
+
+The way out was the second half of F7's own sentence -- *or a tenant that
+arrives from somewhere the form did not type*. So:
+
+- **`Email` gains a stamped `tenant_id`**, which is what a unique index across a
+  tenant can be written over at all; the wall reaches this entity through the
+  holder and an index cannot follow an edge. Immutable, because a stamp lands
+  in the generated `Patch` otherwise and a caller who may patch could move a row
+  behind another tenant's wall.
+- **`(tenant, address)` is unique**, so within one tenant an address names one
+  person. D3's consultant is untouched: that case is *across* tenants and this
+  constrains *within* one.
+- **`VouchWho.address`** is field 4, always beside the tenant. There is no form
+  that takes an address alone, and that is the constraint rather than an
+  omission: a lookup that could be made without naming a tenant is one a front
+  door that forgot to think about which one compiles a wrong answer for.
+
+The real cost is a **migration**: two people in one tenant sharing an address is
+a shape this schema used to permit, and the index cannot be taken while one
+exists.
+
 ### D26 · Two timestamps on a Holder, and the refusals are the feature
 
 Items 6 and 12 of the list below, taken together because they are two columns at
@@ -1374,7 +1459,15 @@ the field is still in `Add` and `Patch`, since that is the half that works.
 Worth doing only if a second app needs it. One app closing a door it can see is
 not obviously worse than a schema option that every app has to remember to use.
 
-### F7 · Signing in by address has no answer yet — **open**
+### F7 · Signing in by address has no answer yet — **closed, by D27**
+
+The way out it named -- *a tenant from somewhere the form did not type* -- is
+`Host` and `FrontService.WhoseHost`, and the constraint that makes it answer
+with one person is a stamped `Email.tenant_id` with a unique `(tenant,
+address)`. `VouchWho` field 4 is spent. What it costs a deployment is the
+migration D27 names.
+
+#### What it said while it was open
 
 `Email` decided an address is unique **per holder**, deliberately, so that a
 consultant can be one person in two tenants under one address. One address may
@@ -1536,7 +1629,7 @@ that costs something, because it is what makes somebody trust the exit code.
 | 1 · schema — Site, Identity, Email | **done**, 15 tests, both databases |
 | 1b · Team, on the second axis | **done**, 21 tests, both databases |
 | 1c · memberships, Credential | **done**, 27 tests, both databases |
-| 2 · payday fixes | F1, F2, F4, F9 done · F3, F6, F7, F10, F11, F12 open · F5 written down |
+| 2 · payday fixes | F1, F2, F4, F9 done · F7 closed by D27 · F3, F6, F10, F11, F12 open · F5 written down |
 | 3 · app layer | linking rules, credential verification, roles and the second axis, `MeService`, escalation prevention, the console · **done** |
 | 4 · keys, sync, console | **keys done** (both planes; no wire surface to mint an `rt_`) · **delegation done** (D25; no wire surface either) · sync channel, console — |
 | 5 · the line, written down | **done** — D19, D20, and POSITION.md rewritten around them |
@@ -1558,7 +1651,10 @@ forces it, and how far it has got are [docs/ROADMAP.md](docs/ROADMAP.md) --
 kept there so that this list stays what it is, which is the question rather than
 the schedule.
 
-1. **A tenant from a hostname.** A multi-tenant app served at
+1. ~~**A tenant from a hostname.**~~ **Done**, D27. `Host`, and
+   `FrontService.WhoseHost` to resolve one before anybody is anybody.
+
+   The original entry: A multi-tenant app served at
    `acme.example.com` has to turn that into a tenant, and roster has no way to
    answer. It is an overlay on `Tenant` in `proto/ext/payday/`, since that
    entity is payday's.
@@ -1567,7 +1663,12 @@ the schedule.
    to one person again, which is what "sign in with your email" and a magic link
    both need. Half of this list is waiting on it.
 
-2. **Home-realm discovery, by domain.** "Addresses at `@acme.com` go to Entra."
+2. ~~**Home-realm discovery, by domain.**~~ **Done**, D27. `MailDomain` and
+   `FrontService.WhereFrom`, hanging off the domain for the reason this entry
+   already gave. What it names is a **provider**, not a connection -- a
+   connection carries a secret and that is item 9, still undecided.
+
+   The original entry: "Addresses at `@acme.com` go to Entra."
    Identifier-first sign-in is the thing every multi-tenant front door rewrites,
    and it is a fact about a tenant's domains.
 

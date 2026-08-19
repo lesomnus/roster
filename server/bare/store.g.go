@@ -19,7 +19,9 @@ import (
 	group "github.com/lesomnus/roster/internal/ent/group"
 	groupmembership "github.com/lesomnus/roster/internal/ent/groupmembership"
 	holder "github.com/lesomnus/roster/internal/ent/holder"
+	host "github.com/lesomnus/roster/internal/ent/host"
 	identity "github.com/lesomnus/roster/internal/ent/identity"
+	maildomain "github.com/lesomnus/roster/internal/ent/maildomain"
 	outbox "github.com/lesomnus/roster/internal/ent/outbox"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	role "github.com/lesomnus/roster/internal/ent/role"
@@ -334,6 +336,8 @@ type Scope interface {
 	SiteScope(ctx context.Context) (predicate.Site, error)
 	GroupScope(ctx context.Context) (predicate.Group, error)
 	GroupMembershipScope(ctx context.Context) (predicate.GroupMembership, error)
+	HostScope(ctx context.Context) (predicate.Host, error)
+	MailDomainScope(ctx context.Context) (predicate.MailDomain, error)
 	TeamScope(ctx context.Context) (predicate.Team, error)
 	RoleScope(ctx context.Context) (predicate.Role, error)
 	BindingScope(ctx context.Context) (predicate.Binding, error)
@@ -383,6 +387,12 @@ func (Unscoped) GroupScope(_ context.Context) (predicate.Group, error) {
 	return nil, nil
 }
 func (Unscoped) GroupMembershipScope(_ context.Context) (predicate.GroupMembership, error) {
+	return nil, nil
+}
+func (Unscoped) HostScope(_ context.Context) (predicate.Host, error) {
+	return nil, nil
+}
+func (Unscoped) MailDomainScope(_ context.Context) (predicate.MailDomain, error) {
 	return nil, nil
 }
 func (Unscoped) TeamScope(_ context.Context) (predicate.Team, error) {
@@ -626,6 +636,46 @@ func (ss Scopes) GroupMembershipScope(ctx context.Context) (predicate.GroupMembe
 	return groupmembership.And(ps...), nil
 }
 
+func (ss Scopes) HostScope(ctx context.Context) (predicate.Host, error) {
+	ps := make([]predicate.Host, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.HostScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return host.And(ps...), nil
+}
+
+func (ss Scopes) MailDomainScope(ctx context.Context) (predicate.MailDomain, error) {
+	ps := make([]predicate.MailDomain, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.MailDomainScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return maildomain.And(ps...), nil
+}
+
 func (ss Scopes) TeamScope(ctx context.Context) (predicate.Team, error) {
 	ps := make([]predicate.Team, 0, len(ss))
 	for _, s := range ss {
@@ -846,7 +896,7 @@ func (s Store) now() time.Time {
 // is rendered for that dialect, not just what this server writes.
 //
 // That set is also what a soft erasure needs, so this is the whole
-// check. ApiKey, Binding, Credential, Delegation, Email, Group, GroupMembership, Holder, Identity, Role, Site, SiteMembership, Team and TeamMembership free the names they held when a row
+// check. ApiKey, Binding, Credential, Delegation, Email, Group, GroupMembership, Holder, Host, Identity, MailDomain, Role, Site, SiteMembership, Team and TeamMembership free the names they held when a row
 // is erased, which is a unique index covering only the rows that are
 // still there -- a partial index, and the dialects above are the ones
 // that have one. MySQL does not, and ent writes the annotation out for
@@ -899,6 +949,10 @@ func (s Server) Site() rstr.SiteServiceServer         { return SiteServiceServer
 func (s Server) Group() rstr.GroupServiceServer       { return GroupServiceServer{Store: s.Store} }
 func (s Server) GroupMembership() rstr.GroupMembershipServiceServer {
 	return GroupMembershipServiceServer{Store: s.Store}
+}
+func (s Server) Host() rstr.HostServiceServer { return HostServiceServer{Store: s.Store} }
+func (s Server) MailDomain() rstr.MailDomainServiceServer {
+	return MailDomainServiceServer{Store: s.Store}
 }
 func (s Server) Team() rstr.TeamServiceServer       { return TeamServiceServer{Store: s.Store} }
 func (s Server) Role() rstr.RoleServiceServer       { return RoleServiceServer{Store: s.Store} }

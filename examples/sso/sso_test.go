@@ -29,6 +29,7 @@ import (
 	"github.com/lesomnus/roster/cmd"
 	"github.com/lesomnus/roster/examples/sso"
 	rstr "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/front"
 	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/vouch"
 )
@@ -226,6 +227,11 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 			"/roster.VouchService/Delegate",
 			"/roster.VouchService/Revoke",
 			"/roster.MeService/Get",
+
+			// What the front door asks before it knows anything, which is how
+			// it stops holding a copy of which tenant serves which name.
+			"/roster.FrontService/WhoseHost",
+			"/roster.FrontService/WhereFrom",
 		},
 	}.Build())
 	x.NoError(err)
@@ -795,4 +801,60 @@ func TestTheProviderHalfHasNoDelegation(t *testing.T) {
 	n, err := d.ungated.Delegation().List(ctx, rstr.DelegationListRequest_builder{}.Build())
 	x.NoError(err)
 	x.Empty(n.GetItems())
+}
+
+// TestTheTenantComesFromRoster is item 1 doing its job in the app that used to
+// hold the copy.
+//
+// `Config.Tenants` is a map in the configuration of every app that fronts a
+// deployment, going stale in each independently. A `Host` row is the same fact
+// written once, by whoever runs the deployment, where the tenant it names
+// lives.
+func TestTheTenantComesFromRoster(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	// No map at all, which used to be refused.
+	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, nil)
+
+	h, err := d.ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),
+		Alias:  "erin",
+	}.Build())
+	x.NoError(err)
+
+	_, err = vouch.New(d.ungated, d.ungated).Set(ctx, rstr.VouchSetRequest_builder{
+		Who:    rstr.VouchWho_builder{Id: h.GetId()}.Build(),
+		Secret: []byte("correct horse battery staple"),
+	}.Build())
+	x.NoError(err)
+
+	post := func() *http.Response {
+		t.Helper()
+
+		body := strings.NewReader(`{"alias":"erin","password":"correct horse battery staple"}`)
+		res, err := http.Post(d.app.URL+"/session", "application/json", body)
+		x.NoError(err)
+		t.Cleanup(func() { res.Body.Close() })
+
+		return res
+	}
+
+	// Nothing has said which tenant serves this name yet, so there is nobody to
+	// sign in as -- and the answer is the one a wrong password gets, because
+	// which of the two it was is not a browser's to learn.
+	x.Equal(http.StatusUnauthorized, post().StatusCode)
+
+	// The row is the whole of the configuration.
+	u, err := url.Parse(d.app.URL)
+	x.NoError(err)
+
+	_, err = d.ungated.Host().Add(ctx, rstr.HostAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),
+		Name:   front.Hostname(u.Host),
+	}.Build())
+	x.NoError(err)
+
+	x.Equal(http.StatusNoContent, post().StatusCode,
+		"the app could not learn from roster which tenant it is serving")
 }

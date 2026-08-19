@@ -25,7 +25,9 @@ import (
 	"github.com/lesomnus/roster/internal/ent/group"
 	"github.com/lesomnus/roster/internal/ent/groupmembership"
 	"github.com/lesomnus/roster/internal/ent/holder"
+	"github.com/lesomnus/roster/internal/ent/host"
 	"github.com/lesomnus/roster/internal/ent/identity"
+	"github.com/lesomnus/roster/internal/ent/maildomain"
 	"github.com/lesomnus/roster/internal/ent/outbox"
 	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/lesomnus/roster/internal/ent/site"
@@ -58,8 +60,12 @@ type Client struct {
 	GroupMembership *GroupMembershipClient
 	// Holder is the client for interacting with the Holder builders.
 	Holder *HolderClient
+	// Host is the client for interacting with the Host builders.
+	Host *HostClient
 	// Identity is the client for interacting with the Identity builders.
 	Identity *IdentityClient
+	// MailDomain is the client for interacting with the MailDomain builders.
+	MailDomain *MailDomainClient
 	// Outbox is the client for interacting with the Outbox builders.
 	Outbox *OutboxClient
 	// Role is the client for interacting with the Role builders.
@@ -94,7 +100,9 @@ func (c *Client) init() {
 	c.Group = NewGroupClient(c.config)
 	c.GroupMembership = NewGroupMembershipClient(c.config)
 	c.Holder = NewHolderClient(c.config)
+	c.Host = NewHostClient(c.config)
 	c.Identity = NewIdentityClient(c.config)
+	c.MailDomain = NewMailDomainClient(c.config)
 	c.Outbox = NewOutboxClient(c.config)
 	c.Role = NewRoleClient(c.config)
 	c.Site = NewSiteClient(c.config)
@@ -203,7 +211,9 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Group:           NewGroupClient(cfg),
 		GroupMembership: NewGroupMembershipClient(cfg),
 		Holder:          NewHolderClient(cfg),
+		Host:            NewHostClient(cfg),
 		Identity:        NewIdentityClient(cfg),
+		MailDomain:      NewMailDomainClient(cfg),
 		Outbox:          NewOutboxClient(cfg),
 		Role:            NewRoleClient(cfg),
 		Site:            NewSiteClient(cfg),
@@ -239,7 +249,9 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Group:           NewGroupClient(cfg),
 		GroupMembership: NewGroupMembershipClient(cfg),
 		Holder:          NewHolderClient(cfg),
+		Host:            NewHostClient(cfg),
 		Identity:        NewIdentityClient(cfg),
+		MailDomain:      NewMailDomainClient(cfg),
 		Outbox:          NewOutboxClient(cfg),
 		Role:            NewRoleClient(cfg),
 		Site:            NewSiteClient(cfg),
@@ -277,8 +289,8 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.ApiKey, c.Audit, c.Binding, c.Credential, c.Delegation, c.Email, c.Group,
-		c.GroupMembership, c.Holder, c.Identity, c.Outbox, c.Role, c.Site,
-		c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
+		c.GroupMembership, c.Holder, c.Host, c.Identity, c.MailDomain, c.Outbox,
+		c.Role, c.Site, c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
 	} {
 		n.Use(hooks...)
 	}
@@ -289,8 +301,8 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.ApiKey, c.Audit, c.Binding, c.Credential, c.Delegation, c.Email, c.Group,
-		c.GroupMembership, c.Holder, c.Identity, c.Outbox, c.Role, c.Site,
-		c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
+		c.GroupMembership, c.Holder, c.Host, c.Identity, c.MailDomain, c.Outbox,
+		c.Role, c.Site, c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -317,8 +329,12 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.GroupMembership.mutate(ctx, m)
 	case *HolderMutation:
 		return c.Holder.mutate(ctx, m)
+	case *HostMutation:
+		return c.Host.mutate(ctx, m)
 	case *IdentityMutation:
 		return c.Identity.mutate(ctx, m)
+	case *MailDomainMutation:
+		return c.MailDomain.mutate(ctx, m)
 	case *OutboxMutation:
 		return c.Outbox.mutate(ctx, m)
 	case *RoleMutation:
@@ -1759,6 +1775,155 @@ func (c *HolderClient) mutate(ctx context.Context, m *HolderMutation) (Value, er
 	}
 }
 
+// HostClient is a client for the Host schema.
+type HostClient struct {
+	config
+}
+
+// NewHostClient returns a client for the Host from the given config.
+func NewHostClient(c config) *HostClient {
+	return &HostClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `host.Hooks(f(g(h())))`.
+func (c *HostClient) Use(hooks ...Hook) {
+	c.hooks.Host = append(c.hooks.Host, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `host.Intercept(f(g(h())))`.
+func (c *HostClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Host = append(c.inters.Host, interceptors...)
+}
+
+// Create returns a builder for creating a Host entity.
+func (c *HostClient) Create() *HostCreate {
+	mutation := newHostMutation(c.config, OpCreate)
+	return &HostCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Host entities.
+func (c *HostClient) CreateBulk(builders ...*HostCreate) *HostCreateBulk {
+	return &HostCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *HostClient) MapCreateBulk(slice any, setFunc func(*HostCreate, int)) *HostCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &HostCreateBulk{err: fmt.Errorf("calling to HostClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*HostCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &HostCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Host.
+func (c *HostClient) Update() *HostUpdate {
+	mutation := newHostMutation(c.config, OpUpdate)
+	return &HostUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *HostClient) UpdateOne(_m *Host) *HostUpdateOne {
+	mutation := newHostMutation(c.config, OpUpdateOne, withHost(_m))
+	return &HostUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *HostClient) UpdateOneID(id uuid.UUID) *HostUpdateOne {
+	mutation := newHostMutation(c.config, OpUpdateOne, withHostID(id))
+	return &HostUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Host.
+func (c *HostClient) Delete() *HostDelete {
+	mutation := newHostMutation(c.config, OpDelete)
+	return &HostDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *HostClient) DeleteOne(_m *Host) *HostDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *HostClient) DeleteOneID(id uuid.UUID) *HostDeleteOne {
+	builder := c.Delete().Where(host.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &HostDeleteOne{builder}
+}
+
+// Query returns a query builder for Host.
+func (c *HostClient) Query() *HostQuery {
+	return &HostQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeHost},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Host entity by its id.
+func (c *HostClient) Get(ctx context.Context, id uuid.UUID) (*Host, error) {
+	return c.Query().Where(host.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *HostClient) GetX(ctx context.Context, id uuid.UUID) *Host {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTenant queries the tenant edge of a Host.
+func (c *HostClient) QueryTenant(_m *Host) *TenantQuery {
+	query := (&TenantClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(host.Table, host.FieldID, id),
+			sqlgraph.To(tenant.Table, tenant.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, host.TenantTable, host.TenantColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *HostClient) Hooks() []Hook {
+	return c.hooks.Host
+}
+
+// Interceptors returns the client interceptors.
+func (c *HostClient) Interceptors() []Interceptor {
+	return c.inters.Host
+}
+
+func (c *HostClient) mutate(ctx context.Context, m *HostMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&HostCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&HostUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&HostUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&HostDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Host mutation op: %q", m.Op())
+	}
+}
+
 // IdentityClient is a client for the Identity schema.
 type IdentityClient struct {
 	config
@@ -1905,6 +2070,155 @@ func (c *IdentityClient) mutate(ctx context.Context, m *IdentityMutation) (Value
 		return (&IdentityDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Identity mutation op: %q", m.Op())
+	}
+}
+
+// MailDomainClient is a client for the MailDomain schema.
+type MailDomainClient struct {
+	config
+}
+
+// NewMailDomainClient returns a client for the MailDomain from the given config.
+func NewMailDomainClient(c config) *MailDomainClient {
+	return &MailDomainClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `maildomain.Hooks(f(g(h())))`.
+func (c *MailDomainClient) Use(hooks ...Hook) {
+	c.hooks.MailDomain = append(c.hooks.MailDomain, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `maildomain.Intercept(f(g(h())))`.
+func (c *MailDomainClient) Intercept(interceptors ...Interceptor) {
+	c.inters.MailDomain = append(c.inters.MailDomain, interceptors...)
+}
+
+// Create returns a builder for creating a MailDomain entity.
+func (c *MailDomainClient) Create() *MailDomainCreate {
+	mutation := newMailDomainMutation(c.config, OpCreate)
+	return &MailDomainCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of MailDomain entities.
+func (c *MailDomainClient) CreateBulk(builders ...*MailDomainCreate) *MailDomainCreateBulk {
+	return &MailDomainCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *MailDomainClient) MapCreateBulk(slice any, setFunc func(*MailDomainCreate, int)) *MailDomainCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &MailDomainCreateBulk{err: fmt.Errorf("calling to MailDomainClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*MailDomainCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &MailDomainCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for MailDomain.
+func (c *MailDomainClient) Update() *MailDomainUpdate {
+	mutation := newMailDomainMutation(c.config, OpUpdate)
+	return &MailDomainUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *MailDomainClient) UpdateOne(_m *MailDomain) *MailDomainUpdateOne {
+	mutation := newMailDomainMutation(c.config, OpUpdateOne, withMailDomain(_m))
+	return &MailDomainUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *MailDomainClient) UpdateOneID(id uuid.UUID) *MailDomainUpdateOne {
+	mutation := newMailDomainMutation(c.config, OpUpdateOne, withMailDomainID(id))
+	return &MailDomainUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for MailDomain.
+func (c *MailDomainClient) Delete() *MailDomainDelete {
+	mutation := newMailDomainMutation(c.config, OpDelete)
+	return &MailDomainDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *MailDomainClient) DeleteOne(_m *MailDomain) *MailDomainDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *MailDomainClient) DeleteOneID(id uuid.UUID) *MailDomainDeleteOne {
+	builder := c.Delete().Where(maildomain.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &MailDomainDeleteOne{builder}
+}
+
+// Query returns a query builder for MailDomain.
+func (c *MailDomainClient) Query() *MailDomainQuery {
+	return &MailDomainQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeMailDomain},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a MailDomain entity by its id.
+func (c *MailDomainClient) Get(ctx context.Context, id uuid.UUID) (*MailDomain, error) {
+	return c.Query().Where(maildomain.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *MailDomainClient) GetX(ctx context.Context, id uuid.UUID) *MailDomain {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTenant queries the tenant edge of a MailDomain.
+func (c *MailDomainClient) QueryTenant(_m *MailDomain) *TenantQuery {
+	query := (&TenantClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(maildomain.Table, maildomain.FieldID, id),
+			sqlgraph.To(tenant.Table, tenant.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, maildomain.TenantTable, maildomain.TenantColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *MailDomainClient) Hooks() []Hook {
+	return c.hooks.MailDomain
+}
+
+// Interceptors returns the client interceptors.
+func (c *MailDomainClient) Interceptors() []Interceptor {
+	return c.inters.MailDomain
+}
+
+func (c *MailDomainClient) mutate(ctx context.Context, m *MailDomainMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&MailDomainCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&MailDomainUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&MailDomainUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&MailDomainDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown MailDomain mutation op: %q", m.Op())
 	}
 }
 
@@ -3003,12 +3317,12 @@ func (c *TenantClient) mutate(ctx context.Context, m *TenantMutation) (Value, er
 type (
 	hooks struct {
 		ApiKey, Audit, Binding, Credential, Delegation, Email, Group, GroupMembership,
-		Holder, Identity, Outbox, Role, Site, SiteMembership, Team, TeamMembership,
-		Tenant []ent.Hook
+		Holder, Host, Identity, MailDomain, Outbox, Role, Site, SiteMembership, Team,
+		TeamMembership, Tenant []ent.Hook
 	}
 	inters struct {
 		ApiKey, Audit, Binding, Credential, Delegation, Email, Group, GroupMembership,
-		Holder, Identity, Outbox, Role, Site, SiteMembership, Team, TeamMembership,
-		Tenant []ent.Interceptor
+		Holder, Host, Identity, MailDomain, Outbox, Role, Site, SiteMembership, Team,
+		TeamMembership, Tenant []ent.Interceptor
 	}
 )

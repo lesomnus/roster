@@ -41,6 +41,7 @@ package vouch
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/lesomnus/z"
@@ -110,6 +111,22 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind string, sec
 	ref, err := refOf(who)
 	if err != nil {
 		return nil, nil, err
+	}
+	if ref == nil {
+		// Named by address, which is a lookup rather than a reference. It costs
+		// a read, and a read that finds nothing costs the same as a wrong
+		// password below -- which is the whole of what D14 asks of every path
+		// that ends in a refusal.
+		ref, err = s.byAddress(ctx, who.GetTenant(), who.GetAddress())
+		if err != nil {
+			if status.Code(err) != codes.NotFound {
+				return nil, nil, err
+			}
+
+			Burn(secret)
+
+			return no(), nil, nil
+		}
 	}
 
 	v, err := s.credential(ctx, s.open, ref, kind)
@@ -420,15 +437,29 @@ func kindOf(v string) string {
 // them makes the answer depend on a precedence rule nothing states.
 func refOf(w *app.VouchWho) (*app.HolderRef, error) {
 	id := w.GetId()
-	tenant, alias := w.GetTenant(), w.GetAlias()
+	tenant, alias, address := w.GetTenant(), w.GetAlias(), w.GetAddress()
 
 	byId := len(id) > 0
-	bySlug := tenant != "" || alias != ""
+	bySlug := alias != ""
+	byAddress := address != ""
 
 	switch {
-	case byId && bySlug:
+	case byId && (bySlug || byAddress || tenant != ""),
+		bySlug && byAddress:
 		return nil, status.Error(codes.InvalidArgument,
-			"who: named both an identifier and a name; exactly one of them is meant")
+			"who: named more than one way of finding somebody; exactly one of them is meant")
+
+	case byAddress:
+		// Not a `HolderRef` at all, which is the shape of the thing: an
+		// address names an `Email` row and the person is what that row hangs
+		// off. So it is looked up rather than referred to, one step earlier,
+		// and this answers nil to say so.
+		if tenant == "" {
+			return nil, status.Error(codes.InvalidArgument,
+				"who: an address is looked up within a tenant, and none was named")
+		}
+
+		return nil, nil
 
 	case byId:
 		k, err := pdid.From(id)
@@ -438,7 +469,7 @@ func refOf(w *app.VouchWho) (*app.HolderRef, error) {
 
 		return app.HolderRef_builder{Id: k.Bytes()}.Build(), nil
 
-	case bySlug:
+	case bySlug || tenant != "":
 		if tenant == "" || alias == "" {
 			return nil, status.Error(codes.InvalidArgument,
 				"who: a name is a tenant and an alias, and one of them is missing")
@@ -454,4 +485,56 @@ func refOf(w *app.VouchWho) (*app.HolderRef, error) {
 	default:
 		return nil, status.Error(codes.InvalidArgument, "who: names nobody")
 	}
+}
+
+// byAddress is the person an address names, within a tenant.
+//
+// # Why it is two reads and not one
+//
+// The tenant arrives as a name -- what a front door read off a hostname, or
+// what a form's selector said -- and the index is over the identifier. So the
+// tenant is resolved first and the address second, and neither read is one this
+// service can skip.
+//
+// It is worth knowing what that costs on the sign-in path, and worth knowing
+// what it buys: `Email` is unique on `(tenant, address)`, so the second read is
+// one indexed row rather than a scan, and it can only ever answer with one
+// person. F7 was open for exactly as long as that was not true.
+//
+// # Every refusal here is NotFound
+//
+// A tenant nobody serves, a domain nobody uses, an address nobody has: one
+// answer, and the caller above burns an argon2 comparison over it. Told apart,
+// this would answer *is there an account here* faster and more exactly than any
+// timing difference could.
+func (s *Server) byAddress(ctx context.Context, tenant, address string) (*app.HolderRef, error) {
+	t, err := s.open.Tenant().Get(ctx, app.TenantGetRequest_builder{
+		Ref:    app.TenantRef_builder{Alias: z.Ptr(tenant)}.Build(),
+		Select: app.TenantSelect_builder{}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	v, err := s.open.Email().Get(ctx, app.EmailGetRequest_builder{
+		Ref: app.EmailRef_builder{
+			At: app.EmailRefByAt_builder{
+				TenantId: t.GetId(),
+				Address:  z.Ptr(strings.ToLower(strings.TrimSpace(address))),
+			}.Build(),
+		}.Build(),
+		Select: app.EmailSelect_builder{
+			Holder: app.HolderSelect_builder{}.Build(),
+		}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	h := v.GetHolder()
+	if h == nil || len(h.GetId()) == 0 {
+		return nil, status.Error(codes.NotFound, "no such address")
+	}
+
+	return app.HolderRef_builder{Id: h.GetId()}.Build(), nil
 }

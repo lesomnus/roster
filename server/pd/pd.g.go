@@ -37,7 +37,9 @@ import (
 	group "github.com/lesomnus/roster/internal/ent/group"
 	groupmembership "github.com/lesomnus/roster/internal/ent/groupmembership"
 	holder "github.com/lesomnus/roster/internal/ent/holder"
+	host "github.com/lesomnus/roster/internal/ent/host"
 	identity "github.com/lesomnus/roster/internal/ent/identity"
+	maildomain "github.com/lesomnus/roster/internal/ent/maildomain"
 	outbox "github.com/lesomnus/roster/internal/ent/outbox"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	role "github.com/lesomnus/roster/internal/ent/role"
@@ -93,7 +95,9 @@ const (
 	GroupDomain           pdid.Domain = 16 // "group"
 	GroupMembershipDomain pdid.Domain = 17 // "group-membership"
 	HolderDomain          pdid.Domain = 2  // "holder"
+	HostDomain            pdid.Domain = 20 // "host"
 	IdentityDomain        pdid.Domain = 8  // "identity"
+	MailDomainDomain      pdid.Domain = 21 // "mail-domain"
 	OutboxDomain          pdid.Domain = 4  // "outbox"
 	RoleDomain            pdid.Domain = 15 // "role"
 	SiteDomain            pdid.Domain = 7  // "site"
@@ -113,7 +117,9 @@ func init() {
 	pdid.Register("roster.Group", GroupDomain, "group")
 	pdid.Register("roster.GroupMembership", GroupMembershipDomain, "group-membership")
 	pdid.Register("roster.Holder", HolderDomain, "holder")
+	pdid.Register("roster.Host", HostDomain, "host")
 	pdid.Register("roster.Identity", IdentityDomain, "identity")
+	pdid.Register("roster.MailDomain", MailDomainDomain, "mail-domain")
 	pdid.Register("roster.Outbox", OutboxDomain, "outbox")
 	pdid.Register("roster.Role", RoleDomain, "role")
 	pdid.Register("roster.Site", SiteDomain, "site")
@@ -137,7 +143,9 @@ var Domains = map[string]pdid.Domain{
 	"roster.Group":           GroupDomain,
 	"roster.GroupMembership": GroupMembershipDomain,
 	"roster.Holder":          HolderDomain,
+	"roster.Host":            HostDomain,
 	"roster.Identity":        IdentityDomain,
+	"roster.MailDomain":      MailDomainDomain,
 	"roster.Outbox":          OutboxDomain,
 	"roster.Role":            RoleDomain,
 	"roster.Site":            SiteDomain,
@@ -239,14 +247,15 @@ func (wall) DelegationScope(ctx context.Context) (predicate.Delegation, error) {
 	return delegation.HasHolderWith(holder.TenantIDIn(vs...)), nil
 }
 
-// EmailScope: a row belongs to the tenant its "holder.tenant" reaches.
+// EmailScope: a row belongs to the tenant its "holder.tenant" reaches, read off "tenant_id" -- which the
+// server stamped when the row was written and no step of that path can move.
 func (wall) EmailScope(ctx context.Context) (predicate.Email, error) {
 	vs, all, err := frame.Narrow(ctx)
 	if all || err != nil {
 		return nil, err
 	}
 
-	return email.HasHolderWith(holder.TenantIDIn(vs...)), nil
+	return email.TenantIDIn(vs...), nil
 }
 
 // GroupScope: a row belongs to the tenant its "tenant" reaches.
@@ -279,6 +288,16 @@ func (wall) HolderScope(ctx context.Context) (predicate.Holder, error) {
 	return holder.TenantIDIn(vs...), nil
 }
 
+// HostScope: a row belongs to the tenant its "tenant" reaches.
+func (wall) HostScope(ctx context.Context) (predicate.Host, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return host.TenantIDIn(vs...), nil
+}
+
 // IdentityScope: a row belongs to the tenant its "holder.tenant" reaches, read off "tenant_id" -- which the
 // server stamped when the row was written and no step of that path can move.
 func (wall) IdentityScope(ctx context.Context) (predicate.Identity, error) {
@@ -288,6 +307,16 @@ func (wall) IdentityScope(ctx context.Context) (predicate.Identity, error) {
 	}
 
 	return identity.TenantIDIn(vs...), nil
+}
+
+// MailDomainScope: a row belongs to the tenant its "tenant" reaches.
+func (wall) MailDomainScope(ctx context.Context) (predicate.MailDomain, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return maildomain.TenantIDIn(vs...), nil
 }
 
 // OutboxScope: declared `global`, so it is not behind the wall at all.
@@ -446,8 +475,18 @@ func (x grouped) HolderScope(ctx context.Context) (predicate.Holder, error) {
 	return nil, nil
 }
 
+// HostScope: in no set -- it declared no field 3, so this narrows nothing.
+func (x grouped) HostScope(ctx context.Context) (predicate.Host, error) {
+	return nil, nil
+}
+
 // IdentityScope: in no set -- it declared no field 3, so this narrows nothing.
 func (x grouped) IdentityScope(ctx context.Context) (predicate.Identity, error) {
+	return nil, nil
+}
+
+// MailDomainScope: in no set -- it declared no field 3, so this narrows nothing.
+func (x grouped) MailDomainScope(ctx context.Context) (predicate.MailDomain, error) {
 	return nil, nil
 }
 
@@ -1613,6 +1652,60 @@ func (s Sink) Email() rstr.EmailServiceServer {
 	return sinkEmail{s.Server.Email(), s.Server.Store, s.w, s.namer, s.joined}
 }
 
+// tenantAtHolderTenant is the tenant "holder.tenant" arrives at.
+func (s sinkEmail) tenantAtHolderTenant(ctx context.Context, ref *rstr.HolderRef) ([]byte, error) {
+	if ref == nil {
+		return nil, pderr.Invalidf("holder", "required: it is what says which tenant this belongs to")
+	}
+
+	// The row the edge names, picked the way every other reference is.
+	pick, err := bare.HolderPick(ref)
+	if err != nil {
+		return nil, pderr.At("holder", err)
+	}
+
+	k, err := s.store.Db.Holder.Query().Where(pick).QueryTenant().OnlyID(ctx)
+	if err != nil {
+		// Not there, or more than one -- both are the reference being wrong,
+		// and both are the caller's to fix.
+		return nil, pderr.Invalidf("holder", "it does not name one row")
+	}
+
+	return k[:], nil
+}
+
+// tenancy fills what the schema says this row's tenant is, and refuses a
+// row whose other paths do not agree with it.
+//
+// The request is already this server's copy by the time it arrives, so it
+// is written to rather than cloned again.
+func (s sinkEmail) tenancy(ctx context.Context, req *rstr.EmailAddRequest) error {
+	want, err := s.tenantAtHolderTenant(ctx, req.GetHolder())
+	if err != nil {
+		return err
+	}
+
+	// Stamped, whatever the caller said. It is not a field of the request
+	// and a caller that reached this server another way does not get to
+	// keep what they put there.
+	req.SetTenantId(want)
+
+	return nil
+}
+
+// Add stamps this row's tenant before writing it.
+func (s sinkEmail) Add(ctx context.Context, req *rstr.EmailAddRequest) (*rstr.Email, error) {
+	// Copied rather than written to: the request belongs to whoever called,
+	// and for a call made in this process that is a message they may still
+	// be holding.
+	r := proto.CloneOf(req)
+	if err := s.tenancy(ctx, r); err != nil {
+		return nil, err
+	}
+
+	return s.EmailServiceServer.Add(ctx, r)
+}
+
 // orderEmail is how Emails come back.
 //
 // The last column is the key, and it is not decoration: a cursor cannot
@@ -2710,6 +2803,174 @@ func (s sinkHolder) watchHolderKeys(
 	return ks, nil
 }
 
+type sinkHost struct {
+	rstr.HostServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) Host() rstr.HostServiceServer {
+	return sinkHost{s.Server.Host(), s.Server.Store, s.w, s.namer, s.joined}
+}
+
+// orderHost is how Hosts come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderHost = []entpage.Order{
+	{Column: host.FieldDateCreated, Desc: false},
+	{Column: host.FieldID, Desc: false},
+}
+
+const (
+	// HostPageSize is what a request that did not say gets, and
+	// HostPageLimit is the most it gets however loudly it asks.
+	HostPageSize  = 20
+	HostPageLimit = 100
+
+	// HostFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	HostFilterLimit = 32
+)
+
+// List answers with the Hosts that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkHost) List(ctx context.Context, req *rstr.HostListRequest) (*rstr.HostListResponse, error) {
+	q := s.store.Db.Host.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.HostNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > HostFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), HostFilterLimit)
+		}
+
+		ps := make([]predicate.Host, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterHost(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(host.Or(ps...))
+	}
+
+	if v := req.GetAfter(); v != "" {
+		var (
+			at0 time.Time
+			at1 uuid.UUID
+		)
+		if err := entpage.Decode(v, &at0, &at1); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		p, err := entpage.After(orderHost, []any{at0, at1})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := entpage.Size(int(req.GetSize()), HostPageSize, HostPageLimit)
+	us, err := q.Order(host.ByDateCreated(), host.ByID()).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*rstr.Host, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := rstr.HostListResponse_builder{Items: items}.Build()
+	if more {
+		last := us[len(us)-1]
+		next, err := entpage.Encode(last.DateCreated, last.ID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(next)
+	}
+
+	return res, nil
+}
+
+// filterHost turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterHost(f *rstr.HostFilter) (predicate.Host, error) {
+	ps := make([]predicate.Host, 0, 1)
+	if f.HasRef() {
+		p, err := bare.HostPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if f.HasTenant() {
+		w := f.GetTenant()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := uuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "tenant: %s", err)
+			}
+
+			ps = append(ps, host.TenantIDEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.TenantPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, host.HasTenantWith(q))
+		}
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return host.And(ps...), nil
+}
+
 type sinkIdentity struct {
 	rstr.IdentityServiceServer
 	store  bare.Store
@@ -3120,6 +3381,174 @@ func (s sinkIdentity) watchIdentityKeys(
 	}
 
 	return ks, nil
+}
+
+type sinkMailDomain struct {
+	rstr.MailDomainServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) MailDomain() rstr.MailDomainServiceServer {
+	return sinkMailDomain{s.Server.MailDomain(), s.Server.Store, s.w, s.namer, s.joined}
+}
+
+// orderMailDomain is how MailDomains come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderMailDomain = []entpage.Order{
+	{Column: maildomain.FieldDateCreated, Desc: false},
+	{Column: maildomain.FieldID, Desc: false},
+}
+
+const (
+	// MailDomainPageSize is what a request that did not say gets, and
+	// MailDomainPageLimit is the most it gets however loudly it asks.
+	MailDomainPageSize  = 20
+	MailDomainPageLimit = 100
+
+	// MailDomainFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	MailDomainFilterLimit = 32
+)
+
+// List answers with the MailDomains that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkMailDomain) List(ctx context.Context, req *rstr.MailDomainListRequest) (*rstr.MailDomainListResponse, error) {
+	q := s.store.Db.MailDomain.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.MailDomainNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > MailDomainFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), MailDomainFilterLimit)
+		}
+
+		ps := make([]predicate.MailDomain, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterMailDomain(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(maildomain.Or(ps...))
+	}
+
+	if v := req.GetAfter(); v != "" {
+		var (
+			at0 time.Time
+			at1 uuid.UUID
+		)
+		if err := entpage.Decode(v, &at0, &at1); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		p, err := entpage.After(orderMailDomain, []any{at0, at1})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := entpage.Size(int(req.GetSize()), MailDomainPageSize, MailDomainPageLimit)
+	us, err := q.Order(maildomain.ByDateCreated(), maildomain.ByID()).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*rstr.MailDomain, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := rstr.MailDomainListResponse_builder{Items: items}.Build()
+	if more {
+		last := us[len(us)-1]
+		next, err := entpage.Encode(last.DateCreated, last.ID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(next)
+	}
+
+	return res, nil
+}
+
+// filterMailDomain turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterMailDomain(f *rstr.MailDomainFilter) (predicate.MailDomain, error) {
+	ps := make([]predicate.MailDomain, 0, 1)
+	if f.HasRef() {
+		p, err := bare.MailDomainPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if f.HasTenant() {
+		w := f.GetTenant()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := uuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "tenant: %s", err)
+			}
+
+			ps = append(ps, maildomain.TenantIDEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.TenantPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, maildomain.HasTenantWith(q))
+		}
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return maildomain.And(ps...), nil
 }
 
 type sinkRole struct {
@@ -5390,6 +5819,42 @@ func (s gateGroupMembership) Add(ctx context.Context, req *rstr.GroupMembershipA
 	return s.GroupMembershipServiceServer.Add(ctx, req)
 }
 
+type gateHost struct {
+	Gate
+	rstr.HostServiceServer
+}
+
+func (s Gate) Host() rstr.HostServiceServer {
+	return gateHost{s, s.Next().Host()}
+}
+
+// Add refuses a Host put into a Tenant this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `tenant` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Tenant, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.Add`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+func (s gateHost) Add(ctx context.Context, req *rstr.HostAddRequest) (*rstr.Host, error) {
+	if ref := req.GetTenant(); ref != nil {
+		if _, err := s.Gate.Next().Tenant().Get(ctx, rstr.TenantGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Tenant")
+			}
+
+			return nil, err
+		}
+	}
+
+	return s.HostServiceServer.Add(ctx, req)
+}
+
 type gateIdentity struct {
 	Gate
 	rstr.IdentityServiceServer
@@ -5424,6 +5889,42 @@ func (s gateIdentity) Add(ctx context.Context, req *rstr.IdentityAddRequest) (*r
 	}
 
 	return s.IdentityServiceServer.Add(ctx, req)
+}
+
+type gateMailDomain struct {
+	Gate
+	rstr.MailDomainServiceServer
+}
+
+func (s Gate) MailDomain() rstr.MailDomainServiceServer {
+	return gateMailDomain{s, s.Next().MailDomain()}
+}
+
+// Add refuses a MailDomain put into a Tenant this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `tenant` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Tenant, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.Add`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+func (s gateMailDomain) Add(ctx context.Context, req *rstr.MailDomainAddRequest) (*rstr.MailDomain, error) {
+	if ref := req.GetTenant(); ref != nil {
+		if _, err := s.Gate.Next().Tenant().Get(ctx, rstr.TenantGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Tenant")
+			}
+
+			return nil, err
+		}
+	}
+
+	return s.MailDomainServiceServer.Add(ctx, req)
 }
 
 type gateRole struct {
@@ -6059,6 +6560,34 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 
 		return k, b, nil
 
+	case HostDomain:
+		row, err := s.Host().Get(ctx, rstr.HostGetRequest_builder{
+			Ref: rstr.HostRef_builder{Id: key.Bytes()}.Build(),
+		}.Build())
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				return uuid.Nil, []byte{}, nil
+			}
+
+			return uuid.Nil, nil, err
+		}
+
+		b, err := proto.Marshal(row)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		if !row.HasTenant() {
+			return uuid.Nil, b, nil
+		}
+
+		k, err := uuid.FromBytes(row.GetTenant().GetId())
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		return k, b, nil
+
 	case IdentityDomain:
 		row, err := s.Identity().Get(ctx, rstr.IdentityGetRequest_builder{
 			Ref: rstr.IdentityRef_builder{Id: key.Bytes()}.Build(),
@@ -6086,6 +6615,34 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 		}
 
 		k, _, err := subject(ctx, s, up)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		return k, b, nil
+
+	case MailDomainDomain:
+		row, err := s.MailDomain().Get(ctx, rstr.MailDomainGetRequest_builder{
+			Ref: rstr.MailDomainRef_builder{Id: key.Bytes()}.Build(),
+		}.Build())
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				return uuid.Nil, []byte{}, nil
+			}
+
+			return uuid.Nil, nil, err
+		}
+
+		b, err := proto.Marshal(row)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+
+		if !row.HasTenant() {
+			return uuid.Nil, b, nil
+		}
+
+		k, err := uuid.FromBytes(row.GetTenant().GetId())
 		if err != nil {
 			return uuid.Nil, nil, err
 		}
@@ -7676,6 +8233,162 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 		}
 
 		res, err := s.GroupMembership().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.HostService_Add_FullMethodName:
+		v := &rstr.HostAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Host().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.HostService_Get_FullMethodName:
+		v := &rstr.HostGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Host().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.HostService_Patch_FullMethodName:
+		v := &rstr.HostPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Host().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.HostService_Apply_FullMethodName:
+		v := &rstr.HostApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Host().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.HostService_Erase_FullMethodName:
+		v := &rstr.HostRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Host().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.HostService_List_FullMethodName:
+		v := &rstr.HostListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Host().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.MailDomainService_Add_FullMethodName:
+		v := &rstr.MailDomainAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.MailDomain().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.MailDomainService_Get_FullMethodName:
+		v := &rstr.MailDomainGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.MailDomain().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.MailDomainService_Patch_FullMethodName:
+		v := &rstr.MailDomainPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.MailDomain().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.MailDomainService_Apply_FullMethodName:
+		v := &rstr.MailDomainApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.MailDomain().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.MailDomainService_Erase_FullMethodName:
+		v := &rstr.MailDomainRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.MailDomain().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.MailDomainService_List_FullMethodName:
+		v := &rstr.MailDomainListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.MailDomain().List(ctx, v)
 		if err != nil {
 			return nil, err
 		}

@@ -43,6 +43,7 @@ message EmailAddRequest {
   string address = 8 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_verified = 9;
   IdentityRef vouched_by = 10;
+  bytes tenant_id = 11 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -55,11 +56,17 @@ message EmailRef {
   oneof key {
     bytes id = 1;
     EmailRefByAddress address = 2;
+    EmailRefByAt at = 11;
   }
 }
 
 message EmailRefByAddress {
   HolderRef holder = 2;
+  string address = 8;
+}
+
+message EmailRefByAt {
+  bytes tenant_id = 11;
   string address = 8;
 }
 
@@ -69,6 +76,7 @@ message EmailSelect {
   bool address = 8;
   bool date_verified = 9;
   IdentitySelect vouched_by = 10;
+  bool tenant_id = 11;
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;

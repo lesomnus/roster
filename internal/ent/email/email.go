@@ -16,6 +16,8 @@ const (
 	FieldAddress = "address"
 	// FieldDateVerified holds the string denoting the date_verified field in the database.
 	FieldDateVerified = "date_verified"
+	// FieldTenantID holds the string denoting the tenant_id field in the database.
+	FieldTenantID = "tenant_id"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
@@ -53,6 +55,7 @@ var Columns = []string{
 	FieldID,
 	FieldAddress,
 	FieldDateVerified,
+	FieldTenantID,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
@@ -86,6 +89,11 @@ func ByAddress(opts ...sql.OrderTermOption) OrderOption {
 // ByDateVerified orders the results by the date_verified field.
 func ByDateVerified(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDateVerified, opts...).ToFunc()
+}
+
+// ByTenantID orders the results by the tenant_id field.
+func ByTenantID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTenantID, opts...).ToFunc()
 }
 
 // ByDateUpdated orders the results by the date_updated field.

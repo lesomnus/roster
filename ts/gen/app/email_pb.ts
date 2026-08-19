@@ -19,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/email.proto.
  */
 export const file_app_email: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvZW1haWwucHJvdG8SBnJvc3RlciKLBAoFRW1haWwSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBmhvbGRlchgCIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgJAARIPCgdhZGRyZXNzGAggASgJEjkKDWRhdGVfdmVyaWZpZWQYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESLAoKdm91Y2hlZF9ieRgKIAEoCzIQLnJvc3Rlci5JZGVudGl0eUIG8oIWAjgBEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADqUAcr8FUwSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARokEgdhZGRyZXNzGgoKBmhvbGRlchACGgsKB2FkZHJlc3MQCDABirsWQAgJMikKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmIBQoZDoAIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_app_identity, file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg9hcHAvZW1haWwucHJvdG8SBnJvc3RlciLXBAoFRW1haWwSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBmhvbGRlchgCIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgJAARIPCgdhZGRyZXNzGAggASgJEjkKDWRhdGVfdmVyaWZpZWQYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESLAoKdm91Y2hlZF9ieRgKIAEoCzIQLnJvc3Rlci5JZGVudGl0eUIG8oIWAjgBEhsKCXRlbmFudF9pZBgLIAEoDEII6oIWBBBAQAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOsMByvwVcBICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGiQSB2FkZHJlc3MaCgoGaG9sZGVyEAIaCwoHYWRkcmVzcxAIMAEaIhICYXQaDQoJdGVuYW50X2lkEAsaCwoHYWRkcmVzcxAIMAGKuxZLCAkyKQoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYgFChkOgAiGgoNaG9sZGVyLnRlbmFudBoJdGVuYW50X2lkQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_app_identity, file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Email is an address a person uses, and whether anybody has checked that they
@@ -85,6 +85,25 @@ export type Email = Message<"roster.Email"> & {
    * @generated from field: roster.Identity vouched_by = 10;
    */
   vouchedBy?: Identity | undefined;
+
+  /**
+   * The tenant `holder.tenant` reaches, kept here. payday stamps it, and
+   * `Identity` says at length why a column is worth it.
+   *
+   * Here it buys one more thing than it does there, and it is the one F7 was
+   * open on: it is what a **unique index across a tenant** can be written over.
+   * Without it there is nowhere to put the constraint -- the wall reaches this
+   * entity through the holder, and an index cannot follow an edge.
+   *
+   * Immutable, which is not decoration. A stamp is written on `Add` and nothing
+   * refreshes it, so a mutable one lands in the generated `Patch` and a caller
+   * who may patch could move a row behind another tenant's wall. Nothing can
+   * put it out of date -- `holder` is immutable and so is `Holder.tenant` --
+   * and this is what says nothing may.
+   *
+   * @generated from field: bytes tenant_id = 11;
+   */
+  tenantId: Uint8Array;
 
   /**
    * @generated from field: google.protobuf.Timestamp date_updated = 13;

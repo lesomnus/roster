@@ -26,6 +26,8 @@ func (Email) Fields() []ent.Field {
 		field.Time("date_verified").
 			Nillable().
 			Optional(),
+		field.UUID("tenant_id", uuid.UUID{}).
+			Immutable(),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().
@@ -58,6 +60,9 @@ func (Email) Indexes() []ent.Index {
 		index.Fields("date_created", "id"),
 		index.Fields("address").
 			Edges("holder").
+			Unique().
+			Annotations(entsql.IndexWhere("date_erased IS NULL")),
+		index.Fields("tenant_id", "address").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 	}

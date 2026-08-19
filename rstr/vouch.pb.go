@@ -34,12 +34,13 @@ const (
 // decided, and it is refused rather than resolved in some order this comment
 // would then have to define.
 type VouchWho struct {
-	state             protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Id     []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_Tenant string                 `protobuf:"bytes,2,opt,name=tenant"`
-	xxx_hidden_Alias  string                 `protobuf:"bytes,3,opt,name=alias"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id      []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Tenant  string                 `protobuf:"bytes,2,opt,name=tenant"`
+	xxx_hidden_Alias   string                 `protobuf:"bytes,3,opt,name=alias"`
+	xxx_hidden_Address string                 `protobuf:"bytes,4,opt,name=address"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *VouchWho) Reset() {
@@ -88,6 +89,13 @@ func (x *VouchWho) GetAlias() string {
 	return ""
 }
 
+func (x *VouchWho) GetAddress() string {
+	if x != nil {
+		return x.xxx_hidden_Address
+	}
+	return ""
+}
+
 func (x *VouchWho) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -103,15 +111,48 @@ func (x *VouchWho) SetAlias(v string) {
 	x.xxx_hidden_Alias = v
 }
 
+func (x *VouchWho) SetAddress(v string) {
+	x.xxx_hidden_Address = v
+}
+
 type VouchWho_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	// The identifier, when the caller already has it.
 	Id []byte
 	// `@tenant/alias`, which is the pair a username field and a tenant selector
-	// make.
+	// make -- or the tenant and an [VouchWho.address], which is what a form that
+	// asks for an email collects.
+	//
+	// The tenant is required by either, and comes from the front door rather than
+	// from the form: `FrontService.WhoseHost` turns the name a browser arrived at
+	// into one.
 	Tenant string
 	Alias  string
+	// An address, within a tenant. What most sign-in forms actually collect.
+	//
+	// # This used to be empty, and F7 is why
+	//
+	// `Email` is unique **per holder**, deliberately, so that a consultant can be
+	// one person in two tenants under one address -- which meant one address
+	// could name two people and a sign-in resolving by it would pick one of them.
+	// The comment here said so and left the field unspent.
+	//
+	// The way out was never a field. It was the second half of the same
+	// sentence: *or a tenant that arrives from somewhere the form did not type.*
+	// A front door has one now, from `FrontService.WhoseHost`, and `Email` has a
+	// unique `(tenant, address)` to go with it -- so within the tenant somebody
+	// arrived at, an address names one person again. D3's consultant is
+	// untouched: that case is across tenants and this constrains within one.
+	//
+	// # It is the tenant **and** the address, always
+	//
+	// Named beside [VouchWho.tenant], which is the same pair an alias uses. There
+	// is no form of this that takes an address alone, and that is the constraint
+	// rather than an omission: a lookup that could be made without naming a
+	// tenant is a lookup a front door that forgot to think about which one
+	// compiles a wrong answer for.
+	Address string
 }
 
 func (b0 VouchWho_builder) Build() *VouchWho {
@@ -121,6 +162,7 @@ func (b0 VouchWho_builder) Build() *VouchWho {
 	x.xxx_hidden_Id = b.Id
 	x.xxx_hidden_Tenant = b.Tenant
 	x.xxx_hidden_Alias = b.Alias
+	x.xxx_hidden_Address = b.Address
 	return m0
 }
 
@@ -887,11 +929,12 @@ var File_app_vouch_proto protoreflect.FileDescriptor
 
 const file_app_vouch_proto_rawDesc = "" +
 	"\n" +
-	"\x0fapp/vouch.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\"H\n" +
+	"\x0fapp/vouch.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\"b\n" +
 	"\bVouchWho\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x16\n" +
 	"\x06tenant\x18\x02 \x01(\tR\x06tenant\x12\x14\n" +
-	"\x05alias\x18\x03 \x01(\tR\x05alias\"d\n" +
+	"\x05alias\x18\x03 \x01(\tR\x05alias\x12\x18\n" +
+	"\aaddress\x18\x04 \x01(\tR\aaddress\"d\n" +
 	"\x12VouchVerifyRequest\x12\"\n" +
 	"\x03who\x18\x01 \x01(\v2\x10.roster.VouchWhoR\x03who\x12\x12\n" +
 	"\x04kind\x18\b \x01(\tR\x04kind\x12\x16\n" +

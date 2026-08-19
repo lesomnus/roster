@@ -102,21 +102,39 @@ message VouchWho {
   bytes id = 1;
 
   // `@tenant/alias`, which is the pair a username field and a tenant selector
-  // make.
+  // make -- or the tenant and an [VouchWho.address], which is what a form that
+  // asks for an email collects.
+  //
+  // The tenant is required by either, and comes from the front door rather than
+  // from the form: `FrontService.WhoseHost` turns the name a browser arrived at
+  // into one.
   string tenant = 2;
   string alias = 3;
 
-  // 4 is empty, and it is worth saying what is not here: an **address**.
+  // An address, within a tenant. What most sign-in forms actually collect.
   //
-  // Signing in by email is what most forms collect, and this service cannot
-  // serve it, because `Email` decided the other way and said so: an address is
-  // unique *per holder*, deliberately, so that a consultant can be one person
-  // in two tenants under one address. One address may therefore name two
-  // people, and a sign-in that resolves by address would pick one of them.
+  // # This used to be empty, and F7 is why
   //
-  // Making it work needs a decision rather than a field -- globally unique
-  // addresses, or a tenant that arrives from somewhere the form did not type.
-  // See PLAN.md.
+  // `Email` is unique **per holder**, deliberately, so that a consultant can be
+  // one person in two tenants under one address -- which meant one address
+  // could name two people and a sign-in resolving by it would pick one of them.
+  // The comment here said so and left the field unspent.
+  //
+  // The way out was never a field. It was the second half of the same
+  // sentence: *or a tenant that arrives from somewhere the form did not type.*
+  // A front door has one now, from `FrontService.WhoseHost`, and `Email` has a
+  // unique `(tenant, address)` to go with it -- so within the tenant somebody
+  // arrived at, an address names one person again. D3's consultant is
+  // untouched: that case is across tenants and this constrains within one.
+  //
+  // # It is the tenant **and** the address, always
+  //
+  // Named beside [VouchWho.tenant], which is the same pair an alias uses. There
+  // is no form of this that takes an address alone, and that is the constraint
+  // rather than an omission: a lookup that could be made without naming a
+  // tenant is a lookup a front door that forgot to think about which one
+  // compiles a wrong answer for.
+  string address = 4;
 }
 
 message VouchVerifyRequest {

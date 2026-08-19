@@ -129,6 +129,11 @@ func (s EmailServiceServer) Add(ctx context.Context, req *rstr.EmailAddRequest) 
 			})
 		}
 	}
+	if v, err := uuid.FromBytes(req.GetTenantId()); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "tenant_id: %s", err)
+	} else {
+		q.SetTenantID(v)
+	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
 		q.SetDateCreated(req.GetDateCreated().AsTime())
@@ -207,6 +212,9 @@ func EmailSelectedFields(m *rstr.EmailSelect) []string {
 	}
 	if m.GetDateVerified() {
 		vs = append(vs, email.FieldDateVerified)
+	}
+	if m.GetTenantId() {
+		vs = append(vs, email.FieldTenantID)
 	}
 	if m.GetDateUpdated() {
 		vs = append(vs, email.FieldDateUpdated)
@@ -304,7 +312,7 @@ func EmailGetKey(ctx context.Context, db *ent.Client, ref *rstr.EmailRef) (uuid.
 var emailOrmEntity = ormpatch.MustEntityOf(rstr.File_app_email_proto, "Email")
 
 var emailPatchColumns = entpatch.Columns{
-	1: email.FieldID, 2: email.HolderColumn, 8: email.FieldAddress, 9: email.FieldDateVerified, 10: email.VouchedByColumn, 13: email.FieldDateUpdated, 14: email.FieldDateErased, 15: email.FieldDateCreated}
+	1: email.FieldID, 2: email.HolderColumn, 8: email.FieldAddress, 9: email.FieldDateVerified, 10: email.VouchedByColumn, 11: email.FieldTenantID, 13: email.FieldDateUpdated, 14: email.FieldDateErased, 15: email.FieldDateCreated}
 
 func (s EmailServiceServer) Apply(ctx context.Context, req *rstr.EmailApplyRequest) (*rstr.Email, error) {
 	if !req.HasPatch() {
@@ -509,6 +517,16 @@ func pickEmail(req *rstr.EmailRef) (predicate.Email, error) {
 			return nil, status.Errorf(codes.InvalidArgument, "address.holder: %s", err)
 		} else {
 			ps = append(ps, email.HasHolderWith(p))
+		}
+		ps = append(ps, email.AddressEQ(k.GetAddress()))
+		return email.And(ps...), nil
+	case rstr.EmailRef_At_case:
+		k := req.GetAt()
+		ps := make([]predicate.Email, 0, 2)
+		if v, err := uuid.FromBytes(k.GetTenantId()); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "at.tenant_id: %s", err)
+		} else {
+			ps = append(ps, email.TenantIDEQ(v))
 		}
 		ps = append(ps, email.AddressEQ(k.GetAddress()))
 		return email.And(ps...), nil

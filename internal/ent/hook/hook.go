@@ -117,6 +117,18 @@ func (f HolderFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, erro
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.HolderMutation", m)
 }
 
+// The HostFunc type is an adapter to allow the use of ordinary
+// function as Host mutator.
+type HostFunc func(context.Context, *ent.HostMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f HostFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.HostMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.HostMutation", m)
+}
+
 // The IdentityFunc type is an adapter to allow the use of ordinary
 // function as Identity mutator.
 type IdentityFunc func(context.Context, *ent.IdentityMutation) (ent.Value, error)
@@ -127,6 +139,18 @@ func (f IdentityFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, er
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.IdentityMutation", m)
+}
+
+// The MailDomainFunc type is an adapter to allow the use of ordinary
+// function as MailDomain mutator.
+type MailDomainFunc func(context.Context, *ent.MailDomainMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f MailDomainFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.MailDomainMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MailDomainMutation", m)
 }
 
 // The OutboxFunc type is an adapter to allow the use of ordinary

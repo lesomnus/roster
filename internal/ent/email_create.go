@@ -43,6 +43,12 @@ func (_c *EmailCreate) SetNillableDateVerified(v *time.Time) *EmailCreate {
 	return _c
 }
 
+// SetTenantID sets the "tenant_id" field.
+func (_c *EmailCreate) SetTenantID(v uuid.UUID) *EmailCreate {
+	_c.mutation.SetTenantID(v)
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *EmailCreate) SetDateUpdated(v time.Time) *EmailCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -150,6 +156,9 @@ func (_c *EmailCreate) check() error {
 	if _, ok := _c.mutation.Address(); !ok {
 		return &ValidationError{Name: "address", err: errors.New(`ent: missing required field "Email.address"`)}
 	}
+	if _, ok := _c.mutation.TenantID(); !ok {
+		return &ValidationError{Name: "tenant_id", err: errors.New(`ent: missing required field "Email.tenant_id"`)}
+	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Email.date_updated"`)}
 	}
@@ -201,6 +210,10 @@ func (_c *EmailCreate) createSpec() (*Email, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.DateVerified(); ok {
 		_spec.SetField(email.FieldDateVerified, field.TypeTime, value)
 		_node.DateVerified = &value
+	}
+	if value, ok := _c.mutation.TenantID(); ok {
+		_spec.SetField(email.FieldTenantID, field.TypeUUID, value)
+		_node.TenantID = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(email.FieldDateUpdated, field.TypeTime, value)

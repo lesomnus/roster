@@ -21,7 +21,9 @@ import (
 	"github.com/lesomnus/roster/internal/ent/group"
 	"github.com/lesomnus/roster/internal/ent/groupmembership"
 	"github.com/lesomnus/roster/internal/ent/holder"
+	"github.com/lesomnus/roster/internal/ent/host"
 	"github.com/lesomnus/roster/internal/ent/identity"
+	"github.com/lesomnus/roster/internal/ent/maildomain"
 	"github.com/lesomnus/roster/internal/ent/outbox"
 	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/lesomnus/roster/internal/ent/site"
@@ -98,7 +100,9 @@ func checkColumn(t, c string) error {
 			group.Table:           group.ValidColumn,
 			groupmembership.Table: groupmembership.ValidColumn,
 			holder.Table:          holder.ValidColumn,
+			host.Table:            host.ValidColumn,
 			identity.Table:        identity.ValidColumn,
+			maildomain.Table:      maildomain.ValidColumn,
 			outbox.Table:          outbox.ValidColumn,
 			role.Table:            role.ValidColumn,
 			site.Table:            site.ValidColumn,

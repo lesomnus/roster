@@ -146,8 +146,8 @@ func (a *App) signIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tenant, ok := a.tenants[hostname(r.Host)]
-	if !ok {
+	tenant, err := a.tenantOf(ctx, r.Host)
+	if err != nil {
 		// Reached under a name this deployment does not serve. Same answer as a
 		// wrong password: which of the two it was is not this browser's to
 		// learn.

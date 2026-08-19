@@ -66,6 +66,11 @@ func DateVerified(v time.Time) predicate.Email {
 	return predicate.Email(sql.FieldEQ(FieldDateVerified, v))
 }
 
+// TenantID applies equality check predicate on the "tenant_id" field. It's identical to TenantIDEQ.
+func TenantID(v uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldEQ(FieldTenantID, v))
+}
+
 // DateUpdated applies equality check predicate on the "date_updated" field. It's identical to DateUpdatedEQ.
 func DateUpdated(v time.Time) predicate.Email {
 	return predicate.Email(sql.FieldEQ(FieldDateUpdated, v))
@@ -204,6 +209,46 @@ func DateVerifiedIsNil() predicate.Email {
 // DateVerifiedNotNil applies the NotNil predicate on the "date_verified" field.
 func DateVerifiedNotNil() predicate.Email {
 	return predicate.Email(sql.FieldNotNull(FieldDateVerified))
+}
+
+// TenantIDEQ applies the EQ predicate on the "tenant_id" field.
+func TenantIDEQ(v uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldEQ(FieldTenantID, v))
+}
+
+// TenantIDNEQ applies the NEQ predicate on the "tenant_id" field.
+func TenantIDNEQ(v uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldNEQ(FieldTenantID, v))
+}
+
+// TenantIDIn applies the In predicate on the "tenant_id" field.
+func TenantIDIn(vs ...uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldIn(FieldTenantID, vs...))
+}
+
+// TenantIDNotIn applies the NotIn predicate on the "tenant_id" field.
+func TenantIDNotIn(vs ...uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldNotIn(FieldTenantID, vs...))
+}
+
+// TenantIDGT applies the GT predicate on the "tenant_id" field.
+func TenantIDGT(v uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldGT(FieldTenantID, v))
+}
+
+// TenantIDGTE applies the GTE predicate on the "tenant_id" field.
+func TenantIDGTE(v uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldGTE(FieldTenantID, v))
+}
+
+// TenantIDLT applies the LT predicate on the "tenant_id" field.
+func TenantIDLT(v uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldLT(FieldTenantID, v))
+}
+
+// TenantIDLTE applies the LTE predicate on the "tenant_id" field.
+func TenantIDLTE(v uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldLTE(FieldTenantID, v))
 }
 
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
