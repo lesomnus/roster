@@ -2097,7 +2097,20 @@ the schedule.
    machine. What is wanted is an event stream rather than an entity `Watch`,
    since a `Holder` changes for reasons nobody needs to hear about.
 
-5. **A breached-password check.** roster is the only thing that sees the
+5. ~~**A breached-password check.**~~ **Done.** `vouch.Breached`, refused
+   before anybody is read -- it is a fact about the secret rather than about the
+   person, so the refusal must not depend on whether they exist.
+
+   **A file and not a service**, because the deployment this app is most
+   careful about has no network at all: the corpus is the format the well-known
+   one is published in, and the lookup halves the file until a window is small
+   enough to read. `sort -u` is enough to make one, and the order is checked at
+   startup rather than trusted -- an unsorted file answers *no* to things that
+   are in it, which is the quiet direction in the one feature whose whole job is
+   to say yes.
+
+   The original entry:
+   roster is the only thing that sees the
    plaintext, so it is the only thing that can. Length and complexity rules are
    policy and stay with the caller; "this one is in a corpus of leaks" is a
    fact.

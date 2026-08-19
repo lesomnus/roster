@@ -75,6 +75,10 @@ type Server struct {
 	walled app.Server
 	reach  Reach
 	keys   Keyring
+
+	// breached is whether a secret is one somebody has already lost, when this
+	// deployment has a way to know. See `server/vouch/breached.go`.
+	breached Breached
 }
 
 // Reach answers whether the caller may write this person's credential, and
@@ -308,6 +312,13 @@ func (s *Server) Set(ctx context.Context, req *app.VouchSetRequest) (*app.VouchS
 	}
 	if len(req.GetSecret()) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "secret: must not be empty")
+	}
+
+	// Before anything is read, because it is a fact about the secret rather
+	// than about the person -- so the refusal must not depend on whether they
+	// exist, and there is no work to undo when it fires.
+	if err := s.mayHold(ctx, req.GetSecret()); err != nil {
+		return nil, err
 	}
 
 	kind := kindOf(req.GetKind())

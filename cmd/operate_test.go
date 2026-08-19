@@ -2,6 +2,11 @@ package cmd_test
 
 import (
 	"context"
+	"crypto/sha1"
+	"encoding/hex"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -265,5 +270,63 @@ func TestALocalOperatorOpensAnAccountSomebodyElseClosed(t *testing.T) {
 		}.Build())
 		x.NoError(err)
 		x.Nil(again.GetWasLockedUntil())
+	})
+}
+
+// TestASecretSomebodyHasLostIsRefused is item 5 through the service, which is
+// where the property that makes it roster's shows.
+//
+// Length and complexity are policy and stay with whoever collects the password.
+// *This one is in a corpus of leaks* can only be answered where the plaintext
+// is, and roster is the only thing that sees it.
+func TestASecretSomebodyHasLostIsRefused(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	sum := sha1.Sum([]byte("hunter2"))
+	at := filepath.Join(t.TempDir(), "leaked.txt")
+	x.NoError(os.WriteFile(at,
+		[]byte(strings.ToUpper(hex.EncodeToString(sum[:]))+":12\n"), 0o600))
+
+	in, err := vouch.BreachedIn(at)
+	x.NoError(err)
+
+	v := vouch.New(b.Ungated, b.Ungated, vouch.WithBreached(in))
+
+	set := func(secret string) error {
+		_, err := v.Set(ctx, app.VouchSetRequest_builder{
+			Who:    app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Secret: []byte(secret),
+		}.Build())
+
+		return err
+	}
+
+	// `FailedPrecondition` rather than `InvalidArgument`: there is nothing
+	// wrong with the request, the world changed under the value in it.
+	x.Equal(codes.FailedPrecondition, status.Code(set("hunter2")))
+	x.NoError(set("correct horse battery staple"))
+
+	// And a generated one is checked too, because nothing about being generated
+	// makes it absent from a list -- it is the same path.
+	t.Run("and a reset goes through the same check", func(t *testing.T) {
+		x := require.New(t)
+
+		_, err := v.Reset(ctx, app.VouchResetRequest_builder{
+			Who: app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		}.Build())
+		x.NoError(err, "thirty-two random bytes were in a corpus of leaks")
+	})
+
+	// A deployment that named no corpus refuses nothing, which is every
+	// deployment that has not said otherwise.
+	t.Run("and a deployment with no corpus checks nothing", func(t *testing.T) {
+		x := require.New(t)
+
+		_, err := b.vouched().Set(ctx, app.VouchSetRequest_builder{
+			Who:    app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Secret: []byte("hunter2"),
+		}.Build())
+		x.NoError(err)
 	})
 }

@@ -100,6 +100,20 @@ type Config struct {
 
 // VouchConfig is what checking secrets needs beyond the rows.
 type VouchConfig struct {
+	// Breached is a file of leaked password hashes, and empty is a deployment
+	// that does not check.
+	//
+	// The format the well-known corpus is published in: SHA-1, uppercase hex,
+	// one per line, **sorted**. A file rather than a service because the
+	// deployment this app is most careful about has no network at all, and the
+	// search is a binary one over the file -- nothing loaded, nothing indexed,
+	// and `sort -u` is enough to make one.
+	//
+	// It is read once at startup to check the order, because a file that is not
+	// sorted answers *no* to things that are in it -- the direction that fails
+	// quietly, in the one feature whose whole job is to say yes.
+	Breached string `yaml:"breached"`
+
 	// Keys wrap the seeds, written `name:base64` with the current one first.
 	//
 	// A list rather than one key because rotation is the only reason a

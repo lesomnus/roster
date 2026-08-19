@@ -500,6 +500,31 @@ standing there comes from the port rather than from a role.
 A new password appears **once**, in the page, to be read out. There is no field
 to type one into: a secret the caller chose is a secret the caller knows.
 
+### A password somebody has already lost
+
+```yaml
+vouch:
+  breached: /var/lib/roster/leaked.txt
+```
+
+SHA-1, uppercase hex, one per line, **sorted** — the format the well-known
+corpus is published in, and `sort -u` is enough to make one. A file rather than
+a service because the deployment this is most careful about has no network at
+all; the lookup halves the file rather than loading it, so the size of the
+corpus costs nothing but disk.
+
+Named and it is a **refusal**: `Vouch.Set` and `Vouch.Reset` answer
+`FailedPrecondition` and the person picks again. Unnamed and nothing is checked,
+which is every deployment that has not said otherwise.
+
+Two things it is not. It is not a length or complexity rule — those are policy
+and stay with whoever collects the password. And it is not advisory: a check
+whose result is advice is a check nobody acts on.
+
+The order is verified once at startup rather than trusted. A file that is not
+sorted answers *no* to things that are in it, which is the quiet direction in
+the one feature whose whole job is to say yes.
+
 ### What a local operator does
 
 For a deployment with no mail, where the person who delivers a recovery code is

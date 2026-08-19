@@ -106,6 +106,10 @@ type Server struct {
 	// than answered with a seed in the clear.
 	Keyring vouch.Keyring
 
+	// Breached is whether a secret is one somebody has already lost, or nil
+	// where this deployment has no way to know.
+	Breached vouch.Breached
+
 	// Sessions is the console's cookie: the endpoint that mints one and the
 	// handler that reads it back. Nil where there is no control plane, since
 	// the people who sign in are its holders and there would be nobody to be.
@@ -240,9 +244,26 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		return nil, err
 	}
 
+	// The corpus, checked for the order it has to be in rather than trusted:
+	// one that is not sorted answers *no* to things that are in it, which is
+	// the direction that fails quietly.
+	var leaked vouch.Breached
+	if c.Vouch.Breached != "" {
+		if err := vouch.Sorted(c.Vouch.Breached); err != nil {
+			db.Close()
+			return nil, err
+		}
+
+		leaked, err = vouch.BreachedIn(c.Vouch.Breached)
+		if err != nil {
+			db.Close()
+			return nil, err
+		}
+	}
+
 	s := &Server{
 		Db: db, Ent: client, Drv: drv, Dialect: dialect, Watch: w,
-		Walled: stacked, Ungated: ungated, Keyring: keyring,
+		Walled: stacked, Ungated: ungated, Keyring: keyring, Breached: leaked,
 	}
 
 	// The control plane: roster again, on its own database, holding keys rather
@@ -409,7 +430,8 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// the gate reads, handed over rather than asked for a second time.
 	app.RegisterVouchServiceServer(g, vouch.New(s.Ungated, s.Walled,
 		vouch.WithReach(core.Reaching(Rules(s.Ent))),
-		vouch.WithKeys(s.Keyring)))
+		vouch.WithKeys(s.Keyring),
+		vouch.WithBreached(s.Breached)))
 
 	// What a front door asks before it knows anything, and therefore through
 	// the server the wall was never installed on. Neither RPC answers with a

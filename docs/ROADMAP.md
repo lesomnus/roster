@@ -399,7 +399,7 @@ Each takes a `D` in PLAN.md when it is taken. None is taken here.
 | P6 | the reads a screen needs, and the screens | **done** — the reads (items 7, 8), §5 the operator screen, and §4 self-service in the reference app. Left of D24's order: §6, extracting the components |
 | P7 | two-step verification | **done** — PLAN.md D29 and D30, and `examples/sso` showing two forms with a half-session between them |
 | P8 | recovery and the magic link | **done** — PLAN.md D31. `Vouch.Link`/`Redeem`, a reset voiding what came before it, and the sweep over both short-lived tables. The air-gap half was already D28's |
-| P9 | the rest | **the session table is done** · left: the event stream, the breached-password check, provider connections (undecided), and the components. None of them blocks the screens |
+| P9 | the rest | session table and **the breached-password check** done · left: the event stream, provider connections (undecided), and the components |
 
 ## See also
 
