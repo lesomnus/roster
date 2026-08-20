@@ -114,11 +114,18 @@ type Server struct {
 	// handler that reads it back. Nil where there is no control plane, since
 	// the people who sign in are its holders and there would be nobody to be.
 	//
-	// In memory, which is right for one replica and **silently wrong** for two
-	// -- a browser is signed in or out depending on which one the load balancer
-	// picked, per request, with nothing in any log saying so. It is the same
-	// trap the memory broker carries, and it is named here rather than
-	// defaulted somewhere unread.
+	// **A table**, not a map: `authsession.New(session.New(control.Ent))`
+	// below, over `server/session`. So a cookie minted by one replica resolves
+	// on another, which is what it has to do -- payday's `MemStore` is right
+	// for one replica and silently wrong for two, a browser signed in or out
+	// depending on which one the load balancer picked, per request, with
+	// nothing in any log saying so.
+	//
+	// The seam is `authsession.Store`, which is where a deployment that would
+	// rather keep these somewhere else puts them. Nothing caches: the handler
+	// asks the store on every request, and the cookie is 32 bytes of
+	// `crypto/rand` rather than something signed, so there is no per-process
+	// secret to keep in step either.
 	Sessions *authsession.Sessions
 
 	// Spin is whatever this deployment has to run besides answering requests.

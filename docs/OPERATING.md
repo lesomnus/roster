@@ -262,10 +262,16 @@ the row simply is not there — which is also the answer to why an operator has
 no standing inside a customer's tenant. They administer the deployment; a
 customer's people are the customer's.
 
-Sessions are held **in this process**, which is right for one replica and
-silently wrong for two: a browser is signed in or out depending on which
-replica the load balancer picked, per request, with nothing in any log saying
-so. Same trap as the memory broker.
+Sessions are held **in a table** — see "Where the console's sessions live"
+above — so a cookie minted by one replica resolves on another. This paragraph
+used to say the opposite, and said it below a section that already said the
+right thing.
+
+What is still per-process is the **watch broker**, which is the same trap one
+seam over: the console's live screens run on `Watch`, and with `broker: memory`
+a screen watching one replica never hears about a write that landed on another.
+Nothing reports it — the stream stays open and looks healthy. See "Running more
+than one" below.
 
 ## A key for a service
 
@@ -611,6 +617,64 @@ where a new account cannot be told what it is for.
 See [LOGIN.md](LOGIN.md) for the whole path. In short: a product app calls
 `Vouch.Verify` with its key, gets yes and two identifiers, and sets its own
 session cookie. roster never talks to a browser.
+
+## Running more than one
+
+Everything durable is in the database and nothing in `cmd/` or `server/` writes
+to local disk, so a second replica needs no shared filesystem and holds nothing
+the first one needs. Sessions, keys, delegations, failure counts, lockouts, the
+TOTP replay window, continuations and magic links are all rows, re-read on every
+request — the process holds no authoritative copy of any of them.
+
+**One thing does not cross replicas, and it is `Watch`.**
+
+With `broker: memory` a client watching against one replica never hears about a
+write that landed on another. Nothing reports it: the stream stays open and the
+client looks connected. The console's live screens are the first thing this
+affects, and a product app granted `HolderService/Watch` is the second.
+
+`broker: none` is not the way out — it refuses `Watch` outright, which is honest
+but is not a Watch. The way out is a broker that crosses processes, which is
+`config.RegisterBroker` in payday: a package that registers a name, blank
+imported here. It is the same shape a database driver has, and for the same
+reason.
+
+An **outbox** does not solve this and is worth saying so about. It makes an
+event survive a crash between the commit and the publish, by writing a row in
+the same transaction as the write. The drainer then publishes into **this
+process's** broker and deletes the rows it read — so with several replicas
+draining one queue, whichever gets there first tells its own subscribers and
+nobody else's. Durability, not fan-out.
+
+### The rest of the checklist
+
+- **Both planes on a shared database.** The driver is named by what registers
+  it, so it is `pgx` and not `postgres`; a name nothing registered is refused at
+  startup rather than falling back.
+- **`db.migrate: false` on every serving replica.** The default already is — it
+  makes the process check the schema and refuse to start on a mismatch, which is
+  what you want N of. Run the migration as its own step.
+- **Seed once, out of band.** `docker/entrypoint.sh` keeps an "already seeded"
+  marker on a local volume; that is a dev-image convenience and not a lock.
+- **Set a maximum connection age.** `server.keepalive.max_connection_age`, and
+  the same under `control` and `admin`. Unset means a gRPC client holds its
+  connection forever, so a replica added to the pool gets no traffic until
+  something else disconnects. The HTTP transcoders balance per request and are
+  unaffected.
+- **The same `vouch.keys`, in the same order, everywhere.** Any replica holding
+  the whole set can read any wrapped seed, so order only decides which key new
+  ones are sealed with. Rotate in two phases: give every replica the new key
+  *second* in the list first, and only then move it to the front. A one-phase
+  rolling change means a seed sealed by an updated replica cannot be read by one
+  that has not restarted — loud rather than silent, but a sign-in failure either
+  way.
+- **The same breached-password corpus, or none.** It gates setting a password,
+  never verifying one, so a replica without it cannot let anybody in that a
+  sibling would refuse — the difference shows up as a password rejected on one
+  attempt and accepted on the retry.
+- **Rate limits are per process.** `grpcx.Limiter`'s memory implementation
+  counts in one, so N replicas mean N times the limit. The interface is the seam
+  if that matters.
 
 ## Talking to it over TLS
 

@@ -369,8 +369,17 @@ held; it just turned out that what there was to extract was smaller than the
 guess it was protecting against.
 
 **The console's session table is done** — it was the one item here that blocked
-running the console rather than improving it, since a deployment could not have
-two replicas until it existed.
+running the console rather than improving it, since a cookie minted by one
+replica had to resolve on another.
+
+It did not, on its own, make roster horizontally scalable, and this paragraph
+used to read as though it had. An audit of every other piece of process-local
+state found the rest already externalised -- keys, delegations, failure counts,
+lockouts, the TOTP replay window, continuations, links, all rows re-read per
+request -- and **one thing left: the watch broker.** `broker: memory` publishes
+inside a process, so a client watching one replica never hears about a write on
+another and nothing reports it. See D33; `docs/OPERATING.md` has the whole
+checklist under "Running more than one".
 
 None of the rest blocks the screens. Item 4's second increment is explicitly
 *taken when the noise is measured rather than predicted*; item 5 is a rule about

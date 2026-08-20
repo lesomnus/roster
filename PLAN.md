@@ -137,6 +137,76 @@ over memberships, credential verification.
 Recorded as they are made, with the reason, so that a later disagreement argues
 with the reason rather than rediscovering the question.
 
+### D33 · roster is stateless except for the broker, and the broker is a seam
+
+Asked directly -- can this be scaled horizontally, and is the state
+externalised? -- and answered by reading every place a process could be holding
+something, rather than from memory.
+
+#### The answer is yes, with one exception, and the exception is `Watch`
+
+Everything durable is a row, re-read on the request that needs it. Sessions
+(`server/session`, behind `authsession.Store`), API keys and bearer tokens
+(`keys.Store`, behind `auth.TokenStore`), delegations, failure counts and
+lockouts (columns, with `DateUpdated` as a CAS precondition), the TOTP replay
+window (`last_step`), continuations and links. Nothing in `cmd/` or `server/`
+writes to local disk. The sweeps are idempotent deletes, so every replica
+running them is harmless.
+
+What a process holds is: the watch broker, the rate limiter's buckets, and
+read-only material derived from configuration -- the TOTP keyring, the path to
+the breached-password corpus. Only the first of those is authoritative.
+
+**With `broker: memory`, a client watching one replica never hears about a write
+that landed on another**, and nothing reports it: the stream stays open and
+looks healthy. That is the whole of what does not scale.
+
+#### Which is a payday seam that was half open, and is now open
+
+`watch.Broker` was always an interface, and that was called the seam. An app
+could **implement** one and could not **select** it: the configuration was a
+closed switch over the two names payday ships. So `config.RegisterBroker`, in
+`RegisterDriver`'s shape, because a broker is a client for something that has to
+be linked in.
+
+And `broker: none` -- documented as *serves no Watch at all* -- served one that
+sent a snapshot and then never spoke, because `watch.New` answers with a non-nil
+`*Watch` whichever broker it was given and the generated `if s.w == nil` guard
+therefore never fired. It refuses outright now. Both in
+`lesomnus/payday@9d614cb`.
+
+#### And one of roster's own, which is the one worth remembering
+
+The control plane's broker was **`memory` written into the code**, not read from
+anywhere. payday goes to some trouble to stop exactly this: `watch.broker` has
+no default and a configuration that omits it is refused, so that scaling to two
+replicas means reading a line and deciding about it. A literal is that line
+deleted -- and it made the console the one screen a second replica broke
+silently, since a key issued on one process would never reach an operator
+watching on another.
+
+It is `control.watch` now, empty taking the data plane's broker name. Still two
+brokers: one publishing into the other would have a key being issued look like a
+person changing, to every client watching, and a client cannot tell them apart.
+
+#### An outbox is not the answer, and looks like one
+
+`pd.Drain` publishes into the broker it was **given** and then deletes the rows
+it read. So with several replicas draining one queue, whichever gets there first
+tells its own subscribers and nobody else's. It buys durability across a crash
+between the commit and the publish. It does not carry an event to another
+process, and reaching for it to solve this would leave the same silence with a
+table underneath it.
+
+#### What this decides
+
+Not to write a distributed broker here. It is payday's to ship or a deployment's
+to register, and roster's part -- making the choice reachable on both planes --
+is done. `docs/OPERATING.md` carries the rest of the checklist, which is
+ordinary deployment work: one database, migration as its own step, seeding out
+of band, a maximum connection age so a new replica gets traffic, and the same
+keyring and corpus everywhere.
+
 ### D32 · A screen somebody draws about themselves takes no subject
 
 D24 §4 and §5, and the rule both screens turned out to be about.
@@ -2377,9 +2447,10 @@ the schedule.
   opaque single-use nonce roster mints and checks, with delivery somewhere else
   — but F7 blocks the usual front door for it, since most links are asked for by
   typing an address.
-- **The console's sessions are in `MemStore`** (`cmd/serve.go`), which is right
-  for one replica and silently wrong for two. See the "after it says yes"
-  section below; this is a table.
+- ~~**The console's sessions are in `MemStore`**~~ **Done.** They are a table --
+  `server/session`, behind `authsession.Store` -- so a cookie minted by one
+  replica resolves on another. What is left of this shape is the **watch
+  broker**, which is a different seam and is still `memory`; see D33.
 
 ### What "after it says yes" means, since it came up
 
@@ -2423,10 +2494,11 @@ above ends in Hydra, and D19 is why roster does not go there instead.
 
 Two things this leaves:
 
-- **`MemStore` is the only store payday ships**, and its own comment says it is
-  right for one replica and *silently wrong* for two. `cmd/serve.go` uses it for
-  the console. A table with an index on the key is what replaces it, and roster
-  is an app that makes tables.
+- ~~**`MemStore` is the only store payday ships**~~, and its own comment says it
+  is right for one replica and *silently wrong* for two. **Taken**: a table with
+  an index on the key is what replaced it, in `server/session`, and roster is an
+  app that makes tables. `authsession.Store` was already the seam; nothing in
+  payday had to change, which is what a seam being real looks like.
 - **A product app should not have to write a login endpoint.** The seam is a
   `Verify`, and roster is already meant to be imported (D10). An exported
   `authsession.Verify` backed by `VouchService` would make custody's whole
