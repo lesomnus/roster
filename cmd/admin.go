@@ -17,7 +17,6 @@ import (
 
 	"github.com/lesomnus/roster/internal/ent"
 	app "github.com/lesomnus/roster/rstr"
-	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/core"
 	"github.com/lesomnus/roster/server/pd"
 	"github.com/lesomnus/roster/server/vouch"
@@ -65,18 +64,19 @@ func Admin(s *Server) (app.Server, error) {
 
 	// The data plane, with no wall and no gate layer. `pd.Wall` narrows by a
 	// tenant the caller belongs to, and an operator belongs to none here.
-	sink, err := pd.NewSink(s.Ent,
-		bare.WithMinter(pd.Minter()),
-		bare.WithRecorder(bare.Recorders{pd.Recorder(), pd.WatchRecorder(s.Watch)}),
-	)
-	if err != nil {
-		return nil, err
-	}
-
+	//
+	// `s.sink` rather than a second `pd.NewSink` of the same shape, and the
+	// difference was not cosmetic: this re-typed the recorder list without the
+	// `if watch.outbox` branch beside it, so writes made **here** were the only
+	// ones in the deployment with nothing durable behind them. `pd.Sink` is a
+	// value whose every method answers with a copy, so sharing one costs
+	// nothing and makes the drift structurally impossible rather than
+	// remembered.
+	//
 	// `core` reading the **control** plane. Its judgements are about the
 	// caller -- what they hold, what they may pass on -- and the caller is
 	// there.
-	return app.Build(sink.WithWatch(s.Watch), core.Build(Rules(s.Control.Ent)), pd.AuditBuild())
+	return app.Build(s.sink.WithWatch(s.Watch), core.Build(Rules(s.Control.Ent)), pd.AuditBuild())
 }
 
 // Intent records that an operator decided to do something, in the control

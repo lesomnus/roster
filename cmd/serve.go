@@ -66,6 +66,22 @@ type Server struct {
 	// for two, since a subscriber on one never hears about a write on another.
 	Watch *watch.Watch
 
+	// sink is this plane with no wall and no gate: the minter and the recorders
+	// exactly as [Build] settled them, **including whether the outbox is among
+	// them**.
+	//
+	// Kept because the admin port builds its own stack over these same rows,
+	// and it used to re-type the list. A second literal is a second answer to
+	// `watch.outbox` -- and the one it gave was `no`, so an operator's writes
+	// were the only ones with nothing behind them if this process stopped
+	// between the commit and the publish. The list is also **ordered** -- the
+	// outbox recorder is last, for the reason [Build] gives -- and an order
+	// written twice is an order that drifts.
+	//
+	// Unexported, unlike everything else here: it is `Ungated` without even
+	// `core`'s rules, so it is held rather than handed out.
+	sink pd.Sink
+
 	// Walled is what a caller reaches, and Ungated is what the deployment does
 	// its own work through -- putting the first tenant there, working out who
 	// is calling. Neither is a privilege anybody holds: the second is a server
@@ -269,7 +285,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	}
 
 	s := &Server{
-		Db: db, Ent: client, Drv: drv, Dialect: dialect, Watch: w,
+		Db: db, Ent: client, Drv: drv, Dialect: dialect, Watch: w, sink: sink,
 		Walled: stacked, Ungated: ungated, Keyring: keyring, Breached: leaked,
 	}
 
@@ -299,6 +315,19 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		control.Keys = true
 
 		s.Control = control
+
+		// What the nested `Build` arranged for itself, carried up.
+		//
+		// `Build` is recursive, so the control plane assembled its own sweeps
+		// and its own drain into `control.Spin` -- and nothing ever ran them:
+		// `spin.Run` is handed the outer `s.Spin` alone. So a deployment with a
+		// control plane had a second set of background work that was configured,
+		// constructed, and silently never started.
+		//
+		// Here rather than at the append below, because that one runs in every
+		// `Build` including this nested one, and the whole failure was work
+		// going somewhere nothing reads.
+		s.Spin = append(s.Spin, control.Spin...)
 		// Two handlers, and the order is the rule `Seq` runs on: the first
 		// that finds anything answers. `Acting` is only interested in a
 		// request carrying `roster-as`, and passes on everything else, so a
@@ -337,6 +366,17 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		// request, with nothing in any log saying why. `session.proto` carries
 		// the rest, including why the table is roster's and not payday's.
 		s.Sessions = authsession.New(session.New(control.Ent))
+
+		// And somebody to collect them, because nobody else will. A store
+		// behind `authsession.Store` has `Put`, `Get` and `Del` and no pass
+		// over everything -- and `Del` is a soft erase, so even signing out
+		// leaves the row. Without this the table is one row per sign-in since
+		// the deployment started.
+		//
+		// Appended to **this** server's `Spin` and not the control plane's, on
+		// its client. See below: what the nested `Build` collected was never
+		// run.
+		s.Spin = append(s.Spin, session.Sweep(control.Ent, session.Swept))
 
 		// A console's cookie in front of a service's key, and **on this plane
 		// only**.

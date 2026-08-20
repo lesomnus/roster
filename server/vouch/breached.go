@@ -63,6 +63,9 @@ func WithBreached(v Breached) Option { return func(s *Server) { s.breached = v }
 // fails quietly -- so the order is checked at startup rather than trusted, which
 // is what [Sorted] is for.
 func BreachedIn(path string) (Breached, error) {
+	// Opened once here to refuse a deployment that named a corpus it has not
+	// got, or an empty one -- both at startup, where a mistake is a server that
+	// does not come up rather than a rule that quietly stops applying.
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("vouch: %w", err)
@@ -83,6 +86,26 @@ func BreachedIn(path string) (Breached, error) {
 			return false, err
 		}
 		defer f.Close()
+
+		// **This** file's size, and not the one measured at startup.
+		//
+		// The size is half of what the search is: it is the upper bound the
+		// halving starts from. Held from boot, a corpus that was replaced --
+		// which is how these are updated, since the published one grows -- is
+		// searched through a bound belonging to a file that is no longer there.
+		// A smaller number hides everything past it; a larger one sends the
+		// first `ReadAt` past the end.
+		//
+		// Both are the failure this whole file is written against: an answer of
+		// *no* that is wrong, quietly, on the one check whose job is to say yes.
+		//
+		// The cost is a stat per call on the password-**set** path, which is
+		// somebody typing a new password. The read that follows is already two
+		// or three seeks over a file measured in gigabytes.
+		st, err := f.Stat()
+		if err != nil {
+			return false, err
+		}
 
 		sum := sha1.Sum(secret)
 

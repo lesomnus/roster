@@ -142,3 +142,58 @@ func TestACorpusLargerThanTheWindowIsStillFound(t *testing.T) {
 		x.False(bad, v)
 	}
 }
+
+// TestACorpusThatWasReplacedIsSearchedAsItIsNow.
+//
+// The size is half of what the search is -- it is the upper bound the halving
+// starts from -- and it was measured once, when the deployment started. A
+// corpus that was replaced afterwards, which is how these are updated since the
+// published one only grows, was then searched through a bound belonging to a
+// file that is no longer there.
+//
+// Which is the failure the whole of `breached.go` is written against: an answer
+// of *no* that is wrong, quietly, on the one check whose job is to say yes.
+// Nothing errors and nothing logs; a password somebody has already lost is
+// simply accepted.
+func TestACorpusThatWasReplacedIsSearchedAsItIsNow(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	// Small to begin with, so the bound taken at construction is far short of
+	// what the file becomes.
+	at := corpus(t, "hunter2")
+
+	in, err := vouch.BreachedIn(at)
+	x.NoError(err)
+
+	bad, err := in(ctx, []byte("hunter2"))
+	x.NoError(err)
+	x.True(bad)
+
+	// The update: a corpus large enough that most of it lies past the old
+	// bound, written over the same path.
+	grown := make([]string, 0, 4096)
+	for i := range 4096 {
+		grown = append(grown, fmt.Sprintf("leaked-%04d", i))
+	}
+	grown = append(grown, "hunter2")
+
+	x.NoError(os.Rename(corpus(t, grown...), at))
+	x.NoError(vouch.Sorted(at))
+
+	// Everything, including the entries that are only reachable through the
+	// new bound. Before the stat moved into the call, the ones past the old
+	// size answered *no*.
+	for _, v := range []string{"hunter2", "leaked-0000", "leaked-2048", "leaked-4095"} {
+		bad, err := in(ctx, []byte(v))
+		x.NoError(err, v)
+		x.True(bad, "%s: searched through a bound that belongs to a file that is gone", v)
+	}
+
+	// And a corpus that shrank is not read past its end.
+	x.NoError(os.Rename(corpus(t, "hunter2"), at))
+
+	bad, err = in(ctx, []byte("leaked-2048"))
+	x.NoError(err)
+	x.False(bad)
+}
