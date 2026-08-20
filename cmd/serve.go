@@ -276,10 +276,13 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		control, err := Build(ctx, Config{
 			Db: c.Control.Db,
 
-			// Its own broker. A control plane publishing into the data plane's
-			// would have a key change look like a person changing, to every
-			// client watching.
-			Watch: config.WatchConfig{Broker: config.BrokerMemory},
+			// Its own broker, and now its own **setting**. A control plane
+			// publishing into the data plane's would have a key change look
+			// like a person changing, to every client watching -- so they are
+			// two brokers. They were also two decisions and only one of them
+			// was written down: this said `memory` in the code, which made the
+			// console the one screen a second replica broke without saying so.
+			Watch: c.Control.watch(c.Watch),
 		})
 		if err != nil {
 			db.Close()

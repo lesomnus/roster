@@ -40,6 +40,10 @@ server:
 #     addr: "127.0.0.1:8082"
 #     allow_web: true
 #     origins: ["http://localhost:5173"]
+#   # Its own broker, and empty takes the one `watch.broker` names below. See
+#   # there for why the two planes do not share one.
+#   watch:
+#     broker: memory
 
 # Where an operator administers **customers**: the data plane with no wall,
 # behind a session. Its `http` is what a console talks to -- a browser cannot
@@ -112,4 +116,27 @@ watch:
   # leaving out. `memory` publishes inside this process, which is right for one
   # replica and silently wrong for two -- a client watching against one never
   # hears about a write that landed on another, and nothing reports it.
+  #
+  # A deployment of two replicas needs a broker that crosses them, and writing
+  # one is `config.RegisterBroker` in payday: a package that registers a name,
+  # blank imported here. The names this binary has are `memory` and `none`.
+  #
+  # `none` serves no Watch at all, and says so -- a stream is refused outright
+  # rather than opening and never speaking. It is not a way to run two replicas;
+  # it is a way to say this deployment has no watchers.
+  #
+  # An **outbox** is a different question and not this one. It makes an event
+  # survive a crash between the commit and the publish, by writing a row in the
+  # same transaction; it does not carry the event to another process, because
+  # the drainer publishes into this same broker. Durability, not fan-out.
   broker: memory
+
+  # The control plane publishes its own changes, to its own broker, and this is
+  # where that is said. Empty takes the name above.
+  #
+  # Two brokers because they are two subjects: one publishing into the other
+  # would have a key being issued look like a person changing, to every client
+  # watching. This used to be `memory` written into the code, which made the
+  # console the one screen a second replica broke without saying so.
+  #
+  # It is `control.watch.broker`, beside `control.db` -- see the block above.

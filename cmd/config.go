@@ -306,6 +306,26 @@ func (c ClientAuthConfig) value() (string, error) {
 type ControlConfig struct {
 	Db config.DbConfig `yaml:"db"`
 
+	// Where **this plane's** changes are published, which is its own question
+	// and not the data plane's.
+	//
+	// It was `memory`, written into the code rather than read from anywhere,
+	// and that made the console the one screen a second replica silently broke:
+	// a key issued on one process would never reach an operator watching on
+	// another, on a stream that stayed open and looked healthy.
+	//
+	// Separate from `watch` above for the reason the databases are separate.
+	// A control plane publishing into the data plane's broker would make a key
+	// changing look like a person changing, to every client watching -- so they
+	// cannot be one setting, and the one that was implicit is the one nobody
+	// could have found.
+	//
+	// Empty takes the data plane's **broker name**, and nothing else about it:
+	// a deployment that named one broker for its people almost always means the
+	// same kind for its keys, and having to write `memory` twice is a way of
+	// getting it right once and wrong later.
+	Watch config.WatchConfig `yaml:"watch"`
+
 	// Where the control plane answers, and **empty is nowhere**.
 	//
 	// The rows are reachable in this process whatever this says -- that is what
@@ -401,4 +421,18 @@ func hal(c *Config) xli.Handler {
 
 		return next(ctx)
 	})
+}
+
+// watch is which broker this plane publishes to, falling back to the kind the
+// data plane named.
+//
+// The **name** and not the whole block: an outbox is about durability of one
+// database's writes and the two planes have two databases, so inheriting it
+// would turn one decision into two rows in a table nobody asked for.
+func (c ControlConfig) watch(data config.WatchConfig) config.WatchConfig {
+	if c.Watch.Broker != "" {
+		return c.Watch
+	}
+
+	return config.WatchConfig{Broker: data.Broker}
 }

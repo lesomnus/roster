@@ -57,7 +57,11 @@ services:
       ROSTER_DB_DSN: postgres://roster:roster@db:5432/roster?sslmode=disable
       ROSTER_DB_MIGRATE: "true"
 
-      ROSTER_CONTROL_DB_DRIVER: postgres
+      # `pgx` and not `postgres`: the driver is named by what registers it
+      # (`config/dbpgx`), and a name nothing registered is refused at startup
+      # rather than falling back. This said `postgres` and so this control plane
+      # never came up.
+      ROSTER_CONTROL_DB_DRIVER: pgx
       ROSTER_CONTROL_DB_DSN: postgres://roster:roster@db:5432/control?sslmode=disable
       ROSTER_CONTROL_DB_MIGRATE: "true"
 
@@ -79,7 +83,12 @@ services:
       ROSTER_ADMIN_HTTP_ALLOW_WEB: "true"
       ROSTER_ADMIN_HTTP_ORIGINS: http://localhost:5173
 
+      # Both planes, because they are two brokers and were two decisions -- and
+      # only one of them used to be written down. `memory` publishes inside this
+      # process, which is right for the one replica this file runs and silently
+      # wrong for two.
       ROSTER_WATCH_BROKER: memory
+      ROSTER_CONTROL_WATCH_BROKER: memory
     volumes:
       # Where the entrypoint keeps its "already seeded" marker. Without it every
       # restart tries to seed again and fails on the alias that is already

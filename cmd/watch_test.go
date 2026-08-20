@@ -8,6 +8,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 
+	"github.com/lesomnus/payday/config"
+	"github.com/lesomnus/payday/pdtest"
+
+	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
 )
 
@@ -243,4 +247,74 @@ func (s *collected) first(t *testing.T) *app.Credential {
 
 		return nil
 	}
+}
+
+// The control plane publishes somewhere, and now it is somewhere a deployment
+// chose.
+//
+// It said `memory` in the code -- `cmd/serve.go`, inside the nested `Build`
+// that makes the second plane -- which made the console the one screen a second
+// replica broke without saying so. An operator watching on process A would
+// never hear about a key issued on process B, on a stream that stayed open and
+// looked healthy.
+//
+// payday goes to some trouble to stop exactly this: `watch.broker` has no
+// default and a configuration that leaves it out is refused, precisely so that
+// scaling to two replicas means reading a line and deciding about it. A literal
+// in the code is that line deleted.
+
+// TestTheControlPlaneTakesTheBrokerItWasGiven, and takes the data plane's kind
+// when it was given none.
+func TestTheControlPlaneTakesTheBrokerItWasGiven(t *testing.T) {
+	x := require.New(t)
+
+	drv, dsn := pdtest.DB(t)
+	cdrv, cdsn := pdtest.DB(t)
+
+	// Said nowhere for the control plane, which is what every deployment
+	// written before this looks like.
+	s, err := cmd.Build(t.Context(), cmd.Config{
+		Db:      config.DbConfig{Driver: drv, Dsn: dsn},
+		Watch:   config.WatchConfig{Broker: config.BrokerNone},
+		Control: cmd.ControlConfig{Db: config.DbConfig{Driver: cdrv, Dsn: cdsn}},
+	})
+	x.NoError(err)
+	t.Cleanup(func() { s.Close() })
+	x.NotNil(s.Control)
+
+	// Inherited rather than hardcoded. `none` is the one that shows it: before
+	// this, a deployment that had said "publish nothing" still got an
+	// in-process broker on its control plane, and nothing anywhere said so.
+	x.Nil(s.Control.Watch.Broker(),
+		"the control plane built a broker the deployment did not ask for")
+
+	// And the data plane's, for the same reason and by the same route.
+	x.Nil(s.Watch.Broker())
+}
+
+// TestTheTwoPlanesDoNotShareABroker is the reason it is a second setting rather
+// than the same one read twice.
+//
+// A control plane publishing into the data plane's would have a key changing
+// look like a person changing, to every client watching -- and a client cannot
+// tell them apart, because what a watch carries is the row and the RPC that
+// touched it.
+func TestTheTwoPlanesDoNotShareABroker(t *testing.T) {
+	x := require.New(t)
+
+	drv, dsn := pdtest.DB(t)
+	cdrv, cdsn := pdtest.DB(t)
+
+	s, err := cmd.Build(t.Context(), cmd.Config{
+		Db:      config.DbConfig{Driver: drv, Dsn: dsn},
+		Watch:   config.WatchConfig{Broker: config.BrokerMemory},
+		Control: cmd.ControlConfig{Db: config.DbConfig{Driver: cdrv, Dsn: cdsn}},
+	})
+	x.NoError(err)
+	t.Cleanup(func() { s.Close() })
+
+	x.NotNil(s.Watch.Broker())
+	x.NotNil(s.Control.Watch.Broker())
+	x.NotSame(s.Watch.Broker(), s.Control.Watch.Broker(),
+		"one broker for both planes: a key change would look like a person changing")
 }

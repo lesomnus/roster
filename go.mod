@@ -31,7 +31,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/lesomnus/grpc-dgram v0.0.0-20260808164022-d993065403e1
 	github.com/lesomnus/otx v0.0.0-20260807173743-977a5687d6ba
-	github.com/lesomnus/payday v0.0.0-20260819070142-9a252e58501a
+	github.com/lesomnus/payday v0.0.0-20260820230129-9d614cb453d8
 	github.com/lesomnus/protobuf-patch v0.0.0-20260803175157-e1b7a0c2804f
 	github.com/lesomnus/xli v0.0.0-20260717171524-bf8cac633057
 	github.com/lesomnus/z v0.0.0-20260531102454-3f1853bb4278
