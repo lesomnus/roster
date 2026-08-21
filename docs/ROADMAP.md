@@ -376,10 +376,10 @@ It did not, on its own, make roster horizontally scalable, and this paragraph
 used to read as though it had. An audit of every other piece of process-local
 state found the rest already externalised -- keys, delegations, failure counts,
 lockouts, the TOTP replay window, continuations, links, all rows re-read per
-request -- and **one thing left: the watch broker.** `broker: memory` publishes
-inside a process, so a client watching one replica never hears about a write on
-another and nothing reports it. See D33; `docs/OPERATING.md` has the whole
-checklist under "Running more than one".
+request -- and one thing left, the watch broker. That is written now:
+`watch.broker: postgres` is `LISTEN`/`NOTIFY` on the database the rows are
+already in, so it needs no second piece of infrastructure. See D33;
+`docs/OPERATING.md` has the whole checklist under "Running more than one".
 
 None of the rest blocks the screens. Item 4's second increment is explicitly
 *taken when the noise is measured rather than predicted*; item 5 is a rule about
@@ -440,6 +440,7 @@ that the plan defers on purpose.
 | P9 | the rest | session table, the breached-password check, **provider connections** and **§6** done · left: the event stream, which item 4 itself defers |
 | — | F10 and F11, upstream | **done** — `pd.Secret` streamed the verifier it hides everywhere else, in payday's own reference app as much as here. `lesomnus/payday@b57f9a1`, pin moved, both halves pinned in `cmd/watch_test.go` |
 | — | F12, upstream | **done** — `pd doctor` reads the app's schema now, which its own comment said it did and did not. `lesomnus/payday@9a252e5` |
+| — | D33 · the broker | **done** — `watch.broker: postgres`, `LISTEN`/`NOTIFY` on the rows' own database. The last thing that did not cross replicas. `lesomnus/payday@73a90a0` |
 | — | D34 · single-use, upstream | **done** — `Erase` answered `Empty`, so nothing could tell a win from a loss and one continuation minted up to 24 credentials on Postgres. `protoc-gen-orm-service@efff3ac` + `protoc-gen-orm-ent@f892843`, pins moved through payday |
 | — | F3 | **already fixed upstream**, and this document was stale about it: `pdgen.checkPresence` refuses a message field that has `Has…` and a NOT NULL column, exempting the three server stamps by their declarations rather than their names. Confirmed here, through `pd doctor` |
 

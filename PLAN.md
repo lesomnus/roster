@@ -193,7 +193,7 @@ apart would say whether a string was ever a real attempt.
 Only the mint is guarded. Everything above it in `step` is a refusal, where
 losing the race changes nothing; below it, two winners are two credentials.
 
-### D33 · roster is stateless except for the broker, and the broker is a seam
+### D33 · roster is stateless, and the one exception now has an answer
 
 Asked directly -- can this be scaled horizontally, and is the state
 externalised? -- and answered by reading every place a process could be holding
@@ -254,14 +254,47 @@ between the commit and the publish. It does not carry an event to another
 process, and reaching for it to solve this would leave the same silence with a
 table underneath it.
 
-#### What this decides
+#### And then the broker was written, because it needed nothing
 
-Not to write a distributed broker here. It is payday's to ship or a deployment's
-to register, and roster's part -- making the choice reachable on both planes --
-is done. `docs/OPERATING.md` carries the rest of the checklist, which is
-ordinary deployment work: one database, migration as its own step, seeding out
-of band, a maximum connection age so a new replica gets traffic, and the same
-keyring and corpus everywhere.
+`watch.broker: postgres` -- `config/brokerpg`, `LISTEN`/`NOTIFY` on **the
+database the rows are already in**. Nothing to store, since a notification
+reaches whoever is listening and is then forgotten; no address, since it is the
+DSN the app already has; nothing to run, since this deployment is on PostgreSQL.
+
+Which is why it was the one to write first. Every other broker worth having is a
+message bus somebody has to stand up, and the seam is open for those. This one
+turns *scaling out* from a piece of infrastructure into a line of configuration,
+for exactly the deployments roster is aimed at.
+
+Three decisions inside it, all in `watch/watchpg`:
+
+- **What travels is what changed, not the row.** Not a size compromise, though
+  PostgreSQL's 8000-byte payload makes the decision easy: what a subscriber may
+  see is decided per subscriber, by re-reading each row through their own
+  narrowing, and a broker carrying content would answer that once, in the wrong
+  place, for everybody. A call that wrote more rows than fit arrives as several
+  notifications, which `watch.Next` cannot tell from several calls.
+- **Losing the connection cuts every subscriber.** There is no backlog to catch
+  up from, so resuming quietly would leave a stream open, healthy-looking and
+  permanently behind -- the failure this seam exists to prevent, arriving through
+  the thing meant to fix it.
+- **Publishing is asynchronous and bounded.** `Publish` must not block the call
+  that produced it, so a full queue drops -- loudly, and cutting this replica's
+  subscribers, which is the only recovery available from there. A deployment
+  that cannot lose an event pairs it with `watch.outbox`, and that composition
+  now works: the drainer publishes into this broker, so it crosses replicas,
+  which it does not with `memory`.
+
+`RegisterBroker` had to change to make it possible: the build is handed the
+app's `DbConfig`, because a broker riding the database had no way to learn which
+one. That is the shape the registry should have had -- the first broker anybody
+writes is this one.
+
+#### What is left
+
+Ordinary deployment work, in `docs/OPERATING.md`: one database, migration as its
+own step, seeding out of band, a maximum connection age so a new replica gets
+traffic, and the same keyring and corpus everywhere.
 
 ### D32 · A screen somebody draws about themselves takes no subject
 

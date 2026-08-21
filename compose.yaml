@@ -84,11 +84,18 @@ services:
       ROSTER_ADMIN_HTTP_ORIGINS: http://localhost:5173
 
       # Both planes, because they are two brokers and were two decisions -- and
-      # only one of them used to be written down. `memory` publishes inside this
-      # process, which is right for the one replica this file runs and silently
-      # wrong for two.
-      ROSTER_WATCH_BROKER: memory
-      ROSTER_CONTROL_WATCH_BROKER: memory
+      # only one of them used to be written down.
+      #
+      # `postgres` rather than `memory`, and it costs nothing here: this file
+      # already runs one, and `LISTEN`/`NOTIFY` needs no storage and no address.
+      # `memory` publishes inside the process, which is right for one replica
+      # and silently wrong for two -- a client watching against one never hears
+      # about a write that landed on another.
+      #
+      # Each plane listens on its own database, which is what keeps a key being
+      # issued from looking like a person changing.
+      ROSTER_WATCH_BROKER: postgres
+      ROSTER_CONTROL_WATCH_BROKER: postgres
     volumes:
       # Where the entrypoint keeps its "already seeded" marker. Without it every
       # restart tries to seed again and fails on the alias that is already

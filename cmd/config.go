@@ -33,6 +33,20 @@ import (
 	// about a missing import and reads as a typo in the configuration.
 	_ "github.com/lesomnus/payday/config/dbpgx"
 	_ "github.com/lesomnus/payday/config/dbsqlite3"
+
+	// And the broker that rides the first of them, so that
+	// `watch.broker: postgres` is a name this binary has.
+	//
+	// The one thing that stopped roster running more than one replica was that
+	// a client watching against one never heard about a write that landed on
+	// another -- and the answer for a deployment already on PostgreSQL needs no
+	// second piece of infrastructure. See `docs/OPERATING.md`, "Running more
+	// than one".
+	//
+	// Linked whatever this deployment runs on, like the drivers above: what it
+	// costs is a `LISTEN` client in the binary, and what the other arrangement
+	// costs is `watch.broker: postgres` reading as a typo.
+	_ "github.com/lesomnus/payday/config/brokerpg"
 )
 
 // Name is what this app is called, and it is the only place it is written.

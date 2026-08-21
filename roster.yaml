@@ -117,18 +117,31 @@ watch:
   # replica and silently wrong for two -- a client watching against one never
   # hears about a write that landed on another, and nothing reports it.
   #
-  # A deployment of two replicas needs a broker that crosses them, and writing
-  # one is `config.RegisterBroker` in payday: a package that registers a name,
-  # blank imported here. The names this binary has are `memory` and `none`.
+  # A deployment of two replicas needs a broker that crosses them, and this
+  # binary has one: `postgres`, which is `LISTEN`/`NOTIFY` on **the database the
+  # rows are already in**. No storage, no address, nothing to run -- if this
+  # deployment is on PostgreSQL, that is the whole of what scaling out takes.
+  #
+  #   broker: postgres
+  #
+  # `watch.dsn` goes with it and should stay empty. It is there for a deployment
+  # whose PostgreSQL is reachable at a different address from the one it writes
+  # through -- a pooler in front of the writer is the case, and `LISTEN` does
+  # not survive one.
+  #
+  # `memory` is what a single replica and a sandbox want, and is what this file
+  # names because it is also what runs on SQLite.
   #
   # `none` serves no Watch at all, and says so -- a stream is refused outright
   # rather than opening and never speaking. It is not a way to run two replicas;
   # it is a way to say this deployment has no watchers.
   #
-  # An **outbox** is a different question and not this one. It makes an event
-  # survive a crash between the commit and the publish, by writing a row in the
-  # same transaction; it does not carry the event to another process, because
-  # the drainer publishes into this same broker. Durability, not fan-out.
+  # An **outbox** is a different question and it composes with this one. It
+  # makes an event survive a crash between the commit and the publish, by
+  # writing a row in the same transaction, and the drainer then publishes into
+  # whatever broker is named here. So with `memory` it is durability and not
+  # fan-out; with `postgres` it is both, which is what a deployment that can
+  # lose neither wants.
   broker: memory
 
   # The control plane publishes its own changes, to its own broker, and this is
