@@ -10,7 +10,6 @@ import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	unsafe "unsafe"
@@ -1380,6 +1379,86 @@ func (b0 ConnectionApplyRequest_builder) Build() *ConnectionApplyRequest {
 	return m0
 }
 
+type ConnectionEraseResponse struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *ConnectionEraseResponse) Reset() {
+	*x = ConnectionEraseResponse{}
+	mi := &file_app_connection_svc_g_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConnectionEraseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConnectionEraseResponse) ProtoMessage() {}
+
+func (x *ConnectionEraseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_app_connection_svc_g_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *ConnectionEraseResponse) GetErased() bool {
+	if x != nil {
+		return x.xxx_hidden_Erased
+	}
+	return false
+}
+
+func (x *ConnectionEraseResponse) SetErased(v bool) {
+	x.xxx_hidden_Erased = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+}
+
+func (x *ConnectionEraseResponse) HasErased() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *ConnectionEraseResponse) ClearErased() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Erased = false
+}
+
+type ConnectionEraseResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Erased is whether this call is the one that erased the row.
+	//
+	// False for a row that was already gone, was never there, or is out
+	// of this caller's reach -- which are one answer on purpose, and the
+	// reason the RPC does not fail instead.
+	Erased *bool
+}
+
+func (b0 ConnectionEraseResponse_builder) Build() *ConnectionEraseResponse {
+	m0 := &ConnectionEraseResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Erased != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		x.xxx_hidden_Erased = *b.Erased
+	}
+	return m0
+}
+
 type ConnectionListRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*ConnectionFilter   `protobuf:"bytes,1,rep,name=filters"`
@@ -1391,7 +1470,7 @@ type ConnectionListRequest struct {
 
 func (x *ConnectionListRequest) Reset() {
 	*x = ConnectionListRequest{}
-	mi := &file_app_connection_svc_g_proto_msgTypes[7]
+	mi := &file_app_connection_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1403,7 +1482,7 @@ func (x *ConnectionListRequest) String() string {
 func (*ConnectionListRequest) ProtoMessage() {}
 
 func (x *ConnectionListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_connection_svc_g_proto_msgTypes[7]
+	mi := &file_app_connection_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1486,7 +1565,7 @@ type ConnectionListResponse struct {
 
 func (x *ConnectionListResponse) Reset() {
 	*x = ConnectionListResponse{}
-	mi := &file_app_connection_svc_g_proto_msgTypes[8]
+	mi := &file_app_connection_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1498,7 +1577,7 @@ func (x *ConnectionListResponse) String() string {
 func (*ConnectionListResponse) ProtoMessage() {}
 
 func (x *ConnectionListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_connection_svc_g_proto_msgTypes[8]
+	mi := &file_app_connection_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1566,7 +1645,7 @@ type ConnectionFilter struct {
 
 func (x *ConnectionFilter) Reset() {
 	*x = ConnectionFilter{}
-	mi := &file_app_connection_svc_g_proto_msgTypes[9]
+	mi := &file_app_connection_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1578,7 +1657,7 @@ func (x *ConnectionFilter) String() string {
 func (*ConnectionFilter) ProtoMessage() {}
 
 func (x *ConnectionFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_app_connection_svc_g_proto_msgTypes[9]
+	mi := &file_app_connection_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1653,7 +1732,7 @@ var File_app_connection_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_connection_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1aapp/connection_svc.g.proto\x12\x06roster\x1a\x14app/connection.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/tenant_svc.g.proto\"\xc7\x02\n" +
+	"\x1aapp/connection_svc.g.proto\x12\x06roster\x1a\x14app/connection.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/tenant_svc.g.proto\"\xc7\x02\n" +
 	"\x14ConnectionAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x19\n" +
@@ -1705,7 +1784,9 @@ const file_app_connection_svc_g_proto_rawDesc = "" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"e\n" +
 	"\x16ConnectionApplyRequest\x12'\n" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.ConnectionRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"\x83\x01\n" +
+	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"1\n" +
+	"\x17ConnectionEraseResponse\x12\x16\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x83\x01\n" +
 	"\x15ConnectionListRequest\x122\n" +
 	"\afilters\x18\x01 \x03(\v2\x18.roster.ConnectionFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
@@ -1715,62 +1796,62 @@ const file_app_connection_svc_g_proto_rawDesc = "" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"f\n" +
 	"\x10ConnectionFilter\x12'\n" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.ConnectionRefR\x03ref\x12)\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant2\xfe\x02\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant2\x87\x03\n" +
 	"\x11ConnectionService\x127\n" +
 	"\x03Add\x12\x1c.roster.ConnectionAddRequest\x1a\x12.roster.Connection\x127\n" +
 	"\x03Get\x12\x1c.roster.ConnectionGetRequest\x1a\x12.roster.Connection\x12;\n" +
 	"\x05Patch\x12\x1e.roster.ConnectionPatchRequest\x1a\x12.roster.Connection\x12;\n" +
-	"\x05Apply\x12\x1e.roster.ConnectionApplyRequest\x1a\x12.roster.Connection\x126\n" +
-	"\x05Erase\x12\x15.roster.ConnectionRef\x1a\x16.google.protobuf.Empty\x12E\n" +
+	"\x05Apply\x12\x1e.roster.ConnectionApplyRequest\x1a\x12.roster.Connection\x12?\n" +
+	"\x05Erase\x12\x15.roster.ConnectionRef\x1a\x1f.roster.ConnectionEraseResponse\x12E\n" +
 	"\x04List\x12\x1d.roster.ConnectionListRequest\x1a\x1e.roster.ConnectionListResponseB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_connection_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_app_connection_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_app_connection_svc_g_proto_goTypes = []any{
-	(*ConnectionAddRequest)(nil),   // 0: roster.ConnectionAddRequest
-	(*ConnectionGetRequest)(nil),   // 1: roster.ConnectionGetRequest
-	(*ConnectionRef)(nil),          // 2: roster.ConnectionRef
-	(*ConnectionRefByAt)(nil),      // 3: roster.ConnectionRefByAt
-	(*ConnectionSelect)(nil),       // 4: roster.ConnectionSelect
-	(*ConnectionPatchRequest)(nil), // 5: roster.ConnectionPatchRequest
-	(*ConnectionApplyRequest)(nil), // 6: roster.ConnectionApplyRequest
-	(*ConnectionListRequest)(nil),  // 7: roster.ConnectionListRequest
-	(*ConnectionListResponse)(nil), // 8: roster.ConnectionListResponse
-	(*ConnectionFilter)(nil),       // 9: roster.ConnectionFilter
-	(*TenantRef)(nil),              // 10: roster.TenantRef
-	(*timestamppb.Timestamp)(nil),  // 11: google.protobuf.Timestamp
-	(*TenantSelect)(nil),           // 12: roster.TenantSelect
-	(*patchpb.Patch)(nil),          // 13: patch.Patch
-	(*Connection)(nil),             // 14: roster.Connection
-	(*emptypb.Empty)(nil),          // 15: google.protobuf.Empty
+	(*ConnectionAddRequest)(nil),    // 0: roster.ConnectionAddRequest
+	(*ConnectionGetRequest)(nil),    // 1: roster.ConnectionGetRequest
+	(*ConnectionRef)(nil),           // 2: roster.ConnectionRef
+	(*ConnectionRefByAt)(nil),       // 3: roster.ConnectionRefByAt
+	(*ConnectionSelect)(nil),        // 4: roster.ConnectionSelect
+	(*ConnectionPatchRequest)(nil),  // 5: roster.ConnectionPatchRequest
+	(*ConnectionApplyRequest)(nil),  // 6: roster.ConnectionApplyRequest
+	(*ConnectionEraseResponse)(nil), // 7: roster.ConnectionEraseResponse
+	(*ConnectionListRequest)(nil),   // 8: roster.ConnectionListRequest
+	(*ConnectionListResponse)(nil),  // 9: roster.ConnectionListResponse
+	(*ConnectionFilter)(nil),        // 10: roster.ConnectionFilter
+	(*TenantRef)(nil),               // 11: roster.TenantRef
+	(*timestamppb.Timestamp)(nil),   // 12: google.protobuf.Timestamp
+	(*TenantSelect)(nil),            // 13: roster.TenantSelect
+	(*patchpb.Patch)(nil),           // 14: patch.Patch
+	(*Connection)(nil),              // 15: roster.Connection
 }
 var file_app_connection_svc_g_proto_depIdxs = []int32{
-	10, // 0: roster.ConnectionAddRequest.tenant:type_name -> roster.TenantRef
-	11, // 1: roster.ConnectionAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	11, // 0: roster.ConnectionAddRequest.tenant:type_name -> roster.TenantRef
+	12, // 1: roster.ConnectionAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 2: roster.ConnectionGetRequest.ref:type_name -> roster.ConnectionRef
 	4,  // 3: roster.ConnectionGetRequest.select:type_name -> roster.ConnectionSelect
 	3,  // 4: roster.ConnectionRef.at:type_name -> roster.ConnectionRefByAt
-	10, // 5: roster.ConnectionRefByAt.tenant:type_name -> roster.TenantRef
-	12, // 6: roster.ConnectionSelect.tenant:type_name -> roster.TenantSelect
+	11, // 5: roster.ConnectionRefByAt.tenant:type_name -> roster.TenantRef
+	13, // 6: roster.ConnectionSelect.tenant:type_name -> roster.TenantSelect
 	2,  // 7: roster.ConnectionPatchRequest.ref:type_name -> roster.ConnectionRef
-	11, // 8: roster.ConnectionPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	12, // 8: roster.ConnectionPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
 	2,  // 9: roster.ConnectionApplyRequest.ref:type_name -> roster.ConnectionRef
-	13, // 10: roster.ConnectionApplyRequest.patch:type_name -> patch.Patch
-	9,  // 11: roster.ConnectionListRequest.filters:type_name -> roster.ConnectionFilter
-	14, // 12: roster.ConnectionListResponse.items:type_name -> roster.Connection
+	14, // 10: roster.ConnectionApplyRequest.patch:type_name -> patch.Patch
+	10, // 11: roster.ConnectionListRequest.filters:type_name -> roster.ConnectionFilter
+	15, // 12: roster.ConnectionListResponse.items:type_name -> roster.Connection
 	2,  // 13: roster.ConnectionFilter.ref:type_name -> roster.ConnectionRef
-	10, // 14: roster.ConnectionFilter.tenant:type_name -> roster.TenantRef
+	11, // 14: roster.ConnectionFilter.tenant:type_name -> roster.TenantRef
 	0,  // 15: roster.ConnectionService.Add:input_type -> roster.ConnectionAddRequest
 	1,  // 16: roster.ConnectionService.Get:input_type -> roster.ConnectionGetRequest
 	5,  // 17: roster.ConnectionService.Patch:input_type -> roster.ConnectionPatchRequest
 	6,  // 18: roster.ConnectionService.Apply:input_type -> roster.ConnectionApplyRequest
 	2,  // 19: roster.ConnectionService.Erase:input_type -> roster.ConnectionRef
-	7,  // 20: roster.ConnectionService.List:input_type -> roster.ConnectionListRequest
-	14, // 21: roster.ConnectionService.Add:output_type -> roster.Connection
-	14, // 22: roster.ConnectionService.Get:output_type -> roster.Connection
-	14, // 23: roster.ConnectionService.Patch:output_type -> roster.Connection
-	14, // 24: roster.ConnectionService.Apply:output_type -> roster.Connection
-	15, // 25: roster.ConnectionService.Erase:output_type -> google.protobuf.Empty
-	8,  // 26: roster.ConnectionService.List:output_type -> roster.ConnectionListResponse
+	8,  // 20: roster.ConnectionService.List:input_type -> roster.ConnectionListRequest
+	15, // 21: roster.ConnectionService.Add:output_type -> roster.Connection
+	15, // 22: roster.ConnectionService.Get:output_type -> roster.Connection
+	15, // 23: roster.ConnectionService.Patch:output_type -> roster.Connection
+	15, // 24: roster.ConnectionService.Apply:output_type -> roster.Connection
+	7,  // 25: roster.ConnectionService.Erase:output_type -> roster.ConnectionEraseResponse
+	9,  // 26: roster.ConnectionService.List:output_type -> roster.ConnectionListResponse
 	21, // [21:27] is the sub-list for method output_type
 	15, // [15:21] is the sub-list for method input_type
 	15, // [15:15] is the sub-list for extension type_name
@@ -1795,7 +1876,7 @@ func file_app_connection_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_connection_svc_g_proto_rawDesc), len(file_app_connection_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

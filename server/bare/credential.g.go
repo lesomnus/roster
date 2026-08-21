@@ -18,7 +18,6 @@ import (
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 type CredentialServiceServer struct {
@@ -416,7 +415,7 @@ func (s CredentialServiceServer) apply(ctx context.Context, ref *rstr.Credential
 	return out, nil
 }
 
-func (s CredentialServiceServer) Erase(ctx context.Context, req *rstr.CredentialRef) (*emptypb.Empty, error) {
+func (s CredentialServiceServer) Erase(ctx context.Context, req *rstr.CredentialRef) (*rstr.CredentialEraseResponse, error) {
 	p, err := CredentialPick(req)
 	if err != nil {
 		return nil, err
@@ -440,13 +439,13 @@ func (s CredentialServiceServer) Erase(ctx context.Context, req *rstr.Credential
 		v, err := st.Db.Credential.Query().Where(p).OnlyID(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
-				return &emptypb.Empty{}, nil
+				return &rstr.CredentialEraseResponse{}, nil
 			}
 			return nil, err
 		}
 
 		k = v
-		p = credential.IDEQ(v)
+		p = credential.And(p, credential.IDEQ(v))
 	}
 
 	u := st.Db.Credential.Update().Where(p)
@@ -467,7 +466,10 @@ func (s CredentialServiceServer) Erase(ctx context.Context, req *rstr.Credential
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return &emptypb.Empty{}, nil
+	res := &rstr.CredentialEraseResponse{}
+	res.SetErased(n > 0)
+
+	return res, nil
 }
 
 // CredentialPick answers with the predicate this reference selects on,

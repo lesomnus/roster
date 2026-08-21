@@ -4,8 +4,8 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
-import type { EmptySchema, Timestamp } from "@bufbuild/protobuf/wkt";
-import { file_google_protobuf_empty, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Patch } from "../../patch/patch_pb.js";
 import { file_patch_patch } from "../../patch/patch_pb.js";
 import type { Audit, AuditSchema } from "./audit_pb.js";
@@ -16,7 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/audit_svc.g.proto.
  */
 export const file_roster_payday_audit_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("Ch9yb3N0ZXIvcGF5ZGF5L2F1ZGl0X3N2Yy5nLnByb3RvEgZyb3N0ZXIitwIKD0F1ZGl0QWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIYCgl0ZW5hbnRfaWQYAiABKAxCBaoBAggCEhcKCGFjdG9yX2lkGAggASgMQgWqAQIIAhIXCgh0cmFjZV9pZBgJIAEoDEIFqgECCAISFQoGYWN0aW9uGAogASgJQgWqAQIIAhIYCglvYmplY3RfaWQYCyABKAxCBaoBAggCEhQKBXBhdGNoGAwgASgMQgWqAQIIAhIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEh4KD2FjdG9yX3RlbmFudF9pZBgQIAEoDEIFqgECCAISFAoFdmFsdWUYESABKAxCBaoBAggCEh0KFWNvdW50ZXJwYXJ0X3RlbmFudF9pZBgSIAEoDCJVCg9BdWRpdEdldFJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLkF1ZGl0UmVmEiMKBnNlbGVjdBgCIAEoCzITLnJvc3Rlci5BdWRpdFNlbGVjdCIfCghBdWRpdFJlZhIMCgJpZBgBIAEoDEgAQgUKA2tleSLgAQoLQXVkaXRTZWxlY3QSCwoDYWxsGAEgASgIEhEKCXRlbmFudF9pZBgCIAEoCBIQCghhY3Rvcl9pZBgIIAEoCBIQCgh0cmFjZV9pZBgJIAEoCBIOCgZhY3Rpb24YCiABKAgSEQoJb2JqZWN0X2lkGAsgASgIEg0KBXBhdGNoGAwgASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCBIXCg9hY3Rvcl90ZW5hbnRfaWQYECABKAgSDQoFdmFsdWUYESABKAgSHQoVY291bnRlcnBhcnRfdGVuYW50X2lkGBIgASgIIoYCChFBdWRpdFBhdGNoUmVxdWVzdBIdCgNyZWYYASABKAsyEC5yb3N0ZXIuQXVkaXRSZWYSEQoJdGVuYW50X2lkGAQgASgMEhAKCGFjdG9yX2lkGBAgASgMEhAKCHRyYWNlX2lkGBIgASgMEg4KBmFjdGlvbhgUIAEoCRIRCglvYmplY3RfaWQYFiABKAwSDQoFcGF0Y2gYGCABKAwSFwoPYWN0b3JfdGVuYW50X2lkGCAgASgMEg0KBXZhbHVlGCIgASgMEh0KFWNvdW50ZXJwYXJ0X3RlbmFudF9pZBgkIAEoDBIiChpjb3VudGVycGFydF90ZW5hbnRfaWRfbnVsbBglIAEoCCJPChFBdWRpdEFwcGx5UmVxdWVzdBIdCgNyZWYYASABKAsyEC5yb3N0ZXIuQXVkaXRSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCJjChBBdWRpdExpc3RSZXF1ZXN0EiQKB2ZpbHRlcnMYASADKAsyEy5yb3N0ZXIuQXVkaXRGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIkYKEUF1ZGl0TGlzdFJlc3BvbnNlEhwKBWl0ZW1zGAEgAygLMg0ucm9zdGVyLkF1ZGl0EhMKBG5leHQYAiABKAlCBaoBAggCIn0KC0F1ZGl0RmlsdGVyEhEKCW9iamVjdF9pZBgBIAEoDBIQCghhY3Rvcl9pZBgCIAEoDBIRCgl0ZW5hbnRfaWQYAyABKAwSFwoPYWN0b3JfdGVuYW50X2lkGAQgASgMEh0KFWNvdW50ZXJwYXJ0X3RlbmFudF9pZBgFIAEoDDLCAgoMQXVkaXRTZXJ2aWNlEi0KA0FkZBIXLnJvc3Rlci5BdWRpdEFkZFJlcXVlc3QaDS5yb3N0ZXIuQXVkaXQSLQoDR2V0Ehcucm9zdGVyLkF1ZGl0R2V0UmVxdWVzdBoNLnJvc3Rlci5BdWRpdBIxCgVQYXRjaBIZLnJvc3Rlci5BdWRpdFBhdGNoUmVxdWVzdBoNLnJvc3Rlci5BdWRpdBIxCgVBcHBseRIZLnJvc3Rlci5BdWRpdEFwcGx5UmVxdWVzdBoNLnJvc3Rlci5BdWRpdBIxCgVFcmFzZRIQLnJvc3Rlci5BdWRpdFJlZhoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eRI7CgRMaXN0Ehgucm9zdGVyLkF1ZGl0TGlzdFJlcXVlc3QaGS5yb3N0ZXIuQXVkaXRMaXN0UmVzcG9uc2VCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_empty, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_audit]);
+  fileDesc("Ch9yb3N0ZXIvcGF5ZGF5L2F1ZGl0X3N2Yy5nLnByb3RvEgZyb3N0ZXIitwIKD0F1ZGl0QWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIYCgl0ZW5hbnRfaWQYAiABKAxCBaoBAggCEhcKCGFjdG9yX2lkGAggASgMQgWqAQIIAhIXCgh0cmFjZV9pZBgJIAEoDEIFqgECCAISFQoGYWN0aW9uGAogASgJQgWqAQIIAhIYCglvYmplY3RfaWQYCyABKAxCBaoBAggCEhQKBXBhdGNoGAwgASgMQgWqAQIIAhIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEh4KD2FjdG9yX3RlbmFudF9pZBgQIAEoDEIFqgECCAISFAoFdmFsdWUYESABKAxCBaoBAggCEh0KFWNvdW50ZXJwYXJ0X3RlbmFudF9pZBgSIAEoDCJVCg9BdWRpdEdldFJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLkF1ZGl0UmVmEiMKBnNlbGVjdBgCIAEoCzITLnJvc3Rlci5BdWRpdFNlbGVjdCIfCghBdWRpdFJlZhIMCgJpZBgBIAEoDEgAQgUKA2tleSLgAQoLQXVkaXRTZWxlY3QSCwoDYWxsGAEgASgIEhEKCXRlbmFudF9pZBgCIAEoCBIQCghhY3Rvcl9pZBgIIAEoCBIQCgh0cmFjZV9pZBgJIAEoCBIOCgZhY3Rpb24YCiABKAgSEQoJb2JqZWN0X2lkGAsgASgIEg0KBXBhdGNoGAwgASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCBIXCg9hY3Rvcl90ZW5hbnRfaWQYECABKAgSDQoFdmFsdWUYESABKAgSHQoVY291bnRlcnBhcnRfdGVuYW50X2lkGBIgASgIIoYCChFBdWRpdFBhdGNoUmVxdWVzdBIdCgNyZWYYASABKAsyEC5yb3N0ZXIuQXVkaXRSZWYSEQoJdGVuYW50X2lkGAQgASgMEhAKCGFjdG9yX2lkGBAgASgMEhAKCHRyYWNlX2lkGBIgASgMEg4KBmFjdGlvbhgUIAEoCRIRCglvYmplY3RfaWQYFiABKAwSDQoFcGF0Y2gYGCABKAwSFwoPYWN0b3JfdGVuYW50X2lkGCAgASgMEg0KBXZhbHVlGCIgASgMEh0KFWNvdW50ZXJwYXJ0X3RlbmFudF9pZBgkIAEoDBIiChpjb3VudGVycGFydF90ZW5hbnRfaWRfbnVsbBglIAEoCCJPChFBdWRpdEFwcGx5UmVxdWVzdBIdCgNyZWYYASABKAsyEC5yb3N0ZXIuQXVkaXRSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIkChJBdWRpdEVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIImMKEEF1ZGl0TGlzdFJlcXVlc3QSJAoHZmlsdGVycxgBIAMoCzITLnJvc3Rlci5BdWRpdEZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAIiRgoRQXVkaXRMaXN0UmVzcG9uc2USHAoFaXRlbXMYASADKAsyDS5yb3N0ZXIuQXVkaXQSEwoEbmV4dBgCIAEoCUIFqgECCAIifQoLQXVkaXRGaWx0ZXISEQoJb2JqZWN0X2lkGAEgASgMEhAKCGFjdG9yX2lkGAIgASgMEhEKCXRlbmFudF9pZBgDIAEoDBIXCg9hY3Rvcl90ZW5hbnRfaWQYBCABKAwSHQoVY291bnRlcnBhcnRfdGVuYW50X2lkGAUgASgMMsYCCgxBdWRpdFNlcnZpY2USLQoDQWRkEhcucm9zdGVyLkF1ZGl0QWRkUmVxdWVzdBoNLnJvc3Rlci5BdWRpdBItCgNHZXQSFy5yb3N0ZXIuQXVkaXRHZXRSZXF1ZXN0Gg0ucm9zdGVyLkF1ZGl0EjEKBVBhdGNoEhkucm9zdGVyLkF1ZGl0UGF0Y2hSZXF1ZXN0Gg0ucm9zdGVyLkF1ZGl0EjEKBUFwcGx5Ehkucm9zdGVyLkF1ZGl0QXBwbHlSZXF1ZXN0Gg0ucm9zdGVyLkF1ZGl0EjUKBUVyYXNlEhAucm9zdGVyLkF1ZGl0UmVmGhoucm9zdGVyLkF1ZGl0RXJhc2VSZXNwb25zZRI7CgRMaXN0Ehgucm9zdGVyLkF1ZGl0TGlzdFJlcXVlc3QaGS5yb3N0ZXIuQXVkaXRMaXN0UmVzcG9uc2VCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_audit]);
 
 /**
  * @generated from message roster.AuditAddRequest
@@ -292,6 +292,29 @@ export const AuditApplyRequestSchema: GenMessage<AuditApplyRequest> = /*@__PURE_
   messageDesc(file_roster_payday_audit_svc_g, 5);
 
 /**
+ * @generated from message roster.AuditEraseResponse
+ */
+export type AuditEraseResponse = Message<"roster.AuditEraseResponse"> & {
+  /**
+   * Erased is whether this call is the one that erased the row.
+   *
+   * False for a row that was already gone, was never there, or is out
+   * of this caller's reach -- which are one answer on purpose, and the
+   * reason the RPC does not fail instead.
+   *
+   * @generated from field: bool erased = 1;
+   */
+  erased: boolean;
+};
+
+/**
+ * Describes the message roster.AuditEraseResponse.
+ * Use `create(AuditEraseResponseSchema)` to create a new message.
+ */
+export const AuditEraseResponseSchema: GenMessage<AuditEraseResponse> = /*@__PURE__*/
+  messageDesc(file_roster_payday_audit_svc_g, 6);
+
+/**
  * @generated from message roster.AuditListRequest
  */
 export type AuditListRequest = Message<"roster.AuditListRequest"> & {
@@ -328,7 +351,7 @@ export type AuditListRequest = Message<"roster.AuditListRequest"> & {
  * Use `create(AuditListRequestSchema)` to create a new message.
  */
 export const AuditListRequestSchema: GenMessage<AuditListRequest> = /*@__PURE__*/
-  messageDesc(file_roster_payday_audit_svc_g, 6);
+  messageDesc(file_roster_payday_audit_svc_g, 7);
 
 /**
  * @generated from message roster.AuditListResponse
@@ -358,7 +381,7 @@ export type AuditListResponse = Message<"roster.AuditListResponse"> & {
  * Use `create(AuditListResponseSchema)` to create a new message.
  */
 export const AuditListResponseSchema: GenMessage<AuditListResponse> = /*@__PURE__*/
-  messageDesc(file_roster_payday_audit_svc_g, 7);
+  messageDesc(file_roster_payday_audit_svc_g, 8);
 
 /**
  * @generated from message roster.AuditFilter
@@ -395,7 +418,7 @@ export type AuditFilter = Message<"roster.AuditFilter"> & {
  * Use `create(AuditFilterSchema)` to create a new message.
  */
 export const AuditFilterSchema: GenMessage<AuditFilter> = /*@__PURE__*/
-  messageDesc(file_roster_payday_audit_svc_g, 8);
+  messageDesc(file_roster_payday_audit_svc_g, 9);
 
 /**
  * @generated from service roster.AuditService
@@ -449,7 +472,7 @@ export const AuditService: GenService<{
   erase: {
     methodKind: "unary";
     input: typeof AuditRefSchema;
-    output: typeof EmptySchema;
+    output: typeof AuditEraseResponseSchema;
   },
   /**
    * List reads Audits a page at a time.

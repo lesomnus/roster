@@ -11,7 +11,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -41,7 +40,7 @@ type RoleServiceClient interface {
 	// Apply applies a patch document to an existing Role
 	Apply(ctx context.Context, in *RoleApplyRequest, opts ...grpc.CallOption) (*Role, error)
 	// Erase deletes a Role
-	Erase(ctx context.Context, in *RoleRef, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Erase(ctx context.Context, in *RoleRef, opts ...grpc.CallOption) (*RoleEraseResponse, error)
 	// List reads Roles a page at a time.
 	List(ctx context.Context, in *RoleListRequest, opts ...grpc.CallOption) (*RoleListResponse, error)
 }
@@ -94,9 +93,9 @@ func (c *roleServiceClient) Apply(ctx context.Context, in *RoleApplyRequest, opt
 	return out, nil
 }
 
-func (c *roleServiceClient) Erase(ctx context.Context, in *RoleRef, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *roleServiceClient) Erase(ctx context.Context, in *RoleRef, opts ...grpc.CallOption) (*RoleEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
+	out := new(RoleEraseResponse)
 	err := c.cc.Invoke(ctx, RoleService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -127,7 +126,7 @@ type RoleServiceServer interface {
 	// Apply applies a patch document to an existing Role
 	Apply(context.Context, *RoleApplyRequest) (*Role, error)
 	// Erase deletes a Role
-	Erase(context.Context, *RoleRef) (*emptypb.Empty, error)
+	Erase(context.Context, *RoleRef) (*RoleEraseResponse, error)
 	// List reads Roles a page at a time.
 	List(context.Context, *RoleListRequest) (*RoleListResponse, error)
 	mustEmbedUnimplementedRoleServiceServer()
@@ -152,7 +151,7 @@ func (UnimplementedRoleServiceServer) Patch(context.Context, *RolePatchRequest) 
 func (UnimplementedRoleServiceServer) Apply(context.Context, *RoleApplyRequest) (*Role, error) {
 	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
-func (UnimplementedRoleServiceServer) Erase(context.Context, *RoleRef) (*emptypb.Empty, error) {
+func (UnimplementedRoleServiceServer) Erase(context.Context, *RoleRef) (*RoleEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedRoleServiceServer) List(context.Context, *RoleListRequest) (*RoleListResponse, error) {
@@ -345,7 +344,7 @@ type BindingServiceClient interface {
 	// Apply applies a patch document to an existing Binding
 	Apply(ctx context.Context, in *BindingApplyRequest, opts ...grpc.CallOption) (*Binding, error)
 	// Erase deletes a Binding
-	Erase(ctx context.Context, in *BindingRef, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Erase(ctx context.Context, in *BindingRef, opts ...grpc.CallOption) (*BindingEraseResponse, error)
 	// List reads Bindings a page at a time.
 	List(ctx context.Context, in *BindingListRequest, opts ...grpc.CallOption) (*BindingListResponse, error)
 }
@@ -398,9 +397,9 @@ func (c *bindingServiceClient) Apply(ctx context.Context, in *BindingApplyReques
 	return out, nil
 }
 
-func (c *bindingServiceClient) Erase(ctx context.Context, in *BindingRef, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *bindingServiceClient) Erase(ctx context.Context, in *BindingRef, opts ...grpc.CallOption) (*BindingEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
+	out := new(BindingEraseResponse)
 	err := c.cc.Invoke(ctx, BindingService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -431,7 +430,7 @@ type BindingServiceServer interface {
 	// Apply applies a patch document to an existing Binding
 	Apply(context.Context, *BindingApplyRequest) (*Binding, error)
 	// Erase deletes a Binding
-	Erase(context.Context, *BindingRef) (*emptypb.Empty, error)
+	Erase(context.Context, *BindingRef) (*BindingEraseResponse, error)
 	// List reads Bindings a page at a time.
 	List(context.Context, *BindingListRequest) (*BindingListResponse, error)
 	mustEmbedUnimplementedBindingServiceServer()
@@ -456,7 +455,7 @@ func (UnimplementedBindingServiceServer) Patch(context.Context, *BindingPatchReq
 func (UnimplementedBindingServiceServer) Apply(context.Context, *BindingApplyRequest) (*Binding, error) {
 	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
-func (UnimplementedBindingServiceServer) Erase(context.Context, *BindingRef) (*emptypb.Empty, error) {
+func (UnimplementedBindingServiceServer) Erase(context.Context, *BindingRef) (*BindingEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedBindingServiceServer) List(context.Context, *BindingListRequest) (*BindingListResponse, error) {

@@ -10,7 +10,6 @@ import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	unsafe "unsafe"
@@ -984,6 +983,86 @@ func (b0 HostApplyRequest_builder) Build() *HostApplyRequest {
 	return m0
 }
 
+type HostEraseResponse struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *HostEraseResponse) Reset() {
+	*x = HostEraseResponse{}
+	mi := &file_app_host_svc_g_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HostEraseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HostEraseResponse) ProtoMessage() {}
+
+func (x *HostEraseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_app_host_svc_g_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *HostEraseResponse) GetErased() bool {
+	if x != nil {
+		return x.xxx_hidden_Erased
+	}
+	return false
+}
+
+func (x *HostEraseResponse) SetErased(v bool) {
+	x.xxx_hidden_Erased = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+}
+
+func (x *HostEraseResponse) HasErased() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *HostEraseResponse) ClearErased() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Erased = false
+}
+
+type HostEraseResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Erased is whether this call is the one that erased the row.
+	//
+	// False for a row that was already gone, was never there, or is out
+	// of this caller's reach -- which are one answer on purpose, and the
+	// reason the RPC does not fail instead.
+	Erased *bool
+}
+
+func (b0 HostEraseResponse_builder) Build() *HostEraseResponse {
+	m0 := &HostEraseResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Erased != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		x.xxx_hidden_Erased = *b.Erased
+	}
+	return m0
+}
+
 type HostListRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*HostFilter         `protobuf:"bytes,1,rep,name=filters"`
@@ -995,7 +1074,7 @@ type HostListRequest struct {
 
 func (x *HostListRequest) Reset() {
 	*x = HostListRequest{}
-	mi := &file_app_host_svc_g_proto_msgTypes[6]
+	mi := &file_app_host_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1007,7 +1086,7 @@ func (x *HostListRequest) String() string {
 func (*HostListRequest) ProtoMessage() {}
 
 func (x *HostListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_host_svc_g_proto_msgTypes[6]
+	mi := &file_app_host_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1090,7 +1169,7 @@ type HostListResponse struct {
 
 func (x *HostListResponse) Reset() {
 	*x = HostListResponse{}
-	mi := &file_app_host_svc_g_proto_msgTypes[7]
+	mi := &file_app_host_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1102,7 +1181,7 @@ func (x *HostListResponse) String() string {
 func (*HostListResponse) ProtoMessage() {}
 
 func (x *HostListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_host_svc_g_proto_msgTypes[7]
+	mi := &file_app_host_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1170,7 +1249,7 @@ type HostFilter struct {
 
 func (x *HostFilter) Reset() {
 	*x = HostFilter{}
-	mi := &file_app_host_svc_g_proto_msgTypes[8]
+	mi := &file_app_host_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1182,7 +1261,7 @@ func (x *HostFilter) String() string {
 func (*HostFilter) ProtoMessage() {}
 
 func (x *HostFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_app_host_svc_g_proto_msgTypes[8]
+	mi := &file_app_host_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1269,7 +1348,7 @@ type MailDomainAddRequest struct {
 
 func (x *MailDomainAddRequest) Reset() {
 	*x = MailDomainAddRequest{}
-	mi := &file_app_host_svc_g_proto_msgTypes[9]
+	mi := &file_app_host_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1281,7 +1360,7 @@ func (x *MailDomainAddRequest) String() string {
 func (*MailDomainAddRequest) ProtoMessage() {}
 
 func (x *MailDomainAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_host_svc_g_proto_msgTypes[9]
+	mi := &file_app_host_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1433,7 +1512,7 @@ type MailDomainGetRequest struct {
 
 func (x *MailDomainGetRequest) Reset() {
 	*x = MailDomainGetRequest{}
-	mi := &file_app_host_svc_g_proto_msgTypes[10]
+	mi := &file_app_host_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1445,7 +1524,7 @@ func (x *MailDomainGetRequest) String() string {
 func (*MailDomainGetRequest) ProtoMessage() {}
 
 func (x *MailDomainGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_host_svc_g_proto_msgTypes[10]
+	mi := &file_app_host_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1525,7 +1604,7 @@ type MailDomainRef struct {
 
 func (x *MailDomainRef) Reset() {
 	*x = MailDomainRef{}
-	mi := &file_app_host_svc_g_proto_msgTypes[11]
+	mi := &file_app_host_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1537,7 +1616,7 @@ func (x *MailDomainRef) String() string {
 func (*MailDomainRef) ProtoMessage() {}
 
 func (x *MailDomainRef) ProtoReflect() protoreflect.Message {
-	mi := &file_app_host_svc_g_proto_msgTypes[11]
+	mi := &file_app_host_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1663,7 +1742,7 @@ func (b0 MailDomainRef_builder) Build() *MailDomainRef {
 type case_MailDomainRef_Key protoreflect.FieldNumber
 
 func (x case_MailDomainRef_Key) String() string {
-	md := file_app_host_svc_g_proto_msgTypes[11].Descriptor()
+	md := file_app_host_svc_g_proto_msgTypes[12].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -1698,7 +1777,7 @@ type MailDomainRefByAt struct {
 
 func (x *MailDomainRefByAt) Reset() {
 	*x = MailDomainRefByAt{}
-	mi := &file_app_host_svc_g_proto_msgTypes[12]
+	mi := &file_app_host_svc_g_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1710,7 +1789,7 @@ func (x *MailDomainRefByAt) String() string {
 func (*MailDomainRefByAt) ProtoMessage() {}
 
 func (x *MailDomainRefByAt) ProtoReflect() protoreflect.Message {
-	mi := &file_app_host_svc_g_proto_msgTypes[12]
+	mi := &file_app_host_svc_g_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1807,7 +1886,7 @@ type MailDomainSelect struct {
 
 func (x *MailDomainSelect) Reset() {
 	*x = MailDomainSelect{}
-	mi := &file_app_host_svc_g_proto_msgTypes[13]
+	mi := &file_app_host_svc_g_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1819,7 +1898,7 @@ func (x *MailDomainSelect) String() string {
 func (*MailDomainSelect) ProtoMessage() {}
 
 func (x *MailDomainSelect) ProtoReflect() protoreflect.Message {
-	mi := &file_app_host_svc_g_proto_msgTypes[13]
+	mi := &file_app_host_svc_g_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2085,7 +2164,7 @@ type MailDomainPatchRequest struct {
 
 func (x *MailDomainPatchRequest) Reset() {
 	*x = MailDomainPatchRequest{}
-	mi := &file_app_host_svc_g_proto_msgTypes[14]
+	mi := &file_app_host_svc_g_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2097,7 +2176,7 @@ func (x *MailDomainPatchRequest) String() string {
 func (*MailDomainPatchRequest) ProtoMessage() {}
 
 func (x *MailDomainPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_host_svc_g_proto_msgTypes[14]
+	mi := &file_app_host_svc_g_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2315,7 +2394,7 @@ type MailDomainApplyRequest struct {
 
 func (x *MailDomainApplyRequest) Reset() {
 	*x = MailDomainApplyRequest{}
-	mi := &file_app_host_svc_g_proto_msgTypes[15]
+	mi := &file_app_host_svc_g_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2327,7 +2406,7 @@ func (x *MailDomainApplyRequest) String() string {
 func (*MailDomainApplyRequest) ProtoMessage() {}
 
 func (x *MailDomainApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_host_svc_g_proto_msgTypes[15]
+	mi := &file_app_host_svc_g_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2398,6 +2477,86 @@ func (b0 MailDomainApplyRequest_builder) Build() *MailDomainApplyRequest {
 	return m0
 }
 
+type MailDomainEraseResponse struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *MailDomainEraseResponse) Reset() {
+	*x = MailDomainEraseResponse{}
+	mi := &file_app_host_svc_g_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MailDomainEraseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MailDomainEraseResponse) ProtoMessage() {}
+
+func (x *MailDomainEraseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_app_host_svc_g_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *MailDomainEraseResponse) GetErased() bool {
+	if x != nil {
+		return x.xxx_hidden_Erased
+	}
+	return false
+}
+
+func (x *MailDomainEraseResponse) SetErased(v bool) {
+	x.xxx_hidden_Erased = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+}
+
+func (x *MailDomainEraseResponse) HasErased() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *MailDomainEraseResponse) ClearErased() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Erased = false
+}
+
+type MailDomainEraseResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Erased is whether this call is the one that erased the row.
+	//
+	// False for a row that was already gone, was never there, or is out
+	// of this caller's reach -- which are one answer on purpose, and the
+	// reason the RPC does not fail instead.
+	Erased *bool
+}
+
+func (b0 MailDomainEraseResponse_builder) Build() *MailDomainEraseResponse {
+	m0 := &MailDomainEraseResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Erased != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		x.xxx_hidden_Erased = *b.Erased
+	}
+	return m0
+}
+
 type MailDomainListRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*MailDomainFilter   `protobuf:"bytes,1,rep,name=filters"`
@@ -2409,7 +2568,7 @@ type MailDomainListRequest struct {
 
 func (x *MailDomainListRequest) Reset() {
 	*x = MailDomainListRequest{}
-	mi := &file_app_host_svc_g_proto_msgTypes[16]
+	mi := &file_app_host_svc_g_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2421,7 +2580,7 @@ func (x *MailDomainListRequest) String() string {
 func (*MailDomainListRequest) ProtoMessage() {}
 
 func (x *MailDomainListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_host_svc_g_proto_msgTypes[16]
+	mi := &file_app_host_svc_g_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2504,7 +2663,7 @@ type MailDomainListResponse struct {
 
 func (x *MailDomainListResponse) Reset() {
 	*x = MailDomainListResponse{}
-	mi := &file_app_host_svc_g_proto_msgTypes[17]
+	mi := &file_app_host_svc_g_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2516,7 +2675,7 @@ func (x *MailDomainListResponse) String() string {
 func (*MailDomainListResponse) ProtoMessage() {}
 
 func (x *MailDomainListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_host_svc_g_proto_msgTypes[17]
+	mi := &file_app_host_svc_g_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2584,7 +2743,7 @@ type MailDomainFilter struct {
 
 func (x *MailDomainFilter) Reset() {
 	*x = MailDomainFilter{}
-	mi := &file_app_host_svc_g_proto_msgTypes[18]
+	mi := &file_app_host_svc_g_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2596,7 +2755,7 @@ func (x *MailDomainFilter) String() string {
 func (*MailDomainFilter) ProtoMessage() {}
 
 func (x *MailDomainFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_app_host_svc_g_proto_msgTypes[18]
+	mi := &file_app_host_svc_g_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2671,7 +2830,7 @@ var File_app_host_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_host_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/host_svc.g.proto\x12\x06roster\x1a\x0eapp/host.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/tenant_svc.g.proto\"\xc0\x01\n" +
+	"\x14app/host_svc.g.proto\x12\x06roster\x1a\x0eapp/host.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/tenant_svc.g.proto\"\xc0\x01\n" +
 	"\x0eHostAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x19\n" +
@@ -2704,7 +2863,9 @@ const file_app_host_svc_g_proto_rawDesc = "" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"Y\n" +
 	"\x10HostApplyRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.roster.HostRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"w\n" +
+	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"+\n" +
+	"\x11HostEraseResponse\x12\x16\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"w\n" +
 	"\x0fHostListRequest\x12,\n" +
 	"\afilters\x18\x01 \x03(\v2\x12.roster.HostFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
@@ -2753,7 +2914,9 @@ const file_app_host_svc_g_proto_rawDesc = "" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"e\n" +
 	"\x16MailDomainApplyRequest\x12'\n" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.MailDomainRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"\x83\x01\n" +
+	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"1\n" +
+	"\x17MailDomainEraseResponse\x12\x16\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x83\x01\n" +
 	"\x15MailDomainListRequest\x122\n" +
 	"\afilters\x18\x01 \x03(\v2\x18.roster.MailDomainFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
@@ -2763,104 +2926,105 @@ const file_app_host_svc_g_proto_rawDesc = "" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"f\n" +
 	"\x10MailDomainFilter\x12'\n" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.MailDomainRefR\x03ref\x12)\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant2\xb6\x02\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant2\xb9\x02\n" +
 	"\vHostService\x12+\n" +
 	"\x03Add\x12\x16.roster.HostAddRequest\x1a\f.roster.Host\x12+\n" +
 	"\x03Get\x12\x16.roster.HostGetRequest\x1a\f.roster.Host\x12/\n" +
 	"\x05Patch\x12\x18.roster.HostPatchRequest\x1a\f.roster.Host\x12/\n" +
-	"\x05Apply\x12\x18.roster.HostApplyRequest\x1a\f.roster.Host\x120\n" +
-	"\x05Erase\x12\x0f.roster.HostRef\x1a\x16.google.protobuf.Empty\x129\n" +
-	"\x04List\x12\x17.roster.HostListRequest\x1a\x18.roster.HostListResponse2\xfe\x02\n" +
+	"\x05Apply\x12\x18.roster.HostApplyRequest\x1a\f.roster.Host\x123\n" +
+	"\x05Erase\x12\x0f.roster.HostRef\x1a\x19.roster.HostEraseResponse\x129\n" +
+	"\x04List\x12\x17.roster.HostListRequest\x1a\x18.roster.HostListResponse2\x87\x03\n" +
 	"\x11MailDomainService\x127\n" +
 	"\x03Add\x12\x1c.roster.MailDomainAddRequest\x1a\x12.roster.MailDomain\x127\n" +
 	"\x03Get\x12\x1c.roster.MailDomainGetRequest\x1a\x12.roster.MailDomain\x12;\n" +
 	"\x05Patch\x12\x1e.roster.MailDomainPatchRequest\x1a\x12.roster.MailDomain\x12;\n" +
-	"\x05Apply\x12\x1e.roster.MailDomainApplyRequest\x1a\x12.roster.MailDomain\x126\n" +
-	"\x05Erase\x12\x15.roster.MailDomainRef\x1a\x16.google.protobuf.Empty\x12E\n" +
+	"\x05Apply\x12\x1e.roster.MailDomainApplyRequest\x1a\x12.roster.MailDomain\x12?\n" +
+	"\x05Erase\x12\x15.roster.MailDomainRef\x1a\x1f.roster.MailDomainEraseResponse\x12E\n" +
 	"\x04List\x12\x1d.roster.MailDomainListRequest\x1a\x1e.roster.MailDomainListResponseB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_host_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_app_host_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
 var file_app_host_svc_g_proto_goTypes = []any{
-	(*HostAddRequest)(nil),         // 0: roster.HostAddRequest
-	(*HostGetRequest)(nil),         // 1: roster.HostGetRequest
-	(*HostRef)(nil),                // 2: roster.HostRef
-	(*HostSelect)(nil),             // 3: roster.HostSelect
-	(*HostPatchRequest)(nil),       // 4: roster.HostPatchRequest
-	(*HostApplyRequest)(nil),       // 5: roster.HostApplyRequest
-	(*HostListRequest)(nil),        // 6: roster.HostListRequest
-	(*HostListResponse)(nil),       // 7: roster.HostListResponse
-	(*HostFilter)(nil),             // 8: roster.HostFilter
-	(*MailDomainAddRequest)(nil),   // 9: roster.MailDomainAddRequest
-	(*MailDomainGetRequest)(nil),   // 10: roster.MailDomainGetRequest
-	(*MailDomainRef)(nil),          // 11: roster.MailDomainRef
-	(*MailDomainRefByAt)(nil),      // 12: roster.MailDomainRefByAt
-	(*MailDomainSelect)(nil),       // 13: roster.MailDomainSelect
-	(*MailDomainPatchRequest)(nil), // 14: roster.MailDomainPatchRequest
-	(*MailDomainApplyRequest)(nil), // 15: roster.MailDomainApplyRequest
-	(*MailDomainListRequest)(nil),  // 16: roster.MailDomainListRequest
-	(*MailDomainListResponse)(nil), // 17: roster.MailDomainListResponse
-	(*MailDomainFilter)(nil),       // 18: roster.MailDomainFilter
-	(*TenantRef)(nil),              // 19: roster.TenantRef
-	(*timestamppb.Timestamp)(nil),  // 20: google.protobuf.Timestamp
-	(*TenantSelect)(nil),           // 21: roster.TenantSelect
-	(*patchpb.Patch)(nil),          // 22: patch.Patch
-	(*Host)(nil),                   // 23: roster.Host
-	(*MailDomain)(nil),             // 24: roster.MailDomain
-	(*emptypb.Empty)(nil),          // 25: google.protobuf.Empty
+	(*HostAddRequest)(nil),          // 0: roster.HostAddRequest
+	(*HostGetRequest)(nil),          // 1: roster.HostGetRequest
+	(*HostRef)(nil),                 // 2: roster.HostRef
+	(*HostSelect)(nil),              // 3: roster.HostSelect
+	(*HostPatchRequest)(nil),        // 4: roster.HostPatchRequest
+	(*HostApplyRequest)(nil),        // 5: roster.HostApplyRequest
+	(*HostEraseResponse)(nil),       // 6: roster.HostEraseResponse
+	(*HostListRequest)(nil),         // 7: roster.HostListRequest
+	(*HostListResponse)(nil),        // 8: roster.HostListResponse
+	(*HostFilter)(nil),              // 9: roster.HostFilter
+	(*MailDomainAddRequest)(nil),    // 10: roster.MailDomainAddRequest
+	(*MailDomainGetRequest)(nil),    // 11: roster.MailDomainGetRequest
+	(*MailDomainRef)(nil),           // 12: roster.MailDomainRef
+	(*MailDomainRefByAt)(nil),       // 13: roster.MailDomainRefByAt
+	(*MailDomainSelect)(nil),        // 14: roster.MailDomainSelect
+	(*MailDomainPatchRequest)(nil),  // 15: roster.MailDomainPatchRequest
+	(*MailDomainApplyRequest)(nil),  // 16: roster.MailDomainApplyRequest
+	(*MailDomainEraseResponse)(nil), // 17: roster.MailDomainEraseResponse
+	(*MailDomainListRequest)(nil),   // 18: roster.MailDomainListRequest
+	(*MailDomainListResponse)(nil),  // 19: roster.MailDomainListResponse
+	(*MailDomainFilter)(nil),        // 20: roster.MailDomainFilter
+	(*TenantRef)(nil),               // 21: roster.TenantRef
+	(*timestamppb.Timestamp)(nil),   // 22: google.protobuf.Timestamp
+	(*TenantSelect)(nil),            // 23: roster.TenantSelect
+	(*patchpb.Patch)(nil),           // 24: patch.Patch
+	(*Host)(nil),                    // 25: roster.Host
+	(*MailDomain)(nil),              // 26: roster.MailDomain
 }
 var file_app_host_svc_g_proto_depIdxs = []int32{
-	19, // 0: roster.HostAddRequest.tenant:type_name -> roster.TenantRef
-	20, // 1: roster.HostAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	21, // 0: roster.HostAddRequest.tenant:type_name -> roster.TenantRef
+	22, // 1: roster.HostAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 2: roster.HostGetRequest.ref:type_name -> roster.HostRef
 	3,  // 3: roster.HostGetRequest.select:type_name -> roster.HostSelect
-	21, // 4: roster.HostSelect.tenant:type_name -> roster.TenantSelect
+	23, // 4: roster.HostSelect.tenant:type_name -> roster.TenantSelect
 	2,  // 5: roster.HostPatchRequest.ref:type_name -> roster.HostRef
-	20, // 6: roster.HostPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	22, // 6: roster.HostPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
 	2,  // 7: roster.HostApplyRequest.ref:type_name -> roster.HostRef
-	22, // 8: roster.HostApplyRequest.patch:type_name -> patch.Patch
-	8,  // 9: roster.HostListRequest.filters:type_name -> roster.HostFilter
-	23, // 10: roster.HostListResponse.items:type_name -> roster.Host
+	24, // 8: roster.HostApplyRequest.patch:type_name -> patch.Patch
+	9,  // 9: roster.HostListRequest.filters:type_name -> roster.HostFilter
+	25, // 10: roster.HostListResponse.items:type_name -> roster.Host
 	2,  // 11: roster.HostFilter.ref:type_name -> roster.HostRef
-	19, // 12: roster.HostFilter.tenant:type_name -> roster.TenantRef
-	19, // 13: roster.MailDomainAddRequest.tenant:type_name -> roster.TenantRef
-	20, // 14: roster.MailDomainAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	11, // 15: roster.MailDomainGetRequest.ref:type_name -> roster.MailDomainRef
-	13, // 16: roster.MailDomainGetRequest.select:type_name -> roster.MailDomainSelect
-	12, // 17: roster.MailDomainRef.at:type_name -> roster.MailDomainRefByAt
-	19, // 18: roster.MailDomainRefByAt.tenant:type_name -> roster.TenantRef
-	21, // 19: roster.MailDomainSelect.tenant:type_name -> roster.TenantSelect
-	11, // 20: roster.MailDomainPatchRequest.ref:type_name -> roster.MailDomainRef
-	20, // 21: roster.MailDomainPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	11, // 22: roster.MailDomainApplyRequest.ref:type_name -> roster.MailDomainRef
-	22, // 23: roster.MailDomainApplyRequest.patch:type_name -> patch.Patch
-	18, // 24: roster.MailDomainListRequest.filters:type_name -> roster.MailDomainFilter
-	24, // 25: roster.MailDomainListResponse.items:type_name -> roster.MailDomain
-	11, // 26: roster.MailDomainFilter.ref:type_name -> roster.MailDomainRef
-	19, // 27: roster.MailDomainFilter.tenant:type_name -> roster.TenantRef
+	21, // 12: roster.HostFilter.tenant:type_name -> roster.TenantRef
+	21, // 13: roster.MailDomainAddRequest.tenant:type_name -> roster.TenantRef
+	22, // 14: roster.MailDomainAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	12, // 15: roster.MailDomainGetRequest.ref:type_name -> roster.MailDomainRef
+	14, // 16: roster.MailDomainGetRequest.select:type_name -> roster.MailDomainSelect
+	13, // 17: roster.MailDomainRef.at:type_name -> roster.MailDomainRefByAt
+	21, // 18: roster.MailDomainRefByAt.tenant:type_name -> roster.TenantRef
+	23, // 19: roster.MailDomainSelect.tenant:type_name -> roster.TenantSelect
+	12, // 20: roster.MailDomainPatchRequest.ref:type_name -> roster.MailDomainRef
+	22, // 21: roster.MailDomainPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	12, // 22: roster.MailDomainApplyRequest.ref:type_name -> roster.MailDomainRef
+	24, // 23: roster.MailDomainApplyRequest.patch:type_name -> patch.Patch
+	20, // 24: roster.MailDomainListRequest.filters:type_name -> roster.MailDomainFilter
+	26, // 25: roster.MailDomainListResponse.items:type_name -> roster.MailDomain
+	12, // 26: roster.MailDomainFilter.ref:type_name -> roster.MailDomainRef
+	21, // 27: roster.MailDomainFilter.tenant:type_name -> roster.TenantRef
 	0,  // 28: roster.HostService.Add:input_type -> roster.HostAddRequest
 	1,  // 29: roster.HostService.Get:input_type -> roster.HostGetRequest
 	4,  // 30: roster.HostService.Patch:input_type -> roster.HostPatchRequest
 	5,  // 31: roster.HostService.Apply:input_type -> roster.HostApplyRequest
 	2,  // 32: roster.HostService.Erase:input_type -> roster.HostRef
-	6,  // 33: roster.HostService.List:input_type -> roster.HostListRequest
-	9,  // 34: roster.MailDomainService.Add:input_type -> roster.MailDomainAddRequest
-	10, // 35: roster.MailDomainService.Get:input_type -> roster.MailDomainGetRequest
-	14, // 36: roster.MailDomainService.Patch:input_type -> roster.MailDomainPatchRequest
-	15, // 37: roster.MailDomainService.Apply:input_type -> roster.MailDomainApplyRequest
-	11, // 38: roster.MailDomainService.Erase:input_type -> roster.MailDomainRef
-	16, // 39: roster.MailDomainService.List:input_type -> roster.MailDomainListRequest
-	23, // 40: roster.HostService.Add:output_type -> roster.Host
-	23, // 41: roster.HostService.Get:output_type -> roster.Host
-	23, // 42: roster.HostService.Patch:output_type -> roster.Host
-	23, // 43: roster.HostService.Apply:output_type -> roster.Host
-	25, // 44: roster.HostService.Erase:output_type -> google.protobuf.Empty
-	7,  // 45: roster.HostService.List:output_type -> roster.HostListResponse
-	24, // 46: roster.MailDomainService.Add:output_type -> roster.MailDomain
-	24, // 47: roster.MailDomainService.Get:output_type -> roster.MailDomain
-	24, // 48: roster.MailDomainService.Patch:output_type -> roster.MailDomain
-	24, // 49: roster.MailDomainService.Apply:output_type -> roster.MailDomain
-	25, // 50: roster.MailDomainService.Erase:output_type -> google.protobuf.Empty
-	17, // 51: roster.MailDomainService.List:output_type -> roster.MailDomainListResponse
+	7,  // 33: roster.HostService.List:input_type -> roster.HostListRequest
+	10, // 34: roster.MailDomainService.Add:input_type -> roster.MailDomainAddRequest
+	11, // 35: roster.MailDomainService.Get:input_type -> roster.MailDomainGetRequest
+	15, // 36: roster.MailDomainService.Patch:input_type -> roster.MailDomainPatchRequest
+	16, // 37: roster.MailDomainService.Apply:input_type -> roster.MailDomainApplyRequest
+	12, // 38: roster.MailDomainService.Erase:input_type -> roster.MailDomainRef
+	18, // 39: roster.MailDomainService.List:input_type -> roster.MailDomainListRequest
+	25, // 40: roster.HostService.Add:output_type -> roster.Host
+	25, // 41: roster.HostService.Get:output_type -> roster.Host
+	25, // 42: roster.HostService.Patch:output_type -> roster.Host
+	25, // 43: roster.HostService.Apply:output_type -> roster.Host
+	6,  // 44: roster.HostService.Erase:output_type -> roster.HostEraseResponse
+	8,  // 45: roster.HostService.List:output_type -> roster.HostListResponse
+	26, // 46: roster.MailDomainService.Add:output_type -> roster.MailDomain
+	26, // 47: roster.MailDomainService.Get:output_type -> roster.MailDomain
+	26, // 48: roster.MailDomainService.Patch:output_type -> roster.MailDomain
+	26, // 49: roster.MailDomainService.Apply:output_type -> roster.MailDomain
+	17, // 50: roster.MailDomainService.Erase:output_type -> roster.MailDomainEraseResponse
+	19, // 51: roster.MailDomainService.List:output_type -> roster.MailDomainListResponse
 	40, // [40:52] is the sub-list for method output_type
 	28, // [28:40] is the sub-list for method input_type
 	28, // [28:28] is the sub-list for extension type_name
@@ -2879,7 +3043,7 @@ func file_app_host_svc_g_proto_init() {
 		(*hostRef_Id)(nil),
 		(*hostRef_Name)(nil),
 	}
-	file_app_host_svc_g_proto_msgTypes[11].OneofWrappers = []any{
+	file_app_host_svc_g_proto_msgTypes[12].OneofWrappers = []any{
 		(*mailDomainRef_Id)(nil),
 		(*mailDomainRef_At)(nil),
 	}
@@ -2889,7 +3053,7 @@ func file_app_host_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_host_svc_g_proto_rawDesc), len(file_app_host_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   19,
+			NumMessages:   21,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

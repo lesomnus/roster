@@ -11,7 +11,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -41,7 +40,7 @@ type DelegationServiceClient interface {
 	// Apply applies a patch document to an existing Delegation
 	Apply(ctx context.Context, in *DelegationApplyRequest, opts ...grpc.CallOption) (*Delegation, error)
 	// Erase deletes a Delegation
-	Erase(ctx context.Context, in *DelegationRef, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Erase(ctx context.Context, in *DelegationRef, opts ...grpc.CallOption) (*DelegationEraseResponse, error)
 	// List reads Delegations a page at a time.
 	List(ctx context.Context, in *DelegationListRequest, opts ...grpc.CallOption) (*DelegationListResponse, error)
 }
@@ -94,9 +93,9 @@ func (c *delegationServiceClient) Apply(ctx context.Context, in *DelegationApply
 	return out, nil
 }
 
-func (c *delegationServiceClient) Erase(ctx context.Context, in *DelegationRef, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *delegationServiceClient) Erase(ctx context.Context, in *DelegationRef, opts ...grpc.CallOption) (*DelegationEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
+	out := new(DelegationEraseResponse)
 	err := c.cc.Invoke(ctx, DelegationService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -127,7 +126,7 @@ type DelegationServiceServer interface {
 	// Apply applies a patch document to an existing Delegation
 	Apply(context.Context, *DelegationApplyRequest) (*Delegation, error)
 	// Erase deletes a Delegation
-	Erase(context.Context, *DelegationRef) (*emptypb.Empty, error)
+	Erase(context.Context, *DelegationRef) (*DelegationEraseResponse, error)
 	// List reads Delegations a page at a time.
 	List(context.Context, *DelegationListRequest) (*DelegationListResponse, error)
 	mustEmbedUnimplementedDelegationServiceServer()
@@ -152,7 +151,7 @@ func (UnimplementedDelegationServiceServer) Patch(context.Context, *DelegationPa
 func (UnimplementedDelegationServiceServer) Apply(context.Context, *DelegationApplyRequest) (*Delegation, error) {
 	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
-func (UnimplementedDelegationServiceServer) Erase(context.Context, *DelegationRef) (*emptypb.Empty, error) {
+func (UnimplementedDelegationServiceServer) Erase(context.Context, *DelegationRef) (*DelegationEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedDelegationServiceServer) List(context.Context, *DelegationListRequest) (*DelegationListResponse, error) {

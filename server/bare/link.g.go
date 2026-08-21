@@ -18,7 +18,6 @@ import (
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 type LinkServiceServer struct {
@@ -398,7 +397,7 @@ func (s LinkServiceServer) apply(ctx context.Context, ref *rstr.LinkRef, doc *pa
 	return out, nil
 }
 
-func (s LinkServiceServer) Erase(ctx context.Context, req *rstr.LinkRef) (*emptypb.Empty, error) {
+func (s LinkServiceServer) Erase(ctx context.Context, req *rstr.LinkRef) (*rstr.LinkEraseResponse, error) {
 	p, err := LinkPick(req)
 	if err != nil {
 		return nil, err
@@ -422,13 +421,13 @@ func (s LinkServiceServer) Erase(ctx context.Context, req *rstr.LinkRef) (*empty
 		v, err := st.Db.Link.Query().Where(p).OnlyID(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
-				return &emptypb.Empty{}, nil
+				return &rstr.LinkEraseResponse{}, nil
 			}
 			return nil, err
 		}
 
 		k = v
-		p = link.IDEQ(v)
+		p = link.And(p, link.IDEQ(v))
 	}
 
 	u := st.Db.Link.Update().Where(p)
@@ -449,7 +448,10 @@ func (s LinkServiceServer) Erase(ctx context.Context, req *rstr.LinkRef) (*empty
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return &emptypb.Empty{}, nil
+	res := &rstr.LinkEraseResponse{}
+	res.SetErased(n > 0)
+
+	return res, nil
 }
 
 // LinkPick answers with the predicate this reference selects on,

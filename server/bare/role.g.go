@@ -19,7 +19,6 @@ import (
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 type RoleServiceServer struct {
@@ -419,7 +418,7 @@ func (s RoleServiceServer) apply(ctx context.Context, ref *rstr.RoleRef, doc *pa
 	return out, nil
 }
 
-func (s RoleServiceServer) Erase(ctx context.Context, req *rstr.RoleRef) (*emptypb.Empty, error) {
+func (s RoleServiceServer) Erase(ctx context.Context, req *rstr.RoleRef) (*rstr.RoleEraseResponse, error) {
 	p, err := RolePick(req)
 	if err != nil {
 		return nil, err
@@ -443,13 +442,13 @@ func (s RoleServiceServer) Erase(ctx context.Context, req *rstr.RoleRef) (*empty
 		v, err := st.Db.Role.Query().Where(p).OnlyID(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
-				return &emptypb.Empty{}, nil
+				return &rstr.RoleEraseResponse{}, nil
 			}
 			return nil, err
 		}
 
 		k = v
-		p = role.IDEQ(v)
+		p = role.And(p, role.IDEQ(v))
 	}
 
 	u := st.Db.Role.Update().Where(p)
@@ -470,7 +469,10 @@ func (s RoleServiceServer) Erase(ctx context.Context, req *rstr.RoleRef) (*empty
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return &emptypb.Empty{}, nil
+	res := &rstr.RoleEraseResponse{}
+	res.SetErased(n > 0)
+
+	return res, nil
 }
 
 // RolePick answers with the predicate this reference selects on,
@@ -927,7 +929,7 @@ func (s BindingServiceServer) apply(ctx context.Context, ref *rstr.BindingRef, d
 	return out, nil
 }
 
-func (s BindingServiceServer) Erase(ctx context.Context, req *rstr.BindingRef) (*emptypb.Empty, error) {
+func (s BindingServiceServer) Erase(ctx context.Context, req *rstr.BindingRef) (*rstr.BindingEraseResponse, error) {
 	p, err := BindingPick(req)
 	if err != nil {
 		return nil, err
@@ -951,13 +953,13 @@ func (s BindingServiceServer) Erase(ctx context.Context, req *rstr.BindingRef) (
 		v, err := st.Db.Binding.Query().Where(p).OnlyID(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
-				return &emptypb.Empty{}, nil
+				return &rstr.BindingEraseResponse{}, nil
 			}
 			return nil, err
 		}
 
 		k = v
-		p = binding.IDEQ(v)
+		p = binding.And(p, binding.IDEQ(v))
 	}
 
 	u := st.Db.Binding.Update().Where(p)
@@ -978,7 +980,10 @@ func (s BindingServiceServer) Erase(ctx context.Context, req *rstr.BindingRef) (
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return &emptypb.Empty{}, nil
+	res := &rstr.BindingEraseResponse{}
+	res.SetErased(n > 0)
+
+	return res, nil
 }
 
 // BindingPick answers with the predicate this reference selects on,

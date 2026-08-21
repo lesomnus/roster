@@ -11,7 +11,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -42,7 +41,7 @@ type EmailServiceClient interface {
 	// Apply applies a patch document to an existing Email
 	Apply(ctx context.Context, in *EmailApplyRequest, opts ...grpc.CallOption) (*Email, error)
 	// Erase deletes a Email
-	Erase(ctx context.Context, in *EmailRef, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Erase(ctx context.Context, in *EmailRef, opts ...grpc.CallOption) (*EmailEraseResponse, error)
 	// List reads Emails a page at a time.
 	List(ctx context.Context, in *EmailListRequest, opts ...grpc.CallOption) (*EmailListResponse, error)
 	// Watch the Emails this caller may see, as they are now and as they change.
@@ -107,9 +106,9 @@ func (c *emailServiceClient) Apply(ctx context.Context, in *EmailApplyRequest, o
 	return out, nil
 }
 
-func (c *emailServiceClient) Erase(ctx context.Context, in *EmailRef, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *emailServiceClient) Erase(ctx context.Context, in *EmailRef, opts ...grpc.CallOption) (*EmailEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
+	out := new(EmailEraseResponse)
 	err := c.cc.Invoke(ctx, EmailService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -159,7 +158,7 @@ type EmailServiceServer interface {
 	// Apply applies a patch document to an existing Email
 	Apply(context.Context, *EmailApplyRequest) (*Email, error)
 	// Erase deletes a Email
-	Erase(context.Context, *EmailRef) (*emptypb.Empty, error)
+	Erase(context.Context, *EmailRef) (*EmailEraseResponse, error)
 	// List reads Emails a page at a time.
 	List(context.Context, *EmailListRequest) (*EmailListResponse, error)
 	// Watch the Emails this caller may see, as they are now and as they change.
@@ -196,7 +195,7 @@ func (UnimplementedEmailServiceServer) Patch(context.Context, *EmailPatchRequest
 func (UnimplementedEmailServiceServer) Apply(context.Context, *EmailApplyRequest) (*Email, error) {
 	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
-func (UnimplementedEmailServiceServer) Erase(context.Context, *EmailRef) (*emptypb.Empty, error) {
+func (UnimplementedEmailServiceServer) Erase(context.Context, *EmailRef) (*EmailEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedEmailServiceServer) List(context.Context, *EmailListRequest) (*EmailListResponse, error) {

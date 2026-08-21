@@ -2,7 +2,6 @@ edition = "2023";
 package roster;
 
 import "app/identity.proto";
-import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "patch/patch.proto";
 import "roster/payday/holder_svc.g.proto";
@@ -19,7 +18,7 @@ service IdentityService {
   // Apply applies a patch document to an existing Identity
   rpc Apply(IdentityApplyRequest) returns (Identity);
   // Erase deletes a Identity
-  rpc Erase(IdentityRef) returns (google.protobuf.Empty);
+  rpc Erase(IdentityRef) returns (IdentityEraseResponse);
   // List reads Identitys a page at a time.
   rpc List(IdentityListRequest) returns (IdentityListResponse);
   // Watch the Identitys this caller may see, as they are now and as they change.
@@ -98,6 +97,15 @@ message IdentityPatchRequest {
 message IdentityApplyRequest {
   IdentityRef ref = 1;
   patch.Patch patch = 2;
+}
+
+message IdentityEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
 }
 
 message IdentityListRequest {

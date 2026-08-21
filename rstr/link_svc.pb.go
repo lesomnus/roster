@@ -10,7 +10,6 @@ import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	unsafe "unsafe"
@@ -982,6 +981,86 @@ func (b0 LinkApplyRequest_builder) Build() *LinkApplyRequest {
 	return m0
 }
 
+type LinkEraseResponse struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *LinkEraseResponse) Reset() {
+	*x = LinkEraseResponse{}
+	mi := &file_app_link_svc_g_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LinkEraseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LinkEraseResponse) ProtoMessage() {}
+
+func (x *LinkEraseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_app_link_svc_g_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *LinkEraseResponse) GetErased() bool {
+	if x != nil {
+		return x.xxx_hidden_Erased
+	}
+	return false
+}
+
+func (x *LinkEraseResponse) SetErased(v bool) {
+	x.xxx_hidden_Erased = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+}
+
+func (x *LinkEraseResponse) HasErased() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *LinkEraseResponse) ClearErased() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Erased = false
+}
+
+type LinkEraseResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Erased is whether this call is the one that erased the row.
+	//
+	// False for a row that was already gone, was never there, or is out
+	// of this caller's reach -- which are one answer on purpose, and the
+	// reason the RPC does not fail instead.
+	Erased *bool
+}
+
+func (b0 LinkEraseResponse_builder) Build() *LinkEraseResponse {
+	m0 := &LinkEraseResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Erased != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		x.xxx_hidden_Erased = *b.Erased
+	}
+	return m0
+}
+
 type LinkListRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*LinkFilter         `protobuf:"bytes,1,rep,name=filters"`
@@ -993,7 +1072,7 @@ type LinkListRequest struct {
 
 func (x *LinkListRequest) Reset() {
 	*x = LinkListRequest{}
-	mi := &file_app_link_svc_g_proto_msgTypes[6]
+	mi := &file_app_link_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1005,7 +1084,7 @@ func (x *LinkListRequest) String() string {
 func (*LinkListRequest) ProtoMessage() {}
 
 func (x *LinkListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_link_svc_g_proto_msgTypes[6]
+	mi := &file_app_link_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1088,7 +1167,7 @@ type LinkListResponse struct {
 
 func (x *LinkListResponse) Reset() {
 	*x = LinkListResponse{}
-	mi := &file_app_link_svc_g_proto_msgTypes[7]
+	mi := &file_app_link_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1100,7 +1179,7 @@ func (x *LinkListResponse) String() string {
 func (*LinkListResponse) ProtoMessage() {}
 
 func (x *LinkListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_link_svc_g_proto_msgTypes[7]
+	mi := &file_app_link_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1167,7 +1246,7 @@ type LinkFilter struct {
 
 func (x *LinkFilter) Reset() {
 	*x = LinkFilter{}
-	mi := &file_app_link_svc_g_proto_msgTypes[8]
+	mi := &file_app_link_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1179,7 +1258,7 @@ func (x *LinkFilter) String() string {
 func (*LinkFilter) ProtoMessage() {}
 
 func (x *LinkFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_app_link_svc_g_proto_msgTypes[8]
+	mi := &file_app_link_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1230,7 +1309,7 @@ var File_app_link_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_link_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/link_svc.g.proto\x12\x06roster\x1a\x0eapp/link.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\x87\x02\n" +
+	"\x14app/link_svc.g.proto\x12\x06roster\x1a\x0eapp/link.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\x87\x02\n" +
 	"\x0eLinkAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x1d\n" +
@@ -1264,7 +1343,9 @@ const file_app_link_svc_g_proto_rawDesc = "" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"Y\n" +
 	"\x10LinkApplyRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.roster.LinkRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"w\n" +
+	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"+\n" +
+	"\x11LinkEraseResponse\x12\x16\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"w\n" +
 	"\x0fLinkListRequest\x12,\n" +
 	"\afilters\x18\x01 \x03(\v2\x12.roster.LinkFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
@@ -1274,16 +1355,16 @@ const file_app_link_svc_g_proto_rawDesc = "" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"/\n" +
 	"\n" +
 	"LinkFilter\x12!\n" +
-	"\x03ref\x18\x01 \x01(\v2\x0f.roster.LinkRefR\x03ref2\xb6\x02\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.roster.LinkRefR\x03ref2\xb9\x02\n" +
 	"\vLinkService\x12+\n" +
 	"\x03Add\x12\x16.roster.LinkAddRequest\x1a\f.roster.Link\x12+\n" +
 	"\x03Get\x12\x16.roster.LinkGetRequest\x1a\f.roster.Link\x12/\n" +
 	"\x05Patch\x12\x18.roster.LinkPatchRequest\x1a\f.roster.Link\x12/\n" +
-	"\x05Apply\x12\x18.roster.LinkApplyRequest\x1a\f.roster.Link\x120\n" +
-	"\x05Erase\x12\x0f.roster.LinkRef\x1a\x16.google.protobuf.Empty\x129\n" +
+	"\x05Apply\x12\x18.roster.LinkApplyRequest\x1a\f.roster.Link\x123\n" +
+	"\x05Erase\x12\x0f.roster.LinkRef\x1a\x19.roster.LinkEraseResponse\x129\n" +
 	"\x04List\x12\x17.roster.LinkListRequest\x1a\x18.roster.LinkListResponseB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_link_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_app_link_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_app_link_svc_g_proto_goTypes = []any{
 	(*LinkAddRequest)(nil),        // 0: roster.LinkAddRequest
 	(*LinkGetRequest)(nil),        // 1: roster.LinkGetRequest
@@ -1291,42 +1372,42 @@ var file_app_link_svc_g_proto_goTypes = []any{
 	(*LinkSelect)(nil),            // 3: roster.LinkSelect
 	(*LinkPatchRequest)(nil),      // 4: roster.LinkPatchRequest
 	(*LinkApplyRequest)(nil),      // 5: roster.LinkApplyRequest
-	(*LinkListRequest)(nil),       // 6: roster.LinkListRequest
-	(*LinkListResponse)(nil),      // 7: roster.LinkListResponse
-	(*LinkFilter)(nil),            // 8: roster.LinkFilter
-	(*HolderRef)(nil),             // 9: roster.HolderRef
-	(*timestamppb.Timestamp)(nil), // 10: google.protobuf.Timestamp
-	(*HolderSelect)(nil),          // 11: roster.HolderSelect
-	(*patchpb.Patch)(nil),         // 12: patch.Patch
-	(*Link)(nil),                  // 13: roster.Link
-	(*emptypb.Empty)(nil),         // 14: google.protobuf.Empty
+	(*LinkEraseResponse)(nil),     // 6: roster.LinkEraseResponse
+	(*LinkListRequest)(nil),       // 7: roster.LinkListRequest
+	(*LinkListResponse)(nil),      // 8: roster.LinkListResponse
+	(*LinkFilter)(nil),            // 9: roster.LinkFilter
+	(*HolderRef)(nil),             // 10: roster.HolderRef
+	(*timestamppb.Timestamp)(nil), // 11: google.protobuf.Timestamp
+	(*HolderSelect)(nil),          // 12: roster.HolderSelect
+	(*patchpb.Patch)(nil),         // 13: patch.Patch
+	(*Link)(nil),                  // 14: roster.Link
 }
 var file_app_link_svc_g_proto_depIdxs = []int32{
-	9,  // 0: roster.LinkAddRequest.holder:type_name -> roster.HolderRef
-	10, // 1: roster.LinkAddRequest.date_expires:type_name -> google.protobuf.Timestamp
-	10, // 2: roster.LinkAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	10, // 0: roster.LinkAddRequest.holder:type_name -> roster.HolderRef
+	11, // 1: roster.LinkAddRequest.date_expires:type_name -> google.protobuf.Timestamp
+	11, // 2: roster.LinkAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 3: roster.LinkGetRequest.ref:type_name -> roster.LinkRef
 	3,  // 4: roster.LinkGetRequest.select:type_name -> roster.LinkSelect
-	11, // 5: roster.LinkSelect.holder:type_name -> roster.HolderSelect
+	12, // 5: roster.LinkSelect.holder:type_name -> roster.HolderSelect
 	2,  // 6: roster.LinkPatchRequest.ref:type_name -> roster.LinkRef
-	10, // 7: roster.LinkPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	11, // 7: roster.LinkPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
 	2,  // 8: roster.LinkApplyRequest.ref:type_name -> roster.LinkRef
-	12, // 9: roster.LinkApplyRequest.patch:type_name -> patch.Patch
-	8,  // 10: roster.LinkListRequest.filters:type_name -> roster.LinkFilter
-	13, // 11: roster.LinkListResponse.items:type_name -> roster.Link
+	13, // 9: roster.LinkApplyRequest.patch:type_name -> patch.Patch
+	9,  // 10: roster.LinkListRequest.filters:type_name -> roster.LinkFilter
+	14, // 11: roster.LinkListResponse.items:type_name -> roster.Link
 	2,  // 12: roster.LinkFilter.ref:type_name -> roster.LinkRef
 	0,  // 13: roster.LinkService.Add:input_type -> roster.LinkAddRequest
 	1,  // 14: roster.LinkService.Get:input_type -> roster.LinkGetRequest
 	4,  // 15: roster.LinkService.Patch:input_type -> roster.LinkPatchRequest
 	5,  // 16: roster.LinkService.Apply:input_type -> roster.LinkApplyRequest
 	2,  // 17: roster.LinkService.Erase:input_type -> roster.LinkRef
-	6,  // 18: roster.LinkService.List:input_type -> roster.LinkListRequest
-	13, // 19: roster.LinkService.Add:output_type -> roster.Link
-	13, // 20: roster.LinkService.Get:output_type -> roster.Link
-	13, // 21: roster.LinkService.Patch:output_type -> roster.Link
-	13, // 22: roster.LinkService.Apply:output_type -> roster.Link
-	14, // 23: roster.LinkService.Erase:output_type -> google.protobuf.Empty
-	7,  // 24: roster.LinkService.List:output_type -> roster.LinkListResponse
+	7,  // 18: roster.LinkService.List:input_type -> roster.LinkListRequest
+	14, // 19: roster.LinkService.Add:output_type -> roster.Link
+	14, // 20: roster.LinkService.Get:output_type -> roster.Link
+	14, // 21: roster.LinkService.Patch:output_type -> roster.Link
+	14, // 22: roster.LinkService.Apply:output_type -> roster.Link
+	6,  // 23: roster.LinkService.Erase:output_type -> roster.LinkEraseResponse
+	8,  // 24: roster.LinkService.List:output_type -> roster.LinkListResponse
 	19, // [19:25] is the sub-list for method output_type
 	13, // [13:19] is the sub-list for method input_type
 	13, // [13:13] is the sub-list for extension type_name
@@ -1351,7 +1432,7 @@ func file_app_link_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_link_svc_g_proto_rawDesc), len(file_app_link_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

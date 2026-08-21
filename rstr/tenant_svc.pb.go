@@ -10,7 +10,6 @@ import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	unsafe "unsafe"
@@ -1039,6 +1038,86 @@ func (b0 TenantApplyRequest_builder) Build() *TenantApplyRequest {
 	return m0
 }
 
+type TenantEraseResponse struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *TenantEraseResponse) Reset() {
+	*x = TenantEraseResponse{}
+	mi := &file_roster_payday_tenant_svc_g_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TenantEraseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TenantEraseResponse) ProtoMessage() {}
+
+func (x *TenantEraseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_roster_payday_tenant_svc_g_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *TenantEraseResponse) GetErased() bool {
+	if x != nil {
+		return x.xxx_hidden_Erased
+	}
+	return false
+}
+
+func (x *TenantEraseResponse) SetErased(v bool) {
+	x.xxx_hidden_Erased = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+}
+
+func (x *TenantEraseResponse) HasErased() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *TenantEraseResponse) ClearErased() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Erased = false
+}
+
+type TenantEraseResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Erased is whether this call is the one that erased the row.
+	//
+	// False for a row that was already gone, was never there, or is out
+	// of this caller's reach -- which are one answer on purpose, and the
+	// reason the RPC does not fail instead.
+	Erased *bool
+}
+
+func (b0 TenantEraseResponse_builder) Build() *TenantEraseResponse {
+	m0 := &TenantEraseResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Erased != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		x.xxx_hidden_Erased = *b.Erased
+	}
+	return m0
+}
+
 type TenantListRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*TenantFilter       `protobuf:"bytes,1,rep,name=filters"`
@@ -1050,7 +1129,7 @@ type TenantListRequest struct {
 
 func (x *TenantListRequest) Reset() {
 	*x = TenantListRequest{}
-	mi := &file_roster_payday_tenant_svc_g_proto_msgTypes[6]
+	mi := &file_roster_payday_tenant_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1062,7 +1141,7 @@ func (x *TenantListRequest) String() string {
 func (*TenantListRequest) ProtoMessage() {}
 
 func (x *TenantListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_roster_payday_tenant_svc_g_proto_msgTypes[6]
+	mi := &file_roster_payday_tenant_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1145,7 +1224,7 @@ type TenantListResponse struct {
 
 func (x *TenantListResponse) Reset() {
 	*x = TenantListResponse{}
-	mi := &file_roster_payday_tenant_svc_g_proto_msgTypes[7]
+	mi := &file_roster_payday_tenant_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1157,7 +1236,7 @@ func (x *TenantListResponse) String() string {
 func (*TenantListResponse) ProtoMessage() {}
 
 func (x *TenantListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_roster_payday_tenant_svc_g_proto_msgTypes[7]
+	mi := &file_roster_payday_tenant_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1224,7 +1303,7 @@ type TenantFilter struct {
 
 func (x *TenantFilter) Reset() {
 	*x = TenantFilter{}
-	mi := &file_roster_payday_tenant_svc_g_proto_msgTypes[8]
+	mi := &file_roster_payday_tenant_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1236,7 +1315,7 @@ func (x *TenantFilter) String() string {
 func (*TenantFilter) ProtoMessage() {}
 
 func (x *TenantFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_roster_payday_tenant_svc_g_proto_msgTypes[8]
+	mi := &file_roster_payday_tenant_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1287,7 +1366,7 @@ var File_roster_payday_tenant_svc_g_proto protoreflect.FileDescriptor
 
 const file_roster_payday_tenant_svc_g_proto_rawDesc = "" +
 	"\n" +
-	" roster/payday/tenant_svc.g.proto\x12\x06roster\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x1aroster/payday/tenant.proto\"\xad\x02\n" +
+	" roster/payday/tenant_svc.g.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x1aroster/payday/tenant.proto\"\xad\x02\n" +
 	"\x10TenantAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
@@ -1327,7 +1406,9 @@ const file_roster_payday_tenant_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"]\n" +
 	"\x12TenantApplyRequest\x12#\n" +
 	"\x03ref\x18\x01 \x01(\v2\x11.roster.TenantRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"{\n" +
+	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"-\n" +
+	"\x13TenantEraseResponse\x12\x16\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"{\n" +
 	"\x11TenantListRequest\x12.\n" +
 	"\afilters\x18\x01 \x03(\v2\x14.roster.TenantFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
@@ -1336,16 +1417,16 @@ const file_roster_payday_tenant_svc_g_proto_rawDesc = "" +
 	"\x05items\x18\x01 \x03(\v2\x0e.roster.TenantR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"3\n" +
 	"\fTenantFilter\x12#\n" +
-	"\x03ref\x18\x01 \x01(\v2\x11.roster.TenantRefR\x03ref2\xce\x02\n" +
+	"\x03ref\x18\x01 \x01(\v2\x11.roster.TenantRefR\x03ref2\xd3\x02\n" +
 	"\rTenantService\x12/\n" +
 	"\x03Add\x12\x18.roster.TenantAddRequest\x1a\x0e.roster.Tenant\x12/\n" +
 	"\x03Get\x12\x18.roster.TenantGetRequest\x1a\x0e.roster.Tenant\x123\n" +
 	"\x05Patch\x12\x1a.roster.TenantPatchRequest\x1a\x0e.roster.Tenant\x123\n" +
-	"\x05Apply\x12\x1a.roster.TenantApplyRequest\x1a\x0e.roster.Tenant\x122\n" +
-	"\x05Erase\x12\x11.roster.TenantRef\x1a\x16.google.protobuf.Empty\x12=\n" +
+	"\x05Apply\x12\x1a.roster.TenantApplyRequest\x1a\x0e.roster.Tenant\x127\n" +
+	"\x05Erase\x12\x11.roster.TenantRef\x1a\x1b.roster.TenantEraseResponse\x12=\n" +
 	"\x04List\x12\x19.roster.TenantListRequest\x1a\x1a.roster.TenantListResponseB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_roster_payday_tenant_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_roster_payday_tenant_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_roster_payday_tenant_svc_g_proto_goTypes = []any{
 	(*TenantAddRequest)(nil),      // 0: roster.TenantAddRequest
 	(*TenantGetRequest)(nil),      // 1: roster.TenantGetRequest
@@ -1353,41 +1434,41 @@ var file_roster_payday_tenant_svc_g_proto_goTypes = []any{
 	(*TenantSelect)(nil),          // 3: roster.TenantSelect
 	(*TenantPatchRequest)(nil),    // 4: roster.TenantPatchRequest
 	(*TenantApplyRequest)(nil),    // 5: roster.TenantApplyRequest
-	(*TenantListRequest)(nil),     // 6: roster.TenantListRequest
-	(*TenantListResponse)(nil),    // 7: roster.TenantListResponse
-	(*TenantFilter)(nil),          // 8: roster.TenantFilter
-	nil,                           // 9: roster.TenantAddRequest.LabelsEntry
-	nil,                           // 10: roster.TenantPatchRequest.LabelsEntry
-	(*timestamppb.Timestamp)(nil), // 11: google.protobuf.Timestamp
-	(*patchpb.Patch)(nil),         // 12: patch.Patch
-	(*Tenant)(nil),                // 13: roster.Tenant
-	(*emptypb.Empty)(nil),         // 14: google.protobuf.Empty
+	(*TenantEraseResponse)(nil),   // 6: roster.TenantEraseResponse
+	(*TenantListRequest)(nil),     // 7: roster.TenantListRequest
+	(*TenantListResponse)(nil),    // 8: roster.TenantListResponse
+	(*TenantFilter)(nil),          // 9: roster.TenantFilter
+	nil,                           // 10: roster.TenantAddRequest.LabelsEntry
+	nil,                           // 11: roster.TenantPatchRequest.LabelsEntry
+	(*timestamppb.Timestamp)(nil), // 12: google.protobuf.Timestamp
+	(*patchpb.Patch)(nil),         // 13: patch.Patch
+	(*Tenant)(nil),                // 14: roster.Tenant
 }
 var file_roster_payday_tenant_svc_g_proto_depIdxs = []int32{
-	9,  // 0: roster.TenantAddRequest.labels:type_name -> roster.TenantAddRequest.LabelsEntry
-	11, // 1: roster.TenantAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	10, // 0: roster.TenantAddRequest.labels:type_name -> roster.TenantAddRequest.LabelsEntry
+	12, // 1: roster.TenantAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 2: roster.TenantGetRequest.ref:type_name -> roster.TenantRef
 	3,  // 3: roster.TenantGetRequest.select:type_name -> roster.TenantSelect
 	2,  // 4: roster.TenantPatchRequest.ref:type_name -> roster.TenantRef
-	10, // 5: roster.TenantPatchRequest.labels:type_name -> roster.TenantPatchRequest.LabelsEntry
-	11, // 6: roster.TenantPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	11, // 5: roster.TenantPatchRequest.labels:type_name -> roster.TenantPatchRequest.LabelsEntry
+	12, // 6: roster.TenantPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
 	2,  // 7: roster.TenantApplyRequest.ref:type_name -> roster.TenantRef
-	12, // 8: roster.TenantApplyRequest.patch:type_name -> patch.Patch
-	8,  // 9: roster.TenantListRequest.filters:type_name -> roster.TenantFilter
-	13, // 10: roster.TenantListResponse.items:type_name -> roster.Tenant
+	13, // 8: roster.TenantApplyRequest.patch:type_name -> patch.Patch
+	9,  // 9: roster.TenantListRequest.filters:type_name -> roster.TenantFilter
+	14, // 10: roster.TenantListResponse.items:type_name -> roster.Tenant
 	2,  // 11: roster.TenantFilter.ref:type_name -> roster.TenantRef
 	0,  // 12: roster.TenantService.Add:input_type -> roster.TenantAddRequest
 	1,  // 13: roster.TenantService.Get:input_type -> roster.TenantGetRequest
 	4,  // 14: roster.TenantService.Patch:input_type -> roster.TenantPatchRequest
 	5,  // 15: roster.TenantService.Apply:input_type -> roster.TenantApplyRequest
 	2,  // 16: roster.TenantService.Erase:input_type -> roster.TenantRef
-	6,  // 17: roster.TenantService.List:input_type -> roster.TenantListRequest
-	13, // 18: roster.TenantService.Add:output_type -> roster.Tenant
-	13, // 19: roster.TenantService.Get:output_type -> roster.Tenant
-	13, // 20: roster.TenantService.Patch:output_type -> roster.Tenant
-	13, // 21: roster.TenantService.Apply:output_type -> roster.Tenant
-	14, // 22: roster.TenantService.Erase:output_type -> google.protobuf.Empty
-	7,  // 23: roster.TenantService.List:output_type -> roster.TenantListResponse
+	7,  // 17: roster.TenantService.List:input_type -> roster.TenantListRequest
+	14, // 18: roster.TenantService.Add:output_type -> roster.Tenant
+	14, // 19: roster.TenantService.Get:output_type -> roster.Tenant
+	14, // 20: roster.TenantService.Patch:output_type -> roster.Tenant
+	14, // 21: roster.TenantService.Apply:output_type -> roster.Tenant
+	6,  // 22: roster.TenantService.Erase:output_type -> roster.TenantEraseResponse
+	8,  // 23: roster.TenantService.List:output_type -> roster.TenantListResponse
 	18, // [18:24] is the sub-list for method output_type
 	12, // [12:18] is the sub-list for method input_type
 	12, // [12:12] is the sub-list for extension type_name
@@ -1411,7 +1492,7 @@ func file_roster_payday_tenant_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_roster_payday_tenant_svc_g_proto_rawDesc), len(file_roster_payday_tenant_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

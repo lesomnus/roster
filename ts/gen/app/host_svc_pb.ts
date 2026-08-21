@@ -6,8 +6,8 @@ import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegen
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Host, HostSchema, MailDomain, MailDomainSchema } from "./host_pb.js";
 import { file_app_host } from "./host_pb.js";
-import type { EmptySchema, Timestamp } from "@bufbuild/protobuf/wkt";
-import { file_google_protobuf_empty, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Patch } from "../patch/patch_pb.js";
 import { file_patch_patch } from "../patch/patch_pb.js";
 import type { TenantRef, TenantSelect } from "../roster/payday/tenant_svc_pb.js";
@@ -18,7 +18,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/host_svc.g.proto.
  */
 export const file_app_host_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcHAvaG9zdF9zdmMuZy5wcm90bxIGcm9zdGVyIpsBCg5Ib3N0QWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGRlc2MYBiABKAlCBaoBAggCEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiUgoOSG9zdEdldFJlcXVlc3QSHAoDcmVmGAEgASgLMg8ucm9zdGVyLkhvc3RSZWYSIgoGc2VsZWN0GAIgASgLMhIucm9zdGVyLkhvc3RTZWxlY3QiLgoHSG9zdFJlZhIMCgJpZBgBIAEoDEgAEg4KBG5hbWUYBSABKAlIAEIFCgNrZXkinAEKCkhvc3RTZWxlY3QSCwoDYWxsGAEgASgIEiQKBnRlbmFudBgCIAEoCzIULnJvc3Rlci5UZW5hbnRTZWxlY3QSDAoEbmFtZRgFIAEoCBIMCgRkZXNjGAYgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgimgEKEEhvc3RQYXRjaFJlcXVlc3QSHAoDcmVmGAEgASgLMg8ucm9zdGVyLkhvc3RSZWYSDAoEbmFtZRgKIAEoCRIMCgRkZXNjGAwgASgJEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIk0KEEhvc3RBcHBseVJlcXVlc3QSHAoDcmVmGAEgASgLMg8ucm9zdGVyLkhvc3RSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCJhCg9Ib3N0TGlzdFJlcXVlc3QSIwoHZmlsdGVycxgBIAMoCzISLnJvc3Rlci5Ib3N0RmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAiJEChBIb3N0TGlzdFJlc3BvbnNlEhsKBWl0ZW1zGAEgAygLMgwucm9zdGVyLkhvc3QSEwoEbmV4dBgCIAEoCUIFqgECCAIiTQoKSG9zdEZpbHRlchIcCgNyZWYYASABKAsyDy5yb3N0ZXIuSG9zdFJlZhIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmIroBChRNYWlsRG9tYWluQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmEhMKBG5hbWUYBSABKAlCBaoBAggCEhcKCHByb3ZpZGVyGAkgASgJQgWqAQIIAhITCgRkZXNjGAYgASgJQgWqAQIIAhIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wImQKFE1haWxEb21haW5HZXRSZXF1ZXN0EiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5NYWlsRG9tYWluUmVmEigKBnNlbGVjdBgCIAEoCzIYLnJvc3Rlci5NYWlsRG9tYWluU2VsZWN0Ik0KDU1haWxEb21haW5SZWYSDAoCaWQYASABKAxIABInCgJhdBgCIAEoCzIZLnJvc3Rlci5NYWlsRG9tYWluUmVmQnlBdEgAQgUKA2tleSJEChFNYWlsRG9tYWluUmVmQnlBdBIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmEgwKBG5hbWUYBSABKAkitAEKEE1haWxEb21haW5TZWxlY3QSCwoDYWxsGAEgASgIEiQKBnRlbmFudBgCIAEoCzIULnJvc3Rlci5UZW5hbnRTZWxlY3QSDAoEbmFtZRgFIAEoCBIQCghwcm92aWRlchgJIAEoCBIMCgRkZXNjGAYgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgiuAEKFk1haWxEb21haW5QYXRjaFJlcXVlc3QSIgoDcmVmGAEgASgLMhUucm9zdGVyLk1haWxEb21haW5SZWYSDAoEbmFtZRgKIAEoCRIQCghwcm92aWRlchgSIAEoCRIMCgRkZXNjGAwgASgJEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIlkKFk1haWxEb21haW5BcHBseVJlcXVlc3QSIgoDcmVmGAEgASgLMhUucm9zdGVyLk1haWxEb21haW5SZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCJtChVNYWlsRG9tYWluTGlzdFJlcXVlc3QSKQoHZmlsdGVycxgBIAMoCzIYLnJvc3Rlci5NYWlsRG9tYWluRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAiJQChZNYWlsRG9tYWluTGlzdFJlc3BvbnNlEiEKBWl0ZW1zGAEgAygLMhIucm9zdGVyLk1haWxEb21haW4SEwoEbmV4dBgCIAEoCUIFqgECCAIiWQoQTWFpbERvbWFpbkZpbHRlchIiCgNyZWYYASABKAsyFS5yb3N0ZXIuTWFpbERvbWFpblJlZhIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmMrYCCgtIb3N0U2VydmljZRIrCgNBZGQSFi5yb3N0ZXIuSG9zdEFkZFJlcXVlc3QaDC5yb3N0ZXIuSG9zdBIrCgNHZXQSFi5yb3N0ZXIuSG9zdEdldFJlcXVlc3QaDC5yb3N0ZXIuSG9zdBIvCgVQYXRjaBIYLnJvc3Rlci5Ib3N0UGF0Y2hSZXF1ZXN0Ggwucm9zdGVyLkhvc3QSLwoFQXBwbHkSGC5yb3N0ZXIuSG9zdEFwcGx5UmVxdWVzdBoMLnJvc3Rlci5Ib3N0EjAKBUVyYXNlEg8ucm9zdGVyLkhvc3RSZWYaFi5nb29nbGUucHJvdG9idWYuRW1wdHkSOQoETGlzdBIXLnJvc3Rlci5Ib3N0TGlzdFJlcXVlc3QaGC5yb3N0ZXIuSG9zdExpc3RSZXNwb25zZTL+AgoRTWFpbERvbWFpblNlcnZpY2USNwoDQWRkEhwucm9zdGVyLk1haWxEb21haW5BZGRSZXF1ZXN0GhIucm9zdGVyLk1haWxEb21haW4SNwoDR2V0Ehwucm9zdGVyLk1haWxEb21haW5HZXRSZXF1ZXN0GhIucm9zdGVyLk1haWxEb21haW4SOwoFUGF0Y2gSHi5yb3N0ZXIuTWFpbERvbWFpblBhdGNoUmVxdWVzdBoSLnJvc3Rlci5NYWlsRG9tYWluEjsKBUFwcGx5Eh4ucm9zdGVyLk1haWxEb21haW5BcHBseVJlcXVlc3QaEi5yb3N0ZXIuTWFpbERvbWFpbhI2CgVFcmFzZRIVLnJvc3Rlci5NYWlsRG9tYWluUmVmGhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5EkUKBExpc3QSHS5yb3N0ZXIuTWFpbERvbWFpbkxpc3RSZXF1ZXN0Gh4ucm9zdGVyLk1haWxEb21haW5MaXN0UmVzcG9uc2VCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_host, file_google_protobuf_empty, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_tenant_svc_g]);
+  fileDesc("ChRhcHAvaG9zdF9zdmMuZy5wcm90bxIGcm9zdGVyIpsBCg5Ib3N0QWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGRlc2MYBiABKAlCBaoBAggCEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiUgoOSG9zdEdldFJlcXVlc3QSHAoDcmVmGAEgASgLMg8ucm9zdGVyLkhvc3RSZWYSIgoGc2VsZWN0GAIgASgLMhIucm9zdGVyLkhvc3RTZWxlY3QiLgoHSG9zdFJlZhIMCgJpZBgBIAEoDEgAEg4KBG5hbWUYBSABKAlIAEIFCgNrZXkinAEKCkhvc3RTZWxlY3QSCwoDYWxsGAEgASgIEiQKBnRlbmFudBgCIAEoCzIULnJvc3Rlci5UZW5hbnRTZWxlY3QSDAoEbmFtZRgFIAEoCBIMCgRkZXNjGAYgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgimgEKEEhvc3RQYXRjaFJlcXVlc3QSHAoDcmVmGAEgASgLMg8ucm9zdGVyLkhvc3RSZWYSDAoEbmFtZRgKIAEoCRIMCgRkZXNjGAwgASgJEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIk0KEEhvc3RBcHBseVJlcXVlc3QSHAoDcmVmGAEgASgLMg8ucm9zdGVyLkhvc3RSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIjChFIb3N0RXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiYQoPSG9zdExpc3RSZXF1ZXN0EiMKB2ZpbHRlcnMYASADKAsyEi5yb3N0ZXIuSG9zdEZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAIiRAoQSG9zdExpc3RSZXNwb25zZRIbCgVpdGVtcxgBIAMoCzIMLnJvc3Rlci5Ib3N0EhMKBG5leHQYAiABKAlCBaoBAggCIk0KCkhvc3RGaWx0ZXISHAoDcmVmGAEgASgLMg8ucm9zdGVyLkhvc3RSZWYSIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZiK6AQoUTWFpbERvbWFpbkFkZFJlcXVlc3QSCgoCaWQYASABKAwSIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZhITCgRuYW1lGAUgASgJQgWqAQIIAhIXCghwcm92aWRlchgJIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJkChRNYWlsRG9tYWluR2V0UmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuTWFpbERvbWFpblJlZhIoCgZzZWxlY3QYAiABKAsyGC5yb3N0ZXIuTWFpbERvbWFpblNlbGVjdCJNCg1NYWlsRG9tYWluUmVmEgwKAmlkGAEgASgMSAASJwoCYXQYAiABKAsyGS5yb3N0ZXIuTWFpbERvbWFpblJlZkJ5QXRIAEIFCgNrZXkiRAoRTWFpbERvbWFpblJlZkJ5QXQSIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZhIMCgRuYW1lGAUgASgJIrQBChBNYWlsRG9tYWluU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZ0ZW5hbnQYAiABKAsyFC5yb3N0ZXIuVGVuYW50U2VsZWN0EgwKBG5hbWUYBSABKAgSEAoIcHJvdmlkZXIYCSABKAgSDAoEZGVzYxgGIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIrgBChZNYWlsRG9tYWluUGF0Y2hSZXF1ZXN0EiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5NYWlsRG9tYWluUmVmEgwKBG5hbWUYCiABKAkSEAoIcHJvdmlkZXIYEiABKAkSDAoEZGVzYxgMIAEoCRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCCJZChZNYWlsRG9tYWluQXBwbHlSZXF1ZXN0EiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5NYWlsRG9tYWluUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giKQoXTWFpbERvbWFpbkVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIm0KFU1haWxEb21haW5MaXN0UmVxdWVzdBIpCgdmaWx0ZXJzGAEgAygLMhgucm9zdGVyLk1haWxEb21haW5GaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIlAKFk1haWxEb21haW5MaXN0UmVzcG9uc2USIQoFaXRlbXMYASADKAsyEi5yb3N0ZXIuTWFpbERvbWFpbhITCgRuZXh0GAIgASgJQgWqAQIIAiJZChBNYWlsRG9tYWluRmlsdGVyEiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5NYWlsRG9tYWluUmVmEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYyuQIKC0hvc3RTZXJ2aWNlEisKA0FkZBIWLnJvc3Rlci5Ib3N0QWRkUmVxdWVzdBoMLnJvc3Rlci5Ib3N0EisKA0dldBIWLnJvc3Rlci5Ib3N0R2V0UmVxdWVzdBoMLnJvc3Rlci5Ib3N0Ei8KBVBhdGNoEhgucm9zdGVyLkhvc3RQYXRjaFJlcXVlc3QaDC5yb3N0ZXIuSG9zdBIvCgVBcHBseRIYLnJvc3Rlci5Ib3N0QXBwbHlSZXF1ZXN0Ggwucm9zdGVyLkhvc3QSMwoFRXJhc2USDy5yb3N0ZXIuSG9zdFJlZhoZLnJvc3Rlci5Ib3N0RXJhc2VSZXNwb25zZRI5CgRMaXN0Ehcucm9zdGVyLkhvc3RMaXN0UmVxdWVzdBoYLnJvc3Rlci5Ib3N0TGlzdFJlc3BvbnNlMocDChFNYWlsRG9tYWluU2VydmljZRI3CgNBZGQSHC5yb3N0ZXIuTWFpbERvbWFpbkFkZFJlcXVlc3QaEi5yb3N0ZXIuTWFpbERvbWFpbhI3CgNHZXQSHC5yb3N0ZXIuTWFpbERvbWFpbkdldFJlcXVlc3QaEi5yb3N0ZXIuTWFpbERvbWFpbhI7CgVQYXRjaBIeLnJvc3Rlci5NYWlsRG9tYWluUGF0Y2hSZXF1ZXN0GhIucm9zdGVyLk1haWxEb21haW4SOwoFQXBwbHkSHi5yb3N0ZXIuTWFpbERvbWFpbkFwcGx5UmVxdWVzdBoSLnJvc3Rlci5NYWlsRG9tYWluEj8KBUVyYXNlEhUucm9zdGVyLk1haWxEb21haW5SZWYaHy5yb3N0ZXIuTWFpbERvbWFpbkVyYXNlUmVzcG9uc2USRQoETGlzdBIdLnJvc3Rlci5NYWlsRG9tYWluTGlzdFJlcXVlc3QaHi5yb3N0ZXIuTWFpbERvbWFpbkxpc3RSZXNwb25zZUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_host, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_tenant_svc_g]);
 
 /**
  * @generated from message roster.HostAddRequest
@@ -229,6 +229,29 @@ export const HostApplyRequestSchema: GenMessage<HostApplyRequest> = /*@__PURE__*
   messageDesc(file_app_host_svc_g, 5);
 
 /**
+ * @generated from message roster.HostEraseResponse
+ */
+export type HostEraseResponse = Message<"roster.HostEraseResponse"> & {
+  /**
+   * Erased is whether this call is the one that erased the row.
+   *
+   * False for a row that was already gone, was never there, or is out
+   * of this caller's reach -- which are one answer on purpose, and the
+   * reason the RPC does not fail instead.
+   *
+   * @generated from field: bool erased = 1;
+   */
+  erased: boolean;
+};
+
+/**
+ * Describes the message roster.HostEraseResponse.
+ * Use `create(HostEraseResponseSchema)` to create a new message.
+ */
+export const HostEraseResponseSchema: GenMessage<HostEraseResponse> = /*@__PURE__*/
+  messageDesc(file_app_host_svc_g, 6);
+
+/**
  * @generated from message roster.HostListRequest
  */
 export type HostListRequest = Message<"roster.HostListRequest"> & {
@@ -265,7 +288,7 @@ export type HostListRequest = Message<"roster.HostListRequest"> & {
  * Use `create(HostListRequestSchema)` to create a new message.
  */
 export const HostListRequestSchema: GenMessage<HostListRequest> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 6);
+  messageDesc(file_app_host_svc_g, 7);
 
 /**
  * @generated from message roster.HostListResponse
@@ -295,7 +318,7 @@ export type HostListResponse = Message<"roster.HostListResponse"> & {
  * Use `create(HostListResponseSchema)` to create a new message.
  */
 export const HostListResponseSchema: GenMessage<HostListResponse> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 7);
+  messageDesc(file_app_host_svc_g, 8);
 
 /**
  * @generated from message roster.HostFilter
@@ -317,7 +340,7 @@ export type HostFilter = Message<"roster.HostFilter"> & {
  * Use `create(HostFilterSchema)` to create a new message.
  */
 export const HostFilterSchema: GenMessage<HostFilter> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 8);
+  messageDesc(file_app_host_svc_g, 9);
 
 /**
  * @generated from message roster.MailDomainAddRequest
@@ -359,7 +382,7 @@ export type MailDomainAddRequest = Message<"roster.MailDomainAddRequest"> & {
  * Use `create(MailDomainAddRequestSchema)` to create a new message.
  */
 export const MailDomainAddRequestSchema: GenMessage<MailDomainAddRequest> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 9);
+  messageDesc(file_app_host_svc_g, 10);
 
 /**
  * @generated from message roster.MailDomainGetRequest
@@ -381,7 +404,7 @@ export type MailDomainGetRequest = Message<"roster.MailDomainGetRequest"> & {
  * Use `create(MailDomainGetRequestSchema)` to create a new message.
  */
 export const MailDomainGetRequestSchema: GenMessage<MailDomainGetRequest> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 10);
+  messageDesc(file_app_host_svc_g, 11);
 
 /**
  * @generated from message roster.MailDomainRef
@@ -410,7 +433,7 @@ export type MailDomainRef = Message<"roster.MailDomainRef"> & {
  * Use `create(MailDomainRefSchema)` to create a new message.
  */
 export const MailDomainRefSchema: GenMessage<MailDomainRef> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 11);
+  messageDesc(file_app_host_svc_g, 12);
 
 /**
  * @generated from message roster.MailDomainRefByAt
@@ -432,7 +455,7 @@ export type MailDomainRefByAt = Message<"roster.MailDomainRefByAt"> & {
  * Use `create(MailDomainRefByAtSchema)` to create a new message.
  */
 export const MailDomainRefByAtSchema: GenMessage<MailDomainRefByAt> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 12);
+  messageDesc(file_app_host_svc_g, 13);
 
 /**
  * @generated from message roster.MailDomainSelect
@@ -484,7 +507,7 @@ export type MailDomainSelect = Message<"roster.MailDomainSelect"> & {
  * Use `create(MailDomainSelectSchema)` to create a new message.
  */
 export const MailDomainSelectSchema: GenMessage<MailDomainSelect> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 13);
+  messageDesc(file_app_host_svc_g, 14);
 
 /**
  * @generated from message roster.MailDomainPatchRequest
@@ -540,7 +563,7 @@ export type MailDomainPatchRequest = Message<"roster.MailDomainPatchRequest"> & 
  * Use `create(MailDomainPatchRequestSchema)` to create a new message.
  */
 export const MailDomainPatchRequestSchema: GenMessage<MailDomainPatchRequest> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 14);
+  messageDesc(file_app_host_svc_g, 15);
 
 /**
  * @generated from message roster.MailDomainApplyRequest
@@ -562,7 +585,30 @@ export type MailDomainApplyRequest = Message<"roster.MailDomainApplyRequest"> & 
  * Use `create(MailDomainApplyRequestSchema)` to create a new message.
  */
 export const MailDomainApplyRequestSchema: GenMessage<MailDomainApplyRequest> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 15);
+  messageDesc(file_app_host_svc_g, 16);
+
+/**
+ * @generated from message roster.MailDomainEraseResponse
+ */
+export type MailDomainEraseResponse = Message<"roster.MailDomainEraseResponse"> & {
+  /**
+   * Erased is whether this call is the one that erased the row.
+   *
+   * False for a row that was already gone, was never there, or is out
+   * of this caller's reach -- which are one answer on purpose, and the
+   * reason the RPC does not fail instead.
+   *
+   * @generated from field: bool erased = 1;
+   */
+  erased: boolean;
+};
+
+/**
+ * Describes the message roster.MailDomainEraseResponse.
+ * Use `create(MailDomainEraseResponseSchema)` to create a new message.
+ */
+export const MailDomainEraseResponseSchema: GenMessage<MailDomainEraseResponse> = /*@__PURE__*/
+  messageDesc(file_app_host_svc_g, 17);
 
 /**
  * @generated from message roster.MailDomainListRequest
@@ -601,7 +647,7 @@ export type MailDomainListRequest = Message<"roster.MailDomainListRequest"> & {
  * Use `create(MailDomainListRequestSchema)` to create a new message.
  */
 export const MailDomainListRequestSchema: GenMessage<MailDomainListRequest> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 16);
+  messageDesc(file_app_host_svc_g, 18);
 
 /**
  * @generated from message roster.MailDomainListResponse
@@ -631,7 +677,7 @@ export type MailDomainListResponse = Message<"roster.MailDomainListResponse"> & 
  * Use `create(MailDomainListResponseSchema)` to create a new message.
  */
 export const MailDomainListResponseSchema: GenMessage<MailDomainListResponse> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 17);
+  messageDesc(file_app_host_svc_g, 19);
 
 /**
  * @generated from message roster.MailDomainFilter
@@ -653,7 +699,7 @@ export type MailDomainFilter = Message<"roster.MailDomainFilter"> & {
  * Use `create(MailDomainFilterSchema)` to create a new message.
  */
 export const MailDomainFilterSchema: GenMessage<MailDomainFilter> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 18);
+  messageDesc(file_app_host_svc_g, 20);
 
 /**
  * @generated from service roster.HostService
@@ -707,7 +753,7 @@ export const HostService: GenService<{
   erase: {
     methodKind: "unary";
     input: typeof HostRefSchema;
-    output: typeof EmptySchema;
+    output: typeof HostEraseResponseSchema;
   },
   /**
    * List reads Hosts a page at a time.
@@ -774,7 +820,7 @@ export const MailDomainService: GenService<{
   erase: {
     methodKind: "unary";
     input: typeof MailDomainRefSchema;
-    output: typeof EmptySchema;
+    output: typeof MailDomainEraseResponseSchema;
   },
   /**
    * List reads MailDomains a page at a time.

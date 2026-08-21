@@ -19,7 +19,6 @@ import (
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 type GroupServiceServer struct {
@@ -413,7 +412,7 @@ func (s GroupServiceServer) apply(ctx context.Context, ref *rstr.GroupRef, doc *
 	return out, nil
 }
 
-func (s GroupServiceServer) Erase(ctx context.Context, req *rstr.GroupRef) (*emptypb.Empty, error) {
+func (s GroupServiceServer) Erase(ctx context.Context, req *rstr.GroupRef) (*rstr.GroupEraseResponse, error) {
 	p, err := GroupPick(req)
 	if err != nil {
 		return nil, err
@@ -437,13 +436,13 @@ func (s GroupServiceServer) Erase(ctx context.Context, req *rstr.GroupRef) (*emp
 		v, err := st.Db.Group.Query().Where(p).OnlyID(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
-				return &emptypb.Empty{}, nil
+				return &rstr.GroupEraseResponse{}, nil
 			}
 			return nil, err
 		}
 
 		k = v
-		p = group.IDEQ(v)
+		p = group.And(p, group.IDEQ(v))
 	}
 
 	u := st.Db.Group.Update().Where(p)
@@ -464,7 +463,10 @@ func (s GroupServiceServer) Erase(ctx context.Context, req *rstr.GroupRef) (*emp
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return &emptypb.Empty{}, nil
+	res := &rstr.GroupEraseResponse{}
+	res.SetErased(n > 0)
+
+	return res, nil
 }
 
 // GroupPick answers with the predicate this reference selects on,
@@ -887,7 +889,7 @@ func (s GroupMembershipServiceServer) apply(ctx context.Context, ref *rstr.Group
 	return out, nil
 }
 
-func (s GroupMembershipServiceServer) Erase(ctx context.Context, req *rstr.GroupMembershipRef) (*emptypb.Empty, error) {
+func (s GroupMembershipServiceServer) Erase(ctx context.Context, req *rstr.GroupMembershipRef) (*rstr.GroupMembershipEraseResponse, error) {
 	p, err := GroupMembershipPick(req)
 	if err != nil {
 		return nil, err
@@ -911,13 +913,13 @@ func (s GroupMembershipServiceServer) Erase(ctx context.Context, req *rstr.Group
 		v, err := st.Db.GroupMembership.Query().Where(p).OnlyID(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
-				return &emptypb.Empty{}, nil
+				return &rstr.GroupMembershipEraseResponse{}, nil
 			}
 			return nil, err
 		}
 
 		k = v
-		p = groupmembership.IDEQ(v)
+		p = groupmembership.And(p, groupmembership.IDEQ(v))
 	}
 
 	u := st.Db.GroupMembership.Update().Where(p)
@@ -938,7 +940,10 @@ func (s GroupMembershipServiceServer) Erase(ctx context.Context, req *rstr.Group
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return &emptypb.Empty{}, nil
+	res := &rstr.GroupMembershipEraseResponse{}
+	res.SetErased(n > 0)
+
+	return res, nil
 }
 
 // GroupMembershipPick answers with the predicate this reference selects on,

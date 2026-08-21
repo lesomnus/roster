@@ -20,7 +20,6 @@ import (
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 type EmailServiceServer struct {
@@ -430,7 +429,7 @@ func (s EmailServiceServer) apply(ctx context.Context, ref *rstr.EmailRef, doc *
 	return out, nil
 }
 
-func (s EmailServiceServer) Erase(ctx context.Context, req *rstr.EmailRef) (*emptypb.Empty, error) {
+func (s EmailServiceServer) Erase(ctx context.Context, req *rstr.EmailRef) (*rstr.EmailEraseResponse, error) {
 	p, err := EmailPick(req)
 	if err != nil {
 		return nil, err
@@ -454,13 +453,13 @@ func (s EmailServiceServer) Erase(ctx context.Context, req *rstr.EmailRef) (*emp
 		v, err := st.Db.Email.Query().Where(p).OnlyID(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
-				return &emptypb.Empty{}, nil
+				return &rstr.EmailEraseResponse{}, nil
 			}
 			return nil, err
 		}
 
 		k = v
-		p = email.IDEQ(v)
+		p = email.And(p, email.IDEQ(v))
 	}
 
 	u := st.Db.Email.Update().Where(p)
@@ -481,7 +480,10 @@ func (s EmailServiceServer) Erase(ctx context.Context, req *rstr.EmailRef) (*emp
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return &emptypb.Empty{}, nil
+	res := &rstr.EmailEraseResponse{}
+	res.SetErased(n > 0)
+
+	return res, nil
 }
 
 // EmailPick answers with the predicate this reference selects on,

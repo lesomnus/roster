@@ -11,7 +11,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -41,7 +40,7 @@ type ContinuationServiceClient interface {
 	// Apply applies a patch document to an existing Continuation
 	Apply(ctx context.Context, in *ContinuationApplyRequest, opts ...grpc.CallOption) (*Continuation, error)
 	// Erase deletes a Continuation
-	Erase(ctx context.Context, in *ContinuationRef, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Erase(ctx context.Context, in *ContinuationRef, opts ...grpc.CallOption) (*ContinuationEraseResponse, error)
 	// List reads Continuations a page at a time.
 	List(ctx context.Context, in *ContinuationListRequest, opts ...grpc.CallOption) (*ContinuationListResponse, error)
 }
@@ -94,9 +93,9 @@ func (c *continuationServiceClient) Apply(ctx context.Context, in *ContinuationA
 	return out, nil
 }
 
-func (c *continuationServiceClient) Erase(ctx context.Context, in *ContinuationRef, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *continuationServiceClient) Erase(ctx context.Context, in *ContinuationRef, opts ...grpc.CallOption) (*ContinuationEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
+	out := new(ContinuationEraseResponse)
 	err := c.cc.Invoke(ctx, ContinuationService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -127,7 +126,7 @@ type ContinuationServiceServer interface {
 	// Apply applies a patch document to an existing Continuation
 	Apply(context.Context, *ContinuationApplyRequest) (*Continuation, error)
 	// Erase deletes a Continuation
-	Erase(context.Context, *ContinuationRef) (*emptypb.Empty, error)
+	Erase(context.Context, *ContinuationRef) (*ContinuationEraseResponse, error)
 	// List reads Continuations a page at a time.
 	List(context.Context, *ContinuationListRequest) (*ContinuationListResponse, error)
 	mustEmbedUnimplementedContinuationServiceServer()
@@ -152,7 +151,7 @@ func (UnimplementedContinuationServiceServer) Patch(context.Context, *Continuati
 func (UnimplementedContinuationServiceServer) Apply(context.Context, *ContinuationApplyRequest) (*Continuation, error) {
 	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
-func (UnimplementedContinuationServiceServer) Erase(context.Context, *ContinuationRef) (*emptypb.Empty, error) {
+func (UnimplementedContinuationServiceServer) Erase(context.Context, *ContinuationRef) (*ContinuationEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedContinuationServiceServer) List(context.Context, *ContinuationListRequest) (*ContinuationListResponse, error) {

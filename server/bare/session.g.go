@@ -18,7 +18,6 @@ import (
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 type SessionServiceServer struct {
@@ -404,7 +403,7 @@ func (s SessionServiceServer) apply(ctx context.Context, ref *rstr.SessionRef, d
 	return out, nil
 }
 
-func (s SessionServiceServer) Erase(ctx context.Context, req *rstr.SessionRef) (*emptypb.Empty, error) {
+func (s SessionServiceServer) Erase(ctx context.Context, req *rstr.SessionRef) (*rstr.SessionEraseResponse, error) {
 	p, err := SessionPick(req)
 	if err != nil {
 		return nil, err
@@ -428,13 +427,13 @@ func (s SessionServiceServer) Erase(ctx context.Context, req *rstr.SessionRef) (
 		v, err := st.Db.Session.Query().Where(p).OnlyID(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
-				return &emptypb.Empty{}, nil
+				return &rstr.SessionEraseResponse{}, nil
 			}
 			return nil, err
 		}
 
 		k = v
-		p = session.IDEQ(v)
+		p = session.And(p, session.IDEQ(v))
 	}
 
 	u := st.Db.Session.Update().Where(p)
@@ -455,7 +454,10 @@ func (s SessionServiceServer) Erase(ctx context.Context, req *rstr.SessionRef) (
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return &emptypb.Empty{}, nil
+	res := &rstr.SessionEraseResponse{}
+	res.SetErased(n > 0)
+
+	return res, nil
 }
 
 // SessionPick answers with the predicate this reference selects on,

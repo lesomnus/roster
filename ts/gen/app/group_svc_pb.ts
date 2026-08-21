@@ -8,8 +8,8 @@ import type { Group, GroupMembership, GroupMembershipSchema, GroupSchema } from 
 import { file_app_group } from "./group_pb.js";
 import type { SiteRef, SiteSelect } from "./site_svc_pb.js";
 import { file_app_site_svc_g } from "./site_svc_pb.js";
-import type { EmptySchema, Timestamp } from "@bufbuild/protobuf/wkt";
-import { file_google_protobuf_empty, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Patch } from "../patch/patch_pb.js";
 import { file_patch_patch } from "../patch/patch_pb.js";
 import type { HolderRef, HolderSelect } from "../roster/payday/holder_svc_pb.js";
@@ -22,7 +22,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/group_svc.g.proto.
  */
 export const file_app_group_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChVhcHAvZ3JvdXBfc3ZjLmcucHJvdG8SBnJvc3RlciLRAQoPR3JvdXBBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSHQoEc2l0ZRgDIAEoCzIPLnJvc3Rlci5TaXRlUmVmEhQKBWFsaWFzGAQgASgJQgWqAQIIAhITCgRuYW1lGAUgASgJQgWqAQIIAhITCgRkZXNjGAYgASgJQgWqAQIIAhIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlUKD0dyb3VwR2V0UmVxdWVzdBIdCgNyZWYYASABKAsyEC5yb3N0ZXIuR3JvdXBSZWYSIwoGc2VsZWN0GAIgASgLMhMucm9zdGVyLkdyb3VwU2VsZWN0IkkKCEdyb3VwUmVmEgwKAmlkGAEgASgMSAASKAoFYWxpYXMYAiABKAsyFy5yb3N0ZXIuR3JvdXBSZWZCeUFsaWFzSABCBQoDa2V5IkMKD0dyb3VwUmVmQnlBbGlhcxIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmEg0KBWFsaWFzGAQgASgJIs4BCgtHcm91cFNlbGVjdBILCgNhbGwYASABKAgSJAoGdGVuYW50GAIgASgLMhQucm9zdGVyLlRlbmFudFNlbGVjdBIgCgRzaXRlGAMgASgLMhIucm9zdGVyLlNpdGVTZWxlY3QSDQoFYWxpYXMYBCABKAgSDAoEbmFtZRgFIAEoCBIMCgRkZXNjGAYgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgiqwEKEUdyb3VwUGF0Y2hSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5Hcm91cFJlZhINCgVhbGlhcxgIIAEoCRIMCgRuYW1lGAogASgJEgwKBGRlc2MYDCABKAkSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiTwoRR3JvdXBBcHBseVJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLkdyb3VwUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giYwoQR3JvdXBMaXN0UmVxdWVzdBIkCgdmaWx0ZXJzGAEgAygLMhMucm9zdGVyLkdyb3VwRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAiJGChFHcm91cExpc3RSZXNwb25zZRIcCgVpdGVtcxgBIAMoCzINLnJvc3Rlci5Hcm91cBITCgRuZXh0GAIgASgJQgWqAQIIAiIsCgtHcm91cEZpbHRlchIdCgNyZWYYASABKAsyEC5yb3N0ZXIuR3JvdXBSZWYinQEKGUdyb3VwTWVtYmVyc2hpcEFkZFJlcXVlc3QSCgoCaWQYASABKAwSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIfCgVncm91cBgIIAEoCzIQLnJvc3Rlci5Hcm91cFJlZhIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wInMKGUdyb3VwTWVtYmVyc2hpcEdldFJlcXVlc3QSJwoDcmVmGAEgASgLMhoucm9zdGVyLkdyb3VwTWVtYmVyc2hpcFJlZhItCgZzZWxlY3QYAiABKAsyHS5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwU2VsZWN0Il8KEkdyb3VwTWVtYmVyc2hpcFJlZhIMCgJpZBgBIAEoDEgAEjQKBm1lbWJlchgCIAEoCzIiLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXBSZWZCeU1lbWJlckgAQgUKA2tleSJgChpHcm91cE1lbWJlcnNoaXBSZWZCeU1lbWJlchIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEh8KBWdyb3VwGAggASgLMhAucm9zdGVyLkdyb3VwUmVmIq8BChVHcm91cE1lbWJlcnNoaXBTZWxlY3QSCwoDYWxsGAEgASgIEiQKBmhvbGRlchgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSIgoFZ3JvdXAYCCABKAsyEy5yb3N0ZXIuR3JvdXBTZWxlY3QSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKUAQobR3JvdXBNZW1iZXJzaGlwUGF0Y2hSZXF1ZXN0EicKA3JlZhgBIAEoCzIaLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXBSZWYSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiYwobR3JvdXBNZW1iZXJzaGlwQXBwbHlSZXF1ZXN0EicKA3JlZhgBIAEoCzIaLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXBSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCJ3ChpHcm91cE1lbWJlcnNoaXBMaXN0UmVxdWVzdBIuCgdmaWx0ZXJzGAEgAygLMh0ucm9zdGVyLkdyb3VwTWVtYmVyc2hpcEZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAIiWgobR3JvdXBNZW1iZXJzaGlwTGlzdFJlc3BvbnNlEiYKBWl0ZW1zGAEgAygLMhcucm9zdGVyLkdyb3VwTWVtYmVyc2hpcBITCgRuZXh0GAIgASgJQgWqAQIIAiJAChVHcm91cE1lbWJlcnNoaXBGaWx0ZXISJwoDcmVmGAEgASgLMhoucm9zdGVyLkdyb3VwTWVtYmVyc2hpcFJlZjLCAgoMR3JvdXBTZXJ2aWNlEi0KA0FkZBIXLnJvc3Rlci5Hcm91cEFkZFJlcXVlc3QaDS5yb3N0ZXIuR3JvdXASLQoDR2V0Ehcucm9zdGVyLkdyb3VwR2V0UmVxdWVzdBoNLnJvc3Rlci5Hcm91cBIxCgVQYXRjaBIZLnJvc3Rlci5Hcm91cFBhdGNoUmVxdWVzdBoNLnJvc3Rlci5Hcm91cBIxCgVBcHBseRIZLnJvc3Rlci5Hcm91cEFwcGx5UmVxdWVzdBoNLnJvc3Rlci5Hcm91cBIxCgVFcmFzZRIQLnJvc3Rlci5Hcm91cFJlZhoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eRI7CgRMaXN0Ehgucm9zdGVyLkdyb3VwTGlzdFJlcXVlc3QaGS5yb3N0ZXIuR3JvdXBMaXN0UmVzcG9uc2UyugMKFkdyb3VwTWVtYmVyc2hpcFNlcnZpY2USQQoDQWRkEiEucm9zdGVyLkdyb3VwTWVtYmVyc2hpcEFkZFJlcXVlc3QaFy5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwEkEKA0dldBIhLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXBHZXRSZXF1ZXN0Ghcucm9zdGVyLkdyb3VwTWVtYmVyc2hpcBJFCgVQYXRjaBIjLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXBQYXRjaFJlcXVlc3QaFy5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwEkUKBUFwcGx5EiMucm9zdGVyLkdyb3VwTWVtYmVyc2hpcEFwcGx5UmVxdWVzdBoXLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXASOwoFRXJhc2USGi5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwUmVmGhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5Ek8KBExpc3QSIi5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwTGlzdFJlcXVlc3QaIy5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwTGlzdFJlc3BvbnNlQiFaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHJiCGVkaXRpb25zcOgH", [file_app_group, file_app_site_svc_g, file_google_protobuf_empty, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g, file_roster_payday_tenant_svc_g]);
+  fileDesc("ChVhcHAvZ3JvdXBfc3ZjLmcucHJvdG8SBnJvc3RlciLRAQoPR3JvdXBBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSHQoEc2l0ZRgDIAEoCzIPLnJvc3Rlci5TaXRlUmVmEhQKBWFsaWFzGAQgASgJQgWqAQIIAhITCgRuYW1lGAUgASgJQgWqAQIIAhITCgRkZXNjGAYgASgJQgWqAQIIAhIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlUKD0dyb3VwR2V0UmVxdWVzdBIdCgNyZWYYASABKAsyEC5yb3N0ZXIuR3JvdXBSZWYSIwoGc2VsZWN0GAIgASgLMhMucm9zdGVyLkdyb3VwU2VsZWN0IkkKCEdyb3VwUmVmEgwKAmlkGAEgASgMSAASKAoFYWxpYXMYAiABKAsyFy5yb3N0ZXIuR3JvdXBSZWZCeUFsaWFzSABCBQoDa2V5IkMKD0dyb3VwUmVmQnlBbGlhcxIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmEg0KBWFsaWFzGAQgASgJIs4BCgtHcm91cFNlbGVjdBILCgNhbGwYASABKAgSJAoGdGVuYW50GAIgASgLMhQucm9zdGVyLlRlbmFudFNlbGVjdBIgCgRzaXRlGAMgASgLMhIucm9zdGVyLlNpdGVTZWxlY3QSDQoFYWxpYXMYBCABKAgSDAoEbmFtZRgFIAEoCBIMCgRkZXNjGAYgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgiqwEKEUdyb3VwUGF0Y2hSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5Hcm91cFJlZhINCgVhbGlhcxgIIAEoCRIMCgRuYW1lGAogASgJEgwKBGRlc2MYDCABKAkSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiTwoRR3JvdXBBcHBseVJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLkdyb3VwUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giJAoSR3JvdXBFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCJjChBHcm91cExpc3RSZXF1ZXN0EiQKB2ZpbHRlcnMYASADKAsyEy5yb3N0ZXIuR3JvdXBGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIkYKEUdyb3VwTGlzdFJlc3BvbnNlEhwKBWl0ZW1zGAEgAygLMg0ucm9zdGVyLkdyb3VwEhMKBG5leHQYAiABKAlCBaoBAggCIiwKC0dyb3VwRmlsdGVyEh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5Hcm91cFJlZiKdAQoZR3JvdXBNZW1iZXJzaGlwQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEh8KBWdyb3VwGAggASgLMhAucm9zdGVyLkdyb3VwUmVmEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAicwoZR3JvdXBNZW1iZXJzaGlwR2V0UmVxdWVzdBInCgNyZWYYASABKAsyGi5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwUmVmEi0KBnNlbGVjdBgCIAEoCzIdLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXBTZWxlY3QiXwoSR3JvdXBNZW1iZXJzaGlwUmVmEgwKAmlkGAEgASgMSAASNAoGbWVtYmVyGAIgASgLMiIucm9zdGVyLkdyb3VwTWVtYmVyc2hpcFJlZkJ5TWVtYmVySABCBQoDa2V5ImAKGkdyb3VwTWVtYmVyc2hpcFJlZkJ5TWVtYmVyEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSHwoFZ3JvdXAYCCABKAsyEC5yb3N0ZXIuR3JvdXBSZWYirwEKFUdyb3VwTWVtYmVyc2hpcFNlbGVjdBILCgNhbGwYASABKAgSJAoGaG9sZGVyGAIgASgLMhQucm9zdGVyLkhvbGRlclNlbGVjdBIiCgVncm91cBgIIAEoCzITLnJvc3Rlci5Hcm91cFNlbGVjdBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIpQBChtHcm91cE1lbWJlcnNoaXBQYXRjaFJlcXVlc3QSJwoDcmVmGAEgASgLMhoucm9zdGVyLkdyb3VwTWVtYmVyc2hpcFJlZhIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCCJjChtHcm91cE1lbWJlcnNoaXBBcHBseVJlcXVlc3QSJwoDcmVmGAEgASgLMhoucm9zdGVyLkdyb3VwTWVtYmVyc2hpcFJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIi4KHEdyb3VwTWVtYmVyc2hpcEVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIncKGkdyb3VwTWVtYmVyc2hpcExpc3RSZXF1ZXN0Ei4KB2ZpbHRlcnMYASADKAsyHS5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAiJaChtHcm91cE1lbWJlcnNoaXBMaXN0UmVzcG9uc2USJgoFaXRlbXMYASADKAsyFy5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwEhMKBG5leHQYAiABKAlCBaoBAggCIkAKFUdyb3VwTWVtYmVyc2hpcEZpbHRlchInCgNyZWYYASABKAsyGi5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwUmVmMsYCCgxHcm91cFNlcnZpY2USLQoDQWRkEhcucm9zdGVyLkdyb3VwQWRkUmVxdWVzdBoNLnJvc3Rlci5Hcm91cBItCgNHZXQSFy5yb3N0ZXIuR3JvdXBHZXRSZXF1ZXN0Gg0ucm9zdGVyLkdyb3VwEjEKBVBhdGNoEhkucm9zdGVyLkdyb3VwUGF0Y2hSZXF1ZXN0Gg0ucm9zdGVyLkdyb3VwEjEKBUFwcGx5Ehkucm9zdGVyLkdyb3VwQXBwbHlSZXF1ZXN0Gg0ucm9zdGVyLkdyb3VwEjUKBUVyYXNlEhAucm9zdGVyLkdyb3VwUmVmGhoucm9zdGVyLkdyb3VwRXJhc2VSZXNwb25zZRI7CgRMaXN0Ehgucm9zdGVyLkdyb3VwTGlzdFJlcXVlc3QaGS5yb3N0ZXIuR3JvdXBMaXN0UmVzcG9uc2UyyAMKFkdyb3VwTWVtYmVyc2hpcFNlcnZpY2USQQoDQWRkEiEucm9zdGVyLkdyb3VwTWVtYmVyc2hpcEFkZFJlcXVlc3QaFy5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwEkEKA0dldBIhLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXBHZXRSZXF1ZXN0Ghcucm9zdGVyLkdyb3VwTWVtYmVyc2hpcBJFCgVQYXRjaBIjLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXBQYXRjaFJlcXVlc3QaFy5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwEkUKBUFwcGx5EiMucm9zdGVyLkdyb3VwTWVtYmVyc2hpcEFwcGx5UmVxdWVzdBoXLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXASSQoFRXJhc2USGi5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwUmVmGiQucm9zdGVyLkdyb3VwTWVtYmVyc2hpcEVyYXNlUmVzcG9uc2USTwoETGlzdBIiLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXBMaXN0UmVxdWVzdBojLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXBMaXN0UmVzcG9uc2VCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_group, file_app_site_svc_g, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g, file_roster_payday_tenant_svc_g]);
 
 /**
  * @generated from message roster.GroupAddRequest
@@ -280,6 +280,29 @@ export const GroupApplyRequestSchema: GenMessage<GroupApplyRequest> = /*@__PURE_
   messageDesc(file_app_group_svc_g, 6);
 
 /**
+ * @generated from message roster.GroupEraseResponse
+ */
+export type GroupEraseResponse = Message<"roster.GroupEraseResponse"> & {
+  /**
+   * Erased is whether this call is the one that erased the row.
+   *
+   * False for a row that was already gone, was never there, or is out
+   * of this caller's reach -- which are one answer on purpose, and the
+   * reason the RPC does not fail instead.
+   *
+   * @generated from field: bool erased = 1;
+   */
+  erased: boolean;
+};
+
+/**
+ * Describes the message roster.GroupEraseResponse.
+ * Use `create(GroupEraseResponseSchema)` to create a new message.
+ */
+export const GroupEraseResponseSchema: GenMessage<GroupEraseResponse> = /*@__PURE__*/
+  messageDesc(file_app_group_svc_g, 7);
+
+/**
  * @generated from message roster.GroupListRequest
  */
 export type GroupListRequest = Message<"roster.GroupListRequest"> & {
@@ -316,7 +339,7 @@ export type GroupListRequest = Message<"roster.GroupListRequest"> & {
  * Use `create(GroupListRequestSchema)` to create a new message.
  */
 export const GroupListRequestSchema: GenMessage<GroupListRequest> = /*@__PURE__*/
-  messageDesc(file_app_group_svc_g, 7);
+  messageDesc(file_app_group_svc_g, 8);
 
 /**
  * @generated from message roster.GroupListResponse
@@ -346,7 +369,7 @@ export type GroupListResponse = Message<"roster.GroupListResponse"> & {
  * Use `create(GroupListResponseSchema)` to create a new message.
  */
 export const GroupListResponseSchema: GenMessage<GroupListResponse> = /*@__PURE__*/
-  messageDesc(file_app_group_svc_g, 8);
+  messageDesc(file_app_group_svc_g, 9);
 
 /**
  * @generated from message roster.GroupFilter
@@ -363,7 +386,7 @@ export type GroupFilter = Message<"roster.GroupFilter"> & {
  * Use `create(GroupFilterSchema)` to create a new message.
  */
 export const GroupFilterSchema: GenMessage<GroupFilter> = /*@__PURE__*/
-  messageDesc(file_app_group_svc_g, 9);
+  messageDesc(file_app_group_svc_g, 10);
 
 /**
  * @generated from message roster.GroupMembershipAddRequest
@@ -395,7 +418,7 @@ export type GroupMembershipAddRequest = Message<"roster.GroupMembershipAddReques
  * Use `create(GroupMembershipAddRequestSchema)` to create a new message.
  */
 export const GroupMembershipAddRequestSchema: GenMessage<GroupMembershipAddRequest> = /*@__PURE__*/
-  messageDesc(file_app_group_svc_g, 10);
+  messageDesc(file_app_group_svc_g, 11);
 
 /**
  * @generated from message roster.GroupMembershipGetRequest
@@ -417,7 +440,7 @@ export type GroupMembershipGetRequest = Message<"roster.GroupMembershipGetReques
  * Use `create(GroupMembershipGetRequestSchema)` to create a new message.
  */
 export const GroupMembershipGetRequestSchema: GenMessage<GroupMembershipGetRequest> = /*@__PURE__*/
-  messageDesc(file_app_group_svc_g, 11);
+  messageDesc(file_app_group_svc_g, 12);
 
 /**
  * @generated from message roster.GroupMembershipRef
@@ -446,7 +469,7 @@ export type GroupMembershipRef = Message<"roster.GroupMembershipRef"> & {
  * Use `create(GroupMembershipRefSchema)` to create a new message.
  */
 export const GroupMembershipRefSchema: GenMessage<GroupMembershipRef> = /*@__PURE__*/
-  messageDesc(file_app_group_svc_g, 12);
+  messageDesc(file_app_group_svc_g, 13);
 
 /**
  * @generated from message roster.GroupMembershipRefByMember
@@ -468,7 +491,7 @@ export type GroupMembershipRefByMember = Message<"roster.GroupMembershipRefByMem
  * Use `create(GroupMembershipRefByMemberSchema)` to create a new message.
  */
 export const GroupMembershipRefByMemberSchema: GenMessage<GroupMembershipRefByMember> = /*@__PURE__*/
-  messageDesc(file_app_group_svc_g, 13);
+  messageDesc(file_app_group_svc_g, 14);
 
 /**
  * @generated from message roster.GroupMembershipSelect
@@ -510,7 +533,7 @@ export type GroupMembershipSelect = Message<"roster.GroupMembershipSelect"> & {
  * Use `create(GroupMembershipSelectSchema)` to create a new message.
  */
 export const GroupMembershipSelectSchema: GenMessage<GroupMembershipSelect> = /*@__PURE__*/
-  messageDesc(file_app_group_svc_g, 14);
+  messageDesc(file_app_group_svc_g, 15);
 
 /**
  * @generated from message roster.GroupMembershipPatchRequest
@@ -551,7 +574,7 @@ export type GroupMembershipPatchRequest = Message<"roster.GroupMembershipPatchRe
  * Use `create(GroupMembershipPatchRequestSchema)` to create a new message.
  */
 export const GroupMembershipPatchRequestSchema: GenMessage<GroupMembershipPatchRequest> = /*@__PURE__*/
-  messageDesc(file_app_group_svc_g, 15);
+  messageDesc(file_app_group_svc_g, 16);
 
 /**
  * @generated from message roster.GroupMembershipApplyRequest
@@ -573,7 +596,30 @@ export type GroupMembershipApplyRequest = Message<"roster.GroupMembershipApplyRe
  * Use `create(GroupMembershipApplyRequestSchema)` to create a new message.
  */
 export const GroupMembershipApplyRequestSchema: GenMessage<GroupMembershipApplyRequest> = /*@__PURE__*/
-  messageDesc(file_app_group_svc_g, 16);
+  messageDesc(file_app_group_svc_g, 17);
+
+/**
+ * @generated from message roster.GroupMembershipEraseResponse
+ */
+export type GroupMembershipEraseResponse = Message<"roster.GroupMembershipEraseResponse"> & {
+  /**
+   * Erased is whether this call is the one that erased the row.
+   *
+   * False for a row that was already gone, was never there, or is out
+   * of this caller's reach -- which are one answer on purpose, and the
+   * reason the RPC does not fail instead.
+   *
+   * @generated from field: bool erased = 1;
+   */
+  erased: boolean;
+};
+
+/**
+ * Describes the message roster.GroupMembershipEraseResponse.
+ * Use `create(GroupMembershipEraseResponseSchema)` to create a new message.
+ */
+export const GroupMembershipEraseResponseSchema: GenMessage<GroupMembershipEraseResponse> = /*@__PURE__*/
+  messageDesc(file_app_group_svc_g, 18);
 
 /**
  * @generated from message roster.GroupMembershipListRequest
@@ -612,7 +658,7 @@ export type GroupMembershipListRequest = Message<"roster.GroupMembershipListRequ
  * Use `create(GroupMembershipListRequestSchema)` to create a new message.
  */
 export const GroupMembershipListRequestSchema: GenMessage<GroupMembershipListRequest> = /*@__PURE__*/
-  messageDesc(file_app_group_svc_g, 17);
+  messageDesc(file_app_group_svc_g, 19);
 
 /**
  * @generated from message roster.GroupMembershipListResponse
@@ -642,7 +688,7 @@ export type GroupMembershipListResponse = Message<"roster.GroupMembershipListRes
  * Use `create(GroupMembershipListResponseSchema)` to create a new message.
  */
 export const GroupMembershipListResponseSchema: GenMessage<GroupMembershipListResponse> = /*@__PURE__*/
-  messageDesc(file_app_group_svc_g, 18);
+  messageDesc(file_app_group_svc_g, 20);
 
 /**
  * @generated from message roster.GroupMembershipFilter
@@ -659,7 +705,7 @@ export type GroupMembershipFilter = Message<"roster.GroupMembershipFilter"> & {
  * Use `create(GroupMembershipFilterSchema)` to create a new message.
  */
 export const GroupMembershipFilterSchema: GenMessage<GroupMembershipFilter> = /*@__PURE__*/
-  messageDesc(file_app_group_svc_g, 19);
+  messageDesc(file_app_group_svc_g, 21);
 
 /**
  * @generated from service roster.GroupService
@@ -713,7 +759,7 @@ export const GroupService: GenService<{
   erase: {
     methodKind: "unary";
     input: typeof GroupRefSchema;
-    output: typeof EmptySchema;
+    output: typeof GroupEraseResponseSchema;
   },
   /**
    * List reads Groups a page at a time.
@@ -780,7 +826,7 @@ export const GroupMembershipService: GenService<{
   erase: {
     methodKind: "unary";
     input: typeof GroupMembershipRefSchema;
-    output: typeof EmptySchema;
+    output: typeof GroupMembershipEraseResponseSchema;
   },
   /**
    * List reads GroupMemberships a page at a time.

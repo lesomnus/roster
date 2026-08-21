@@ -137,6 +137,62 @@ over memberships, credential verification.
 Recorded as they are made, with the reason, so that a later disagreement argues
 with the reason rather than rediscovering the question.
 
+### D34 · Single-use is what the row says, and the row has to be able to say it
+
+`Continuation` and `Link` are spent by erasing them, and both places said so:
+*single use, and used is not there*; *it is safe here because a continuation is
+single-use*. Neither was true under concurrency.
+
+#### What happened, measured rather than reasoned about
+
+Thirty-two callers presenting one continuation with the same correct code: all
+read the live row, all compared against the same credential, and all went on to
+mint. **Up to twenty-four independently revocable credentials from one proof**,
+each surviving revocation of the others. Links the same, and the interleaving
+there is not exotic -- a mail client fetching a link to preview it, while the
+person clicks it.
+
+It reproduced on Postgres and never on SQLite, where a second writer gets
+`database is locked` and dies leaving exactly one winner. The suite is SQLite
+unless `PDTEST_POSTGRES` says otherwise, and `pdtest.DB`'s own sibling comment
+names that as *the direction that hides a mistake*.
+
+#### Why no amount of care here could have fixed it
+
+Spending is an `Erase`, and `Erase` answered `Empty`. The database was already
+deciding correctly -- one UPDATE narrowed by `date_erased IS NULL` matches once
+-- and then threw the answer away. Every loser was told exactly what the winner
+was told.
+
+Nor could roster have compared-and-swapped instead: a `Patch` carrying only a
+version test compiles to an `Exist` check and no write, so two callers both see
+the row and both proceed. `Continuation` has no mutable column to swap on, and
+adding one would have been a second way of saying erased.
+
+So payday was in the way, and the fix is upstream in two parts
+(`protoc-gen-orm-service@efff3ac`, `protoc-gen-orm-ent@f892843`):
+
+- **`Erase` reports what it did.** `<E>EraseResponse{bool erased = 1}`, from the
+  same `n` the trail is written from. It cannot be said by failing, because
+  erasing what is not there has to succeed -- `keys.Undelegate` depends on that,
+  and so does anybody cancelling something that may already be cancelled.
+- **`Erase` stopped dropping its narrowing.** It read the row's id to name it in
+  the trail and then *replaced* the predicate with `IDEQ(v)`, discarding both
+  liveness and scope -- so two concurrent erases of one row both matched and both
+  recorded a Change saying they had erased it. One row, two entries in a trail.
+
+Wire-compatible: `Empty` has no fields, so an older client decodes the new
+response as an `Empty` carrying one unknown field.
+
+#### And here, the losers get `no()`
+
+Not an error. It is what every other unusable handle already gets -- one that
+expired, one that was spent, one somebody else was issued -- and telling them
+apart would say whether a string was ever a real attempt.
+
+Only the mint is guarded. Everything above it in `step` is a refusal, where
+losing the race changes nothing; below it, two winners are two credentials.
+
 ### D33 · roster is stateless except for the broker, and the broker is a seam
 
 Asked directly -- can this be scaled horizontally, and is the state

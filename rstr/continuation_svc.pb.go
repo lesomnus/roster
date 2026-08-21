@@ -10,7 +10,6 @@ import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	unsafe "unsafe"
@@ -1089,6 +1088,86 @@ func (b0 ContinuationApplyRequest_builder) Build() *ContinuationApplyRequest {
 	return m0
 }
 
+type ContinuationEraseResponse struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *ContinuationEraseResponse) Reset() {
+	*x = ContinuationEraseResponse{}
+	mi := &file_app_continuation_svc_g_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ContinuationEraseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ContinuationEraseResponse) ProtoMessage() {}
+
+func (x *ContinuationEraseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_app_continuation_svc_g_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *ContinuationEraseResponse) GetErased() bool {
+	if x != nil {
+		return x.xxx_hidden_Erased
+	}
+	return false
+}
+
+func (x *ContinuationEraseResponse) SetErased(v bool) {
+	x.xxx_hidden_Erased = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+}
+
+func (x *ContinuationEraseResponse) HasErased() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *ContinuationEraseResponse) ClearErased() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Erased = false
+}
+
+type ContinuationEraseResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Erased is whether this call is the one that erased the row.
+	//
+	// False for a row that was already gone, was never there, or is out
+	// of this caller's reach -- which are one answer on purpose, and the
+	// reason the RPC does not fail instead.
+	Erased *bool
+}
+
+func (b0 ContinuationEraseResponse_builder) Build() *ContinuationEraseResponse {
+	m0 := &ContinuationEraseResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Erased != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		x.xxx_hidden_Erased = *b.Erased
+	}
+	return m0
+}
+
 type ContinuationListRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*ContinuationFilter `protobuf:"bytes,1,rep,name=filters"`
@@ -1100,7 +1179,7 @@ type ContinuationListRequest struct {
 
 func (x *ContinuationListRequest) Reset() {
 	*x = ContinuationListRequest{}
-	mi := &file_app_continuation_svc_g_proto_msgTypes[6]
+	mi := &file_app_continuation_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1112,7 +1191,7 @@ func (x *ContinuationListRequest) String() string {
 func (*ContinuationListRequest) ProtoMessage() {}
 
 func (x *ContinuationListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_continuation_svc_g_proto_msgTypes[6]
+	mi := &file_app_continuation_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1195,7 +1274,7 @@ type ContinuationListResponse struct {
 
 func (x *ContinuationListResponse) Reset() {
 	*x = ContinuationListResponse{}
-	mi := &file_app_continuation_svc_g_proto_msgTypes[7]
+	mi := &file_app_continuation_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1207,7 +1286,7 @@ func (x *ContinuationListResponse) String() string {
 func (*ContinuationListResponse) ProtoMessage() {}
 
 func (x *ContinuationListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_continuation_svc_g_proto_msgTypes[7]
+	mi := &file_app_continuation_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1274,7 +1353,7 @@ type ContinuationFilter struct {
 
 func (x *ContinuationFilter) Reset() {
 	*x = ContinuationFilter{}
-	mi := &file_app_continuation_svc_g_proto_msgTypes[8]
+	mi := &file_app_continuation_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1286,7 +1365,7 @@ func (x *ContinuationFilter) String() string {
 func (*ContinuationFilter) ProtoMessage() {}
 
 func (x *ContinuationFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_app_continuation_svc_g_proto_msgTypes[8]
+	mi := &file_app_continuation_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1337,7 +1416,7 @@ var File_app_continuation_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_continuation_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1capp/continuation_svc.g.proto\x12\x06roster\x1a\x16app/continuation.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xcc\x02\n" +
+	"\x1capp/continuation_svc.g.proto\x12\x06roster\x1a\x16app/continuation.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xcc\x02\n" +
 	"\x16ContinuationAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x1c\n" +
@@ -1376,7 +1455,9 @@ const file_app_continuation_svc_g_proto_rawDesc = "" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"i\n" +
 	"\x18ContinuationApplyRequest\x12)\n" +
 	"\x03ref\x18\x01 \x01(\v2\x17.roster.ContinuationRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"\x87\x01\n" +
+	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"3\n" +
+	"\x19ContinuationEraseResponse\x12\x16\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x87\x01\n" +
 	"\x17ContinuationListRequest\x124\n" +
 	"\afilters\x18\x01 \x03(\v2\x1a.roster.ContinuationFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
@@ -1385,59 +1466,59 @@ const file_app_continuation_svc_g_proto_rawDesc = "" +
 	"\x05items\x18\x01 \x03(\v2\x14.roster.ContinuationR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"?\n" +
 	"\x12ContinuationFilter\x12)\n" +
-	"\x03ref\x18\x01 \x01(\v2\x17.roster.ContinuationRefR\x03ref2\x96\x03\n" +
+	"\x03ref\x18\x01 \x01(\v2\x17.roster.ContinuationRefR\x03ref2\xa1\x03\n" +
 	"\x13ContinuationService\x12;\n" +
 	"\x03Add\x12\x1e.roster.ContinuationAddRequest\x1a\x14.roster.Continuation\x12;\n" +
 	"\x03Get\x12\x1e.roster.ContinuationGetRequest\x1a\x14.roster.Continuation\x12?\n" +
 	"\x05Patch\x12 .roster.ContinuationPatchRequest\x1a\x14.roster.Continuation\x12?\n" +
-	"\x05Apply\x12 .roster.ContinuationApplyRequest\x1a\x14.roster.Continuation\x128\n" +
-	"\x05Erase\x12\x17.roster.ContinuationRef\x1a\x16.google.protobuf.Empty\x12I\n" +
+	"\x05Apply\x12 .roster.ContinuationApplyRequest\x1a\x14.roster.Continuation\x12C\n" +
+	"\x05Erase\x12\x17.roster.ContinuationRef\x1a!.roster.ContinuationEraseResponse\x12I\n" +
 	"\x04List\x12\x1f.roster.ContinuationListRequest\x1a .roster.ContinuationListResponseB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_continuation_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_app_continuation_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_app_continuation_svc_g_proto_goTypes = []any{
-	(*ContinuationAddRequest)(nil),   // 0: roster.ContinuationAddRequest
-	(*ContinuationGetRequest)(nil),   // 1: roster.ContinuationGetRequest
-	(*ContinuationRef)(nil),          // 2: roster.ContinuationRef
-	(*ContinuationSelect)(nil),       // 3: roster.ContinuationSelect
-	(*ContinuationPatchRequest)(nil), // 4: roster.ContinuationPatchRequest
-	(*ContinuationApplyRequest)(nil), // 5: roster.ContinuationApplyRequest
-	(*ContinuationListRequest)(nil),  // 6: roster.ContinuationListRequest
-	(*ContinuationListResponse)(nil), // 7: roster.ContinuationListResponse
-	(*ContinuationFilter)(nil),       // 8: roster.ContinuationFilter
-	(*HolderRef)(nil),                // 9: roster.HolderRef
-	(*timestamppb.Timestamp)(nil),    // 10: google.protobuf.Timestamp
-	(*HolderSelect)(nil),             // 11: roster.HolderSelect
-	(*patchpb.Patch)(nil),            // 12: patch.Patch
-	(*Continuation)(nil),             // 13: roster.Continuation
-	(*emptypb.Empty)(nil),            // 14: google.protobuf.Empty
+	(*ContinuationAddRequest)(nil),    // 0: roster.ContinuationAddRequest
+	(*ContinuationGetRequest)(nil),    // 1: roster.ContinuationGetRequest
+	(*ContinuationRef)(nil),           // 2: roster.ContinuationRef
+	(*ContinuationSelect)(nil),        // 3: roster.ContinuationSelect
+	(*ContinuationPatchRequest)(nil),  // 4: roster.ContinuationPatchRequest
+	(*ContinuationApplyRequest)(nil),  // 5: roster.ContinuationApplyRequest
+	(*ContinuationEraseResponse)(nil), // 6: roster.ContinuationEraseResponse
+	(*ContinuationListRequest)(nil),   // 7: roster.ContinuationListRequest
+	(*ContinuationListResponse)(nil),  // 8: roster.ContinuationListResponse
+	(*ContinuationFilter)(nil),        // 9: roster.ContinuationFilter
+	(*HolderRef)(nil),                 // 10: roster.HolderRef
+	(*timestamppb.Timestamp)(nil),     // 11: google.protobuf.Timestamp
+	(*HolderSelect)(nil),              // 12: roster.HolderSelect
+	(*patchpb.Patch)(nil),             // 13: patch.Patch
+	(*Continuation)(nil),              // 14: roster.Continuation
 }
 var file_app_continuation_svc_g_proto_depIdxs = []int32{
-	9,  // 0: roster.ContinuationAddRequest.holder:type_name -> roster.HolderRef
-	10, // 1: roster.ContinuationAddRequest.date_expires:type_name -> google.protobuf.Timestamp
-	10, // 2: roster.ContinuationAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	10, // 0: roster.ContinuationAddRequest.holder:type_name -> roster.HolderRef
+	11, // 1: roster.ContinuationAddRequest.date_expires:type_name -> google.protobuf.Timestamp
+	11, // 2: roster.ContinuationAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 3: roster.ContinuationGetRequest.ref:type_name -> roster.ContinuationRef
 	3,  // 4: roster.ContinuationGetRequest.select:type_name -> roster.ContinuationSelect
-	11, // 5: roster.ContinuationSelect.holder:type_name -> roster.HolderSelect
+	12, // 5: roster.ContinuationSelect.holder:type_name -> roster.HolderSelect
 	2,  // 6: roster.ContinuationPatchRequest.ref:type_name -> roster.ContinuationRef
-	10, // 7: roster.ContinuationPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	11, // 7: roster.ContinuationPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
 	2,  // 8: roster.ContinuationApplyRequest.ref:type_name -> roster.ContinuationRef
-	12, // 9: roster.ContinuationApplyRequest.patch:type_name -> patch.Patch
-	8,  // 10: roster.ContinuationListRequest.filters:type_name -> roster.ContinuationFilter
-	13, // 11: roster.ContinuationListResponse.items:type_name -> roster.Continuation
+	13, // 9: roster.ContinuationApplyRequest.patch:type_name -> patch.Patch
+	9,  // 10: roster.ContinuationListRequest.filters:type_name -> roster.ContinuationFilter
+	14, // 11: roster.ContinuationListResponse.items:type_name -> roster.Continuation
 	2,  // 12: roster.ContinuationFilter.ref:type_name -> roster.ContinuationRef
 	0,  // 13: roster.ContinuationService.Add:input_type -> roster.ContinuationAddRequest
 	1,  // 14: roster.ContinuationService.Get:input_type -> roster.ContinuationGetRequest
 	4,  // 15: roster.ContinuationService.Patch:input_type -> roster.ContinuationPatchRequest
 	5,  // 16: roster.ContinuationService.Apply:input_type -> roster.ContinuationApplyRequest
 	2,  // 17: roster.ContinuationService.Erase:input_type -> roster.ContinuationRef
-	6,  // 18: roster.ContinuationService.List:input_type -> roster.ContinuationListRequest
-	13, // 19: roster.ContinuationService.Add:output_type -> roster.Continuation
-	13, // 20: roster.ContinuationService.Get:output_type -> roster.Continuation
-	13, // 21: roster.ContinuationService.Patch:output_type -> roster.Continuation
-	13, // 22: roster.ContinuationService.Apply:output_type -> roster.Continuation
-	14, // 23: roster.ContinuationService.Erase:output_type -> google.protobuf.Empty
-	7,  // 24: roster.ContinuationService.List:output_type -> roster.ContinuationListResponse
+	7,  // 18: roster.ContinuationService.List:input_type -> roster.ContinuationListRequest
+	14, // 19: roster.ContinuationService.Add:output_type -> roster.Continuation
+	14, // 20: roster.ContinuationService.Get:output_type -> roster.Continuation
+	14, // 21: roster.ContinuationService.Patch:output_type -> roster.Continuation
+	14, // 22: roster.ContinuationService.Apply:output_type -> roster.Continuation
+	6,  // 23: roster.ContinuationService.Erase:output_type -> roster.ContinuationEraseResponse
+	8,  // 24: roster.ContinuationService.List:output_type -> roster.ContinuationListResponse
 	19, // [19:25] is the sub-list for method output_type
 	13, // [13:19] is the sub-list for method input_type
 	13, // [13:13] is the sub-list for extension type_name
@@ -1462,7 +1543,7 @@ func file_app_continuation_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_continuation_svc_g_proto_rawDesc), len(file_app_continuation_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

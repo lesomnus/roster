@@ -10,7 +10,6 @@ import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	unsafe "unsafe"
@@ -977,6 +976,86 @@ func (b0 SiteMembershipApplyRequest_builder) Build() *SiteMembershipApplyRequest
 	return m0
 }
 
+type SiteMembershipEraseResponse struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *SiteMembershipEraseResponse) Reset() {
+	*x = SiteMembershipEraseResponse{}
+	mi := &file_app_membership_svc_g_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SiteMembershipEraseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SiteMembershipEraseResponse) ProtoMessage() {}
+
+func (x *SiteMembershipEraseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_app_membership_svc_g_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SiteMembershipEraseResponse) GetErased() bool {
+	if x != nil {
+		return x.xxx_hidden_Erased
+	}
+	return false
+}
+
+func (x *SiteMembershipEraseResponse) SetErased(v bool) {
+	x.xxx_hidden_Erased = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+}
+
+func (x *SiteMembershipEraseResponse) HasErased() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *SiteMembershipEraseResponse) ClearErased() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Erased = false
+}
+
+type SiteMembershipEraseResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Erased is whether this call is the one that erased the row.
+	//
+	// False for a row that was already gone, was never there, or is out
+	// of this caller's reach -- which are one answer on purpose, and the
+	// reason the RPC does not fail instead.
+	Erased *bool
+}
+
+func (b0 SiteMembershipEraseResponse_builder) Build() *SiteMembershipEraseResponse {
+	m0 := &SiteMembershipEraseResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Erased != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		x.xxx_hidden_Erased = *b.Erased
+	}
+	return m0
+}
+
 type SiteMembershipListRequest struct {
 	state              protoimpl.MessageState   `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*SiteMembershipFilter `protobuf:"bytes,1,rep,name=filters"`
@@ -988,7 +1067,7 @@ type SiteMembershipListRequest struct {
 
 func (x *SiteMembershipListRequest) Reset() {
 	*x = SiteMembershipListRequest{}
-	mi := &file_app_membership_svc_g_proto_msgTypes[7]
+	mi := &file_app_membership_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1000,7 +1079,7 @@ func (x *SiteMembershipListRequest) String() string {
 func (*SiteMembershipListRequest) ProtoMessage() {}
 
 func (x *SiteMembershipListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_membership_svc_g_proto_msgTypes[7]
+	mi := &file_app_membership_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1083,7 +1162,7 @@ type SiteMembershipListResponse struct {
 
 func (x *SiteMembershipListResponse) Reset() {
 	*x = SiteMembershipListResponse{}
-	mi := &file_app_membership_svc_g_proto_msgTypes[8]
+	mi := &file_app_membership_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1095,7 +1174,7 @@ func (x *SiteMembershipListResponse) String() string {
 func (*SiteMembershipListResponse) ProtoMessage() {}
 
 func (x *SiteMembershipListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_membership_svc_g_proto_msgTypes[8]
+	mi := &file_app_membership_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1162,7 +1241,7 @@ type SiteMembershipFilter struct {
 
 func (x *SiteMembershipFilter) Reset() {
 	*x = SiteMembershipFilter{}
-	mi := &file_app_membership_svc_g_proto_msgTypes[9]
+	mi := &file_app_membership_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1174,7 +1253,7 @@ func (x *SiteMembershipFilter) String() string {
 func (*SiteMembershipFilter) ProtoMessage() {}
 
 func (x *SiteMembershipFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_app_membership_svc_g_proto_msgTypes[9]
+	mi := &file_app_membership_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1231,7 +1310,7 @@ type SiteMembershipWatchRequest struct {
 
 func (x *SiteMembershipWatchRequest) Reset() {
 	*x = SiteMembershipWatchRequest{}
-	mi := &file_app_membership_svc_g_proto_msgTypes[10]
+	mi := &file_app_membership_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1243,7 +1322,7 @@ func (x *SiteMembershipWatchRequest) String() string {
 func (*SiteMembershipWatchRequest) ProtoMessage() {}
 
 func (x *SiteMembershipWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_membership_svc_g_proto_msgTypes[10]
+	mi := &file_app_membership_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1315,7 +1394,7 @@ type SiteMembershipWatchResponse struct {
 
 func (x *SiteMembershipWatchResponse) Reset() {
 	*x = SiteMembershipWatchResponse{}
-	mi := &file_app_membership_svc_g_proto_msgTypes[11]
+	mi := &file_app_membership_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1327,7 +1406,7 @@ func (x *SiteMembershipWatchResponse) String() string {
 func (*SiteMembershipWatchResponse) ProtoMessage() {}
 
 func (x *SiteMembershipWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_membership_svc_g_proto_msgTypes[11]
+	mi := &file_app_membership_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1379,7 +1458,7 @@ type SiteMembershipWatchItem struct {
 
 func (x *SiteMembershipWatchItem) Reset() {
 	*x = SiteMembershipWatchItem{}
-	mi := &file_app_membership_svc_g_proto_msgTypes[12]
+	mi := &file_app_membership_svc_g_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1391,7 +1470,7 @@ func (x *SiteMembershipWatchItem) String() string {
 func (*SiteMembershipWatchItem) ProtoMessage() {}
 
 func (x *SiteMembershipWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_app_membership_svc_g_proto_msgTypes[12]
+	mi := &file_app_membership_svc_g_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1515,7 +1594,7 @@ type TeamMembershipAddRequest struct {
 
 func (x *TeamMembershipAddRequest) Reset() {
 	*x = TeamMembershipAddRequest{}
-	mi := &file_app_membership_svc_g_proto_msgTypes[13]
+	mi := &file_app_membership_svc_g_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1527,7 +1606,7 @@ func (x *TeamMembershipAddRequest) String() string {
 func (*TeamMembershipAddRequest) ProtoMessage() {}
 
 func (x *TeamMembershipAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_membership_svc_g_proto_msgTypes[13]
+	mi := &file_app_membership_svc_g_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1688,7 +1767,7 @@ type TeamMembershipGetRequest struct {
 
 func (x *TeamMembershipGetRequest) Reset() {
 	*x = TeamMembershipGetRequest{}
-	mi := &file_app_membership_svc_g_proto_msgTypes[14]
+	mi := &file_app_membership_svc_g_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1700,7 +1779,7 @@ func (x *TeamMembershipGetRequest) String() string {
 func (*TeamMembershipGetRequest) ProtoMessage() {}
 
 func (x *TeamMembershipGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_membership_svc_g_proto_msgTypes[14]
+	mi := &file_app_membership_svc_g_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1780,7 +1859,7 @@ type TeamMembershipRef struct {
 
 func (x *TeamMembershipRef) Reset() {
 	*x = TeamMembershipRef{}
-	mi := &file_app_membership_svc_g_proto_msgTypes[15]
+	mi := &file_app_membership_svc_g_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1792,7 +1871,7 @@ func (x *TeamMembershipRef) String() string {
 func (*TeamMembershipRef) ProtoMessage() {}
 
 func (x *TeamMembershipRef) ProtoReflect() protoreflect.Message {
-	mi := &file_app_membership_svc_g_proto_msgTypes[15]
+	mi := &file_app_membership_svc_g_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1918,7 +1997,7 @@ func (b0 TeamMembershipRef_builder) Build() *TeamMembershipRef {
 type case_TeamMembershipRef_Key protoreflect.FieldNumber
 
 func (x case_TeamMembershipRef_Key) String() string {
-	md := file_app_membership_svc_g_proto_msgTypes[15].Descriptor()
+	md := file_app_membership_svc_g_proto_msgTypes[16].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -1951,7 +2030,7 @@ type TeamMembershipRefByMember struct {
 
 func (x *TeamMembershipRefByMember) Reset() {
 	*x = TeamMembershipRefByMember{}
-	mi := &file_app_membership_svc_g_proto_msgTypes[16]
+	mi := &file_app_membership_svc_g_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1963,7 +2042,7 @@ func (x *TeamMembershipRefByMember) String() string {
 func (*TeamMembershipRefByMember) ProtoMessage() {}
 
 func (x *TeamMembershipRefByMember) ProtoReflect() protoreflect.Message {
-	mi := &file_app_membership_svc_g_proto_msgTypes[16]
+	mi := &file_app_membership_svc_g_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2051,7 +2130,7 @@ type TeamMembershipSelect struct {
 
 func (x *TeamMembershipSelect) Reset() {
 	*x = TeamMembershipSelect{}
-	mi := &file_app_membership_svc_g_proto_msgTypes[17]
+	mi := &file_app_membership_svc_g_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2063,7 +2142,7 @@ func (x *TeamMembershipSelect) String() string {
 func (*TeamMembershipSelect) ProtoMessage() {}
 
 func (x *TeamMembershipSelect) ProtoReflect() protoreflect.Message {
-	mi := &file_app_membership_svc_g_proto_msgTypes[17]
+	mi := &file_app_membership_svc_g_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2289,7 +2368,7 @@ type TeamMembershipPatchRequest struct {
 
 func (x *TeamMembershipPatchRequest) Reset() {
 	*x = TeamMembershipPatchRequest{}
-	mi := &file_app_membership_svc_g_proto_msgTypes[18]
+	mi := &file_app_membership_svc_g_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2301,7 +2380,7 @@ func (x *TeamMembershipPatchRequest) String() string {
 func (*TeamMembershipPatchRequest) ProtoMessage() {}
 
 func (x *TeamMembershipPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_membership_svc_g_proto_msgTypes[18]
+	mi := &file_app_membership_svc_g_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2480,7 +2559,7 @@ type TeamMembershipApplyRequest struct {
 
 func (x *TeamMembershipApplyRequest) Reset() {
 	*x = TeamMembershipApplyRequest{}
-	mi := &file_app_membership_svc_g_proto_msgTypes[19]
+	mi := &file_app_membership_svc_g_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2492,7 +2571,7 @@ func (x *TeamMembershipApplyRequest) String() string {
 func (*TeamMembershipApplyRequest) ProtoMessage() {}
 
 func (x *TeamMembershipApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_membership_svc_g_proto_msgTypes[19]
+	mi := &file_app_membership_svc_g_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2563,6 +2642,86 @@ func (b0 TeamMembershipApplyRequest_builder) Build() *TeamMembershipApplyRequest
 	return m0
 }
 
+type TeamMembershipEraseResponse struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *TeamMembershipEraseResponse) Reset() {
+	*x = TeamMembershipEraseResponse{}
+	mi := &file_app_membership_svc_g_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TeamMembershipEraseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TeamMembershipEraseResponse) ProtoMessage() {}
+
+func (x *TeamMembershipEraseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_app_membership_svc_g_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *TeamMembershipEraseResponse) GetErased() bool {
+	if x != nil {
+		return x.xxx_hidden_Erased
+	}
+	return false
+}
+
+func (x *TeamMembershipEraseResponse) SetErased(v bool) {
+	x.xxx_hidden_Erased = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+}
+
+func (x *TeamMembershipEraseResponse) HasErased() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *TeamMembershipEraseResponse) ClearErased() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Erased = false
+}
+
+type TeamMembershipEraseResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Erased is whether this call is the one that erased the row.
+	//
+	// False for a row that was already gone, was never there, or is out
+	// of this caller's reach -- which are one answer on purpose, and the
+	// reason the RPC does not fail instead.
+	Erased *bool
+}
+
+func (b0 TeamMembershipEraseResponse_builder) Build() *TeamMembershipEraseResponse {
+	m0 := &TeamMembershipEraseResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Erased != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		x.xxx_hidden_Erased = *b.Erased
+	}
+	return m0
+}
+
 type TeamMembershipListRequest struct {
 	state              protoimpl.MessageState   `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*TeamMembershipFilter `protobuf:"bytes,1,rep,name=filters"`
@@ -2574,7 +2733,7 @@ type TeamMembershipListRequest struct {
 
 func (x *TeamMembershipListRequest) Reset() {
 	*x = TeamMembershipListRequest{}
-	mi := &file_app_membership_svc_g_proto_msgTypes[20]
+	mi := &file_app_membership_svc_g_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2586,7 +2745,7 @@ func (x *TeamMembershipListRequest) String() string {
 func (*TeamMembershipListRequest) ProtoMessage() {}
 
 func (x *TeamMembershipListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_membership_svc_g_proto_msgTypes[20]
+	mi := &file_app_membership_svc_g_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2669,7 +2828,7 @@ type TeamMembershipListResponse struct {
 
 func (x *TeamMembershipListResponse) Reset() {
 	*x = TeamMembershipListResponse{}
-	mi := &file_app_membership_svc_g_proto_msgTypes[21]
+	mi := &file_app_membership_svc_g_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2681,7 +2840,7 @@ func (x *TeamMembershipListResponse) String() string {
 func (*TeamMembershipListResponse) ProtoMessage() {}
 
 func (x *TeamMembershipListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_membership_svc_g_proto_msgTypes[21]
+	mi := &file_app_membership_svc_g_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2748,7 +2907,7 @@ type TeamMembershipFilter struct {
 
 func (x *TeamMembershipFilter) Reset() {
 	*x = TeamMembershipFilter{}
-	mi := &file_app_membership_svc_g_proto_msgTypes[22]
+	mi := &file_app_membership_svc_g_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2760,7 +2919,7 @@ func (x *TeamMembershipFilter) String() string {
 func (*TeamMembershipFilter) ProtoMessage() {}
 
 func (x *TeamMembershipFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_app_membership_svc_g_proto_msgTypes[22]
+	mi := &file_app_membership_svc_g_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2817,7 +2976,7 @@ type TeamMembershipWatchRequest struct {
 
 func (x *TeamMembershipWatchRequest) Reset() {
 	*x = TeamMembershipWatchRequest{}
-	mi := &file_app_membership_svc_g_proto_msgTypes[23]
+	mi := &file_app_membership_svc_g_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2829,7 +2988,7 @@ func (x *TeamMembershipWatchRequest) String() string {
 func (*TeamMembershipWatchRequest) ProtoMessage() {}
 
 func (x *TeamMembershipWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_membership_svc_g_proto_msgTypes[23]
+	mi := &file_app_membership_svc_g_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2901,7 +3060,7 @@ type TeamMembershipWatchResponse struct {
 
 func (x *TeamMembershipWatchResponse) Reset() {
 	*x = TeamMembershipWatchResponse{}
-	mi := &file_app_membership_svc_g_proto_msgTypes[24]
+	mi := &file_app_membership_svc_g_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2913,7 +3072,7 @@ func (x *TeamMembershipWatchResponse) String() string {
 func (*TeamMembershipWatchResponse) ProtoMessage() {}
 
 func (x *TeamMembershipWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_membership_svc_g_proto_msgTypes[24]
+	mi := &file_app_membership_svc_g_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2965,7 +3124,7 @@ type TeamMembershipWatchItem struct {
 
 func (x *TeamMembershipWatchItem) Reset() {
 	*x = TeamMembershipWatchItem{}
-	mi := &file_app_membership_svc_g_proto_msgTypes[25]
+	mi := &file_app_membership_svc_g_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2977,7 +3136,7 @@ func (x *TeamMembershipWatchItem) String() string {
 func (*TeamMembershipWatchItem) ProtoMessage() {}
 
 func (x *TeamMembershipWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_app_membership_svc_g_proto_msgTypes[25]
+	mi := &file_app_membership_svc_g_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3090,7 +3249,7 @@ var File_app_membership_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_membership_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1aapp/membership_svc.g.proto\x12\x06roster\x1a\x14app/membership.proto\x1a\x14app/role_svc.g.proto\x1a\x14app/site_svc.g.proto\x1a\x14app/team_svc.g.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xb9\x01\n" +
+	"\x1aapp/membership_svc.g.proto\x12\x06roster\x1a\x14app/membership.proto\x1a\x14app/role_svc.g.proto\x1a\x14app/site_svc.g.proto\x1a\x14app/team_svc.g.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xb9\x01\n" +
 	"\x18SiteMembershipAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12#\n" +
@@ -3120,7 +3279,9 @@ const file_app_membership_svc_g_proto_rawDesc = "" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"m\n" +
 	"\x1aSiteMembershipApplyRequest\x12+\n" +
 	"\x03ref\x18\x01 \x01(\v2\x19.roster.SiteMembershipRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"\x8b\x01\n" +
+	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"5\n" +
+	"\x1bSiteMembershipEraseResponse\x12\x16\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x8b\x01\n" +
 	"\x19SiteMembershipListRequest\x126\n" +
 	"\afilters\x18\x01 \x03(\v2\x1c.roster.SiteMembershipFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
@@ -3172,7 +3333,9 @@ const file_app_membership_svc_g_proto_rawDesc = "" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"m\n" +
 	"\x1aTeamMembershipApplyRequest\x12+\n" +
 	"\x03ref\x18\x01 \x01(\v2\x19.roster.TeamMembershipRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"\x8b\x01\n" +
+	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"5\n" +
+	"\x1bTeamMembershipEraseResponse\x12\x16\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x8b\x01\n" +
 	"\x19TeamMembershipListRequest\x126\n" +
 	"\afilters\x18\x01 \x03(\v2\x1c.roster.TeamMembershipFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
@@ -3190,25 +3353,25 @@ const file_app_membership_svc_g_proto_rawDesc = "" +
 	"\x17TeamMembershipWatchItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12,\n" +
 	"\x05value\x18\x02 \x01(\v2\x16.roster.TeamMembershipR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action2\x82\x04\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action2\x8f\x04\n" +
 	"\x15SiteMembershipService\x12?\n" +
 	"\x03Add\x12 .roster.SiteMembershipAddRequest\x1a\x16.roster.SiteMembership\x12?\n" +
 	"\x03Get\x12 .roster.SiteMembershipGetRequest\x1a\x16.roster.SiteMembership\x12C\n" +
 	"\x05Patch\x12\".roster.SiteMembershipPatchRequest\x1a\x16.roster.SiteMembership\x12C\n" +
-	"\x05Apply\x12\".roster.SiteMembershipApplyRequest\x1a\x16.roster.SiteMembership\x12:\n" +
-	"\x05Erase\x12\x19.roster.SiteMembershipRef\x1a\x16.google.protobuf.Empty\x12M\n" +
+	"\x05Apply\x12\".roster.SiteMembershipApplyRequest\x1a\x16.roster.SiteMembership\x12G\n" +
+	"\x05Erase\x12\x19.roster.SiteMembershipRef\x1a#.roster.SiteMembershipEraseResponse\x12M\n" +
 	"\x04List\x12!.roster.SiteMembershipListRequest\x1a\".roster.SiteMembershipListResponse\x12R\n" +
-	"\x05Watch\x12\".roster.SiteMembershipWatchRequest\x1a#.roster.SiteMembershipWatchResponse0\x012\x82\x04\n" +
+	"\x05Watch\x12\".roster.SiteMembershipWatchRequest\x1a#.roster.SiteMembershipWatchResponse0\x012\x8f\x04\n" +
 	"\x15TeamMembershipService\x12?\n" +
 	"\x03Add\x12 .roster.TeamMembershipAddRequest\x1a\x16.roster.TeamMembership\x12?\n" +
 	"\x03Get\x12 .roster.TeamMembershipGetRequest\x1a\x16.roster.TeamMembership\x12C\n" +
 	"\x05Patch\x12\".roster.TeamMembershipPatchRequest\x1a\x16.roster.TeamMembership\x12C\n" +
-	"\x05Apply\x12\".roster.TeamMembershipApplyRequest\x1a\x16.roster.TeamMembership\x12:\n" +
-	"\x05Erase\x12\x19.roster.TeamMembershipRef\x1a\x16.google.protobuf.Empty\x12M\n" +
+	"\x05Apply\x12\".roster.TeamMembershipApplyRequest\x1a\x16.roster.TeamMembership\x12G\n" +
+	"\x05Erase\x12\x19.roster.TeamMembershipRef\x1a#.roster.TeamMembershipEraseResponse\x12M\n" +
 	"\x04List\x12!.roster.TeamMembershipListRequest\x1a\".roster.TeamMembershipListResponse\x12R\n" +
 	"\x05Watch\x12\".roster.TeamMembershipWatchRequest\x1a#.roster.TeamMembershipWatchResponse0\x01B!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_membership_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
+var file_app_membership_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
 var file_app_membership_svc_g_proto_goTypes = []any{
 	(*SiteMembershipAddRequest)(nil),    // 0: roster.SiteMembershipAddRequest
 	(*SiteMembershipGetRequest)(nil),    // 1: roster.SiteMembershipGetRequest
@@ -3217,111 +3380,112 @@ var file_app_membership_svc_g_proto_goTypes = []any{
 	(*SiteMembershipSelect)(nil),        // 4: roster.SiteMembershipSelect
 	(*SiteMembershipPatchRequest)(nil),  // 5: roster.SiteMembershipPatchRequest
 	(*SiteMembershipApplyRequest)(nil),  // 6: roster.SiteMembershipApplyRequest
-	(*SiteMembershipListRequest)(nil),   // 7: roster.SiteMembershipListRequest
-	(*SiteMembershipListResponse)(nil),  // 8: roster.SiteMembershipListResponse
-	(*SiteMembershipFilter)(nil),        // 9: roster.SiteMembershipFilter
-	(*SiteMembershipWatchRequest)(nil),  // 10: roster.SiteMembershipWatchRequest
-	(*SiteMembershipWatchResponse)(nil), // 11: roster.SiteMembershipWatchResponse
-	(*SiteMembershipWatchItem)(nil),     // 12: roster.SiteMembershipWatchItem
-	(*TeamMembershipAddRequest)(nil),    // 13: roster.TeamMembershipAddRequest
-	(*TeamMembershipGetRequest)(nil),    // 14: roster.TeamMembershipGetRequest
-	(*TeamMembershipRef)(nil),           // 15: roster.TeamMembershipRef
-	(*TeamMembershipRefByMember)(nil),   // 16: roster.TeamMembershipRefByMember
-	(*TeamMembershipSelect)(nil),        // 17: roster.TeamMembershipSelect
-	(*TeamMembershipPatchRequest)(nil),  // 18: roster.TeamMembershipPatchRequest
-	(*TeamMembershipApplyRequest)(nil),  // 19: roster.TeamMembershipApplyRequest
-	(*TeamMembershipListRequest)(nil),   // 20: roster.TeamMembershipListRequest
-	(*TeamMembershipListResponse)(nil),  // 21: roster.TeamMembershipListResponse
-	(*TeamMembershipFilter)(nil),        // 22: roster.TeamMembershipFilter
-	(*TeamMembershipWatchRequest)(nil),  // 23: roster.TeamMembershipWatchRequest
-	(*TeamMembershipWatchResponse)(nil), // 24: roster.TeamMembershipWatchResponse
-	(*TeamMembershipWatchItem)(nil),     // 25: roster.TeamMembershipWatchItem
-	(*HolderRef)(nil),                   // 26: roster.HolderRef
-	(*SiteRef)(nil),                     // 27: roster.SiteRef
-	(*timestamppb.Timestamp)(nil),       // 28: google.protobuf.Timestamp
-	(*HolderSelect)(nil),                // 29: roster.HolderSelect
-	(*SiteSelect)(nil),                  // 30: roster.SiteSelect
-	(*patchpb.Patch)(nil),               // 31: patch.Patch
-	(*SiteMembership)(nil),              // 32: roster.SiteMembership
-	(*TeamRef)(nil),                     // 33: roster.TeamRef
-	(*RoleRef)(nil),                     // 34: roster.RoleRef
-	(*TeamSelect)(nil),                  // 35: roster.TeamSelect
-	(*RoleSelect)(nil),                  // 36: roster.RoleSelect
-	(*TeamMembership)(nil),              // 37: roster.TeamMembership
-	(*emptypb.Empty)(nil),               // 38: google.protobuf.Empty
+	(*SiteMembershipEraseResponse)(nil), // 7: roster.SiteMembershipEraseResponse
+	(*SiteMembershipListRequest)(nil),   // 8: roster.SiteMembershipListRequest
+	(*SiteMembershipListResponse)(nil),  // 9: roster.SiteMembershipListResponse
+	(*SiteMembershipFilter)(nil),        // 10: roster.SiteMembershipFilter
+	(*SiteMembershipWatchRequest)(nil),  // 11: roster.SiteMembershipWatchRequest
+	(*SiteMembershipWatchResponse)(nil), // 12: roster.SiteMembershipWatchResponse
+	(*SiteMembershipWatchItem)(nil),     // 13: roster.SiteMembershipWatchItem
+	(*TeamMembershipAddRequest)(nil),    // 14: roster.TeamMembershipAddRequest
+	(*TeamMembershipGetRequest)(nil),    // 15: roster.TeamMembershipGetRequest
+	(*TeamMembershipRef)(nil),           // 16: roster.TeamMembershipRef
+	(*TeamMembershipRefByMember)(nil),   // 17: roster.TeamMembershipRefByMember
+	(*TeamMembershipSelect)(nil),        // 18: roster.TeamMembershipSelect
+	(*TeamMembershipPatchRequest)(nil),  // 19: roster.TeamMembershipPatchRequest
+	(*TeamMembershipApplyRequest)(nil),  // 20: roster.TeamMembershipApplyRequest
+	(*TeamMembershipEraseResponse)(nil), // 21: roster.TeamMembershipEraseResponse
+	(*TeamMembershipListRequest)(nil),   // 22: roster.TeamMembershipListRequest
+	(*TeamMembershipListResponse)(nil),  // 23: roster.TeamMembershipListResponse
+	(*TeamMembershipFilter)(nil),        // 24: roster.TeamMembershipFilter
+	(*TeamMembershipWatchRequest)(nil),  // 25: roster.TeamMembershipWatchRequest
+	(*TeamMembershipWatchResponse)(nil), // 26: roster.TeamMembershipWatchResponse
+	(*TeamMembershipWatchItem)(nil),     // 27: roster.TeamMembershipWatchItem
+	(*HolderRef)(nil),                   // 28: roster.HolderRef
+	(*SiteRef)(nil),                     // 29: roster.SiteRef
+	(*timestamppb.Timestamp)(nil),       // 30: google.protobuf.Timestamp
+	(*HolderSelect)(nil),                // 31: roster.HolderSelect
+	(*SiteSelect)(nil),                  // 32: roster.SiteSelect
+	(*patchpb.Patch)(nil),               // 33: patch.Patch
+	(*SiteMembership)(nil),              // 34: roster.SiteMembership
+	(*TeamRef)(nil),                     // 35: roster.TeamRef
+	(*RoleRef)(nil),                     // 36: roster.RoleRef
+	(*TeamSelect)(nil),                  // 37: roster.TeamSelect
+	(*RoleSelect)(nil),                  // 38: roster.RoleSelect
+	(*TeamMembership)(nil),              // 39: roster.TeamMembership
 }
 var file_app_membership_svc_g_proto_depIdxs = []int32{
-	26, // 0: roster.SiteMembershipAddRequest.holder:type_name -> roster.HolderRef
-	27, // 1: roster.SiteMembershipAddRequest.site:type_name -> roster.SiteRef
-	28, // 2: roster.SiteMembershipAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	28, // 0: roster.SiteMembershipAddRequest.holder:type_name -> roster.HolderRef
+	29, // 1: roster.SiteMembershipAddRequest.site:type_name -> roster.SiteRef
+	30, // 2: roster.SiteMembershipAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 3: roster.SiteMembershipGetRequest.ref:type_name -> roster.SiteMembershipRef
 	4,  // 4: roster.SiteMembershipGetRequest.select:type_name -> roster.SiteMembershipSelect
 	3,  // 5: roster.SiteMembershipRef.member:type_name -> roster.SiteMembershipRefByMember
-	26, // 6: roster.SiteMembershipRefByMember.holder:type_name -> roster.HolderRef
-	27, // 7: roster.SiteMembershipRefByMember.site:type_name -> roster.SiteRef
-	29, // 8: roster.SiteMembershipSelect.holder:type_name -> roster.HolderSelect
-	30, // 9: roster.SiteMembershipSelect.site:type_name -> roster.SiteSelect
+	28, // 6: roster.SiteMembershipRefByMember.holder:type_name -> roster.HolderRef
+	29, // 7: roster.SiteMembershipRefByMember.site:type_name -> roster.SiteRef
+	31, // 8: roster.SiteMembershipSelect.holder:type_name -> roster.HolderSelect
+	32, // 9: roster.SiteMembershipSelect.site:type_name -> roster.SiteSelect
 	2,  // 10: roster.SiteMembershipPatchRequest.ref:type_name -> roster.SiteMembershipRef
-	28, // 11: roster.SiteMembershipPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	30, // 11: roster.SiteMembershipPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
 	2,  // 12: roster.SiteMembershipApplyRequest.ref:type_name -> roster.SiteMembershipRef
-	31, // 13: roster.SiteMembershipApplyRequest.patch:type_name -> patch.Patch
-	9,  // 14: roster.SiteMembershipListRequest.filters:type_name -> roster.SiteMembershipFilter
-	32, // 15: roster.SiteMembershipListResponse.items:type_name -> roster.SiteMembership
+	33, // 13: roster.SiteMembershipApplyRequest.patch:type_name -> patch.Patch
+	10, // 14: roster.SiteMembershipListRequest.filters:type_name -> roster.SiteMembershipFilter
+	34, // 15: roster.SiteMembershipListResponse.items:type_name -> roster.SiteMembership
 	2,  // 16: roster.SiteMembershipFilter.ref:type_name -> roster.SiteMembershipRef
-	9,  // 17: roster.SiteMembershipWatchRequest.filters:type_name -> roster.SiteMembershipFilter
-	12, // 18: roster.SiteMembershipWatchResponse.items:type_name -> roster.SiteMembershipWatchItem
-	32, // 19: roster.SiteMembershipWatchItem.value:type_name -> roster.SiteMembership
-	26, // 20: roster.TeamMembershipAddRequest.holder:type_name -> roster.HolderRef
-	33, // 21: roster.TeamMembershipAddRequest.team:type_name -> roster.TeamRef
-	34, // 22: roster.TeamMembershipAddRequest.role:type_name -> roster.RoleRef
-	28, // 23: roster.TeamMembershipAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	15, // 24: roster.TeamMembershipGetRequest.ref:type_name -> roster.TeamMembershipRef
-	17, // 25: roster.TeamMembershipGetRequest.select:type_name -> roster.TeamMembershipSelect
-	16, // 26: roster.TeamMembershipRef.member:type_name -> roster.TeamMembershipRefByMember
-	26, // 27: roster.TeamMembershipRefByMember.holder:type_name -> roster.HolderRef
-	33, // 28: roster.TeamMembershipRefByMember.team:type_name -> roster.TeamRef
-	29, // 29: roster.TeamMembershipSelect.holder:type_name -> roster.HolderSelect
-	35, // 30: roster.TeamMembershipSelect.team:type_name -> roster.TeamSelect
-	36, // 31: roster.TeamMembershipSelect.role:type_name -> roster.RoleSelect
-	15, // 32: roster.TeamMembershipPatchRequest.ref:type_name -> roster.TeamMembershipRef
-	34, // 33: roster.TeamMembershipPatchRequest.role:type_name -> roster.RoleRef
-	28, // 34: roster.TeamMembershipPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	15, // 35: roster.TeamMembershipApplyRequest.ref:type_name -> roster.TeamMembershipRef
-	31, // 36: roster.TeamMembershipApplyRequest.patch:type_name -> patch.Patch
-	22, // 37: roster.TeamMembershipListRequest.filters:type_name -> roster.TeamMembershipFilter
-	37, // 38: roster.TeamMembershipListResponse.items:type_name -> roster.TeamMembership
-	15, // 39: roster.TeamMembershipFilter.ref:type_name -> roster.TeamMembershipRef
-	22, // 40: roster.TeamMembershipWatchRequest.filters:type_name -> roster.TeamMembershipFilter
-	25, // 41: roster.TeamMembershipWatchResponse.items:type_name -> roster.TeamMembershipWatchItem
-	37, // 42: roster.TeamMembershipWatchItem.value:type_name -> roster.TeamMembership
+	10, // 17: roster.SiteMembershipWatchRequest.filters:type_name -> roster.SiteMembershipFilter
+	13, // 18: roster.SiteMembershipWatchResponse.items:type_name -> roster.SiteMembershipWatchItem
+	34, // 19: roster.SiteMembershipWatchItem.value:type_name -> roster.SiteMembership
+	28, // 20: roster.TeamMembershipAddRequest.holder:type_name -> roster.HolderRef
+	35, // 21: roster.TeamMembershipAddRequest.team:type_name -> roster.TeamRef
+	36, // 22: roster.TeamMembershipAddRequest.role:type_name -> roster.RoleRef
+	30, // 23: roster.TeamMembershipAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	16, // 24: roster.TeamMembershipGetRequest.ref:type_name -> roster.TeamMembershipRef
+	18, // 25: roster.TeamMembershipGetRequest.select:type_name -> roster.TeamMembershipSelect
+	17, // 26: roster.TeamMembershipRef.member:type_name -> roster.TeamMembershipRefByMember
+	28, // 27: roster.TeamMembershipRefByMember.holder:type_name -> roster.HolderRef
+	35, // 28: roster.TeamMembershipRefByMember.team:type_name -> roster.TeamRef
+	31, // 29: roster.TeamMembershipSelect.holder:type_name -> roster.HolderSelect
+	37, // 30: roster.TeamMembershipSelect.team:type_name -> roster.TeamSelect
+	38, // 31: roster.TeamMembershipSelect.role:type_name -> roster.RoleSelect
+	16, // 32: roster.TeamMembershipPatchRequest.ref:type_name -> roster.TeamMembershipRef
+	36, // 33: roster.TeamMembershipPatchRequest.role:type_name -> roster.RoleRef
+	30, // 34: roster.TeamMembershipPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	16, // 35: roster.TeamMembershipApplyRequest.ref:type_name -> roster.TeamMembershipRef
+	33, // 36: roster.TeamMembershipApplyRequest.patch:type_name -> patch.Patch
+	24, // 37: roster.TeamMembershipListRequest.filters:type_name -> roster.TeamMembershipFilter
+	39, // 38: roster.TeamMembershipListResponse.items:type_name -> roster.TeamMembership
+	16, // 39: roster.TeamMembershipFilter.ref:type_name -> roster.TeamMembershipRef
+	24, // 40: roster.TeamMembershipWatchRequest.filters:type_name -> roster.TeamMembershipFilter
+	27, // 41: roster.TeamMembershipWatchResponse.items:type_name -> roster.TeamMembershipWatchItem
+	39, // 42: roster.TeamMembershipWatchItem.value:type_name -> roster.TeamMembership
 	0,  // 43: roster.SiteMembershipService.Add:input_type -> roster.SiteMembershipAddRequest
 	1,  // 44: roster.SiteMembershipService.Get:input_type -> roster.SiteMembershipGetRequest
 	5,  // 45: roster.SiteMembershipService.Patch:input_type -> roster.SiteMembershipPatchRequest
 	6,  // 46: roster.SiteMembershipService.Apply:input_type -> roster.SiteMembershipApplyRequest
 	2,  // 47: roster.SiteMembershipService.Erase:input_type -> roster.SiteMembershipRef
-	7,  // 48: roster.SiteMembershipService.List:input_type -> roster.SiteMembershipListRequest
-	10, // 49: roster.SiteMembershipService.Watch:input_type -> roster.SiteMembershipWatchRequest
-	13, // 50: roster.TeamMembershipService.Add:input_type -> roster.TeamMembershipAddRequest
-	14, // 51: roster.TeamMembershipService.Get:input_type -> roster.TeamMembershipGetRequest
-	18, // 52: roster.TeamMembershipService.Patch:input_type -> roster.TeamMembershipPatchRequest
-	19, // 53: roster.TeamMembershipService.Apply:input_type -> roster.TeamMembershipApplyRequest
-	15, // 54: roster.TeamMembershipService.Erase:input_type -> roster.TeamMembershipRef
-	20, // 55: roster.TeamMembershipService.List:input_type -> roster.TeamMembershipListRequest
-	23, // 56: roster.TeamMembershipService.Watch:input_type -> roster.TeamMembershipWatchRequest
-	32, // 57: roster.SiteMembershipService.Add:output_type -> roster.SiteMembership
-	32, // 58: roster.SiteMembershipService.Get:output_type -> roster.SiteMembership
-	32, // 59: roster.SiteMembershipService.Patch:output_type -> roster.SiteMembership
-	32, // 60: roster.SiteMembershipService.Apply:output_type -> roster.SiteMembership
-	38, // 61: roster.SiteMembershipService.Erase:output_type -> google.protobuf.Empty
-	8,  // 62: roster.SiteMembershipService.List:output_type -> roster.SiteMembershipListResponse
-	11, // 63: roster.SiteMembershipService.Watch:output_type -> roster.SiteMembershipWatchResponse
-	37, // 64: roster.TeamMembershipService.Add:output_type -> roster.TeamMembership
-	37, // 65: roster.TeamMembershipService.Get:output_type -> roster.TeamMembership
-	37, // 66: roster.TeamMembershipService.Patch:output_type -> roster.TeamMembership
-	37, // 67: roster.TeamMembershipService.Apply:output_type -> roster.TeamMembership
-	38, // 68: roster.TeamMembershipService.Erase:output_type -> google.protobuf.Empty
-	21, // 69: roster.TeamMembershipService.List:output_type -> roster.TeamMembershipListResponse
-	24, // 70: roster.TeamMembershipService.Watch:output_type -> roster.TeamMembershipWatchResponse
+	8,  // 48: roster.SiteMembershipService.List:input_type -> roster.SiteMembershipListRequest
+	11, // 49: roster.SiteMembershipService.Watch:input_type -> roster.SiteMembershipWatchRequest
+	14, // 50: roster.TeamMembershipService.Add:input_type -> roster.TeamMembershipAddRequest
+	15, // 51: roster.TeamMembershipService.Get:input_type -> roster.TeamMembershipGetRequest
+	19, // 52: roster.TeamMembershipService.Patch:input_type -> roster.TeamMembershipPatchRequest
+	20, // 53: roster.TeamMembershipService.Apply:input_type -> roster.TeamMembershipApplyRequest
+	16, // 54: roster.TeamMembershipService.Erase:input_type -> roster.TeamMembershipRef
+	22, // 55: roster.TeamMembershipService.List:input_type -> roster.TeamMembershipListRequest
+	25, // 56: roster.TeamMembershipService.Watch:input_type -> roster.TeamMembershipWatchRequest
+	34, // 57: roster.SiteMembershipService.Add:output_type -> roster.SiteMembership
+	34, // 58: roster.SiteMembershipService.Get:output_type -> roster.SiteMembership
+	34, // 59: roster.SiteMembershipService.Patch:output_type -> roster.SiteMembership
+	34, // 60: roster.SiteMembershipService.Apply:output_type -> roster.SiteMembership
+	7,  // 61: roster.SiteMembershipService.Erase:output_type -> roster.SiteMembershipEraseResponse
+	9,  // 62: roster.SiteMembershipService.List:output_type -> roster.SiteMembershipListResponse
+	12, // 63: roster.SiteMembershipService.Watch:output_type -> roster.SiteMembershipWatchResponse
+	39, // 64: roster.TeamMembershipService.Add:output_type -> roster.TeamMembership
+	39, // 65: roster.TeamMembershipService.Get:output_type -> roster.TeamMembership
+	39, // 66: roster.TeamMembershipService.Patch:output_type -> roster.TeamMembership
+	39, // 67: roster.TeamMembershipService.Apply:output_type -> roster.TeamMembership
+	21, // 68: roster.TeamMembershipService.Erase:output_type -> roster.TeamMembershipEraseResponse
+	23, // 69: roster.TeamMembershipService.List:output_type -> roster.TeamMembershipListResponse
+	26, // 70: roster.TeamMembershipService.Watch:output_type -> roster.TeamMembershipWatchResponse
 	57, // [57:71] is the sub-list for method output_type
 	43, // [43:57] is the sub-list for method input_type
 	43, // [43:43] is the sub-list for extension type_name
@@ -3343,7 +3507,7 @@ func file_app_membership_svc_g_proto_init() {
 		(*siteMembershipRef_Id)(nil),
 		(*siteMembershipRef_Member)(nil),
 	}
-	file_app_membership_svc_g_proto_msgTypes[15].OneofWrappers = []any{
+	file_app_membership_svc_g_proto_msgTypes[16].OneofWrappers = []any{
 		(*teamMembershipRef_Id)(nil),
 		(*teamMembershipRef_Member)(nil),
 	}
@@ -3353,7 +3517,7 @@ func file_app_membership_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_membership_svc_g_proto_rawDesc), len(file_app_membership_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   26,
+			NumMessages:   28,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

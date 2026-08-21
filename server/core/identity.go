@@ -6,7 +6,6 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/lesomnus/payday/pderr"
 
@@ -165,7 +164,7 @@ func (s coreIdentity) oneAccountPerProvider(ctx context.Context, req *app.Identi
 // different name. And an operator resetting a password, which is D28's -- this
 // is about somebody removing their own last way in, not about anybody being
 // locked out on purpose.
-func (s coreIdentity) Erase(ctx context.Context, req *app.IdentityRef) (*emptypb.Empty, error) {
+func (s coreIdentity) Erase(ctx context.Context, req *app.IdentityRef) (*app.IdentityEraseResponse, error) {
 	// The row first, because the reference may be a subject and the count is
 	// about the person. Through `Next()` rather than a client, so the wall
 	// narrows it exactly as the erase below will: a caller who cannot see it
@@ -180,7 +179,11 @@ func (s coreIdentity) Erase(ctx context.Context, req *app.IdentityRef) (*emptypb
 		if status.Code(err) == codes.NotFound {
 			// Erasing what is not there succeeds, which is the rule the
 			// generated `Erase` already states and this must not change.
-			return &emptypb.Empty{}, nil
+			//
+			// And `erased` is false, which is the same answer the generated one
+			// gives for a row that was already gone: the RPC does not fail, and
+			// it does not pretend either.
+			return app.IdentityEraseResponse_builder{}.Build(), nil
 		}
 
 		return nil, err

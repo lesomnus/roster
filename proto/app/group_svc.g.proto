@@ -3,7 +3,6 @@ package roster;
 
 import "app/group.proto";
 import "app/site_svc.g.proto";
-import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "patch/patch.proto";
 import "roster/payday/holder_svc.g.proto";
@@ -21,7 +20,7 @@ service GroupService {
   // Apply applies a patch document to an existing Group
   rpc Apply(GroupApplyRequest) returns (Group);
   // Erase deletes a Group
-  rpc Erase(GroupRef) returns (google.protobuf.Empty);
+  rpc Erase(GroupRef) returns (GroupEraseResponse);
   // List reads Groups a page at a time.
   rpc List(GroupListRequest) returns (GroupListResponse);
 }
@@ -36,7 +35,7 @@ service GroupMembershipService {
   // Apply applies a patch document to an existing GroupMembership
   rpc Apply(GroupMembershipApplyRequest) returns (GroupMembership);
   // Erase deletes a GroupMembership
-  rpc Erase(GroupMembershipRef) returns (google.protobuf.Empty);
+  rpc Erase(GroupMembershipRef) returns (GroupMembershipEraseResponse);
   // List reads GroupMemberships a page at a time.
   rpc List(GroupMembershipListRequest) returns (GroupMembershipListResponse);
 }
@@ -104,6 +103,15 @@ message GroupPatchRequest {
 message GroupApplyRequest {
   GroupRef ref = 1;
   patch.Patch patch = 2;
+}
+
+message GroupEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
 }
 
 message GroupListRequest {
@@ -194,6 +202,15 @@ message GroupMembershipPatchRequest {
 message GroupMembershipApplyRequest {
   GroupMembershipRef ref = 1;
   patch.Patch patch = 2;
+}
+
+message GroupMembershipEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
 }
 
 message GroupMembershipListRequest {

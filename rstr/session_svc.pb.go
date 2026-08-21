@@ -10,7 +10,6 @@ import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	unsafe "unsafe"
@@ -1096,6 +1095,86 @@ func (b0 SessionApplyRequest_builder) Build() *SessionApplyRequest {
 	return m0
 }
 
+type SessionEraseResponse struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *SessionEraseResponse) Reset() {
+	*x = SessionEraseResponse{}
+	mi := &file_app_session_svc_g_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SessionEraseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SessionEraseResponse) ProtoMessage() {}
+
+func (x *SessionEraseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_app_session_svc_g_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SessionEraseResponse) GetErased() bool {
+	if x != nil {
+		return x.xxx_hidden_Erased
+	}
+	return false
+}
+
+func (x *SessionEraseResponse) SetErased(v bool) {
+	x.xxx_hidden_Erased = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+}
+
+func (x *SessionEraseResponse) HasErased() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *SessionEraseResponse) ClearErased() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Erased = false
+}
+
+type SessionEraseResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Erased is whether this call is the one that erased the row.
+	//
+	// False for a row that was already gone, was never there, or is out
+	// of this caller's reach -- which are one answer on purpose, and the
+	// reason the RPC does not fail instead.
+	Erased *bool
+}
+
+func (b0 SessionEraseResponse_builder) Build() *SessionEraseResponse {
+	m0 := &SessionEraseResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Erased != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		x.xxx_hidden_Erased = *b.Erased
+	}
+	return m0
+}
+
 type SessionListRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*SessionFilter      `protobuf:"bytes,1,rep,name=filters"`
@@ -1107,7 +1186,7 @@ type SessionListRequest struct {
 
 func (x *SessionListRequest) Reset() {
 	*x = SessionListRequest{}
-	mi := &file_app_session_svc_g_proto_msgTypes[6]
+	mi := &file_app_session_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1119,7 +1198,7 @@ func (x *SessionListRequest) String() string {
 func (*SessionListRequest) ProtoMessage() {}
 
 func (x *SessionListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_session_svc_g_proto_msgTypes[6]
+	mi := &file_app_session_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1202,7 +1281,7 @@ type SessionListResponse struct {
 
 func (x *SessionListResponse) Reset() {
 	*x = SessionListResponse{}
-	mi := &file_app_session_svc_g_proto_msgTypes[7]
+	mi := &file_app_session_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1214,7 +1293,7 @@ func (x *SessionListResponse) String() string {
 func (*SessionListResponse) ProtoMessage() {}
 
 func (x *SessionListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_session_svc_g_proto_msgTypes[7]
+	mi := &file_app_session_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1281,7 +1360,7 @@ type SessionFilter struct {
 
 func (x *SessionFilter) Reset() {
 	*x = SessionFilter{}
-	mi := &file_app_session_svc_g_proto_msgTypes[8]
+	mi := &file_app_session_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1293,7 +1372,7 @@ func (x *SessionFilter) String() string {
 func (*SessionFilter) ProtoMessage() {}
 
 func (x *SessionFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_app_session_svc_g_proto_msgTypes[8]
+	mi := &file_app_session_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1344,7 +1423,7 @@ var File_app_session_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_session_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x17app/session_svc.g.proto\x12\x06roster\x1a\x11app/session.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xc1\x02\n" +
+	"\x17app/session_svc.g.proto\x12\x06roster\x1a\x11app/session.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xc1\x02\n" +
 	"\x11SessionAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x1b\n" +
@@ -1380,7 +1459,9 @@ const file_app_session_svc_g_proto_rawDesc = "" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"_\n" +
 	"\x13SessionApplyRequest\x12$\n" +
 	"\x03ref\x18\x01 \x01(\v2\x12.roster.SessionRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"}\n" +
+	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\".\n" +
+	"\x14SessionEraseResponse\x12\x16\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"}\n" +
 	"\x12SessionListRequest\x12/\n" +
 	"\afilters\x18\x01 \x03(\v2\x15.roster.SessionFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
@@ -1389,16 +1470,16 @@ const file_app_session_svc_g_proto_rawDesc = "" +
 	"\x05items\x18\x01 \x03(\v2\x0f.roster.SessionR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"5\n" +
 	"\rSessionFilter\x12$\n" +
-	"\x03ref\x18\x01 \x01(\v2\x12.roster.SessionRefR\x03ref2\xda\x02\n" +
+	"\x03ref\x18\x01 \x01(\v2\x12.roster.SessionRefR\x03ref2\xe0\x02\n" +
 	"\x0eSessionService\x121\n" +
 	"\x03Add\x12\x19.roster.SessionAddRequest\x1a\x0f.roster.Session\x121\n" +
 	"\x03Get\x12\x19.roster.SessionGetRequest\x1a\x0f.roster.Session\x125\n" +
 	"\x05Patch\x12\x1b.roster.SessionPatchRequest\x1a\x0f.roster.Session\x125\n" +
-	"\x05Apply\x12\x1b.roster.SessionApplyRequest\x1a\x0f.roster.Session\x123\n" +
-	"\x05Erase\x12\x12.roster.SessionRef\x1a\x16.google.protobuf.Empty\x12?\n" +
+	"\x05Apply\x12\x1b.roster.SessionApplyRequest\x1a\x0f.roster.Session\x129\n" +
+	"\x05Erase\x12\x12.roster.SessionRef\x1a\x1c.roster.SessionEraseResponse\x12?\n" +
 	"\x04List\x12\x1a.roster.SessionListRequest\x1a\x1b.roster.SessionListResponseB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_session_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_app_session_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_app_session_svc_g_proto_goTypes = []any{
 	(*SessionAddRequest)(nil),     // 0: roster.SessionAddRequest
 	(*SessionGetRequest)(nil),     // 1: roster.SessionGetRequest
@@ -1406,44 +1487,44 @@ var file_app_session_svc_g_proto_goTypes = []any{
 	(*SessionSelect)(nil),         // 3: roster.SessionSelect
 	(*SessionPatchRequest)(nil),   // 4: roster.SessionPatchRequest
 	(*SessionApplyRequest)(nil),   // 5: roster.SessionApplyRequest
-	(*SessionListRequest)(nil),    // 6: roster.SessionListRequest
-	(*SessionListResponse)(nil),   // 7: roster.SessionListResponse
-	(*SessionFilter)(nil),         // 8: roster.SessionFilter
-	(*HolderRef)(nil),             // 9: roster.HolderRef
-	(*timestamppb.Timestamp)(nil), // 10: google.protobuf.Timestamp
-	(*HolderSelect)(nil),          // 11: roster.HolderSelect
-	(*patchpb.Patch)(nil),         // 12: patch.Patch
-	(*Session)(nil),               // 13: roster.Session
-	(*emptypb.Empty)(nil),         // 14: google.protobuf.Empty
+	(*SessionEraseResponse)(nil),  // 6: roster.SessionEraseResponse
+	(*SessionListRequest)(nil),    // 7: roster.SessionListRequest
+	(*SessionListResponse)(nil),   // 8: roster.SessionListResponse
+	(*SessionFilter)(nil),         // 9: roster.SessionFilter
+	(*HolderRef)(nil),             // 10: roster.HolderRef
+	(*timestamppb.Timestamp)(nil), // 11: google.protobuf.Timestamp
+	(*HolderSelect)(nil),          // 12: roster.HolderSelect
+	(*patchpb.Patch)(nil),         // 13: patch.Patch
+	(*Session)(nil),               // 14: roster.Session
 }
 var file_app_session_svc_g_proto_depIdxs = []int32{
-	9,  // 0: roster.SessionAddRequest.holder:type_name -> roster.HolderRef
-	10, // 1: roster.SessionAddRequest.date_expires:type_name -> google.protobuf.Timestamp
-	10, // 2: roster.SessionAddRequest.date_idle:type_name -> google.protobuf.Timestamp
-	10, // 3: roster.SessionAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	10, // 0: roster.SessionAddRequest.holder:type_name -> roster.HolderRef
+	11, // 1: roster.SessionAddRequest.date_expires:type_name -> google.protobuf.Timestamp
+	11, // 2: roster.SessionAddRequest.date_idle:type_name -> google.protobuf.Timestamp
+	11, // 3: roster.SessionAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 4: roster.SessionGetRequest.ref:type_name -> roster.SessionRef
 	3,  // 5: roster.SessionGetRequest.select:type_name -> roster.SessionSelect
-	11, // 6: roster.SessionSelect.holder:type_name -> roster.HolderSelect
+	12, // 6: roster.SessionSelect.holder:type_name -> roster.HolderSelect
 	2,  // 7: roster.SessionPatchRequest.ref:type_name -> roster.SessionRef
-	10, // 8: roster.SessionPatchRequest.date_idle:type_name -> google.protobuf.Timestamp
-	10, // 9: roster.SessionPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	11, // 8: roster.SessionPatchRequest.date_idle:type_name -> google.protobuf.Timestamp
+	11, // 9: roster.SessionPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
 	2,  // 10: roster.SessionApplyRequest.ref:type_name -> roster.SessionRef
-	12, // 11: roster.SessionApplyRequest.patch:type_name -> patch.Patch
-	8,  // 12: roster.SessionListRequest.filters:type_name -> roster.SessionFilter
-	13, // 13: roster.SessionListResponse.items:type_name -> roster.Session
+	13, // 11: roster.SessionApplyRequest.patch:type_name -> patch.Patch
+	9,  // 12: roster.SessionListRequest.filters:type_name -> roster.SessionFilter
+	14, // 13: roster.SessionListResponse.items:type_name -> roster.Session
 	2,  // 14: roster.SessionFilter.ref:type_name -> roster.SessionRef
 	0,  // 15: roster.SessionService.Add:input_type -> roster.SessionAddRequest
 	1,  // 16: roster.SessionService.Get:input_type -> roster.SessionGetRequest
 	4,  // 17: roster.SessionService.Patch:input_type -> roster.SessionPatchRequest
 	5,  // 18: roster.SessionService.Apply:input_type -> roster.SessionApplyRequest
 	2,  // 19: roster.SessionService.Erase:input_type -> roster.SessionRef
-	6,  // 20: roster.SessionService.List:input_type -> roster.SessionListRequest
-	13, // 21: roster.SessionService.Add:output_type -> roster.Session
-	13, // 22: roster.SessionService.Get:output_type -> roster.Session
-	13, // 23: roster.SessionService.Patch:output_type -> roster.Session
-	13, // 24: roster.SessionService.Apply:output_type -> roster.Session
-	14, // 25: roster.SessionService.Erase:output_type -> google.protobuf.Empty
-	7,  // 26: roster.SessionService.List:output_type -> roster.SessionListResponse
+	7,  // 20: roster.SessionService.List:input_type -> roster.SessionListRequest
+	14, // 21: roster.SessionService.Add:output_type -> roster.Session
+	14, // 22: roster.SessionService.Get:output_type -> roster.Session
+	14, // 23: roster.SessionService.Patch:output_type -> roster.Session
+	14, // 24: roster.SessionService.Apply:output_type -> roster.Session
+	6,  // 25: roster.SessionService.Erase:output_type -> roster.SessionEraseResponse
+	8,  // 26: roster.SessionService.List:output_type -> roster.SessionListResponse
 	21, // [21:27] is the sub-list for method output_type
 	15, // [15:21] is the sub-list for method input_type
 	15, // [15:15] is the sub-list for extension type_name
@@ -1468,7 +1549,7 @@ func file_app_session_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_session_svc_g_proto_rawDesc), len(file_app_session_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

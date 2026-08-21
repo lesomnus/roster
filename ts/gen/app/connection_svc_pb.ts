@@ -6,8 +6,8 @@ import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegen
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Connection, ConnectionSchema } from "./connection_pb.js";
 import { file_app_connection } from "./connection_pb.js";
-import type { EmptySchema, Timestamp } from "@bufbuild/protobuf/wkt";
-import { file_google_protobuf_empty, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Patch } from "../patch/patch_pb.js";
 import { file_patch_patch } from "../patch/patch_pb.js";
 import type { TenantRef, TenantSelect } from "../roster/payday/tenant_svc_pb.js";
@@ -18,7 +18,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/connection_svc.g.proto.
  */
 export const file_app_connection_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChphcHAvY29ubmVjdGlvbl9zdmMuZy5wcm90bxIGcm9zdGVyIv0BChRDb25uZWN0aW9uQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGRlc2MYBiABKAlCBaoBAggCEhUKBmlzc3VlchgIIAEoCUIFqgECCAISGAoJY2xpZW50X2lkGAkgASgJQgWqAQIIAhIOCgZzY29wZXMYCiADKAkSGQoKc2VjcmV0X3JlZhgLIAEoCUIFqgECCAISMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJkChRDb25uZWN0aW9uR2V0UmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuQ29ubmVjdGlvblJlZhIoCgZzZWxlY3QYAiABKAsyGC5yb3N0ZXIuQ29ubmVjdGlvblNlbGVjdCJNCg1Db25uZWN0aW9uUmVmEgwKAmlkGAEgASgMSAASJwoCYXQYAiABKAsyGS5yb3N0ZXIuQ29ubmVjdGlvblJlZkJ5QXRIAEIFCgNrZXkiRAoRQ29ubmVjdGlvblJlZkJ5QXQSIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZhIMCgRuYW1lGAUgASgJIukBChBDb25uZWN0aW9uU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZ0ZW5hbnQYAiABKAsyFC5yb3N0ZXIuVGVuYW50U2VsZWN0EgwKBG5hbWUYBSABKAgSDAoEZGVzYxgGIAEoCBIOCgZpc3N1ZXIYCCABKAgSEQoJY2xpZW50X2lkGAkgASgIEg4KBnNjb3BlcxgKIAEoCBISCgpzZWNyZXRfcmVmGAsgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgi7QEKFkNvbm5lY3Rpb25QYXRjaFJlcXVlc3QSIgoDcmVmGAEgASgLMhUucm9zdGVyLkNvbm5lY3Rpb25SZWYSDAoEbmFtZRgKIAEoCRIMCgRkZXNjGAwgASgJEg4KBmlzc3VlchgQIAEoCRIRCgljbGllbnRfaWQYEiABKAkSDgoGc2NvcGVzGBQgAygJEhIKCnNlY3JldF9yZWYYFiABKAkSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiWQoWQ29ubmVjdGlvbkFwcGx5UmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuQ29ubmVjdGlvblJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIm0KFUNvbm5lY3Rpb25MaXN0UmVxdWVzdBIpCgdmaWx0ZXJzGAEgAygLMhgucm9zdGVyLkNvbm5lY3Rpb25GaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIlAKFkNvbm5lY3Rpb25MaXN0UmVzcG9uc2USIQoFaXRlbXMYASADKAsyEi5yb3N0ZXIuQ29ubmVjdGlvbhITCgRuZXh0GAIgASgJQgWqAQIIAiJZChBDb25uZWN0aW9uRmlsdGVyEiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5Db25uZWN0aW9uUmVmEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYy/gIKEUNvbm5lY3Rpb25TZXJ2aWNlEjcKA0FkZBIcLnJvc3Rlci5Db25uZWN0aW9uQWRkUmVxdWVzdBoSLnJvc3Rlci5Db25uZWN0aW9uEjcKA0dldBIcLnJvc3Rlci5Db25uZWN0aW9uR2V0UmVxdWVzdBoSLnJvc3Rlci5Db25uZWN0aW9uEjsKBVBhdGNoEh4ucm9zdGVyLkNvbm5lY3Rpb25QYXRjaFJlcXVlc3QaEi5yb3N0ZXIuQ29ubmVjdGlvbhI7CgVBcHBseRIeLnJvc3Rlci5Db25uZWN0aW9uQXBwbHlSZXF1ZXN0GhIucm9zdGVyLkNvbm5lY3Rpb24SNgoFRXJhc2USFS5yb3N0ZXIuQ29ubmVjdGlvblJlZhoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eRJFCgRMaXN0Eh0ucm9zdGVyLkNvbm5lY3Rpb25MaXN0UmVxdWVzdBoeLnJvc3Rlci5Db25uZWN0aW9uTGlzdFJlc3BvbnNlQiFaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHJiCGVkaXRpb25zcOgH", [file_app_connection, file_google_protobuf_empty, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_tenant_svc_g]);
+  fileDesc("ChphcHAvY29ubmVjdGlvbl9zdmMuZy5wcm90bxIGcm9zdGVyIv0BChRDb25uZWN0aW9uQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGRlc2MYBiABKAlCBaoBAggCEhUKBmlzc3VlchgIIAEoCUIFqgECCAISGAoJY2xpZW50X2lkGAkgASgJQgWqAQIIAhIOCgZzY29wZXMYCiADKAkSGQoKc2VjcmV0X3JlZhgLIAEoCUIFqgECCAISMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJkChRDb25uZWN0aW9uR2V0UmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuQ29ubmVjdGlvblJlZhIoCgZzZWxlY3QYAiABKAsyGC5yb3N0ZXIuQ29ubmVjdGlvblNlbGVjdCJNCg1Db25uZWN0aW9uUmVmEgwKAmlkGAEgASgMSAASJwoCYXQYAiABKAsyGS5yb3N0ZXIuQ29ubmVjdGlvblJlZkJ5QXRIAEIFCgNrZXkiRAoRQ29ubmVjdGlvblJlZkJ5QXQSIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZhIMCgRuYW1lGAUgASgJIukBChBDb25uZWN0aW9uU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZ0ZW5hbnQYAiABKAsyFC5yb3N0ZXIuVGVuYW50U2VsZWN0EgwKBG5hbWUYBSABKAgSDAoEZGVzYxgGIAEoCBIOCgZpc3N1ZXIYCCABKAgSEQoJY2xpZW50X2lkGAkgASgIEg4KBnNjb3BlcxgKIAEoCBISCgpzZWNyZXRfcmVmGAsgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgi7QEKFkNvbm5lY3Rpb25QYXRjaFJlcXVlc3QSIgoDcmVmGAEgASgLMhUucm9zdGVyLkNvbm5lY3Rpb25SZWYSDAoEbmFtZRgKIAEoCRIMCgRkZXNjGAwgASgJEg4KBmlzc3VlchgQIAEoCRIRCgljbGllbnRfaWQYEiABKAkSDgoGc2NvcGVzGBQgAygJEhIKCnNlY3JldF9yZWYYFiABKAkSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiWQoWQ29ubmVjdGlvbkFwcGx5UmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuQ29ubmVjdGlvblJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIikKF0Nvbm5lY3Rpb25FcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCJtChVDb25uZWN0aW9uTGlzdFJlcXVlc3QSKQoHZmlsdGVycxgBIAMoCzIYLnJvc3Rlci5Db25uZWN0aW9uRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAiJQChZDb25uZWN0aW9uTGlzdFJlc3BvbnNlEiEKBWl0ZW1zGAEgAygLMhIucm9zdGVyLkNvbm5lY3Rpb24SEwoEbmV4dBgCIAEoCUIFqgECCAIiWQoQQ29ubmVjdGlvbkZpbHRlchIiCgNyZWYYASABKAsyFS5yb3N0ZXIuQ29ubmVjdGlvblJlZhIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmMocDChFDb25uZWN0aW9uU2VydmljZRI3CgNBZGQSHC5yb3N0ZXIuQ29ubmVjdGlvbkFkZFJlcXVlc3QaEi5yb3N0ZXIuQ29ubmVjdGlvbhI3CgNHZXQSHC5yb3N0ZXIuQ29ubmVjdGlvbkdldFJlcXVlc3QaEi5yb3N0ZXIuQ29ubmVjdGlvbhI7CgVQYXRjaBIeLnJvc3Rlci5Db25uZWN0aW9uUGF0Y2hSZXF1ZXN0GhIucm9zdGVyLkNvbm5lY3Rpb24SOwoFQXBwbHkSHi5yb3N0ZXIuQ29ubmVjdGlvbkFwcGx5UmVxdWVzdBoSLnJvc3Rlci5Db25uZWN0aW9uEj8KBUVyYXNlEhUucm9zdGVyLkNvbm5lY3Rpb25SZWYaHy5yb3N0ZXIuQ29ubmVjdGlvbkVyYXNlUmVzcG9uc2USRQoETGlzdBIdLnJvc3Rlci5Db25uZWN0aW9uTGlzdFJlcXVlc3QaHi5yb3N0ZXIuQ29ubmVjdGlvbkxpc3RSZXNwb25zZUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_connection, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_tenant_svc_g]);
 
 /**
  * @generated from message roster.ConnectionAddRequest
@@ -311,6 +311,29 @@ export const ConnectionApplyRequestSchema: GenMessage<ConnectionApplyRequest> = 
   messageDesc(file_app_connection_svc_g, 6);
 
 /**
+ * @generated from message roster.ConnectionEraseResponse
+ */
+export type ConnectionEraseResponse = Message<"roster.ConnectionEraseResponse"> & {
+  /**
+   * Erased is whether this call is the one that erased the row.
+   *
+   * False for a row that was already gone, was never there, or is out
+   * of this caller's reach -- which are one answer on purpose, and the
+   * reason the RPC does not fail instead.
+   *
+   * @generated from field: bool erased = 1;
+   */
+  erased: boolean;
+};
+
+/**
+ * Describes the message roster.ConnectionEraseResponse.
+ * Use `create(ConnectionEraseResponseSchema)` to create a new message.
+ */
+export const ConnectionEraseResponseSchema: GenMessage<ConnectionEraseResponse> = /*@__PURE__*/
+  messageDesc(file_app_connection_svc_g, 7);
+
+/**
  * @generated from message roster.ConnectionListRequest
  */
 export type ConnectionListRequest = Message<"roster.ConnectionListRequest"> & {
@@ -347,7 +370,7 @@ export type ConnectionListRequest = Message<"roster.ConnectionListRequest"> & {
  * Use `create(ConnectionListRequestSchema)` to create a new message.
  */
 export const ConnectionListRequestSchema: GenMessage<ConnectionListRequest> = /*@__PURE__*/
-  messageDesc(file_app_connection_svc_g, 7);
+  messageDesc(file_app_connection_svc_g, 8);
 
 /**
  * @generated from message roster.ConnectionListResponse
@@ -377,7 +400,7 @@ export type ConnectionListResponse = Message<"roster.ConnectionListResponse"> & 
  * Use `create(ConnectionListResponseSchema)` to create a new message.
  */
 export const ConnectionListResponseSchema: GenMessage<ConnectionListResponse> = /*@__PURE__*/
-  messageDesc(file_app_connection_svc_g, 8);
+  messageDesc(file_app_connection_svc_g, 9);
 
 /**
  * @generated from message roster.ConnectionFilter
@@ -399,7 +422,7 @@ export type ConnectionFilter = Message<"roster.ConnectionFilter"> & {
  * Use `create(ConnectionFilterSchema)` to create a new message.
  */
 export const ConnectionFilterSchema: GenMessage<ConnectionFilter> = /*@__PURE__*/
-  messageDesc(file_app_connection_svc_g, 9);
+  messageDesc(file_app_connection_svc_g, 10);
 
 /**
  * @generated from service roster.ConnectionService
@@ -453,7 +476,7 @@ export const ConnectionService: GenService<{
   erase: {
     methodKind: "unary";
     input: typeof ConnectionRefSchema;
-    output: typeof EmptySchema;
+    output: typeof ConnectionEraseResponseSchema;
   },
   /**
    * List reads Connections a page at a time.

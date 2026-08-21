@@ -6,8 +6,8 @@ import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegen
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Session, SessionSchema } from "./session_pb.js";
 import { file_app_session } from "./session_pb.js";
-import type { EmptySchema, Timestamp } from "@bufbuild/protobuf/wkt";
-import { file_google_protobuf_empty, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Patch } from "../patch/patch_pb.js";
 import { file_patch_patch } from "../patch/patch_pb.js";
 import type { HolderRef, HolderSelect } from "../roster/payday/holder_svc_pb.js";
@@ -18,7 +18,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/session_svc.g.proto.
  */
 export const file_app_session_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChdhcHAvc2Vzc2lvbl9zdmMuZy5wcm90bxIGcm9zdGVyIoICChFTZXNzaW9uQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhQKBWdyYW50GAggASgMQgWqAQIIAhIVCgZzZWNyZXQYCSABKAxCBaoBAggCEjAKDGRhdGVfZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLQoJZGF0ZV9pZGxlGAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlsKEVNlc3Npb25HZXRSZXF1ZXN0Eh8KA3JlZhgBIAEoCzISLnJvc3Rlci5TZXNzaW9uUmVmEiUKBnNlbGVjdBgCIAEoCzIVLnJvc3Rlci5TZXNzaW9uU2VsZWN0IjMKClNlc3Npb25SZWYSDAoCaWQYASABKAxIABIQCgZzZWNyZXQYCSABKAxIAEIFCgNrZXkiywEKDVNlc3Npb25TZWxlY3QSCwoDYWxsGAEgASgIEiQKBmhvbGRlchgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSDQoFZ3JhbnQYCCABKAgSDgoGc2VjcmV0GAkgASgIEhQKDGRhdGVfZXhwaXJlcxgLIAEoCBIRCglkYXRlX2lkbGUYDCABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCLLAQoTU2Vzc2lvblBhdGNoUmVxdWVzdBIfCgNyZWYYASABKAsyEi5yb3N0ZXIuU2Vzc2lvblJlZhItCglkYXRlX2lkbGUYGCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhYKDmRhdGVfaWRsZV9udWxsGBkgASgIEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIlMKE1Nlc3Npb25BcHBseVJlcXVlc3QSHwoDcmVmGAEgASgLMhIucm9zdGVyLlNlc3Npb25SZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCJnChJTZXNzaW9uTGlzdFJlcXVlc3QSJgoHZmlsdGVycxgBIAMoCzIVLnJvc3Rlci5TZXNzaW9uRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAiJKChNTZXNzaW9uTGlzdFJlc3BvbnNlEh4KBWl0ZW1zGAEgAygLMg8ucm9zdGVyLlNlc3Npb24SEwoEbmV4dBgCIAEoCUIFqgECCAIiMAoNU2Vzc2lvbkZpbHRlchIfCgNyZWYYASABKAsyEi5yb3N0ZXIuU2Vzc2lvblJlZjLaAgoOU2Vzc2lvblNlcnZpY2USMQoDQWRkEhkucm9zdGVyLlNlc3Npb25BZGRSZXF1ZXN0Gg8ucm9zdGVyLlNlc3Npb24SMQoDR2V0Ehkucm9zdGVyLlNlc3Npb25HZXRSZXF1ZXN0Gg8ucm9zdGVyLlNlc3Npb24SNQoFUGF0Y2gSGy5yb3N0ZXIuU2Vzc2lvblBhdGNoUmVxdWVzdBoPLnJvc3Rlci5TZXNzaW9uEjUKBUFwcGx5Ehsucm9zdGVyLlNlc3Npb25BcHBseVJlcXVlc3QaDy5yb3N0ZXIuU2Vzc2lvbhIzCgVFcmFzZRISLnJvc3Rlci5TZXNzaW9uUmVmGhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5Ej8KBExpc3QSGi5yb3N0ZXIuU2Vzc2lvbkxpc3RSZXF1ZXN0Ghsucm9zdGVyLlNlc3Npb25MaXN0UmVzcG9uc2VCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_session, file_google_protobuf_empty, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChdhcHAvc2Vzc2lvbl9zdmMuZy5wcm90bxIGcm9zdGVyIoICChFTZXNzaW9uQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhQKBWdyYW50GAggASgMQgWqAQIIAhIVCgZzZWNyZXQYCSABKAxCBaoBAggCEjAKDGRhdGVfZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLQoJZGF0ZV9pZGxlGAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlsKEVNlc3Npb25HZXRSZXF1ZXN0Eh8KA3JlZhgBIAEoCzISLnJvc3Rlci5TZXNzaW9uUmVmEiUKBnNlbGVjdBgCIAEoCzIVLnJvc3Rlci5TZXNzaW9uU2VsZWN0IjMKClNlc3Npb25SZWYSDAoCaWQYASABKAxIABIQCgZzZWNyZXQYCSABKAxIAEIFCgNrZXkiywEKDVNlc3Npb25TZWxlY3QSCwoDYWxsGAEgASgIEiQKBmhvbGRlchgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSDQoFZ3JhbnQYCCABKAgSDgoGc2VjcmV0GAkgASgIEhQKDGRhdGVfZXhwaXJlcxgLIAEoCBIRCglkYXRlX2lkbGUYDCABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCLLAQoTU2Vzc2lvblBhdGNoUmVxdWVzdBIfCgNyZWYYASABKAsyEi5yb3N0ZXIuU2Vzc2lvblJlZhItCglkYXRlX2lkbGUYGCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhYKDmRhdGVfaWRsZV9udWxsGBkgASgIEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIlMKE1Nlc3Npb25BcHBseVJlcXVlc3QSHwoDcmVmGAEgASgLMhIucm9zdGVyLlNlc3Npb25SZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCImChRTZXNzaW9uRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiZwoSU2Vzc2lvbkxpc3RSZXF1ZXN0EiYKB2ZpbHRlcnMYASADKAsyFS5yb3N0ZXIuU2Vzc2lvbkZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAIiSgoTU2Vzc2lvbkxpc3RSZXNwb25zZRIeCgVpdGVtcxgBIAMoCzIPLnJvc3Rlci5TZXNzaW9uEhMKBG5leHQYAiABKAlCBaoBAggCIjAKDVNlc3Npb25GaWx0ZXISHwoDcmVmGAEgASgLMhIucm9zdGVyLlNlc3Npb25SZWYy4AIKDlNlc3Npb25TZXJ2aWNlEjEKA0FkZBIZLnJvc3Rlci5TZXNzaW9uQWRkUmVxdWVzdBoPLnJvc3Rlci5TZXNzaW9uEjEKA0dldBIZLnJvc3Rlci5TZXNzaW9uR2V0UmVxdWVzdBoPLnJvc3Rlci5TZXNzaW9uEjUKBVBhdGNoEhsucm9zdGVyLlNlc3Npb25QYXRjaFJlcXVlc3QaDy5yb3N0ZXIuU2Vzc2lvbhI1CgVBcHBseRIbLnJvc3Rlci5TZXNzaW9uQXBwbHlSZXF1ZXN0Gg8ucm9zdGVyLlNlc3Npb24SOQoFRXJhc2USEi5yb3N0ZXIuU2Vzc2lvblJlZhocLnJvc3Rlci5TZXNzaW9uRXJhc2VSZXNwb25zZRI/CgRMaXN0Ehoucm9zdGVyLlNlc3Npb25MaXN0UmVxdWVzdBobLnJvc3Rlci5TZXNzaW9uTGlzdFJlc3BvbnNlQiFaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHJiCGVkaXRpb25zcOgH", [file_app_session, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.SessionAddRequest
@@ -254,6 +254,29 @@ export const SessionApplyRequestSchema: GenMessage<SessionApplyRequest> = /*@__P
   messageDesc(file_app_session_svc_g, 5);
 
 /**
+ * @generated from message roster.SessionEraseResponse
+ */
+export type SessionEraseResponse = Message<"roster.SessionEraseResponse"> & {
+  /**
+   * Erased is whether this call is the one that erased the row.
+   *
+   * False for a row that was already gone, was never there, or is out
+   * of this caller's reach -- which are one answer on purpose, and the
+   * reason the RPC does not fail instead.
+   *
+   * @generated from field: bool erased = 1;
+   */
+  erased: boolean;
+};
+
+/**
+ * Describes the message roster.SessionEraseResponse.
+ * Use `create(SessionEraseResponseSchema)` to create a new message.
+ */
+export const SessionEraseResponseSchema: GenMessage<SessionEraseResponse> = /*@__PURE__*/
+  messageDesc(file_app_session_svc_g, 6);
+
+/**
  * @generated from message roster.SessionListRequest
  */
 export type SessionListRequest = Message<"roster.SessionListRequest"> & {
@@ -290,7 +313,7 @@ export type SessionListRequest = Message<"roster.SessionListRequest"> & {
  * Use `create(SessionListRequestSchema)` to create a new message.
  */
 export const SessionListRequestSchema: GenMessage<SessionListRequest> = /*@__PURE__*/
-  messageDesc(file_app_session_svc_g, 6);
+  messageDesc(file_app_session_svc_g, 7);
 
 /**
  * @generated from message roster.SessionListResponse
@@ -320,7 +343,7 @@ export type SessionListResponse = Message<"roster.SessionListResponse"> & {
  * Use `create(SessionListResponseSchema)` to create a new message.
  */
 export const SessionListResponseSchema: GenMessage<SessionListResponse> = /*@__PURE__*/
-  messageDesc(file_app_session_svc_g, 7);
+  messageDesc(file_app_session_svc_g, 8);
 
 /**
  * @generated from message roster.SessionFilter
@@ -337,7 +360,7 @@ export type SessionFilter = Message<"roster.SessionFilter"> & {
  * Use `create(SessionFilterSchema)` to create a new message.
  */
 export const SessionFilterSchema: GenMessage<SessionFilter> = /*@__PURE__*/
-  messageDesc(file_app_session_svc_g, 8);
+  messageDesc(file_app_session_svc_g, 9);
 
 /**
  * @generated from service roster.SessionService
@@ -391,7 +414,7 @@ export const SessionService: GenService<{
   erase: {
     methodKind: "unary";
     input: typeof SessionRefSchema;
-    output: typeof EmptySchema;
+    output: typeof SessionEraseResponseSchema;
   },
   /**
    * List reads Sessions a page at a time.

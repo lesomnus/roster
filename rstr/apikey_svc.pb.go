@@ -10,7 +10,6 @@ import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	unsafe "unsafe"
@@ -1500,6 +1499,86 @@ func (b0 ApiKeyApplyRequest_builder) Build() *ApiKeyApplyRequest {
 	return m0
 }
 
+type ApiKeyEraseResponse struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *ApiKeyEraseResponse) Reset() {
+	*x = ApiKeyEraseResponse{}
+	mi := &file_app_apikey_svc_g_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ApiKeyEraseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ApiKeyEraseResponse) ProtoMessage() {}
+
+func (x *ApiKeyEraseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_app_apikey_svc_g_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *ApiKeyEraseResponse) GetErased() bool {
+	if x != nil {
+		return x.xxx_hidden_Erased
+	}
+	return false
+}
+
+func (x *ApiKeyEraseResponse) SetErased(v bool) {
+	x.xxx_hidden_Erased = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+}
+
+func (x *ApiKeyEraseResponse) HasErased() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *ApiKeyEraseResponse) ClearErased() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Erased = false
+}
+
+type ApiKeyEraseResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Erased is whether this call is the one that erased the row.
+	//
+	// False for a row that was already gone, was never there, or is out
+	// of this caller's reach -- which are one answer on purpose, and the
+	// reason the RPC does not fail instead.
+	Erased *bool
+}
+
+func (b0 ApiKeyEraseResponse_builder) Build() *ApiKeyEraseResponse {
+	m0 := &ApiKeyEraseResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Erased != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		x.xxx_hidden_Erased = *b.Erased
+	}
+	return m0
+}
+
 type ApiKeyListRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*ApiKeyFilter       `protobuf:"bytes,1,rep,name=filters"`
@@ -1511,7 +1590,7 @@ type ApiKeyListRequest struct {
 
 func (x *ApiKeyListRequest) Reset() {
 	*x = ApiKeyListRequest{}
-	mi := &file_app_apikey_svc_g_proto_msgTypes[7]
+	mi := &file_app_apikey_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1523,7 +1602,7 @@ func (x *ApiKeyListRequest) String() string {
 func (*ApiKeyListRequest) ProtoMessage() {}
 
 func (x *ApiKeyListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_apikey_svc_g_proto_msgTypes[7]
+	mi := &file_app_apikey_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1606,7 +1685,7 @@ type ApiKeyListResponse struct {
 
 func (x *ApiKeyListResponse) Reset() {
 	*x = ApiKeyListResponse{}
-	mi := &file_app_apikey_svc_g_proto_msgTypes[8]
+	mi := &file_app_apikey_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1618,7 +1697,7 @@ func (x *ApiKeyListResponse) String() string {
 func (*ApiKeyListResponse) ProtoMessage() {}
 
 func (x *ApiKeyListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_apikey_svc_g_proto_msgTypes[8]
+	mi := &file_app_apikey_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1685,7 +1764,7 @@ type ApiKeyFilter struct {
 
 func (x *ApiKeyFilter) Reset() {
 	*x = ApiKeyFilter{}
-	mi := &file_app_apikey_svc_g_proto_msgTypes[9]
+	mi := &file_app_apikey_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1697,7 +1776,7 @@ func (x *ApiKeyFilter) String() string {
 func (*ApiKeyFilter) ProtoMessage() {}
 
 func (x *ApiKeyFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_app_apikey_svc_g_proto_msgTypes[9]
+	mi := &file_app_apikey_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1748,7 +1827,7 @@ var File_app_apikey_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_apikey_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x16app/apikey_svc.g.proto\x12\x06roster\x1a\x10app/apikey.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xf5\x02\n" +
+	"\x16app/apikey_svc.g.proto\x12\x06roster\x1a\x10app/apikey.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xf5\x02\n" +
 	"\x10ApiKeyAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x1b\n" +
@@ -1799,7 +1878,9 @@ const file_app_apikey_svc_g_proto_rawDesc = "" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"]\n" +
 	"\x12ApiKeyApplyRequest\x12#\n" +
 	"\x03ref\x18\x01 \x01(\v2\x11.roster.ApiKeyRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"{\n" +
+	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"-\n" +
+	"\x13ApiKeyEraseResponse\x12\x16\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"{\n" +
 	"\x11ApiKeyListRequest\x12.\n" +
 	"\afilters\x18\x01 \x03(\v2\x14.roster.ApiKeyFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
@@ -1808,16 +1889,16 @@ const file_app_apikey_svc_g_proto_rawDesc = "" +
 	"\x05items\x18\x01 \x03(\v2\x0e.roster.ApiKeyR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"3\n" +
 	"\fApiKeyFilter\x12#\n" +
-	"\x03ref\x18\x01 \x01(\v2\x11.roster.ApiKeyRefR\x03ref2\xce\x02\n" +
+	"\x03ref\x18\x01 \x01(\v2\x11.roster.ApiKeyRefR\x03ref2\xd3\x02\n" +
 	"\rApiKeyService\x12/\n" +
 	"\x03Add\x12\x18.roster.ApiKeyAddRequest\x1a\x0e.roster.ApiKey\x12/\n" +
 	"\x03Get\x12\x18.roster.ApiKeyGetRequest\x1a\x0e.roster.ApiKey\x123\n" +
 	"\x05Patch\x12\x1a.roster.ApiKeyPatchRequest\x1a\x0e.roster.ApiKey\x123\n" +
-	"\x05Apply\x12\x1a.roster.ApiKeyApplyRequest\x1a\x0e.roster.ApiKey\x122\n" +
-	"\x05Erase\x12\x11.roster.ApiKeyRef\x1a\x16.google.protobuf.Empty\x12=\n" +
+	"\x05Apply\x12\x1a.roster.ApiKeyApplyRequest\x1a\x0e.roster.ApiKey\x127\n" +
+	"\x05Erase\x12\x11.roster.ApiKeyRef\x1a\x1b.roster.ApiKeyEraseResponse\x12=\n" +
 	"\x04List\x12\x19.roster.ApiKeyListRequest\x1a\x1a.roster.ApiKeyListResponseB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_apikey_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_app_apikey_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_app_apikey_svc_g_proto_goTypes = []any{
 	(*ApiKeyAddRequest)(nil),      // 0: roster.ApiKeyAddRequest
 	(*ApiKeyGetRequest)(nil),      // 1: roster.ApiKeyGetRequest
@@ -1826,47 +1907,47 @@ var file_app_apikey_svc_g_proto_goTypes = []any{
 	(*ApiKeySelect)(nil),          // 4: roster.ApiKeySelect
 	(*ApiKeyPatchRequest)(nil),    // 5: roster.ApiKeyPatchRequest
 	(*ApiKeyApplyRequest)(nil),    // 6: roster.ApiKeyApplyRequest
-	(*ApiKeyListRequest)(nil),     // 7: roster.ApiKeyListRequest
-	(*ApiKeyListResponse)(nil),    // 8: roster.ApiKeyListResponse
-	(*ApiKeyFilter)(nil),          // 9: roster.ApiKeyFilter
-	(*HolderRef)(nil),             // 10: roster.HolderRef
-	(*timestamppb.Timestamp)(nil), // 11: google.protobuf.Timestamp
-	(*HolderSelect)(nil),          // 12: roster.HolderSelect
-	(*patchpb.Patch)(nil),         // 13: patch.Patch
-	(*ApiKey)(nil),                // 14: roster.ApiKey
-	(*emptypb.Empty)(nil),         // 15: google.protobuf.Empty
+	(*ApiKeyEraseResponse)(nil),   // 7: roster.ApiKeyEraseResponse
+	(*ApiKeyListRequest)(nil),     // 8: roster.ApiKeyListRequest
+	(*ApiKeyListResponse)(nil),    // 9: roster.ApiKeyListResponse
+	(*ApiKeyFilter)(nil),          // 10: roster.ApiKeyFilter
+	(*HolderRef)(nil),             // 11: roster.HolderRef
+	(*timestamppb.Timestamp)(nil), // 12: google.protobuf.Timestamp
+	(*HolderSelect)(nil),          // 13: roster.HolderSelect
+	(*patchpb.Patch)(nil),         // 14: patch.Patch
+	(*ApiKey)(nil),                // 15: roster.ApiKey
 }
 var file_app_apikey_svc_g_proto_depIdxs = []int32{
-	10, // 0: roster.ApiKeyAddRequest.holder:type_name -> roster.HolderRef
-	11, // 1: roster.ApiKeyAddRequest.date_used:type_name -> google.protobuf.Timestamp
-	11, // 2: roster.ApiKeyAddRequest.date_expires:type_name -> google.protobuf.Timestamp
-	11, // 3: roster.ApiKeyAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	11, // 0: roster.ApiKeyAddRequest.holder:type_name -> roster.HolderRef
+	12, // 1: roster.ApiKeyAddRequest.date_used:type_name -> google.protobuf.Timestamp
+	12, // 2: roster.ApiKeyAddRequest.date_expires:type_name -> google.protobuf.Timestamp
+	12, // 3: roster.ApiKeyAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 4: roster.ApiKeyGetRequest.ref:type_name -> roster.ApiKeyRef
 	4,  // 5: roster.ApiKeyGetRequest.select:type_name -> roster.ApiKeySelect
 	3,  // 6: roster.ApiKeyRef.alias:type_name -> roster.ApiKeyRefByAlias
-	10, // 7: roster.ApiKeyRefByAlias.holder:type_name -> roster.HolderRef
-	12, // 8: roster.ApiKeySelect.holder:type_name -> roster.HolderSelect
+	11, // 7: roster.ApiKeyRefByAlias.holder:type_name -> roster.HolderRef
+	13, // 8: roster.ApiKeySelect.holder:type_name -> roster.HolderSelect
 	2,  // 9: roster.ApiKeyPatchRequest.ref:type_name -> roster.ApiKeyRef
-	11, // 10: roster.ApiKeyPatchRequest.date_used:type_name -> google.protobuf.Timestamp
-	11, // 11: roster.ApiKeyPatchRequest.date_expires:type_name -> google.protobuf.Timestamp
-	11, // 12: roster.ApiKeyPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	12, // 10: roster.ApiKeyPatchRequest.date_used:type_name -> google.protobuf.Timestamp
+	12, // 11: roster.ApiKeyPatchRequest.date_expires:type_name -> google.protobuf.Timestamp
+	12, // 12: roster.ApiKeyPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
 	2,  // 13: roster.ApiKeyApplyRequest.ref:type_name -> roster.ApiKeyRef
-	13, // 14: roster.ApiKeyApplyRequest.patch:type_name -> patch.Patch
-	9,  // 15: roster.ApiKeyListRequest.filters:type_name -> roster.ApiKeyFilter
-	14, // 16: roster.ApiKeyListResponse.items:type_name -> roster.ApiKey
+	14, // 14: roster.ApiKeyApplyRequest.patch:type_name -> patch.Patch
+	10, // 15: roster.ApiKeyListRequest.filters:type_name -> roster.ApiKeyFilter
+	15, // 16: roster.ApiKeyListResponse.items:type_name -> roster.ApiKey
 	2,  // 17: roster.ApiKeyFilter.ref:type_name -> roster.ApiKeyRef
 	0,  // 18: roster.ApiKeyService.Add:input_type -> roster.ApiKeyAddRequest
 	1,  // 19: roster.ApiKeyService.Get:input_type -> roster.ApiKeyGetRequest
 	5,  // 20: roster.ApiKeyService.Patch:input_type -> roster.ApiKeyPatchRequest
 	6,  // 21: roster.ApiKeyService.Apply:input_type -> roster.ApiKeyApplyRequest
 	2,  // 22: roster.ApiKeyService.Erase:input_type -> roster.ApiKeyRef
-	7,  // 23: roster.ApiKeyService.List:input_type -> roster.ApiKeyListRequest
-	14, // 24: roster.ApiKeyService.Add:output_type -> roster.ApiKey
-	14, // 25: roster.ApiKeyService.Get:output_type -> roster.ApiKey
-	14, // 26: roster.ApiKeyService.Patch:output_type -> roster.ApiKey
-	14, // 27: roster.ApiKeyService.Apply:output_type -> roster.ApiKey
-	15, // 28: roster.ApiKeyService.Erase:output_type -> google.protobuf.Empty
-	8,  // 29: roster.ApiKeyService.List:output_type -> roster.ApiKeyListResponse
+	8,  // 23: roster.ApiKeyService.List:input_type -> roster.ApiKeyListRequest
+	15, // 24: roster.ApiKeyService.Add:output_type -> roster.ApiKey
+	15, // 25: roster.ApiKeyService.Get:output_type -> roster.ApiKey
+	15, // 26: roster.ApiKeyService.Patch:output_type -> roster.ApiKey
+	15, // 27: roster.ApiKeyService.Apply:output_type -> roster.ApiKey
+	7,  // 28: roster.ApiKeyService.Erase:output_type -> roster.ApiKeyEraseResponse
+	9,  // 29: roster.ApiKeyService.List:output_type -> roster.ApiKeyListResponse
 	24, // [24:30] is the sub-list for method output_type
 	18, // [18:24] is the sub-list for method input_type
 	18, // [18:18] is the sub-list for extension type_name
@@ -1892,7 +1973,7 @@ func file_app_apikey_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_apikey_svc_g_proto_rawDesc), len(file_app_apikey_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -11,7 +11,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -41,7 +40,7 @@ type SessionServiceClient interface {
 	// Apply applies a patch document to an existing Session
 	Apply(ctx context.Context, in *SessionApplyRequest, opts ...grpc.CallOption) (*Session, error)
 	// Erase deletes a Session
-	Erase(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Erase(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*SessionEraseResponse, error)
 	// List reads Sessions a page at a time.
 	List(ctx context.Context, in *SessionListRequest, opts ...grpc.CallOption) (*SessionListResponse, error)
 }
@@ -94,9 +93,9 @@ func (c *sessionServiceClient) Apply(ctx context.Context, in *SessionApplyReques
 	return out, nil
 }
 
-func (c *sessionServiceClient) Erase(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *sessionServiceClient) Erase(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*SessionEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
+	out := new(SessionEraseResponse)
 	err := c.cc.Invoke(ctx, SessionService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -127,7 +126,7 @@ type SessionServiceServer interface {
 	// Apply applies a patch document to an existing Session
 	Apply(context.Context, *SessionApplyRequest) (*Session, error)
 	// Erase deletes a Session
-	Erase(context.Context, *SessionRef) (*emptypb.Empty, error)
+	Erase(context.Context, *SessionRef) (*SessionEraseResponse, error)
 	// List reads Sessions a page at a time.
 	List(context.Context, *SessionListRequest) (*SessionListResponse, error)
 	mustEmbedUnimplementedSessionServiceServer()
@@ -152,7 +151,7 @@ func (UnimplementedSessionServiceServer) Patch(context.Context, *SessionPatchReq
 func (UnimplementedSessionServiceServer) Apply(context.Context, *SessionApplyRequest) (*Session, error) {
 	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
-func (UnimplementedSessionServiceServer) Erase(context.Context, *SessionRef) (*emptypb.Empty, error) {
+func (UnimplementedSessionServiceServer) Erase(context.Context, *SessionRef) (*SessionEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedSessionServiceServer) List(context.Context, *SessionListRequest) (*SessionListResponse, error) {

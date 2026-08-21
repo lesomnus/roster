@@ -161,9 +161,23 @@ func (s *Server) Redeem(ctx context.Context, req *app.VouchRedeemRequest) (*app.
 	}
 
 	// Spent whatever happens next, which is the whole of what single-use means:
-	// *used* is *not there*.
-	if _, err := s.open.Link().Erase(ctx, app.LinkRef_builder{Id: v.GetId()}.Build()); err != nil {
+	// *used* is *not there*. And **only the caller that spent it** goes on --
+	// the erase answers who did, because a link is a first factor with no
+	// second one behind it, so two winners here are two credentials from one
+	// mail.
+	//
+	// A mail client that fetches a link to preview it, and a person who clicks
+	// it while that fetch is in flight, is not an exotic case. It is the shape
+	// this is most likely to meet.
+	//
+	// The same `no()` every other unusable token gets, for the same reason:
+	// told apart, this says whether a string was ever a real link.
+	spent, err := s.open.Link().Erase(ctx, app.LinkRef_builder{Id: v.GetId()}.Build())
+	if err != nil {
 		return nil, err
+	}
+	if !spent.GetErased() {
+		return app.VouchDelegateResponse_builder{Verified: no()}.Build(), nil
 	}
 
 	// And then it is a first factor like any other. If they have a second one

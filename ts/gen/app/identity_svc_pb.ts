@@ -6,8 +6,8 @@ import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegen
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Identity, IdentitySchema } from "./identity_pb.js";
 import { file_app_identity } from "./identity_pb.js";
-import type { EmptySchema, Timestamp } from "@bufbuild/protobuf/wkt";
-import { file_google_protobuf_empty, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Patch } from "../patch/patch_pb.js";
 import { file_patch_patch } from "../patch/patch_pb.js";
 import type { HolderRef, HolderSelect } from "../roster/payday/holder_svc_pb.js";
@@ -18,7 +18,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/identity_svc.g.proto.
  */
 export const file_app_identity_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChhhcHAvaWRlbnRpdHlfc3ZjLmcucHJvdG8SBnJvc3RlciLAAQoSSWRlbnRpdHlBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSFwoIcHJvdmlkZXIYCCABKAlCBaoBAggCEhYKB3N1YmplY3QYCSABKAlCBaoBAggCEhgKCXRlbmFudF9pZBgKIAEoDEIFqgECCAISMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJeChJJZGVudGl0eUdldFJlcXVlc3QSIAoDcmVmGAEgASgLMhMucm9zdGVyLklkZW50aXR5UmVmEiYKBnNlbGVjdBgCIAEoCzIWLnJvc3Rlci5JZGVudGl0eVNlbGVjdCJTCgtJZGVudGl0eVJlZhIMCgJpZBgBIAEoDEgAEi8KB3N1YmplY3QYCiABKAsyHC5yb3N0ZXIuSWRlbnRpdHlSZWZCeVN1YmplY3RIAEIFCgNrZXkiTAoUSWRlbnRpdHlSZWZCeVN1YmplY3QSEQoJdGVuYW50X2lkGAogASgMEhAKCHByb3ZpZGVyGAggASgJEg8KB3N1YmplY3QYCSABKAkiugEKDklkZW50aXR5U2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0EhAKCHByb3ZpZGVyGAggASgIEg8KB3N1YmplY3QYCSABKAgSEQoJdGVuYW50X2lkGAogASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgivAEKFElkZW50aXR5UGF0Y2hSZXF1ZXN0EiAKA3JlZhgBIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIQCghwcm92aWRlchgQIAEoCRIPCgdzdWJqZWN0GBIgASgJEhEKCXRlbmFudF9pZBgUIAEoDBIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCCJVChRJZGVudGl0eUFwcGx5UmVxdWVzdBIgCgNyZWYYASABKAsyEy5yb3N0ZXIuSWRlbnRpdHlSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCJpChNJZGVudGl0eUxpc3RSZXF1ZXN0EicKB2ZpbHRlcnMYASADKAsyFi5yb3N0ZXIuSWRlbnRpdHlGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIkwKFElkZW50aXR5TGlzdFJlc3BvbnNlEh8KBWl0ZW1zGAEgAygLMhAucm9zdGVyLklkZW50aXR5EhMKBG5leHQYAiABKAlCBaoBAggCImgKDklkZW50aXR5RmlsdGVyEiAKA3JlZhgBIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhEKCXRlbmFudF9pZBgDIAEoDCJdChRJZGVudGl0eVdhdGNoUmVxdWVzdBInCgdmaWx0ZXJzGAEgAygLMhYucm9zdGVyLklkZW50aXR5RmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCIkEKFUlkZW50aXR5V2F0Y2hSZXNwb25zZRIoCgVpdGVtcxgBIAMoCzIZLnJvc3Rlci5JZGVudGl0eVdhdGNoSXRlbSJXChFJZGVudGl0eVdhdGNoSXRlbRIKCgJpZBgBIAEoDBIfCgV2YWx1ZRgCIAEoCzIQLnJvc3Rlci5JZGVudGl0eRIVCgZhY3Rpb24YAyABKAlCBaoBAggCMq4DCg9JZGVudGl0eVNlcnZpY2USMwoDQWRkEhoucm9zdGVyLklkZW50aXR5QWRkUmVxdWVzdBoQLnJvc3Rlci5JZGVudGl0eRIzCgNHZXQSGi5yb3N0ZXIuSWRlbnRpdHlHZXRSZXF1ZXN0GhAucm9zdGVyLklkZW50aXR5EjcKBVBhdGNoEhwucm9zdGVyLklkZW50aXR5UGF0Y2hSZXF1ZXN0GhAucm9zdGVyLklkZW50aXR5EjcKBUFwcGx5Ehwucm9zdGVyLklkZW50aXR5QXBwbHlSZXF1ZXN0GhAucm9zdGVyLklkZW50aXR5EjQKBUVyYXNlEhMucm9zdGVyLklkZW50aXR5UmVmGhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5EkEKBExpc3QSGy5yb3N0ZXIuSWRlbnRpdHlMaXN0UmVxdWVzdBocLnJvc3Rlci5JZGVudGl0eUxpc3RSZXNwb25zZRJGCgVXYXRjaBIcLnJvc3Rlci5JZGVudGl0eVdhdGNoUmVxdWVzdBodLnJvc3Rlci5JZGVudGl0eVdhdGNoUmVzcG9uc2UwAUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_identity, file_google_protobuf_empty, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChhhcHAvaWRlbnRpdHlfc3ZjLmcucHJvdG8SBnJvc3RlciLAAQoSSWRlbnRpdHlBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSFwoIcHJvdmlkZXIYCCABKAlCBaoBAggCEhYKB3N1YmplY3QYCSABKAlCBaoBAggCEhgKCXRlbmFudF9pZBgKIAEoDEIFqgECCAISMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJeChJJZGVudGl0eUdldFJlcXVlc3QSIAoDcmVmGAEgASgLMhMucm9zdGVyLklkZW50aXR5UmVmEiYKBnNlbGVjdBgCIAEoCzIWLnJvc3Rlci5JZGVudGl0eVNlbGVjdCJTCgtJZGVudGl0eVJlZhIMCgJpZBgBIAEoDEgAEi8KB3N1YmplY3QYCiABKAsyHC5yb3N0ZXIuSWRlbnRpdHlSZWZCeVN1YmplY3RIAEIFCgNrZXkiTAoUSWRlbnRpdHlSZWZCeVN1YmplY3QSEQoJdGVuYW50X2lkGAogASgMEhAKCHByb3ZpZGVyGAggASgJEg8KB3N1YmplY3QYCSABKAkiugEKDklkZW50aXR5U2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0EhAKCHByb3ZpZGVyGAggASgIEg8KB3N1YmplY3QYCSABKAgSEQoJdGVuYW50X2lkGAogASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgivAEKFElkZW50aXR5UGF0Y2hSZXF1ZXN0EiAKA3JlZhgBIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIQCghwcm92aWRlchgQIAEoCRIPCgdzdWJqZWN0GBIgASgJEhEKCXRlbmFudF9pZBgUIAEoDBIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCCJVChRJZGVudGl0eUFwcGx5UmVxdWVzdBIgCgNyZWYYASABKAsyEy5yb3N0ZXIuSWRlbnRpdHlSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCInChVJZGVudGl0eUVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIImkKE0lkZW50aXR5TGlzdFJlcXVlc3QSJwoHZmlsdGVycxgBIAMoCzIWLnJvc3Rlci5JZGVudGl0eUZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAIiTAoUSWRlbnRpdHlMaXN0UmVzcG9uc2USHwoFaXRlbXMYASADKAsyEC5yb3N0ZXIuSWRlbnRpdHkSEwoEbmV4dBgCIAEoCUIFqgECCAIiaAoOSWRlbnRpdHlGaWx0ZXISIAoDcmVmGAEgASgLMhMucm9zdGVyLklkZW50aXR5UmVmEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSEQoJdGVuYW50X2lkGAMgASgMIl0KFElkZW50aXR5V2F0Y2hSZXF1ZXN0EicKB2ZpbHRlcnMYASADKAsyFi5yb3N0ZXIuSWRlbnRpdHlGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiQQoVSWRlbnRpdHlXYXRjaFJlc3BvbnNlEigKBWl0ZW1zGAEgAygLMhkucm9zdGVyLklkZW50aXR5V2F0Y2hJdGVtIlcKEUlkZW50aXR5V2F0Y2hJdGVtEgoKAmlkGAEgASgMEh8KBXZhbHVlGAIgASgLMhAucm9zdGVyLklkZW50aXR5EhUKBmFjdGlvbhgDIAEoCUIFqgECCAIytQMKD0lkZW50aXR5U2VydmljZRIzCgNBZGQSGi5yb3N0ZXIuSWRlbnRpdHlBZGRSZXF1ZXN0GhAucm9zdGVyLklkZW50aXR5EjMKA0dldBIaLnJvc3Rlci5JZGVudGl0eUdldFJlcXVlc3QaEC5yb3N0ZXIuSWRlbnRpdHkSNwoFUGF0Y2gSHC5yb3N0ZXIuSWRlbnRpdHlQYXRjaFJlcXVlc3QaEC5yb3N0ZXIuSWRlbnRpdHkSNwoFQXBwbHkSHC5yb3N0ZXIuSWRlbnRpdHlBcHBseVJlcXVlc3QaEC5yb3N0ZXIuSWRlbnRpdHkSOwoFRXJhc2USEy5yb3N0ZXIuSWRlbnRpdHlSZWYaHS5yb3N0ZXIuSWRlbnRpdHlFcmFzZVJlc3BvbnNlEkEKBExpc3QSGy5yb3N0ZXIuSWRlbnRpdHlMaXN0UmVxdWVzdBocLnJvc3Rlci5JZGVudGl0eUxpc3RSZXNwb25zZRJGCgVXYXRjaBIcLnJvc3Rlci5JZGVudGl0eVdhdGNoUmVxdWVzdBodLnJvc3Rlci5JZGVudGl0eVdhdGNoUmVzcG9uc2UwAUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_identity, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.IdentityAddRequest
@@ -271,6 +271,29 @@ export const IdentityApplyRequestSchema: GenMessage<IdentityApplyRequest> = /*@_
   messageDesc(file_app_identity_svc_g, 6);
 
 /**
+ * @generated from message roster.IdentityEraseResponse
+ */
+export type IdentityEraseResponse = Message<"roster.IdentityEraseResponse"> & {
+  /**
+   * Erased is whether this call is the one that erased the row.
+   *
+   * False for a row that was already gone, was never there, or is out
+   * of this caller's reach -- which are one answer on purpose, and the
+   * reason the RPC does not fail instead.
+   *
+   * @generated from field: bool erased = 1;
+   */
+  erased: boolean;
+};
+
+/**
+ * Describes the message roster.IdentityEraseResponse.
+ * Use `create(IdentityEraseResponseSchema)` to create a new message.
+ */
+export const IdentityEraseResponseSchema: GenMessage<IdentityEraseResponse> = /*@__PURE__*/
+  messageDesc(file_app_identity_svc_g, 7);
+
+/**
  * @generated from message roster.IdentityListRequest
  */
 export type IdentityListRequest = Message<"roster.IdentityListRequest"> & {
@@ -307,7 +330,7 @@ export type IdentityListRequest = Message<"roster.IdentityListRequest"> & {
  * Use `create(IdentityListRequestSchema)` to create a new message.
  */
 export const IdentityListRequestSchema: GenMessage<IdentityListRequest> = /*@__PURE__*/
-  messageDesc(file_app_identity_svc_g, 7);
+  messageDesc(file_app_identity_svc_g, 8);
 
 /**
  * @generated from message roster.IdentityListResponse
@@ -337,7 +360,7 @@ export type IdentityListResponse = Message<"roster.IdentityListResponse"> & {
  * Use `create(IdentityListResponseSchema)` to create a new message.
  */
 export const IdentityListResponseSchema: GenMessage<IdentityListResponse> = /*@__PURE__*/
-  messageDesc(file_app_identity_svc_g, 8);
+  messageDesc(file_app_identity_svc_g, 9);
 
 /**
  * @generated from message roster.IdentityFilter
@@ -364,7 +387,7 @@ export type IdentityFilter = Message<"roster.IdentityFilter"> & {
  * Use `create(IdentityFilterSchema)` to create a new message.
  */
 export const IdentityFilterSchema: GenMessage<IdentityFilter> = /*@__PURE__*/
-  messageDesc(file_app_identity_svc_g, 9);
+  messageDesc(file_app_identity_svc_g, 10);
 
 /**
  * @generated from message roster.IdentityWatchRequest
@@ -400,7 +423,7 @@ export type IdentityWatchRequest = Message<"roster.IdentityWatchRequest"> & {
  * Use `create(IdentityWatchRequestSchema)` to create a new message.
  */
 export const IdentityWatchRequestSchema: GenMessage<IdentityWatchRequest> = /*@__PURE__*/
-  messageDesc(file_app_identity_svc_g, 10);
+  messageDesc(file_app_identity_svc_g, 11);
 
 /**
  * @generated from message roster.IdentityWatchResponse
@@ -419,7 +442,7 @@ export type IdentityWatchResponse = Message<"roster.IdentityWatchResponse"> & {
  * Use `create(IdentityWatchResponseSchema)` to create a new message.
  */
 export const IdentityWatchResponseSchema: GenMessage<IdentityWatchResponse> = /*@__PURE__*/
-  messageDesc(file_app_identity_svc_g, 11);
+  messageDesc(file_app_identity_svc_g, 12);
 
 /**
  * @generated from message roster.IdentityWatchItem
@@ -466,7 +489,7 @@ export type IdentityWatchItem = Message<"roster.IdentityWatchItem"> & {
  * Use `create(IdentityWatchItemSchema)` to create a new message.
  */
 export const IdentityWatchItemSchema: GenMessage<IdentityWatchItem> = /*@__PURE__*/
-  messageDesc(file_app_identity_svc_g, 12);
+  messageDesc(file_app_identity_svc_g, 13);
 
 /**
  * @generated from service roster.IdentityService
@@ -520,7 +543,7 @@ export const IdentityService: GenService<{
   erase: {
     methodKind: "unary";
     input: typeof IdentityRefSchema;
-    output: typeof EmptySchema;
+    output: typeof IdentityEraseResponseSchema;
   },
   /**
    * List reads Identitys a page at a time.

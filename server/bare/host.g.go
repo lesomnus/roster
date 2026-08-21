@@ -19,7 +19,6 @@ import (
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 type HostServiceServer struct {
@@ -393,7 +392,7 @@ func (s HostServiceServer) apply(ctx context.Context, ref *rstr.HostRef, doc *pa
 	return out, nil
 }
 
-func (s HostServiceServer) Erase(ctx context.Context, req *rstr.HostRef) (*emptypb.Empty, error) {
+func (s HostServiceServer) Erase(ctx context.Context, req *rstr.HostRef) (*rstr.HostEraseResponse, error) {
 	p, err := HostPick(req)
 	if err != nil {
 		return nil, err
@@ -417,13 +416,13 @@ func (s HostServiceServer) Erase(ctx context.Context, req *rstr.HostRef) (*empty
 		v, err := st.Db.Host.Query().Where(p).OnlyID(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
-				return &emptypb.Empty{}, nil
+				return &rstr.HostEraseResponse{}, nil
 			}
 			return nil, err
 		}
 
 		k = v
-		p = host.IDEQ(v)
+		p = host.And(p, host.IDEQ(v))
 	}
 
 	u := st.Db.Host.Update().Where(p)
@@ -444,7 +443,10 @@ func (s HostServiceServer) Erase(ctx context.Context, req *rstr.HostRef) (*empty
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return &emptypb.Empty{}, nil
+	res := &rstr.HostEraseResponse{}
+	res.SetErased(n > 0)
+
+	return res, nil
 }
 
 // HostPick answers with the predicate this reference selects on,
@@ -857,7 +859,7 @@ func (s MailDomainServiceServer) apply(ctx context.Context, ref *rstr.MailDomain
 	return out, nil
 }
 
-func (s MailDomainServiceServer) Erase(ctx context.Context, req *rstr.MailDomainRef) (*emptypb.Empty, error) {
+func (s MailDomainServiceServer) Erase(ctx context.Context, req *rstr.MailDomainRef) (*rstr.MailDomainEraseResponse, error) {
 	p, err := MailDomainPick(req)
 	if err != nil {
 		return nil, err
@@ -881,13 +883,13 @@ func (s MailDomainServiceServer) Erase(ctx context.Context, req *rstr.MailDomain
 		v, err := st.Db.MailDomain.Query().Where(p).OnlyID(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
-				return &emptypb.Empty{}, nil
+				return &rstr.MailDomainEraseResponse{}, nil
 			}
 			return nil, err
 		}
 
 		k = v
-		p = maildomain.IDEQ(v)
+		p = maildomain.And(p, maildomain.IDEQ(v))
 	}
 
 	u := st.Db.MailDomain.Update().Where(p)
@@ -908,7 +910,10 @@ func (s MailDomainServiceServer) Erase(ctx context.Context, req *rstr.MailDomain
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return &emptypb.Empty{}, nil
+	res := &rstr.MailDomainEraseResponse{}
+	res.SetErased(n > 0)
+
+	return res, nil
 }
 
 // MailDomainPick answers with the predicate this reference selects on,

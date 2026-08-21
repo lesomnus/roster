@@ -11,7 +11,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -41,7 +40,7 @@ type ApiKeyServiceClient interface {
 	// Apply applies a patch document to an existing ApiKey
 	Apply(ctx context.Context, in *ApiKeyApplyRequest, opts ...grpc.CallOption) (*ApiKey, error)
 	// Erase deletes a ApiKey
-	Erase(ctx context.Context, in *ApiKeyRef, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Erase(ctx context.Context, in *ApiKeyRef, opts ...grpc.CallOption) (*ApiKeyEraseResponse, error)
 	// List reads ApiKeys a page at a time.
 	List(ctx context.Context, in *ApiKeyListRequest, opts ...grpc.CallOption) (*ApiKeyListResponse, error)
 }
@@ -94,9 +93,9 @@ func (c *apiKeyServiceClient) Apply(ctx context.Context, in *ApiKeyApplyRequest,
 	return out, nil
 }
 
-func (c *apiKeyServiceClient) Erase(ctx context.Context, in *ApiKeyRef, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *apiKeyServiceClient) Erase(ctx context.Context, in *ApiKeyRef, opts ...grpc.CallOption) (*ApiKeyEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
+	out := new(ApiKeyEraseResponse)
 	err := c.cc.Invoke(ctx, ApiKeyService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -127,7 +126,7 @@ type ApiKeyServiceServer interface {
 	// Apply applies a patch document to an existing ApiKey
 	Apply(context.Context, *ApiKeyApplyRequest) (*ApiKey, error)
 	// Erase deletes a ApiKey
-	Erase(context.Context, *ApiKeyRef) (*emptypb.Empty, error)
+	Erase(context.Context, *ApiKeyRef) (*ApiKeyEraseResponse, error)
 	// List reads ApiKeys a page at a time.
 	List(context.Context, *ApiKeyListRequest) (*ApiKeyListResponse, error)
 	mustEmbedUnimplementedApiKeyServiceServer()
@@ -152,7 +151,7 @@ func (UnimplementedApiKeyServiceServer) Patch(context.Context, *ApiKeyPatchReque
 func (UnimplementedApiKeyServiceServer) Apply(context.Context, *ApiKeyApplyRequest) (*ApiKey, error) {
 	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
-func (UnimplementedApiKeyServiceServer) Erase(context.Context, *ApiKeyRef) (*emptypb.Empty, error) {
+func (UnimplementedApiKeyServiceServer) Erase(context.Context, *ApiKeyRef) (*ApiKeyEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedApiKeyServiceServer) List(context.Context, *ApiKeyListRequest) (*ApiKeyListResponse, error) {

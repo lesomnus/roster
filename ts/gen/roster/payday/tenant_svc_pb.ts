@@ -4,8 +4,8 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
-import type { EmptySchema, Timestamp } from "@bufbuild/protobuf/wkt";
-import { file_google_protobuf_empty, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Patch } from "../../patch/patch_pb.js";
 import { file_patch_patch } from "../../patch/patch_pb.js";
 import type { Tenant, TenantSchema } from "./tenant_pb.js";
@@ -16,7 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/tenant_svc.g.proto.
  */
 export const file_roster_payday_tenant_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("CiByb3N0ZXIvcGF5ZGF5L3RlbmFudF9zdmMuZy5wcm90bxIGcm9zdGVyIvUBChBUZW5hbnRBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEhQKBWFsaWFzGAQgASgJQgWqAQIIAhITCgRuYW1lGAUgASgJQgWqAQIIAhITCgRkZXNjGAYgASgJQgWqAQIIAhI0CgZsYWJlbHMYByADKAsyJC5yb3N0ZXIuVGVuYW50QWRkUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiWAoQVGVuYW50R2V0UmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuVGVuYW50UmVmEiQKBnNlbGVjdBgCIAEoCzIULnJvc3Rlci5UZW5hbnRTZWxlY3QiMQoJVGVuYW50UmVmEgwKAmlkGAEgASgMSAASDwoFYWxpYXMYBCABKAlIAEIFCgNrZXkiggEKDFRlbmFudFNlbGVjdBILCgNhbGwYASABKAgSDQoFYWxpYXMYBCABKAgSDAoEbmFtZRgFIAEoCBIMCgRkZXNjGAYgASgIEg4KBmxhYmVscxgHIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIpQCChJUZW5hbnRQYXRjaFJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLlRlbmFudFJlZhINCgVhbGlhcxgIIAEoCRIMCgRuYW1lGAogASgJEgwKBGRlc2MYDCABKAkSNgoGbGFiZWxzGA4gAygLMiYucm9zdGVyLlRlbmFudFBhdGNoUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIlEKElRlbmFudEFwcGx5UmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuVGVuYW50UmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giZQoRVGVuYW50TGlzdFJlcXVlc3QSJQoHZmlsdGVycxgBIAMoCzIULnJvc3Rlci5UZW5hbnRGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIkgKElRlbmFudExpc3RSZXNwb25zZRIdCgVpdGVtcxgBIAMoCzIOLnJvc3Rlci5UZW5hbnQSEwoEbmV4dBgCIAEoCUIFqgECCAIiLgoMVGVuYW50RmlsdGVyEh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYyzgIKDVRlbmFudFNlcnZpY2USLwoDQWRkEhgucm9zdGVyLlRlbmFudEFkZFJlcXVlc3QaDi5yb3N0ZXIuVGVuYW50Ei8KA0dldBIYLnJvc3Rlci5UZW5hbnRHZXRSZXF1ZXN0Gg4ucm9zdGVyLlRlbmFudBIzCgVQYXRjaBIaLnJvc3Rlci5UZW5hbnRQYXRjaFJlcXVlc3QaDi5yb3N0ZXIuVGVuYW50EjMKBUFwcGx5Ehoucm9zdGVyLlRlbmFudEFwcGx5UmVxdWVzdBoOLnJvc3Rlci5UZW5hbnQSMgoFRXJhc2USES5yb3N0ZXIuVGVuYW50UmVmGhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5Ej0KBExpc3QSGS5yb3N0ZXIuVGVuYW50TGlzdFJlcXVlc3QaGi5yb3N0ZXIuVGVuYW50TGlzdFJlc3BvbnNlQiFaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHJiCGVkaXRpb25zcOgH", [file_google_protobuf_empty, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_tenant]);
+  fileDesc("CiByb3N0ZXIvcGF5ZGF5L3RlbmFudF9zdmMuZy5wcm90bxIGcm9zdGVyIvUBChBUZW5hbnRBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEhQKBWFsaWFzGAQgASgJQgWqAQIIAhITCgRuYW1lGAUgASgJQgWqAQIIAhITCgRkZXNjGAYgASgJQgWqAQIIAhI0CgZsYWJlbHMYByADKAsyJC5yb3N0ZXIuVGVuYW50QWRkUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiWAoQVGVuYW50R2V0UmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuVGVuYW50UmVmEiQKBnNlbGVjdBgCIAEoCzIULnJvc3Rlci5UZW5hbnRTZWxlY3QiMQoJVGVuYW50UmVmEgwKAmlkGAEgASgMSAASDwoFYWxpYXMYBCABKAlIAEIFCgNrZXkiggEKDFRlbmFudFNlbGVjdBILCgNhbGwYASABKAgSDQoFYWxpYXMYBCABKAgSDAoEbmFtZRgFIAEoCBIMCgRkZXNjGAYgASgIEg4KBmxhYmVscxgHIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIpQCChJUZW5hbnRQYXRjaFJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLlRlbmFudFJlZhINCgVhbGlhcxgIIAEoCRIMCgRuYW1lGAogASgJEgwKBGRlc2MYDCABKAkSNgoGbGFiZWxzGA4gAygLMiYucm9zdGVyLlRlbmFudFBhdGNoUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIlEKElRlbmFudEFwcGx5UmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuVGVuYW50UmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giJQoTVGVuYW50RXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiZQoRVGVuYW50TGlzdFJlcXVlc3QSJQoHZmlsdGVycxgBIAMoCzIULnJvc3Rlci5UZW5hbnRGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIkgKElRlbmFudExpc3RSZXNwb25zZRIdCgVpdGVtcxgBIAMoCzIOLnJvc3Rlci5UZW5hbnQSEwoEbmV4dBgCIAEoCUIFqgECCAIiLgoMVGVuYW50RmlsdGVyEh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYy0wIKDVRlbmFudFNlcnZpY2USLwoDQWRkEhgucm9zdGVyLlRlbmFudEFkZFJlcXVlc3QaDi5yb3N0ZXIuVGVuYW50Ei8KA0dldBIYLnJvc3Rlci5UZW5hbnRHZXRSZXF1ZXN0Gg4ucm9zdGVyLlRlbmFudBIzCgVQYXRjaBIaLnJvc3Rlci5UZW5hbnRQYXRjaFJlcXVlc3QaDi5yb3N0ZXIuVGVuYW50EjMKBUFwcGx5Ehoucm9zdGVyLlRlbmFudEFwcGx5UmVxdWVzdBoOLnJvc3Rlci5UZW5hbnQSNwoFRXJhc2USES5yb3N0ZXIuVGVuYW50UmVmGhsucm9zdGVyLlRlbmFudEVyYXNlUmVzcG9uc2USPQoETGlzdBIZLnJvc3Rlci5UZW5hbnRMaXN0UmVxdWVzdBoaLnJvc3Rlci5UZW5hbnRMaXN0UmVzcG9uc2VCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_tenant]);
 
 /**
  * @generated from message roster.TenantAddRequest
@@ -242,6 +242,29 @@ export const TenantApplyRequestSchema: GenMessage<TenantApplyRequest> = /*@__PUR
   messageDesc(file_roster_payday_tenant_svc_g, 5);
 
 /**
+ * @generated from message roster.TenantEraseResponse
+ */
+export type TenantEraseResponse = Message<"roster.TenantEraseResponse"> & {
+  /**
+   * Erased is whether this call is the one that erased the row.
+   *
+   * False for a row that was already gone, was never there, or is out
+   * of this caller's reach -- which are one answer on purpose, and the
+   * reason the RPC does not fail instead.
+   *
+   * @generated from field: bool erased = 1;
+   */
+  erased: boolean;
+};
+
+/**
+ * Describes the message roster.TenantEraseResponse.
+ * Use `create(TenantEraseResponseSchema)` to create a new message.
+ */
+export const TenantEraseResponseSchema: GenMessage<TenantEraseResponse> = /*@__PURE__*/
+  messageDesc(file_roster_payday_tenant_svc_g, 6);
+
+/**
  * @generated from message roster.TenantListRequest
  */
 export type TenantListRequest = Message<"roster.TenantListRequest"> & {
@@ -278,7 +301,7 @@ export type TenantListRequest = Message<"roster.TenantListRequest"> & {
  * Use `create(TenantListRequestSchema)` to create a new message.
  */
 export const TenantListRequestSchema: GenMessage<TenantListRequest> = /*@__PURE__*/
-  messageDesc(file_roster_payday_tenant_svc_g, 6);
+  messageDesc(file_roster_payday_tenant_svc_g, 7);
 
 /**
  * @generated from message roster.TenantListResponse
@@ -308,7 +331,7 @@ export type TenantListResponse = Message<"roster.TenantListResponse"> & {
  * Use `create(TenantListResponseSchema)` to create a new message.
  */
 export const TenantListResponseSchema: GenMessage<TenantListResponse> = /*@__PURE__*/
-  messageDesc(file_roster_payday_tenant_svc_g, 7);
+  messageDesc(file_roster_payday_tenant_svc_g, 8);
 
 /**
  * @generated from message roster.TenantFilter
@@ -325,7 +348,7 @@ export type TenantFilter = Message<"roster.TenantFilter"> & {
  * Use `create(TenantFilterSchema)` to create a new message.
  */
 export const TenantFilterSchema: GenMessage<TenantFilter> = /*@__PURE__*/
-  messageDesc(file_roster_payday_tenant_svc_g, 8);
+  messageDesc(file_roster_payday_tenant_svc_g, 9);
 
 /**
  * @generated from service roster.TenantService
@@ -379,7 +402,7 @@ export const TenantService: GenService<{
   erase: {
     methodKind: "unary";
     input: typeof TenantRefSchema;
-    output: typeof EmptySchema;
+    output: typeof TenantEraseResponseSchema;
   },
   /**
    * List reads Tenants a page at a time.

@@ -3,7 +3,6 @@ package roster;
 
 import "app/email.proto";
 import "app/identity_svc.g.proto";
-import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "patch/patch.proto";
 import "roster/payday/holder_svc.g.proto";
@@ -20,7 +19,7 @@ service EmailService {
   // Apply applies a patch document to an existing Email
   rpc Apply(EmailApplyRequest) returns (Email);
   // Erase deletes a Email
-  rpc Erase(EmailRef) returns (google.protobuf.Empty);
+  rpc Erase(EmailRef) returns (EmailEraseResponse);
   // List reads Emails a page at a time.
   rpc List(EmailListRequest) returns (EmailListResponse);
   // Watch the Emails this caller may see, as they are now and as they change.
@@ -116,6 +115,15 @@ message EmailPatchRequest {
 message EmailApplyRequest {
   EmailRef ref = 1;
   patch.Patch patch = 2;
+}
+
+message EmailEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
 }
 
 message EmailListRequest {

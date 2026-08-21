@@ -18,7 +18,6 @@ import (
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 type ConnectionServiceServer struct {
@@ -410,7 +409,7 @@ func (s ConnectionServiceServer) apply(ctx context.Context, ref *rstr.Connection
 	return out, nil
 }
 
-func (s ConnectionServiceServer) Erase(ctx context.Context, req *rstr.ConnectionRef) (*emptypb.Empty, error) {
+func (s ConnectionServiceServer) Erase(ctx context.Context, req *rstr.ConnectionRef) (*rstr.ConnectionEraseResponse, error) {
 	p, err := ConnectionPick(req)
 	if err != nil {
 		return nil, err
@@ -434,13 +433,13 @@ func (s ConnectionServiceServer) Erase(ctx context.Context, req *rstr.Connection
 		v, err := st.Db.Connection.Query().Where(p).OnlyID(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
-				return &emptypb.Empty{}, nil
+				return &rstr.ConnectionEraseResponse{}, nil
 			}
 			return nil, err
 		}
 
 		k = v
-		p = connection.IDEQ(v)
+		p = connection.And(p, connection.IDEQ(v))
 	}
 
 	u := st.Db.Connection.Update().Where(p)
@@ -461,7 +460,10 @@ func (s ConnectionServiceServer) Erase(ctx context.Context, req *rstr.Connection
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return &emptypb.Empty{}, nil
+	res := &rstr.ConnectionEraseResponse{}
+	res.SetErased(n > 0)
+
+	return res, nil
 }
 
 // ConnectionPick answers with the predicate this reference selects on,

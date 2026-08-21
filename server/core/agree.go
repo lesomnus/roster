@@ -3,8 +3,6 @@ package core
 import (
 	"context"
 
-	"google.golang.org/protobuf/types/known/emptypb"
-
 	"github.com/lesomnus/payday/pderr"
 
 	app "github.com/lesomnus/roster/rstr"
@@ -80,7 +78,7 @@ func (s coreTeamMembership) Add(ctx context.Context, req *app.TeamMembershipAddR
 }
 
 // Erase asks the same question the write does, about the team the row names.
-func (s coreTeamMembership) Erase(ctx context.Context, req *app.TeamMembershipRef) (*emptypb.Empty, error) {
+func (s coreTeamMembership) Erase(ctx context.Context, req *app.TeamMembershipRef) (*app.TeamMembershipEraseResponse, error) {
 	v, err := s.Next().TeamMembership().Get(ctx, app.TeamMembershipGetRequest_builder{
 		Ref:    req,
 		Select: app.TeamMembershipSelect_builder{Team: app.TeamSelect_builder{}.Build()}.Build(),

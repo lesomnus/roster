@@ -10,7 +10,6 @@ import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	unsafe "unsafe"
@@ -1580,6 +1579,86 @@ func (b0 CredentialApplyRequest_builder) Build() *CredentialApplyRequest {
 	return m0
 }
 
+type CredentialEraseResponse struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *CredentialEraseResponse) Reset() {
+	*x = CredentialEraseResponse{}
+	mi := &file_app_credential_svc_g_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CredentialEraseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CredentialEraseResponse) ProtoMessage() {}
+
+func (x *CredentialEraseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_app_credential_svc_g_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *CredentialEraseResponse) GetErased() bool {
+	if x != nil {
+		return x.xxx_hidden_Erased
+	}
+	return false
+}
+
+func (x *CredentialEraseResponse) SetErased(v bool) {
+	x.xxx_hidden_Erased = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+}
+
+func (x *CredentialEraseResponse) HasErased() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *CredentialEraseResponse) ClearErased() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Erased = false
+}
+
+type CredentialEraseResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Erased is whether this call is the one that erased the row.
+	//
+	// False for a row that was already gone, was never there, or is out
+	// of this caller's reach -- which are one answer on purpose, and the
+	// reason the RPC does not fail instead.
+	Erased *bool
+}
+
+func (b0 CredentialEraseResponse_builder) Build() *CredentialEraseResponse {
+	m0 := &CredentialEraseResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Erased != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		x.xxx_hidden_Erased = *b.Erased
+	}
+	return m0
+}
+
 type CredentialListRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*CredentialFilter   `protobuf:"bytes,1,rep,name=filters"`
@@ -1591,7 +1670,7 @@ type CredentialListRequest struct {
 
 func (x *CredentialListRequest) Reset() {
 	*x = CredentialListRequest{}
-	mi := &file_app_credential_svc_g_proto_msgTypes[7]
+	mi := &file_app_credential_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1603,7 +1682,7 @@ func (x *CredentialListRequest) String() string {
 func (*CredentialListRequest) ProtoMessage() {}
 
 func (x *CredentialListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_credential_svc_g_proto_msgTypes[7]
+	mi := &file_app_credential_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1686,7 +1765,7 @@ type CredentialListResponse struct {
 
 func (x *CredentialListResponse) Reset() {
 	*x = CredentialListResponse{}
-	mi := &file_app_credential_svc_g_proto_msgTypes[8]
+	mi := &file_app_credential_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1698,7 +1777,7 @@ func (x *CredentialListResponse) String() string {
 func (*CredentialListResponse) ProtoMessage() {}
 
 func (x *CredentialListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_credential_svc_g_proto_msgTypes[8]
+	mi := &file_app_credential_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1766,7 +1845,7 @@ type CredentialFilter struct {
 
 func (x *CredentialFilter) Reset() {
 	*x = CredentialFilter{}
-	mi := &file_app_credential_svc_g_proto_msgTypes[9]
+	mi := &file_app_credential_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1778,7 +1857,7 @@ func (x *CredentialFilter) String() string {
 func (*CredentialFilter) ProtoMessage() {}
 
 func (x *CredentialFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_app_credential_svc_g_proto_msgTypes[9]
+	mi := &file_app_credential_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1859,7 +1938,7 @@ type CredentialWatchRequest struct {
 
 func (x *CredentialWatchRequest) Reset() {
 	*x = CredentialWatchRequest{}
-	mi := &file_app_credential_svc_g_proto_msgTypes[10]
+	mi := &file_app_credential_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1871,7 +1950,7 @@ func (x *CredentialWatchRequest) String() string {
 func (*CredentialWatchRequest) ProtoMessage() {}
 
 func (x *CredentialWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_credential_svc_g_proto_msgTypes[10]
+	mi := &file_app_credential_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1943,7 +2022,7 @@ type CredentialWatchResponse struct {
 
 func (x *CredentialWatchResponse) Reset() {
 	*x = CredentialWatchResponse{}
-	mi := &file_app_credential_svc_g_proto_msgTypes[11]
+	mi := &file_app_credential_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1955,7 +2034,7 @@ func (x *CredentialWatchResponse) String() string {
 func (*CredentialWatchResponse) ProtoMessage() {}
 
 func (x *CredentialWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_credential_svc_g_proto_msgTypes[11]
+	mi := &file_app_credential_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2007,7 +2086,7 @@ type CredentialWatchItem struct {
 
 func (x *CredentialWatchItem) Reset() {
 	*x = CredentialWatchItem{}
-	mi := &file_app_credential_svc_g_proto_msgTypes[12]
+	mi := &file_app_credential_svc_g_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2019,7 +2098,7 @@ func (x *CredentialWatchItem) String() string {
 func (*CredentialWatchItem) ProtoMessage() {}
 
 func (x *CredentialWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_app_credential_svc_g_proto_msgTypes[12]
+	mi := &file_app_credential_svc_g_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2132,7 +2211,7 @@ var File_app_credential_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_credential_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1aapp/credential_svc.g.proto\x12\x06roster\x1a\x14app/credential.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xa8\x03\n" +
+	"\x1aapp/credential_svc.g.proto\x12\x06roster\x1a\x14app/credential.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xa8\x03\n" +
 	"\x14CredentialAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x19\n" +
@@ -2190,7 +2269,9 @@ const file_app_credential_svc_g_proto_rawDesc = "" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"e\n" +
 	"\x16CredentialApplyRequest\x12'\n" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.CredentialRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"\x83\x01\n" +
+	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"1\n" +
+	"\x17CredentialEraseResponse\x12\x16\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x83\x01\n" +
 	"\x15CredentialListRequest\x122\n" +
 	"\afilters\x18\x01 \x03(\v2\x18.roster.CredentialFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
@@ -2209,17 +2290,17 @@ const file_app_credential_svc_g_proto_rawDesc = "" +
 	"\x13CredentialWatchItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
 	"\x05value\x18\x02 \x01(\v2\x12.roster.CredentialR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action2\xca\x03\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action2\xd3\x03\n" +
 	"\x11CredentialService\x127\n" +
 	"\x03Add\x12\x1c.roster.CredentialAddRequest\x1a\x12.roster.Credential\x127\n" +
 	"\x03Get\x12\x1c.roster.CredentialGetRequest\x1a\x12.roster.Credential\x12;\n" +
 	"\x05Patch\x12\x1e.roster.CredentialPatchRequest\x1a\x12.roster.Credential\x12;\n" +
-	"\x05Apply\x12\x1e.roster.CredentialApplyRequest\x1a\x12.roster.Credential\x126\n" +
-	"\x05Erase\x12\x15.roster.CredentialRef\x1a\x16.google.protobuf.Empty\x12E\n" +
+	"\x05Apply\x12\x1e.roster.CredentialApplyRequest\x1a\x12.roster.Credential\x12?\n" +
+	"\x05Erase\x12\x15.roster.CredentialRef\x1a\x1f.roster.CredentialEraseResponse\x12E\n" +
 	"\x04List\x12\x1d.roster.CredentialListRequest\x1a\x1e.roster.CredentialListResponse\x12J\n" +
 	"\x05Watch\x12\x1e.roster.CredentialWatchRequest\x1a\x1f.roster.CredentialWatchResponse0\x01B!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_credential_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_app_credential_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_app_credential_svc_g_proto_goTypes = []any{
 	(*CredentialAddRequest)(nil),    // 0: roster.CredentialAddRequest
 	(*CredentialGetRequest)(nil),    // 1: roster.CredentialGetRequest
@@ -2228,56 +2309,56 @@ var file_app_credential_svc_g_proto_goTypes = []any{
 	(*CredentialSelect)(nil),        // 4: roster.CredentialSelect
 	(*CredentialPatchRequest)(nil),  // 5: roster.CredentialPatchRequest
 	(*CredentialApplyRequest)(nil),  // 6: roster.CredentialApplyRequest
-	(*CredentialListRequest)(nil),   // 7: roster.CredentialListRequest
-	(*CredentialListResponse)(nil),  // 8: roster.CredentialListResponse
-	(*CredentialFilter)(nil),        // 9: roster.CredentialFilter
-	(*CredentialWatchRequest)(nil),  // 10: roster.CredentialWatchRequest
-	(*CredentialWatchResponse)(nil), // 11: roster.CredentialWatchResponse
-	(*CredentialWatchItem)(nil),     // 12: roster.CredentialWatchItem
-	(*HolderRef)(nil),               // 13: roster.HolderRef
-	(*timestamppb.Timestamp)(nil),   // 14: google.protobuf.Timestamp
-	(*HolderSelect)(nil),            // 15: roster.HolderSelect
-	(*patchpb.Patch)(nil),           // 16: patch.Patch
-	(*Credential)(nil),              // 17: roster.Credential
-	(*emptypb.Empty)(nil),           // 18: google.protobuf.Empty
+	(*CredentialEraseResponse)(nil), // 7: roster.CredentialEraseResponse
+	(*CredentialListRequest)(nil),   // 8: roster.CredentialListRequest
+	(*CredentialListResponse)(nil),  // 9: roster.CredentialListResponse
+	(*CredentialFilter)(nil),        // 10: roster.CredentialFilter
+	(*CredentialWatchRequest)(nil),  // 11: roster.CredentialWatchRequest
+	(*CredentialWatchResponse)(nil), // 12: roster.CredentialWatchResponse
+	(*CredentialWatchItem)(nil),     // 13: roster.CredentialWatchItem
+	(*HolderRef)(nil),               // 14: roster.HolderRef
+	(*timestamppb.Timestamp)(nil),   // 15: google.protobuf.Timestamp
+	(*HolderSelect)(nil),            // 16: roster.HolderSelect
+	(*patchpb.Patch)(nil),           // 17: patch.Patch
+	(*Credential)(nil),              // 18: roster.Credential
 }
 var file_app_credential_svc_g_proto_depIdxs = []int32{
-	13, // 0: roster.CredentialAddRequest.holder:type_name -> roster.HolderRef
-	14, // 1: roster.CredentialAddRequest.date_locked:type_name -> google.protobuf.Timestamp
-	14, // 2: roster.CredentialAddRequest.date_rotated:type_name -> google.protobuf.Timestamp
-	14, // 3: roster.CredentialAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	14, // 0: roster.CredentialAddRequest.holder:type_name -> roster.HolderRef
+	15, // 1: roster.CredentialAddRequest.date_locked:type_name -> google.protobuf.Timestamp
+	15, // 2: roster.CredentialAddRequest.date_rotated:type_name -> google.protobuf.Timestamp
+	15, // 3: roster.CredentialAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 4: roster.CredentialGetRequest.ref:type_name -> roster.CredentialRef
 	4,  // 5: roster.CredentialGetRequest.select:type_name -> roster.CredentialSelect
 	3,  // 6: roster.CredentialRef.kind:type_name -> roster.CredentialRefByKind
-	13, // 7: roster.CredentialRefByKind.holder:type_name -> roster.HolderRef
-	15, // 8: roster.CredentialSelect.holder:type_name -> roster.HolderSelect
+	14, // 7: roster.CredentialRefByKind.holder:type_name -> roster.HolderRef
+	16, // 8: roster.CredentialSelect.holder:type_name -> roster.HolderSelect
 	2,  // 9: roster.CredentialPatchRequest.ref:type_name -> roster.CredentialRef
-	14, // 10: roster.CredentialPatchRequest.date_locked:type_name -> google.protobuf.Timestamp
-	14, // 11: roster.CredentialPatchRequest.date_rotated:type_name -> google.protobuf.Timestamp
-	14, // 12: roster.CredentialPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	15, // 10: roster.CredentialPatchRequest.date_locked:type_name -> google.protobuf.Timestamp
+	15, // 11: roster.CredentialPatchRequest.date_rotated:type_name -> google.protobuf.Timestamp
+	15, // 12: roster.CredentialPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
 	2,  // 13: roster.CredentialApplyRequest.ref:type_name -> roster.CredentialRef
-	16, // 14: roster.CredentialApplyRequest.patch:type_name -> patch.Patch
-	9,  // 15: roster.CredentialListRequest.filters:type_name -> roster.CredentialFilter
-	17, // 16: roster.CredentialListResponse.items:type_name -> roster.Credential
+	17, // 14: roster.CredentialApplyRequest.patch:type_name -> patch.Patch
+	10, // 15: roster.CredentialListRequest.filters:type_name -> roster.CredentialFilter
+	18, // 16: roster.CredentialListResponse.items:type_name -> roster.Credential
 	2,  // 17: roster.CredentialFilter.ref:type_name -> roster.CredentialRef
-	13, // 18: roster.CredentialFilter.holder:type_name -> roster.HolderRef
-	9,  // 19: roster.CredentialWatchRequest.filters:type_name -> roster.CredentialFilter
-	12, // 20: roster.CredentialWatchResponse.items:type_name -> roster.CredentialWatchItem
-	17, // 21: roster.CredentialWatchItem.value:type_name -> roster.Credential
+	14, // 18: roster.CredentialFilter.holder:type_name -> roster.HolderRef
+	10, // 19: roster.CredentialWatchRequest.filters:type_name -> roster.CredentialFilter
+	13, // 20: roster.CredentialWatchResponse.items:type_name -> roster.CredentialWatchItem
+	18, // 21: roster.CredentialWatchItem.value:type_name -> roster.Credential
 	0,  // 22: roster.CredentialService.Add:input_type -> roster.CredentialAddRequest
 	1,  // 23: roster.CredentialService.Get:input_type -> roster.CredentialGetRequest
 	5,  // 24: roster.CredentialService.Patch:input_type -> roster.CredentialPatchRequest
 	6,  // 25: roster.CredentialService.Apply:input_type -> roster.CredentialApplyRequest
 	2,  // 26: roster.CredentialService.Erase:input_type -> roster.CredentialRef
-	7,  // 27: roster.CredentialService.List:input_type -> roster.CredentialListRequest
-	10, // 28: roster.CredentialService.Watch:input_type -> roster.CredentialWatchRequest
-	17, // 29: roster.CredentialService.Add:output_type -> roster.Credential
-	17, // 30: roster.CredentialService.Get:output_type -> roster.Credential
-	17, // 31: roster.CredentialService.Patch:output_type -> roster.Credential
-	17, // 32: roster.CredentialService.Apply:output_type -> roster.Credential
-	18, // 33: roster.CredentialService.Erase:output_type -> google.protobuf.Empty
-	8,  // 34: roster.CredentialService.List:output_type -> roster.CredentialListResponse
-	11, // 35: roster.CredentialService.Watch:output_type -> roster.CredentialWatchResponse
+	8,  // 27: roster.CredentialService.List:input_type -> roster.CredentialListRequest
+	11, // 28: roster.CredentialService.Watch:input_type -> roster.CredentialWatchRequest
+	18, // 29: roster.CredentialService.Add:output_type -> roster.Credential
+	18, // 30: roster.CredentialService.Get:output_type -> roster.Credential
+	18, // 31: roster.CredentialService.Patch:output_type -> roster.Credential
+	18, // 32: roster.CredentialService.Apply:output_type -> roster.Credential
+	7,  // 33: roster.CredentialService.Erase:output_type -> roster.CredentialEraseResponse
+	9,  // 34: roster.CredentialService.List:output_type -> roster.CredentialListResponse
+	12, // 35: roster.CredentialService.Watch:output_type -> roster.CredentialWatchResponse
 	29, // [29:36] is the sub-list for method output_type
 	22, // [22:29] is the sub-list for method input_type
 	22, // [22:22] is the sub-list for extension type_name
@@ -2302,7 +2383,7 @@ func file_app_credential_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_credential_svc_g_proto_rawDesc), len(file_app_credential_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   13,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

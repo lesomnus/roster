@@ -18,7 +18,6 @@ import (
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 type IdentityServiceServer struct {
@@ -400,7 +399,7 @@ func (s IdentityServiceServer) apply(ctx context.Context, ref *rstr.IdentityRef,
 	return out, nil
 }
 
-func (s IdentityServiceServer) Erase(ctx context.Context, req *rstr.IdentityRef) (*emptypb.Empty, error) {
+func (s IdentityServiceServer) Erase(ctx context.Context, req *rstr.IdentityRef) (*rstr.IdentityEraseResponse, error) {
 	p, err := IdentityPick(req)
 	if err != nil {
 		return nil, err
@@ -424,13 +423,13 @@ func (s IdentityServiceServer) Erase(ctx context.Context, req *rstr.IdentityRef)
 		v, err := st.Db.Identity.Query().Where(p).OnlyID(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
-				return &emptypb.Empty{}, nil
+				return &rstr.IdentityEraseResponse{}, nil
 			}
 			return nil, err
 		}
 
 		k = v
-		p = identity.IDEQ(v)
+		p = identity.And(p, identity.IDEQ(v))
 	}
 
 	u := st.Db.Identity.Update().Where(p)
@@ -451,7 +450,10 @@ func (s IdentityServiceServer) Erase(ctx context.Context, req *rstr.IdentityRef)
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return &emptypb.Empty{}, nil
+	res := &rstr.IdentityEraseResponse{}
+	res.SetErased(n > 0)
+
+	return res, nil
 }
 
 // IdentityPick answers with the predicate this reference selects on,

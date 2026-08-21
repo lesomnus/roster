@@ -21,7 +21,6 @@ import (
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 type SiteMembershipServiceServer struct {
@@ -401,7 +400,7 @@ func (s SiteMembershipServiceServer) apply(ctx context.Context, ref *rstr.SiteMe
 	return out, nil
 }
 
-func (s SiteMembershipServiceServer) Erase(ctx context.Context, req *rstr.SiteMembershipRef) (*emptypb.Empty, error) {
+func (s SiteMembershipServiceServer) Erase(ctx context.Context, req *rstr.SiteMembershipRef) (*rstr.SiteMembershipEraseResponse, error) {
 	p, err := SiteMembershipPick(req)
 	if err != nil {
 		return nil, err
@@ -425,13 +424,13 @@ func (s SiteMembershipServiceServer) Erase(ctx context.Context, req *rstr.SiteMe
 		v, err := st.Db.SiteMembership.Query().Where(p).OnlyID(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
-				return &emptypb.Empty{}, nil
+				return &rstr.SiteMembershipEraseResponse{}, nil
 			}
 			return nil, err
 		}
 
 		k = v
-		p = sitemembership.IDEQ(v)
+		p = sitemembership.And(p, sitemembership.IDEQ(v))
 	}
 
 	u := st.Db.SiteMembership.Update().Where(p)
@@ -452,7 +451,10 @@ func (s SiteMembershipServiceServer) Erase(ctx context.Context, req *rstr.SiteMe
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return &emptypb.Empty{}, nil
+	res := &rstr.SiteMembershipEraseResponse{}
+	res.SetErased(n > 0)
+
+	return res, nil
 }
 
 // SiteMembershipPick answers with the predicate this reference selects on,
@@ -905,7 +907,7 @@ func (s TeamMembershipServiceServer) apply(ctx context.Context, ref *rstr.TeamMe
 	return out, nil
 }
 
-func (s TeamMembershipServiceServer) Erase(ctx context.Context, req *rstr.TeamMembershipRef) (*emptypb.Empty, error) {
+func (s TeamMembershipServiceServer) Erase(ctx context.Context, req *rstr.TeamMembershipRef) (*rstr.TeamMembershipEraseResponse, error) {
 	p, err := TeamMembershipPick(req)
 	if err != nil {
 		return nil, err
@@ -929,13 +931,13 @@ func (s TeamMembershipServiceServer) Erase(ctx context.Context, req *rstr.TeamMe
 		v, err := st.Db.TeamMembership.Query().Where(p).OnlyID(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
-				return &emptypb.Empty{}, nil
+				return &rstr.TeamMembershipEraseResponse{}, nil
 			}
 			return nil, err
 		}
 
 		k = v
-		p = teammembership.IDEQ(v)
+		p = teammembership.And(p, teammembership.IDEQ(v))
 	}
 
 	u := st.Db.TeamMembership.Update().Where(p)
@@ -956,7 +958,10 @@ func (s TeamMembershipServiceServer) Erase(ctx context.Context, req *rstr.TeamMe
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return &emptypb.Empty{}, nil
+	res := &rstr.TeamMembershipEraseResponse{}
+	res.SetErased(n > 0)
+
+	return res, nil
 }
 
 // TeamMembershipPick answers with the predicate this reference selects on,

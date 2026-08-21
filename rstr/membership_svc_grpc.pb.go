@@ -11,7 +11,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -42,7 +41,7 @@ type SiteMembershipServiceClient interface {
 	// Apply applies a patch document to an existing SiteMembership
 	Apply(ctx context.Context, in *SiteMembershipApplyRequest, opts ...grpc.CallOption) (*SiteMembership, error)
 	// Erase deletes a SiteMembership
-	Erase(ctx context.Context, in *SiteMembershipRef, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Erase(ctx context.Context, in *SiteMembershipRef, opts ...grpc.CallOption) (*SiteMembershipEraseResponse, error)
 	// List reads SiteMemberships a page at a time.
 	List(ctx context.Context, in *SiteMembershipListRequest, opts ...grpc.CallOption) (*SiteMembershipListResponse, error)
 	// Watch the SiteMemberships this caller may see, as they are now and as they change.
@@ -107,9 +106,9 @@ func (c *siteMembershipServiceClient) Apply(ctx context.Context, in *SiteMembers
 	return out, nil
 }
 
-func (c *siteMembershipServiceClient) Erase(ctx context.Context, in *SiteMembershipRef, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *siteMembershipServiceClient) Erase(ctx context.Context, in *SiteMembershipRef, opts ...grpc.CallOption) (*SiteMembershipEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
+	out := new(SiteMembershipEraseResponse)
 	err := c.cc.Invoke(ctx, SiteMembershipService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -159,7 +158,7 @@ type SiteMembershipServiceServer interface {
 	// Apply applies a patch document to an existing SiteMembership
 	Apply(context.Context, *SiteMembershipApplyRequest) (*SiteMembership, error)
 	// Erase deletes a SiteMembership
-	Erase(context.Context, *SiteMembershipRef) (*emptypb.Empty, error)
+	Erase(context.Context, *SiteMembershipRef) (*SiteMembershipEraseResponse, error)
 	// List reads SiteMemberships a page at a time.
 	List(context.Context, *SiteMembershipListRequest) (*SiteMembershipListResponse, error)
 	// Watch the SiteMemberships this caller may see, as they are now and as they change.
@@ -196,7 +195,7 @@ func (UnimplementedSiteMembershipServiceServer) Patch(context.Context, *SiteMemb
 func (UnimplementedSiteMembershipServiceServer) Apply(context.Context, *SiteMembershipApplyRequest) (*SiteMembership, error) {
 	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
-func (UnimplementedSiteMembershipServiceServer) Erase(context.Context, *SiteMembershipRef) (*emptypb.Empty, error) {
+func (UnimplementedSiteMembershipServiceServer) Erase(context.Context, *SiteMembershipRef) (*SiteMembershipEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedSiteMembershipServiceServer) List(context.Context, *SiteMembershipListRequest) (*SiteMembershipListResponse, error) {
@@ -410,7 +409,7 @@ type TeamMembershipServiceClient interface {
 	// Apply applies a patch document to an existing TeamMembership
 	Apply(ctx context.Context, in *TeamMembershipApplyRequest, opts ...grpc.CallOption) (*TeamMembership, error)
 	// Erase deletes a TeamMembership
-	Erase(ctx context.Context, in *TeamMembershipRef, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Erase(ctx context.Context, in *TeamMembershipRef, opts ...grpc.CallOption) (*TeamMembershipEraseResponse, error)
 	// List reads TeamMemberships a page at a time.
 	List(ctx context.Context, in *TeamMembershipListRequest, opts ...grpc.CallOption) (*TeamMembershipListResponse, error)
 	// Watch the TeamMemberships this caller may see, as they are now and as they change.
@@ -475,9 +474,9 @@ func (c *teamMembershipServiceClient) Apply(ctx context.Context, in *TeamMembers
 	return out, nil
 }
 
-func (c *teamMembershipServiceClient) Erase(ctx context.Context, in *TeamMembershipRef, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *teamMembershipServiceClient) Erase(ctx context.Context, in *TeamMembershipRef, opts ...grpc.CallOption) (*TeamMembershipEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
+	out := new(TeamMembershipEraseResponse)
 	err := c.cc.Invoke(ctx, TeamMembershipService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -527,7 +526,7 @@ type TeamMembershipServiceServer interface {
 	// Apply applies a patch document to an existing TeamMembership
 	Apply(context.Context, *TeamMembershipApplyRequest) (*TeamMembership, error)
 	// Erase deletes a TeamMembership
-	Erase(context.Context, *TeamMembershipRef) (*emptypb.Empty, error)
+	Erase(context.Context, *TeamMembershipRef) (*TeamMembershipEraseResponse, error)
 	// List reads TeamMemberships a page at a time.
 	List(context.Context, *TeamMembershipListRequest) (*TeamMembershipListResponse, error)
 	// Watch the TeamMemberships this caller may see, as they are now and as they change.
@@ -564,7 +563,7 @@ func (UnimplementedTeamMembershipServiceServer) Patch(context.Context, *TeamMemb
 func (UnimplementedTeamMembershipServiceServer) Apply(context.Context, *TeamMembershipApplyRequest) (*TeamMembership, error) {
 	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
-func (UnimplementedTeamMembershipServiceServer) Erase(context.Context, *TeamMembershipRef) (*emptypb.Empty, error) {
+func (UnimplementedTeamMembershipServiceServer) Erase(context.Context, *TeamMembershipRef) (*TeamMembershipEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedTeamMembershipServiceServer) List(context.Context, *TeamMembershipListRequest) (*TeamMembershipListResponse, error) {

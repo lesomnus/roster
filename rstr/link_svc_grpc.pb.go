@@ -11,7 +11,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -41,7 +40,7 @@ type LinkServiceClient interface {
 	// Apply applies a patch document to an existing Link
 	Apply(ctx context.Context, in *LinkApplyRequest, opts ...grpc.CallOption) (*Link, error)
 	// Erase deletes a Link
-	Erase(ctx context.Context, in *LinkRef, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Erase(ctx context.Context, in *LinkRef, opts ...grpc.CallOption) (*LinkEraseResponse, error)
 	// List reads Links a page at a time.
 	List(ctx context.Context, in *LinkListRequest, opts ...grpc.CallOption) (*LinkListResponse, error)
 }
@@ -94,9 +93,9 @@ func (c *linkServiceClient) Apply(ctx context.Context, in *LinkApplyRequest, opt
 	return out, nil
 }
 
-func (c *linkServiceClient) Erase(ctx context.Context, in *LinkRef, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *linkServiceClient) Erase(ctx context.Context, in *LinkRef, opts ...grpc.CallOption) (*LinkEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
+	out := new(LinkEraseResponse)
 	err := c.cc.Invoke(ctx, LinkService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -127,7 +126,7 @@ type LinkServiceServer interface {
 	// Apply applies a patch document to an existing Link
 	Apply(context.Context, *LinkApplyRequest) (*Link, error)
 	// Erase deletes a Link
-	Erase(context.Context, *LinkRef) (*emptypb.Empty, error)
+	Erase(context.Context, *LinkRef) (*LinkEraseResponse, error)
 	// List reads Links a page at a time.
 	List(context.Context, *LinkListRequest) (*LinkListResponse, error)
 	mustEmbedUnimplementedLinkServiceServer()
@@ -152,7 +151,7 @@ func (UnimplementedLinkServiceServer) Patch(context.Context, *LinkPatchRequest) 
 func (UnimplementedLinkServiceServer) Apply(context.Context, *LinkApplyRequest) (*Link, error) {
 	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
-func (UnimplementedLinkServiceServer) Erase(context.Context, *LinkRef) (*emptypb.Empty, error) {
+func (UnimplementedLinkServiceServer) Erase(context.Context, *LinkRef) (*LinkEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedLinkServiceServer) List(context.Context, *LinkListRequest) (*LinkListResponse, error) {

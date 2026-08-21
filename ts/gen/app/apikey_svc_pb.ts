@@ -6,8 +6,8 @@ import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegen
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { ApiKey, ApiKeySchema } from "./apikey_pb.js";
 import { file_app_apikey } from "./apikey_pb.js";
-import type { EmptySchema, Timestamp } from "@bufbuild/protobuf/wkt";
-import { file_google_protobuf_empty, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Patch } from "../patch/patch_pb.js";
 import { file_patch_patch } from "../patch/patch_pb.js";
 import type { HolderRef, HolderSelect } from "../roster/payday/holder_svc_pb.js";
@@ -18,7 +18,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/apikey_svc.g.proto.
  */
 export const file_app_apikey_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChZhcHAvYXBpa2V5X3N2Yy5nLnByb3RvEgZyb3N0ZXIipwIKEEFwaUtleUFkZFJlcXVlc3QSCgoCaWQYASABKAwSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIUCgVhbGlhcxgEIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISDwoHbWV0aG9kcxgIIAMoCRIVCgZzZWNyZXQYCSABKAxCBaoBAggCEi0KCWRhdGVfdXNlZBgKIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlgKEEFwaUtleUdldFJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLkFwaUtleVJlZhIkCgZzZWxlY3QYAiABKAsyFC5yb3N0ZXIuQXBpS2V5U2VsZWN0Il0KCUFwaUtleVJlZhIMCgJpZBgBIAEoDEgAEikKBWFsaWFzGAIgASgLMhgucm9zdGVyLkFwaUtleVJlZkJ5QWxpYXNIABIQCgZzZWNyZXQYCSABKAxIAEIFCgNrZXkiRAoQQXBpS2V5UmVmQnlBbGlhcxIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEg0KBWFsaWFzGAQgASgJIukBCgxBcGlLZXlTZWxlY3QSCwoDYWxsGAEgASgIEiQKBmhvbGRlchgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSDQoFYWxpYXMYBCABKAgSDAoEZGVzYxgGIAEoCBIPCgdtZXRob2RzGAggASgIEg4KBnNlY3JldBgJIAEoCBIRCglkYXRlX3VzZWQYCiABKAgSFAoMZGF0ZV9leHBpcmVzGAsgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgi1AIKEkFwaUtleVBhdGNoUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuQXBpS2V5UmVmEg0KBWFsaWFzGAggASgJEgwKBGRlc2MYDCABKAkSDwoHbWV0aG9kcxgQIAMoCRIOCgZzZWNyZXQYEiABKAwSLQoJZGF0ZV91c2VkGBQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIWCg5kYXRlX3VzZWRfbnVsbBgVIAEoCBIwCgxkYXRlX2V4cGlyZXMYFiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhkKEWRhdGVfZXhwaXJlc19udWxsGBcgASgIEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIlEKEkFwaUtleUFwcGx5UmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuQXBpS2V5UmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giZQoRQXBpS2V5TGlzdFJlcXVlc3QSJQoHZmlsdGVycxgBIAMoCzIULnJvc3Rlci5BcGlLZXlGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIkgKEkFwaUtleUxpc3RSZXNwb25zZRIdCgVpdGVtcxgBIAMoCzIOLnJvc3Rlci5BcGlLZXkSEwoEbmV4dBgCIAEoCUIFqgECCAIiLgoMQXBpS2V5RmlsdGVyEh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5BcGlLZXlSZWYyzgIKDUFwaUtleVNlcnZpY2USLwoDQWRkEhgucm9zdGVyLkFwaUtleUFkZFJlcXVlc3QaDi5yb3N0ZXIuQXBpS2V5Ei8KA0dldBIYLnJvc3Rlci5BcGlLZXlHZXRSZXF1ZXN0Gg4ucm9zdGVyLkFwaUtleRIzCgVQYXRjaBIaLnJvc3Rlci5BcGlLZXlQYXRjaFJlcXVlc3QaDi5yb3N0ZXIuQXBpS2V5EjMKBUFwcGx5Ehoucm9zdGVyLkFwaUtleUFwcGx5UmVxdWVzdBoOLnJvc3Rlci5BcGlLZXkSMgoFRXJhc2USES5yb3N0ZXIuQXBpS2V5UmVmGhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5Ej0KBExpc3QSGS5yb3N0ZXIuQXBpS2V5TGlzdFJlcXVlc3QaGi5yb3N0ZXIuQXBpS2V5TGlzdFJlc3BvbnNlQiFaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHJiCGVkaXRpb25zcOgH", [file_app_apikey, file_google_protobuf_empty, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChZhcHAvYXBpa2V5X3N2Yy5nLnByb3RvEgZyb3N0ZXIipwIKEEFwaUtleUFkZFJlcXVlc3QSCgoCaWQYASABKAwSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIUCgVhbGlhcxgEIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISDwoHbWV0aG9kcxgIIAMoCRIVCgZzZWNyZXQYCSABKAxCBaoBAggCEi0KCWRhdGVfdXNlZBgKIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlgKEEFwaUtleUdldFJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLkFwaUtleVJlZhIkCgZzZWxlY3QYAiABKAsyFC5yb3N0ZXIuQXBpS2V5U2VsZWN0Il0KCUFwaUtleVJlZhIMCgJpZBgBIAEoDEgAEikKBWFsaWFzGAIgASgLMhgucm9zdGVyLkFwaUtleVJlZkJ5QWxpYXNIABIQCgZzZWNyZXQYCSABKAxIAEIFCgNrZXkiRAoQQXBpS2V5UmVmQnlBbGlhcxIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEg0KBWFsaWFzGAQgASgJIukBCgxBcGlLZXlTZWxlY3QSCwoDYWxsGAEgASgIEiQKBmhvbGRlchgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSDQoFYWxpYXMYBCABKAgSDAoEZGVzYxgGIAEoCBIPCgdtZXRob2RzGAggASgIEg4KBnNlY3JldBgJIAEoCBIRCglkYXRlX3VzZWQYCiABKAgSFAoMZGF0ZV9leHBpcmVzGAsgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgi1AIKEkFwaUtleVBhdGNoUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuQXBpS2V5UmVmEg0KBWFsaWFzGAggASgJEgwKBGRlc2MYDCABKAkSDwoHbWV0aG9kcxgQIAMoCRIOCgZzZWNyZXQYEiABKAwSLQoJZGF0ZV91c2VkGBQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIWCg5kYXRlX3VzZWRfbnVsbBgVIAEoCBIwCgxkYXRlX2V4cGlyZXMYFiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhkKEWRhdGVfZXhwaXJlc19udWxsGBcgASgIEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIlEKEkFwaUtleUFwcGx5UmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuQXBpS2V5UmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giJQoTQXBpS2V5RXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiZQoRQXBpS2V5TGlzdFJlcXVlc3QSJQoHZmlsdGVycxgBIAMoCzIULnJvc3Rlci5BcGlLZXlGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIkgKEkFwaUtleUxpc3RSZXNwb25zZRIdCgVpdGVtcxgBIAMoCzIOLnJvc3Rlci5BcGlLZXkSEwoEbmV4dBgCIAEoCUIFqgECCAIiLgoMQXBpS2V5RmlsdGVyEh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5BcGlLZXlSZWYy0wIKDUFwaUtleVNlcnZpY2USLwoDQWRkEhgucm9zdGVyLkFwaUtleUFkZFJlcXVlc3QaDi5yb3N0ZXIuQXBpS2V5Ei8KA0dldBIYLnJvc3Rlci5BcGlLZXlHZXRSZXF1ZXN0Gg4ucm9zdGVyLkFwaUtleRIzCgVQYXRjaBIaLnJvc3Rlci5BcGlLZXlQYXRjaFJlcXVlc3QaDi5yb3N0ZXIuQXBpS2V5EjMKBUFwcGx5Ehoucm9zdGVyLkFwaUtleUFwcGx5UmVxdWVzdBoOLnJvc3Rlci5BcGlLZXkSNwoFRXJhc2USES5yb3N0ZXIuQXBpS2V5UmVmGhsucm9zdGVyLkFwaUtleUVyYXNlUmVzcG9uc2USPQoETGlzdBIZLnJvc3Rlci5BcGlLZXlMaXN0UmVxdWVzdBoaLnJvc3Rlci5BcGlLZXlMaXN0UmVzcG9uc2VCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_apikey, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.ApiKeyAddRequest
@@ -337,6 +337,29 @@ export const ApiKeyApplyRequestSchema: GenMessage<ApiKeyApplyRequest> = /*@__PUR
   messageDesc(file_app_apikey_svc_g, 6);
 
 /**
+ * @generated from message roster.ApiKeyEraseResponse
+ */
+export type ApiKeyEraseResponse = Message<"roster.ApiKeyEraseResponse"> & {
+  /**
+   * Erased is whether this call is the one that erased the row.
+   *
+   * False for a row that was already gone, was never there, or is out
+   * of this caller's reach -- which are one answer on purpose, and the
+   * reason the RPC does not fail instead.
+   *
+   * @generated from field: bool erased = 1;
+   */
+  erased: boolean;
+};
+
+/**
+ * Describes the message roster.ApiKeyEraseResponse.
+ * Use `create(ApiKeyEraseResponseSchema)` to create a new message.
+ */
+export const ApiKeyEraseResponseSchema: GenMessage<ApiKeyEraseResponse> = /*@__PURE__*/
+  messageDesc(file_app_apikey_svc_g, 7);
+
+/**
  * @generated from message roster.ApiKeyListRequest
  */
 export type ApiKeyListRequest = Message<"roster.ApiKeyListRequest"> & {
@@ -373,7 +396,7 @@ export type ApiKeyListRequest = Message<"roster.ApiKeyListRequest"> & {
  * Use `create(ApiKeyListRequestSchema)` to create a new message.
  */
 export const ApiKeyListRequestSchema: GenMessage<ApiKeyListRequest> = /*@__PURE__*/
-  messageDesc(file_app_apikey_svc_g, 7);
+  messageDesc(file_app_apikey_svc_g, 8);
 
 /**
  * @generated from message roster.ApiKeyListResponse
@@ -403,7 +426,7 @@ export type ApiKeyListResponse = Message<"roster.ApiKeyListResponse"> & {
  * Use `create(ApiKeyListResponseSchema)` to create a new message.
  */
 export const ApiKeyListResponseSchema: GenMessage<ApiKeyListResponse> = /*@__PURE__*/
-  messageDesc(file_app_apikey_svc_g, 8);
+  messageDesc(file_app_apikey_svc_g, 9);
 
 /**
  * @generated from message roster.ApiKeyFilter
@@ -420,7 +443,7 @@ export type ApiKeyFilter = Message<"roster.ApiKeyFilter"> & {
  * Use `create(ApiKeyFilterSchema)` to create a new message.
  */
 export const ApiKeyFilterSchema: GenMessage<ApiKeyFilter> = /*@__PURE__*/
-  messageDesc(file_app_apikey_svc_g, 9);
+  messageDesc(file_app_apikey_svc_g, 10);
 
 /**
  * @generated from service roster.ApiKeyService
@@ -474,7 +497,7 @@ export const ApiKeyService: GenService<{
   erase: {
     methodKind: "unary";
     input: typeof ApiKeyRefSchema;
-    output: typeof EmptySchema;
+    output: typeof ApiKeyEraseResponseSchema;
   },
   /**
    * List reads ApiKeys a page at a time.

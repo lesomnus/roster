@@ -18,7 +18,6 @@ import (
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 type TenantServiceServer struct {
@@ -376,7 +375,7 @@ func (s TenantServiceServer) apply(ctx context.Context, ref *rstr.TenantRef, doc
 	return out, nil
 }
 
-func (s TenantServiceServer) Erase(ctx context.Context, req *rstr.TenantRef) (*emptypb.Empty, error) {
+func (s TenantServiceServer) Erase(ctx context.Context, req *rstr.TenantRef) (*rstr.TenantEraseResponse, error) {
 	p, err := TenantPick(req)
 	if err != nil {
 		return nil, err
@@ -400,13 +399,13 @@ func (s TenantServiceServer) Erase(ctx context.Context, req *rstr.TenantRef) (*e
 		v, err := st.Db.Tenant.Query().Where(p).OnlyID(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
-				return &emptypb.Empty{}, nil
+				return &rstr.TenantEraseResponse{}, nil
 			}
 			return nil, err
 		}
 
 		k = v
-		p = tenant.IDEQ(v)
+		p = tenant.And(p, tenant.IDEQ(v))
 	}
 
 	n, err := st.Db.Tenant.Delete().Where(p).Exec(ctx)
@@ -424,7 +423,10 @@ func (s TenantServiceServer) Erase(ctx context.Context, req *rstr.TenantRef) (*e
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return &emptypb.Empty{}, nil
+	res := &rstr.TenantEraseResponse{}
+	res.SetErased(n > 0)
+
+	return res, nil
 }
 
 func TenantPick(req *rstr.TenantRef) (predicate.Tenant, error) {

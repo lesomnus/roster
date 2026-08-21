@@ -6,8 +6,8 @@ import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegen
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Continuation, ContinuationSchema } from "./continuation_pb.js";
 import { file_app_continuation } from "./continuation_pb.js";
-import type { EmptySchema, Timestamp } from "@bufbuild/protobuf/wkt";
-import { file_google_protobuf_empty, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Patch } from "../patch/patch_pb.js";
 import { file_patch_patch } from "../patch/patch_pb.js";
 import type { HolderRef, HolderSelect } from "../roster/payday/holder_svc_pb.js";
@@ -18,7 +18,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/continuation_svc.g.proto.
  */
 export const file_app_continuation_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChxhcHAvY29udGludWF0aW9uX3N2Yy5nLnByb3RvEgZyb3N0ZXIigAIKFkNvbnRpbnVhdGlvbkFkZFJlcXVlc3QSCgoCaWQYASABKAwSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIRCglzYXRpc2ZpZWQYCCADKAkSFQoGc2VjcmV0GAkgASgMQgWqAQIIAhIVCgZpc3N1ZXIYCiABKAxCBaoBAggCEhIKCm1ldGVyZWRfYnkYDCABKAwSMAoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wImoKFkNvbnRpbnVhdGlvbkdldFJlcXVlc3QSJAoDcmVmGAEgASgLMhcucm9zdGVyLkNvbnRpbnVhdGlvblJlZhIqCgZzZWxlY3QYAiABKAsyGi5yb3N0ZXIuQ29udGludWF0aW9uU2VsZWN0IjgKD0NvbnRpbnVhdGlvblJlZhIMCgJpZBgBIAEoDEgAEhAKBnNlY3JldBgJIAEoDEgAQgUKA2tleSLlAQoSQ29udGludWF0aW9uU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0EhEKCXNhdGlzZmllZBgIIAEoCBIOCgZzZWNyZXQYCSABKAgSDgoGaXNzdWVyGAogASgIEhIKCm1ldGVyZWRfYnkYDCABKAgSFAoMZGF0ZV9leHBpcmVzGAsgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgijgEKGENvbnRpbnVhdGlvblBhdGNoUmVxdWVzdBIkCgNyZWYYASABKAsyFy5yb3N0ZXIuQ29udGludWF0aW9uUmVmEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIl0KGENvbnRpbnVhdGlvbkFwcGx5UmVxdWVzdBIkCgNyZWYYASABKAsyFy5yb3N0ZXIuQ29udGludWF0aW9uUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2gicQoXQ29udGludWF0aW9uTGlzdFJlcXVlc3QSKwoHZmlsdGVycxgBIAMoCzIaLnJvc3Rlci5Db250aW51YXRpb25GaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIlQKGENvbnRpbnVhdGlvbkxpc3RSZXNwb25zZRIjCgVpdGVtcxgBIAMoCzIULnJvc3Rlci5Db250aW51YXRpb24SEwoEbmV4dBgCIAEoCUIFqgECCAIiOgoSQ29udGludWF0aW9uRmlsdGVyEiQKA3JlZhgBIAEoCzIXLnJvc3Rlci5Db250aW51YXRpb25SZWYylgMKE0NvbnRpbnVhdGlvblNlcnZpY2USOwoDQWRkEh4ucm9zdGVyLkNvbnRpbnVhdGlvbkFkZFJlcXVlc3QaFC5yb3N0ZXIuQ29udGludWF0aW9uEjsKA0dldBIeLnJvc3Rlci5Db250aW51YXRpb25HZXRSZXF1ZXN0GhQucm9zdGVyLkNvbnRpbnVhdGlvbhI/CgVQYXRjaBIgLnJvc3Rlci5Db250aW51YXRpb25QYXRjaFJlcXVlc3QaFC5yb3N0ZXIuQ29udGludWF0aW9uEj8KBUFwcGx5EiAucm9zdGVyLkNvbnRpbnVhdGlvbkFwcGx5UmVxdWVzdBoULnJvc3Rlci5Db250aW51YXRpb24SOAoFRXJhc2USFy5yb3N0ZXIuQ29udGludWF0aW9uUmVmGhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5EkkKBExpc3QSHy5yb3N0ZXIuQ29udGludWF0aW9uTGlzdFJlcXVlc3QaIC5yb3N0ZXIuQ29udGludWF0aW9uTGlzdFJlc3BvbnNlQiFaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHJiCGVkaXRpb25zcOgH", [file_app_continuation, file_google_protobuf_empty, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChxhcHAvY29udGludWF0aW9uX3N2Yy5nLnByb3RvEgZyb3N0ZXIigAIKFkNvbnRpbnVhdGlvbkFkZFJlcXVlc3QSCgoCaWQYASABKAwSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIRCglzYXRpc2ZpZWQYCCADKAkSFQoGc2VjcmV0GAkgASgMQgWqAQIIAhIVCgZpc3N1ZXIYCiABKAxCBaoBAggCEhIKCm1ldGVyZWRfYnkYDCABKAwSMAoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wImoKFkNvbnRpbnVhdGlvbkdldFJlcXVlc3QSJAoDcmVmGAEgASgLMhcucm9zdGVyLkNvbnRpbnVhdGlvblJlZhIqCgZzZWxlY3QYAiABKAsyGi5yb3N0ZXIuQ29udGludWF0aW9uU2VsZWN0IjgKD0NvbnRpbnVhdGlvblJlZhIMCgJpZBgBIAEoDEgAEhAKBnNlY3JldBgJIAEoDEgAQgUKA2tleSLlAQoSQ29udGludWF0aW9uU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0EhEKCXNhdGlzZmllZBgIIAEoCBIOCgZzZWNyZXQYCSABKAgSDgoGaXNzdWVyGAogASgIEhIKCm1ldGVyZWRfYnkYDCABKAgSFAoMZGF0ZV9leHBpcmVzGAsgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgijgEKGENvbnRpbnVhdGlvblBhdGNoUmVxdWVzdBIkCgNyZWYYASABKAsyFy5yb3N0ZXIuQ29udGludWF0aW9uUmVmEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIl0KGENvbnRpbnVhdGlvbkFwcGx5UmVxdWVzdBIkCgNyZWYYASABKAsyFy5yb3N0ZXIuQ29udGludWF0aW9uUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giKwoZQ29udGludWF0aW9uRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgicQoXQ29udGludWF0aW9uTGlzdFJlcXVlc3QSKwoHZmlsdGVycxgBIAMoCzIaLnJvc3Rlci5Db250aW51YXRpb25GaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIlQKGENvbnRpbnVhdGlvbkxpc3RSZXNwb25zZRIjCgVpdGVtcxgBIAMoCzIULnJvc3Rlci5Db250aW51YXRpb24SEwoEbmV4dBgCIAEoCUIFqgECCAIiOgoSQ29udGludWF0aW9uRmlsdGVyEiQKA3JlZhgBIAEoCzIXLnJvc3Rlci5Db250aW51YXRpb25SZWYyoQMKE0NvbnRpbnVhdGlvblNlcnZpY2USOwoDQWRkEh4ucm9zdGVyLkNvbnRpbnVhdGlvbkFkZFJlcXVlc3QaFC5yb3N0ZXIuQ29udGludWF0aW9uEjsKA0dldBIeLnJvc3Rlci5Db250aW51YXRpb25HZXRSZXF1ZXN0GhQucm9zdGVyLkNvbnRpbnVhdGlvbhI/CgVQYXRjaBIgLnJvc3Rlci5Db250aW51YXRpb25QYXRjaFJlcXVlc3QaFC5yb3N0ZXIuQ29udGludWF0aW9uEj8KBUFwcGx5EiAucm9zdGVyLkNvbnRpbnVhdGlvbkFwcGx5UmVxdWVzdBoULnJvc3Rlci5Db250aW51YXRpb24SQwoFRXJhc2USFy5yb3N0ZXIuQ29udGludWF0aW9uUmVmGiEucm9zdGVyLkNvbnRpbnVhdGlvbkVyYXNlUmVzcG9uc2USSQoETGlzdBIfLnJvc3Rlci5Db250aW51YXRpb25MaXN0UmVxdWVzdBogLnJvc3Rlci5Db250aW51YXRpb25MaXN0UmVzcG9uc2VCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_continuation, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.ContinuationAddRequest
@@ -249,6 +249,29 @@ export const ContinuationApplyRequestSchema: GenMessage<ContinuationApplyRequest
   messageDesc(file_app_continuation_svc_g, 5);
 
 /**
+ * @generated from message roster.ContinuationEraseResponse
+ */
+export type ContinuationEraseResponse = Message<"roster.ContinuationEraseResponse"> & {
+  /**
+   * Erased is whether this call is the one that erased the row.
+   *
+   * False for a row that was already gone, was never there, or is out
+   * of this caller's reach -- which are one answer on purpose, and the
+   * reason the RPC does not fail instead.
+   *
+   * @generated from field: bool erased = 1;
+   */
+  erased: boolean;
+};
+
+/**
+ * Describes the message roster.ContinuationEraseResponse.
+ * Use `create(ContinuationEraseResponseSchema)` to create a new message.
+ */
+export const ContinuationEraseResponseSchema: GenMessage<ContinuationEraseResponse> = /*@__PURE__*/
+  messageDesc(file_app_continuation_svc_g, 6);
+
+/**
  * @generated from message roster.ContinuationListRequest
  */
 export type ContinuationListRequest = Message<"roster.ContinuationListRequest"> & {
@@ -285,7 +308,7 @@ export type ContinuationListRequest = Message<"roster.ContinuationListRequest"> 
  * Use `create(ContinuationListRequestSchema)` to create a new message.
  */
 export const ContinuationListRequestSchema: GenMessage<ContinuationListRequest> = /*@__PURE__*/
-  messageDesc(file_app_continuation_svc_g, 6);
+  messageDesc(file_app_continuation_svc_g, 7);
 
 /**
  * @generated from message roster.ContinuationListResponse
@@ -315,7 +338,7 @@ export type ContinuationListResponse = Message<"roster.ContinuationListResponse"
  * Use `create(ContinuationListResponseSchema)` to create a new message.
  */
 export const ContinuationListResponseSchema: GenMessage<ContinuationListResponse> = /*@__PURE__*/
-  messageDesc(file_app_continuation_svc_g, 7);
+  messageDesc(file_app_continuation_svc_g, 8);
 
 /**
  * @generated from message roster.ContinuationFilter
@@ -332,7 +355,7 @@ export type ContinuationFilter = Message<"roster.ContinuationFilter"> & {
  * Use `create(ContinuationFilterSchema)` to create a new message.
  */
 export const ContinuationFilterSchema: GenMessage<ContinuationFilter> = /*@__PURE__*/
-  messageDesc(file_app_continuation_svc_g, 8);
+  messageDesc(file_app_continuation_svc_g, 9);
 
 /**
  * @generated from service roster.ContinuationService
@@ -386,7 +409,7 @@ export const ContinuationService: GenService<{
   erase: {
     methodKind: "unary";
     input: typeof ContinuationRefSchema;
-    output: typeof EmptySchema;
+    output: typeof ContinuationEraseResponseSchema;
   },
   /**
    * List reads Continuations a page at a time.

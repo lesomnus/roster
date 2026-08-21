@@ -18,7 +18,6 @@ import (
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 type DelegationServiceServer struct {
@@ -404,7 +403,7 @@ func (s DelegationServiceServer) apply(ctx context.Context, ref *rstr.Delegation
 	return out, nil
 }
 
-func (s DelegationServiceServer) Erase(ctx context.Context, req *rstr.DelegationRef) (*emptypb.Empty, error) {
+func (s DelegationServiceServer) Erase(ctx context.Context, req *rstr.DelegationRef) (*rstr.DelegationEraseResponse, error) {
 	p, err := DelegationPick(req)
 	if err != nil {
 		return nil, err
@@ -428,13 +427,13 @@ func (s DelegationServiceServer) Erase(ctx context.Context, req *rstr.Delegation
 		v, err := st.Db.Delegation.Query().Where(p).OnlyID(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
-				return &emptypb.Empty{}, nil
+				return &rstr.DelegationEraseResponse{}, nil
 			}
 			return nil, err
 		}
 
 		k = v
-		p = delegation.IDEQ(v)
+		p = delegation.And(p, delegation.IDEQ(v))
 	}
 
 	u := st.Db.Delegation.Update().Where(p)
@@ -455,7 +454,10 @@ func (s DelegationServiceServer) Erase(ctx context.Context, req *rstr.Delegation
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return &emptypb.Empty{}, nil
+	res := &rstr.DelegationEraseResponse{}
+	res.SetErased(n > 0)
+
+	return res, nil
 }
 
 // DelegationPick answers with the predicate this reference selects on,

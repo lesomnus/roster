@@ -18,7 +18,6 @@ import (
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 type TeamServiceServer struct {
@@ -412,7 +411,7 @@ func (s TeamServiceServer) apply(ctx context.Context, ref *rstr.TeamRef, doc *pa
 	return out, nil
 }
 
-func (s TeamServiceServer) Erase(ctx context.Context, req *rstr.TeamRef) (*emptypb.Empty, error) {
+func (s TeamServiceServer) Erase(ctx context.Context, req *rstr.TeamRef) (*rstr.TeamEraseResponse, error) {
 	p, err := TeamPick(req)
 	if err != nil {
 		return nil, err
@@ -436,13 +435,13 @@ func (s TeamServiceServer) Erase(ctx context.Context, req *rstr.TeamRef) (*empty
 		v, err := st.Db.Team.Query().Where(p).OnlyID(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
-				return &emptypb.Empty{}, nil
+				return &rstr.TeamEraseResponse{}, nil
 			}
 			return nil, err
 		}
 
 		k = v
-		p = team.IDEQ(v)
+		p = team.And(p, team.IDEQ(v))
 	}
 
 	u := st.Db.Team.Update().Where(p)
@@ -463,7 +462,10 @@ func (s TeamServiceServer) Erase(ctx context.Context, req *rstr.TeamRef) (*empty
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return &emptypb.Empty{}, nil
+	res := &rstr.TeamEraseResponse{}
+	res.SetErased(n > 0)
+
+	return res, nil
 }
 
 // TeamPick answers with the predicate this reference selects on,

@@ -5,7 +5,6 @@ import "app/membership.proto";
 import "app/role_svc.g.proto";
 import "app/site_svc.g.proto";
 import "app/team_svc.g.proto";
-import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "patch/patch.proto";
 import "roster/payday/holder_svc.g.proto";
@@ -22,7 +21,7 @@ service SiteMembershipService {
   // Apply applies a patch document to an existing SiteMembership
   rpc Apply(SiteMembershipApplyRequest) returns (SiteMembership);
   // Erase deletes a SiteMembership
-  rpc Erase(SiteMembershipRef) returns (google.protobuf.Empty);
+  rpc Erase(SiteMembershipRef) returns (SiteMembershipEraseResponse);
   // List reads SiteMemberships a page at a time.
   rpc List(SiteMembershipListRequest) returns (SiteMembershipListResponse);
   // Watch the SiteMemberships this caller may see, as they are now and as they change.
@@ -49,7 +48,7 @@ service TeamMembershipService {
   // Apply applies a patch document to an existing TeamMembership
   rpc Apply(TeamMembershipApplyRequest) returns (TeamMembership);
   // Erase deletes a TeamMembership
-  rpc Erase(TeamMembershipRef) returns (google.protobuf.Empty);
+  rpc Erase(TeamMembershipRef) returns (TeamMembershipEraseResponse);
   // List reads TeamMemberships a page at a time.
   rpc List(TeamMembershipListRequest) returns (TeamMembershipListResponse);
   // Watch the TeamMemberships this caller may see, as they are now and as they change.
@@ -120,6 +119,15 @@ message SiteMembershipPatchRequest {
 message SiteMembershipApplyRequest {
   SiteMembershipRef ref = 1;
   patch.Patch patch = 2;
+}
+
+message SiteMembershipEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
 }
 
 message SiteMembershipListRequest {
@@ -266,6 +274,15 @@ message TeamMembershipPatchRequest {
 message TeamMembershipApplyRequest {
   TeamMembershipRef ref = 1;
   patch.Patch patch = 2;
+}
+
+message TeamMembershipEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
 }
 
 message TeamMembershipListRequest {

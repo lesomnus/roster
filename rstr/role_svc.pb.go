@@ -10,7 +10,6 @@ import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	unsafe "unsafe"
@@ -1276,6 +1275,86 @@ func (b0 RoleApplyRequest_builder) Build() *RoleApplyRequest {
 	return m0
 }
 
+type RoleEraseResponse struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *RoleEraseResponse) Reset() {
+	*x = RoleEraseResponse{}
+	mi := &file_app_role_svc_g_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RoleEraseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RoleEraseResponse) ProtoMessage() {}
+
+func (x *RoleEraseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_app_role_svc_g_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *RoleEraseResponse) GetErased() bool {
+	if x != nil {
+		return x.xxx_hidden_Erased
+	}
+	return false
+}
+
+func (x *RoleEraseResponse) SetErased(v bool) {
+	x.xxx_hidden_Erased = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+}
+
+func (x *RoleEraseResponse) HasErased() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *RoleEraseResponse) ClearErased() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Erased = false
+}
+
+type RoleEraseResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Erased is whether this call is the one that erased the row.
+	//
+	// False for a row that was already gone, was never there, or is out
+	// of this caller's reach -- which are one answer on purpose, and the
+	// reason the RPC does not fail instead.
+	Erased *bool
+}
+
+func (b0 RoleEraseResponse_builder) Build() *RoleEraseResponse {
+	m0 := &RoleEraseResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Erased != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		x.xxx_hidden_Erased = *b.Erased
+	}
+	return m0
+}
+
 type RoleListRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*RoleFilter         `protobuf:"bytes,1,rep,name=filters"`
@@ -1287,7 +1366,7 @@ type RoleListRequest struct {
 
 func (x *RoleListRequest) Reset() {
 	*x = RoleListRequest{}
-	mi := &file_app_role_svc_g_proto_msgTypes[7]
+	mi := &file_app_role_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1299,7 +1378,7 @@ func (x *RoleListRequest) String() string {
 func (*RoleListRequest) ProtoMessage() {}
 
 func (x *RoleListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_role_svc_g_proto_msgTypes[7]
+	mi := &file_app_role_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1382,7 +1461,7 @@ type RoleListResponse struct {
 
 func (x *RoleListResponse) Reset() {
 	*x = RoleListResponse{}
-	mi := &file_app_role_svc_g_proto_msgTypes[8]
+	mi := &file_app_role_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1394,7 +1473,7 @@ func (x *RoleListResponse) String() string {
 func (*RoleListResponse) ProtoMessage() {}
 
 func (x *RoleListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_role_svc_g_proto_msgTypes[8]
+	mi := &file_app_role_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1461,7 +1540,7 @@ type RoleFilter struct {
 
 func (x *RoleFilter) Reset() {
 	*x = RoleFilter{}
-	mi := &file_app_role_svc_g_proto_msgTypes[9]
+	mi := &file_app_role_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1473,7 +1552,7 @@ func (x *RoleFilter) String() string {
 func (*RoleFilter) ProtoMessage() {}
 
 func (x *RoleFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_app_role_svc_g_proto_msgTypes[9]
+	mi := &file_app_role_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1536,7 +1615,7 @@ type BindingAddRequest struct {
 
 func (x *BindingAddRequest) Reset() {
 	*x = BindingAddRequest{}
-	mi := &file_app_role_svc_g_proto_msgTypes[10]
+	mi := &file_app_role_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1548,7 +1627,7 @@ func (x *BindingAddRequest) String() string {
 func (*BindingAddRequest) ProtoMessage() {}
 
 func (x *BindingAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_role_svc_g_proto_msgTypes[10]
+	mi := &file_app_role_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1733,7 +1812,7 @@ type BindingGetRequest struct {
 
 func (x *BindingGetRequest) Reset() {
 	*x = BindingGetRequest{}
-	mi := &file_app_role_svc_g_proto_msgTypes[11]
+	mi := &file_app_role_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1745,7 +1824,7 @@ func (x *BindingGetRequest) String() string {
 func (*BindingGetRequest) ProtoMessage() {}
 
 func (x *BindingGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_role_svc_g_proto_msgTypes[11]
+	mi := &file_app_role_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1825,7 +1904,7 @@ type BindingRef struct {
 
 func (x *BindingRef) Reset() {
 	*x = BindingRef{}
-	mi := &file_app_role_svc_g_proto_msgTypes[12]
+	mi := &file_app_role_svc_g_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1837,7 +1916,7 @@ func (x *BindingRef) String() string {
 func (*BindingRef) ProtoMessage() {}
 
 func (x *BindingRef) ProtoReflect() protoreflect.Message {
-	mi := &file_app_role_svc_g_proto_msgTypes[12]
+	mi := &file_app_role_svc_g_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1925,7 +2004,7 @@ func (b0 BindingRef_builder) Build() *BindingRef {
 type case_BindingRef_Key protoreflect.FieldNumber
 
 func (x case_BindingRef_Key) String() string {
-	md := file_app_role_svc_g_proto_msgTypes[12].Descriptor()
+	md := file_app_role_svc_g_proto_msgTypes[13].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -1960,7 +2039,7 @@ type BindingSelect struct {
 
 func (x *BindingSelect) Reset() {
 	*x = BindingSelect{}
-	mi := &file_app_role_svc_g_proto_msgTypes[13]
+	mi := &file_app_role_svc_g_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1972,7 +2051,7 @@ func (x *BindingSelect) String() string {
 func (*BindingSelect) ProtoMessage() {}
 
 func (x *BindingSelect) ProtoReflect() protoreflect.Message {
-	mi := &file_app_role_svc_g_proto_msgTypes[13]
+	mi := &file_app_role_svc_g_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2220,7 +2299,7 @@ type BindingPatchRequest struct {
 
 func (x *BindingPatchRequest) Reset() {
 	*x = BindingPatchRequest{}
-	mi := &file_app_role_svc_g_proto_msgTypes[14]
+	mi := &file_app_role_svc_g_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2232,7 +2311,7 @@ func (x *BindingPatchRequest) String() string {
 func (*BindingPatchRequest) ProtoMessage() {}
 
 func (x *BindingPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_role_svc_g_proto_msgTypes[14]
+	mi := &file_app_role_svc_g_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2354,7 +2433,7 @@ type BindingApplyRequest struct {
 
 func (x *BindingApplyRequest) Reset() {
 	*x = BindingApplyRequest{}
-	mi := &file_app_role_svc_g_proto_msgTypes[15]
+	mi := &file_app_role_svc_g_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2366,7 +2445,7 @@ func (x *BindingApplyRequest) String() string {
 func (*BindingApplyRequest) ProtoMessage() {}
 
 func (x *BindingApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_role_svc_g_proto_msgTypes[15]
+	mi := &file_app_role_svc_g_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2437,6 +2516,86 @@ func (b0 BindingApplyRequest_builder) Build() *BindingApplyRequest {
 	return m0
 }
 
+type BindingEraseResponse struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *BindingEraseResponse) Reset() {
+	*x = BindingEraseResponse{}
+	mi := &file_app_role_svc_g_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BindingEraseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BindingEraseResponse) ProtoMessage() {}
+
+func (x *BindingEraseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_app_role_svc_g_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *BindingEraseResponse) GetErased() bool {
+	if x != nil {
+		return x.xxx_hidden_Erased
+	}
+	return false
+}
+
+func (x *BindingEraseResponse) SetErased(v bool) {
+	x.xxx_hidden_Erased = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+}
+
+func (x *BindingEraseResponse) HasErased() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *BindingEraseResponse) ClearErased() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Erased = false
+}
+
+type BindingEraseResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Erased is whether this call is the one that erased the row.
+	//
+	// False for a row that was already gone, was never there, or is out
+	// of this caller's reach -- which are one answer on purpose, and the
+	// reason the RPC does not fail instead.
+	Erased *bool
+}
+
+func (b0 BindingEraseResponse_builder) Build() *BindingEraseResponse {
+	m0 := &BindingEraseResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Erased != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		x.xxx_hidden_Erased = *b.Erased
+	}
+	return m0
+}
+
 type BindingListRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*BindingFilter      `protobuf:"bytes,1,rep,name=filters"`
@@ -2448,7 +2607,7 @@ type BindingListRequest struct {
 
 func (x *BindingListRequest) Reset() {
 	*x = BindingListRequest{}
-	mi := &file_app_role_svc_g_proto_msgTypes[16]
+	mi := &file_app_role_svc_g_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2460,7 +2619,7 @@ func (x *BindingListRequest) String() string {
 func (*BindingListRequest) ProtoMessage() {}
 
 func (x *BindingListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_role_svc_g_proto_msgTypes[16]
+	mi := &file_app_role_svc_g_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2543,7 +2702,7 @@ type BindingListResponse struct {
 
 func (x *BindingListResponse) Reset() {
 	*x = BindingListResponse{}
-	mi := &file_app_role_svc_g_proto_msgTypes[17]
+	mi := &file_app_role_svc_g_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2555,7 +2714,7 @@ func (x *BindingListResponse) String() string {
 func (*BindingListResponse) ProtoMessage() {}
 
 func (x *BindingListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_role_svc_g_proto_msgTypes[17]
+	mi := &file_app_role_svc_g_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2622,7 +2781,7 @@ type BindingFilter struct {
 
 func (x *BindingFilter) Reset() {
 	*x = BindingFilter{}
-	mi := &file_app_role_svc_g_proto_msgTypes[18]
+	mi := &file_app_role_svc_g_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2634,7 +2793,7 @@ func (x *BindingFilter) String() string {
 func (*BindingFilter) ProtoMessage() {}
 
 func (x *BindingFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_app_role_svc_g_proto_msgTypes[18]
+	mi := &file_app_role_svc_g_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2685,7 +2844,7 @@ var File_app_role_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_role_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/role_svc.g.proto\x12\x06roster\x1a\x15app/group_svc.g.proto\x1a\x0eapp/role.proto\x1a\x14app/site_svc.g.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\x1a roster/payday/tenant_svc.g.proto\"\x9c\x02\n" +
+	"\x14app/role_svc.g.proto\x12\x06roster\x1a\x15app/group_svc.g.proto\x1a\x0eapp/role.proto\x1a\x14app/site_svc.g.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\x1a roster/payday/tenant_svc.g.proto\"\x9c\x02\n" +
 	"\x0eRoleAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12#\n" +
@@ -2729,7 +2888,9 @@ const file_app_role_svc_g_proto_rawDesc = "" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"Y\n" +
 	"\x10RoleApplyRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.roster.RoleRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"w\n" +
+	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"+\n" +
+	"\x11RoleEraseResponse\x12\x16\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"w\n" +
 	"\x0fRoleListRequest\x12,\n" +
 	"\afilters\x18\x01 \x03(\v2\x12.roster.RoleFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
@@ -2770,7 +2931,9 @@ const file_app_role_svc_g_proto_rawDesc = "" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"_\n" +
 	"\x13BindingApplyRequest\x12$\n" +
 	"\x03ref\x18\x01 \x01(\v2\x12.roster.BindingRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"}\n" +
+	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\".\n" +
+	"\x14BindingEraseResponse\x12\x16\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"}\n" +
 	"\x12BindingListRequest\x12/\n" +
 	"\afilters\x18\x01 \x03(\v2\x15.roster.BindingFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
@@ -2779,23 +2942,23 @@ const file_app_role_svc_g_proto_rawDesc = "" +
 	"\x05items\x18\x01 \x03(\v2\x0f.roster.BindingR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"5\n" +
 	"\rBindingFilter\x12$\n" +
-	"\x03ref\x18\x01 \x01(\v2\x12.roster.BindingRefR\x03ref2\xb6\x02\n" +
+	"\x03ref\x18\x01 \x01(\v2\x12.roster.BindingRefR\x03ref2\xb9\x02\n" +
 	"\vRoleService\x12+\n" +
 	"\x03Add\x12\x16.roster.RoleAddRequest\x1a\f.roster.Role\x12+\n" +
 	"\x03Get\x12\x16.roster.RoleGetRequest\x1a\f.roster.Role\x12/\n" +
 	"\x05Patch\x12\x18.roster.RolePatchRequest\x1a\f.roster.Role\x12/\n" +
-	"\x05Apply\x12\x18.roster.RoleApplyRequest\x1a\f.roster.Role\x120\n" +
-	"\x05Erase\x12\x0f.roster.RoleRef\x1a\x16.google.protobuf.Empty\x129\n" +
-	"\x04List\x12\x17.roster.RoleListRequest\x1a\x18.roster.RoleListResponse2\xda\x02\n" +
+	"\x05Apply\x12\x18.roster.RoleApplyRequest\x1a\f.roster.Role\x123\n" +
+	"\x05Erase\x12\x0f.roster.RoleRef\x1a\x19.roster.RoleEraseResponse\x129\n" +
+	"\x04List\x12\x17.roster.RoleListRequest\x1a\x18.roster.RoleListResponse2\xe0\x02\n" +
 	"\x0eBindingService\x121\n" +
 	"\x03Add\x12\x19.roster.BindingAddRequest\x1a\x0f.roster.Binding\x121\n" +
 	"\x03Get\x12\x19.roster.BindingGetRequest\x1a\x0f.roster.Binding\x125\n" +
 	"\x05Patch\x12\x1b.roster.BindingPatchRequest\x1a\x0f.roster.Binding\x125\n" +
-	"\x05Apply\x12\x1b.roster.BindingApplyRequest\x1a\x0f.roster.Binding\x123\n" +
-	"\x05Erase\x12\x12.roster.BindingRef\x1a\x16.google.protobuf.Empty\x12?\n" +
+	"\x05Apply\x12\x1b.roster.BindingApplyRequest\x1a\x0f.roster.Binding\x129\n" +
+	"\x05Erase\x12\x12.roster.BindingRef\x1a\x1c.roster.BindingEraseResponse\x12?\n" +
 	"\x04List\x12\x1a.roster.BindingListRequest\x1a\x1b.roster.BindingListResponseB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_role_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_app_role_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
 var file_app_role_svc_g_proto_goTypes = []any{
 	(*RoleAddRequest)(nil),        // 0: roster.RoleAddRequest
 	(*RoleGetRequest)(nil),        // 1: roster.RoleGetRequest
@@ -2804,91 +2967,92 @@ var file_app_role_svc_g_proto_goTypes = []any{
 	(*RoleSelect)(nil),            // 4: roster.RoleSelect
 	(*RolePatchRequest)(nil),      // 5: roster.RolePatchRequest
 	(*RoleApplyRequest)(nil),      // 6: roster.RoleApplyRequest
-	(*RoleListRequest)(nil),       // 7: roster.RoleListRequest
-	(*RoleListResponse)(nil),      // 8: roster.RoleListResponse
-	(*RoleFilter)(nil),            // 9: roster.RoleFilter
-	(*BindingAddRequest)(nil),     // 10: roster.BindingAddRequest
-	(*BindingGetRequest)(nil),     // 11: roster.BindingGetRequest
-	(*BindingRef)(nil),            // 12: roster.BindingRef
-	(*BindingSelect)(nil),         // 13: roster.BindingSelect
-	(*BindingPatchRequest)(nil),   // 14: roster.BindingPatchRequest
-	(*BindingApplyRequest)(nil),   // 15: roster.BindingApplyRequest
-	(*BindingListRequest)(nil),    // 16: roster.BindingListRequest
-	(*BindingListResponse)(nil),   // 17: roster.BindingListResponse
-	(*BindingFilter)(nil),         // 18: roster.BindingFilter
-	(*TenantRef)(nil),             // 19: roster.TenantRef
-	(*SiteRef)(nil),               // 20: roster.SiteRef
-	(*timestamppb.Timestamp)(nil), // 21: google.protobuf.Timestamp
-	(*TenantSelect)(nil),          // 22: roster.TenantSelect
-	(*SiteSelect)(nil),            // 23: roster.SiteSelect
-	(*patchpb.Patch)(nil),         // 24: patch.Patch
-	(*Role)(nil),                  // 25: roster.Role
-	(*HolderRef)(nil),             // 26: roster.HolderRef
-	(*GroupRef)(nil),              // 27: roster.GroupRef
-	(*HolderSelect)(nil),          // 28: roster.HolderSelect
-	(*GroupSelect)(nil),           // 29: roster.GroupSelect
-	(*Binding)(nil),               // 30: roster.Binding
-	(*emptypb.Empty)(nil),         // 31: google.protobuf.Empty
+	(*RoleEraseResponse)(nil),     // 7: roster.RoleEraseResponse
+	(*RoleListRequest)(nil),       // 8: roster.RoleListRequest
+	(*RoleListResponse)(nil),      // 9: roster.RoleListResponse
+	(*RoleFilter)(nil),            // 10: roster.RoleFilter
+	(*BindingAddRequest)(nil),     // 11: roster.BindingAddRequest
+	(*BindingGetRequest)(nil),     // 12: roster.BindingGetRequest
+	(*BindingRef)(nil),            // 13: roster.BindingRef
+	(*BindingSelect)(nil),         // 14: roster.BindingSelect
+	(*BindingPatchRequest)(nil),   // 15: roster.BindingPatchRequest
+	(*BindingApplyRequest)(nil),   // 16: roster.BindingApplyRequest
+	(*BindingEraseResponse)(nil),  // 17: roster.BindingEraseResponse
+	(*BindingListRequest)(nil),    // 18: roster.BindingListRequest
+	(*BindingListResponse)(nil),   // 19: roster.BindingListResponse
+	(*BindingFilter)(nil),         // 20: roster.BindingFilter
+	(*TenantRef)(nil),             // 21: roster.TenantRef
+	(*SiteRef)(nil),               // 22: roster.SiteRef
+	(*timestamppb.Timestamp)(nil), // 23: google.protobuf.Timestamp
+	(*TenantSelect)(nil),          // 24: roster.TenantSelect
+	(*SiteSelect)(nil),            // 25: roster.SiteSelect
+	(*patchpb.Patch)(nil),         // 26: patch.Patch
+	(*Role)(nil),                  // 27: roster.Role
+	(*HolderRef)(nil),             // 28: roster.HolderRef
+	(*GroupRef)(nil),              // 29: roster.GroupRef
+	(*HolderSelect)(nil),          // 30: roster.HolderSelect
+	(*GroupSelect)(nil),           // 31: roster.GroupSelect
+	(*Binding)(nil),               // 32: roster.Binding
 }
 var file_app_role_svc_g_proto_depIdxs = []int32{
-	19, // 0: roster.RoleAddRequest.tenant:type_name -> roster.TenantRef
-	20, // 1: roster.RoleAddRequest.site:type_name -> roster.SiteRef
-	21, // 2: roster.RoleAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	21, // 0: roster.RoleAddRequest.tenant:type_name -> roster.TenantRef
+	22, // 1: roster.RoleAddRequest.site:type_name -> roster.SiteRef
+	23, // 2: roster.RoleAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 3: roster.RoleGetRequest.ref:type_name -> roster.RoleRef
 	4,  // 4: roster.RoleGetRequest.select:type_name -> roster.RoleSelect
 	3,  // 5: roster.RoleRef.alias:type_name -> roster.RoleRefByAlias
-	19, // 6: roster.RoleRefByAlias.tenant:type_name -> roster.TenantRef
-	22, // 7: roster.RoleSelect.tenant:type_name -> roster.TenantSelect
-	23, // 8: roster.RoleSelect.site:type_name -> roster.SiteSelect
+	21, // 6: roster.RoleRefByAlias.tenant:type_name -> roster.TenantRef
+	24, // 7: roster.RoleSelect.tenant:type_name -> roster.TenantSelect
+	25, // 8: roster.RoleSelect.site:type_name -> roster.SiteSelect
 	2,  // 9: roster.RolePatchRequest.ref:type_name -> roster.RoleRef
-	21, // 10: roster.RolePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	23, // 10: roster.RolePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
 	2,  // 11: roster.RoleApplyRequest.ref:type_name -> roster.RoleRef
-	24, // 12: roster.RoleApplyRequest.patch:type_name -> patch.Patch
-	9,  // 13: roster.RoleListRequest.filters:type_name -> roster.RoleFilter
-	25, // 14: roster.RoleListResponse.items:type_name -> roster.Role
+	26, // 12: roster.RoleApplyRequest.patch:type_name -> patch.Patch
+	10, // 13: roster.RoleListRequest.filters:type_name -> roster.RoleFilter
+	27, // 14: roster.RoleListResponse.items:type_name -> roster.Role
 	2,  // 15: roster.RoleFilter.ref:type_name -> roster.RoleRef
 	2,  // 16: roster.BindingAddRequest.role:type_name -> roster.RoleRef
-	20, // 17: roster.BindingAddRequest.site:type_name -> roster.SiteRef
-	26, // 18: roster.BindingAddRequest.holder:type_name -> roster.HolderRef
-	27, // 19: roster.BindingAddRequest.group:type_name -> roster.GroupRef
-	21, // 20: roster.BindingAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	12, // 21: roster.BindingGetRequest.ref:type_name -> roster.BindingRef
-	13, // 22: roster.BindingGetRequest.select:type_name -> roster.BindingSelect
+	22, // 17: roster.BindingAddRequest.site:type_name -> roster.SiteRef
+	28, // 18: roster.BindingAddRequest.holder:type_name -> roster.HolderRef
+	29, // 19: roster.BindingAddRequest.group:type_name -> roster.GroupRef
+	23, // 20: roster.BindingAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	13, // 21: roster.BindingGetRequest.ref:type_name -> roster.BindingRef
+	14, // 22: roster.BindingGetRequest.select:type_name -> roster.BindingSelect
 	4,  // 23: roster.BindingSelect.role:type_name -> roster.RoleSelect
-	23, // 24: roster.BindingSelect.site:type_name -> roster.SiteSelect
-	28, // 25: roster.BindingSelect.holder:type_name -> roster.HolderSelect
-	29, // 26: roster.BindingSelect.group:type_name -> roster.GroupSelect
-	12, // 27: roster.BindingPatchRequest.ref:type_name -> roster.BindingRef
-	21, // 28: roster.BindingPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	12, // 29: roster.BindingApplyRequest.ref:type_name -> roster.BindingRef
-	24, // 30: roster.BindingApplyRequest.patch:type_name -> patch.Patch
-	18, // 31: roster.BindingListRequest.filters:type_name -> roster.BindingFilter
-	30, // 32: roster.BindingListResponse.items:type_name -> roster.Binding
-	12, // 33: roster.BindingFilter.ref:type_name -> roster.BindingRef
+	25, // 24: roster.BindingSelect.site:type_name -> roster.SiteSelect
+	30, // 25: roster.BindingSelect.holder:type_name -> roster.HolderSelect
+	31, // 26: roster.BindingSelect.group:type_name -> roster.GroupSelect
+	13, // 27: roster.BindingPatchRequest.ref:type_name -> roster.BindingRef
+	23, // 28: roster.BindingPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	13, // 29: roster.BindingApplyRequest.ref:type_name -> roster.BindingRef
+	26, // 30: roster.BindingApplyRequest.patch:type_name -> patch.Patch
+	20, // 31: roster.BindingListRequest.filters:type_name -> roster.BindingFilter
+	32, // 32: roster.BindingListResponse.items:type_name -> roster.Binding
+	13, // 33: roster.BindingFilter.ref:type_name -> roster.BindingRef
 	0,  // 34: roster.RoleService.Add:input_type -> roster.RoleAddRequest
 	1,  // 35: roster.RoleService.Get:input_type -> roster.RoleGetRequest
 	5,  // 36: roster.RoleService.Patch:input_type -> roster.RolePatchRequest
 	6,  // 37: roster.RoleService.Apply:input_type -> roster.RoleApplyRequest
 	2,  // 38: roster.RoleService.Erase:input_type -> roster.RoleRef
-	7,  // 39: roster.RoleService.List:input_type -> roster.RoleListRequest
-	10, // 40: roster.BindingService.Add:input_type -> roster.BindingAddRequest
-	11, // 41: roster.BindingService.Get:input_type -> roster.BindingGetRequest
-	14, // 42: roster.BindingService.Patch:input_type -> roster.BindingPatchRequest
-	15, // 43: roster.BindingService.Apply:input_type -> roster.BindingApplyRequest
-	12, // 44: roster.BindingService.Erase:input_type -> roster.BindingRef
-	16, // 45: roster.BindingService.List:input_type -> roster.BindingListRequest
-	25, // 46: roster.RoleService.Add:output_type -> roster.Role
-	25, // 47: roster.RoleService.Get:output_type -> roster.Role
-	25, // 48: roster.RoleService.Patch:output_type -> roster.Role
-	25, // 49: roster.RoleService.Apply:output_type -> roster.Role
-	31, // 50: roster.RoleService.Erase:output_type -> google.protobuf.Empty
-	8,  // 51: roster.RoleService.List:output_type -> roster.RoleListResponse
-	30, // 52: roster.BindingService.Add:output_type -> roster.Binding
-	30, // 53: roster.BindingService.Get:output_type -> roster.Binding
-	30, // 54: roster.BindingService.Patch:output_type -> roster.Binding
-	30, // 55: roster.BindingService.Apply:output_type -> roster.Binding
-	31, // 56: roster.BindingService.Erase:output_type -> google.protobuf.Empty
-	17, // 57: roster.BindingService.List:output_type -> roster.BindingListResponse
+	8,  // 39: roster.RoleService.List:input_type -> roster.RoleListRequest
+	11, // 40: roster.BindingService.Add:input_type -> roster.BindingAddRequest
+	12, // 41: roster.BindingService.Get:input_type -> roster.BindingGetRequest
+	15, // 42: roster.BindingService.Patch:input_type -> roster.BindingPatchRequest
+	16, // 43: roster.BindingService.Apply:input_type -> roster.BindingApplyRequest
+	13, // 44: roster.BindingService.Erase:input_type -> roster.BindingRef
+	18, // 45: roster.BindingService.List:input_type -> roster.BindingListRequest
+	27, // 46: roster.RoleService.Add:output_type -> roster.Role
+	27, // 47: roster.RoleService.Get:output_type -> roster.Role
+	27, // 48: roster.RoleService.Patch:output_type -> roster.Role
+	27, // 49: roster.RoleService.Apply:output_type -> roster.Role
+	7,  // 50: roster.RoleService.Erase:output_type -> roster.RoleEraseResponse
+	9,  // 51: roster.RoleService.List:output_type -> roster.RoleListResponse
+	32, // 52: roster.BindingService.Add:output_type -> roster.Binding
+	32, // 53: roster.BindingService.Get:output_type -> roster.Binding
+	32, // 54: roster.BindingService.Patch:output_type -> roster.Binding
+	32, // 55: roster.BindingService.Apply:output_type -> roster.Binding
+	17, // 56: roster.BindingService.Erase:output_type -> roster.BindingEraseResponse
+	19, // 57: roster.BindingService.List:output_type -> roster.BindingListResponse
 	46, // [46:58] is the sub-list for method output_type
 	34, // [34:46] is the sub-list for method input_type
 	34, // [34:34] is the sub-list for extension type_name
@@ -2910,7 +3074,7 @@ func file_app_role_svc_g_proto_init() {
 		(*roleRef_Id)(nil),
 		(*roleRef_Alias)(nil),
 	}
-	file_app_role_svc_g_proto_msgTypes[12].OneofWrappers = []any{
+	file_app_role_svc_g_proto_msgTypes[13].OneofWrappers = []any{
 		(*bindingRef_Id)(nil),
 	}
 	type x struct{}
@@ -2919,7 +3083,7 @@ func file_app_role_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_role_svc_g_proto_rawDesc), len(file_app_role_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   19,
+			NumMessages:   21,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

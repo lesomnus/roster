@@ -18,7 +18,6 @@ import (
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 type HolderServiceServer struct {
@@ -432,7 +431,7 @@ func (s HolderServiceServer) apply(ctx context.Context, ref *rstr.HolderRef, doc
 	return out, nil
 }
 
-func (s HolderServiceServer) Erase(ctx context.Context, req *rstr.HolderRef) (*emptypb.Empty, error) {
+func (s HolderServiceServer) Erase(ctx context.Context, req *rstr.HolderRef) (*rstr.HolderEraseResponse, error) {
 	p, err := HolderPick(req)
 	if err != nil {
 		return nil, err
@@ -456,13 +455,13 @@ func (s HolderServiceServer) Erase(ctx context.Context, req *rstr.HolderRef) (*e
 		v, err := st.Db.Holder.Query().Where(p).OnlyID(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
-				return &emptypb.Empty{}, nil
+				return &rstr.HolderEraseResponse{}, nil
 			}
 			return nil, err
 		}
 
 		k = v
-		p = holder.IDEQ(v)
+		p = holder.And(p, holder.IDEQ(v))
 	}
 
 	u := st.Db.Holder.Update().Where(p)
@@ -483,7 +482,10 @@ func (s HolderServiceServer) Erase(ctx context.Context, req *rstr.HolderRef) (*e
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return &emptypb.Empty{}, nil
+	res := &rstr.HolderEraseResponse{}
+	res.SetErased(n > 0)
+
+	return res, nil
 }
 
 // HolderPick answers with the predicate this reference selects on,

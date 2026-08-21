@@ -2,7 +2,6 @@ edition = "2023";
 package roster;
 
 import "app/connection.proto";
-import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "patch/patch.proto";
 import "roster/payday/tenant_svc.g.proto";
@@ -19,7 +18,7 @@ service ConnectionService {
   // Apply applies a patch document to an existing Connection
   rpc Apply(ConnectionApplyRequest) returns (Connection);
   // Erase deletes a Connection
-  rpc Erase(ConnectionRef) returns (google.protobuf.Empty);
+  rpc Erase(ConnectionRef) returns (ConnectionEraseResponse);
   // List reads Connections a page at a time.
   rpc List(ConnectionListRequest) returns (ConnectionListResponse);
 }
@@ -94,6 +93,15 @@ message ConnectionPatchRequest {
 message ConnectionApplyRequest {
   ConnectionRef ref = 1;
   patch.Patch patch = 2;
+}
+
+message ConnectionEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
 }
 
 message ConnectionListRequest {

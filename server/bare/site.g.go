@@ -18,7 +18,6 @@ import (
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 type SiteServiceServer struct {
@@ -402,7 +401,7 @@ func (s SiteServiceServer) apply(ctx context.Context, ref *rstr.SiteRef, doc *pa
 	return out, nil
 }
 
-func (s SiteServiceServer) Erase(ctx context.Context, req *rstr.SiteRef) (*emptypb.Empty, error) {
+func (s SiteServiceServer) Erase(ctx context.Context, req *rstr.SiteRef) (*rstr.SiteEraseResponse, error) {
 	p, err := SitePick(req)
 	if err != nil {
 		return nil, err
@@ -426,13 +425,13 @@ func (s SiteServiceServer) Erase(ctx context.Context, req *rstr.SiteRef) (*empty
 		v, err := st.Db.Site.Query().Where(p).OnlyID(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
-				return &emptypb.Empty{}, nil
+				return &rstr.SiteEraseResponse{}, nil
 			}
 			return nil, err
 		}
 
 		k = v
-		p = site.IDEQ(v)
+		p = site.And(p, site.IDEQ(v))
 	}
 
 	u := st.Db.Site.Update().Where(p)
@@ -453,7 +452,10 @@ func (s SiteServiceServer) Erase(ctx context.Context, req *rstr.SiteRef) (*empty
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return &emptypb.Empty{}, nil
+	res := &rstr.SiteEraseResponse{}
+	res.SetErased(n > 0)
+
+	return res, nil
 }
 
 // SitePick answers with the predicate this reference selects on,

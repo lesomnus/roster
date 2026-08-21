@@ -11,7 +11,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -42,7 +41,7 @@ type CredentialServiceClient interface {
 	// Apply applies a patch document to an existing Credential
 	Apply(ctx context.Context, in *CredentialApplyRequest, opts ...grpc.CallOption) (*Credential, error)
 	// Erase deletes a Credential
-	Erase(ctx context.Context, in *CredentialRef, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Erase(ctx context.Context, in *CredentialRef, opts ...grpc.CallOption) (*CredentialEraseResponse, error)
 	// List reads Credentials a page at a time.
 	List(ctx context.Context, in *CredentialListRequest, opts ...grpc.CallOption) (*CredentialListResponse, error)
 	// Watch the Credentials this caller may see, as they are now and as they change.
@@ -107,9 +106,9 @@ func (c *credentialServiceClient) Apply(ctx context.Context, in *CredentialApply
 	return out, nil
 }
 
-func (c *credentialServiceClient) Erase(ctx context.Context, in *CredentialRef, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *credentialServiceClient) Erase(ctx context.Context, in *CredentialRef, opts ...grpc.CallOption) (*CredentialEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
+	out := new(CredentialEraseResponse)
 	err := c.cc.Invoke(ctx, CredentialService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -159,7 +158,7 @@ type CredentialServiceServer interface {
 	// Apply applies a patch document to an existing Credential
 	Apply(context.Context, *CredentialApplyRequest) (*Credential, error)
 	// Erase deletes a Credential
-	Erase(context.Context, *CredentialRef) (*emptypb.Empty, error)
+	Erase(context.Context, *CredentialRef) (*CredentialEraseResponse, error)
 	// List reads Credentials a page at a time.
 	List(context.Context, *CredentialListRequest) (*CredentialListResponse, error)
 	// Watch the Credentials this caller may see, as they are now and as they change.
@@ -196,7 +195,7 @@ func (UnimplementedCredentialServiceServer) Patch(context.Context, *CredentialPa
 func (UnimplementedCredentialServiceServer) Apply(context.Context, *CredentialApplyRequest) (*Credential, error) {
 	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
-func (UnimplementedCredentialServiceServer) Erase(context.Context, *CredentialRef) (*emptypb.Empty, error) {
+func (UnimplementedCredentialServiceServer) Erase(context.Context, *CredentialRef) (*CredentialEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedCredentialServiceServer) List(context.Context, *CredentialListRequest) (*CredentialListResponse, error) {

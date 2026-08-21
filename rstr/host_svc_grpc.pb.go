@@ -11,7 +11,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -41,7 +40,7 @@ type HostServiceClient interface {
 	// Apply applies a patch document to an existing Host
 	Apply(ctx context.Context, in *HostApplyRequest, opts ...grpc.CallOption) (*Host, error)
 	// Erase deletes a Host
-	Erase(ctx context.Context, in *HostRef, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Erase(ctx context.Context, in *HostRef, opts ...grpc.CallOption) (*HostEraseResponse, error)
 	// List reads Hosts a page at a time.
 	List(ctx context.Context, in *HostListRequest, opts ...grpc.CallOption) (*HostListResponse, error)
 }
@@ -94,9 +93,9 @@ func (c *hostServiceClient) Apply(ctx context.Context, in *HostApplyRequest, opt
 	return out, nil
 }
 
-func (c *hostServiceClient) Erase(ctx context.Context, in *HostRef, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *hostServiceClient) Erase(ctx context.Context, in *HostRef, opts ...grpc.CallOption) (*HostEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
+	out := new(HostEraseResponse)
 	err := c.cc.Invoke(ctx, HostService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -127,7 +126,7 @@ type HostServiceServer interface {
 	// Apply applies a patch document to an existing Host
 	Apply(context.Context, *HostApplyRequest) (*Host, error)
 	// Erase deletes a Host
-	Erase(context.Context, *HostRef) (*emptypb.Empty, error)
+	Erase(context.Context, *HostRef) (*HostEraseResponse, error)
 	// List reads Hosts a page at a time.
 	List(context.Context, *HostListRequest) (*HostListResponse, error)
 	mustEmbedUnimplementedHostServiceServer()
@@ -152,7 +151,7 @@ func (UnimplementedHostServiceServer) Patch(context.Context, *HostPatchRequest) 
 func (UnimplementedHostServiceServer) Apply(context.Context, *HostApplyRequest) (*Host, error) {
 	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
-func (UnimplementedHostServiceServer) Erase(context.Context, *HostRef) (*emptypb.Empty, error) {
+func (UnimplementedHostServiceServer) Erase(context.Context, *HostRef) (*HostEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedHostServiceServer) List(context.Context, *HostListRequest) (*HostListResponse, error) {
@@ -345,7 +344,7 @@ type MailDomainServiceClient interface {
 	// Apply applies a patch document to an existing MailDomain
 	Apply(ctx context.Context, in *MailDomainApplyRequest, opts ...grpc.CallOption) (*MailDomain, error)
 	// Erase deletes a MailDomain
-	Erase(ctx context.Context, in *MailDomainRef, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Erase(ctx context.Context, in *MailDomainRef, opts ...grpc.CallOption) (*MailDomainEraseResponse, error)
 	// List reads MailDomains a page at a time.
 	List(ctx context.Context, in *MailDomainListRequest, opts ...grpc.CallOption) (*MailDomainListResponse, error)
 }
@@ -398,9 +397,9 @@ func (c *mailDomainServiceClient) Apply(ctx context.Context, in *MailDomainApply
 	return out, nil
 }
 
-func (c *mailDomainServiceClient) Erase(ctx context.Context, in *MailDomainRef, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *mailDomainServiceClient) Erase(ctx context.Context, in *MailDomainRef, opts ...grpc.CallOption) (*MailDomainEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
+	out := new(MailDomainEraseResponse)
 	err := c.cc.Invoke(ctx, MailDomainService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -431,7 +430,7 @@ type MailDomainServiceServer interface {
 	// Apply applies a patch document to an existing MailDomain
 	Apply(context.Context, *MailDomainApplyRequest) (*MailDomain, error)
 	// Erase deletes a MailDomain
-	Erase(context.Context, *MailDomainRef) (*emptypb.Empty, error)
+	Erase(context.Context, *MailDomainRef) (*MailDomainEraseResponse, error)
 	// List reads MailDomains a page at a time.
 	List(context.Context, *MailDomainListRequest) (*MailDomainListResponse, error)
 	mustEmbedUnimplementedMailDomainServiceServer()
@@ -456,7 +455,7 @@ func (UnimplementedMailDomainServiceServer) Patch(context.Context, *MailDomainPa
 func (UnimplementedMailDomainServiceServer) Apply(context.Context, *MailDomainApplyRequest) (*MailDomain, error) {
 	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
-func (UnimplementedMailDomainServiceServer) Erase(context.Context, *MailDomainRef) (*emptypb.Empty, error) {
+func (UnimplementedMailDomainServiceServer) Erase(context.Context, *MailDomainRef) (*MailDomainEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedMailDomainServiceServer) List(context.Context, *MailDomainListRequest) (*MailDomainListResponse, error) {

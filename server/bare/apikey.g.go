@@ -18,7 +18,6 @@ import (
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 type ApiKeyServiceServer struct {
@@ -414,7 +413,7 @@ func (s ApiKeyServiceServer) apply(ctx context.Context, ref *rstr.ApiKeyRef, doc
 	return out, nil
 }
 
-func (s ApiKeyServiceServer) Erase(ctx context.Context, req *rstr.ApiKeyRef) (*emptypb.Empty, error) {
+func (s ApiKeyServiceServer) Erase(ctx context.Context, req *rstr.ApiKeyRef) (*rstr.ApiKeyEraseResponse, error) {
 	p, err := ApiKeyPick(req)
 	if err != nil {
 		return nil, err
@@ -438,13 +437,13 @@ func (s ApiKeyServiceServer) Erase(ctx context.Context, req *rstr.ApiKeyRef) (*e
 		v, err := st.Db.ApiKey.Query().Where(p).OnlyID(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
-				return &emptypb.Empty{}, nil
+				return &rstr.ApiKeyEraseResponse{}, nil
 			}
 			return nil, err
 		}
 
 		k = v
-		p = apikey.IDEQ(v)
+		p = apikey.And(p, apikey.IDEQ(v))
 	}
 
 	u := st.Db.ApiKey.Update().Where(p)
@@ -465,7 +464,10 @@ func (s ApiKeyServiceServer) Erase(ctx context.Context, req *rstr.ApiKeyRef) (*e
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return &emptypb.Empty{}, nil
+	res := &rstr.ApiKeyEraseResponse{}
+	res.SetErased(n > 0)
+
+	return res, nil
 }
 
 // ApiKeyPick answers with the predicate this reference selects on,

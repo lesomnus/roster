@@ -4,7 +4,6 @@ package roster;
 import "app/group_svc.g.proto";
 import "app/role.proto";
 import "app/site_svc.g.proto";
-import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "patch/patch.proto";
 import "roster/payday/holder_svc.g.proto";
@@ -22,7 +21,7 @@ service RoleService {
   // Apply applies a patch document to an existing Role
   rpc Apply(RoleApplyRequest) returns (Role);
   // Erase deletes a Role
-  rpc Erase(RoleRef) returns (google.protobuf.Empty);
+  rpc Erase(RoleRef) returns (RoleEraseResponse);
   // List reads Roles a page at a time.
   rpc List(RoleListRequest) returns (RoleListResponse);
 }
@@ -37,7 +36,7 @@ service BindingService {
   // Apply applies a patch document to an existing Binding
   rpc Apply(BindingApplyRequest) returns (Binding);
   // Erase deletes a Binding
-  rpc Erase(BindingRef) returns (google.protobuf.Empty);
+  rpc Erase(BindingRef) returns (BindingEraseResponse);
   // List reads Bindings a page at a time.
   rpc List(BindingListRequest) returns (BindingListResponse);
 }
@@ -108,6 +107,15 @@ message RolePatchRequest {
 message RoleApplyRequest {
   RoleRef ref = 1;
   patch.Patch patch = 2;
+}
+
+message RoleEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
 }
 
 message RoleListRequest {
@@ -196,6 +204,15 @@ message BindingPatchRequest {
 message BindingApplyRequest {
   BindingRef ref = 1;
   patch.Patch patch = 2;
+}
+
+message BindingEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
 }
 
 message BindingListRequest {

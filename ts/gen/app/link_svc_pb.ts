@@ -6,8 +6,8 @@ import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegen
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Link, LinkSchema } from "./link_pb.js";
 import { file_app_link } from "./link_pb.js";
-import type { EmptySchema, Timestamp } from "@bufbuild/protobuf/wkt";
-import { file_google_protobuf_empty, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Patch } from "../patch/patch_pb.js";
 import { file_patch_patch } from "../patch/patch_pb.js";
 import type { HolderRef, HolderSelect } from "../roster/payday/holder_svc_pb.js";
@@ -18,7 +18,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/link_svc.g.proto.
  */
 export const file_app_link_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcHAvbGlua19zdmMuZy5wcm90bxIGcm9zdGVyItEBCg5MaW5rQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhUKBnNlY3JldBgJIAEoDEIFqgECCAISFQoGaXNzdWVyGAogASgMQgWqAQIIAhIwCgxkYXRlX2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiUgoOTGlua0dldFJlcXVlc3QSHAoDcmVmGAEgASgLMg8ucm9zdGVyLkxpbmtSZWYSIgoGc2VsZWN0GAIgASgLMhIucm9zdGVyLkxpbmtTZWxlY3QiMAoHTGlua1JlZhIMCgJpZBgBIAEoDEgAEhAKBnNlY3JldBgJIAEoDEgAQgUKA2tleSK2AQoKTGlua1NlbGVjdBILCgNhbGwYASABKAgSJAoGaG9sZGVyGAIgASgLMhQucm9zdGVyLkhvbGRlclNlbGVjdBIOCgZzZWNyZXQYCSABKAgSDgoGaXNzdWVyGAogASgIEhQKDGRhdGVfZXhwaXJlcxgLIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIn4KEExpbmtQYXRjaFJlcXVlc3QSHAoDcmVmGAEgASgLMg8ucm9zdGVyLkxpbmtSZWYSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiTQoQTGlua0FwcGx5UmVxdWVzdBIcCgNyZWYYASABKAsyDy5yb3N0ZXIuTGlua1JlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoImEKD0xpbmtMaXN0UmVxdWVzdBIjCgdmaWx0ZXJzGAEgAygLMhIucm9zdGVyLkxpbmtGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIkQKEExpbmtMaXN0UmVzcG9uc2USGwoFaXRlbXMYASADKAsyDC5yb3N0ZXIuTGluaxITCgRuZXh0GAIgASgJQgWqAQIIAiIqCgpMaW5rRmlsdGVyEhwKA3JlZhgBIAEoCzIPLnJvc3Rlci5MaW5rUmVmMrYCCgtMaW5rU2VydmljZRIrCgNBZGQSFi5yb3N0ZXIuTGlua0FkZFJlcXVlc3QaDC5yb3N0ZXIuTGluaxIrCgNHZXQSFi5yb3N0ZXIuTGlua0dldFJlcXVlc3QaDC5yb3N0ZXIuTGluaxIvCgVQYXRjaBIYLnJvc3Rlci5MaW5rUGF0Y2hSZXF1ZXN0Ggwucm9zdGVyLkxpbmsSLwoFQXBwbHkSGC5yb3N0ZXIuTGlua0FwcGx5UmVxdWVzdBoMLnJvc3Rlci5MaW5rEjAKBUVyYXNlEg8ucm9zdGVyLkxpbmtSZWYaFi5nb29nbGUucHJvdG9idWYuRW1wdHkSOQoETGlzdBIXLnJvc3Rlci5MaW5rTGlzdFJlcXVlc3QaGC5yb3N0ZXIuTGlua0xpc3RSZXNwb25zZUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_link, file_google_protobuf_empty, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChRhcHAvbGlua19zdmMuZy5wcm90bxIGcm9zdGVyItEBCg5MaW5rQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhUKBnNlY3JldBgJIAEoDEIFqgECCAISFQoGaXNzdWVyGAogASgMQgWqAQIIAhIwCgxkYXRlX2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiUgoOTGlua0dldFJlcXVlc3QSHAoDcmVmGAEgASgLMg8ucm9zdGVyLkxpbmtSZWYSIgoGc2VsZWN0GAIgASgLMhIucm9zdGVyLkxpbmtTZWxlY3QiMAoHTGlua1JlZhIMCgJpZBgBIAEoDEgAEhAKBnNlY3JldBgJIAEoDEgAQgUKA2tleSK2AQoKTGlua1NlbGVjdBILCgNhbGwYASABKAgSJAoGaG9sZGVyGAIgASgLMhQucm9zdGVyLkhvbGRlclNlbGVjdBIOCgZzZWNyZXQYCSABKAgSDgoGaXNzdWVyGAogASgIEhQKDGRhdGVfZXhwaXJlcxgLIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIn4KEExpbmtQYXRjaFJlcXVlc3QSHAoDcmVmGAEgASgLMg8ucm9zdGVyLkxpbmtSZWYSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiTQoQTGlua0FwcGx5UmVxdWVzdBIcCgNyZWYYASABKAsyDy5yb3N0ZXIuTGlua1JlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIiMKEUxpbmtFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCJhCg9MaW5rTGlzdFJlcXVlc3QSIwoHZmlsdGVycxgBIAMoCzISLnJvc3Rlci5MaW5rRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAiJEChBMaW5rTGlzdFJlc3BvbnNlEhsKBWl0ZW1zGAEgAygLMgwucm9zdGVyLkxpbmsSEwoEbmV4dBgCIAEoCUIFqgECCAIiKgoKTGlua0ZpbHRlchIcCgNyZWYYASABKAsyDy5yb3N0ZXIuTGlua1JlZjK5AgoLTGlua1NlcnZpY2USKwoDQWRkEhYucm9zdGVyLkxpbmtBZGRSZXF1ZXN0Ggwucm9zdGVyLkxpbmsSKwoDR2V0EhYucm9zdGVyLkxpbmtHZXRSZXF1ZXN0Ggwucm9zdGVyLkxpbmsSLwoFUGF0Y2gSGC5yb3N0ZXIuTGlua1BhdGNoUmVxdWVzdBoMLnJvc3Rlci5MaW5rEi8KBUFwcGx5Ehgucm9zdGVyLkxpbmtBcHBseVJlcXVlc3QaDC5yb3N0ZXIuTGluaxIzCgVFcmFzZRIPLnJvc3Rlci5MaW5rUmVmGhkucm9zdGVyLkxpbmtFcmFzZVJlc3BvbnNlEjkKBExpc3QSFy5yb3N0ZXIuTGlua0xpc3RSZXF1ZXN0Ghgucm9zdGVyLkxpbmtMaXN0UmVzcG9uc2VCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_link, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.LinkAddRequest
@@ -229,6 +229,29 @@ export const LinkApplyRequestSchema: GenMessage<LinkApplyRequest> = /*@__PURE__*
   messageDesc(file_app_link_svc_g, 5);
 
 /**
+ * @generated from message roster.LinkEraseResponse
+ */
+export type LinkEraseResponse = Message<"roster.LinkEraseResponse"> & {
+  /**
+   * Erased is whether this call is the one that erased the row.
+   *
+   * False for a row that was already gone, was never there, or is out
+   * of this caller's reach -- which are one answer on purpose, and the
+   * reason the RPC does not fail instead.
+   *
+   * @generated from field: bool erased = 1;
+   */
+  erased: boolean;
+};
+
+/**
+ * Describes the message roster.LinkEraseResponse.
+ * Use `create(LinkEraseResponseSchema)` to create a new message.
+ */
+export const LinkEraseResponseSchema: GenMessage<LinkEraseResponse> = /*@__PURE__*/
+  messageDesc(file_app_link_svc_g, 6);
+
+/**
  * @generated from message roster.LinkListRequest
  */
 export type LinkListRequest = Message<"roster.LinkListRequest"> & {
@@ -265,7 +288,7 @@ export type LinkListRequest = Message<"roster.LinkListRequest"> & {
  * Use `create(LinkListRequestSchema)` to create a new message.
  */
 export const LinkListRequestSchema: GenMessage<LinkListRequest> = /*@__PURE__*/
-  messageDesc(file_app_link_svc_g, 6);
+  messageDesc(file_app_link_svc_g, 7);
 
 /**
  * @generated from message roster.LinkListResponse
@@ -295,7 +318,7 @@ export type LinkListResponse = Message<"roster.LinkListResponse"> & {
  * Use `create(LinkListResponseSchema)` to create a new message.
  */
 export const LinkListResponseSchema: GenMessage<LinkListResponse> = /*@__PURE__*/
-  messageDesc(file_app_link_svc_g, 7);
+  messageDesc(file_app_link_svc_g, 8);
 
 /**
  * @generated from message roster.LinkFilter
@@ -312,7 +335,7 @@ export type LinkFilter = Message<"roster.LinkFilter"> & {
  * Use `create(LinkFilterSchema)` to create a new message.
  */
 export const LinkFilterSchema: GenMessage<LinkFilter> = /*@__PURE__*/
-  messageDesc(file_app_link_svc_g, 8);
+  messageDesc(file_app_link_svc_g, 9);
 
 /**
  * @generated from service roster.LinkService
@@ -366,7 +389,7 @@ export const LinkService: GenService<{
   erase: {
     methodKind: "unary";
     input: typeof LinkRefSchema;
-    output: typeof EmptySchema;
+    output: typeof LinkEraseResponseSchema;
   },
   /**
    * List reads Links a page at a time.

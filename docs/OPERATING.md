@@ -646,6 +646,21 @@ process's** broker and deletes the rows it read — so with several replicas
 draining one queue, whichever gets there first tells its own subscribers and
 nobody else's. Durability, not fan-out.
 
+### Testing against the database you actually run
+
+The suite is SQLite unless `PDTEST_POSTGRES` names a server, and the two
+disagree in the direction that hides mistakes: a second concurrent writer gets
+`database is locked` on SQLite and dies, which makes a missing once-only
+guarantee look like a working one. PLAN.md D34 is what that hid.
+
+```sh
+PDTEST_POSTGRES=postgres://roster:...@localhost:5432/roster?sslmode=disable \
+  go test ./... -count=1
+```
+
+Worth running before anything that touches spending a handle -- a continuation,
+a link, a delegation.
+
 ### The rest of the checklist
 
 - **Both planes on a shared database.** The driver is named by what registers

@@ -11,7 +11,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -42,7 +41,7 @@ type IdentityServiceClient interface {
 	// Apply applies a patch document to an existing Identity
 	Apply(ctx context.Context, in *IdentityApplyRequest, opts ...grpc.CallOption) (*Identity, error)
 	// Erase deletes a Identity
-	Erase(ctx context.Context, in *IdentityRef, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Erase(ctx context.Context, in *IdentityRef, opts ...grpc.CallOption) (*IdentityEraseResponse, error)
 	// List reads Identitys a page at a time.
 	List(ctx context.Context, in *IdentityListRequest, opts ...grpc.CallOption) (*IdentityListResponse, error)
 	// Watch the Identitys this caller may see, as they are now and as they change.
@@ -107,9 +106,9 @@ func (c *identityServiceClient) Apply(ctx context.Context, in *IdentityApplyRequ
 	return out, nil
 }
 
-func (c *identityServiceClient) Erase(ctx context.Context, in *IdentityRef, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *identityServiceClient) Erase(ctx context.Context, in *IdentityRef, opts ...grpc.CallOption) (*IdentityEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
+	out := new(IdentityEraseResponse)
 	err := c.cc.Invoke(ctx, IdentityService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -159,7 +158,7 @@ type IdentityServiceServer interface {
 	// Apply applies a patch document to an existing Identity
 	Apply(context.Context, *IdentityApplyRequest) (*Identity, error)
 	// Erase deletes a Identity
-	Erase(context.Context, *IdentityRef) (*emptypb.Empty, error)
+	Erase(context.Context, *IdentityRef) (*IdentityEraseResponse, error)
 	// List reads Identitys a page at a time.
 	List(context.Context, *IdentityListRequest) (*IdentityListResponse, error)
 	// Watch the Identitys this caller may see, as they are now and as they change.
@@ -196,7 +195,7 @@ func (UnimplementedIdentityServiceServer) Patch(context.Context, *IdentityPatchR
 func (UnimplementedIdentityServiceServer) Apply(context.Context, *IdentityApplyRequest) (*Identity, error) {
 	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
-func (UnimplementedIdentityServiceServer) Erase(context.Context, *IdentityRef) (*emptypb.Empty, error) {
+func (UnimplementedIdentityServiceServer) Erase(context.Context, *IdentityRef) (*IdentityEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedIdentityServiceServer) List(context.Context, *IdentityListRequest) (*IdentityListResponse, error) {

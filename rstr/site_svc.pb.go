@@ -10,7 +10,6 @@ import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	unsafe "unsafe"
@@ -1226,6 +1225,86 @@ func (b0 SiteApplyRequest_builder) Build() *SiteApplyRequest {
 	return m0
 }
 
+type SiteEraseResponse struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *SiteEraseResponse) Reset() {
+	*x = SiteEraseResponse{}
+	mi := &file_app_site_svc_g_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SiteEraseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SiteEraseResponse) ProtoMessage() {}
+
+func (x *SiteEraseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_app_site_svc_g_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SiteEraseResponse) GetErased() bool {
+	if x != nil {
+		return x.xxx_hidden_Erased
+	}
+	return false
+}
+
+func (x *SiteEraseResponse) SetErased(v bool) {
+	x.xxx_hidden_Erased = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+}
+
+func (x *SiteEraseResponse) HasErased() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *SiteEraseResponse) ClearErased() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Erased = false
+}
+
+type SiteEraseResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Erased is whether this call is the one that erased the row.
+	//
+	// False for a row that was already gone, was never there, or is out
+	// of this caller's reach -- which are one answer on purpose, and the
+	// reason the RPC does not fail instead.
+	Erased *bool
+}
+
+func (b0 SiteEraseResponse_builder) Build() *SiteEraseResponse {
+	m0 := &SiteEraseResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Erased != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		x.xxx_hidden_Erased = *b.Erased
+	}
+	return m0
+}
+
 type SiteListRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*SiteFilter         `protobuf:"bytes,1,rep,name=filters"`
@@ -1237,7 +1316,7 @@ type SiteListRequest struct {
 
 func (x *SiteListRequest) Reset() {
 	*x = SiteListRequest{}
-	mi := &file_app_site_svc_g_proto_msgTypes[7]
+	mi := &file_app_site_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1249,7 +1328,7 @@ func (x *SiteListRequest) String() string {
 func (*SiteListRequest) ProtoMessage() {}
 
 func (x *SiteListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_site_svc_g_proto_msgTypes[7]
+	mi := &file_app_site_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1332,7 +1411,7 @@ type SiteListResponse struct {
 
 func (x *SiteListResponse) Reset() {
 	*x = SiteListResponse{}
-	mi := &file_app_site_svc_g_proto_msgTypes[8]
+	mi := &file_app_site_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1344,7 +1423,7 @@ func (x *SiteListResponse) String() string {
 func (*SiteListResponse) ProtoMessage() {}
 
 func (x *SiteListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_site_svc_g_proto_msgTypes[8]
+	mi := &file_app_site_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1411,7 +1490,7 @@ type SiteFilter struct {
 
 func (x *SiteFilter) Reset() {
 	*x = SiteFilter{}
-	mi := &file_app_site_svc_g_proto_msgTypes[9]
+	mi := &file_app_site_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1423,7 +1502,7 @@ func (x *SiteFilter) String() string {
 func (*SiteFilter) ProtoMessage() {}
 
 func (x *SiteFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_app_site_svc_g_proto_msgTypes[9]
+	mi := &file_app_site_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1480,7 +1559,7 @@ type SiteWatchRequest struct {
 
 func (x *SiteWatchRequest) Reset() {
 	*x = SiteWatchRequest{}
-	mi := &file_app_site_svc_g_proto_msgTypes[10]
+	mi := &file_app_site_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1492,7 +1571,7 @@ func (x *SiteWatchRequest) String() string {
 func (*SiteWatchRequest) ProtoMessage() {}
 
 func (x *SiteWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_site_svc_g_proto_msgTypes[10]
+	mi := &file_app_site_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1564,7 +1643,7 @@ type SiteWatchResponse struct {
 
 func (x *SiteWatchResponse) Reset() {
 	*x = SiteWatchResponse{}
-	mi := &file_app_site_svc_g_proto_msgTypes[11]
+	mi := &file_app_site_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1576,7 +1655,7 @@ func (x *SiteWatchResponse) String() string {
 func (*SiteWatchResponse) ProtoMessage() {}
 
 func (x *SiteWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_site_svc_g_proto_msgTypes[11]
+	mi := &file_app_site_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1628,7 +1707,7 @@ type SiteWatchItem struct {
 
 func (x *SiteWatchItem) Reset() {
 	*x = SiteWatchItem{}
-	mi := &file_app_site_svc_g_proto_msgTypes[12]
+	mi := &file_app_site_svc_g_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1640,7 +1719,7 @@ func (x *SiteWatchItem) String() string {
 func (*SiteWatchItem) ProtoMessage() {}
 
 func (x *SiteWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_app_site_svc_g_proto_msgTypes[12]
+	mi := &file_app_site_svc_g_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1753,7 +1832,7 @@ var File_app_site_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_site_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/site_svc.g.proto\x12\x06roster\x1a\x0eapp/site.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/tenant_svc.g.proto\"\xd4\x02\n" +
+	"\x14app/site_svc.g.proto\x12\x06roster\x1a\x0eapp/site.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/tenant_svc.g.proto\"\xd4\x02\n" +
 	"\x0eSiteAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x1b\n" +
@@ -1801,7 +1880,9 @@ const file_app_site_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"Y\n" +
 	"\x10SiteApplyRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.roster.SiteRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"w\n" +
+	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"+\n" +
+	"\x11SiteEraseResponse\x12\x16\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"w\n" +
 	"\x0fSiteListRequest\x12,\n" +
 	"\afilters\x18\x01 \x03(\v2\x12.roster.SiteFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
@@ -1820,17 +1901,17 @@ const file_app_site_svc_g_proto_rawDesc = "" +
 	"\rSiteWatchItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\"\n" +
 	"\x05value\x18\x02 \x01(\v2\f.roster.SiteR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action2\xf6\x02\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action2\xf9\x02\n" +
 	"\vSiteService\x12+\n" +
 	"\x03Add\x12\x16.roster.SiteAddRequest\x1a\f.roster.Site\x12+\n" +
 	"\x03Get\x12\x16.roster.SiteGetRequest\x1a\f.roster.Site\x12/\n" +
 	"\x05Patch\x12\x18.roster.SitePatchRequest\x1a\f.roster.Site\x12/\n" +
-	"\x05Apply\x12\x18.roster.SiteApplyRequest\x1a\f.roster.Site\x120\n" +
-	"\x05Erase\x12\x0f.roster.SiteRef\x1a\x16.google.protobuf.Empty\x129\n" +
+	"\x05Apply\x12\x18.roster.SiteApplyRequest\x1a\f.roster.Site\x123\n" +
+	"\x05Erase\x12\x0f.roster.SiteRef\x1a\x19.roster.SiteEraseResponse\x129\n" +
 	"\x04List\x12\x17.roster.SiteListRequest\x1a\x18.roster.SiteListResponse\x12>\n" +
 	"\x05Watch\x12\x18.roster.SiteWatchRequest\x1a\x19.roster.SiteWatchResponse0\x01B!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_site_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_app_site_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_app_site_svc_g_proto_goTypes = []any{
 	(*SiteAddRequest)(nil),        // 0: roster.SiteAddRequest
 	(*SiteGetRequest)(nil),        // 1: roster.SiteGetRequest
@@ -1839,55 +1920,55 @@ var file_app_site_svc_g_proto_goTypes = []any{
 	(*SiteSelect)(nil),            // 4: roster.SiteSelect
 	(*SitePatchRequest)(nil),      // 5: roster.SitePatchRequest
 	(*SiteApplyRequest)(nil),      // 6: roster.SiteApplyRequest
-	(*SiteListRequest)(nil),       // 7: roster.SiteListRequest
-	(*SiteListResponse)(nil),      // 8: roster.SiteListResponse
-	(*SiteFilter)(nil),            // 9: roster.SiteFilter
-	(*SiteWatchRequest)(nil),      // 10: roster.SiteWatchRequest
-	(*SiteWatchResponse)(nil),     // 11: roster.SiteWatchResponse
-	(*SiteWatchItem)(nil),         // 12: roster.SiteWatchItem
-	nil,                           // 13: roster.SiteAddRequest.LabelsEntry
-	nil,                           // 14: roster.SitePatchRequest.LabelsEntry
-	(*TenantRef)(nil),             // 15: roster.TenantRef
-	(*timestamppb.Timestamp)(nil), // 16: google.protobuf.Timestamp
-	(*TenantSelect)(nil),          // 17: roster.TenantSelect
-	(*patchpb.Patch)(nil),         // 18: patch.Patch
-	(*Site)(nil),                  // 19: roster.Site
-	(*emptypb.Empty)(nil),         // 20: google.protobuf.Empty
+	(*SiteEraseResponse)(nil),     // 7: roster.SiteEraseResponse
+	(*SiteListRequest)(nil),       // 8: roster.SiteListRequest
+	(*SiteListResponse)(nil),      // 9: roster.SiteListResponse
+	(*SiteFilter)(nil),            // 10: roster.SiteFilter
+	(*SiteWatchRequest)(nil),      // 11: roster.SiteWatchRequest
+	(*SiteWatchResponse)(nil),     // 12: roster.SiteWatchResponse
+	(*SiteWatchItem)(nil),         // 13: roster.SiteWatchItem
+	nil,                           // 14: roster.SiteAddRequest.LabelsEntry
+	nil,                           // 15: roster.SitePatchRequest.LabelsEntry
+	(*TenantRef)(nil),             // 16: roster.TenantRef
+	(*timestamppb.Timestamp)(nil), // 17: google.protobuf.Timestamp
+	(*TenantSelect)(nil),          // 18: roster.TenantSelect
+	(*patchpb.Patch)(nil),         // 19: patch.Patch
+	(*Site)(nil),                  // 20: roster.Site
 }
 var file_app_site_svc_g_proto_depIdxs = []int32{
-	15, // 0: roster.SiteAddRequest.tenant:type_name -> roster.TenantRef
-	13, // 1: roster.SiteAddRequest.labels:type_name -> roster.SiteAddRequest.LabelsEntry
-	16, // 2: roster.SiteAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	16, // 0: roster.SiteAddRequest.tenant:type_name -> roster.TenantRef
+	14, // 1: roster.SiteAddRequest.labels:type_name -> roster.SiteAddRequest.LabelsEntry
+	17, // 2: roster.SiteAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 3: roster.SiteGetRequest.ref:type_name -> roster.SiteRef
 	4,  // 4: roster.SiteGetRequest.select:type_name -> roster.SiteSelect
 	3,  // 5: roster.SiteRef.slug:type_name -> roster.SiteRefBySlug
-	15, // 6: roster.SiteRefBySlug.tenant:type_name -> roster.TenantRef
-	17, // 7: roster.SiteSelect.tenant:type_name -> roster.TenantSelect
+	16, // 6: roster.SiteRefBySlug.tenant:type_name -> roster.TenantRef
+	18, // 7: roster.SiteSelect.tenant:type_name -> roster.TenantSelect
 	2,  // 8: roster.SitePatchRequest.ref:type_name -> roster.SiteRef
-	14, // 9: roster.SitePatchRequest.labels:type_name -> roster.SitePatchRequest.LabelsEntry
-	16, // 10: roster.SitePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	15, // 9: roster.SitePatchRequest.labels:type_name -> roster.SitePatchRequest.LabelsEntry
+	17, // 10: roster.SitePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
 	2,  // 11: roster.SiteApplyRequest.ref:type_name -> roster.SiteRef
-	18, // 12: roster.SiteApplyRequest.patch:type_name -> patch.Patch
-	9,  // 13: roster.SiteListRequest.filters:type_name -> roster.SiteFilter
-	19, // 14: roster.SiteListResponse.items:type_name -> roster.Site
+	19, // 12: roster.SiteApplyRequest.patch:type_name -> patch.Patch
+	10, // 13: roster.SiteListRequest.filters:type_name -> roster.SiteFilter
+	20, // 14: roster.SiteListResponse.items:type_name -> roster.Site
 	2,  // 15: roster.SiteFilter.ref:type_name -> roster.SiteRef
-	9,  // 16: roster.SiteWatchRequest.filters:type_name -> roster.SiteFilter
-	12, // 17: roster.SiteWatchResponse.items:type_name -> roster.SiteWatchItem
-	19, // 18: roster.SiteWatchItem.value:type_name -> roster.Site
+	10, // 16: roster.SiteWatchRequest.filters:type_name -> roster.SiteFilter
+	13, // 17: roster.SiteWatchResponse.items:type_name -> roster.SiteWatchItem
+	20, // 18: roster.SiteWatchItem.value:type_name -> roster.Site
 	0,  // 19: roster.SiteService.Add:input_type -> roster.SiteAddRequest
 	1,  // 20: roster.SiteService.Get:input_type -> roster.SiteGetRequest
 	5,  // 21: roster.SiteService.Patch:input_type -> roster.SitePatchRequest
 	6,  // 22: roster.SiteService.Apply:input_type -> roster.SiteApplyRequest
 	2,  // 23: roster.SiteService.Erase:input_type -> roster.SiteRef
-	7,  // 24: roster.SiteService.List:input_type -> roster.SiteListRequest
-	10, // 25: roster.SiteService.Watch:input_type -> roster.SiteWatchRequest
-	19, // 26: roster.SiteService.Add:output_type -> roster.Site
-	19, // 27: roster.SiteService.Get:output_type -> roster.Site
-	19, // 28: roster.SiteService.Patch:output_type -> roster.Site
-	19, // 29: roster.SiteService.Apply:output_type -> roster.Site
-	20, // 30: roster.SiteService.Erase:output_type -> google.protobuf.Empty
-	8,  // 31: roster.SiteService.List:output_type -> roster.SiteListResponse
-	11, // 32: roster.SiteService.Watch:output_type -> roster.SiteWatchResponse
+	8,  // 24: roster.SiteService.List:input_type -> roster.SiteListRequest
+	11, // 25: roster.SiteService.Watch:input_type -> roster.SiteWatchRequest
+	20, // 26: roster.SiteService.Add:output_type -> roster.Site
+	20, // 27: roster.SiteService.Get:output_type -> roster.Site
+	20, // 28: roster.SiteService.Patch:output_type -> roster.Site
+	20, // 29: roster.SiteService.Apply:output_type -> roster.Site
+	7,  // 30: roster.SiteService.Erase:output_type -> roster.SiteEraseResponse
+	9,  // 31: roster.SiteService.List:output_type -> roster.SiteListResponse
+	12, // 32: roster.SiteService.Watch:output_type -> roster.SiteWatchResponse
 	26, // [26:33] is the sub-list for method output_type
 	19, // [19:26] is the sub-list for method input_type
 	19, // [19:19] is the sub-list for extension type_name
@@ -1912,7 +1993,7 @@ func file_app_site_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_site_svc_g_proto_rawDesc), len(file_app_site_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   15,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

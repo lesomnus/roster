@@ -11,7 +11,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -41,7 +40,7 @@ type GroupServiceClient interface {
 	// Apply applies a patch document to an existing Group
 	Apply(ctx context.Context, in *GroupApplyRequest, opts ...grpc.CallOption) (*Group, error)
 	// Erase deletes a Group
-	Erase(ctx context.Context, in *GroupRef, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Erase(ctx context.Context, in *GroupRef, opts ...grpc.CallOption) (*GroupEraseResponse, error)
 	// List reads Groups a page at a time.
 	List(ctx context.Context, in *GroupListRequest, opts ...grpc.CallOption) (*GroupListResponse, error)
 }
@@ -94,9 +93,9 @@ func (c *groupServiceClient) Apply(ctx context.Context, in *GroupApplyRequest, o
 	return out, nil
 }
 
-func (c *groupServiceClient) Erase(ctx context.Context, in *GroupRef, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *groupServiceClient) Erase(ctx context.Context, in *GroupRef, opts ...grpc.CallOption) (*GroupEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
+	out := new(GroupEraseResponse)
 	err := c.cc.Invoke(ctx, GroupService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -127,7 +126,7 @@ type GroupServiceServer interface {
 	// Apply applies a patch document to an existing Group
 	Apply(context.Context, *GroupApplyRequest) (*Group, error)
 	// Erase deletes a Group
-	Erase(context.Context, *GroupRef) (*emptypb.Empty, error)
+	Erase(context.Context, *GroupRef) (*GroupEraseResponse, error)
 	// List reads Groups a page at a time.
 	List(context.Context, *GroupListRequest) (*GroupListResponse, error)
 	mustEmbedUnimplementedGroupServiceServer()
@@ -152,7 +151,7 @@ func (UnimplementedGroupServiceServer) Patch(context.Context, *GroupPatchRequest
 func (UnimplementedGroupServiceServer) Apply(context.Context, *GroupApplyRequest) (*Group, error) {
 	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
-func (UnimplementedGroupServiceServer) Erase(context.Context, *GroupRef) (*emptypb.Empty, error) {
+func (UnimplementedGroupServiceServer) Erase(context.Context, *GroupRef) (*GroupEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedGroupServiceServer) List(context.Context, *GroupListRequest) (*GroupListResponse, error) {
@@ -345,7 +344,7 @@ type GroupMembershipServiceClient interface {
 	// Apply applies a patch document to an existing GroupMembership
 	Apply(ctx context.Context, in *GroupMembershipApplyRequest, opts ...grpc.CallOption) (*GroupMembership, error)
 	// Erase deletes a GroupMembership
-	Erase(ctx context.Context, in *GroupMembershipRef, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Erase(ctx context.Context, in *GroupMembershipRef, opts ...grpc.CallOption) (*GroupMembershipEraseResponse, error)
 	// List reads GroupMemberships a page at a time.
 	List(ctx context.Context, in *GroupMembershipListRequest, opts ...grpc.CallOption) (*GroupMembershipListResponse, error)
 }
@@ -398,9 +397,9 @@ func (c *groupMembershipServiceClient) Apply(ctx context.Context, in *GroupMembe
 	return out, nil
 }
 
-func (c *groupMembershipServiceClient) Erase(ctx context.Context, in *GroupMembershipRef, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *groupMembershipServiceClient) Erase(ctx context.Context, in *GroupMembershipRef, opts ...grpc.CallOption) (*GroupMembershipEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
+	out := new(GroupMembershipEraseResponse)
 	err := c.cc.Invoke(ctx, GroupMembershipService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -431,7 +430,7 @@ type GroupMembershipServiceServer interface {
 	// Apply applies a patch document to an existing GroupMembership
 	Apply(context.Context, *GroupMembershipApplyRequest) (*GroupMembership, error)
 	// Erase deletes a GroupMembership
-	Erase(context.Context, *GroupMembershipRef) (*emptypb.Empty, error)
+	Erase(context.Context, *GroupMembershipRef) (*GroupMembershipEraseResponse, error)
 	// List reads GroupMemberships a page at a time.
 	List(context.Context, *GroupMembershipListRequest) (*GroupMembershipListResponse, error)
 	mustEmbedUnimplementedGroupMembershipServiceServer()
@@ -456,7 +455,7 @@ func (UnimplementedGroupMembershipServiceServer) Patch(context.Context, *GroupMe
 func (UnimplementedGroupMembershipServiceServer) Apply(context.Context, *GroupMembershipApplyRequest) (*GroupMembership, error) {
 	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
-func (UnimplementedGroupMembershipServiceServer) Erase(context.Context, *GroupMembershipRef) (*emptypb.Empty, error) {
+func (UnimplementedGroupMembershipServiceServer) Erase(context.Context, *GroupMembershipRef) (*GroupMembershipEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedGroupMembershipServiceServer) List(context.Context, *GroupMembershipListRequest) (*GroupMembershipListResponse, error) {

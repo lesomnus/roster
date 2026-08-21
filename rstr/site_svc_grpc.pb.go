@@ -11,7 +11,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -42,7 +41,7 @@ type SiteServiceClient interface {
 	// Apply applies a patch document to an existing Site
 	Apply(ctx context.Context, in *SiteApplyRequest, opts ...grpc.CallOption) (*Site, error)
 	// Erase deletes a Site
-	Erase(ctx context.Context, in *SiteRef, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Erase(ctx context.Context, in *SiteRef, opts ...grpc.CallOption) (*SiteEraseResponse, error)
 	// List reads Sites a page at a time.
 	List(ctx context.Context, in *SiteListRequest, opts ...grpc.CallOption) (*SiteListResponse, error)
 	// Watch the Sites this caller may see, as they are now and as they change.
@@ -107,9 +106,9 @@ func (c *siteServiceClient) Apply(ctx context.Context, in *SiteApplyRequest, opt
 	return out, nil
 }
 
-func (c *siteServiceClient) Erase(ctx context.Context, in *SiteRef, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *siteServiceClient) Erase(ctx context.Context, in *SiteRef, opts ...grpc.CallOption) (*SiteEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
+	out := new(SiteEraseResponse)
 	err := c.cc.Invoke(ctx, SiteService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -159,7 +158,7 @@ type SiteServiceServer interface {
 	// Apply applies a patch document to an existing Site
 	Apply(context.Context, *SiteApplyRequest) (*Site, error)
 	// Erase deletes a Site
-	Erase(context.Context, *SiteRef) (*emptypb.Empty, error)
+	Erase(context.Context, *SiteRef) (*SiteEraseResponse, error)
 	// List reads Sites a page at a time.
 	List(context.Context, *SiteListRequest) (*SiteListResponse, error)
 	// Watch the Sites this caller may see, as they are now and as they change.
@@ -196,7 +195,7 @@ func (UnimplementedSiteServiceServer) Patch(context.Context, *SitePatchRequest) 
 func (UnimplementedSiteServiceServer) Apply(context.Context, *SiteApplyRequest) (*Site, error) {
 	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
-func (UnimplementedSiteServiceServer) Erase(context.Context, *SiteRef) (*emptypb.Empty, error) {
+func (UnimplementedSiteServiceServer) Erase(context.Context, *SiteRef) (*SiteEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedSiteServiceServer) List(context.Context, *SiteListRequest) (*SiteListResponse, error) {

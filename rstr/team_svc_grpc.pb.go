@@ -11,7 +11,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -42,7 +41,7 @@ type TeamServiceClient interface {
 	// Apply applies a patch document to an existing Team
 	Apply(ctx context.Context, in *TeamApplyRequest, opts ...grpc.CallOption) (*Team, error)
 	// Erase deletes a Team
-	Erase(ctx context.Context, in *TeamRef, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Erase(ctx context.Context, in *TeamRef, opts ...grpc.CallOption) (*TeamEraseResponse, error)
 	// List reads Teams a page at a time.
 	List(ctx context.Context, in *TeamListRequest, opts ...grpc.CallOption) (*TeamListResponse, error)
 	// Watch the Teams this caller may see, as they are now and as they change.
@@ -107,9 +106,9 @@ func (c *teamServiceClient) Apply(ctx context.Context, in *TeamApplyRequest, opt
 	return out, nil
 }
 
-func (c *teamServiceClient) Erase(ctx context.Context, in *TeamRef, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *teamServiceClient) Erase(ctx context.Context, in *TeamRef, opts ...grpc.CallOption) (*TeamEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
+	out := new(TeamEraseResponse)
 	err := c.cc.Invoke(ctx, TeamService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -159,7 +158,7 @@ type TeamServiceServer interface {
 	// Apply applies a patch document to an existing Team
 	Apply(context.Context, *TeamApplyRequest) (*Team, error)
 	// Erase deletes a Team
-	Erase(context.Context, *TeamRef) (*emptypb.Empty, error)
+	Erase(context.Context, *TeamRef) (*TeamEraseResponse, error)
 	// List reads Teams a page at a time.
 	List(context.Context, *TeamListRequest) (*TeamListResponse, error)
 	// Watch the Teams this caller may see, as they are now and as they change.
@@ -196,7 +195,7 @@ func (UnimplementedTeamServiceServer) Patch(context.Context, *TeamPatchRequest) 
 func (UnimplementedTeamServiceServer) Apply(context.Context, *TeamApplyRequest) (*Team, error) {
 	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
-func (UnimplementedTeamServiceServer) Erase(context.Context, *TeamRef) (*emptypb.Empty, error) {
+func (UnimplementedTeamServiceServer) Erase(context.Context, *TeamRef) (*TeamEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedTeamServiceServer) List(context.Context, *TeamListRequest) (*TeamListResponse, error) {

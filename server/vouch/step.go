@@ -90,7 +90,7 @@ func (s *Server) step(ctx context.Context, handle, kind, name string, secret []b
 		// learns what is in `satisfied` without reading it, which is the same
 		// fact by a longer route.
 		by.Burn(secret)
-		s.spend(ctx, c)
+		_, _ = s.spend(ctx, c)
 
 		return no(), nil, nil
 	}
@@ -102,13 +102,13 @@ func (s *Server) step(ctx context.Context, handle, kind, name string, secret []b
 		}
 
 		by.Burn(secret)
-		s.spend(ctx, c)
+		_, _ = s.spend(ctx, c)
 
 		return no(), nil, nil
 	}
 
 	if until := v.GetDateLocked(); until != nil && until.AsTime().After(time.Now()) {
-		s.spend(ctx, c)
+		_, _ = s.spend(ctx, c)
 
 		return app.VouchVerifyResponse_builder{LockedUntil: until}.Build(), nil, nil
 	}
@@ -139,15 +139,28 @@ func (s *Server) step(ctx context.Context, handle, kind, name string, secret []b
 			return nil, nil, err
 		}
 
-		s.spend(ctx, c)
+		_, _ = s.spend(ctx, c)
 
 		return res, nil, nil
 	}
 
 	// The old one is spent whatever happens next: single use, and *used* is
 	// *not there*.
-	if err := s.spend(ctx, c); err != nil {
+	//
+	// And **only the caller that spent it** goes on. Everything above this line
+	// is a refusal, where losing the race changes nothing -- the answer is `no`
+	// either way. Below it is the mint, where it changes everything: two
+	// winners are two credentials for one proof.
+	//
+	// It is `no()` and not an error, because that is what every other way of
+	// presenting a handle nobody may spend already answers, and telling them
+	// apart says whether a string was ever a real attempt.
+	won, err := s.spend(ctx, c)
+	if err != nil {
 		return nil, nil, err
+	}
+	if !won {
+		return no(), nil, nil
 	}
 
 	done := append(slices.Clone(c.GetSatisfied()), kindOf(kind))
@@ -333,12 +346,34 @@ func (s *Server) continuation(ctx context.Context, handle string, by pdid.Id) (*
 	return v, nil
 }
 
-// spend erases the attempt, which is the whole of what single-use means here.
-func (s *Server) spend(ctx context.Context, v *app.Continuation) error {
-	_, err := s.open.Continuation().Erase(ctx,
+// spend erases the attempt, and answers whether **this** call is the one that
+// did -- which is the whole of what single-use means here.
+//
+// # It used to answer only whether the statement ran
+//
+// Spending is an erase, and an erase answered nothing. So N callers presenting
+// one handle all read the live row, all compared against the same credential,
+// and all went on to mint: each got an independently revocable credential for
+// that person, and revoking the one somebody knows about left the others.
+//
+// It was not theoretical and it was not rare in the shape that matters -- a
+// browser retrying a submit, or somebody who has the handle. What hid it is
+// that the suite runs on SQLite, where a second writer gets `database is
+// locked` and dies, leaving exactly one winner. On Postgres it reproduced.
+//
+// The answer comes from the row, not from a check before it: the erase is one
+// UPDATE narrowed by `date_erased IS NULL`, so the database decides, and it
+// decides once. `false` is a caller that lost, one whose attempt had already
+// expired or been spent, and one that was never there -- which are one answer
+// on purpose, exactly as the RPC makes them one.
+func (s *Server) spend(ctx context.Context, v *app.Continuation) (bool, error) {
+	res, err := s.open.Continuation().Erase(ctx,
 		app.ContinuationRef_builder{Id: v.GetId()}.Build())
+	if err != nil {
+		return false, err
+	}
 
-	return err
+	return res.GetErased(), nil
 }
 
 // failedAt counts a failure against a credential named by id.

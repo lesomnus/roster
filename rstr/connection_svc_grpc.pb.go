@@ -11,7 +11,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -41,7 +40,7 @@ type ConnectionServiceClient interface {
 	// Apply applies a patch document to an existing Connection
 	Apply(ctx context.Context, in *ConnectionApplyRequest, opts ...grpc.CallOption) (*Connection, error)
 	// Erase deletes a Connection
-	Erase(ctx context.Context, in *ConnectionRef, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	Erase(ctx context.Context, in *ConnectionRef, opts ...grpc.CallOption) (*ConnectionEraseResponse, error)
 	// List reads Connections a page at a time.
 	List(ctx context.Context, in *ConnectionListRequest, opts ...grpc.CallOption) (*ConnectionListResponse, error)
 }
@@ -94,9 +93,9 @@ func (c *connectionServiceClient) Apply(ctx context.Context, in *ConnectionApply
 	return out, nil
 }
 
-func (c *connectionServiceClient) Erase(ctx context.Context, in *ConnectionRef, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *connectionServiceClient) Erase(ctx context.Context, in *ConnectionRef, opts ...grpc.CallOption) (*ConnectionEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
+	out := new(ConnectionEraseResponse)
 	err := c.cc.Invoke(ctx, ConnectionService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -127,7 +126,7 @@ type ConnectionServiceServer interface {
 	// Apply applies a patch document to an existing Connection
 	Apply(context.Context, *ConnectionApplyRequest) (*Connection, error)
 	// Erase deletes a Connection
-	Erase(context.Context, *ConnectionRef) (*emptypb.Empty, error)
+	Erase(context.Context, *ConnectionRef) (*ConnectionEraseResponse, error)
 	// List reads Connections a page at a time.
 	List(context.Context, *ConnectionListRequest) (*ConnectionListResponse, error)
 	mustEmbedUnimplementedConnectionServiceServer()
@@ -152,7 +151,7 @@ func (UnimplementedConnectionServiceServer) Patch(context.Context, *ConnectionPa
 func (UnimplementedConnectionServiceServer) Apply(context.Context, *ConnectionApplyRequest) (*Connection, error) {
 	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
-func (UnimplementedConnectionServiceServer) Erase(context.Context, *ConnectionRef) (*emptypb.Empty, error) {
+func (UnimplementedConnectionServiceServer) Erase(context.Context, *ConnectionRef) (*ConnectionEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedConnectionServiceServer) List(context.Context, *ConnectionListRequest) (*ConnectionListResponse, error) {

@@ -18,7 +18,6 @@ import (
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 type AuditServiceServer struct {
@@ -409,7 +408,7 @@ func (s AuditServiceServer) apply(ctx context.Context, ref *rstr.AuditRef, doc *
 	return out, nil
 }
 
-func (s AuditServiceServer) Erase(ctx context.Context, req *rstr.AuditRef) (*emptypb.Empty, error) {
+func (s AuditServiceServer) Erase(ctx context.Context, req *rstr.AuditRef) (*rstr.AuditEraseResponse, error) {
 	p, err := AuditPick(req)
 	if err != nil {
 		return nil, err
@@ -433,13 +432,13 @@ func (s AuditServiceServer) Erase(ctx context.Context, req *rstr.AuditRef) (*emp
 		v, err := st.Db.Audit.Query().Where(p).OnlyID(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
-				return &emptypb.Empty{}, nil
+				return &rstr.AuditEraseResponse{}, nil
 			}
 			return nil, err
 		}
 
 		k = v
-		p = audit.IDEQ(v)
+		p = audit.And(p, audit.IDEQ(v))
 	}
 
 	n, err := st.Db.Audit.Delete().Where(p).Exec(ctx)
@@ -457,7 +456,10 @@ func (s AuditServiceServer) Erase(ctx context.Context, req *rstr.AuditRef) (*emp
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return &emptypb.Empty{}, nil
+	res := &rstr.AuditEraseResponse{}
+	res.SetErased(n > 0)
+
+	return res, nil
 }
 
 func AuditPick(req *rstr.AuditRef) (predicate.Audit, error) {

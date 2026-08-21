@@ -10,7 +10,6 @@ import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	unsafe "unsafe"
@@ -1218,6 +1217,86 @@ func (b0 GroupApplyRequest_builder) Build() *GroupApplyRequest {
 	return m0
 }
 
+type GroupEraseResponse struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *GroupEraseResponse) Reset() {
+	*x = GroupEraseResponse{}
+	mi := &file_app_group_svc_g_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupEraseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupEraseResponse) ProtoMessage() {}
+
+func (x *GroupEraseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_app_group_svc_g_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *GroupEraseResponse) GetErased() bool {
+	if x != nil {
+		return x.xxx_hidden_Erased
+	}
+	return false
+}
+
+func (x *GroupEraseResponse) SetErased(v bool) {
+	x.xxx_hidden_Erased = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+}
+
+func (x *GroupEraseResponse) HasErased() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *GroupEraseResponse) ClearErased() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Erased = false
+}
+
+type GroupEraseResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Erased is whether this call is the one that erased the row.
+	//
+	// False for a row that was already gone, was never there, or is out
+	// of this caller's reach -- which are one answer on purpose, and the
+	// reason the RPC does not fail instead.
+	Erased *bool
+}
+
+func (b0 GroupEraseResponse_builder) Build() *GroupEraseResponse {
+	m0 := &GroupEraseResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Erased != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		x.xxx_hidden_Erased = *b.Erased
+	}
+	return m0
+}
+
 type GroupListRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*GroupFilter        `protobuf:"bytes,1,rep,name=filters"`
@@ -1229,7 +1308,7 @@ type GroupListRequest struct {
 
 func (x *GroupListRequest) Reset() {
 	*x = GroupListRequest{}
-	mi := &file_app_group_svc_g_proto_msgTypes[7]
+	mi := &file_app_group_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1241,7 +1320,7 @@ func (x *GroupListRequest) String() string {
 func (*GroupListRequest) ProtoMessage() {}
 
 func (x *GroupListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_group_svc_g_proto_msgTypes[7]
+	mi := &file_app_group_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1324,7 +1403,7 @@ type GroupListResponse struct {
 
 func (x *GroupListResponse) Reset() {
 	*x = GroupListResponse{}
-	mi := &file_app_group_svc_g_proto_msgTypes[8]
+	mi := &file_app_group_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1336,7 +1415,7 @@ func (x *GroupListResponse) String() string {
 func (*GroupListResponse) ProtoMessage() {}
 
 func (x *GroupListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_group_svc_g_proto_msgTypes[8]
+	mi := &file_app_group_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1403,7 +1482,7 @@ type GroupFilter struct {
 
 func (x *GroupFilter) Reset() {
 	*x = GroupFilter{}
-	mi := &file_app_group_svc_g_proto_msgTypes[9]
+	mi := &file_app_group_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1415,7 +1494,7 @@ func (x *GroupFilter) String() string {
 func (*GroupFilter) ProtoMessage() {}
 
 func (x *GroupFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_app_group_svc_g_proto_msgTypes[9]
+	mi := &file_app_group_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1476,7 +1555,7 @@ type GroupMembershipAddRequest struct {
 
 func (x *GroupMembershipAddRequest) Reset() {
 	*x = GroupMembershipAddRequest{}
-	mi := &file_app_group_svc_g_proto_msgTypes[10]
+	mi := &file_app_group_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1488,7 +1567,7 @@ func (x *GroupMembershipAddRequest) String() string {
 func (*GroupMembershipAddRequest) ProtoMessage() {}
 
 func (x *GroupMembershipAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_group_svc_g_proto_msgTypes[10]
+	mi := &file_app_group_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1625,7 +1704,7 @@ type GroupMembershipGetRequest struct {
 
 func (x *GroupMembershipGetRequest) Reset() {
 	*x = GroupMembershipGetRequest{}
-	mi := &file_app_group_svc_g_proto_msgTypes[11]
+	mi := &file_app_group_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1637,7 +1716,7 @@ func (x *GroupMembershipGetRequest) String() string {
 func (*GroupMembershipGetRequest) ProtoMessage() {}
 
 func (x *GroupMembershipGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_group_svc_g_proto_msgTypes[11]
+	mi := &file_app_group_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1717,7 +1796,7 @@ type GroupMembershipRef struct {
 
 func (x *GroupMembershipRef) Reset() {
 	*x = GroupMembershipRef{}
-	mi := &file_app_group_svc_g_proto_msgTypes[12]
+	mi := &file_app_group_svc_g_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1729,7 +1808,7 @@ func (x *GroupMembershipRef) String() string {
 func (*GroupMembershipRef) ProtoMessage() {}
 
 func (x *GroupMembershipRef) ProtoReflect() protoreflect.Message {
-	mi := &file_app_group_svc_g_proto_msgTypes[12]
+	mi := &file_app_group_svc_g_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1855,7 +1934,7 @@ func (b0 GroupMembershipRef_builder) Build() *GroupMembershipRef {
 type case_GroupMembershipRef_Key protoreflect.FieldNumber
 
 func (x case_GroupMembershipRef_Key) String() string {
-	md := file_app_group_svc_g_proto_msgTypes[12].Descriptor()
+	md := file_app_group_svc_g_proto_msgTypes[13].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -1888,7 +1967,7 @@ type GroupMembershipRefByMember struct {
 
 func (x *GroupMembershipRefByMember) Reset() {
 	*x = GroupMembershipRefByMember{}
-	mi := &file_app_group_svc_g_proto_msgTypes[13]
+	mi := &file_app_group_svc_g_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1900,7 +1979,7 @@ func (x *GroupMembershipRefByMember) String() string {
 func (*GroupMembershipRefByMember) ProtoMessage() {}
 
 func (x *GroupMembershipRefByMember) ProtoReflect() protoreflect.Message {
-	mi := &file_app_group_svc_g_proto_msgTypes[13]
+	mi := &file_app_group_svc_g_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1987,7 +2066,7 @@ type GroupMembershipSelect struct {
 
 func (x *GroupMembershipSelect) Reset() {
 	*x = GroupMembershipSelect{}
-	mi := &file_app_group_svc_g_proto_msgTypes[14]
+	mi := &file_app_group_svc_g_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1999,7 +2078,7 @@ func (x *GroupMembershipSelect) String() string {
 func (*GroupMembershipSelect) ProtoMessage() {}
 
 func (x *GroupMembershipSelect) ProtoReflect() protoreflect.Message {
-	mi := &file_app_group_svc_g_proto_msgTypes[14]
+	mi := &file_app_group_svc_g_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2199,7 +2278,7 @@ type GroupMembershipPatchRequest struct {
 
 func (x *GroupMembershipPatchRequest) Reset() {
 	*x = GroupMembershipPatchRequest{}
-	mi := &file_app_group_svc_g_proto_msgTypes[15]
+	mi := &file_app_group_svc_g_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2211,7 +2290,7 @@ func (x *GroupMembershipPatchRequest) String() string {
 func (*GroupMembershipPatchRequest) ProtoMessage() {}
 
 func (x *GroupMembershipPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_group_svc_g_proto_msgTypes[15]
+	mi := &file_app_group_svc_g_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2333,7 +2412,7 @@ type GroupMembershipApplyRequest struct {
 
 func (x *GroupMembershipApplyRequest) Reset() {
 	*x = GroupMembershipApplyRequest{}
-	mi := &file_app_group_svc_g_proto_msgTypes[16]
+	mi := &file_app_group_svc_g_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2345,7 +2424,7 @@ func (x *GroupMembershipApplyRequest) String() string {
 func (*GroupMembershipApplyRequest) ProtoMessage() {}
 
 func (x *GroupMembershipApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_group_svc_g_proto_msgTypes[16]
+	mi := &file_app_group_svc_g_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2416,6 +2495,86 @@ func (b0 GroupMembershipApplyRequest_builder) Build() *GroupMembershipApplyReque
 	return m0
 }
 
+type GroupMembershipEraseResponse struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *GroupMembershipEraseResponse) Reset() {
+	*x = GroupMembershipEraseResponse{}
+	mi := &file_app_group_svc_g_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupMembershipEraseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupMembershipEraseResponse) ProtoMessage() {}
+
+func (x *GroupMembershipEraseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_app_group_svc_g_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *GroupMembershipEraseResponse) GetErased() bool {
+	if x != nil {
+		return x.xxx_hidden_Erased
+	}
+	return false
+}
+
+func (x *GroupMembershipEraseResponse) SetErased(v bool) {
+	x.xxx_hidden_Erased = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+}
+
+func (x *GroupMembershipEraseResponse) HasErased() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *GroupMembershipEraseResponse) ClearErased() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Erased = false
+}
+
+type GroupMembershipEraseResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Erased is whether this call is the one that erased the row.
+	//
+	// False for a row that was already gone, was never there, or is out
+	// of this caller's reach -- which are one answer on purpose, and the
+	// reason the RPC does not fail instead.
+	Erased *bool
+}
+
+func (b0 GroupMembershipEraseResponse_builder) Build() *GroupMembershipEraseResponse {
+	m0 := &GroupMembershipEraseResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Erased != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		x.xxx_hidden_Erased = *b.Erased
+	}
+	return m0
+}
+
 type GroupMembershipListRequest struct {
 	state              protoimpl.MessageState    `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*GroupMembershipFilter `protobuf:"bytes,1,rep,name=filters"`
@@ -2427,7 +2586,7 @@ type GroupMembershipListRequest struct {
 
 func (x *GroupMembershipListRequest) Reset() {
 	*x = GroupMembershipListRequest{}
-	mi := &file_app_group_svc_g_proto_msgTypes[17]
+	mi := &file_app_group_svc_g_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2439,7 +2598,7 @@ func (x *GroupMembershipListRequest) String() string {
 func (*GroupMembershipListRequest) ProtoMessage() {}
 
 func (x *GroupMembershipListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_group_svc_g_proto_msgTypes[17]
+	mi := &file_app_group_svc_g_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2522,7 +2681,7 @@ type GroupMembershipListResponse struct {
 
 func (x *GroupMembershipListResponse) Reset() {
 	*x = GroupMembershipListResponse{}
-	mi := &file_app_group_svc_g_proto_msgTypes[18]
+	mi := &file_app_group_svc_g_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2534,7 +2693,7 @@ func (x *GroupMembershipListResponse) String() string {
 func (*GroupMembershipListResponse) ProtoMessage() {}
 
 func (x *GroupMembershipListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_group_svc_g_proto_msgTypes[18]
+	mi := &file_app_group_svc_g_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2601,7 +2760,7 @@ type GroupMembershipFilter struct {
 
 func (x *GroupMembershipFilter) Reset() {
 	*x = GroupMembershipFilter{}
-	mi := &file_app_group_svc_g_proto_msgTypes[19]
+	mi := &file_app_group_svc_g_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2613,7 +2772,7 @@ func (x *GroupMembershipFilter) String() string {
 func (*GroupMembershipFilter) ProtoMessage() {}
 
 func (x *GroupMembershipFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_app_group_svc_g_proto_msgTypes[19]
+	mi := &file_app_group_svc_g_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2664,7 +2823,7 @@ var File_app_group_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_group_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x15app/group_svc.g.proto\x12\x06roster\x1a\x0fapp/group.proto\x1a\x14app/site_svc.g.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\x1a roster/payday/tenant_svc.g.proto\"\x83\x02\n" +
+	"\x15app/group_svc.g.proto\x12\x06roster\x1a\x0fapp/group.proto\x1a\x14app/site_svc.g.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\x1a roster/payday/tenant_svc.g.proto\"\x83\x02\n" +
 	"\x0fGroupAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12#\n" +
@@ -2704,7 +2863,9 @@ const file_app_group_svc_g_proto_rawDesc = "" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"[\n" +
 	"\x11GroupApplyRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.roster.GroupRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"y\n" +
+	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\",\n" +
+	"\x12GroupEraseResponse\x12\x16\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"y\n" +
 	"\x10GroupListRequest\x12-\n" +
 	"\afilters\x18\x01 \x03(\v2\x13.roster.GroupFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
@@ -2743,7 +2904,9 @@ const file_app_group_svc_g_proto_rawDesc = "" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"o\n" +
 	"\x1bGroupMembershipApplyRequest\x12,\n" +
 	"\x03ref\x18\x01 \x01(\v2\x1a.roster.GroupMembershipRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"\x8d\x01\n" +
+	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"6\n" +
+	"\x1cGroupMembershipEraseResponse\x12\x16\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x8d\x01\n" +
 	"\x1aGroupMembershipListRequest\x127\n" +
 	"\afilters\x18\x01 \x03(\v2\x1d.roster.GroupMembershipFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
@@ -2752,114 +2915,115 @@ const file_app_group_svc_g_proto_rawDesc = "" +
 	"\x05items\x18\x01 \x03(\v2\x17.roster.GroupMembershipR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"E\n" +
 	"\x15GroupMembershipFilter\x12,\n" +
-	"\x03ref\x18\x01 \x01(\v2\x1a.roster.GroupMembershipRefR\x03ref2\xc2\x02\n" +
+	"\x03ref\x18\x01 \x01(\v2\x1a.roster.GroupMembershipRefR\x03ref2\xc6\x02\n" +
 	"\fGroupService\x12-\n" +
 	"\x03Add\x12\x17.roster.GroupAddRequest\x1a\r.roster.Group\x12-\n" +
 	"\x03Get\x12\x17.roster.GroupGetRequest\x1a\r.roster.Group\x121\n" +
 	"\x05Patch\x12\x19.roster.GroupPatchRequest\x1a\r.roster.Group\x121\n" +
-	"\x05Apply\x12\x19.roster.GroupApplyRequest\x1a\r.roster.Group\x121\n" +
-	"\x05Erase\x12\x10.roster.GroupRef\x1a\x16.google.protobuf.Empty\x12;\n" +
-	"\x04List\x12\x18.roster.GroupListRequest\x1a\x19.roster.GroupListResponse2\xba\x03\n" +
+	"\x05Apply\x12\x19.roster.GroupApplyRequest\x1a\r.roster.Group\x125\n" +
+	"\x05Erase\x12\x10.roster.GroupRef\x1a\x1a.roster.GroupEraseResponse\x12;\n" +
+	"\x04List\x12\x18.roster.GroupListRequest\x1a\x19.roster.GroupListResponse2\xc8\x03\n" +
 	"\x16GroupMembershipService\x12A\n" +
 	"\x03Add\x12!.roster.GroupMembershipAddRequest\x1a\x17.roster.GroupMembership\x12A\n" +
 	"\x03Get\x12!.roster.GroupMembershipGetRequest\x1a\x17.roster.GroupMembership\x12E\n" +
 	"\x05Patch\x12#.roster.GroupMembershipPatchRequest\x1a\x17.roster.GroupMembership\x12E\n" +
-	"\x05Apply\x12#.roster.GroupMembershipApplyRequest\x1a\x17.roster.GroupMembership\x12;\n" +
-	"\x05Erase\x12\x1a.roster.GroupMembershipRef\x1a\x16.google.protobuf.Empty\x12O\n" +
+	"\x05Apply\x12#.roster.GroupMembershipApplyRequest\x1a\x17.roster.GroupMembership\x12I\n" +
+	"\x05Erase\x12\x1a.roster.GroupMembershipRef\x1a$.roster.GroupMembershipEraseResponse\x12O\n" +
 	"\x04List\x12\".roster.GroupMembershipListRequest\x1a#.roster.GroupMembershipListResponseB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_group_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_app_group_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_app_group_svc_g_proto_goTypes = []any{
-	(*GroupAddRequest)(nil),             // 0: roster.GroupAddRequest
-	(*GroupGetRequest)(nil),             // 1: roster.GroupGetRequest
-	(*GroupRef)(nil),                    // 2: roster.GroupRef
-	(*GroupRefByAlias)(nil),             // 3: roster.GroupRefByAlias
-	(*GroupSelect)(nil),                 // 4: roster.GroupSelect
-	(*GroupPatchRequest)(nil),           // 5: roster.GroupPatchRequest
-	(*GroupApplyRequest)(nil),           // 6: roster.GroupApplyRequest
-	(*GroupListRequest)(nil),            // 7: roster.GroupListRequest
-	(*GroupListResponse)(nil),           // 8: roster.GroupListResponse
-	(*GroupFilter)(nil),                 // 9: roster.GroupFilter
-	(*GroupMembershipAddRequest)(nil),   // 10: roster.GroupMembershipAddRequest
-	(*GroupMembershipGetRequest)(nil),   // 11: roster.GroupMembershipGetRequest
-	(*GroupMembershipRef)(nil),          // 12: roster.GroupMembershipRef
-	(*GroupMembershipRefByMember)(nil),  // 13: roster.GroupMembershipRefByMember
-	(*GroupMembershipSelect)(nil),       // 14: roster.GroupMembershipSelect
-	(*GroupMembershipPatchRequest)(nil), // 15: roster.GroupMembershipPatchRequest
-	(*GroupMembershipApplyRequest)(nil), // 16: roster.GroupMembershipApplyRequest
-	(*GroupMembershipListRequest)(nil),  // 17: roster.GroupMembershipListRequest
-	(*GroupMembershipListResponse)(nil), // 18: roster.GroupMembershipListResponse
-	(*GroupMembershipFilter)(nil),       // 19: roster.GroupMembershipFilter
-	(*TenantRef)(nil),                   // 20: roster.TenantRef
-	(*SiteRef)(nil),                     // 21: roster.SiteRef
-	(*timestamppb.Timestamp)(nil),       // 22: google.protobuf.Timestamp
-	(*TenantSelect)(nil),                // 23: roster.TenantSelect
-	(*SiteSelect)(nil),                  // 24: roster.SiteSelect
-	(*patchpb.Patch)(nil),               // 25: patch.Patch
-	(*Group)(nil),                       // 26: roster.Group
-	(*HolderRef)(nil),                   // 27: roster.HolderRef
-	(*HolderSelect)(nil),                // 28: roster.HolderSelect
-	(*GroupMembership)(nil),             // 29: roster.GroupMembership
-	(*emptypb.Empty)(nil),               // 30: google.protobuf.Empty
+	(*GroupAddRequest)(nil),              // 0: roster.GroupAddRequest
+	(*GroupGetRequest)(nil),              // 1: roster.GroupGetRequest
+	(*GroupRef)(nil),                     // 2: roster.GroupRef
+	(*GroupRefByAlias)(nil),              // 3: roster.GroupRefByAlias
+	(*GroupSelect)(nil),                  // 4: roster.GroupSelect
+	(*GroupPatchRequest)(nil),            // 5: roster.GroupPatchRequest
+	(*GroupApplyRequest)(nil),            // 6: roster.GroupApplyRequest
+	(*GroupEraseResponse)(nil),           // 7: roster.GroupEraseResponse
+	(*GroupListRequest)(nil),             // 8: roster.GroupListRequest
+	(*GroupListResponse)(nil),            // 9: roster.GroupListResponse
+	(*GroupFilter)(nil),                  // 10: roster.GroupFilter
+	(*GroupMembershipAddRequest)(nil),    // 11: roster.GroupMembershipAddRequest
+	(*GroupMembershipGetRequest)(nil),    // 12: roster.GroupMembershipGetRequest
+	(*GroupMembershipRef)(nil),           // 13: roster.GroupMembershipRef
+	(*GroupMembershipRefByMember)(nil),   // 14: roster.GroupMembershipRefByMember
+	(*GroupMembershipSelect)(nil),        // 15: roster.GroupMembershipSelect
+	(*GroupMembershipPatchRequest)(nil),  // 16: roster.GroupMembershipPatchRequest
+	(*GroupMembershipApplyRequest)(nil),  // 17: roster.GroupMembershipApplyRequest
+	(*GroupMembershipEraseResponse)(nil), // 18: roster.GroupMembershipEraseResponse
+	(*GroupMembershipListRequest)(nil),   // 19: roster.GroupMembershipListRequest
+	(*GroupMembershipListResponse)(nil),  // 20: roster.GroupMembershipListResponse
+	(*GroupMembershipFilter)(nil),        // 21: roster.GroupMembershipFilter
+	(*TenantRef)(nil),                    // 22: roster.TenantRef
+	(*SiteRef)(nil),                      // 23: roster.SiteRef
+	(*timestamppb.Timestamp)(nil),        // 24: google.protobuf.Timestamp
+	(*TenantSelect)(nil),                 // 25: roster.TenantSelect
+	(*SiteSelect)(nil),                   // 26: roster.SiteSelect
+	(*patchpb.Patch)(nil),                // 27: patch.Patch
+	(*Group)(nil),                        // 28: roster.Group
+	(*HolderRef)(nil),                    // 29: roster.HolderRef
+	(*HolderSelect)(nil),                 // 30: roster.HolderSelect
+	(*GroupMembership)(nil),              // 31: roster.GroupMembership
 }
 var file_app_group_svc_g_proto_depIdxs = []int32{
-	20, // 0: roster.GroupAddRequest.tenant:type_name -> roster.TenantRef
-	21, // 1: roster.GroupAddRequest.site:type_name -> roster.SiteRef
-	22, // 2: roster.GroupAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	22, // 0: roster.GroupAddRequest.tenant:type_name -> roster.TenantRef
+	23, // 1: roster.GroupAddRequest.site:type_name -> roster.SiteRef
+	24, // 2: roster.GroupAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 3: roster.GroupGetRequest.ref:type_name -> roster.GroupRef
 	4,  // 4: roster.GroupGetRequest.select:type_name -> roster.GroupSelect
 	3,  // 5: roster.GroupRef.alias:type_name -> roster.GroupRefByAlias
-	20, // 6: roster.GroupRefByAlias.tenant:type_name -> roster.TenantRef
-	23, // 7: roster.GroupSelect.tenant:type_name -> roster.TenantSelect
-	24, // 8: roster.GroupSelect.site:type_name -> roster.SiteSelect
+	22, // 6: roster.GroupRefByAlias.tenant:type_name -> roster.TenantRef
+	25, // 7: roster.GroupSelect.tenant:type_name -> roster.TenantSelect
+	26, // 8: roster.GroupSelect.site:type_name -> roster.SiteSelect
 	2,  // 9: roster.GroupPatchRequest.ref:type_name -> roster.GroupRef
-	22, // 10: roster.GroupPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	24, // 10: roster.GroupPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
 	2,  // 11: roster.GroupApplyRequest.ref:type_name -> roster.GroupRef
-	25, // 12: roster.GroupApplyRequest.patch:type_name -> patch.Patch
-	9,  // 13: roster.GroupListRequest.filters:type_name -> roster.GroupFilter
-	26, // 14: roster.GroupListResponse.items:type_name -> roster.Group
+	27, // 12: roster.GroupApplyRequest.patch:type_name -> patch.Patch
+	10, // 13: roster.GroupListRequest.filters:type_name -> roster.GroupFilter
+	28, // 14: roster.GroupListResponse.items:type_name -> roster.Group
 	2,  // 15: roster.GroupFilter.ref:type_name -> roster.GroupRef
-	27, // 16: roster.GroupMembershipAddRequest.holder:type_name -> roster.HolderRef
+	29, // 16: roster.GroupMembershipAddRequest.holder:type_name -> roster.HolderRef
 	2,  // 17: roster.GroupMembershipAddRequest.group:type_name -> roster.GroupRef
-	22, // 18: roster.GroupMembershipAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	12, // 19: roster.GroupMembershipGetRequest.ref:type_name -> roster.GroupMembershipRef
-	14, // 20: roster.GroupMembershipGetRequest.select:type_name -> roster.GroupMembershipSelect
-	13, // 21: roster.GroupMembershipRef.member:type_name -> roster.GroupMembershipRefByMember
-	27, // 22: roster.GroupMembershipRefByMember.holder:type_name -> roster.HolderRef
+	24, // 18: roster.GroupMembershipAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	13, // 19: roster.GroupMembershipGetRequest.ref:type_name -> roster.GroupMembershipRef
+	15, // 20: roster.GroupMembershipGetRequest.select:type_name -> roster.GroupMembershipSelect
+	14, // 21: roster.GroupMembershipRef.member:type_name -> roster.GroupMembershipRefByMember
+	29, // 22: roster.GroupMembershipRefByMember.holder:type_name -> roster.HolderRef
 	2,  // 23: roster.GroupMembershipRefByMember.group:type_name -> roster.GroupRef
-	28, // 24: roster.GroupMembershipSelect.holder:type_name -> roster.HolderSelect
+	30, // 24: roster.GroupMembershipSelect.holder:type_name -> roster.HolderSelect
 	4,  // 25: roster.GroupMembershipSelect.group:type_name -> roster.GroupSelect
-	12, // 26: roster.GroupMembershipPatchRequest.ref:type_name -> roster.GroupMembershipRef
-	22, // 27: roster.GroupMembershipPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	12, // 28: roster.GroupMembershipApplyRequest.ref:type_name -> roster.GroupMembershipRef
-	25, // 29: roster.GroupMembershipApplyRequest.patch:type_name -> patch.Patch
-	19, // 30: roster.GroupMembershipListRequest.filters:type_name -> roster.GroupMembershipFilter
-	29, // 31: roster.GroupMembershipListResponse.items:type_name -> roster.GroupMembership
-	12, // 32: roster.GroupMembershipFilter.ref:type_name -> roster.GroupMembershipRef
+	13, // 26: roster.GroupMembershipPatchRequest.ref:type_name -> roster.GroupMembershipRef
+	24, // 27: roster.GroupMembershipPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	13, // 28: roster.GroupMembershipApplyRequest.ref:type_name -> roster.GroupMembershipRef
+	27, // 29: roster.GroupMembershipApplyRequest.patch:type_name -> patch.Patch
+	21, // 30: roster.GroupMembershipListRequest.filters:type_name -> roster.GroupMembershipFilter
+	31, // 31: roster.GroupMembershipListResponse.items:type_name -> roster.GroupMembership
+	13, // 32: roster.GroupMembershipFilter.ref:type_name -> roster.GroupMembershipRef
 	0,  // 33: roster.GroupService.Add:input_type -> roster.GroupAddRequest
 	1,  // 34: roster.GroupService.Get:input_type -> roster.GroupGetRequest
 	5,  // 35: roster.GroupService.Patch:input_type -> roster.GroupPatchRequest
 	6,  // 36: roster.GroupService.Apply:input_type -> roster.GroupApplyRequest
 	2,  // 37: roster.GroupService.Erase:input_type -> roster.GroupRef
-	7,  // 38: roster.GroupService.List:input_type -> roster.GroupListRequest
-	10, // 39: roster.GroupMembershipService.Add:input_type -> roster.GroupMembershipAddRequest
-	11, // 40: roster.GroupMembershipService.Get:input_type -> roster.GroupMembershipGetRequest
-	15, // 41: roster.GroupMembershipService.Patch:input_type -> roster.GroupMembershipPatchRequest
-	16, // 42: roster.GroupMembershipService.Apply:input_type -> roster.GroupMembershipApplyRequest
-	12, // 43: roster.GroupMembershipService.Erase:input_type -> roster.GroupMembershipRef
-	17, // 44: roster.GroupMembershipService.List:input_type -> roster.GroupMembershipListRequest
-	26, // 45: roster.GroupService.Add:output_type -> roster.Group
-	26, // 46: roster.GroupService.Get:output_type -> roster.Group
-	26, // 47: roster.GroupService.Patch:output_type -> roster.Group
-	26, // 48: roster.GroupService.Apply:output_type -> roster.Group
-	30, // 49: roster.GroupService.Erase:output_type -> google.protobuf.Empty
-	8,  // 50: roster.GroupService.List:output_type -> roster.GroupListResponse
-	29, // 51: roster.GroupMembershipService.Add:output_type -> roster.GroupMembership
-	29, // 52: roster.GroupMembershipService.Get:output_type -> roster.GroupMembership
-	29, // 53: roster.GroupMembershipService.Patch:output_type -> roster.GroupMembership
-	29, // 54: roster.GroupMembershipService.Apply:output_type -> roster.GroupMembership
-	30, // 55: roster.GroupMembershipService.Erase:output_type -> google.protobuf.Empty
-	18, // 56: roster.GroupMembershipService.List:output_type -> roster.GroupMembershipListResponse
+	8,  // 38: roster.GroupService.List:input_type -> roster.GroupListRequest
+	11, // 39: roster.GroupMembershipService.Add:input_type -> roster.GroupMembershipAddRequest
+	12, // 40: roster.GroupMembershipService.Get:input_type -> roster.GroupMembershipGetRequest
+	16, // 41: roster.GroupMembershipService.Patch:input_type -> roster.GroupMembershipPatchRequest
+	17, // 42: roster.GroupMembershipService.Apply:input_type -> roster.GroupMembershipApplyRequest
+	13, // 43: roster.GroupMembershipService.Erase:input_type -> roster.GroupMembershipRef
+	19, // 44: roster.GroupMembershipService.List:input_type -> roster.GroupMembershipListRequest
+	28, // 45: roster.GroupService.Add:output_type -> roster.Group
+	28, // 46: roster.GroupService.Get:output_type -> roster.Group
+	28, // 47: roster.GroupService.Patch:output_type -> roster.Group
+	28, // 48: roster.GroupService.Apply:output_type -> roster.Group
+	7,  // 49: roster.GroupService.Erase:output_type -> roster.GroupEraseResponse
+	9,  // 50: roster.GroupService.List:output_type -> roster.GroupListResponse
+	31, // 51: roster.GroupMembershipService.Add:output_type -> roster.GroupMembership
+	31, // 52: roster.GroupMembershipService.Get:output_type -> roster.GroupMembership
+	31, // 53: roster.GroupMembershipService.Patch:output_type -> roster.GroupMembership
+	31, // 54: roster.GroupMembershipService.Apply:output_type -> roster.GroupMembership
+	18, // 55: roster.GroupMembershipService.Erase:output_type -> roster.GroupMembershipEraseResponse
+	20, // 56: roster.GroupMembershipService.List:output_type -> roster.GroupMembershipListResponse
 	45, // [45:57] is the sub-list for method output_type
 	33, // [33:45] is the sub-list for method input_type
 	33, // [33:33] is the sub-list for extension type_name
@@ -2880,7 +3044,7 @@ func file_app_group_svc_g_proto_init() {
 		(*groupRef_Id)(nil),
 		(*groupRef_Alias)(nil),
 	}
-	file_app_group_svc_g_proto_msgTypes[12].OneofWrappers = []any{
+	file_app_group_svc_g_proto_msgTypes[13].OneofWrappers = []any{
 		(*groupMembershipRef_Id)(nil),
 		(*groupMembershipRef_Member)(nil),
 	}
@@ -2890,7 +3054,7 @@ func file_app_group_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_group_svc_g_proto_rawDesc), len(file_app_group_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   20,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

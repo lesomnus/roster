@@ -11,7 +11,6 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	anypb "google.golang.org/protobuf/types/known/anypb"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	unsafe "unsafe"
@@ -1853,6 +1852,86 @@ func (b0 HolderApplyRequest_builder) Build() *HolderApplyRequest {
 	return m0
 }
 
+type HolderEraseResponse struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *HolderEraseResponse) Reset() {
+	*x = HolderEraseResponse{}
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HolderEraseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HolderEraseResponse) ProtoMessage() {}
+
+func (x *HolderEraseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *HolderEraseResponse) GetErased() bool {
+	if x != nil {
+		return x.xxx_hidden_Erased
+	}
+	return false
+}
+
+func (x *HolderEraseResponse) SetErased(v bool) {
+	x.xxx_hidden_Erased = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+}
+
+func (x *HolderEraseResponse) HasErased() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *HolderEraseResponse) ClearErased() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Erased = false
+}
+
+type HolderEraseResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Erased is whether this call is the one that erased the row.
+	//
+	// False for a row that was already gone, was never there, or is out
+	// of this caller's reach -- which are one answer on purpose, and the
+	// reason the RPC does not fail instead.
+	Erased *bool
+}
+
+func (b0 HolderEraseResponse_builder) Build() *HolderEraseResponse {
+	m0 := &HolderEraseResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Erased != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		x.xxx_hidden_Erased = *b.Erased
+	}
+	return m0
+}
+
 type HolderListRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*HolderFilter       `protobuf:"bytes,1,rep,name=filters"`
@@ -1864,7 +1943,7 @@ type HolderListRequest struct {
 
 func (x *HolderListRequest) Reset() {
 	*x = HolderListRequest{}
-	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[7]
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1876,7 +1955,7 @@ func (x *HolderListRequest) String() string {
 func (*HolderListRequest) ProtoMessage() {}
 
 func (x *HolderListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[7]
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1959,7 +2038,7 @@ type HolderListResponse struct {
 
 func (x *HolderListResponse) Reset() {
 	*x = HolderListResponse{}
-	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[8]
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1971,7 +2050,7 @@ func (x *HolderListResponse) String() string {
 func (*HolderListResponse) ProtoMessage() {}
 
 func (x *HolderListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[8]
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2039,7 +2118,7 @@ type HolderFilter struct {
 
 func (x *HolderFilter) Reset() {
 	*x = HolderFilter{}
-	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[9]
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2051,7 +2130,7 @@ func (x *HolderFilter) String() string {
 func (*HolderFilter) ProtoMessage() {}
 
 func (x *HolderFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[9]
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2132,7 +2211,7 @@ type HolderWatchRequest struct {
 
 func (x *HolderWatchRequest) Reset() {
 	*x = HolderWatchRequest{}
-	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[10]
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2144,7 +2223,7 @@ func (x *HolderWatchRequest) String() string {
 func (*HolderWatchRequest) ProtoMessage() {}
 
 func (x *HolderWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[10]
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2216,7 +2295,7 @@ type HolderWatchResponse struct {
 
 func (x *HolderWatchResponse) Reset() {
 	*x = HolderWatchResponse{}
-	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[11]
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2228,7 +2307,7 @@ func (x *HolderWatchResponse) String() string {
 func (*HolderWatchResponse) ProtoMessage() {}
 
 func (x *HolderWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[11]
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2280,7 +2359,7 @@ type HolderWatchItem struct {
 
 func (x *HolderWatchItem) Reset() {
 	*x = HolderWatchItem{}
-	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[12]
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2292,7 +2371,7 @@ func (x *HolderWatchItem) String() string {
 func (*HolderWatchItem) ProtoMessage() {}
 
 func (x *HolderWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[12]
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2413,7 +2492,7 @@ type HolderUpdateRequest struct {
 
 func (x *HolderUpdateRequest) Reset() {
 	*x = HolderUpdateRequest{}
-	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[13]
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2425,7 +2504,7 @@ func (x *HolderUpdateRequest) String() string {
 func (*HolderUpdateRequest) ProtoMessage() {}
 
 func (x *HolderUpdateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[13]
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2560,7 +2639,7 @@ type HolderDisableRequest struct {
 
 func (x *HolderDisableRequest) Reset() {
 	*x = HolderDisableRequest{}
-	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[14]
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2572,7 +2651,7 @@ func (x *HolderDisableRequest) String() string {
 func (*HolderDisableRequest) ProtoMessage() {}
 
 func (x *HolderDisableRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[14]
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2654,7 +2733,7 @@ type HolderEnableRequest struct {
 
 func (x *HolderEnableRequest) Reset() {
 	*x = HolderEnableRequest{}
-	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[15]
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2666,7 +2745,7 @@ func (x *HolderEnableRequest) String() string {
 func (*HolderEnableRequest) ProtoMessage() {}
 
 func (x *HolderEnableRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[15]
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2747,7 +2826,7 @@ type HolderInvalidateRequest struct {
 
 func (x *HolderInvalidateRequest) Reset() {
 	*x = HolderInvalidateRequest{}
-	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[16]
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2759,7 +2838,7 @@ func (x *HolderInvalidateRequest) String() string {
 func (*HolderInvalidateRequest) ProtoMessage() {}
 
 func (x *HolderInvalidateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[16]
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2839,7 +2918,7 @@ type HolderSignsInRequest struct {
 
 func (x *HolderSignsInRequest) Reset() {
 	*x = HolderSignsInRequest{}
-	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[17]
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2851,7 +2930,7 @@ func (x *HolderSignsInRequest) String() string {
 func (*HolderSignsInRequest) ProtoMessage() {}
 
 func (x *HolderSignsInRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[17]
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2908,7 +2987,7 @@ type HolderSignsInResponse struct {
 
 func (x *HolderSignsInResponse) Reset() {
 	*x = HolderSignsInResponse{}
-	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[18]
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2920,7 +2999,7 @@ func (x *HolderSignsInResponse) String() string {
 func (*HolderSignsInResponse) ProtoMessage() {}
 
 func (x *HolderSignsInResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[18]
+	mi := &file_roster_payday_holder_svc_g_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2980,7 +3059,7 @@ var File_roster_payday_holder_svc_g_proto protoreflect.FileDescriptor
 
 const file_roster_payday_holder_svc_g_proto_rawDesc = "" +
 	"\n" +
-	" roster/payday/holder_svc.g.proto\x12\x06roster\x1a\fapp/me.proto\x1a\x19google/protobuf/any.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x1aroster/payday/holder.proto\x1a roster/payday/tenant_svc.g.proto\"\xd6\x04\n" +
+	" roster/payday/holder_svc.g.proto\x12\x06roster\x1a\fapp/me.proto\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x1aroster/payday/holder.proto\x1a roster/payday/tenant_svc.g.proto\"\xd6\x04\n" +
 	"\x10HolderAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x1b\n" +
@@ -3054,7 +3133,9 @@ const file_roster_payday_holder_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"]\n" +
 	"\x12HolderApplyRequest\x12#\n" +
 	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"{\n" +
+	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"-\n" +
+	"\x13HolderEraseResponse\x12\x16\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"{\n" +
 	"\x11HolderListRequest\x12.\n" +
 	"\afilters\x18\x01 \x03(\v2\x14.roster.HolderFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
@@ -3095,13 +3176,13 @@ const file_roster_payday_holder_svc_g_proto_rawDesc = "" +
 	"\n" +
 	"identities\x18\r \x03(\v2\x16.roster.SignInIdentityR\n" +
 	"identities\x12:\n" +
-	"\vcredentials\x18\x0e \x03(\v2\x18.roster.SignInCredentialR\vcredentials2\xc0\x05\n" +
+	"\vcredentials\x18\x0e \x03(\v2\x18.roster.SignInCredentialR\vcredentials2\xc5\x05\n" +
 	"\rHolderService\x12/\n" +
 	"\x03Add\x12\x18.roster.HolderAddRequest\x1a\x0e.roster.Holder\x12/\n" +
 	"\x03Get\x12\x18.roster.HolderGetRequest\x1a\x0e.roster.Holder\x123\n" +
 	"\x05Patch\x12\x1a.roster.HolderPatchRequest\x1a\x0e.roster.Holder\x123\n" +
-	"\x05Apply\x12\x1a.roster.HolderApplyRequest\x1a\x0e.roster.Holder\x122\n" +
-	"\x05Erase\x12\x11.roster.HolderRef\x1a\x16.google.protobuf.Empty\x12=\n" +
+	"\x05Apply\x12\x1a.roster.HolderApplyRequest\x1a\x0e.roster.Holder\x127\n" +
+	"\x05Erase\x12\x11.roster.HolderRef\x1a\x1b.roster.HolderEraseResponse\x12=\n" +
 	"\x04List\x12\x19.roster.HolderListRequest\x1a\x1a.roster.HolderListResponse\x12B\n" +
 	"\x05Watch\x12\x1a.roster.HolderWatchRequest\x1a\x1b.roster.HolderWatchResponse0\x01\x125\n" +
 	"\x06Update\x12\x1b.roster.HolderUpdateRequest\x1a\x0e.roster.Holder\x127\n" +
@@ -3111,7 +3192,7 @@ const file_roster_payday_holder_svc_g_proto_rawDesc = "" +
 	"Invalidate\x12\x1f.roster.HolderInvalidateRequest\x1a\x0e.roster.Holder\x12F\n" +
 	"\aSignsIn\x12\x1c.roster.HolderSignsInRequest\x1a\x1d.roster.HolderSignsInResponseB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_roster_payday_holder_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
+var file_roster_payday_holder_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_roster_payday_holder_svc_g_proto_goTypes = []any{
 	(*HolderAddRequest)(nil),        // 0: roster.HolderAddRequest
 	(*HolderGetRequest)(nil),        // 1: roster.HolderGetRequest
@@ -3120,97 +3201,97 @@ var file_roster_payday_holder_svc_g_proto_goTypes = []any{
 	(*HolderSelect)(nil),            // 4: roster.HolderSelect
 	(*HolderPatchRequest)(nil),      // 5: roster.HolderPatchRequest
 	(*HolderApplyRequest)(nil),      // 6: roster.HolderApplyRequest
-	(*HolderListRequest)(nil),       // 7: roster.HolderListRequest
-	(*HolderListResponse)(nil),      // 8: roster.HolderListResponse
-	(*HolderFilter)(nil),            // 9: roster.HolderFilter
-	(*HolderWatchRequest)(nil),      // 10: roster.HolderWatchRequest
-	(*HolderWatchResponse)(nil),     // 11: roster.HolderWatchResponse
-	(*HolderWatchItem)(nil),         // 12: roster.HolderWatchItem
-	(*HolderUpdateRequest)(nil),     // 13: roster.HolderUpdateRequest
-	(*HolderDisableRequest)(nil),    // 14: roster.HolderDisableRequest
-	(*HolderEnableRequest)(nil),     // 15: roster.HolderEnableRequest
-	(*HolderInvalidateRequest)(nil), // 16: roster.HolderInvalidateRequest
-	(*HolderSignsInRequest)(nil),    // 17: roster.HolderSignsInRequest
-	(*HolderSignsInResponse)(nil),   // 18: roster.HolderSignsInResponse
-	nil,                             // 19: roster.HolderAddRequest.LabelsEntry
-	nil,                             // 20: roster.HolderPatchRequest.LabelsEntry
-	(*TenantRef)(nil),               // 21: roster.TenantRef
-	(*timestamppb.Timestamp)(nil),   // 22: google.protobuf.Timestamp
-	(*Profile)(nil),                 // 23: roster.Profile
-	(*anypb.Any)(nil),               // 24: google.protobuf.Any
-	(*TenantSelect)(nil),            // 25: roster.TenantSelect
-	(*patchpb.Patch)(nil),           // 26: patch.Patch
-	(*Holder)(nil),                  // 27: roster.Holder
-	(*SignInIdentity)(nil),          // 28: roster.SignInIdentity
-	(*SignInCredential)(nil),        // 29: roster.SignInCredential
-	(*emptypb.Empty)(nil),           // 30: google.protobuf.Empty
+	(*HolderEraseResponse)(nil),     // 7: roster.HolderEraseResponse
+	(*HolderListRequest)(nil),       // 8: roster.HolderListRequest
+	(*HolderListResponse)(nil),      // 9: roster.HolderListResponse
+	(*HolderFilter)(nil),            // 10: roster.HolderFilter
+	(*HolderWatchRequest)(nil),      // 11: roster.HolderWatchRequest
+	(*HolderWatchResponse)(nil),     // 12: roster.HolderWatchResponse
+	(*HolderWatchItem)(nil),         // 13: roster.HolderWatchItem
+	(*HolderUpdateRequest)(nil),     // 14: roster.HolderUpdateRequest
+	(*HolderDisableRequest)(nil),    // 15: roster.HolderDisableRequest
+	(*HolderEnableRequest)(nil),     // 16: roster.HolderEnableRequest
+	(*HolderInvalidateRequest)(nil), // 17: roster.HolderInvalidateRequest
+	(*HolderSignsInRequest)(nil),    // 18: roster.HolderSignsInRequest
+	(*HolderSignsInResponse)(nil),   // 19: roster.HolderSignsInResponse
+	nil,                             // 20: roster.HolderAddRequest.LabelsEntry
+	nil,                             // 21: roster.HolderPatchRequest.LabelsEntry
+	(*TenantRef)(nil),               // 22: roster.TenantRef
+	(*timestamppb.Timestamp)(nil),   // 23: google.protobuf.Timestamp
+	(*Profile)(nil),                 // 24: roster.Profile
+	(*anypb.Any)(nil),               // 25: google.protobuf.Any
+	(*TenantSelect)(nil),            // 26: roster.TenantSelect
+	(*patchpb.Patch)(nil),           // 27: patch.Patch
+	(*Holder)(nil),                  // 28: roster.Holder
+	(*SignInIdentity)(nil),          // 29: roster.SignInIdentity
+	(*SignInCredential)(nil),        // 30: roster.SignInCredential
 }
 var file_roster_payday_holder_svc_g_proto_depIdxs = []int32{
-	21, // 0: roster.HolderAddRequest.tenant:type_name -> roster.TenantRef
-	19, // 1: roster.HolderAddRequest.labels:type_name -> roster.HolderAddRequest.LabelsEntry
-	22, // 2: roster.HolderAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	23, // 3: roster.HolderAddRequest.profile:type_name -> roster.Profile
-	24, // 4: roster.HolderAddRequest.data:type_name -> google.protobuf.Any
-	22, // 5: roster.HolderAddRequest.date_invalidated:type_name -> google.protobuf.Timestamp
-	22, // 6: roster.HolderAddRequest.date_disabled:type_name -> google.protobuf.Timestamp
+	22, // 0: roster.HolderAddRequest.tenant:type_name -> roster.TenantRef
+	20, // 1: roster.HolderAddRequest.labels:type_name -> roster.HolderAddRequest.LabelsEntry
+	23, // 2: roster.HolderAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	24, // 3: roster.HolderAddRequest.profile:type_name -> roster.Profile
+	25, // 4: roster.HolderAddRequest.data:type_name -> google.protobuf.Any
+	23, // 5: roster.HolderAddRequest.date_invalidated:type_name -> google.protobuf.Timestamp
+	23, // 6: roster.HolderAddRequest.date_disabled:type_name -> google.protobuf.Timestamp
 	2,  // 7: roster.HolderGetRequest.ref:type_name -> roster.HolderRef
 	4,  // 8: roster.HolderGetRequest.select:type_name -> roster.HolderSelect
 	3,  // 9: roster.HolderRef.slug:type_name -> roster.HolderRefBySlug
-	21, // 10: roster.HolderRefBySlug.tenant:type_name -> roster.TenantRef
-	25, // 11: roster.HolderSelect.tenant:type_name -> roster.TenantSelect
+	22, // 10: roster.HolderRefBySlug.tenant:type_name -> roster.TenantRef
+	26, // 11: roster.HolderSelect.tenant:type_name -> roster.TenantSelect
 	2,  // 12: roster.HolderPatchRequest.ref:type_name -> roster.HolderRef
-	20, // 13: roster.HolderPatchRequest.labels:type_name -> roster.HolderPatchRequest.LabelsEntry
-	22, // 14: roster.HolderPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	23, // 15: roster.HolderPatchRequest.profile:type_name -> roster.Profile
-	24, // 16: roster.HolderPatchRequest.data:type_name -> google.protobuf.Any
-	22, // 17: roster.HolderPatchRequest.date_invalidated:type_name -> google.protobuf.Timestamp
-	22, // 18: roster.HolderPatchRequest.date_disabled:type_name -> google.protobuf.Timestamp
+	21, // 13: roster.HolderPatchRequest.labels:type_name -> roster.HolderPatchRequest.LabelsEntry
+	23, // 14: roster.HolderPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	24, // 15: roster.HolderPatchRequest.profile:type_name -> roster.Profile
+	25, // 16: roster.HolderPatchRequest.data:type_name -> google.protobuf.Any
+	23, // 17: roster.HolderPatchRequest.date_invalidated:type_name -> google.protobuf.Timestamp
+	23, // 18: roster.HolderPatchRequest.date_disabled:type_name -> google.protobuf.Timestamp
 	2,  // 19: roster.HolderApplyRequest.ref:type_name -> roster.HolderRef
-	26, // 20: roster.HolderApplyRequest.patch:type_name -> patch.Patch
-	9,  // 21: roster.HolderListRequest.filters:type_name -> roster.HolderFilter
-	27, // 22: roster.HolderListResponse.items:type_name -> roster.Holder
+	27, // 20: roster.HolderApplyRequest.patch:type_name -> patch.Patch
+	10, // 21: roster.HolderListRequest.filters:type_name -> roster.HolderFilter
+	28, // 22: roster.HolderListResponse.items:type_name -> roster.Holder
 	2,  // 23: roster.HolderFilter.ref:type_name -> roster.HolderRef
-	21, // 24: roster.HolderFilter.tenant:type_name -> roster.TenantRef
-	9,  // 25: roster.HolderWatchRequest.filters:type_name -> roster.HolderFilter
-	12, // 26: roster.HolderWatchResponse.items:type_name -> roster.HolderWatchItem
-	27, // 27: roster.HolderWatchItem.value:type_name -> roster.Holder
+	22, // 24: roster.HolderFilter.tenant:type_name -> roster.TenantRef
+	10, // 25: roster.HolderWatchRequest.filters:type_name -> roster.HolderFilter
+	13, // 26: roster.HolderWatchResponse.items:type_name -> roster.HolderWatchItem
+	28, // 27: roster.HolderWatchItem.value:type_name -> roster.Holder
 	2,  // 28: roster.HolderUpdateRequest.ref:type_name -> roster.HolderRef
-	22, // 29: roster.HolderUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
-	23, // 30: roster.HolderUpdateRequest.profile:type_name -> roster.Profile
-	24, // 31: roster.HolderUpdateRequest.data:type_name -> google.protobuf.Any
+	23, // 29: roster.HolderUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
+	24, // 30: roster.HolderUpdateRequest.profile:type_name -> roster.Profile
+	25, // 31: roster.HolderUpdateRequest.data:type_name -> google.protobuf.Any
 	2,  // 32: roster.HolderDisableRequest.ref:type_name -> roster.HolderRef
-	22, // 33: roster.HolderDisableRequest.date_updated:type_name -> google.protobuf.Timestamp
+	23, // 33: roster.HolderDisableRequest.date_updated:type_name -> google.protobuf.Timestamp
 	2,  // 34: roster.HolderEnableRequest.ref:type_name -> roster.HolderRef
-	22, // 35: roster.HolderEnableRequest.date_updated:type_name -> google.protobuf.Timestamp
+	23, // 35: roster.HolderEnableRequest.date_updated:type_name -> google.protobuf.Timestamp
 	2,  // 36: roster.HolderInvalidateRequest.ref:type_name -> roster.HolderRef
-	22, // 37: roster.HolderInvalidateRequest.date_updated:type_name -> google.protobuf.Timestamp
+	23, // 37: roster.HolderInvalidateRequest.date_updated:type_name -> google.protobuf.Timestamp
 	2,  // 38: roster.HolderSignsInRequest.ref:type_name -> roster.HolderRef
-	28, // 39: roster.HolderSignsInResponse.identities:type_name -> roster.SignInIdentity
-	29, // 40: roster.HolderSignsInResponse.credentials:type_name -> roster.SignInCredential
+	29, // 39: roster.HolderSignsInResponse.identities:type_name -> roster.SignInIdentity
+	30, // 40: roster.HolderSignsInResponse.credentials:type_name -> roster.SignInCredential
 	0,  // 41: roster.HolderService.Add:input_type -> roster.HolderAddRequest
 	1,  // 42: roster.HolderService.Get:input_type -> roster.HolderGetRequest
 	5,  // 43: roster.HolderService.Patch:input_type -> roster.HolderPatchRequest
 	6,  // 44: roster.HolderService.Apply:input_type -> roster.HolderApplyRequest
 	2,  // 45: roster.HolderService.Erase:input_type -> roster.HolderRef
-	7,  // 46: roster.HolderService.List:input_type -> roster.HolderListRequest
-	10, // 47: roster.HolderService.Watch:input_type -> roster.HolderWatchRequest
-	13, // 48: roster.HolderService.Update:input_type -> roster.HolderUpdateRequest
-	14, // 49: roster.HolderService.Disable:input_type -> roster.HolderDisableRequest
-	15, // 50: roster.HolderService.Enable:input_type -> roster.HolderEnableRequest
-	16, // 51: roster.HolderService.Invalidate:input_type -> roster.HolderInvalidateRequest
-	17, // 52: roster.HolderService.SignsIn:input_type -> roster.HolderSignsInRequest
-	27, // 53: roster.HolderService.Add:output_type -> roster.Holder
-	27, // 54: roster.HolderService.Get:output_type -> roster.Holder
-	27, // 55: roster.HolderService.Patch:output_type -> roster.Holder
-	27, // 56: roster.HolderService.Apply:output_type -> roster.Holder
-	30, // 57: roster.HolderService.Erase:output_type -> google.protobuf.Empty
-	8,  // 58: roster.HolderService.List:output_type -> roster.HolderListResponse
-	11, // 59: roster.HolderService.Watch:output_type -> roster.HolderWatchResponse
-	27, // 60: roster.HolderService.Update:output_type -> roster.Holder
-	27, // 61: roster.HolderService.Disable:output_type -> roster.Holder
-	27, // 62: roster.HolderService.Enable:output_type -> roster.Holder
-	27, // 63: roster.HolderService.Invalidate:output_type -> roster.Holder
-	18, // 64: roster.HolderService.SignsIn:output_type -> roster.HolderSignsInResponse
+	8,  // 46: roster.HolderService.List:input_type -> roster.HolderListRequest
+	11, // 47: roster.HolderService.Watch:input_type -> roster.HolderWatchRequest
+	14, // 48: roster.HolderService.Update:input_type -> roster.HolderUpdateRequest
+	15, // 49: roster.HolderService.Disable:input_type -> roster.HolderDisableRequest
+	16, // 50: roster.HolderService.Enable:input_type -> roster.HolderEnableRequest
+	17, // 51: roster.HolderService.Invalidate:input_type -> roster.HolderInvalidateRequest
+	18, // 52: roster.HolderService.SignsIn:input_type -> roster.HolderSignsInRequest
+	28, // 53: roster.HolderService.Add:output_type -> roster.Holder
+	28, // 54: roster.HolderService.Get:output_type -> roster.Holder
+	28, // 55: roster.HolderService.Patch:output_type -> roster.Holder
+	28, // 56: roster.HolderService.Apply:output_type -> roster.Holder
+	7,  // 57: roster.HolderService.Erase:output_type -> roster.HolderEraseResponse
+	9,  // 58: roster.HolderService.List:output_type -> roster.HolderListResponse
+	12, // 59: roster.HolderService.Watch:output_type -> roster.HolderWatchResponse
+	28, // 60: roster.HolderService.Update:output_type -> roster.Holder
+	28, // 61: roster.HolderService.Disable:output_type -> roster.Holder
+	28, // 62: roster.HolderService.Enable:output_type -> roster.Holder
+	28, // 63: roster.HolderService.Invalidate:output_type -> roster.Holder
+	19, // 64: roster.HolderService.SignsIn:output_type -> roster.HolderSignsInResponse
 	53, // [53:65] is the sub-list for method output_type
 	41, // [41:53] is the sub-list for method input_type
 	41, // [41:41] is the sub-list for extension type_name
@@ -3237,7 +3318,7 @@ func file_roster_payday_holder_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_roster_payday_holder_svc_g_proto_rawDesc), len(file_roster_payday_holder_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   21,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
