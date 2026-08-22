@@ -33,14 +33,32 @@ export const file_app_email: GenFile = /*@__PURE__*/
  * are changed, and organisations reassign a leaver's address to a new joiner
  * with the same name.
  *
- * So nothing here resolves anybody by address. What resolves people is
- * [Identity], and this is what to show them and where to write to them.
+ * So this is what to show somebody and where to write to them, and what
+ * resolves people is [Identity]. An address resolves one **within a tenant**,
+ * which is a later and narrower thing; see the index below and D27.
  *
- * # Not unique across the deployment
+ * # Unique twice, and neither of them across the deployment
  *
  * A consultant may legitimately be a person in two tenants under one address,
- * and a global constraint makes the second one an error with no resolution. It
- * is unique **per holder** instead: nobody lists the same address twice.
+ * and a global constraint makes the second one an error with no resolution. So
+ * it is unique **per holder** -- nobody lists the same address twice -- and
+ * **per tenant**, which is what closes F7 and makes `VouchWho.address` name
+ * somebody.
+ *
+ * # And stored as it is looked up
+ *
+ * Neither of those means anything unless the column holds what the lookup
+ * compares. `vouch.byAddress` lowers and trims what it is handed, and for a
+ * while the write did neither: `Someone@Acme.example` and
+ * `someone@acme.example` were two rows to the index and one address to
+ * everything that read it. What that cost was not a duplicate -- it was that
+ * the lowered spelling **wins**, so an address written as a provider sent it
+ * could not sign in at all, and anybody who could add an address could write
+ * the lowered form of somebody else's onto their own row and take it.
+ *
+ * `server/core` refuses a write that is not already normalised, naming the form
+ * it should have been, the way it refuses a `Host` that is not; `front.Address`
+ * is the one function both sides use.
  *
  * @generated from message roster.Email
  */

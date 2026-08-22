@@ -1093,9 +1093,18 @@ through a door nobody had put a lock on because the door did not exist yet.
 
 It is the same comparison `mayGrant` makes, in the other direction: `mayGrant`
 asks whether the caller covers what they are handing out, this asks whether they
-cover what the person they are becoming already holds. Same source -- bindings,
-through `rules.Granted` -- same conservatism, same reading of a missing frame as
-the deployment's own work, and the same "on its own" rule about patterns.
+cover what the person they are becoming already holds. Same conservatism, same
+reading of a missing frame as the deployment's own work, and the same "on its
+own" rule about patterns.
+
+**Not the same source, and that took two more findings to see.** This entry said
+*bindings, through `rules.Granted`*, and the two directions cannot read the same
+answer: `mayGrant` is right to leave a role held in a team out, because a team
+role is not one to bind across the tenant, and this is wrong to -- an
+administrator provisioned through a team, or through a group, read as holding
+nothing at all and could be reset by anybody. A missing path refuses in one
+direction and allows in the other. `rules.Holding` is what this asks now; see
+D35 and D41.
 
 Changing your own is exempt, and has to be: without it nobody could change their
 own password unless they held everything they held, which is true and is a

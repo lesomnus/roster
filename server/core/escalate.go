@@ -72,12 +72,26 @@ import (
 // administrator who reads as holding nothing and can be reset by anybody. That
 // was true of a group binding until it was written down here.
 //
-// # What is not covered, and why it is enough
+// # Where it is applied, and the one place it is not
 //
-// `Patch` and `Apply` are how a role could grow methods after it was written,
-// and both are closed at the transport by `grpcx.GeneralWrite` -- `Closed` in
-// the chain and in `batch.Guard`. A deployment that opens them opens this with
-// them, which is worth knowing and is not a hole this can close from here.
+// Every write that changes what the gate will answer for somebody:
+// `Role.Add` and `Role.Patch`, `Binding.Add`, `TeamMembership.Add` and
+// `TeamMembership.Patch`, `GroupMembership.Add`, and `ApiKey.Add` and
+// `ApiKey.Patch`. The last two of those name no role and hand over as much as
+// one, which is what took three goes to see; see D40.
+//
+// The `Patch`es are checked **here** rather than left to the transport. This
+// paragraph used to say they were closed by `grpcx.GeneralWrite` and that it
+// was not a hole this could close, and both halves were wrong: `Patch` is a
+// generated verb like any other and is served, and a role that can grow
+// methods after it was written is a role whose first version says nothing.
+//
+// `Apply` is the one left. It is a general write -- a patch document rather
+// than named fields -- and it is closed at the transport by
+// `grpcx.GeneralWrite`, `Closed` in the chain and in `batch.Guard`, which is
+// what roster serves: nothing here sets `AllowGeneralWrites`. A deployment that
+// opens it takes this on with it, and closing it from here means reading the
+// document to find out what it sets, which is work nothing has needed yet.
 
 // Granted is every pattern somebody holds through a binding, and therefore may
 // pass on.

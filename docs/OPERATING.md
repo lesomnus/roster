@@ -426,22 +426,64 @@ Scope is where the reference sits:
 | a `Binding` with a site | that site |
 | a `TeamMembership` | that team |
 
-A `Group` is a set of people and grants nothing by itself — a binding to a group
-reaches everybody in it, so the rule is written once and the membership changes.
+A `Group` is a set of people, and a binding to one reaches everybody in it — so
+the rule is written once and the membership changes. Which is why **putting
+somebody into a group is handing them what it holds**, and is refused on the
+same terms as writing the binding was.
 
 ### You cannot hand out what you do not hold
 
-Writing a role, patching one, binding one, and putting methods on an API key are
-all refused when they name a method you do not hold **through a binding**. A
-role you hold in one team is not yours to bind across the tenant.
+**A grant is any write that changes what the gate will answer for somebody**,
+which is a wider set than the writes that mention a role. These are all of them:
+
+| | |
+| --- | --- |
+| `RoleService/Add`, `/Patch` | the methods the role names |
+| `BindingService/Add` | that role, to a person or to a group |
+| `TeamMembershipService/Add`, `/Patch` | that role, in that team |
+| `GroupMembershipService/Add` | everything bound to that group |
+| `ApiKeyService/Add`, `/Patch` | the methods on the key |
+
+Each is refused when it names a method you do not hold. The last two are the
+ones that surprise people: neither says the word *role*, and each hands over as
+much as one.
 
 **What you hold, where you hold it.** A binding made in a site is a permission
 held there, so it may be handed on **in that site** and nowhere wider. A site
-administrator delegates inside their own site and cannot reach past it.
+administrator delegates inside their own site and cannot reach past it — and a
+group bound across the tenant is not one they may put anybody into, even though
+a group bound inside their site is.
 
-A role held in a *team* is left out of this entirely: its scope is a team and
-the scopes here are the tenant and a site, so there is nothing to compare. What
-asks about a team is the per-call check in `server/core`.
+A role held in a *team* is left out of what you may **hand out**: its scope is a
+team, and the scopes here are the tenant and a site, so there is nothing to
+compare. It is *not* left out of what you **hold** — see the next section, where
+the difference is the whole point.
+
+### And you cannot write a way into an account wider than yours
+
+Resetting a password is a way to become somebody, so it is refused unless their
+permissions are a subset of yours. Everything else somebody signs in with is the
+same act:
+
+| | |
+| --- | --- |
+| `VouchService/Set`, `/Reset`, `/Unlock` | their secret |
+| `VouchService/Enrol` | their second factor |
+| `IdentityService/Add` | an account at a provider that signs in as them |
+| `EmailService/Add` | a mailbox a recovery link is sent to |
+| `ApiKeyService/Add` | a key that **acts as** them |
+
+`IdentityService/Add` and `EmailService/Add` are worth reading twice before
+granting. They sound like keeping a directory tidy, and each is a way to sign in
+as whoever the row is about: link an account you control to somebody's `Holder`,
+or put a mailbox you read on it and ask for a link.
+
+**What counts as theirs is wider than what they may hand out.** A person
+provisioned as an administrator through a `TeamMembership`, or through a
+`Group`, holds those permissions for this rule even though they may not bind
+them anywhere. The two readings differ on purpose: missing a path in the first
+refuses a grant somebody could have made, which is a conversation, and missing
+one in the second lets an administrator be reset by anybody.
 
 **And a role that belongs to a site is bound only there**, whoever is asking.
 That is the schema's own rule and it holds for somebody who legitimately holds

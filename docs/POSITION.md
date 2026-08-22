@@ -216,16 +216,29 @@ they are traversed.
 | conditions / ABAC | "during working hours", "from this network" — an expression language, and then a debugger for it | a language |
 
 Escalation prevention **is** here, and used to be the last row of that table.
-Nobody hands out what they do not hold: `server/core/escalate.go`, on
-`Role.Add`, `Role.Patch`, `Binding.Add`, `TeamMembership.Add`,
-`GroupMembership.Add` and the methods of an API key -- six places rather than
-the one that row estimated -- plus the
-rule that a role scoped to a site is bound only in that site. What somebody
-holds counts the same whether the binding names them or a group they are in,
-which matters most in the other direction: the same rule refuses writing the
-credential of anybody wider than you, and a permission it could not see would
-be an administrator it read as holding nothing. `OPERATING.md` has the
-operator's half of it.
+`server/core/escalate.go` holds two rules, and it took three goes to state
+either of them widely enough.
+
+**Nobody hands out what they do not hold.** Which applies to every write that
+changes what the gate will answer for somebody, and not only to the writes that
+name a role: `Role.Add` and `Patch`, `Binding.Add`, `TeamMembership.Add` and
+`Patch`, `GroupMembership.Add`, and the methods on an API key. The last two name
+no role and hand over as much as one. Beside it sits the schema's own rule that
+a role scoped to a site is bound only in that site.
+
+**And nobody writes a way into an account wider than their own.** A password,
+a second factor, an account at a provider, a mailbox a recovery link goes to,
+or a key that acts as them -- all of them are ways to be that person, and all of
+them are refused unless that person's permissions are a subset of the writer's.
+
+The two rules read *held* differently, on purpose. What may be handed out is
+what somebody holds through a binding; what counts as theirs for the second rule
+is everything they hold by any path, a group and a team included. Missing a path
+in the first refuses a grant somebody could have made, which is a conversation.
+Missing one in the second is an administrator that reads as holding nothing, and
+anybody who may reset a password can become them.
+
+`OPERATING.md` has the operator's half of both.
 
 ## Two planes, one schema
 
