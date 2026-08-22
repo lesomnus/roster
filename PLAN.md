@@ -399,6 +399,62 @@ asked: `internal/apptest/cmd/outboxsecret_test.go` upstream, and
 `cmd/outboxsecret_test.go` here, because it is a property of the pinned payday
 rather than of anything in roster.
 
+### F19 · An edge is a read, and the gate was not asking about most of them -- **fixed upstream**
+
+The widest thing found in this app, and it needed a **clerk** rather than an
+administrator.
+
+    Alice may call Email.Add and Email.Get, in acme, and nothing else.
+    She adds an address of her own, vouched for by an identity of hooli's.
+    She reads her own row back, selecting through the edge.
+    She has hooli's provider subject, that person's name, and their tenant.
+
+Reproduced over a real listener before anything was changed, and the three hops
+are `EmailSelect` → `IdentitySelect` → `HolderSelect` → `TenantSelect`, each of
+which narrows liveness and nothing else.
+
+#### Why the gate did not catch it, and why its reason was good
+
+`emitAdmit` checks the edges an `Add` hangs off, which is what keeps a row from
+being planted in a tenant the caller cannot see. It checked the **first hop of
+the path to the tenant**, and said why: *an edge pointing at some other row in
+another tenant is a different question -- referential, not tenancy -- and is not
+asked here.*
+
+That is careful and it is wrong, because an edge is a **read**. `vouched_by` is
+not the path to anybody's tenant and it is walked by a select all the same. One
+hop later the wall is not there.
+
+It is F14's shape with **scope** substituted for **liveness**. F14 closed *a
+select reached an erased parent because nothing narrowed the nested read*, and
+its closing sentence -- *it is the parent's liveness and not the caller's scope,
+which is why it is the generator's and not the wall's* -- is the sentence this
+falsifies. The scope half was never closed for an edge a caller chooses.
+
+#### Both key forms, and the second is worse
+
+By identifier, and by `(tenant_id, provider, subject)`, because `Pick` applies
+erasure and no scope. The second needs no identifier at all -- and the tenant
+identifier is not a secret, since `FrontService.WhoseHost` maps a hostname to
+one through `Ungated`, on purpose. It answered differently for a subject that
+exists, so it was an **oracle** before it was a leak.
+
+#### Fixed in payday, in the generator, because every app on it had this
+
+`lesomnus/payday@7d19dea` checks every edge whose target is behind the wall, and
+`@51284cf` asks again on `Patch` for the edges that can move. What it costs is a
+read per edge where it used to be one per `Add`; the old weighing dismissed that
+cost against a benefit it did not believe in, and the benefit was demonstrated.
+
+`Patch` is included although `/Patch` is closed at the transport, which is the
+reading `cmd/aspermission_test.go` already rejected in writing about `Role.Patch`
+and `ApiKey.Patch`: `allow_general_writes` is one line of configuration, and
+`cmd/entity.go` builds the local CLI with no `closed` interceptor at all -- F18.
+
+`cmd/foreignedge_test.go` is roster's, because the leak was found here and a
+property that holds only because of how somebody else emits a layer is one that
+stops holding without anything in this repository changing.
+
 ### F18 · Three sentences that were false, and one asymmetry nobody had written down
 
 Found by sweeping for what is still open rather than by anything failing, which
@@ -1016,6 +1072,11 @@ It is the parent's **liveness** and not the caller's scope, which is why it is
 the generator's and not the wall's: a wall narrows the child's path to a tenant
 and has nothing to say about whether the row at the other end of an edge is
 still there.
+
+That last sentence is true and was read as more than it says. The caller's scope
+**is** reachable through an edge -- a select walks it, and the wall never
+narrowed what a write chose to point at. F19 is that half, found two months
+later by the same shape one substitution over.
 
 Fixed in `protoc-gen-orm-ent@28a0a48`, pinned through `lesomnus/payday@dbe36f0`.
 Only where a select asks for the edge: the key-only load `SelectInit` falls back
