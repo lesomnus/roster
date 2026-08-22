@@ -30,9 +30,10 @@ const (
 // row the trail names on every line it writes. Like [Tenant] it is payday's
 // because everything that decides anything reads it.
 //
-// **Fields 1..7 and 13..15 are payday's**; an app adds its own in 8..12 and
-// from 16, in a `holder.ext.proto` beside this. Adding an email or the subject
-// an external identity provider knows them by is exactly what that is for.
+// **Fields 1, 2, 4..7 and 13..15 are payday's**; 3 is not -- it is left for
+// the app's set edge -- and an app adds its own in 8..12 and from 16, in a
+// `holder.ext.proto` beside this. Adding an email or the subject an external
+// identity provider knows them by is exactly what that is for.
 type Holder struct {
 	state                      protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id              []byte                 `protobuf:"bytes,1,opt,name=id"`

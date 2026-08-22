@@ -168,6 +168,45 @@ The fix is the field, at 5, the number `name` has everywhere. `Delegate`'s
 comment was updated rather than deleted: it is right about signing in, and what
 it did not cover is enrolling.
 
+### F13 · The record of an erase was filed where the erased side could not read it -- **fixed upstream**
+
+The trail is filed under the tenant of the **thing that changed**, which is
+what makes it a trail two parties can read: whoever holds the row can read what
+was done to it. That is the reason payday's recorder pays a read on the write
+path rather than filing everything under whoever asked.
+
+It did not hold for an erase, and roster is a deployment where that is *every*
+erase -- nothing here declares `hard:`. The recorder reads the row it is
+recording through the bare server, and every read that server makes narrows to
+the rows still here. So the row a soft erase had just stamped was NotFound to
+the record of that very erase, and the record took the path meant for a row
+that is really gone: the **actor's** tenant, and an empty value.
+
+Exactly the wrong way round. An operator erasing somebody in a customer's
+tenant left a record their own tenant could read and the customer's could not
+-- the party with the strongest claim to know their person was removed is the
+one it was hidden from.
+
+Two more of the same kind came with it, and roster is exposed to one:
+
+- **A nil `[]byte` in a NOT NULL column.** SQL NULL to pgx, an empty blob to
+  SQLite's driver -- so a write that passes on the database the tests run on is
+  refused by the one the app is deployed on. The trail has three such columns.
+- **A message-typed field on an entity** stored as `{}`, because the generated
+  column is `encoding/json` and an opaque-API message has no exported fields.
+  roster has no such field today, which is the only reason it is not here.
+
+Fixed in `lesomnus/payday@f1f9321`, pin moved. `cmd/erasetrail_test.go` is
+roster asking whether it arrived -- worth its own file because the answer is a
+property of the pin rather than of anything here, and because the shape it
+asserts (a record filed away from its own tenant) is one no assertion about
+counts or contents would have caught.
+
+Beside the fix came the thing that finds this class at a desk:
+`scripts/with-postgres.sh` in payday, and a CI job that runs both of its
+modules on PostgreSQL. roster's own version of that sentence is in
+`docs/OPERATING.md`.
+
 ### D37 · What a review of every document against the code turned up
 
 Every document was read against the code rather than from memory, and every
