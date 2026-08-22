@@ -154,6 +154,28 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind, name strin
 	if err != nil {
 		return nil, nil, err
 	}
+
+	by, err := s.verifierOf(kind)
+	if err != nil {
+		// A kind this deployment cannot check at all, refused before anybody is
+		// looked for: it is a fact about the deployment rather than about the
+		// person, so it must not depend on whether they exist.
+		//
+		// Above the address lookup and not merely above the credential read,
+		// which is where this sat and which made the sentence above false for
+		// the one form a sign-in form actually collects. `byAddress` answers
+		// NotFound for somebody who is not here, and that was turned into the
+		// `no()` every stranger gets -- so an unknown kind was InvalidArgument
+		// for an address that exists and OK for one that does not, and `totp`
+		// on a keyring-less deployment was Unimplemented against the same
+		// nothing. That is D14's question answered in a status code: exact
+		// rather than statistical, needing no frame to ask, and worse than the
+		// clock `delegate.go` already refuses to hand over.
+		//
+		// `step` has always read this way round. This is now the same shape.
+		return nil, nil, err
+	}
+
 	if ref == nil {
 		// Named by address, which is a lookup rather than a reference. It costs
 		// a read, and a read that finds nothing costs the same as a wrong
@@ -165,18 +187,17 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind, name strin
 				return nil, nil, err
 			}
 
-			Burn(secret)
+			// The **kind's** burn, for the reason the one below gives: this was
+			// the package argon2 burn whatever was asked for, so `totp` against
+			// an address nobody has cost forty milliseconds and `totp` against
+			// somebody real with no second factor cost microseconds. That is
+			// the inversion `server/vouch/kind.go` was written to close,
+			// reintroduced one branch earlier and pointed at the address rather
+			// than at the person.
+			by.Burn(secret)
 
 			return no(), nil, nil
 		}
-	}
-
-	by, err := s.verifierOf(kind)
-	if err != nil {
-		// A kind this deployment cannot check at all, refused before anybody is
-		// read: it is a fact about the deployment rather than about the person,
-		// so it must not depend on whether they exist.
-		return nil, nil, err
 	}
 
 	v, err := s.credentialNamed(ctx, s.open, ref, kind, name)
@@ -314,6 +335,14 @@ func (s *Server) Set(ctx context.Context, req *app.VouchSetRequest) (*app.VouchS
 		return nil, status.Error(codes.InvalidArgument, "secret: must not be empty")
 	}
 
+	// What this may write down, decided before anything is read or hashed and
+	// before the breach check spends a round trip on it -- it is a fact about
+	// the request, and it costs nothing to answer.
+	kind := kindOf(req.GetKind())
+	if err := s.settable(kind); err != nil {
+		return nil, err
+	}
+
 	// Before anything is read, because it is a fact about the secret rather
 	// than about the person -- so the refusal must not depend on whether they
 	// exist, and there is no work to undo when it fires.
@@ -321,10 +350,29 @@ func (s *Server) Set(ctx context.Context, req *app.VouchSetRequest) (*app.VouchS
 		return nil, err
 	}
 
-	kind := kindOf(req.GetKind())
 	sum, err := Hash(req.GetSecret())
 	if err != nil {
 		return nil, status.Error(codes.Internal, "the secret cannot be stored just now")
+	}
+
+	if ref == nil {
+		// Named by address, which `refOf` answers nil for because it is a
+		// lookup rather than a reference. Every sibling resolves it --
+		// [Server.Verify], `Unlock`, `Enrol`, `Link` -- and this one passed the
+		// nil straight into the read below, so a caller naming somebody the way
+		// their own sign-in form does was told `key not set: Holder`: a
+		// generated type they never sent, about a field they never filled in.
+		// `Reset` is where it was felt, because resetting by email is the
+		// operator flow and it resets **through** here.
+		//
+		// After the refusals above and not before them: each of those is a
+		// fact about the request or about the secret rather than about the
+		// person, and one that waited for a lookup would be a refusal that
+		// depends on whether they exist.
+		ref, err = s.byAddress(ctx, req.GetWho().GetTenant(), req.GetWho().GetAddress())
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Read the person before writing their secret, because the write below may

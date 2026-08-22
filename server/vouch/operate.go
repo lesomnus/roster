@@ -56,6 +56,30 @@ func (s *Server) Reset(ctx context.Context, req *app.VouchResetRequest) (*app.Vo
 			"kind: %q is not a password; a second factor is Enrol", k)
 	}
 
+	// Whoever this is about, resolved **here** and once.
+	//
+	// `Set` resolves an address too, and letting it do so for this call meant
+	// resolving twice and then remembering to do it the same way -- which is
+	// exactly what was not remembered: the invalidation below asked `refOf`
+	// again, got nil for an address, and skipped. So a reset by email changed
+	// the password and left every session the takeover had opened alive, which
+	// is the one thing the paragraph below says must not happen, silently, on
+	// the form an operator actually uses.
+	//
+	// Resolved before the passphrase is made so that a call about nobody costs
+	// nothing, and so that both halves below are about the same person by
+	// construction rather than by agreement.
+	ref, err := refOf(req.GetWho())
+	if err != nil {
+		return nil, err
+	}
+	if ref == nil {
+		ref, err = s.byAddress(ctx, req.GetWho().GetTenant(), req.GetWho().GetAddress())
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	secret, err := passphrase()
 	if err != nil {
 		return nil, status.Error(codes.Internal, "a secret cannot be made just now")
@@ -64,8 +88,12 @@ func (s *Server) Reset(ctx context.Context, req *app.VouchResetRequest) (*app.Vo
 	// Through `Set`, which is where the hashing, the wall and the escalation
 	// rule already are. Reimplementing any of the three here would be a second
 	// copy of each, and the copy that gets it wrong is the one nobody reads.
+	//
+	// Named by identifier rather than by whatever the caller wrote, since it
+	// has been resolved: `Set` then has nothing left to look up, and cannot
+	// resolve it to somebody else.
 	if _, err := s.Set(ctx, app.VouchSetRequest_builder{
-		Who:    req.GetWho(),
+		Who:    app.VouchWho_builder{Id: ref.GetId()}.Build(),
 		Kind:   req.GetKind(),
 		Secret: []byte(secret),
 	}.Build()); err != nil {
@@ -83,9 +111,7 @@ func (s *Server) Reset(ctx context.Context, req *app.VouchResetRequest) (*app.Vo
 	//
 	// Best effort after the fact: the password is already changed, and failing
 	// the whole call would leave the caller unsure which half happened.
-	if ref, err := refOf(req.GetWho()); err == nil && ref != nil {
-		_, _ = s.walled.Holder().Invalidate(ctx, app.HolderInvalidateRequest_builder{Ref: ref}.Build())
-	}
+	_, _ = s.walled.Holder().Invalidate(ctx, app.HolderInvalidateRequest_builder{Ref: ref}.Build())
 
 	return app.VouchResetResponse_builder{Secret: secret}.Build(), nil
 }

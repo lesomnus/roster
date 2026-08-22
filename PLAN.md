@@ -168,6 +168,150 @@ The fix is the field, at 5, the number `name` has everywhere. `Delegate`'s
 comment was updated rather than deleted: it is right about signing in, and what
 it did not cover is enrolling.
 
+### D37 · What a review of every document against the code turned up
+
+Every document was read against the code rather than from memory, and every
+finding was then argued against by somebody trying to refute it. Most of what
+came back was prose that had been true when it was written. What was not is
+here, because each of these is a rule that already existed and a place it did
+not reach.
+
+#### The wall around a port is not the wall around a deployment
+
+The admin listener builds its own `VouchService` and its own chain, and three
+of the differences from the data plane's were omissions rather than decisions.
+
+It was built without `WithBreached`, so the corpus of leaked passwords -- which
+`OPERATING.md` calls a deployment-wide refusal -- was enforced on the port a
+customer reaches and not on the one an operator resets passwords from. The two
+options are not the same kind of thing and that is why the second was forgotten:
+`WithReach` reads the caller's bindings and genuinely does not cross between the
+planes, while the corpus answers a question about the value before anybody is
+read.
+
+Its `Intent` recorded a write on the control plane by matching the four
+generated verb suffixes, so every `VouchService` write served on that very port
+-- `Set`, `Reset`, `Unlock`, `Revoke`, `Link`, `Enrol` -- and every `Holder`
+overlay write left one trail instead of two. Named the **reads** instead and
+everything else recorded, which is the direction `register` in `serve.go`
+already fails in.
+
+And `admin.limit` was read by nothing. Every other knob of that block is.
+
+#### A rate that counted half the calls, twice over
+
+Both chains wrote `LimitUnary` alone, so `Watch` was the way past whatever a
+deployment configured: one call to open, nothing counted however long it ran or
+however many were opened.
+
+Fixing it found the second half. `ServerConfig.Limiter()` **builds** a bucket,
+so a chain that called it once per interceptor would have had two limits with
+the same numbers on them, neither counting what the other let through -- a rate
+of n per second answering 2n, with nothing in the configuration to see. One
+limiter, handed to both.
+
+#### The one credential a suspension did not reach
+
+D26's table says `date_disabled` is enforced at `cmd.Resolver`, *where every
+credential that resolves to a holder arrives*. Every credential arriving **at
+roster**: a product app is handed the `rt_` and asks `TokenService/Introspect`,
+carrying its own key, so the person's credential is a string in a request body
+that never goes near the resolver. Suspending somebody stopped them signing in
+and left them working everywhere else until the token expired, which for a key
+is possibly never. Read in `keys.findKey` now, where both answers this package
+gives are built.
+
+#### And the ones that were about a refusal costing what it should
+
+`Verify` resolved an address before it decided whether it could check the kind
+at all, so *a fact about the deployment* became a fact about whether the address
+exists: an unknown kind answered InvalidArgument for one that does and `no()`
+for one that does not, and `totp` on a keyring-less deployment answered
+Unimplemented against the same nothing. The burn for a missing address was the
+package argon2 rather than the kind's, which is the inversion `kind.go` exists
+to close, reintroduced one branch earlier.
+
+`Set` wrote whatever `kind` it was handed. Nothing else in the service does, and
+a phantom kind is offered by `factors` to every framed sign-in from then on,
+refused by `Continue`, and unremovable -- `CredentialService` is unregistered.
+
+#### The half-session, and what its clock is about
+
+`Config.Half` was written down and never read: the only thing ending a
+half-session was the browser's own cookie expiry. Fixing that by teaching
+`held.take` the clock broke the other caller -- `SignOut` takes the entry in
+order to **revoke** what is in it, and an expired entry is the one that most
+needs revoking, since `expires` is this app's hold on a browser and not roster's
+on a credential. The clock belongs to the second form, which is spending a
+string roster is holding anyway. Two functions, and the one that says which is
+which is the name.
+
+The same call also removed a signed-in browser's delegation, because both live
+in one map under one key: one stray POST and somebody's session could act for
+nobody, with a credential still live in roster and nothing holding the
+reference.
+
+#### Two answers to one question, three times
+
+A `Tenant` lookup that failed for any reason answered 401, so a roster that was
+down read as a wrong password -- which `frontdoor.js` warns about in as many
+words for the call one further on. `ErrUnknownHost` is the only one a person is
+told no for.
+
+`Hostname` was two functions, roster's and the reference app's, and they
+disagreed about a bracketed literal with no port: `[::1]` here, `::1` there, so
+the lookup missed and the page said nobody is there. It was also cutting every
+unbracketed literal at its last colon -- the guard for *too many colons* looked
+at the part after it, which the last colon guarantees has none -- so `fe80::1`
+was stored as `fe80:`. Both are `net.SplitHostPort` now, which holds every one
+of those rules, and the app asks roster what a name is.
+
+`control.watch` inherited the data plane's broker by **replacing the whole
+block**, so `control.watch.outbox: true` beside an inherited broker was loaded,
+listed by `roster config env`, and dropped. And `watch.outbox` with
+`broker: none` wrote a row inside every transaction that nothing would ever
+publish or delete, in a table `OutboxService` answers no RPC for -- refused at
+startup now, in one place rather than in the drain's condition as well.
+
+#### Stopping
+
+`main` handled `os.Interrupt` alone. `docker stop` and every orchestrator send
+SIGTERM, and the image runs `exec roster serve`, which makes roster PID 1 --
+where SIGTERM has no default handler at all. So the graceful path was written,
+wired, and never once executed in the way this app is deployed, and every
+routine restart was a crash.
+
+`GracefulStop` waits for every RPC in flight and a `Watch` never ends on its
+own, so one product app holding the sync channel -- which is what item 4 tells
+a product app to do -- meant the process had to be killed. Five seconds and then
+`Stop`, which is what unblocks the graceful call rather than racing it.
+
+And `serve` checked one plane's schema. `control.db.migrate` was listed by
+`config env`, set by `compose.yaml`, promised by `OPERATING.md` and read by
+nothing -- so an upgrade past a release that adds a control-plane table started,
+said nothing, and was first reported as an operator who could not sign in.
+
+#### What was found and not fixed
+
+Two callers unlinking a person's last two identities at once both count before
+either writes, and the person is left with no way in. Nothing this layer can
+reach serialises them: a transaction is necessary and not sufficient under READ
+COMMITTED, and the lock that would be -- `SELECT ... FOR UPDATE` -- is not
+something a generated read offers. Writing to the `Holder` inside the
+transaction would take the same lock and is worse than the disease. It takes two
+calls at once about one account from a caller who is almost always the person
+themselves, and an operator's `Vouch.Reset` is a way back in.
+
+#### And how the fixes themselves were reviewed
+
+Each group of fixes was written by one reader and then attacked by another,
+whose only job was to refute it. That found a security regression before it
+landed -- a `Reset` by address that changed the password and skipped D26's
+invalidation, leaving every session a takeover had opened alive -- a test
+asserting a count that a soft erase does not change, a skipped test standing in
+for a fix, and a timing assertion that would have flaked against a remote
+database. None of those would have been found by running the suite.
+
 ### D35 · Escalation prevention is a set of rows, and three readers disagreed about it
 
 `escalate.go` states one rule -- *what you grant must be a subset of what you

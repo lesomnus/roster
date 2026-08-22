@@ -443,10 +443,25 @@ func hal(c *Config) xli.Handler {
 // The **name** and not the whole block: an outbox is about durability of one
 // database's writes and the two planes have two databases, so inheriting it
 // would turn one decision into two rows in a table nobody asked for.
+//
+// It is the one field that falls back, and it took a rewrite to be: this used
+// to answer with a fresh `WatchConfig` carrying the data plane's broker
+// whenever `control.watch.broker` was empty -- which threw away everything else
+// the control block had said. A deployment that wrote `control.watch.outbox:
+// true` and left the broker to be inherited, exactly as the field above invites
+// it to, got no recorder and no drain: the setting was loaded, listed by
+// `roster config env`, and dropped on the floor, so a crash between the commit
+// and the publish still lost the key change it had paid a row per write to
+// keep. Nothing said so, and nothing could have -- both arrangements build a
+// working server.
+//
+// Filling the one field in rather than choosing between two blocks is also what
+// keeps the next field added to `WatchConfig` from having to be remembered
+// here.
 func (c ControlConfig) watch(data config.WatchConfig) config.WatchConfig {
-	if c.Watch.Broker != "" {
-		return c.Watch
+	if c.Watch.Broker == "" {
+		c.Watch.Broker = data.Broker
 	}
 
-	return config.WatchConfig{Broker: data.Broker}
+	return c.Watch
 }

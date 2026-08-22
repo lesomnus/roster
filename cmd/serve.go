@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"slices"
 	"strings"
+	"time"
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
@@ -181,6 +182,29 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		db.Close()
 		return nil, err
 	}
+	if c.Watch.Outbox && b == nil {
+		// A queue with nothing at the other end of it.
+		//
+		// The recorder below is installed on `watch.outbox` alone and the drain
+		// further down spins only where there is a broker to publish into, so
+		// this combination -- two plain environment variables, and the loader
+		// accepts both -- wrote a row inside every transaction that nothing
+		// would ever publish or delete. `OutboxService` answers no RPC, so not
+		// even an operator could drain it by hand; the table grows until the
+		// database is full, which is the failure `outbox.proto` warns about in
+		// as many words.
+		//
+		// Refused rather than logged and skipped, because the two settings
+		// contradict each other and the deployment that wrote them meant one of
+		// the two. Skipping the recorder would pick one silently, which is how
+		// this got here.
+		db.Close()
+		return nil, fmt.Errorf(
+			"watch.outbox: on, and watch.broker is %q, so nothing would ever publish or "+
+				"delete what it queues -- every write would leave a row behind and the "+
+				"table would grow without end. name a broker, or turn the outbox off",
+			config.BrokerNone)
+	}
 
 	w := watch.New(b)
 
@@ -309,6 +333,17 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		})
 		if err != nil {
 			db.Close()
+
+			if c.Control.Watch.Broker == "" {
+				// Named, because the setting it is about is one the operator
+				// did not write. The broker above is the data plane's,
+				// inherited exactly as the field invites -- so a refusal saying
+				// `control: watch.broker is "none"` reads as being about a line
+				// that is not in the file.
+				return nil, fmt.Errorf(
+					"control: %w (control.watch.broker is empty, so it took watch.broker)", err)
+			}
+
 			return nil, fmt.Errorf("control: %w", err)
 		}
 
@@ -407,11 +442,16 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		vouch.Sweep(s.Ent, vouch.Swept),
 	)
 
-	if c.Watch.Outbox && b != nil {
+	if c.Watch.Outbox {
 		// The loop that makes an event durable. It is not a layer and not a
 		// method on any server -- `spin.Run` finds it in whatever is handed
 		// over, which is what keeps a server that has no background work from
 		// carrying an empty method saying so.
+		//
+		// No second look at whether there is a broker: the refusal above is the
+		// one place that decides, and a condition here as well would be the
+		// same rule written twice -- which is how a queue with nothing at the
+		// other end of it got written in the first place.
 		s.Spin = append(s.Spin, pd.Drain(client, b, c.Watch.Every()))
 	}
 
@@ -456,10 +496,20 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// twice below so that the two cannot come to disagree.
 	shut := s.closed(c)
 
+	// One limiter, handed to both halves.
+	//
+	// `Limiter()` builds a bucket, so calling it twice is two limits with the
+	// same numbers on them and neither counting what the other let through --
+	// which is a rate of `n` per second answering `2n`, silently. Held in a
+	// variable for the reason `shut` is: one thing the chain is told, rather
+	// than a constructor called wherever it is needed.
+	rate := c.Server.Limiter()
+
 	chain := grpcx.Serving(ctx, grpcx.WithDeadline(c.Server.CallTimeout())).
 		WithUnary(auth.InterceptorUnary(h, r, public)).
 		WithStream(auth.InterceptorStream(h, r, public)).
-		WithUnary(grpcx.LimitUnary(c.Server.Limiter(), gate.ByTenant())).
+		WithUnary(grpcx.LimitUnary(rate, gate.ByTenant())).
+		WithStream(grpcx.LimitStream(rate, gate.ByTenant())).
 		With(gate.Interceptor(Policy(s.Ent))).
 		With(s.Watch.Interceptor()).
 		WithUnary(grpcx.ClosedUnary(shut)).
@@ -745,10 +795,59 @@ func (s *Server) Serve(ctx context.Context, c Config, l net.Listener) error {
 
 	go func() {
 		<-ctx.Done()
-		g.GracefulStop()
+		stopping(g)
 	}()
 
 	return g.Serve(l)
+}
+
+// ShutdownGrace is how long a stop waits for the calls that are still in
+// flight.
+//
+// `GracefulStop` on its own waits for all of them, and one kind never ends: a
+// Watch loops until the **client** hangs up, the deadline the chain installs is
+// unary-only, and no connection is aged out unless a deployment configured
+// keepalive. So one product app holding the sync channel -- which is what
+// `PLAN.md` item 4 tells a product app to do -- meant `g.Serve` never returned:
+// the deferred stops for the other listeners never ran, the errgroup below
+// never finished, and `signal.NotifyContext` had already fired so a second
+// Ctrl-C did nothing. The process had to be killed, which is exactly the thing
+// `NewCmdServe`'s comment says the wiring is arranged to prevent.
+//
+// Five seconds, and a constant rather than a setting because the number that
+// decides this is somebody else's: `docker stop` waits ten and then sends
+// SIGKILL, so a longer grace is one nothing lives to use. A deployment that
+// wants its streams cut sooner has `keepalive.max_connection_age`, which says
+// something truer about a long-lived stream than a shutdown timeout does.
+//
+// Exported so that a test can say *bounded by what this app chose* rather than
+// by a number copied beside it, which is the whole claim.
+const ShutdownGrace = 5 * time.Second
+
+// stopping takes a server down, and does not wait forever to.
+//
+// Graceful first, so a unary call in flight finishes and its caller gets an
+// answer rather than a broken connection. Hard after [ShutdownGrace], because
+// waiting on a stream that has no reason to end is not waiting, it is hanging.
+//
+// `Stop` beside a `GracefulStop` already in flight is what unblocks it: it
+// closes the transports out from under the handlers, the connections drain, and
+// the graceful call returns -- which is why the goroutine is still waited for
+// rather than abandoned. Anything left running after this is running under a
+// process that is on its way out anyway.
+func stopping(g *grpc.Server) {
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		g.GracefulStop()
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(ShutdownGrace):
+		g.Stop()
+		<-done
+	}
 }
 
 // GrpcControl is the control plane's own server, for a console.
@@ -809,7 +908,11 @@ func (s *Server) serveControl(ctx context.Context, c Config, g *grpc.Server) (fu
 
 	log.From(ctx).InfoContext(ctx, "control", slog.String("addr", l.Addr().String()))
 
-	return g.GracefulStop, nil
+	// Bounded like the one above, and for the same reason: this port serves the
+	// same watchable services, so a console with a stream open would otherwise
+	// hold the whole shutdown -- from a `defer`, after the data plane had
+	// already stopped and with nothing left to report it.
+	return func() { stopping(g) }, nil
 }
 
 // serveAdmin is where an operator administers customers; see `admin.go`.
@@ -827,7 +930,7 @@ func (s *Server) serveAdmin(ctx context.Context, c Config, g *grpc.Server) (func
 
 	log.From(ctx).InfoContext(ctx, "admin", slog.String("addr", l.Addr().String()))
 
-	return g.GracefulStop, nil
+	return func() { stopping(g) }, nil
 }
 
 // serveHttp is the second listener, for whatever cannot speak gRPC -- which is
@@ -921,6 +1024,69 @@ func (s *Server) http(ctx context.Context, name string, c config.HttpConfig, g *
 	return func() { srv.Close() }, nil
 }
 
+// Ready is the databases, before anything is served on them.
+//
+// payday owns some of this app's schema, so a field added to a holder there
+// arrives in `internal/ent` the next time this app generates -- and nothing
+// about that is loud. It compiles, the tests pass against a database the tests
+// just created, and the first sign of trouble is a column that is not there in
+// the one handler that reads it.
+//
+// So one of two things happens here, and which one is the operator's to say.
+// `db.migrate: true` hands the serving process the right to alter tables, which
+// is right for development and is a thing to decide on purpose; anything else
+// and the shapes have to agree already.
+//
+// **Both** planes, and the second is why this is a method rather than four
+// lines in `serve`. Only the data plane was ever looked at: the control plane
+// -- a second roster, on its own database, holding the keys every request is
+// authenticated against -- was opened and served in whatever shape it was
+// found. `control.db.migrate` was listed by `roster config env`, set by
+// `compose.yaml`, promised by `docs/OPERATING.md`, and read by nothing.
+//
+// What it cost is an upgrade past a release that adds a control-plane table --
+// `session` is one -- on a deployment whose entrypoint skips `init` because the
+// marker beside its databases says it is already seeded. The data plane
+// migrates, the control plane does not, and the process starts and says
+// nothing: the sweep logs the missing table and carries on, and the first
+// report is an operator who cannot sign in. That is the quiet failure the
+// check exists to turn into a refusal at startup.
+//
+// Both planes generate from the same `internal/ent`, so there is one set of
+// tables to check against and no second answer to keep in step.
+func (s *Server) Ready(ctx context.Context, c Config) error {
+	if err := s.ready(ctx, c.Db); err != nil {
+		return err
+	}
+	if s.Control == nil {
+		return nil
+	}
+
+	// Named, because the two databases are configured in two blocks and an
+	// error saying a table is missing says nothing about which of them to go
+	// and look at.
+	if err := s.Control.ready(ctx, c.Control.Db); err != nil {
+		return fmt.Errorf("control: %w", err)
+	}
+
+	return nil
+}
+
+// ready is [Server.Ready] for one plane, told what that plane's `db` block
+// says.
+//
+// A method on the server rather than a function taking one, because what it
+// needs is the three things `Build` worked out and kept -- the connection, the
+// dialect it speaks and the client -- and re-deriving any of them from the
+// configuration would be a second answer to a question already answered.
+func (s *Server) ready(ctx context.Context, c config.DbConfig) error {
+	if c.Migrate {
+		return s.Ent.Schema.Create(ctx)
+	}
+
+	return migrate.Check(ctx, s.Db, s.Dialect, entmigrate.Tables)
+}
+
 // NewCmdServe is `<app> serve`.
 //
 // It is the app's own and not payday's, for the reason at the top of
@@ -939,25 +1105,7 @@ func NewCmdServe(c *Config) *xli.Command {
 			}
 			defer s.Close()
 
-			// The database, before anything is served on it.
-			//
-			// payday owns some of this app's schema, so a field added to a
-			// holder there arrives in `internal/ent` the next time this app
-			// generates -- and nothing about that is loud. It compiles, the
-			// tests pass against a database the tests just created, and the
-			// first sign of trouble is a column that is not there in the one
-			// handler that reads it.
-			//
-			// So one of the two happens here, and which one is the operator's
-			// to say. `db.migrate: true` hands the serving process the right to
-			// alter tables, which is right for development and is a thing to
-			// decide on purpose; anything else and the shapes have to agree
-			// already.
-			if c.Db.Migrate {
-				if err := s.Ent.Schema.Create(ctx); err != nil {
-					return err
-				}
-			} else if err := migrate.Check(ctx, s.Db, s.Dialect, entmigrate.Tables); err != nil {
+			if err := s.Ready(ctx, *c); err != nil {
 				return err
 			}
 

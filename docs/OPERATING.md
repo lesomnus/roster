@@ -745,6 +745,12 @@ Nothing written down is plaintext, and it warns once.
   customer-minted key safe are in place — the prefix, the holder it resolves to,
   and `mayGrant` on `methods` — and what is missing is the surface that would
   use them.
+- **A person cannot be raced out of their own account, quite.** Two calls at
+  once, each removing one of somebody's last two ways in, both check before
+  either writes and both go through. It takes two simultaneous calls about one
+  account, from a caller who is almost always that person; `Vouch.Reset` gives
+  them a password, which is a way back in. PLAN.md D37 says what closing it
+  needs.
 - **A person's own `rt_` key, minted from a screen.** The delegation path is
   exercised — `examples/sso` mounts `frontdoor`, which calls `Vouch.Delegate`
   on a password sign-in and `Vouch.Revoke` on sign-out — but a key somebody

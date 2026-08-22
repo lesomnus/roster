@@ -3,6 +3,9 @@ package core
 import (
 	"context"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"github.com/lesomnus/payday/pderr"
 
 	app "github.com/lesomnus/roster/rstr"
@@ -95,12 +98,40 @@ func (s coreTeamMembership) Add(ctx context.Context, req *app.TeamMembershipAddR
 }
 
 // Erase asks the same question the write does, about the team the row names.
+//
+// # Why the row not being there is not an error
+//
+// Asking needs the row: which team a membership is of is not in the reference,
+// so it is read first -- and a read of what is gone answers NotFound. Passing
+// that on put this layer at odds with the RPC it stands in front of. The
+// generated `Erase` answers `{erased: false}` for a row that was already gone
+// or was never there, and PLAN.md states that as a rule rather than as a
+// detail: `keys.Undelegate` erases what may already be erased, and so does
+// anybody cancelling something twice.
+//
+// The shape it was found in is two operators removing one person from one team.
+// The winner is told what happened; the loser was told the row does not exist,
+// for a call whose whole request was the state they both ended up in.
+//
+// Answered before `mayChangeTeam` rather than after, because there is nothing
+// left to ask: the permission question is about a team, and a row that is not
+// there names none. Nor does answering early tell an outsider anything -- the
+// read goes through `Next()`, so a caller the wall hides the row from gets
+// NotFound here and `{erased: false}` from the generated `Erase` below, which
+// is the same answer they are getting now.
+//
+// [coreIdentity.Erase] is these three lines for the same reason, and the
+// comment there is the long version.
 func (s coreTeamMembership) Erase(ctx context.Context, req *app.TeamMembershipRef) (*app.TeamMembershipEraseResponse, error) {
 	v, err := s.Next().TeamMembership().Get(ctx, app.TeamMembershipGetRequest_builder{
 		Ref:    req,
 		Select: app.TeamMembershipSelect_builder{Team: app.TeamSelect_builder{}.Build()}.Build(),
 	}.Build())
 	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return app.TeamMembershipEraseResponse_builder{}.Build(), nil
+		}
+
 		return nil, err
 	}
 

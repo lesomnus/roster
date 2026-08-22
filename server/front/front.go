@@ -25,6 +25,7 @@ package front
 
 import (
 	"context"
+	"net"
 	"strings"
 
 	"google.golang.org/grpc/codes"
@@ -49,27 +50,40 @@ type Server struct {
 func New(open app.Server) *Server { return &Server{open: open} }
 
 // Hostname is a host as this app stores and compares one: lowercased, with any
-// port removed.
+// port removed and an address literal unbracketed.
 //
 // Exported because both sides need it and neither may disagree. A row written
 // as `Acme.Example.com:8443` is a row that silently never matches, and the
-// place that finds out is a sign-in page saying nobody is there.
+// symptom is a sign-in page saying nobody is there.
+//
+// # Why the splitting is not done by hand
+//
+// It was, and both halves of it were wrong for an address literal.
+//
+// The bracketed form kept its brackets, so `::1` and `[::1]` were two spellings
+// of one name and each a fixed point of this function -- `Host.Add` accepted
+// either, and an operator who wrote the bare one had a row no request could
+// arrive as. The unbracketed form was cut at its last colon, because the guard
+// meant to catch *too many colons* looked at the part **after** it, which the
+// last colon guarantees has none: so it was true always, `::1` was stored as
+// `:` and `fe80::1` as `fe80:`, and what the operator saw was `Host.Add`
+// telling them so.
+//
+// [net.SplitHostPort] holds every one of those rules already, including that
+// the brackets exist only to tell a colon in an address from the colon before a
+// port -- which is why it takes them off with the port rather than leaving
+// them. What it does not do is answer for a string with no port at all, which
+// is most of what arrives here, so the error is read as "there was nothing to
+// split" and the one case that leaves is finished off: a literal in brackets
+// and no port.
 func Hostname(v string) string {
 	v = strings.ToLower(strings.TrimSpace(v))
 
-	// A bracketed IPv6 literal keeps its colons. Cutting at the last colon
-	// outside the brackets is what `net.SplitHostPort` does, and doing it by
-	// hand avoids an error return for a string that may legitimately have no
-	// port at all.
-	if i := strings.LastIndex(v, "]"); i >= 0 {
-		if j := strings.Index(v[i:], ":"); j >= 0 {
-			v = v[:i+j]
-		}
-
-		return v
+	if h, _, err := net.SplitHostPort(v); err == nil {
+		return h
 	}
-	if i := strings.LastIndex(v, ":"); i >= 0 && !strings.Contains(v[i+1:], ":") {
-		v = v[:i]
+	if strings.HasPrefix(v, "[") && strings.HasSuffix(v, "]") {
+		return v[1 : len(v)-1]
 	}
 
 	return v

@@ -57,7 +57,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -76,6 +75,7 @@ import (
 
 	"github.com/lesomnus/roster/frontdoor"
 	rstr "github.com/lesomnus/roster/rstr"
+	rosterhost "github.com/lesomnus/roster/server/front"
 )
 
 // Config is what a deployment is told.
@@ -263,7 +263,17 @@ func New(ctx context.Context, c Config, conn *grpc.ClientConn, s *authsession.Se
 		},
 
 		Tenant: func(ctx context.Context, host string) (string, error) {
-			return tenantOf(ctx, roster, front, c.Tenants, host)
+			t, err := tenantOf(ctx, roster, front, c.Tenants, host)
+			if errors.Is(err, ErrUnknown) {
+				// The one cause `frontdoor` says "no" to, in the word this app
+				// uses for it. Everything else reaches it as it is and is
+				// answered as broken, which is the difference between a person
+				// being told their password was wrong and being told the place
+				// they are typing it at is down.
+				return "", frontdoor.ErrUnknownHost
+			}
+
+			return t, err
 		},
 	})
 	if err != nil {
@@ -378,10 +388,21 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 	who.Host = r.Host
 
 	t, err := tenantOf(ctx, a.roster, a.front, a.tenants, r.Host)
-	if err != nil {
+	switch {
+	case errors.Is(err, ErrUnknown):
 		// Reached under a name this deployment does not serve. There is no
 		// tenant to sign in to and nothing to guess.
 		http.Error(w, "this account has not been invited", http.StatusForbidden)
+		return
+
+	case err != nil:
+		// And a roster that could not be reached is not a name nobody serves.
+		// This said "this account has not been invited" to an outage -- a
+		// sentence about the person, made up, about a lookup that never
+		// happened -- and the same person retrying at a healthy roster would
+		// have signed straight in.
+		fmt.Fprintf(os.Stderr, "sso: whose host %q: %v\n", r.Host, err)
+		http.Error(w, "cannot sign in", http.StatusInternalServerError)
 		return
 	}
 
@@ -635,16 +656,6 @@ func Enrolling(c rstr.Client) Enrol {
 	}
 }
 
-// hostname drops the port, which is part of an address and not of a name a
-// deployment maps.
-func hostname(v string) string {
-	if h, _, err := net.SplitHostPort(v); err == nil {
-		v = h
-	}
-
-	return strings.ToLower(v)
-}
-
 // tenantOf is which operator this browser arrived at, by alias.
 //
 // From the configured map when there is one, and otherwise from roster. The
@@ -664,7 +675,14 @@ func tenantOf(
 	host string,
 ) (string, error) {
 	if len(tenants) > 0 {
-		t, ok := tenants[hostname(host)]
+		// Normalized by roster's own function rather than by this app's copy
+		// of it. There were two, and two answers to *what name did this
+		// browser arrive at* is one of them looking up a row the other never
+		// wrote: a portless `[::1]` stayed bracketed here and was stored
+		// unbracketed there, so the lookup missed and the page said nobody is
+		// here. `Hostname` says as much about itself -- both sides need it and
+		// neither may disagree.
+		t, ok := tenants[rosterhost.Hostname(host)]
 		if !ok {
 			return "", ErrUnknown
 		}
@@ -674,6 +692,17 @@ func tenantOf(
 
 	v, err := front.WhoseHost(ctx, rstr.FrontWhoseHostRequest_builder{Host: host}.Build())
 	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			// The same answer the configured map gives for a name that is not
+			// in it, and it has to be the same one: a caller that cannot tell
+			// *nobody is here* from *nobody answered* has to guess, and both
+			// guesses are wrong in public -- one tells a stranger a host exists,
+			// the other tells somebody with the right password that it was
+			// wrong. `WhoseHost` passes `NotFound` through unchanged for
+			// exactly this reader.
+			return "", ErrUnknown
+		}
+
 		return "", err
 	}
 

@@ -172,25 +172,50 @@ func Intent(control *ent.Client) grpc.UnaryServerInterceptor {
 	}
 }
 
-// writes reports whether a method changes anything.
+// writes reports whether a method changes anything, and it says so by naming
+// the **reads**, because the other direction was wrong here.
 //
-// By the name, because nothing else says so: payday's recorder is invoked by
-// the sink rather than named per method, and there is no descriptor option for
-// it. The four are what generation emits for every entity; a hand-written
-// service that writes under another name would be missed, which is why this
-// list is here and not somewhere it reads as exhaustive.
+// By the name at all, because nothing else says so: payday's recorder is
+// invoked by the sink rather than named per method, and there is no descriptor
+// option for it. What this used to name was the four verbs generation emits --
+// Add, Patch, Apply, Erase -- with a note that a hand-written service writing
+// under another name would be missed. It was missed, on this port, and the
+// note is where it was written down.
+//
+// Every credential write is such a name. `Set`, `Reset`, `Unlock`, `Revoke`,
+// `Link` and `Enrol` are `VouchService`'s, hand-written and registered by
+// `GrpcAdmin` below; `Update`, `Disable`, `Enable` and `Invalidate` are the
+// overlay a holder carries. So an operator resetting a password left **one**
+// row rather than two -- and since the trace is made past this line, in a
+// deployment that configured no `otel:` that one row carried no trace either
+// and there was nothing to join it to. The audit came apart on exactly the
+// writes this port exists to make, which are also the ones a reader of the
+// trail would go looking for first.
+//
+// Naming the reads cannot fail in that direction. A read this does not know is
+// recorded as a decision it was not, which costs a row somebody reads past; a
+// write it does not know is a write nothing accounts for, and nothing says so.
+// `register` in `serve.go` chose the same way round for the same reason: the
+// arrangement that fails by doing too much fails where somebody can see it.
 func writes(method string) bool {
 	i := strings.LastIndex(method, "/")
 	if i < 0 {
-		return false
-	}
-
-	switch method[i+1:] {
-	case "Add", "Patch", "Apply", "Erase":
+		// Not something gRPC dispatched, which cannot arrive at this end of an
+		// interceptor. Recorded rather than skipped, for the reason above.
 		return true
 	}
 
-	return false
+	switch method[i+1:] {
+	// The three generation emits, and `SignsIn` -- the one hand-written read
+	// this port serves, which answers how somebody signs in without the
+	// verifier. `Watch` is a stream and never reaches a unary interceptor; it
+	// is named anyway, because a list of reads that is missing a read is the
+	// half of this that is worth being careful about.
+	case "Get", "List", "Watch", "SignsIn":
+		return false
+	}
+
+	return true
 }
 
 // traced puts a trace on the context when nothing else has.
@@ -244,9 +269,38 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 
 	shut := s.closed(Config{Server: c.Admin})
 
+	// One limiter, handed to both halves -- see the same line in
+	// [Server.Grpc]. `Limiter()` builds a bucket, so calling it twice is two
+	// limits with the same numbers on them and neither counting what the other
+	// let through.
+	rate := c.Admin.Limiter()
+
 	chain := grpcx.Serving(ctx, grpcx.WithDeadline(c.Admin.CallTimeout())).
 		WithUnary(auth.InterceptorUnary(s.Sessions.Handler(), Resolver(s.Control.Ungated, nil), public)).
 		WithStream(auth.InterceptorStream(s.Sessions.Handler(), Resolver(s.Control.Ungated, nil), public)).
+
+		// `admin:` is a whole `config.ServerConfig`, and this was the one knob
+		// of it nothing here read: the deadline is taken from it on the line
+		// above, the certificate and what is closed below, and the rate was
+		// not. So a deployment that wrote one on this port was answered by a
+		// server that had never been told about it -- which is worse than no
+		// limit, because it is the limit somebody believes they have.
+		//
+		// `gate.ByTenant`, as on the data plane, and here that is one bucket
+		// for the whole console: every caller on this port is in the operator's
+		// own tenant, by construction, since a session names a control plane
+		// holder. That is what a rate means here -- the deployment slowing
+		// itself down on the listener that has no wall -- and it is the reading
+		// that makes a limit written on `admin:` do something rather than
+		// nothing.
+		//
+		// Both halves, which is what `grpcx.Limit` is: a stream is one call
+		// counted when it opens, and leaving it out meant `Watch` was the way
+		// past a rate on either port. Written as `LimitUnary` alone here and on
+		// the data plane, where it was the same omission -- one line each,
+		// because there is one answer.
+		WithUnary(grpcx.LimitUnary(rate, gate.ByTenant())).
+		WithStream(grpcx.LimitStream(rate, gate.ByTenant())).
 		With(gate.Interceptor(Policy(s.Control.Ent))).
 		WithUnary(Intent(s.Control.Ent)).
 		With(s.Watch.Interceptor()).
@@ -285,7 +339,24 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 	// What bounds it instead is the port: no wall, bound where only a console
 	// reaches, behind a control-plane session, and every write recorded twice
 	// and joined by the trace.
-	app.RegisterVouchServiceServer(g, vouch.New(admin, admin, vouch.WithKeys(s.Keyring)))
+	//
+	// # With `WithBreached`, which was never a decision
+	//
+	// `WithReach` is about the caller and does not survive the crossing between
+	// the two databases, which is the paragraph above. A corpus of leaked
+	// passwords is about none of that: it answers *has this secret already been
+	// lost*, before anybody is read, so it is a fact about the value and not
+	// about who is writing it or where they reached the server. A deployment
+	// that named one has said it will not hold that password, full stop.
+	//
+	// Left out, this port was the one door in the deployment such a password
+	// could still come through -- and it is the door that matters most, since
+	// setting a password for somebody who has just phoned support is the whole
+	// reason `VouchService` is registered here at all. The data plane refused
+	// it, the console accepted it, and nothing said the two disagreed.
+	app.RegisterVouchServiceServer(g, vouch.New(admin, admin,
+		vouch.WithKeys(s.Keyring),
+		vouch.WithBreached(s.Breached)))
 
 	return g, nil
 }

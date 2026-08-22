@@ -65,6 +65,10 @@ import (
 // thing: there is no credential here to act with.
 var ErrNotSignedIn = errors.New("frontdoor: this session cannot act for anybody")
 
+// ErrUnknownHost is [Config.Tenant] saying this deployment serves nobody under
+// the name the browser arrived at.
+var ErrUnknownHost = errors.New("frontdoor: no operator here serves this name")
+
 // Config is what an app has to say.
 type Config struct {
 	// Sessions is the app's own, on the app's domain. This package never makes
@@ -91,6 +95,15 @@ type Config struct {
 	// Supplied rather than done here, because a deployment that serves one
 	// operator knows the answer at build time and one that serves many asks
 	// roster -- `FrontService.WhoseHost` -- and both are a line the app writes.
+	//
+	// A name this deployment serves nobody under is [ErrUnknownHost], and that
+	// is the only error a person is ever told "no" for. Everything else --
+	// a roster that cannot be reached, a lookup that failed -- is this
+	// deployment being broken, and is answered as broken. The distinction is
+	// asked of the app because only the app knows which of its two answers is
+	// which; getting it wrong in the safe direction costs a page saying
+	// something is down, and in the other it costs somebody being told their
+	// correct password was wrong.
 	Tenant func(ctx context.Context, host string) (string, error)
 
 	// Half is how long a browser has to answer a second form.
@@ -213,10 +226,23 @@ func (d *Door) signIn(w http.ResponseWriter, r *http.Request) {
 
 	tenant, err := d.c.Tenant(ctx, r.Host)
 	if err != nil {
-		// Reached under a name this deployment does not serve. Same answer as a
-		// wrong password: which of the two it was is not this browser's to
-		// learn.
-		http.Error(w, "no", http.StatusUnauthorized)
+		if errors.Is(err, ErrUnknownHost) {
+			// Reached under a name this deployment does not serve. Same answer
+			// as a wrong password: which of the two it was is not this
+			// browser's to learn.
+			http.Error(w, "no", http.StatusUnauthorized)
+			return
+		}
+
+		// Anything else is this deployment's, and saying "no" to it is the one
+		// mistake `frontdoor.js` documents in as many words: *a proxy answering
+		// 502 is not a wrong password, and a page that said 'no' to it sends
+		// somebody to type their password again at a server that is down.* A
+		// deployment that asks roster which operator serves a name -- which is
+		// the deployment `FrontService` exists for -- turned its own outage
+		// into a wrong password here, while the identical outage one call later
+		// at `Delegate` answered 500 and read as broken.
+		http.Error(w, "cannot sign in", http.StatusInternalServerError)
 		return
 	}
 
@@ -262,8 +288,18 @@ func (d *Door) finish(w http.ResponseWriter, r *http.Request) {
 	// Taken rather than read: this browser gets one attempt at the second form
 	// per first form, which is the app's half of a rule roster keeps too -- a
 	// continuation is single-use there.
-	v, ok := d.held.take(key)
-	if !ok || v.continuation == "" {
+	//
+	// Taken **only if it is a continuation**, and that qualifier is the whole of
+	// a defect worth stating. A signed-in browser's delegation lives in the same
+	// map under the same key, so an unconditional take removed it here: one
+	// stray POST -- a retry, a page that fires twice, anybody who can make that
+	// browser send one -- and the delegation was gone without being revoked,
+	// leaving somebody whose cookie still resolves and whose every call answers
+	// that this session cannot act. The alternative was to put it back after
+	// looking, which is the same race written twice; deciding under the one lock
+	// is what makes single-use and leave-alone the same statement.
+	v, ok := d.held.takeHalf(key)
+	if !ok {
 		http.Error(w, "no", http.StatusUnauthorized)
 		return
 	}
@@ -476,6 +512,17 @@ func (d *held) get(key string) (one, bool) {
 	return v, true
 }
 
+// take is [held.get] and a delete in one, and it does **not** read the clock.
+//
+// Its one caller is [Door.SignOut], which wants the entry in order to revoke
+// what is in it -- and an expired entry is exactly the one that most needs
+// revoking. `expires` is this app's hold on the browser, not roster's on the
+// credential: a delegation whose entry timed out here is still a live
+// credential in roster's table until somebody says otherwise, so answering
+// "absent" for it would drop the reference and leave that credential to run out
+// on its own. See [Door.SignOut], which says the same thing from the other end.
+//
+// Which is why the second form does not use this. See [held.takeHalf].
 func (d *held) take(key string) (one, bool) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -484,6 +531,50 @@ func (d *held) take(key string) (one, bool) {
 	delete(d.by, key)
 
 	return v, ok
+}
+
+// takeHalf is take, of a continuation and never of a delegation.
+//
+// Two things at once, and they are one decision because they are decided under
+// one lock.
+//
+// **Never of a delegation.** A signed-in browser's delegation lives in the same
+// map under the same key -- a browser has one or the other, see [one] -- so an
+// unconditional take removed it here: one stray POST to the second form, a
+// retry, a page that fires twice, anybody who can make that browser send one,
+// and the delegation was gone without being revoked. What is left behind is
+// somebody whose cookie still resolves and whose every call answers that this
+// session cannot act, and a credential still live in roster with nothing
+// holding the reference. Putting it back after looking is the same race written
+// twice; deciding here is what makes it one statement.
+//
+// **And only while it is live**, which is how [Config.Half] became a number
+// something enforces. `finish` authenticates a second form from this and
+// nothing else, so before this the only thing ending a half-session was the
+// cookie's own `Expires` -- the browser's good manners. Anything that is not a
+// browser had roster's hold on the attempt instead: five minutes, whatever the
+// app asked for.
+//
+// An expired continuation is deleted on the way past, because there is nothing
+// in one to revoke: roster spends it or lets it expire, and this end of it is a
+// string. That is the whole reason the clock lives here and not in [held.take].
+func (d *held) takeHalf(key string) (one, bool) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	v, ok := d.by[key]
+	if !ok || v.continuation == "" {
+		// Absent, or somebody's delegation -- which is not this call's to
+		// spend, whether or not this app's hold on it has run out.
+		return one{}, false
+	}
+
+	delete(d.by, key)
+	if !time.Now().Before(v.expires) {
+		return one{}, false
+	}
+
+	return v, true
 }
 
 func ids(holder, tenant []byte) (pdid.Id, pdid.Id, error) {

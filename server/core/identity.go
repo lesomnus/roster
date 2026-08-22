@@ -100,6 +100,21 @@ func subjectIsStable(v string) error {
 // rather than a page of the tenant's. The pages are still followed, because a
 // person may have more of them than a page holds and a check that is right only
 // for the first twenty is the bug this is replacing.
+//
+// # And what asking the database still does not decide
+//
+// Two `Add`s at one provider with different subjects, at the same time. Both
+// list, neither sees the other, and both are written -- the same read-then-write
+// gap [coreIdentity.Erase] has, and the same person accumulating two accounts
+// this refuses when it is asked once.
+//
+// This half a database can decide on its own, and should: the uniqueness that
+// exists is `(tenant, provider, subject)` where nothing is erased, and what
+// this function means is `(holder, provider)` on the same terms. That is an
+// index in the schema rather than a judgement in a layer, so it is not written
+// here -- and this function stays either way, because a constraint violation
+// says "already exists" and what a caller needs to be told is which link went
+// to the wrong row.
 func (s coreIdentity) oneAccountPerProvider(ctx context.Context, req *app.IdentityAddRequest) error {
 	ref := req.GetHolder()
 	if ref == nil {
@@ -164,6 +179,39 @@ func (s coreIdentity) oneAccountPerProvider(ctx context.Context, req *app.Identi
 // different name. And an operator resetting a password, which is D28's -- this
 // is about somebody removing their own last way in, not about anybody being
 // locked out on purpose.
+//
+// # And what it does not survive, which is two callers at once
+//
+// The count below is a read, and the erase after it is a write that commits in
+// a transaction of its own. Two callers unlinking a person's last two
+// identities each count before either writes, each see the other's still live,
+// and both go through -- so the state this exists to refuse is reached by
+// asking for it twice at the same time. Forty people, each unlinked twice at
+// once, lost 39 on PostgreSQL and four on SQLite. It is not a narrow window and
+// it is not one dialect's.
+//
+// It is **not** closed here, and the reason is worth writing down rather than
+// leaving as an omission: nothing this layer can reach serialises the two.
+//
+// A transaction spanning the count and the erase is necessary and is not
+// enough -- under READ COMMITTED the two counts take their own snapshots and
+// neither blocks. What is needed beside it is a lock the two contend for, which
+// means `SELECT ... FOR UPDATE` on the Holder, and no generated read offers
+// one. Writing to the Holder inside the transaction would take the same lock
+// and is worse than the disease: every unlink would move a person's
+// `date_updated` and put a Change against their row for a call that changed
+// nothing about them.
+//
+// Opening the transaction is the smaller half of that and is reachable --
+// `enttx.Begin` takes a `dialect.Driver`, [Core.WithDriver] is already handed
+// one whenever payday rebinds this stack, and holding it would let this layer
+// begin its own. It is the lock that is missing, and it is missing upstream.
+//
+// So what stands between somebody and this is that it takes two calls at once
+// about one account, from a caller who is almost always the person themselves
+// -- a double submit rather than an attack -- and that the state it reaches is
+// recoverable: an operator's `Vouch.Reset` gives them a password, which is a
+// way in. PLAN.md records it where the other things that are not here are.
 func (s coreIdentity) Erase(ctx context.Context, req *app.IdentityRef) (*app.IdentityEraseResponse, error) {
 	// The row first, because the reference may be a subject and the count is
 	// about the person. Through `Next()` rather than a client, so the wall

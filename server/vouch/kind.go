@@ -69,6 +69,47 @@ func (s *Server) verifierOf(kind string) (verifier, error) {
 	}
 }
 
+// settable refuses a kind [Server.Set] must not write down.
+//
+// # What was wrong with writing whatever arrived
+//
+// `Set` put the `kind` column in as it was handed over, and it is the only
+// entry point here that did: `Verify` and `Continue` refuse a kind
+// [Server.verifierOf] does not know, `Reset` refuses anything but a password,
+// `Enrol` anything but a second factor.
+//
+// The row that let through is not inert and cannot be taken back. `factors`
+// offers every confirmed credential somebody has, so from then on every framed
+// sign-in offers a kind nothing can check; `answer` sets `ok` only when there
+// is nothing left to prove, so it never does; and `Continue` refuses the very
+// kind it was just offered. Meanwhile `CredentialService` is unregistered and
+// closed to the batch, `Reset` refuses the kind and so does `Enrol` -- so no
+// call on any plane can delete it. One mistyped kind in an admin console is a
+// person who needs a shell on the database to sign in again.
+//
+// # Why it asks verifierOf rather than holding a list
+//
+// A second list is a second thing to update, and the one that is forgotten is
+// the one that decides what may be stored. What may be written is exactly what
+// something here can later check, so that is the question this asks.
+//
+// `totp` is the one kind that is known and still not this call's. `Set`
+// argon2-hashes what it is handed and a seed has to be read back -- so the row
+// would be a second factor that can never answer, and `Enrol` is the act that
+// makes one. `vouch.proto` said so under `Enrol` and nothing enforced it.
+// Refused as `InvalidArgument` whether or not this deployment holds a key,
+// because which act a caller is doing is not a fact about the deployment.
+func (s *Server) settable(kind string) error {
+	if k := kindOf(kind); k == KindTotp {
+		return status.Errorf(codes.InvalidArgument,
+			"kind: %q is not something to set; a second factor is Enrol", k)
+	}
+
+	_, err := s.verifierOf(kind)
+
+	return err
+}
+
 // password is argon2id, and is what every deployment has.
 type password struct{}
 
