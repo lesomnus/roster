@@ -89,10 +89,35 @@ func Hostname(v string) string {
 	return v
 }
 
+// Address is an address as this app stores and compares one: lowercased and
+// trimmed.
+//
+// Exported for [Hostname]'s reason, and it was learned the same way. The
+// lookup that turns an address into a person -- `vouch.byAddress` -- lowers and
+// trims what it is handed, and the write did neither. So the unique index on
+// `(tenant_id, address)`, which is the whole of what makes an address name one
+// person, was comparing strings the lookup would never compare:
+// `Someone@Acme.example` and `someone@acme.example` are two rows to the index
+// and one address to everything that reads it.
+//
+// What that cost is not a duplicate. It is that the second row wins: an address
+// written as a provider sent it cannot sign in at all -- the lookup lowers and
+// the column never was -- and anybody who may add an address can write the
+// lowered spelling of somebody else's onto their own row, at which point the
+// victim's address resolves to them. Their password stops working and the
+// attacker's starts, and a link mailed to the victim's mailbox signs in
+// whoever clicks it as the attacker.
+//
+// The local part is lowered as well as the domain. RFC 5321 lets a mail server
+// treat the local part as case-sensitive and none do; more to the point,
+// `byAddress` decided this already, and a store whose write and whose lookup
+// disagree about a name has no unique index at all.
+func Address(v string) string { return strings.ToLower(strings.TrimSpace(v)) }
+
 // Domain is the part of an address that is looked up, from either an address or
 // a bare domain.
 func Domain(v string) string {
-	v = strings.ToLower(strings.TrimSpace(v))
+	v = Address(v)
 	if i := strings.LastIndex(v, "@"); i >= 0 {
 		v = v[i+1:]
 	}

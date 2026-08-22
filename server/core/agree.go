@@ -7,6 +7,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/lesomnus/payday/pderr"
+	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
 )
@@ -95,6 +96,66 @@ func (s coreTeamMembership) Add(ctx context.Context, req *app.TeamMembershipAddR
 	}
 
 	return s.TeamMembershipServiceServer.Add(ctx, req)
+}
+
+// Patch is `Add`'s two questions asked again, and it has to be.
+//
+// A membership may name no role -- that is how somebody is put in a team
+// without being given anything, and `TestAMembershipWithNoRoleIsStillAMembership`
+// says so. `Patch` is what turns one of those into a membership that does name
+// one, which is the same grant `Add` is refused for, arriving one verb later:
+//
+//	Alice may call TeamMembership.Add and Patch, and nothing else.
+//	Alice adds herself to a team, naming no role. Allowed, and rightly.
+//	Alice patches that membership to name the tenant's admin role.
+//
+// `role` is the only field this request has besides the version, so there is
+// nothing else here to guard -- and `role_null` clears it, which takes a
+// permission away and is not this rule's business (D26, the same place
+// `Disable` sits).
+//
+// The team is read off the row rather than taken from the request, because the
+// request cannot say it: the edge is immutable, so what a patch is about is
+// whatever the row already names.
+func (s coreTeamMembership) Patch(ctx context.Context, req *app.TeamMembershipPatchRequest) (*app.TeamMembership, error) {
+	if req.GetRole() == nil {
+		// Nothing being handed out. A clear, a version bump, or a request that
+		// changes nothing at all.
+		return s.TeamMembershipServiceServer.Patch(ctx, req)
+	}
+
+	v, err := s.Next().TeamMembership().Get(ctx, app.TeamMembershipGetRequest_builder{
+		Ref: req.GetRef(),
+		Select: app.TeamMembershipSelect_builder{
+			Team: app.TeamSelect_builder{Site: app.SiteSelect_builder{}.Build()}.Build(),
+		}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	team := app.TeamRef_builder{Id: v.GetTeam().GetId()}.Build()
+	if err := s.mayChangeTeam(ctx, app.TeamMembershipService_Patch_FullMethodName, team); err != nil {
+		return nil, err
+	}
+
+	ms, err := s.methodsOf(ctx, req.GetRole())
+	if err != nil {
+		return nil, err
+	}
+
+	at := pdid.Nil
+	if b := v.GetTeam().GetSite().GetId(); len(b) > 0 {
+		at, err = pdid.From(b)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if err := s.mayGrant(ctx, "role", ms, at); err != nil {
+		return nil, err
+	}
+
+	return s.TeamMembershipServiceServer.Patch(ctx, req)
 }
 
 // Erase asks the same question the write does, about the team the row names.

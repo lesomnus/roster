@@ -10,8 +10,12 @@ import (
 	uuid "github.com/google/uuid"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
+	holder "github.com/lesomnus/roster/internal/ent/holder"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
+	role "github.com/lesomnus/roster/internal/ent/role"
+	site "github.com/lesomnus/roster/internal/ent/site"
 	sitemembership "github.com/lesomnus/roster/internal/ent/sitemembership"
+	team "github.com/lesomnus/roster/internal/ent/team"
 	teammembership "github.com/lesomnus/roster/internal/ent/teammembership"
 	rstr "github.com/lesomnus/roster/rstr"
 	graph "github.com/protobuf-orm/protobuf-orm/graph"
@@ -216,11 +220,13 @@ func SiteMembershipSelect(q *ent.SiteMembershipQuery, m *rstr.SiteMembershipSele
 	}
 	if m.HasHolder() {
 		q.WithHolder(func(q *ent.HolderQuery) {
+			q.Where(holder.DateErasedIsNil())
 			HolderSelect(q, m.GetHolder())
 		})
 	}
 	if m.HasSite() {
 		q.WithSite(func(q *ent.SiteQuery) {
+			q.Where(site.DateErasedIsNil())
 			SiteSelect(q, m.GetSite())
 		})
 	}
@@ -707,16 +713,19 @@ func TeamMembershipSelect(q *ent.TeamMembershipQuery, m *rstr.TeamMembershipSele
 	}
 	if m.HasHolder() {
 		q.WithHolder(func(q *ent.HolderQuery) {
+			q.Where(holder.DateErasedIsNil())
 			HolderSelect(q, m.GetHolder())
 		})
 	}
 	if m.HasTeam() {
 		q.WithTeam(func(q *ent.TeamQuery) {
+			q.Where(team.DateErasedIsNil())
 			TeamSelect(q, m.GetTeam())
 		})
 	}
 	if m.HasRole() {
 		q.WithRole(func(q *ent.RoleQuery) {
+			q.Where(role.DateErasedIsNil())
 			RoleSelect(q, m.GetRole())
 		})
 	}

@@ -11,6 +11,7 @@ import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
 	apikey "github.com/lesomnus/roster/internal/ent/apikey"
+	holder "github.com/lesomnus/roster/internal/ent/holder"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
@@ -235,6 +236,7 @@ func ApiKeySelect(q *ent.ApiKeyQuery, m *rstr.ApiKeySelect) {
 	}
 	if m.HasHolder() {
 		q.WithHolder(func(q *ent.HolderQuery) {
+			q.Where(holder.DateErasedIsNil())
 			HolderSelect(q, m.GetHolder())
 		})
 	}

@@ -168,6 +168,107 @@ The fix is the field, at 5, the number `name` has everywhere. `Delegate`'s
 comment was updated rather than deleted: it is right about signing in, and what
 it did not cover is enrolling.
 
+### D41 · Everything that had to be refused, asked as one question
+
+The audit began because somebody noticed an ordinary person could make roster
+answer as somebody else. Every hole since had been found by tripping over
+another instance of a rule that was already written. So the question was asked
+from the other end -- *what are all the ways one person becomes another?* -- and
+five families were enumerated and attacked: by naming somebody, by holding a
+credential that is not theirs, by acquiring their permissions, through a call
+that is supposed to be about yourself, and by reading enough to become them.
+
+Eight of the attacks were not refused. Seven were roster's and one was upstream.
+
+#### Writing a way in for somebody else
+
+The one the audit should have started from, and the plainest:
+
+    Alice may call Identity.Add and Email.Add, and nothing else.
+    Alice links her own GitHub account to the administrator's row.
+    Alice signs in with GitHub and is served as the administrator.
+
+`Email` had no layer in `server/core` at all, and `Identity.Add` had two
+judgements about the *subject* and none about **whose row it is written on**.
+The mailbox is the same move one door along: an address of hers on his row, then
+`Vouch.Link` at that address.
+
+The rule was written and applied in one place. `vouch.Enrol` says it -- *adding
+a way in for somebody is not quite writing their credential, and it is close
+enough* -- about a second factor, and it is true of a first. It is
+[Core.mayReach] said about the other half of a sign-in, which is what
+`mayWriteAWayIn` is.
+
+`ApiKey.Add` is the third door: it checked the key's **methods** and not whose
+holder it is minted on. The helpdesk minted a key on the administrator's holder
+carrying only `Vouch.Set` -- a method they hold, so the methods check passed --
+and the key acts as the administrator, so `mayReach` saw a caller writing their
+own credential and the next call set a password they chose.
+
+#### An address is stored as it is looked up
+
+`vouch.byAddress` lowers and trims; the write did neither. So the unique index
+on `(tenant_id, address)` -- the whole of what makes an address name one person,
+and what closed F7 -- was comparing strings the lookup never compares.
+`Someone@Acme.example` and `someone@acme.example` were two rows and one address.
+
+Two failures, and the quiet one is worse than the attack: an address stored as a
+provider sent it could not sign in at all. The attack is that the lowered
+spelling of somebody's address, written onto your own row, is where their
+address resolves from then on.
+
+`front.Address` is the one function both sides use now, beside `Hostname`, which
+learned the same lesson.
+
+#### Two more grants that name no role
+
+`TeamMembership.Patch` had no layer: a membership may be added naming no role,
+and patching one to name the tenant's admin role is the grant `Add` is refused
+for, arriving one verb later.
+
+And the direction argument again, on the last edge that carries a role.
+`Granted` reads bindings only, correctly, because a role held in a team is not a
+role to bind across the tenant. `mayReach` was asking the same function what the
+**target** holds -- where a missing path allows rather than refuses -- so an
+administrator provisioned through a team read as holding nothing. `Holding` is
+the second answer: everything somebody holds by any path, which is `policy.of`
+expressed as grants. The team roles are reported across the tenant, because that
+is what the gate will actually let them call.
+
+#### A way into another tenant
+
+`Vouch.Link` read the person through the **unwalled** server. `Verify` does that
+deliberately -- there is no frame yet -- and `Link` is not that call: it is made
+by an app holding a credential, about somebody it names. So a holder in acme
+with `Link` and `Redeem` could name `@hooli/erlich` and be handed a real,
+spendable way into another organisation.
+
+Narrowed, that request answers what a request for a stranger answers: the token
+that resolves to nobody. Which is the same answer for the same reason -- who is
+in another tenant is not this caller's to learn, any more than who is here at
+all is.
+
+#### And one that was upstream
+
+A **select** reached a parent that had been erased. `protoc-gen-orm-ent@3843c60`
+made a *reference* answer among the live rows; the edge a select asks for went
+through no predicate at all, so the parent of any row a caller may read came
+back whole. Erasure cascades to nothing on purpose, so an erased person's
+address outlives them -- and asking for `select.holder.all` on the way past it
+answered their alias, their name, their profile, their provider subject.
+
+Fixed in `protoc-gen-orm-ent@28a0a48` and pinned through payday. Only where a
+select asks for the edge: the key-only load `SelectInit` falls back to is what a
+recorder reads the row it has just erased through, and narrowing that would take
+a trail entry away from the tenant it is about.
+
+#### What the row that outlives them is worth now
+
+An address still says it was once somebody's, to a caller who may already read
+every address in that tenant. What it is no longer is a way back to who had it.
+Destroying rather than forgetting is an erase that cascades, and that is a
+decision about the schema rather than about a read.
+
 ### D40 · The third way round escalation prevention, and the shape they share
 
 Found by asking the question the audit should have started from: *what are all

@@ -10,6 +10,7 @@ import (
 	uuid "github.com/google/uuid"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
+	holder "github.com/lesomnus/roster/internal/ent/holder"
 	link "github.com/lesomnus/roster/internal/ent/link"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
@@ -219,6 +220,7 @@ func LinkSelect(q *ent.LinkQuery, m *rstr.LinkSelect) {
 	}
 	if m.HasHolder() {
 		q.WithHolder(func(q *ent.HolderQuery) {
+			q.Where(holder.DateErasedIsNil())
 			HolderSelect(q, m.GetHolder())
 		})
 	}

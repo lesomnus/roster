@@ -36,6 +36,13 @@ func (s coreIdentity) Add(ctx context.Context, req *app.IdentityAddRequest) (*ap
 		return nil, err
 	}
 
+	// And whose account this is a way into. Linking a provider account to
+	// somebody is handing whoever holds that account their sign-in; see
+	// `escalate.go`, [Core.mayWriteAWayIn].
+	if err := s.mayWriteAWayIn(ctx, "holder", req.GetHolder()); err != nil {
+		return nil, err
+	}
+
 	return s.IdentityServiceServer.Add(ctx, req)
 }
 

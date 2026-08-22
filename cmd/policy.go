@@ -336,7 +336,12 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 // Rules is what `server/core` needs to know about a caller, from the rows this
 // policy already reads.
 func Rules(db *ent.Client) core.Rules {
-	return core.Rules{Holds: Holds(db), Granted: Granted(db), Joining: Joining(db)}
+	return core.Rules{
+		Holds:   Holds(db),
+		Granted: Granted(db),
+		Joining: Joining(db),
+		Holding: Holding(db),
+	}
 }
 
 // Granted is every pattern somebody holds through a binding, and **where**.
@@ -407,6 +412,56 @@ func Joining(db *ent.Client) core.Joining {
 		}
 
 		return grantsOf(vs), nil
+	}
+}
+
+// Holding is everything somebody holds, by any path -- which is `policy.of`
+// expressed as grants rather than as a set of methods.
+//
+// [Granted] answers what may be **passed on** and reads bindings only, for the
+// reason `escalate.go` gives: a role held in one team is not a role to bind
+// across the tenant. This answers what somebody **has**, which is the question
+// `core.mayReach` asks about the person whose credential is being written --
+// and there the two readings are not interchangeable. A path missing from the
+// first refuses a grant somebody could have made; missing from the second it
+// allows a password to be reset on an administrator who reads as holding
+// nothing.
+//
+// The team roles are reported across the tenant rather than at their team's
+// site, because that is what the gate will actually let them call: `policy.of`
+// unions a team role into the set `May` answers from, and the only thing that
+// narrows one back down is `core.mayChangeTeam`, which guards the membership
+// writes and nothing else. Reporting them narrower would be reporting less
+// than the person can do, which is the direction that lets somebody be reached.
+func Holding(db *ent.Client) core.Holding {
+	return func(ctx context.Context, who pdid.Id) ([]core.Grant, error) {
+		vs, err := bindingsReaching(ctx, db, who.Uuid())
+		if err != nil {
+			return nil, err
+		}
+
+		gs := grantsOf(vs)
+
+		ts, err := db.TeamMembership.Query().
+			Where(
+				teammembership.DateErasedIsNil(),
+				teammembership.HasHolderWith(holder.IDEQ(who.Uuid())),
+			).
+			WithRole().
+			All(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range ts {
+			if v.Edges.Role == nil {
+				continue
+			}
+
+			gs = append(gs, core.Grant{Methods: v.Edges.Role.Methods})
+		}
+
+		return gs, nil
 	}
 }
 

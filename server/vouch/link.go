@@ -92,7 +92,25 @@ func (s *Server) Link(ctx context.Context, req *app.VouchLinkRequest) (*app.Vouc
 		}
 	}
 
-	who, err := s.open.Holder().Get(ctx, app.HolderGetRequest_builder{
+	// Through the **walled** server, as `Reset`, `Unlock` and `Enrol` read.
+	//
+	// `Verify` reads the unwalled one because the person signing in has no
+	// credential yet and there is no frame to narrow by. This is not that call:
+	// it is made by an app that holds one, about somebody that app names, so
+	// the caller's tenant is known and the wall applies to it like any other
+	// read.
+	//
+	// Read unwalled, it minted a **spendable** way into another tenant. A
+	// holder in acme with `Vouch.Link` and `Vouch.Redeem` -- an ordinary
+	// permission for an app that mails recovery links -- could name
+	// `@hooli/erlich`, be handed a real token, redeem it, and act as somebody
+	// in an organisation acme cannot otherwise see a row of.
+	//
+	// Narrowed, that request answers what a request for a stranger answers:
+	// NotFound below, and the token that resolves to nobody. Which is the same
+	// answer for the same reason -- who is in another tenant is not this
+	// caller's to learn, any more than who is here at all is.
+	who, err := s.walled.Holder().Get(ctx, app.HolderGetRequest_builder{
 		Ref: ref,
 		Select: app.HolderSelect_builder{
 			DateErased:   z.Ptr(true),

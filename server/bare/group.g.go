@@ -12,7 +12,9 @@ import (
 	ent "github.com/lesomnus/roster/internal/ent"
 	group "github.com/lesomnus/roster/internal/ent/group"
 	groupmembership "github.com/lesomnus/roster/internal/ent/groupmembership"
+	holder "github.com/lesomnus/roster/internal/ent/holder"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
+	site "github.com/lesomnus/roster/internal/ent/site"
 	rstr "github.com/lesomnus/roster/rstr"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
@@ -233,6 +235,7 @@ func GroupSelect(q *ent.GroupQuery, m *rstr.GroupSelect) {
 	}
 	if m.HasSite() {
 		q.WithSite(func(q *ent.SiteQuery) {
+			q.Where(site.DateErasedIsNil())
 			SiteSelect(q, m.GetSite())
 		})
 	}
@@ -705,11 +708,13 @@ func GroupMembershipSelect(q *ent.GroupMembershipQuery, m *rstr.GroupMembershipS
 	}
 	if m.HasHolder() {
 		q.WithHolder(func(q *ent.HolderQuery) {
+			q.Where(holder.DateErasedIsNil())
 			HolderSelect(q, m.GetHolder())
 		})
 	}
 	if m.HasGroup() {
 		q.WithGroup(func(q *ent.GroupQuery) {
+			q.Where(group.DateErasedIsNil())
 			GroupSelect(q, m.GetGroup())
 		})
 	}

@@ -44,6 +44,28 @@ type Rules struct {
 	// Joining is what a group holds, which is what putting somebody into it
 	// hands them. See [Joining].
 	Joining Joining
+
+	// Holding is everything somebody holds by any path, which is what
+	// [Core.mayReach] compares. See [Holding].
+	Holding Holding
+}
+
+// holding is [Rules.Holding], or [Rules.Granted] where a stack was assembled
+// before there were two answers.
+//
+// A fallback rather than a requirement, because the two are the same for every
+// deployment that has no teams and no groups -- and a stack built without the
+// wider one should refuse conservatively rather than answer as though nobody
+// held anything, which is the direction that lets a credential be written.
+func (r Rules) holding() Holding {
+	if r.Holding != nil {
+		return r.Holding
+	}
+	if r.Granted == nil {
+		return nil
+	}
+
+	return Holding(r.Granted)
 }
 
 func New(next app.Server, rules Rules) Core { return Core{app.NewOverlay(next), rules} }

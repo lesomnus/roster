@@ -11,8 +11,11 @@ import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
 	binding "github.com/lesomnus/roster/internal/ent/binding"
+	group "github.com/lesomnus/roster/internal/ent/group"
+	holder "github.com/lesomnus/roster/internal/ent/holder"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	role "github.com/lesomnus/roster/internal/ent/role"
+	site "github.com/lesomnus/roster/internal/ent/site"
 	rstr "github.com/lesomnus/roster/rstr"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
@@ -239,6 +242,7 @@ func RoleSelect(q *ent.RoleQuery, m *rstr.RoleSelect) {
 	}
 	if m.HasSite() {
 		q.WithSite(func(q *ent.SiteQuery) {
+			q.Where(site.DateErasedIsNil())
 			SiteSelect(q, m.GetSite())
 		})
 	}
@@ -733,21 +737,25 @@ func BindingSelect(q *ent.BindingQuery, m *rstr.BindingSelect) {
 	}
 	if m.HasRole() {
 		q.WithRole(func(q *ent.RoleQuery) {
+			q.Where(role.DateErasedIsNil())
 			RoleSelect(q, m.GetRole())
 		})
 	}
 	if m.HasSite() {
 		q.WithSite(func(q *ent.SiteQuery) {
+			q.Where(site.DateErasedIsNil())
 			SiteSelect(q, m.GetSite())
 		})
 	}
 	if m.HasHolder() {
 		q.WithHolder(func(q *ent.HolderQuery) {
+			q.Where(holder.DateErasedIsNil())
 			HolderSelect(q, m.GetHolder())
 		})
 	}
 	if m.HasGroup() {
 		q.WithGroup(func(q *ent.GroupQuery) {
+			q.Where(group.DateErasedIsNil())
 			GroupSelect(q, m.GetGroup())
 		})
 	}

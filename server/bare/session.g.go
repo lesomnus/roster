@@ -10,6 +10,7 @@ import (
 	uuid "github.com/google/uuid"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
+	holder "github.com/lesomnus/roster/internal/ent/holder"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	session "github.com/lesomnus/roster/internal/ent/session"
 	rstr "github.com/lesomnus/roster/rstr"
@@ -225,6 +226,7 @@ func SessionSelect(q *ent.SessionQuery, m *rstr.SessionSelect) {
 	}
 	if m.HasHolder() {
 		q.WithHolder(func(q *ent.HolderQuery) {
+			q.Where(holder.DateErasedIsNil())
 			HolderSelect(q, m.GetHolder())
 		})
 	}

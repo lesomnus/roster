@@ -41,7 +41,6 @@ package vouch
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"github.com/lesomnus/z"
@@ -52,6 +51,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/front"
 )
 
 // MaxFailures is how many wrong answers in a row close an account, and LockFor
@@ -696,7 +696,10 @@ func (s *Server) byAddress(ctx context.Context, tenant, address string) (*app.Ho
 		Ref: app.EmailRef_builder{
 			At: app.EmailRefByAt_builder{
 				TenantId: t.GetId(),
-				Address:  z.Ptr(strings.ToLower(strings.TrimSpace(address))),
+				// The same normalisation the write is held to, from the same
+				// function: a lookup that lowers against a column that does
+				// not is an index comparing strings this never compares.
+				Address: z.Ptr(front.Address(address)),
 			}.Build(),
 		}.Build(),
 		Select: app.EmailSelect_builder{

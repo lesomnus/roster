@@ -11,6 +11,8 @@ import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
 	email "github.com/lesomnus/roster/internal/ent/email"
+	holder "github.com/lesomnus/roster/internal/ent/holder"
+	identity "github.com/lesomnus/roster/internal/ent/identity"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
 	graph "github.com/protobuf-orm/protobuf-orm/graph"
@@ -235,11 +237,13 @@ func EmailSelect(q *ent.EmailQuery, m *rstr.EmailSelect) {
 	}
 	if m.HasHolder() {
 		q.WithHolder(func(q *ent.HolderQuery) {
+			q.Where(holder.DateErasedIsNil())
 			HolderSelect(q, m.GetHolder())
 		})
 	}
 	if m.HasVouchedBy() {
 		q.WithVouchedBy(func(q *ent.IdentityQuery) {
+			q.Where(identity.DateErasedIsNil())
 			IdentitySelect(q, m.GetVouchedBy())
 		})
 	}

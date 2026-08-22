@@ -55,6 +55,19 @@ func (s coreApiKey) Add(ctx context.Context, req *app.ApiKeyAddRequest) (*app.Ap
 		return nil, err
 	}
 
+	// And **whose** key it is, which the methods do not say.
+	//
+	// A key resolves to its holder, so calls made with it are made as them --
+	// which is a credential for that person, written by whoever minted it. The
+	// methods check alone left the helpdesk able to mint a key on the
+	// administrator's holder carrying only `Vouch.Set`, a method they hold: the
+	// key acts as the administrator, `mayReach` sees a caller writing their own
+	// credential, and the next call sets a password they chose on the account
+	// they could not reach. See [Core.mayWriteAWayIn].
+	if err := s.mayWriteAWayIn(ctx, "holder", req.GetHolder()); err != nil {
+		return nil, err
+	}
+
 	return s.ApiKeyServiceServer.Add(ctx, req)
 }
 

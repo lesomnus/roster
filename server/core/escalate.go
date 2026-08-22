@@ -103,6 +103,30 @@ type Granted func(ctx context.Context, who pdid.Id) ([]Grant, error)
 // already says and a signature should not have to repeat.
 type Joining func(ctx context.Context, group pdid.Id) ([]Grant, error)
 
+// Holding is everything somebody holds, by any path -- which is a different
+// question from [Granted] and has to be answered separately.
+//
+// `Granted` is *what may be passed on*, and it is bindings only on purpose: a
+// role held in one team is not a role to bind across the tenant, because that
+// would widen a scope rather than pass a permission on. Missing a path there
+// only refuses a grant somebody could have made, which is the conversation
+// `escalate.go` says it is willing to have.
+//
+// [Core.mayReach] asks the opposite question -- *what does this person hold,
+// so that I know whether writing their credential makes me them* -- and there
+// a missing path **allows**. An administrator provisioned through a team read
+// as holding nothing, and anybody who could reset a password could become
+// them. The same silence a group binding left, one edge along.
+//
+// So this is `policy.of` expressed as grants: bindings written to them,
+// bindings written to a group they are in, and the roles they hold in a team.
+// The last are reported at [pdid.Nil] -- the whole tenant -- because that is
+// what the gate will actually let them call: it is outermost and cannot know
+// which team a call is about, and the only thing that narrows a team role back
+// down is `core.mayChangeTeam`, which guards the membership writes and nothing
+// else.
+type Holding func(ctx context.Context, who pdid.Id) ([]Grant, error)
+
 // Grant is a set of patterns and where they are held.
 //
 // `Site` is `pdid.Nil` for a binding made across the tenant, and otherwise the
@@ -237,6 +261,65 @@ func (s Core) mayJoin(ctx context.Context, ref *app.GroupRef) error {
 	}
 
 	return nil
+}
+
+// mayWriteAWayIn refuses somebody adding a way to sign in to an account that
+// holds more than theirs.
+//
+// # It is [Core.mayReach], said about the other half of a sign-in
+//
+// That rule guards the **secret**: you may write somebody's credential only if
+// their permissions are a subset of yours, because resetting a password is a
+// way to become them. A way in is the other half of the same act, and it is the
+// half nothing was asking about:
+//
+//	Alice may call Identity.Add and Email.Add, and nothing else.
+//	Alice links her own GitHub account to the administrator's row.
+//	Alice signs in with GitHub and is served as the administrator.
+//
+// Two RPCs, no password guessed, no method she did not already hold -- from
+// "Alice keeps people's contact details up to date". The mailbox is the same
+// move one door along: an `Email` of hers on his row, then `Vouch.Link` at that
+// address, then a link she reads.
+//
+// `vouch.Enrol` has said this for as long as it has existed -- *adding a way in
+// for somebody is not quite writing their credential, and it is close enough:
+// an operator who could enrol a factor on an administrator's account would hold
+// one of the two things that person signs in with*. It was written about a
+// second factor and is true of a first.
+//
+// # Adding your own is not this
+//
+// [Core.mayReach] passes when the target is the caller, which is what keeps a
+// person able to link their own account and add their own address. The rule is
+// about writing one onto **somebody else**.
+func (s Core) mayWriteAWayIn(ctx context.Context, field string, ref *app.HolderRef) error {
+	if ref == nil {
+		return nil
+	}
+
+	k, err := s.holderOf(ctx, ref)
+	if err != nil {
+		return err
+	}
+
+	return s.mayReach(ctx, field, k)
+}
+
+// holderOf is the identifier a `HolderRef` names, read when it named something
+// else -- an alias, or an address. Through `Next()`, so a caller who cannot see
+// the person cannot write a way into their account either.
+func (s Core) holderOf(ctx context.Context, ref *app.HolderRef) (pdid.Id, error) {
+	if b := ref.GetId(); len(b) > 0 {
+		return pdid.From(b)
+	}
+
+	v, err := s.Next().Holder().Get(ctx, app.HolderGetRequest_builder{Ref: ref}.Build())
+	if err != nil {
+		return pdid.Nil, err
+	}
+
+	return pdid.From(v.GetId())
 }
 
 // groupOf is the identifier a `GroupRef` names, read when it named something
@@ -467,12 +550,12 @@ func (s Core) mayReach(ctx context.Context, field string, target pdid.Id) error 
 		// order.
 		return nil
 	}
-	if s.rules.Granted == nil {
+	if s.rules.holding() == nil {
 		return status.Error(codes.PermissionDenied,
 			"this server cannot say what anybody holds, so it will not let you write their credential")
 	}
 
-	theirs, err := s.rules.Granted(ctx, target)
+	theirs, err := s.rules.holding()(ctx, target)
 	if err != nil {
 		return err
 	}
@@ -483,7 +566,7 @@ func (s Core) mayReach(ctx context.Context, field string, target pdid.Id) error 
 		return nil
 	}
 
-	mine, err := s.rules.Granted(ctx, f.Actor)
+	mine, err := s.rules.holding()(ctx, f.Actor)
 	if err != nil {
 		return err
 	}
