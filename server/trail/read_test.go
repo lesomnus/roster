@@ -42,33 +42,41 @@ func TestAnArchiveReadsBackOnceWhateverIsInIt(t *testing.T) {
 	x.NoError(err)
 
 	dir := t.TempDir()
-	path := filepath.Join(dir, trail.Named(at))
 
-	// Twice, and as two gzip members rather than two lines of one -- which is
-	// what appending actually produces, and is the shape that would go unnoticed
-	// if the reader stopped at the first member.
-	f, err := os.Create(path)
-	x.NoError(err)
-	for range 2 {
+	member := func() []byte {
 		buf := &bytes.Buffer{}
 		z := gzip.NewWriter(buf)
 		_, err := z.Write(append(b, '\n'))
 		x.NoError(err)
 		x.NoError(z.Close())
 
-		_, err = f.Write(buf.Bytes())
-		x.NoError(err)
+		return buf.Bytes()
 	}
-	x.NoError(f.Close())
+
+	// Two gzip members in one file rather than two lines of one, which is what
+	// appending actually produces and is the shape that would go unnoticed if
+	// the reader stopped at the first member.
+	one := filepath.Join(dir, trail.Named(at, "aaaaaaaaaaaaaaaa"))
+	x.NoError(os.WriteFile(one, append(member(), member()...), 0o600))
+
+	// And the same row again in a **second** run's file, which is what two
+	// writers reaching the same month leave behind. A reader that deduplicated
+	// within a file and not across them would answer twice.
+	two := filepath.Join(dir, trail.Named(at, "bbbbbbbbbbbbbbbb"))
+	x.NoError(os.WriteFile(two, member(), 0o600))
+
+	paths, err := trail.Files(dir)
+	x.NoError(err)
+	x.Len(paths, 2)
 
 	got := []*app.Audit{}
-	x.NoError(trail.Read(path, func(v *app.Audit) error {
+	x.NoError(trail.Read(paths, func(v *app.Audit) error {
 		got = append(got, v)
 
 		return nil
 	}))
 
-	x.Len(got, 1, "the same row was read twice")
+	x.Len(got, 1, "the same row was read more than once")
 	x.Equal(v.GetAction(), got[0].GetAction())
 	x.Equal(at, got[0].GetDateCreated().AsTime())
 }
@@ -84,8 +92,16 @@ func TestAnArchiveIsDestroyedByTheMonthAfterIt(t *testing.T) {
 	x := require.New(t)
 
 	dir := t.TempDir()
-	for _, v := range []string{"2024-11", "2024-12", "2025-01"} {
-		x.NoError(os.WriteFile(filepath.Join(dir, "audit-"+v+trail.Ext), nil, 0o600))
+	for i, v := range []string{"2024-11", "2024-12", "2025-01"} {
+		// One of them without a run in the name, which is what the first
+		// version of the format wrote. An archive already on a disk has to go
+		// on being readable and destroyable.
+		name := "audit-" + v + trail.Ext
+		if i > 0 {
+			name = "audit-" + v + ".0123456789abcdef" + trail.Ext
+		}
+
+		x.NoError(os.WriteFile(filepath.Join(dir, name), nil, 0o600))
 	}
 
 	// Something else in the directory, which is not this to destroy.

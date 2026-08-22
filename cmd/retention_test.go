@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -52,11 +53,12 @@ func TestWhatLeavesTheDatabaseIsInTheFileBeforeItLeaves(t *testing.T) {
 
 	files, err := trail.Files(dir)
 	x.NoError(err)
-	x.Len(files, 1, "one month of writes should be one file")
-	x.Equal(trail.Named(time.Now()), filepath.Base(files[0]))
+	x.Len(files, 1, "one run over one month of writes should be one file")
+	x.True(strings.HasPrefix(filepath.Base(files[0]), "audit-"+trail.Month(time.Now())+"."),
+		"the month has to come first in the name, or nothing can be purged by it: %s", files[0])
 
 	got := map[string]string{}
-	x.NoError(trail.Read(files[0], func(v *app.Audit) error {
+	x.NoError(trail.Read(files, func(v *app.Audit) error {
 		got[string(v.GetId())] = v.GetAction()
 
 		return nil
@@ -67,6 +69,59 @@ func TestWhatLeavesTheDatabaseIsInTheFileBeforeItLeaves(t *testing.T) {
 		x.Equal(v.Action, got[string(trail.Row(v).GetId())],
 			"a row left the database and is not in the file")
 	}
+}
+
+// TestTwoRunsOverOneMonthDoNotShareAFile.
+//
+// The first version of the archive was one file per month, appended to, on the
+// reasoning that concatenated gzip members are a valid stream. That is true of
+// one writer and there is not one writer: `trail.Sweep` takes no lock -- nor
+// does the generated outbox drain, whose comment says *nothing here takes a
+// lock, so two of these drain the same rows* -- so two replicas, or an operator
+// running `roster trail prune` while the process sweeps, write into one file at
+// once. A `gzip.Writer` flushes in chunks of its own choosing, so what
+// interleaves is not two members but the inside of one, and the month stops
+// being readable at all.
+//
+// Asserted as the property that prevents it rather than by racing two writers:
+// a race that happens to lose is a test that happens to pass. What has to be
+// true is that no two runs are ever handed the same file.
+func TestTwoRunsOverOneMonthDoNotShareAFile(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	dir := t.TempDir()
+
+	b.holder(t, ctx, b.Acme, "first")
+	one, err := trail.Archive(ctx, b.Ent, time.Now().Add(time.Hour), dir)
+	x.NoError(err)
+	x.NotZero(one)
+
+	b.holder(t, ctx, b.Acme, "second")
+	two, err := trail.Archive(ctx, b.Ent, time.Now().Add(time.Hour), dir)
+	x.NoError(err)
+	x.NotZero(two)
+
+	files, err := trail.Files(dir)
+	x.NoError(err)
+	x.Len(files, 2, "two runs over the same month were handed the same file")
+
+	// Both named for the month, which is what a destructive pass reads.
+	for _, v := range files {
+		x.True(strings.HasPrefix(filepath.Base(v), "audit-"+trail.Month(time.Now())+"."))
+	}
+
+	// And between them they hold every row, once.
+	n := 0
+	seen := map[string]bool{}
+	x.NoError(trail.Read(files, func(v *app.Audit) error {
+		n++
+		x.False(seen[string(v.GetId())], "a row was read twice")
+		seen[string(v.GetId())] = true
+
+		return nil
+	}))
+	x.Equal(one+two, n)
 }
 
 // TestNothingLeavesTheDatabaseThatCouldNotBeWritten.

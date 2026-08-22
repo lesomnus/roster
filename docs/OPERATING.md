@@ -333,6 +333,13 @@ it deletes the rows that are in the file rather than re-running the query. So
 the one failure it can leave is rows in both places, which is the direction to
 fail in — `read` drops the duplicate.
 
+Each run writes its own files, named `audit-2026-08.<run>.jsonl.gz`. Nothing
+takes a lock — the sweep does not, and neither does `prune` — so two replicas,
+or an operator pruning while the process sweeps, would otherwise be two writers
+inside one gzip stream. Read them as a set (`--in`, or several paths at once)
+rather than one at a time: a row two runs both archived is dropped by whichever
+read sees both.
+
 `read` opens no database. That is the point of keeping the file: it outlives the
 deployment that wrote it, and a reader that needed the deployment would be
 answering the question at exactly the moment nobody can.

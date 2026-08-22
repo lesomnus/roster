@@ -172,36 +172,32 @@ func newCmdTrailRead(c *Config) *xli.Command {
 
 			asJson, _ := flg.Find[bool](cmd, "json")
 
-			for _, path := range paths {
-				err := trail.Read(path, func(v *app.Audit) error {
-					if !keep(v) {
-						return nil
-					}
-					if asJson {
-						b, err := protojson.Marshal(v)
-						if err != nil {
-							return err
-						}
-
-						fmt.Fprintf(os.Stdout, "%s\n", b)
-
-						return nil
+			// One call over every file rather than one per file, because the
+			// duplicate two writers leave behind is only visible to a reader
+			// that has seen both. See [trail.Read].
+			return trail.Read(paths, func(v *app.Audit) error {
+				if !keep(v) {
+					return nil
+				}
+				if asJson {
+					b, err := protojson.Marshal(v)
+					if err != nil {
+						return err
 					}
 
-					fmt.Fprintf(os.Stdout, "%s\t%s\t%s\t%s\n",
-						v.GetDateCreated().AsTime().UTC().Format(time.RFC3339),
-						v.GetAction(),
-						named(v.GetObjectId()),
-						named(v.GetActorId()))
+					fmt.Fprintf(os.Stdout, "%s\n", b)
 
 					return nil
-				})
-				if err != nil {
-					return err
 				}
-			}
 
-			return nil
+				fmt.Fprintf(os.Stdout, "%s\t%s\t%s\t%s\n",
+					v.GetDateCreated().AsTime().UTC().Format(time.RFC3339),
+					v.GetAction(),
+					named(v.GetObjectId()),
+					named(v.GetActorId()))
+
+				return nil
+			})
 		}),
 	}
 }

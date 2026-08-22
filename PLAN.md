@@ -372,6 +372,33 @@ suite: `cmd/close_test.go` asks the database whether both pools were given
 back, because only the database knows and a count kept here would be a second
 answer.
 
+### F16 · The redactor was written for one of three recorders -- **fixed upstream**
+
+F15 fixed `Audit.patch`. The declaration is `(payday.field).secret`, what it
+bought was a generated `hide<E>` clearing the column out of `value`, and F15
+added `hidden` so the same held for the **document** a write was compiled from.
+
+Three recorders sit behind every write and read the same `bare.Change`. The
+finding named one and the fix reached one: `watchRecorder` and `outboxRecorder`
+went on marshalling `c.Patch` raw. That is fixing the instance rather than the
+defect, which is the thing this project keeps deciding not to do.
+
+Nothing carried a verifier off the box. `watchpg` deliberately sends no patch --
+its package doc says so and its own test asserts it -- `memory` is this process,
+and a `WatchItem` carries the row re-read through each subscriber's narrowing
+rather than the document. What was at rest was an `outbox` row holding one until
+something drained it, in the same database as the `credential` table it came
+from, in a service that declares no methods.
+
+So it was latent rather than open, and the reason to fix it is that none of what
+made it latent is a property of **those two lines**. The first broker written
+that carries a patch carries verifiers, and nothing would have said so.
+
+`lesomnus/payday@7ff5e8f`, with the queue asked the question the trail was
+asked: `internal/apptest/cmd/outboxsecret_test.go` upstream, and
+`cmd/outboxsecret_test.go` here, because it is a property of the pinned payday
+rather than of anything in roster.
+
 ### D44 · The trail's retention is two clocks, and neither of them is an RPC
 
 `audit.proto` asked for this in as many words and the sentence read as a caveat
@@ -412,6 +439,27 @@ different states that look alike.
 The pair is one act. Two commands, or one command with the export optional, is a
 deployment that exports and forgets to delete or deletes without having
 exported, and only one of those two is ever noticed.
+
+#### And the file a run writes is its own, which took a second pass
+
+The archive was one file per month, appended to, because concatenated gzip
+members are a valid stream and so a file need never be rewritten. That is true
+of one writer, and there is not one writer: `trail.Sweep` takes no lock -- nor
+does the generated outbox drain, whose comment says *nothing here takes a lock,
+so two of these drain the same rows*. For the drain, two replicas is wasted
+work. Here a `gzip.Writer` flushes to the file in chunks of its own choosing, so
+what two writers interleave is not two members but the inside of one, and the
+month stops being a gzip stream at all.
+
+A run writes its own files -- `audit-2026-08.<run>.jsonl.gz` -- so writers never
+share one, and each member is built whole and written in a single call beside
+that. The month stays first in the name so a destructive pass still reads it
+without opening anything. What it costs is more files and the duplicate rows two
+writers leave, which `Read` already dropped because a crash between the sync and
+the delete could always produce them -- it now drops them **across** files
+rather than within one.
+
+#### The delete, and why it is by identifier
 
 The delete names the rows that are in the file rather than re-running
 `date_created < before`. A second query matches whatever is true when it runs: a

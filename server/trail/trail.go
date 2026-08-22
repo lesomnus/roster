@@ -43,8 +43,11 @@ package trail
 
 import (
 	"bufio"
+	"bytes"
 	"compress/gzip"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -75,19 +78,50 @@ const Batch = 1000
 // Ext is what an archive file is called, after the month it holds.
 const Ext = ".jsonl.gz"
 
-// Named is the name of the file a row of this date belongs in.
-//
-// By month, which is the unit two different questions want. A prune runs on
-// whatever clock a deployment sets and writes into whichever months it reaches,
-// so the file is addressed by the row rather than by the run -- two runs in one
-// month append to one file, and a run that spans a boundary writes two. And
-// [Purge] can answer *is all of this old enough* from the name alone, because a
-// file named for a month cannot hold anything after it.
+// Month is the part of an archive's name that says what is in it.
 //
 // UTC, so that a deployment does not file the same instant in two months
 // depending on where the machine thinks it is.
-func Named(at time.Time) string {
-	return "audit-" + at.UTC().Format("2006-01") + Ext
+func Month(at time.Time) string { return at.UTC().Format("2006-01") }
+
+// Named is the file a row of this date belongs in, for one run of [Archive].
+//
+// **A month and a run**, and the run half is not decoration. The first version
+// was the month alone, appended to, on the reasoning that concatenated gzip
+// members are a valid stream and so a file need never be rewritten. That is
+// true of one writer.
+//
+// There is not one writer. [Sweep] takes no lock -- neither does the generated
+// outbox drain, and its comment says so: *nothing here takes a lock, so two of
+// these drain the same rows.* For the drain that is wasted work. Here two
+// writers interleave gzip members **inside one member**, because a
+// `gzip.Writer` flushes to the file in chunks of its own choosing, and what
+// lands is not a gzip stream at all. Two replicas, or an operator running
+// `roster trail prune` while the process sweeps, and the month is unreadable.
+//
+// A run writes its own files, so writers never share one. What it costs is more
+// files -- one per month a run reaches, rather than one per month -- and the
+// duplicate rows two writers produce, which [Read] already drops because
+// [Archive] could always leave those behind by crashing.
+//
+// The month stays **first** so that [Doomed] can still answer *is all of this
+// old enough* from the name, without opening anything.
+func Named(at time.Time, run string) string {
+	return "audit-" + Month(at) + "." + run + Ext
+}
+
+// run is what tells one pass's files from another's.
+//
+// Random rather than a timestamp or a process id: two replicas starting from
+// the same cron minute would collide on the first, and a container that always
+// comes up as pid 1 on the second.
+func run() (string, error) {
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(b), nil
 }
 
 // Archive writes every row older than `before` into `dir`, then removes exactly
@@ -120,6 +154,11 @@ func Archive(ctx context.Context, db *ent.Client, before time.Time, dir string) 
 		return 0, err
 	}
 
+	id, err := run()
+	if err != nil {
+		return 0, err
+	}
+
 	moved := 0
 	for {
 		vs, err := db.Audit.Query().
@@ -134,7 +173,7 @@ func Archive(ctx context.Context, db *ent.Client, before time.Time, dir string) 
 			return moved, nil
 		}
 
-		if err := write(dir, vs); err != nil {
+		if err := write(dir, id, vs); err != nil {
 			return moved, err
 		}
 
@@ -198,15 +237,17 @@ func Collect(ctx context.Context, db *ent.Client, before time.Time) (int, error)
 	}
 }
 
-// write appends one batch to whichever month each row belongs to.
+// write appends one batch to this run's file for whichever month each row
+// belongs to.
 //
 // Appended, and gzip is what makes that free: concatenated members are a valid
 // stream and a reader walks them as one. So a file is never rewritten and a run
-// that stops half way has still written what it wrote.
-func write(dir string, vs []*ent.Audit) error {
+// that stops half way has still written what it wrote -- and because the name
+// carries the run, the writer appending is the only one there is.
+func write(dir, id string, vs []*ent.Audit) error {
 	byMonth := map[string][]*ent.Audit{}
 	for _, v := range vs {
-		name := Named(v.DateCreated)
+		name := Named(v.DateCreated, id)
 		byMonth[name] = append(byMonth[name], v)
 	}
 
@@ -232,7 +273,14 @@ func appendTo(path string, vs []*ent.Audit) error {
 	}
 	defer f.Close()
 
-	z := gzip.NewWriter(f)
+	// Built whole and written once. A `gzip.Writer` over the file would flush
+	// in chunks of its own choosing, and a chunk is where a second writer gets
+	// in -- see [Named]. This is belt beside those braces: the run id already
+	// means nobody else has this file open, and a member that reaches the disk
+	// in one write cannot be half of one either.
+	buf := &bytes.Buffer{}
+
+	z := gzip.NewWriter(buf)
 	for _, v := range vs {
 		b, err := protojson.Marshal(Row(v))
 		if err != nil {
@@ -243,6 +291,9 @@ func appendTo(path string, vs []*ent.Audit) error {
 		}
 	}
 	if err := z.Close(); err != nil {
+		return err
+	}
+	if _, err := f.Write(buf.Bytes()); err != nil {
 		return err
 	}
 
@@ -288,13 +339,30 @@ func Row(v *ent.Audit) *app.Audit {
 	return b.Build()
 }
 
-// Read walks one archive file, oldest first, and calls `fn` for each row.
+// Read walks archives in the order given and calls `fn` for each row.
 //
-// Duplicates are dropped by identifier, which is what makes [Archive]'s crash
-// window cheap: the same rows written twice read back once. It costs an
-// identifier per row in memory for the length of the file, which is what a
-// month of one deployment's writes is.
-func Read(path string, fn func(*app.Audit) error) error {
+// **Across the files rather than within one**, which is what the run in a
+// name costs: two writers that reached the same month wrote two files, and a
+// row in both is one row. It is the same drop that makes [Archive]'s crash
+// window cheap -- rows left in the database and in a file are re-archived by
+// the next pass -- and now it has a second reason.
+//
+// It costs an identifier per row in memory for the length of the read. A month
+// of one deployment's writes is what that is, and the alternative is answering
+// a question about a set with a pass over one of its parts.
+func Read(paths []string, fn func(*app.Audit) error) error {
+	seen := map[string]bool{}
+
+	for _, path := range paths {
+		if err := read(path, seen, fn); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func read(path string, seen map[string]bool, fn func(*app.Audit) error) error {
 	f, err := os.Open(path)
 	if err != nil {
 		return err
@@ -306,8 +374,6 @@ func Read(path string, fn func(*app.Audit) error) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 	defer z.Close()
-
-	seen := map[string]bool{}
 
 	s := bufio.NewScanner(z)
 	s.Buffer(make([]byte, 0, 64*1024), 16*1024*1024)
@@ -421,11 +487,23 @@ func Doomed(dir string, before time.Time) ([]string, error) {
 	return out, nil
 }
 
-// monthOf reads back what [Named] wrote.
+// monthOf reads back the half of [Named] that says what is in the file.
+//
+// The run is not parsed and is not looked at. What a destructive pass needs to
+// know is the month, and a name it cannot read a month out of is a file this
+// did not write -- see [Doomed], which leaves those alone.
 func monthOf(name string) (time.Time, bool) {
-	v := strings.TrimSuffix(strings.TrimPrefix(name, "audit-"), Ext)
+	v := strings.TrimSuffix(name, Ext)
 	if v == name {
 		return time.Time{}, false
+	}
+
+	v, ok := strings.CutPrefix(v, "audit-")
+	if !ok {
+		return time.Time{}, false
+	}
+	if i := strings.IndexByte(v, '.'); i >= 0 {
+		v = v[:i]
 	}
 
 	at, err := time.ParseInLocation("2006-01", v, time.UTC)
