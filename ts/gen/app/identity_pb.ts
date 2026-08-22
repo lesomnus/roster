@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/identity.proto.
  */
 export const file_app_identity: GenFile = /*@__PURE__*/
-  fileDesc("ChJhcHAvaWRlbnRpdHkucHJvdG8SBnJvc3RlciKFBAoISWRlbnRpdHkSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBmhvbGRlchgCIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgJAARIQCghwcm92aWRlchgIIAEoCRIPCgdzdWJqZWN0GAkgASgJEhkKCXRlbmFudF9pZBgKIAEoDEIG6oIWAhBAEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADrHAcr8FV0SAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARo1EgdzdWJqZWN0Gg0KCXRlbmFudF9pZBAKGgwKCHByb3ZpZGVyEAgaCwoHc3ViamVjdBAJMAGKuxZiCAgyQAoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaCAoGaG9sZGVyGgsKCXRlbmFudF9pZCAUKGQ6ACIaCg1ob2xkZXIudGVuYW50Ggl0ZW5hbnRfaWRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChJhcHAvaWRlbnRpdHkucHJvdG8SBnJvc3RlciKHBAoISWRlbnRpdHkSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBmhvbGRlchgCIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgJAARIQCghwcm92aWRlchgIIAEoCRIPCgdzdWJqZWN0GAkgASgJEhsKCXRlbmFudF9pZBgKIAEoDEII6oIWBBBAQAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOscByvwVXRICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGjUSB3N1YmplY3QaDQoJdGVuYW50X2lkEAoaDAoIcHJvdmlkZXIQCBoLCgdzdWJqZWN0EAkwAYq7FmIICDJAChIKEAoMZGF0ZV9jcmVhdGVkEA8KCAoGCgJpZBABGgUKA3JlZhoICgZob2xkZXIaCwoJdGVuYW50X2lkIBQoZDoAIhoKDWhvbGRlci50ZW5hbnQaCXRlbmFudF9pZEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Identity is one way a person signs in: a subject at a provider, pointing at
@@ -95,6 +95,16 @@ export type Identity = Message<"roster.Identity"> & {
    * when the row is written and no step of that path can move afterwards --
    * which is what `pd gen` refuses a stamp without. Nothing refreshes it
    * because nothing can put it out of date.
+   *
+   * And **immutable**, which is what says nothing may -- the word `Email.tenant_id`
+   * carries and this one did not. Without it the column is a field of the patch
+   * request like any other, so a write could move the row across the wall: the
+   * stamp is the whole of what a read is narrowed by, and a row whose stamp
+   * says another tenant is a row that tenant reads and this one does not. It is
+   * closed at the transport today -- `/Patch` is a general write and roster
+   * opens none -- which is a reason it went unnoticed and not a reason to leave
+   * it, since a batch and the servers' own writes reach the column by another
+   * road.
    *
    * @generated from field: bytes tenant_id = 10;
    */

@@ -61,12 +61,23 @@ func (s coreEmail) Add(ctx context.Context, req *app.EmailAddRequest) (*app.Emai
 	return s.EmailServiceServer.Add(ctx, req)
 }
 
-// Patch is the same two rules about the same two fields.
+// Patch is the normalisation, and **not** the rule about whose row it is.
 //
-// The holder is immutable, so a patch cannot move an address onto somebody
-// else's row -- but it can change what the address **is**, which reaches the
-// same place: the lowered spelling of the administrator's address, written over
-// one of mine, and from then on their address is mine.
+// Which is a gap on purpose rather than the other rule being forgotten, and it
+// is only safe because of something one file away: `/Patch` is closed at the
+// transport by `grpcx.GeneralWrite` and roster sets no `AllowGeneralWrites`, so
+// nothing a caller reaches gets here. What does is a batch and the servers' own
+// writes, neither of which is somebody naming a row.
+//
+// If that changes -- a deployment with a reason to open general writes -- this
+// wants [Core.mayWriteAWayIn] beside the normalisation, because the holder
+// being immutable is not the protection it looks like: a patch cannot move an
+// address onto somebody else's row and it can change what the address on
+// **their** row is, which reaches the same place. The address is theirs; the
+// mailbox would be mine.
+//
+// The normalisation is here anyway, because it is about the value rather than
+// about the caller and those other roads write values too.
 func (s coreEmail) Patch(ctx context.Context, req *app.EmailPatchRequest) (*app.Email, error) {
 	if req.HasAddress() {
 		if err := normalised("address", req.GetAddress(), front.Address); err != nil {

@@ -155,9 +155,15 @@ well, and that is why the shape of a Kratos login form belongs to Kratos.
 Three things, and they are chosen to be the ones an employee directory actually
 needs.
 
-**1. The tenant wall.** Every row belongs to a tenant and no read crosses one.
-This is payday's and is not configurable — there is no rule anybody can write
-that turns it off.
+**1. The tenant wall.** Every row belongs to a tenant and no read a caller
+reaches crosses one. This is payday's and is not configurable — there is no rule
+anybody can write that turns it off.
+
+What it needs instead is wiring. The wall is a predicate on a server instance,
+and roster deliberately runs one it was never installed on, for the work that
+cannot be done from inside a tenant. Which of the two a hand-written service
+reads is an ordinary line: `Vouch.Link` read the unwalled one and could mint a
+spendable way into another organisation. PLAN.md D41.
 
 **2. Roles bound at a scope.** A `Role` is a list of RPCs. A `Binding` grants it
 to a `Holder` or a `Group`, either across the tenant or within one `Site`. This

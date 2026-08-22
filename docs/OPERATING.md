@@ -568,6 +568,14 @@ costs — the rule about writing somebody's credential is **not** applied on tha
 port, because it reads bindings the caller has none of, and an operator's
 standing there comes from the port rather than from a role.
 
+**The rule about writing a *way in* costs the same, and does not look like it.**
+`IdentityService/Add` and `EmailService/Add` are served here too and do carry
+it, but it reads the control plane — where a customer's person holds nothing —
+so it refuses nothing. Granting either of them on this port is granting the
+account, exactly as granting `Vouch.Reset` is. That is the same waiver and it is
+the silent one: on the data plane those two are guarded, and nothing about the
+call says which port it arrived at.
+
 A new password appears **once**, in the page, to be read out. There is no field
 to type one into: a secret the caller chose is a secret the caller knows.
 
@@ -643,8 +651,9 @@ Three things to know before handing these out:
   one if you have not, because a suspension that fails when somebody edits a
   profile is a suspension that editing a profile in a loop can prevent.
 - **Nothing stops you suspending an administrator.** Escalation prevention
-  covers roles, bindings and an API key's methods, and not this. PLAN.md's list,
-  item 11.
+  covers everything that hands out a permission or writes a way in — the two
+  tables above — and not this: suspending somebody is a denial of service rather
+  than a way to become them. PLAN.md's list, item 11.
 
 What an app in front does with `date_invalidated` is its own half: roster
 answers *invalid since when*, and the app answers *what is still alive*. It
@@ -793,8 +802,9 @@ Nothing written down is plaintext, and it warns once.
 - **Nothing mints a `rt_` key over the wire.** `ApiKeyService` is unregistered,
   so issuing one takes `Ungated` and therefore a shell. The rules that make a
   customer-minted key safe are in place — the prefix, the holder it resolves to,
-  and `mayGrant` on `methods` — and what is missing is the surface that would
-  use them.
+  `mayGrant` on `methods`, and the rule about whose holder it is minted on —
+  because a key that acts as somebody is a way into their account whatever
+  methods it names — and what is missing is the surface that would use them.
 - **An erase forgets rather than destroys.** Erasing a `Holder` stamps their row
   and cascades to nothing, so their `Email` and their `Identity` stay — as does
   the trail, for the same reason. What those rows can no longer be used for is

@@ -340,6 +340,25 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 	// reaches, behind a control-plane session, and every write recorded twice
 	// and joined by the trace.
 	//
+	// # And the same is true of the rule about a way in, less visibly
+	//
+	// D41 added a second rule of that family: nobody writes a way to sign in --
+	// an account at a provider, a mailbox, a key that acts as them -- onto
+	// somebody who holds more than they do. `IdentityService` and
+	// `EmailService` are both registered on this port, and they do carry it,
+	// because the layer is built here like any other.
+	//
+	// It refuses nothing, for the same reason `WithReach` was left out: the
+	// rules are built from `s.Control.Ent`, so asking what a **customer's**
+	// person holds is asking the wrong database, which answers nothing -- and
+	// nothing is what the rule reads as *there is nothing to escalate to*.
+	//
+	// Which is the same waiver and is worth naming separately, because this one
+	// is silent: a reader of `escalate.go` sees the rule applied to
+	// `Identity.Add` and has no way to know it is inert here. Granting
+	// `EmailService/Add` on this port is granting the account, exactly as
+	// granting `Vouch.Reset` is, and it does not look like it.
+	//
 	// # With `WithBreached`, which was never a decision
 	//
 	// `WithReach` is about the caller and does not survive the crossing between

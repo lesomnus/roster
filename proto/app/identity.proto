@@ -75,7 +75,20 @@ message Identity {
   // when the row is written and no step of that path can move afterwards --
   // which is what `pd gen` refuses a stamp without. Nothing refreshes it
   // because nothing can put it out of date.
-  bytes tenant_id = 10 [(orm.field) = {type: TYPE_UUID}];
+  //
+  // And **immutable**, which is what says nothing may -- the word `Email.tenant_id`
+  // carries and this one did not. Without it the column is a field of the patch
+  // request like any other, so a write could move the row across the wall: the
+  // stamp is the whole of what a read is narrowed by, and a row whose stamp
+  // says another tenant is a row that tenant reads and this one does not. It is
+  // closed at the transport today -- `/Patch` is a general write and roster
+  // opens none -- which is a reason it went unnoticed and not a reason to leave
+  // it, since a batch and the servers' own writes reach the column by another
+  // road.
+  bytes tenant_id = 10 [(orm.field) = {
+    type: TYPE_UUID
+    immutable: true
+  }];
 
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];

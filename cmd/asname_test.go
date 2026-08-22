@@ -2,6 +2,7 @@ package cmd_test
 
 import (
 	"context"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"strconv"
 	"testing"
 
@@ -630,4 +631,47 @@ func TestAnIdentifierNamesOnlyItsOwnKind(t *testing.T) {
 		x.False(v.GetOk())
 		x.Empty(v.GetHolder())
 	})
+}
+
+// TestAStampIsNotAFieldACallerWrites.
+//
+// The tenant stamp is the whole of what a read is narrowed by: `pd.Wall`
+// compares it and nothing else, so a row whose stamp says another tenant is a
+// row that tenant reads and this one does not. Which makes it the shortest way
+// across the wall there could be -- not a reference to follow or a permission
+// to acquire, one column.
+//
+// `Identity.tenant_id` was declared without `immutable: true` while
+// `Email.tenant_id`, the other stamp in this schema and written the same way,
+// carried it. So it landed in the generated patch request as an ordinary field,
+// and a write could move the row.
+//
+// It was closed at the transport the whole time -- `/Patch` is a general write
+// and roster opens none -- which is why nothing had noticed, and is not a
+// reason to leave a column a batch or the servers' own writes reach by another
+// road. The schema is where it is said, and the assertion is that it is not a
+// field at all rather than that some layer refuses it.
+func TestAStampIsNotAFieldACallerWrites(t *testing.T) {
+	x := require.New(t)
+
+	// Read off the descriptor rather than by trying a write, because what is
+	// being pinned is that there is nothing to try: a caller cannot name the
+	// column, in any request, on any road.
+	for _, tc := range []struct {
+		what string
+		m    protoreflect.MessageDescriptor
+	}{
+		{"an identity", (&app.IdentityPatchRequest{}).ProtoReflect().Descriptor()},
+		{"an email", (&app.EmailPatchRequest{}).ProtoReflect().Descriptor()},
+	} {
+		t.Run(tc.what, func(t *testing.T) {
+			x := require.New(t)
+			x.Nil(tc.m.Fields().ByName("tenant_id"),
+				"a patch can move the row across the wall")
+		})
+	}
+
+	// And the stamp is still answered, so what went is the write and not the
+	// column: a caller may read which tenant a row is filed under.
+	x.NotNil((&app.IdentitySelect{}).ProtoReflect().Descriptor().Fields().ByName("tenant_id"))
 }

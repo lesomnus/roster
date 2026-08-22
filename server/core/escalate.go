@@ -80,18 +80,22 @@ import (
 // `ApiKey.Patch`. The last two of those name no role and hand over as much as
 // one, which is what took three goes to see; see D40.
 //
-// The `Patch`es are checked **here** rather than left to the transport. This
-// paragraph used to say they were closed by `grpcx.GeneralWrite` and that it
-// was not a hole this could close, and both halves were wrong: `Patch` is a
-// generated verb like any other and is served, and a role that can grow
-// methods after it was written is a role whose first version says nothing.
+// The `Patch`es are checked **here as well**, and that is worth being exact
+// about because this paragraph was wrong twice.
 //
-// `Apply` is the one left. It is a general write -- a patch document rather
-// than named fields -- and it is closed at the transport by
-// `grpcx.GeneralWrite`, `Closed` in the chain and in `batch.Guard`, which is
-// what roster serves: nothing here sets `AllowGeneralWrites`. A deployment that
-// opens it takes this on with it, and closing it from here means reading the
-// document to find out what it sets, which is work nothing has needed yet.
+// `grpcx.GeneralWrite` closes `/Patch` and `/Apply` alike, and roster sets no
+// `AllowGeneralWrites`, so neither is on the wire. That is not the same as
+// being guarded: the transport is one road and the layer is what every other
+// one goes through -- a batch, the servers' own writes, and any deployment
+// that opens general writes because it has a reason to. A role that can grow
+// methods after it was written is a role whose first version says nothing, and
+// leaving that to a setting is leaving it to somebody who did not know they
+// were deciding it.
+//
+// `Apply` is the one still standing on the transport alone. It carries a patch
+// document rather than named fields, so refusing it here means reading the
+// document to find out what it sets, which is work nothing has needed yet -- a
+// deployment that opens general writes takes that on with them.
 
 // Granted is every pattern somebody holds through a binding, and therefore may
 // pass on.

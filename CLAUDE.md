@@ -145,9 +145,33 @@ flag to check; the wiring is the whole of the control.
 
 ## The wall is a predicate, so it only applies to reads
 
-`Add` has no row to narrow, so it is gated in the generated `Gate` layer
-instead. If you are reasoning about who may create something, that is where it
-is decided.
+`Add` has no row to narrow, so the generated `Gate` layer stands in front of it
+-- and what it decides is smaller than it sounds: that there **is** a caller,
+and that the rows an `Add` hangs off are ones that caller can see. Who may
+create a thing at all is the policy, in the interceptor above it. Neither is
+where *what this write hands out* is decided.
+
+> **A grant is any write that changes what the gate will answer for somebody.**
+
+Which is wider than the writes that name a role, and is the sentence three
+separate holes were found behind. `cmd/policy.go` answers from three sets --
+bindings written to a person, bindings written to a group they are in, and roles
+they hold in a team -- so a write that adds a row to any of the three hands out
+whatever that row reaches. `GroupMembership.Add` names no role and grants as
+much as `Binding.Add` does.
+
+And beside it, the rule that is not about permissions at all:
+
+> **Nobody writes a way into an account wider than their own.**
+
+A password, a second factor, an account at a provider, a mailbox a recovery link
+goes to, a key that acts as them. `Identity.Add` and `Email.Add` sound like
+keeping a directory tidy and each is a way to sign in as whoever the row is
+about.
+
+If you are adding a write, ask both questions of it before asking anything else.
+`server/core/escalate.go` is where the answers live and PLAN.md D40 and D41 are
+how they were arrived at.
 
 ## Running
 

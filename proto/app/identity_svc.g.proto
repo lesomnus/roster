@@ -77,7 +77,6 @@ message IdentityPatchRequest {
   IdentityRef ref = 1;
   string provider = 16;
   string subject = 18;
-  bytes tenant_id = 20;
   // The version this update requires the stored date_updated to be.
   // It is a precondition, not a write: the update applies only if the row
   // still holds this value, and the server stamps the new version itself.

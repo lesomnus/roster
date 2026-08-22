@@ -887,7 +887,6 @@ type IdentityPatchRequest struct {
 	xxx_hidden_Ref              *IdentityRef           `protobuf:"bytes,1,opt,name=ref"`
 	xxx_hidden_Provider         *string                `protobuf:"bytes,16,opt,name=provider"`
 	xxx_hidden_Subject          *string                `protobuf:"bytes,18,opt,name=subject"`
-	xxx_hidden_TenantId         []byte                 `protobuf:"bytes,20,opt,name=tenant_id,json=tenantId"`
 	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateUpdatedForce bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
 	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
@@ -948,13 +947,6 @@ func (x *IdentityPatchRequest) GetSubject() string {
 	return ""
 }
 
-func (x *IdentityPatchRequest) GetTenantId() []byte {
-	if x != nil {
-		return x.xxx_hidden_TenantId
-	}
-	return nil
-}
-
 func (x *IdentityPatchRequest) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -975,20 +967,12 @@ func (x *IdentityPatchRequest) SetRef(v *IdentityRef) {
 
 func (x *IdentityPatchRequest) SetProvider(v string) {
 	x.xxx_hidden_Provider = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 5)
 }
 
 func (x *IdentityPatchRequest) SetSubject(v string) {
 	x.xxx_hidden_Subject = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 6)
-}
-
-func (x *IdentityPatchRequest) SetTenantId(v []byte) {
-	if v == nil {
-		v = []byte{}
-	}
-	x.xxx_hidden_TenantId = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 5)
 }
 
 func (x *IdentityPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -997,7 +981,7 @@ func (x *IdentityPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *IdentityPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 5)
 }
 
 func (x *IdentityPatchRequest) HasRef() bool {
@@ -1021,13 +1005,6 @@ func (x *IdentityPatchRequest) HasSubject() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
 }
 
-func (x *IdentityPatchRequest) HasTenantId() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
-}
-
 func (x *IdentityPatchRequest) HasDateUpdated() bool {
 	if x == nil {
 		return false
@@ -1039,7 +1016,7 @@ func (x *IdentityPatchRequest) HasDateUpdatedForce() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
 }
 
 func (x *IdentityPatchRequest) ClearRef() {
@@ -1056,17 +1033,12 @@ func (x *IdentityPatchRequest) ClearSubject() {
 	x.xxx_hidden_Subject = nil
 }
 
-func (x *IdentityPatchRequest) ClearTenantId() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
-	x.xxx_hidden_TenantId = nil
-}
-
 func (x *IdentityPatchRequest) ClearDateUpdated() {
 	x.xxx_hidden_DateUpdated = nil
 }
 
 func (x *IdentityPatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
 	x.xxx_hidden_DateUpdatedForce = false
 }
 
@@ -1076,7 +1048,6 @@ type IdentityPatchRequest_builder struct {
 	Ref      *IdentityRef
 	Provider *string
 	Subject  *string
-	TenantId []byte
 	// The version this update requires the stored date_updated to be.
 	// It is a precondition, not a write: the update applies only if the row
 	// still holds this value, and the server stamps the new version itself.
@@ -1099,20 +1070,16 @@ func (b0 IdentityPatchRequest_builder) Build() *IdentityPatchRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	if b.Provider != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 5)
 		x.xxx_hidden_Provider = b.Provider
 	}
 	if b.Subject != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 5)
 		x.xxx_hidden_Subject = b.Subject
-	}
-	if b.TenantId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 6)
-		x.xxx_hidden_TenantId = b.TenantId
 	}
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 5)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	return m0
@@ -1910,12 +1877,11 @@ const file_app_identity_svc_g_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xfd\x01\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xe0\x01\n" +
 	"\x14IdentityPatchRequest\x12%\n" +
 	"\x03ref\x18\x01 \x01(\v2\x13.roster.IdentityRefR\x03ref\x12\x1a\n" +
 	"\bprovider\x18\x10 \x01(\tR\bprovider\x12\x18\n" +
-	"\asubject\x18\x12 \x01(\tR\asubject\x12\x1b\n" +
-	"\ttenant_id\x18\x14 \x01(\fR\btenantId\x12=\n" +
+	"\asubject\x18\x12 \x01(\tR\asubject\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"a\n" +
 	"\x14IdentityApplyRequest\x12%\n" +

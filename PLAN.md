@@ -372,6 +372,32 @@ suite: `cmd/close_test.go` asks the database whether both pools were given
 back, because only the database knows and a count kept here would be a second
 answer.
 
+### F14 · A select reached a parent that had been erased -- **fixed upstream**
+
+F9 made a **reference** answer among the live rows, because a reference to a row
+is composed into the reference of whatever names one and no narrowing of the
+parent is applied there. A **select** is the other way to reach a parent, and it
+went through nothing at all: the edge is loaded with the target's own `Select`
+and no predicate.
+
+So the parent of any row a caller may read came back whole, whatever state it
+was in. An erase cascades to nothing on purpose -- an address and an external
+identity outlive the person -- and asking for `select.holder.all` on the way
+past one of those answered their alias, their name, their profile, their
+provider subject: everything the entity's own `Get` answers NotFound to, for the
+same caller, one call later. And a list needs no name to start from.
+
+It is the parent's **liveness** and not the caller's scope, which is why it is
+the generator's and not the wall's: a wall narrows the child's path to a tenant
+and has nothing to say about whether the row at the other end of an edge is
+still there.
+
+Fixed in `protoc-gen-orm-ent@28a0a48`, pinned through `lesomnus/payday@dbe36f0`.
+Only where a select asks for the edge: the key-only load `SelectInit` falls back
+to is what payday's recorder reads a row it has just erased through, and
+narrowing that would take a trail entry away from the tenant it is about --
+which is F13, immediately above.
+
 ### F13 · The record of an erase was filed where the erased side could not read it -- **fixed upstream**
 
 The trail is filed under the tenant of the **thing that changed**, which is
@@ -2754,9 +2780,9 @@ Confirmed here: `proto/app/host.proto` moved onto `MailDomain`'s domain, and
 | 1 · schema — Site, Identity, Email | **done**, 15 tests, both databases |
 | 1b · Team, on the second axis | **done**, 21 tests, both databases |
 | 1c · memberships, Credential | **done**, 27 tests, both databases |
-| 2 · payday fixes | **all closed** — F1, F2, F3, F4, F6, F8, F9, F10, F11, F12 fixed · F7 by D27 · F5 is operational and written down |
+| 2 · payday fixes | **all closed** — F1, F2, F3, F4, F6, F8, F9, F10, F11, F12, F13, F14 fixed · F7 by D27 · F5 is operational and written down |
 | 3 · app layer | linking rules, credential verification, roles and the second axis, `MeService`, escalation prevention, the console · **done** |
-| 4 · keys, sync, console | **keys done** (both planes; no wire surface to mint an `rt_`) · **delegation done** (D25; no wire surface either) · sync channel, console — |
+| 4 · keys, sync, console | **keys done** (both planes; no wire surface to mint an `rt_`) · **delegation done** (D25; `Vouch.Delegate` mints one over the wire and `Vouch.Revoke` ends it — what has no wire surface is `DelegationService`) · **console done** · sync channel — |
 | 5 · the line, written down | **done** — D19, D20, and POSITION.md rewritten around them |
 
 The phases above are how this was built. What is built **next** is

@@ -441,11 +441,11 @@ that the plan defers on purpose.
 | | | |
 | --- | --- | --- |
 | P0 | F9 — a reference reached erased rows | **done** — fixed in `protoc-gen-orm-ent@3843c60`, pin moved, both symptoms tested here |
-| P1 | `Delegation` | **done** — the entity, `rd_`, the issuer binding, and `keys.Delegate`. PLAN.md D25. Nothing mints one over the wire; D24 puts the page first |
+| P1 | `Delegation` | **done** — the entity, `rd_`, the issuer binding, and `keys.Delegate`. PLAN.md D25. `Vouch.Delegate` mints one over the wire and `Vouch.Revoke` ends it; what has no wire surface is `DelegationService`, which is closed |
 | P2 | `Holder` epoch and disabled, and the refusals | **done** — PLAN.md D26. Closes list items 6 and 12, and item 4's first increment came free |
 | P3 | the reference app's spine | **done** — `Vouch.Delegate`/`Revoke`, `keys.Sweep`, the lifetime settled, identities and credentials on `MeGetResponse`, and `examples/sso` signing in with a password and reading its own record as the person |
 | P4 | hostname, mail domain, and F7 | **done** — PLAN.md D27. `Host`, `MailDomain`, `FrontService`, `Email` stamped and unique per tenant, `VouchWho.address`, and `examples/sso` asking roster rather than holding a map |
-| P5 | escalation over credential writes, then the write surface | **done** — PLAN.md D28, and D35 for the two ways round it. `core.Reaching`, `Vouch.Reset`, `Vouch.Unlock`, and the rule over `Vouch.Set`. Not done: minting an `rt_` over the wire |
+| P5 | escalation over credential writes, then the write surface | **done** — PLAN.md D28, and D35, D40 and D41 for the five ways round it found later. `core.Reaching`, `Vouch.Reset`, `Vouch.Unlock`, the rule over `Vouch.Set`, and the second rule beside it: nobody writes a way in for somebody wider than they. Not done: minting an `rt_` over the wire |
 | P6 | the reads a screen needs, and the screens | **done** — the reads (items 7, 8), §5 the operator screen, §4 self-service in the reference app, and §6 the extraction. D24's order is complete. §4's *add an SSO method* is the one half not drawn: a person removes one and signs out everywhere, and adding one is the sign-in flow reached by somebody already signed in, which the reference app does not route |
 | P7 | two-step verification | **done** — PLAN.md D29 and D30, and `examples/sso` showing two forms with a half-session between them |
 | P8 | recovery and the magic link | **done** — PLAN.md D31. `Vouch.Link`/`Redeem`, a reset voiding what came before it, and the sweep over both short-lived tables. The air-gap half was already D28's |
