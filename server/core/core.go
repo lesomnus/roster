@@ -8,8 +8,11 @@
 package core
 
 import (
+	"context"
 	"entgo.io/ent/dialect"
 	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
+
+	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
 )
@@ -21,6 +24,33 @@ type Core struct {
 	// rules is what a caller holds, which `cmd` reads for `gate.Policy` and
 	// hands over rather than this package asking a second time. See [Rules].
 	rules Rules
+
+	// lock is a write on somebody's own row that nothing asked for. See
+	// [Core.only]: it is what makes two callers removing a person's last two
+	// ways in contend for something, and there is nothing in the generated API
+	// that does it -- a `Patch` carrying only a version test compiles to an
+	// existence check and no write at all, which is D34's finding arriving in a
+	// second place.
+	//
+	// Supplied rather than done here, for `Rules`' reason: it is a write
+	// against ent, and this package deliberately holds no client. `cmd` has
+	// one and already reads it directly, with the same argument.
+	lock Lock
+
+	// drv is what this stack was built on, for the one judgement here that a
+	// read cannot make on its own.
+	//
+	// Nearly every rule in this package is *look, then refuse* -- and a look is
+	// enough when what it looks at is the request. [coreIdentity.Erase] is the
+	// exception: what it looks at is a **count** of other rows, and a count
+	// taken outside a transaction is a fact about a moment that has passed. See
+	// [Core.only].
+	//
+	// Nil is a stack assembled without one, which is every test that builds a
+	// layer by hand. The rule reads that as *the caller has arranged the
+	// transaction* and does its work in whatever it was handed, which is also
+	// what it does inside a batch.
+	drv dialect.Driver
 }
 
 // Rules is what this layer has to know about a caller and cannot work out.
@@ -68,14 +98,45 @@ func (r Rules) holding() Holding {
 	return Holding(r.Granted)
 }
 
-func New(next app.Server, rules Rules) Core { return Core{app.NewOverlay(next), rules} }
+func New(next app.Server, rules Rules, opts ...Option) Core {
+	s := Core{Overlay: app.NewOverlay(next), rules: rules}
+	for _, opt := range opts {
+		opt(&s)
+	}
+
+	return s
+}
+
+// Option is something this layer is told beside its rules.
+type Option func(*Core)
+
+// Lock is a write on somebody's own row that nothing asked for, made on the
+// driver it is handed so that it lands inside whatever transaction is open.
+//
+// It exists because two callers have to contend for something and the schema's
+// own version is not reachable as a write: see [Core.only].
+type Lock func(ctx context.Context, drv dialect.Driver, who pdid.Id) error
+
+// On is the driver this stack was built on and the write one rule takes to
+// serialise on; see [Core.drv] and [Lock].
+func On(drv dialect.Driver, lock Lock) Option {
+	return func(s *Core) {
+		s.drv = drv
+		s.lock = lock
+	}
+}
 
 // Build makes a builder of this layer so that it can be stacked.
-func Build(rules Rules) app.Builder { return builder{rules} }
+func Build(rules Rules, opts ...Option) app.Builder { return builder{rules, opts} }
 
-type builder struct{ rules Rules }
+type builder struct {
+	rules Rules
+	opts  []Option
+}
 
-func (b builder) Build(next app.Server) (app.Server, error) { return New(next, b.rules), nil }
+func (b builder) Build(next app.Server) (app.Server, error) {
+	return New(next, b.rules, b.opts...), nil
+}
 
 var (
 	_ app.Server               = Core{}
@@ -94,5 +155,9 @@ func (s Core) WithDriver(drv dialect.Driver) (app.Server, error) {
 		return nil, err
 	}
 
+	// The driver is **not** carried over: this stack is being rebound onto a
+	// transaction somebody else opened, and a rule that began its own inside
+	// that one would be a transaction nested in a transaction. Nil is how
+	// [Core.only] is told the caller has already arranged one.
 	return New(next, s.rules), nil
 }

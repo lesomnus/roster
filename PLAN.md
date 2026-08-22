@@ -372,6 +372,55 @@ suite: `cmd/close_test.go` asks the database whether both pools were given
 back, because only the database knows and a count kept here would be a second
 answer.
 
+### D42 · An optimistic lock is a write, and the last way in is closed
+
+D37 recorded the last-way-in race as *found and not fixed*, on the reasoning
+that nothing this layer can reach serialises two callers: a transaction is not
+enough under READ COMMITTED, and `SELECT ... FOR UPDATE` is not something a
+generated read offers. That was right about the transaction and wrong about the
+conclusion.
+
+The schema already carries the thing needed. Every entity has `date_updated` as
+its version, and a version is a compare-and-swap -- what it was missing was not
+a primitive but a **scope**: the count, the erase and the swap have to be one
+commit, or the swap validates a moment the other two do not share.
+
+So `coreIdentity.Erase` opens a transaction, writes the person's version, then
+counts and erases inside it. The second caller blocks on that row, and by the
+time it is let through the first has committed and the count it takes is the
+true one. Forty people unlinked twice at once: forty kept a way in, on
+PostgreSQL, where the same test lost thirty-nine before.
+
+#### Where the first attempt went, which is worth keeping
+
+The obvious write was the generated `Patch` with a version precondition and no
+fields. It compiles to an **existence check and no write** -- which is D34's
+finding, about a continuation, arriving in a second place a year later. Two
+callers each validated a version, neither wrote anything, and they contended for
+nothing. It passed on SQLite, which serialises writers anyway, and changed
+nothing at all on PostgreSQL.
+
+An optimistic lock is a write. A precondition with no write beside it is a read
+with an opinion.
+
+#### What it took, and what it cost
+
+`Core` gains the driver it is built on and a `Lock` -- a write on somebody's own
+row that nothing asked for. The write is `cmd`'s, against ent, for the reason
+`Rules` is: `server/core` holds no client, and this file already reads ent
+directly because working out what a caller may do cannot itself require
+permission. Taking a lock is not a write anybody asked for either, so it is not
+one the layers should record or narrow.
+
+The cost is that a person's `date_updated` moves when an identity of theirs is
+removed. It is a token rather than a fact, the trail carries the erase that
+explains it and nothing for the lock, and a console holding an older version is
+told to read again -- which is what a version is for.
+
+A stack with no driver -- a batch, or anything payday rebound onto its own
+transaction -- runs the rule in what it was handed, because the outer
+transaction is already the serialisation point.
+
 ### F15 · `secret:` kept a column out of one of the trail's two records -- **fixed upstream**
 
 Found by asking what rules `Audit` is under, which was the fourth of the

@@ -272,7 +272,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	// What keeps it out of the **trail** is not this layer -- the recorder is
 	// behind every layer -- but the declaration on the field, which the recorder
 	// reads for itself. See `Credential.secret`.
-	stacked, err := app.Build(walled.WithWatch(w), core.Build(Rules(client)), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
+	stacked, err := app.Build(walled.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client))), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -287,7 +287,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	// what this app means -- an identity linked by `init` or by an admin console
 	// is still an identity, and a subject that is an email address is still
 	// wrong.
-	ungated, err := app.Build(sink.WithWatch(w), core.Build(Rules(client)), pd.AuditBuild())
+	ungated, err := app.Build(sink.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client))), pd.AuditBuild())
 	if err != nil {
 		db.Close()
 		return nil, err

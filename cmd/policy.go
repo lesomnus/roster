@@ -2,6 +2,9 @@ package cmd
 
 import (
 	"context"
+	"time"
+
+	"entgo.io/ent/dialect"
 	"slices"
 
 	"github.com/google/uuid"
@@ -320,6 +323,64 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 	}
 
 	return h, nil
+}
+
+// Locking is the write `server/core` takes to make two callers contend.
+//
+// One rule there is not a judgement about a request but a **count** of other
+// rows -- may this identity go, or is it the last way somebody can sign in --
+// and a count taken outside a transaction is a fact about a moment that has
+// passed. What closes it is the count, the erase and one write on the person's
+// own row inside a single transaction, so that the second caller blocks on the
+// row and is refused rather than counting a set that is about to change.
+//
+// # Why the write is here and not there
+//
+// Because there is nothing in the generated API that makes one. A `Patch`
+// carrying only a version precondition compiles to an existence check and no
+// write at all -- which is D34's finding, arriving in a second place a year
+// later -- and a `Patch` naming a real field would be this rule editing
+// somebody's record to take a lock, which is a strange thing to find in a
+// trail.
+//
+// So it is a write against ent, which `server/core` deliberately holds no
+// client for. This file already reads ent directly and says why: what a caller
+// may do cannot itself require permission. The same argument covers this --
+// taking a lock is not a write anybody asked for, so it is not one the layers
+// should record or narrow.
+//
+// # What it writes
+//
+// The version column, to now. It is a concurrency token rather than a fact
+// about the person, so moving it says nothing untrue, and going around the
+// recorder means the trail carries the erase that explains it and no entry for
+// the lock itself.
+//
+// What it costs is that a console holding a version of that row from before the
+// unlink is told to read again on its next write, which is what a version is
+// for.
+func Locking(db *ent.Client) core.Lock {
+	return func(ctx context.Context, drv dialect.Driver, who pdid.Id) error {
+		// On the driver it is handed, which is the transaction `server/core`
+		// opened. A write on the client this was built from would be a write
+		// outside it, and then there is nothing to contend for.
+		if drv != nil {
+			db = ent.NewClient(ent.Driver(drv))
+		}
+
+		n, err := db.Holder.Update().
+			Where(holder.IDEQ(who.Uuid())).
+			SetDateUpdated(time.Now()).
+			Save(ctx)
+		if err != nil {
+			return err
+		}
+		if n == 0 {
+			return status.Error(codes.NotFound, "Holder not found")
+		}
+
+		return nil
+	}
 }
 
 // Rules is everything `server/core` has to know about a caller and cannot work

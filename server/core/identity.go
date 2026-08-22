@@ -187,38 +187,19 @@ func (s coreIdentity) oneAccountPerProvider(ctx context.Context, req *app.Identi
 // is about somebody removing their own last way in, not about anybody being
 // locked out on purpose.
 //
-// # And what it does not survive, which is two callers at once
+// # And what a count on its own cannot say
 //
-// The count below is a read, and the erase after it is a write that commits in
-// a transaction of its own. Two callers unlinking a person's last two
-// identities each count before either writes, each see the other's still live,
-// and both go through -- so the state this exists to refuse is reached by
-// asking for it twice at the same time. Forty people, each unlinked twice at
-// once, lost 39 on PostgreSQL and four on SQLite. It is not a narrow window and
-// it is not one dialect's.
+// A count is a read, and the erase after it is a write. Two callers unlinking a
+// person's last two identities each count before either writes, each see the
+// other's still live, and both go through -- so the state this exists to refuse
+// is reached by asking for it twice at the same time. Forty people, each
+// unlinked twice at once, lost 39 on PostgreSQL and four on SQLite. It was not
+// a narrow window and it was not one dialect's.
 //
-// It is **not** closed here, and the reason is worth writing down rather than
-// leaving as an omission: nothing this layer can reach serialises the two.
-//
-// A transaction spanning the count and the erase is necessary and is not
-// enough -- under READ COMMITTED the two counts take their own snapshots and
-// neither blocks. What is needed beside it is a lock the two contend for, which
-// means `SELECT ... FOR UPDATE` on the Holder, and no generated read offers
-// one. Writing to the Holder inside the transaction would take the same lock
-// and is worse than the disease: every unlink would move a person's
-// `date_updated` and put a Change against their row for a call that changed
-// nothing about them.
-//
-// Opening the transaction is the smaller half of that and is reachable --
-// `enttx.Begin` takes a `dialect.Driver`, [Core.WithDriver] is already handed
-// one whenever payday rebinds this stack, and holding it would let this layer
-// begin its own. It is the lock that is missing, and it is missing upstream.
-//
-// So what stands between somebody and this is that it takes two calls at once
-// about one account, from a caller who is almost always the person themselves
-// -- a double submit rather than an attack -- and that the state it reaches is
-// recoverable: an operator's `Vouch.Reset` gives them a password, which is a
-// way in. PLAN.md records it where the other things that are not here are.
+// The count and the erase share a transaction now, with one write both callers
+// make before either counts. [Core.only] is that, and it is also where the
+// first attempt went wrong -- a version precondition with no write beside it is
+// a read with an opinion.
 func (s coreIdentity) Erase(ctx context.Context, req *app.IdentityRef) (*app.IdentityEraseResponse, error) {
 	// The row first, because the reference may be a subject and the count is
 	// about the person. Through `Next()` rather than a client, so the wall
@@ -244,11 +225,37 @@ func (s coreIdentity) Erase(ctx context.Context, req *app.IdentityRef) (*app.Ide
 		return nil, err
 	}
 
-	if err := s.notTheirLastWayIn(ctx, v.GetHolder().GetId(), v.GetId()); err != nil {
+	// The count and the erase together, or neither.
+	//
+	// See [Core.only] for why a count on its own decides nothing, and what the
+	// two callers contend for.
+	var out *app.IdentityEraseResponse
+	err = s.only(ctx, v.GetHolder().GetId(), func(next app.Server) error {
+		if err := s.on(next).notTheirLastWayIn(ctx, v.GetHolder().GetId(), v.GetId()); err != nil {
+			return err
+		}
+
+		w, err := next.Identity().Erase(ctx, req)
+		if err != nil {
+			return err
+		}
+
+		out = w
+
+		return nil
+	})
+	if err != nil {
 		return nil, err
 	}
 
-	return s.IdentityServiceServer.Erase(ctx, req)
+	return out, nil
+}
+
+// on is this layer reading through `next` rather than through the stack it was
+// built on -- which inside [Core.only] is the same stack, bound to a
+// transaction.
+func (s coreIdentity) on(next app.Server) coreIdentity {
+	return coreIdentity{Core: New(next, s.rules), IdentityServiceServer: next.Identity()}
 }
 
 // notTheirLastWayIn counts what would be left.

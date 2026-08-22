@@ -812,12 +812,7 @@ Nothing written down is plaintext, and it warns once.
   ones still here, so an address is an address and not a way back to who had it.
   A deployment with an obligation to destroy rather than to forget needs an
   erase that cascades, and that is a change to the schema rather than to a read.
-- **A person cannot be raced out of their own account, quite.** Two calls at
-  once, each removing one of somebody's last two ways in, both check before
-  either writes and both go through. It takes two simultaneous calls about one
-  account, from a caller who is almost always that person; `Vouch.Reset` gives
-  them a password, which is a way back in. PLAN.md D37 says what closing it
-  needs.
+
 - **A person's own `rt_` key, minted from a screen.** The delegation path is
   exercised — `examples/sso` mounts `frontdoor`, which calls `Vouch.Delegate`
   on a password sign-in and `Vouch.Revoke` on sign-out — but a key somebody
