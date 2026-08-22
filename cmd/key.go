@@ -13,6 +13,7 @@ import (
 	"github.com/lesomnus/z"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
@@ -140,6 +141,10 @@ func newCmdKeyAdd(c *Config) *xli.Command {
 			fmt.Fprintf(os.Stderr,
 				"key %s for @%s, allowing %d method(s). This is the only time it is shown.\n",
 				k, service, len(methods))
+
+			if v := Widest(methods); v != "" {
+				fmt.Fprintf(os.Stderr, "\n%s\n", v)
+			}
 
 			return nil
 		}),
@@ -301,4 +306,46 @@ func splitMethods(v string) []string {
 	}
 
 	return vs
+}
+
+// Widest says so when a key's methods reach the one read that is wider than
+// every other one put together.
+//
+// # Why this and nothing else
+//
+// A key is the deployment's, and the deployment is every tenant in it -- so
+// `cmd.Policy.Where` answers `frame.Everything` and the wall narrows nothing.
+// That is the design and it is right: a key allowed `/roster.HolderService/List`
+// reads every customer's people, and a service that manages customers has to.
+//
+// `AuditService` is the same property with a different magnitude. `Audit.value`
+// is the row as each write left it, so one method answers **every table's
+// contents, across every tenant, across all time** -- including rows long since
+// deleted, since nothing erases a trail row. It is the single widest read this
+// app has, and `cmd/trailkey_test.go` is what says so.
+//
+// Said rather than refused. A compliance exporter is a real service and this is
+// the method it needs; what is wrong is granting it by reaching for `*` and not
+// noticing. So this is the sentence that makes somebody notice, once, at the
+// moment they could still choose otherwise.
+func Widest(methods []string) string {
+	reads := []string{
+		app.AuditService_List_FullMethodName,
+		app.AuditService_Get_FullMethodName,
+	}
+
+	for _, held := range methods {
+		for _, want := range reads {
+			if !frame.Covers(held, want) {
+				continue
+			}
+
+			return "NOTE: `" + held + "` reaches the audit trail, which holds the contents of every\n" +
+				"write in this deployment, in every tenant, for as long as the retention policy\n" +
+				"keeps them. A key is not walled by tenant. Grant it only to something that has\n" +
+				"to read other customers' history."
+		}
+	}
+
+	return ""
 }

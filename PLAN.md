@@ -399,6 +399,75 @@ asked: `internal/apptest/cmd/outboxsecret_test.go` upstream, and
 `cmd/outboxsecret_test.go` here, because it is a property of the pinned payday
 rather than of anything in roster.
 
+### D47 · The trail gets no new RPC, and the reason is not the one I gave
+
+The plan was `AuditService.Prune` and `Status` on an overlay, and a `List` that
+continued out of the archive so a console would not have to ask twice. None of
+the three is being built, and the reasons are worth writing down because two of
+them are not what was expected.
+
+#### `Prune` — the layer does not stop it, the **grants** do
+
+The argument given first was that the generated layer refuses trail writes. That
+was wrong twice over: an overlay declares a new method, so the refusal does not
+apply to it, and `core` sits **below** `Audit` in the stack -- so a
+`coreAudit.Prune` calling `s.AuditServiceServer.Erase` reaches bare's hard
+delete without meeting the refusal at all.
+
+The real reason is `cmd/policy.go`. Methods are matched by **pattern**, through
+`frame.Covers`, which honours `*` in the package, service and method positions.
+So a role or key holding `/roster.*/*` -- and `roster init` writes exactly that
+-- picks up a new method **the moment it is generated, with nobody deciding**.
+An API key skips `May` entirely and is narrowed only by its own list.
+
+Which turns *an API key that prunes is a stolen key that prunes* from a phrase
+into a mechanism: adding the method grants it retroactively to every wildcard
+already issued. A shell on the box is a credential nothing steals over the wire,
+and it stays the only door.
+
+#### `List` over the archive — there is no index, and slow is worse than absent
+
+An archive is gzipped files, sorted by month and kind and by nothing else. Any
+question narrower than *give me this month* is a full scan of the files in
+range. So a `List` that continued past the retention boundary would be a call
+that answers in milliseconds until the day it crosses, and then in seconds --
+unpredictably, depending on how much archive a deployment has kept.
+
+A console screen that is sometimes slow for reasons the caller cannot see is
+worse than one that says *the database holds back to May; before that is in the
+archive*. If this is wanted later, what it needs first is an index beside each
+archive, and that is a thing to build when somebody has the screen open.
+
+#### `Status` — nothing reads it
+
+`ts/src` does not mention the trail; the console has never read it. An RPC with
+no consumer is a shape guessed before the page that would use it, which is the
+thing PLAN.md keeps deciding not to do. When the screen exists it will say what
+it needs.
+
+### F17 · A deployment key reads every tenant's whole history -- **by design, and now written down**
+
+`cmd.Policy.Where` answers `frame.Everything` for an `rk_` key, deliberately: *a
+key belongs to the deployment and the deployment is every tenant in it. What
+narrows it is its methods, not its tenants.* So a key allowed
+`/roster.HolderService/List` reads every customer's people, which is what a
+service that manages customers is for.
+
+`AuditService` is the same property at a different magnitude, and that is the
+half nobody had noted. `Audit.value` is the row as each write left it, so one
+method answers **every table's contents, in every tenant, across all time** --
+including rows long since deleted, since nothing erases a trail row. It is the
+single widest read this app has, and no role reaches it that way: a person is
+walled to their own tenant, so the same method asked by a holder is a different
+question.
+
+Not a defect, so not fixed. What was wrong was that it was undiscoverable:
+`cmd/trailkey_test.go` asserts it in both directions, so narrowing it is a
+failing test somebody has to think about, and `roster key add` says it once when
+a key's methods reach the trail. Said rather than refused -- a compliance
+exporter is a real service and this is the method it needs; what is wrong is
+granting it by reaching for `*` and not noticing.
+
 ### D46 · An erase makes somebody unreachable; forgetting them destroys something
 
 Nothing in roster destroyed anything about a person, and *"we deleted them"* was

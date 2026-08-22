@@ -396,6 +396,31 @@ kind it holds, so January's goes once the cutoff has reached February — not on
 the 31st, when most of it is still inside the window. There is nothing after
 this.
 
+#### A key that can read the trail can read everything
+
+A key is the **deployment's**, and the deployment is every tenant in it — the
+wall narrows nothing for one. That is the design, and a key allowed
+`/roster.HolderService/List` reading every customer's people is what a service
+that manages customers is for.
+
+The trail is that property at a different size. `Audit.value` is the row as each
+write left it, so one method answers **every table's contents, in every tenant,
+across all time**, including rows long since deleted. It is the single widest
+read this deployment has.
+
+`roster key add` says so when a key's methods reach it:
+
+```
+NOTE: `/roster.*/*` reaches the audit trail, which holds the contents of every
+write in this deployment, in every tenant, for as long as the retention policy
+keeps them. A key is not walled by tenant.
+```
+
+No **role** reaches it that way — a person is walled to their own tenant, so the
+same method asked by a holder is a different question. If you reach for a
+wildcard because writing out eleven methods is tedious, this is the one to
+notice.
+
 #### There is no RPC for any of it
 
 `AuditService` answers reads and refuses every write — *"the trail is written by
