@@ -13,6 +13,16 @@ option go_package = "github.com/lesomnus/roster/rstr";
 // Identity is one way a person signs in: a subject at a provider, pointing at
 // the Holder it turned out to be.
 //
+// # Whose row it is written on is the other half of it
+//
+// This file says at length what makes a good **subject**, and for a long time
+// said nothing about the **holder**. A row here is a way into the account it
+// names: link an account you control to somebody's Holder and signing in at
+// that provider serves you as them. So writing one is refused unless that
+// person's permissions are a subset of yours -- the rule that guards a password,
+// applied to the other half of a sign-in. `server/core/escalate.go`, PLAN.md
+// D41.
+//
 // # Why it is a row and not a column
 //
 // One person, several. The same human arrives through the company's Entra

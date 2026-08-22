@@ -29,8 +29,10 @@
 // therefore need the caller's certificate, like everything else here. See
 // `cmd.public`, which says what it cost to get this wrong for an afternoon.
 //
-// `Verify` is asked before anybody has been resolved to a person, so it reads
-// the server the wall was never installed on -- exactly as `cmd.Resolver` does,
+// The line runs between somebody **proving themselves** and somebody **being
+// named**. `Verify`, and `Continue`, `Delegate` and `Redeem` behind it, are
+// asked before anybody has been resolved to a person, so they read the server
+// the wall was never installed on -- exactly as `cmd.Resolver` does,
 // and for the same reason: working out who somebody is cannot require already
 // knowing.
 //

@@ -322,19 +322,15 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 	return h, nil
 }
 
-// Holds is `server/core`'s question, answered from the rows this policy already
-// reads: may this person call this method, for this team?
+// Rules is everything `server/core` has to know about a caller and cannot work
+// out, from the rows this policy already reads.
 //
-// Two ways to yes, and they are the two scopes a role is referenced at. A
-// **binding** is the tenant or a site and is never about one team, so holding
-// one is enough by itself. A **team membership** is that team, so it counts
-// only when the call is about it.
-//
-// One function rather than two, because it is one question. The gate asks a
-// weaker version of it -- may you ever call this -- and a layer asks this one,
-// and both read the same rows.
-// Rules is what `server/core` needs to know about a caller, from the rows this
-// policy already reads.
+// Four answers to what look like one question and are not, which is what took
+// three findings to see. `Holds` is about one call and one team. `Granted` is
+// what may be **passed on** and reads bindings alone. `Joining` is what a group
+// holds, so that putting somebody in one is weighed like writing the binding.
+// `Holding` is everything somebody **has**, by any path -- which is the one
+// `mayReach` needs, because there a path not walked allows rather than refuses.
 func Rules(db *ent.Client) core.Rules {
 	return core.Rules{
 		Holds:   Holds(db),
@@ -489,6 +485,17 @@ func grantsOf(vs []*ent.Binding) []core.Grant {
 	return gs
 }
 
+// Holds is `server/core`'s question, answered from the rows this policy already
+// reads: may this person call this method, for this team?
+//
+// Two ways to yes, and they are the two scopes a role is referenced at. A
+// **binding** is the tenant or a site and is never about one team, so holding
+// one is enough by itself. A **team membership** is that team, so it counts
+// only when the call is about it.
+//
+// One function rather than two, because it is one question. The gate asks a
+// weaker version of it -- may you ever call this -- and a layer asks this one,
+// and both read the same rows.
 func Holds(db *ent.Client) core.Holds {
 	return func(ctx context.Context, who pdid.Id, method string, team pdid.Id) (bool, error) {
 		// The same set the gate let them through on -- see

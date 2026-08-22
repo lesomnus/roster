@@ -15,6 +15,13 @@ option go_package = "github.com/lesomnus/roster/rstr";
 
 // SiteMembership is somebody being in a site.
 //
+// Unlike the two memberships below it, writing one is **not** a grant: nothing
+// that decides what the gate answers reads this row, so putting somebody in a
+// site changes what they may see and not what they may do. Worth saying because
+// it is the reader's next question once the other two are refused as grants,
+// and because the answer is a property of `policy.of` rather than of this
+// message -- a row the policy started reading would become one.
+//
 // A row rather than an edge on the Holder because it is many-to-many: a person
 // works at one factory and audits another, and a support engineer sees several.
 // That is why the Holder itself carries no site -- see PLAN.md, D4.
@@ -80,6 +87,15 @@ message SiteMembership {
 }
 
 // TeamMembership is somebody being on a team, which is where a role comes from.
+//
+// # Naming a role here is granting it
+//
+// The gate is outermost and never sees which team a call is about, so
+// `policy.of` unions the methods of a role held in a team into what somebody
+// may **ever** call, and `server/core` refuses the wrong team per call. Which
+// means attaching a role here hands out its methods, and `Add` and `Patch` are
+// both refused when they name one the caller does not hold -- at the team's
+// site, which is the scope a team sits in. PLAN.md D35 and D41.
 //
 // The design derives roles from team membership **within a site**: the same
 // person is an operator in Seoul and a reader in Frankfurt, and a role that

@@ -51,8 +51,11 @@ const (
 //
 // # The actor is the key
 //
-// A request carrying one is served as **this row** and not as the holder it
-// hangs off. So the trail names which key asked, revoking is a delete, and no
+// A request carrying a **deployment** key -- `rk_` -- is served as **this row**
+// and not as the holder it hangs off. A tenant key resolves to its holder
+// instead, so a call made with one is made as that person; see `server/keys`.
+// Which is why writing a key onto somebody's holder is writing a way into their
+// account, and is refused on the same terms their password is. So the trail names which key asked, revoking is a delete, and no
 // person-row grants anything -- which is the case `frame.Everything` warns
 // about: a privilege held by being a particular row cannot be revoked and
 // cannot be narrowed. A key row exists to be revoked.

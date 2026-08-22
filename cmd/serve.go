@@ -447,10 +447,19 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 			auth.Bearer(keys.Store(control.Ungated, nil)),
 		)
 	}
-	// Collecting expired delegations, and only where there are any: they are
-	// minted on this plane and the control plane has no such rows. It is not
-	// what makes an expired one refused -- [keys.findDelegation] is -- and the
-	// comment on `Sweep` says which half is which.
+	// Collecting expired delegations, attempts and links.
+	//
+	// It is not what makes an expired one refused -- [keys.findDelegation] is,
+	// and the comment on `Sweep` says which half is which. What this is about is
+	// the size of a table nothing else deletes from.
+	//
+	// Appended in **every** `Build`, so the nested one arranges the same two
+	// sweeps over the control plane's copies of these tables. Those are empty
+	// today -- delegations and attempts are minted on the data plane -- and the
+	// loops are two DELETEs an hour against nothing. Written where they are
+	// rather than behind a check for which plane this is, because a plane that
+	// grows one of these rows and has no sweep is a table that grows silently,
+	// and that is the failure worth being wrong towards.
 	s.Spin = append(s.Spin,
 		keys.Sweep(s.Ent, keys.Swept),
 		vouch.Sweep(s.Ent, vouch.Swept),
@@ -586,8 +595,9 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// from being a hole; `server/front` says it at length.
 	app.RegisterFrontServiceServer(g, front.New(s.Ungated))
 
-	// And what a caller is, in one round trip. It takes nothing, so there is
-	// nobody but the caller to ask about; see `server/me`.
+	// And what a caller is, in one round trip. None of its three methods takes
+	// a subject, so none can be pointed at anybody else -- `Unlink` names a
+	// *which* and never a *whose*; see `server/me` and [aboutYourself].
 	// With the stack its two writes go through. The reads go to ent because the
 	// missing subject has already narrowed them; the writes have rules on them,
 	// and the rules live in a layer.
@@ -644,10 +654,12 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 // `CredentialService`, `ApiKeyService` and `DelegationService` are not here.
 // Each has a generated `Get` that answers with whatever columns it was asked
 // for, and in all three cases one of them is a verifier -- a password hash, a
-// key hash, the hash of a delegation. Serving them is publishing those to
-// anybody the wall lets read a row. The rows still exist and this app still
-// reads them, in process, but there is no method on this server that answers
-// with one.
+// key hash, the hash of a delegation, the digest of a session cookie, the
+// secret of a link, the secret of a continuation -- six services in all, and
+// every one of them holds a column declared `secret`. Serving any of them is
+// publishing that column to anybody the wall lets read a row. The rows still
+// exist and this app still reads them, in process, but there is no method on
+// this server that answers with one.
 //
 // For `DelegationService` this is the **only** control that closes it, and that
 // is worth knowing before somebody adds a line here for tidiness.

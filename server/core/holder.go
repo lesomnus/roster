@@ -91,9 +91,12 @@ func (s coreHolder) Update(ctx context.Context, req *app.HolderUpdateRequest) (*
 //
 // **Escalation.** Suspending an administrator is a denial of service and
 // resetting their credential is a way to become them, and `escalate.go` covers
-// neither. That is one subject and it is `docs/ROADMAP.md` P5's, where the rule
-// is chosen rather than assumed -- writing half of it here would leave the
-// half that matters more looking as though somebody had considered it.
+// the second of the two now -- `Core.mayReach`, chosen in D28 rather than
+// assumed here, guards every credential write and every way in beside it.
+//
+// The first is still nobody's. Somebody who may `Disable` an administrator
+// cannot become them; they can only stop them, and D26 says that is a real gap
+// and a different one.
 //
 // **A password change does not invalidate.** *A password reset that leaves old
 // sessions alive is not a reset* is true, and it belongs with the recovery

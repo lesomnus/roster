@@ -115,7 +115,7 @@ func (s Core) WithDriver(drv dialect.Driver) (api.Server, error) {
 		return nil, err
 	}
 
-	return New(next), nil
+	return New(next, s.rules), nil
 }
 
 var (
@@ -123,6 +123,10 @@ var (
 	_ enttx.Binder[api.Server] = Core{}
 )
 ```
+
+A layer that holds anything hands it over as well -- `server/core` carries its
+`Rules`, and a rebuild that dropped them would answer inside a transaction with
+a stack that refuses everything a frame carries.
 
 Leave it out and **nothing fails until a transaction is opened** — a batch, or a
 multi-write RPC — because `enttx.Rebind` asks at run time. `pd doctor` finds it.

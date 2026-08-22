@@ -58,7 +58,9 @@ import (
 	app "github.com/lesomnus/roster/rstr"
 )
 
-// The two prefixes, which are two **kinds** of key and not decoration.
+// The three prefixes, which are three **kinds** of credential and not
+// decoration -- two of them keys and one a delegation, which is why this says
+// credential rather than key.
 //
 // A prefix is not a secret and grants nothing. What it buys is first that a key
 // is recognisable -- a secret scanner can be told the pattern, a reviewer seeing

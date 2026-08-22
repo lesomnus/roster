@@ -26,8 +26,12 @@ export const file_app_group: GenFile = /*@__PURE__*/
 /**
  * Group is a named set of people, and nothing else.
  *
- * It grants nothing by itself. What a group can do is what a [Binding] gives
- * it, and that separation is deliberate: a group that carried permissions would
+ * The row grants nothing by itself, which is not the same as a group granting
+ * nothing: a binding written to one is held by everybody in it, so joining is
+ * where the grant lands. See [GroupMembership].
+ *
+ * What a group can do is what a [Binding] gives it, and that separation is
+ * deliberate: a group that carried permissions would
  * be a role wearing a membership's clothes, and the two change for different
  * reasons -- who is in marketing changes weekly, what marketing may do changes
  * when somebody decides it does.
@@ -100,6 +104,14 @@ export const GroupSchema: GenMessage<Group> = /*@__PURE__*/
 
 /**
  * GroupMembership is somebody being in a [Group].
+ *
+ * # Writing one is a grant
+ *
+ * A binding written to a group is held by everybody in it -- that is what a
+ * group is for -- so putting somebody in one hands them every binding that
+ * names it. Which makes this a grant although it mentions no role, and it is
+ * refused on the same terms `Binding.Add` is: nobody hands out what they do not
+ * hold, each binding checked at the scope it was made in. PLAN.md D40.
  *
  * A row rather than a list on either side, for the reason every membership here
  * is one: it is many-to-many, and it is a fact with a date of its own.

@@ -36,8 +36,11 @@ const (
 //
 // So the answer rides back with the yes. `VouchService.Verify` has already
 // proved the person to this deployment's satisfaction; this is a credential for
-// them, valid for minutes, that the app puts in `authorization` and roster
-// resolves to the person -- with their wall, their bindings and their sites.
+// them, valid for minutes, that the app puts in `roster-as` -- beside its own
+// key in `authorization`, never instead of it -- and roster resolves to the
+// person, with their wall, their bindings and their sites. A delegation
+// presented alone is nobody: it says who a call is **about** and the caller
+// still has to say who they are.
 //
 // # Why it is not an ApiKey
 //

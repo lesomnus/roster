@@ -61,8 +61,12 @@ export const file_app_continuation: GenFile = /*@__PURE__*/
  *
  * Spending it is an erase. *Used* is *not there* -- `<Entity>Pick` narrows to
  * the live rows, so a spent one is out of reach the moment the erase lands, and
- * two concurrent spends resolve to one winner through the ordinary
- * compare-and-swap. A second column recording the same fact is a second thing
+ * two concurrent spends resolve to one winner in the database itself: the
+ * erase is one UPDATE narrowed by `date_erased IS NULL`, so it matches once and
+ * `Erase` answers whether this call was the one that did it. Not the version
+ * precondition, which cannot decide this -- a `Patch` carrying only a version
+ * test compiles to an `Exist` check and no write, so both callers see the row
+ * and both proceed. PLAN.md D34. A second column recording the same fact is a second thing
  * to drift.
  *
  * @generated from message roster.Continuation

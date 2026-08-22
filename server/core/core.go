@@ -25,7 +25,7 @@ type Core struct {
 
 // Rules is what this layer has to know about a caller and cannot work out.
 //
-// Both answers come from the same rows `gate.Policy` reads -- bindings, group
+// All four answers come from the same rows `gate.Policy` reads -- bindings, group
 // memberships, team memberships -- and `cmd` reads them against ent, because
 // working out what somebody may do cannot itself require permission. Asking
 // again here would be a second implementation of one question, and two

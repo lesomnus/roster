@@ -32,8 +32,8 @@ import (
 //
 // The shape is the one D13 named when it shut the door: not reopening
 // `CredentialService`, but a narrow service that takes secrets in and never
-// answers with one it was holding. This is that service, and these are two more
-// of its methods.
+// answers with one it was holding. This is that service, and these are three
+// more of its methods.
 //
 // # And why the rule went in first
 //

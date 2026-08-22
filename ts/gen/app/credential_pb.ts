@@ -92,6 +92,12 @@ export type Credential = Message<"roster.Credential"> & {
    * What kind of secret it is -- "password", "totp". One of each **name** per
    * person, which the index below is what enforces.
    *
+   * A string, and unlike `Identity.provider` the set is **not** a deployment's
+   * to extend: what may be written here is exactly what something in
+   * `server/vouch` can later check, and `Vouch.Set` refuses anything else. A
+   * row of a kind nothing checks is offered to every sign-in from then on,
+   * refused when it is answered, and removable by no call on any plane.
+   *
    * @generated from field: string kind = 8;
    */
   kind: string;
@@ -147,7 +153,12 @@ export type Credential = Message<"roster.Credential"> & {
    * extra column, it is the column that argument was about.
    *
    * Zero for a kind that does not count anything, which is every kind that
-   * exists today except `totp`.
+   * exists today except `totp` -- and for `totp` it is a fact rather than a
+   * default: a seed that has never had a code verified against it is
+   * **unconfirmed**, and `Vouch` leaves an unconfirmed factor out of what a
+   * person is asked for, because a QR somebody may have mis-scanned is a form
+   * that cannot be filled. One code moves it, which is what `Verify` taking a
+   * name is for. PLAN.md D29 and D36.
    *
    * @generated from field: int64 last_step = 16;
    */

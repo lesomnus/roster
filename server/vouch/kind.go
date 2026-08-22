@@ -154,13 +154,18 @@ func (v Totp) Burn(secret []byte) {
 	_, _, _ = v.Compare(stored, secret, 0)
 }
 
-// dummy is one wrapped seed, made on the first attempt against somebody who has
-// no second factor rather than at startup.
+// dummy is a wrapped seed for somebody who has no second factor: made on each
+// attempt, and kept nowhere.
 //
-// Per-server rather than a package `sync.OnceValue`, because it is wrapped with
-// **this** deployment's key: one shared across two servers in a process would
-// be wrapped with whichever keyring got there first, and unwrapping it under
-// the other would cost an error rather than a decrypt.
+// Made rather than kept because there is nowhere to keep it. `Totp` is a value
+// built per call from the keyring -- see [Server.verifierOf] -- so a seed held
+// on it would live for one comparison anyway, and a package-level one would be
+// wrapped with whichever of a process's two deployments got there first, which
+// unwraps under the other as an error rather than as a decrypt.
+//
+// What it costs is a seed and an AES wrap per refusal, which is microseconds
+// against the milliseconds this exists to spend. What it buys is that a person
+// with no second factor costs what a person with one costs.
 func (v Totp) dummy() []byte {
 	seed, err := totpSeed()
 	if err != nil {

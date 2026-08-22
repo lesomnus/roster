@@ -63,7 +63,8 @@ import (
 // # What counts as held, and why the direction matters
 //
 // A binding reaches somebody by naming them or by naming a group they are in,
-// and both count -- [Granted] walks the same rows the gate walks.
+// and both count in both answers -- [Granted] and [Holding] walk the same rows
+// the gate walks.
 //
 // Missing one is not symmetric. In [Core.mayGrant] it reads what the *caller*
 // holds, so a path not walked only refuses a grant they could have made: the

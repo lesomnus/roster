@@ -134,7 +134,6 @@ type bearer struct {
 	Issuer []byte
 }
 
-// findKey is [lookup] in the words [bearer] uses.
 // findKey is [lookup] as a bearer, plus the one holder-level refusal both
 // tables share.
 //
