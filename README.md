@@ -179,6 +179,14 @@ holds but a server instance this process was handed. Running it twice is an
 error rather than a no-op, because an `init` that quietly did nothing is one
 somebody runs against the wrong deployment and believes.
 
+`key` and `trail` are there for the same kind of reason and it is worth knowing
+which kind. `roster key` writes to the control plane, which is not served.
+`roster trail` applies the retention policy, and no server offers those acts at
+all: `AuditService` refuses every write, because what a trail is worth is that
+the credential which lets somebody act is not the credential that lets them
+erase the record of having acted. Both need the database, which is the boundary
+being asked for. See `docs/OPERATING.md`.
+
 The configuration is a file, then the environment over the top of it. It is read
 on the **root** command, so it has happened whichever subcommand runs, and
 `--config` names a file when the default is not wanted — which is how one app

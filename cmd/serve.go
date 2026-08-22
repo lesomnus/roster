@@ -39,6 +39,7 @@ import (
 	"github.com/lesomnus/roster/server/core"
 	"github.com/lesomnus/roster/server/front"
 	"github.com/lesomnus/roster/server/keys"
+	"github.com/lesomnus/roster/server/trail"
 	"github.com/lesomnus/roster/server/me"
 	"github.com/lesomnus/roster/server/pd"
 	"github.com/lesomnus/roster/server/session"
@@ -464,6 +465,31 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		keys.Sweep(s.Ent, keys.Swept),
 		vouch.Sweep(s.Ent, vouch.Swept),
 	)
+
+	// And the trail's retention, which is the one sweep here that is a
+	// **mechanism** rather than a tidy-up.
+	//
+	// The two above collect rows that are already refused; an outage of either
+	// costs disk. Nothing else applies a retention window, so an outage of this
+	// one is a deployment keeping records it told somebody it would not. That
+	// is why the policy is checked here, where a refusal stops the process,
+	// rather than at the first pass a day later.
+	//
+	// Nothing is appended when no policy is named, and the nested build that
+	// raises the control plane is handed a config with no `audit` at all -- so
+	// the deployment's own trail is never on a clock. Unlike the two above,
+	// that is the direction to be wrong in: the failure of a sweep that does
+	// not exist is a table that grows, and the failure of one that does is
+	// evidence that is gone.
+	if p := c.Audit.Policy(); p.On() {
+		if err := p.Valid(); err != nil {
+			db.Close()
+
+			return nil, err
+		}
+
+		s.Spin = append(s.Spin, trail.Sweep(s.Ent, p))
+	}
 
 	if c.Watch.Outbox {
 		// The loop that makes an event durable. It is not a layer and not a

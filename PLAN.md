@@ -372,6 +372,88 @@ suite: `cmd/close_test.go` asks the database whether both pools were given
 back, because only the database knows and a count kept here would be a second
 answer.
 
+### D44 · The trail's retention is two clocks, and neither of them is an RPC
+
+`audit.proto` asked for this in as many words and the sentence read as a caveat
+rather than as a task: *the trail outlives what it names, so a softly erased
+row's contents live on here. An app with an obligation to destroy data has to
+reckon with the trail, and the answer is a retention policy rather than an empty
+column.* There was none. So the policy roster had was **forever**, arrived at by
+not deciding, on the one table that never stops growing.
+
+#### Why one number would have been the wrong shape
+
+*Delete after N* answers the operational question -- what the console can show,
+what a query costs, how big the disk is -- and gets the obligation exactly
+backwards. The window somebody wants in the hot table is months; the window they
+are required to be able to produce a record over is years. A single number is
+either a database nobody can afford or a record that is gone too early.
+
+So it is two: `retain` is how long a row stays in the database, `destroy` is how
+long the record exists at all, and `archive` is where a row lives out the
+difference -- one gzipped file per month, protojson, readable by anything that
+can read an `Audit`.
+
+#### Forever is the default, and the blank field is refused
+
+Both clocks are empty unless a deployment sets them, because the alternative is
+a version upgrade deciding how long somebody's evidence lasts.
+
+And `retain` with no `archive` is refused at startup rather than obeyed. That
+configuration *works*: the sweep runs, the table stops growing, and every graph
+an operator watches improves. What it is doing is destroying the trail, and the
+day it is discovered is the day somebody asks for a record. `discard: true` is
+how a deployment says it means it -- its own setting rather than an empty
+string, because *I have not configured where* and *I do not want one* are two
+different states that look alike.
+
+#### Written before deleted, and deleted by identifier
+
+The pair is one act. Two commands, or one command with the export optional, is a
+deployment that exports and forgets to delete or deletes without having
+exported, and only one of those two is ever noticed.
+
+The delete names the rows that are in the file rather than re-running
+`date_created < before`. A second query matches whatever is true when it runs: a
+row backdated by a clock that stepped, or written by a replica whose idea of now
+is behind, is a row the second query removes and the file does not have. What is
+left is a crash between the sync and the delete, which leaves rows in **both**
+places -- the direction to fail in, and `Read` drops the duplicate by
+identifier.
+
+#### And why none of it is an RPC
+
+The layer in front of `AuditService` refuses every write -- *"the trail is
+written by what happened, not by anybody asking"* -- and a retention RPC beside
+it would be the exception that makes that sentence false. What a trail is worth
+is exactly that the credential which lets somebody act is not the credential
+that lets them erase the record of having acted. An API key that prunes is a
+stolen key that prunes.
+
+So both doors need the database: `roster trail` at a shell, and `serve` applying
+the policy itself. The second one matters as much as the first -- a policy that
+runs when somebody remembers to run it is not a policy -- and it is the sweep in
+this app that is a **mechanism** rather than a tidy-up. The other two collect
+rows that are already refused, so an outage of either costs disk. An outage of
+this one is a deployment keeping records it said it would not.
+
+#### What is left, and it is a decision rather than work
+
+Erasing **one person** from the trail. This policy is about age and reaches
+everybody at once; a right-to-erasure request is about a subject, and what it
+should blank is not obvious -- the contents of writes about them, their
+identifier as an actor, or both. Blanking the actor destroys *who did this*,
+which is what the trail is for; keeping it keeps an identifier that is itself
+personal data.
+
+The two answers in the field are to null the contents and keep the event -- the
+same distinction `audit.proto` already draws for the hard erase, *the record of
+the destruction and the record of the contents are different rows* -- or to
+encrypt per subject and destroy the key, which is what deployments with archives
+in several places do because they cannot go and find them all. Not chosen here,
+because it is the app's obligation that decides and roster does not know what
+that is yet.
+
 ### D43 · A second factor is not a way in
 
 Two places asked *can this person sign in* and both counted a TOTP seed as a
@@ -525,6 +607,10 @@ question was never the second copy. `Audit` has **no retention policy**, which
 `audit.proto` says in as many words -- *an app with an obligation to destroy data
 has to reckon with the trail, and the answer is a retention policy rather than an
 empty column* -- and that is the decision still open.
+
+It is open no longer; D44 is what came of it. What is still open is the half
+that is genuinely a decision rather than work: erasing **one person** from the
+trail, where D44 says why the obvious version is not obvious.
 
 ### F14 · A select reached a parent that had been erased -- **fixed upstream**
 
@@ -3225,6 +3311,21 @@ the schedule.
   replica resolves on another. And the **watch broker**, which is the same shape
   one seam over, crosses replicas once it is named: `watch.broker: postgres`.
   See D33.
+- ~~**`Audit` has no retention policy.**~~ **Done**, D44. Two clocks -- how long
+  a row stays in the database and how long the record exists at all -- with the
+  archive between them, applied by `serve` and by `roster trail`. Forever is
+  still the default, and a window with nowhere to put what leaves it is refused
+  at startup rather than obeyed.
+- **Erasing one person from the trail is not written, and it is a decision
+  first.** The policy above is about age and reaches everybody at once. A
+  right-to-erasure request is about a subject, and what it should blank is the
+  open part: the contents of writes about them, their identifier as an actor, or
+  both. Blanking the actor destroys *who did this*; keeping it keeps an
+  identifier that is itself personal data. The two answers in the field are to
+  null the contents and keep the event -- the distinction `audit.proto` already
+  draws for the hard erase -- or to encrypt per subject and destroy the key. It
+  is the deployment's obligation that decides, and roster does not know what
+  that is. D44.
 
 ### What "after it says yes" means, since it came up
 

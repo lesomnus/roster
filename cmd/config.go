@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/flg"
@@ -22,6 +23,8 @@ import (
 
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/config"
+
+	"github.com/lesomnus/roster/server/trail"
 
 	// The two engines this app runs on, blank-imported here rather than by
 	// payday so that an app does not carry one it never opens.
@@ -110,6 +113,68 @@ type Config struct {
 	// Empty is a deployment that holds no second factor, and asking it to is
 	// refused rather than answered with a seed in the clear.
 	Vouch VouchConfig `yaml:"vouch"`
+
+	// Audit is how long the trail is kept, and where what leaves it goes.
+	//
+	// Empty is **forever**, which is what a deployment that has not thought
+	// about it gets and is the only honest default: the alternative is a
+	// version upgrade quietly deciding how long somebody's evidence lasts.
+	//
+	// It is the data plane's alone. The nested build that raises the control
+	// plane is handed a config with no `audit` -- see [Build] -- so nothing
+	// sweeps the trail of the deployment's own operations, which is a table
+	// that grows by the key and is the last one anybody wants a clock deleting
+	// from.
+	Audit AuditConfig `yaml:"audit"`
+}
+
+// AuditConfig is the retention policy, and it is two clocks.
+//
+// `audit.proto` asks for one in as many words -- *an app with an obligation to
+// destroy data has to reckon with the trail, and the answer is a retention
+// policy rather than an empty column* -- and until this there was none, so the
+// answer roster gave was forever, arrived at by not deciding.
+//
+// The two clocks are not the same question. `retain` is operational: how much
+// of the trail the database carries, which is what a console can show and what
+// a query costs. `destroy` is the obligation, and it is normally years longer.
+// `archive` is where a row lives out the difference. See `server/trail`.
+type AuditConfig struct {
+	// Retain is how long a row stays in the database, e.g. `2160h` for ninety
+	// days. Empty is forever.
+	Retain time.Duration `yaml:"retain"`
+
+	// Archive is the directory rows are written to on their way out of the
+	// database. Empty keeps no copy, which is refused unless `discard` says the
+	// deployment means it.
+	Archive string `yaml:"archive"`
+
+	// Discard is a deployment saying it means to keep nothing.
+	//
+	// Its own setting rather than an empty `archive`, because those are two
+	// different states that look alike: *I have not configured where* and *I do
+	// not want one*. A blank field that defaults to destruction is the
+	// configuration mistake that gets discovered by an auditor.
+	Discard bool `yaml:"discard"`
+
+	// Destroy is how long an archive file is kept once it is written. Empty is
+	// forever.
+	Destroy time.Duration `yaml:"destroy"`
+
+	// Every is how often the policy is applied. Empty is `trail.Swept`, which
+	// is a day.
+	Every time.Duration `yaml:"every"`
+}
+
+// Policy is this block as the thing that applies it.
+func (c AuditConfig) Policy() trail.Policy {
+	return trail.Policy{
+		Retain:  c.Retain,
+		Archive: c.Archive,
+		Discard: c.Discard,
+		Destroy: c.Destroy,
+		Every:   c.Every,
+	}
 }
 
 // VouchConfig is what checking secrets needs beyond the rows.
@@ -410,6 +475,7 @@ func Cmd(c *Config) *xli.Command {
 			pdcmd.NewCmdConfig(Loader, c),
 			NewCmdInit(c),
 			NewCmdKey(c),
+			NewCmdTrail(c),
 			NewCmdServe(c),
 		}, NewCmdEntities(c)...),
 

@@ -278,6 +278,89 @@ about a write that landed on another, and nothing reports it — the stream stay
 open and looks healthy. `broker: postgres` is what a second replica needs, on
 both planes. See "Running more than one" below.
 
+### How long the trail is kept
+
+**Forever, until you say otherwise.** That is the default and it is deliberate:
+a version upgrade is not the right thing to decide how long a deployment's
+evidence lasts.
+
+It is the one table that never stops growing. Every write is a row in it, and
+unlike a session or a sign-in attempt there is nothing stale to collect — a
+trail row is not expired, it is old.
+
+So a policy is two clocks rather than one, because they answer to two different
+people:
+
+```yaml
+audit:
+  retain: 2160h                  # 90 days in the database
+  archive: /var/lib/roster/audit # where a row goes when it leaves
+  destroy: 61320h                # 7 years, and then it is gone
+  every: 24h                     # how often the two are applied
+```
+
+`retain` is operational — what the console can show, what a query costs, how big
+the disk is. `destroy` is the obligation, and it is normally years the longer of
+the two. Between them the row lives in `archive`, one gzipped file per month.
+
+Set `retain` with no `archive` and roster **refuses to start**:
+
+```
+audit.retain names a window and audit.archive names nowhere to put what
+leaves it; set audit.archive, or audit.discard: true to say the rows are
+meant to go
+```
+
+Because that configuration works. The sweep runs, the table stops growing, every
+graph an operator watches improves — and what it is doing is destroying the
+trail. `audit.discard: true` is how a deployment says it means that.
+
+Nothing sweeps the **control plane's** trail. It is the record of the
+deployment's own operations, it grows by the key rather than by the request, and
+it is the last thing anybody wants a clock deleting from.
+
+#### By hand
+
+```sh
+roster trail prune --older-than 2160h --dry-run   # how many, and change nothing
+roster trail prune --older-than 2160h             # archive them, then remove them
+roster trail read --in /var/lib/roster/audit      # read an archive back
+roster trail purge --older-than 61320h --dry-run  # which files would go
+```
+
+`prune` writes, `fsync`s and closes the file **before** it deletes anything, and
+it deletes the rows that are in the file rather than re-running the query. So
+the one failure it can leave is rows in both places, which is the direction to
+fail in — `read` drops the duplicate.
+
+`read` opens no database. That is the point of keeping the file: it outlives the
+deployment that wrote it, and a reader that needed the deployment would be
+answering the question at exactly the moment nobody can.
+
+`purge` destroys by file and never by row. A file is named for the month it
+holds, so January goes once the cutoff has reached February — not on the 31st,
+when most of it is still inside the window. There is nothing after this.
+
+#### There is no RPC for any of it
+
+`AuditService` answers reads and refuses every write — *"the trail is written by
+what happened, not by anybody asking"* — and a retention RPC beside it would be
+the exception that makes the sentence false. What a trail is worth is that the
+credential which lets somebody act is not the credential that lets them erase
+the record of having acted. A key that prunes is a stolen key that prunes.
+
+So both doors need the database: a shell on the box, or `serve` applying the
+policy on its own clock.
+
+#### What this does not do yet
+
+Erase **one person** from the trail on request. The time-based policy is about
+age and reaches everybody's rows at once; a right-to-erasure request is about a
+subject, and what it should blank — the contents of writes about them, their
+identifier as an actor, or both — is a decision nobody has made here. The usual
+answers are to null the contents and keep the event, or to encrypt per subject
+and destroy the key. See PLAN.md.
+
 ## A key for a service
 
 ```sh
