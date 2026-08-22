@@ -414,8 +414,12 @@ somebody reading the code to decide what is safe.
   `protobuf-merge` matches rpcs by name and emits the overlay's request,
   response and body; payday invokes it without `Strict`; and the conflict kinds
   it can report cover fields and editions and not rpcs at all. So an overlay
-  redeclaring `Get` replaces it, silently. The comment is corrected and the fix
-  is payday's -- see below.
+  redeclaring `Get` replaces it, silently. The comment is corrected here and the
+  fix is **payday's and is not written yet**: `CheckOverlay` compares fields by
+  number and has nothing to say about an rpc, and `protobuf-merge` would need a
+  conflict kind for one before `Strict` could refuse it. It is the "compiles
+  perfectly and is wrong" class the one rule exists for, and it is the largest
+  thing this sweep left open.
 - **The foreign keys into `holder` are not uniform.** Eleven are `NO ACTION` and
   `binding_holder_holder` alone is `SET NULL`. Nothing depends on it today,
   because an erase is an UPDATE and no `ON DELETE` rule fires; it would matter
@@ -1181,7 +1185,12 @@ And `serve` checked one plane's schema. `control.db.migrate` was listed by
 nothing -- so an upgrade past a release that adds a control-plane table started,
 said nothing, and was first reported as an operator who could not sign in.
 
-#### What was found and not fixed
+#### What was found and not fixed -- **and was fixed later, by D42**
+
+Left in place because the reasoning below is what D42 had to argue with, and
+because being wrong about *nothing this layer can reach* is worth reading beside
+the answer. The schema's own `date_updated` **is** the lock, once the count, the
+erase and a real write share a transaction.
 
 Two callers unlinking a person's last two identities at once both count before
 either writes, and the person is left with no way in. Nothing this layer can
@@ -3438,7 +3447,8 @@ the schedule.
 2. ~~**Home-realm discovery, by domain.**~~ **Done**, D27. `MailDomain` and
    `FrontService.WhereFrom`, hanging off the domain for the reason this entry
    already gave. What it names is a **provider**, not a connection -- a
-   connection carries a secret and that is item 9, still undecided.
+   connection carries a secret and that is item 9 -- which is **done** since,
+   `Connection` and P9.
 
    The original entry: "Addresses at `@acme.com` go to Entra."
    Identifier-first sign-in is the thing every multi-tenant front door rewrites,

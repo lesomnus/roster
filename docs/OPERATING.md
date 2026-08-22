@@ -629,9 +629,10 @@ What a tenant key costs is the trail: its writes are recorded as the person's,
 so `Audit` says who and not which of their keys. Revoking still works, since the
 row is what the token resolves through.
 
-Nothing mints a `rt_` key over the wire yet — `ApiKeyService` is unregistered,
-so it takes `Ungated`, which means a shell. The console is what changes that,
-and the rules that make it safe are in place: see below.
+A `rt_` is minted over the wire by `IssueService/IssueKey` on the data plane —
+see "A customer mints their own" above. `ApiKeyService` stays unregistered, and
+the issuing exception lives in its own RPC rather than as a hole in the rule
+that keeps a verifier out of every answer.
 
 A **delegation** is different and is minted over the wire: `Vouch.Delegate` is
 `Verify` that also mints for the person it just proved, and `Vouch.Redeem` does
@@ -893,9 +894,9 @@ Three things to know before handing these out:
 - **`Invalidate` does not touch an API key.** A key is named, listed and revoked
   one at a time; killing somebody's scripts silently under "sign out everywhere"
   is an outage with nothing saying why. Erase the `ApiKey` row, which is a
-  shell: `roster key revoke` reaches the deployment's own `rk_` keys and not a
-  tenant's `rt_` ones, for the same reason nothing mints an `rt_` over the wire
-  yet.
+  shell: `roster key revoke` reaches the deployment's own `rk_` keys, and a
+  tenant's `rt_` ones are erased through `ApiKeyService` on a port that serves
+  it, or at a shell.
 - **They do not require a version.** Every other write here is a
   compare-and-swap; these take one if you have read the row and proceed without
   one if you have not, because a suspension that fails when somebody edits a
@@ -1049,24 +1050,12 @@ Nothing written down is plaintext, and it warns once.
 
 ## What is not here
 
-- **Nothing mints a `rt_` key over the wire.** `ApiKeyService` is unregistered,
-  so issuing one takes `Ungated` and therefore a shell. The rules that make a
-  customer-minted key safe are in place — the prefix, the holder it resolves to,
-  `mayGrant` on `methods`, and the rule about whose holder it is minted on —
-  because a key that acts as somebody is a way into their account whatever
-  methods it names — and what is missing is the surface that would use them.
-- **An erase forgets rather than destroys.** Erasing a `Holder` stamps their row
-  and cascades to nothing, so their `Email` and their `Identity` stay — as does
-  the trail, for the same reason. What those rows can no longer be used for is
-  reaching the person: the parent of a row a caller may read is narrowed to the
-  ones still here, so an address is an address and not a way back to who had it.
-  A deployment with an obligation to destroy rather than to forget needs an
-  erase that cascades, and that is a change to the schema rather than to a read.
-
-- **A person's own `rt_` key, minted from a screen.** The delegation path is
-  exercised — `examples/sso` mounts `frontdoor`, which calls `Vouch.Delegate`
-  on a password sign-in and `Vouch.Revoke` on sign-out — but a key somebody
-  keeps is the surface above, and that is the same missing screen.
+- **A screen for a person's own `rt_` key.** The RPC is there —
+  `IssueService/IssueKey` on the data plane, with both rules on it — and nothing
+  in `ts/src` calls it. The delegation path is exercised (`examples/sso` mounts
+  `frontdoor`, which calls `Vouch.Delegate` on a password sign-in and
+  `Vouch.Revoke` on sign-out); a key somebody keeps and pastes into a script is
+  the screen nobody has drawn.
 - **`Binding` cannot be re-pointed.** Its edges are immutable, so changing who
   holds what is a delete and an add. That is the safe direction and it is worth
   knowing before writing a console screen that looks like an edit.
