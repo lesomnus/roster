@@ -372,6 +372,51 @@ suite: `cmd/close_test.go` asks the database whether both pools were given
 back, because only the database knows and a count kept here would be a second
 answer.
 
+### F15 · `secret:` kept a column out of one of the trail's two records -- **fixed upstream**
+
+Found by asking what rules `Audit` is under, which was the fourth of the
+pending decisions and turned out not to be a decision.
+
+`Audit` holds a write twice. `value` is the row as the write left it, and the
+generated `hide<E>` clears the declared columns before it is marshalled --
+which is what `TestNoVerifierReachesTheTrail` has been asserting since it was
+written. `patch` is the same write from the other end, the document it was
+compiled from, and nothing touched it. That test checked one column.
+
+So `Vouch.Set` -- the RPC whose whole job is to take a secret in and never hand
+one back -- wrote the argon2id string into `Audit.patch` in full. And the trail
+is **served**: `AuditService` is generated like any other and the wall files a
+credential's row under its person's tenant, so anybody in that tenant whose role
+reaches the trail could read the password hash of everybody in it. Which is the
+read D13 unregistered `CredentialService` to prevent, arriving by the road
+nobody had looked down, into the one table nothing erases.
+
+Fixed in `lesomnus/payday@312ccbf`: the recorder drops the entries naming a
+declared field before the document is held. Entries rather than values, because
+a patch entry with its value removed is a document that no longer applies -- and
+what is kept is every other entry of the same write, with `value` saying what
+the row became.
+
+The part worth remembering is how it was nearly missed twice. A patch entry says
+where it applies as either a `path` or a list of `targets`, and a generated
+`Patch` writes the second even for one field -- so the first filter read `path`,
+looked correct, and let everything through. The test that caught it is in
+payday's reference app, which is where a claim about generated code belongs.
+
+`cmd/trailsecret_test.go` is roster asking the same question of its own trail,
+in both columns and against the encoded shape rather than only this deployment's
+parameters.
+
+#### And what it says about the pending question
+
+`watch.outbox` was on the list as *unredacted patch documents, byte-identical to
+what `Audit.patch` already holds*. That was true and the wrong way round: the
+outbox is drained and deleted, and `Audit` is the table nothing erases. The
+question was never the second copy. `Audit` has **no retention policy**, which
+`audit.proto` says in as many words -- *an app with an obligation to destroy data
+has to reckon with the trail, and the answer is a retention policy rather than an
+empty column* -- and that is the decision still open.
+
 ### F14 · A select reached a parent that had been erased -- **fixed upstream**
 
 F9 made a **reference** answer among the live rows, because a reference to a row
