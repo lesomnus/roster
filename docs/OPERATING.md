@@ -795,6 +795,13 @@ Nothing written down is plaintext, and it warns once.
   customer-minted key safe are in place — the prefix, the holder it resolves to,
   and `mayGrant` on `methods` — and what is missing is the surface that would
   use them.
+- **An erase forgets rather than destroys.** Erasing a `Holder` stamps their row
+  and cascades to nothing, so their `Email` and their `Identity` stay — as does
+  the trail, for the same reason. What those rows can no longer be used for is
+  reaching the person: the parent of a row a caller may read is narrowed to the
+  ones still here, so an address is an address and not a way back to who had it.
+  A deployment with an obligation to destroy rather than to forget needs an
+  erase that cascades, and that is a change to the schema rather than to a read.
 - **A person cannot be raced out of their own account, quite.** Two calls at
   once, each removing one of somebody's last two ways in, both check before
   either writes and both go through. It takes two simultaneous calls about one
