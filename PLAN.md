@@ -372,6 +372,66 @@ suite: `cmd/close_test.go` asks the database whether both pools were given
 back, because only the database knows and a count kept here would be a second
 answer.
 
+### D43 · A second factor is not a way in
+
+Two places asked *can this person sign in* and both counted a TOTP seed as a
+yes. Neither was wrong about its own arithmetic; they were asking about the
+wrong set.
+
+`server/core` refuses to remove somebody's last way in by counting their
+identities and their credentials, and a seed is a credential -- so a person with
+one provider and one seed could have the provider unlinked. The count said one
+was left. What was left was six digits nobody may be asked for until they have
+already said who they are.
+
+`server/vouch` reached the same state from the front. `Verify` takes a kind and
+checks it, and `answer` sets `ok` when there is nothing left to prove -- so for
+somebody whose only credential is a seed there was never anything left, and a
+six-digit code inside a thirty-second window was a whole sign-in. The account
+was one `Enrol` old, and the call that confirmed the enrolment was the call that
+let them in.
+
+The second one is the hole and it is worth saying why it hid. `ok` is set from
+the **absence** of work outstanding, which is exactly the shape D21 chose to
+keep an app that has never heard of second factors failing closed. The emptier
+an account was, the more finished its sign-in looked.
+
+So it is one sentence, in `vouch.Begins`, and both sides ask it: a password can
+be the first thing somebody proves, and so can a link; a second factor cannot,
+because it is what is asked *after* one. A sign-in is over when there is nothing
+outstanding **and** something that could have begun one has been passed.
+
+#### Why it is the kind and not the row
+
+Nothing is written down about it. What a kind *is* is settled by what
+`server/vouch` can do with it -- the same argument `settable` makes about which
+kinds may be stored at all -- and a column would be a second answer, one that
+every row written before the question existed gets wrong.
+
+#### Where it deliberately does not apply
+
+`Verify` has a branch for a caller with no frame: it cannot mint a continuation,
+so it answers `ok` to a first factor without ever asking for a second. That
+branch is `init` and the sandbox, and its `ok` already means *the secret
+matched* rather than *the sign-in is finished* -- so a rule about which factor
+finishes one has nothing to decide there. Nothing in a deployment reaches it:
+every caller that gets that far holds a key or a certificate, and so carries an
+actor.
+
+It is also what keeps the enrolment ritual working. Confirming a freshly
+enrolled seed is a `Verify` of kind `totp`, which for a person who has a
+password answers with a continuation naming it -- and for a person who has
+nothing else is now refused, which is the case this decision is about.
+
+#### What was not done
+
+`Enrol` still writes a seed for somebody with no first factor, and that row is
+inert: nothing can finish a sign-in with it, and `server/core` no longer counts
+it. Refusing it outright was considered and left alone, because the person it
+would refuse is the one who signs in at an external provider -- roster never
+sees that first factor, and a rule stated here would be a rule about a fact this
+app does not hold.
+
 ### D42 · An optimistic lock is a write, and the last way in is closed
 
 D37 recorded the last-way-in race as *found and not fixed*, on the reasoning

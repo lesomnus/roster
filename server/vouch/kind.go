@@ -2,6 +2,7 @@ package vouch
 
 import (
 	"crypto/rand"
+	"slices"
 	"time"
 
 	"google.golang.org/grpc/codes"
@@ -68,6 +69,58 @@ func (s *Server) verifierOf(kind string) (verifier, error) {
 		return nil, status.Errorf(codes.InvalidArgument, "kind: %q is not something this checks", kind)
 	}
 }
+
+// Begins answers whether a kind can be the **first** thing somebody proves.
+//
+// A password can, and so can a link: each is something a person presents before
+// anybody has asked them for anything else. A second factor cannot. It is what
+// is asked *after* one, and six digits on their own are six digits.
+//
+// # The two places that assumed otherwise
+//
+// Nothing asked this, and both halves of the app quietly answered yes. `Verify`
+// takes a kind and checks it, so `Verify(who, "totp", code)` proved a factor and
+// [Server.answer] set `ok` the moment there was nothing left to prove -- and for
+// somebody whose only credential is a seed, there never was. A person in that
+// state signed in with a six-digit code inside a thirty-second window, and the
+// call that confirmed a freshly enrolled seed was the call that let them in.
+//
+// `server/core` reached the same state from the other side. The rule that
+// refuses to take away somebody's last way in counted every credential, so a
+// person with one provider and one seed could have the provider unlinked: the
+// count said one was left, and the one that was left could not let them in. The
+// two are the same mistake, which is why they are now the same sentence.
+//
+// # Why it is not a column
+//
+// It is a property of the kind and not of the row, for the reason
+// [Server.verifierOf] gives about its own question: what a kind *is* is settled
+// by what this package can do with it, and a column would be a second answer --
+// one that every row written before the question existed gets wrong.
+func Begins(kind string) bool {
+	switch kindOf(kind) {
+	case KindPassword, KindLink:
+		return true
+
+	default:
+		return false
+	}
+}
+
+// begun answers whether anything proved so far could have started this.
+func begun(satisfied []string) bool {
+	return slices.ContainsFunc(satisfied, Begins)
+}
+
+// errAlone is what somebody is told when the only thing they have proved is a
+// second factor and there is nothing else left to prove.
+//
+// It costs nothing to say plainly. Reaching it means the secret was **right**,
+// so whoever is told already holds the seed, and what they are told is the true
+// thing -- there is nothing here for it to be second to -- rather than that
+// their own code is wrong, which is an answer nobody can act on.
+var errAlone = status.Error(codes.FailedPrecondition,
+	"a second factor is not a way in on its own; this account has nothing for it to be second to")
 
 // settable refuses a kind [Server.Set] must not write down.
 //

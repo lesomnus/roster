@@ -206,6 +206,21 @@ func (s *Server) answer(ctx context.Context, h *app.Holder, satisfied []string, 
 		return nil, err
 	}
 	if len(left) == 0 {
+		// Nothing left to prove is not the same as proved. A sign-in is over
+		// when there is nothing outstanding **and** something that could have
+		// begun one has been passed -- see [Begins] -- and somebody whose only
+		// credential is a second factor has neither. Answering `ok` here is a
+		// six-digit code standing in for an account.
+		//
+		// This is the line the hole was on, and it is worth being exact about
+		// why it was invisible. `ok` is set from the *absence* of work left,
+		// which is the property that makes an app which has never heard of
+		// second factors fail closed -- so the emptier somebody's account, the
+		// more finished their sign-in looked.
+		if !begun(satisfied) {
+			return nil, errAlone
+		}
+
 		return app.VouchVerifyResponse_builder{
 			Ok:     true,
 			Holder: holder.Bytes(),

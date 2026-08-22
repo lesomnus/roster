@@ -294,6 +294,16 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind, name strin
 	//
 	// A caller with no frame -- `init`, the sandbox -- cannot be issued one and
 	// does not want one, so it gets the answer this always gave.
+	//
+	// Which is also why [Begins] is not asked here, and it is worth saying so
+	// where somebody will look for it. This branch already answers `ok` to a
+	// **first** factor without asking for a second, because it has nowhere to
+	// put a continuation -- so what its `ok` means is *the secret matched*
+	// rather than *the sign-in is finished*, and a rule about which factor
+	// finishes one has nothing to decide here. Nothing in a deployment reaches
+	// it either: every caller that gets this far holds a key or a certificate
+	// and so carries an actor. It is `init`, and it is the tests and the
+	// example confirming a freshly enrolled seed without signing anybody in.
 	issuer, err := issuerOf(ctx)
 	if err != nil {
 		if err := s.passed(ctx, v, step, true); err != nil {

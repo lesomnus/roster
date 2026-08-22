@@ -10,6 +10,7 @@ import (
 	"github.com/lesomnus/payday/pderr"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/vouch"
 )
 
 type coreIdentity struct {
@@ -175,10 +176,18 @@ func (s coreIdentity) oneAccountPerProvider(ctx context.Context, req *app.Identi
 //
 // # What counts as a way in
 //
-// An `Identity` or a `Credential`. They are the two things `VouchService` and a
-// Login App between them can turn into a signed-in person, and the count is
-// over both: somebody with a password may unlink their last provider, and
-// somebody with two providers and no password may unlink one of them.
+// An `Identity`, or a `Credential` **of a kind that can begin a sign-in**. They
+// are what `VouchService` and a Login App between them can turn into a
+// signed-in person, and the count is over both: somebody with a password may
+// unlink their last provider, and somebody with two providers and no password
+// may unlink one of them.
+//
+// A second factor is not one of them, and counting it was the same mistake this
+// file makes about counts generally -- the number was right and the question
+// was wrong. Six digits are what somebody is asked for *after* they have said
+// who they are; a person left holding nothing else cannot start. [vouch.Begins]
+// is the one sentence both sides of it now ask, and the other side of it is
+// `Verify`, which used to let that same person in.
 //
 // # What it does not stop
 //
@@ -297,8 +306,12 @@ func (s coreIdentity) notTheirLastWayIn(ctx context.Context, holder, erasing []b
 	if err != nil {
 		return err
 	}
-	if len(creds.GetItems()) > 0 {
-		return nil
+	for _, v := range creds.GetItems() {
+		// The kind decides, not the row: a seed is a credential and is not a
+		// way in. See [vouch.Begins].
+		if vouch.Begins(v.GetKind()) {
+			return nil
+		}
 	}
 
 	return status.Error(codes.FailedPrecondition,
