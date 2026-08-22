@@ -332,9 +332,17 @@ func subjects() []subject {
 			},
 		},
 		// And what they may do. A destroyed person holding permissions is a row
-		// waiting to be a surprise -- and one of the twelve foreign keys into
-		// `holder` is `SET NULL`, so leaving these would leave a binding pointing
-		// at nobody rather than at somebody who is gone.
+		// waiting to be a surprise.
+		//
+		// And there is an asymmetry underneath worth knowing about, which
+		// nothing else states: of the twelve foreign keys into `holder`,
+		// eleven are `NO ACTION` and `binding_holder_holder` alone is
+		// `SET NULL` -- see `internal/ent/migrate/schema.go`. Nothing depends
+		// on it today, because an erase is an UPDATE and no `ON DELETE` rule
+		// fires. It would matter the day somebody builds a **hard** erase of a
+		// person: eleven children would block it and `Binding` would quietly
+		// keep a row whose holder is NULL. Removing these here is what makes
+		// that irrelevant either way.
 		{
 			name: "binding",
 			ids: func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {

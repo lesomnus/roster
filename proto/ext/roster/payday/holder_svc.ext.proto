@@ -10,9 +10,16 @@ import "roster/payday/holder.proto";
 
 // What this app adds to the generated contract for `Holder`.
 //
-// An overlay may only **add**. Generation refuses one that redeclares
-// something payday generated, for the reason the entity overlays are refused:
-// the merge would take the overlay's word.
+// An overlay may only **add**, and that is a rule this file keeps rather than
+// one anything enforces. It used to say generation refuses an overlay that
+// redeclares something payday generated; it does not. `protobuf-merge` matches
+// rpcs by name and emits the **overlay's** request, response and body, payday
+// invokes it without `Strict`, and the conflict kinds it can report cover
+// fields and editions and not rpcs at all -- so redeclaring `Get` here would
+// replace it, silently, and nothing anywhere would say so.
+//
+// It is written down rather than worked around because the fix belongs
+// upstream. See PLAN.md.
 service HolderService {
   // Update is the narrow write, and the one a caller is given.
   //

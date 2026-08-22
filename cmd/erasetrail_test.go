@@ -17,7 +17,11 @@ import (
 // everything under whoever asked.
 //
 // It did not hold for an erase, and roster is a deployment where that is every
-// erase: nothing here declares `hard:`, so every row is soft-erased. The
+// erase **of a person**: no entity holding somebody's data declares `hard:`, so
+// every one of those rows is soft-erased. Three do -- `Tenant`, `Audit` and
+// `Outbox`, all three payday's own -- and none of them is anybody. This comment
+// used to say "nothing here declares `hard:`", which was easier to read and
+// false. The
 // recorder reads the row it is recording through the bare server, and every
 // read the bare server makes narrows to the rows still here -- so the row the
 // erase had just stamped was NotFound to the record of that very erase. The

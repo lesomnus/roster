@@ -60,6 +60,18 @@ import (
 // Nothing about it is served. The ungated server is registered on a listener
 // with no address and torn down when the command finishes.
 //
+// It also carries **no `closed` interceptor**, which is worth saying out loud
+// because the wire does. `grpcx.GeneralWrite` closes `/Patch` and `/Apply`
+// unless a deployment opens them, and none of that is installed here -- so
+// `roster holder patch` reaches the general write at a shell, and can null a
+// person's profile or overwrite their alias.
+//
+// That is not a boundary being crossed: an operator running this already has
+// the database credentials, and everything they could do through the general
+// write they could do with a SQL client. It is written down because *local is
+// Ungated* was documented and *and general writes are open there* was not, and
+// the two are different sentences.
+//
 // **Remote is not that.** It is a caller like any other, so `tenant ls` over
 // the wire answers with the tenants that credential may see -- which for an
 // API key is one. The two are not the same view and are not meant to be; see

@@ -90,26 +90,38 @@ func newCmdTrailPrune(c *Config) *xli.Command {
 				return prune(ctx, *c)
 			}
 
-			dir, _ := flg.Find[string](cmd, "to")
-			if dir == "" {
-				dir = c.Audit.Archive
-			}
-
 			of, err := kindOf(cmd)
 			if err != nil {
 				return err
 			}
 
-			discard, _ := flg.Find[bool](cmd, "discard")
-			if dir == "" && !discard {
-				// The same refusal `trail.Policy.Valid` makes about the
-				// configuration, at the other door. Somebody who has not said
-				// where the rows go has not said they may be destroyed.
-				return errors.New("--to: nowhere to put what leaves the database; " +
-					"name a directory, set audit.archive, or --discard to say the rows are meant to go")
+			dry, _ := flg.Find[bool](cmd, "dry-run")
+
+			dir, _ := flg.Find[string](cmd, "to")
+			if dir == "" {
+				dir = c.Audit.Archive
 			}
-			if dir != "" && discard {
-				return errors.New("--discard and --to say two different things about the same rows")
+
+			discard, _ := flg.Find[bool](cmd, "discard")
+
+			// Where the rows go is a question about **destroying** them, so it
+			// is asked of a run that will. A dry run that insisted on a
+			// destination was refusing to count on the grounds that it had not
+			// been told where to put what it was not going to move -- and it
+			// made the only safe way to ask *how many* into the one form that
+			// needs the dangerous flags filled in first.
+			if !dry {
+				if dir == "" && !discard {
+					// The same refusal `trail.Policy.Valid` makes about the
+					// configuration, at the other door. Somebody who has not
+					// said where the rows go has not said they may be
+					// destroyed.
+					return errors.New("--to: nowhere to put what leaves the database; " +
+						"name a directory, set audit.archive, or --discard to say the rows are meant to go")
+				}
+				if dir != "" && discard {
+					return errors.New("--discard and --to say two different things about the same rows")
+				}
 			}
 
 			s, err := Build(ctx, *c)
@@ -120,7 +132,7 @@ func newCmdTrailPrune(c *Config) *xli.Command {
 
 			store := pd.TrailStore(s.Ent)
 
-			if dry, _ := flg.Find[bool](cmd, "dry-run"); dry {
+			if dry {
 				n, err := store.Count(ctx, of, before)
 				if err != nil {
 					return err

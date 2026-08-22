@@ -399,6 +399,35 @@ asked: `internal/apptest/cmd/outboxsecret_test.go` upstream, and
 `cmd/outboxsecret_test.go` here, because it is a property of the pinned payday
 rather than of anything in roster.
 
+### F18 · Three sentences that were false, and one asymmetry nobody had written down
+
+Found by sweeping for what is still open rather than by anything failing, which
+is the point: none of these breaks a test, and every one of them misleads
+somebody reading the code to decide what is safe.
+
+- `cmd/erasetrail_test.go` said *nothing here declares `hard:`, so every row is
+  soft-erased*. `Tenant`, `Audit` and `Outbox` declare it -- all three payday's
+  own, and none of them a person, which is what the sentence was reaching for
+  and did not say. `docs/ROADMAP.md` carried the same claim in F13's row.
+- `proto/ext/roster/payday/holder_svc.ext.proto` said *generation refuses an
+  overlay that redeclares something payday generated*. **Nothing refuses it.**
+  `protobuf-merge` matches rpcs by name and emits the overlay's request,
+  response and body; payday invokes it without `Strict`; and the conflict kinds
+  it can report cover fields and editions and not rpcs at all. So an overlay
+  redeclaring `Get` replaces it, silently. The comment is corrected and the fix
+  is payday's -- see below.
+- **The foreign keys into `holder` are not uniform.** Eleven are `NO ACTION` and
+  `binding_holder_holder` alone is `SET NULL`. Nothing depends on it today,
+  because an erase is an UPDATE and no `ON DELETE` rule fires; it would matter
+  the day somebody builds a hard erase of a person, when eleven children would
+  block it and `Binding` would quietly keep a row whose holder is NULL.
+  `server/forget` removes those rows anyway, and now says so.
+- And `cmd/entity.go` builds the local CLI's server with **no `closed`
+  interceptor**, so `roster holder patch` reaches the general write that the
+  wire closes. Not a boundary -- an operator running it holds the database
+  credentials -- but *local is Ungated* was written down and *and general writes
+  are open there* was not.
+
 ### D48 · Minting an `rt_` over the wire, which was P5's one loose end
 
 The roadmap carried it under P5 for as long as there was a roadmap: *not done,
