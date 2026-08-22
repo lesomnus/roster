@@ -284,6 +284,25 @@ func TestASecretIsSetForTheAddressThatNamesSomebody(t *testing.T) {
 			"a reset by email left every session it was recovering from alive")
 	})
 
+	// And through the stack `cmd.Grpc` actually wires, which is not the one
+	// above: `b.vouched()` is the unwalled server with no escalation rule on
+	// it, so a fix tested only there is a fix tested with both of the things
+	// that could refuse it taken away. `b.operated()` is the walled server
+	// with `core.Reaching`, which is what a deployment serves.
+	t.Run("and through the stack a deployment serves", func(t *testing.T) {
+		x := require.New(t)
+
+		v := b.operated()
+		as := b.as(ctx, b.AcmeUser, b.Acme)
+
+		res, err := v.Reset(as, app.VouchResetRequest_builder{
+			Who: who("someone@acme.example"),
+		}.Build())
+		x.NoError(err)
+		x.NotEmpty(res.GetSecret())
+		x.True(b.verifies(t, ctx, b.AcmeUser, res.GetSecret()).GetOk())
+	})
+
 	// An address nobody has is `NotFound`, which is what every other call that
 	// looks one up answers. This is behind the wall and the caller is an
 	// operator who already knows the account exists, so there is nothing here

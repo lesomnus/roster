@@ -21,6 +21,7 @@ import (
 
 	"github.com/lesomnus/roster/cmd"
 	"github.com/lesomnus/roster/internal/ent"
+	entaudit "github.com/lesomnus/roster/internal/ent/audit"
 	app "github.com/lesomnus/roster/rstr"
 )
 
@@ -234,8 +235,6 @@ func TestEveryOperatorWriteLeavesBothTrails(t *testing.T) {
 			x := require.New(t)
 
 			was := adminTrail(t, s.Ent)
-			before, err := s.Control.Ent.Audit.Query().Count(ctx)
-			x.NoError(err)
 
 			x.NoError(w.call(as))
 
@@ -247,14 +246,26 @@ func TestEveryOperatorWriteLeavesBothTrails(t *testing.T) {
 					"%s: no trace on %s, so nothing to join it to", w.name, v.Action)
 			}
 
-			// Who decided, in the plane the operator is in.
-			cs, err := s.Control.Ent.Audit.Query().All(ctx)
+			// Who decided, in the plane the operator is in -- asked for by
+			// the action rather than taken as the last row of an unordered
+			// read. `All` promises no order, so `cs[len(cs)-1]` was insertion
+			// order holding on a fresh table and nothing more; the same is
+			// true of `data[0]`, and both are joined on a trace that has to be
+			// the right pair to mean anything.
+			cs, err := s.Control.Ent.Audit.Query().
+				Where(entaudit.ActionEQ(w.name)).
+				All(ctx)
 			x.NoError(err)
-			x.Equal(before+1, len(cs), "%s: the decision was not recorded", w.name)
+			x.Len(cs, 1, "%s: the decision was not recorded", w.name)
 
-			intent := cs[len(cs)-1]
+			intent := cs[0]
 			x.Equal(w.name, intent.Action)
-			x.Equal(string(data[0].TraceID), string(intent.TraceID),
+
+			traces := map[string]bool{}
+			for _, v := range data {
+				traces[string(v.TraceID)] = true
+			}
+			x.True(traces[string(intent.TraceID)],
 				"the two trails carry different traces and cannot be joined")
 
 			who, err := s.Control.Ent.Holder.Get(ctx, intent.ActorID)

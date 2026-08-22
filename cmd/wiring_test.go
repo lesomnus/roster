@@ -23,6 +23,7 @@ import (
 
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/keys"
 )
 
 // How the process is assembled, and how it stops.
@@ -419,13 +420,47 @@ func TestTheControlPlaneKeepsItsOwnOutbox(t *testing.T) {
 
 	// And something to publish and delete them, which is the other half of the
 	// same setting: a recorder with no drain is a table that only grows.
-	x.Len(s.Control.Spin, 3, "the control plane's outbox has no drain behind it")
+	//
+	// Compared against the same deployment without the setting, rather than
+	// counted. A bare length was what was written, and it says the right thing
+	// only until somebody adds a background loop -- then it fails with a
+	// message about an outbox that has nothing to do with what changed, and it
+	// would equally have passed with three sweeps and no drain. `pd.Drain`
+	// answers an unexported type, so what can be asked is what the setting
+	// added.
+	bare := withoutOutbox(t)
+	x.Equal(len(bare.Control.Spin)+1, len(s.Control.Spin),
+		"the control plane's outbox has no drain behind it")
 
 	// The data plane said nothing about an outbox and still has none -- the
 	// inheritance goes one way.
 	n, err = s.Ent.Outbox.Query().Count(ctx)
 	x.NoError(err)
 	x.Zero(n, "the control plane's outbox was inherited by the data plane")
+}
+
+// withoutOutbox is the same two-plane deployment with the setting off, which
+// is what makes the count above about the setting rather than about how many
+// loops this app happens to run.
+func withoutOutbox(t *testing.T) *cmd.Server {
+	t.Helper()
+	x := require.New(t)
+
+	drv, dsn := pdtest.DB(t)
+	cdrv, cdsn := pdtest.DB(t)
+
+	s, err := cmd.Build(t.Context(), cmd.Config{
+		Db:    config.DbConfig{Driver: drv, Dsn: dsn},
+		Watch: config.WatchConfig{Broker: config.BrokerMemory},
+		Control: cmd.ControlConfig{
+			Db:    config.DbConfig{Driver: cdrv, Dsn: cdsn},
+			Watch: config.WatchConfig{Broker: config.BrokerMemory},
+		},
+	})
+	x.NoError(err)
+	t.Cleanup(func() { s.Close() })
+
+	return s
 }
 
 // TestAnOutboxWithNowhereToPublishIsRefused.
@@ -531,4 +566,122 @@ func TestAFailureThatIsNotAboutBrokersDoesNotMentionThem(t *testing.T) {
 	x.Contains(err.Error(), "control:", "the refusal did not say which plane")
 	x.NotContains(err.Error(), "watch.broker",
 		"a database that would not answer was reported as a broker question")
+}
+
+// TestADeploymentWithEveryPortOpenStops.
+//
+// [cmd.ShutdownGrace] is chosen against a number somebody else owns: `docker
+// stop` waits ten seconds and then sends SIGKILL, so a longer grace is one
+// nothing lives to use. That argument holds for **one** listener. A deployment
+// with a control plane and an admin port opens five, each stopped by a `defer`
+// of its own -- and defers run one after another, so five graces end to end is
+// twenty-five seconds against a ten-second budget, with four of the five never
+// having been asked before the process was killed.
+//
+// They have nothing to say to each other: one listener draining is not a reason
+// for the next to still be accepting. So they run together and the budget is
+// the grace, whatever a deployment opened.
+//
+// Measured with a stream held open on every port that serves one, because a
+// stream is the thing that makes a stop take its whole grace -- a watch never
+// ends on its own, which is what `TestShutdownDoesNotWaitOnAStream` is about
+// one listener at a time.
+func TestADeploymentWithEveryPortOpenStops(t *testing.T) {
+	x := require.New(t)
+
+	drv, dsn := pdtest.DB(t)
+	cdrv, cdsn := pdtest.DB(t)
+
+	ctx := t.Context()
+
+	// Every port this app opens, on addresses the kernel picks.
+	c := cmd.Config{
+		Db:    config.DbConfig{Driver: drv, Dsn: dsn},
+		Watch: config.WatchConfig{Broker: config.BrokerMemory},
+		Control: cmd.ControlConfig{
+			Db:           config.DbConfig{Driver: cdrv, Dsn: cdsn},
+			ServerConfig: config.ServerConfig{Addr: "127.0.0.1:0"},
+		},
+		Admin: config.ServerConfig{Addr: "127.0.0.1:0"},
+	}
+
+	s, err := cmd.Build(ctx, c)
+	x.NoError(err)
+	t.Cleanup(func() { s.Close() })
+	x.NoError(s.Ent.Schema.Create(ctx))
+	x.NoError(s.Control.Ent.Schema.Create(ctx))
+
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	x.NoError(err)
+
+	sctx, stop := context.WithCancel(context.Background())
+	defer stop()
+
+	served := make(chan error, 1)
+	go func() { served <- s.Serve(sctx, c, l) }()
+
+	// A stream on the data plane, which is the one this test can reach without
+	// a session: the other two take a cookie, and what is being measured is
+	// whether the stops wait on each other rather than what each one waits for.
+	conn, err := grpc.NewClient(l.Addr().String(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
+	x.NoError(err)
+	defer conn.Close()
+
+	b := &built{Server: s}
+	b.Acme = b.tenant(t, ctx, "acme")
+	who := b.holder(t, ctx, b.Acme, "watched")
+	b.mayAnything(who, b.Acme)
+
+	// A real credential, because naming a control plane is what switches this
+	// deployment off `auth.Plain` -- and naming one is the whole point here,
+	// since it is the deployment that opens all five listeners.
+	token, sum, err := keys.Mint(keys.PrefixTenant)
+	x.NoError(err)
+
+	_, err = s.Ungated.ApiKey().Add(ctx, app.ApiKeyAddRequest_builder{
+		Holder:  app.HolderRef_builder{Id: who.Bytes()}.Build(),
+		Alias:   "watcher",
+		Secret:  sum,
+		Methods: []string{"/roster.*/*"},
+	}.Build())
+	x.NoError(err)
+
+	out, err := app.NewHolderServiceClient(conn).Watch(bearing(ctx, token),
+		app.HolderWatchRequest_builder{
+			Filters: []*app.HolderFilter{
+				app.HolderFilter_builder{
+					Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
+				}.Build(),
+			},
+		}.Build())
+	x.NoError(err)
+
+	_, err = out.Recv()
+	x.NoError(err, "the watch never started, so this proves nothing about shutdown")
+
+	at := time.Now()
+	stop()
+
+	select {
+	case <-served:
+	case <-time.After(60 * time.Second):
+		t.Fatal("the process never stopped")
+	}
+
+	took := time.Since(at)
+	t.Logf("five listeners stopped in %s", took)
+
+	// Within one grace, with every listener a deployment opens open and a
+	// stream held on the one this test can reach without a session cookie.
+	//
+	// It does **not** discriminate serial from together, and saying so is the
+	// point of the note: only the listener with the stream waits its grace
+	// here, so five in series would answer in one grace too. What that costs
+	// is why `TestTheListenersStopTogether` is written against the loop
+	// instead. What this pins is the wiring around it -- that every listener
+	// is stopped at all, and that opening four more of them does not leave the
+	// process running.
+	x.Less(took, 2*cmd.ShutdownGrace,
+		"a deployment with every port open did not stop within its own grace")
 }

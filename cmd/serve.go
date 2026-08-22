@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"entgo.io/ent/dialect"
@@ -790,11 +791,22 @@ func (s *Server) Serve(ctx context.Context, c Config, l net.Listener) error {
 		return err
 	}
 
+	// The stops, collected rather than deferred one at a time.
+	//
+	// A `defer` per listener runs them in series, and each waits up to
+	// [ShutdownGrace] -- so five listeners is five graces end to end, and the
+	// number that justifies the grace is `docker stop`'s ten seconds. Five of
+	// them is twenty-five, which is SIGKILL with four of the five never having
+	// been asked. Run together, the budget is the grace whatever a deployment
+	// opened.
+	var stops shutdown
+	defer stops.run()
+
 	stop, err := s.serveHttp(ctx, c, g)
 	if err != nil {
 		return err
 	}
-	defer stop()
+	stops.add(stop)
 
 	var control *grpc.Server
 	if s.Control != nil {
@@ -808,13 +820,13 @@ func (s *Server) Serve(ctx context.Context, c Config, l net.Listener) error {
 	if err != nil {
 		return err
 	}
-	defer stopControl()
+	stops.add(stopControl)
 
 	stopControlHttp, err := s.serveControlHttp(ctx, c, control)
 	if err != nil {
 		return err
 	}
-	defer stopControlHttp()
+	stops.add(stopControlHttp)
 
 	admin, err := s.GrpcAdmin(ctx, c)
 	if err != nil {
@@ -825,13 +837,13 @@ func (s *Server) Serve(ctx context.Context, c Config, l net.Listener) error {
 	if err != nil {
 		return err
 	}
-	defer stopAdmin()
+	stops.add(stopAdmin)
 
 	stopAdminHttp, err := s.serveAdminHttp(ctx, c, admin)
 	if err != nil {
 		return err
 	}
-	defer stopAdminHttp()
+	stops.add(stopAdminHttp)
 
 	go func() {
 		<-ctx.Done()
@@ -839,6 +851,36 @@ func (s *Server) Serve(ctx context.Context, c Config, l net.Listener) error {
 	}()
 
 	return g.Serve(l)
+}
+
+// shutdown is every listener's stop, run together rather than one after
+// another.
+//
+// Each of them waits up to [ShutdownGrace] for the calls still in flight, and
+// they have nothing to say to each other -- one listener draining is not a
+// reason for the next one to still be accepting. Deferred separately they ran
+// in series, so a deployment with a control plane and an admin port spent five
+// graces where the grace is chosen against a ten-second budget.
+//
+// It is a type rather than a slice of `func()` and a loop at the end, because
+// what has to be true is that a stop added is a stop run: the loop was the
+// thing that was there and the `defer` beside each listener was what got
+// written instead.
+type shutdown struct{ fs []func() }
+
+func (v *shutdown) add(f func()) { v.fs = append(v.fs, f) }
+
+func (v *shutdown) run() {
+	var wg sync.WaitGroup
+	for _, f := range v.fs {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			f()
+		}()
+	}
+
+	wg.Wait()
 }
 
 // ShutdownGrace is how long a stop waits for the calls that are still in

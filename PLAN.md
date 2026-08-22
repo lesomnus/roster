@@ -168,6 +168,30 @@ The fix is the field, at 5, the number `name` has everywhere. `Delegate`'s
 comment was updated rather than deleted: it is right about signing in, and what
 it did not cover is enrolling.
 
+### D39 · The grace is the process's, not each listener's
+
+`ShutdownGrace` is five seconds and the number that justifies it is somebody
+else's: `docker stop` waits ten and then sends SIGKILL, so a longer grace is one
+nothing lives to use.
+
+That argument holds for **one** listener. A deployment with a control plane and
+an admin port opens five, and each was stopped by a `defer` of its own -- so
+five graces ran end to end. Twenty-five seconds against a ten-second budget,
+with four of the five never having been asked before the process was killed,
+which is the outcome the grace exists to avoid arriving by way of the grace.
+
+They have nothing to say to each other: one listener draining is not a reason
+for the next to still be accepting. So they run together and the budget is the
+grace, whatever a deployment opened.
+
+The test is written against the loop rather than against a served deployment,
+and that is worth saying rather than leaving as an oddity. A test that opens all
+five can hold a stream on only one of them without a session cookie -- and only
+a listener with a stream in flight waits its grace at all -- so serial and
+together both answer in one grace and it discriminates nothing. The end-to-end
+test is kept for what it does pin, which is that every listener is stopped and
+that opening four more does not leave the process running.
+
 ### D38 · Closing a deployment closed one of its two planes
 
 Found by running this suite the way its own CI runs it, which nothing here had
