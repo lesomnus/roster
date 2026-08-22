@@ -164,10 +164,14 @@ Two things about the table worth knowing:
 - **A session dies with the person.** The holder is an edge, so erasing an
   operator ends their sessions without anybody having to remember to.
 
-Nothing collects expired rows yet: `authsession` checks both clocks when it
-reads one, so an expired session is refused the moment it is presented, and what
-is left is a table that grows. `keys.Sweep` and `vouch.Sweep` are the shape
-that fixes it and this has not been given one.
+Expired rows are collected hourly, by `session.Sweep` — `keys.Sweep`'s shape,
+which is what this paragraph asked for when it said nothing did. It deletes on
+`date_expires` alone and on nothing else: a signed-out session is deleted where
+it is signed out, and a row whose person is gone goes with them through the
+edge. Nothing depends on the sweep for correctness — `authsession` checks both
+clocks when it reads one, so an expired session is refused the moment it is
+presented — so the sweep is about the size of the table and not about who may
+sign in.
 
 
 An **operator** signs in: a holder of the control plane, which is where the
@@ -267,11 +271,12 @@ above — so a cookie minted by one replica resolves on another. This paragraph
 used to say the opposite, and said it below a section that already said the
 right thing.
 
-What is still per-process is the **watch broker**, which is the same trap one
-seam over: the console's live screens run on `Watch`, and with `broker: memory`
-a screen watching one replica never hears about a write that landed on another.
-Nothing reports it — the stream stays open and looks healthy. See "Running more
-than one" below.
+The **watch broker** is the same trap one seam over, and it is the one setting
+that has to be named rather than left: with `broker: memory` the console's live
+screens run on `Watch` per process, so a screen watching one replica never hears
+about a write that landed on another, and nothing reports it — the stream stays
+open and looks healthy. `broker: postgres` is what a second replica needs, on
+both planes. See "Running more than one" below.
 
 ## A key for a service
 
@@ -378,10 +383,12 @@ Nothing mints a `rt_` key over the wire yet — `ApiKeyService` is unregistered,
 so it takes `Ungated`, which means a shell. The console is what changes that,
 and the rules that make it safe are in place: see below.
 
-Nor a delegation, and for a different reason: what would mint one is
-`VouchService.Verify` answering with it, and the page that decides how long it
-should live has not been written. PLAN.md D24 is why that order, D25 is the
-shape.
+A **delegation** is different and is minted over the wire: `Vouch.Delegate` is
+`Verify` that also mints for the person it just proved, and `Vouch.Redeem` does
+the same at the end of a magic link. A separate RPC rather than a field on
+`Verify`, because a role here is a list of methods — so a Login App that must
+check passwords and never mint is a different grant from a product app that
+needs the token. PLAN.md D23 and D25.
 
 ## Who may do what
 
@@ -585,8 +592,10 @@ Three things to know before handing these out:
 
 - **`Invalidate` does not touch an API key.** A key is named, listed and revoked
   one at a time; killing somebody's scripts silently under "sign out everywhere"
-  is an outage with nothing saying why. Use `roster key revoke`, or erase the
-  row.
+  is an outage with nothing saying why. Erase the `ApiKey` row, which is a
+  shell: `roster key revoke` reaches the deployment's own `rk_` keys and not a
+  tenant's `rt_` ones, for the same reason nothing mints an `rt_` over the wire
+  yet.
 - **They do not require a version.** Every other write here is a
   compare-and-swap; these take one if you have read the row and proceed without
   one if you have not, because a suspension that fails when somebody edits a
@@ -626,25 +635,48 @@ the first one needs. Sessions, keys, delegations, failure counts, lockouts, the
 TOTP replay window, continuations and magic links are all rows, re-read on every
 request — the process holds no authoritative copy of any of them.
 
-**One thing does not cross replicas, and it is `Watch`.**
+**`Watch` crosses replicas only if you say which broker.** There is no default,
+deliberately: memory is right for one process and silently wrong for two, and a
+setting that guesses would guess wrong exactly when a deployment grows.
+
+```yaml
+watch:
+  broker: postgres
+control:
+  watch:
+    broker: postgres
+```
+
+That is `LISTEN`/`NOTIFY` on the database the rows are already in — no second
+address, nothing to stand up, and nothing to keep. It is scoped to a database,
+so the two planes stay separate without either of them being told to: a key
+being issued does not arrive looking like a person changing. Leave `watch.dsn`
+empty unless the writes go through a pooler, which `LISTEN` cannot cross.
 
 With `broker: memory` a client watching against one replica never hears about a
 write that landed on another. Nothing reports it: the stream stays open and the
 client looks connected. The console's live screens are the first thing this
 affects, and a product app granted `HolderService/Watch` is the second.
 
-`broker: none` is not the way out — it refuses `Watch` outright, which is honest
-but is not a Watch. The way out is a broker that crosses processes, which is
+`broker: none` is honest rather than a way out — it refuses `Watch` outright,
+so a client is told rather than left listening. Another broker is
 `config.RegisterBroker` in payday: a package that registers a name, blank
-imported here. It is the same shape a database driver has, and for the same
-reason.
+imported here, the same shape a database driver has and for the same reason.
+Nobody has needed one.
 
-An **outbox** does not solve this and is worth saying so about. It makes an
-event survive a crash between the commit and the publish, by writing a row in
-the same transaction as the write. The drainer then publishes into **this
-process's** broker and deletes the rows it read — so with several replicas
-draining one queue, whichever gets there first tells its own subscribers and
-nobody else's. Durability, not fan-out.
+What a broker does **not** promise is that nothing is missed. A notification
+reaches whoever is listening at that moment and is then forgotten, so a
+subscriber that falls behind or loses the connection is cut, and the client
+re-reads a snapshot when it reconnects. That is the same contract `watch` had
+in one process.
+
+An **outbox** answers the other question, and it needs a broker to be worth
+anything. It makes an event survive a crash between the commit and the publish,
+by writing a row in the same transaction as the write; the drainer then
+publishes into this process's broker. With `broker: memory` that reaches this
+replica's subscribers and nobody else's — durability with no fan-out, which is
+half an answer. With `broker: postgres` the drained event crosses like any
+other.
 
 ### Testing against the database you actually run
 
@@ -713,10 +745,10 @@ Nothing written down is plaintext, and it warns once.
   customer-minted key safe are in place — the prefix, the holder it resolves to,
   and `mayGrant` on `methods` — and what is missing is the surface that would
   use them.
-- **A reference app that uses a delegation.** `VouchService.Delegate` mints one
-  and `Revoke` ends it, but nothing in `examples/sso` calls either yet: it signs
-  people in with OIDC and never calls `Vouch` at all. PLAN.md D24 and
-  `docs/ROADMAP.md` P3.
+- **A person's own `rt_` key, minted from a screen.** The delegation path is
+  exercised — `examples/sso` mounts `frontdoor`, which calls `Vouch.Delegate`
+  on a password sign-in and `Vouch.Revoke` on sign-out — but a key somebody
+  keeps is the surface above, and that is the same missing screen.
 - **`Binding` cannot be re-pointed.** Its edges are immutable, so changing who
   holds what is a delete and an add. That is the safe direction and it is worth
   knowing before writing a console screen that looks like an edit.
@@ -735,11 +767,12 @@ Nothing written down is plaintext, and it warns once.
   What is not here is WebAuthn. `Credential` is already indexed on
   `(holder, kind, name)` for it — a passkey lands one row per device — and
   nothing checks that kind.
-- **No magic link.** Inside the line and unwritten, and the thing in the way is
-  F7: an address does not resolve to one person by design, so the usual front
-  door for a link has nothing to look anybody up with.
-- **Nothing collects expired sessions.** They are refused on read, so this is
-  a table that grows rather than a hole. See above.
+- **Nothing sends the magic link.** `Vouch.Link` mints one and answers with it
+  once; `Vouch.Redeem` spends it, and a person with a second factor is still
+  asked for it, because a link that skipped one would turn a mailbox into an
+  account. What is outside roster is the **delivery** — D19 — and that is what
+  makes the air-gapped case work at all: with no mail the somebody else is a
+  person, and what they hand over is a password from `Vouch.Reset`.
 - **Nothing here signs a token.** If several products need one sign-in, that is
   Hydra in front and roster answering it — LOGIN.md, "What changes when Hydra is
   in front". Do not reach for a JWT minted here; PLAN.md D19 is why.

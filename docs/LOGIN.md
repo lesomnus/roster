@@ -197,11 +197,13 @@ by the caller it was issued to — and the app hands it back with the second
 secret. So the two forms are the app's and the fact that both were the same
 person is roster's, which is the only half an app developer wanted.
 
-Beside it come the three things needed to draw the second form: what is
-`satisfied` so far, what is `available` to this person, and what is `pending` —
-a challenge, where the method has one. What does **not** come is how many steps
-there are in total, which of the available methods to offer, or what to call
-them. Those are the app's, and D21 says why.
+Beside it come the two things needed to draw the second form: what is
+`satisfied` so far, and what is `available` to this person — each of those a
+kind, a name and a lockout, which are facts rather than instructions. A factor
+whose method has a challenge to send would add a third field and none does yet.
+What does **not** come is how many steps there are in total, which of the
+available methods to offer, or what to call them. Those are the app's, and D21
+says why.
 
 See PLAN.md D20 and D21.
 
@@ -347,9 +349,11 @@ for the reason payday's other easy defaults are — an app nobody can start unti
 a control plane exists is an app nobody runs. Anything reachable by more than
 the machine it runs on needs the control plane configured and TLS under it.
 
-`examples/sso` is the whole of it working: a login app that signs somebody in
-with Google, Entra or GitHub, holds its own key, and finds out here who they
-are.
+`examples/sso` shows the **other** shape, and it is worth being exact about
+which: its machine is a `Holder` in the tenant it serves, with an `rt_` key, so
+what it demonstrates is a per-tenant caller and not the control-plane one this
+section is about. The paragraph above is the answer for a caller that acts
+across every tenant — custody — and its own tests are where that is exercised.
 
 ## See also
 

@@ -1679,7 +1679,7 @@ this with a `default` namespace; here the edge becomes required.
     Role     tenant=2  site=3?  alias=4  methods=8[]
     Group    tenant=2  site=3?  alias=4
     GroupMembership  holder=2  group=8
-    Binding  holder=2?  site=3?  role=8  group=9?
+    Binding  role=2  site=3?  holder=8?  group=9?
     TeamMembership   holder=2  team=8  role=9      <- already here; role becomes an edge
 
 **`Role` is referenced from two places, and the scope is wherever the
@@ -2611,22 +2611,23 @@ the schedule.
   OPERATING.md). What it needs is the `VouchService` trick: a narrow service
   that takes a secret in, answers with the plaintext exactly once, and can never
   read one back.
-- **And nothing mints a delegation over the wire either**, for a different
-  reason: D24 puts the page that would ask for one before the RPC that answers.
-  `keys.Delegate` is the mint and it is a Go call; D23 says where it belongs,
-  which is riding back on `VouchService.Verify`.
-- **Two-step verification is decided and not written.** D20 and D21 say what it
-  is — a `Credential` row, a `continuation` handle, one lockout count across
-  both steps — and nothing implements it. D21's four conditions are the ones
-  that are cheap to leave out and expensive to find.
-- **Magic link is inside the line and is not written.** D19 admits it — an
-  opaque single-use nonce roster mints and checks, with delivery somewhere else
-  — but F7 blocks the usual front door for it, since most links are asked for by
-  typing an address.
+- ~~**And nothing mints a delegation over the wire either.**~~ **Done**, and not
+  in the shape this bullet predicted: it rides back on `VouchService.Delegate`
+  rather than on `Verify` growing an answer, because a role here is a list of
+  methods and the two are different things to hand out. D23 and D25.
+- ~~**Two-step verification is decided and not written.**~~ **Done**, D29 and
+  D30: `Vouch.Continue`, the `Continuation` entity, one lockout count metered
+  across both steps, and the single-use spend D34 had to go upstream for.
+  D21's four conditions are what the shape was checked against.
+- ~~**Magic link is inside the line and is not written.**~~ **Done**, D31.
+  `Vouch.Link` and `Vouch.Redeem`, and a person with a second factor is still
+  asked for it. F7 stopped blocking it when D27 gave an address a tenant to be
+  unique within.
 - ~~**The console's sessions are in `MemStore`**~~ **Done.** They are a table --
   `server/session`, behind `authsession.Store` -- so a cookie minted by one
-  replica resolves on another. What is left of this shape is the **watch
-  broker**, which is a different seam and is still `memory`; see D33.
+  replica resolves on another. And the **watch broker**, which is the same shape
+  one seam over, crosses replicas once it is named: `watch.broker: postgres`.
+  See D33.
 
 ### What "after it says yes" means, since it came up
 

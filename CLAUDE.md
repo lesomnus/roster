@@ -55,12 +55,14 @@ checks a password. `PLAN.md` D19 and D20, `docs/POSITION.md`.
 ```sh
 go tool pd gen .          # messages, ent schema, servers, layers
 go tool pd gen --ts .     # and the TypeScript half
-go tool pd gen --check .  # what CI runs: fails if anything moved
+go tool pd gen --check --ts .  # what CI runs: fails if anything moved
 ```
 
 A generated file that was not regenerated **compiles perfectly and is wrong**.
-If you edited anything under `proto/`, you are not done until `pd gen --check`
-exits 0.
+If you edited anything under `proto/`, you are not done until
+`pd gen --check --ts .` exits 0. With `--ts` because that is what CI runs: the
+check without it passes while `ts/gen` is a schema behind, which is a green
+local run and a red one on the branch.
 
 ```sh
 go tool pd doctor .       # what would go wrong, before it does
@@ -159,10 +161,18 @@ cd ts && npm install && npm run dev
 
 ## `auth.Plain` is not for production
 
-It believes what the caller writes. It is right for tests and a sandbox, and
-`serve.go` wires it because the alternative is an app that cannot be run until
-there is a certificate authority. Issuing credentials is an HTTP endpoint and
-is this app's to write.
+It believes what the caller writes. It is right for tests and a sandbox, and it
+is what `serve.go` wires **when there is no `control:` plane** — an app with
+nowhere to keep keys has nothing else it could check.
+
+Name a control plane and the same wiring reads API keys instead
+(`auth.Seq(keys.Acting(…), auth.Bearer(keys.Store(…)))`), which needs no
+certificate authority and no HTTP endpoint: `roster key add` mints one from a
+shell, and the control plane's `IssueService` mints one over the wire. mTLS is
+the other answer and is a deployment's to configure.
+
+What is HTTP is the console's **session cookie**, because that is a credential
+a browser holds and `auth` reads credentials rather than making them.
 
 ## Reference
 

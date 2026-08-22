@@ -14,9 +14,9 @@ The line, so that it is on the first screen:
 > **roster stores facts and verifies claims about them. It never issues anything
 > a third party verifies.**
 
-So it checks a password and will check a second factor, and it does not run a
-login flow, mint a session for somebody else's browser, or sign a token another
-system verifies alone. [docs/POSITION.md](docs/POSITION.md) is that applied;
+So it checks a password and a second factor, and it does not run a login flow,
+mint a session for somebody else's browser, or sign a token another system
+verifies alone. [docs/POSITION.md](docs/POSITION.md) is that applied;
 [PLAN.md](PLAN.md) D19 is why it is worded as a test rather than as a list.
 
 | | |
@@ -235,7 +235,7 @@ credential, the same wall, speaking Connect and gRPC-Web instead. A Connect call
 is a POST with a JSON body, so it is also what to reach for from a shell:
 
 ```sh
-curl -sX POST http://localhost:8080/app.ThingService/List \
+curl -sX POST http://localhost:8080/roster.ThingService/List \
   -H 'Content-Type: application/json' -H 'Connect-Protocol-Version: 1' -d '{}'
 ```
 
@@ -246,16 +246,18 @@ brings, not about what is reachable where.
 Whatever else this app serves over HTTP goes on the same mux, in `serve.go`:
 
 ```go
-h, err := web.New(c.Server.Http, g)
-h.Handle("/login", login(s.Ungated))
+h, err := web.New(c, g)
+v := Login(s.Control)
+h.Handle("POST /session", s.Sessions.Serve(v))
+h.Handle("DELETE /session", s.Sessions.Serve(v))
 ```
 
-That is where a login endpoint lands, and the page needs one: `auth.Plain` takes
-the caller's word for who they are, which is right for a sandbox and for tests
-and is not something to serve where anyone can reach it. `auth` reads a
-credential and does not issue one — issuing is HTTP, and this is the HTTP. The
-cross-origin answer is over the whole mux, so a route added here is reachable
-from the same page the RPCs are.
+That is the console's sign-in, and it is HTTP because it **issues**: `auth`
+reads a credential and never makes one, and a cookie is the one credential a
+browser can hold. Only where a `control:` plane is configured, since that is
+who signs in — the operators who run this deployment, not a customer's people.
+The cross-origin answer is over the whole mux, so a route added here is
+reachable from the same page the RPCs are.
 
 `go tool pd gen --ts .` writes the messages and service descriptors into
 `ts/gen`, along with `entities.ts` — one declaration per entity, which is what
@@ -278,5 +280,6 @@ that fails **quietly** when it is left out:
 | an overlay on payday's own field number | `alias` quietly becoming whatever the overlay said |
 | a list order not ending in the key | a page that repeats a row or skips one |
 
-And two that are warnings rather than refusals, because a small table is a real
-thing: a list order no index covers, and an alias that is not a name.
+And one that is a warning rather than a refusal, because a small table is a
+real thing: a list order no index covers. An alias that is not a name is
+refused, at generation and again at run time.

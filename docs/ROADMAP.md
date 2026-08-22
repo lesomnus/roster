@@ -102,8 +102,10 @@ Three things that are not `ApiKey`'s:
   say it, which makes it a layer's job.
 - **Expiry is enforced on read.** A sweep that is the mechanism is a sweep whose
   outage is a security incident. The sweep collects garbage; the read decides.
-- **Single-use is a compare-and-swap**, for D14's reason one row over: two
-  concurrent uses must be one success.
+- **Not single-use.** A delegation is looked up and nothing is touched, because
+  it is what an app holds for a whole session and presents on every call. What
+  *is* single-use is the continuation, which is one proof rather than one
+  credential -- P7, D30, and D34 for what it took to make that true.
 
 The prefix is not a new idea. OPERATING.md already says *the prefix decides
 which database holds the row and who the token is served as*, so a third value
@@ -299,7 +301,7 @@ follows is what survived, and it is **four increments** rather than one.
 `Continue(continuation, kind, secret)` is new, because proving a second factor
 is a distinct thing for a role to name and it takes a continuation rather than a
 `who`. `Verify` and `Delegate` grow the answer -- `satisfied`, `available`,
-`pending`, `continuation` -- and **mint a continuation only when there is more
+`continuation` -- and **mint a continuation only when there is more
 to prove**, so a deployment with one factor pays exactly what it pays today and
 the single-factor path stays one round trip. Minting stays on `Delegate`, which
 takes a continuation in place of `who`+`secret`.
@@ -312,10 +314,14 @@ exclusive.
 
 #### Four increments
 
-1. **`Credential` grows up.** `alias` at field 4 and the index at
-   `(holder, kind, alias)` -- because *one of each per person* is right for a
+1. **`Credential` grows up.** `name` at field 5 and the index at
+   `(holder, kind, name)` -- because *one of each per person* is right for a
    password, defensible for TOTP and wrong for WebAuthn, where registering a
-   backup authenticator is the standard advice. It costs nothing now and is a
+   backup authenticator is the standard advice. Written here as `alias` at 4,
+   which is what the field-number convention reserves and is the wrong number:
+   payday **makes an alias up** when a caller gives none, and this wants the
+   opposite, an empty value meaning *the only one*. `credential.proto` has the
+   long version. It costs nothing now and is a
    migration later. Plus a **last accepted step**, because D20 requires that a
    spent TOTP code not work twice and there is nowhere to record it.
 
@@ -354,8 +360,9 @@ of the mail, which is the same mechanism reached differently.
 ### P9 · The rest, in no forced order
 
 The event stream (item 4's second increment), the breached-password check (item
-5), per-tenant provider connections (item 9, which needs a decision first), and
-extracting the components (D24 §6, last for D24's own reason).
+5), per-tenant provider connections (item 9, which needed a decision first and
+has one), and extracting the components (D24 §6, last for D24's own reason).
+All but the first are done; the first is deferred by item 4 itself.
 
 **§6 is done, and it answered smaller than D22 guessed.** The Go half is the
 whole of it -- `frontdoor`, which is the two forms, the half session, the
@@ -383,8 +390,9 @@ already in, so it needs no second piece of infrastructure. See D33;
 
 None of the rest blocks the screens. Item 4's second increment is explicitly
 *taken when the noise is measured rather than predicted*; item 5 is a rule about
-what a password may be and changes no shape; item 9 has a boundary question that
-argues with D13 and has not been answered.
+what a password may be and changed no shape; item 9's boundary question was
+answered -- the connection is roster's and the secret is not -- and both are
+written.
 
 **What is left is that one increment**, and it is left on purpose rather than
 unfinished: item 4 says a dedicated stream is taken *when the noise is measured*,
@@ -408,8 +416,12 @@ Each takes a `D` in PLAN.md when it is taken. None is taken here.
    three reasons land, so the delegation token is its own entity and the
    continuation and the nonce are not settled by that choice. It takes a `D`
    once P1 is written.
-2. **The rule for item 11.** *Only somebody whose permissions are a subset of
-   yours*, or *a tenant operator is a tenant administrator, and we say so*.
+2. ~~**The rule for item 11.**~~ **Taken**: D28, the subset rule -- *you may
+   only write the credential of somebody whose permissions are a subset of
+   yours*. The alternative it names, *a tenant operator is a tenant
+   administrator and we say so*, is honest and is written down beside it as the
+   one that was not taken. `server/core/escalate.go`, and D35 for the two ways
+   round it that were found later.
 3. ~~**Item 9's boundary.**~~ **Taken**: the connection is roster's and the
    secret is not. Everything that varies per tenant is public, and the secret
    has to reach the front door whatever roster does -- so roster holds a
@@ -434,7 +446,7 @@ that the plan defers on purpose.
 | P3 | the reference app's spine | **done** — `Vouch.Delegate`/`Revoke`, `keys.Sweep`, the lifetime settled, identities and credentials on `MeGetResponse`, and `examples/sso` signing in with a password and reading its own record as the person |
 | P4 | hostname, mail domain, and F7 | **done** — PLAN.md D27. `Host`, `MailDomain`, `FrontService`, `Email` stamped and unique per tenant, `VouchWho.address`, and `examples/sso` asking roster rather than holding a map |
 | P5 | escalation over credential writes, then the write surface | **done** — PLAN.md D28, and D35 for the two ways round it. `core.Reaching`, `Vouch.Reset`, `Vouch.Unlock`, and the rule over `Vouch.Set`. Not done: minting an `rt_` over the wire |
-| P6 | the reads a screen needs, and the screens | **done** — the reads (items 7, 8), §5 the operator screen, §4 self-service in the reference app, and §6 the extraction. D24's order is complete |
+| P6 | the reads a screen needs, and the screens | **done** — the reads (items 7, 8), §5 the operator screen, §4 self-service in the reference app, and §6 the extraction. D24's order is complete. §4's *add an SSO method* is the one half not drawn: a person removes one and signs out everywhere, and adding one is the sign-in flow reached by somebody already signed in, which the reference app does not route |
 | P7 | two-step verification | **done** — PLAN.md D29 and D30, and `examples/sso` showing two forms with a half-session between them |
 | P8 | recovery and the magic link | **done** — PLAN.md D31. `Vouch.Link`/`Redeem`, a reset voiding what came before it, and the sweep over both short-lived tables. The air-gap half was already D28's |
 | P9 | the rest | session table, the breached-password check, **provider connections** and **§6** done · left: the event stream, which item 4 itself defers |
