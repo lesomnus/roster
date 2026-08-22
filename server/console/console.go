@@ -129,7 +129,39 @@ func (a authed) SignOut(ctx context.Context, req *app.AuthSignOutRequest) (*app.
 
 // Issue is `IssueService` over this plane's rows.
 func Issue(s app.Server, db *ent.Client) app.IssueServiceServer {
-	return issuer{s: s, db: db, v: vouch.New(s, s)}
+	return issuer{s: s, db: db, v: vouch.New(s, s), prefix: keys.PrefixDeployment}
+}
+
+// IssueTenant is the same service on the **data plane**, minting a customer's
+// kind.
+//
+// # What differs, and what deliberately does not
+//
+// The prefix, and how a holder is named. Everything else -- the secret made
+// here, the hash stored before the answer leaves, the answer given once -- is
+// the same code, because those were never facts about which plane this is.
+//
+// The **rules** are the same too, and they are not written here: minting goes
+// through the walled server, so `core.ApiKey.Add` runs both of the two that
+// matter. *Nobody hands out a method they do not hold* -- `mayGrant` -- and
+// *nobody writes a way into an account wider than their own*, because a key
+// resolves to its holder and calls made with it are made as them.
+//
+// That second one is the whole reason this can be served to customers at all.
+// Without it, somebody who may mint keys could mint one on the administrator's
+// holder carrying a method they themselves hold, and then call as the
+// administrator -- which is the finding `core/apikey.go` records, one door
+// over.
+//
+// # Why a customer minting their own key is safe to offer
+//
+// Because it hands out nothing new. An `rt_` resolves to a person and is
+// narrowed by what that person may do, so a key is at most a second copy of a
+// credential they already have -- and less, since it names methods. What it
+// replaces is `roster key add`, which is a shell on the box, and a shell is not
+// something a customer has or should be given.
+func IssueTenant(s app.Server, db *ent.Client) app.IssueServiceServer {
+	return issuer{s: s, db: db, v: vouch.New(s, s), prefix: keys.PrefixTenant}
 }
 
 type issuer struct {
@@ -138,11 +170,17 @@ type issuer struct {
 	s  app.Server
 	db *ent.Client
 	v  app.VouchServiceServer
+
+	// prefix is which plane this instance mints for, and it is not in any
+	// request: a caller that could name it could ask the customer-facing port
+	// for a key of the deployment's own kind, and the prefix is exactly what
+	// tells the two apart. See `server/keys`.
+	prefix string
 }
 
 func (i issuer) IssueKey(ctx context.Context, req *app.IssueKeyRequest) (*app.IssueKeyResponse, error) {
-	if req.GetService() == "" || req.GetAlias() == "" {
-		return nil, status.Error(codes.InvalidArgument, "a service and a name for the key")
+	if req.GetAlias() == "" {
+		return nil, status.Error(codes.InvalidArgument, "a name for the key")
 	}
 	if len(req.GetMethods()) == 0 {
 		// Refused rather than defaulted in either direction. Everything hands
@@ -151,20 +189,20 @@ func (i issuer) IssueKey(ctx context.Context, req *app.IssueKeyRequest) (*app.Is
 		return nil, status.Error(codes.InvalidArgument, "methods: a key that allows nothing opens no door")
 	}
 
-	who, err := i.holder(ctx, req.GetService())
+	ref, err := i.whose(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	// The deployment's own kind. A `rt_` is a customer's and belongs to the
-	// other plane; this service is served here and mints what belongs here.
-	token, sum, err := keys.Mint(keys.PrefixDeployment)
+	// Which kind is a fact about which server answered, and not a field. See
+	// [issuer.prefix].
+	token, sum, err := keys.Mint(i.prefix)
 	if err != nil {
 		return nil, err
 	}
 
 	add := app.ApiKeyAddRequest_builder{
-		Holder:  app.HolderRef_builder{Id: who.Bytes()}.Build(),
+		Holder:  ref,
 		Alias:   req.GetAlias(),
 		Secret:  sum,
 		Methods: req.GetMethods(),
@@ -219,6 +257,65 @@ func (i issuer) IssuePassword(ctx context.Context, req *app.IssuePasswordRequest
 // service is the moment it becomes a caller of this deployment, and asking for
 // two commands to express one intent is how a runbook grows a step nobody
 // remembers.
+// whose is who the key is for, and it refuses a request that said twice or not
+// at all.
+//
+// The two forms are not interchangeable and are not a convenience. `service` is
+// an alias in the one tenant this plane has, and names a holder **into
+// existence** if there is none -- which is right there and wrong here, because
+// a customer's people are the customer's and a call that made one by mentioning
+// them is a way to write rows into somebody else's tenant by typo.
+//
+// `holder` is a reference, so it carries a tenant and the wall narrows it. It
+// is refused on the control plane rather than accepted, because the field means
+// *this exists already* and there it might not.
+//
+// Both, or neither, is a caller that has not decided -- the refusal
+// `vouch.refOf` makes about a person named two ways, for the same reason.
+func (i issuer) whose(ctx context.Context, req *app.IssueKeyRequest) (*app.HolderRef, error) {
+	service, ref := req.GetService(), req.GetHolder()
+
+	byName := service != ""
+	byRef := ref != nil
+
+	switch {
+	case byName && byRef:
+		return nil, status.Error(codes.InvalidArgument,
+			"a service and a holder name whose key this is two ways; give one")
+
+	case i.prefix == keys.PrefixTenant:
+		if !byRef {
+			return nil, status.Error(codes.InvalidArgument,
+				"holder: whose key this is; `service` is the other plane's, where there is one tenant")
+		}
+
+		// Read back through the walled server, so that a reference this caller
+		// cannot see is a NotFound rather than a key minted into a tenant they
+		// have no business in. `ApiKey.Add` would narrow it too; this is so the
+		// refusal says which field.
+		v, err := i.s.Holder().Get(ctx, app.HolderGetRequest_builder{Ref: ref}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		return app.HolderRef_builder{Id: v.GetId()}.Build(), nil
+
+	case byRef:
+		return nil, status.Error(codes.InvalidArgument,
+			"holder: this plane has one tenant, so a key is for a `service` by name")
+
+	case !byName:
+		return nil, status.Error(codes.InvalidArgument, "service: whose key this is")
+	}
+
+	who, err := i.holder(ctx, service)
+	if err != nil {
+		return nil, err
+	}
+
+	return app.HolderRef_builder{Id: who.Bytes()}.Build(), nil
+}
+
 func (i issuer) holder(ctx context.Context, alias string) (pdid.Id, error) {
 	t, err := i.db.Tenant.Query().First(ctx)
 	if err != nil {

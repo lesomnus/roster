@@ -46,6 +46,23 @@ const (
 // the servers write, not how a caller asks* -- extended to one more method of
 // one entity.
 //
+// # It is served on both planes, and the prefix says which
+//
+// The control plane mints `rk_`: the deployment's own services, which are
+// holders of that plane. The data plane mints `rt_`: a key belonging to
+// somebody inside a customer's tenant, which resolves to that person and is
+// narrowed by what they may do.
+//
+// Which one an instance mints is not in the request and cannot be. A caller
+// that could name a prefix could ask the customer-facing port for a key of the
+// deployment's own kind, and the two are told apart by exactly that string --
+// see `server/keys`. It is a fact about which server answered.
+//
+// What **is** in the request is who the key is for, and the two planes name a
+// holder differently because they are shaped differently: the control plane has
+// one tenant and a service is created by being named, and the data plane has
+// many and a customer's people are the customer's to create.
+//
 // # Why the caller does not send the secret
 //
 // It could: `ApiKeyAddRequest` takes a verifier, so a console could generate
@@ -117,6 +134,23 @@ func (c *issueServiceClient) IssuePassword(ctx context.Context, in *IssuePasswor
 // The same convention `Patch` and `Apply` already have -- *not served; it is how
 // the servers write, not how a caller asks* -- extended to one more method of
 // one entity.
+//
+// # It is served on both planes, and the prefix says which
+//
+// The control plane mints `rk_`: the deployment's own services, which are
+// holders of that plane. The data plane mints `rt_`: a key belonging to
+// somebody inside a customer's tenant, which resolves to that person and is
+// narrowed by what they may do.
+//
+// Which one an instance mints is not in the request and cannot be. A caller
+// that could name a prefix could ask the customer-facing port for a key of the
+// deployment's own kind, and the two are told apart by exactly that string --
+// see `server/keys`. It is a fact about which server answered.
+//
+// What **is** in the request is who the key is for, and the two planes name a
+// holder differently because they are shaped differently: the control plane has
+// one tenant and a service is created by being named, and the data plane has
+// many and a customer's people are the customer's to create.
 //
 // # Why the caller does not send the secret
 //

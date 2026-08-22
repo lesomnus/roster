@@ -112,11 +112,18 @@ type Server struct {
 	// plane *and* of a deployment that has none -- so the one place they differ
 	// has to be said rather than inferred.
 	//
-	// What it changes is one service. `ApiKeyService` is closed everywhere by
+	// What it changes is two services. `ApiKeyService` is closed everywhere by
 	// default because its generated `Get` answers with the verifier column; on
 	// the port where the deployment's own operator manages keys, that is the
 	// point. `CredentialService` stays closed on both, because a password hash
 	// is nobody's to read.
+	//
+	// And `IssueService`, which both planes serve and which mints a different
+	// **kind** on each -- `rk_` there and `rt_` here. `Grpc` registers the
+	// customer's one unless this flag says otherwise, and `GrpcControl` adds
+	// the deployment's own after; without the flag they would both land on the
+	// control plane's server, and gRPC refuses a service registered twice. It
+	// did, loudly, which is the good direction for that mistake to fail in.
 	Keys bool
 
 	// Keyring is what this deployment can wrap a seed with, from `vouch.keys`.
@@ -622,6 +629,26 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 
 	g := grpc.NewServer(os...)
 	register(g, s.Walled)
+
+	// A customer minting a key for themselves, which until now needed a shell
+	// on the box.
+	//
+	// Not on the control plane, which mints the other kind and registers its
+	// own `IssueService` after this -- see [Server.Keys], which is the one flag
+	// that tells the two apart because `Control == nil` cannot.
+	//
+	// The **walled** server, so `core.ApiKey.Add` runs both rules a key is held
+	// to: nobody hands out a method they do not hold, and nobody writes a way
+	// into an account wider than their own -- a key resolves to its holder, so
+	// a call made with it is made as them.
+	//
+	// It hands out nothing new, which is what makes it safe to offer here: an
+	// `rt_` is at most a second copy of a credential its holder already has,
+	// and less, since it names methods. What it replaces is `roster key add`,
+	// which is a shell, and a shell is not a thing a customer has.
+	if !s.Keys {
+		app.RegisterIssueServiceServer(g, console.IssueTenant(s.Walled, s.Ent))
+	}
 
 	// The one service that is not an entity: it answers yes or no about a row
 	// nothing else may read. See `server/vouch`.

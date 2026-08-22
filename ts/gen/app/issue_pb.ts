@@ -7,6 +7,8 @@ import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegen
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { ApiKey } from "./apikey_pb.js";
 import { file_app_apikey } from "./apikey_pb.js";
+import type { HolderRef } from "../roster/payday/holder_svc_pb.js";
+import { file_roster_payday_holder_svc_g } from "../roster/payday/holder_svc_pb.js";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Message } from "@bufbuild/protobuf";
@@ -15,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/issue.proto.
  */
 export const file_app_issue: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvaXNzdWUucHJvdG8SBnJvc3RlciJvCg9Jc3N1ZUtleVJlcXVlc3QSDwoHc2VydmljZRgBIAEoCRINCgVhbGlhcxgCIAEoCRIPCgdtZXRob2RzGAMgAygJEisKB2V4cGlyZXMYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIj4KEElzc3VlS2V5UmVzcG9uc2USDQoFdG9rZW4YASABKAkSGwoDa2V5GAIgASgLMg4ucm9zdGVyLkFwaUtleSIlChRJc3N1ZVBhc3N3b3JkUmVxdWVzdBINCgVhbGlhcxgBIAEoCSIpChVJc3N1ZVBhc3N3b3JkUmVzcG9uc2USEAoIcGFzc3dvcmQYASABKAkymwEKDElzc3VlU2VydmljZRI9CghJc3N1ZUtleRIXLnJvc3Rlci5Jc3N1ZUtleVJlcXVlc3QaGC5yb3N0ZXIuSXNzdWVLZXlSZXNwb25zZRJMCg1Jc3N1ZVBhc3N3b3JkEhwucm9zdGVyLklzc3VlUGFzc3dvcmRSZXF1ZXN0Gh0ucm9zdGVyLklzc3VlUGFzc3dvcmRSZXNwb25zZUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_app_apikey, file_google_protobuf_timestamp]);
+  fileDesc("Cg9hcHAvaXNzdWUucHJvdG8SBnJvc3RlciKSAQoPSXNzdWVLZXlSZXF1ZXN0Eg8KB3NlcnZpY2UYASABKAkSDQoFYWxpYXMYAiABKAkSDwoHbWV0aG9kcxgDIAMoCRIrCgdleHBpcmVzGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIhCgZob2xkZXIYBSABKAsyES5yb3N0ZXIuSG9sZGVyUmVmIj4KEElzc3VlS2V5UmVzcG9uc2USDQoFdG9rZW4YASABKAkSGwoDa2V5GAIgASgLMg4ucm9zdGVyLkFwaUtleSIlChRJc3N1ZVBhc3N3b3JkUmVxdWVzdBINCgVhbGlhcxgBIAEoCSIpChVJc3N1ZVBhc3N3b3JkUmVzcG9uc2USEAoIcGFzc3dvcmQYASABKAkymwEKDElzc3VlU2VydmljZRI9CghJc3N1ZUtleRIXLnJvc3Rlci5Jc3N1ZUtleVJlcXVlc3QaGC5yb3N0ZXIuSXNzdWVLZXlSZXNwb25zZRJMCg1Jc3N1ZVBhc3N3b3JkEhwucm9zdGVyLklzc3VlUGFzc3dvcmRSZXF1ZXN0Gh0ucm9zdGVyLklzc3VlUGFzc3dvcmRSZXNwb25zZUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_app_apikey, file_roster_payday_holder_svc_g, file_google_protobuf_timestamp]);
 
 /**
  * @generated from message roster.IssueKeyRequest
@@ -26,6 +28,10 @@ export type IssueKeyRequest = Message<"roster.IssueKeyRequest"> & {
    * that is not there creates it: a service is not something somebody sets up
    * on purpose before they need it, which is what `roster key add` already
    * decided.
+   *
+   * **Control plane only.** There is one tenant there, so an alias names one
+   * person; on the data plane it names one per customer and creating a holder
+   * by mentioning them is not a thing to do across a wall.
    *
    * @generated from field: string service = 1;
    */
@@ -55,6 +61,28 @@ export type IssueKeyRequest = Message<"roster.IssueKeyRequest"> & {
    * @generated from field: google.protobuf.Timestamp expires = 4;
    */
   expires?: Timestamp | undefined;
+
+  /**
+   * Whose it is, in full.
+   *
+   * **Data plane only**, and the reason it is a reference rather than an alias
+   * is the wall: an alias is unique within a tenant and this plane has many, so
+   * a name alone is a question with more than one answer. A reference carries
+   * the tenant, and the wall narrows it to the ones this caller can see.
+   *
+   * Naming one that is not there is a refusal rather than a creation. A
+   * customer's people are the customer's, and a call that made one by
+   * mentioning them would be a way to write rows into somebody else's tenant by
+   * typo.
+   *
+   * Giving both this and `service` is refused, the way `VouchWho` refuses a
+   * person named two ways: a caller that filled in both has not decided which
+   * it means, and picking one makes the answer depend on a precedence rule
+   * nothing states.
+   *
+   * @generated from field: roster.HolderRef holder = 5;
+   */
+  holder?: HolderRef | undefined;
 };
 
 /**
@@ -151,6 +179,23 @@ export const IssuePasswordResponseSchema: GenMessage<IssuePasswordResponse> = /*
  * The same convention `Patch` and `Apply` already have -- *not served; it is how
  * the servers write, not how a caller asks* -- extended to one more method of
  * one entity.
+ *
+ * # It is served on both planes, and the prefix says which
+ *
+ * The control plane mints `rk_`: the deployment's own services, which are
+ * holders of that plane. The data plane mints `rt_`: a key belonging to
+ * somebody inside a customer's tenant, which resolves to that person and is
+ * narrowed by what they may do.
+ *
+ * Which one an instance mints is not in the request and cannot be. A caller
+ * that could name a prefix could ask the customer-facing port for a key of the
+ * deployment's own kind, and the two are told apart by exactly that string --
+ * see `server/keys`. It is a fact about which server answered.
+ *
+ * What **is** in the request is who the key is for, and the two planes name a
+ * holder differently because they are shaped differently: the control plane has
+ * one tenant and a service is created by being named, and the data plane has
+ * many and a customer's people are the customer's to create.
  *
  * # Why the caller does not send the secret
  *

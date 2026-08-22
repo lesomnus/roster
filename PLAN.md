@@ -399,6 +399,77 @@ asked: `internal/apptest/cmd/outboxsecret_test.go` upstream, and
 `cmd/outboxsecret_test.go` here, because it is a property of the pinned payday
 rather than of anything in roster.
 
+### D48 · Minting an `rt_` over the wire, which was P5's one loose end
+
+The roadmap carried it under P5 for as long as there was a roadmap: *not done,
+minting an `rt_` over the wire*. The half that **answers** finished long ago --
+a tenant key resolves to its holder, is narrowed by what that person may do, and
+`TokenService/Introspect` serves it to product apps -- and the half that issues
+was `roster key add`, which is a shell on the box, which is not a thing a
+customer has.
+
+#### It is `IssueService`, on the other plane
+
+Not a new service. `IssueService` already exists for exactly this shape -- make
+a secret, store what verifies it, answer with it once -- and the reason it
+existed only on the control plane was that nothing had asked for the other kind
+yet. So the same code is registered on the data plane, and what differs is two
+things.
+
+**The prefix**, which is not in the request and cannot be: a caller that could
+name one could ask the customer-facing port for a key of the deployment's own
+kind, and the prefix is exactly what tells the two apart. It is a fact about
+which server answered.
+
+**How a holder is named.** `service` is an alias in the one tenant the control
+plane has, and names a holder **into existence** if there is none -- which is
+right there, and wrong on a plane with many tenants, where a call that made
+somebody by mentioning them is a way to write rows into another customer's
+tenant by typo. So the data plane takes a `HolderRef`, the wall narrows it, and
+each plane refuses the other's form. Both at once is refused too, the way
+`vouch.refOf` refuses a person named two ways.
+
+#### The rules are not written in the issuer, and that is the point
+
+Minting goes through the **walled** server, so `core.ApiKey.Add` runs, and both
+of the rules a key is held to are already there:
+
+- *Nobody hands out a method they do not hold.* A key is the most direct grant
+  there is -- whoever holds the string calls whatever the column says.
+- *Nobody writes a way into an account wider than their own.* A key resolves to
+  its holder, so a call made with it is made **as them**. `core/apikey.go`
+  records the finding this closes: minting one on the administrator's row
+  carrying only a method the minter holds is a credential for the
+  administrator, and the methods check alone passes it.
+
+That second rule is the whole reason this can be offered to customers at all,
+and it is why the tests for it go over the wire rather than in process -- a
+service reaching the ungated server would pass every check by having no frame.
+
+#### What it hands out: nothing
+
+An `rt_` resolves to a person and is narrowed by what that person may do, so a
+key is at most a second copy of a credential they already hold, and less, since
+it names methods. What it replaces is the shell.
+
+#### One thing it does not do, and the reason is elsewhere
+
+A deployment with no `control:` wires `auth.Plain`, which believes what a caller
+writes and reads no token -- so a key minted there is inert. That is the caveat
+`auth.Plain` carries everywhere rather than a fact about this service, and
+`README.md` and `docs/OPERATING.md` both already say `auth.Plain` is not for
+production. It is not refused for the reason `roster key add` refuses without a
+control plane: that one has nowhere to **write** the row, and this one always
+does.
+
+#### And a duplicate registration, which failed loudly
+
+`GrpcControl` builds on `Grpc`, so registering the customer's issuer there put
+two `IssueService`s on the control plane's server and gRPC refused to start.
+`Server.Keys` is the flag that tells the planes apart -- it exists because
+`Control == nil` is true of the control plane *and* of a deployment that has
+none -- and it now decides two services rather than one.
+
 ### D47 · The trail gets no new RPC, and the reason is not the one I gave
 
 The plan was `AuditService.Prune` and `Status` on an overlay, and a `List` that
@@ -3568,13 +3639,13 @@ the schedule.
   before deciding what to draw.
 - **Credential verification is done** — `server/vouch`, D13 and D14. What is
   *not* done is what happens after it says yes.
-- **Nothing mints an `rt_` key over the wire.** A data-plane holder's key
-  resolves to that holder and is narrowed by their own permissions, and
-  `TokenService/Introspect` already serves it to product apps — so the half that
-  answers is done and the half that issues is a shell (`cmd/key.go`,
-  OPERATING.md). What it needs is the `VouchService` trick: a narrow service
-  that takes a secret in, answers with the plaintext exactly once, and can never
-  read one back.
+- ~~**Nothing mints an `rt_` key over the wire.**~~ **Done**, D48, and not with
+  a new service: `IssueService` already was the narrow service that takes a
+  secret in and answers with it once, and it is now served on the data plane
+  too, minting the customer's kind. The prefix is a fact about which server
+  answered rather than a field, and the rules are `core.ApiKey.Add`'s --
+  nothing hands out a method it does not hold, and nothing writes a way into an
+  account wider than its own.
 - ~~**And nothing mints a delegation over the wire either.**~~ **Done**, and not
   in the shape this bullet predicted: it rides back on `VouchService.Delegate`
   rather than on `Verify` growing an answer, because a role here is a list of

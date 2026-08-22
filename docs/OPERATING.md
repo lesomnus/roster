@@ -570,8 +570,39 @@ the row, which table in it, and who the token is served as.
 | | | |
 | --- | --- | --- |
 | `rk_` | the deployment's | `roster key add`. Resolves to the **key**, holds no tenant, sees every tenant there is |
-| `rt_` | a tenant's | belongs to a holder. Resolves to that **holder**, so the wall, the bindings and the sites all apply exactly as when that person calls |
+| `rt_` | a tenant's | `IssueService/IssueKey` on the data plane. Belongs to a holder, resolves to that **holder**, so the wall, the bindings and the sites all apply exactly as when that person calls |
 | `rd_` | a **delegation** | a product app calling as somebody it just signed in. Resolves to that holder in the same way — but it does **not** go in `authorization`: it rides in `roster-as`, beside the app's own key |
+
+#### A customer mints their own
+
+```
+IssueService/IssueKey { holder: {...}, alias: "ci", methods: ["/roster.HolderService/List"] }
+  → { token: "rt_…", key: {...} }
+```
+
+Served on the **data plane**, which is the port a product app already talks to,
+and answered once — what is stored is a hash. `roster key add` is the other
+plane's and mints `rk_`; which kind an instance mints is a fact about which
+server answered rather than a field anybody sends, because a caller that could
+name a prefix could ask the customer-facing port for a key of the deployment's
+own kind.
+
+Two rules run, and neither is written in the issuer — it mints through the
+walled server, so a key is held to what every grant is held to:
+
+- **nobody hands out a method they do not hold.** A key is the most direct grant
+  there is: whoever holds the string calls whatever the column says.
+- **nobody writes a way into an account wider than their own.** A key resolves
+  to its holder, so a call made with it is made *as them* — minting one on the
+  administrator's row carrying only a method you hold is a credential for the
+  administrator, and the methods check alone would let it through.
+
+Naming a holder who is not there is a refusal, not a creation. A customer's
+people are the customer's.
+
+Note a deployment with no `control:` wires `auth.Plain`, which reads no token —
+so a key minted there is inert. That is the `auth.Plain` caveat, not a fact
+about this call.
 
 A `rt_` key is therefore never wider than the person it hangs off. Its `methods`
 narrow that further and can never widen it — a method on the key that its holder

@@ -27,6 +27,7 @@ type IssueKeyRequest struct {
 	xxx_hidden_Alias   string                 `protobuf:"bytes,2,opt,name=alias"`
 	xxx_hidden_Methods []string               `protobuf:"bytes,3,rep,name=methods"`
 	xxx_hidden_Expires *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=expires"`
+	xxx_hidden_Holder  *HolderRef             `protobuf:"bytes,5,opt,name=holder"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -84,6 +85,13 @@ func (x *IssueKeyRequest) GetExpires() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *IssueKeyRequest) GetHolder() *HolderRef {
+	if x != nil {
+		return x.xxx_hidden_Holder
+	}
+	return nil
+}
+
 func (x *IssueKeyRequest) SetService(v string) {
 	x.xxx_hidden_Service = v
 }
@@ -100,6 +108,10 @@ func (x *IssueKeyRequest) SetExpires(v *timestamppb.Timestamp) {
 	x.xxx_hidden_Expires = v
 }
 
+func (x *IssueKeyRequest) SetHolder(v *HolderRef) {
+	x.xxx_hidden_Holder = v
+}
+
 func (x *IssueKeyRequest) HasExpires() bool {
 	if x == nil {
 		return false
@@ -107,8 +119,19 @@ func (x *IssueKeyRequest) HasExpires() bool {
 	return x.xxx_hidden_Expires != nil
 }
 
+func (x *IssueKeyRequest) HasHolder() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Holder != nil
+}
+
 func (x *IssueKeyRequest) ClearExpires() {
 	x.xxx_hidden_Expires = nil
+}
+
+func (x *IssueKeyRequest) ClearHolder() {
+	x.xxx_hidden_Holder = nil
 }
 
 type IssueKeyRequest_builder struct {
@@ -118,6 +141,10 @@ type IssueKeyRequest_builder struct {
 	// that is not there creates it: a service is not something somebody sets up
 	// on purpose before they need it, which is what `roster key add` already
 	// decided.
+	//
+	// **Control plane only.** There is one tenant there, so an alias names one
+	// person; on the data plane it names one per customer and creating a holder
+	// by mentioning them is not a thing to do across a wall.
 	Service string
 	// What somebody calls this key when deciding whether to revoke it.
 	Alias string
@@ -129,6 +156,23 @@ type IssueKeyRequest_builder struct {
 	Methods []string
 	// When it stops working, unset for one that does not.
 	Expires *timestamppb.Timestamp
+	// Whose it is, in full.
+	//
+	// **Data plane only**, and the reason it is a reference rather than an alias
+	// is the wall: an alias is unique within a tenant and this plane has many, so
+	// a name alone is a question with more than one answer. A reference carries
+	// the tenant, and the wall narrows it to the ones this caller can see.
+	//
+	// Naming one that is not there is a refusal rather than a creation. A
+	// customer's people are the customer's, and a call that made one by
+	// mentioning them would be a way to write rows into somebody else's tenant by
+	// typo.
+	//
+	// Giving both this and `service` is refused, the way `VouchWho` refuses a
+	// person named two ways: a caller that filled in both has not decided which
+	// it means, and picking one makes the answer depend on a precedence rule
+	// nothing states.
+	Holder *HolderRef
 }
 
 func (b0 IssueKeyRequest_builder) Build() *IssueKeyRequest {
@@ -139,6 +183,7 @@ func (b0 IssueKeyRequest_builder) Build() *IssueKeyRequest {
 	x.xxx_hidden_Alias = b.Alias
 	x.xxx_hidden_Methods = b.Methods
 	x.xxx_hidden_Expires = b.Expires
+	x.xxx_hidden_Holder = b.Holder
 	return m0
 }
 
@@ -350,12 +395,13 @@ var File_app_issue_proto protoreflect.FileDescriptor
 
 const file_app_issue_proto_rawDesc = "" +
 	"\n" +
-	"\x0fapp/issue.proto\x12\x06roster\x1a\x10app/apikey.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x91\x01\n" +
+	"\x0fapp/issue.proto\x12\x06roster\x1a\x10app/apikey.proto\x1a roster/payday/holder_svc.g.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xbc\x01\n" +
 	"\x0fIssueKeyRequest\x12\x18\n" +
 	"\aservice\x18\x01 \x01(\tR\aservice\x12\x14\n" +
 	"\x05alias\x18\x02 \x01(\tR\x05alias\x12\x18\n" +
 	"\amethods\x18\x03 \x03(\tR\amethods\x124\n" +
-	"\aexpires\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\"J\n" +
+	"\aexpires\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\x12)\n" +
+	"\x06holder\x18\x05 \x01(\v2\x11.roster.HolderRefR\x06holder\"J\n" +
 	"\x10IssueKeyResponse\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12 \n" +
 	"\x03key\x18\x02 \x01(\v2\x0e.roster.ApiKeyR\x03key\",\n" +
@@ -374,20 +420,22 @@ var file_app_issue_proto_goTypes = []any{
 	(*IssuePasswordRequest)(nil),  // 2: roster.IssuePasswordRequest
 	(*IssuePasswordResponse)(nil), // 3: roster.IssuePasswordResponse
 	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
-	(*ApiKey)(nil),                // 5: roster.ApiKey
+	(*HolderRef)(nil),             // 5: roster.HolderRef
+	(*ApiKey)(nil),                // 6: roster.ApiKey
 }
 var file_app_issue_proto_depIdxs = []int32{
 	4, // 0: roster.IssueKeyRequest.expires:type_name -> google.protobuf.Timestamp
-	5, // 1: roster.IssueKeyResponse.key:type_name -> roster.ApiKey
-	0, // 2: roster.IssueService.IssueKey:input_type -> roster.IssueKeyRequest
-	2, // 3: roster.IssueService.IssuePassword:input_type -> roster.IssuePasswordRequest
-	1, // 4: roster.IssueService.IssueKey:output_type -> roster.IssueKeyResponse
-	3, // 5: roster.IssueService.IssuePassword:output_type -> roster.IssuePasswordResponse
-	4, // [4:6] is the sub-list for method output_type
-	2, // [2:4] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	5, // 1: roster.IssueKeyRequest.holder:type_name -> roster.HolderRef
+	6, // 2: roster.IssueKeyResponse.key:type_name -> roster.ApiKey
+	0, // 3: roster.IssueService.IssueKey:input_type -> roster.IssueKeyRequest
+	2, // 4: roster.IssueService.IssuePassword:input_type -> roster.IssuePasswordRequest
+	1, // 5: roster.IssueService.IssueKey:output_type -> roster.IssueKeyResponse
+	3, // 6: roster.IssueService.IssuePassword:output_type -> roster.IssuePasswordResponse
+	5, // [5:7] is the sub-list for method output_type
+	3, // [3:5] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_app_issue_proto_init() }
@@ -396,6 +444,7 @@ func file_app_issue_proto_init() {
 		return
 	}
 	file_app_apikey_proto_init()
+	file_roster_payday_holder_svc_g_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
