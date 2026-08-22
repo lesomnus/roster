@@ -288,22 +288,59 @@ It is the one table that never stops growing. Every write is a row in it, and
 unlike a session or a sign-in attempt there is nothing stale to collect — a
 trail row is not expired, it is old.
 
-So a policy is two clocks rather than one, because they answer to two different
-people:
+The mechanism is **payday's** (`trail`, and `config.AuditConfig`), because the
+`Audit` entity is payday's and every app on it has the same table and the same
+problem. What is roster's is the values.
+
+#### Two clocks, per kind of thing
 
 ```yaml
 audit:
-  retain: 2160h                  # 90 days in the database
+  profile: pipa                  # a starting point, with its arithmetic
   archive: /var/lib/roster/audit # where a row goes when it leaves
-  destroy: 61320h                # 7 years, and then it is gone
-  every: 24h                     # how often the two are applied
+  every: 24h                     # how often the policy is applied
+  by:
+    holder:
+      profile: gdpr              # people are under a privacy regime
+    host:
+      profile: forever           # a hostname is not personal data
 ```
 
 `retain` is operational — what the console can show, what a query costs, how big
 the disk is. `destroy` is the obligation, and it is normally years the longer of
-the two. Between them the row lives in `archive`, one gzipped file per month.
+the two. Between them the row lives in `archive`, one gzipped file per month
+**per kind**.
 
-Set `retain` with no `archive` and roster **refuses to start**:
+And `by:` is why it is two clocks *per kind* rather than two clocks. A
+deployment's obligations are not uniform across its entities: what was done to a
+person has to stop existing eventually, and an operating record of what a
+machine did usually has the opposite requirement. One clock over the table
+forces the shorter of the two onto everything. The kinds are the names the
+schema registered — `roster trail prune --kind nonsense` lists them.
+
+#### The profiles carry their arithmetic
+
+```sh
+roster trail profiles
+```
+
+```
+pci    retain=2160h destroy=8760h   PCI-DSS 10.5.1: one year of audit history, the last three months immediately available
+hipaa  retain=2160h destroy=52560h  HIPAA 45 CFR 164.316(b)(2)(i): documentation retained six years
+sox    retain=2160h destroy=61320h  SOX, via 17 CFR 210.2-06: audit records retained seven years
+pipa   retain=2160h destroy=8760h   개인정보의 안전성 확보조치 기준: access records kept at least one year
+gdpr   retain=2160h destroy=17520h  GDPR names no figure — Article 5(1)(e) asks for a stated limit rather than a particular one …
+```
+
+`61320h` is unreadable; *seven years, because 17 CFR 210.2-06 says seven years*
+is a thing a reviewer can disagree with. That is all a profile is for.
+
+It is **a starting point and not a compliance guarantee.** What a deployment is
+obliged to keep depends on what it processes, for whom, and where — none of
+which roster knows. Anything written beside a profile wins, because a deployment
+that sets `destroy:` knows something the table does not.
+
+#### A window with nowhere to put what leaves it is refused
 
 ```
 audit.retain names a window and audit.archive names nowhere to put what
@@ -311,9 +348,12 @@ leaves it; set audit.archive, or audit.discard: true to say the rows are
 meant to go
 ```
 
-Because that configuration works. The sweep runs, the table stops growing, every
-graph an operator watches improves — and what it is doing is destroying the
-trail. `audit.discard: true` is how a deployment says it means that.
+Because that configuration *works*. The sweep runs, the table stops growing,
+every graph an operator watches improves — and what it is doing is destroying
+the trail. `audit.discard: true` is how a deployment says it means that, and it
+can be said per kind.
+
+Read where the process comes up, not at the first pass a day later.
 
 Nothing sweeps the **control plane's** trail. It is the record of the
 deployment's own operations, it grows by the key rather than by the request, and
@@ -322,31 +362,39 @@ it is the last thing anybody wants a clock deleting from.
 #### By hand
 
 ```sh
-roster trail prune --older-than 2160h --dry-run   # how many, and change nothing
-roster trail prune --older-than 2160h             # archive them, then remove them
+roster trail prune                                # apply the policy now, per kind
+roster trail prune --older-than 2160h --dry-run   # a window of your own: how many
+roster trail prune --older-than 2160h --kind holder
 roster trail read --in /var/lib/roster/audit      # read an archive back
-roster trail purge --older-than 61320h --dry-run  # which files would go
+roster trail purge --older-than 61320h --dry-run  # which archives would go
 ```
 
-`prune` writes, `fsync`s and closes the file **before** it deletes anything, and
-it deletes the rows that are in the file rather than re-running the query. So
-the one failure it can leave is rows in both places, which is the direction to
-fail in — `read` drops the duplicate.
+`prune` with no window applies **the deployment's own policy**, which is what
+somebody putting it in cron means. Give it `--older-than` and it is a manual act
+instead — which is worth knowing, because a manual window does not consult
+`by:`, so `--older-than 1ns` with no `--kind` reaches the kinds the policy keeps
+forever.
 
-Each run writes its own files, named `audit-2026-08.<run>.jsonl.gz`. Nothing
-takes a lock — the sweep does not, and neither does `prune` — so two replicas,
-or an operator pruning while the process sweeps, would otherwise be two writers
-inside one gzip stream. Read them as a set (`--in`, or several paths at once)
-rather than one at a time: a row two runs both archived is dropped by whichever
-read sees both.
+It writes, `fsync`s and closes each file **before** it deletes anything, and it
+deletes the rows that are in the file rather than re-running the query. So the
+one failure it can leave is rows in both places, which is the direction to fail
+in — `read` drops the duplicate.
+
+Each run writes its own files, named `audit-2026-08.holder.<run>.jsonl.gz`.
+Nothing takes a lock — the sweep does not, and neither does `prune` — so two
+replicas, or an operator pruning while the process sweeps, would otherwise be
+two writers inside one gzip stream. Read them as a set (`--in`, or several paths
+at once) rather than one at a time: a row two runs both archived is dropped by
+whichever read sees both.
 
 `read` opens no database. That is the point of keeping the file: it outlives the
 deployment that wrote it, and a reader that needed the deployment would be
 answering the question at exactly the moment nobody can.
 
-`purge` destroys by file and never by row. A file is named for the month it
-holds, so January goes once the cutoff has reached February — not on the 31st,
-when most of it is still inside the window. There is nothing after this.
+`purge` destroys by file and never by row. A file is named for the month and the
+kind it holds, so January's goes once the cutoff has reached February — not on
+the 31st, when most of it is still inside the window. There is nothing after
+this.
 
 #### There is no RPC for any of it
 
@@ -356,17 +404,22 @@ the exception that makes the sentence false. What a trail is worth is that the
 credential which lets somebody act is not the credential that lets them erase
 the record of having acted. A key that prunes is a stolen key that prunes.
 
+There is a second, sharper reason and it is roster's own wiring: `cmd/policy.go`
+matches methods by **pattern**, so a role or API key holding `/roster.*/*` — and
+`roster init` writes exactly that — picks up a new method the moment it is
+generated, with nobody deciding. An `rk_` key skips `May` entirely and is
+narrowed only by its own method list.
+
 So both doors need the database: a shell on the box, or `serve` applying the
 policy on its own clock.
 
 #### What this does not do yet
 
-Erase **one person** from the trail on request. The time-based policy is about
-age and reaches everybody's rows at once; a right-to-erasure request is about a
+Erase **one person** from the trail on request. The policy above is about age
+and reaches everybody's rows at once; a right-to-erasure request is about a
 subject, and what it should blank — the contents of writes about them, their
-identifier as an actor, or both — is a decision nobody has made here. The usual
-answers are to null the contents and keep the event, or to encrypt per subject
-and destroy the key. See PLAN.md.
+identifier as an actor, or both — is a decision this deployment's obligations
+make. See PLAN.md.
 
 ## A key for a service
 

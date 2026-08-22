@@ -11,11 +11,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/lesomnus/payday/config"
+	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/pdtest"
+	"github.com/lesomnus/payday/trail"
 
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
-	"github.com/lesomnus/roster/server/trail"
+	"github.com/lesomnus/roster/server/pd"
 )
 
 // TestWhatLeavesTheDatabaseIsInTheFileBeforeItLeaves.
@@ -43,7 +45,7 @@ func TestWhatLeavesTheDatabaseIsInTheFileBeforeItLeaves(t *testing.T) {
 	dir := t.TempDir()
 
 	// Everything, which is what a cutoff in the future means.
-	n, err := trail.Archive(ctx, b.Ent, time.Now().Add(time.Hour), dir)
+	n, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Kinds{}, time.Now().Add(time.Hour), dir)
 	x.NoError(err)
 	x.Equal(len(was), n)
 
@@ -53,12 +55,11 @@ func TestWhatLeavesTheDatabaseIsInTheFileBeforeItLeaves(t *testing.T) {
 
 	files, err := trail.Files(dir)
 	x.NoError(err)
-	x.Len(files, 1, "one run over one month of writes should be one file")
 	x.True(strings.HasPrefix(filepath.Base(files[0]), "audit-"+trail.Month(time.Now())+"."),
 		"the month has to come first in the name, or nothing can be purged by it: %s", files[0])
 
 	got := map[string]string{}
-	x.NoError(trail.Read(files, func(v *app.Audit) error {
+	x.NoError(pd.ReadTrail(files, func(v *app.Audit) error {
 		got[string(v.GetId())] = v.GetAction()
 
 		return nil
@@ -66,7 +67,7 @@ func TestWhatLeavesTheDatabaseIsInTheFileBeforeItLeaves(t *testing.T) {
 
 	x.Len(got, len(was), "the file holds fewer rows than the database gave up")
 	for _, v := range was {
-		x.Equal(v.Action, got[string(trail.Row(v).GetId())],
+		x.Equal(v.Action, got[string(pdid.Id(v.ID).Bytes())],
 			"a row left the database and is not in the file")
 	}
 }
@@ -93,28 +94,37 @@ func TestTwoRunsOverOneMonthDoNotShareAFile(t *testing.T) {
 	dir := t.TempDir()
 
 	b.holder(t, ctx, b.Acme, "first")
-	one, err := trail.Archive(ctx, b.Ent, time.Now().Add(time.Hour), dir)
+	one, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Kinds{}, time.Now().Add(time.Hour), dir)
 	x.NoError(err)
 	x.NotZero(one)
 
 	b.holder(t, ctx, b.Acme, "second")
-	two, err := trail.Archive(ctx, b.Ent, time.Now().Add(time.Hour), dir)
+	two, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Kinds{}, time.Now().Add(time.Hour), dir)
 	x.NoError(err)
 	x.NotZero(two)
 
 	files, err := trail.Files(dir)
 	x.NoError(err)
-	x.Len(files, 2, "two runs over the same month were handed the same file")
+	x.NotEmpty(files)
 
-	// Both named for the month, which is what a destructive pass reads.
+	// The run is the last part of the name before the extension, and no file
+	// may carry both.
+	runs := map[string]bool{}
 	for _, v := range files {
-		x.True(strings.HasPrefix(filepath.Base(v), "audit-"+trail.Month(time.Now())+"."))
+		name := strings.TrimSuffix(filepath.Base(v), trail.Ext)
+
+		vs := strings.Split(name, ".")
+		x.Len(vs, 3, "a name is month.kind.run: %s", name)
+		x.Equal("audit-"+trail.Month(time.Now()), vs[0])
+
+		runs[vs[2]] = true
 	}
+	x.Len(runs, 2, "two runs over the same month were handed the same file")
 
 	// And between them they hold every row, once.
 	n := 0
 	seen := map[string]bool{}
-	x.NoError(trail.Read(files, func(v *app.Audit) error {
+	x.NoError(pd.ReadTrail(files, func(v *app.Audit) error {
 		n++
 		x.False(seen[string(v.GetId())], "a row was read twice")
 		seen[string(v.GetId())] = true
@@ -145,7 +155,7 @@ func TestNothingLeavesTheDatabaseThatCouldNotBeWritten(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "archive")
 	x.NoError(os.WriteFile(dir, nil, 0o600))
 
-	n, err := trail.Archive(ctx, b.Ent, time.Now().Add(time.Hour), dir)
+	n, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Kinds{}, time.Now().Add(time.Hour), dir)
 	x.Error(err)
 	x.Zero(n)
 
@@ -178,11 +188,11 @@ func TestThePolicyIsAppliedByTheProcessAndNotOnlyByAnOperator(t *testing.T) {
 	dir := t.TempDir()
 
 	// A window of nothing, so that everything already written is past it.
-	p := trail.Policy{Retain: time.Nanosecond, Archive: dir, Every: time.Hour}
+	p := trail.Policy{Keep: trail.Keep{Retain: time.Nanosecond}, Archive: dir, Every: time.Hour}
 
 	run, stop := context.WithCancel(ctx)
 	done := make(chan error, 1)
-	go func() { done <- trail.Sweep(b.Ent, p)(run) }()
+	go func() { done <- trail.Sweep(pd.TrailStore(b.Ent), p)(run) }()
 
 	x.Eventually(func() bool {
 		n, err := b.Ent.Audit.Query().Count(ctx)
@@ -195,7 +205,79 @@ func TestThePolicyIsAppliedByTheProcessAndNotOnlyByAnOperator(t *testing.T) {
 
 	files, err := trail.Files(dir)
 	x.NoError(err)
-	x.Len(files, 1, "the rows left the database and were not written anywhere")
+	x.NotEmpty(files, "the rows left the database and were not written anywhere")
+}
+
+// TestTheWindowIsPerKindOfThing.
+//
+// The first shape of this was one clock over the table, and it is wrong in a
+// way that only shows up in an app with more than one kind of entity in it. A
+// deployment's obligations are not uniform: what was done to a **person** is
+// under a privacy regime and eventually has to stop existing, and what a
+// **machine** did is an operating record whose requirement is the opposite one.
+// One clock forces the shorter of the two onto everything, and there is no
+// global answer honest for both.
+//
+// roster is nearly all the first kind, which is why this is asserted with
+// `holder` on the keeping side: the point is that the policy can say so, not
+// which way round roster would set it.
+func TestTheWindowIsPerKindOfThing(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	who := b.holder(t, ctx, b.Acme, "somebody")
+	b.identity(t, ctx, who, "github", "gh-somebody")
+
+	holder, ok := pdid.DomainOf("holder")
+	x.True(ok, "the schema registered no `holder` domain, so this proves nothing")
+
+	kinds := func() map[pdid.Domain]int {
+		vs, err := b.Ent.Audit.Query().All(ctx)
+		require.NoError(t, err)
+
+		out := map[pdid.Domain]int{}
+		for _, v := range vs {
+			out[pdid.Domain(v.Domain)]++
+		}
+
+		return out
+	}
+
+	was := kinds()
+	x.NotZero(was[holder], "no write about a person was recorded")
+	x.Greater(len(was), 1, "every row is the same kind, so this proves nothing")
+
+	p, err := config.AuditConfig{
+		Retain:  time.Nanosecond,
+		Discard: true,
+		By:      map[string]config.AuditKeepConfig{"holder": {Profile: "forever"}},
+	}.Policy()
+	x.NoError(err)
+
+	p.Pass(ctx, pd.TrailStore(b.Ent))
+
+	left := kinds()
+	x.Equal(was[holder], left[holder], "a kind the policy keeps forever was swept")
+	x.Len(left, 1, "a kind the policy has a window for survived it")
+}
+
+// TestAKindThisAppDoesNotHaveIsRefused.
+//
+// A deployment that meant `holder` and wrote `holders` has configured a
+// retention policy for nothing at all, and the rows it thought it was
+// protecting fall to the default -- which is the failure this whole thing
+// exists to make loud. Refused where the process comes up, like every other
+// refusal in `config`.
+func TestAKindThisAppDoesNotHaveIsRefused(t *testing.T) {
+	x := require.New(t)
+
+	_, err := config.AuditConfig{
+		Discard: true,
+		Retain:  time.Hour,
+		By:      map[string]config.AuditKeepConfig{"holders": {Profile: "forever"}},
+	}.Policy()
+	x.ErrorContains(err, "not a kind this app has")
+	x.ErrorContains(err, "holder", "the refusal does not say what the kinds are")
 }
 
 // TestADeploymentIsNotAllowedToDestroyEvidenceByLeavingAFieldBlank.
@@ -216,7 +298,7 @@ func TestADeploymentIsNotAllowedToDestroyEvidenceByLeavingAFieldBlank(t *testing
 	_, err := cmd.Build(ctx, cmd.Config{
 		Db:    config.DbConfig{Driver: drv, Dsn: dsn},
 		Watch: config.WatchConfig{Broker: config.BrokerMemory},
-		Audit: cmd.AuditConfig{Retain: 90 * 24 * time.Hour},
+		Audit: config.AuditConfig{Retain: 90 * 24 * time.Hour},
 	})
 	x.ErrorContains(err, "nowhere to put")
 
@@ -228,7 +310,7 @@ func TestADeploymentIsNotAllowedToDestroyEvidenceByLeavingAFieldBlank(t *testing
 		s, err := cmd.Build(ctx, cmd.Config{
 			Db:    config.DbConfig{Driver: drv, Dsn: dsn},
 			Watch: config.WatchConfig{Broker: config.BrokerMemory},
-			Audit: cmd.AuditConfig{Retain: 90 * 24 * time.Hour, Discard: true},
+			Audit: config.AuditConfig{Retain: 90 * 24 * time.Hour, Discard: true},
 		})
 		x.NoError(err)
 		x.NoError(s.Close())
@@ -249,6 +331,8 @@ func TestADeploymentIsNotAllowedToDestroyEvidenceByLeavingAFieldBlank(t *testing
 		// No sweep for a trail nobody has set a window on, which is what makes
 		// the default forever rather than a number this version happened to
 		// pick.
-		x.False(cmd.AuditConfig{}.Policy().On())
+		p, err := config.AuditConfig{}.Policy()
+		x.NoError(err)
+		x.False(p.On())
 	})
 }

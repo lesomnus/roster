@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -15,8 +16,10 @@ import (
 
 	"github.com/lesomnus/payday/pdid"
 
+	"github.com/lesomnus/payday/trail"
+
 	app "github.com/lesomnus/roster/rstr"
-	"github.com/lesomnus/roster/server/trail"
+	"github.com/lesomnus/roster/server/pd"
 )
 
 // NewCmdTrail is `roster trail`: what happens to the record of what happened,
@@ -49,6 +52,7 @@ func NewCmdTrail(c *Config) *xli.Command {
 			newCmdTrailPrune(c),
 			newCmdTrailRead(c),
 			newCmdTrailPurge(c),
+			newCmdTrailProfiles(),
 		},
 	}
 }
@@ -58,25 +62,42 @@ func NewCmdTrail(c *Config) *xli.Command {
 func newCmdTrailPrune(c *Config) *xli.Command {
 	return &xli.Command{
 		Name:  "prune",
-		Brief: "archive the rows past the window, then remove them",
+		Brief: "apply the retention policy now, or a window of your own",
 
 		Flags: flg.Flags{
 			&flg.String{Name: "older-than", Brief: "how old a row has to be, e.g. 2160h for ninety days"},
 			&flg.String{Name: "before", Brief: "an instant instead, RFC 3339"},
+			&flg.String{Name: "kind", Brief: "only rows about this kind of thing, e.g. holder; every kind by default"},
 			&flg.String{Name: "to", Brief: "the directory to write into; audit.archive by default"},
 			&flg.Switch{Name: "discard", Brief: "remove them and keep no copy"},
 			&flg.Switch{Name: "dry-run", Brief: "say how many there are and change nothing"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
-			before, err := cutoff(cmd)
+			before, given, err := cutoff(cmd)
 			if err != nil {
 				return err
+			}
+			if !given {
+				// No window of their own, so the deployment's: one pass of what
+				// `audit:` says, per kind, exactly as the sweep does it.
+				//
+				// This is the default rather than a refusal because it is what
+				// somebody putting this in cron means, and because the
+				// alternative was worse than inconvenient: a command that only
+				// took a cutoff destroyed the kind the configuration said to
+				// keep forever.
+				return prune(ctx, *c)
 			}
 
 			dir, _ := flg.Find[string](cmd, "to")
 			if dir == "" {
 				dir = c.Audit.Archive
+			}
+
+			of, err := kindOf(cmd)
+			if err != nil {
+				return err
 			}
 
 			discard, _ := flg.Find[bool](cmd, "discard")
@@ -97,8 +118,10 @@ func newCmdTrailPrune(c *Config) *xli.Command {
 			}
 			defer s.Close()
 
+			store := pd.TrailStore(s.Ent)
+
 			if dry, _ := flg.Find[bool](cmd, "dry-run"); dry {
-				n, err := trail.Count(ctx, s.Ent, before)
+				n, err := store.Count(ctx, of, before)
 				if err != nil {
 					return err
 				}
@@ -110,9 +133,9 @@ func newCmdTrailPrune(c *Config) *xli.Command {
 
 			n := 0
 			if discard {
-				n, err = trail.Collect(ctx, s.Ent, before)
+				n, err = trail.Collect(ctx, store, of, before)
 			} else {
-				n, err = trail.Archive(ctx, s.Ent, before, dir)
+				n, err = trail.Archive(ctx, store, of, before, dir)
 			}
 			if err != nil {
 				// With the count, because a run that moved most of the table
@@ -175,7 +198,7 @@ func newCmdTrailRead(c *Config) *xli.Command {
 			// One call over every file rather than one per file, because the
 			// duplicate two writers leave behind is only visible to a reader
 			// that has seen both. See [trail.Read].
-			return trail.Read(paths, func(v *app.Audit) error {
+			return pd.ReadTrail(paths, func(v *app.Audit) error {
 				if !keep(v) {
 					return nil
 				}
@@ -216,12 +239,26 @@ func newCmdTrailPurge(c *Config) *xli.Command {
 		Flags: flg.Flags{
 			&flg.String{Name: "older-than", Brief: "how old the archive has to be, e.g. 61320h for seven years"},
 			&flg.String{Name: "before", Brief: "an instant instead, RFC 3339"},
+			&flg.String{Name: "kind", Brief: "only archives of this kind of thing; every kind by default"},
 			&flg.String{Name: "in", Brief: "the directory to destroy from; audit.archive by default"},
 			&flg.Switch{Name: "dry-run", Brief: "say which files and remove nothing"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
-			before, err := cutoff(cmd)
+			before, given, err := cutoff(cmd)
+			if err != nil {
+				return err
+			}
+			if !given {
+				// The archive half of the policy is applied by the same pass
+				// `prune` runs, so there is nothing for a bare `purge` to mean
+				// that is not already covered -- and guessing would be guessing
+				// about the one act with nothing after it.
+				return errors.New("--older-than or --before: how old is old enough; " +
+					"`trail prune` applies the deployment's own policy, this destroys archives by hand")
+			}
+
+			of, err := kindOf(cmd)
 			if err != nil {
 				return err
 			}
@@ -234,8 +271,10 @@ func newCmdTrailPurge(c *Config) *xli.Command {
 				return errors.New("--in: which directory")
 			}
 
+			cut := of.CutFor(before)
+
 			if dry, _ := flg.Find[bool](cmd, "dry-run"); dry {
-				vs, err := trail.Doomed(dir, before)
+				vs, err := trail.Doomed(dir, cut)
 				if err != nil {
 					return err
 				}
@@ -246,7 +285,7 @@ func newCmdTrailPurge(c *Config) *xli.Command {
 				return nil
 			}
 
-			vs, err := trail.Purge(ctx, dir, before)
+			vs, err := trail.Purge(ctx, dir, cut)
 			if err != nil {
 				return fmt.Errorf("after %d file(s): %w", len(vs), err)
 			}
@@ -259,41 +298,131 @@ func newCmdTrailPurge(c *Config) *xli.Command {
 	}
 }
 
-// cutoff is `--older-than` or `--before`, and refuses both and neither.
+// kindOf is `--kind`, and every kind when it is not given.
 //
-// Both, because they are two ways of naming one instant and a command given two
-// has not been told which -- the same refusal `vouch.refOf` makes about a
-// person named twice, for the same reason. Neither, because a default here is a
-// default about how much to destroy.
-func cutoff(cmd *xli.Command) (time.Time, error) {
+// One kind rather than a list, deliberately: a policy is per kind and an
+// operator running one of these by hand is answering for one of them. A list
+// would be a second way to write a policy, in a place that is not the
+// configuration.
+func kindOf(cmd *xli.Command) (trail.Kinds, error) {
+	v, _ := flg.Find[string](cmd, "kind")
+	if v == "" {
+		return trail.Kinds{}, nil
+	}
+
+	d, err := trail.DomainOf(v)
+	if err != nil {
+		return trail.Kinds{}, fmt.Errorf("--kind: %w", err)
+	}
+
+	return trail.Only(d), nil
+}
+
+// newCmdTrailProfiles prints the table, because a number in a configuration
+// file that nobody can trace is a number nobody will change.
+func newCmdTrailProfiles() *xli.Command {
+	return &xli.Command{
+		Name:  "profiles",
+		Brief: "the named retention regimes, and where each number comes from",
+
+		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
+			names := make([]string, 0, len(trail.Profiles))
+			for k := range trail.Profiles {
+				names = append(names, k)
+			}
+			sort.Strings(names)
+
+			for _, name := range names {
+				v := trail.Profiles[name]
+				fmt.Fprintf(os.Stdout, "%-16s retain=%-8s destroy=%-8s %s\n",
+					name, dur(v.Retain), dur(v.Destroy), v.Why)
+			}
+
+			fmt.Fprintln(os.Stderr,
+				"\nA starting point and not a guarantee: what a deployment must keep depends "+
+					"on what it processes and for whom.")
+
+			return nil
+		}),
+	}
+}
+
+func dur(v time.Duration) string {
+	if v == 0 {
+		return "forever"
+	}
+
+	return v.String()
+}
+
+// prune is one pass of the deployment's own policy, which is what this command
+// does when it was given no window.
+func prune(ctx context.Context, c Config) error {
+	p, err := c.Audit.Policy()
+	if err != nil {
+		return err
+	}
+	if !p.On() {
+		return errors.New("this deployment keeps its trail forever, so there is nothing to apply; " +
+			"see `audit:` in the configuration, or name a window with --older-than")
+	}
+
+	s, err := Build(ctx, c)
+	if err != nil {
+		return err
+	}
+	defer s.Close()
+
+	fmt.Fprintf(os.Stderr, "%s\n", p.String())
+
+	// It logs what it did, per kind, exactly as the sweep does -- which is why
+	// nothing is printed here beyond the policy: two accounts of one pass would
+	// be two that disagree.
+	p.Pass(ctx, pd.TrailStore(s.Ent))
+
+	return nil
+}
+
+// cutoff is `--older-than` or `--before`, and answers whether either was given.
+//
+// Both is refused, because they are two ways of naming one instant and a
+// command given two has not been told which -- the same refusal `vouch.refOf`
+// makes about a person named twice, for the same reason.
+//
+// Neither is **not** refused, and used to be. A window is what an operator
+// names when they mean something other than the policy; when they name nothing
+// they mean the policy, and the version that insisted on a cutoff made
+// `--older-than 1ns` the obvious thing to type -- which destroys the kind the
+// configuration says to keep forever.
+func cutoff(cmd *xli.Command) (time.Time, bool, error) {
 	older, _ := flg.Find[string](cmd, "older-than")
 	before, _ := flg.Find[string](cmd, "before")
 
 	switch {
 	case older != "" && before != "":
-		return time.Time{}, errors.New("--older-than and --before name the same instant two ways; give one")
+		return time.Time{}, false, errors.New("--older-than and --before name the same instant two ways; give one")
 
 	case older != "":
 		d, err := time.ParseDuration(older)
 		if err != nil {
-			return time.Time{}, fmt.Errorf("--older-than: %w", err)
+			return time.Time{}, false, fmt.Errorf("--older-than: %w", err)
 		}
 		if d <= 0 {
-			return time.Time{}, errors.New("--older-than: a window of nothing is everything")
+			return time.Time{}, false, errors.New("--older-than: a window of nothing is everything")
 		}
 
-		return time.Now().Add(-d), nil
+		return time.Now().Add(-d), true, nil
 
 	case before != "":
 		at, err := time.Parse(time.RFC3339, before)
 		if err != nil {
-			return time.Time{}, fmt.Errorf("--before: %w", err)
+			return time.Time{}, false, fmt.Errorf("--before: %w", err)
 		}
 
-		return at, nil
+		return at, true, nil
 
 	default:
-		return time.Time{}, errors.New("--older-than or --before: how old is old enough")
+		return time.Time{}, false, nil
 	}
 }
 

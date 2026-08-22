@@ -23,5 +23,6 @@ func (e *Audit) Proto() *rstr.Audit {
 	if e.CounterpartTenantID != nil {
 		x.SetCounterpartTenantId(e.CounterpartTenantID[:])
 	}
+	x.SetDomain(e.Domain)
 	return x
 }

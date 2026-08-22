@@ -399,6 +399,82 @@ asked: `internal/apptest/cmd/outboxsecret_test.go` upstream, and
 `cmd/outboxsecret_test.go` here, because it is a property of the pinned payday
 rather than of anything in roster.
 
+### D45 · The retention is payday's, and it is per kind of thing
+
+D44 built the retention policy in roster, and both halves of that were wrong.
+
+#### It belonged upstream, and the question should have come first
+
+The `Audit` entity is payday's, the recorder that fills it is payday's, and the
+layer that refuses to let anybody write to it is payday's. Every app on payday
+gets that table and every one of them has it grow forever -- so an answer
+written here is a format the next app cannot read, a sweep with its own bugs,
+and for the app that never gets round to it, the deployment's largest table and
+an obligation nobody has met.
+
+roster's own configuration says the rule: *the framework cannot own this struct,
+since what an app is configured with is the app's. What it owns is the pieces:
+each of these is a payday type, and what is written here is only which of them
+this app has.* `cmd.AuditConfig` was a roster type, and that was the tell.
+
+The split follows the one `internal/pdgen/outbox.go` already drew about the
+drain: *generated rather than written in the runtime because `ent.Client` and the
+predicates are the app's types -- and what is not generated is any judgement.*
+So `pd.TrailStore` reads a batch of these kinds older than this and forgets the
+ones it is told, and every decision is in `trail`. The document between the two
+halves is protojson, which is the archive's format anyway; payday has no Go type
+for its own `Audit`, because the schema is copied into each app and generated
+there.
+
+#### And one clock over the table was the wrong shape
+
+A deployment's obligations are not uniform across its entities, and the two ends
+pull in opposite directions. What was done to a **person** is under a privacy
+regime: it has a stated limit and eventually has to stop existing. What a
+**machine** did is an operating record -- who drove it, which route, when the
+fault was logged -- and the requirement there is usually that it never be lost.
+A single clock forces the shorter of the two onto everything, and there is no
+global answer that is honest for both.
+
+So the policy names kinds and a kind with nothing said about it gets the
+default. Which required a column.
+
+#### `Audit.domain`, and the note that said it was not needed
+
+`object_id` carries the kind already -- a `pdid` holds its domain -- and the
+note beside it said a column was therefore unnecessary. That note was right
+about the question it was answering. *What kind was this row about* is answered
+by reading the row. *Which rows were about robots* is a query over a set, and no
+database indexes into byte nine of a `uuid`.
+
+The second question is what a retention policy is made of, and it was the case
+the note was silent about. Indexed with `date_created`, because a policy that
+keeps machine records and sweeps people's would otherwise scan the whole table
+on every pass.
+
+Defaulted, too, and that was found by breaking it: roster's admin port composes
+a trail row by hand through ent, and a required column is one it learns about
+from a runtime refusal. `counterpart_tenant_id` predicted that in as many words,
+one field down, about itself.
+
+#### Profiles, because a number nobody can trace is a number nobody will change
+
+`61320h` is unreadable and *seven years, because 17 CFR 210.2-06 says seven
+years* is a thing a reviewer can disagree with. `trail.Profiles` carries pci,
+hipaa, sox, pipa, pipa-sensitive, gdpr and forever, each with the sentence its
+number comes from -- and says out loud that it is a starting point and not a
+guarantee, since what a deployment must keep depends on what it processes and
+for whom.
+
+#### And the command applies the policy rather than a cutoff
+
+`roster trail prune` with no window is one pass of what `audit:` says, per kind.
+The version that insisted on a cutoff made `--older-than 1ns` the obvious thing
+to type, which destroys the very kind the configuration says to keep forever --
+a footgun pointed at the one thing this exists to protect.
+
+`lesomnus/payday@607b7ac`, `@eaec815`, `@ca0e618`, `@db9e366`.
+
 ### D44 · The trail's retention is two clocks, and neither of them is an RPC
 
 `audit.proto` asked for this in as many words and the sentence read as a caveat

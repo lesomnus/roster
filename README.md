@@ -185,7 +185,9 @@ which kind. `roster key` writes to the control plane, which is not served.
 all: `AuditService` refuses every write, because what a trail is worth is that
 the credential which lets somebody act is not the credential that lets them
 erase the record of having acted. Both need the database, which is the boundary
-being asked for. See `docs/OPERATING.md`.
+being asked for. The policy itself is payday's — `config.AuditConfig` and
+payday's `trail` — because the trail is payday's table and every app on it has
+the same problem. See `docs/OPERATING.md`.
 
 The configuration is a file, then the environment over the top of it. It is read
 on the **root** command, so it has happened whichever subcommand runs, and

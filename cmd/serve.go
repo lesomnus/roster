@@ -28,6 +28,7 @@ import (
 	"github.com/lesomnus/payday/migrate"
 	"github.com/lesomnus/payday/pdpb"
 	"github.com/lesomnus/payday/spin"
+	"github.com/lesomnus/payday/trail"
 	"github.com/lesomnus/payday/watch"
 	"github.com/lesomnus/payday/web"
 
@@ -39,7 +40,6 @@ import (
 	"github.com/lesomnus/roster/server/core"
 	"github.com/lesomnus/roster/server/front"
 	"github.com/lesomnus/roster/server/keys"
-	"github.com/lesomnus/roster/server/trail"
 	"github.com/lesomnus/roster/server/me"
 	"github.com/lesomnus/roster/server/pd"
 	"github.com/lesomnus/roster/server/session"
@@ -481,14 +481,16 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	// that is the direction to be wrong in: the failure of a sweep that does
 	// not exist is a table that grows, and the failure of one that does is
 	// evidence that is gone.
-	if p := c.Audit.Policy(); p.On() {
-		if err := p.Valid(); err != nil {
-			db.Close()
+	p, err := c.Audit.Policy()
+	if err != nil {
+		db.Close()
 
-			return nil, err
-		}
+		return nil, err
+	}
+	if p.On() {
+		log.From(ctx).InfoContext(ctx, "trail: retention", "policy", p.String())
 
-		s.Spin = append(s.Spin, trail.Sweep(s.Ent, p))
+		s.Spin = append(s.Spin, trail.Sweep(pd.TrailStore(s.Ent), p))
 	}
 
 	if c.Watch.Outbox {

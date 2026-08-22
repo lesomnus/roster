@@ -135,6 +135,11 @@ func (s AuditServiceServer) Add(ctx context.Context, req *rstr.AuditAddRequest) 
 			q.SetCounterpartTenantID(v)
 		}
 	}
+	if req.HasDomain() {
+		q.SetDomain(req.GetDomain())
+	} else {
+		q.SetDomain(0)
+	}
 
 	u, err := q.Save(ctx)
 	if err != nil {
@@ -228,6 +233,9 @@ func AuditSelectedFields(m *rstr.AuditSelect) []string {
 	if m.GetCounterpartTenantId() {
 		vs = append(vs, audit.FieldCounterpartTenantID)
 	}
+	if m.GetDomain() {
+		vs = append(vs, audit.FieldDomain)
+	}
 
 	return vs
 }
@@ -293,7 +301,7 @@ func AuditGetKey(ctx context.Context, db *ent.Client, ref *rstr.AuditRef) (uuid.
 var auditOrmEntity = ormpatch.MustEntityOf(rstr.File_roster_payday_audit_proto, "Audit")
 
 var auditPatchColumns = entpatch.Columns{
-	1: audit.FieldID, 2: audit.FieldTenantID, 8: audit.FieldActorID, 9: audit.FieldTraceID, 10: audit.FieldAction, 11: audit.FieldObjectID, 12: audit.FieldPatch, 15: audit.FieldDateCreated, 16: audit.FieldActorTenantID, 17: audit.FieldValue, 18: audit.FieldCounterpartTenantID}
+	1: audit.FieldID, 2: audit.FieldTenantID, 8: audit.FieldActorID, 9: audit.FieldTraceID, 10: audit.FieldAction, 11: audit.FieldObjectID, 12: audit.FieldPatch, 15: audit.FieldDateCreated, 16: audit.FieldActorTenantID, 17: audit.FieldValue, 18: audit.FieldCounterpartTenantID, 19: audit.FieldDomain}
 
 func (s AuditServiceServer) Apply(ctx context.Context, req *rstr.AuditApplyRequest) (*rstr.Audit, error) {
 	if !req.HasPatch() {
