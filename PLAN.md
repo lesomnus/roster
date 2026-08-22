@@ -137,6 +137,61 @@ over memberships, credential verification.
 Recorded as they are made, with the reason, so that a later disagreement argues
 with the reason rather than rediscovering the question.
 
+### D35 · Escalation prevention is a set of rows, and three readers disagreed about it
+
+`escalate.go` states one rule -- *what you grant must be a subset of what you
+hold* -- and the four writes that name a role were the surface it was applied
+to. Two ways round it survived, and neither is a hole in the rule: both are a
+disagreement about **what somebody holds**, between readers of the same rows.
+
+#### Attaching a role is granting it
+
+`TeamMembership.Add` names a role and never asked. It looked like the wrong
+place to ask, because a team is not a scope this rule compares -- and the gate
+had already decided otherwise: `policy.of` unions the methods of a role held in
+a team into the set it answers from, deliberately, because the gate is
+outermost and never sees which team a call is about (D17).
+
+So the two RPCs `escalate.go` opens with, one service along:
+
+    Alice may call TeamMembership.Add and nothing else.
+    Alice attaches the tenant's admin role to herself, in any team.
+    Alice may now erase anybody.
+
+From "Alice manages who is in what" -- the same sentence that made
+`Binding.Add` dangerous. The scope it is granted at is the team's **site**,
+which is a scope the rule already compares; a team with no site is the tenant's.
+
+#### A permission held through a group was a permission held by nobody
+
+`Granted` queried the holder edge alone. `policy.of` walks group memberships
+too, and `cmd/policy_test.go` has pinned that a group carries a binding since
+it was written -- so the gate and this rule answered differently about the same
+person.
+
+Which direction that breaks in is the whole of why it is here. In `mayGrant` it
+reads what the *caller* holds, and missing a path only refuses a grant somebody
+could have made -- the conversation `escalate.go` says it is willing to have.
+In `mayReach` it reads what the **target** holds and allows the write when that
+is nothing:
+
+    Ops may call Holder.List and nothing else.
+    Ops resets the password of an administrator provisioned by a group.
+    Ops signs in as them.
+
+The conservative failure and the silent one are the same blindness read in two
+directions, which is the argument for the fix being *one query* rather than a
+second answer: `bindingsReaching` is now what the gate, `Holds` and `Granted`
+all read.
+
+#### Why it was not found by the tests that exist
+
+Every escalation test binds directly. `TestAGroupCarriesItToo` proves a group
+carries a binding **to the gate**, and nothing asked the same question of the
+rule that guards credentials -- so both halves were tested and the disagreement
+between them was not. `cmd/escalate_test.go` is that question, in both
+directions.
+
 ### D34 · Single-use is what the row says, and the row has to be able to say it
 
 `Continuation` and `Link` are spent by erasing them, and both places said so:
@@ -1631,8 +1686,9 @@ rule that applies outside it.
 - **No `resourceNames` yet.** See below; it needs a seam that does not exist.
 - ~~**Escalation prevention later.**~~ Done, and wider than this entry
   expected: `server/core/escalate.go`, on `Role.Add`, `Role.Patch`,
-  `Binding.Add` and an API key's methods, plus the rule that a role scoped to a
-  site is bound only in that site.
+  `Binding.Add`, `TeamMembership.Add` and an API key's methods, plus the rule
+  that a role scoped to a site is bound only in that site. The fourth of those
+  and what counts as *held* were both got wrong first; see D35.
 
 #### Team-scoped permission, and where it has to live
 

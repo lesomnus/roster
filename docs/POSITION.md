@@ -217,10 +217,14 @@ they are traversed.
 
 Escalation prevention **is** here, and used to be the last row of that table.
 Nobody hands out what they do not hold: `server/core/escalate.go`, on
-`Role.Add`, `Role.Patch`, `Binding.Add` and the methods of an API key -- four
-places rather than the one that row estimated -- plus the rule that a role
-scoped to a site is bound only in that site. `OPERATING.md` has the operator's
-half of it.
+`Role.Add`, `Role.Patch`, `Binding.Add`, `TeamMembership.Add` and the methods
+of an API key -- five places rather than the one that row estimated -- plus the
+rule that a role scoped to a site is bound only in that site. What somebody
+holds counts the same whether the binding names them or a group they are in,
+which matters most in the other direction: the same rule refuses writing the
+credential of anybody wider than you, and a permission it could not see would
+be an administrator it read as holding nothing. `OPERATING.md` has the
+operator's half of it.
 
 ## Two planes, one schema
 

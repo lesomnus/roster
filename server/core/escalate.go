@@ -46,6 +46,32 @@ import (
 // cannot grant something they arguably could, which is a conversation. The
 // other direction is silent.
 //
+// # And through a team, which the gate cannot narrow
+//
+// The paragraph above is about what a caller may **hand out**. What they may
+// hand out *with* is the other half, and it was missing: `TeamMembership.Add`
+// names a role, and `policy.of` unions the methods of a role somebody holds in
+// a team into the set the gate answers from -- deliberately, because the gate
+// is outermost and never sees which team a call is about. So attaching a role
+// **is** granting its methods, and the same three lines that guard
+// `Binding.Add` guard it now.
+//
+// The scope it is granted at is the team's **site**, which is where a team
+// sits; a team with no site answers the tenant. Both are scopes this rule
+// already compares, which is why the check fits without inventing a third one.
+//
+// # What counts as held, and why the direction matters
+//
+// A binding reaches somebody by naming them or by naming a group they are in,
+// and both count -- [Granted] walks the same rows the gate walks.
+//
+// Missing one is not symmetric. In [Core.mayGrant] it reads what the *caller*
+// holds, so a path not walked only refuses a grant they could have made: the
+// conversation above. In [Core.mayReach] it reads what the *target* holds and
+// allows the write when that is nothing, so a path not walked is an
+// administrator who reads as holding nothing and can be reset by anybody. That
+// was true of a group binding until it was written down here.
+//
 // # What is not covered, and why it is enough
 //
 // `Patch` and `Apply` are how a role could grow methods after it was written,
@@ -224,6 +250,35 @@ func (s Core) siteOfRole(ctx context.Context, ref *app.RoleRef) (pdid.Id, error)
 	v, err := s.Next().Role().Get(ctx, app.RoleGetRequest_builder{
 		Ref:    ref,
 		Select: app.RoleSelect_builder{Site: app.SiteSelect_builder{}.Build()}.Build(),
+	}.Build())
+	if err != nil {
+		return pdid.Nil, err
+	}
+
+	if b := v.GetSite().GetId(); len(b) > 0 {
+		return pdid.From(b)
+	}
+
+	return pdid.Nil, nil
+}
+
+// siteOfTeam is the site a team is in, which is the scope a role attached
+// there is granted at.
+//
+// A team is inside a site and a site is inside the tenant, so a role attached
+// in a team is a grant made in that site: [Core.mayGrant] then counts the
+// caller's tenant-wide grants and the ones made in that same site, and nothing
+// from a site next door. A team with no site is the tenant's own, and answers
+// [pdid.Nil] -- which `mayGrant` reads as the widest scope, so only a
+// tenant-wide grant of the caller's covers it.
+func (s Core) siteOfTeam(ctx context.Context, ref *app.TeamRef) (pdid.Id, error) {
+	if ref == nil {
+		return pdid.Nil, nil
+	}
+
+	v, err := s.Next().Team().Get(ctx, app.TeamGetRequest_builder{
+		Ref:    ref,
+		Select: app.TeamSelect_builder{Site: app.SiteSelect_builder{}.Build()}.Build(),
 	}.Build())
 	if err != nil {
 		return pdid.Nil, err

@@ -74,6 +74,23 @@ func (s coreTeamMembership) Add(ctx context.Context, req *app.TeamMembershipAddR
 		return nil, err
 	}
 
+	// And what attaching that role hands out, which is the same question
+	// `Binding.Add` asks and for the same reason: the gate unions the methods
+	// of a role somebody holds in a team into what they may ever call, so
+	// naming one here **is** granting it. See `escalate.go`, "and through a
+	// team, which the gate cannot narrow".
+	ms, err := s.methodsOf(ctx, req.GetRole())
+	if err != nil {
+		return nil, err
+	}
+	at, err := s.siteOfTeam(ctx, req.GetTeam())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.mayGrant(ctx, "role", ms, at); err != nil {
+		return nil, err
+	}
+
 	return s.TeamMembershipServiceServer.Add(ctx, req)
 }
 

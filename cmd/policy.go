@@ -212,12 +212,18 @@ func (h held) allows(method string) bool {
 	return false
 }
 
-// of reads the bindings a holder has, by being them or by being in a group.
-func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
-	h := held{methods: map[string]struct{}{}}
-
+// bindingsReaching is every live binding that reaches somebody: the ones
+// written to them, and the ones written to a group they are in.
+//
+// One function because it is one set, and three readers of it that disagreed
+// would be three answers to "what does this person hold". They did disagree:
+// this walk was written here for the gate, and `Granted` had a query of its
+// own that stopped at the holder edge -- so a group-provisioned administrator
+// could call every method their role names and was, to the rule that protects
+// them from being reset, somebody who held nothing. See [Granted].
+func bindingsReaching(ctx context.Context, db *ent.Client, who uuid.UUID) ([]*ent.Binding, error) {
 	// The groups they are in, which is the other way a binding reaches them.
-	gs, err := p.db.GroupMembership.Query().
+	gs, err := db.GroupMembership.Query().
 		Where(
 			groupmembership.DateErasedIsNil(),
 			groupmembership.HasHolderWith(holder.IDEQ(who)),
@@ -226,15 +232,15 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 		Where(group.DateErasedIsNil()).
 		IDs(ctx)
 	if err != nil {
-		return held{}, err
+		return nil, err
 	}
 
-	q := p.db.Binding.Query().Where(
+	q := db.Binding.Query().Where(
 		binding.DateErasedIsNil(),
 		binding.HasHolderWith(holder.IDEQ(who)),
 	)
 	if len(gs) > 0 {
-		q = p.db.Binding.Query().Where(
+		q = db.Binding.Query().Where(
 			binding.DateErasedIsNil(),
 			binding.Or(
 				binding.HasHolderWith(holder.IDEQ(who)),
@@ -243,7 +249,14 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 		)
 	}
 
-	vs, err := q.WithRole().WithSite().All(ctx)
+	return q.WithRole().WithSite().All(ctx)
+}
+
+// of reads the bindings a holder has, by being them or by being in a group.
+func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
+	h := held{methods: map[string]struct{}{}}
+
+	vs, err := bindingsReaching(ctx, p.db, who)
 	if err != nil {
 		return held{}, err
 	}
@@ -346,16 +359,19 @@ func Rules(db *ent.Client) core.Rules {
 // and the scopes here are the tenant and a site, so there is nothing to
 // compare it against -- `server/core.Holds` is what asks about a team, per
 // call, with the team in hand.
+//
+// A binding reaching somebody **through a group** is not left out, and the
+// direction is why it is worth saying. [Core.mayGrant] reads what the caller
+// holds, where missing one only refuses a grant somebody could have made --
+// the conversation `escalate.go` is willing to have. [Core.mayReach] reads
+// what the **target** holds and allows the write when that is nothing, so the
+// same blindness there is silent: an administrator provisioned by a group read
+// as holding nothing, and anybody who could reset a password could become
+// them. Which is why this walks the same rows [policy.of] walks -- see
+// [bindingsReaching].
 func Granted(db *ent.Client) core.Granted {
 	return func(ctx context.Context, who pdid.Id) ([]core.Grant, error) {
-		vs, err := db.Binding.Query().
-			Where(
-				binding.DateErasedIsNil(),
-				binding.HasHolderWith(holder.IDEQ(who.Uuid())),
-			).
-			WithRole().
-			WithSite().
-			All(ctx)
+		vs, err := bindingsReaching(ctx, db, who.Uuid())
 		if err != nil {
 			return nil, err
 		}
@@ -380,13 +396,11 @@ func Granted(db *ent.Client) core.Granted {
 
 func Holds(db *ent.Client) core.Holds {
 	return func(ctx context.Context, who pdid.Id, method string, team pdid.Id) (bool, error) {
-		vs, err := db.Binding.Query().
-			Where(
-				binding.DateErasedIsNil(),
-				binding.HasHolderWith(holder.IDEQ(who.Uuid())),
-			).
-			WithRole().
-			All(ctx)
+		// The same set the gate let them through on -- see
+		// [bindingsReaching]. A narrower reading here would refuse the call
+		// after the gate allowed it, which is the two halves of one answer
+		// disagreeing rather than one of them being careful.
+		vs, err := bindingsReaching(ctx, db, who.Uuid())
 		if err != nil {
 			return false, err
 		}
