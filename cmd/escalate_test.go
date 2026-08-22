@@ -2,6 +2,7 @@ package cmd_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -12,6 +13,8 @@ import (
 
 	app "github.com/lesomnus/roster/rstr"
 )
+
+const joinGroup = "/roster.GroupMembershipService/Add"
 
 // The two ways round `escalate.go` that the rule it states does not cover.
 //
@@ -168,6 +171,142 @@ func TestATeamWithNoSiteIsTheTenantsOwn(t *testing.T) {
 
 	// In Seoul's own team, it does.
 	x.NoError(attach(b.team(t, ctx, seoul, "seoul-team"), reader))
+}
+
+// TestJoiningAGroupIsGrantingYourselfWhatItHolds.
+//
+// The third of the same shape, and it is the same sentence again: "Alice
+// manages who is in what group" is a permission an administrator grants
+// without hesitating.
+//
+// A group is a subject of a binding exactly as a person is -- that is what a
+// group is *for*, and `policy.of` counts a binding that names one as held by
+// everybody in it. So a binding written to a group is handed out to whoever
+// joins it, and the membership is the other half of the write `Binding.Add`
+// already asks about:
+//
+//	Alice may call GroupMembership.Add and nothing else.
+//	Alice puts herself in the group the deployment binds its admin role to.
+//	Alice may now erase anybody.
+//
+// Two RPCs, and neither of them names a role.
+func TestJoiningAGroupIsGrantingYourselfWhatItHolds(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	// The group a deployment provisions its administrators through.
+	admins := b.groupHolding(t, ctx, "admins", b.role(t, ctx, "admin", eraseHold), nil)
+
+	// Alice manages memberships, and holds nothing else.
+	b.binds(t, b.AcmeUser, b.role(t, ctx, "manager", joinGroup), nil)
+
+	conn := served(t, b.Server)
+	wire := asOverTheWire(ctx, b.AcmeUser)
+
+	_, err := app.NewGroupMembershipServiceClient(conn).Add(wire,
+		app.GroupMembershipAddRequest_builder{
+			Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Group:  app.GroupRef_builder{Id: admins.Bytes()}.Build(),
+		}.Build())
+	x.Equal(codes.PermissionDenied, status.Code(err),
+		"she put herself in a group holding what she does not")
+	x.Contains(status.Convert(err).Message(), eraseHold,
+		"the refusal did not say which permission was the problem")
+
+	// And the escalation it exists to stop.
+	_, err = app.NewHolderServiceClient(conn).Erase(wire,
+		app.HolderRef_builder{Id: b.holder(t, ctx, b.Acme, "victim").Bytes()}.Build())
+	x.Equal(codes.PermissionDenied, status.Code(err),
+		"she erased somebody, so the membership was written after all")
+}
+
+// TestWhatYouHoldYouMayPutSomebodyInto, so that what refused above was the
+// escalation and not the method.
+func TestWhatYouHoldYouMayPutSomebodyInto(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	readers := b.groupHolding(t, ctx, "readers", b.role(t, ctx, "reader", getHolder), nil)
+	b.binds(t, b.AcmeUser, b.role(t, ctx, "manager", joinGroup, getHolder), nil)
+
+	conn := served(t, b.Server)
+
+	_, err := app.NewGroupMembershipServiceClient(conn).Add(asOverTheWire(ctx, b.AcmeUser),
+		app.GroupMembershipAddRequest_builder{
+			Holder: app.HolderRef_builder{Id: b.holder(t, ctx, b.Acme, "newcomer").Bytes()}.Build(),
+			Group:  app.GroupRef_builder{Id: readers.Bytes()}.Build(),
+		}.Build())
+	x.NoError(err)
+}
+
+// TestAGroupBoundInOneSiteIsNotAGroupBoundAcrossTheTenant.
+//
+// A group may be bound more than once and the bindings need not agree about
+// where. Each is checked at the scope it was made in, which is what keeps a
+// site administrator able to put somebody into a group bound inside their own
+// site and unable to put them into one bound across the tenant -- the same
+// asymmetry `mayGrant` applies to a binding, arriving through the membership.
+func TestAGroupBoundInOneSiteIsNotAGroupBoundAcrossTheTenant(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	seoul := b.site(t, ctx, b.Acme, "seoul")
+
+	// She manages memberships across the tenant, and holds `Holder.Get` in
+	// Seoul alone.
+	b.binds(t, b.AcmeUser, b.role(t, ctx, "manager", joinGroup), nil)
+	b.binds(t, b.AcmeUser, b.role(t, ctx, "seoul-reader", getHolder), &seoul)
+
+	inSeoul := b.groupHolding(t, ctx, "seoul-readers", b.role(t, ctx, "reader", getHolder), &seoul)
+	wide := b.groupHolding(t, ctx, "everyone-readers", b.role(t, ctx, "wide-reader", getHolder), nil)
+
+	conn := served(t, b.Server)
+	wire := asOverTheWire(ctx, b.AcmeUser)
+
+	n := 0
+	join := func(g pdid.Id) error {
+		n++
+		newcomer := b.holder(t, ctx, b.Acme, fmt.Sprintf("newcomer-%d", n))
+		_, err := app.NewGroupMembershipServiceClient(conn).Add(wire,
+			app.GroupMembershipAddRequest_builder{
+				Holder: app.HolderRef_builder{Id: newcomer.Bytes()}.Build(),
+				Group:  app.GroupRef_builder{Id: g.Bytes()}.Build(),
+			}.Build())
+
+		return err
+	}
+
+	x.NoError(join(inSeoul), "a group bound where she holds it was refused")
+
+	err := join(wide)
+	x.Equal(codes.PermissionDenied, status.Code(err),
+		"a grant made in one site put somebody into a group the whole tenant holds")
+}
+
+// groupHolding is a group with a binding to `role`, in a site or across the
+// tenant -- which is the shape a deployment provisions permissions in.
+func (b *built) groupHolding(t *testing.T, ctx context.Context, alias string, role pdid.Id, site *pdid.Id) pdid.Id {
+	t.Helper()
+	x := require.New(t)
+
+	g, err := b.Ungated.Group().Add(ctx, app.GroupAddRequest_builder{
+		Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Alias:  alias,
+	}.Build())
+	x.NoError(err)
+
+	req := app.BindingAddRequest_builder{
+		Role:  app.RoleRef_builder{Id: role.Bytes()}.Build(),
+		Group: app.GroupRef_builder{Id: g.GetId()}.Build(),
+	}
+	if site != nil {
+		req.Site = app.SiteRef_builder{Id: site.Bytes()}.Build()
+	}
+
+	_, err = b.Ungated.Binding().Add(ctx, req.Build())
+	x.NoError(err)
+
+	return mustId(t, g.GetId())
 }
 
 // TestAPermissionHeldThroughAGroupIsStillHeld.

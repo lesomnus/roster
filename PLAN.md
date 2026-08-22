@@ -168,6 +168,62 @@ The fix is the field, at 5, the number `name` has everywhere. `Delegate`'s
 comment was updated rather than deleted: it is right about signing in, and what
 it did not cover is enrolling.
 
+### D40 · The third way round escalation prevention, and the shape they share
+
+Found by asking the question the audit should have started from: *what are all
+the ways one person becomes another?* -- rather than by finding another instance
+of one.
+
+`GroupMembership.Add` named no role and asked nothing. A group is a subject of a
+binding exactly as a person is, which is what a group is **for**, and
+`policy.of` counts a binding that names one as held by everybody in it. So a
+binding written to a group is handed out to whoever joins it, and the membership
+is the other half of the write `Binding.Add` already asks about:
+
+    Alice may call GroupMembership.Add and nothing else.
+    Alice puts herself in the group the deployment binds its admin role to.
+    Alice may now erase anybody.
+
+Two RPCs, and neither of them names a role. The same sentence as the other two
+-- *Alice manages who is in what* -- and a permission an administrator grants
+without hesitating.
+
+#### The shape all three share
+
+D35 called it "a set of rows, and three readers disagreed about it". With a
+third instance the pattern is sharper than that, and worth naming so the fourth
+is found before it ships:
+
+> **A grant is any write that changes what the gate will answer for somebody.**
+
+Not "any write that names a role". `Binding.Add` names one; `TeamMembership.Add`
+names one; `GroupMembership.Add` names none and grants just as much, because
+what it changes is which bindings reach a person. The question to ask of a new
+write is not *does this mention permissions* but *does `policy.of` read
+differently afterwards* -- and `policy.of` reads bindings by holder, bindings by
+group, and roles held in a team. Three sets, and every write that adds a row to
+any of them is a grant.
+
+Which also says what is **not**: `SiteMembership.Add` is not, because nothing in
+`policy.of` reads it. That is worth having checked rather than assumed.
+
+#### What it needed that the other two did not
+
+A group's grants cannot be read through the generated servers -- `BindingFilter`
+carries a `ref` and nothing else, so there is no way to list the bindings of a
+group. `Rules` is the seam that exists for exactly this, and it gained a third
+answer: `Joining`, which is `Granted` asked from the other end of the same rows.
+
+Each binding is checked at the scope it was made in, so a site administrator may
+put somebody into a group bound inside their own site and not into one bound
+across the tenant.
+
+#### And removing somebody is still not this
+
+Taking a permission away is a denial of service rather than an escalation, which
+is where D26 left `Disable`. Somebody who can remove an administrator from a
+group cannot become them.
+
 ### D39 · The grace is the process's, not each listener's
 
 `ShutdownGrace` is five seconds and the number that justifies it is somebody

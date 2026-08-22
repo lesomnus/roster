@@ -336,7 +336,7 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 // Rules is what `server/core` needs to know about a caller, from the rows this
 // policy already reads.
 func Rules(db *ent.Client) core.Rules {
-	return core.Rules{Holds: Holds(db), Granted: Granted(db)}
+	return core.Rules{Holds: Holds(db), Granted: Granted(db), Joining: Joining(db)}
 }
 
 // Granted is every pattern somebody holds through a binding, and **where**.
@@ -376,22 +376,62 @@ func Granted(db *ent.Client) core.Granted {
 			return nil, err
 		}
 
-		gs := make([]core.Grant, 0, len(vs))
-		for _, v := range vs {
-			if v.Edges.Role == nil {
-				continue
-			}
+		return grantsOf(vs), nil
+	}
+}
 
-			g := core.Grant{Methods: v.Edges.Role.Methods}
-			if v.Edges.Site != nil {
-				g.Site = pdid.Id(v.Edges.Site.ID)
-			}
-
-			gs = append(gs, g)
+// Joining is what a group holds, which is what putting somebody into it hands
+// them.
+//
+// The same rows [Granted] reads, asked from the other end: a binding names a
+// holder **or** a group, and this is the group half. A separate query rather
+// than a widened one, for the reason [core.Joining] gives -- the two are asked
+// about different kinds of identifier.
+//
+// The site travels with the methods for [Granted]'s reason, and it matters
+// more here: a group may be bound twice, once across the tenant and once
+// inside a site, and a site administrator who may put somebody into the second
+// must not be able to put them into the first.
+func Joining(db *ent.Client) core.Joining {
+	return func(ctx context.Context, id pdid.Id) ([]core.Grant, error) {
+		vs, err := db.Binding.Query().
+			Where(
+				binding.DateErasedIsNil(),
+				binding.HasGroupWith(group.IDEQ(id.Uuid()), group.DateErasedIsNil()),
+			).
+			WithRole().
+			WithSite().
+			All(ctx)
+		if err != nil {
+			return nil, err
 		}
 
-		return gs, nil
+		return grantsOf(vs), nil
 	}
+}
+
+// grantsOf is a set of bindings as the rule reads them: what each allows, and
+// where.
+//
+// One function because both answers are the same rows read the same way, and
+// two copies of this loop would be two places to remember that a binding with
+// no site is the whole tenant.
+func grantsOf(vs []*ent.Binding) []core.Grant {
+	gs := make([]core.Grant, 0, len(vs))
+	for _, v := range vs {
+		if v.Edges.Role == nil {
+			continue
+		}
+
+		g := core.Grant{Methods: v.Edges.Role.Methods}
+		if v.Edges.Site != nil {
+			g.Site = pdid.Id(v.Edges.Site.ID)
+		}
+
+		gs = append(gs, g)
+	}
+
+	return gs
 }
 
 func Holds(db *ent.Client) core.Holds {

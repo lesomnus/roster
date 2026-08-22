@@ -88,6 +88,21 @@ import (
 // says four useful things between one method and all of them besides.
 type Granted func(ctx context.Context, who pdid.Id) ([]Grant, error)
 
+// Joining is what somebody takes on by being put into a group.
+//
+// A group is a subject of a binding exactly as a person is -- that is what a
+// group is for, and `cmd/policy.go` counts a binding that names one as held by
+// everybody in it. So putting somebody into a group hands them every binding
+// that names it, and the person doing the putting is handing out something.
+//
+// A separate answer from [Granted] rather than the same one asked about a
+// group, because the two questions are asked of different things: `Granted`
+// takes a holder and this takes a group, and a binding names one or the other.
+// One function taking either would be a function whose caller has to say which
+// kind of identifier it just handed over, which is the thing an identifier
+// already says and a signature should not have to repeat.
+type Joining func(ctx context.Context, group pdid.Id) ([]Grant, error)
+
 // Grant is a set of patterns and where they are held.
 //
 // `Site` is `pdid.Nil` for a binding made across the tenant, and otherwise the
@@ -153,6 +168,91 @@ func (s Core) mayGrant(ctx context.Context, field string, methods []string, at p
 	}
 
 	return nil
+}
+
+// mayJoin refuses putting somebody into a group that holds more than the
+// caller does.
+//
+// # It is the same act as binding, one service along
+//
+// `Binding.Add` asks [Core.mayGrant] because writing a binding hands out its
+// role's methods. A binding to a **group** is handed out to everybody in that
+// group -- which is what a group is -- so the membership is the other half of
+// the same write, and it was asked nothing.
+//
+// What that cost is the shape `escalate.go` opens with, for the third time:
+//
+//	Alice may call GroupMembership.Add and nothing else.
+//	Alice puts herself in the group the deployment binds its admin role to.
+//	Alice may now erase anybody.
+//
+// Two RPCs, from "Alice manages who is in what group" -- which is a permission
+// an administrator grants without hesitating, and is the same sentence that
+// made `Binding.Add` and `TeamMembership.Add` dangerous.
+//
+// # Every binding, each at its own scope
+//
+// A group may be bound more than once, and the bindings need not agree about
+// where: one across the tenant, one in a site. Each is checked at the scope it
+// was made in, which is what keeps a site administrator able to add somebody to
+// a group bound inside their own site and unable to add them to one bound
+// across the tenant.
+//
+// # And removing somebody is not this
+//
+// Taking a permission away is a denial of service rather than an escalation,
+// which is where D26 left `Disable` and for the same reason: somebody who can
+// remove an administrator from a group cannot become them.
+func (s Core) mayJoin(ctx context.Context, ref *app.GroupRef) error {
+	if _, ok := frame.From(ctx); !ok {
+		// The deployment's own work through an unwalled server, as everywhere
+		// else in this file: `init` puts the first operator in a group before
+		// there is anybody to refuse.
+		return nil
+	}
+	if ref == nil {
+		// A membership of no group hands out nothing. The generated Add
+		// refuses it for its own reasons.
+		return nil
+	}
+	if s.rules.Joining == nil {
+		return status.Error(codes.PermissionDenied,
+			"this server cannot say what a group holds, so it will not put anybody into one")
+	}
+
+	k, err := s.groupOf(ctx, ref)
+	if err != nil {
+		return err
+	}
+
+	vs, err := s.rules.Joining(ctx, k)
+	if err != nil {
+		return err
+	}
+
+	for _, v := range vs {
+		if err := s.mayGrant(ctx, "group", v.Methods, v.Site); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// groupOf is the identifier a `GroupRef` names, read when it named something
+// else -- the same shape as [Core.teamOf], and read through `Next()` so that a
+// caller who cannot see the group cannot join it either.
+func (s Core) groupOf(ctx context.Context, ref *app.GroupRef) (pdid.Id, error) {
+	if b := ref.GetId(); len(b) > 0 {
+		return pdid.From(b)
+	}
+
+	v, err := s.Next().Group().Get(ctx, app.GroupGetRequest_builder{Ref: ref}.Build())
+	if err != nil {
+		return pdid.Nil, err
+	}
+
+	return pdid.From(v.GetId())
 }
 
 // bindableIn refuses a binding that would put a role somewhere it does not

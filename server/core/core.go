@@ -40,6 +40,10 @@ type Rules struct {
 	// Granted is every method somebody holds **through a binding**, which is
 	// what they may pass on. See [Granted].
 	Granted Granted
+
+	// Joining is what a group holds, which is what putting somebody into it
+	// hands them. See [Joining].
+	Joining Joining
 }
 
 func New(next app.Server, rules Rules) Core { return Core{app.NewOverlay(next), rules} }

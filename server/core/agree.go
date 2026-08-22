@@ -189,6 +189,13 @@ func (s coreGroupMembership) Add(ctx context.Context, req *app.GroupMembershipAd
 		return nil, err
 	}
 
+	// And what being in that group hands them, which is every binding written
+	// to it -- the other half of the write `Binding.Add` already asks about.
+	// See `escalate.go`, "it is the same act as binding, one service along".
+	if err := s.mayJoin(ctx, req.GetGroup()); err != nil {
+		return nil, err
+	}
+
 	return s.GroupMembershipServiceServer.Add(ctx, req)
 }
 
