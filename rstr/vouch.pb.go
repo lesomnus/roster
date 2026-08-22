@@ -171,6 +171,7 @@ type VouchVerifyRequest struct {
 	xxx_hidden_Who    *VouchWho              `protobuf:"bytes,1,opt,name=who"`
 	xxx_hidden_Kind   string                 `protobuf:"bytes,8,opt,name=kind"`
 	xxx_hidden_Secret []byte                 `protobuf:"bytes,9,opt,name=secret"`
+	xxx_hidden_Name   string                 `protobuf:"bytes,5,opt,name=name"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -221,6 +222,13 @@ func (x *VouchVerifyRequest) GetSecret() []byte {
 	return nil
 }
 
+func (x *VouchVerifyRequest) GetName() string {
+	if x != nil {
+		return x.xxx_hidden_Name
+	}
+	return ""
+}
+
 func (x *VouchVerifyRequest) SetWho(v *VouchWho) {
 	x.xxx_hidden_Who = v
 }
@@ -234,6 +242,10 @@ func (x *VouchVerifyRequest) SetSecret(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Secret = v
+}
+
+func (x *VouchVerifyRequest) SetName(v string) {
+	x.xxx_hidden_Name = v
 }
 
 func (x *VouchVerifyRequest) HasWho() bool {
@@ -257,6 +269,25 @@ type VouchVerifyRequest_builder struct {
 	// The secret itself, as typed. Not a hash: hashing is this service's, because
 	// parameters chosen by a caller are parameters this store cannot vouch for.
 	Secret []byte
+	// Which one, when this person has two of a kind. Empty is the only one.
+	//
+	// # Why a first factor takes one at all
+	//
+	// The form beside this said a first factor is its kind's only one by
+	// construction, and `Continue` was where a name was needed. That is true of
+	// signing **in** -- a person is asked for a password, and there is one -- and
+	// it is not true of confirming what they just enrolled.
+	//
+	// `Enrol` invites a name and writes the row unconfirmed, and an unconfirmed
+	// factor is left out of `available` on purpose: it is a QR somebody may have
+	// mis-scanned, so offering it is offering a form that cannot be filled. The
+	// way it gets confirmed is verifying one code against it -- which is this
+	// call, because a continuation is only minted when something is left to
+	// prove, and what was just enrolled is not.
+	//
+	// So without this the first named factor a person adds is one no call can
+	// reach, and the deployment that thinks it has a second factor has none.
+	Name string
 }
 
 func (b0 VouchVerifyRequest_builder) Build() *VouchVerifyRequest {
@@ -266,6 +297,7 @@ func (b0 VouchVerifyRequest_builder) Build() *VouchVerifyRequest {
 	x.xxx_hidden_Who = b.Who
 	x.xxx_hidden_Kind = b.Kind
 	x.xxx_hidden_Secret = b.Secret
+	x.xxx_hidden_Name = b.Name
 	return m0
 }
 
@@ -1046,8 +1078,13 @@ type VouchDelegateRequest_builder struct {
 	Kind         string
 	Secret       []byte
 	Continuation string
-	// Which one, when this person has two of a kind. Only read with a
-	// continuation; a first factor is its kind's only one by construction.
+	// Which one, when this person has two of a kind. Empty is the only one.
+	//
+	// Read either way. It used to say *only with a continuation, since a first
+	// factor is its kind's only one by construction* -- which is true of signing
+	// in and not of what `Enrol` writes: the first second-factor somebody adds
+	// may be named, and confirming it is a first-factor call. See
+	// `VouchVerifyRequest.name`.
 	Name string
 	// What the delegation may be used for, in full:
 	// "/roster.IdentityService/List".
@@ -2105,11 +2142,12 @@ const file_app_vouch_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x16\n" +
 	"\x06tenant\x18\x02 \x01(\tR\x06tenant\x12\x14\n" +
 	"\x05alias\x18\x03 \x01(\tR\x05alias\x12\x18\n" +
-	"\aaddress\x18\x04 \x01(\tR\aaddress\"d\n" +
+	"\aaddress\x18\x04 \x01(\tR\aaddress\"x\n" +
 	"\x12VouchVerifyRequest\x12\"\n" +
 	"\x03who\x18\x01 \x01(\v2\x10.roster.VouchWhoR\x03who\x12\x12\n" +
 	"\x04kind\x18\b \x01(\tR\x04kind\x12\x16\n" +
-	"\x06secret\x18\t \x01(\fR\x06secret\"t\n" +
+	"\x06secret\x18\t \x01(\fR\x06secret\x12\x12\n" +
+	"\x04name\x18\x05 \x01(\tR\x04name\"t\n" +
 	"\vVouchFactor\x12\x12\n" +
 	"\x04kind\x18\b \x01(\tR\x04kind\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12=\n" +

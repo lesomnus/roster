@@ -720,12 +720,21 @@ Nothing written down is plaintext, and it warns once.
 - **`Binding` cannot be re-pointed.** Its edges are immutable, so changing who
   holds what is a delete and an add. That is the safe direction and it is worth
   knowing before writing a console screen that looks like an edit.
-- **No second factor.** It is roster's to hold and to check when it exists — see
-  PLAN.md D20 and D21 — and today there is only a password. Deciding *when* to
-  demand one is not roster's either way; that belongs wherever the browser is.
-  What will be roster's alongside it is the `continuation`: an opaque handle
-  carrying "this person satisfied the first factor" between the two calls, so an
-  app serving two forms holds nothing but a string.
+- **No second factor other than TOTP.** `Vouch.Enrol` writes a seed, `Verify`
+  and `Continue` check the codes, and the `continuation` between them is an
+  opaque handle carrying *this person satisfied the first factor* — so an app
+  serving two forms holds nothing but a string. PLAN.md D20, D21, D29 and D30.
+
+  Two things about it are the operator's. It needs `vouch.keys`
+  (`ROSTER_VOUCH_KEYS`), because a seed is the one secret roster has to be able
+  to read back, and a deployment with no key refuses to enrol rather than
+  storing one in the clear. And deciding *when* to demand a second factor is
+  not roster's either way — that belongs wherever the browser is; roster
+  answers what is left to prove.
+
+  What is not here is WebAuthn. `Credential` is already indexed on
+  `(holder, kind, name)` for it — a passkey lands one row per device — and
+  nothing checks that kind.
 - **No magic link.** Inside the line and unwritten, and the thing in the way is
   F7: an address does not resolve to one person by design, so the usual front
   door for a link has nothing to look anybody up with.

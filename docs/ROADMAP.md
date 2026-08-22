@@ -443,6 +443,7 @@ that the plan defers on purpose.
 | — | D33 · the broker | **done** — `watch.broker: postgres`, `LISTEN`/`NOTIFY` on the rows' own database. The last thing that did not cross replicas. `lesomnus/payday@73a90a0` |
 | — | D34 · single-use, upstream | **done** — `Erase` answered `Empty`, so nothing could tell a win from a loss and one continuation minted up to 24 credentials on Postgres. `protoc-gen-orm-service@efff3ac` + `protoc-gen-orm-ent@f892843`, pins moved through payday |
 | — | D35 · escalation, twice round | **done** — `TeamMembership.Add` handed out a role without asking, and a permission held through a group read as no permission at all — which `mayReach` allows on rather than refuses on. One query now answers all three readers. `cmd/escalate_test.go` |
+| — | D36 · the named factor nothing could confirm | **done** — `Enrol` invites a name and `Verify` took none, so the first named second-factor a person added was one no call could reach and the deployment silently had one factor. `VouchVerifyRequest.name`, `cmd/enrol_test.go` |
 | — | F3 | **already fixed upstream**, and this document was stale about it: `pdgen.checkPresence` refuses a message field that has `Has…` and a NOT NULL column, exempting the three server stamps by their declarations rather than their names. Confirmed here, through `pd doctor` |
 
 ## See also

@@ -86,7 +86,7 @@ func (s *Server) Delegate(ctx context.Context, req *app.VouchDelegateRequest) (*
 		res, v, err = s.step(ctx, handle, req.GetKind(), req.GetName(), req.GetSecret())
 
 	default:
-		res, v, err = s.verify(ctx, req.GetWho(), req.GetKind(), req.GetSecret())
+		res, v, err = s.verify(ctx, req.GetWho(), req.GetKind(), req.GetName(), req.GetSecret())
 	}
 	if err != nil {
 		return nil, err

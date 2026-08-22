@@ -134,7 +134,7 @@ func New(open, walled app.Server, opts ...Option) *Server {
 // cost the same time. The one exception is a lockout, and `VouchVerifyResponse`
 // says why that trade was taken.
 func (s *Server) Verify(ctx context.Context, req *app.VouchVerifyRequest) (*app.VouchVerifyResponse, error) {
-	res, _, err := s.verify(ctx, req.GetWho(), req.GetKind(), req.GetSecret())
+	res, _, err := s.verify(ctx, req.GetWho(), req.GetKind(), req.GetName(), req.GetSecret())
 
 	return res, err
 }
@@ -149,7 +149,7 @@ func (s *Server) Verify(ctx context.Context, req *app.VouchVerifyRequest) (*app.
 // One function rather than two, because the second copy is the one that forgets
 // the lockout, or the erasure check, or that every refusal has to cost the
 // same.
-func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind string, secret []byte) (*app.VouchVerifyResponse, *app.Credential, error) {
+func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind, name string, secret []byte) (*app.VouchVerifyResponse, *app.Credential, error) {
 	ref, err := refOf(who)
 	if err != nil {
 		return nil, nil, err
@@ -179,7 +179,7 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind string, sec
 		return nil, nil, err
 	}
 
-	v, err := s.credential(ctx, s.open, ref, kind)
+	v, err := s.credentialNamed(ctx, s.open, ref, kind, name)
 	if err != nil {
 		if status.Code(err) != codes.NotFound {
 			return nil, nil, err

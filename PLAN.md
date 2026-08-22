@@ -137,6 +137,37 @@ over memberships, credential verification.
 Recorded as they are made, with the reason, so that a later disagreement argues
 with the reason rather than rediscovering the question.
 
+### D36 · A first factor is its kind's only one, except the one being enrolled
+
+`VouchVerifyRequest` took no name, and `VouchDelegateRequest.name` said why:
+*only read with a continuation; a first factor is its kind's only one by
+construction.* That is true of signing **in** -- somebody is asked for a
+password and there is one -- and it is not true of the call that confirms what
+was just enrolled.
+
+`Enrol` invites a name (*"the phone", "the yubikey in the drawer"*) and writes
+the row **unconfirmed**, which D29 chose deliberately: an unconfirmed factor is
+left out of `available`, because a QR somebody may have mis-scanned is a form
+that cannot be filled. What confirms it is verifying one code against it, and
+that call is a first-factor call -- a continuation is minted only when
+something is left to prove, and what was just enrolled is not.
+
+So for a **named** first factor there was no call that could reach it. `Verify`
+resolved by kind with no name, and an unset name in a `CredentialRefByKind` is
+`name = ""` rather than "any", so it matched the unnamed row and not this one.
+The person scanned a code, the deployment believed it had a second factor, and
+nothing ever asked for one.
+
+Two things kept it invisible. Every test enrolled the unnamed factor first --
+`totp_test.go` adds "the spare phone" as a *second* one and never confirms it
+-- and the two halves it needed are each correct on their own: leaving
+unconfirmed factors out of `available` is D29's rule, and matching an empty
+name exactly is what makes "the only one" mean something.
+
+The fix is the field, at 5, the number `name` has everywhere. `Delegate`'s
+comment was updated rather than deleted: it is right about signing in, and what
+it did not cover is enrolling.
+
 ### D35 · Escalation prevention is a set of rows, and three readers disagreed about it
 
 `escalate.go` states one rule -- *what you grant must be a subset of what you

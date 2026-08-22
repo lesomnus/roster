@@ -171,6 +171,13 @@ func passphrase() (string, error) {
 // An unconfirmed factor still **verifies** -- that is how it gets confirmed --
 // and it does not appear in what a person *has*. The two are different
 // questions and only the second one is about whether to ask for it.
+//
+// Which is why `Verify` takes a name. A first factor is its kind's only one
+// when somebody is signing in, so the name was `Continue`'s alone -- and the
+// call that confirms what was just enrolled is a first-factor call about a row
+// that may be named. Without it the first named factor a person adds is one
+// nothing can reach: `Verify` matched the unnamed row, and no continuation is
+// minted to reach `Continue` with, because there is nothing left to prove.
 func (s *Server) Enrol(ctx context.Context, req *app.VouchEnrolRequest) (*app.VouchEnrolResponse, error) {
 	if kindOf(req.GetKind()) != KindTotp {
 		// A password is `Set` or `Reset`, and neither of those is a thing a
