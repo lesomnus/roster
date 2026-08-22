@@ -900,10 +900,31 @@ and get the check, and one who has not gets the write.
 
 | | where | why it cannot be the other place |
 | --- | --- | --- |
-| `date_disabled` | `cmd.Resolver`, and `vouch.Verify` | the resolver is where every credential that resolves to a holder arrives -- a session, an `rt_`, a delegation -- and it never sees a password. `vouch` is where somebody signs in and there is no frame yet |
+| `date_disabled` | `cmd.Resolver`, `vouch.Verify`, and `keys.findKey` | the resolver is where every credential that resolves to a holder arrives **at roster** -- a session, an `rt_`, a delegation -- and it never sees a password. `vouch` is where somebody signs in and there is no frame yet. The third was missing: a product app's token never reaches the resolver, because the app asks `TokenService/Introspect` instead. See below |
 | `date_invalidated` | the credential's own lookup | the resolver sees the holder and not the credential, so it cannot know **when** the thing in front of it was issued. Only the row does |
 
 That split is the whole of why this is two changes and not one.
+
+#### And the row this table did not have
+
+The first row said `cmd.Resolver` covers *every credential that resolves to a
+holder*, which is true of every credential arriving **here** -- and a product
+app's is not one of them. custody is handed an `rt_` or an `rd_` and asks
+`TokenService/Introspect` what it stands for; that call carries the *app's* own
+key, so the person's credential is a string in the request body and never
+reaches the resolver at all.
+
+Which made this act do half of what it says. Somebody suspended could not sign
+in and could not call roster, and went on working in every app in front of it
+until their token expired -- possibly never, since `ApiKey.date_expires` is
+nullable on purpose. The one act whose whole point is *this person, not now*
+did not reach where the person actually was.
+
+It is read in `keys.findKey` now, which is where both answers this package
+gives are built -- `Store`'s, which the resolver would have caught a moment
+later anyway, and `Service`'s, which nothing was going to catch. One place
+rather than two that have to agree, and it is the same `NotFound` every other
+refusal about a token uses, so telling them apart says nothing.
 
 #### What the epoch voids, and what it deliberately does not
 

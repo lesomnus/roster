@@ -135,9 +135,32 @@ type bearer struct {
 }
 
 // findKey is [lookup] in the words [bearer] uses.
+// findKey is [lookup] as a bearer, plus the one holder-level refusal both
+// tables share.
+//
+// **A suspended holder's token stands for nobody.** D26's table puts
+// `date_disabled` at `cmd.Resolver`, on the grounds that it is where every
+// credential resolving to a holder arrives -- which is true of every credential
+// arriving *here* and not of a product app's. custody is handed an `rt_` and
+// asks `TokenService/Introspect`; nothing about that call passes through the
+// resolver, so suspending somebody stopped them signing in and left them
+// working in every app in front until the token expired, which for a key is
+// possibly never.
+//
+// So it is here, where the two answers this package gives are both built:
+// [Store]'s, which the resolver would have caught a moment later anyway, and
+// [Service]'s, which nothing else was going to catch at all. One place rather
+// than two that have to agree.
+//
+// It is not the epoch and does not read like it. `date_invalidated` voids what
+// was issued before a moment and is compared against this row's own timestamp;
+// this is a fact about the person now, so enabling them gives the token back.
 func findKey(ctx context.Context, s app.Server, token string) (*bearer, error) {
 	v, err := lookup(ctx, s, token)
 	if err != nil {
+		return nil, err
+	}
+	if err := signable(v.GetHolder()); err != nil {
 		return nil, err
 	}
 
@@ -147,6 +170,19 @@ func findKey(ctx context.Context, s app.Server, token string) (*bearer, error) {
 		Methods: v.GetMethods(),
 		Expires: expiryOf(v),
 	}, nil
+}
+
+// signable refuses a token whose holder is suspended. See [findKey].
+//
+// The same `NotFound` everything else about a token is refused with, so that
+// telling them apart says nothing: an app hearing it stops trusting the string
+// and sends the person to authenticate again, which is where they find out.
+func signable(v *app.Holder) error {
+	if v.GetDateDisabled() != nil {
+		return status.Error(codes.NotFound, "no such token")
+	}
+
+	return nil
 }
 
 // findDelegation is [lookup] over the other table, and differs in three things.
@@ -167,8 +203,10 @@ func findKey(ctx context.Context, s app.Server, token string) (*bearer, error) {
 // `date_invalidated` says everything issued before a moment is void, and the
 // only thing that knows when this credential was issued is this row. So the
 // comparison is between two columns that are never in the same place again --
-// which is also why the resolver, which sees the holder and not the credential,
-// covers `date_disabled` and cannot cover this.
+// which is why the resolver, which sees the holder and not the credential,
+// cannot cover this. It does cover `date_disabled`, for every credential that
+// reaches roster -- and a product app's does not reach it, so that is read
+// here too; see [findKey].
 //
 // **The issuer comes back unchecked**, because there is nothing here to check
 // it against: `auth.TokenStore.Lookup` is handed the token and nothing else --
@@ -187,6 +225,7 @@ func findDelegation(ctx context.Context, s app.Server, token string) (*bearer, e
 			Holder: app.HolderSelect_builder{
 				Tenant:          app.TenantSelect_builder{}.Build(),
 				DateInvalidated: z.Ptr(true),
+				DateDisabled:    z.Ptr(true),
 			}.Build(),
 		}.Build(),
 	}.Build())
@@ -213,6 +252,12 @@ func findDelegation(ctx context.Context, s app.Server, token string) (*bearer, e
 	// that it is too old.
 	if w := v.GetHolder().GetDateInvalidated(); w != nil && !v.GetDateCreated().AsTime().After(w.AsTime()) {
 		return nil, status.Error(codes.NotFound, "no such token")
+	}
+
+	// And whoever it is about has to be somebody who may sign in at all, which
+	// is a different question from when this was issued. See [findKey].
+	if err := signable(v.GetHolder()); err != nil {
+		return nil, err
 	}
 
 	return &bearer{

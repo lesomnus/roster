@@ -301,8 +301,12 @@ func lookup(ctx context.Context, s app.Server, token string) (*app.ApiKey, error
 			// [Store] does not use. One select rather than two because the
 			// edge is a join the query does either way once it is asked for,
 			// and a second shape here is a second thing to keep in step.
+			//
+			// And whether they are suspended, which both halves do use; see
+			// [findKey].
 			Holder: app.HolderSelect_builder{
-				Tenant: app.TenantSelect_builder{}.Build(),
+				Tenant:       app.TenantSelect_builder{}.Build(),
+				DateDisabled: z.Ptr(true),
 			}.Build(),
 		}.Build(),
 	}.Build())
