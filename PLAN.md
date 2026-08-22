@@ -168,6 +168,29 @@ The fix is the field, at 5, the number `name` has everywhere. `Delegate`'s
 comment was updated rather than deleted: it is right about signing in, and what
 it did not cover is enrolling.
 
+### D38 · Closing a deployment closed one of its two planes
+
+Found by running this suite the way its own CI runs it, which nothing here had
+done: `postgres:17` as GitHub hands it out allows a hundred connections, and the
+`cmd` package ran out part way through. What came back was `sorry, too many
+clients already` against whichever tests happened to be running when the last
+connection was taken -- a different set every run, which reads exactly like a
+flaky suite and is not one.
+
+`Build` is recursive, so a deployment naming a `control:` plane is two servers
+with a database and a pool each. `Close` was one line closing the outer one.
+
+Why it survived: the caller that matters in production calls it once and then
+exits, so a leaked pool is a process that was ending anyway. The caller that
+does care is a suite, where every test that needs keys, a console or an
+operator builds both planes -- and the symptom arrives as somebody else's test
+failing.
+
+Which is the argument for the test being about `Close` rather than about the
+suite: `cmd/close_test.go` asks the database whether both pools were given
+back, because only the database knows and a count kept here would be a second
+answer.
+
 ### F13 · The record of an erase was filed where the erased side could not read it -- **fixed upstream**
 
 The trail is filed under the tenant of the **thing that changed**, which is

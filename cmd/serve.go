@@ -471,7 +471,34 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	return s, nil
 }
 
-func (s *Server) Close() error { return s.Db.Close() }
+// Close gives back what this deployment holds, which is **both** planes.
+//
+// `Build` is recursive, so a deployment that names a `control:` plane is two
+// servers with a database and a pool each. This was one line closing the outer
+// one, and the inner pool was never given back.
+//
+// A process on its way out does not care, which is why it went unnoticed: the
+// one caller in production calls this once and then exits. A suite is the
+// caller that does care -- every test that needs keys, a console or an operator
+// builds both planes -- and against PostgreSQL with the hundred connections its
+// image allows, the package ran out part way through. What came back was
+// `too many clients already` against whichever tests were running when the last
+// connection was taken: a different set every run, which reads exactly like a
+// flaky suite and is not one.
+//
+// Both are attempted and the first error is answered, rather than returning on
+// the first: a data plane that would not close is not a reason to leave the
+// control plane's connections held as well.
+func (s *Server) Close() error {
+	err := s.Db.Close()
+	if s.Control != nil {
+		if e := s.Control.Close(); err == nil {
+			err = e
+		}
+	}
+
+	return err
+}
 
 // Grpc builds the server every call arrives at.
 //
