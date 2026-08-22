@@ -413,13 +413,64 @@ narrowed only by its own method list.
 So both doors need the database: a shell on the box, or `serve` applying the
 policy on its own clock.
 
-#### What this does not do yet
+### Destroying somebody, which an erase does not
 
-Erase **one person** from the trail on request. The policy above is about age
-and reaches everybody's rows at once; a right-to-erasure request is about a
-subject, and what it should blank — the contents of writes about them, their
-identifier as an actor, or both — is a decision this deployment's obligations
-make. See PLAN.md.
+`roster holder erase` makes somebody **unreachable and destroys nothing.** The
+row keeps their alias, name and profile; their addresses and external identities
+keep theirs; and the trail holds a copy of all of it — including the copy the
+erase itself wrote, because `Audit.value` is the row as the event left it.
+
+That is right for *this person has left*. For *destroy what you hold about them*
+there is a second act:
+
+```sh
+roster forget @acme/erin        # now, because they asked
+roster forget                   # everybody whose grace has run out
+roster forget --dry-run         # who that would be
+roster restore @acme/erin       # undo the erase, while there is one to undo
+```
+
+```yaml
+holder:
+  forget_after: 720h   # 30 days after an erase. empty is never
+  every: 24h
+```
+
+**Two triggers and one act.** A request has no grace — they asked, and the clock
+a regulator counts is already running (GDPR Article 12(3) gives a month;
+개인정보보호법's 시행령 reads *지체 없이* as five days). An account closing has one,
+and that window is **operational rather than legal**: a mistaken deletion, a
+compromised account deleting things, a billing dispute. Thirty days is the
+ordinary answer and it fits inside the month.
+
+**`restore` is what makes the window a grace.** Without it, thirty days and then
+destruction is a delay. There was no way to undo an erase at all — a patch
+carries no `date_erased`, deliberately, since a caller who could write it could
+un-erase anybody — so this goes through the database like everything else here.
+
+It refuses somebody already forgotten. A forgotten holder has no alias, and that
+is the honest answer: there is no name left to bring back.
+
+#### What goes, and what stays
+
+Everything that says *this person reaches here, signs in there, holds this* is
+removed — addresses, external identities, verifiers, API keys, sessions,
+attempts, links, and the rows that say what they may do.
+
+The `Holder` row **stays, blank**. Its identifier is `Audit.actor_id` and twelve
+foreign keys point at it, and what makes it personal data is that it *resolves*.
+Emptied, it is a stable pseudonym reaching nothing: *the same someone did these
+fourteen things*, with no way to say who.
+
+The trail keeps its **events** and loses its **contents**, in the database and
+in the archive both. The actor, the action, the object and the time stay;
+`value` and `patch` go. Both halves matter and they pull against each other — a
+version that destroyed the rows would let somebody erase the evidence of what
+was done *to* them by asking to be forgotten.
+
+Note the archive is reached only if `audit.archive` is set, and it is the one
+place anything here rewrites a file. If you keep archives elsewhere as well —
+backups, object storage — those are yours to reach.
 
 ## A key for a service
 

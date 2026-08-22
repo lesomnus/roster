@@ -38,6 +38,7 @@ import (
 	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/console"
 	"github.com/lesomnus/roster/server/core"
+	"github.com/lesomnus/roster/server/forget"
 	"github.com/lesomnus/roster/server/front"
 	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/me"
@@ -491,6 +492,21 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		log.From(ctx).InfoContext(ctx, "trail: retention", "policy", p.String())
 
 		s.Spin = append(s.Spin, trail.Sweep(pd.TrailStore(s.Ent), p))
+	}
+
+	// And the other window, which is about a person rather than about age.
+	//
+	// Same shape and the same reason for being loud: nothing else destroys what
+	// is held about somebody who has left, so a sweep that has been failing is
+	// a deployment holding what it said it would destroy. Nothing is appended
+	// when no window is named, and the nested control-plane build is handed a
+	// config with no `holder` -- its people are the deployment's own operators,
+	// not customers with a right to be forgotten.
+	if c.Holder.ForgetAfter > 0 {
+		log.From(ctx).InfoContext(ctx, "forget: after an erase",
+			"after", c.Holder.ForgetAfter, "archive", c.Audit.Archive != "")
+
+		s.Spin = append(s.Spin, forget.Sweep(s.Ent, c.Holder.ForgetAfter, c.Audit.Archive, c.Holder.Every))
 	}
 
 	if c.Watch.Outbox {

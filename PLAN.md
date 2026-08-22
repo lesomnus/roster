@@ -399,6 +399,94 @@ asked: `internal/apptest/cmd/outboxsecret_test.go` upstream, and
 `cmd/outboxsecret_test.go` here, because it is a property of the pinned payday
 rather than of anything in roster.
 
+### D46 · An erase makes somebody unreachable; forgetting them destroys something
+
+Nothing in roster destroyed anything about a person, and *"we deleted them"* was
+not true of any call it served.
+
+`Holder.Erase` writes `date_erased` and the version beside it and stops. Nothing
+cascades -- that was decided and is right -- so the row keeps the alias, the
+name and the profile, the addresses and the external identities keep theirs, and
+the trail holds a copy of all of it **including the copy the erase itself
+wrote**, since `Audit.value` is the row as the event left it. Erasing somebody
+is the one act that puts their whole record into the trail one more time.
+
+Which is the correct shape for *this person has left*. It is the wrong one for
+*destroy what you hold about them*, and there was nothing else.
+
+#### Two triggers, one act
+
+A **request** -- somebody exercising a right -- has no grace. They asked, and
+the clock a regulator counts is already running: GDPR Article 12(3) gives a
+month, and 개인정보보호법's 시행령 reads *지체 없이* as five days. A window inside
+that is risk bought with nothing.
+
+An **account closing** has one, and the window is **operational rather than
+legal**: a mistaken deletion, a compromised account deleting things, a billing
+dispute. Thirty days is the ordinary answer across the industry and it fits
+inside the month. `holder.forget_after`.
+
+They end in the same place and differ only in when, which is why they are one
+function with two callers.
+
+#### The window is a grace only because of `restore`
+
+roster could not undo an erase at all. `HolderPatchRequest` carries no
+`date_erased`, deliberately -- a caller who could write it could un-erase
+anybody -- so there was no path back through any server.
+
+Without one, *thirty days and then destruction* is a delay rather than a grace,
+and every reason the window exists is a reason that needs the mistake to be
+reversible. `roster restore` is that, through ent, for the same reason
+everything else here is: a shell on the box is the credential, and it is the one
+nothing steals over the wire.
+
+It refuses somebody already forgotten, and what answers that is the row itself
+-- a forgotten holder has no alias, because that is the first thing taken. Not a
+column, because a column would be a second answer that a row written before it
+existed gets wrong, and nothing it could read is more honest than *there is no
+name here any more*.
+
+#### What is destroyed, and the thing that pulls against it
+
+Everything that exists to say *this person reaches here, signs in there, holds
+this* goes: addresses, external identities, verifiers, keys, sessions, attempts,
+links, and the rows that say what they may do. Those are meaningless without the
+person, and a destroyed person holding permissions is a row waiting to be a
+surprise -- one of the twelve foreign keys into `holder` is `SET NULL`, so
+leaving the bindings would leave one pointing at nobody.
+
+The `Holder` row **stays, blank**. Its identifier is `Audit.actor_id` and twelve
+foreign keys point at it, and what makes it personal data is that it *resolves*.
+Emptied of the columns that name somebody it is a stable pseudonym reaching
+nothing, which is what a trail wants: *the same someone did these fourteen
+things*, with no way to say who.
+
+And the trail keeps its events and loses its contents. Both halves matter and
+they pull against each other: a version that destroyed the rows would let
+somebody erase the evidence of what was done **to** them by asking to be
+forgotten. `Audit.value` and `Audit.patch` are blanked; the actor, the action,
+the object and the time stay. That is what a legal-obligation exemption is an
+exemption *for*.
+
+#### It reaches the archive, and that is the one place an archive is edited
+
+Not reaching it would destroy the copy an operator can see and leave the copy on
+the disk beside it -- not a gap in a policy, an answer that is wrong in the
+direction that matters. `Purge` destroys whole files and `Archive` only appends,
+precisely so that nothing rewrites one; this is the exception, written beside
+itself, synced, and renamed over.
+
+#### And the set of objects is wider than the person
+
+`Audit.value` for a write to an `Email` row is the address, and that row's
+`object_id` is the email's rather than the person's. A pass that named only the
+holder would blank the record of the person and leave every address they ever
+had in the trail beside it. So every identifier destroyed is collected on the
+way past and named to the redactor.
+
+`server/forget`, `cmd/forget.go`, and payday's half in `lesomnus/payday@63ee846`.
+
 ### D45 · The retention is payday's, and it is per kind of thing
 
 D44 built the retention policy in roster, and both halves of that were wrong.

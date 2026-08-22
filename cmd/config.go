@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/flg"
@@ -125,7 +126,55 @@ type Config struct {
 	// that grows by the key and is the last one anybody wants a clock deleting
 	// from.
 	Audit config.AuditConfig `yaml:"audit"`
+
+	// Holder is what happens to somebody after they leave.
+	//
+	// roster's and not payday's, and that is where the line falls: payday holds
+	// the trail and offers the half of forgetting that has no judgement in it,
+	// and *which rows are a person's* is a fact about this app's schema that no
+	// framework can read. See `server/forget` and `docs/RUNTIME.md` §7.
+	Holder HolderConfig `yaml:"holder"`
 }
+
+// HolderConfig is how long an erased person is kept before what is held about
+// them is destroyed.
+//
+// # Two clocks again, and only one of them is here
+//
+// `Holder.Erase` makes somebody unreachable and destroys nothing. This is the
+// window between that and destruction, and it is **operational rather than
+// legal**: a mistaken deletion, a compromised account deleting things, a
+// billing dispute. Thirty days is the ordinary answer and it fits inside GDPR's
+// month; a deployment under 개인정보보호법's five days for an explicit request
+// wants it shorter, or uses `roster forget <who>`, which has no window at all
+// because the person asked.
+//
+// The other clock -- an explicit request -- is not configuration. It is a
+// command, because it is somebody exercising a right rather than a policy
+// running.
+//
+// Empty is **never**, which is the same default the trail's retention has and
+// for the same reason: a version upgrade is not the right thing to start
+// destroying a deployment's data.
+type HolderConfig struct {
+	// ForgetAfter is how long after an erase somebody is destroyed. Empty is
+	// never.
+	ForgetAfter time.Duration `yaml:"forget_after"`
+
+	// Every is how often that is checked. Empty is a day, which is what
+	// `trail.Swept` is and for the same reason: what this period decides is
+	// only how far past the window somebody may sit.
+	Every time.Duration `yaml:"every"`
+}
+
+// Archive is where the trail's archive lives, which forgetting has to reach as
+// well as the database.
+//
+// Read off `audit:` rather than repeated here, because there is one archive and
+// two things that write to it. A deployment that kept them apart would have a
+// person destroyed in one copy and not the other, which is the failure this
+// whole act exists to prevent.
+func (c HolderConfig) Archive(from Config) string { return from.Audit.Archive }
 
 // VouchConfig is what checking secrets needs beyond the rows.
 type VouchConfig struct {
@@ -426,6 +475,8 @@ func Cmd(c *Config) *xli.Command {
 			NewCmdInit(c),
 			NewCmdKey(c),
 			NewCmdTrail(c),
+			NewCmdForget(c),
+			NewCmdRestore(c),
 			NewCmdServe(c),
 		}, NewCmdEntities(c)...),
 
