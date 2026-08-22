@@ -693,6 +693,16 @@ PDTEST_POSTGRES=postgres://roster:...@localhost:5432/roster?sslmode=disable \
 Worth running before anything that touches spending a handle -- a continuation,
 a link, a delegation.
 
+Give the server room for connections. Each test builds a deployment and most of
+them build two planes, so a default `max_connections` of 100 runs out part way
+through and the failures that come back say `sorry, too many clients already`
+against whichever tests happened to be running -- a different set each time,
+which reads exactly like a flaky suite and is not one:
+
+```sh
+docker run -d -e POSTGRES_PASSWORD=… postgres:17-alpine -c max_connections=400
+```
+
 ### The rest of the checklist
 
 - **Both planes on a shared database.** The driver is named by what registers

@@ -784,6 +784,64 @@ func TestAPasswordSignInReadsItsOwnRecord(t *testing.T) {
 		defer got.Body.Close()
 		x.Equal(http.StatusForbidden, got.StatusCode)
 	})
+
+	// The other half of the first form, which every suite here had left
+	// unexercised.
+	//
+	// A sign-in page collects one field and what people type into it is far more
+	// often an address than an alias, so `frontdoor` takes either and decides
+	// which one the body named -- an address is a lookup through `Email` and an
+	// alias is a reference, and they are two different resolutions of the same
+	// question. Everything written about this app signs in by alias, so the
+	// branch a deployment's users actually take was the one nothing ran.
+	//
+	// What that hides is quiet in the worst way: a body naming an address
+	// resolves to nobody, and the answer to nobody is deliberately the answer to
+	// a wrong password. So the failure is not an error anywhere -- it is every
+	// person on the deployment being told their password is wrong, and retyping
+	// it.
+	//
+	// Last, and with a jar of its own, so that the counts the subtests above
+	// assert are counts of what they were about.
+	t.Run("and the same person named by the address they typed", func(t *testing.T) {
+		x := require.New(t)
+
+		jar, err := cookiejar.New(nil)
+		x.NoError(err)
+
+		c := &http.Client{Jar: jar}
+
+		res, err := c.Post(d.app.URL+"/session", "application/json",
+			strings.NewReader(`{"address":"erin@acme.example","password":"correct horse battery staple"}`))
+		x.NoError(err)
+		defer res.Body.Close()
+		x.Equal(http.StatusNoContent, res.StatusCode)
+
+		// And it is Erin. Signing in is a status code, and a status code says
+		// only that somebody was signed in -- so the record is read and the
+		// name in it is what makes this a test about *which* person an address
+		// resolves to rather than about whether the branch runs at all.
+		got, err := c.Get(d.app.URL + "/me")
+		x.NoError(err)
+		defer got.Body.Close()
+		x.Equal(http.StatusOK, got.StatusCode)
+
+		var v record
+		x.NoError(json.NewDecoder(got.Body).Decode(&v))
+		x.Equal("erin", v.Alias)
+
+		// An address nobody here has is the same answer as a wrong password,
+		// which is the sentence roster's `verify` is written around and which
+		// this branch is the one place in this app that could undo. The lookup
+		// fails a step earlier than the comparison does, so a refusal of its own
+		// shape would be a list of which addresses have accounts, readable by
+		// anyone with a form.
+		miss, err := c.Post(d.app.URL+"/session", "application/json",
+			strings.NewReader(`{"address":"nobody@acme.example","password":"correct horse battery staple"}`))
+		x.NoError(err)
+		defer miss.Body.Close()
+		x.Equal(http.StatusUnauthorized, miss.StatusCode)
+	})
 }
 
 // TestTheProviderHalfHasNoDelegation is the seam D23 left, said out loud.
@@ -1179,4 +1237,195 @@ func TestSomebodyRemovesAWayInFromTheirOwnPage(t *testing.T) {
 	// next -- which is the state a person reaches by removing things until
 	// there is one.
 	x.Equal("password", read().SignsIn[0].Kind)
+}
+
+// TestSigningOutEverywhereEndsBothHalves is the third button on that screen,
+// and the only one nothing was pinning.
+//
+// It is the one act here that is written in two places at once. roster is told
+// *everything issued before this moment is void*, which is one column and
+// reaches every app and every other browser; this app ends the cookie it minted,
+// which roster does not know exists. Neither half can be seen from where the
+// other is written, so either can stop working in silence -- and what that
+// silence is, both ways round, is somebody who pressed "sign out everywhere"
+// and is still signed in. If roster's half went missing the laptop they pressed
+// it about would still be reading their record; if this app's half went missing
+// the browser in their hand would be.
+//
+// The two acts beside it -- reading the record and removing a way in -- have had
+// an end-to-end test each since the screen was written, and the comment above
+// [TestTheAccountScreenIsServed] says all three do. This is the third one.
+func TestSigningOutEverywhereEndsBothHalves(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "acme"})
+
+	h, err := d.ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),
+		Alias:  "erin",
+	}.Build())
+	x.NoError(err)
+
+	_, err = vouch.New(d.ungated, d.ungated).Set(ctx, rstr.VouchSetRequest_builder{
+		Who:    rstr.VouchWho_builder{Id: h.GetId()}.Build(),
+		Secret: []byte("correct horse battery staple"),
+	}.Build())
+	x.NoError(err)
+
+	// A browser that has signed in, as a browser: its own jar, so that two of
+	// them are two people as far as everything below is concerned.
+	signIn := func() *http.Client {
+		t.Helper()
+
+		jar, err := cookiejar.New(nil)
+		x.NoError(err)
+
+		c := &http.Client{Jar: jar}
+
+		res, err := c.Post(d.app.URL+"/session", "application/json",
+			strings.NewReader(`{"alias":"erin","password":"correct horse battery staple"}`))
+		x.NoError(err)
+		defer res.Body.Close()
+		x.Equal(http.StatusNoContent, res.StatusCode)
+
+		return c
+	}
+
+	// Whether this browser can still draw the page, which is the only thing a
+	// browser can observe about any of this.
+	reads := func(c *http.Client) int {
+		t.Helper()
+
+		res, err := c.Get(d.app.URL + "/me")
+		x.NoError(err)
+		defer res.Body.Close()
+
+		return res.StatusCode
+	}
+
+	epoch := func() *rstr.Holder {
+		t.Helper()
+
+		v, err := d.ungated.Holder().Get(ctx, rstr.HolderGetRequest_builder{
+			Ref:    rstr.HolderRef_builder{Id: h.GetId()}.Build(),
+			Select: rstr.HolderSelect_builder{DateInvalidated: proto.Bool(true)}.Build(),
+		}.Build())
+		x.NoError(err)
+
+		return v
+	}
+
+	// Before anybody has signed in, because this is the press that must not
+	// reach roster at all.
+	//
+	// `acting` is the whole of what makes this the person's own act. Without it
+	// the call still goes out -- on the connection this app authenticates with,
+	// whose actor is the login app's own Holder -- and `SignOutEverywhere` takes
+	// no subject, so what it would write is an epoch on the front door itself,
+	// from an unauthenticated POST anybody on the internet can send. That is a
+	// refusal worth an assertion rather than an obvious one: the handler reads
+	// as if the credential were the person's, and it only is because one line
+	// above it made it so.
+	t.Run("a browser that never signed in cannot press it", func(t *testing.T) {
+		x := require.New(t)
+
+		res, err := http.Post(d.app.URL+"/me/sign-out-everywhere", "application/json", nil)
+		x.NoError(err)
+		defer res.Body.Close()
+		x.Equal(http.StatusForbidden, res.StatusCode)
+
+		v, err := d.ungated.Holder().Get(ctx, rstr.HolderGetRequest_builder{
+			Ref: rstr.HolderRef_builder{
+				Slug: rstr.HolderRefBySlug_builder{
+					Alias:  proto.String("login-app"),
+					Tenant: rstr.TenantRef_builder{Alias: proto.String("acme")}.Build(),
+				}.Build(),
+			}.Build(),
+			Select: rstr.HolderSelect_builder{DateInvalidated: proto.Bool(true)}.Build(),
+		}.Build())
+		x.NoError(err)
+		x.Nil(v.GetDateInvalidated(),
+			"an anonymous POST wrote an epoch on the app's own holder")
+	})
+
+	// Two browsers, because the half that reaches the other one cannot be seen
+	// from the browser that pressed the button: this app drops what it holds for
+	// **this** browser whatever roster answered, so a `SignOutEverywhere` that
+	// never left the process would look exactly like a working one from here.
+	laptop := signIn()
+	phone := signIn()
+
+	x.Equal(http.StatusOK, reads(laptop))
+	x.Equal(http.StatusOK, reads(phone))
+	x.Nil(epoch().GetDateInvalidated(), "nothing has been signed out of yet")
+
+	both, err := d.ungated.Delegation().List(ctx, rstr.DelegationListRequest_builder{}.Build())
+	x.NoError(err)
+	x.Len(both.GetItems(), 2, "two browsers, two credentials")
+
+	res, err := laptop.Post(d.app.URL+"/me/sign-out-everywhere", "application/json", nil)
+	x.NoError(err)
+	defer res.Body.Close()
+	x.Equal(http.StatusNoContent, res.StatusCode)
+
+	t.Run("this browser's own session is over", func(t *testing.T) {
+		x := require.New(t)
+
+		x.Equal(http.StatusForbidden, reads(laptop),
+			"the browser that pressed it is still signed in to this app")
+
+		// And the browser was told, rather than merely being forgotten here. A
+		// session dropped on the server and left in the jar is somebody who
+		// looks signed in to every page that draws a name before it makes a
+		// call, until the first call fails -- which on this screen is after the
+		// button they pressed appeared to do nothing.
+		var ended bool
+		for _, c := range res.Cookies() {
+			if c.MaxAge < 0 || c.Value == "" {
+				ended = true
+			}
+		}
+		x.True(ended, "the cookie was dropped here and left in the browser")
+
+		// What is deliberately not asserted here is the count of rows in
+		// roster's table. `SignOut` revokes the delegation it was holding, and
+		// `Revoke` finds one through the same lookup the epoch was just written
+		// in front of -- so it finds nothing and removes nothing, and both rows
+		// are left for `Sweep` to collect when their own hour runs out. Neither
+		// is reachable in the meantime, for exactly that reason, which is why
+		// this is a note and not a defect: a count that moved would be a nicer
+		// table and not a different answer to any question a browser can ask.
+	})
+
+	t.Run("and so is the one on the other device", func(t *testing.T) {
+		x := require.New(t)
+
+		// The epoch is the only thing that could have reached it. Nothing told
+		// this app about the phone -- its delegation is still in the map here
+		// and its row is still in roster's table -- so what stops the call is
+		// roster reading *issued before the moment this holder was invalidated*
+		// as it resolves the credential.
+		x.NotNil(epoch().GetDateInvalidated(), "roster was never told")
+
+		// 502 and not 403, which is worth being exact about: this app cannot
+		// know the string it is holding has gone dead, so it asks with it and
+		// roster refuses. A page that answered 403 here would be one that had
+		// checked something locally -- and anything local is a copy of an
+		// answer only roster has.
+		x.Equal(http.StatusBadGateway, reads(phone),
+			"the other browser kept reading the record it was signed out of")
+	})
+
+	t.Run("and it is a moment rather than a lock", func(t *testing.T) {
+		x := require.New(t)
+
+		// Which is the difference between signing out and being suspended, and
+		// it is only visible from here: `date_invalidated` voids what was issued
+		// before it and says nothing about what comes after, so the person can
+		// sign straight back in. An implementation that read the column as "this
+		// account is closed" would pass every assertion above and lock somebody
+		// out of their own account for pressing a button that says sign out.
+		x.Equal(http.StatusOK, reads(signIn()))
+	})
 }

@@ -151,6 +151,16 @@ type Server struct {
 	Spin []any
 }
 
+// ErrOutboxHasNowhereToGo is `watch.outbox` on with no broker to publish into.
+//
+// A sentinel because the caller that builds the **control** plane has one thing
+// to add to this and nothing to add to any other failure: which of the two
+// `watch.broker` settings the name came from. Without it that note rode on
+// every error the nested build could answer with, so a database that would not
+// answer was reported as a database that would not answer, plus a sentence
+// about brokers.
+var ErrOutboxHasNowhereToGo = errors.New("watch.outbox: nothing would ever publish or delete what it queues")
+
 // Build opens the database and stacks the servers.
 //
 // The two hooks are the whole of what payday puts in the write and read paths,
@@ -200,10 +210,9 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		// this got here.
 		db.Close()
 		return nil, fmt.Errorf(
-			"watch.outbox: on, and watch.broker is %q, so nothing would ever publish or "+
-				"delete what it queues -- every write would leave a row behind and the "+
+			"%w: watch.broker is %q, so every write would leave a row behind and the "+
 				"table would grow without end. name a broker, or turn the outbox off",
-			config.BrokerNone)
+			ErrOutboxHasNowhereToGo, config.BrokerNone)
 	}
 
 	w := watch.New(b)
@@ -334,12 +343,16 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		if err != nil {
 			db.Close()
 
-			if c.Control.Watch.Broker == "" {
+			if errors.Is(err, ErrOutboxHasNowhereToGo) && c.Control.Watch.Broker == "" {
 				// Named, because the setting it is about is one the operator
-				// did not write. The broker above is the data plane's,
-				// inherited exactly as the field invites -- so a refusal saying
+				// did not write. The broker in that refusal is the data
+				// plane's, inherited exactly as the field invites -- so
 				// `control: watch.broker is "none"` reads as being about a line
 				// that is not in the file.
+				//
+				// Only for that refusal, which is what the sentinel is for.
+				// Said of everything the nested build can answer with, it put a
+				// sentence about brokers on a database that would not answer.
 				return nil, fmt.Errorf(
 					"control: %w (control.watch.broker is empty, so it took watch.broker)", err)
 			}

@@ -500,3 +500,35 @@ func TestTheDataPlaneCountsAStreamToo(t *testing.T) {
 	x.Equal(codes.ResourceExhausted, status.Code(err),
 		"a stream was not counted, or it was counted against a bucket of its own")
 }
+
+// TestAFailureThatIsNotAboutBrokersDoesNotMentionThem.
+//
+// The note the control plane adds -- *control.watch.broker is empty, so it took
+// watch.broker* -- is true of exactly one refusal and was said of every error
+// the nested `Build` could answer with. A control database that would not
+// answer was reported as a database that would not answer, plus a sentence
+// about brokers, which sends whoever reads it to the wrong file.
+//
+// It is the shape of thing that reads as harmless and is not: an error message
+// is the only thing between an operator and the setting they have to change,
+// and one that names a second setting confidently is worse than one that names
+// none.
+func TestAFailureThatIsNotAboutBrokersDoesNotMentionThem(t *testing.T) {
+	x := require.New(t)
+
+	drv, dsn := pdtest.DB(t)
+
+	// A control plane pointed at a database that is not there, and no broker
+	// named for it -- which is the arrangement that used to attract the note.
+	_, err := cmd.Build(t.Context(), cmd.Config{
+		Db:    config.DbConfig{Driver: drv, Dsn: dsn},
+		Watch: config.WatchConfig{Broker: config.BrokerMemory},
+		Control: cmd.ControlConfig{
+			Db: config.DbConfig{Driver: "postgres", Dsn: "postgres://nobody@127.0.0.1:1/nothing?sslmode=disable"},
+		},
+	})
+	x.Error(err)
+	x.Contains(err.Error(), "control:", "the refusal did not say which plane")
+	x.NotContains(err.Error(), "watch.broker",
+		"a database that would not answer was reported as a broker question")
+}
