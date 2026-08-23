@@ -16,17 +16,17 @@ The line, so that it is on the first screen:
 
 So it checks a password and a second factor, and it does not run a login flow,
 mint a session for somebody else's browser, or sign a token another system
-verifies alone. [docs/POSITION.md](docs/POSITION.md) is that applied;
+verifies alone. [docs/position.md](docs/position.md) is that applied;
 [PLAN.md](PLAN.md) D19 is why it is worded as a test rather than as a list.
 
 | | |
 | --- | --- |
-| [docs/POSITION.md](docs/POSITION.md) | what roster is, and **where it stops** |
-| [docs/Entity.md](docs/Entity.md) | the twenty-three tables, drawn, with a paragraph each |
-| [docs/OPERATING.md](docs/OPERATING.md) | running one: keys, roles, TLS |
-| [docs/LOGIN.md](docs/LOGIN.md) | what happens when somebody signs in |
+| [docs/position.md](docs/position.md) | what roster is, and **where it stops** |
+| [docs/entity.md](docs/entity.md) | the twenty-three tables, drawn, with a paragraph each |
+| [docs/operating.md](docs/operating.md) | running one: keys, roles, TLS |
+| [docs/login.md](docs/login.md) | what happens when somebody signs in |
 | [PLAN.md](PLAN.md) | every decision, with the reason that produced it |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | what is being built next, in order, and how far it has got |
+| [docs/roadmap.md](docs/roadmap.md) | what is being built next, in order, and how far it has got |
 
 ## What it does
 
@@ -166,7 +166,7 @@ things that are cheap to get wrong here and expensive to find later.
 
 ## Upgrading a deployment
 
-`docs/UPGRADING.md` — what moved in the database, what changed in behaviour, and
+`docs/upgrading.md` — what moved in the database, what changed in behaviour, and
 what is only new surface. There is no `migrations/` directory: `db.migrate:
 true` lets ent bring the database to the shape the schema says, and without it
 `serve` refuses to start until somebody has.
@@ -195,7 +195,7 @@ the credential which lets somebody act is not the credential that lets them
 erase the record of having acted. Both need the database, which is the boundary
 being asked for. The policy itself is payday's — `config.AuditConfig` and
 payday's `trail` — because the trail is payday's table and every app on it has
-the same problem. See `docs/OPERATING.md`.
+the same problem. See `docs/operating.md`.
 
 The configuration is a file, then the environment over the top of it. It is read
 on the **root** command, so it has happened whichever subcommand runs, and

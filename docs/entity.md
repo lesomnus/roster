@@ -8,7 +8,7 @@ under `proto/`, and those carry the argument at length -- why a row rather than
 a column, why a timestamp rather than a flag, what was tried first. What is here
 is short enough to read in one sitting and points at them.
 
-`PLAN.md` is what roster is for and every decision taken. `docs/ROADMAP.md` is
+`PLAN.md` is what roster is for and every decision taken. `docs/roadmap.md` is
 the order they were built in.
 
 ## The shape
@@ -386,7 +386,7 @@ The wall is the OR of three columns (`tenant_id`, `actor_tenant_id`,
 `counterpart_tenant_id`), so both parties to a cross-tenant write can read the
 record without either holding a scope wide enough to see the other. `value` is
 the row as the event left it, erase included, so a softly erased row's contents
-live on here -- which is what the retention policy in `docs/OPERATING.md` is
+live on here -- which is what the retention policy in `docs/operating.md` is
 for, and what `roster forget` destroys per person.
 
 ### `Outbox` — a write that has to be published even if this process dies
@@ -471,4 +471,4 @@ spending them on something else.
 | `proto/roster/payday/*.proto` | payday's four, **copied in** — do not edit; write an overlay in `proto/ext/payday/` |
 | `internal/ent/migrate/schema.go` | the tables as they are actually created |
 | `PLAN.md` | every decision, by number |
-| `docs/OPERATING.md` | what an operator does with these |
+| `docs/operating.md` | what an operator does with these |

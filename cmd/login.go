@@ -23,7 +23,7 @@ import (
 // run this deployment live. Not a customer. roster's data plane is a store of
 // other people's people, and nothing in it signs in to roster itself -- a
 // customer signs in to whatever product serves them, and that product asks
-// `VouchService`. See `docs/LOGIN.md`.
+// `VouchService`. See `docs/login.md`.
 //
 // So a deployment with no control plane has no console and this is not served.
 // There would be nobody to be.

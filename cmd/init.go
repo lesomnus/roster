@@ -143,7 +143,7 @@ func NewCmdInit(c *Config) *xli.Command {
 
 			if v.Operator == pdid.Nil {
 				cmd.Printf("\nno control plane is configured, so this deployment believes its callers.\n")
-				cmd.Printf("see docs/OPERATING.md before serving it anywhere.\n")
+				cmd.Printf("see docs/operating.md before serving it anywhere.\n")
 
 				return nil
 			}

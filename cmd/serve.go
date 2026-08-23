@@ -1221,7 +1221,7 @@ func (s *Server) http(ctx context.Context, name string, c config.HttpConfig, g *
 // -- a second roster, on its own database, holding the keys every request is
 // authenticated against -- was opened and served in whatever shape it was
 // found. `control.db.migrate` was listed by `roster config env`, set by
-// `compose.yaml`, promised by `docs/OPERATING.md`, and read by nothing.
+// `compose.yaml`, promised by `docs/operating.md`, and read by nothing.
 //
 // What it cost is an upgrade past a release that adds a control-plane table --
 // `session` is one -- on a deployment whose entrypoint skips `init` because the

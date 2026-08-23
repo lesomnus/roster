@@ -20,7 +20,7 @@ import (
 // a session, an `rt_`, a delegation*. That is true of every credential arriving
 // **here**, and a product app's is not one of them. custody is handed an `rt_`
 // or an `rd_` and asks `TokenService/Introspect` what it stands for, which is
-// exactly what `OPERATING.md` tells an app in front to ask.
+// exactly what `operating.md` tells an app in front to ask.
 //
 // So suspending somebody stopped them signing in and stopped them calling
 // roster, and left them working in every app in front of it until the token

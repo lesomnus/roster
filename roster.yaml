@@ -27,7 +27,7 @@ server:
     origins: ["http://localhost:5173"]
 
 # Who may call this deployment, and who runs it. Without this the deployment
-# believes its callers and there is no console; see docs/OPERATING.md.
+# believes its callers and there is no console; see docs/operating.md.
 #
 # control:
 #   db:

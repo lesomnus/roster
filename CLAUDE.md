@@ -5,7 +5,7 @@ from `proto/`**, so the usual shape of a change is: edit the schema, regenerate,
 then write the part no schema can state.
 
 `PLAN.md` is what roster is for and every decision taken so far.
-`docs/ROADMAP.md` is what is being built next, in order, and how far it has got
+`docs/roadmap.md` is what is being built next, in order, and how far it has got
 -- **update its progress table in the same commit as the work.** `README.md` is
 the long version of the mechanics below.
 
@@ -48,7 +48,7 @@ make, and the answer is Hydra or the app's own `authsession`.
 
 Do not restate this as a list of things roster does not implement. That version
 existed, said "no providers, no MFA", and was already false: `VouchService`
-checks a password. `PLAN.md` D19 and D20, `docs/POSITION.md`.
+checks a password. `PLAN.md` D19 and D20, `docs/position.md`.
 
 ## Regenerate after touching the schema
 
@@ -204,7 +204,7 @@ a browser holds and `auth` reads credentials rather than making them.
 
 ## Reference
 
-- `docs/Entity.md` — the twenty-three entities, how they relate, one paragraph each
+- `docs/entity.md` — the twenty-three entities, how they relate, one paragraph each
 - `README.md` — the same ground at length, including upgrading payday
 - <https://github.com/lesomnus/payday/tree/main/docs> — the guides and the
   references behind them

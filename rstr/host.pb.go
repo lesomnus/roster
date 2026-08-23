@@ -33,7 +33,7 @@ const (
 // configuration -- which is a copy of a fact roster owns, in as many places as
 // there are apps, going stale independently.
 //
-// It is the **host** and not the email domain, and LOGIN.md is explicit about
+// It is the **host** and not the email domain, and login.md is explicit about
 // why: *a tenant is the same service under a different operator's own domain,
 // so the name the browser arrived at is the operator whose service they are
 // signing in to.* Where somebody **authenticates** is a different question,

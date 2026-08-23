@@ -106,7 +106,7 @@ browser → product app → Hydra /oauth2/auth
 - **② only if this deployment has a password or a magic link at all.** A
   provider-only deployment does not call it.
 - **③** because Hydra does not know what a tenant is either.
-- **④** is not sign-in. It is the ordinary reading LOGIN.md already describes —
+- **④** is not sign-in. It is the ordinary reading login.md already describes —
   a product app anchors a row and reads names when there is a screen to draw.
 
 **roster is in the flow once, at sign-in, and beside it afterwards. It is not in
@@ -531,7 +531,7 @@ somebody reading the code to decide what is safe.
 - `cmd/erasetrail_test.go` said *nothing here declares `hard:`, so every row is
   soft-erased*. `Tenant`, `Audit` and `Outbox` declare it -- all three payday's
   own, and none of them a person, which is what the sentence was reaching for
-  and did not say. `docs/ROADMAP.md` carried the same claim in F13's row.
+  and did not say. `docs/roadmap.md` carried the same claim in F13's row.
 - `proto/ext/roster/payday/holder_svc.ext.proto` said *generation refuses an
   overlay that redeclares something payday generated*. **Nothing refuses it.**
   `protobuf-merge` matches rpcs by name and emits the overlay's request,
@@ -561,7 +561,7 @@ somebody reading the code to decide what is safe.
 
 ### D54 · A key somebody mints for themselves
 
-The last line of `docs/OPERATING.md`'s *what is not here* that was a missing
+The last line of `docs/operating.md`'s *what is not here* that was a missing
 feature rather than a deliberate absence: an **operator** could list somebody's
 keys, mint one and revoke one -- D51 drew that console -- and a person could do
 none of the three about their own.
@@ -591,7 +591,7 @@ arrived at -- and this reaches it by writing through the walled stack, exactly
 as `Link` and `Unlink` do. A version that reached for the database would
 compile, work, and be a self-service page that hands out permissions.
 
-So `MeService/IssueKey` joins the grant table in `OPERATING.md` beside
+So `MeService/IssueKey` joins the grant table in `operating.md` beside
 `ApiKeyService/Add`: the widest key somebody can make for themselves is exactly
 as wide as they are.
 
@@ -687,7 +687,7 @@ error about the credential rather than about the database.
 
 ### D52 · WebAuthn, which D20 had already designed
 
-The largest thing `docs/OPERATING.md` listed as not here, and it needed no new
+The largest thing `docs/operating.md` listed as not here, and it needed no new
 decision: D20 settled the shape while arguing about TOTP, and this is that
 paragraph built.
 
@@ -1001,7 +1001,7 @@ it names methods. What it replaces is the shell.
 A deployment with no `control:` wires `auth.Plain`, which believes what a caller
 writes and reads no token -- so a key minted there is inert. That is the caveat
 `auth.Plain` carries everywhere rather than a fact about this service, and
-`README.md` and `docs/OPERATING.md` both already say `auth.Plain` is not for
+`README.md` and `docs/operating.md` both already say `auth.Plain` is not for
 production. It is not refused for the reason `roster key add` refuses without a
 control plane: that one has nowhere to **write** the row, and this one always
 does.
@@ -1578,7 +1578,7 @@ counts or contents would have caught.
 Beside the fix came the thing that finds this class at a desk:
 `scripts/with-postgres.sh` in payday, and a CI job that runs both of its
 modules on PostgreSQL. roster's own version of that sentence is in
-`docs/OPERATING.md`.
+`docs/operating.md`.
 
 ### D37 · What a review of every document against the code turned up
 
@@ -1594,7 +1594,7 @@ The admin listener builds its own `VouchService` and its own chain, and three
 of the differences from the data plane's were omissions rather than decisions.
 
 It was built without `WithBreached`, so the corpus of leaked passwords -- which
-`OPERATING.md` calls a deployment-wide refusal -- was enforced on the port a
+`operating.md` calls a deployment-wide refusal -- was enforced on the port a
 customer reaches and not on the one an operator resets passwords from. The two
 options are not the same kind of thing and that is why the second was forgotten:
 `WithReach` reads the caller's bindings and genuinely does not cross between the
@@ -1699,7 +1699,7 @@ a product app to do -- meant the process had to be killed. Five seconds and then
 `Stop`, which is what unblocks the graceful call rather than racing it.
 
 And `serve` checked one plane's schema. `control.db.migrate` was listed by
-`config env`, set by `compose.yaml`, promised by `OPERATING.md` and read by
+`config env`, set by `compose.yaml`, promised by `operating.md` and read by
 nothing -- so an upgrade past a release that adds a control-plane table started,
 said nothing, and was first reported as an operator who could not sign in.
 
@@ -1939,7 +1939,7 @@ writes is this one.
 
 #### What is left
 
-Ordinary deployment work, in `docs/OPERATING.md`: one database, migration as its
+Ordinary deployment work, in `docs/operating.md`: one database, migration as its
 own step, seeding out of band, a maximum connection age so a new replica gets
 traffic, and the same keyring and corpus everywhere.
 
@@ -2064,7 +2064,7 @@ the whole call would leave the caller unsure which half happened.
 ### D30 · The attempt is roster's, and one new RPC is what it costs
 
 D21 written down, after a stress test found that the obvious shape breaks four
-things. `docs/ROADMAP.md` P7 has the four; these are the answers.
+things. `docs/roadmap.md` P7 has the four; these are the answers.
 
 #### One new RPC, and two that grow
 
@@ -2348,7 +2348,7 @@ the reason `Identity` is an entity and `Profile` is not. A repeated field on
 `Tenant` is one value to the database, with no index, so a front door resolving
 a name would read every tenant there is.
 
-**Two entities and not one**, because LOGIN.md is explicit that they answer
+**Two entities and not one**, because login.md is explicit that they answer
 different questions and because they differ in the two ways that decide a
 schema. A host is a public name somebody owns, unique across the deployment; a
 mail domain is one operator's routing hint about their own people, unique within
@@ -2536,7 +2536,7 @@ password signs themselves out of everything, with nothing having said so.
 ### D25 · A delegation is its own row, and the prefix is what reaches it
 
 D23 said what this is and left every question about where it lives. This is
-those answers, and the first of them reverses something `docs/ROADMAP.md` had
+those answers, and the first of them reverses something `docs/roadmap.md` had
 written down.
 
 #### It is not one table with the continuation and the nonce
@@ -2580,7 +2580,7 @@ schema rather than in a comment.
 
 #### `rd_`, and the prefix now decides a table as well
 
-OPERATING.md already says the prefix *decides which database holds the row and
+operating.md already says the prefix *decides which database holds the row and
 who the token is served as*. This is that rule's next entry: same database as
 `rt_`, different table, and the same answer about who -- the **holder**, with
 their wall, their bindings and their sites, narrowed further by the row's
@@ -2742,7 +2742,7 @@ What it refuses:
 | | why it is outside |
 | --- | --- |
 | a signed token — JWT — for other systems | issuer, JWKS, rotation, expiry against revocation, audience, front-channel logout. That list is Hydra's feature list, and writing it is writing Hydra |
-| a session cookie for a product app | a cookie is set by the server the browser is talking to, and roster has no browser, no cookie domain and no CSRF story. See LOGIN.md |
+| a session cookie for a product app | a cookie is set by the server the browser is talking to, and roster has no browser, no cookie domain and no CSRF story. See login.md |
 | deciding *when* a second factor is needed | a flow, and flows are the Login App's |
 
 **The two are not the same size, and that is the point.** Verifying is a
@@ -2952,7 +2952,7 @@ which is the half that has to be where the browser is.
 
 A hosted login page takes on a browser, a cookie domain, CSRF, template
 rendering and an XSS surface. That is the cost, and it is not what decides it.
-What decides it is already written down in LOGIN.md:
+What decides it is already written down in login.md:
 
 > Which tenant it is. That is what a tenant *is*: the same service under a
 > different operator's own domain.
@@ -3154,7 +3154,7 @@ The unique key is `(tenant, provider, subject)`. It was written here as the pair
 alone, and the tenant was added to it deliberately: without it one account at a
 provider would belong to exactly one tenant across the whole deployment, and the
 second operator a person signed up to would be told the identity was taken, by
-somebody they cannot see. LOGIN.md, "A person who uses two operators' services",
+somebody they cannot see. login.md, "A person who uses two operators' services",
 is the long form.
 
 ### D3 · Email is an entity, and is not unique
@@ -3936,10 +3936,10 @@ Confirmed here: `proto/app/host.proto` moved onto `MailDomain`'s domain, and
 | 2 · payday fixes | **all closed** — F1, F2, F3, F4, F6, F8, F9, F10, F11, F12, F13, F14 fixed · F7 by D27 · F5 is operational and written down |
 | 3 · app layer | linking rules, credential verification, roles and the second axis, `MeService`, escalation prevention, the console · **done** |
 | 4 · keys, sync, console | **done** — keys on both planes, and an `rt_` minted over the wire by `IssueService` (D48) or by the person themselves (D54) · **delegation** (D25; `Vouch.Delegate` mints one and `Vouch.Revoke` ends it — what has no wire surface is `DelegationService`) · **console** · and the **sync channel**, D53: `SyncService` is one stream that takes nothing and carries three facts off a `Holder` |
-| 5 · the line, written down | **done** — D19, D20, and POSITION.md rewritten around them |
+| 5 · the line, written down | **done** — D19, D20, and position.md rewritten around them |
 
 The phases above are how this was built. What is built **next** is
-[docs/ROADMAP.md](docs/ROADMAP.md), which carries its own progress table.
+[docs/roadmap.md](docs/roadmap.md), which carries its own progress table.
 
 ### What was roster's to build for a sign-in
 
@@ -3956,7 +3956,7 @@ and is two, 6 was a registry of sessions and is one timestamp.
 They were **subjects and not pieces of work**, and reading them together shows
 why: three of them were one table, two of them were one field each, and one of
 them did not close what it said it closed. The order they were built in and what
-forced it are [docs/ROADMAP.md](docs/ROADMAP.md) -- kept there so that this list
+forced it are [docs/roadmap.md](docs/roadmap.md) -- kept there so that this list
 stays what it is, which is the question rather than the schedule.
 
 1. ~~**A tenant from a hostname.**~~ **Done**, D27. `Host`, and

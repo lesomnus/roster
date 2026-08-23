@@ -38,7 +38,7 @@ const (
 //
 // # Why roster ships this and payday does not
 //
-// `docs/ROADMAP.md` listed it as a decision, and named the argument for
+// `docs/roadmap.md` listed it as a decision, and named the argument for
 // upstream: `MemStore` being the only store payday ships means the next payday
 // app writes this one again. That is true and it is not enough.
 //

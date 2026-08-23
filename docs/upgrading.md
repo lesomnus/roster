@@ -107,7 +107,7 @@ alone; nothing reads them.
 
 - **`audit:`** — how long the trail is kept, per kind. Absent is **forever**,
   which is what every deployment had before, so leaving it out changes nothing.
-  `docs/OPERATING.md`, "How long the trail is kept".
+  `docs/operating.md`, "How long the trail is kept".
 - **`holder:`** — how long after an erase somebody is destroyed. Absent is
   **never**, again what you had.
 - **`roster trail`**, **`roster forget`**, **`roster restore`** — commands, and
@@ -120,7 +120,7 @@ alone; nothing reads them.
   calls it, and calling it needs `/roster.SyncService/Watch` on that app's key
   and a **broker**: `watch.broker: none` answers `Unimplemented` rather than
   opening a stream that never carries anything, and `memory` is right for one
-  replica and silently wrong for two. `docs/OPERATING.md`, "How an app hears
+  replica and silently wrong for two. `docs/operating.md`, "How an app hears
   about it".
 - **`MeService.IssueKey` and `/RevokeKey`**, and `MeGetResponse.keys` — a
   person minting and revoking their own `rt_`. Both need a role naming them,
@@ -129,7 +129,7 @@ alone; nothing reads them.
 
 `audit:` and `holder:` are the two new **configuration** blocks, and each is
 refused at startup if it names a window with nowhere to put what leaves it.
-That refusal is the point; see OPERATING.md. Everything else above is surface
+That refusal is the point; see operating.md. Everything else above is surface
 that sits there until something calls it.
 
 ### And what a downstream app might notice

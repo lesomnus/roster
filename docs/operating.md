@@ -1,7 +1,7 @@
 # Running roster
 
 Task-shaped: what to type, in the order it has to happen. What each part *is*
-lives in [POSITION.md](POSITION.md) and the package comments.
+lives in [position.md](position.md) and the package comments.
 
 ## The two planes
 
@@ -997,7 +997,7 @@ D17 named, arriving on the screen it is most tempting on.
 
 ## Signing somebody in
 
-See [LOGIN.md](LOGIN.md) for the whole path. In short: a product app calls
+See [login.md](login.md) for the whole path. In short: a product app calls
 `Vouch.Verify` with its key, gets yes and two identifiers, and sets its own
 session cookie. roster never talks to a browser.
 
@@ -1156,5 +1156,5 @@ Nothing written down is plaintext, and it warns once.
   makes the air-gapped case work at all: with no mail the somebody else is a
   person, and what they hand over is a password from `Vouch.Reset`.
 - **Nothing here signs a token.** If several products need one sign-in, that is
-  Hydra in front and roster answering it — LOGIN.md, "What changes when Hydra is
+  Hydra in front and roster answering it — login.md, "What changes when Hydra is
   in front". Do not reach for a JWT minted here; PLAN.md D19 is why.

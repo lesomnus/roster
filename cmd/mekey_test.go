@@ -14,7 +14,7 @@ import (
 	"github.com/lesomnus/roster/server/me"
 )
 
-// The self-service half of a key, which `docs/OPERATING.md` listed under *what
+// The self-service half of a key, which `docs/operating.md` listed under *what
 // is not here* for as long as the operator's half existed.
 //
 // An operator has had one since D51: the console lists somebody's keys beside

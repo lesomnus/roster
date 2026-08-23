@@ -1582,7 +1582,7 @@ func TestAddingAWayInNeedsASessionFirst(t *testing.T) {
 		"a browser with no session started an errand that attaches an account to somebody")
 }
 
-// TestSomebodyMintsAKeyFromTheirOwnPage, which `docs/OPERATING.md` listed under
+// TestSomebodyMintsAKeyFromTheirOwnPage, which `docs/operating.md` listed under
 // *what is not here* for as long as the operator's version existed.
 //
 // The operator's is the console: it lists somebody's keys beside their

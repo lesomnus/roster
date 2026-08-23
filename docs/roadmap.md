@@ -63,7 +63,7 @@ signed in yet.
 wrote the rule that decides their shape: *anything that has to be looked up goes
 flat beside it* — which is the reason `Identity` is an entity and `Profile` is
 not. So they are entities, not repeated fields on `Tenant`. Two of them, because
-LOGIN.md is explicit that a hostname and an email domain answer different
+login.md is explicit that a hostname and an email domain answer different
 questions, and because they differ in the two ways that matter: one is unique
 across the deployment and read without a tenant, the other is unique within one.
 
@@ -115,7 +115,7 @@ Three things that are not `ApiKey`'s:
   *is* single-use is the continuation, which is one proof rather than one
   credential -- P7, D30, and D34 for what it took to make that true.
 
-The prefix is not a new idea. OPERATING.md already says *the prefix decides
+The prefix is not a new idea. operating.md already says *the prefix decides
 which database holds the row and who the token is served as*, so a third value
 is that rule's next entry rather than an exception to it — and it is that rule's
 next entry only because this is one kind of thing. It resolves to the holder,
@@ -397,7 +397,7 @@ lockouts, the TOTP replay window, continuations, links, all rows re-read per
 request -- and one thing left, the watch broker. That is written now:
 `watch.broker: postgres` is `LISTEN`/`NOTIFY` on the database the rows are
 already in, so it needs no second piece of infrastructure. See D33;
-`docs/OPERATING.md` has the whole checklist under "Running more than one".
+`docs/operating.md` has the whole checklist under "Running more than one".
 
 None of the rest blocks the screens. Item 4's second increment is explicitly
 *taken when the noise is measured rather than predicted*; item 5 is a rule about
@@ -486,8 +486,8 @@ command.
 | — | F16, upstream | **done** — F15's redactor was written for one of the **three** recorders reading the same `bare.Change`; `watchRecorder` and `outboxRecorder` went on marshalling the patch raw, so an `outbox` row held a verifier at rest and the first broker carrying a patch would have carried one off the box. `lesomnus/payday@7ff5e8f`, pin moved, `cmd/outboxsecret_test.go` |
 | — | F20 · two quiet generator holes | **done** — an overlay redeclaring a generated rpc replaced it and nothing said so (`lesomnus/payday@15a0e47`), and one whose name matched no contract was never merged at all (`@a06360f`). Plus `Email.date_verified`: a caller could assert their own address had been checked, which nothing reads **yet** — closed in `server/core/email.go`, because `immutable:` removes a field from Patch and keeps it in Add, which is backwards here. And payday now has the declaration this wanted — `payday.field.stamped`, `@1c2b63e` — which roster takes the moment payday's buf module is published again |
 | — | F19 · an edge is a read | **fixed upstream** — the widest thing found here, and it needed a clerk. `Email.vouched_by` is not the path to anybody's tenant, so the gate never asked about it — and a nested select walks it, so `Email.Add` + `Email.Get` read another tenant's identity, that person's name, and their tenant. F14's shape with scope where liveness was. Both key forms, and the by-subject one needs no identifier and answers as an oracle. `lesomnus/payday@7d19dea` and `@51284cf`, pin moved, `cmd/foreignedge_test.go` |
-| — | D52 · WebAuthn | **done** — the largest thing OPERATING.md listed as not here, and it needed no new decision: D20 designed it while arguing about TOTP. roster verifies because the **signature counter** is state and state belongs to the row; the relying party, origins and challenge arrive inside the presented bytes, because the request is generic across kinds. Burns one ECDSA rather than one argon2, which is `kind.go`'s finding a second time. `server/vouch/webauthn.go`, `vouchtest` |
-| — | D54 · a key somebody mints for themselves | **done** — the last of `OPERATING.md`'s *what is not here* that was a missing feature. `MeGetResponse.keys`, `MeService.IssueKey` and `MeService.RevokeKey`: no subject in any of them, so the smallest role covering one means *may mint a key that acts as you* rather than *for anybody in this tenant*. `server/core` still refuses a list wider than the person writing it, reached by writing through the walled stack. `examples/sso` draws it. PLAN.md D54 |
+| — | D52 · WebAuthn | **done** — the largest thing operating.md listed as not here, and it needed no new decision: D20 designed it while arguing about TOTP. roster verifies because the **signature counter** is state and state belongs to the row; the relying party, origins and challenge arrive inside the presented bytes, because the request is generic across kinds. Burns one ECDSA rather than one argon2, which is `kind.go`'s finding a second time. `server/vouch/webauthn.go`, `vouchtest` |
+| — | D54 · a key somebody mints for themselves | **done** — the last of `operating.md`'s *what is not here* that was a missing feature. `MeGetResponse.keys`, `MeService.IssueKey` and `MeService.RevokeKey`: no subject in any of them, so the smallest role covering one means *may mint a key that acts as you* rather than *for anybody in this tenant*. `server/core` still refuses a list wider than the person writing it, reached by writing through the walled stack. `examples/sso` draws it. PLAN.md D54 |
 | — | D51 · the screen a key is minted from | **done** — D48 left *nothing in `ts/src` calls it* true. It needed a read first: `ApiKeyService` is unregistered everywhere, so `HolderService.SignsIn` answers with keys as well as identities and credentials, verifier absent rather than deselected. `RevokeKey` beside it, a *which* within a *whose*. `IssueService` on the admin port too, because that is the port a console reaches. `cmd/holderkey_test.go` |
 | — | D50 · adding a way in | **done** — §4's undrawn half. `MeService.Link` beside `Unlink`, and **not** waived: `cmd/asself_test.go` failed on `MeLinkRequest.subject` and was right on the substance — what `aboutYourself` waives is what somebody must be able to do with no role, and attaching a provider account is a feature a deployment offers. The reference app does not grant it either, because doing so would mean its key could bind any role to anybody. `cmd/melink_test.go` |
 | — | D49 · a front door that checked is believed | **done** — D23's last open sentence. An OIDC-fronted deployment could find out who somebody was and could not act as them: the password half had `Delegate` and the provider half had nothing. roster does not check the token — `connection.proto` had already ruled that out as being the relying party — so `Vouch.Accept` takes the claim a front door verified and mints for whoever it reaches. Its own method because the grant is the whole control, and `roster key add` says so. `cmd/accept_test.go` |
@@ -510,4 +510,4 @@ command.
 ## See also
 
 - [PLAN.md](../PLAN.md) — the decisions, and the twelve subjects
-- [POSITION.md](POSITION.md) — the line these are all on the near side of
+- [position.md](position.md) — the line these are all on the near side of

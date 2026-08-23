@@ -340,7 +340,7 @@ Every one of those is an argument against the *table*, not against the *schema*.
 The control plane is the same schema on its own database with its own single
 tenant, so a `Holder` there is a caller rather than a person, its `rk_` key
 holds no tenant and sees every tenant there is, and none of the three objections
-survives. `roster key add` mints it; `OPERATING.md` is the operator's half.
+survives. `roster key add` mints it; `operating.md` is the operator's half.
 
 What is left is deployment wiring rather than a decision: a deployment that
 names no control plane still serves `auth.Plain`, which believes whatever a

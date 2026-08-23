@@ -19,7 +19,7 @@ import (
 // not a security control. It is the other half of that sentence. Without it the
 // table is one row per sign-in since the deployment started, forever.
 //
-// It was missing, and `docs/OPERATING.md` said so out loud while the table was
+// It was missing, and `docs/operating.md` said so out loud while the table was
 // being written. This is that sentence closed.
 //
 // An hour, because nothing waits on it.

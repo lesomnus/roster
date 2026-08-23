@@ -31,7 +31,7 @@ func main() {
 	//
 	// What it cost is that a routine restart was a crash: with `watch.outbox`
 	// off, which is the default, an event committed and not yet published is
-	// lost on every one of them, in the window `docs/OPERATING.md` describes as
+	// lost on every one of them, in the window `docs/operating.md` describes as
 	// the outbox's reason to exist.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

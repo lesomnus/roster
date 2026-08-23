@@ -26,7 +26,7 @@ import (
 //
 // And `Del` is not a delete. It is the soft erase every entity here has, so
 // even signing out leaves the row. So the table was one row per sign-in since
-// the deployment started, forever, and `docs/OPERATING.md` said so out loud
+// the deployment started, forever, and `docs/operating.md` said so out loud
 // while the table was being written.
 
 func TestExpiredSessionsAreCollected(t *testing.T) {

@@ -29,7 +29,7 @@ import (
 	//
 	// Both, because both are used: `compose.yaml` runs it on PostgreSQL and a
 	// test runs it on SQLite. Linking only the second made `docker compose up`
-	// -- the quickstart `docs/OPERATING.md` gives -- fail at
+	// -- the quickstart `docs/operating.md` gives -- fail at
 	// `unknown driver "pgx"`, which is a sentence about a name rather than
 	// about a missing import and reads as a typo in the configuration.
 	_ "github.com/lesomnus/payday/config/dbpgx"
@@ -41,7 +41,7 @@ import (
 	// The one thing that stopped roster running more than one replica was that
 	// a client watching against one never heard about a write that landed on
 	// another -- and the answer for a deployment already on PostgreSQL needs no
-	// second piece of infrastructure. See `docs/OPERATING.md`, "Running more
+	// second piece of infrastructure. See `docs/operating.md`, "Running more
 	// than one".
 	//
 	// Linked whatever this deployment runs on, like the drivers above: what it

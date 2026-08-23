@@ -37,7 +37,7 @@ func as(t *testing.T, who string) metadata.MD {
 }
 
 // TestPlainDoesNotHandOutEveryTenant is the deployment that named no control
-// plane, which `auth.Plain` serves and which OPERATING.md calls "believes its
+// plane, which `auth.Plain` serves and which operating.md calls "believes its
 // callers".
 //
 // It believes them about **who they are**. What it must not do is let a caller

@@ -65,7 +65,7 @@ code says otherwise: roster **does** hold a session for its own console, through
 `payday/auth/authsession`. That is not an exception to anything. A cookie is set
 by the server the browser is talking to, and for the console that server is
 roster. What roster does not do is mint a session for **somebody else's**
-browser — custody's cookie is custody's, and LOGIN.md draws where the split
+browser — custody's cookie is custody's, and login.md draws where the split
 falls.
 
 **Not a product's own database.** custody keeps its own rows and anchors them to
@@ -244,7 +244,7 @@ in the first refuses a grant somebody could have made, which is a conversation.
 Missing one in the second is an administrator that reads as holding nothing, and
 anybody who may reset a password can become them.
 
-`OPERATING.md` has the operator's half of both.
+`operating.md` has the operator's half of both.
 
 ## Two planes, one schema
 
@@ -260,4 +260,4 @@ ask, and the thing that answers "who is this" is the thing that should answer it
 ## See also
 
 - [PLAN.md](../PLAN.md) — the decisions, with the reasoning that produced them
-- [LOGIN.md](LOGIN.md) — what happens when somebody signs in, end to end
+- [login.md](login.md) — what happens when somebody signs in, end to end
