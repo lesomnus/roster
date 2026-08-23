@@ -445,11 +445,26 @@ the **patch** request and leaves it in `Add`, and this wants the other way
 round: nobody asserts a verification when the row is created, and something
 stamps it when a verification happens.
 
-Neither generator can say that. `orm.field` has `immutable` and no opposite;
-`payday.field` has `secret`, which narrows reads and states outright that *the
-write side is untouched*. So `server/core/email.go` refuses it, with the frame
-opt-out `mayGrant` and `mayJoin` take -- and **the missing declaration is worth
-raising upstream**, which is the one thing here left undone on purpose.
+`orm.field` has `immutable` and no opposite. `payday.field` did not have one
+either, so `server/core/email.go` refuses it with the frame opt-out `mayGrant`
+and `mayJoin` take.
+
+**The declaration exists now.** `payday.field.stamped`, added for this
+(`lesomnus/payday@1c2b63e`), refuses the field in the generated `Add` and lands
+the refusal in the **gate** -- which is exact rather than convenient: a stamp is
+not a permission and not a column nobody may touch, it is a fact a *request* may
+not assert, and the gate is the layer that exists because there is a request.
+`Patch` is untouched, because that is the road the stamp is written by.
+
+roster cannot take it yet, and the reason is ordering rather than design: the
+option lives in payday's **buf module**, which roster depends on as
+`buf.build/payday/payday:dev`, and a schema using it does not compile until that
+module is published again -- `cannot resolve message field name for
+payday.Field`. `docs/MIGRATING.md` carries the same note about `secret:`.
+
+So the layer stays until the module moves, and the swap is three lines: the
+option on the field, the method deleted, and the test left exactly as it is --
+it asserts the refusal and not where the refusal lives.
 
 ### F19 · An edge is a read, and the gate was not asking about most of them -- **fixed upstream**
 

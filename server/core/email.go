@@ -106,11 +106,17 @@ func (s coreEmail) Patch(ctx context.Context, req *app.EmailPatchRequest) (*app.
 // wants is the other way round: nobody asserts a verification when the row is
 // created, and something here stamps it when a verification actually happens.
 //
-// Neither generator can say that. `orm.field` has `immutable` and no opposite;
-// `payday.field` has `secret`, which narrows reads and says outright that *the
-// write side is untouched*. So it is a layer, and that is the shape available
-// rather than the shape wanted -- worth raising upstream, and written down here
-// so the next person does not go looking for a declaration.
+// `orm.field` has `immutable` and no opposite. `payday.field` **now** has one --
+// `stamped:`, added for this, `lesomnus/payday@1c2b63e` -- and roster cannot
+// take it yet: the option lives in payday's **buf module**, which roster
+// depends on as `buf.build/payday/payday:dev`, and a schema using it fails to
+// compile until that module is published again. `docs/MIGRATING.md` carries the
+// same ordering note about `secret:`.
+//
+// So this layer is what the declaration will replace, and the replacement is
+// three lines: the option on the field, this method deleted, and the test in
+// `cmd/foreignedge_test.go` left exactly as it is -- it asserts the refusal and
+// not where the refusal lives.
 //
 // # What it is protecting, given nothing reads the column yet
 //
