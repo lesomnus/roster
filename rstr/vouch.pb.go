@@ -166,6 +166,124 @@ func (b0 VouchWho_builder) Build() *VouchWho {
 	return m0
 }
 
+// VouchClaim is what a front door read out of a token it verified.
+//
+// # Why it is not a `VouchWho`, and not a ref either
+//
+// `VouchWho` names a **person** -- an identifier, an alias, an address -- and
+// this call is not about a person the caller looked up. It is about the
+// assertion they were handed: *this issuer says this subject signed in*, which
+// is what an `id_token` carries and what `Identity` was written to hold. Making
+// it its own message is what keeps the two apart in a reader's head, and in a
+// role: a caller that may present a claim is not thereby a caller that may name
+// anybody.
+//
+// A generated `IdentityRef` would say the same thing and cannot be used here,
+// for [VouchWho]'s reason one paragraph up: the refs are generated from the
+// entities in a later step than this file.
+//
+// # And it names a tenant, always
+//
+// The same constraint [VouchWho.address] carries, and for the same reason: a
+// subject is unique **within a provider within a tenant**, so a lookup made
+// without naming one is a lookup a front door that forgot to think about which
+// tenant compiles a wrong answer for. `FrontService.WhoseHost` is where the
+// tenant comes from -- the name the browser arrived at -- and never from the
+// token.
+type VouchClaim struct {
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Tenant   []byte                 `protobuf:"bytes,1,opt,name=tenant"`
+	xxx_hidden_Provider string                 `protobuf:"bytes,2,opt,name=provider"`
+	xxx_hidden_Subject  string                 `protobuf:"bytes,3,opt,name=subject"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *VouchClaim) Reset() {
+	*x = VouchClaim{}
+	mi := &file_app_vouch_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VouchClaim) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VouchClaim) ProtoMessage() {}
+
+func (x *VouchClaim) ProtoReflect() protoreflect.Message {
+	mi := &file_app_vouch_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *VouchClaim) GetTenant() []byte {
+	if x != nil {
+		return x.xxx_hidden_Tenant
+	}
+	return nil
+}
+
+func (x *VouchClaim) GetProvider() string {
+	if x != nil {
+		return x.xxx_hidden_Provider
+	}
+	return ""
+}
+
+func (x *VouchClaim) GetSubject() string {
+	if x != nil {
+		return x.xxx_hidden_Subject
+	}
+	return ""
+}
+
+func (x *VouchClaim) SetTenant(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Tenant = v
+}
+
+func (x *VouchClaim) SetProvider(v string) {
+	x.xxx_hidden_Provider = v
+}
+
+func (x *VouchClaim) SetSubject(v string) {
+	x.xxx_hidden_Subject = v
+}
+
+type VouchClaim_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Which tenant the front door is answering for.
+	Tenant []byte
+	// The issuer, as this deployment named it when the identity was linked --
+	// "google", "entra". Not the raw `iss` claim, deliberately: what roster holds
+	// is the deployment's own word for a provider, and a front door translating
+	// one to the other is the front door doing its own job.
+	Provider string
+	// The `sub`, as the provider issued it and as `Identity` stored it.
+	Subject string
+}
+
+func (b0 VouchClaim_builder) Build() *VouchClaim {
+	m0 := &VouchClaim{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Tenant = b.Tenant
+	x.xxx_hidden_Provider = b.Provider
+	x.xxx_hidden_Subject = b.Subject
+	return m0
+}
+
 type VouchVerifyRequest struct {
 	state             protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Who    *VouchWho              `protobuf:"bytes,1,opt,name=who"`
@@ -178,7 +296,7 @@ type VouchVerifyRequest struct {
 
 func (x *VouchVerifyRequest) Reset() {
 	*x = VouchVerifyRequest{}
-	mi := &file_app_vouch_proto_msgTypes[1]
+	mi := &file_app_vouch_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -190,7 +308,7 @@ func (x *VouchVerifyRequest) String() string {
 func (*VouchVerifyRequest) ProtoMessage() {}
 
 func (x *VouchVerifyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[1]
+	mi := &file_app_vouch_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -320,7 +438,7 @@ type VouchFactor struct {
 
 func (x *VouchFactor) Reset() {
 	*x = VouchFactor{}
-	mi := &file_app_vouch_proto_msgTypes[2]
+	mi := &file_app_vouch_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -332,7 +450,7 @@ func (x *VouchFactor) String() string {
 func (*VouchFactor) ProtoMessage() {}
 
 func (x *VouchFactor) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[2]
+	mi := &file_app_vouch_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -424,7 +542,7 @@ type VouchVerifyResponse struct {
 
 func (x *VouchVerifyResponse) Reset() {
 	*x = VouchVerifyResponse{}
-	mi := &file_app_vouch_proto_msgTypes[3]
+	mi := &file_app_vouch_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -436,7 +554,7 @@ func (x *VouchVerifyResponse) String() string {
 func (*VouchVerifyResponse) ProtoMessage() {}
 
 func (x *VouchVerifyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[3]
+	mi := &file_app_vouch_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -615,7 +733,7 @@ type VouchContinueRequest struct {
 
 func (x *VouchContinueRequest) Reset() {
 	*x = VouchContinueRequest{}
-	mi := &file_app_vouch_proto_msgTypes[4]
+	mi := &file_app_vouch_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -627,7 +745,7 @@ func (x *VouchContinueRequest) String() string {
 func (*VouchContinueRequest) ProtoMessage() {}
 
 func (x *VouchContinueRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[4]
+	mi := &file_app_vouch_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -716,7 +834,7 @@ type VouchContinueResponse struct {
 
 func (x *VouchContinueResponse) Reset() {
 	*x = VouchContinueResponse{}
-	mi := &file_app_vouch_proto_msgTypes[5]
+	mi := &file_app_vouch_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -728,7 +846,7 @@ func (x *VouchContinueResponse) String() string {
 func (*VouchContinueResponse) ProtoMessage() {}
 
 func (x *VouchContinueResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[5]
+	mi := &file_app_vouch_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -788,7 +906,7 @@ type VouchSetRequest struct {
 
 func (x *VouchSetRequest) Reset() {
 	*x = VouchSetRequest{}
-	mi := &file_app_vouch_proto_msgTypes[6]
+	mi := &file_app_vouch_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -800,7 +918,7 @@ func (x *VouchSetRequest) String() string {
 func (*VouchSetRequest) ProtoMessage() {}
 
 func (x *VouchSetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[6]
+	mi := &file_app_vouch_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -884,7 +1002,7 @@ type VouchSetResponse struct {
 
 func (x *VouchSetResponse) Reset() {
 	*x = VouchSetResponse{}
-	mi := &file_app_vouch_proto_msgTypes[7]
+	mi := &file_app_vouch_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -896,7 +1014,7 @@ func (x *VouchSetResponse) String() string {
 func (*VouchSetResponse) ProtoMessage() {}
 
 func (x *VouchSetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[7]
+	mi := &file_app_vouch_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -934,7 +1052,7 @@ type VouchDelegateRequest struct {
 
 func (x *VouchDelegateRequest) Reset() {
 	*x = VouchDelegateRequest{}
-	mi := &file_app_vouch_proto_msgTypes[8]
+	mi := &file_app_vouch_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -946,7 +1064,7 @@ func (x *VouchDelegateRequest) String() string {
 func (*VouchDelegateRequest) ProtoMessage() {}
 
 func (x *VouchDelegateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[8]
+	mi := &file_app_vouch_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1133,6 +1251,118 @@ func (b0 VouchDelegateRequest_builder) Build() *VouchDelegateRequest {
 	return m0
 }
 
+type VouchAcceptRequest struct {
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Claim   *VouchClaim            `protobuf:"bytes,1,opt,name=claim"`
+	xxx_hidden_Methods []string               `protobuf:"bytes,2,rep,name=methods"`
+	xxx_hidden_Expires *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=expires"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *VouchAcceptRequest) Reset() {
+	*x = VouchAcceptRequest{}
+	mi := &file_app_vouch_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VouchAcceptRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VouchAcceptRequest) ProtoMessage() {}
+
+func (x *VouchAcceptRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_app_vouch_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *VouchAcceptRequest) GetClaim() *VouchClaim {
+	if x != nil {
+		return x.xxx_hidden_Claim
+	}
+	return nil
+}
+
+func (x *VouchAcceptRequest) GetMethods() []string {
+	if x != nil {
+		return x.xxx_hidden_Methods
+	}
+	return nil
+}
+
+func (x *VouchAcceptRequest) GetExpires() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_Expires
+	}
+	return nil
+}
+
+func (x *VouchAcceptRequest) SetClaim(v *VouchClaim) {
+	x.xxx_hidden_Claim = v
+}
+
+func (x *VouchAcceptRequest) SetMethods(v []string) {
+	x.xxx_hidden_Methods = v
+}
+
+func (x *VouchAcceptRequest) SetExpires(v *timestamppb.Timestamp) {
+	x.xxx_hidden_Expires = v
+}
+
+func (x *VouchAcceptRequest) HasClaim() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Claim != nil
+}
+
+func (x *VouchAcceptRequest) HasExpires() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Expires != nil
+}
+
+func (x *VouchAcceptRequest) ClearClaim() {
+	x.xxx_hidden_Claim = nil
+}
+
+func (x *VouchAcceptRequest) ClearExpires() {
+	x.xxx_hidden_Expires = nil
+}
+
+type VouchAcceptRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// What the front door was handed, and checked.
+	Claim *VouchClaim
+	// What the delegation may be used for, bounded by what the caller may call.
+	// Empty is refused, as everywhere else here: a delegation that allows nothing
+	// opens no door.
+	Methods []string
+	// When it stops working. Unset is `keys.DelegateFor`, which is minutes.
+	Expires *timestamppb.Timestamp
+}
+
+func (b0 VouchAcceptRequest_builder) Build() *VouchAcceptRequest {
+	m0 := &VouchAcceptRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Claim = b.Claim
+	x.xxx_hidden_Methods = b.Methods
+	x.xxx_hidden_Expires = b.Expires
+	return m0
+}
+
 type VouchDelegateResponse struct {
 	state               protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Verified *VouchVerifyResponse   `protobuf:"bytes,1,opt,name=verified"`
@@ -1144,7 +1374,7 @@ type VouchDelegateResponse struct {
 
 func (x *VouchDelegateResponse) Reset() {
 	*x = VouchDelegateResponse{}
-	mi := &file_app_vouch_proto_msgTypes[9]
+	mi := &file_app_vouch_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1156,7 +1386,7 @@ func (x *VouchDelegateResponse) String() string {
 func (*VouchDelegateResponse) ProtoMessage() {}
 
 func (x *VouchDelegateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[9]
+	mi := &file_app_vouch_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1265,7 +1495,7 @@ type VouchEnrolRequest struct {
 
 func (x *VouchEnrolRequest) Reset() {
 	*x = VouchEnrolRequest{}
-	mi := &file_app_vouch_proto_msgTypes[10]
+	mi := &file_app_vouch_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1277,7 +1507,7 @@ func (x *VouchEnrolRequest) String() string {
 func (*VouchEnrolRequest) ProtoMessage() {}
 
 func (x *VouchEnrolRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[10]
+	mi := &file_app_vouch_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1380,7 +1610,7 @@ type VouchEnrolResponse struct {
 
 func (x *VouchEnrolResponse) Reset() {
 	*x = VouchEnrolResponse{}
-	mi := &file_app_vouch_proto_msgTypes[11]
+	mi := &file_app_vouch_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1392,7 +1622,7 @@ func (x *VouchEnrolResponse) String() string {
 func (*VouchEnrolResponse) ProtoMessage() {}
 
 func (x *VouchEnrolResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[11]
+	mi := &file_app_vouch_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1455,7 +1685,7 @@ type VouchRevokeRequest struct {
 
 func (x *VouchRevokeRequest) Reset() {
 	*x = VouchRevokeRequest{}
-	mi := &file_app_vouch_proto_msgTypes[12]
+	mi := &file_app_vouch_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1467,7 +1697,7 @@ func (x *VouchRevokeRequest) String() string {
 func (*VouchRevokeRequest) ProtoMessage() {}
 
 func (x *VouchRevokeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[12]
+	mi := &file_app_vouch_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1512,7 +1742,7 @@ type VouchRevokeResponse struct {
 
 func (x *VouchRevokeResponse) Reset() {
 	*x = VouchRevokeResponse{}
-	mi := &file_app_vouch_proto_msgTypes[13]
+	mi := &file_app_vouch_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1524,7 +1754,7 @@ func (x *VouchRevokeResponse) String() string {
 func (*VouchRevokeResponse) ProtoMessage() {}
 
 func (x *VouchRevokeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[13]
+	mi := &file_app_vouch_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1557,7 +1787,7 @@ type VouchResetRequest struct {
 
 func (x *VouchResetRequest) Reset() {
 	*x = VouchResetRequest{}
-	mi := &file_app_vouch_proto_msgTypes[14]
+	mi := &file_app_vouch_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1569,7 +1799,7 @@ func (x *VouchResetRequest) String() string {
 func (*VouchResetRequest) ProtoMessage() {}
 
 func (x *VouchResetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[14]
+	mi := &file_app_vouch_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1641,7 +1871,7 @@ type VouchResetResponse struct {
 
 func (x *VouchResetResponse) Reset() {
 	*x = VouchResetResponse{}
-	mi := &file_app_vouch_proto_msgTypes[15]
+	mi := &file_app_vouch_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1653,7 +1883,7 @@ func (x *VouchResetResponse) String() string {
 func (*VouchResetResponse) ProtoMessage() {}
 
 func (x *VouchResetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[15]
+	mi := &file_app_vouch_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1702,7 +1932,7 @@ type VouchUnlockRequest struct {
 
 func (x *VouchUnlockRequest) Reset() {
 	*x = VouchUnlockRequest{}
-	mi := &file_app_vouch_proto_msgTypes[16]
+	mi := &file_app_vouch_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1714,7 +1944,7 @@ func (x *VouchUnlockRequest) String() string {
 func (*VouchUnlockRequest) ProtoMessage() {}
 
 func (x *VouchUnlockRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[16]
+	mi := &file_app_vouch_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1783,7 +2013,7 @@ type VouchUnlockResponse struct {
 
 func (x *VouchUnlockResponse) Reset() {
 	*x = VouchUnlockResponse{}
-	mi := &file_app_vouch_proto_msgTypes[17]
+	mi := &file_app_vouch_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1795,7 +2025,7 @@ func (x *VouchUnlockResponse) String() string {
 func (*VouchUnlockResponse) ProtoMessage() {}
 
 func (x *VouchUnlockResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[17]
+	mi := &file_app_vouch_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1856,7 +2086,7 @@ type VouchLinkRequest struct {
 
 func (x *VouchLinkRequest) Reset() {
 	*x = VouchLinkRequest{}
-	mi := &file_app_vouch_proto_msgTypes[18]
+	mi := &file_app_vouch_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1868,7 +2098,7 @@ func (x *VouchLinkRequest) String() string {
 func (*VouchLinkRequest) ProtoMessage() {}
 
 func (x *VouchLinkRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[18]
+	mi := &file_app_vouch_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1955,7 +2185,7 @@ type VouchLinkResponse struct {
 
 func (x *VouchLinkResponse) Reset() {
 	*x = VouchLinkResponse{}
-	mi := &file_app_vouch_proto_msgTypes[19]
+	mi := &file_app_vouch_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1967,7 +2197,7 @@ func (x *VouchLinkResponse) String() string {
 func (*VouchLinkResponse) ProtoMessage() {}
 
 func (x *VouchLinkResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[19]
+	mi := &file_app_vouch_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2043,7 +2273,7 @@ type VouchRedeemRequest struct {
 
 func (x *VouchRedeemRequest) Reset() {
 	*x = VouchRedeemRequest{}
-	mi := &file_app_vouch_proto_msgTypes[20]
+	mi := &file_app_vouch_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2055,7 +2285,7 @@ func (x *VouchRedeemRequest) String() string {
 func (*VouchRedeemRequest) ProtoMessage() {}
 
 func (x *VouchRedeemRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[20]
+	mi := &file_app_vouch_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2142,7 +2372,12 @@ const file_app_vouch_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x16\n" +
 	"\x06tenant\x18\x02 \x01(\tR\x06tenant\x12\x14\n" +
 	"\x05alias\x18\x03 \x01(\tR\x05alias\x12\x18\n" +
-	"\aaddress\x18\x04 \x01(\tR\aaddress\"x\n" +
+	"\aaddress\x18\x04 \x01(\tR\aaddress\"Z\n" +
+	"\n" +
+	"VouchClaim\x12\x16\n" +
+	"\x06tenant\x18\x01 \x01(\fR\x06tenant\x12\x1a\n" +
+	"\bprovider\x18\x02 \x01(\tR\bprovider\x12\x18\n" +
+	"\asubject\x18\x03 \x01(\tR\asubject\"x\n" +
 	"\x12VouchVerifyRequest\x12\"\n" +
 	"\x03who\x18\x01 \x01(\v2\x10.roster.VouchWhoR\x03who\x12\x12\n" +
 	"\x04kind\x18\b \x01(\tR\x04kind\x12\x16\n" +
@@ -2181,7 +2416,11 @@ const file_app_vouch_proto_rawDesc = "" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x18\n" +
 	"\amethods\x18\n" +
 	" \x03(\tR\amethods\x124\n" +
-	"\aexpires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\"\x9c\x01\n" +
+	"\aexpires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\"\x8e\x01\n" +
+	"\x12VouchAcceptRequest\x12(\n" +
+	"\x05claim\x18\x01 \x01(\v2\x12.roster.VouchClaimR\x05claim\x12\x18\n" +
+	"\amethods\x18\x02 \x03(\tR\amethods\x124\n" +
+	"\aexpires\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\"\x9c\x01\n" +
 	"\x15VouchDelegateResponse\x127\n" +
 	"\bverified\x18\x01 \x01(\v2\x1b.roster.VouchVerifyResponseR\bverified\x12\x14\n" +
 	"\x05token\x18\n" +
@@ -2218,7 +2457,7 @@ const file_app_vouch_proto_rawDesc = "" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12\x18\n" +
 	"\amethods\x18\n" +
 	" \x03(\tR\amethods\x124\n" +
-	"\aexpires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\aexpires2\xa5\x05\n" +
+	"\aexpires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\aexpires2\xea\x05\n" +
 	"\fVouchService\x12A\n" +
 	"\x06Verify\x12\x1a.roster.VouchVerifyRequest\x1a\x1b.roster.VouchVerifyResponse\x128\n" +
 	"\x03Set\x12\x17.roster.VouchSetRequest\x1a\x18.roster.VouchSetResponse\x12G\n" +
@@ -2229,77 +2468,84 @@ const file_app_vouch_proto_rawDesc = "" +
 	"\x06Redeem\x12\x1a.roster.VouchRedeemRequest\x1a\x1d.roster.VouchDelegateResponse\x12G\n" +
 	"\bContinue\x12\x1c.roster.VouchContinueRequest\x1a\x1d.roster.VouchContinueResponse\x12>\n" +
 	"\x05Enrol\x12\x19.roster.VouchEnrolRequest\x1a\x1a.roster.VouchEnrolResponse\x12A\n" +
-	"\x06Revoke\x12\x1a.roster.VouchRevokeRequest\x1a\x1b.roster.VouchRevokeResponseB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
+	"\x06Revoke\x12\x1a.roster.VouchRevokeRequest\x1a\x1b.roster.VouchRevokeResponse\x12C\n" +
+	"\x06Accept\x12\x1a.roster.VouchAcceptRequest\x1a\x1d.roster.VouchDelegateResponseB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_app_vouch_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
+var file_app_vouch_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_app_vouch_proto_goTypes = []any{
 	(*VouchWho)(nil),              // 0: roster.VouchWho
-	(*VouchVerifyRequest)(nil),    // 1: roster.VouchVerifyRequest
-	(*VouchFactor)(nil),           // 2: roster.VouchFactor
-	(*VouchVerifyResponse)(nil),   // 3: roster.VouchVerifyResponse
-	(*VouchContinueRequest)(nil),  // 4: roster.VouchContinueRequest
-	(*VouchContinueResponse)(nil), // 5: roster.VouchContinueResponse
-	(*VouchSetRequest)(nil),       // 6: roster.VouchSetRequest
-	(*VouchSetResponse)(nil),      // 7: roster.VouchSetResponse
-	(*VouchDelegateRequest)(nil),  // 8: roster.VouchDelegateRequest
-	(*VouchDelegateResponse)(nil), // 9: roster.VouchDelegateResponse
-	(*VouchEnrolRequest)(nil),     // 10: roster.VouchEnrolRequest
-	(*VouchEnrolResponse)(nil),    // 11: roster.VouchEnrolResponse
-	(*VouchRevokeRequest)(nil),    // 12: roster.VouchRevokeRequest
-	(*VouchRevokeResponse)(nil),   // 13: roster.VouchRevokeResponse
-	(*VouchResetRequest)(nil),     // 14: roster.VouchResetRequest
-	(*VouchResetResponse)(nil),    // 15: roster.VouchResetResponse
-	(*VouchUnlockRequest)(nil),    // 16: roster.VouchUnlockRequest
-	(*VouchUnlockResponse)(nil),   // 17: roster.VouchUnlockResponse
-	(*VouchLinkRequest)(nil),      // 18: roster.VouchLinkRequest
-	(*VouchLinkResponse)(nil),     // 19: roster.VouchLinkResponse
-	(*VouchRedeemRequest)(nil),    // 20: roster.VouchRedeemRequest
-	(*timestamppb.Timestamp)(nil), // 21: google.protobuf.Timestamp
+	(*VouchClaim)(nil),            // 1: roster.VouchClaim
+	(*VouchVerifyRequest)(nil),    // 2: roster.VouchVerifyRequest
+	(*VouchFactor)(nil),           // 3: roster.VouchFactor
+	(*VouchVerifyResponse)(nil),   // 4: roster.VouchVerifyResponse
+	(*VouchContinueRequest)(nil),  // 5: roster.VouchContinueRequest
+	(*VouchContinueResponse)(nil), // 6: roster.VouchContinueResponse
+	(*VouchSetRequest)(nil),       // 7: roster.VouchSetRequest
+	(*VouchSetResponse)(nil),      // 8: roster.VouchSetResponse
+	(*VouchDelegateRequest)(nil),  // 9: roster.VouchDelegateRequest
+	(*VouchAcceptRequest)(nil),    // 10: roster.VouchAcceptRequest
+	(*VouchDelegateResponse)(nil), // 11: roster.VouchDelegateResponse
+	(*VouchEnrolRequest)(nil),     // 12: roster.VouchEnrolRequest
+	(*VouchEnrolResponse)(nil),    // 13: roster.VouchEnrolResponse
+	(*VouchRevokeRequest)(nil),    // 14: roster.VouchRevokeRequest
+	(*VouchRevokeResponse)(nil),   // 15: roster.VouchRevokeResponse
+	(*VouchResetRequest)(nil),     // 16: roster.VouchResetRequest
+	(*VouchResetResponse)(nil),    // 17: roster.VouchResetResponse
+	(*VouchUnlockRequest)(nil),    // 18: roster.VouchUnlockRequest
+	(*VouchUnlockResponse)(nil),   // 19: roster.VouchUnlockResponse
+	(*VouchLinkRequest)(nil),      // 20: roster.VouchLinkRequest
+	(*VouchLinkResponse)(nil),     // 21: roster.VouchLinkResponse
+	(*VouchRedeemRequest)(nil),    // 22: roster.VouchRedeemRequest
+	(*timestamppb.Timestamp)(nil), // 23: google.protobuf.Timestamp
 }
 var file_app_vouch_proto_depIdxs = []int32{
 	0,  // 0: roster.VouchVerifyRequest.who:type_name -> roster.VouchWho
-	21, // 1: roster.VouchFactor.locked_until:type_name -> google.protobuf.Timestamp
-	21, // 2: roster.VouchVerifyResponse.locked_until:type_name -> google.protobuf.Timestamp
-	2,  // 3: roster.VouchVerifyResponse.available:type_name -> roster.VouchFactor
-	3,  // 4: roster.VouchContinueResponse.verified:type_name -> roster.VouchVerifyResponse
+	23, // 1: roster.VouchFactor.locked_until:type_name -> google.protobuf.Timestamp
+	23, // 2: roster.VouchVerifyResponse.locked_until:type_name -> google.protobuf.Timestamp
+	3,  // 3: roster.VouchVerifyResponse.available:type_name -> roster.VouchFactor
+	4,  // 4: roster.VouchContinueResponse.verified:type_name -> roster.VouchVerifyResponse
 	0,  // 5: roster.VouchSetRequest.who:type_name -> roster.VouchWho
 	0,  // 6: roster.VouchDelegateRequest.who:type_name -> roster.VouchWho
-	21, // 7: roster.VouchDelegateRequest.expires:type_name -> google.protobuf.Timestamp
-	3,  // 8: roster.VouchDelegateResponse.verified:type_name -> roster.VouchVerifyResponse
-	21, // 9: roster.VouchDelegateResponse.expires:type_name -> google.protobuf.Timestamp
-	0,  // 10: roster.VouchEnrolRequest.who:type_name -> roster.VouchWho
-	0,  // 11: roster.VouchResetRequest.who:type_name -> roster.VouchWho
-	0,  // 12: roster.VouchUnlockRequest.who:type_name -> roster.VouchWho
-	21, // 13: roster.VouchUnlockResponse.was_locked_until:type_name -> google.protobuf.Timestamp
-	0,  // 14: roster.VouchLinkRequest.who:type_name -> roster.VouchWho
-	21, // 15: roster.VouchLinkRequest.expires:type_name -> google.protobuf.Timestamp
-	21, // 16: roster.VouchLinkResponse.expires:type_name -> google.protobuf.Timestamp
-	21, // 17: roster.VouchRedeemRequest.expires:type_name -> google.protobuf.Timestamp
-	1,  // 18: roster.VouchService.Verify:input_type -> roster.VouchVerifyRequest
-	6,  // 19: roster.VouchService.Set:input_type -> roster.VouchSetRequest
-	8,  // 20: roster.VouchService.Delegate:input_type -> roster.VouchDelegateRequest
-	14, // 21: roster.VouchService.Reset:input_type -> roster.VouchResetRequest
-	16, // 22: roster.VouchService.Unlock:input_type -> roster.VouchUnlockRequest
-	18, // 23: roster.VouchService.Link:input_type -> roster.VouchLinkRequest
-	20, // 24: roster.VouchService.Redeem:input_type -> roster.VouchRedeemRequest
-	4,  // 25: roster.VouchService.Continue:input_type -> roster.VouchContinueRequest
-	10, // 26: roster.VouchService.Enrol:input_type -> roster.VouchEnrolRequest
-	12, // 27: roster.VouchService.Revoke:input_type -> roster.VouchRevokeRequest
-	3,  // 28: roster.VouchService.Verify:output_type -> roster.VouchVerifyResponse
-	7,  // 29: roster.VouchService.Set:output_type -> roster.VouchSetResponse
-	9,  // 30: roster.VouchService.Delegate:output_type -> roster.VouchDelegateResponse
-	15, // 31: roster.VouchService.Reset:output_type -> roster.VouchResetResponse
-	17, // 32: roster.VouchService.Unlock:output_type -> roster.VouchUnlockResponse
-	19, // 33: roster.VouchService.Link:output_type -> roster.VouchLinkResponse
-	9,  // 34: roster.VouchService.Redeem:output_type -> roster.VouchDelegateResponse
-	5,  // 35: roster.VouchService.Continue:output_type -> roster.VouchContinueResponse
-	11, // 36: roster.VouchService.Enrol:output_type -> roster.VouchEnrolResponse
-	13, // 37: roster.VouchService.Revoke:output_type -> roster.VouchRevokeResponse
-	28, // [28:38] is the sub-list for method output_type
-	18, // [18:28] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	23, // 7: roster.VouchDelegateRequest.expires:type_name -> google.protobuf.Timestamp
+	1,  // 8: roster.VouchAcceptRequest.claim:type_name -> roster.VouchClaim
+	23, // 9: roster.VouchAcceptRequest.expires:type_name -> google.protobuf.Timestamp
+	4,  // 10: roster.VouchDelegateResponse.verified:type_name -> roster.VouchVerifyResponse
+	23, // 11: roster.VouchDelegateResponse.expires:type_name -> google.protobuf.Timestamp
+	0,  // 12: roster.VouchEnrolRequest.who:type_name -> roster.VouchWho
+	0,  // 13: roster.VouchResetRequest.who:type_name -> roster.VouchWho
+	0,  // 14: roster.VouchUnlockRequest.who:type_name -> roster.VouchWho
+	23, // 15: roster.VouchUnlockResponse.was_locked_until:type_name -> google.protobuf.Timestamp
+	0,  // 16: roster.VouchLinkRequest.who:type_name -> roster.VouchWho
+	23, // 17: roster.VouchLinkRequest.expires:type_name -> google.protobuf.Timestamp
+	23, // 18: roster.VouchLinkResponse.expires:type_name -> google.protobuf.Timestamp
+	23, // 19: roster.VouchRedeemRequest.expires:type_name -> google.protobuf.Timestamp
+	2,  // 20: roster.VouchService.Verify:input_type -> roster.VouchVerifyRequest
+	7,  // 21: roster.VouchService.Set:input_type -> roster.VouchSetRequest
+	9,  // 22: roster.VouchService.Delegate:input_type -> roster.VouchDelegateRequest
+	16, // 23: roster.VouchService.Reset:input_type -> roster.VouchResetRequest
+	18, // 24: roster.VouchService.Unlock:input_type -> roster.VouchUnlockRequest
+	20, // 25: roster.VouchService.Link:input_type -> roster.VouchLinkRequest
+	22, // 26: roster.VouchService.Redeem:input_type -> roster.VouchRedeemRequest
+	5,  // 27: roster.VouchService.Continue:input_type -> roster.VouchContinueRequest
+	12, // 28: roster.VouchService.Enrol:input_type -> roster.VouchEnrolRequest
+	14, // 29: roster.VouchService.Revoke:input_type -> roster.VouchRevokeRequest
+	10, // 30: roster.VouchService.Accept:input_type -> roster.VouchAcceptRequest
+	4,  // 31: roster.VouchService.Verify:output_type -> roster.VouchVerifyResponse
+	8,  // 32: roster.VouchService.Set:output_type -> roster.VouchSetResponse
+	11, // 33: roster.VouchService.Delegate:output_type -> roster.VouchDelegateResponse
+	17, // 34: roster.VouchService.Reset:output_type -> roster.VouchResetResponse
+	19, // 35: roster.VouchService.Unlock:output_type -> roster.VouchUnlockResponse
+	21, // 36: roster.VouchService.Link:output_type -> roster.VouchLinkResponse
+	11, // 37: roster.VouchService.Redeem:output_type -> roster.VouchDelegateResponse
+	6,  // 38: roster.VouchService.Continue:output_type -> roster.VouchContinueResponse
+	13, // 39: roster.VouchService.Enrol:output_type -> roster.VouchEnrolResponse
+	15, // 40: roster.VouchService.Revoke:output_type -> roster.VouchRevokeResponse
+	11, // 41: roster.VouchService.Accept:output_type -> roster.VouchDelegateResponse
+	31, // [31:42] is the sub-list for method output_type
+	20, // [20:31] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_app_vouch_proto_init() }
@@ -2313,7 +2559,7 @@ func file_app_vouch_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_vouch_proto_rawDesc), len(file_app_vouch_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   21,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/vouch.proto.
  */
 export const file_app_vouch: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJGCghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCSJfChJWb3VjaFZlcmlmeVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMEgwKBG5hbWUYBSABKAkiWwoLVm91Y2hGYWN0b3ISDAoEa2luZBgIIAEoCRIMCgRuYW1lGAUgASgJEjAKDGxvY2tlZF91bnRpbBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAixAEKE1ZvdWNoVmVyaWZ5UmVzcG9uc2USCgoCb2sYASABKAgSDgoGaG9sZGVyGAIgASgMEg4KBnRlbmFudBgDIAEoDBIwCgxsb2NrZWRfdW50aWwYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhEKCXNhdGlzZmllZBgKIAMoCRImCglhdmFpbGFibGUYCyADKAsyEy5yb3N0ZXIuVm91Y2hGYWN0b3ISFAoMY29udGludWF0aW9uGAwgASgJIlgKFFZvdWNoQ29udGludWVSZXF1ZXN0EhQKDGNvbnRpbnVhdGlvbhgBIAEoCRIMCgRraW5kGAggASgJEg4KBnNlY3JldBgJIAEoDBIMCgRuYW1lGAUgASgJIkYKFVZvdWNoQ29udGludWVSZXNwb25zZRItCgh2ZXJpZmllZBgBIAEoCzIbLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlIk4KD1ZvdWNoU2V0UmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwiEgoQVm91Y2hTZXRSZXNwb25zZSK1AQoUVm91Y2hEZWxlZ2F0ZVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMEhQKDGNvbnRpbnVhdGlvbhgMIAEoCRIMCgRuYW1lGAUgASgJEg8KB21ldGhvZHMYCiADKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiggEKFVZvdWNoRGVsZWdhdGVSZXNwb25zZRItCgh2ZXJpZmllZBgBIAEoCzIbLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlEg0KBXRva2VuGAogASgJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIl4KEVZvdWNoRW5yb2xSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSDgoGaXNzdWVyGAkgASgJIi8KElZvdWNoRW5yb2xSZXNwb25zZRIMCgRzZWVkGAEgASgJEgsKA3VyaRgCIAEoCSIjChJWb3VjaFJldm9rZVJlcXVlc3QSDQoFdG9rZW4YASABKAkiFQoTVm91Y2hSZXZva2VSZXNwb25zZSJAChFWb3VjaFJlc2V0UmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCSIkChJWb3VjaFJlc2V0UmVzcG9uc2USDgoGc2VjcmV0GAEgASgJIkEKElZvdWNoVW5sb2NrUmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCSJLChNWb3VjaFVubG9ja1Jlc3BvbnNlEjQKEHdhc19sb2NrZWRfdW50aWwYASABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIl4KEFZvdWNoTGlua1JlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIk8KEVZvdWNoTGlua1Jlc3BvbnNlEg0KBXRva2VuGAEgASgJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wImEKElZvdWNoUmVkZWVtUmVxdWVzdBINCgV0b2tlbhgBIAEoCRIPCgdtZXRob2RzGAogAygJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wMqUFCgxWb3VjaFNlcnZpY2USQQoGVmVyaWZ5Ehoucm9zdGVyLlZvdWNoVmVyaWZ5UmVxdWVzdBobLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlEjgKA1NldBIXLnJvc3Rlci5Wb3VjaFNldFJlcXVlc3QaGC5yb3N0ZXIuVm91Y2hTZXRSZXNwb25zZRJHCghEZWxlZ2F0ZRIcLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVxdWVzdBodLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVzcG9uc2USPgoFUmVzZXQSGS5yb3N0ZXIuVm91Y2hSZXNldFJlcXVlc3QaGi5yb3N0ZXIuVm91Y2hSZXNldFJlc3BvbnNlEkEKBlVubG9jaxIaLnJvc3Rlci5Wb3VjaFVubG9ja1JlcXVlc3QaGy5yb3N0ZXIuVm91Y2hVbmxvY2tSZXNwb25zZRI7CgRMaW5rEhgucm9zdGVyLlZvdWNoTGlua1JlcXVlc3QaGS5yb3N0ZXIuVm91Y2hMaW5rUmVzcG9uc2USQwoGUmVkZWVtEhoucm9zdGVyLlZvdWNoUmVkZWVtUmVxdWVzdBodLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVzcG9uc2USRwoIQ29udGludWUSHC5yb3N0ZXIuVm91Y2hDb250aW51ZVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hDb250aW51ZVJlc3BvbnNlEj4KBUVucm9sEhkucm9zdGVyLlZvdWNoRW5yb2xSZXF1ZXN0Ghoucm9zdGVyLlZvdWNoRW5yb2xSZXNwb25zZRJBCgZSZXZva2USGi5yb3N0ZXIuVm91Y2hSZXZva2VSZXF1ZXN0Ghsucm9zdGVyLlZvdWNoUmV2b2tlUmVzcG9uc2VCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp]);
+  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJGCghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCSI/CgpWb3VjaENsYWltEg4KBnRlbmFudBgBIAEoDBIQCghwcm92aWRlchgCIAEoCRIPCgdzdWJqZWN0GAMgASgJIl8KElZvdWNoVmVyaWZ5UmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSDAoEbmFtZRgFIAEoCSJbCgtWb3VjaEZhY3RvchIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSMAoMbG9ja2VkX3VudGlsGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCLEAQoTVm91Y2hWZXJpZnlSZXNwb25zZRIKCgJvaxgBIAEoCBIOCgZob2xkZXIYAiABKAwSDgoGdGVuYW50GAMgASgMEjAKDGxvY2tlZF91bnRpbBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEQoJc2F0aXNmaWVkGAogAygJEiYKCWF2YWlsYWJsZRgLIAMoCzITLnJvc3Rlci5Wb3VjaEZhY3RvchIUCgxjb250aW51YXRpb24YDCABKAkiWAoUVm91Y2hDb250aW51ZVJlcXVlc3QSFAoMY29udGludWF0aW9uGAEgASgJEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMEgwKBG5hbWUYBSABKAkiRgoVVm91Y2hDb250aW51ZVJlc3BvbnNlEi0KCHZlcmlmaWVkGAEgASgLMhsucm9zdGVyLlZvdWNoVmVyaWZ5UmVzcG9uc2UiTgoPVm91Y2hTZXRSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJEg4KBnNlY3JldBgJIAEoDCISChBWb3VjaFNldFJlc3BvbnNlIrUBChRWb3VjaERlbGVnYXRlUmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSFAoMY29udGludWF0aW9uGAwgASgJEgwKBG5hbWUYBSABKAkSDwoHbWV0aG9kcxgKIAMoCRIrCgdleHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJ1ChJWb3VjaEFjY2VwdFJlcXVlc3QSIQoFY2xhaW0YASABKAsyEi5yb3N0ZXIuVm91Y2hDbGFpbRIPCgdtZXRob2RzGAIgAygJEisKB2V4cGlyZXMYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIoIBChVWb3VjaERlbGVnYXRlUmVzcG9uc2USLQoIdmVyaWZpZWQYASABKAsyGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZRINCgV0b2tlbhgKIAEoCRIrCgdleHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJeChFWb3VjaEVucm9sUmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCRIMCgRuYW1lGAUgASgJEg4KBmlzc3VlchgJIAEoCSIvChJWb3VjaEVucm9sUmVzcG9uc2USDAoEc2VlZBgBIAEoCRILCgN1cmkYAiABKAkiIwoSVm91Y2hSZXZva2VSZXF1ZXN0Eg0KBXRva2VuGAEgASgJIhUKE1ZvdWNoUmV2b2tlUmVzcG9uc2UiQAoRVm91Y2hSZXNldFJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkiJAoSVm91Y2hSZXNldFJlc3BvbnNlEg4KBnNlY3JldBgBIAEoCSJBChJWb3VjaFVubG9ja1JlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkiSwoTVm91Y2hVbmxvY2tSZXNwb25zZRI0ChB3YXNfbG9ja2VkX3VudGlsGAEgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJeChBWb3VjaExpbmtSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIrCgdleHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJPChFWb3VjaExpbmtSZXNwb25zZRINCgV0b2tlbhgBIAEoCRIrCgdleHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJhChJWb3VjaFJlZGVlbVJlcXVlc3QSDQoFdG9rZW4YASABKAkSDwoHbWV0aG9kcxgKIAMoCRIrCgdleHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcDLqBQoMVm91Y2hTZXJ2aWNlEkEKBlZlcmlmeRIaLnJvc3Rlci5Wb3VjaFZlcmlmeVJlcXVlc3QaGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZRI4CgNTZXQSFy5yb3N0ZXIuVm91Y2hTZXRSZXF1ZXN0Ghgucm9zdGVyLlZvdWNoU2V0UmVzcG9uc2USRwoIRGVsZWdhdGUSHC5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlEj4KBVJlc2V0Ehkucm9zdGVyLlZvdWNoUmVzZXRSZXF1ZXN0Ghoucm9zdGVyLlZvdWNoUmVzZXRSZXNwb25zZRJBCgZVbmxvY2sSGi5yb3N0ZXIuVm91Y2hVbmxvY2tSZXF1ZXN0Ghsucm9zdGVyLlZvdWNoVW5sb2NrUmVzcG9uc2USOwoETGluaxIYLnJvc3Rlci5Wb3VjaExpbmtSZXF1ZXN0Ghkucm9zdGVyLlZvdWNoTGlua1Jlc3BvbnNlEkMKBlJlZGVlbRIaLnJvc3Rlci5Wb3VjaFJlZGVlbVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlEkcKCENvbnRpbnVlEhwucm9zdGVyLlZvdWNoQ29udGludWVSZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoQ29udGludWVSZXNwb25zZRI+CgVFbnJvbBIZLnJvc3Rlci5Wb3VjaEVucm9sUmVxdWVzdBoaLnJvc3Rlci5Wb3VjaEVucm9sUmVzcG9uc2USQQoGUmV2b2tlEhoucm9zdGVyLlZvdWNoUmV2b2tlUmVxdWVzdBobLnJvc3Rlci5Wb3VjaFJldm9rZVJlc3BvbnNlEkMKBkFjY2VwdBIaLnJvc3Rlci5Wb3VjaEFjY2VwdFJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp]);
 
 /**
  * VouchWho names somebody in the words a sign-in form collects.
@@ -95,6 +95,67 @@ export const VouchWhoSchema: GenMessage<VouchWho> = /*@__PURE__*/
   messageDesc(file_app_vouch, 0);
 
 /**
+ * VouchClaim is what a front door read out of a token it verified.
+ *
+ * # Why it is not a `VouchWho`, and not a ref either
+ *
+ * `VouchWho` names a **person** -- an identifier, an alias, an address -- and
+ * this call is not about a person the caller looked up. It is about the
+ * assertion they were handed: *this issuer says this subject signed in*, which
+ * is what an `id_token` carries and what `Identity` was written to hold. Making
+ * it its own message is what keeps the two apart in a reader's head, and in a
+ * role: a caller that may present a claim is not thereby a caller that may name
+ * anybody.
+ *
+ * A generated `IdentityRef` would say the same thing and cannot be used here,
+ * for [VouchWho]'s reason one paragraph up: the refs are generated from the
+ * entities in a later step than this file.
+ *
+ * # And it names a tenant, always
+ *
+ * The same constraint [VouchWho.address] carries, and for the same reason: a
+ * subject is unique **within a provider within a tenant**, so a lookup made
+ * without naming one is a lookup a front door that forgot to think about which
+ * tenant compiles a wrong answer for. `FrontService.WhoseHost` is where the
+ * tenant comes from -- the name the browser arrived at -- and never from the
+ * token.
+ *
+ * @generated from message roster.VouchClaim
+ */
+export type VouchClaim = Message<"roster.VouchClaim"> & {
+  /**
+   * Which tenant the front door is answering for.
+   *
+   * @generated from field: bytes tenant = 1;
+   */
+  tenant: Uint8Array;
+
+  /**
+   * The issuer, as this deployment named it when the identity was linked --
+   * "google", "entra". Not the raw `iss` claim, deliberately: what roster holds
+   * is the deployment's own word for a provider, and a front door translating
+   * one to the other is the front door doing its own job.
+   *
+   * @generated from field: string provider = 2;
+   */
+  provider: string;
+
+  /**
+   * The `sub`, as the provider issued it and as `Identity` stored it.
+   *
+   * @generated from field: string subject = 3;
+   */
+  subject: string;
+};
+
+/**
+ * Describes the message roster.VouchClaim.
+ * Use `create(VouchClaimSchema)` to create a new message.
+ */
+export const VouchClaimSchema: GenMessage<VouchClaim> = /*@__PURE__*/
+  messageDesc(file_app_vouch, 1);
+
+/**
  * @generated from message roster.VouchVerifyRequest
  */
 export type VouchVerifyRequest = Message<"roster.VouchVerifyRequest"> & {
@@ -149,7 +210,7 @@ export type VouchVerifyRequest = Message<"roster.VouchVerifyRequest"> & {
  * Use `create(VouchVerifyRequestSchema)` to create a new message.
  */
 export const VouchVerifyRequestSchema: GenMessage<VouchVerifyRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 1);
+  messageDesc(file_app_vouch, 2);
 
 /**
  * VouchFactor is one way somebody can prove themselves, and when.
@@ -192,7 +253,7 @@ export type VouchFactor = Message<"roster.VouchFactor"> & {
  * Use `create(VouchFactorSchema)` to create a new message.
  */
 export const VouchFactorSchema: GenMessage<VouchFactor> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 2);
+  messageDesc(file_app_vouch, 3);
 
 /**
  * @generated from message roster.VouchVerifyResponse
@@ -278,7 +339,7 @@ export type VouchVerifyResponse = Message<"roster.VouchVerifyResponse"> & {
  * Use `create(VouchVerifyResponseSchema)` to create a new message.
  */
 export const VouchVerifyResponseSchema: GenMessage<VouchVerifyResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 3);
+  messageDesc(file_app_vouch, 4);
 
 /**
  * @generated from message roster.VouchContinueRequest
@@ -314,7 +375,7 @@ export type VouchContinueRequest = Message<"roster.VouchContinueRequest"> & {
  * Use `create(VouchContinueRequestSchema)` to create a new message.
  */
 export const VouchContinueRequestSchema: GenMessage<VouchContinueRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 4);
+  messageDesc(file_app_vouch, 5);
 
 /**
  * @generated from message roster.VouchContinueResponse
@@ -334,7 +395,7 @@ export type VouchContinueResponse = Message<"roster.VouchContinueResponse"> & {
  * Use `create(VouchContinueResponseSchema)` to create a new message.
  */
 export const VouchContinueResponseSchema: GenMessage<VouchContinueResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 5);
+  messageDesc(file_app_vouch, 6);
 
 /**
  * @generated from message roster.VouchSetRequest
@@ -361,7 +422,7 @@ export type VouchSetRequest = Message<"roster.VouchSetRequest"> & {
  * Use `create(VouchSetRequestSchema)` to create a new message.
  */
 export const VouchSetRequestSchema: GenMessage<VouchSetRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 6);
+  messageDesc(file_app_vouch, 7);
 
 /**
  * @generated from message roster.VouchSetResponse
@@ -374,7 +435,7 @@ export type VouchSetResponse = Message<"roster.VouchSetResponse"> & {
  * Use `create(VouchSetResponseSchema)` to create a new message.
  */
 export const VouchSetResponseSchema: GenMessage<VouchSetResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 7);
+  messageDesc(file_app_vouch, 8);
 
 /**
  * @generated from message roster.VouchDelegateRequest
@@ -473,7 +534,42 @@ export type VouchDelegateRequest = Message<"roster.VouchDelegateRequest"> & {
  * Use `create(VouchDelegateRequestSchema)` to create a new message.
  */
 export const VouchDelegateRequestSchema: GenMessage<VouchDelegateRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 8);
+  messageDesc(file_app_vouch, 9);
+
+/**
+ * @generated from message roster.VouchAcceptRequest
+ */
+export type VouchAcceptRequest = Message<"roster.VouchAcceptRequest"> & {
+  /**
+   * What the front door was handed, and checked.
+   *
+   * @generated from field: roster.VouchClaim claim = 1;
+   */
+  claim?: VouchClaim | undefined;
+
+  /**
+   * What the delegation may be used for, bounded by what the caller may call.
+   * Empty is refused, as everywhere else here: a delegation that allows nothing
+   * opens no door.
+   *
+   * @generated from field: repeated string methods = 2;
+   */
+  methods: string[];
+
+  /**
+   * When it stops working. Unset is `keys.DelegateFor`, which is minutes.
+   *
+   * @generated from field: google.protobuf.Timestamp expires = 3;
+   */
+  expires?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.VouchAcceptRequest.
+ * Use `create(VouchAcceptRequestSchema)` to create a new message.
+ */
+export const VouchAcceptRequestSchema: GenMessage<VouchAcceptRequest> = /*@__PURE__*/
+  messageDesc(file_app_vouch, 10);
 
 /**
  * @generated from message roster.VouchDelegateResponse
@@ -516,7 +612,7 @@ export type VouchDelegateResponse = Message<"roster.VouchDelegateResponse"> & {
  * Use `create(VouchDelegateResponseSchema)` to create a new message.
  */
 export const VouchDelegateResponseSchema: GenMessage<VouchDelegateResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 9);
+  messageDesc(file_app_vouch, 11);
 
 /**
  * @generated from message roster.VouchEnrolRequest
@@ -558,7 +654,7 @@ export type VouchEnrolRequest = Message<"roster.VouchEnrolRequest"> & {
  * Use `create(VouchEnrolRequestSchema)` to create a new message.
  */
 export const VouchEnrolRequestSchema: GenMessage<VouchEnrolRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 10);
+  messageDesc(file_app_vouch, 12);
 
 /**
  * @generated from message roster.VouchEnrolResponse
@@ -587,7 +683,7 @@ export type VouchEnrolResponse = Message<"roster.VouchEnrolResponse"> & {
  * Use `create(VouchEnrolResponseSchema)` to create a new message.
  */
 export const VouchEnrolResponseSchema: GenMessage<VouchEnrolResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 11);
+  messageDesc(file_app_vouch, 13);
 
 /**
  * @generated from message roster.VouchRevokeRequest
@@ -606,7 +702,7 @@ export type VouchRevokeRequest = Message<"roster.VouchRevokeRequest"> & {
  * Use `create(VouchRevokeRequestSchema)` to create a new message.
  */
 export const VouchRevokeRequestSchema: GenMessage<VouchRevokeRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 12);
+  messageDesc(file_app_vouch, 14);
 
 /**
  * @generated from message roster.VouchRevokeResponse
@@ -619,7 +715,7 @@ export type VouchRevokeResponse = Message<"roster.VouchRevokeResponse"> & {
  * Use `create(VouchRevokeResponseSchema)` to create a new message.
  */
 export const VouchRevokeResponseSchema: GenMessage<VouchRevokeResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 13);
+  messageDesc(file_app_vouch, 15);
 
 /**
  * @generated from message roster.VouchResetRequest
@@ -645,7 +741,7 @@ export type VouchResetRequest = Message<"roster.VouchResetRequest"> & {
  * Use `create(VouchResetRequestSchema)` to create a new message.
  */
 export const VouchResetRequestSchema: GenMessage<VouchResetRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 14);
+  messageDesc(file_app_vouch, 16);
 
 /**
  * @generated from message roster.VouchResetResponse
@@ -666,7 +762,7 @@ export type VouchResetResponse = Message<"roster.VouchResetResponse"> & {
  * Use `create(VouchResetResponseSchema)` to create a new message.
  */
 export const VouchResetResponseSchema: GenMessage<VouchResetResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 15);
+  messageDesc(file_app_vouch, 17);
 
 /**
  * @generated from message roster.VouchUnlockRequest
@@ -688,7 +784,7 @@ export type VouchUnlockRequest = Message<"roster.VouchUnlockRequest"> & {
  * Use `create(VouchUnlockRequestSchema)` to create a new message.
  */
 export const VouchUnlockRequestSchema: GenMessage<VouchUnlockRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 16);
+  messageDesc(file_app_vouch, 18);
 
 /**
  * @generated from message roster.VouchUnlockResponse
@@ -710,7 +806,7 @@ export type VouchUnlockResponse = Message<"roster.VouchUnlockResponse"> & {
  * Use `create(VouchUnlockResponseSchema)` to create a new message.
  */
 export const VouchUnlockResponseSchema: GenMessage<VouchUnlockResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 17);
+  messageDesc(file_app_vouch, 19);
 
 /**
  * @generated from message roster.VouchLinkRequest
@@ -739,7 +835,7 @@ export type VouchLinkRequest = Message<"roster.VouchLinkRequest"> & {
  * Use `create(VouchLinkRequestSchema)` to create a new message.
  */
 export const VouchLinkRequestSchema: GenMessage<VouchLinkRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 18);
+  messageDesc(file_app_vouch, 20);
 
 /**
  * @generated from message roster.VouchLinkResponse
@@ -767,7 +863,7 @@ export type VouchLinkResponse = Message<"roster.VouchLinkResponse"> & {
  * Use `create(VouchLinkResponseSchema)` to create a new message.
  */
 export const VouchLinkResponseSchema: GenMessage<VouchLinkResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 19);
+  messageDesc(file_app_vouch, 21);
 
 /**
  * @generated from message roster.VouchRedeemRequest
@@ -802,7 +898,7 @@ export type VouchRedeemRequest = Message<"roster.VouchRedeemRequest"> & {
  * Use `create(VouchRedeemRequestSchema)` to create a new message.
  */
 export const VouchRedeemRequestSchema: GenMessage<VouchRedeemRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 20);
+  messageDesc(file_app_vouch, 22);
 
 /**
  * VouchService is how a secret is used without ever leaving the store.
@@ -1067,6 +1163,59 @@ export const VouchService: GenService<{
     methodKind: "unary";
     input: typeof VouchRevokeRequestSchema;
     output: typeof VouchRevokeResponseSchema;
+  },
+  /**
+   * Accept mints for somebody a front door has **already** checked, and it is
+   * the one method here that verifies nothing.
+   *
+   * # The gap it closes
+   *
+   * D23 left it open in as many words: *a deployment with Hydra in front does
+   * not call `Vouch` at all, so there is nothing for the token to ride back on.
+   * Exchanging an `id_token` for one is the obvious route and it is not
+   * designed.* So an OIDC-fronted deployment could find out who somebody is and
+   * could not get a credential to act **as** them -- which is the whole of what
+   * `roster-as` is for.
+   *
+   * # Why roster does not check the token itself
+   *
+   * Because that is being the relying party, and `connection.proto` already
+   * decided roster is not: *the secret has to reach the front door -- roster
+   * cannot use it, because using it means doing the OIDC exchange, which is
+   * being the relying party and is what D19 says roster is not.* The front door
+   * holds the client secret, does the exchange, and verifies the signature
+   * against an issuer it chose. roster holds none of that and would have to
+   * acquire all of it.
+   *
+   * So this is not `Verify` with a token instead of a password. It is roster
+   * **accepting** that somebody else did the checking, which is a different act
+   * and is named like one.
+   *
+   * # What that costs, said plainly
+   *
+   * A caller allowed this mints a delegation for **anybody**. There is no
+   * secret, no continuation and no proof -- the grant is the whole of the
+   * control, which is why it is its own method rather than a field on
+   * `Delegate`: a role names it, `roster key add` warns about it, and the trail
+   * records which service asked.
+   *
+   * It is the same trust `keys.Acting` already places in a front door, made
+   * explicit and made grantable separately. An app that checks passwords
+   * through `Verify` and must never mint for somebody it did not check is a
+   * different grant from one that runs an OIDC flow, and before this they were
+   * the same key.
+   *
+   * What it is still not: **wider than the person**. `methods` is bounded by
+   * what the caller may call, exactly as `Delegate`'s is, and the delegation is
+   * bounded by what the holder may do. A front door that can mint for anybody
+   * cannot mint anybody more permission than they have.
+   *
+   * @generated from rpc roster.VouchService.Accept
+   */
+  accept: {
+    methodKind: "unary";
+    input: typeof VouchAcceptRequestSchema;
+    output: typeof VouchDelegateResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_app_vouch, 0);

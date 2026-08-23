@@ -29,6 +29,7 @@ const (
 	VouchService_Continue_FullMethodName = "/roster.VouchService/Continue"
 	VouchService_Enrol_FullMethodName    = "/roster.VouchService/Enrol"
 	VouchService_Revoke_FullMethodName   = "/roster.VouchService/Revoke"
+	VouchService_Accept_FullMethodName   = "/roster.VouchService/Accept"
 )
 
 // VouchServiceClient is the client API for VouchService service.
@@ -215,6 +216,51 @@ type VouchServiceClient interface {
 	// delete, and the caller who may make it is the one that can prove it holds
 	// the token -- which is the same pair `roster-as` already carries.
 	Revoke(ctx context.Context, in *VouchRevokeRequest, opts ...grpc.CallOption) (*VouchRevokeResponse, error)
+	// Accept mints for somebody a front door has **already** checked, and it is
+	// the one method here that verifies nothing.
+	//
+	// # The gap it closes
+	//
+	// D23 left it open in as many words: *a deployment with Hydra in front does
+	// not call `Vouch` at all, so there is nothing for the token to ride back on.
+	// Exchanging an `id_token` for one is the obvious route and it is not
+	// designed.* So an OIDC-fronted deployment could find out who somebody is and
+	// could not get a credential to act **as** them -- which is the whole of what
+	// `roster-as` is for.
+	//
+	// # Why roster does not check the token itself
+	//
+	// Because that is being the relying party, and `connection.proto` already
+	// decided roster is not: *the secret has to reach the front door -- roster
+	// cannot use it, because using it means doing the OIDC exchange, which is
+	// being the relying party and is what D19 says roster is not.* The front door
+	// holds the client secret, does the exchange, and verifies the signature
+	// against an issuer it chose. roster holds none of that and would have to
+	// acquire all of it.
+	//
+	// So this is not `Verify` with a token instead of a password. It is roster
+	// **accepting** that somebody else did the checking, which is a different act
+	// and is named like one.
+	//
+	// # What that costs, said plainly
+	//
+	// A caller allowed this mints a delegation for **anybody**. There is no
+	// secret, no continuation and no proof -- the grant is the whole of the
+	// control, which is why it is its own method rather than a field on
+	// `Delegate`: a role names it, `roster key add` warns about it, and the trail
+	// records which service asked.
+	//
+	// It is the same trust `keys.Acting` already places in a front door, made
+	// explicit and made grantable separately. An app that checks passwords
+	// through `Verify` and must never mint for somebody it did not check is a
+	// different grant from one that runs an OIDC flow, and before this they were
+	// the same key.
+	//
+	// What it is still not: **wider than the person**. `methods` is bounded by
+	// what the caller may call, exactly as `Delegate`'s is, and the delegation is
+	// bounded by what the holder may do. A front door that can mint for anybody
+	// cannot mint anybody more permission than they have.
+	Accept(ctx context.Context, in *VouchAcceptRequest, opts ...grpc.CallOption) (*VouchDelegateResponse, error)
 }
 
 type vouchServiceClient struct {
@@ -319,6 +365,16 @@ func (c *vouchServiceClient) Revoke(ctx context.Context, in *VouchRevokeRequest,
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(VouchRevokeResponse)
 	err := c.cc.Invoke(ctx, VouchService_Revoke_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *vouchServiceClient) Accept(ctx context.Context, in *VouchAcceptRequest, opts ...grpc.CallOption) (*VouchDelegateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(VouchDelegateResponse)
+	err := c.cc.Invoke(ctx, VouchService_Accept_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -509,6 +565,51 @@ type VouchServiceServer interface {
 	// delete, and the caller who may make it is the one that can prove it holds
 	// the token -- which is the same pair `roster-as` already carries.
 	Revoke(context.Context, *VouchRevokeRequest) (*VouchRevokeResponse, error)
+	// Accept mints for somebody a front door has **already** checked, and it is
+	// the one method here that verifies nothing.
+	//
+	// # The gap it closes
+	//
+	// D23 left it open in as many words: *a deployment with Hydra in front does
+	// not call `Vouch` at all, so there is nothing for the token to ride back on.
+	// Exchanging an `id_token` for one is the obvious route and it is not
+	// designed.* So an OIDC-fronted deployment could find out who somebody is and
+	// could not get a credential to act **as** them -- which is the whole of what
+	// `roster-as` is for.
+	//
+	// # Why roster does not check the token itself
+	//
+	// Because that is being the relying party, and `connection.proto` already
+	// decided roster is not: *the secret has to reach the front door -- roster
+	// cannot use it, because using it means doing the OIDC exchange, which is
+	// being the relying party and is what D19 says roster is not.* The front door
+	// holds the client secret, does the exchange, and verifies the signature
+	// against an issuer it chose. roster holds none of that and would have to
+	// acquire all of it.
+	//
+	// So this is not `Verify` with a token instead of a password. It is roster
+	// **accepting** that somebody else did the checking, which is a different act
+	// and is named like one.
+	//
+	// # What that costs, said plainly
+	//
+	// A caller allowed this mints a delegation for **anybody**. There is no
+	// secret, no continuation and no proof -- the grant is the whole of the
+	// control, which is why it is its own method rather than a field on
+	// `Delegate`: a role names it, `roster key add` warns about it, and the trail
+	// records which service asked.
+	//
+	// It is the same trust `keys.Acting` already places in a front door, made
+	// explicit and made grantable separately. An app that checks passwords
+	// through `Verify` and must never mint for somebody it did not check is a
+	// different grant from one that runs an OIDC flow, and before this they were
+	// the same key.
+	//
+	// What it is still not: **wider than the person**. `methods` is bounded by
+	// what the caller may call, exactly as `Delegate`'s is, and the delegation is
+	// bounded by what the holder may do. A front door that can mint for anybody
+	// cannot mint anybody more permission than they have.
+	Accept(context.Context, *VouchAcceptRequest) (*VouchDelegateResponse, error)
 	mustEmbedUnimplementedVouchServiceServer()
 }
 
@@ -548,6 +649,9 @@ func (UnimplementedVouchServiceServer) Enrol(context.Context, *VouchEnrolRequest
 }
 func (UnimplementedVouchServiceServer) Revoke(context.Context, *VouchRevokeRequest) (*VouchRevokeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Revoke not implemented")
+}
+func (UnimplementedVouchServiceServer) Accept(context.Context, *VouchAcceptRequest) (*VouchDelegateResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Accept not implemented")
 }
 func (UnimplementedVouchServiceServer) mustEmbedUnimplementedVouchServiceServer() {}
 func (UnimplementedVouchServiceServer) testEmbeddedByValue()                      {}
@@ -750,6 +854,24 @@ func _VouchService_Revoke_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _VouchService_Accept_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VouchAcceptRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VouchServiceServer).Accept(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: VouchService_Accept_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VouchServiceServer).Accept(ctx, req.(*VouchAcceptRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // VouchService_ServiceDesc is the grpc.ServiceDesc for VouchService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -796,6 +918,10 @@ var VouchService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Revoke",
 			Handler:    _VouchService_Revoke_Handler,
+		},
+		{
+			MethodName: "Accept",
+			Handler:    _VouchService_Accept_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

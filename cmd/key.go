@@ -329,23 +329,40 @@ func splitMethods(v string) []string {
 // noticing. So this is the sentence that makes somebody notice, once, at the
 // moment they could still choose otherwise.
 func Widest(methods []string) string {
-	reads := []string{
-		app.AuditService_List_FullMethodName,
-		app.AuditService_Get_FullMethodName,
+	wide := []struct {
+		method string
+		why    string
+	}{
+		{app.AuditService_List_FullMethodName, readsTheTrail},
+		{app.AuditService_Get_FullMethodName, readsTheTrail},
+		{app.VouchService_Accept_FullMethodName, mintsForAnybody},
 	}
 
 	for _, held := range methods {
-		for _, want := range reads {
-			if !frame.Covers(held, want) {
+		for _, v := range wide {
+			if !frame.Covers(held, v.method) {
 				continue
 			}
 
-			return "NOTE: `" + held + "` reaches the audit trail, which holds the contents of every\n" +
-				"write in this deployment, in every tenant, for as long as the retention policy\n" +
-				"keeps them. A key is not walled by tenant. Grant it only to something that has\n" +
-				"to read other customers' history."
+			return "NOTE: `" + held + "` " + v.why
 		}
 	}
 
 	return ""
 }
+
+const readsTheTrail = "reaches the audit trail, which holds the contents of every\n" +
+	"write in this deployment, in every tenant, for as long as the retention policy\n" +
+	"keeps them. A key is not walled by tenant. Grant it only to something that has\n" +
+	"to read other customers' history."
+
+// accepts is the other one, and it is the sharper of the two.
+//
+// `Vouch.Accept` mints a delegation for **anybody**, with no secret and no
+// proof: it exists so that a front door which ran an OIDC flow can say who it
+// checked, and the grant is the whole of the control. Reading a trail is
+// reading; this is acting as somebody.
+const mintsForAnybody = "mints a credential for anybody, on the caller's word.\n" +
+	"`Vouch.Accept` is for a front door that did its own checking -- an OIDC flow --\n" +
+	"and it verifies nothing itself. An app that checks passwords through `Verify`\n" +
+	"does not need it, and should not have it."

@@ -555,6 +555,73 @@ somebody reading the code to decide what is safe.
   credentials -- but *local is Ungated* was written down and *and general writes
   are open there* was not.
 
+### D49 · roster accepts that somebody else did the checking
+
+D23's one open sentence, and the last thing it left: *a deployment with Hydra in
+front does not call `Vouch` at all, so there is nothing for the token to ride
+back on. Exchanging an `id_token` for one is the obvious route and it is not
+designed.*
+
+So an OIDC-fronted deployment could find out who somebody was -- `Identity` maps
+a provider's subject to a person -- and could not get a credential to act **as**
+them, which is the whole of what `roster-as` is for. The password half had
+`Vouch.Delegate` and the provider half had nothing.
+
+#### roster does not check the token, and that was already decided
+
+`connection.proto` settled it while deciding where a client secret lives: *the
+secret has to reach the front door -- roster cannot use it, because using it
+means doing the OIDC exchange, which is being the relying party and is what D19
+says roster is not.*
+
+Which rules out the shape everybody reaches for first: `Verify` with a token
+instead of a password. roster would need the issuer's JWKS, key rotation, clock
+skew, `aud` and `iss` and `nonce` -- the whole of being a relying party, for an
+issuer the front door already chose and already talks to.
+
+So the front door checks and roster **accepts**. It is a different act and
+`Vouch.Accept` is named like one.
+
+#### What it costs, which is the whole of the design
+
+A caller allowed this mints a delegation for **anybody**. No secret, no
+continuation, no proof. The grant is the entire control.
+
+That is why it is its own method and not a field on `Delegate`: a role names it,
+`roster key add` warns about it, and the trail records which service asked. Two
+front doors that were the same key before this are two grants now -- one that
+checks passwords and must never mint for somebody it did not check, and one that
+runs an OIDC flow.
+
+It is the same trust `keys.Acting` already places in a front door. What changed
+is that it is grantable separately and visible when it is granted.
+
+#### What it keeps
+
+Everything after the proof, because none of it was about how somebody was
+proved. `methods` is bounded by what the **caller** may call, the delegation is
+bounded by what the **person** may do, the issuer is the frame's actor so
+rotating a key voids what it minted, and the expiry is `keys.DelegateFor`.
+
+And the refusals that are not about proof: a claim reaching nobody, a suspended
+person, an erased one. A suspension that held for a password and not for a token
+would be a suspension that depends on which door somebody came through.
+
+What it does not keep is the **burn**. D14's equal-cost rule is about a caller
+learning something from how long a refusal took, and it is about a caller
+guessing. This caller proved nothing and is guessing nothing.
+
+#### And a claim is not a reference
+
+`VouchClaim` is its own message rather than an `IdentityRef`, and the reason is
+not only that a hand-written service cannot name a generated ref -- `VouchWho`
+already says that. It is that this call is not about a person the caller looked
+up. It is about the assertion they were handed, and keeping the two apart is
+what makes *may present a claim* a different grant from *may name anybody*.
+
+Naming a claim that reaches nobody is refused rather than provisioning one.
+Making a person by receiving a token is a different act with a different name.
+
 ### D48 · Minting an `rt_` over the wire, which was P5's one loose end
 
 The roadmap carried it under P5 for as long as there was a roadmap: *not done,

@@ -196,6 +196,52 @@ service VouchService {
   // delete, and the caller who may make it is the one that can prove it holds
   // the token -- which is the same pair `roster-as` already carries.
   rpc Revoke(VouchRevokeRequest) returns (VouchRevokeResponse);
+
+  // Accept mints for somebody a front door has **already** checked, and it is
+  // the one method here that verifies nothing.
+  //
+  // # The gap it closes
+  //
+  // D23 left it open in as many words: *a deployment with Hydra in front does
+  // not call `Vouch` at all, so there is nothing for the token to ride back on.
+  // Exchanging an `id_token` for one is the obvious route and it is not
+  // designed.* So an OIDC-fronted deployment could find out who somebody is and
+  // could not get a credential to act **as** them -- which is the whole of what
+  // `roster-as` is for.
+  //
+  // # Why roster does not check the token itself
+  //
+  // Because that is being the relying party, and `connection.proto` already
+  // decided roster is not: *the secret has to reach the front door -- roster
+  // cannot use it, because using it means doing the OIDC exchange, which is
+  // being the relying party and is what D19 says roster is not.* The front door
+  // holds the client secret, does the exchange, and verifies the signature
+  // against an issuer it chose. roster holds none of that and would have to
+  // acquire all of it.
+  //
+  // So this is not `Verify` with a token instead of a password. It is roster
+  // **accepting** that somebody else did the checking, which is a different act
+  // and is named like one.
+  //
+  // # What that costs, said plainly
+  //
+  // A caller allowed this mints a delegation for **anybody**. There is no
+  // secret, no continuation and no proof -- the grant is the whole of the
+  // control, which is why it is its own method rather than a field on
+  // `Delegate`: a role names it, `roster key add` warns about it, and the trail
+  // records which service asked.
+  //
+  // It is the same trust `keys.Acting` already places in a front door, made
+  // explicit and made grantable separately. An app that checks passwords
+  // through `Verify` and must never mint for somebody it did not check is a
+  // different grant from one that runs an OIDC flow, and before this they were
+  // the same key.
+  //
+  // What it is still not: **wider than the person**. `methods` is bounded by
+  // what the caller may call, exactly as `Delegate`'s is, and the delegation is
+  // bounded by what the holder may do. A front door that can mint for anybody
+  // cannot mint anybody more permission than they have.
+  rpc Accept(VouchAcceptRequest) returns (VouchDelegateResponse);
 }
 
 // VouchWho names somebody in the words a sign-in form collects.
@@ -248,6 +294,44 @@ message VouchWho {
   // tenant is a lookup a front door that forgot to think about which one
   // compiles a wrong answer for.
   string address = 4;
+}
+
+// VouchClaim is what a front door read out of a token it verified.
+//
+// # Why it is not a `VouchWho`, and not a ref either
+//
+// `VouchWho` names a **person** -- an identifier, an alias, an address -- and
+// this call is not about a person the caller looked up. It is about the
+// assertion they were handed: *this issuer says this subject signed in*, which
+// is what an `id_token` carries and what `Identity` was written to hold. Making
+// it its own message is what keeps the two apart in a reader's head, and in a
+// role: a caller that may present a claim is not thereby a caller that may name
+// anybody.
+//
+// A generated `IdentityRef` would say the same thing and cannot be used here,
+// for [VouchWho]'s reason one paragraph up: the refs are generated from the
+// entities in a later step than this file.
+//
+// # And it names a tenant, always
+//
+// The same constraint [VouchWho.address] carries, and for the same reason: a
+// subject is unique **within a provider within a tenant**, so a lookup made
+// without naming one is a lookup a front door that forgot to think about which
+// tenant compiles a wrong answer for. `FrontService.WhoseHost` is where the
+// tenant comes from -- the name the browser arrived at -- and never from the
+// token.
+message VouchClaim {
+  // Which tenant the front door is answering for.
+  bytes tenant = 1;
+
+  // The issuer, as this deployment named it when the identity was linked --
+  // "google", "entra". Not the raw `iss` claim, deliberately: what roster holds
+  // is the deployment's own word for a provider, and a front door translating
+  // one to the other is the front door doing its own job.
+  string provider = 2;
+
+  // The `sub`, as the provider issued it and as `Identity` stored it.
+  string subject = 3;
 }
 
 message VouchVerifyRequest {
@@ -437,6 +521,19 @@ message VouchDelegateRequest {
   //
   // A time in the past is refused rather than clamped.
   google.protobuf.Timestamp expires = 11;
+}
+
+message VouchAcceptRequest {
+  // What the front door was handed, and checked.
+  VouchClaim claim = 1;
+
+  // What the delegation may be used for, bounded by what the caller may call.
+  // Empty is refused, as everywhere else here: a delegation that allows nothing
+  // opens no door.
+  repeated string methods = 2;
+
+  // When it stops working. Unset is `keys.DelegateFor`, which is minutes.
+  google.protobuf.Timestamp expires = 3;
 }
 
 message VouchDelegateResponse {

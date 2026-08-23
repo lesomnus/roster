@@ -4,12 +4,14 @@ import (
 	"context"
 	"time"
 
+	"github.com/lesomnus/z"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/frame"
+	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
@@ -240,4 +242,147 @@ func issuerOf(ctx context.Context) (pdid.Id, error) {
 	}
 
 	return f.Actor, nil
+}
+
+// Accept mints for somebody a front door has already checked, and checks
+// nothing itself.
+//
+// # What it is, in one line
+//
+// [Server.Delegate] without the proof. Everything after the proof is shared --
+// the bound on `methods`, the issuer the delegation is tied to, the expiry, the
+// row -- because those were never facts about how somebody was checked.
+//
+// # Why roster does not do the checking
+//
+// `connection.proto` decided it: *using it means doing the OIDC exchange, which
+// is being the relying party and is what D19 says roster is not.* The front
+// door holds the client secret and verifies the signature against an issuer it
+// chose; roster holds neither and would have to acquire both. So the claim
+// arrives already checked and roster resolves it to a person.
+//
+// D23 left this open in as many words -- *exchanging an `id_token` for one is
+// the obvious route and it is not designed* -- and it is the last thing that
+// entry left.
+//
+// # The refusals it keeps, which are the ones that are not about proof
+//
+// A claim that reaches nobody, a person who has been disabled, a person who has
+// been erased. [Server.verify] refuses all three and this refuses them too --
+// not by sharing that function, which is about a secret, but by asking the same
+// questions of the row.
+//
+// What it deliberately does **not** do is burn. D14's equal-cost rule is about
+// a caller learning something from how long a refusal took, and it applies to a
+// caller **guessing**. This caller proved nothing and is guessing nothing: they
+// hold a grant that says roster believes them. Making them wait would be paying
+// for a property nobody can use.
+func (s *Server) Accept(ctx context.Context, req *app.VouchAcceptRequest) (*app.VouchDelegateResponse, error) {
+	methods := req.GetMethods()
+	if len(methods) == 0 {
+		return nil, status.Error(codes.InvalidArgument,
+			"methods: a delegation that allows nothing opens no door")
+	}
+	if err := mayDelegate(ctx, methods); err != nil {
+		return nil, err
+	}
+
+	issuer, err := issuerOf(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	who, err := s.claimed(ctx, req.GetClaim())
+	if err != nil {
+		return nil, err
+	}
+
+	holder, err := pdid.From(who.GetId())
+	if err != nil {
+		return nil, err
+	}
+	tenant, err := pdid.From(who.GetTenant().GetId())
+	if err != nil {
+		return nil, err
+	}
+
+	// The same answer a finished sign-in carries, because that is what this is:
+	// a caller reading `verified.ok` reads one field whichever way the person
+	// was proved.
+	res := app.VouchVerifyResponse_builder{
+		Ok:     true,
+		Holder: holder.Bytes(),
+		Tenant: tenant.Bytes(),
+	}.Build()
+
+	return s.mint(ctx, res, holder, issuer, methods, req.GetExpires())
+}
+
+// claimed is the person a claim reaches, and refuses one that reaches nobody
+// who could sign in.
+//
+// Read through the **walled** server, unlike everything `verify` reads. That is
+// not an inconsistency: `verify` is unwalled because a sign-in happens before
+// anybody has been resolved, and this caller is resolved before they get here
+// -- they hold a grant naming this method. So the ordinary narrowing applies,
+// and a front door answering for one tenant cannot present a claim about
+// another.
+func (s *Server) claimed(ctx context.Context, claim *app.VouchClaim) (*app.Holder, error) {
+	tenant, provider, subject := claim.GetTenant(), claim.GetProvider(), claim.GetSubject()
+	switch {
+	case len(tenant) == 0:
+		return nil, pderr.Invalidf("claim.tenant", "which tenant this front door is answering for")
+	case provider == "":
+		return nil, pderr.Invalidf("claim.provider", "which provider issued this")
+	case subject == "":
+		return nil, pderr.Invalidf("claim.subject", "who the provider said it was")
+	}
+
+	v, err := s.walled.Identity().Get(ctx, app.IdentityGetRequest_builder{
+		Ref: app.IdentityRef_builder{
+			Subject: app.IdentityRefBySubject_builder{
+				TenantId: tenant,
+				Provider: z.Ptr(provider),
+				Subject:  z.Ptr(subject),
+			}.Build(),
+		}.Build(),
+		// The same three the credential read asks for, and for the same
+		// reasons: the tenant because a delegation names one, and the two
+		// stamps because a person who is suspended or gone is not somebody a
+		// token gets to be.
+		Select: app.IdentitySelect_builder{
+			Holder: app.HolderSelect_builder{
+				Tenant:       app.TenantSelect_builder{}.Build(),
+				DateErased:   z.Ptr(true),
+				DateDisabled: z.Ptr(true),
+			}.Build(),
+		}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			// Nobody arrives under this claim. Refused rather than provisioned:
+			// making a person by presenting a token would turn a front door
+			// into something that writes rows in a tenant by receiving one, and
+			// that is a different act with a different name.
+			return nil, status.Error(codes.NotFound, "no such identity")
+		}
+
+		return nil, err
+	}
+
+	who := v.GetHolder()
+	if who.GetDateDisabled() != nil {
+		// The same refusal `verify` makes, and it has to be here too: a
+		// suspension that held for a password and not for a token would be a
+		// suspension that depends on which door somebody came through.
+		return nil, status.Error(codes.PermissionDenied, "not to sign in")
+	}
+	if who.GetDateErased() != nil {
+		// `holder.proto` states this as a guarantee -- an erased holder "cannot
+		// authenticate" -- and a reference narrows to the rows still there, so
+		// this is belt beside braces rather than the only control.
+		return nil, status.Error(codes.NotFound, "no such identity")
+	}
+
+	return who, nil
 }
