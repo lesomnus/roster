@@ -187,6 +187,13 @@ holds but a server instance this process was handed. Running it twice is an
 error rather than a no-op, because an `init` that quietly did nothing is one
 somebody runs against the wrong deployment and believes.
 
+It also needs a `control:` database, and that is the one thing it refuses over.
+Without one a deployment serves `auth.Plain` — every caller is whoever they type
+— and adding a control plane afterwards is not a migration: an `rt_` minted
+while nobody was checking sits inert in the data plane until the day something
+reads it, and then all of them work at once. `cmd.Seed` is not asked this, which
+is where a test and the Wasm sandbox live.
+
 `key` and `trail` are there for the same kind of reason and it is worth knowing
 which kind. `roster key` writes to the control plane, which is not served.
 `roster trail` applies the retention policy, and no server offers those acts at

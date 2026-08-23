@@ -574,6 +574,76 @@ somebody reading the code to decide what is safe.
   credentials -- but *local is Ungated* was written down and *and general writes
   are open there* was not.
 
+### D55 · A control plane is not a thing to add later
+
+`roster init` refuses a configuration that names no `control.db`. It is the only
+setting the command insists on, and the argument for it is not symmetry.
+
+#### What a deployment without one is
+
+`auth.Plain`, which believes whatever a caller writes. That is the right
+arrangement for a checkout and payday warns about it once per process, so
+nothing here is hidden — and D15 already says the control plane is where the
+answer to *who is calling* lives.
+
+What was never written down is the shape of **leaving it until later**.
+
+#### The keys that were inert and then were not
+
+Under `Plain` a caller says who they are and is believed, which means every
+method a role could reach is reachable by anybody who can make a request.
+`MeService.IssueKey` is one of them: a name is written, `cmd.Resolver` turns it
+into a row, a frame is built, and an `ApiKey` lands on the **data plane**. D54
+is careful that such a key is never wider than the person it hangs off — and
+under `Plain` the person it hangs off is whoever asked.
+
+Nothing reads it, because `auth.Bearer(keys.Store(…))` is wired inside
+`if c.Control.Serves()` and there is no control plane. `ApiKey.date_expires` is
+nullable and an unexpiring key is what a service wants, so the row does not go
+away.
+
+Name a control plane afterwards and `auth.Seq` gains the handler. Every key
+minted while nobody was checking is a working credential from that moment, and
+no operator issued any of them. The deployment does not acquire a control plane;
+it acquires credentials.
+
+There is no revocation step to add either, because there is nothing to revoke
+*from* — an operator listing keys sees rows that look exactly like the ones they
+made.
+
+#### Why the command and not `Build`
+
+Because `Plain` has a place and this is not an argument against it. A deployment
+raised by a Go call is a test or the Wasm sandbox: no port, no stranger, and
+`wasm/main.go` builds its own server with `pdauth.Plain()` on purpose so that a
+page needs no branch. `cmd.Seed` writes every row `init` writes and is asked
+nothing.
+
+What is left is the one path somebody types, which is the one path that ends in
+a listener.
+
+#### What it does not fix
+
+`init` still writes a data plane tenant, a holder in it, and the `everything`
+role — and with a control plane required, **that person cannot call anything**.
+A data plane holder gets no password and no key here, and the two writes that
+would give them one, `VouchService.Set` and the `IssueService` that mints an
+`rt_`, are served on `admin.addr` by an operator.
+
+So the command stopped printing `sign in as: @contoso/admin`, which was a true
+sentence only about the arrangement it now refuses. What replaces it says the
+credential is written over `admin.addr`.
+
+That is a smaller version of a question this leaves open: whether `init` should
+seed a customer at all, or seed only the control plane and let the operator's
+first act be the same act as their hundredth. `contoso` is an example company
+name, and a fake customer in a production database is an odd thing for a
+deployment to start life with. `mayGrant` compares methods and site rather than
+tenant, and the admin port registers `TenantService`, `HolderService`,
+`RoleService`, `BindingService`, `VouchService` and `IssueService` — so an
+operator can already stand a customer up from nothing. What is missing is the
+screen: `ts/src/customers.tsx` lists customers and cannot make one.
+
 ### D54 · A key somebody mints for themselves
 
 The last line of `docs/operating.md`'s *what is not here* that was a missing

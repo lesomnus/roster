@@ -10,8 +10,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"google.golang.org/grpc/metadata"
-
 	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
@@ -19,6 +17,7 @@ import (
 
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/vouch"
 )
 
@@ -27,19 +26,22 @@ import (
 //
 // The command rather than its parts, because what was wrong was not any one of
 // them: every row it wrote was correct and the deployment was still unusable.
-func inited(t *testing.T, control bool, args ...string) (*cmd.Server, string) {
+func inited(t *testing.T, args ...string) (*cmd.Server, string) {
 	t.Helper()
 	x := require.New(t)
 	ctx := t.Context()
 
+	// Both planes, because there is no other kind: `init` refuses a
+	// configuration that names no control database. The switch this took was
+	// how a deployment on `auth.Plain` got raised in a test, and `cmd.Build`
+	// is what does that now.
 	drv, dsn := pdtest.DB(t)
+	cdrv, cdsn := pdtest.DB(t)
+
 	c := cmd.Config{
-		Db:    config.DbConfig{Driver: drv, Dsn: dsn},
-		Watch: config.WatchConfig{Broker: config.BrokerMemory},
-	}
-	if control {
-		cdrv, cdsn := pdtest.DB(t)
-		c.Control = cmd.ControlConfig{Db: config.DbConfig{Driver: cdrv, Dsn: cdsn}}
+		Db:      config.DbConfig{Driver: drv, Dsn: dsn},
+		Watch:   config.WatchConfig{Broker: config.BrokerMemory},
+		Control: cmd.ControlConfig{Db: config.DbConfig{Driver: cdrv, Dsn: cdsn}},
 	}
 
 	out := &bytes.Buffer{}
@@ -68,9 +70,7 @@ func TestInitLeavesADeploymentThatWorks(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	s, out := inited(t, false)
-
-	x.Contains(out, "sign in as: @contoso/admin")
+	s, out := inited(t)
 
 	// The wildcard is said out loud where it is granted, in the words it was
 	// granted in. A permission nobody reads about is one nobody remembers is
@@ -78,8 +78,41 @@ func TestInitLeavesADeploymentThatWorks(t *testing.T) {
 	x.Contains(out, "/roster.*/*")
 	x.Contains(out, "every RPC roster serves")
 
+	// And what they hold **nothing** of, which is the half that used to read as
+	// its opposite: this printed `sign in as: @contoso/admin`, and a data plane
+	// holder gets no password and no key from `init`. It was a true sentence
+	// only about a deployment on `auth.Plain`, which is the one arrangement
+	// this command no longer makes.
+	x.Contains(out, "holds nothing to call with yet")
+	x.NotContains(out, "sign in as: @contoso/admin")
+
+	// So the credential is minted here, which is what an operator does over
+	// `admin.addr` -- `console.IssueTenant` is registered there for exactly
+	// this. Written through `Ungated` because a test is the deployment, not
+	// somebody asking it.
+	admin, err := s.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref: app.HolderRef_builder{
+			Slug: app.HolderRefBySlug_builder{
+				Alias:  strPtr("admin"),
+				Tenant: app.TenantRef_builder{Alias: strPtr("contoso")}.Build(),
+			}.Build(),
+		}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	token, sum, err := keys.Mint(keys.PrefixTenant)
+	x.NoError(err)
+
+	_, err = s.Ungated.ApiKey().Add(ctx, app.ApiKeyAddRequest_builder{
+		Holder:  app.HolderRef_builder{Id: admin.GetId()}.Build(),
+		Alias:   "bootstrap",
+		Secret:  sum,
+		Methods: []string{"/roster.*/*"},
+	}.Build())
+	x.NoError(err)
+
 	conn := served(t, s)
-	asAdmin := metadata.NewOutgoingContext(ctx, as(t, "@contoso/admin"))
+	asAdmin := bearing(ctx, token)
 
 	t.Run("the admin may write the second role", func(t *testing.T) {
 		x := require.New(t)
@@ -131,7 +164,7 @@ func TestInitSeedsAnOperator(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	s, out := inited(t, true)
+	s, out := inited(t)
 	x.NotNil(s.Control)
 
 	// Shown once, and the only place it will ever be.
@@ -181,15 +214,56 @@ func TestInitSeedsAnOperator(t *testing.T) {
 	})
 }
 
-// TestInitSaysNothingAboutAControlPlaneThatIsNotThere -- a checkout gets
-// `auth.Plain`, and being told so at the moment the deployment is created is
-// the only time somebody is definitely reading.
-func TestInitSaysNothingAboutAControlPlaneThatIsNotThere(t *testing.T) {
+// TestInitNeedsAControlPlane is the deployment this command will not make.
+//
+// It used to make it and print a note: no control plane, so `auth.Plain`, so
+// every caller is whoever they type. That is a fine arrangement for a checkout
+// and a bad one to be able to grow out of, because growing out of it is not a
+// migration.
+//
+// `MeService.IssueKey` works under `Plain` -- a name is written, a frame is
+// built, an `ApiKey` row lands on the data plane -- and nothing reads it,
+// because `auth.Bearer` is not in the chain. An expiry is optional, so the row
+// stays. Name a control plane afterwards and `auth.Seq` gains
+// `keys.Store(control.Ungated, s.Ungated)`: every key minted while nobody was
+// checking becomes a working credential, at once, issued by nobody.
+//
+// So the command refuses rather than warns. `Seed` does not, which is the line:
+// a deployment raised by a Go call is a test or the Wasm sandbox, and `Plain`
+// is what those are for.
+func TestInitNeedsAControlPlane(t *testing.T) {
 	x := require.New(t)
 
-	_, out := inited(t, false)
-	x.NotContains(out, "control plane\n  holder")
-	x.Contains(out, "believes its callers")
+	drv, dsn := pdtest.DB(t)
+	c := cmd.Config{
+		Db:    config.DbConfig{Driver: drv, Dsn: dsn},
+		Watch: config.WatchConfig{Broker: config.BrokerMemory},
+	}
+
+	out := &bytes.Buffer{}
+	k := cmd.NewCmdInit(&c)
+	k.Writer = out
+
+	err := k.Run(t.Context(), nil)
+	x.Error(err, "a deployment that believes its callers was created without a word")
+	x.ErrorContains(err, "control.db.driver",
+		"the refusal does not name the field to fill in")
+
+	t.Run("and nothing was written on the way to refusing", func(t *testing.T) {
+		x := require.New(t)
+
+		// Before the database is opened, which is what makes running this
+		// again after filling the field in a first `init` rather than a
+		// second. `init` twice is an error on purpose.
+		s, err := cmd.Build(t.Context(), c)
+		x.NoError(err)
+		t.Cleanup(func() { s.Close() })
+		x.NoError(s.Ent.Schema.Create(t.Context()))
+
+		n, err := s.Ent.Tenant.Query().Count(t.Context())
+		x.NoError(err)
+		x.Zero(n, "a tenant was left behind by a command that refused")
+	})
 }
 
 // TestNobodyGrantsEverythingWhoDoesNotHoldIt is the flag being subject to the
@@ -469,7 +543,7 @@ func TestTheFirstTenantCanBeGivenItsIdentifier(t *testing.T) {
 func TestAnEmptyPasswordIsGeneratedInstead(t *testing.T) {
 	x := require.New(t)
 
-	s, out := inited(t, true)
+	s, out := inited(t)
 	x.NotEmpty(passwordFrom(t, out), "nothing was generated")
 	_ = s
 }

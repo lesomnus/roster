@@ -72,7 +72,7 @@ func TestAGrantNothingCanReadAllowsNothing(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	s, out := inited(t, true)
+	s, out := inited(t)
 	c := signIn(t, s, "ops", passwordFrom(t, out))
 	x.NotNil(c)
 
@@ -162,7 +162,7 @@ func TestAnEmptyGrantColumnIsNotAWholeGrant(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	s, out := inited(t, true)
+	s, out := inited(t)
 	c := signIn(t, s, "ops", passwordFrom(t, out))
 	x.NotNil(c)
 

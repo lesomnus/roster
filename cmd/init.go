@@ -46,6 +46,20 @@ import (
 // administrator cannot call, and cannot grant themselves either, because
 // granting is refused for anything the granter does not already hold.
 //
+// # It needs a control plane
+//
+// `control.db` is required here and nowhere else. The plane is the deployment's
+// own roster -- who may call it, and who runs it -- and a deployment that
+// leaves it for later serves `auth.Plain` in the meantime, where every caller
+// is whoever they type. What that costs is not only the obvious: an `rt_`
+// minted while nobody is checking is a row that outlives the arrangement, and
+// the day a control plane is named every one of them starts working. See the
+// refusal below.
+//
+// `Seed` is not asked this. A deployment raised by a Go call -- a test, the
+// Wasm sandbox -- is exactly where `Plain` belongs, and this is the only
+// command anybody types.
+//
 // # Running it twice
 //
 // An error, because an alias is unique and the database says so. That is the
@@ -94,6 +108,35 @@ func NewCmdInit(c *Config) *xli.Command {
 				at = k
 			}
 
+			// A control plane, always, and the reason is not tidiness.
+			//
+			// A deployment that adds one **later** serves `auth.Plain` until it
+			// does: every caller is whoever they type. `MeService.IssueKey`
+			// works perfectly well in that state -- a name is written, a frame
+			// is built, an `ApiKey` row lands on the data plane -- and nothing
+			// reads it, because `auth.Bearer` is not in the chain. An expiry is
+			// optional, so those rows do not go away.
+			//
+			// The day a control plane is named, `auth.Seq` gains
+			// `keys.Store(control.Ungated, s.Ungated)` and every one of them
+			// becomes a working credential at once. Nobody issued them on
+			// purpose, because under `Plain` there was nobody to be. That is
+			// not a migration; it is a deployment quietly acquiring
+			// credentials.
+			//
+			// So the door is shut here rather than warned about. `Seed` is not
+			// asked this -- a test and the Wasm sandbox raise a deployment by a
+			// Go call, which is exactly where `Plain` belongs -- and this is
+			// the only command anybody types to create one.
+			if !c.Control.Serves() {
+				return errors.New(
+					"control.db.driver: init needs a control plane and this names no database for one. " +
+						"a deployment that adds one later serves auth.Plain until it does -- every caller is " +
+						"whoever they type, and an rt_ key minted by any of them sits inert in the data plane " +
+						"until the day a control plane reads it, when all of them work at once. " +
+						"name control.db, then run this again")
+			}
+
 			s, err := Build(ctx, *c)
 			if err != nil {
 				return err
@@ -139,20 +182,23 @@ func NewCmdInit(c *Config) *xli.Command {
 			cmd.Printf("tenant %s is %s\n", tenant, v.Tenant)
 			cmd.Printf("holder %s is %s\n", holder, v.Holder)
 			cmd.Printf("  bound to role %q = %s -- every RPC roster serves, now and after an upgrade\n", everything, everyRosterMethod)
-			cmd.Printf("\nsign in as: @%s/%s\n", tenant, holder)
 
-			if v.Operator == pdid.Nil {
-				cmd.Printf("\nno control plane is configured, so this deployment believes its callers.\n")
-				cmd.Printf("see docs/operating.md before serving it anywhere.\n")
-
-				return nil
-			}
+			// What that person cannot do, said where it is read.
+			//
+			// This printed `sign in as: @contoso/admin`, which was true of a
+			// deployment on `auth.Plain` and of no other: a data plane holder
+			// gets no password and no key from `init`, and the two things that
+			// would give them one -- `VouchService.Set` and the `IssueService`
+			// that mints an `rt_` -- are served on `admin.addr`, by an
+			// operator. Now that a control plane is required, the line was
+			// never true, so it says the other thing instead.
+			cmd.Printf("  and holds nothing to call with yet: a key or a password for them is written over admin.addr\n")
 
 			cmd.Printf("\ncontrol plane\n")
 			cmd.Printf("  holder %s is %s\n", operator, v.Operator)
 			cmd.Printf("  bound to role %q = %s\n", everything, everyRosterMethod)
 			cmd.Printf("  password  %s\n", v.Password)
-			cmd.Printf("\nthat password is shown once and is not stored. write it down now.\n")
+			cmd.Printf("\nsign in to the console as %s. that password is shown once and is not stored -- write it down now.\n", operator)
 
 			return nil
 		}),

@@ -27,7 +27,7 @@ func TestTheConsoleSignsInAsAnRpc(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	s, out := inited(t, true)
+	s, out := inited(t)
 	secret := passwordFrom(t, out)
 
 	g, err := s.GrpcControl(ctx, cmd.Config{})

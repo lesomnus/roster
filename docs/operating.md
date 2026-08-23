@@ -38,6 +38,19 @@ control:
 which says so once in the log. That is right for a checkout and is not something
 to serve anywhere else.
 
+`roster init` will not make that deployment at all — it refuses a configuration
+with no `control.db`, and the reason is what happens to the ones that add one
+later. `MeService.IssueKey` works perfectly under `Plain`: a name is written, a
+frame is built, an `ApiKey` row lands on the data plane, and nothing reads it
+because `auth.Bearer` is not in the chain. An expiry is optional, so the row
+stays. Name a control plane afterwards and every key minted while nobody was
+checking becomes a working credential at once, issued by nobody. That is not a
+migration.
+
+`cmd.Seed` is not asked the same question, which is the line: a deployment
+raised by a Go call is a test or the Wasm sandbox, and `Plain` is what those are
+for.
+
 Leave the **database** out and write the rest of the block, and you get that
 same deployment with a control plane written down beside it. What decides is
 `control.db.driver` and nothing else — an address is only how the plane is
@@ -55,6 +68,9 @@ other.
 ```sh
 roster init --tenant contoso --holder admin
 ```
+
+Both planes, or it refuses: see above for why a control plane is not a thing to
+add later.
 
 A tenant is not put up from inside one, so the first row cannot arrive over the
 API. `init` writes it through the server instance the process holds.
@@ -76,6 +92,12 @@ A list written at `init` is a snapshot. The next release adds an RPC the first
 administrator cannot call and cannot grant themselves either, because granting
 is refused for anything the granter does not already hold — so a snapshot is
 repaired by a shell on the box, once per upgrade, forever.
+
+What that person does **not** get is a way to call with. `init` writes no
+password and no key for them, and the two things that would — `VouchService.Set`
+and the `IssueService` that mints an `rt_` — are served on `admin.addr`, by an
+operator. So the first act after `init` is the same act as the hundredth: sign
+in to the console and give them one.
 
 It is still an ordinary row: unbind it and it is gone, erase it and every
 binding to it goes too. And it is not something anybody can hand out — see
@@ -144,7 +166,7 @@ npm --prefix ts run dev            # against a running roster
 
 `dev:sandbox` compiles the whole server into the page — `GOOS=js GOARCH=wasm`,
 SQLite in a Worker, a message port instead of HTTP/2. A reload is a fresh
-deployment: two new databases, `roster init` run again, nothing left over. It
+deployment: two new databases, seeded again by `cmd.Seed`, nothing left over. It
 signs in as `ops` with the password `sandbox`.
 
 The password is checked there by the same `vouch`, so a wrong one is refused —

@@ -64,7 +64,7 @@ func signIn(t *testing.T, s *cmd.Server, alias, password string) *http.Cookie {
 func TestAnOperatorSignsIn(t *testing.T) {
 	x := require.New(t)
 
-	s, out := inited(t, true)
+	s, out := inited(t)
 	x.NotNil(s.Sessions, "a deployment with a control plane has a console door")
 
 	secret := passwordFrom(t, out)
@@ -103,7 +103,18 @@ func TestAnOperatorSignsIn(t *testing.T) {
 func TestNoControlPlaneNoConsole(t *testing.T) {
 	x := require.New(t)
 
-	s, _ := inited(t, false)
+	// Built rather than `init`ed, because `init` refuses a deployment with no
+	// control plane now -- and what this is about is the wiring, which is the
+	// same however the rows got there.
+	drv, dsn := pdtest.DB(t)
+
+	s, err := cmd.Build(t.Context(), cmd.Config{
+		Db:    config.DbConfig{Driver: drv, Dsn: dsn},
+		Watch: config.WatchConfig{Broker: config.BrokerMemory},
+	})
+	x.NoError(err)
+	t.Cleanup(func() { s.Close() })
+
 	x.Nil(s.Control)
 	x.Nil(s.Sessions, "a console door was opened where nobody can sign in")
 }
@@ -119,7 +130,7 @@ func TestTheCookieOpensTheControlPlane(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	s, out := inited(t, true)
+	s, out := inited(t)
 	c := signIn(t, s, "ops", passwordFrom(t, out))
 	x.NotNil(c)
 
@@ -183,7 +194,7 @@ func TestAConsoleManagesKeys(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	s, out := inited(t, true)
+	s, out := inited(t)
 	c := signIn(t, s, "ops", passwordFrom(t, out))
 	x.NotNil(c)
 
@@ -238,7 +249,7 @@ func TestAnOperatorAdministersCustomers(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	s, out := inited(t, true)
+	s, out := inited(t)
 	c := signIn(t, s, "ops", passwordFrom(t, out))
 	x.NotNil(c)
 
@@ -312,7 +323,7 @@ func TestTheTwoTrailsAreJoined(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	s, out := inited(t, true)
+	s, out := inited(t)
 	c := signIn(t, s, "ops", passwordFrom(t, out))
 	x.NotNil(c)
 
@@ -383,7 +394,7 @@ func TestNoVerifierReachesTheTrail(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	s, out := inited(t, true)
+	s, out := inited(t)
 	x.NotEmpty(passwordFrom(t, out))
 
 	// The operator's password, hashed by the RPC that hashes it.
@@ -434,7 +445,7 @@ func TestAConsoleReachesTheAdminPortOverHttp(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	s, out := inited(t, true)
+	s, out := inited(t)
 
 	g, err := s.GrpcAdmin(ctx, cmd.Config{})
 	x.NoError(err)
@@ -499,7 +510,7 @@ func TestAConsoleReachesTheControlPlaneOverHttp(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	s, out := inited(t, true)
+	s, out := inited(t)
 
 	wg, err := s.GrpcControl(ctx, cmd.Config{})
 	require.NoError(t, err)

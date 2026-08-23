@@ -34,6 +34,11 @@ server:
 # without it is refused rather than served -- it used to be a deployment on
 # `auth.Plain` with a control plane written down beside it.
 #
+# **`roster init` refuses a file with this block missing altogether**, which is
+# the one setting it insists on. Not tidiness: a deployment that adds a control
+# plane later serves `auth.Plain` until it does, and an `rt_` minted while
+# nobody is checking becomes a working credential the day one is named.
+#
 # control:
 #   db:
 #     driver: sqlite3
