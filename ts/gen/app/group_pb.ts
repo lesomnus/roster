@@ -60,6 +60,29 @@ export type Group = Message<"roster.Group"> & {
    * Optional, the way a role's is: a group belonging to a site is narrowed by
    * it, and one belonging to none is the tenant's.
    *
+   * # It narrows who can see this row, and not who may be in it
+   *
+   * Which is worth saying because the other reading is the natural one and is
+   * wrong. Nothing requires a member to belong to this site: [GroupMembership]
+   * carries no site at all -- no field 3, so the second axis does not reach it
+   * -- and `server/core` refuses only a member from another **tenant**. A
+   * `Holder` has no site of its own either, since being in one is
+   * `SiteMembership` and that is many-to-many; see PLAN.md D4.
+   *
+   * So a group is the one place where people across several sites are one
+   * subject, and that is what it is for. A team is the other shape and belongs
+   * to exactly one site.
+   *
+   * # And it is not what scopes the grant
+   *
+   * The [Binding]'s site is. A group with members in Seoul and in Frankfurt,
+   * bound to a role within Seoul, gives all of them that role in Seoul --
+   * `cmd.policy` unions the sites off the bindings that reach somebody and
+   * never reads their `SiteMembership`.
+   *
+   * Read *a group in a site* as **whose group this is**, never as *whose people
+   * these are*.
+   *
    * @generated from field: roster.Site site = 3;
    */
   site?: Site | undefined;

@@ -63,6 +63,30 @@ export const file_app_host: GenFile = /*@__PURE__*/
  * cannot see -- and a hostname is a public fact, so that is the cheaper side of
  * the trade. `Email` deliberately went the other way, and D3 says why.
  *
+ * # And nothing here proves the name is yours
+ *
+ * roster does not resolve DNS and should not: it is meant to run in an air gap,
+ * which is the same reason the breached-password corpus is a file and a magic
+ * link is delivered by somebody else. It would also be checking the wrong
+ * thing. What decides that traffic for a name reaches this deployment is DNS
+ * and the ingress in front of it, and both belong to whoever runs the
+ * deployment -- so a row naming a hostname nothing routes is inert, and a row
+ * disagreeing with what **is** routed was written by the same person who routed
+ * it.
+ *
+ * What is left is **claiming a name you do not own**, and it is real: the first
+ * writer takes it, the rightful one is refused, and the refusal says only that
+ * somebody has it. So the conclusion is about the grant rather than about the
+ * schema:
+ *
+ * 	Registering a hostname is the deployment's act, not a customer's.
+ * 	Do not put `/roster.HostService/Add` on a role a tenant's own
+ * 	administrators hold.
+ *
+ * Nothing enforces that and nothing can -- it is a permission, and permissions
+ * are a deployment's. [MailDomain] needs no such care, and the reason is the
+ * section below it: it claims nothing.
+ *
  * @generated from message roster.Host
  */
 export type Host = Message<"roster.Host"> & {

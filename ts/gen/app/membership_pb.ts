@@ -29,11 +29,23 @@ export const file_app_membership: GenFile = /*@__PURE__*/
  * SiteMembership is somebody being in a site.
  *
  * Unlike the two memberships below it, writing one is **not** a grant: nothing
- * that decides what the gate answers reads this row, so putting somebody in a
- * site changes what they may see and not what they may do. Worth saying because
- * it is the reader's next question once the other two are refused as grants,
- * and because the answer is a property of `policy.of` rather than of this
- * message -- a row the policy started reading would become one.
+ * that decides what the gate answers reads this row. Worth saying because it is
+ * the reader's next question once the other two are refused as grants, and
+ * because the answer is a property of `cmd.policy` rather than of this message
+ * -- a row the policy started reading would become one.
+ *
+ * # And it does not widen a read either
+ *
+ * Which is the half that is easy to get wrong, and was written here wrongly
+ * once: *changes what they may see and not what they may do*. It changes
+ * neither. `policy.of` builds the sites a caller is narrowed to out of the site
+ * on each `Binding` that reaches them and the site of each `Team` they are on,
+ * and it never queries this table -- so somebody with a membership in Frankfurt
+ * and no binding there reads nothing of Frankfurt's.
+ *
+ * So this is a **record** rather than an input: it answers *who is here*, which
+ * is a question a product asks and a console draws. Giving somebody a site's
+ * rows is a binding scoped to that site, and it is a separate act on purpose.
  *
  * A row rather than an edge on the Holder because it is many-to-many: a person
  * works at one factory and audits another, and a support engineer sees several.

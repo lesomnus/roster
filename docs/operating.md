@@ -781,8 +781,22 @@ Three things to know:
 - **A host is unique across the deployment.** Two operators cannot both own one
   name, so the second is told it is taken by somebody they cannot see. A
   hostname is a public fact, which is why that is the cheap side of the trade.
+- **So registering one is your act, not a customer's.** roster does not resolve
+  DNS — it is meant to run in an air gap — and it would be checking the wrong
+  thing anyway: what makes traffic for a name arrive here is DNS and your
+  ingress, both yours. A row naming a hostname nothing routes does nothing.
+
+  What is left is a customer claiming a name they do not own, which takes it
+  from whoever does and tells them only that somebody has it. **Do not put
+  `/roster.HostService/Add` on a role a tenant's administrators hold.** Nothing
+  enforces this and nothing can — it is a permission, and the wall does not
+  narrow uniqueness. A mail domain needs no such care; see below.
 - **A mail domain is unique within a tenant**, and two operators saying
-  something about `@gmail.com` are two facts.
+  something about `@gmail.com` are two facts. It claims nothing, so nothing has
+  to be proved: `FrontService/WhereFrom` takes the tenant the hostname resolved
+  to, so what a customer writes here only ever changes where **their own**
+  people are sent. That is the difference from a host, and it is why this one is
+  safe to hand out.
 
 And which provider one operator's people arrive through:
 
