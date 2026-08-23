@@ -4186,7 +4186,8 @@ the schedule.
 - **The repository is private.** custody is public; making roster public was
   refused by a permission check rather than decided, so it is worth an explicit
   choice.
-- **F3** above: whether payday should refuse the declaration that lies.
+- ~~**F3** above: whether payday should refuse the declaration that lies.~~ It
+  does -- `pdgen.checkPresence`, and through `pd doctor` as well as `pd gen`.
 - **The second axis is demonstrated.** `Team` carries the edge, and a caller
   narrowed to one site sees one team out of two in the same tenant. D4 is no
   longer a claim.
@@ -4234,8 +4235,22 @@ the schedule.
   archive between them, applied by `serve` and by `roster trail`. Forever is
   still the default, and a window with nowhere to put what leaves it is refused
   at startup rather than obeyed.
-- **Erasing one person from the trail is not written, and it is a decision
-  first.** The policy above is about age and reaches everybody at once. A
+- ~~**Erasing one person from the trail is not written, and it is a decision
+  first.**~~ **Both**, D46. The decision the entry called open was answered by
+  asking what a trail is for: the events stay and their **contents** go, in the
+  database and in the archive both, and the `Holder` row stays **blank** rather
+  than being deleted -- an identifier that resolves to nobody is a stable
+  pseudonym, which is exactly what *the same someone did these fourteen things*
+  needs and is not personal data. So neither of the two answers in the field: it
+  nulls the contents like the first, and keeps the actor as the second wanted,
+  without the key ceremony the second needs to do it.
+
+  `server/forget`, `roster forget` and `roster restore`, on two triggers that
+  are one act -- a request, which has no grace, and an account closing, which
+  has `holder.forget_after`.
+
+  The original entry: The policy above is about age and reaches everybody at
+  once. A
   right-to-erasure request is about a subject, and what it should blank is the
   open part: the contents of writes about them, their identifier as an actor, or
   both. Blanking the actor destroys *who did this*; keeping it keeps an

@@ -113,10 +113,17 @@ func (s coreEmail) Patch(ctx context.Context, req *app.EmailPatchRequest) (*app.
 // compile until that module is published again. `docs/MIGRATING.md` carries the
 // same ordering note about `secret:`.
 //
-// So this layer is what the declaration will replace, and the replacement is
-// three lines: the option on the field, this method deleted, and the test in
-// `cmd/foreignedge_test.go` left exactly as it is -- it asserts the refusal and
-// not where the refusal lives.
+// The push has not happened -- there is no `buf push` in payday's CI, so the
+// label moves when somebody runs it:
+//
+//	cd <payday>; buf push --label dev ./proto     # needs BUF_TOKEN
+//
+// After which this is three lines. `(payday.field) = {stamped: true}` beside
+// the `orm.field` on `Email.date_verified`, this method deleted with its call,
+// and `cmd/foreignedge_test.go` left exactly as it is -- it asserts the refusal
+// and not where the refusal lives, including the *no frame is the deployment's
+// own work* case, which the generated refusal keeps by living in the **gate**
+// and the gate being installed on `Walled` alone.
 //
 // # What it is protecting, given nothing reads the column yet
 //
