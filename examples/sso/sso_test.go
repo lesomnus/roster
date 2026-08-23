@@ -241,9 +241,16 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 			// rather than a pattern, so that what this app may do reads as a
 			// list somebody chose.
 			"/roster.VouchService/Delegate",
+
+			// And the provider half, which is a **separate** grant: this app
+			// runs an OIDC flow and checks the token itself, and `Accept` is
+			// roster believing it. An app that only checks passwords does not
+			// get this line -- see D49, and the warning `roster key add` gives.
+			"/roster.VouchService/Accept",
 			"/roster.VouchService/Revoke",
 			"/roster.MeService/Get",
 			"/roster.MeService/Unlink",
+			"/roster.MeService/Link",
 			"/roster.MeService/SignOutEverywhere",
 
 			// What the front door asks before it knows anything, which is how
@@ -844,16 +851,25 @@ func TestAPasswordSignInReadsItsOwnRecord(t *testing.T) {
 	})
 }
 
-// TestTheProviderHalfHasNoDelegation is the seam D23 left, said out loud.
+// TestTheProviderHalfHasADelegationNow, which is the seam D23 left, closed.
 //
-// A sign-in through the provider never calls `Vouch` -- the secret is somebody
-// else's to check -- so there is nothing for a delegation to ride back on.
-// Exchanging an `id_token` for one is a different decision: it is roster
-// accepting somebody else's assertion as proof, which is a D19 question.
+// It used to be `TestTheProviderHalfHasNoDelegation`, and it asserted a
+// refusal: a sign-in through the provider never calls `Vouch` -- the secret is
+// somebody else's to check -- so there was nothing for a delegation to ride
+// back on, and `/me` answered `403` rather than quietly falling back to the
+// app's own credential. That refusal was right, and it was a gap said out loud
+// rather than a design.
 //
-// So the page answers a refusal rather than quietly falling back to the app's
-// own credential, which is the failure this whole phase exists to avoid.
-func TestTheProviderHalfHasNoDelegation(t *testing.T) {
+// D49 is the decision it was waiting for. roster does not check the token --
+// being the relying party is what `connection.proto` says roster is not -- so
+// the app checks it and `Vouch.Accept` hands the claim over. `frontdoor` mints
+// the session and holds the delegation beside it, which is the same thing it
+// does after a password, because none of that was ever about how somebody was
+// proved.
+//
+// What still has to be true is the thing the old test was protecting: the page
+// is drawn with a credential **for the person**, and never with the app's own.
+func TestTheProviderHalfHasADelegationNow(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
@@ -874,14 +890,19 @@ func TestTheProviderHalfHasNoDelegation(t *testing.T) {
 	got, err := c.Get(d.app.URL + "/me")
 	x.NoError(err)
 	defer got.Body.Close()
-	x.Equal(http.StatusForbidden, got.StatusCode,
-		"the provider half drew a page it has no credential for")
+	x.Equal(http.StatusOK, got.StatusCode,
+		"the provider half still cannot draw the page it signed somebody in for")
 
-	// And nothing was minted, so the refusal is the absence of one rather than
-	// a check in front of one.
-	n, err := d.ungated.Delegation().List(ctx, rstr.DelegationListRequest_builder{}.Build())
+	// One was minted, and it is the person's rather than the app's: what
+	// `Accept` answers is a delegation over a **holder**, which is what makes
+	// the page narrower than what this app may do.
+	vs, err := d.ungated.Delegation().List(ctx, rstr.DelegationListRequest_builder{}.Build())
 	x.NoError(err)
-	x.Empty(n.GetItems())
+	x.Len(vs.GetItems(), 1)
+
+	var body map[string]any
+	x.NoError(json.NewDecoder(got.Body).Decode(&body))
+	x.Equal("newcomer", body["alias"], "the page was drawn about somebody else")
 }
 
 // TestTheTenantComesFromRoster is item 1 doing its job in the app that used to
@@ -1428,4 +1449,127 @@ func TestSigningOutEverywhereEndsBothHalves(t *testing.T) {
 		// out of their own account for pressing a button that says sign out.
 		x.Equal(http.StatusOK, reads(signIn()))
 	})
+}
+
+// TestAddingAWayInIsRoutedNow is §4's undrawn half, reaching roster.
+//
+// The roadmap named it and nothing routed it: *a person removes one and signs
+// out everywhere, and adding one is the sign-in flow reached by somebody
+// already signed in, which the reference app does not route.*
+//
+// It is the same redirect. What differs is which cookie goes with it and what
+// the callback does at the end. This app has **one** provider, so what it can
+// show is the routing and the refusal a person meets when they try to add the
+// provider they already use -- one per person, which `server/core` refuses
+// because *a second one is a link that found the wrong row*. The success path
+// wants a second provider and is asserted where roster is, in
+// `cmd/melink_test.go`.
+func TestAddingAWayInIsRoutedNow(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	d := serve(t, func(c rstr.Client) sso.Enrol { return sso.Enrolling(c) }, map[string]string{"127.0.0.1": "acme"})
+	d.idp.subject = "3001"
+	d.idp.claims = map[string]any{"email": "adder@acme.example", "email_verified": true}
+
+	jar, err := cookiejar.New(nil)
+	x.NoError(err)
+
+	c := &http.Client{Jar: jar}
+
+	res, err := c.Get(d.app.URL + "/login")
+	x.NoError(err)
+	defer res.Body.Close()
+	x.Equal(http.StatusOK, res.StatusCode)
+
+	was, err := d.ungated.Identity().List(ctx, rstr.IdentityListRequest_builder{}.Build())
+	x.NoError(err)
+	x.Len(was.GetItems(), 1, "signing in wrote something other than one identity")
+
+	t.Run("and until a role says so, it is refused", func(t *testing.T) {
+		x := require.New(t)
+
+		// `MeService.Link` is not waived, so somebody the login app enrolled
+		// holds nothing that allows it -- and the app does not grant it, on
+		// purpose: doing so would mean its key could bind any role to anybody.
+		d.idp.subject = "3002"
+
+		res, err := c.Post(d.app.URL+"/me/ways", "application/json", nil)
+		x.NoError(err)
+		defer res.Body.Close()
+		x.Equal(http.StatusForbidden, res.StatusCode)
+	})
+
+	// What a deployment does about it: one role, one method, written where it
+	// decides what an ordinary account is.
+	role, err := d.ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
+		Tenant:  rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),
+		Alias:   "self-service",
+		Methods: []string{rstr.MeService_Link_FullMethodName},
+	}.Build())
+	x.NoError(err)
+
+	people, err := d.ungated.Holder().List(ctx, rstr.HolderListRequest_builder{}.Build())
+	x.NoError(err)
+	for _, v := range people.GetItems() {
+		_, err = d.ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
+			Role:   rstr.RoleRef_builder{Id: role.GetId()}.Build(),
+			Holder: rstr.HolderRef_builder{Id: v.GetId()}.Build(),
+		}.Build())
+		x.NoError(err)
+	}
+
+	// A fresh browser, so the delegation carries the role that now exists.
+	jar2, err := cookiejar.New(nil)
+	x.NoError(err)
+
+	c = &http.Client{Jar: jar2}
+
+	d.idp.subject = "3001"
+
+	back, err := c.Get(d.app.URL + "/login")
+	x.NoError(err)
+	defer back.Body.Close()
+	x.Equal(http.StatusOK, back.StatusCode)
+
+	// The same provider answering as a different account, which is somebody
+	// trying to add a second way in at the one they already use.
+	d.idp.subject = "3002"
+
+	add, err := c.Post(d.app.URL+"/me/ways", "application/json", nil)
+	x.NoError(err)
+	defer add.Body.Close()
+
+	// A page a person can act on rather than a five-hundred: it means they are
+	// already signed in with this provider. The errand reached roster, which is
+	// what this asserts -- before it, nothing routed at all.
+	x.Equal(http.StatusConflict, add.StatusCode)
+
+	now, err := d.ungated.Identity().List(ctx, rstr.IdentityListRequest_builder{}.Build())
+	x.NoError(err)
+	x.Len(now.GetItems(), 1, "a refused link wrote a row anyway")
+}
+
+// TestAddingAWayInNeedsASessionFirst.
+//
+// The order is the whole of the safety. An errand that attached an account to
+// whoever's browser landed on the callback would look exactly like this flow
+// while being a way into somebody else's account -- so the session is read at
+// the start, and again at the end, and the one at the end is the one that
+// decides.
+func TestAddingAWayInNeedsASessionFirst(t *testing.T) {
+	x := require.New(t)
+
+	d := serve(t, func(c rstr.Client) sso.Enrol { return sso.Enrolling(c) }, map[string]string{"127.0.0.1": "acme"})
+
+	jar, err := cookiejar.New(nil)
+	x.NoError(err)
+
+	c := &http.Client{Jar: jar}
+
+	res, err := c.Post(d.app.URL+"/me/ways", "application/json", nil)
+	x.NoError(err)
+	defer res.Body.Close()
+	x.Equal(http.StatusForbidden, res.StatusCode,
+		"a browser with no session started an errand that attaches an account to somebody")
 }

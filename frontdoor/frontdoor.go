@@ -447,6 +447,80 @@ func (d *Door) answer(w http.ResponseWriter, r *http.Request, res *rstr.VouchDel
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// Accept signs somebody in on a claim this app has already checked, and holds
+// the delegation beside the session exactly as a password sign-in does.
+//
+// # The seam D23 left, from the other side
+//
+// A sign-in through a provider never calls `Vouch`, so there was nothing for a
+// delegation to ride back on -- and an app that minted its own session anyway
+// ended up with a browser that is signed in and a `/me` that answers a refusal.
+// `examples/sso` had exactly that, and its own comment said the exchange *is a
+// decision nobody has taken*.
+//
+// It is taken: `Vouch.Accept`, D49. roster does not check the token -- being
+// the relying party is what `connection.proto` decided roster is not -- so the
+// app checks it and this hands the claim over.
+//
+// # Why it is here and not in the app
+//
+// Because everything after the claim is the part that is the same in every app
+// that does this: the delegation, the session that must not outlive it, and the
+// pair of headers a later call carries. That is what `frontdoor` is, and an app
+// doing it itself is an app that gets the *must not outlive it* wrong once.
+//
+// # What the app still owns
+//
+// The exchange, the state parameter, and which tenant the browser arrived in.
+// This takes the claim and nothing about the browser's journey to it.
+func (d *Door) Accept(ctx context.Context, w http.ResponseWriter, tenant, provider, subject string) error {
+	if provider == "" || subject == "" {
+		return ErrNotSignedIn
+	}
+
+	id, err := pdid.Parse(tenant)
+	if err != nil {
+		return err
+	}
+
+	res, err := d.c.Vouch.Accept(ctx, rstr.VouchAcceptRequest_builder{
+		Claim: rstr.VouchClaim_builder{
+			Tenant:   id.Bytes(),
+			Provider: provider,
+			Subject:  subject,
+		}.Build(),
+		Methods: d.c.Methods,
+	}.Build())
+	if err != nil {
+		return err
+	}
+
+	who, err := pdid.From(res.GetVerified().GetHolder())
+	if err != nil {
+		return err
+	}
+
+	s, cookie, err := d.c.Sessions.Mint(ctx, authsession.Session{
+		Id:       who.String(),
+		TenantId: id.String(),
+
+		// The same two as a password sign-in, and the same reasons: everything
+		// this person may do against **this app**, and never outliving the
+		// delegation this app was given to act with.
+		Grant:   frame.Whole(),
+		Expires: res.GetExpires().AsTime(),
+	})
+	if err != nil {
+		return err
+	}
+
+	d.held.put(s.Key, one{who: who, token: res.GetToken(), expires: res.GetExpires().AsTime()})
+
+	http.SetCookie(w, cookie)
+
+	return nil
+}
+
 // one is what this app holds for one browser, and it is one of two things.
 //
 // A **delegation** for somebody who has finished, and a **continuation** for

@@ -108,10 +108,10 @@ func (p policy) May(ctx context.Context, c gate.Call) error {
 //
 // # The two writes, and why they are on the list
 //
-// `Unlink` and `SignOutEverywhere` write, which is the part worth stopping on.
-// They are here for `Get`'s reason and not by extension of it: neither takes a
-// subject, so neither can be pointed at anybody else, and what each does is
-// something a person may do to their own account by definition.
+// `Unlink` and `SignOutEverywhere` write, which is the part worth
+// stopping on. They are here for `Get`'s reason and not by extension of it:
+// neither takes a subject, so neither can be pointed at anybody else, and what
+// each does is something a person may do to their own account by definition.
 //
 // The alternative is a role, and a role is the wrong shape twice over. It would
 // have to reach every identity in the tenant, since `Identity` narrows by
@@ -123,6 +123,30 @@ func (p policy) May(ctx context.Context, c gate.Call) error {
 // What keeps them safe is the same absence that keeps `Get` safe, plus the
 // rules in the layer: `server/core` refuses the removal of a last way in, so
 // the button cannot lock somebody out of their own account.
+//
+// # `Link` is not on this list, and it took two answers to be sure
+//
+// The paragraph above looks like it applies -- there is no role that means *may
+// add their own identity*, since `Identity` narrows by tenant -- and it does
+// not. The objection is about granting an **entity** permission to buy a narrow
+// act. `MeService/Link` is already the narrow act: it writes to the frame's
+// actor and there is no field that could redirect it, so a role naming that
+// method grants exactly *may add a way into your own account* and nothing
+// wider. The thing that made a role the wrong shape for `Unlink` is absent.
+//
+// And the other half of the argument is absent too. What is waived here is what
+// somebody **must** be able to do with no role at all: read their own record,
+// sign out of a session they no longer trust, take back a way in. Attaching a
+// provider account is not in that category -- it is a feature a deployment
+// offers, nobody is locked out by its absence, and it creates something that
+// persists after the app that asked for it is gone.
+//
+// So it needs a grant, and `cmd/asself_test.go` is what settled it: that test
+// refuses any waived method whose request carries a field that could name
+// somebody, and `MeLinkRequest.subject` is one by that reading. The field means
+// a provider's account rather than a person, so it is a false positive on the
+// letter -- and the test was right on the substance, which is the more useful
+// thing a mechanical check can be.
 func aboutYourself(method string) bool {
 	switch method {
 	case app.MeService_Get_FullMethodName,

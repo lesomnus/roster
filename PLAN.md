@@ -555,6 +555,72 @@ somebody reading the code to decide what is safe.
   credentials -- but *local is Ungated* was written down and *and general writes
   are open there* was not.
 
+### D50 · Adding a way in, and the half of §4 nobody had drawn
+
+§4 named it and nothing routed it: *a person removes one and signs out
+everywhere, and adding one is the sign-in flow reached by somebody already
+signed in, which the reference app does not route.*
+
+It is the same redirect. What differs is two things, and both are where the
+safety is.
+
+#### Which cookie, and what it must not carry
+
+Two cookies rather than one with a mode in it, because the provider redirects to
+one callback and the callback has to know which errand it is finishing. A
+browser carrying both is refused rather than having one chosen for it.
+
+What the link cookie deliberately does **not** carry is who the linking is for.
+That is the session, read at the moment the callback runs. A browser that could
+say whose account an account is being attached to is a browser that could attach
+one to somebody else, and it would look exactly like this flow while doing it.
+
+#### `MeService.Link`, and why it is not waived
+
+The other half of `Unlink`, and it is not on `aboutYourself`'s list. That took
+two answers.
+
+The first was that it does need a role, because creating a way in persists and
+is written from data the caller supplies. The second was that it does not,
+because `Unlink`'s objection -- *`Identity` narrows by tenant, so the smallest
+grant covering it covers everybody's* -- seemed to apply.
+
+It does not apply, and `cmd/asself_test.go` is what settled it. That test
+refuses any waived method whose request carries a field that could name
+somebody, and it failed on `MeLinkRequest.subject`. The field means a provider's
+account rather than a person -- a false positive on the letter -- and the test
+was right on the substance: what `aboutYourself` waives is what somebody
+**must** be able to do with no role at all, and attaching a provider account is
+a feature a deployment offers rather than a floor. Nobody is locked out by its
+absence.
+
+And the objection genuinely does not hold, because `MeService/Link` **is** the
+narrow grant: it writes to the frame's actor and no field can redirect it, so a
+role naming that method means exactly *may add a way into your own account*.
+
+So three grants, each somebody's own decision: the person holds a role naming
+it, the front door's key allows it, and the delegation names it.
+
+#### And the reference app does not grant it
+
+It could, and the price is the point. Granting a role from `Enrolling` means the
+login app's key holds `RoleService/Add` and `BindingService/Add` -- *may bind
+any role it can name to anybody it can see*, a wide credential held by the one
+service reachable from the open internet, bought to hand out a single method.
+
+So the app does not, the button answers a refusal it can explain, and
+`sso_test.go` shows what a deployment does instead: one role, one method,
+written where it decides what an ordinary account is.
+
+#### Which also closed the other half of §4
+
+`/me` used to answer a refusal for a provider sign-in, because there was no
+delegation to draw it with -- `password.go` said the exchange that would allow
+it *is a decision nobody has taken*. D49 took it, so `frontdoor.Door.Accept`
+mints the session and holds the delegation beside it exactly as a password
+sign-in does, and `TestTheProviderHalfHasNoDelegation` is now
+`TestTheProviderHalfHasADelegationNow`.
+
 ### D49 · roster accepts that somebody else did the checking
 
 D23's one open sentence, and the last thing it left: *a deployment with Hydra in

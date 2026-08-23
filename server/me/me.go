@@ -31,6 +31,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/frame"
+	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
 
 	"github.com/google/uuid"
@@ -345,6 +346,65 @@ func (s *Server) Unlink(ctx context.Context, req *app.MeUnlinkRequest) (*app.MeU
 	}
 
 	return app.MeUnlinkResponse_builder{}.Build(), nil
+}
+
+// Link attaches a provider account the caller has just proved they control.
+//
+// The other half of [Server.Unlink], and the half §4 left undrawn. It writes
+// through the **walled** server for `Unlink`'s reason -- so `server/core` runs,
+// and with it the rule that a second identity of one provider for one person is
+// a link that found the wrong row.
+//
+// # It hangs off the frame and never off an argument
+//
+// `f.Actor`, exactly as `SignOutEverywhere` does. There is no field naming
+// whose row this is and there will not be: what makes this method the person's
+// own is the same absence that makes the other three theirs.
+//
+// # And what a refusal must not say
+//
+// `(provider, subject)` is unique across the deployment, so a claim already
+// attached to somebody else comes back as a constraint failure. That is
+// answered as `AlreadyExists` with nothing about **whose** it is -- the same
+// care `Unlink` takes about an identifier that is not the caller's. Telling
+// somebody *that account belongs to alice@acme* would make this a lookup from
+// a provider subject to a person, which is a thing no caller here may do.
+func (s *Server) Link(ctx context.Context, req *app.MeLinkRequest) (*app.MeLinkResponse, error) {
+	f, ok := frame.From(ctx)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "who is asking?")
+	}
+	if s.walled == nil {
+		return nil, status.Error(codes.Unimplemented, "this server cannot write")
+	}
+
+	provider, subject := req.GetProvider(), req.GetSubject()
+	switch {
+	case provider == "":
+		return nil, pderr.Invalidf("provider", "which provider issued this")
+	case subject == "":
+		return nil, pderr.Invalidf("subject", "who the provider said it was")
+	}
+
+	v, err := s.walled.Identity().Add(ctx, app.IdentityAddRequest_builder{
+		Holder:   app.HolderRef_builder{Id: f.Actor.Bytes()}.Build(),
+		Provider: provider,
+		Subject:  subject,
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.AlreadyExists {
+			// Either the caller already has one of this provider -- which
+			// `server/core` refuses in those words -- or the account belongs to
+			// somebody else. One answer, because telling them apart is telling
+			// a caller which provider accounts are taken here.
+			return nil, status.Error(codes.AlreadyExists,
+				"that account is already a way in")
+		}
+
+		return nil, err
+	}
+
+	return app.MeLinkResponse_builder{Id: v.GetId()}.Build(), nil
 }
 
 // SignOutEverywhere voids everything issued to the caller before now.

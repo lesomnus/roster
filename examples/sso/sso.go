@@ -70,7 +70,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/lesomnus/payday/auth/authsession"
-	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 
 	"github.com/lesomnus/roster/frontdoor"
@@ -258,6 +257,7 @@ func New(ctx context.Context, c Config, conn *grpc.ClientConn, s *authsession.Se
 		// the package that mints it.
 		Methods: []string{
 			rstr.MeService_Get_FullMethodName,
+			rstr.MeService_Link_FullMethodName,
 			rstr.MeService_Unlink_FullMethodName,
 			rstr.MeService_SignOutEverywhere_FullMethodName,
 		},
@@ -320,6 +320,7 @@ func (a *App) Handler() http.Handler {
 	m.Handle("/session", a.door.Handler())
 	m.Handle("/session/{rest...}", a.door.Handler())
 	m.HandleFunc("GET /me", a.me)
+	m.HandleFunc("POST /me/ways", a.addWay)
 	m.HandleFunc("DELETE /me/ways/{id}", a.unlink)
 	m.HandleFunc("POST /me/sign-out-everywhere", a.everywhere)
 	m.HandleFunc("GET /account", a.Account)
@@ -343,7 +344,49 @@ func (a *App) Handler() http.Handler {
 // in as themselves.
 const stateCookie = "sso_state"
 
+// linkCookie is the same parameter for the other errand.
+//
+// Two cookies rather than one with a mode in it, because the provider redirects
+// to one callback and the callback has to know which errand it is finishing.
+// Which cookie is present says it, and a browser that somehow carries both is
+// refused rather than having one chosen for it.
+//
+// What it deliberately does **not** carry is who the linking is for. That is
+// the session, read at the moment the callback runs -- so a browser cannot
+// carry an assertion about whose account an account is being attached to, which
+// is the one thing that would turn this into a way in for somebody else.
+const linkCookie = "sso_link"
+
 func (a *App) login(w http.ResponseWriter, r *http.Request) {
+	a.start(w, r, stateCookie)
+}
+
+// addWay is `POST /me/ways`: the sign-in flow, reached by somebody already
+// signed in.
+//
+// §4 named this and nothing routed it: *a person removes one and signs out
+// everywhere, and adding one is the sign-in flow reached by somebody already
+// signed in, which the reference app does not route.*
+//
+// It is the same redirect. What differs is which cookie goes with it and what
+// the callback does at the end -- and, before any of that, that there **is** a
+// session: an errand that attaches an account to somebody has to know who
+// somebody is before it starts, not after the provider answers.
+func (a *App) addWay(w http.ResponseWriter, r *http.Request) {
+	if _, err := a.acting(r.Context(), r); err != nil {
+		// Checked here as well as at the end, and the one at the end is the one
+		// that decides. This is so that somebody who is not signed in is told
+		// now rather than after a round trip to a provider.
+		http.Error(w, "no", http.StatusForbidden)
+		return
+	}
+
+	a.start(w, r, linkCookie)
+}
+
+// start is the redirect both errands make, and the cookie is what tells them
+// apart.
+func (a *App) start(w http.ResponseWriter, r *http.Request, cookie string) {
 	state, err := nonce()
 	if err != nil {
 		http.Error(w, "cannot start", http.StatusInternalServerError)
@@ -351,7 +394,7 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:     stateCookie,
+		Name:     cookie,
 		Value:    state,
 		Path:     "/",
 		HttpOnly: true,
@@ -367,17 +410,30 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	c, err := r.Cookie(stateCookie)
-	if err != nil || c.Value == "" || c.Value != r.URL.Query().Get("state") {
-		// One answer for a missing cookie, a missing parameter and a mismatch:
-		// all three are the same event from here, and saying which would tell
-		// whoever sent this browser how far they got.
+	// Which errand this is finishing, said by which cookie came back. A browser
+	// carrying both is refused rather than having one chosen for it: two
+	// errands were started and only one can be finished with one code, and
+	// picking would make the answer depend on an order nothing states.
+	signIn := matches(r, stateCookie)
+	linking := matches(r, linkCookie)
+
+	// Spent either way, and both, because a browser that started two and
+	// finished neither should not be able to finish the other one later.
+	http.SetCookie(w, &http.Cookie{Name: stateCookie, Path: "/", MaxAge: -1})
+	http.SetCookie(w, &http.Cookie{Name: linkCookie, Path: "/", MaxAge: -1})
+
+	if signIn == linking {
+		// Neither, or both. One answer for a missing cookie, a missing
+		// parameter, a mismatch and an ambiguity: they are the same event from
+		// here, and saying which would tell whoever sent this browser how far
+		// they got.
 		http.Error(w, "no", http.StatusBadRequest)
 		return
 	}
-
-	// It is spent either way.
-	http.SetCookie(w, &http.Cookie{Name: stateCookie, Path: "/", MaxAge: -1})
+	if linking {
+		a.link(w, r)
+		return
+	}
 
 	who, err := a.who(ctx, r.URL.Query().Get("code"))
 	if err != nil {
@@ -408,7 +464,12 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 
 	who.Tenant = t
 
-	holder, tenant, err := a.find(ctx, who)
+	// Still asked, and the answer is still what decides whether this person may
+	// sign in at all -- an identity that reaches nobody here is somebody who
+	// was never invited. What is no longer used is the holder it resolves to:
+	// `Door.Accept` resolves the same claim on the other side of the wire, and
+	// two resolutions of one claim is one more place for them to disagree.
+	_, tenant, err := a.find(ctx, who)
 	switch {
 	case errors.Is(err, ErrUnknown):
 		http.Error(w, "this account has not been invited", http.StatusForbidden)
@@ -425,25 +486,110 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 	// The session is this app's and says nothing about the provider. What the
 	// browser carries afterwards is a cookie only this server can read; the
 	// token is spent and is not kept.
-	_, cookie, err := a.sessions.Mint(ctx, authsession.Session{
-		Id:       holder.String(),
-		TenantId: tenant.String(),
-
-		// Everything this person may do, which is what signing in at the app's
-		// own page means. A narrower grant is what a token from an issuer
-		// carries.
-		Grant: frame.Whole(),
-	})
-	if err != nil {
+	//
+	// Through `frontdoor`, which mints the session **and** holds a delegation
+	// beside it -- so this browser can read its own record afterwards. The
+	// comment at the top of `password.go` used to say the exchange that would
+	// allow it was a decision nobody had taken; it is D49, and `Vouch.Accept`
+	// is it.
+	//
+	// `holder` is not passed and is not needed: `Accept` resolves the claim
+	// itself, which is the same resolution `find` just made. What is passed is
+	// the tenant, because that is the fact this app established from the host
+	// and roster cannot read off a token.
+	if err := a.door.Accept(ctx, w, tenant.String(), who.Provider, who.Subject); err != nil {
+		fmt.Fprintf(os.Stderr, "sso: accept %s/%s: %v\n", who.Provider, who.Subject, err)
 		http.Error(w, "cannot sign in", http.StatusInternalServerError)
 		return
 	}
-
-	http.SetCookie(w, cookie)
 	http.Redirect(w, r, a.after, http.StatusFound)
 }
 
-// who exchanges the code and reads the token.
+// matches answers whether this cookie came back with the state it was set with.
+//
+// A missing cookie, an empty one and a mismatch are one answer, which is what
+// keeps the callback from saying how far somebody got.
+func matches(r *http.Request, name string) bool {
+	c, err := r.Cookie(name)
+
+	return err == nil && c.Value != "" && c.Value == r.URL.Query().Get("state")
+}
+
+// link finishes the other errand: attach what the provider just proved to the
+// person who is already signed in.
+//
+// # Who it attaches to
+//
+// The **session**, read here and not carried through the redirect. A browser
+// that could say whose account this is for is a browser that could attach an
+// account to somebody else, and it would look exactly like this flow while
+// doing it. So the only assertion that travels is the state parameter, which
+// says nothing about anybody.
+//
+// # And roster is the one that refuses
+//
+// Not this app. `MeService.Link` hangs the row off the frame's actor, refuses a
+// second identity of one provider, and refuses an account already attached to
+// somebody -- without saying whose. This handler turns those into pages and
+// adds nothing of its own, which is the shape every other handler here has.
+func (a *App) link(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	as, err := a.acting(ctx, r)
+	if err != nil {
+		// Signed out between starting and finishing, or never signed in. Either
+		// way there is nobody to attach this to, and there is deliberately no
+		// fallback that signs them in instead: an errand that silently becomes
+		// a different errand is one nobody can reason about.
+		http.Error(w, "no", http.StatusForbidden)
+		return
+	}
+
+	who, err := a.who(ctx, r.URL.Query().Get("code"))
+	if err != nil {
+		http.Error(w, "no", http.StatusBadRequest)
+		return
+	}
+
+	res, err := a.me_.Link(as, rstr.MeLinkRequest_builder{
+		Provider: who.Provider,
+		Subject:  who.Subject,
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.AlreadyExists {
+			// That account is already a way in, here or for somebody else.
+			// Told apart from nothing, for the reason `MeService.Link` gives.
+			http.Error(w, "that account is already a way in", http.StatusConflict)
+			return
+		}
+		if status.Code(err) == codes.InvalidArgument {
+			// One provider per person, which `server/core` refuses in as many
+			// words: *a second one is a link that found the wrong row, and
+			// linking it would join two people into one.* A person can act on
+			// this -- it means they are already signed in with this provider,
+			// under a different account -- so they are told rather than shown a
+			// five-hundred.
+			http.Error(w, "you already sign in with this provider", http.StatusConflict)
+			return
+		}
+		if status.Code(err) == codes.PermissionDenied {
+			// This deployment has not granted linking. A real answer rather
+			// than a five-hundred: it is a policy and somebody can change it.
+			http.Error(w, "this deployment does not let people add their own", http.StatusForbidden)
+			return
+		}
+
+		fmt.Fprintf(os.Stderr, "sso: link %s/%s: %v\n", who.Provider, who.Subject, err)
+		http.Error(w, "cannot add", http.StatusInternalServerError)
+		return
+	}
+
+	// Back to the page that asked, with what was written, so it can offer to
+	// remove it without asking again.
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintf(w, "{\"id\":%q}\n", base64.RawURLEncoding.EncodeToString(res.GetId()))
+}
+
 func (a *App) who(ctx context.Context, code string) (Caller, error) {
 	if code == "" {
 		return Caller{}, errors.New("no code")
@@ -652,6 +798,21 @@ func Enrolling(c rstr.Client) Enrol {
 			return pdid.Nil, fmt.Errorf("enrol %s: %w", caller.Email, err)
 		}
 
+		// And **not** what they may do, which is the line this app does not
+		// cross.
+		//
+		// `MeService.Link` is not waived the way the other three are -- adding
+		// a way in is a feature a deployment offers rather than something
+		// somebody must be able to do with no role -- so somebody enrolled here
+		// cannot add one until a role says they may, and the account page tells
+		// them so in a sentence.
+		//
+		// This app could grant it. Doing so would mean its key holds
+		// `RoleService/Add` and `BindingService/Add`, which is *may bind any
+		// role it can name to anybody it can see* -- a wide credential held by
+		// the one service reachable from the open internet, bought to hand out
+		// a single method. What a deployment does instead is write the role
+		// once, wherever it decides what an ordinary account is.
 		return pdid.From(v.GetId())
 	}
 }

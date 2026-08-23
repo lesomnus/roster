@@ -25,14 +25,22 @@ import (
 // What stayed is what is this app's: which provider it uses, which pages it
 // draws, and what it asks roster on the person's behalf.
 //
-// # And what this app deliberately does not reach
+// # And both halves reach it now
 //
-// A sign-in through the provider never calls `Vouch` -- the secret is somebody
-// else's to check -- so there is nothing for a delegation to ride back on, and
-// `/me` answers a refusal rather than falling back to this app's own
-// credential. D23 recorded that and said to leave the seam: exchanging an
-// `id_token` for a delegation is roster accepting somebody else's assertion as
-// proof, which is a D19 question and takes its own entry.
+// This used to say the opposite: a sign-in through the provider never calls
+// `Vouch`, so there was nothing for a delegation to ride back on and `/me`
+// answered a refusal rather than falling back to this app's own credential.
+// D23 recorded that and said to leave the seam -- *exchanging an `id_token` for
+// a delegation is roster accepting somebody else's assertion as proof, which is
+// a D19 question and takes its own entry.*
+//
+// It has one: **D49**. roster does not check the token, because being the
+// relying party is what `connection.proto` says roster is not -- so this app
+// checks it, `Vouch.Accept` hands the claim over, and `frontdoor` holds the
+// delegation beside the session exactly as it does after a password.
+//
+// What did not change is the thing the refusal was protecting: the page is
+// drawn with a credential **for the person**, never with this app's own.
 
 // record is the person's own page, as a page needs it.
 //
@@ -190,10 +198,9 @@ func kinds(v *rstr.MeGetResponse) []string {
 func (a *App) me(w http.ResponseWriter, r *http.Request) {
 	ctx, err := a.acting(r.Context(), r)
 	if err != nil {
-		// Signed in through the provider, which does not produce one. See the
-		// note at the top of this file: the exchange that would is a decision
-		// nobody has taken.
-		http.Error(w, "this session cannot read its own record; sign in with a password", http.StatusForbidden)
+		// No delegation, which now means no session rather than the wrong kind
+		// of one: both halves mint one. See the note at the top of this file.
+		http.Error(w, "not signed in", http.StatusForbidden)
 		return
 	}
 

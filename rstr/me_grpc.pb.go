@@ -22,6 +22,7 @@ const (
 	MeService_Get_FullMethodName               = "/roster.MeService/Get"
 	MeService_Unlink_FullMethodName            = "/roster.MeService/Unlink"
 	MeService_SignOutEverywhere_FullMethodName = "/roster.MeService/SignOutEverywhere"
+	MeService_Link_FullMethodName              = "/roster.MeService/Link"
 )
 
 // MeServiceClient is the client API for MeService service.
@@ -88,6 +89,58 @@ type MeServiceClient interface {
 	// beside it. roster answers *invalid since when*; an app answers *what is
 	// still alive*.
 	SignOutEverywhere(ctx context.Context, in *MeSignOutEverywhereRequest, opts ...grpc.CallOption) (*MeSignOutEverywhereResponse, error)
+	// Link attaches a provider account the caller has just proved they control.
+	//
+	// The other half of [MeService.Unlink], and the half §4 left undrawn: a
+	// person removes a way in from a screen and adding one was *the sign-in flow
+	// reached by somebody already signed in*, which nothing routed.
+	//
+	// # What it takes, and what that is not
+	//
+	// A provider and a subject: the claim a front door read out of a token it
+	// verified, exactly as `VouchClaim` carries one. roster checks neither -- it
+	// is not the relying party, which `connection.proto` decided -- so what this
+	// does is attach a claim to the caller and nothing more.
+	//
+	// It cannot be pointed at anybody else. There is no subject argument in the
+	// sense `Unlink`'s comment means: `(provider, subject)` names an account at a
+	// provider and never a person here, and the row it writes hangs off the
+	// frame's actor. What it can do is attach a **foreign** account to the
+	// caller's own row, which is the feature.
+	//
+	// # It needs a role, unlike the other three
+	//
+	// `aboutYourself` waives `Get`, `Unlink` and `SignOutEverywhere`, and this is
+	// not on that list -- which its own comment demands a decision about rather
+	// than an inheritance.
+	//
+	// The reason those three are waived is that they are what somebody **must**
+	// be able to do with no role at all: read their own record, sign out of a
+	// session they no longer trust, take back a way in. Attaching a provider
+	// account is not in that category. Nobody is locked out by its absence, it is
+	// a feature a deployment chooses to offer, and it creates something that
+	// outlives the app that asked for it.
+	//
+	// The objection that makes a role wrong for `Unlink` -- *`Identity` narrows
+	// by tenant, so the smallest grant covering it covers everybody's* -- does
+	// not apply, because this method **is** the narrow grant. It writes to the
+	// frame's actor and no field can redirect it, so a role naming it means
+	// exactly *may add a way into your own account*.
+	//
+	// So there are three grants and each is somebody's own decision: the person
+	// holds a role naming this, the front door's key allows it, and the
+	// delegation it acts with names it. An app that signs people in and must
+	// never attach an account does not ask -- the same shape `Vouch.Accept` takes
+	// one service over, and the same reason.
+	//
+	// # And the refusals it inherits
+	//
+	// `(provider, subject)` is unique, so a claim already attached to somebody
+	// else is refused -- and refused without saying **whose**, which is the same
+	// care `Unlink` takes about a `which` that is not the caller's. `server/core`
+	// refuses a second identity of one provider for one person, so this cannot
+	// quietly replace the account somebody already signs in with.
+	Link(ctx context.Context, in *MeLinkRequest, opts ...grpc.CallOption) (*MeLinkResponse, error)
 }
 
 type meServiceClient struct {
@@ -122,6 +175,16 @@ func (c *meServiceClient) SignOutEverywhere(ctx context.Context, in *MeSignOutEv
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(MeSignOutEverywhereResponse)
 	err := c.cc.Invoke(ctx, MeService_SignOutEverywhere_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *meServiceClient) Link(ctx context.Context, in *MeLinkRequest, opts ...grpc.CallOption) (*MeLinkResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MeLinkResponse)
+	err := c.cc.Invoke(ctx, MeService_Link_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -192,6 +255,58 @@ type MeServiceServer interface {
 	// beside it. roster answers *invalid since when*; an app answers *what is
 	// still alive*.
 	SignOutEverywhere(context.Context, *MeSignOutEverywhereRequest) (*MeSignOutEverywhereResponse, error)
+	// Link attaches a provider account the caller has just proved they control.
+	//
+	// The other half of [MeService.Unlink], and the half §4 left undrawn: a
+	// person removes a way in from a screen and adding one was *the sign-in flow
+	// reached by somebody already signed in*, which nothing routed.
+	//
+	// # What it takes, and what that is not
+	//
+	// A provider and a subject: the claim a front door read out of a token it
+	// verified, exactly as `VouchClaim` carries one. roster checks neither -- it
+	// is not the relying party, which `connection.proto` decided -- so what this
+	// does is attach a claim to the caller and nothing more.
+	//
+	// It cannot be pointed at anybody else. There is no subject argument in the
+	// sense `Unlink`'s comment means: `(provider, subject)` names an account at a
+	// provider and never a person here, and the row it writes hangs off the
+	// frame's actor. What it can do is attach a **foreign** account to the
+	// caller's own row, which is the feature.
+	//
+	// # It needs a role, unlike the other three
+	//
+	// `aboutYourself` waives `Get`, `Unlink` and `SignOutEverywhere`, and this is
+	// not on that list -- which its own comment demands a decision about rather
+	// than an inheritance.
+	//
+	// The reason those three are waived is that they are what somebody **must**
+	// be able to do with no role at all: read their own record, sign out of a
+	// session they no longer trust, take back a way in. Attaching a provider
+	// account is not in that category. Nobody is locked out by its absence, it is
+	// a feature a deployment chooses to offer, and it creates something that
+	// outlives the app that asked for it.
+	//
+	// The objection that makes a role wrong for `Unlink` -- *`Identity` narrows
+	// by tenant, so the smallest grant covering it covers everybody's* -- does
+	// not apply, because this method **is** the narrow grant. It writes to the
+	// frame's actor and no field can redirect it, so a role naming it means
+	// exactly *may add a way into your own account*.
+	//
+	// So there are three grants and each is somebody's own decision: the person
+	// holds a role naming this, the front door's key allows it, and the
+	// delegation it acts with names it. An app that signs people in and must
+	// never attach an account does not ask -- the same shape `Vouch.Accept` takes
+	// one service over, and the same reason.
+	//
+	// # And the refusals it inherits
+	//
+	// `(provider, subject)` is unique, so a claim already attached to somebody
+	// else is refused -- and refused without saying **whose**, which is the same
+	// care `Unlink` takes about a `which` that is not the caller's. `server/core`
+	// refuses a second identity of one provider for one person, so this cannot
+	// quietly replace the account somebody already signs in with.
+	Link(context.Context, *MeLinkRequest) (*MeLinkResponse, error)
 	mustEmbedUnimplementedMeServiceServer()
 }
 
@@ -210,6 +325,9 @@ func (UnimplementedMeServiceServer) Unlink(context.Context, *MeUnlinkRequest) (*
 }
 func (UnimplementedMeServiceServer) SignOutEverywhere(context.Context, *MeSignOutEverywhereRequest) (*MeSignOutEverywhereResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SignOutEverywhere not implemented")
+}
+func (UnimplementedMeServiceServer) Link(context.Context, *MeLinkRequest) (*MeLinkResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Link not implemented")
 }
 func (UnimplementedMeServiceServer) mustEmbedUnimplementedMeServiceServer() {}
 func (UnimplementedMeServiceServer) testEmbeddedByValue()                   {}
@@ -286,6 +404,24 @@ func _MeService_SignOutEverywhere_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MeService_Link_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MeLinkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MeServiceServer).Link(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MeService_Link_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MeServiceServer).Link(ctx, req.(*MeLinkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MeService_ServiceDesc is the grpc.ServiceDesc for MeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -304,6 +440,10 @@ var MeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SignOutEverywhere",
 			Handler:    _MeService_SignOutEverywhere_Handler,
+		},
+		{
+			MethodName: "Link",
+			Handler:    _MeService_Link_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
