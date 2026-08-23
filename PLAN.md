@@ -537,12 +537,16 @@ somebody reading the code to decide what is safe.
   `protobuf-merge` matches rpcs by name and emits the overlay's request,
   response and body; payday invokes it without `Strict`; and the conflict kinds
   it can report cover fields and editions and not rpcs at all. So an overlay
-  redeclaring `Get` replaces it, silently. The comment is corrected here and the
-  fix is **payday's and is not written yet**: `CheckOverlay` compares fields by
-  number and has nothing to say about an rpc, and `protobuf-merge` would need a
-  conflict kind for one before `Strict` could refuse it. It is the "compiles
-  perfectly and is wrong" class the one rule exists for, and it is the largest
-  thing this sweep left open.
+  redeclaring `Get` replaces it, silently. The comment is corrected here, and
+  the fix is **payday's** -- written in F20 rather than left open, which is what
+  the one rule asks for: `pdcli.checkOverlayRpcs` refuses an overlay that
+  redeclares an rpc the contract already has, before the merge that would have
+  taken its word. `CheckOverlay` compares fields by number and had nothing to
+  say about an rpc, and `protobuf-merge` would have needed a conflict kind for
+  one before `Strict` could refuse it, so the check is in the generator that
+  invokes the merge rather than in the merge. It was the "compiles perfectly and
+  is wrong" class the one rule exists for, and it was the largest thing this
+  sweep left open.
 - **The foreign keys into `holder` are not uniform.** Eleven are `NO ACTION` and
   `binding_holder_holder` alone is `SET NULL`. Nothing depends on it today,
   because an erase is an UPDATE and no `ON DELETE` rule fires; it would matter
@@ -1500,9 +1504,11 @@ question was never the second copy. `Audit` has **no retention policy**, which
 has to reckon with the trail, and the answer is a retention policy rather than an
 empty column* -- and that is the decision still open.
 
-It is open no longer; D44 is what came of it. What is still open is the half
-that is genuinely a decision rather than work: erasing **one person** from the
-trail, where D44 says why the obvious version is not obvious.
+It is open no longer; D44 is what came of it. And neither is the half D44 left
+behind -- erasing **one person** from the trail -- which D46 both decided and
+built: the events stay, their contents go, and the `Holder` row stays blank, so
+the trail keeps *the same someone did these fourteen things* and loses every way
+to say who that someone was.
 
 ### F14 · A select reached a parent that had been erased -- **fixed upstream**
 
@@ -3929,25 +3935,29 @@ Confirmed here: `proto/app/host.proto` moved onto `MailDomain`'s domain, and
 | 1c · memberships, Credential | **done**, 27 tests, both databases |
 | 2 · payday fixes | **all closed** — F1, F2, F3, F4, F6, F8, F9, F10, F11, F12, F13, F14 fixed · F7 by D27 · F5 is operational and written down |
 | 3 · app layer | linking rules, credential verification, roles and the second axis, `MeService`, escalation prevention, the console · **done** |
-| 4 · keys, sync, console | **keys done** (both planes; no wire surface to mint an `rt_`) · **delegation done** (D25; `Vouch.Delegate` mints one over the wire and `Vouch.Revoke` ends it — what has no wire surface is `DelegationService`) · **console done** · sync channel — |
+| 4 · keys, sync, console | **done** — keys on both planes, and an `rt_` minted over the wire by `IssueService` (D48) or by the person themselves (D54) · **delegation** (D25; `Vouch.Delegate` mints one and `Vouch.Revoke` ends it — what has no wire surface is `DelegationService`) · **console** · and the **sync channel**, D53: `SyncService` is one stream that takes nothing and carries three facts off a `Holder` |
 | 5 · the line, written down | **done** — D19, D20, and POSITION.md rewritten around them |
 
 The phases above are how this was built. What is built **next** is
 [docs/ROADMAP.md](docs/ROADMAP.md), which carries its own progress table.
 
-### What is still roster's to build for a sign-in
+### What was roster's to build for a sign-in
 
-D19 through D24 say where the line is. This is what is on the near side of it
-and not written yet. None of these is decided; each takes a `D` when it is.
-Where an entry names a preferred answer, that is a recommendation carried over
-from the discussion that found it, not a decision taken.
+D19 through D24 say where the line is, and this was what is on the near side of
+it. **All twelve are done**, each with a `D` of its own -- item 4, the sync
+channel, was the last, and it took two increments and D53.
 
-These are **subjects and not pieces of work**, and reading them together shows
-why: three of them are one table, two of them are one field each, and one of
-them does not close what it says it closes. The order they are built in, what
-forces it, and how far it has got are [docs/ROADMAP.md](docs/ROADMAP.md) --
-kept there so that this list stays what it is, which is the question rather than
-the schedule.
+The list is kept rather than deleted, and each entry keeps the sentence it was
+written as. What a thing was asked for is not recoverable from what it became,
+and half of these turned out to be something other than what the entry
+predicted: 4 wanted an outbox and is a stream an app dials, 3 was one feature
+and is two, 6 was a registry of sessions and is one timestamp.
+
+They were **subjects and not pieces of work**, and reading them together shows
+why: three of them were one table, two of them were one field each, and one of
+them did not close what it said it closed. The order they were built in and what
+forced it are [docs/ROADMAP.md](docs/ROADMAP.md) -- kept there so that this list
+stays what it is, which is the question rather than the schedule.
 
 1. ~~**A tenant from a hostname.**~~ **Done**, D27. `Host`, and
    `FrontService.WhoseHost` to resolve one before anybody is anybody.

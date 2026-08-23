@@ -1,12 +1,18 @@
 # Building it — the order, and how far it has got
 
 `PLAN.md` is what roster is and why, and its list of twelve is the **subjects**
-that are still on the near side of D19's line. It deliberately takes no
-decisions and states no order.
+on the near side of D19's line. It deliberately takes no decisions and states no
+order.
 
 This file is the other half: **the order, the dependencies, and what is done.**
 When the two disagree about a subject, PLAN.md is right; when they disagree
 about a sequence, this one is.
+
+**All twelve are done, and so is every phase below.** The last was item 4, the
+sync channel, which the list had carried since the first week and which D26 took
+the first half of for free: `SyncService`, D53. What is here now is a record of
+the order rather than a queue -- so a change to roster is a new decision in
+PLAN.md and a new row here, not the next line of a plan.
 
 ## What the list turned out to be
 
@@ -442,8 +448,20 @@ what the questions were before anybody answered them.
 
 ## Progress
 
-Every payday finding is closed. What is left of this roadmap is one increment
-that the plan defers on purpose.
+Every payday finding is closed, every phase is done, and so is every one of
+PLAN.md's twelve. The last was P9's event stream, which the plan had deferred on
+purpose and which stopped being a deferral when the reason it was one turned out
+to be wrong: the entity `Watch` is not merely noisy for this, it refuses a
+subscription with no filters, and an app cannot name people who have not signed
+in yet.
+
+One thing is **written and waiting** rather than open, and it is upstream's turn
+rather than a decision: `Email.date_verified` should carry
+`(payday.field).stamped` instead of the layer in `server/core/email.go` that
+does the same refusal by hand. The option exists in payday; it reaches roster
+through `buf.build/payday/payday:dev`, and that label has not been pushed since.
+The swap is three lines the day it is, and the layer's own comment carries the
+command.
 
 | | | |
 | --- | --- | --- |
