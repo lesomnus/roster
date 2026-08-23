@@ -2,7 +2,7 @@
 #
 #	docker compose up
 #	open http://localhost:5173
-#	sign in as admin / admin
+#	sign in as admin / admin        # the operator; there are no customers yet
 #
 # Not the sandbox. `npm run dev:sandbox` compiles the server into the page and
 # needs none of this; what this is for is the console talking to a roster that

@@ -63,17 +63,29 @@ export function app(transport: Transport): App {
  * Admin is what a page calls on the **admin** listener, which is where a
  * deployment's operator reaches its customers.
  *
- * Two services and not the whole of `App`, because this is not a second copy of
- * the console: it is the three or four writes an operator makes about one
- * person, and a page reads through the store for everything else.
+ * Not the whole of `App`, because this is not a second copy of the console: it
+ * is the writes an operator makes -- about one person, and about standing a
+ * customer up -- and a page reads through the store for everything else.
  *
  * `VouchService` is on that port for the reason PLAN.md item 10 gives -- an air
  * gap has an operator instead of a mail server -- and `cmd/admin.go` says what
  * it costs and what bounds it.
+ *
+ * `tenant`, `role` and `binding` are the four writes that make a customer, and
+ * they are here because `roster init` stopped making one. What creates a
+ * customer is an operator, on this port, through the rules -- `mayGrant`
+ * compares methods and site rather than tenants, so the whole-package pattern
+ * an operator holds in the **control** plane reaches a tenant that did not
+ * exist a moment ago. PLAN.md D56.
  */
 export interface Admin {
 	readonly holder: Client<typeof HolderService>
 	readonly vouch: Client<typeof VouchService>
+
+	/** The four writes that stand a customer up; see `customers.tsx`. */
+	readonly tenant: Client<typeof TenantService>
+	readonly role: Client<typeof RoleService>
+	readonly binding: Client<typeof BindingService>
 
 	/**
 	 * A key for one of a customer's people, answered once.
@@ -90,6 +102,9 @@ export function admin(transport: Transport): Admin {
 	return {
 		holder: createClient(HolderService, transport),
 		vouch: createClient(VouchService, transport),
+		tenant: createClient(TenantService, transport),
+		role: createClient(RoleService, transport),
+		binding: createClient(BindingService, transport),
 		issue: createClient(IssueService, transport),
 	}
 }

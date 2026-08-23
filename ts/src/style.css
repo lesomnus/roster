@@ -91,6 +91,24 @@ td:last-child {
 	padding-left: 1rem;
 }
 
+/* The form that stands a customer up, which is what `roster init` used to do.
+
+   It sits above the list rather than behind a button, because on a fresh
+   deployment the list is empty and the thing to do next is the only thing on
+   the screen. */
+.new-customer {
+	margin-bottom: 1rem;
+}
+
+.new-customer form {
+	margin-bottom: 0.25rem;
+}
+
+.new-customer button[disabled] {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
 /* A provider's subject is an opaque identifier somebody compares by eye. */
 .mono {
 	font-family: ui-monospace, monospace;

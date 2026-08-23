@@ -554,7 +554,7 @@ func TestSigningOutReachesThePortWithNoWall(t *testing.T) {
 
 		n, err := s.Ent.Tenant.Query().Count(ctx)
 		x.NoError(err)
-		x.Equal(2, n, "a signed-out console wrote a customer") // contoso, and `before`
+		x.Equal(1, n, "a signed-out console wrote a customer") // `before`, and nothing else
 	})
 
 	// And a key is not a way round it. `rk_` is the deployment's own credential

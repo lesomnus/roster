@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	"github.com/lesomnus/payday/config"
@@ -17,7 +18,6 @@ import (
 
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
-	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/vouch"
 )
 
@@ -59,13 +59,20 @@ func inited(t *testing.T, args ...string) (*cmd.Server, string) {
 }
 
 // TestInitLeavesADeploymentThatWorks is the thing that was missing, and it is
-// deliberately about what the admin can **do** rather than what rows exist.
+// deliberately about what the operator can **do** rather than what rows exist.
 //
 // Before this, `init` wrote a tenant and a holder and printed "sign in as
 // @contoso/admin". Every row was right. The admin could call one method --
 // `MeService.Get`, which told them they held nothing -- and there was no way
 // out, because writing the first role needs a binding that only writing the
 // first role could give them.
+//
+// The plane it is about moved. `init` seeds the control plane and nothing else
+// now -- a customer is an operator's act, over `admin.addr`, and
+// `cmd/newcustomer_test.go` is that sequence end to end -- so the deadlock this
+// was written for is the operator's deadlock, and the binding that has to
+// actually work is theirs. The finding is the same one: rows that are all
+// correct and a deployment nobody can use.
 func TestInitLeavesADeploymentThatWorks(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
@@ -78,70 +85,60 @@ func TestInitLeavesADeploymentThatWorks(t *testing.T) {
 	x.Contains(out, "/roster.*/*")
 	x.Contains(out, "every RPC roster serves")
 
-	// And what they hold **nothing** of, which is the half that used to read as
-	// its opposite: this printed `sign in as: @contoso/admin`, and a data plane
-	// holder gets no password and no key from `init`. It was a true sentence
-	// only about a deployment on `auth.Plain`, which is the one arrangement
-	// this command no longer makes.
-	x.Contains(out, "holds nothing to call with yet")
+	// And the customer that is not there, which is the half that used to read
+	// as its opposite: this printed `sign in as: @contoso/admin`, and a data
+	// plane holder gets no password and no key from anywhere here. It was a
+	// true sentence only about a deployment on `auth.Plain`, which is the one
+	// arrangement this command no longer makes.
 	x.NotContains(out, "sign in as: @contoso/admin")
+	x.Contains(out, "there are no customers yet")
 
-	// So the credential is minted here, which is what an operator does over
-	// `admin.addr` -- `console.IssueTenant` is registered there for exactly
-	// this. Written through `Ungated` because a test is the deployment, not
-	// somebody asking it.
-	admin, err := s.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
-		Ref: app.HolderRef_builder{
-			Slug: app.HolderRefBySlug_builder{
-				Alias:  strPtr("admin"),
-				Tenant: app.TenantRef_builder{Alias: strPtr("contoso")}.Build(),
-			}.Build(),
-		}.Build(),
-	}.Build())
+	n, err := s.Ent.Tenant.Query().Count(ctx)
+	x.NoError(err)
+	x.Zero(n, "init seeded a customer nobody asked for")
+
+	// What the operator can do with what they were given, over the port they
+	// were given it for.
+	c := signIn(t, s, "ops", passwordFrom(t, out))
+	x.NotNil(c, "the password init printed does not sign in")
+
+	g, err := s.GrpcAdmin(ctx, cmd.Config{})
 	x.NoError(err)
 
-	token, sum, err := keys.Mint(keys.PrefixTenant)
-	x.NoError(err)
+	admin := pdtest.Serve(t, g)
+	as := metadata.NewOutgoingContext(ctx, metadata.Pairs("cookie", c.Name+"="+c.Value))
 
-	_, err = s.Ungated.ApiKey().Add(ctx, app.ApiKeyAddRequest_builder{
-		Holder:  app.HolderRef_builder{Id: admin.GetId()}.Build(),
-		Alias:   "bootstrap",
-		Secret:  sum,
-		Methods: []string{"/roster.*/*"},
-	}.Build())
-	x.NoError(err)
-
-	conn := served(t, s)
-	asAdmin := bearing(ctx, token)
-
-	t.Run("the admin may write the second role", func(t *testing.T) {
+	t.Run("the operator may make the first customer", func(t *testing.T) {
 		x := require.New(t)
 
-		v, err := app.NewTenantServiceClient(conn).Get(asAdmin,
-			app.TenantGetRequest_builder{
-				Ref: app.TenantRef_builder{Alias: strPtr("contoso")}.Build(),
-			}.Build())
-		x.NoError(err)
-
-		_, err = app.NewRoleServiceClient(conn).Add(asAdmin, app.RoleAddRequest_builder{
-			Tenant:  app.TenantRef_builder{Id: v.GetId()}.Build(),
-			Alias:   "reader",
-			Methods: []string{"/roster.HolderService/Get"},
-		}.Build())
+		tn, err := app.NewTenantServiceClient(admin).Add(as,
+			app.TenantAddRequest_builder{Alias: "newco"}.Build())
 		x.NoError(err, "the deployment cannot be administered by the person init named")
-	})
 
-	t.Run("and read what it holds", func(t *testing.T) {
-		x := require.New(t)
+		h, err := app.NewHolderServiceClient(admin).Add(as, app.HolderAddRequest_builder{
+			Tenant: app.TenantRef_builder{Id: tn.GetId()}.Build(),
+			Alias:  "admin",
+		}.Build())
+		x.NoError(err)
 
-		_, err := app.NewHolderServiceClient(conn).List(asAdmin,
-			app.HolderListRequest_builder{}.Build())
+		// The write that used to be impossible from outside, and is the whole
+		// of why `init` could stop doing it: `mayGrant` compares methods and
+		// site rather than tenants, so a binding held in the **control** plane
+		// reaches a tenant that did not exist a moment ago.
+		r, err := app.NewRoleServiceClient(admin).Add(as, app.RoleAddRequest_builder{
+			Tenant:  app.TenantRef_builder{Id: tn.GetId()}.Build(),
+			Alias:   "everything",
+			Methods: []string{"/roster.*/*"},
+		}.Build())
+		x.NoError(err)
+
+		_, err = app.NewBindingServiceClient(admin).Add(as, app.BindingAddRequest_builder{
+			Role:   app.RoleRef_builder{Id: r.GetId()}.Build(),
+			Holder: app.HolderRef_builder{Id: h.GetId()}.Build(),
+		}.Build())
 		x.NoError(err)
 	})
 
-	// The list a page draws is the enumeration, so a console can decide what to
-	// show. What the gate reads is the flag, which is why the two cannot
-	// disagree after an upgrade.
 	// The pattern itself, not what it expands to.
 	//
 	// A page evaluates it the same three ways the server does. An expansion
@@ -151,8 +148,13 @@ func TestInitLeavesADeploymentThatWorks(t *testing.T) {
 	t.Run("Me answers with the pattern", func(t *testing.T) {
 		x := require.New(t)
 
-		v, err := app.NewMeServiceClient(conn).Get(asAdmin, app.MeGetRequest_builder{}.Build())
+		wire := servedControl(t, s)
+
+		v, err := app.NewMeServiceClient(wire).Get(
+			metadata.NewOutgoingContext(ctx, metadata.Pairs("cookie", c.Name+"="+c.Value)),
+			app.MeGetRequest_builder{}.Build())
 		x.NoError(err)
+		x.Equal("ops", v.GetAlias())
 		x.Equal([]string{"/roster.*/*"}, v.GetMethods())
 	})
 }

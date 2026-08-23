@@ -174,7 +174,7 @@ true` lets ent bring the database to the shape the schema says, and without it
 ## Running
 
 ```sh
-go run ./cmd/roster init          # the first tenant, and somebody in it
+go run ./cmd/roster init          # the operator who runs this deployment
 go run ./cmd/roster config        # what this deployment is configured with
 go run ./cmd/roster config env    # every variable it can be told through
 go run ./cmd/roster serve
@@ -186,6 +186,12 @@ up from inside one, so the first row of a deployment cannot arrive over the API
 holds but a server instance this process was handed. Running it twice is an
 error rather than a no-op, because an `init` that quietly did nothing is one
 somebody runs against the wrong deployment and believes.
+
+What it writes is the **operator** and nothing else. It used to write a customer
+as well — `--tenant contoso --holder admin` — so every deployment began life with
+one nobody had asked for, and once a control plane became required that person
+could not be signed in as anyway. Customers come from the console now, which
+makes an operator's first act the same act as their hundredth. PLAN.md D56.
 
 It also needs a `control:` database, and that is the one thing it refuses over.
 Without one a deployment serves `auth.Plain` — every caller is whoever they type

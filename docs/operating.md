@@ -63,54 +63,50 @@ A key must not live in the tables it protects, which is why the second database
 is a database and not a reserved tenant. There is no query from one to the
 other.
 
-## Your first tenant and person
+## Your operator
 
 ```sh
-roster init --tenant contoso --holder admin
+roster init
 ```
 
 Both planes, or it refuses: see above for why a control plane is not a thing to
 add later.
 
-A tenant is not put up from inside one, so the first row cannot arrive over the
-API. `init` writes it through the server instance the process holds.
+What it writes is one person — the **operator** who runs this deployment, in the
+control plane — and the role that lets them. Nothing in the data plane at all:
 
-It also writes the first **role and binding**, and that is not a convenience:
+```
+control plane
+  holder ops is 019ff2...
+  bound to role "everything" = /roster.*/* -- every RPC roster serves, now and after an upgrade
+  password  kQ9x...
+
+sign in to the console as ops. that password is shown once and is not stored -- write it down now.
+
+there are no customers yet, which is the right state to start in.
+```
+
+That row cannot arrive over the API. A tenant is not put up from inside one, so
+the first row of a deployment has nowhere else to come from; `init` writes it
+through the server instance the process holds.
+
+It also writes the **role and binding**, and that is not a convenience:
 permissions are deny-by-default, so a tenant and a holder alone are somebody who
 can call one method — the one that tells them they hold nothing. There is no way
 out of that from the API, because writing the first role needs a binding only
 writing the first role could give.
 
-The role is `everything`, and what it holds is a **pattern**:
-
-```
-holder admin is 019ff2...
-  bound to role "everything" = /roster.*/* -- every RPC roster serves, now and after an upgrade
-```
-
-A list written at `init` is a snapshot. The next release adds an RPC the first
-administrator cannot call and cannot grant themselves either, because granting
-is refused for anything the granter does not already hold — so a snapshot is
-repaired by a shell on the box, once per upgrade, forever.
-
-What that person does **not** get is a way to call with. `init` writes no
-password and no key for them, and the two things that would — `VouchService.Set`
-and the `IssueService` that mints an `rt_` — are served on `admin.addr`, by an
-operator. So the first act after `init` is the same act as the hundredth: sign
-in to the console and give them one.
+The role is `everything`, and what it holds is a **pattern**. A list written at
+`init` is a snapshot: the next release adds an RPC the first operator cannot
+call and cannot grant themselves either, because granting is refused for
+anything the granter does not already hold — so a snapshot is repaired by a
+shell on the box, once per upgrade, forever.
 
 It is still an ordinary row: unbind it and it is gone, erase it and every
 binding to it goes too. And it is not something anybody can hand out — see
 below.
 
-### And an operator, if there is a control plane
-
-```
-control plane
-  holder ops is 019ff2...
-  bound to role "everything"
-  password  kQ9x...
-```
+### About that password
 
 Shown once and stored as an argon2id hash. There is no `--password` flag on
 purpose: a secret on a command line is in the shell history and the process
@@ -118,6 +114,69 @@ list, which is the same reason `roster key add` will not take a key.
 
 That is the console's bootstrap. A console cannot be what creates the first
 person allowed to use it.
+
+### It used to seed a customer, and does not
+
+`init` took `--tenant` and `--holder`, defaulting to `contoso` and `admin`, so
+every deployment began life with a customer nobody had asked for — named after
+an example company, in a production database. And once a control plane became
+required, that person could not be signed in as anyway: a data plane holder gets
+no password and no key from `init`, and both writes that would give them one are
+served on `admin.addr`, by an operator.
+
+So making a customer is an operator's act, and it is the same act the hundredth
+time. `mayGrant` compares methods and **site** rather than tenants, so the
+operator's binding — tenant-wide, in the control plane — reaches a tenant that
+did not exist a moment ago, and `admin.addr` registers everything the act needs.
+
+## Your first customer
+
+Sign in to the console and use the form above the customers list. It is four
+writes and the console makes them in order:
+
+| | |
+| --- | --- |
+| `TenantService/Add` | the customer |
+| `HolderService/Add` | the first person in it |
+| `RoleService/Add` | `everything`, as the pattern above |
+| `BindingService/Add` | which ties the two together |
+
+Then give that person a way in, on their own panel: **new password**
+(`VouchService/Reset`) for somebody at a browser, or a key (`IssueService`,
+minting an `rt_`) for something that calls. Neither exists until you write it —
+creating somebody writes no credential, deliberately.
+
+There is no fifth RPC that does all of this, and there should not be: each of
+the four is held to the same rules every other write on that port is, and a
+composite would be a fifth thing to hold to them. It is not a transaction
+either — `BatchService` is the data plane's and an operator's pattern is
+roster's own package, not payday's — so a failure part way leaves what came
+before it. That is survivable here and was not survivable in `init`: the
+deadlock `init` was fixed for was real because writing the first role needs a
+binding only writing the first role could give, and an operator writes it from
+outside every tenant. They can simply finish.
+
+`cmd/newcustomer_test.go` is the whole sequence, including both ways of writing
+a credential and the proof that the resulting key answers as the person rather
+than as the operator.
+
+### If an app already knows this organisation
+
+The console's form has an **identifier** field, empty almost always, and there
+is a case where it must be filled in. An app served by this roster anchors its
+own rows on the identifier a credential carries; when that app also has the
+tenant written down as a constant, the two have to agree from the start.
+
+**What happens without it is not an error**, which is why it is worth saying
+here. Both sides come up, somebody signs in, and the app makes a *second* tenant
+for them because the identifier it was handed is not one it has: two rows for
+one organisation, and the rows that belong together split across them, with
+nothing failing. It has to be a tenant-domain identifier and `Tenant.Add`
+refuses anything else, so the check is payday's rather than one written here.
+
+It was `roster init --tenant-id`, and the flag went with the customer. What is
+left is the console, and `roster tenant add <alias> '{"id":"…"}'` for somebody
+with a shell on the box.
 
 ## Locally, in one command
 

@@ -85,9 +85,13 @@ func TestInitRefusesToRunTwice(t *testing.T) {
 	_, err = initRun(t, c)
 	x.Error(err, "a second init against a seeded deployment reported success")
 
-	// Named by the alias that collided, because the operator reading this is
+	// Named by the row that collided, because the operator reading this is
 	// deciding whether they are looking at the wrong database or at a restart.
-	x.ErrorContains(err, "contoso")
+	//
+	// The **operator**, which is what `init` writes now: it seeds the control
+	// plane and nothing else, so the first thing already there is the role
+	// bound to the person who runs this deployment.
+	x.ErrorContains(err, "ops")
 
 	s, err := cmd.Build(ctx, c)
 	x.NoError(err)
@@ -95,24 +99,38 @@ func TestInitRefusesToRunTwice(t *testing.T) {
 
 	// One of everything the first run wrote, which is the claim that the
 	// refusal came before any write and not after some of them.
+	//
+	// The **control** plane, which is the whole of what `init` writes: an owner
+	// tenant, the operator in it, the role that says everything, and the
+	// binding. A customer is an operator's act now and there is none to count.
 	t.Run("and writes nothing on the way out", func(t *testing.T) {
+		x := require.New(t)
+
+		n, err := s.Control.Ent.Tenant.Query().Count(ctx)
+		x.NoError(err)
+		x.Equal(1, n, "a second tenant was written by the run that failed")
+
+		n, err = s.Control.Ent.Holder.Query().Count(ctx)
+		x.NoError(err)
+		x.Equal(1, n)
+
+		n, err = s.Control.Ent.Role.Query().Count(ctx)
+		x.NoError(err)
+		x.Equal(1, n)
+
+		n, err = s.Control.Ent.Binding.Query().Count(ctx)
+		x.NoError(err)
+		x.Equal(1, n)
+	})
+
+	// And the plane it does not touch at all, which is the other half of the
+	// same sentence: a fresh deployment has no customers.
+	t.Run("and no customer anywhere", func(t *testing.T) {
 		x := require.New(t)
 
 		n, err := s.Ent.Tenant.Query().Count(ctx)
 		x.NoError(err)
-		x.Equal(1, n, "a second tenant was written by the run that failed")
-
-		n, err = s.Ent.Holder.Query().Count(ctx)
-		x.NoError(err)
-		x.Equal(1, n)
-
-		n, err = s.Ent.Role.Query().Count(ctx)
-		x.NoError(err)
-		x.Equal(1, n)
-
-		n, err = s.Ent.Binding.Query().Count(ctx)
-		x.NoError(err)
-		x.Equal(1, n)
+		x.Zero(n, "init seeded a customer nobody asked for")
 	})
 
 	// The one a botched second run would be most expensive to have touched.
@@ -131,15 +149,15 @@ func TestInitRefusesToRunTwice(t *testing.T) {
 	})
 }
 
-// TestASecondInitStopsBeforeTheOperator is the same command interrupted where
-// it actually can be, which is not where the test above stops it.
+// TestASecondSeedStopsBeforeTheOperator is [cmd.Seed] interrupted where it
+// actually can be, which is not where the test above stops it.
 //
-// [cmd.Seed] is a sequence of RPCs and not a transaction: a tenant, a holder, a
+// `Seed` is a sequence of RPCs and not a transaction: a tenant, a holder, a
 // role, a binding, and then the control plane's operator in a second database
 // that no transaction could have spanned anyway. The run above never gets past
 // the first call, so it says nothing about what a partial one leaves.
 //
-// A second `init` naming a **different** tenant does get past it. The data
+// A second seed naming a **different** tenant does get past it. The data
 // plane's four rows are written, and then the control plane refuses: the
 // operator's tenant already holds a role called "everything", and an alias is
 // unique. That refusal lands in `seedOperator` before the passphrase is
@@ -147,11 +165,18 @@ func TestInitRefusesToRunTwice(t *testing.T) {
 // because the alternative is an operator who wrote down the first password
 // finding it no longer works after a command that failed.
 //
-// What is left behind is a customer nobody asked for, and the point of the
-// error is that somebody is told to go and look at it. `docker/entrypoint.sh`
-// does not write its marker, so it retries -- and the retry fails on the tenant
-// instead, which is the loud version of not converging.
-func TestASecondInitStopsBeforeTheOperator(t *testing.T) {
+// # It is `Seed` and not `init`, and that is the change rather than the test
+//
+// This ran the command twice, because the command used to write the four data
+// plane rows. It writes only the operator now -- a customer is an operator's
+// act, over `admin.addr` -- so a second `roster init` collides on the first
+// write it makes and never reaches the partial case at all. That is the test
+// above, and it is the whole of what a shell or an entrypoint can produce.
+//
+// The partial case did not go away: `Seed` still writes a customer when it is
+// asked for one, which is what a test and the Wasm sandbox ask for. So the
+// property is pinned where it still lives.
+func TestASecondSeedStopsBeforeTheOperator(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
@@ -162,13 +187,15 @@ func TestASecondInitStopsBeforeTheOperator(t *testing.T) {
 
 	secret := passwordFrom(t, out)
 
-	_, err = initRun(t, c, "--tenant", "fabrikam")
-	x.Error(err, "a second init reseeded the control plane of a live deployment")
-	x.ErrorContains(err, "operator", "it failed somewhere other than the operator")
-
 	s, err := cmd.Build(ctx, c)
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })
+
+	_, err = cmd.Seed(ctx, s, cmd.Seeding{
+		Tenant: "fabrikam", Holder: "admin", Operator: "ops",
+	})
+	x.Error(err, "a second seed reseeded the control plane of a live deployment")
+	x.ErrorContains(err, "operator", "it failed somewhere other than the operator")
 
 	// The half that did happen, said out loud so that a later change which
 	// makes `Seed` roll this back fails here and is looked at, rather than
@@ -178,7 +205,7 @@ func TestASecondInitStopsBeforeTheOperator(t *testing.T) {
 
 		n, err := s.Ent.Tenant.Query().Count(ctx)
 		x.NoError(err)
-		x.Equal(2, n, "contoso from the first run, fabrikam from the one that failed")
+		x.Equal(1, n, "fabrikam from the run that failed, and nothing from init")
 	})
 
 	// The half that must not have.

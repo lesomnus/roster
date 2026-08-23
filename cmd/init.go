@@ -19,14 +19,36 @@ import (
 	"github.com/lesomnus/roster/server/vouch"
 )
 
-// NewCmdInit is `roster init`: the first tenant, the first person, and the
-// first thing either of them may do.
+// NewCmdInit is `roster init`: the person who runs this deployment, and the
+// first thing they may do.
 //
 // It exists because there is nowhere else it could happen. A tenant is not put
 // up from inside one, so the first row of a deployment cannot arrive over the
 // API. What puts it there is [Server.Ungated], which is not a privilege anybody
 // holds: it is a server instance this process was handed, reachable from this
 // command and from nowhere a request can get to.
+//
+// # It is the control plane's, and it used to be both
+//
+// This also wrote a **customer**: a tenant, somebody in it, and the role that
+// administers it, from `--tenant` and `--holder` whose defaults were `contoso`
+// and `admin`. So every deployment began life with a customer nobody had asked
+// for, named after an example company, in a production database -- and once a
+// control plane became required, that person could not be signed in as anyway:
+// a data plane holder gets no password and no key from here, and both writes
+// that would give them one are served on `admin.addr`, by an operator.
+//
+// Making a customer is an operator's act now, and it is the same act the
+// hundredth time. `mayGrant` compares methods and site rather than tenants, so
+// the operator's binding -- tenant-wide, in the **control** plane -- reaches a
+// tenant that did not exist a moment ago; the admin port registers all four
+// writes plus the two that write a way in. `ts/src/customers.tsx` is the
+// screen, `cmd/newcustomer_test.go` is the whole sequence, and PLAN.md D56 is
+// why.
+//
+// `Seed` still writes one when it is asked for a tenant, because a test and the
+// Wasm sandbox want a deployment with somebody in it and have no console to
+// make one from.
 //
 // # It grants, and it used to only create
 //
@@ -41,10 +63,11 @@ import (
 // fresh deployment answered nothing and nothing could change that. It went
 // unnoticed because this command had no test.
 //
-// So it binds a role, and the role is [Role.every_method] rather than a list.
-// A list written here is a snapshot: the next release adds an RPC the first
-// administrator cannot call, and cannot grant themselves either, because
-// granting is refused for anything the granter does not already hold.
+// So it binds a role, and the role is a pattern rather than a list. A list
+// written here is a snapshot: the next release adds an RPC the first operator
+// cannot call, and cannot grant themselves either, because granting is refused
+// for anything the granter does not already hold. That is now about the
+// operator alone, and it is why `allow` is still here.
 //
 // # It needs a control plane
 //
@@ -68,44 +91,17 @@ import (
 func NewCmdInit(c *Config) *xli.Command {
 	return &xli.Command{
 		Name:  "init",
-		Brief: "put up the first tenant, somebody in it, and what they may do",
+		Brief: "put up the operator who runs this deployment, and what they may do",
 
 		Flags: flg.Flags{
-			&flg.String{Name: "tenant", Brief: "the alias of the tenant to create"},
-			&flg.String{Name: "holder", Brief: "the alias of the holder to create in it"},
 			&flg.String{Name: "operator", Brief: "the alias of the control plane holder who runs the console"},
-			&flg.String{Name: "tenant-id", Brief: "the identifier to give the first tenant; one is minted by default"},
 			&flg.Switch{Name: "password-stdin", Brief: "read the operator's password from stdin instead of generating one"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
-			tenant, ok := flg.Find[string](cmd, "tenant")
-			if !ok || tenant == "" {
-				tenant = "contoso"
-			}
-
-			holder, ok := flg.Find[string](cmd, "holder")
-			if !ok || holder == "" {
-				holder = "admin"
-			}
-
 			operator, ok := flg.Find[string](cmd, "operator")
 			if !ok || operator == "" {
 				operator = "ops"
-			}
-
-			// The identifier for the first tenant, when an app served by this
-			// roster already has one written down for the same organisation.
-			// See [Seeding.TenantId] for what goes wrong when the two disagree,
-			// which is nothing loud.
-			var at pdid.Id
-			if v, ok := flg.Find[string](cmd, "tenant-id"); ok && v != "" {
-				k, err := pdid.Parse(v)
-				if err != nil {
-					return fmt.Errorf("--tenant-id: %w", err)
-				}
-
-				at = k
 			}
 
 			// A control plane, always, and the reason is not tidiness.
@@ -168,48 +164,43 @@ func NewCmdInit(c *Config) *xli.Command {
 				}
 			}
 
-			v, err := Seed(ctx, s, Seeding{
-				Tenant:   tenant,
-				Holder:   holder,
-				Operator: operator,
-				Password: given,
-				TenantId: at,
-			})
+			v, err := Seed(ctx, s, Seeding{Operator: operator, Password: given})
 			if err != nil {
 				return err
 			}
 
-			cmd.Printf("tenant %s is %s\n", tenant, v.Tenant)
-			cmd.Printf("holder %s is %s\n", holder, v.Holder)
-			cmd.Printf("  bound to role %q = %s -- every RPC roster serves, now and after an upgrade\n", everything, everyRosterMethod)
-
-			// What that person cannot do, said where it is read.
-			//
-			// This printed `sign in as: @contoso/admin`, which was true of a
-			// deployment on `auth.Plain` and of no other: a data plane holder
-			// gets no password and no key from `init`, and the two things that
-			// would give them one -- `VouchService.Set` and the `IssueService`
-			// that mints an `rt_` -- are served on `admin.addr`, by an
-			// operator. Now that a control plane is required, the line was
-			// never true, so it says the other thing instead.
-			cmd.Printf("  and holds nothing to call with yet: a key or a password for them is written over admin.addr\n")
-
-			cmd.Printf("\ncontrol plane\n")
+			cmd.Printf("control plane\n")
 			cmd.Printf("  holder %s is %s\n", operator, v.Operator)
-			cmd.Printf("  bound to role %q = %s\n", everything, everyRosterMethod)
+			cmd.Printf("  bound to role %q = %s -- every RPC roster serves, now and after an upgrade\n", everything, everyRosterMethod)
 			cmd.Printf("  password  %s\n", v.Password)
 			cmd.Printf("\nsign in to the console as %s. that password is shown once and is not stored -- write it down now.\n", operator)
+
+			// And the next thing to do, because there is one and it is no
+			// longer this command's.
+			//
+			// A deployment with no customers is the correct state to be left
+			// in: a tenant is a customer, and one written by `init` was a
+			// customer nobody asked for. What replaces it is the console, where
+			// the first one is made the same way the hundredth is.
+			cmd.Printf("\nthere are no customers yet, which is the right state to start in.\n")
+			cmd.Printf("the console makes the first one -- a tenant, somebody in it, and the role\n")
+			cmd.Printf("that lets them administer it. see docs/operating.md.\n")
 
 			return nil
 		}),
 	}
 }
 
-// Seeded is what a fresh deployment is: the two identifiers `init` prints, and
-// the operator it made in the control plane.
+// Seeded is what a fresh deployment is: the operator who runs it, and the
+// customer if one was asked for.
+//
+// `Tenant` and `Holder` are [pdid.Nil] where [Seeding.Tenant] was empty, which
+// is what `roster init` asks for -- a deployment starts with no customers, and
+// making one is an operator's act. A caller that wants both is a test or the
+// Wasm sandbox, which have no console to make one from.
 //
 // `Operator` is [pdid.Nil] and `Password` is empty where there was no control
-// plane, which is a deployment that believes its callers and has no console.
+// plane, which `init` refuses and a Go call may still do.
 type Seeded struct {
 	Tenant   pdid.Id
 	Holder   pdid.Id
@@ -225,11 +216,21 @@ type Seeded struct {
 // last two additions -- a password, and now an identifier -- are both things a
 // reader of a call site could not tell apart from the aliases beside them.
 type Seeding struct {
-	// Tenant, Holder and Operator are the aliases of the three rows made: the
-	// first tenant, the first person in it, and the one who administers this
-	// deployment from the control plane.
-	Tenant   string
-	Holder   string
+	// Tenant and Holder are a **customer**: a tenant and the first person in
+	// it, who is bound the role that administers it.
+	//
+	// Empty is none, which is what `roster init` asks for and is the ordinary
+	// state of a fresh deployment. A caller that fills them in is one with no
+	// console to make a customer from -- a test, or the Wasm sandbox, where a
+	// reload is a fresh deployment and a page with nobody in it shows nothing.
+	//
+	// A `Holder` with no `Tenant` is refused rather than ignored: there is
+	// nowhere to put them, and the caller meant one of the two.
+	Tenant string
+	Holder string
+
+	// Operator is the one who administers this deployment from the control
+	// plane, and is the only row `roster init` writes.
 	Operator string
 
 	// Password is the **operator's**, and empty means generate one.
@@ -277,6 +278,23 @@ func Seed(ctx context.Context, s *Server, in Seeding) (Seeded, error) {
 	}
 
 	tenant, holder, operator, password := in.Tenant, in.Holder, in.Operator, in.Password
+
+	// No customer, which is what `roster init` asks for. See [Seeding.Tenant].
+	if tenant == "" {
+		if holder != "" || in.TenantId != pdid.Nil {
+			return Seeded{}, errors.New("a holder and an identifier, and no tenant to put them in")
+		}
+		if s.Control == nil {
+			return Seeded{}, nil
+		}
+
+		operator, secret, err := seedOperator(ctx, s.Control, operator, password)
+		if err != nil {
+			return Seeded{}, fmt.Errorf("operator %q: %w", in.Operator, err)
+		}
+
+		return Seeded{Operator: operator, Password: secret}, nil
+	}
 
 	req := app.TenantAddRequest_builder{Alias: tenant}
 	if in.TenantId != pdid.Nil {

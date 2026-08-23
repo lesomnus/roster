@@ -361,9 +361,21 @@ func TestTheAdminPortLimitsWhatItWasToldTo(t *testing.T) {
 		})
 		conn, as := adminPort(t, s, c, out)
 
-		vs, err := app.NewHolderServiceClient(conn).List(as, app.HolderListRequest_builder{}.Build())
+		// Somebody to watch, written in process rather than over the port.
+		// `init` leaves no customers -- making one is an operator's act -- and
+		// making one here would spend the budget this test is measuring.
+		tn, err := s.Ungated.Tenant().Add(t.Context(),
+			app.TenantAddRequest_builder{Alias: "newco"}.Build())
 		x.NoError(err)
-		x.NotEmpty(vs.GetItems())
+
+		h, err := s.Ungated.Holder().Add(t.Context(), app.HolderAddRequest_builder{
+			Tenant: app.TenantRef_builder{Id: tn.GetId()}.Build(),
+			Alias:  "someone",
+		}.Build())
+		x.NoError(err)
+
+		_, err = app.NewHolderServiceClient(conn).List(as, app.HolderListRequest_builder{}.Build())
+		x.NoError(err, "the first call in a second was refused")
 
 		// Filtered, because a watch has to say which rows it is about and an
 		// unfiltered one is refused for that instead -- which would be this
@@ -371,7 +383,7 @@ func TestTheAdminPortLimitsWhatItWasToldTo(t *testing.T) {
 		req := app.HolderWatchRequest_builder{
 			Filters: []*app.HolderFilter{
 				app.HolderFilter_builder{
-					Ref: app.HolderRef_builder{Id: vs.GetItems()[0].GetId()}.Build(),
+					Ref: app.HolderRef_builder{Id: h.GetId()}.Build(),
 				}.Build(),
 			},
 		}.Build()

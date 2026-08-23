@@ -33,12 +33,18 @@
 # That prefix is roster's own, for the **admin listener** -- `ROSTER_ADMIN_ADDR`
 # is a port. `ROSTER_ROOT_*` is this script's and collides with nothing, which
 # `roster config env` will confirm.
+#
+# # And no customer
+#
+# This passed `--tenant` and `--holder` and there was a `ROSTER_SEED_*` pair to
+# set them with, so every container started life with a customer named after an
+# example company. `init` seeds the control plane alone now: what comes up is a
+# deployment and an operator, and the first customer is made from the console
+# the same way the hundredth is. See PLAN.md D56.
 set -eu
 
 : "${ROSTER_ROOT_USER:=admin}"
 : "${ROSTER_ROOT_PASSWORD:=admin}"
-: "${ROSTER_SEED_TENANT:=contoso}"
-: "${ROSTER_SEED_HOLDER:=admin}"
 : "${ROSTER_STATE:=/var/lib/roster}"
 
 seeded="${ROSTER_STATE}/seeded"
@@ -57,8 +63,6 @@ if [ ! -e "${seeded}" ]; then
 	# container that meant to set a password and did not is one whose operator
 	# cannot sign in and does not know why.
 	printf '%s' "${ROSTER_ROOT_PASSWORD}" | roster init \
-		--tenant "${ROSTER_SEED_TENANT}" \
-		--holder "${ROSTER_SEED_HOLDER}" \
 		--operator "${ROSTER_ROOT_USER}" \
 		--password-stdin
 

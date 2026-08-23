@@ -574,6 +574,84 @@ somebody reading the code to decide what is safe.
   credentials -- but *local is Ungated* was written down and *and general writes
   are open there* was not.
 
+### D56 · A customer is an operator's act, not a seed
+
+`roster init` seeds the control plane and nothing else. The first customer is
+made from the console, over `admin.addr`, by the operator it just created.
+
+#### What it used to do
+
+`--tenant` and `--holder`, defaulting to `contoso` and `admin`. So every
+deployment began life with a customer nobody had asked for, named after an
+example company, in a production database -- and `docs/entity.md` uses that same
+name as the *documentation's* example, which makes a real row of it worse rather
+than tidier.
+
+D55 made it stranger. With a control plane required, that person could not be
+signed in as: a data plane holder gets no password and no key from `init`, and
+both writes that would give them one -- `VouchService.Set` and the
+`IssueService` that mints an `rt_` -- are served on `admin.addr`, by an
+operator. `init` printed `sign in as: @contoso/admin` and there was no way to.
+
+#### Why the operator can do it, which is the load-bearing fact
+
+`Core.mayGrant` reads what the caller holds and compares **methods and site**.
+It does not compare tenants:
+
+	for _, g := range held {
+		if g.Site == pdid.Nil || g.Site == at { … }
+	}
+
+The operator's binding is tenant-wide in the **control** plane, so it reaches a
+tenant that did not exist a moment ago. `cmd/admin.go` builds `core` from
+`s.Control.Ent` for exactly this reason -- *who is calling and what they hold
+are control plane questions; what they are operating on is the data plane* --
+and the port registers all four writes plus the two that write a way in.
+
+That was already asserted by `TestAnOperatorAdministersCustomers`. What was
+never asserted is the last mile, and it is the one that matters once nothing
+seeds a customer: `cmd/newcustomer_test.go` runs the four writes as a session,
+mints an `rt_`, and checks that the key answers as the **person** and is walled
+to their tenant.
+
+#### Four writes and not a fifth RPC
+
+Each of the four is held to the same rules every other write on that port is. A
+composite would be a fifth thing to hold to them, and the rule this repository
+keeps arriving back at is that a grant is any write that changes what the gate
+answers -- which is easier to see on four writes than inside one.
+
+It is not a transaction either. `BatchService` is served on the data plane and
+not on the admin port, and an operator's pattern is roster's own package rather
+than payday's, so it would not cover a batch in any case. A call that fails part
+way leaves what came before it: a tenant with nobody in it, or somebody with no
+role.
+
+Neither is the deadlock `init` was fixed for. That one was real because writing
+the first role needs a binding only writing the first role could give; here the
+operator writes it from **outside** every tenant and can simply finish. So the
+console says how far it got rather than rolling back, which would delete rows a
+second operator may already be looking at.
+
+#### What `Seed` still does
+
+Writes a customer when it is asked for one. `Seeding.Tenant` empty is none,
+which is what the command asks for; a `Holder` with no `Tenant` is refused
+rather than ignored. The callers that fill it in are the ones with no console to
+make a customer from -- the Wasm sandbox, where a reload is a fresh deployment
+and a page with nobody in it shows nothing, and the tests.
+
+#### And the identifier that had a flag
+
+`--tenant-id` existed for the case in `Seeding.TenantId`: an app served by this
+roster that already has the organisation written down as a constant, where the
+two identifiers have to agree from the start and disagreeing fails silently --
+two tenants for one organisation, rows split across them, nothing erroring.
+
+The capability moved rather than went: `TenantAddRequest` takes an `id` and
+`Tenant.Add` refuses one that is not tenant-domain. What had to move with it is
+the **warning**, which is now in `docs/operating.md` beside the act it is about.
+
 ### D55 · A control plane is not a thing to add later
 
 `roster init` refuses a configuration that names no `control.db`. It is the only
