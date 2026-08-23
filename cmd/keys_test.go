@@ -44,10 +44,10 @@ type keyedBuilt struct {
 	// databases rather than two fresh ones.
 	Config cmd.Config
 
-	Conn  *grpc.ClientConn
-	Contoso  pdid.Id
-	Who   pdid.Id
-	Token string
+	Conn    *grpc.ClientConn
+	Contoso pdid.Id
+	Who     pdid.Id
+	Token   string
 }
 
 // keyFor stands a deployment up and mints a key allowing exactly `methods`.
@@ -97,10 +97,10 @@ func keyFor(t *testing.T, methods ...string) *keyedBuilt {
 	x.NoError(err)
 
 	return &keyedBuilt{
-		Server: s,
-		Config: c,
-		Conn:   served(t, s),
-		Contoso:   contoso, Who: who, Token: token,
+		Server:  s,
+		Config:  c,
+		Conn:    served(t, s),
+		Contoso: contoso, Who: who, Token: token,
 	}
 }
 
