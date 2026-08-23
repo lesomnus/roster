@@ -3,6 +3,9 @@ package core
 import (
 	"context"
 
+	"github.com/lesomnus/payday/frame"
+	"github.com/lesomnus/payday/pderr"
+
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/front"
 )
@@ -54,6 +57,9 @@ func (s coreEmail) Add(ctx context.Context, req *app.EmailAddRequest) (*app.Emai
 	if err := normalised("address", req.GetAddress(), front.Address); err != nil {
 		return nil, err
 	}
+	if err := s.notVouchedForByTheCaller(ctx, req); err != nil {
+		return nil, err
+	}
 	if err := s.mayWriteAWayIn(ctx, "holder", req.GetHolder()); err != nil {
 		return nil, err
 	}
@@ -86,4 +92,57 @@ func (s coreEmail) Patch(ctx context.Context, req *app.EmailPatchRequest) (*app.
 	}
 
 	return s.EmailServiceServer.Patch(ctx, req)
+}
+
+// notVouchedForByTheCaller refuses a caller asserting that an address has been
+// checked.
+//
+// # Why the schema cannot say this
+//
+// `05792f6` closed the same class one entity over -- *a stamp is not a field a
+// caller writes* -- and it closed it with `immutable: true`, which is the right
+// word for `Identity.tenant_id` and the wrong one here. `immutable` takes a
+// field out of the **patch** request and leaves it in `Add`, and what this
+// wants is the other way round: nobody asserts a verification when the row is
+// created, and something here stamps it when a verification actually happens.
+//
+// Neither generator can say that. `orm.field` has `immutable` and no opposite;
+// `payday.field` has `secret`, which narrows reads and says outright that *the
+// write side is untouched*. So it is a layer, and that is the shape available
+// rather than the shape wanted -- worth raising upstream, and written down here
+// so the next person does not go looking for a declaration.
+//
+// # What it is protecting, given nothing reads the column yet
+//
+// Nothing does, today: `MeService` echoes it back to the person it is about and
+// no rule consults it. That is what makes this cheap to close and worth closing
+// now rather than later, because the field's whole stated job is to decide
+// whether an address may be **trusted** -- `email.proto` on `vouched_by` says
+// an unverified provider address must not be trusted to link accounts -- and
+// the day something reads it is the day every value already in the column was
+// put there by whoever could write the row.
+//
+// And that is wider than it sounds. [Core.mayReach] passes for the caller's own
+// row and for any target holding nothing the caller lacks, so a support desk
+// whose whole job is contact details can write an address for nearly everybody
+// in the tenant. A desk asserting *this one is verified* is the escalation this
+// closes before it exists.
+//
+// # Who is allowed to
+//
+// Nobody, through a request. A frame means somebody asked; no frame is the
+// deployment's own work -- `init`, a seed, a server writing through the
+// unwalled stack -- which is the same opt-out `mayGrant` and `mayJoin` take,
+// and for the same reason. `Patch` is left alone: that is the road a
+// verification would be stamped by, and it is closed at the transport anyway.
+func (s coreEmail) notVouchedForByTheCaller(ctx context.Context, req *app.EmailAddRequest) error {
+	if _, ok := frame.From(ctx); !ok {
+		return nil
+	}
+	if !req.HasDateVerified() {
+		return nil
+	}
+
+	return pderr.Invalidf("date_verified",
+		"an address is verified by something checking it, not by the request that creates it")
 }

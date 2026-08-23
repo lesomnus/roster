@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/frame"
 
@@ -152,5 +153,65 @@ func TestAnEdgeIsNotAWayThroughTheWall(t *testing.T) {
 			VouchedBy: app.IdentityRef_builder{Id: ours.GetId()}.Build(),
 		}.Build())
 		x.NoError(err, "the check refuses what it should allow")
+	})
+}
+
+// TestNobodyAssertsThatTheirOwnAddressWasChecked.
+//
+// `05792f6` closed this class one entity over -- *a stamp is not a field a
+// caller writes* -- for `Identity.tenant_id`, with `immutable: true`. That word
+// is the right one there and the wrong one here: `immutable` takes a field out
+// of the **patch** request and leaves it in `Add`, and what `date_verified`
+// wants is the other way round. Neither generator can say it, so it is a layer.
+//
+// Nothing reads the column yet, which is what makes this cheap to close and the
+// reason to close it now. Its whole stated job is to decide whether an address
+// may be **trusted** -- `email.proto` says an unverified provider address must
+// not be trusted to link accounts -- so the day something reads it is the day
+// every value already there was written by whoever could write the row.
+//
+// Which is wider than it sounds: `mayReach` passes for any target holding
+// nothing the caller lacks, so a support desk whose whole job is contact
+// details writes addresses for nearly everybody in the tenant.
+func TestNobodyAssertsThatTheirOwnAddressWasChecked(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	b.binds(t, b.AcmeUser, b.role(t, ctx, "desk", "/roster.EmailService/Add"), nil)
+
+	conn := served(t, b.Server)
+	wire := asOverTheWire(ctx, b.AcmeUser)
+	c := app.NewEmailServiceClient(conn)
+
+	_, err := c.Add(wire, app.EmailAddRequest_builder{
+		Holder:       app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Address:      "alice@acme.example",
+		DateVerified: timestamppb.Now(),
+	}.Build())
+	x.Equal(codes.InvalidArgument, status.Code(err),
+		"a caller asserted that their own address had been checked")
+	x.Contains(status.Convert(err).Message(), "date_verified")
+
+	t.Run("and the same write without the claim is fine", func(t *testing.T) {
+		x := require.New(t)
+
+		_, err := c.Add(wire, app.EmailAddRequest_builder{
+			Holder:  app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Address: "alice@acme.example",
+		}.Build())
+		x.NoError(err)
+	})
+
+	t.Run("and the deployment's own work is not a request", func(t *testing.T) {
+		x := require.New(t)
+
+		// No frame, which is `init`, a seed, or a server writing through the
+		// unwalled stack -- the same opt-out `mayGrant` and `mayJoin` take.
+		_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
+			Holder:       app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Address:      "seeded@acme.example",
+			DateVerified: timestamppb.Now(),
+		}.Build())
+		x.NoError(err)
 	})
 }

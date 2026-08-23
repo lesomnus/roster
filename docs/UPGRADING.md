@@ -75,6 +75,34 @@ upgrading, or leave the seed-only accounts alone until you do.
 The same rule stops `Identity.Erase` taking somebody's last provider when all
 they have left is a seed, which is a refusal where there used to be none.
 
+### Two refusals that were leaks
+
+**An edge may not reach a row you cannot see.** The gate checked the edges an
+`Add` hangs off, and checked only the path to the tenant — so `Email.vouched_by`
+could be pointed at another tenant's identity and read back through a nested
+select. A clerk with `Email.Add` and `Email.Get` read another customer's holder
+and tenant. Fixed in payday's generator, so every edge behind the wall is now
+checked at `Add`, and again at `Patch` for the ones that can move.
+
+Nothing legitimate is affected: a write inside your own tenant passes exactly as
+before, and the `Ungated` stack carries no gate at all, so seeds, `init` and the
+CLI are untouched. What is refused is an edge that leaves the caller's scope,
+which was never a thing to do on purpose.
+
+**Nobody asserts that an address has been checked.** `Email.Add` took
+`date_verified` from the request. Nothing reads the column yet, so this changes
+no behaviour you can observe — but if you have a tool that seeds addresses
+*through a credentialled call* and sets it, that call now returns
+`InvalidArgument`. Seeding without a frame — `init`, a shell, `Ungated` — is
+unaffected. Check with:
+
+```sql
+SELECT count(*) FROM email WHERE date_verified IS NOT NULL;
+```
+
+Rows here were written by somebody rather than by a verification. They are left
+alone; nothing reads them.
+
 ### New surface you can ignore until you want it
 
 - **`audit:`** — how long the trail is kept, per kind. Absent is **forever**,

@@ -399,6 +399,58 @@ asked: `internal/apptest/cmd/outboxsecret_test.go` upstream, and
 `cmd/outboxsecret_test.go` here, because it is a property of the pinned payday
 rather than of anything in roster.
 
+### F20 · Two things a generator was letting through quietly
+
+Both found by sweeping rather than by anything failing, and both are the
+"compiles perfectly and is wrong" shape rather than a bug with a symptom.
+
+#### An overlay redeclaring a generated rpc replaced it
+
+`protobuf-merge` matches rpcs by name and emits the **overlay's** request,
+response and body. So an overlay declaring `rpc Get(...)` replaces the generated
+one -- the file compiles, the tests that call it pass, and what is gone is the
+wall, the trail and the narrowing that were behind that name. `Strict` does not
+help: its conflict kinds cover fields and editions and there is none for an rpc,
+and `CheckOverlay` compares fields by number and says nothing about a service.
+
+roster's own overlay carried a comment asserting the opposite, and had for as
+long as it had been written. F18 corrected the comment; `lesomnus/payday@15a0e47`
+makes it true, comparing against the contract **as merged so far** so that one
+rule covers the crud rpcs and `List` and `Watch` alike.
+
+And beside it, `@a06360f`: an overlay whose name matches no contract was never
+visited at all, since the merge walks the contracts and looks up an overlay
+beside each. It generated cleanly, merged nothing, and the first sign was a
+method that was not there. `doctor` already said this about entity overlays.
+
+#### A caller could assert that an address had been checked
+
+`Email.date_verified` is in the `Add` request, so whoever may write the row may
+write the stamp. Nothing reads it -- `MeService` echoes it back to the person it
+is about -- which is what made it cheap to close and is the reason to close it
+now: the field's whole job is to decide whether an address may be **trusted**,
+and the day something reads it is the day every value already in the column was
+put there by whoever could write the row.
+
+Wider than it sounds. [Core.mayReach] passes for the caller's own row and for
+any target holding nothing the caller lacks, so a support desk whose whole job
+is contact details writes addresses for nearly everybody in the tenant.
+
+#### And why it is a layer rather than a declaration
+
+D-nothing: `05792f6` closed this class one entity over -- *a stamp is not a
+field a caller writes* -- with `immutable: true`, which is the right word for
+`Identity.tenant_id` and the wrong one here. `immutable` takes a field out of
+the **patch** request and leaves it in `Add`, and this wants the other way
+round: nobody asserts a verification when the row is created, and something
+stamps it when a verification happens.
+
+Neither generator can say that. `orm.field` has `immutable` and no opposite;
+`payday.field` has `secret`, which narrows reads and states outright that *the
+write side is untouched*. So `server/core/email.go` refuses it, with the frame
+opt-out `mayGrant` and `mayJoin` take -- and **the missing declaration is worth
+raising upstream**, which is the one thing here left undone on purpose.
+
 ### F19 · An edge is a read, and the gate was not asking about most of them -- **fixed upstream**
 
 The widest thing found in this app, and it needed a **clerk** rather than an
