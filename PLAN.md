@@ -555,6 +555,80 @@ somebody reading the code to decide what is safe.
   credentials -- but *local is Ungated* was written down and *and general writes
   are open there* was not.
 
+### D52 · WebAuthn, which D20 had already designed
+
+The largest thing `docs/OPERATING.md` listed as not here, and it needed no new
+decision: D20 settled the shape while arguing about TOTP, and this is that
+paragraph built.
+
+> WebAuthn is the interesting case because a public key **is not a secret**, so
+> D14's "it must not travel" does not apply to it. What still keeps verification
+> here is the **signature counter**: it is state that has to move forward exactly
+> once per assertion, and state belongs to whoever holds the row. So roster
+> verifies, taking the relying-party id, origin and challenge as arguments --
+> they are the browser-facing half and roster does not know them.
+
+Every line of that is load-bearing and every line of it held.
+
+#### The three facts arrive inside the presented bytes
+
+`VouchVerifyRequest` is generic across kinds, and three fields meaning something
+for one kind and nothing for the others would be three fields every other kind
+has to explain. What a caller presents is already whatever the kind says it is
+-- a password, six digits -- so for this it is the assertion **and** the relying
+party, the origins and the challenge, as one envelope. `kind.go` is the seam
+that was already there: *a kind is checked its own way.*
+
+#### And it burns its own way, which `kind.go` predicted
+
+An ECDSA verification is microseconds and an argon2 burn is forty milliseconds,
+so burning the package default here would invert the difference rather than
+close it -- which is the finding `kind.go` exists for, arriving a second time in
+a second kind. `WebAuthn.Burn` does one ECDSA verification.
+
+#### What is not checked, and why each is somebody else's
+
+**The attestation against a metadata service.** Which authenticators a
+deployment trusts is a policy, and policy is the flow's -- the same line D20
+draws about whether a second factor is demanded at all.
+
+**User verification.** A security key tapped without a PIN is a legitimate
+second factor, and demanding UV here would refuse exactly that. Whether a
+deployment wants a passkey rather than a key is a question for the page that
+asks.
+
+**The algorithms** are named rather than left open, because the verifier refuses
+a key whose algorithm is not on a list and an empty list refuses everything.
+ES256, RS256 and EdDSA -- and nothing with SHA-1, which is the omission that is
+a statement.
+
+#### The counter, and the case that would have broken it
+
+Zero on both sides is **allowed**. An authenticator is permitted to report no
+counter, and a large share of the keys people own report zero forever; refusing
+that would refuse them. What is refused is a counter that did not move on a
+device that reports one, which is a replay or a clone.
+
+#### `Begins` answers no, and that is a choice rather than a fact
+
+A security key tapped as a second factor cannot begin a sign-in; a passkey with
+user verification can. They are the same kind here and are told apart by a flag
+in the assertion rather than by the column.
+
+So it answers no for both, which is the conservative direction -- it can only
+refuse what would otherwise have worked. What it costs is that somebody whose
+only credential is a passkey cannot sign in with it. Making it depend on the
+assertion is a further decision and wants its own reason: `Begins` is asked of a
+**kind**, before anything has been presented.
+
+#### And the tests write an authenticator rather than replaying one
+
+`server/vouch/vouchtest` holds a private key and signs on demand, because what
+these tests are about is a relationship -- *this key signed this challenge, and
+the counter moved* -- and a captured blob can only assert that one recording
+still parses. It is also the only way to ask for the wrong challenge, or the
+right one twice.
+
 ### D51 · The screen a key is minted from, and the read it needed first
 
 D48 built `IssueService` on the data plane and left the last line of that entry

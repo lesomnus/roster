@@ -176,6 +176,12 @@ func TestADeploymentWithNoKeyHoldsNoSecondFactor(t *testing.T) {
 //
 // It is a fact about the deployment rather than about the person, so it must
 // not depend on whether they exist -- otherwise the refusal is a way to ask.
+//
+// The kind used to be `webauthn`, which was a name nothing checked. It is one
+// now, so this asks with a name nothing will ever check -- and the difference
+// is the point of the test rather than an inconvenience to it: what is being
+// asserted is the **shape** of the refusal for an unknown kind, and a kind that
+// quietly became known would have made this pass by asking nothing.
 func TestAKindNobodyChecksIsRefusedBeforeAnybodyIsRead(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
@@ -188,7 +194,7 @@ func TestAKindNobodyChecksIsRefusedBeforeAnybodyIsRead(t *testing.T) {
 	} {
 		_, err := v.Verify(ctx, app.VouchVerifyRequest_builder{
 			Who:    who,
-			Kind:   "webauthn",
+			Kind:   "semaphore",
 			Secret: []byte("whatever"),
 		}.Build())
 		x.Equal(codes.InvalidArgument, status.Code(err))

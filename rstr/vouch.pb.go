@@ -1484,13 +1484,14 @@ func (b0 VouchDelegateResponse_builder) Build() *VouchDelegateResponse {
 }
 
 type VouchEnrolRequest struct {
-	state             protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Who    *VouchWho              `protobuf:"bytes,1,opt,name=who"`
-	xxx_hidden_Kind   string                 `protobuf:"bytes,8,opt,name=kind"`
-	xxx_hidden_Name   string                 `protobuf:"bytes,5,opt,name=name"`
-	xxx_hidden_Issuer string                 `protobuf:"bytes,9,opt,name=issuer"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Who         *VouchWho              `protobuf:"bytes,1,opt,name=who"`
+	xxx_hidden_Kind        string                 `protobuf:"bytes,8,opt,name=kind"`
+	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
+	xxx_hidden_Issuer      string                 `protobuf:"bytes,9,opt,name=issuer"`
+	xxx_hidden_Attestation []byte                 `protobuf:"bytes,10,opt,name=attestation"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *VouchEnrolRequest) Reset() {
@@ -1546,6 +1547,13 @@ func (x *VouchEnrolRequest) GetIssuer() string {
 	return ""
 }
 
+func (x *VouchEnrolRequest) GetAttestation() []byte {
+	if x != nil {
+		return x.xxx_hidden_Attestation
+	}
+	return nil
+}
+
 func (x *VouchEnrolRequest) SetWho(v *VouchWho) {
 	x.xxx_hidden_Who = v
 }
@@ -1560,6 +1568,13 @@ func (x *VouchEnrolRequest) SetName(v string) {
 
 func (x *VouchEnrolRequest) SetIssuer(v string) {
 	x.xxx_hidden_Issuer = v
+}
+
+func (x *VouchEnrolRequest) SetAttestation(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Attestation = v
 }
 
 func (x *VouchEnrolRequest) HasWho() bool {
@@ -1577,8 +1592,15 @@ type VouchEnrolRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Who *VouchWho
-	// Which kind. Only "totp" today: a password is `Set` or `Reset`, and neither
-	// of those is something a person's phone holds.
+	// Which kind: "totp" or "webauthn". A password is `Set` or `Reset`, and
+	// neither of those is something a person's phone or key holds.
+	//
+	// The two arrive by opposite roads and that is why they are one method. For
+	// `totp` roster **makes** the secret and answers with it once, because a seed
+	// has to be read back and a browser generating one is a browser's `crypto`
+	// deciding how good it is. For `webauthn` the authenticator makes it and
+	// roster is handed the public half -- there is nothing to answer with, and
+	// the response is empty.
 	Kind string
 	// What they call it, when there is more than one to tell apart -- "the
 	// phone", "the yubikey in the drawer". Empty is the only one of its kind.
@@ -1587,6 +1609,21 @@ type VouchEnrolRequest_builder struct {
 	// name rather than the tenant's: a person with accounts at two operators
 	// needs to tell the two entries apart, and both are this roster.
 	Issuer string
+	// What the browser answered with, for `webauthn`, and nothing for `totp`.
+	//
+	// An envelope rather than the raw attestation: the response alone is not
+	// checkable, because verifying it needs the relying-party id, the origin and
+	// the challenge -- the three facts D20 named as the browser-facing half that
+	// roster does not know. So it carries all four.
+	//
+	//	{"rp_id": "acme.example",
+	//	 "origins": ["https://acme.example"],
+	//	 "challenge": "…",
+	//	 "response": { … what navigator.credentials.create() gave … }}
+	//
+	// Refused for `totp`, which makes its own secret: a request carrying both has
+	// not decided which ceremony it is doing.
+	Attestation []byte
 }
 
 func (b0 VouchEnrolRequest_builder) Build() *VouchEnrolRequest {
@@ -1597,6 +1634,7 @@ func (b0 VouchEnrolRequest_builder) Build() *VouchEnrolRequest {
 	x.xxx_hidden_Kind = b.Kind
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Issuer = b.Issuer
+	x.xxx_hidden_Attestation = b.Attestation
 	return m0
 }
 
@@ -1658,6 +1696,10 @@ func (x *VouchEnrolResponse) SetUri(v string) {
 type VouchEnrolResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
+	// Both empty for `webauthn`: the authenticator kept the private half and
+	// roster was handed the public one, so there is nothing here that was not
+	// already in the browser.
+	//
 	// The seed, base32, uppercase and unpadded -- the only time it is readable.
 	//
 	// Padding is legal and some apps refuse it, which is the sort of thing only
@@ -2425,12 +2467,14 @@ const file_app_vouch_proto_rawDesc = "" +
 	"\bverified\x18\x01 \x01(\v2\x1b.roster.VouchVerifyResponseR\bverified\x12\x14\n" +
 	"\x05token\x18\n" +
 	" \x01(\tR\x05token\x124\n" +
-	"\aexpires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\"w\n" +
+	"\aexpires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\"\x99\x01\n" +
 	"\x11VouchEnrolRequest\x12\"\n" +
 	"\x03who\x18\x01 \x01(\v2\x10.roster.VouchWhoR\x03who\x12\x12\n" +
 	"\x04kind\x18\b \x01(\tR\x04kind\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x16\n" +
-	"\x06issuer\x18\t \x01(\tR\x06issuer\":\n" +
+	"\x06issuer\x18\t \x01(\tR\x06issuer\x12 \n" +
+	"\vattestation\x18\n" +
+	" \x01(\fR\vattestation\":\n" +
 	"\x12VouchEnrolResponse\x12\x12\n" +
 	"\x04seed\x18\x01 \x01(\tR\x04seed\x12\x10\n" +
 	"\x03uri\x18\x02 \x01(\tR\x03uri\"*\n" +

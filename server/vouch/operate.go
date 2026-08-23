@@ -11,6 +11,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/lesomnus/payday/pderr"
+
 	app "github.com/lesomnus/roster/rstr"
 )
 
@@ -205,16 +207,30 @@ func passphrase() (string, error) {
 // nothing can reach: `Verify` matched the unnamed row, and no continuation is
 // minted to reach `Continue` with, because there is nothing left to prove.
 func (s *Server) Enrol(ctx context.Context, req *app.VouchEnrolRequest) (*app.VouchEnrolResponse, error) {
-	if kindOf(req.GetKind()) != KindTotp {
+	kind := kindOf(req.GetKind())
+	switch kind {
+	case KindTotp:
+		if len(req.GetAttestation()) > 0 {
+			return nil, pderr.Invalidf("attestation",
+				"a seed is made here; a request carrying one has not decided which ceremony it is doing")
+		}
+		if s.keys.Current == "" {
+			return nil, status.Error(codes.Unimplemented,
+				"this deployment holds no key to wrap a seed with, so it cannot hold a second factor")
+		}
+
+	case KindWebAuthn:
+		if len(req.GetAttestation()) == 0 {
+			return nil, pderr.Invalidf("attestation",
+				"an authenticator makes this one; roster is handed the public half")
+		}
+
+	default:
 		// A password is `Set` or `Reset`, and neither of those is a thing a
-		// phone holds. Refused rather than routed, because a caller asking for
-		// one here has misunderstood which act they are doing.
+		// phone or a key holds. Refused rather than routed, because a caller
+		// asking for one here has misunderstood which act they are doing.
 		return nil, status.Errorf(codes.InvalidArgument,
 			"kind: %q is not something to enrol; a password is Set or Reset", req.GetKind())
-	}
-	if s.keys.Current == "" {
-		return nil, status.Error(codes.Unimplemented,
-			"this deployment holds no key to wrap a seed with, so it cannot hold a second factor")
 	}
 
 	ref, err := refOf(req.GetWho())
@@ -242,6 +258,36 @@ func (s *Server) Enrol(ctx context.Context, req *app.VouchEnrolRequest) (*app.Vo
 	// signs in with. Same rule, same place.
 	if err := s.mayReach(ctx, who.GetId()); err != nil {
 		return nil, err
+	}
+
+	if kind == KindWebAuthn {
+		// Checked before it is written, which is the whole of what this branch
+		// is: an attestation nobody verified is a row that answers to whoever
+		// sent it.
+		v, err := Register(req.GetAttestation())
+		if err != nil {
+			return nil, pderr.Invalidf("attestation", "%s", err)
+		}
+
+		if _, err := s.walled.Credential().Add(ctx, app.CredentialAddRequest_builder{
+			Holder: ref,
+			Kind:   KindWebAuthn,
+			Name:   req.GetName(),
+			Secret: v.Stored,
+
+			// The counter the authenticator reported, so the first assertion
+			// has something to have to exceed. Unlike a seed there is no
+			// *unconfirmed* state to be in: registering **is** the proof, since
+			// the attestation is a signature over a challenge this deployment
+			// chose.
+			LastStep: v.Count,
+		}.Build()); err != nil {
+			return nil, err
+		}
+
+		// Nothing to answer with, and that is the shape rather than an
+		// omission: the private half never left the authenticator.
+		return app.VouchEnrolResponse_builder{}.Build(), nil
 	}
 
 	seed, err := totpSeed()

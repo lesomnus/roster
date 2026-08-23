@@ -65,6 +65,14 @@ func (s *Server) verifierOf(kind string) (verifier, error) {
 
 		return Totp{Keys: s.keys}, nil
 
+	case KindWebAuthn:
+		// No keyring, and that is the difference worth noticing beside the
+		// line above. A TOTP seed has to be read back, so a deployment that
+		// cannot wrap one cannot hold one; a credential public key is public
+		// and there is nothing to wrap. So this kind works on every
+		// deployment, including the one with no `vouch.keys` at all.
+		return WebAuthn{}, nil
+
 	default:
 		return nil, status.Errorf(codes.InvalidArgument, "kind: %q is not something this checks", kind)
 	}
@@ -107,6 +115,26 @@ func Begins(kind string) bool {
 	}
 }
 
+// A note on `webauthn`, which is the one kind where this is a **choice** rather
+// than a fact.
+//
+// A security key tapped as a second factor cannot begin a sign-in, and a
+// passkey with user verification can -- it proves possession and that somebody
+// unlocked it, which is exactly what a password proves and more. The two are
+// the same kind here and are told apart by a flag in the assertion, not by the
+// column.
+//
+// So this answers **no** for both, which is the conservative direction: it can
+// only refuse things that would otherwise have worked, never permit one that
+// would not. What it costs is that somebody whose only credential is a passkey
+// cannot sign in with it, and that `server/core` will not let their last
+// provider be unlinked -- both of which are refusals rather than holes.
+//
+// Making it depend on the assertion is a further decision and wants its own
+// reason: `Begins` is asked of a **kind**, before anything has been presented,
+// and an answer that depended on what arrived would be a different function in
+// a different place.
+
 // begun answers whether anything proved so far could have started this.
 func begun(satisfied []string) bool {
 	return slices.ContainsFunc(satisfied, Begins)
@@ -146,14 +174,15 @@ var errAlone = status.Error(codes.FailedPrecondition,
 // the one that decides what may be stored. What may be written is exactly what
 // something here can later check, so that is the question this asks.
 //
-// `totp` is the one kind that is known and still not this call's. `Set`
-// argon2-hashes what it is handed and a seed has to be read back -- so the row
-// would be a second factor that can never answer, and `Enrol` is the act that
-// makes one. `vouch.proto` said so under `Enrol` and nothing enforced it.
-// Refused as `InvalidArgument` whether or not this deployment holds a key,
-// because which act a caller is doing is not a fact about the deployment.
+// `totp` and `webauthn` are the kinds that are known and still not this call's.
+// `Set` argon2-hashes what it is handed: a seed has to be read back and a
+// credential public key has to be parsed, so either row would be a second
+// factor that can never answer, and `Enrol` is the act that makes one.
+// `vouch.proto` said so under `Enrol` and nothing enforced it. Refused as
+// `InvalidArgument` whether or not this deployment holds a key, because which
+// act a caller is doing is not a fact about the deployment.
 func (s *Server) settable(kind string) error {
-	if k := kindOf(kind); k == KindTotp {
+	if k := kindOf(kind); k == KindTotp || k == KindWebAuthn {
 		return status.Errorf(codes.InvalidArgument,
 			"kind: %q is not something to set; a second factor is Enrol", k)
 	}

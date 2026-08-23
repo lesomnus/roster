@@ -1070,9 +1070,18 @@ Nothing written down is plaintext, and it warns once.
   not roster's either way — that belongs wherever the browser is; roster
   answers what is left to prove.
 
-  What is not here is WebAuthn. `Credential` is already indexed on
-  `(holder, kind, name)` for it — a passkey lands one row per device — and
-  nothing checks that kind.
+  **WebAuthn is here too.** `Vouch.Enrol` with `kind: webauthn` takes what
+  `navigator.credentials.create()` answered with, and `Verify`/`Continue` take
+  an assertion — each in an envelope carrying the relying-party id, the origins
+  and the challenge, because roster does not know which page a browser was on.
+  What roster keeps is the public key and the **signature counter**, which is
+  why verification is here at all: a counter that did not move forward is a
+  replay or a clone, and a counter kept in two places is two answers.
+
+  A key does **not** begin a sign-in, so somebody's only credential cannot be
+  one. That is conservative rather than final: a passkey with user verification
+  could, and telling it from a tapped security key means reading a flag in the
+  assertion rather than the kind.
 - **Nothing sends the magic link.** `Vouch.Link` mints one and answers with it
   once; `Vouch.Redeem` spends it, and a person with a second factor is still
   asked for it, because a link that skipped one would turn a mailbox into an
