@@ -115,16 +115,40 @@ alone; nothing reads them.
 - **`IssueService` on the data plane** — a customer minting their own `rt_`.
   Additive: no existing caller sees a difference, and a deployment with no
   `control:` reads no keys anyway.
+- **`SyncService.Watch`** — one stream an app holds open to hear that somebody
+  was suspended, signed out everywhere, or erased. Nothing changes until an app
+  calls it, and calling it needs `/roster.SyncService/Watch` on that app's key
+  and a **broker**: `watch.broker: none` answers `Unimplemented` rather than
+  opening a stream that never carries anything, and `memory` is right for one
+  replica and silently wrong for two. `docs/OPERATING.md`, "How an app hears
+  about it".
+- **`MeService.IssueKey` and `/RevokeKey`**, and `MeGetResponse.keys` — a
+  person minting and revoking their own `rt_`. Both need a role naming them,
+  so nobody gains anything until you grant it, and `MeService/IssueKey` is
+  refused for methods its caller does not hold like every other grant.
 
-Both new blocks are refused at startup if they name a window with nowhere to
-put what leaves it. That refusal is the point; see OPERATING.md.
+`audit:` and `holder:` are the two new **configuration** blocks, and each is
+refused at startup if it names a window with nowhere to put what leaves it.
+That refusal is the point; see OPERATING.md. Everything else above is surface
+that sits there until something calls it.
 
 ### And what a downstream app might notice
 
 - The **outbox** no longer carries `secret:` columns in its `patch` documents.
   If you drain it into something that expected a verifier there — nothing
   should — it is gone.
-- `Audit.domain` appears in the generated TypeScript (`ts/gen`). Additive.
+- `Audit.domain` appears in the generated TypeScript (`ts/gen`). Additive, and
+  so are `SyncService`, `SyncEvent` and the three new `MeService` shapes.
+- **`MeGetResponse` grew `keys`.** An app decoding it into a hand-written type
+  ignores the field; one that round-trips the message and asserts on its whole
+  contents will see it. `examples/sso` is the pattern either way — it mirrors
+  the shape it reads rather than sharing a type, so what roster answers with is
+  roster's to change.
+- If you copied `examples/sso`'s **delegation method list**, it grew by two
+  (`MeService/IssueKey`, `/RevokeKey`). A delegation narrows to the
+  intersection of what the app asks for and what the person holds, so asking
+  for less than you draw is what makes a button refuse when pressed — and
+  asking for more than you draw costs nothing.
 
 ## Checking before you commit to it
 
