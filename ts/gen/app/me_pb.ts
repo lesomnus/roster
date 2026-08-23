@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/me.proto.
  */
 export const file_app_me: GenFile = /*@__PURE__*/
-  fileDesc("CgxhcHAvbWUucHJvdG8SBnJvc3RlciIOCgxNZUdldFJlcXVlc3QiMgoNTWVMaW5rUmVxdWVzdBIQCghwcm92aWRlchgBIAEoCRIPCgdzdWJqZWN0GAIgASgJIhwKDk1lTGlua1Jlc3BvbnNlEgoKAmlkGAEgASgMIh0KD01lVW5saW5rUmVxdWVzdBIKCgJpZBgBIAEoDCISChBNZVVubGlua1Jlc3BvbnNlIhwKGk1lU2lnbk91dEV2ZXJ5d2hlcmVSZXF1ZXN0IlMKG01lU2lnbk91dEV2ZXJ5d2hlcmVSZXNwb25zZRI0ChBkYXRlX2ludmFsaWRhdGVkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKXAgoNTWVHZXRSZXNwb25zZRIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAwSDQoFYWxpYXMYBCABKAkSDAoEbmFtZRgFIAEoCRIfCgZlbWFpbHMYCCADKAsyDy5yb3N0ZXIuTWVFbWFpbBIdCgV0ZWFtcxgJIAMoCzIOLnJvc3Rlci5NZVRlYW0SDwoHbWV0aG9kcxgKIAMoCRINCgVzaXRlcxgLIAMoDBISCgpldmVyeV9zaXRlGAwgASgIEioKCmlkZW50aXRpZXMYDSADKAsyFi5yb3N0ZXIuU2lnbkluSWRlbnRpdHkSLQoLY3JlZGVudGlhbHMYDiADKAsyGC5yb3N0ZXIuU2lnbkluQ3JlZGVudGlhbCJxCg5TaWduSW5JZGVudGl0eRIKCgJpZBgBIAEoDBIQCghwcm92aWRlchgIIAEoCRIPCgdzdWJqZWN0GAkgASgJEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAikQEKEFNpZ25JbkNyZWRlbnRpYWwSDAoEa2luZBgIIAEoCRIMCgRuYW1lGAUgASgJEjAKDGRhdGVfcm90YXRlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLwoLZGF0ZV9sb2NrZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIk0KB01lRW1haWwSDwoHYWRkcmVzcxgIIAEoCRIxCg1kYXRlX3ZlcmlmaWVkGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJhCgZNZVRlYW0SCgoCaWQYASABKAwSDQoFYWxpYXMYBCABKAkSDAoEbmFtZRgFIAEoCRIMCgRzaXRlGAggASgMEhIKCnNpdGVfYWxpYXMYCSABKAkSDAoEcm9sZRgKIAEoCTKRAgoJTWVTZXJ2aWNlEjIKA0dldBIULnJvc3Rlci5NZUdldFJlcXVlc3QaFS5yb3N0ZXIuTWVHZXRSZXNwb25zZRI7CgZVbmxpbmsSFy5yb3N0ZXIuTWVVbmxpbmtSZXF1ZXN0Ghgucm9zdGVyLk1lVW5saW5rUmVzcG9uc2USXAoRU2lnbk91dEV2ZXJ5d2hlcmUSIi5yb3N0ZXIuTWVTaWduT3V0RXZlcnl3aGVyZVJlcXVlc3QaIy5yb3N0ZXIuTWVTaWduT3V0RXZlcnl3aGVyZVJlc3BvbnNlEjUKBExpbmsSFS5yb3N0ZXIuTWVMaW5rUmVxdWVzdBoWLnJvc3Rlci5NZUxpbmtSZXNwb25zZUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp]);
+  fileDesc("CgxhcHAvbWUucHJvdG8SBnJvc3RlciIOCgxNZUdldFJlcXVlc3QiMgoNTWVMaW5rUmVxdWVzdBIQCghwcm92aWRlchgBIAEoCRIPCgdzdWJqZWN0GAIgASgJIhwKDk1lTGlua1Jlc3BvbnNlEgoKAmlkGAEgASgMIh0KD01lVW5saW5rUmVxdWVzdBIKCgJpZBgBIAEoDCISChBNZVVubGlua1Jlc3BvbnNlIhwKGk1lU2lnbk91dEV2ZXJ5d2hlcmVSZXF1ZXN0IlMKG01lU2lnbk91dEV2ZXJ5d2hlcmVSZXNwb25zZRI0ChBkYXRlX2ludmFsaWRhdGVkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKXAgoNTWVHZXRSZXNwb25zZRIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAwSDQoFYWxpYXMYBCABKAkSDAoEbmFtZRgFIAEoCRIfCgZlbWFpbHMYCCADKAsyDy5yb3N0ZXIuTWVFbWFpbBIdCgV0ZWFtcxgJIAMoCzIOLnJvc3Rlci5NZVRlYW0SDwoHbWV0aG9kcxgKIAMoCRINCgVzaXRlcxgLIAMoDBISCgpldmVyeV9zaXRlGAwgASgIEioKCmlkZW50aXRpZXMYDSADKAsyFi5yb3N0ZXIuU2lnbkluSWRlbnRpdHkSLQoLY3JlZGVudGlhbHMYDiADKAsyGC5yb3N0ZXIuU2lnbkluQ3JlZGVudGlhbCKYAQoJU2lnbkluS2V5EgoKAmlkGAEgASgMEg0KBWFsaWFzGAQgASgJEg8KB21ldGhvZHMYCCADKAkSMAoMZGF0ZV9leHBpcmVzGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBItCglkYXRlX3VzZWQYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wInEKDlNpZ25JbklkZW50aXR5EgoKAmlkGAEgASgMEhAKCHByb3ZpZGVyGAggASgJEg8KB3N1YmplY3QYCSABKAkSMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKRAQoQU2lnbkluQ3JlZGVudGlhbBIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSMAoMZGF0ZV9yb3RhdGVkGAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIvCgtkYXRlX2xvY2tlZBgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiTQoHTWVFbWFpbBIPCgdhZGRyZXNzGAggASgJEjEKDWRhdGVfdmVyaWZpZWQYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wImEKBk1lVGVhbRIKCgJpZBgBIAEoDBINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBHNpdGUYCCABKAwSEgoKc2l0ZV9hbGlhcxgJIAEoCRIMCgRyb2xlGAogASgJMpECCglNZVNlcnZpY2USMgoDR2V0EhQucm9zdGVyLk1lR2V0UmVxdWVzdBoVLnJvc3Rlci5NZUdldFJlc3BvbnNlEjsKBlVubGluaxIXLnJvc3Rlci5NZVVubGlua1JlcXVlc3QaGC5yb3N0ZXIuTWVVbmxpbmtSZXNwb25zZRJcChFTaWduT3V0RXZlcnl3aGVyZRIiLnJvc3Rlci5NZVNpZ25PdXRFdmVyeXdoZXJlUmVxdWVzdBojLnJvc3Rlci5NZVNpZ25PdXRFdmVyeXdoZXJlUmVzcG9uc2USNQoETGluaxIVLnJvc3Rlci5NZUxpbmtSZXF1ZXN0GhYucm9zdGVyLk1lTGlua1Jlc3BvbnNlQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp]);
 
 /**
  * @generated from message roster.MeGetRequest
@@ -268,7 +268,68 @@ export const MeGetResponseSchema: GenMessage<MeGetResponse> = /*@__PURE__*/
  * `HolderService.SignsIn` about somebody else. Two shapes saying one thing is
  * two that drift, and the drift would be between what a person sees about
  * themselves and what an operator sees about them.
+ * SignInKey is one API key that acts as somebody.
  *
+ * A key is a way in like the other two, and it is the one a screen most needs
+ * help to show: `ApiKeyService` is unregistered everywhere -- its generated
+ * `Get` answers with the verifier -- so a page listing one person's keys by
+ * reading and sifting would be reading every customer's to draw one. The same
+ * sentence `HolderService.SignsIn` already carries about identities.
+ *
+ * What is **not** here is the secret, and there is nowhere it could come from:
+ * what is stored is a hash. A key is readable exactly once, at the moment
+ * `IssueService` mints it.
+ *
+ * @generated from message roster.SignInKey
+ */
+export type SignInKey = Message<"roster.SignInKey"> & {
+  /**
+   * The row, so that a screen with a revoke button has something to name.
+   *
+   * @generated from field: bytes id = 1;
+   */
+  id: Uint8Array;
+
+  /**
+   * What somebody called it when deciding whether to revoke it.
+   *
+   * @generated from field: string alias = 4;
+   */
+  alias: string;
+
+  /**
+   * What it may be used for, which is the whole of what a key **is** beyond
+   * the person it hangs off: an `rt_` is never wider than them, and this is
+   * how much narrower it was made.
+   *
+   * @generated from field: repeated string methods = 8;
+   */
+  methods: string[];
+
+  /**
+   * When it stops working, unset for one that does not.
+   *
+   * @generated from field: google.protobuf.Timestamp date_expires = 9;
+   */
+  dateExpires?: Timestamp | undefined;
+
+  /**
+   * When it was last used, unset for never -- which is the field that answers
+   * *is anything still calling with this* before somebody revokes it.
+   *
+   * @generated from field: google.protobuf.Timestamp date_used = 10;
+   */
+  dateUsed?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.SignInKey.
+ * Use `create(SignInKeySchema)` to create a new message.
+ */
+export const SignInKeySchema: GenMessage<SignInKey> = /*@__PURE__*/
+  messageDesc(file_app_me, 8);
+
+/**
  * @generated from message roster.SignInIdentity
  */
 export type SignInIdentity = Message<"roster.SignInIdentity"> & {
@@ -309,7 +370,7 @@ export type SignInIdentity = Message<"roster.SignInIdentity"> & {
  * Use `create(SignInIdentitySchema)` to create a new message.
  */
 export const SignInIdentitySchema: GenMessage<SignInIdentity> = /*@__PURE__*/
-  messageDesc(file_app_me, 8);
+  messageDesc(file_app_me, 9);
 
 /**
  * SignInCredential is one secret roster holds for somebody, and never the secret.
@@ -360,7 +421,7 @@ export type SignInCredential = Message<"roster.SignInCredential"> & {
  * Use `create(SignInCredentialSchema)` to create a new message.
  */
 export const SignInCredentialSchema: GenMessage<SignInCredential> = /*@__PURE__*/
-  messageDesc(file_app_me, 9);
+  messageDesc(file_app_me, 10);
 
 /**
  * @generated from message roster.MeEmail
@@ -382,7 +443,7 @@ export type MeEmail = Message<"roster.MeEmail"> & {
  * Use `create(MeEmailSchema)` to create a new message.
  */
 export const MeEmailSchema: GenMessage<MeEmail> = /*@__PURE__*/
-  messageDesc(file_app_me, 10);
+  messageDesc(file_app_me, 11);
 
 /**
  * @generated from message roster.MeTeam
@@ -426,7 +487,7 @@ export type MeTeam = Message<"roster.MeTeam"> & {
  * Use `create(MeTeamSchema)` to create a new message.
  */
 export const MeTeamSchema: GenMessage<MeTeam> = /*@__PURE__*/
-  messageDesc(file_app_me, 11);
+  messageDesc(file_app_me, 12);
 
 /**
  * MeService answers what a caller is, in one round trip.

@@ -555,6 +555,57 @@ somebody reading the code to decide what is safe.
   credentials -- but *local is Ungated* was written down and *and general writes
   are open there* was not.
 
+### D51 · The screen a key is minted from, and the read it needed first
+
+D48 built `IssueService` on the data plane and left the last line of that entry
+true: *nothing in `ts/src` calls it.* An RPC with no screen is the shape PLAN.md
+keeps deciding not to build, so it is built.
+
+#### It needed a read that did not exist
+
+A console cannot list somebody's keys. `ApiKeyService` is unregistered
+everywhere -- its generated `Get` answers with the verifier -- so there is no
+served road to a key row at all, and a page that read every key in the tenant
+and sifted would be reading every customer's to draw one.
+
+That is the sentence `HolderService.SignsIn` already carries about identities
+and credentials, and a key is a way in by the same definition: it resolves to
+its holder, so a call made with it is made as them. So `SignsIn` answers with
+keys too, written out field by field -- the verifier **absent** rather than
+deselected, which is the statement rather than a `Select` somebody could get
+wrong.
+
+And `ApiKey` gains a `by: holder` filter, for `Credential`'s reason in the same
+words: the service is unregistered and closed to the batch, so the only thing
+that can ask is this process.
+
+#### And a revoke, because a list with no button sends somebody to a shell
+
+`roster key revoke` reaches the deployment's own `rk_` keys and not a tenant's.
+`HolderService.RevokeKey` is the narrow one: a *which* within a *whose*, where
+the reference resolves the person through the wall first and the identifier
+names the key, so one that is not theirs is `NotFound` before anything is
+erased.
+
+Its own method rather than a field, for `Disable` and `Enable`'s reason: a role
+is a list of methods, so *may see how somebody signs in* is a different grant
+from *may take a way in away*.
+
+#### Served where the console is
+
+`IssueService` is on the admin port as well as the data plane -- the same
+service, the same rows, the same `rt_`. `admin` is the data plane with no wall,
+which is what that port is; what still runs is `server/core`, so the two rules a
+key is held to are checked whichever port asked.
+
+#### And a flake that had been waiting
+
+`mayAnything` named its role after the first eight characters of an identifier.
+A `pdid` is a UUIDv7, so those eight are the **timestamp** -- two holders made
+in the same millisecond collided on a unique alias, and a test that creates two
+people and gives each a role is an ordinary test. It failed only on a machine
+fast enough, which is the worst way for a harness to be wrong.
+
 ### D50 · Adding a way in, and the half of §4 nobody had drawn
 
 §4 named it and nothing routed it: *a person removes one and signs out

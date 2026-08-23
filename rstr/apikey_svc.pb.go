@@ -1756,10 +1756,11 @@ func (b0 ApiKeyListResponse_builder) Build() *ApiKeyListResponse {
 }
 
 type ApiKeyFilter struct {
-	state          protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref *ApiKeyRef             `protobuf:"bytes,1,opt,name=ref"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref    *ApiKeyRef             `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Holder *HolderRef             `protobuf:"bytes,2,opt,name=holder"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *ApiKeyFilter) Reset() {
@@ -1794,8 +1795,19 @@ func (x *ApiKeyFilter) GetRef() *ApiKeyRef {
 	return nil
 }
 
+func (x *ApiKeyFilter) GetHolder() *HolderRef {
+	if x != nil {
+		return x.xxx_hidden_Holder
+	}
+	return nil
+}
+
 func (x *ApiKeyFilter) SetRef(v *ApiKeyRef) {
 	x.xxx_hidden_Ref = v
+}
+
+func (x *ApiKeyFilter) SetHolder(v *HolderRef) {
+	x.xxx_hidden_Holder = v
 }
 
 func (x *ApiKeyFilter) HasRef() bool {
@@ -1805,14 +1817,26 @@ func (x *ApiKeyFilter) HasRef() bool {
 	return x.xxx_hidden_Ref != nil
 }
 
+func (x *ApiKeyFilter) HasHolder() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Holder != nil
+}
+
 func (x *ApiKeyFilter) ClearRef() {
 	x.xxx_hidden_Ref = nil
+}
+
+func (x *ApiKeyFilter) ClearHolder() {
+	x.xxx_hidden_Holder = nil
 }
 
 type ApiKeyFilter_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref *ApiKeyRef
+	Ref    *ApiKeyRef
+	Holder *HolderRef
 }
 
 func (b0 ApiKeyFilter_builder) Build() *ApiKeyFilter {
@@ -1820,6 +1844,7 @@ func (b0 ApiKeyFilter_builder) Build() *ApiKeyFilter {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Holder = b.Holder
 	return m0
 }
 
@@ -1887,9 +1912,10 @@ const file_app_apikey_svc_g_proto_rawDesc = "" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"U\n" +
 	"\x12ApiKeyListResponse\x12$\n" +
 	"\x05items\x18\x01 \x03(\v2\x0e.roster.ApiKeyR\x05items\x12\x19\n" +
-	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"3\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"^\n" +
 	"\fApiKeyFilter\x12#\n" +
-	"\x03ref\x18\x01 \x01(\v2\x11.roster.ApiKeyRefR\x03ref2\xd3\x02\n" +
+	"\x03ref\x18\x01 \x01(\v2\x11.roster.ApiKeyRefR\x03ref\x12)\n" +
+	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder2\xd3\x02\n" +
 	"\rApiKeyService\x12/\n" +
 	"\x03Add\x12\x18.roster.ApiKeyAddRequest\x1a\x0e.roster.ApiKey\x12/\n" +
 	"\x03Get\x12\x18.roster.ApiKeyGetRequest\x1a\x0e.roster.ApiKey\x123\n" +
@@ -1936,23 +1962,24 @@ var file_app_apikey_svc_g_proto_depIdxs = []int32{
 	10, // 15: roster.ApiKeyListRequest.filters:type_name -> roster.ApiKeyFilter
 	15, // 16: roster.ApiKeyListResponse.items:type_name -> roster.ApiKey
 	2,  // 17: roster.ApiKeyFilter.ref:type_name -> roster.ApiKeyRef
-	0,  // 18: roster.ApiKeyService.Add:input_type -> roster.ApiKeyAddRequest
-	1,  // 19: roster.ApiKeyService.Get:input_type -> roster.ApiKeyGetRequest
-	5,  // 20: roster.ApiKeyService.Patch:input_type -> roster.ApiKeyPatchRequest
-	6,  // 21: roster.ApiKeyService.Apply:input_type -> roster.ApiKeyApplyRequest
-	2,  // 22: roster.ApiKeyService.Erase:input_type -> roster.ApiKeyRef
-	8,  // 23: roster.ApiKeyService.List:input_type -> roster.ApiKeyListRequest
-	15, // 24: roster.ApiKeyService.Add:output_type -> roster.ApiKey
-	15, // 25: roster.ApiKeyService.Get:output_type -> roster.ApiKey
-	15, // 26: roster.ApiKeyService.Patch:output_type -> roster.ApiKey
-	15, // 27: roster.ApiKeyService.Apply:output_type -> roster.ApiKey
-	7,  // 28: roster.ApiKeyService.Erase:output_type -> roster.ApiKeyEraseResponse
-	9,  // 29: roster.ApiKeyService.List:output_type -> roster.ApiKeyListResponse
-	24, // [24:30] is the sub-list for method output_type
-	18, // [18:24] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	11, // 18: roster.ApiKeyFilter.holder:type_name -> roster.HolderRef
+	0,  // 19: roster.ApiKeyService.Add:input_type -> roster.ApiKeyAddRequest
+	1,  // 20: roster.ApiKeyService.Get:input_type -> roster.ApiKeyGetRequest
+	5,  // 21: roster.ApiKeyService.Patch:input_type -> roster.ApiKeyPatchRequest
+	6,  // 22: roster.ApiKeyService.Apply:input_type -> roster.ApiKeyApplyRequest
+	2,  // 23: roster.ApiKeyService.Erase:input_type -> roster.ApiKeyRef
+	8,  // 24: roster.ApiKeyService.List:input_type -> roster.ApiKeyListRequest
+	15, // 25: roster.ApiKeyService.Add:output_type -> roster.ApiKey
+	15, // 26: roster.ApiKeyService.Get:output_type -> roster.ApiKey
+	15, // 27: roster.ApiKeyService.Patch:output_type -> roster.ApiKey
+	15, // 28: roster.ApiKeyService.Apply:output_type -> roster.ApiKey
+	7,  // 29: roster.ApiKeyService.Erase:output_type -> roster.ApiKeyEraseResponse
+	9,  // 30: roster.ApiKeyService.List:output_type -> roster.ApiKeyListResponse
+	25, // [25:31] is the sub-list for method output_type
+	19, // [19:25] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_app_apikey_svc_g_proto_init() }

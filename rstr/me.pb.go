@@ -682,6 +682,163 @@ func (b0 MeGetResponse_builder) Build() *MeGetResponse {
 // `HolderService.SignsIn` about somebody else. Two shapes saying one thing is
 // two that drift, and the drift would be between what a person sees about
 // themselves and what an operator sees about them.
+// SignInKey is one API key that acts as somebody.
+//
+// A key is a way in like the other two, and it is the one a screen most needs
+// help to show: `ApiKeyService` is unregistered everywhere -- its generated
+// `Get` answers with the verifier -- so a page listing one person's keys by
+// reading and sifting would be reading every customer's to draw one. The same
+// sentence `HolderService.SignsIn` already carries about identities.
+//
+// What is **not** here is the secret, and there is nowhere it could come from:
+// what is stored is a hash. A key is readable exactly once, at the moment
+// `IssueService` mints it.
+type SignInKey struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Alias       string                 `protobuf:"bytes,4,opt,name=alias"`
+	xxx_hidden_Methods     []string               `protobuf:"bytes,8,rep,name=methods"`
+	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_DateUsed    *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=date_used,json=dateUsed"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *SignInKey) Reset() {
+	*x = SignInKey{}
+	mi := &file_app_me_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SignInKey) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SignInKey) ProtoMessage() {}
+
+func (x *SignInKey) ProtoReflect() protoreflect.Message {
+	mi := &file_app_me_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SignInKey) GetId() []byte {
+	if x != nil {
+		return x.xxx_hidden_Id
+	}
+	return nil
+}
+
+func (x *SignInKey) GetAlias() string {
+	if x != nil {
+		return x.xxx_hidden_Alias
+	}
+	return ""
+}
+
+func (x *SignInKey) GetMethods() []string {
+	if x != nil {
+		return x.xxx_hidden_Methods
+	}
+	return nil
+}
+
+func (x *SignInKey) GetDateExpires() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateExpires
+	}
+	return nil
+}
+
+func (x *SignInKey) GetDateUsed() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateUsed
+	}
+	return nil
+}
+
+func (x *SignInKey) SetId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Id = v
+}
+
+func (x *SignInKey) SetAlias(v string) {
+	x.xxx_hidden_Alias = v
+}
+
+func (x *SignInKey) SetMethods(v []string) {
+	x.xxx_hidden_Methods = v
+}
+
+func (x *SignInKey) SetDateExpires(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpires = v
+}
+
+func (x *SignInKey) SetDateUsed(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateUsed = v
+}
+
+func (x *SignInKey) HasDateExpires() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateExpires != nil
+}
+
+func (x *SignInKey) HasDateUsed() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateUsed != nil
+}
+
+func (x *SignInKey) ClearDateExpires() {
+	x.xxx_hidden_DateExpires = nil
+}
+
+func (x *SignInKey) ClearDateUsed() {
+	x.xxx_hidden_DateUsed = nil
+}
+
+type SignInKey_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The row, so that a screen with a revoke button has something to name.
+	Id []byte
+	// What somebody called it when deciding whether to revoke it.
+	Alias string
+	// What it may be used for, which is the whole of what a key **is** beyond
+	// the person it hangs off: an `rt_` is never wider than them, and this is
+	// how much narrower it was made.
+	Methods []string
+	// When it stops working, unset for one that does not.
+	DateExpires *timestamppb.Timestamp
+	// When it was last used, unset for never -- which is the field that answers
+	// *is anything still calling with this* before somebody revokes it.
+	DateUsed *timestamppb.Timestamp
+}
+
+func (b0 SignInKey_builder) Build() *SignInKey {
+	m0 := &SignInKey{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Id = b.Id
+	x.xxx_hidden_Alias = b.Alias
+	x.xxx_hidden_Methods = b.Methods
+	x.xxx_hidden_DateExpires = b.DateExpires
+	x.xxx_hidden_DateUsed = b.DateUsed
+	return m0
+}
+
 type SignInIdentity struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
@@ -694,7 +851,7 @@ type SignInIdentity struct {
 
 func (x *SignInIdentity) Reset() {
 	*x = SignInIdentity{}
-	mi := &file_app_me_proto_msgTypes[8]
+	mi := &file_app_me_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -706,7 +863,7 @@ func (x *SignInIdentity) String() string {
 func (*SignInIdentity) ProtoMessage() {}
 
 func (x *SignInIdentity) ProtoReflect() protoreflect.Message {
-	mi := &file_app_me_proto_msgTypes[8]
+	mi := &file_app_me_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -821,7 +978,7 @@ type SignInCredential struct {
 
 func (x *SignInCredential) Reset() {
 	*x = SignInCredential{}
-	mi := &file_app_me_proto_msgTypes[9]
+	mi := &file_app_me_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -833,7 +990,7 @@ func (x *SignInCredential) String() string {
 func (*SignInCredential) ProtoMessage() {}
 
 func (x *SignInCredential) ProtoReflect() protoreflect.Message {
-	mi := &file_app_me_proto_msgTypes[9]
+	mi := &file_app_me_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -948,7 +1105,7 @@ type MeEmail struct {
 
 func (x *MeEmail) Reset() {
 	*x = MeEmail{}
-	mi := &file_app_me_proto_msgTypes[10]
+	mi := &file_app_me_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -960,7 +1117,7 @@ func (x *MeEmail) String() string {
 func (*MeEmail) ProtoMessage() {}
 
 func (x *MeEmail) ProtoReflect() protoreflect.Message {
-	mi := &file_app_me_proto_msgTypes[10]
+	mi := &file_app_me_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1034,7 +1191,7 @@ type MeTeam struct {
 
 func (x *MeTeam) Reset() {
 	*x = MeTeam{}
-	mi := &file_app_me_proto_msgTypes[11]
+	mi := &file_app_me_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1046,7 +1203,7 @@ func (x *MeTeam) String() string {
 func (*MeTeam) ProtoMessage() {}
 
 func (x *MeTeam) ProtoReflect() protoreflect.Message {
-	mi := &file_app_me_proto_msgTypes[11]
+	mi := &file_app_me_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1186,7 +1343,14 @@ const file_app_me_proto_rawDesc = "" +
 	"\n" +
 	"identities\x18\r \x03(\v2\x16.roster.SignInIdentityR\n" +
 	"identities\x12:\n" +
-	"\vcredentials\x18\x0e \x03(\v2\x18.roster.SignInCredentialR\vcredentials\"\x95\x01\n" +
+	"\vcredentials\x18\x0e \x03(\v2\x18.roster.SignInCredentialR\vcredentials\"\xc3\x01\n" +
+	"\tSignInKey\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x14\n" +
+	"\x05alias\x18\x04 \x01(\tR\x05alias\x12\x18\n" +
+	"\amethods\x18\b \x03(\tR\amethods\x12=\n" +
+	"\fdate_expires\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\x127\n" +
+	"\tdate_used\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\bdateUsed\"\x95\x01\n" +
 	"\x0eSignInIdentity\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1a\n" +
 	"\bprovider\x18\b \x01(\tR\bprovider\x12\x18\n" +
@@ -1216,7 +1380,7 @@ const file_app_me_proto_rawDesc = "" +
 	"\x11SignOutEverywhere\x12\".roster.MeSignOutEverywhereRequest\x1a#.roster.MeSignOutEverywhereResponse\x125\n" +
 	"\x04Link\x12\x15.roster.MeLinkRequest\x1a\x16.roster.MeLinkResponseB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_app_me_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_app_me_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_app_me_proto_goTypes = []any{
 	(*MeGetRequest)(nil),                // 0: roster.MeGetRequest
 	(*MeLinkRequest)(nil),               // 1: roster.MeLinkRequest
@@ -1226,35 +1390,38 @@ var file_app_me_proto_goTypes = []any{
 	(*MeSignOutEverywhereRequest)(nil),  // 5: roster.MeSignOutEverywhereRequest
 	(*MeSignOutEverywhereResponse)(nil), // 6: roster.MeSignOutEverywhereResponse
 	(*MeGetResponse)(nil),               // 7: roster.MeGetResponse
-	(*SignInIdentity)(nil),              // 8: roster.SignInIdentity
-	(*SignInCredential)(nil),            // 9: roster.SignInCredential
-	(*MeEmail)(nil),                     // 10: roster.MeEmail
-	(*MeTeam)(nil),                      // 11: roster.MeTeam
-	(*timestamppb.Timestamp)(nil),       // 12: google.protobuf.Timestamp
+	(*SignInKey)(nil),                   // 8: roster.SignInKey
+	(*SignInIdentity)(nil),              // 9: roster.SignInIdentity
+	(*SignInCredential)(nil),            // 10: roster.SignInCredential
+	(*MeEmail)(nil),                     // 11: roster.MeEmail
+	(*MeTeam)(nil),                      // 12: roster.MeTeam
+	(*timestamppb.Timestamp)(nil),       // 13: google.protobuf.Timestamp
 }
 var file_app_me_proto_depIdxs = []int32{
-	12, // 0: roster.MeSignOutEverywhereResponse.date_invalidated:type_name -> google.protobuf.Timestamp
-	10, // 1: roster.MeGetResponse.emails:type_name -> roster.MeEmail
-	11, // 2: roster.MeGetResponse.teams:type_name -> roster.MeTeam
-	8,  // 3: roster.MeGetResponse.identities:type_name -> roster.SignInIdentity
-	9,  // 4: roster.MeGetResponse.credentials:type_name -> roster.SignInCredential
-	12, // 5: roster.SignInIdentity.date_created:type_name -> google.protobuf.Timestamp
-	12, // 6: roster.SignInCredential.date_rotated:type_name -> google.protobuf.Timestamp
-	12, // 7: roster.SignInCredential.date_locked:type_name -> google.protobuf.Timestamp
-	12, // 8: roster.MeEmail.date_verified:type_name -> google.protobuf.Timestamp
-	0,  // 9: roster.MeService.Get:input_type -> roster.MeGetRequest
-	3,  // 10: roster.MeService.Unlink:input_type -> roster.MeUnlinkRequest
-	5,  // 11: roster.MeService.SignOutEverywhere:input_type -> roster.MeSignOutEverywhereRequest
-	1,  // 12: roster.MeService.Link:input_type -> roster.MeLinkRequest
-	7,  // 13: roster.MeService.Get:output_type -> roster.MeGetResponse
-	4,  // 14: roster.MeService.Unlink:output_type -> roster.MeUnlinkResponse
-	6,  // 15: roster.MeService.SignOutEverywhere:output_type -> roster.MeSignOutEverywhereResponse
-	2,  // 16: roster.MeService.Link:output_type -> roster.MeLinkResponse
-	13, // [13:17] is the sub-list for method output_type
-	9,  // [9:13] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	13, // 0: roster.MeSignOutEverywhereResponse.date_invalidated:type_name -> google.protobuf.Timestamp
+	11, // 1: roster.MeGetResponse.emails:type_name -> roster.MeEmail
+	12, // 2: roster.MeGetResponse.teams:type_name -> roster.MeTeam
+	9,  // 3: roster.MeGetResponse.identities:type_name -> roster.SignInIdentity
+	10, // 4: roster.MeGetResponse.credentials:type_name -> roster.SignInCredential
+	13, // 5: roster.SignInKey.date_expires:type_name -> google.protobuf.Timestamp
+	13, // 6: roster.SignInKey.date_used:type_name -> google.protobuf.Timestamp
+	13, // 7: roster.SignInIdentity.date_created:type_name -> google.protobuf.Timestamp
+	13, // 8: roster.SignInCredential.date_rotated:type_name -> google.protobuf.Timestamp
+	13, // 9: roster.SignInCredential.date_locked:type_name -> google.protobuf.Timestamp
+	13, // 10: roster.MeEmail.date_verified:type_name -> google.protobuf.Timestamp
+	0,  // 11: roster.MeService.Get:input_type -> roster.MeGetRequest
+	3,  // 12: roster.MeService.Unlink:input_type -> roster.MeUnlinkRequest
+	5,  // 13: roster.MeService.SignOutEverywhere:input_type -> roster.MeSignOutEverywhereRequest
+	1,  // 14: roster.MeService.Link:input_type -> roster.MeLinkRequest
+	7,  // 15: roster.MeService.Get:output_type -> roster.MeGetResponse
+	4,  // 16: roster.MeService.Unlink:output_type -> roster.MeUnlinkResponse
+	6,  // 17: roster.MeService.SignOutEverywhere:output_type -> roster.MeSignOutEverywhereResponse
+	2,  // 18: roster.MeService.Link:output_type -> roster.MeLinkResponse
+	15, // [15:19] is the sub-list for method output_type
+	11, // [11:15] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_app_me_proto_init() }
@@ -1268,7 +1435,7 @@ func file_app_me_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_me_proto_rawDesc), len(file_app_me_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

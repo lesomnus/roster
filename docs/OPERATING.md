@@ -895,8 +895,8 @@ Three things to know before handing these out:
   one at a time; killing somebody's scripts silently under "sign out everywhere"
   is an outage with nothing saying why. Erase the `ApiKey` row, which is a
   shell: `roster key revoke` reaches the deployment's own `rk_` keys, and a
-  tenant's `rt_` ones are erased through `ApiKeyService` on a port that serves
-  it, or at a shell.
+  tenant's `rt_` ones go through `HolderService.RevokeKey` -- which the console
+  draws beside the list, since `ApiKeyService` is unregistered everywhere.
 - **They do not require a version.** Every other write here is a
   compare-and-swap; these take one if you have read the row and proceed without
   one if you have not, because a suspension that fails when somebody edits a
@@ -1050,12 +1050,11 @@ Nothing written down is plaintext, and it warns once.
 
 ## What is not here
 
-- **A screen for a person's own `rt_` key.** The RPC is there —
-  `IssueService/IssueKey` on the data plane, with both rules on it — and nothing
-  in `ts/src` calls it. The delegation path is exercised (`examples/sso` mounts
-  `frontdoor`, which calls `Vouch.Delegate` on a password sign-in and
-  `Vouch.Revoke` on sign-out); a key somebody keeps and pastes into a script is
-  the screen nobody has drawn.
+- **A screen where a person mints their *own* `rt_`.** An **operator** has one:
+  the console lists somebody's keys beside their passwords and providers, mints
+  one and revokes one. A person doing it for themselves is the self-service
+  version, and nothing draws it — `IssueService` is on the data plane for it,
+  and `MeService` would need the read.
 - **`Binding` cannot be re-pointed.** Its edges are immutable, so changing who
   holds what is a delete and an add. That is the safe direction and it is worth
   knowing before writing a console screen that looks like an edit.

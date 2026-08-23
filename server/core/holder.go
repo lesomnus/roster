@@ -5,7 +5,11 @@ import (
 	"time"
 
 	"github.com/lesomnus/z"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/lesomnus/payday/pderr"
 
 	app "github.com/lesomnus/roster/rstr"
 )
@@ -240,5 +244,87 @@ func (s coreHolder) SignsIn(ctx context.Context, req *app.HolderSignsInRequest) 
 		res.Credentials = append(res.Credentials, f.Build())
 	}
 
+	keys, err := s.Next().ApiKey().List(ctx, app.ApiKeyListRequest_builder{
+		Filters: []*app.ApiKeyFilter{
+			app.ApiKeyFilter_builder{Holder: who}.Build(),
+		},
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+	for _, k := range keys.GetItems() {
+		// Written out like the credentials above, and for the identical
+		// reason: the verifier is **absent** rather than deselected. There is
+		// no `Select` here to get wrong, and the shape is the statement.
+		f := app.SignInKey_builder{
+			Id:      k.GetId(),
+			Alias:   k.GetAlias(),
+			Methods: k.GetMethods(),
+		}
+		if u := k.GetDateExpires(); u != nil {
+			f.DateExpires = u
+		}
+		if u := k.GetDateUsed(); u != nil {
+			f.DateUsed = u
+		}
+
+		res.Keys = append(res.Keys, f.Build())
+	}
+
 	return res.Build(), nil
+}
+
+// RevokeKey ends one key of one person's, and refuses one that is not theirs.
+//
+// The read is the whole of the rule. `ApiKey` narrows by its holder's tenant,
+// so an identifier alone would be an argument that reaches every key in it --
+// and the reference is what makes this a *which* within a *whose*: the holder
+// is resolved through the wall first, exactly as `SignsIn` resolves it, so
+// somebody outside the caller's tenant is `NotFound` before any key is named.
+//
+// The erase goes through `Next()` and not a client, so it is recorded and
+// narrowed like every other write. There is no soft/hard question here: an
+// `ApiKey` is soft-erased like everything else, and what stops a revoked key
+// working is that `keys.findKey` reads through a reference that reaches only
+// the rows still there.
+func (s coreHolder) RevokeKey(ctx context.Context, req *app.HolderRevokeKeyRequest) (*app.HolderRevokeKeyResponse, error) {
+	v, err := s.HolderServiceServer.Get(ctx, app.HolderGetRequest_builder{
+		Ref:    req.GetRef(),
+		Select: app.HolderSelect_builder{}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+	if len(req.GetId()) == 0 {
+		return nil, pderr.Invalidf("id", "which key")
+	}
+
+	// Theirs, or nothing. The holder is the first predicate and the identifier
+	// the second, which is the order that makes the answer about the person --
+	// the same order `MeService.Unlink` reads in, for the same reason.
+	vs, err := s.Next().ApiKey().List(ctx, app.ApiKeyListRequest_builder{
+		Filters: []*app.ApiKeyFilter{
+			app.ApiKeyFilter_builder{
+				Holder: app.HolderRef_builder{Id: v.GetId()}.Build(),
+			}.Build(),
+		},
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	for _, k := range vs.GetItems() {
+		if !bytesEq(k.GetId(), req.GetId()) {
+			continue
+		}
+
+		if _, err := s.Next().ApiKey().Erase(ctx,
+			app.ApiKeyRef_builder{Id: k.GetId()}.Build()); err != nil {
+			return nil, err
+		}
+
+		return app.HolderRevokeKeyResponse_builder{}.Build(), nil
+	}
+
+	return nil, status.Error(codes.NotFound, "no such key")
 }

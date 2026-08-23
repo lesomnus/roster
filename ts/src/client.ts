@@ -26,6 +26,7 @@ import { MeService } from '../gen/app/me_pb.js'
 import { TenantService } from '../gen/roster/payday/tenant_svc_pb.js'
 import { HolderService } from '../gen/roster/payday/holder_svc_pb.js'
 import { VouchService } from '../gen/app/vouch_pb.js'
+import { IssueService } from '../gen/app/issue_pb.js'
 import { BatchService } from '@lesomnus/payday/pdpb'
 
 export interface App {
@@ -73,11 +74,22 @@ export function app(transport: Transport): App {
 export interface Admin {
 	readonly holder: Client<typeof HolderService>
 	readonly vouch: Client<typeof VouchService>
+
+	/**
+	 * A key for one of a customer's people, answered once.
+	 *
+	 * The same service the data plane serves, on the same rows, minting the
+	 * same `rt_`. It is on this port too because this is the one a console
+	 * reaches, and a screen that lists somebody's keys and cannot add one is a
+	 * screen that sends an operator to a shell.
+	 */
+	readonly issue: Client<typeof IssueService>
 }
 
 export function admin(transport: Transport): Admin {
 	return {
 		holder: createClient(HolderService, transport),
 		vouch: createClient(VouchService, transport),
+		issue: createClient(IssueService, transport),
 	}
 }

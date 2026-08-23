@@ -86,7 +86,36 @@ service HolderService {
   // reason: it is a read of a holder, and a second service would be a second
   // name for the same rows.
   rpc SignsIn(HolderSignsInRequest) returns (HolderSignsInResponse);
+
+  // RevokeKey ends one key of one person's.
+  //
+  // Beside `SignsIn` for the same reason it is: `ApiKeyService` is unregistered
+  // everywhere, so there is no served road to a key row at all -- and a screen
+  // that lists somebody's keys and cannot end one is a screen that sends an
+  // operator to a shell, which is what `roster key revoke` is and which reaches
+  // only the **deployment's** own `rk_` keys.
+  //
+  // A *which* within a *whose*: the reference says the person, the identifier
+  // says the key, and one that is not theirs is `NotFound`. So this cannot be
+  // used to ask whether a key exists, and cannot be pointed past the wall the
+  // reference is narrowed by.
+  //
+  // Its own method rather than a field on `Update`, for the reason `Disable`
+  // and `Enable` are two: a role is a list of methods, so a deployment can only
+  // hand out what it can name -- and *may see how somebody signs in* is a
+  // different grant from *may take a way in away*.
+  rpc RevokeKey(HolderRevokeKeyRequest) returns (HolderRevokeKeyResponse);
 }
+
+message HolderRevokeKeyRequest {
+  // Whose.
+  HolderRef ref = 1;
+
+  // Which, by the identifier `SignsIn` answers with.
+  bytes id = 2;
+}
+
+message HolderRevokeKeyResponse {}
 
 message HolderSignsInRequest {
   HolderRef ref = 1;
@@ -98,6 +127,16 @@ message HolderSignsInResponse {
   // person sees about themselves and what an operator sees about them.
   repeated SignInIdentity identities = 13;
   repeated SignInCredential credentials = 14;
+
+  // And the keys that act as them, which `MeService` does not answer with.
+  //
+  // That asymmetry is deliberate rather than an omission. A person reading
+  // their own record is looking at what **they** sign in with; a key is
+  // something a machine of theirs holds, and the screen that lists one is the
+  // screen that revokes it -- which is an operator's, on the port with no wall.
+  // If a self-service version is wanted later it is a different decision with a
+  // different reason, and `me.proto` is where it would be argued.
+  repeated SignInKey keys = 15;
 }
 
 message HolderDisableRequest {

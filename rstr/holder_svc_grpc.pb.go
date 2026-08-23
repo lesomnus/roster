@@ -31,6 +31,7 @@ const (
 	HolderService_Enable_FullMethodName     = "/roster.HolderService/Enable"
 	HolderService_Invalidate_FullMethodName = "/roster.HolderService/Invalidate"
 	HolderService_SignsIn_FullMethodName    = "/roster.HolderService/SignsIn"
+	HolderService_RevokeKey_FullMethodName  = "/roster.HolderService/RevokeKey"
 )
 
 // HolderServiceClient is the client API for HolderService service.
@@ -122,6 +123,24 @@ type HolderServiceClient interface {
 	// reason: it is a read of a holder, and a second service would be a second
 	// name for the same rows.
 	SignsIn(ctx context.Context, in *HolderSignsInRequest, opts ...grpc.CallOption) (*HolderSignsInResponse, error)
+	// RevokeKey ends one key of one person's.
+	//
+	// Beside `SignsIn` for the same reason it is: `ApiKeyService` is unregistered
+	// everywhere, so there is no served road to a key row at all -- and a screen
+	// that lists somebody's keys and cannot end one is a screen that sends an
+	// operator to a shell, which is what `roster key revoke` is and which reaches
+	// only the **deployment's** own `rk_` keys.
+	//
+	// A *which* within a *whose*: the reference says the person, the identifier
+	// says the key, and one that is not theirs is `NotFound`. So this cannot be
+	// used to ask whether a key exists, and cannot be pointed past the wall the
+	// reference is narrowed by.
+	//
+	// Its own method rather than a field on `Update`, for the reason `Disable`
+	// and `Enable` are two: a role is a list of methods, so a deployment can only
+	// hand out what it can name -- and *may see how somebody signs in* is a
+	// different grant from *may take a way in away*.
+	RevokeKey(ctx context.Context, in *HolderRevokeKeyRequest, opts ...grpc.CallOption) (*HolderRevokeKeyResponse, error)
 }
 
 type holderServiceClient struct {
@@ -261,6 +280,16 @@ func (c *holderServiceClient) SignsIn(ctx context.Context, in *HolderSignsInRequ
 	return out, nil
 }
 
+func (c *holderServiceClient) RevokeKey(ctx context.Context, in *HolderRevokeKeyRequest, opts ...grpc.CallOption) (*HolderRevokeKeyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HolderRevokeKeyResponse)
+	err := c.cc.Invoke(ctx, HolderService_RevokeKey_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // HolderServiceServer is the server API for HolderService service.
 // All implementations must embed UnimplementedHolderServiceServer
 // for forward compatibility.
@@ -350,6 +379,24 @@ type HolderServiceServer interface {
 	// reason: it is a read of a holder, and a second service would be a second
 	// name for the same rows.
 	SignsIn(context.Context, *HolderSignsInRequest) (*HolderSignsInResponse, error)
+	// RevokeKey ends one key of one person's.
+	//
+	// Beside `SignsIn` for the same reason it is: `ApiKeyService` is unregistered
+	// everywhere, so there is no served road to a key row at all -- and a screen
+	// that lists somebody's keys and cannot end one is a screen that sends an
+	// operator to a shell, which is what `roster key revoke` is and which reaches
+	// only the **deployment's** own `rk_` keys.
+	//
+	// A *which* within a *whose*: the reference says the person, the identifier
+	// says the key, and one that is not theirs is `NotFound`. So this cannot be
+	// used to ask whether a key exists, and cannot be pointed past the wall the
+	// reference is narrowed by.
+	//
+	// Its own method rather than a field on `Update`, for the reason `Disable`
+	// and `Enable` are two: a role is a list of methods, so a deployment can only
+	// hand out what it can name -- and *may see how somebody signs in* is a
+	// different grant from *may take a way in away*.
+	RevokeKey(context.Context, *HolderRevokeKeyRequest) (*HolderRevokeKeyResponse, error)
 	mustEmbedUnimplementedHolderServiceServer()
 }
 
@@ -395,6 +442,9 @@ func (UnimplementedHolderServiceServer) Invalidate(context.Context, *HolderInval
 }
 func (UnimplementedHolderServiceServer) SignsIn(context.Context, *HolderSignsInRequest) (*HolderSignsInResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SignsIn not implemented")
+}
+func (UnimplementedHolderServiceServer) RevokeKey(context.Context, *HolderRevokeKeyRequest) (*HolderRevokeKeyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RevokeKey not implemented")
 }
 func (UnimplementedHolderServiceServer) mustEmbedUnimplementedHolderServiceServer() {}
 func (UnimplementedHolderServiceServer) testEmbeddedByValue()                       {}
@@ -626,6 +676,24 @@ func _HolderService_SignsIn_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HolderService_RevokeKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HolderRevokeKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HolderServiceServer).RevokeKey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HolderService_RevokeKey_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HolderServiceServer).RevokeKey(ctx, req.(*HolderRevokeKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // HolderService_ServiceDesc is the grpc.ServiceDesc for HolderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -676,6 +744,10 @@ var HolderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SignsIn",
 			Handler:    _HolderService_SignsIn_Handler,
+		},
+		{
+			MethodName: "RevokeKey",
+			Handler:    _HolderService_RevokeKey_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

@@ -146,7 +146,17 @@ message ApiKey {
         {field: {name: "date_created", number: 15}},
         {field: {name: "id", number: 1}}
       ]
-      by: [{name: "ref"}]
+      // And by holder, which is what "how does this person sign in" needs one
+      // service over: `HolderService.SignsIn` reads one person's rows, and a
+      // page that listed them by reading everything and sifting would be
+      // reading every customer's to draw one. It grants nothing -- this
+      // service is unregistered everywhere and closed to the batch, because
+      // its generated `Get` answers with the verifier, so the only thing that
+      // can ask is this process. The same sentence `Credential` carries.
+      by: [
+        {name: "ref"},
+        {name: "holder"}
+      ]
       size: 20
       max: 100
     }

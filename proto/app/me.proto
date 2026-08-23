@@ -230,6 +230,37 @@ message MeGetResponse {
 // `HolderService.SignsIn` about somebody else. Two shapes saying one thing is
 // two that drift, and the drift would be between what a person sees about
 // themselves and what an operator sees about them.
+// SignInKey is one API key that acts as somebody.
+//
+// A key is a way in like the other two, and it is the one a screen most needs
+// help to show: `ApiKeyService` is unregistered everywhere -- its generated
+// `Get` answers with the verifier -- so a page listing one person's keys by
+// reading and sifting would be reading every customer's to draw one. The same
+// sentence `HolderService.SignsIn` already carries about identities.
+//
+// What is **not** here is the secret, and there is nowhere it could come from:
+// what is stored is a hash. A key is readable exactly once, at the moment
+// `IssueService` mints it.
+message SignInKey {
+  // The row, so that a screen with a revoke button has something to name.
+  bytes id = 1;
+
+  // What somebody called it when deciding whether to revoke it.
+  string alias = 4;
+
+  // What it may be used for, which is the whole of what a key **is** beyond
+  // the person it hangs off: an `rt_` is never wider than them, and this is
+  // how much narrower it was made.
+  repeated string methods = 8;
+
+  // When it stops working, unset for one that does not.
+  google.protobuf.Timestamp date_expires = 9;
+
+  // When it was last used, unset for never -- which is the field that answers
+  // *is anything still calling with this* before somebody revokes it.
+  google.protobuf.Timestamp date_used = 10;
+}
+
 message SignInIdentity {
   // The row, so that a screen with a remove button has something to name.
   bytes id = 1;

@@ -147,4 +147,5 @@ message ApiKeyListResponse {
 
 message ApiKeyFilter {
   ApiKeyRef ref = 1;
+  HolderRef holder = 2;
 }

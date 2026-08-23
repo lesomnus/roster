@@ -190,8 +190,14 @@ func (b *built) mayAnything(actor, tenant pdid.Id) {
 	ctx := context.Background()
 
 	v, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
-		Tenant:  app.TenantRef_builder{Id: tenant.Bytes()}.Build(),
-		Alias:   "everything-" + actor.String()[:8],
+		Tenant: app.TenantRef_builder{Id: tenant.Bytes()}.Build(),
+		// The **whole** identifier, which took a flake to arrive at. It used to
+		// be the first eight characters, and a `pdid` is a UUIDv7 -- so those
+		// eight are the timestamp, and two holders made in the same
+		// millisecond collided on a unique alias. A test that creates two
+		// people and gives each an all-methods role is an ordinary test, and it
+		// failed only when the machine was fast enough.
+		Alias:   "everything-" + actor.String(),
 		Methods: []string{"/roster.*/*"},
 	}.Build())
 	if err != nil {

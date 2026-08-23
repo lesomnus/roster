@@ -35,7 +35,11 @@ import { useState } from 'react'
 
 import { useQuery } from '@lesomnus/payday/react'
 
-import type { SignInCredential, SignInIdentity } from '../gen/app/me_pb.js'
+import { create } from '@bufbuild/protobuf'
+
+import type { ApiKey } from '../gen/app/apikey_pb.js'
+import { SignInKeySchema } from '../gen/app/me_pb.js'
+import type { SignInCredential, SignInIdentity, SignInKey } from '../gen/app/me_pb.js'
 import type { Holder } from '../gen/roster/payday/holder_pb.js'
 import { HolderService } from '../gen/roster/payday/holder_svc_pb.js'
 import type { Admin } from './client.js'
@@ -47,6 +51,25 @@ function uuid(v: Uint8Array | undefined): string {
 	const h = [...v].map((b) => b.toString(16).padStart(2, '0')).join('')
 
 	return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`
+}
+
+/**
+ * keyOf is the row `IssueService` answers beside a token, as the table shows
+ * one.
+ *
+ * Two shapes for one thing, and this is the seam between them: `ApiKey` is the
+ * entity and `SignInKey` is what a narrow read answers with, because
+ * `ApiKeyService` is unregistered everywhere. Converting here rather than
+ * asking again is what keeps a freshly minted key on the screen that minted it.
+ */
+function keyOf(v: ApiKey): SignInKey {
+	return create(SignInKeySchema, {
+		id: v.id,
+		alias: v.alias,
+		methods: v.methods,
+		dateExpires: v.dateExpires,
+		dateUsed: v.dateUsed,
+	})
 }
 
 function when(v: { seconds: bigint } | undefined): string {
@@ -101,6 +124,14 @@ export function Person(props: {
 			<h4>{props.holder.alias}</h4>
 
 			<Ways ids={ids} creds={creds} />
+
+			<Keys
+				keys={vs.data?.keys ?? []}
+				holder={key}
+				admin={props.admin}
+				may={props.may}
+				say={say}
+			/>
 
 			<div className="state">
 				{disabled ? (
@@ -210,6 +241,150 @@ export function Person(props: {
  * schema permits — a `Holder` written by an operator before anything was
  * attached — and is not the same as a screen that failed to load.
  */
+/**
+ * Keys is what a machine of theirs holds, and the one act on it.
+ *
+ * # Why it is here and not on the customers screen
+ *
+ * A key **is** a way in: it resolves to its holder, so a call made with it is
+ * made as them. That is why it sits beside the passwords and the providers
+ * rather than in a table of its own -- and why revoking one is on the same
+ * screen as suspending somebody, which is the other way to stop a credential
+ * working.
+ *
+ * # What is not here
+ *
+ * The secret, and there is nowhere it could come from: what is stored is a
+ * hash. A key is readable exactly once, at the moment it is minted, and this
+ * page shows it then and never again.
+ */
+function Keys(props: {
+	keys: SignInKey[]
+	holder: Uint8Array
+	admin: Admin
+	may: (method: string) => boolean
+	say: (v: { kind: 'secret' | 'done' | 'bad'; text: string }) => void
+}): React.ReactNode {
+	const [alias, setAlias] = useState('')
+	const [methods, setMethods] = useState('')
+
+	// What this screen has done since it read, which is the ordinary shape for
+	// a page that changes a list it is showing. `useQuery` has no refetch and
+	// `SignsIn` is not a `List`, so nothing revalidates it -- and a table that
+	// still showed a key somebody just revoked would be worse than one that is
+	// a moment behind the server.
+	const [gone, setGone] = useState<string[]>([])
+	const [made, setMade] = useState<SignInKey[]>([])
+
+	const keys = [...props.keys.filter((v) => !gone.includes(uuid(v.id))), ...made]
+
+	const who = { key: { case: 'id' as const, value: props.holder } }
+	const bad = (e: unknown): void =>
+		props.say({ kind: 'bad', text: e instanceof Error ? e.message : 'no' })
+
+	return (
+		<section className="keys">
+			<h5>keys</h5>
+
+			{keys.length === 0 ? (
+				<p className="none">none — nothing of theirs calls this deployment</p>
+			) : (
+				<table>
+					<thead>
+						<tr>
+							<th>name</th>
+							<th>may call</th>
+							<th>last used</th>
+							<th />
+						</tr>
+					</thead>
+					<tbody>
+						{keys.map((v) => (
+							<tr key={uuid(v.id)}>
+								<td>{v.alias}</td>
+								{/* What it may call, in full. A key is never wider
+								    than the person it hangs off, so this is how
+								    much narrower it was made -- which is the only
+								    thing worth reading before revoking one. */}
+								<td className="mono">{v.methods.join(', ')}</td>
+								<td>
+									{v.dateUsed === undefined ? (
+										<span className="none">never</span>
+									) : (
+										when(v.dateUsed)
+									)}
+								</td>
+								<td>
+									<button
+										disabled={!props.may('/roster.HolderService/RevokeKey')}
+										onClick={() => {
+											void props.admin.holder
+												.revokeKey({ ref: who, id: v.id })
+												.then(() => {
+													props.say({ kind: 'done', text: 'revoked' })
+													setGone((was) => [...was, uuid(v.id)])
+												})
+												.catch(bad)
+										}}
+									>
+										revoke
+									</button>
+								</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+			)}
+
+			<div className="acts">
+				<input
+					placeholder="what to call it"
+					value={alias}
+					onChange={(e) => setAlias(e.target.value)}
+				/>
+				{/* Written out and never defaulted, in either direction.
+				    Everything hands out more than anybody asked for; nothing
+				    mints a key that silently does not work -- which is the
+				    refusal `IssueService` makes, said here so somebody meets it
+				    before they have typed a name. */}
+				<input
+					placeholder="/roster.HolderService/List, …"
+					value={methods}
+					onChange={(e) => setMethods(e.target.value)}
+				/>
+				<button
+					disabled={
+						!props.may('/roster.IssueService/IssueKey') ||
+						alias === '' ||
+						methods.trim() === ''
+					}
+					onClick={() => {
+						void props.admin.issue
+							.issueKey({
+								holder: who,
+								alias,
+								methods: methods
+									.split(',')
+									.map((v) => v.trim())
+									.filter((v) => v !== ''),
+							})
+							.then((r) => {
+								props.say({ kind: 'secret', text: r.token })
+								setAlias('')
+								setMethods('')
+								const row = r.key
+								if (row !== undefined) setMade((was) => [...was, keyOf(row)])
+							})
+							.catch(bad)
+					}}
+				>
+					mint a key
+				</button>
+			</div>
+		</section>
+	)
+}
+
 function Ways(props: { ids: SignInIdentity[]; creds: SignInCredential[] }): React.ReactNode {
 	if (props.ids.length === 0 && props.creds.length === 0) {
 		return <p className="none">no way in at all — nothing to sign in with</p>
