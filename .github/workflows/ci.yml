@@ -47,30 +47,22 @@ jobs:
       # arguing with the generator on every push. Left out deliberately; the
       # `lint:` block in `buf.yaml` is what a `buf lint` run by hand obeys.
 
-      - name: formatted
-        run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
-      - run: go vet ./...
-      - run: go test ./... -count=1
-
-      # What no compiler and no test can see.
-      #
-      # `doctor` is the one that finds a layer with no `WithDriver` -- which
-      # fails at run time, only inside a transaction, and only once somebody
-      # calls a multi-write RPC.
-      #
-      # `--ts` as well, so the TypeScript half is held to the same rule. It
-      # needs the plugin from `ts/`, which is why the install comes first.
+      # Before the gate, because the gate ends by checking the TypeScript half
+      # of what is generated and by building the console, and both need the
+      # plugin. A run without it is a run that says the generated code is fine
+      # having looked at two thirds of it.
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - run: npm ci --prefix ts
-      - run: go tool pd doctor .
-      - run: go tool pd gen --check --ts .
 
-      # And that roster still builds for the browser. `ts/package.json` has a
-      # `wasm` script and a sandbox that loads what it produces, so this is a
-      # promise the repository already makes -- kept only by being checked.
-      - run: GOOS=js GOARCH=wasm go build ./...
+      # One step rather than seven, which is the point of the script: what CI
+      # runs and what a desk runs are the same command, so a green run there
+      # cannot mean less than a green run here. It covers gofmt, the build, the
+      # vet, the tests, `pd doctor`, `pd gen --check --ts`, the wasm build and
+      # the console -- and everything above is what it deliberately does not,
+      # being about this branch rather than about this checkout.
+      - run: ./scripts/test.sh
 
   # The same suite, on the database roster is actually deployed on.
   #
@@ -108,6 +100,10 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      # The tests alone rather than the whole gate: `scripts/test.sh` is the
+      # same command with the variable set, but the parts of it that are not
+      # tests -- gofmt, the generation check, two builds -- do not become a
+      # different question on PostgreSQL, and this job has no node on it.
       - run: go test ./... -count=1
         env:
           PDTEST_POSTGRES: postgres://app:app@127.0.0.1:5432/app?sslmode=disable

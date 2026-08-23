@@ -55,18 +55,31 @@ checks a password. `PLAN.md` D19 and D20, `docs/position.md`.
 ```sh
 go tool pd gen .          # messages, ent schema, servers, layers
 go tool pd gen --ts .     # and the TypeScript half
-go tool pd gen --check --ts .  # what CI runs: fails if anything moved
+go tool pd doctor .       # what would go wrong, before it does
 ```
 
 A generated file that was not regenerated **compiles perfectly and is wrong**.
 If you edited anything under `proto/`, you are not done until
-`pd gen --check --ts .` exits 0. With `--ts` because that is what CI runs: the
-check without it passes while `ts/gen` is a schema behind, which is a green
-local run and a red one on the branch.
+`pd gen --check --ts .` exits 0 -- with `--ts`, because the check without it
+passes while `ts/gen` is a schema behind, which is a green local run and a red
+one on the branch.
+
+## Before pushing
 
 ```sh
-go tool pd doctor .       # what would go wrong, before it does
+./scripts/test.sh         # everything CI decides on
 ```
+
+**Run this rather than the parts of it.** It is gofmt, the build, the vet, the
+tests, `pd doctor`, `pd gen --check --ts`, the wasm build and the console, in
+that order -- and the two that have actually caught something are the two no
+compiler complains about. A list of commands to remember is a list somebody
+forgets one of, which is how this repository learned to want a script.
+
+It takes what it is handed (`./scripts/test.sh -run TestWall`), and the other
+half of CI is the same command with `PDTEST_POSTGRES` set. The one thing it
+leaves to CI is `buf breaking`, which is about the branch rather than about the
+checkout.
 
 ## Do not edit — regenerate
 
