@@ -334,8 +334,9 @@ what lets one human sign up to two operators with one Google account.
 
 > erin arrives as `entra` / `oid-9f3…`, which is the identifier Entra promises
 > never to change. That pair is unique within acme, so it lands on one `Holder`
-> and never on two -- and the same human may hold a row in hooli under a
-> different provider, which neither tenant can tell.
+> and never on two -- and that very same `entra` / `oid-9f3…` pair may name
+> somebody in hooli too, which is what keeping the tenant in the key is for and
+> which neither tenant can tell.
 
 ### 📧 `Email` — an address somebody uses, and whether anybody checked
 
@@ -461,7 +462,7 @@ replaces would be a set of signed-in browsers.
 ```mermaid
 erDiagram
   "🏢 Tenant"  ||--o{  "🌐 Host" : "answers at"
-  "🏢 Tenant"  ||--o{  "📮 MailDomain" : "claims"
+  "🏢 Tenant"  ||--o{  "📮 MailDomain" : "routes"
   "🏢 Tenant"  ||--o{  "🔌 Connection" : "authenticates through"
 ```
 
@@ -546,10 +547,11 @@ the row as the event left it, erase included, so a softly erased row's contents
 live on here -- which is what the retention policy in `docs/operating.md` is
 for, and what `roster forget` destroys per person.
 
-> Every write above wrote a row here, inside the same transaction: alice as the
-> actor, the row she touched as the object, and what it looked like afterwards.
-> When acme has to answer *who put erin in on-call*, this is the only table that
-> can.
+> Every write acme made above wrote a row here, inside the same transaction:
+> whoever made it as the actor, the row they touched as the object, and what it
+> looked like afterwards. **ops** signing in to the console wrote one too, in
+> the control plane's own trail, which acme cannot read. When acme has to answer
+> *who put erin in on-call*, this is the only table that can.
 
 ### 📤 `Outbox` — a write that has to be published even if this process dies
 
