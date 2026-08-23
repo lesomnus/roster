@@ -531,6 +531,7 @@ roster key revoke --id <id>     # a delete, so the next call carrying it fails
 | `/roster.FrontService/WhereFrom` | where the people at an address authenticate |
 | `/roster.MeService/Get` | somebody's own record, through a delegation |
 | `/roster.HolderService/Get` | who somebody still is — a name for a screen, and the periodic recheck that ends a session after somebody leaves |
+| `/roster.SyncService/Watch` | one stream, held open, that says when somebody's sessions stopped being good — so the recheck above is a fallback rather than the mechanism |
 | `/payday.TokenService/Introspect` | only if the app takes API tokens, or asks about a delegation it was given; see below |
 
 Not `VouchService/Set` — changing a password belongs to whatever account portal
@@ -907,8 +908,46 @@ Three things to know before handing these out:
   than a way to become them. PLAN.md's list, item 11.
 
 What an app in front does with `date_invalidated` is its own half: roster
-answers *invalid since when*, and the app answers *what is still alive*. It
-arrives on `HolderService/Watch` like anything else about a person.
+answers *invalid since when*, and the app answers *what is still alive*.
+
+### How an app hears about it
+
+```
+POST /roster.SyncService/Watch   {}      # a stream, held open
+```
+
+One stream that takes no argument, and each message is three facts about one
+person: `date_invalidated`, `date_disabled`, `date_erased`, with the tenant and
+a `reason` beside them.
+
+- **The app dials roster.** There is no subscription to register and no URL for
+  roster to call back on. It is one more stream on the port your app already
+  holds a credential for, and a dropped connection is a reconnect rather than a
+  dead-letter queue.
+- **It takes nothing because the wall is what narrows it.** A deployment `rk_`
+  key hears every tenant; a credential that resolves to a person hears theirs.
+  There is no field to say whose events you want, deliberately -- see PLAN.md
+  D53.
+- **Compare, do not drop.** The message carries the instants, not an
+  instruction. A session minted after `date_invalidated` is untouched; one from
+  before it is not a session. `reason` is a word for your log and is
+  `UNSPECIFIED` the first time this stream mentions somebody.
+- **It replays nothing.** A reconnect is told what changes next, not what it
+  missed, so treat a reconnect as a reason to stop trusting what you hold. The
+  authority is `payday.TokenService/Introspect`, which answers synchronously;
+  this stream is what saves you asking.
+- **It needs a broker.** `watch.broker: none` answers `Unimplemented` here
+  rather than opening a stream that will never carry anything, and `memory` is
+  right for one replica and silently wrong for two. See *Running more than one*.
+
+Allow `/roster.SyncService/Watch` on the app's key. It is a read and grants
+nothing else; what it can tell the app about is exactly what that key could
+already `Get`.
+
+The same facts also arrive on `HolderService/Watch`, along with everything else
+about a person -- which is why that is not the one to use here. It sends whole
+rows, wakes on every rename, and refuses a subscription with no filters, so an
+app would have to name people before they had ever signed in.
 
 ### What a page shows
 

@@ -555,6 +555,80 @@ somebody reading the code to decide what is safe.
   credentials -- but *local is Ungated* was written down and *and general writes
   are open there* was not.
 
+### D53 · The sync channel, which is state and not a signal
+
+Item 4, the last thing the list still called Phase 4. `cmd/watch_test.go` runs
+its first increment -- the two facts travelling on the entity stream -- and
+closes by saying the event stream is *taken when the noise is measured rather
+than predicted*. It has been measured. The measurement is not a rate; it is
+that the entity `Watch` **cannot be subscribed to for this at all**: it refuses
+a subscription with no filters, because that is the whole table forever, and an
+app cannot name in advance the people who have not signed in yet.
+
+So `SyncService` is one stream that takes nothing, over the `Walled` server, and
+carries three fields off `Holder`: `date_invalidated`, `date_disabled`,
+`date_erased`. No row travels.
+
+**The request is empty and stays empty.** What an app hears is narrowed by the
+wall, exactly as a read is -- a deployment key hears every tenant, a credential
+resolving to a person hears theirs. A field naming whose events to send would be
+a second narrowing beside the one that already decides, and two answers to *what
+may this caller see* is the shape of the bug rather than a convenience.
+
+#### It sends state, and the reason is commentary
+
+The first draft sent a `SyncReason` and nothing else, which made it a stream of
+deltas -- and a delta that did not arrive is a lie that never gets corrected.
+The three timestamps are the message now, and everything the watch machinery
+promises follows from that: a duplicate is a no-op, an out-of-order pair
+converges, a reconnect is told the truth rather than a history.
+
+`reason` stays, as a word for a log and a screen, and is **best effort**. It is
+worked out by comparing against what this stream last sent, so the first time it
+hears about somebody there is no movement to name and it says `UNSPECIFIED` --
+which is what every event is immediately after a reconnect, and is exactly why
+the facts are beside it.
+
+#### What it does not do, twice
+
+**It does not read the RPC.** `watch.Next` answers with the method the call was
+dispatched under, so a stamp moved by `HolderService/Disable` and one moved by
+`MeService/SignOutEverywhere` arrive under different names, and a write made on
+the way somewhere else -- the holder that comes with a new tenant -- under a
+third. A table of those names is wrong the day somebody adds an RPC, and wrong
+silently. Comparing columns cannot drift from the schema, because it is the
+schema.
+
+**It does not snapshot**, and this is the one place the design refuses a
+convenience. A snapshot here is every holder this caller can see, which for a
+deployment key is every holder of every tenant -- the read the generated `Watch`
+declines to do without filters, and this has none to give it. So a reconnect is
+told what changes next and not what it missed, and the honest instruction is to
+stop trusting what you hold. That costs nothing anybody needs, because the
+authority already exists: `payday.TokenService/Introspect` answers whether a
+credential is still good, synchronously. This stream is the optimisation that
+saves asking; `Introspect` is the truth.
+
+#### The hole the first version had
+
+On first sight it sent **nothing** -- there was no prior state, so no movement
+to name -- and that was a hole rather than a nicety: a suspension landing just
+after an app connects is the first thing the stream hears about that person, and
+so was the one event it swallowed. What replaces it is narrower than "always
+send": somebody with all three stamps unset has had nothing happen to them, so
+no copy anybody holds can be wrong and there is nothing to say. A rename stays
+silent -- which is the sentence the whole service is argued from -- and the
+write that mattered still travels.
+
+#### And one upstream fix it needed
+
+`pdtest.DB`'s SQLite half set no `busy_timeout`, so a connection that found the
+database busy failed the query instead of waiting. Every test that makes one
+call at a time is fine; a test with a server stream in it is not, because the
+handler reads while the test writes. It failed in about a third of runs with an
+error about the credential rather than about the database.
+`lesomnus/payday@58d5d4d`.
+
 ### D52 · WebAuthn, which D20 had already designed
 
 The largest thing `docs/OPERATING.md` listed as not here, and it needed no new
@@ -2384,6 +2458,11 @@ facts about somebody that have to travel are now on the same row, so they arrive
 on a stream that already exists. The event stream item 4 argues for is a second
 increment, worth taking when the noise is measured rather than predicted.
 
+**Measured, and taken** -- D53. What settled it was not a rate: the entity
+`Watch` refuses a subscription with no filters, and an app cannot name the
+people who have not signed in yet, so it is not a stream an app could hold at
+all.
+
 #### What is not here
 
 **Escalation.** Suspending an administrator is a denial of service, and
@@ -3870,7 +3949,11 @@ the schedule.
    asserts it. D3 gave that field the job of deciding whether an address may be
    trusted at all, and here it can only ever say no.
 
-4. **The sync channel, as an invalidation signal.** `Outbox`/`Drain` has been
+4. ~~**The sync channel, as an invalidation signal.**~~ **Done**, both
+   increments. `SyncService.Watch`; see D53.
+
+   The original entry:
+   `Outbox`/`Drain` has been
    Phase 4 as "the sync channel" from the start. Its first real subject is
    *this person's credentials changed, stop trusting what you were told* — see
    6 below, which is the same feature.
@@ -3881,6 +3964,12 @@ the schedule.
    to wherever an app said, and a reconnect in place of a retry-and-dead-letter
    machine. What is wanted is an event stream rather than an entity `Watch`,
    since a `Holder` changes for reasons nobody needs to hear about.
+
+   Both sentences survived being built. The direction is what `SyncService` is;
+   *a `Holder` changes for reasons nobody needs to hear about* is the comparison
+   at the middle of it. What the entry did not know is that the entity `Watch`
+   is not merely noisy for this but **unsubscribable**: it refuses a watch with
+   no filters, and an app cannot name people who have not signed in yet.
 
 5. ~~**A breached-password check.**~~ **Done.** `vouch.Breached`, refused
    before anybody is read -- it is a fact about the secret rather than about the

@@ -44,6 +44,7 @@ import (
 	"github.com/lesomnus/roster/server/me"
 	"github.com/lesomnus/roster/server/pd"
 	"github.com/lesomnus/roster/server/session"
+	rostersync "github.com/lesomnus/roster/server/sync"
 	"github.com/lesomnus/roster/server/vouch"
 )
 
@@ -629,6 +630,19 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 
 	g := grpc.NewServer(os...)
 	register(g, s.Walled)
+
+	// The one stream an app that trusts roster holds open: *a decision you made
+	// has stopped being good.*
+	//
+	// The **walled** server, so what an app hears is narrowed exactly as a read
+	// is -- a deployment key hears every tenant, a credential resolving to a
+	// person hears theirs -- and there is no field beside that narrowing.
+	//
+	// A deployment with no broker refuses the call rather than opening a stream
+	// that will never carry anything, which `watch.Stream` decides before it
+	// reads and which is the one failure a client cannot tell from a quiet
+	// system.
+	app.RegisterSyncServiceServer(g, rostersync.Service(s.Walled, s.Watch))
 
 	// A customer minting a key for themselves, which until now needed a shell
 	// on the box.

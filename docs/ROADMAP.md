@@ -47,8 +47,10 @@ there — 11 and 12. Item 4 wants them to travel, and `Holder` already declares
 `watch: {}`, justified in `holder.proto` for precisely this: *the one fact about
 somebody that has to travel is that they are gone.* So item 4's first increment
 is a field arriving on a stream that already exists. The event stream it argues
-for is a second increment, taken when the noise is measured rather than
-predicted.
+for is a second increment, and is taken: `SyncService`, PLAN.md D53. The thing
+that settled it was not a rate but that the entity `Watch` refuses a
+subscription with no filters, so an app cannot subscribe for people who have not
+signed in yet.
 
 **Two of them hang off a domain.** Item 1 (a tenant from a hostname) and item 2
 (home-realm discovery) are both lookups by a name, and `holder.proto` already
@@ -364,7 +366,8 @@ of the mail, which is the same mechanism reached differently.
 The event stream (item 4's second increment), the breached-password check (item
 5), per-tenant provider connections (item 9, which needed a decision first and
 has one), and extracting the components (D24 §6, last for D24's own reason).
-All but the first are done; the first is deferred by item 4 itself.
+**All four are done.** The event stream is `SyncService` -- one stream that
+takes nothing, carrying three columns off `Holder` and no rows -- PLAN.md D53.
 
 **§6 is done, and it answered smaller than D22 guessed.** The Go half is the
 whole of it -- `frontdoor`, which is the two forms, the half session, the
@@ -453,7 +456,7 @@ that the plan defers on purpose.
 | P6 | the reads a screen needs, and the screens | **done** — the reads (items 7, 8), §5 the operator screen, §4 self-service in the reference app, and §6 the extraction. D24's order is complete. **And §4's *add an SSO method* is drawn now**, D50: `POST /me/ways` is the same redirect with a second cookie, `MeService.Link` is the write, and the session — never the browser — says whose account it is for |
 | P7 | two-step verification | **done** — PLAN.md D29 and D30, and `examples/sso` showing two forms with a half-session between them |
 | P8 | recovery and the magic link | **done** — PLAN.md D31. `Vouch.Link`/`Redeem`, a reset voiding what came before it, and the sweep over both short-lived tables. The air-gap half was already D28's |
-| P9 | the rest | session table, the breached-password check, **provider connections** and **§6** done · left: the event stream, which item 4 itself defers |
+| P9 | the rest | **done** — session table, the breached-password check, **provider connections**, **§6**, and now the event stream: `SyncService`, PLAN.md D53. It sends state and not a signal, takes no argument because the wall is what narrows it, and does not snapshot because a snapshot here is every holder of every tenant |
 | — | F10 and F11, upstream | **done** — `pd.Secret` streamed the verifier it hides everywhere else, in payday's own reference app as much as here. `lesomnus/payday@b57f9a1`, pin moved, both halves pinned in `cmd/watch_test.go` |
 | — | F12, upstream | **done** — `pd doctor` reads the app's schema now, which its own comment said it did and did not. `lesomnus/payday@9a252e5` |
 | — | D33 · the broker | **done** — `watch.broker: postgres`, `LISTEN`/`NOTIFY` on the rows' own database. The last thing that did not cross replicas. `lesomnus/payday@73a90a0` |

@@ -28,9 +28,10 @@ import (
 // answered by `Get`, and still not be on the stream -- and nothing would say
 // so until an app that trusted the stream kept trusting a signed-out session.
 //
-// The event stream item 4 argues for is still a second increment, and is still
-// deferred: it is *taken when the noise is measured rather than predicted*, and
-// nothing has run long enough to measure any.
+// The event stream item 4 argues for is the second increment, and it is taken:
+// `SyncService`, in `cmd/sync_test.go`. What settled it was not a rate -- this
+// watch refuses a subscription with no filters, so an app that wanted one
+// person's suspension would have to name them before they signed in.
 
 // watching opens a Watch and answers with what it sends, one message at a time.
 //
