@@ -22,6 +22,7 @@ verifies alone. [docs/POSITION.md](docs/POSITION.md) is that applied;
 | | |
 | --- | --- |
 | [docs/POSITION.md](docs/POSITION.md) | what roster is, and **where it stops** |
+| [docs/Entity.md](docs/Entity.md) | the twenty-three tables, drawn, with a paragraph each |
 | [docs/OPERATING.md](docs/OPERATING.md) | running one: keys, roles, TLS |
 | [docs/LOGIN.md](docs/LOGIN.md) | what happens when somebody signs in |
 | [PLAN.md](PLAN.md) | every decision, with the reason that produced it |

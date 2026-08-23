@@ -204,6 +204,7 @@ a browser holds and `auth` reads credentials rather than making them.
 
 ## Reference
 
+- `docs/Entity.md` — the twenty-three entities, how they relate, one paragraph each
 - `README.md` — the same ground at length, including upgrading payday
 - <https://github.com/lesomnus/payday/tree/main/docs> — the guides and the
   references behind them
