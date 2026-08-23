@@ -179,6 +179,41 @@ var ErrOutboxHasNowhereToGo = errors.New("watch.outbox: nothing would ever publi
 // with the domain of its entity and refuses one of another, [pd.Wall] narrows
 // every read to the tenants the caller may see.
 func Build(ctx context.Context, c Config) (*Server, error) {
+	// The two blocks that are answered by silence when the one field they hang
+	// off is missing, refused before anything is opened.
+	//
+	// `Serves()` reads `control.db.driver` alone, which is right: a control
+	// plane is a database and an address is only how it is reached. What that
+	// leaves is a `control:` block with every field but that one, and it builds
+	// a **working server with no control plane at all** -- no key of either
+	// kind is read, no delegation is honoured, no console session is minted,
+	// and `control.addr` opens nothing. The whole of what says so is payday's
+	// `auth: serving with Plain` warning, which a deployment that wrote no
+	// `control:` prints as well. So the one line that could have told somebody
+	// is the line that cannot tell the two apart.
+	//
+	// `admin:` is the same shape one step further out: the port authenticates a
+	// session cookie against the control plane's holders, so `Admin` answers
+	// with nothing where there is no control plane and `serveAdmin` opens no
+	// listener. An address that is written down and not served is worse than
+	// one that is refused, because it is a port somebody believes is there.
+	//
+	// Refused rather than logged, for the reason `watch.outbox` with no broker
+	// is: the file says two things that cannot both be meant, and picking one
+	// silently is how this got here.
+	if c.Control.Said() && !c.Control.Serves() {
+		return nil, errors.New(
+			"control: the block says things and control.db.driver names no database, so no control " +
+				"plane is built -- no api key is read, no console session is minted, and control.addr " +
+				"opens nothing. name a database, or take the block out")
+	}
+	if said(c.Admin) && !c.Control.Serves() {
+		return nil, errors.New(
+			"admin: the port takes a session cookie and resolves it against the control plane's " +
+				"holders, and control.db.driver names no database, so there is nobody to be and no " +
+				"listener is opened. name a control plane, or take the block out")
+	}
+
 	db, dialect, err := c.Db.Open(ctx)
 	if err != nil {
 		return nil, err

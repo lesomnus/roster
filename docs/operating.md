@@ -38,6 +38,14 @@ control:
 which says so once in the log. That is right for a checkout and is not something
 to serve anywhere else.
 
+Leave the **database** out and write the rest of the block, and you get that
+same deployment with a control plane written down beside it. What decides is
+`control.db.driver` and nothing else — an address is only how the plane is
+reached — so `control.addr` on its own built a server that reads no `rk_` and
+no `rt_`, honours no `rd_`, mints no session and opens no port, while the only
+line in the log about any of it was the `Plain` warning a file with no
+`control:` at all prints too. It is refused at startup now, naming the field.
+
 A key must not live in the tables it protects, which is why the second database
 is a database and not a reserved tenant. There is no query from one to the
 other.
@@ -202,6 +210,11 @@ admin:
     allow_web: true
     origins: ["http://localhost:5173"]
 ```
+
+`admin` needs a control plane and is refused without one: the port takes a
+session cookie and resolves it against **that** database's holders, so with no
+control plane there is nobody to be. It used to open no listener and say
+nothing.
 
 A browser cannot speak gRPC, so a port without `http` is a port a console
 cannot reach — and `server.http` is the wrong one: it fronts the **walled**

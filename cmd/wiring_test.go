@@ -112,6 +112,110 @@ func TestTheControlPlaneMigratesWhenItSaysSo(t *testing.T) {
 	x.NoError(s.Ready(ctx, c), "a plane that was just migrated does not match itself")
 }
 
+// TestAControlPlaneThatIsNotOneIsRefused is a block written down that does
+// nothing.
+//
+// `ControlConfig.Serves` reads `control.db.driver` and nothing else, which is
+// the right field: a control plane is a database, and an address is only how it
+// is reached. What it leaves is a block with every field but that one -- and
+// that built a **working server with no control plane at all**. Every caller is
+// `auth.Plain`, which is to say whoever they type; no `rk_` or `rt_` is read,
+// because `auth.Bearer` is never in the chain; no `rd_` is honoured, because
+// `keys.Acting` is not either; no console session is minted; and the port on
+// the line above opens nothing.
+//
+// Nothing could have said so. payday warns once that `Plain` is being served,
+// and a deployment that wrote no `control:` at all prints the same line -- so
+// the one line that would have told somebody is the line that cannot tell the
+// two apart.
+func TestAControlPlaneThatIsNotOneIsRefused(t *testing.T) {
+	drv, dsn := pdtest.DB(t)
+
+	// A database that opens, so that what is refused is the control block and
+	// not a side effect of a configuration that was broken anyway.
+	base := cmd.Config{
+		Db:    config.DbConfig{Driver: drv, Dsn: dsn},
+		Watch: config.WatchConfig{Broker: config.BrokerMemory},
+	}
+
+	// Whatever the block said, and not its address alone: every field under it
+	// is as inert without a database as `control.addr` is, and the next one
+	// added will be too.
+	for _, tc := range []struct {
+		desc string
+		v    cmd.ControlConfig
+	}{
+		{"an address", cmd.ControlConfig{
+			ServerConfig: config.ServerConfig{Addr: "127.0.0.1:0"},
+		}},
+		{"the console's port", cmd.ControlConfig{
+			ServerConfig: config.ServerConfig{
+				Http: config.HttpConfig{Addr: "127.0.0.1:0", AllowWeb: true},
+			},
+		}},
+		{"a broker for a plane that is not there", cmd.ControlConfig{
+			Watch: config.WatchConfig{Broker: config.BrokerMemory},
+		}},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			x := require.New(t)
+
+			c := base
+			c.Control = tc.v
+
+			_, err := cmd.Build(t.Context(), c)
+			x.Error(err, "a control plane was written down and the deployment served Plain")
+			x.ErrorContains(err, "control.db.driver",
+				"the refusal does not name the field that is missing")
+		})
+	}
+
+	t.Run("and a plane that is only a database still builds", func(t *testing.T) {
+		x := require.New(t)
+
+		// The arrangement this must not break: a control plane reachable by a
+		// Go call and on no port at all. `Serves()` is true and `Answers()` is
+		// false, which is what `control.addr` being empty means -- see
+		// `ControlConfig`.
+		cdrv, cdsn := pdtest.DB(t)
+
+		c := base
+		c.Control = cmd.ControlConfig{Db: config.DbConfig{Driver: cdrv, Dsn: cdsn}}
+
+		s, err := cmd.Build(t.Context(), c)
+		x.NoError(err)
+		t.Cleanup(func() { s.Close() })
+
+		x.NotNil(s.Control, "a control plane with no address was not built")
+	})
+}
+
+// TestAnAdminPortWithNobodyToBeIsRefused is the same shape one step further
+// out.
+//
+// The port authenticates a session cookie and resolves it against the **control
+// plane's** holders, so `cmd.Admin` answers with nothing where there is no
+// control plane and `serveAdmin` opens no listener. Written down and not
+// served, which is worse than refused: it is a port an operator believes is
+// there.
+func TestAnAdminPortWithNobodyToBeIsRefused(t *testing.T) {
+	x := require.New(t)
+
+	drv, dsn := pdtest.DB(t)
+
+	c := cmd.Config{
+		Db:    config.DbConfig{Driver: drv, Dsn: dsn},
+		Watch: config.WatchConfig{Broker: config.BrokerMemory},
+		Admin: config.ServerConfig{Addr: "127.0.0.1:0"},
+	}
+
+	_, err := cmd.Build(t.Context(), c)
+	x.Error(err, "an admin port was written down and nothing opened it")
+	x.ErrorContains(err, "admin")
+	x.ErrorContains(err, "control.db.driver",
+		"the refusal does not say which block has to be filled in")
+}
+
 // TestServeStopsOnSigterm is how this process is actually asked to stop.
 //
 // `docker stop` and every orchestrator send SIGTERM. Only `os.Interrupt` was

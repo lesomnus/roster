@@ -12,6 +12,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 	"time"
 
@@ -433,6 +434,36 @@ func (c ControlConfig) Serves() bool { return c.Db.Driver != "" }
 
 // Answers reports whether the control plane is reachable over the network.
 func (c ControlConfig) Answers() bool { return c.Serves() && c.Addr != "" }
+
+// Said reports whether this block says anything beyond which database it is on.
+//
+// It is the other half of [ControlConfig.Serves], and it exists because that
+// one reads `control.db.driver` **and nothing else**. That is the right field
+// to read -- a control plane is a database, and an address is only how it is
+// reached -- and what it leaves possible is a block with every field but that
+// one, which builds a deployment that is not the one somebody wrote down. See
+// [Build].
+//
+// Whatever the block said rather than its address alone, because
+// `control.http.addr`, `control.watch.broker` and every limit under it are as
+// inert without a database as `control.addr` is. Compared against the zero
+// value with the database taken out, so that the next field added here does
+// not have to be remembered.
+func (c ControlConfig) Said() bool {
+	c.Db = config.DbConfig{}
+
+	return !reflect.DeepEqual(c, ControlConfig{})
+}
+
+// said reports whether a listener block says anything at all.
+//
+// A function rather than a method because [config.ServerConfig] is payday's,
+// and `admin:` is the one place an app has to ask this of it: every other
+// listener answers the question with its own address, and this one is opened
+// or not by something else entirely. See [Build].
+func said(c config.ServerConfig) bool {
+	return !reflect.DeepEqual(c, config.ServerConfig{})
+}
 
 // Cmd is this app's own command line: what payday supplies, plus whatever the
 // app has of its own.

@@ -29,6 +29,11 @@ server:
 # Who may call this deployment, and who runs it. Without this the deployment
 # believes its callers and there is no console; see docs/operating.md.
 #
+# `db` is what decides, and not `addr`: a control plane is a database, and an
+# address is only how it is reached. So uncommenting the rest of this block
+# without it is refused rather than served -- it used to be a deployment on
+# `auth.Plain` with a control plane written down beside it.
+#
 # control:
 #   db:
 #     driver: sqlite3
