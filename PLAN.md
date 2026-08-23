@@ -42,19 +42,18 @@ the one rule an agent or a hurried afternoon will break first.
 
 ## Where roster sits
 
-```
-browser → proxy ─┬─ session cookie ↔ token
-                 │
-                 ├→ Hydra ──login_challenge──> Login App
-                 │            (protocol)        (which provider, MFA)
-                 │                                  │
-                 │                                  ↓  "who is this identity?"
-                 │                              ╔═══════╗
-                 │                              ║ roster ║  ← owns `sub`
-                 │                              ╚═══════╝
-                 │                                  ↑  "/api/v1/me"
-                 └→ product apps (custody, …) ──────┘
-                        verify the JWT locally
+```mermaid
+flowchart LR
+  B(["browser"]) -- "session cookie ↔ token" --> P["proxy"]
+
+  P --> H["Hydra<br/>the protocol"]
+  H -- login_challenge --> L["Login App<br/>which provider, MFA"]
+  L -- "who is this identity?" --> R
+
+  P --> A["product apps — custody, …<br/>verify the JWT locally"]
+  A -- "/api/v1/me" --> R
+
+  R[["roster<br/>owns <code>sub</code>"]]
 ```
 
 roster is called by machines: the Login App and admin consoles. Not by end
@@ -84,20 +83,29 @@ authenticate anybody**. It hands a `login_challenge` to a Login App and waits to
 be told a `subject`. Where that string comes from is the hole, and the hole is
 roster-shaped.
 
-```
-browser → product app → Hydra /oauth2/auth
-                          │ login_challenge
-                          ↓
-                      Login App
-                          │ Entra / GitHub → (provider, subject)
-                    ①     ├──> roster · Identity → Holder.id     ← this is `sub`
-                    ②     ├──> roster · VouchService.Verify      (password, link)
-                    ③     ├──> roster · the tenant, and the token's other claims
-                          │ acceptLoginRequest{subject: Holder.id}
-                          ↓
-                       Hydra ── code ──> product app
-                                            │ exchange, verify, keep a session
-                    ④                       └──> roster · MeService, names, teams
+```mermaid
+sequenceDiagram
+  participant B as browser
+  participant A as product app
+  participant H as Hydra
+  participant L as Login App
+  participant E as Entra / GitHub
+  participant R as roster
+
+  B->>A: /login
+  A->>H: /oauth2/auth
+  H->>L: login_challenge
+  L->>E: the flow it runs
+  E-->>L: (provider, subject)
+
+  L->>R: ① Identity → Holder.id, which is `sub`
+  L->>R: ② VouchService.Verify — a password, a link
+  L->>R: ③ the tenant, and the token's other claims
+
+  L-->>H: acceptLoginRequest{subject: Holder.id}
+  H-->>A: code
+  Note over A: exchange, verify, keep a session
+  A->>R: ④ MeService — names, teams
 ```
 
 - **① is the one that cannot be moved.** Use Entra's `oid` as `sub` and the same

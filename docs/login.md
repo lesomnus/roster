@@ -6,36 +6,21 @@ on a listener and custody dialling it.
 
 ## The path
 
-```
-  browser                custody                     roster
-     │                      │                           │
-     │ POST /session        │                           │
-     │  {tenant, alias,     │                           │
-     │   password}          │                           │
-     ├─────────────────────>│                           │
-     │                      │ VouchService.Verify       │
-     │                      │  who{tenant, alias}       │
-     │                      │  secret                   │
-     │                      ├──────────────────────────>│
-     │                      │                           │ Holder by @tenant/alias
-     │                      │                           │ Credential by (holder,
-     │                      │                           │   "password")
-     │                      │                           │ argon2id, constant time
-     │                      │                           │ failures, lockout
-     │                      │  {ok, holder, tenant}     │
-     │                      │<──────────────────────────┤
-     │  204                 │                           │
-     │  Set-Cookie: session │                           │
-     │<─────────────────────┤                           │
-     │                      │                           │
-     │ POST /app.AssetService/List                      │
-     │  Cookie: session     │                           │
-     ├─────────────────────>│                           │
-     │                      │ cookie → session → frame  │
-     │                      │ anchor, if first time     │
-     │                      │ wall narrows to tenant    │
-     │  200 {items:[…]}     │                           │
-     │<─────────────────────┤                           │
+```mermaid
+sequenceDiagram
+  participant B as browser
+  participant C as custody
+  participant R as roster
+
+  B->>C: POST /session<br/>{tenant, alias, password}
+  C->>R: VouchService.Verify<br/>who{tenant, alias}, secret
+  Note over R: Holder by @tenant/alias<br/>Credential by (holder, "password")<br/>argon2id, constant time<br/>failures, lockout
+  R-->>C: {ok, holder, tenant}
+  C-->>B: 204<br/>Set-Cookie: session
+
+  B->>C: POST /app.AssetService/List<br/>Cookie: session
+  Note over C: cookie → session → frame<br/>anchor, if first time<br/>wall narrows to tenant
+  C-->>B: 200 {items:[…]}
 ```
 
 **roster never sees the browser.** It is called by machines, has no cookie
@@ -135,19 +120,25 @@ database and does not authenticate anybody. It hands a `login_challenge` to a
 Login App and waits to be told a `subject`, and choosing that string is the
 problem roster exists for.
 
-```
-  browser        product app          Hydra            Login App        roster
-     │                │                 │                  │              │
-     ├── /login ─────>│── 302 ─────────>│                  │              │
-     │                │                 ├─ challenge ─────>│              │
-     │                │                 │                  │  Entra / GitHub
-     │                │                 │                  ├─ identity ──>│
-     │                │                 │                  │<─ Holder.id ─┤
-     │                │                 │<─ accept{sub} ───┤              │
-     │                │<── code ────────┤                  │              │
-     │                ├─ exchange ─────>│                  │              │
-     │                │<─ id_token ─────┤                  │              │
-     │  Set-Cookie ───┤ (the same opaque cookie as above)  │              │
+```mermaid
+sequenceDiagram
+  participant B as browser
+  participant A as product app
+  participant H as Hydra
+  participant L as Login App
+  participant R as roster
+
+  B->>A: /login
+  A->>H: 302
+  H->>L: challenge
+  Note over L: Entra / GitHub
+  L->>R: identity
+  R-->>L: Holder.id
+  L-->>H: accept{sub}
+  H-->>A: code
+  A->>H: exchange
+  H-->>A: id_token
+  A-->>B: Set-Cookie<br/>(the same opaque cookie as above)
 ```
 
 Line by line, against the no-Hydra picture:
@@ -218,13 +209,14 @@ What closes it is not a change to `Email`'s rule but a second fact. A tenant is
 the same service under a different operator's own domain, so the **name the
 browser arrived at** says which operator — and roster holds that now:
 
-```
-front door                                  roster
-     │  FrontService/WhoseHost "contoso.example.com"  │
-     ├────────────────────────────────────────────>│
-     │<──────────────── contoso ──────────────────────┤
-     │  Vouch.Verify {tenant: contoso, address: …}    │
-     ├────────────────────────────────────────────>│
+```mermaid
+sequenceDiagram
+  participant F as front door
+  participant R as roster
+
+  F->>R: FrontService/WhoseHost "contoso.example.com"
+  R-->>F: contoso
+  F->>R: Vouch.Verify {tenant: contoso, address: …}
 ```
 
 Within one tenant an address is unique, so there is one row to find. The
@@ -295,15 +287,17 @@ app filtering rows in its own code is the thing that leaks by being forgotten.
 So `Vouch.Delegate` is `Verify` and one more thing: on a yes it answers with a
 short-lived credential for the person it just proved.
 
-```
-POST /session   {alias, password}
-     app ── Vouch.Delegate ──> roster
-     app <── {ok, holder, tenant, token, expires} ──
+```mermaid
+sequenceDiagram
+  participant A as app
+  participant R as roster
 
-later, drawing a page
-     app ── authorization: Bearer rk_…        (who is calling)
-            roster-as:     rd_…               (who the call is about)
-         ── MeService/Get ──> roster
+  Note over A,R: POST /session {alias, password}
+  A->>R: Vouch.Delegate
+  R-->>A: {ok, holder, tenant, token, expires}
+
+  Note over A,R: later, drawing a page
+  A->>R: MeService/Get<br/>authorization: Bearer rk_… (who is calling)<br/>roster-as: rd_… (who the call is about)
 ```
 
 **It is not a bearer credential on its own.** A delegation says who a call is
