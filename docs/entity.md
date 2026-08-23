@@ -610,10 +610,12 @@ hard (gone).
 | 🍪 `Session` | 24 | via `holder.tenant` | -- | soft | `grant`, `secret`, `date_expires`, `date_idle` |
 | 🔌 `Connection` | 25 | `tenant` edge | -- | soft | `name`, `desc`, `issuer`, `client_id`, `scopes`, `secret_ref` |
 
-`id`, `date_created`, `date_updated` and `date_erased` are on everything and are
-left out above. `date_updated` is the version a `Patch` compares against, and
-🏢 `Tenant`, 📖 `Audit` and 📤 `Outbox` have no `date_erased` because they are the
-three that erase hard.
+`id` and `date_created` are on everything and are left out above, and so are
+`date_updated` and `date_erased` wherever an entity has them. Neither is
+everywhere. `date_updated` is the version a `Patch` compares against, which
+📖 `Audit` and 📤 `Outbox` do not carry -- a row written once and never revised
+has no version to disagree about. And 🏢 `Tenant` joins those two in having no
+`date_erased`, because the three of them erase hard.
 
 Field numbers are read **by name** across every entity, which is what lets one
 generator write the same code for all of them:
