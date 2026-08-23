@@ -260,6 +260,8 @@ func New(ctx context.Context, c Config, conn *grpc.ClientConn, s *authsession.Se
 			rstr.MeService_Link_FullMethodName,
 			rstr.MeService_Unlink_FullMethodName,
 			rstr.MeService_SignOutEverywhere_FullMethodName,
+			rstr.MeService_IssueKey_FullMethodName,
+			rstr.MeService_RevokeKey_FullMethodName,
 		},
 
 		Tenant: func(ctx context.Context, host string) (string, error) {
@@ -323,6 +325,8 @@ func (a *App) Handler() http.Handler {
 	m.HandleFunc("POST /me/ways", a.addWay)
 	m.HandleFunc("DELETE /me/ways/{id}", a.unlink)
 	m.HandleFunc("POST /me/sign-out-everywhere", a.everywhere)
+	m.HandleFunc("POST /me/keys", a.mintKey)
+	m.HandleFunc("DELETE /me/keys/{id}", a.revokeKey)
 	m.HandleFunc("GET /account", a.Account)
 
 	// The module `account.html` imports. Mounted by this app rather than by

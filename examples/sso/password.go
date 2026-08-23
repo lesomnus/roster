@@ -54,6 +54,29 @@ type recordOf struct {
 	SignsIn    []wayIn  `json:"signs_in"`
 	MayCallAll []string `json:"may_call"`
 	Teams      []string `json:"teams"`
+
+	// Keys is what acts **as** them, which is a different list from `SignsIn`
+	// and is on this page for the reason D51 put it on the operator's: a key is
+	// a string in somebody's script, and the question a person asks about one
+	// is *is this still being used* rather than *what is it*.
+	Keys []keyOf `json:"keys"`
+}
+
+// keyOf is one `rt_`, and never the key.
+//
+// What is stored is a hash, so there is nowhere the secret could come from --
+// it is readable exactly once, in the answer to minting it.
+type keyOf struct {
+	Id      string   `json:"id"`
+	Alias   string   `json:"alias"`
+	Methods []string `json:"methods"`
+
+	// Used is when it was last presented, empty for never -- which is the field
+	// that answers *is anything still calling with this* before somebody
+	// revokes it. Expires is when it stops working, empty for one that does
+	// not.
+	Used    string `json:"used,omitempty"`
+	Expires string `json:"expires,omitempty"`
 }
 
 type wayIn struct {
@@ -78,6 +101,7 @@ func record(v *rstr.MeGetResponse) recordOf {
 		MayCallAll: v.GetMethods(),
 		SignsIn:    []wayIn{},
 		Teams:      []string{},
+		Keys:       []keyOf{},
 	}
 	for _, c := range v.GetCredentials() {
 		out.SignsIn = append(out.SignsIn, wayIn{Kind: c.GetKind(), Which: c.GetName()})
@@ -93,8 +117,27 @@ func record(v *rstr.MeGetResponse) recordOf {
 	for _, t := range v.GetTeams() {
 		out.Teams = append(out.Teams, t.GetAlias())
 	}
+	for _, k := range v.GetKeys() {
+		out.Keys = append(out.Keys, key(k))
+	}
 
 	return out
+}
+
+func key(v *rstr.SignInKey) keyOf {
+	k := keyOf{
+		Id:      base64.RawURLEncoding.EncodeToString(v.GetId()),
+		Alias:   v.GetAlias(),
+		Methods: v.GetMethods(),
+	}
+	if u := v.GetDateUsed(); u != nil {
+		k.Used = u.AsTime().Format("2006-01-02")
+	}
+	if u := v.GetDateExpires(); u != nil {
+		k.Expires = u.AsTime().Format("2006-01-02")
+	}
+
+	return k
 }
 
 // unlink is `DELETE /me/ways/{id}`: one of the person's own ways in.
@@ -154,6 +197,87 @@ func (a *App) everywhere(w http.ResponseWriter, r *http.Request) {
 
 	// And this app's own, because roster does not know it exists.
 	a.door.SignOut(w, r)
+}
+
+// mintKey is `POST /me/keys`: an `rt_` that acts as the person, made by them.
+//
+// The self-service half of what an operator's console has had since D51, and
+// through `MeService` for the reason `unlink` is: `IssueService.IssueKey` takes
+// a `HolderRef`, so the smallest role covering *mint a key for myself* would be
+// *mint one for anybody in this tenant*.
+//
+// The **secret comes back once and is not stored here.** This app writes it
+// into the response and keeps no copy: what roster holds is a hash, and a
+// reference app that cached it to show again would be teaching the opposite of
+// what the field is for.
+func (a *App) mintKey(w http.ResponseWriter, r *http.Request) {
+	ctx, err := a.acting(r.Context(), r)
+	if err != nil {
+		http.Error(w, "no", http.StatusForbidden)
+		return
+	}
+
+	var in struct {
+		Alias   string   `json:"alias"`
+		Methods []string `json:"methods"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		http.Error(w, "no", http.StatusBadRequest)
+		return
+	}
+
+	v, err := a.me_.IssueKey(ctx, rstr.MeIssueKeyRequest_builder{
+		Alias:   in.Alias,
+		Methods: in.Methods,
+	}.Build())
+	if err != nil {
+		switch status.Code(err) {
+		case codes.InvalidArgument:
+			http.Error(w, "a name, and at least one method", http.StatusBadRequest)
+		case codes.PermissionDenied:
+			// The refusal a person can act on: they asked for a method they do
+			// not hold, and `server/core` is what said so. Told rather than
+			// flattened, because "no" here reads as a bug in the page.
+			http.Error(w, "you cannot hand out something you do not hold", http.StatusForbidden)
+		default:
+			http.Error(w, "no", http.StatusBadGateway)
+		}
+
+		return
+	}
+
+	w.Header().Set("content-type", "application/json")
+	w.Header().Set("cache-control", "no-store")
+	_ = json.NewEncoder(w).Encode(struct {
+		Token string `json:"token"`
+		Key   keyOf  `json:"key"`
+	}{Token: v.GetToken(), Key: key(v.GetKey())})
+}
+
+// revokeKey is `DELETE /me/keys/{id}`: one of the person's own.
+//
+// A *which* and never a *whose*, exactly as `unlink` is -- and with no
+// last-one rule, because a key is not a way **in**. Revoking every one of them
+// locks nobody out of anything.
+func (a *App) revokeKey(w http.ResponseWriter, r *http.Request) {
+	ctx, err := a.acting(r.Context(), r)
+	if err != nil {
+		http.Error(w, "no", http.StatusForbidden)
+		return
+	}
+
+	id, err := base64.RawURLEncoding.DecodeString(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, "no", http.StatusBadRequest)
+		return
+	}
+
+	if _, err := a.me_.RevokeKey(ctx, rstr.MeRevokeKeyRequest_builder{Id: id}.Build()); err != nil {
+		http.Error(w, "no", http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func addresses(v *rstr.MeGetResponse) []string {

@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/me.proto.
  */
 export const file_app_me: GenFile = /*@__PURE__*/
-  fileDesc("CgxhcHAvbWUucHJvdG8SBnJvc3RlciIOCgxNZUdldFJlcXVlc3QiMgoNTWVMaW5rUmVxdWVzdBIQCghwcm92aWRlchgBIAEoCRIPCgdzdWJqZWN0GAIgASgJIhwKDk1lTGlua1Jlc3BvbnNlEgoKAmlkGAEgASgMIh0KD01lVW5saW5rUmVxdWVzdBIKCgJpZBgBIAEoDCISChBNZVVubGlua1Jlc3BvbnNlIhwKGk1lU2lnbk91dEV2ZXJ5d2hlcmVSZXF1ZXN0IlMKG01lU2lnbk91dEV2ZXJ5d2hlcmVSZXNwb25zZRI0ChBkYXRlX2ludmFsaWRhdGVkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKXAgoNTWVHZXRSZXNwb25zZRIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAwSDQoFYWxpYXMYBCABKAkSDAoEbmFtZRgFIAEoCRIfCgZlbWFpbHMYCCADKAsyDy5yb3N0ZXIuTWVFbWFpbBIdCgV0ZWFtcxgJIAMoCzIOLnJvc3Rlci5NZVRlYW0SDwoHbWV0aG9kcxgKIAMoCRINCgVzaXRlcxgLIAMoDBISCgpldmVyeV9zaXRlGAwgASgIEioKCmlkZW50aXRpZXMYDSADKAsyFi5yb3N0ZXIuU2lnbkluSWRlbnRpdHkSLQoLY3JlZGVudGlhbHMYDiADKAsyGC5yb3N0ZXIuU2lnbkluQ3JlZGVudGlhbCKYAQoJU2lnbkluS2V5EgoKAmlkGAEgASgMEg0KBWFsaWFzGAQgASgJEg8KB21ldGhvZHMYCCADKAkSMAoMZGF0ZV9leHBpcmVzGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBItCglkYXRlX3VzZWQYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wInEKDlNpZ25JbklkZW50aXR5EgoKAmlkGAEgASgMEhAKCHByb3ZpZGVyGAggASgJEg8KB3N1YmplY3QYCSABKAkSMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKRAQoQU2lnbkluQ3JlZGVudGlhbBIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSMAoMZGF0ZV9yb3RhdGVkGAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIvCgtkYXRlX2xvY2tlZBgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiTQoHTWVFbWFpbBIPCgdhZGRyZXNzGAggASgJEjEKDWRhdGVfdmVyaWZpZWQYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wImEKBk1lVGVhbRIKCgJpZBgBIAEoDBINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBHNpdGUYCCABKAwSEgoKc2l0ZV9hbGlhcxgJIAEoCRIMCgRyb2xlGAogASgJMpECCglNZVNlcnZpY2USMgoDR2V0EhQucm9zdGVyLk1lR2V0UmVxdWVzdBoVLnJvc3Rlci5NZUdldFJlc3BvbnNlEjsKBlVubGluaxIXLnJvc3Rlci5NZVVubGlua1JlcXVlc3QaGC5yb3N0ZXIuTWVVbmxpbmtSZXNwb25zZRJcChFTaWduT3V0RXZlcnl3aGVyZRIiLnJvc3Rlci5NZVNpZ25PdXRFdmVyeXdoZXJlUmVxdWVzdBojLnJvc3Rlci5NZVNpZ25PdXRFdmVyeXdoZXJlUmVzcG9uc2USNQoETGluaxIVLnJvc3Rlci5NZUxpbmtSZXF1ZXN0GhYucm9zdGVyLk1lTGlua1Jlc3BvbnNlQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp]);
+  fileDesc("CgxhcHAvbWUucHJvdG8SBnJvc3RlciIOCgxNZUdldFJlcXVlc3QiMgoNTWVMaW5rUmVxdWVzdBIQCghwcm92aWRlchgBIAEoCRIPCgdzdWJqZWN0GAIgASgJIhwKDk1lTGlua1Jlc3BvbnNlEgoKAmlkGAEgASgMImAKEU1lSXNzdWVLZXlSZXF1ZXN0Eg0KBWFsaWFzGAEgASgJEg8KB21ldGhvZHMYAiADKAkSKwoHZXhwaXJlcxgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiQwoSTWVJc3N1ZUtleVJlc3BvbnNlEg0KBXRva2VuGAEgASgJEh4KA2tleRgCIAEoCzIRLnJvc3Rlci5TaWduSW5LZXkiIAoSTWVSZXZva2VLZXlSZXF1ZXN0EgoKAmlkGAEgASgMIhUKE01lUmV2b2tlS2V5UmVzcG9uc2UiHQoPTWVVbmxpbmtSZXF1ZXN0EgoKAmlkGAEgASgMIhIKEE1lVW5saW5rUmVzcG9uc2UiHAoaTWVTaWduT3V0RXZlcnl3aGVyZVJlcXVlc3QiUwobTWVTaWduT3V0RXZlcnl3aGVyZVJlc3BvbnNlEjQKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIrgCCg1NZUdldFJlc3BvbnNlEgoKAmlkGAEgASgMEg4KBnRlbmFudBgCIAEoDBINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEh8KBmVtYWlscxgIIAMoCzIPLnJvc3Rlci5NZUVtYWlsEh0KBXRlYW1zGAkgAygLMg4ucm9zdGVyLk1lVGVhbRIPCgdtZXRob2RzGAogAygJEg0KBXNpdGVzGAsgAygMEhIKCmV2ZXJ5X3NpdGUYDCABKAgSKgoKaWRlbnRpdGllcxgNIAMoCzIWLnJvc3Rlci5TaWduSW5JZGVudGl0eRItCgtjcmVkZW50aWFscxgOIAMoCzIYLnJvc3Rlci5TaWduSW5DcmVkZW50aWFsEh8KBGtleXMYDyADKAsyES5yb3N0ZXIuU2lnbkluS2V5IpgBCglTaWduSW5LZXkSCgoCaWQYASABKAwSDQoFYWxpYXMYBCABKAkSDwoHbWV0aG9kcxgIIAMoCRIwCgxkYXRlX2V4cGlyZXMYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi0KCWRhdGVfdXNlZBgKIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAicQoOU2lnbkluSWRlbnRpdHkSCgoCaWQYASABKAwSEAoIcHJvdmlkZXIYCCABKAkSDwoHc3ViamVjdBgJIAEoCRIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIpEBChBTaWduSW5DcmVkZW50aWFsEgwKBGtpbmQYCCABKAkSDAoEbmFtZRgFIAEoCRIwCgxkYXRlX3JvdGF0ZWQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi8KC2RhdGVfbG9ja2VkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJNCgdNZUVtYWlsEg8KB2FkZHJlc3MYCCABKAkSMQoNZGF0ZV92ZXJpZmllZBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiYQoGTWVUZWFtEgoKAmlkGAEgASgMEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSDAoEc2l0ZRgIIAEoDBISCgpzaXRlX2FsaWFzGAkgASgJEgwKBHJvbGUYCiABKAkymgMKCU1lU2VydmljZRIyCgNHZXQSFC5yb3N0ZXIuTWVHZXRSZXF1ZXN0GhUucm9zdGVyLk1lR2V0UmVzcG9uc2USOwoGVW5saW5rEhcucm9zdGVyLk1lVW5saW5rUmVxdWVzdBoYLnJvc3Rlci5NZVVubGlua1Jlc3BvbnNlElwKEVNpZ25PdXRFdmVyeXdoZXJlEiIucm9zdGVyLk1lU2lnbk91dEV2ZXJ5d2hlcmVSZXF1ZXN0GiMucm9zdGVyLk1lU2lnbk91dEV2ZXJ5d2hlcmVSZXNwb25zZRI1CgRMaW5rEhUucm9zdGVyLk1lTGlua1JlcXVlc3QaFi5yb3N0ZXIuTWVMaW5rUmVzcG9uc2USQQoISXNzdWVLZXkSGS5yb3N0ZXIuTWVJc3N1ZUtleVJlcXVlc3QaGi5yb3N0ZXIuTWVJc3N1ZUtleVJlc3BvbnNlEkQKCVJldm9rZUtleRIaLnJvc3Rlci5NZVJldm9rZUtleVJlcXVlc3QaGy5yb3N0ZXIuTWVSZXZva2VLZXlSZXNwb25zZUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp]);
 
 /**
  * @generated from message roster.MeGetRequest
@@ -79,6 +79,104 @@ export const MeLinkResponseSchema: GenMessage<MeLinkResponse> = /*@__PURE__*/
   messageDesc(file_app_me, 2);
 
 /**
+ * @generated from message roster.MeIssueKeyRequest
+ */
+export type MeIssueKeyRequest = Message<"roster.MeIssueKeyRequest"> & {
+  /**
+   * What the caller calls this key when deciding whether to revoke it.
+   *
+   * @generated from field: string alias = 1;
+   */
+  alias: string;
+
+  /**
+   * What it may be used for, in full: "/roster.VouchService/Verify".
+   *
+   * Empty is refused rather than defaulted in either direction, which is
+   * `IssueKeyRequest.methods`' rule and is worth more here: a page that
+   * defaulted to everything the person holds would mint a key as wide as they
+   * are every time somebody left the field alone.
+   *
+   * @generated from field: repeated string methods = 2;
+   */
+  methods: string[];
+
+  /**
+   * When it stops working, unset for one that does not.
+   *
+   * @generated from field: google.protobuf.Timestamp expires = 3;
+   */
+  expires?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.MeIssueKeyRequest.
+ * Use `create(MeIssueKeyRequestSchema)` to create a new message.
+ */
+export const MeIssueKeyRequestSchema: GenMessage<MeIssueKeyRequest> = /*@__PURE__*/
+  messageDesc(file_app_me, 3);
+
+/**
+ * @generated from message roster.MeIssueKeyResponse
+ */
+export type MeIssueKeyResponse = Message<"roster.MeIssueKeyResponse"> & {
+  /**
+   * The key, and the only time it is ever readable. What is stored is a hash,
+   * for the reason every password store has one.
+   *
+   * @generated from field: string token = 1;
+   */
+  token: string;
+
+  /**
+   * The row, in the shape `MeGetResponse.keys` answers with -- so a page that
+   * has just minted one can put it in the list without asking again.
+   *
+   * @generated from field: roster.SignInKey key = 2;
+   */
+  key?: SignInKey | undefined;
+};
+
+/**
+ * Describes the message roster.MeIssueKeyResponse.
+ * Use `create(MeIssueKeyResponseSchema)` to create a new message.
+ */
+export const MeIssueKeyResponseSchema: GenMessage<MeIssueKeyResponse> = /*@__PURE__*/
+  messageDesc(file_app_me, 4);
+
+/**
+ * @generated from message roster.MeRevokeKeyRequest
+ */
+export type MeRevokeKeyRequest = Message<"roster.MeRevokeKeyRequest"> & {
+  /**
+   * Which one, by the identifier `MeGetResponse.keys` answers with.
+   *
+   * @generated from field: bytes id = 1;
+   */
+  id: Uint8Array;
+};
+
+/**
+ * Describes the message roster.MeRevokeKeyRequest.
+ * Use `create(MeRevokeKeyRequestSchema)` to create a new message.
+ */
+export const MeRevokeKeyRequestSchema: GenMessage<MeRevokeKeyRequest> = /*@__PURE__*/
+  messageDesc(file_app_me, 5);
+
+/**
+ * @generated from message roster.MeRevokeKeyResponse
+ */
+export type MeRevokeKeyResponse = Message<"roster.MeRevokeKeyResponse"> & {
+};
+
+/**
+ * Describes the message roster.MeRevokeKeyResponse.
+ * Use `create(MeRevokeKeyResponseSchema)` to create a new message.
+ */
+export const MeRevokeKeyResponseSchema: GenMessage<MeRevokeKeyResponse> = /*@__PURE__*/
+  messageDesc(file_app_me, 6);
+
+/**
  * @generated from message roster.MeUnlinkRequest
  */
 export type MeUnlinkRequest = Message<"roster.MeUnlinkRequest"> & {
@@ -99,7 +197,7 @@ export type MeUnlinkRequest = Message<"roster.MeUnlinkRequest"> & {
  * Use `create(MeUnlinkRequestSchema)` to create a new message.
  */
 export const MeUnlinkRequestSchema: GenMessage<MeUnlinkRequest> = /*@__PURE__*/
-  messageDesc(file_app_me, 3);
+  messageDesc(file_app_me, 7);
 
 /**
  * @generated from message roster.MeUnlinkResponse
@@ -112,7 +210,7 @@ export type MeUnlinkResponse = Message<"roster.MeUnlinkResponse"> & {
  * Use `create(MeUnlinkResponseSchema)` to create a new message.
  */
 export const MeUnlinkResponseSchema: GenMessage<MeUnlinkResponse> = /*@__PURE__*/
-  messageDesc(file_app_me, 4);
+  messageDesc(file_app_me, 8);
 
 /**
  * @generated from message roster.MeSignOutEverywhereRequest
@@ -125,7 +223,7 @@ export type MeSignOutEverywhereRequest = Message<"roster.MeSignOutEverywhereRequ
  * Use `create(MeSignOutEverywhereRequestSchema)` to create a new message.
  */
 export const MeSignOutEverywhereRequestSchema: GenMessage<MeSignOutEverywhereRequest> = /*@__PURE__*/
-  messageDesc(file_app_me, 5);
+  messageDesc(file_app_me, 9);
 
 /**
  * @generated from message roster.MeSignOutEverywhereResponse
@@ -145,7 +243,7 @@ export type MeSignOutEverywhereResponse = Message<"roster.MeSignOutEverywhereRes
  * Use `create(MeSignOutEverywhereResponseSchema)` to create a new message.
  */
 export const MeSignOutEverywhereResponseSchema: GenMessage<MeSignOutEverywhereResponse> = /*@__PURE__*/
-  messageDesc(file_app_me, 6);
+  messageDesc(file_app_me, 10);
 
 /**
  * @generated from message roster.MeGetResponse
@@ -251,6 +349,25 @@ export type MeGetResponse = Message<"roster.MeGetResponse"> & {
    * @generated from field: repeated roster.SignInCredential credentials = 14;
    */
   credentials: SignInCredential[];
+
+  /**
+   * And the keys that act as them, which is the third way in and the one that
+   * is hardest to see: an `rt_` is a string in somebody's script, and the
+   * question a person asks about it is *is this still being used* rather than
+   * *what is it*.
+   *
+   * Here for the same reason as the two above and one more. `ApiKeyService` is
+   * unregistered everywhere -- its generated `Get` answers with the verifier --
+   * so there is no read to narrow, and the read an operator uses,
+   * `HolderService.SignsIn`, takes a subject and reaches their whole tenant.
+   *
+   * The secret is not here and there is nowhere it could come from: what is
+   * stored is a hash. A key is readable exactly once, at
+   * [MeService.IssueKey].
+   *
+   * @generated from field: repeated roster.SignInKey keys = 15;
+   */
+  keys: SignInKey[];
 };
 
 /**
@@ -258,16 +375,9 @@ export type MeGetResponse = Message<"roster.MeGetResponse"> & {
  * Use `create(MeGetResponseSchema)` to create a new message.
  */
 export const MeGetResponseSchema: GenMessage<MeGetResponse> = /*@__PURE__*/
-  messageDesc(file_app_me, 7);
+  messageDesc(file_app_me, 11);
 
 /**
- * SignInIdentity is one way somebody arrives from outside.
- *
- * Named for what it describes rather than for the RPC that first answered with
- * it, because there are two now: this one about the caller, and
- * `HolderService.SignsIn` about somebody else. Two shapes saying one thing is
- * two that drift, and the drift would be between what a person sees about
- * themselves and what an operator sees about them.
  * SignInKey is one API key that acts as somebody.
  *
  * A key is a way in like the other two, and it is the one a screen most needs
@@ -327,9 +437,17 @@ export type SignInKey = Message<"roster.SignInKey"> & {
  * Use `create(SignInKeySchema)` to create a new message.
  */
 export const SignInKeySchema: GenMessage<SignInKey> = /*@__PURE__*/
-  messageDesc(file_app_me, 8);
+  messageDesc(file_app_me, 12);
 
 /**
+ * SignInIdentity is one way somebody arrives from outside.
+ *
+ * Named for what it describes rather than for the RPC that first answered with
+ * it, because there are two now: this one about the caller, and
+ * `HolderService.SignsIn` about somebody else. Two shapes saying one thing is
+ * two that drift, and the drift would be between what a person sees about
+ * themselves and what an operator sees about them.
+ *
  * @generated from message roster.SignInIdentity
  */
 export type SignInIdentity = Message<"roster.SignInIdentity"> & {
@@ -370,7 +488,7 @@ export type SignInIdentity = Message<"roster.SignInIdentity"> & {
  * Use `create(SignInIdentitySchema)` to create a new message.
  */
 export const SignInIdentitySchema: GenMessage<SignInIdentity> = /*@__PURE__*/
-  messageDesc(file_app_me, 9);
+  messageDesc(file_app_me, 13);
 
 /**
  * SignInCredential is one secret roster holds for somebody, and never the secret.
@@ -421,7 +539,7 @@ export type SignInCredential = Message<"roster.SignInCredential"> & {
  * Use `create(SignInCredentialSchema)` to create a new message.
  */
 export const SignInCredentialSchema: GenMessage<SignInCredential> = /*@__PURE__*/
-  messageDesc(file_app_me, 10);
+  messageDesc(file_app_me, 14);
 
 /**
  * @generated from message roster.MeEmail
@@ -443,7 +561,7 @@ export type MeEmail = Message<"roster.MeEmail"> & {
  * Use `create(MeEmailSchema)` to create a new message.
  */
 export const MeEmailSchema: GenMessage<MeEmail> = /*@__PURE__*/
-  messageDesc(file_app_me, 11);
+  messageDesc(file_app_me, 15);
 
 /**
  * @generated from message roster.MeTeam
@@ -487,7 +605,7 @@ export type MeTeam = Message<"roster.MeTeam"> & {
  * Use `create(MeTeamSchema)` to create a new message.
  */
 export const MeTeamSchema: GenMessage<MeTeam> = /*@__PURE__*/
-  messageDesc(file_app_me, 12);
+  messageDesc(file_app_me, 16);
 
 /**
  * MeService answers what a caller is, in one round trip.
@@ -635,6 +753,71 @@ export const MeService: GenService<{
     methodKind: "unary";
     input: typeof MeLinkRequestSchema;
     output: typeof MeLinkResponseSchema;
+  },
+  /**
+   * IssueKey mints an `rt_` that acts as the caller, and answers with it once.
+   *
+   * The self-service half of `IssueService.IssueKey`, which is an operator's:
+   * that one takes a `HolderRef` and this takes nothing, which is the same
+   * split `SignOutEverywhere` makes against `HolderService.Invalidate` and for
+   * the same reason.
+   *
+   * # Why it is not `IssueService` with your own identifier
+   *
+   * Because it could be, and the grant is the problem rather than the call.
+   * `IssueKeyRequest.holder` is a reference the wall narrows to the caller's
+   * tenant, so the smallest role covering *mint a key for myself* is *mint a
+   * key for anybody here* -- the shape [MeService.Unlink]'s comment refuses,
+   * arriving on the screen a person is most likely to be given.
+   *
+   * This is a **which** with no *whose* at all: the row hangs off the frame's
+   * actor and no field can redirect it, so a role naming it means exactly *may
+   * mint a key that acts as you*.
+   *
+   * # What still refuses it
+   *
+   * `server/core` holds a key to the rule every grant is held to -- nobody
+   * hands out a method they do not hold -- and this goes through it, so a
+   * person cannot mint themselves something wider than they are. That is the
+   * whole of what makes a self-service button safe, and it is why this writes
+   * through the walled stack rather than reaching for the database.
+   *
+   * # And it needs a role
+   *
+   * `aboutYourself` waives `Get`, `Unlink` and `SignOutEverywhere` and this is
+   * not on that list, for `Link`'s reason said again: what is waived is what
+   * somebody must be able to do with **no** role, and minting an API key is a
+   * feature a deployment chooses to offer. Nobody is locked out by its absence,
+   * and what it creates outlives the session that asked for it.
+   *
+   * @generated from rpc roster.MeService.IssueKey
+   */
+  issueKey: {
+    methodKind: "unary";
+    input: typeof MeIssueKeyRequestSchema;
+    output: typeof MeIssueKeyResponseSchema;
+  },
+  /**
+   * RevokeKey ends one of the caller's own keys.
+   *
+   * The other half, and the half that must exist for the first to be offered:
+   * a screen that mints and cannot revoke is a screen that only accumulates.
+   *
+   * A *which* and never a *whose*, exactly as [MeService.Unlink] is. One that
+   * is not the caller's is `NotFound`, told apart from nothing, so this cannot
+   * be used to ask whether somebody else's key exists.
+   *
+   * Unlike `Unlink` there is no last-one rule. A key is not a way **in** -- it
+   * is a way to act once you already are one -- so revoking the only one locks
+   * nobody out of anything, and a person who revokes all of theirs still signs
+   * in the way they always did.
+   *
+   * @generated from rpc roster.MeService.RevokeKey
+   */
+  revokeKey: {
+    methodKind: "unary";
+    input: typeof MeRevokeKeyRequestSchema;
+    output: typeof MeRevokeKeyResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_app_me, 0);

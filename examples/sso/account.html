@@ -64,6 +64,38 @@
 	<h2>addresses</h2>
 	<ul id="emails"></ul>
 
+	<!--
+		The third way in, and the one that is hardest to see: an `rt_` is a
+		string in somebody's script. The column that matters on this table is
+		*used*, because the question a person asks before revoking one is
+		whether anything is still calling with it.
+	-->
+	<h2>keys that act as you</h2>
+	<table>
+		<tbody id="keys"></tbody>
+	</table>
+	<p class="none" id="no-keys" hidden>none</p>
+
+	<form id="mint">
+		<label>name <input name="alias" placeholder="the nightly job" /></label>
+		<label>
+			may call
+			<input name="methods" placeholder="/roster.MeService/Get" />
+		</label>
+		<button>mint</button>
+		<p class="bad" id="mint-bad" hidden></p>
+	</form>
+
+	<!--
+		Shown once and never again, which is not this page being careful: what
+		roster stored is a hash, so there is nowhere a second look could come
+		from. Reloading loses it, and that is the correct behaviour to draw.
+	-->
+	<p id="minted" hidden>
+		Copy this now — it is not shown again.<br />
+		<code id="minted-token"></code>
+	</p>
+
 	<div class="acts">
 		<!--
 			Two halves in two places. roster answers *invalid since when*, which
@@ -144,9 +176,59 @@
 				: v.emails.map((a) => Object.assign(document.createElement('li'), { textContent: a }))),
 		)
 
+		drawKeys(v)
+
 		show($('in'), false)
 		show($('next'), false)
 		show($('me'), true)
+	}
+
+	function drawKeys(v) {
+		show($('no-keys'), v.keys.length === 0)
+		$('keys').replaceChildren(
+			...v.keys.map((k) => {
+				const tr = document.createElement('tr')
+
+				const alias = document.createElement('td')
+				alias.textContent = k.alias
+
+				const methods = document.createElement('td')
+				methods.className = 'none'
+				methods.textContent = k.methods.join(' ')
+
+				// Never, rather than blank. A key nothing has ever presented
+				// is the one somebody is most likely to be safe revoking, and
+				// an empty cell does not say so.
+				const used = document.createElement('td')
+				used.className = 'none'
+				used.textContent = k.used ? `used ${k.used}` : 'never used'
+
+				const act = document.createElement('td')
+				const b = document.createElement('button')
+				b.textContent = 'revoke'
+				b.onclick = () => revoke(k.id)
+				act.append(b)
+
+				tr.append(alias, methods, used, act)
+				return tr
+			}),
+		)
+	}
+
+	async function revoke(id) {
+		show($('me-bad'), false)
+
+		const res = await fetch(`/me/keys/${id}`, { method: 'DELETE' })
+		if (!res.ok) {
+			$('me-bad').textContent = 'no'
+			show($('me-bad'), true)
+			return
+		}
+
+		// The token of a key that is gone must not stay on the screen beside
+		// the list it is no longer in.
+		show($('minted'), false)
+		await draw()
 	}
 
 	async function remove(id) {
@@ -210,6 +292,35 @@
 		show($('next-bad'), true)
 		show($('next'), false)
 		show($('in'), true)
+	}
+
+	$('mint').onsubmit = async (e) => {
+		e.preventDefault()
+		show($('mint-bad'), false)
+		show($('minted'), false)
+
+		const f = new FormData(e.target)
+		const res = await post('/me/keys', {
+			alias: f.get('alias'),
+			// Split by this page, because a text field is what a page has and a
+			// list is what the RPC takes. An empty one is sent as empty: roster
+			// refuses a key that allows nothing rather than defaulting it, and
+			// a page that filled in a default would be choosing what somebody
+			// left blank.
+			methods: String(f.get('methods') ?? '').split(/\s+/).filter(Boolean),
+		})
+		if (!res.ok) {
+			$('mint-bad').textContent = await res.text()
+			show($('mint-bad'), true)
+			return
+		}
+
+		const v = await res.json()
+		$('minted-token').textContent = v.token
+		show($('minted'), true)
+		e.target.reset()
+
+		await draw()
 	}
 
 	$('everywhere').onclick = async () => {

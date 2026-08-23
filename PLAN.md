@@ -555,6 +555,58 @@ somebody reading the code to decide what is safe.
   credentials -- but *local is Ungated* was written down and *and general writes
   are open there* was not.
 
+### D54 · A key somebody mints for themselves
+
+The last line of `docs/OPERATING.md`'s *what is not here* that was a missing
+feature rather than a deliberate absence: an **operator** could list somebody's
+keys, mint one and revoke one -- D51 drew that console -- and a person could do
+none of the three about their own.
+
+Three methods on `MeService`, which is where the answer already was:
+`MeGetResponse.keys` beside the identities and credentials it already carried,
+`MeService.IssueKey`, and `MeService.RevokeKey`.
+
+#### Why not `IssueService` with your own identifier
+
+Because it works, and the grant is the problem rather than the call.
+`IssueKeyRequest.holder` is a `HolderRef` the wall narrows to the caller's
+tenant, so the smallest role covering *mint a key for myself* is *mint one for
+anybody here* -- which is the objection D23 was built from and which
+`MeService.Unlink`'s comment already states about `IdentityService`. The same is
+true of `HolderService.RevokeKey`, which takes a subject for the same reason.
+
+These take no subject at all. The row hangs off the frame's actor and no field
+can redirect it, so a role naming `MeService/IssueKey` means exactly *may mint a
+key that acts as you*.
+
+#### And what stops somebody minting themselves the world
+
+Nothing in `MeService`, and that is the design. `server/core`'s `ApiKey.Add`
+refuses a list of methods the caller does not hold -- the rule D28 and D41
+arrived at -- and this reaches it by writing through the walled stack, exactly
+as `Link` and `Unlink` do. A version that reached for the database would
+compile, work, and be a self-service page that hands out permissions.
+
+So `MeService/IssueKey` joins the grant table in `OPERATING.md` beside
+`ApiKeyService/Add`: the widest key somebody can make for themselves is exactly
+as wide as they are.
+
+#### Neither is waived
+
+`aboutYourself` waives `Get`, `Unlink` and `SignOutEverywhere` and these are not
+on that list, for D50's reason said again: what is waived is what somebody
+**must** be able to do with no role at all -- read their own record, sign out of
+a session they no longer trust, take back a way in. An API key is a feature a
+deployment offers; nobody is locked out by its absence, and what it creates
+outlives the session that asked for it.
+
+#### And there is no last-one rule
+
+`Unlink` refuses the removal of somebody's only way in. `RevokeKey` does not,
+because a key is not a way **in** -- it is a way to act once you already are
+one. Somebody who revokes every key they have signs in tomorrow the way they
+always did.
+
 ### D53 · The sync channel, which is state and not a signal
 
 Item 4, the last thing the list still called Phase 4. `cmd/watch_test.go` runs

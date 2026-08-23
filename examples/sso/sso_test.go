@@ -252,6 +252,8 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 			"/roster.MeService/Unlink",
 			"/roster.MeService/Link",
 			"/roster.MeService/SignOutEverywhere",
+			"/roster.MeService/IssueKey",
+			"/roster.MeService/RevokeKey",
 
 			// What the front door asks before it knows anything, which is how
 			// it stops holding a copy of which tenant serves which name.
@@ -1153,6 +1155,12 @@ type record struct {
 		Which string `json:"which"`
 	} `json:"signs_in"`
 	MayCall []string `json:"may_call"`
+	Keys    []struct {
+		Id      string   `json:"id"`
+		Alias   string   `json:"alias"`
+		Methods []string `json:"methods"`
+		Used    string   `json:"used"`
+	} `json:"keys"`
 }
 
 // TestTheAccountScreenIsServed is D24 §4 reachable, and it is the whole of what
@@ -1572,4 +1580,137 @@ func TestAddingAWayInNeedsASessionFirst(t *testing.T) {
 	defer res.Body.Close()
 	x.Equal(http.StatusForbidden, res.StatusCode,
 		"a browser with no session started an errand that attaches an account to somebody")
+}
+
+// TestSomebodyMintsAKeyFromTheirOwnPage, which `docs/OPERATING.md` listed under
+// *what is not here* for as long as the operator's version existed.
+//
+// The operator's is the console: it lists somebody's keys beside their
+// passwords and providers, mints one, revokes one. This is the same three acts
+// with no subject anywhere in them, which is what lets a deployment offer it
+// without handing somebody a role that reaches everybody in their tenant.
+func TestSomebodyMintsAKeyFromTheirOwnPage(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "acme"})
+
+	h, err := d.ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),
+		Alias:  "erin",
+	}.Build())
+	x.NoError(err)
+
+	// What she may do, which is what she may put on a key -- `server/core`
+	// refuses a list wider than the person writing it, and that rule is the
+	// whole of what makes a self-service mint button safe.
+	role, err := d.ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),
+		Alias:  "hers",
+		Methods: []string{
+			rstr.MeService_Get_FullMethodName,
+			rstr.MeService_IssueKey_FullMethodName,
+			rstr.MeService_RevokeKey_FullMethodName,
+		},
+	}.Build())
+	x.NoError(err)
+
+	_, err = d.ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
+		Role:   rstr.RoleRef_builder{Id: role.GetId()}.Build(),
+		Holder: rstr.HolderRef_builder{Id: h.GetId()}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	_, err = vouch.New(d.ungated, d.ungated).Set(ctx, rstr.VouchSetRequest_builder{
+		Who:    rstr.VouchWho_builder{Id: h.GetId()}.Build(),
+		Secret: []byte("correct horse battery staple"),
+	}.Build())
+	x.NoError(err)
+
+	jar, err := cookiejar.New(nil)
+	x.NoError(err)
+
+	c := &http.Client{Jar: jar}
+
+	res, err := c.Post(d.app.URL+"/session", "application/json",
+		strings.NewReader(`{"alias":"erin","password":"correct horse battery staple"}`))
+	x.NoError(err)
+	res.Body.Close()
+	x.Equal(http.StatusNoContent, res.StatusCode)
+
+	mint := func(body string) *http.Response {
+		t.Helper()
+
+		res, err := c.Post(d.app.URL+"/me/keys", "application/json", strings.NewReader(body))
+		x.NoError(err)
+		t.Cleanup(func() { res.Body.Close() })
+
+		return res
+	}
+
+	out := mint(`{"alias":"the-nightly-job","methods":["/roster.MeService/Get"]}`)
+	x.Equal(http.StatusOK, out.StatusCode)
+
+	var minted struct {
+		Token string `json:"token"`
+		Key   struct {
+			Id string `json:"id"`
+		} `json:"key"`
+	}
+	x.NoError(json.NewDecoder(out.Body).Decode(&minted))
+
+	// An `rt_` and not an `rk_`: which kind a key is is a fact about which
+	// server answered rather than a field, and this one is the data plane.
+	x.True(strings.HasPrefix(minted.Token, "rt_"), "the token was %q", minted.Token)
+
+	t.Run("and her own page lists it, without the secret", func(t *testing.T) {
+		x := require.New(t)
+
+		got, err := c.Get(d.app.URL + "/me")
+		x.NoError(err)
+		defer got.Body.Close()
+
+		body, err := io.ReadAll(got.Body)
+		x.NoError(err)
+
+		var v record
+		x.NoError(json.Unmarshal(body, &v))
+		x.Len(v.Keys, 1)
+		x.Equal("the-nightly-job", v.Keys[0].Alias)
+		x.Equal([]string{"/roster.MeService/Get"}, v.Keys[0].Methods)
+		x.Empty(v.Keys[0].Used, "a key nothing has presented was shown as used")
+
+		// A key is readable exactly once. What is stored is a hash, so there is
+		// nowhere a second look could come from -- and this asserts the page
+		// does not keep one of its own.
+		x.NotContains(string(body), minted.Token)
+	})
+
+	t.Run("and nothing wider than she is", func(t *testing.T) {
+		x := require.New(t)
+
+		out := mint(`{"alias":"reaching","methods":["/roster.HolderService/Erase"]}`)
+		x.Equal(http.StatusForbidden, out.StatusCode,
+			"a self-service page handed out a permission its person does not hold")
+	})
+
+	t.Run("and she can revoke it", func(t *testing.T) {
+		x := require.New(t)
+
+		req, err := http.NewRequest(http.MethodDelete, d.app.URL+"/me/keys/"+minted.Key.Id, nil)
+		x.NoError(err)
+
+		out, err := c.Do(req)
+		x.NoError(err)
+		defer out.Body.Close()
+		x.Equal(http.StatusNoContent, out.StatusCode)
+
+		got, err := c.Get(d.app.URL + "/me")
+		x.NoError(err)
+		defer got.Body.Close()
+
+		var v record
+		x.NoError(json.NewDecoder(got.Body).Decode(&v))
+		x.Empty(v.Keys)
+	})
 }

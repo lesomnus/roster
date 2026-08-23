@@ -122,6 +122,57 @@ service MeService {
   // refuses a second identity of one provider for one person, so this cannot
   // quietly replace the account somebody already signs in with.
   rpc Link(MeLinkRequest) returns (MeLinkResponse);
+
+  // IssueKey mints an `rt_` that acts as the caller, and answers with it once.
+  //
+  // The self-service half of `IssueService.IssueKey`, which is an operator's:
+  // that one takes a `HolderRef` and this takes nothing, which is the same
+  // split `SignOutEverywhere` makes against `HolderService.Invalidate` and for
+  // the same reason.
+  //
+  // # Why it is not `IssueService` with your own identifier
+  //
+  // Because it could be, and the grant is the problem rather than the call.
+  // `IssueKeyRequest.holder` is a reference the wall narrows to the caller's
+  // tenant, so the smallest role covering *mint a key for myself* is *mint a
+  // key for anybody here* -- the shape [MeService.Unlink]'s comment refuses,
+  // arriving on the screen a person is most likely to be given.
+  //
+  // This is a **which** with no *whose* at all: the row hangs off the frame's
+  // actor and no field can redirect it, so a role naming it means exactly *may
+  // mint a key that acts as you*.
+  //
+  // # What still refuses it
+  //
+  // `server/core` holds a key to the rule every grant is held to -- nobody
+  // hands out a method they do not hold -- and this goes through it, so a
+  // person cannot mint themselves something wider than they are. That is the
+  // whole of what makes a self-service button safe, and it is why this writes
+  // through the walled stack rather than reaching for the database.
+  //
+  // # And it needs a role
+  //
+  // `aboutYourself` waives `Get`, `Unlink` and `SignOutEverywhere` and this is
+  // not on that list, for `Link`'s reason said again: what is waived is what
+  // somebody must be able to do with **no** role, and minting an API key is a
+  // feature a deployment chooses to offer. Nobody is locked out by its absence,
+  // and what it creates outlives the session that asked for it.
+  rpc IssueKey(MeIssueKeyRequest) returns (MeIssueKeyResponse);
+
+  // RevokeKey ends one of the caller's own keys.
+  //
+  // The other half, and the half that must exist for the first to be offered:
+  // a screen that mints and cannot revoke is a screen that only accumulates.
+  //
+  // A *which* and never a *whose*, exactly as [MeService.Unlink] is. One that
+  // is not the caller's is `NotFound`, told apart from nothing, so this cannot
+  // be used to ask whether somebody else's key exists.
+  //
+  // Unlike `Unlink` there is no last-one rule. A key is not a way **in** -- it
+  // is a way to act once you already are one -- so revoking the only one locks
+  // nobody out of anything, and a person who revokes all of theirs still signs
+  // in the way they always did.
+  rpc RevokeKey(MeRevokeKeyRequest) returns (MeRevokeKeyResponse);
 }
 
 message MeGetRequest {}
@@ -143,6 +194,39 @@ message MeLinkResponse {
   // asking again.
   bytes id = 1;
 }
+
+message MeIssueKeyRequest {
+  // What the caller calls this key when deciding whether to revoke it.
+  string alias = 1;
+
+  // What it may be used for, in full: "/roster.VouchService/Verify".
+  //
+  // Empty is refused rather than defaulted in either direction, which is
+  // `IssueKeyRequest.methods`' rule and is worth more here: a page that
+  // defaulted to everything the person holds would mint a key as wide as they
+  // are every time somebody left the field alone.
+  repeated string methods = 2;
+
+  // When it stops working, unset for one that does not.
+  google.protobuf.Timestamp expires = 3;
+}
+
+message MeIssueKeyResponse {
+  // The key, and the only time it is ever readable. What is stored is a hash,
+  // for the reason every password store has one.
+  string token = 1;
+
+  // The row, in the shape `MeGetResponse.keys` answers with -- so a page that
+  // has just minted one can put it in the list without asking again.
+  SignInKey key = 2;
+}
+
+message MeRevokeKeyRequest {
+  // Which one, by the identifier `MeGetResponse.keys` answers with.
+  bytes id = 1;
+}
+
+message MeRevokeKeyResponse {}
 
 message MeUnlinkRequest {
   // Which one, by the identifier `MeGetResponse` answers with.
@@ -221,15 +305,23 @@ message MeGetResponse {
   // also why `cmd.Policy` can waive a binding for it and for nothing else.
   repeated SignInIdentity identities = 13;
   repeated SignInCredential credentials = 14;
+
+  // And the keys that act as them, which is the third way in and the one that
+  // is hardest to see: an `rt_` is a string in somebody's script, and the
+  // question a person asks about it is *is this still being used* rather than
+  // *what is it*.
+  //
+  // Here for the same reason as the two above and one more. `ApiKeyService` is
+  // unregistered everywhere -- its generated `Get` answers with the verifier --
+  // so there is no read to narrow, and the read an operator uses,
+  // `HolderService.SignsIn`, takes a subject and reaches their whole tenant.
+  //
+  // The secret is not here and there is nowhere it could come from: what is
+  // stored is a hash. A key is readable exactly once, at
+  // [MeService.IssueKey].
+  repeated SignInKey keys = 15;
 }
 
-// SignInIdentity is one way somebody arrives from outside.
-//
-// Named for what it describes rather than for the RPC that first answered with
-// it, because there are two now: this one about the caller, and
-// `HolderService.SignsIn` about somebody else. Two shapes saying one thing is
-// two that drift, and the drift would be between what a person sees about
-// themselves and what an operator sees about them.
 // SignInKey is one API key that acts as somebody.
 //
 // A key is a way in like the other two, and it is the one a screen most needs
@@ -261,6 +353,13 @@ message SignInKey {
   google.protobuf.Timestamp date_used = 10;
 }
 
+// SignInIdentity is one way somebody arrives from outside.
+//
+// Named for what it describes rather than for the RPC that first answered with
+// it, because there are two now: this one about the caller, and
+// `HolderService.SignsIn` about somebody else. Two shapes saying one thing is
+// two that drift, and the drift would be between what a person sees about
+// themselves and what an operator sees about them.
 message SignInIdentity {
   // The row, so that a screen with a remove button has something to name.
   bytes id = 1;

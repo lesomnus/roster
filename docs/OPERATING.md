@@ -695,8 +695,12 @@ which is a wider set than the writes that mention a role. These are all of them:
 | `TeamMembershipService/Add`, `/Patch` | that role, in that team |
 | `GroupMembershipService/Add` | everything bound to that group |
 | `ApiKeyService/Add`, `/Patch` | the methods on the key |
+| `MeService/IssueKey` | the methods on a key that acts as **you** |
 
-Each is refused when it names a method you do not hold. The last two are the
+Each is refused when it names a method you do not hold. The last one is a
+person's own and is refused on the same terms, which is what lets a deployment
+put a mint button on a self-service page: the widest key somebody can make for
+themselves is exactly as wide as they are. The last two are the
 ones that surprise people: neither says the word *role*, and each hands over as
 much as one.
 
@@ -956,11 +960,40 @@ POST /roster.MeService/Get   {}
 ```
 
 Takes nothing, answers about the caller: their identifiers, addresses, teams,
-and every method they may call. That list is the union the server enforces, so
+every method they may call, and the three ways in that resolve to them — the
+credentials roster holds, the provider accounts somebody else does, and the
+keys that act as them. That method list is the union the server enforces, so
 what a page shows and what it is allowed to do cannot drift.
 
 It needs **no role** — requiring one to learn that you hold none is a deployment
 where a new account cannot be told what it is for.
+
+### And what a page lets somebody do about it
+
+Four more methods on the same service, each with **no subject anywhere in it**.
+That is what makes them safe to offer: none can be pointed at anybody else, so
+the smallest role covering one means exactly what its name says.
+
+| | |
+| --- | --- |
+| `MeService/Unlink` | take back one of their own provider accounts. Waived — no role needed |
+| `MeService/SignOutEverywhere` | void everything issued to them before now. Waived |
+| `MeService/Link` | attach a provider account they have just proved they control |
+| `MeService/IssueKey`, `/RevokeKey` | mint an `rt_` that acts as them, and end one |
+
+The first two need **no role**, for `Get`'s reason: they are what somebody must
+be able to do with no permissions at all. The last two are features a deployment
+chooses to offer, so they are named on a role like anything else.
+
+Reach for these rather than the operator's equivalents on any screen a person
+draws about themselves. `IdentityService` and `ApiKeyService` narrow by
+**tenant**, so the smallest role covering *remove my own account* through them
+is *remove anybody's*, and `IssueService.IssueKey` and
+`HolderService.RevokeKey` take a subject for the same reason. That is the leak
+D17 named, arriving on the screen it is most tempting on.
+
+`examples/sso` draws all of it: `GET /me`, `POST /me/keys`, `DELETE
+/me/keys/{id}`, `DELETE /me/ways/{id}`, `POST /me/sign-out-everywhere`.
 
 ## Signing somebody in
 
@@ -1089,11 +1122,6 @@ Nothing written down is plaintext, and it warns once.
 
 ## What is not here
 
-- **A screen where a person mints their *own* `rt_`.** An **operator** has one:
-  the console lists somebody's keys beside their passwords and providers, mints
-  one and revokes one. A person doing it for themselves is the self-service
-  version, and nothing draws it — `IssueService` is on the data plane for it,
-  and `MeService` would need the read.
 - **`Binding` cannot be re-pointed.** Its edges are immutable, so changing who
   holds what is a delete and an add. That is the safe direction and it is worth
   knowing before writing a console screen that looks like an edit.

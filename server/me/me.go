@@ -37,12 +37,14 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/lesomnus/roster/internal/ent"
+	"github.com/lesomnus/roster/internal/ent/apikey"
 	"github.com/lesomnus/roster/internal/ent/credential"
 	"github.com/lesomnus/roster/internal/ent/email"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/identity"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/keys"
 )
 
 // Held is the union `gate.Policy` enforces, asked here so that what a page
@@ -126,6 +128,9 @@ func (s *Server) Get(ctx context.Context, _ *app.MeGetRequest) (*app.MeGetRespon
 		return nil, err
 	}
 	if res.Credentials, err = s.credentials(ctx, f.Actor); err != nil {
+		return nil, err
+	}
+	if res.Keys, err = s.keys(ctx, f.Actor); err != nil {
 		return nil, err
 	}
 
@@ -292,6 +297,166 @@ func (s *Server) credentials(ctx context.Context, who pdid.Id) ([]*app.SignInCre
 	}
 
 	return out, nil
+}
+
+// keys is what acts as them, and never what verifies one.
+//
+// Written out like `credentials` above and for the identical reason: `secret`
+// is absent rather than deselected, and there is no `Select` here that could
+// ask for it. `ApiKeyService` is unregistered everywhere for that fact, and
+// this is the read that replaces it for the one case that is safe.
+//
+// The operator's version of this answer is `HolderService.SignsIn`, which is
+// the same message filled in the same order -- two shapes saying one thing is
+// two that drift, and the drift would be between what a person sees about
+// themselves and what an operator sees about them.
+func (s *Server) keys(ctx context.Context, who pdid.Id) ([]*app.SignInKey, error) {
+	vs, err := s.db.ApiKey.Query().
+		Where(apikey.DateErasedIsNil(), apikey.HasHolderWith(holder.IDEQ(who.Uuid()))).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]*app.SignInKey, 0, len(vs))
+	for _, v := range vs {
+		k := app.SignInKey_builder{
+			Id:      v.ID[:],
+			Alias:   v.Alias,
+			Methods: v.Methods,
+		}
+		if v.DateExpires != nil {
+			k.DateExpires = timestamppb.New(*v.DateExpires)
+		}
+		if v.DateUsed != nil {
+			k.DateUsed = timestamppb.New(*v.DateUsed)
+		}
+
+		out = append(out, k.Build())
+	}
+
+	return out, nil
+}
+
+// IssueKey mints an `rt_` that acts as the caller.
+//
+// The self-service half of `IssueService.IssueKey`. That one takes a
+// `HolderRef` and is an operator's; this takes no subject at all, which is what
+// makes the smallest role covering it *may mint a key that acts as you* rather
+// than *may mint one for anybody in this tenant*.
+//
+// # The rule that makes the button safe is not here
+//
+// It is in `server/core`, and this reaches it by writing through the walled
+// stack: `ApiKey.Add` refuses a list of methods the caller does not hold, so a
+// person cannot mint themselves something wider than they are. Reaching for the
+// database would be a self-service page that hands out permissions.
+//
+// # And the prefix is not in the request
+//
+// `keys.PrefixTenant`, because this server is the data plane and a key minted
+// here belongs to somebody inside a customer's tenant. `issue.proto` argues
+// that at length: a caller that could name a prefix could ask the
+// customer-facing port for a key of the deployment's own kind.
+func (s *Server) IssueKey(ctx context.Context, req *app.MeIssueKeyRequest) (*app.MeIssueKeyResponse, error) {
+	f, ok := frame.From(ctx)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "who is asking?")
+	}
+	if s.walled == nil {
+		return nil, status.Error(codes.Unimplemented, "this server cannot write")
+	}
+
+	if req.GetAlias() == "" {
+		return nil, pderr.Invalidf("alias", "a name for the key")
+	}
+	if len(req.GetMethods()) == 0 {
+		// Refused rather than defaulted, which `IssueKeyRequest.methods` states
+		// and which matters more here: a page that defaulted to everything the
+		// person holds would mint a key as wide as they are every time somebody
+		// left the field alone.
+		return nil, pderr.Invalidf("methods", "a key that allows nothing opens no door")
+	}
+
+	token, sum, err := keys.Mint(keys.PrefixTenant)
+	if err != nil {
+		return nil, err
+	}
+
+	add := app.ApiKeyAddRequest_builder{
+		Holder:  app.HolderRef_builder{Id: f.Actor.Bytes()}.Build(),
+		Alias:   req.GetAlias(),
+		Secret:  sum,
+		Methods: req.GetMethods(),
+	}
+	if v := req.GetExpires(); v != nil {
+		add.DateExpires = v
+	}
+
+	v, err := s.walled.ApiKey().Add(ctx, add.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	// Answered in the shape the list is in, so a page that has just minted one
+	// puts it beside the others without asking again -- and so that the secret
+	// has nowhere to appear twice.
+	k := app.SignInKey_builder{
+		Id:      v.GetId(),
+		Alias:   v.GetAlias(),
+		Methods: v.GetMethods(),
+	}
+	if u := v.GetDateExpires(); u != nil {
+		k.DateExpires = u
+	}
+
+	return app.MeIssueKeyResponse_builder{Token: token, Key: k.Build()}.Build(), nil
+}
+
+// RevokeKey ends one of the caller's own keys.
+//
+// The same shape as [Server.Unlink]: the read that finds it is narrowed by the
+// caller **before** it is narrowed by the identifier, so one that belongs to
+// somebody else is `NotFound` rather than refused. Told apart, this would
+// answer whether somebody else's key exists.
+//
+// There is no last-one rule, unlike `Unlink`. A key is not a way in -- it is a
+// way to act once you already are one -- so revoking the only one locks nobody
+// out of anything.
+func (s *Server) RevokeKey(ctx context.Context, req *app.MeRevokeKeyRequest) (*app.MeRevokeKeyResponse, error) {
+	f, ok := frame.From(ctx)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "who is asking?")
+	}
+	if s.walled == nil {
+		return nil, status.Error(codes.Unimplemented, "this server cannot write")
+	}
+
+	id, err := uuid.FromBytes(req.GetId())
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+	}
+
+	n, err := s.db.ApiKey.Query().
+		Where(
+			apikey.DateErasedIsNil(),
+			apikey.HasHolderWith(holder.IDEQ(f.Actor.Uuid())),
+			apikey.IDEQ(id),
+		).
+		Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if n == 0 {
+		return nil, status.Error(codes.NotFound, "no such key")
+	}
+
+	if _, err := s.walled.ApiKey().Erase(ctx,
+		app.ApiKeyRef_builder{Id: req.GetId()}.Build()); err != nil {
+		return nil, err
+	}
+
+	return app.MeRevokeKeyResponse_builder{}.Build(), nil
 }
 
 // Unlink removes one of the caller's own ways in.

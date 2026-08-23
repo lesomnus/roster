@@ -23,6 +23,8 @@ const (
 	MeService_Unlink_FullMethodName            = "/roster.MeService/Unlink"
 	MeService_SignOutEverywhere_FullMethodName = "/roster.MeService/SignOutEverywhere"
 	MeService_Link_FullMethodName              = "/roster.MeService/Link"
+	MeService_IssueKey_FullMethodName          = "/roster.MeService/IssueKey"
+	MeService_RevokeKey_FullMethodName         = "/roster.MeService/RevokeKey"
 )
 
 // MeServiceClient is the client API for MeService service.
@@ -141,6 +143,55 @@ type MeServiceClient interface {
 	// refuses a second identity of one provider for one person, so this cannot
 	// quietly replace the account somebody already signs in with.
 	Link(ctx context.Context, in *MeLinkRequest, opts ...grpc.CallOption) (*MeLinkResponse, error)
+	// IssueKey mints an `rt_` that acts as the caller, and answers with it once.
+	//
+	// The self-service half of `IssueService.IssueKey`, which is an operator's:
+	// that one takes a `HolderRef` and this takes nothing, which is the same
+	// split `SignOutEverywhere` makes against `HolderService.Invalidate` and for
+	// the same reason.
+	//
+	// # Why it is not `IssueService` with your own identifier
+	//
+	// Because it could be, and the grant is the problem rather than the call.
+	// `IssueKeyRequest.holder` is a reference the wall narrows to the caller's
+	// tenant, so the smallest role covering *mint a key for myself* is *mint a
+	// key for anybody here* -- the shape [MeService.Unlink]'s comment refuses,
+	// arriving on the screen a person is most likely to be given.
+	//
+	// This is a **which** with no *whose* at all: the row hangs off the frame's
+	// actor and no field can redirect it, so a role naming it means exactly *may
+	// mint a key that acts as you*.
+	//
+	// # What still refuses it
+	//
+	// `server/core` holds a key to the rule every grant is held to -- nobody
+	// hands out a method they do not hold -- and this goes through it, so a
+	// person cannot mint themselves something wider than they are. That is the
+	// whole of what makes a self-service button safe, and it is why this writes
+	// through the walled stack rather than reaching for the database.
+	//
+	// # And it needs a role
+	//
+	// `aboutYourself` waives `Get`, `Unlink` and `SignOutEverywhere` and this is
+	// not on that list, for `Link`'s reason said again: what is waived is what
+	// somebody must be able to do with **no** role, and minting an API key is a
+	// feature a deployment chooses to offer. Nobody is locked out by its absence,
+	// and what it creates outlives the session that asked for it.
+	IssueKey(ctx context.Context, in *MeIssueKeyRequest, opts ...grpc.CallOption) (*MeIssueKeyResponse, error)
+	// RevokeKey ends one of the caller's own keys.
+	//
+	// The other half, and the half that must exist for the first to be offered:
+	// a screen that mints and cannot revoke is a screen that only accumulates.
+	//
+	// A *which* and never a *whose*, exactly as [MeService.Unlink] is. One that
+	// is not the caller's is `NotFound`, told apart from nothing, so this cannot
+	// be used to ask whether somebody else's key exists.
+	//
+	// Unlike `Unlink` there is no last-one rule. A key is not a way **in** -- it
+	// is a way to act once you already are one -- so revoking the only one locks
+	// nobody out of anything, and a person who revokes all of theirs still signs
+	// in the way they always did.
+	RevokeKey(ctx context.Context, in *MeRevokeKeyRequest, opts ...grpc.CallOption) (*MeRevokeKeyResponse, error)
 }
 
 type meServiceClient struct {
@@ -185,6 +236,26 @@ func (c *meServiceClient) Link(ctx context.Context, in *MeLinkRequest, opts ...g
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(MeLinkResponse)
 	err := c.cc.Invoke(ctx, MeService_Link_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *meServiceClient) IssueKey(ctx context.Context, in *MeIssueKeyRequest, opts ...grpc.CallOption) (*MeIssueKeyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MeIssueKeyResponse)
+	err := c.cc.Invoke(ctx, MeService_IssueKey_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *meServiceClient) RevokeKey(ctx context.Context, in *MeRevokeKeyRequest, opts ...grpc.CallOption) (*MeRevokeKeyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MeRevokeKeyResponse)
+	err := c.cc.Invoke(ctx, MeService_RevokeKey_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -307,6 +378,55 @@ type MeServiceServer interface {
 	// refuses a second identity of one provider for one person, so this cannot
 	// quietly replace the account somebody already signs in with.
 	Link(context.Context, *MeLinkRequest) (*MeLinkResponse, error)
+	// IssueKey mints an `rt_` that acts as the caller, and answers with it once.
+	//
+	// The self-service half of `IssueService.IssueKey`, which is an operator's:
+	// that one takes a `HolderRef` and this takes nothing, which is the same
+	// split `SignOutEverywhere` makes against `HolderService.Invalidate` and for
+	// the same reason.
+	//
+	// # Why it is not `IssueService` with your own identifier
+	//
+	// Because it could be, and the grant is the problem rather than the call.
+	// `IssueKeyRequest.holder` is a reference the wall narrows to the caller's
+	// tenant, so the smallest role covering *mint a key for myself* is *mint a
+	// key for anybody here* -- the shape [MeService.Unlink]'s comment refuses,
+	// arriving on the screen a person is most likely to be given.
+	//
+	// This is a **which** with no *whose* at all: the row hangs off the frame's
+	// actor and no field can redirect it, so a role naming it means exactly *may
+	// mint a key that acts as you*.
+	//
+	// # What still refuses it
+	//
+	// `server/core` holds a key to the rule every grant is held to -- nobody
+	// hands out a method they do not hold -- and this goes through it, so a
+	// person cannot mint themselves something wider than they are. That is the
+	// whole of what makes a self-service button safe, and it is why this writes
+	// through the walled stack rather than reaching for the database.
+	//
+	// # And it needs a role
+	//
+	// `aboutYourself` waives `Get`, `Unlink` and `SignOutEverywhere` and this is
+	// not on that list, for `Link`'s reason said again: what is waived is what
+	// somebody must be able to do with **no** role, and minting an API key is a
+	// feature a deployment chooses to offer. Nobody is locked out by its absence,
+	// and what it creates outlives the session that asked for it.
+	IssueKey(context.Context, *MeIssueKeyRequest) (*MeIssueKeyResponse, error)
+	// RevokeKey ends one of the caller's own keys.
+	//
+	// The other half, and the half that must exist for the first to be offered:
+	// a screen that mints and cannot revoke is a screen that only accumulates.
+	//
+	// A *which* and never a *whose*, exactly as [MeService.Unlink] is. One that
+	// is not the caller's is `NotFound`, told apart from nothing, so this cannot
+	// be used to ask whether somebody else's key exists.
+	//
+	// Unlike `Unlink` there is no last-one rule. A key is not a way **in** -- it
+	// is a way to act once you already are one -- so revoking the only one locks
+	// nobody out of anything, and a person who revokes all of theirs still signs
+	// in the way they always did.
+	RevokeKey(context.Context, *MeRevokeKeyRequest) (*MeRevokeKeyResponse, error)
 	mustEmbedUnimplementedMeServiceServer()
 }
 
@@ -328,6 +448,12 @@ func (UnimplementedMeServiceServer) SignOutEverywhere(context.Context, *MeSignOu
 }
 func (UnimplementedMeServiceServer) Link(context.Context, *MeLinkRequest) (*MeLinkResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Link not implemented")
+}
+func (UnimplementedMeServiceServer) IssueKey(context.Context, *MeIssueKeyRequest) (*MeIssueKeyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method IssueKey not implemented")
+}
+func (UnimplementedMeServiceServer) RevokeKey(context.Context, *MeRevokeKeyRequest) (*MeRevokeKeyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RevokeKey not implemented")
 }
 func (UnimplementedMeServiceServer) mustEmbedUnimplementedMeServiceServer() {}
 func (UnimplementedMeServiceServer) testEmbeddedByValue()                   {}
@@ -422,6 +548,42 @@ func _MeService_Link_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MeService_IssueKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MeIssueKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MeServiceServer).IssueKey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MeService_IssueKey_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MeServiceServer).IssueKey(ctx, req.(*MeIssueKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MeService_RevokeKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MeRevokeKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MeServiceServer).RevokeKey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MeService_RevokeKey_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MeServiceServer).RevokeKey(ctx, req.(*MeRevokeKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MeService_ServiceDesc is the grpc.ServiceDesc for MeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -444,6 +606,14 @@ var MeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Link",
 			Handler:    _MeService_Link_Handler,
+		},
+		{
+			MethodName: "IssueKey",
+			Handler:    _MeService_IssueKey_Handler,
+		},
+		{
+			MethodName: "RevokeKey",
+			Handler:    _MeService_RevokeKey_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
