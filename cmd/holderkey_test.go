@@ -28,7 +28,7 @@ func TestOneScreenShowsEveryWayIntoOneAccount(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	who := b.holder(t, ctx, b.Acme, "erin")
+	who := b.holder(t, ctx, b.Contoso, "erin")
 	b.identity(t, ctx, who, "github", "gh-erin")
 
 	_, sum, err := keys.Mint(keys.PrefixTenant)
@@ -43,7 +43,7 @@ func TestOneScreenShowsEveryWayIntoOneAccount(t *testing.T) {
 	x.NoError(err)
 
 	// Somebody else's, which must not be in the answer.
-	other := b.holder(t, ctx, b.Acme, "somebody-else")
+	other := b.holder(t, ctx, b.Contoso, "somebody-else")
 
 	_, sum2, err := keys.Mint(keys.PrefixTenant)
 	x.NoError(err)
@@ -56,7 +56,7 @@ func TestOneScreenShowsEveryWayIntoOneAccount(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	res, err := b.Walled.Holder().SignsIn(b.as(ctx, who, b.Acme),
+	res, err := b.Walled.Holder().SignsIn(b.as(ctx, who, b.Contoso),
 		app.HolderSignsInRequest_builder{
 			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		}.Build())
@@ -81,14 +81,14 @@ func TestOneScreenShowsEveryWayIntoOneAccount(t *testing.T) {
 	t.Run("and one of them can be ended", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := b.Walled.Holder().RevokeKey(b.as(ctx, who, b.Acme),
+		_, err := b.Walled.Holder().RevokeKey(b.as(ctx, who, b.Contoso),
 			app.HolderRevokeKeyRequest_builder{
 				Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 				Id:  res.GetKeys()[0].GetId(),
 			}.Build())
 		x.NoError(err)
 
-		now, err := b.Walled.Holder().SignsIn(b.as(ctx, who, b.Acme),
+		now, err := b.Walled.Holder().SignsIn(b.as(ctx, who, b.Contoso),
 			app.HolderSignsInRequest_builder{
 				Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 			}.Build())
@@ -102,14 +102,14 @@ func TestOneScreenShowsEveryWayIntoOneAccount(t *testing.T) {
 		// A *which* within a *whose*: the reference says the person and the
 		// identifier says the key, so pointing one at the other's is NotFound
 		// rather than a revocation.
-		vs, err := b.Walled.Holder().SignsIn(b.as(ctx, other, b.Acme),
+		vs, err := b.Walled.Holder().SignsIn(b.as(ctx, other, b.Contoso),
 			app.HolderSignsInRequest_builder{
 				Ref: app.HolderRef_builder{Id: other.Bytes()}.Build(),
 			}.Build())
 		x.NoError(err)
 		x.Len(vs.GetKeys(), 1)
 
-		_, err = b.Walled.Holder().RevokeKey(b.as(ctx, who, b.Acme),
+		_, err = b.Walled.Holder().RevokeKey(b.as(ctx, who, b.Contoso),
 			app.HolderRevokeKeyRequest_builder{
 				Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 				Id:  vs.GetKeys()[0].GetId(),

@@ -23,10 +23,10 @@ func TestAHostIsStoredAsItIsCompared(t *testing.T) {
 		in   string
 		want string
 	}{
-		{"acme.example.com", "acme.example.com"},
-		{"ACME.Example.com", "acme.example.com"},
-		{"  acme.example.com  ", "acme.example.com"},
-		{"acme.example.com:8443", "acme.example.com"},
+		{"contoso.example.com", "contoso.example.com"},
+		{"CONTOSO.Example.com", "contoso.example.com"},
+		{"  contoso.example.com  ", "contoso.example.com"},
+		{"contoso.example.com:8443", "contoso.example.com"},
 
 		{"[::1]", "::1"},
 		{"[::1]:8443", "::1"},

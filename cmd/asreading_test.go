@@ -84,9 +84,9 @@ func TestNothingOfAnErasedHolderIsReadableThroughARowThatOutlivedThem(t *testing
 	x := require.New(t)
 	b, ctx := build(t)
 
-	const address = "joe@acme.example"
+	const address = "joe@contoso.example"
 
-	joe := b.holder(t, ctx, b.Acme, "joe")
+	joe := b.holder(t, ctx, b.Contoso, "joe")
 	_, err := b.Ungated.Holder().Patch(ctx, app.HolderPatchRequest_builder{
 		Ref:              app.HolderRef_builder{Id: joe.Bytes()}.Build(),
 		Name:             z.Ptr("Joseph Bloggs"),
@@ -109,8 +109,8 @@ func TestNothingOfAnErasedHolderIsReadableThroughARowThatOutlivedThem(t *testing
 	x.NoError(err)
 
 	conn := served(t, b.Server)
-	b.mayAnything(b.AcmeUser, b.Acme)
-	wire := asOverTheWire(ctx, b.AcmeUser)
+	b.mayAnything(b.ContosoUser, b.Contoso)
+	wire := asOverTheWire(ctx, b.ContosoUser)
 
 	// The guarantee, from the front. This is the half that works, and without
 	// it the failures below could be a caller who may read nothing at all.
@@ -126,7 +126,7 @@ func TestNothingOfAnErasedHolderIsReadableThroughARowThatOutlivedThem(t *testing
 		v, err := app.NewEmailServiceClient(conn).Get(wire, app.EmailGetRequest_builder{
 			Ref: app.EmailRef_builder{
 				At: app.EmailRefByAt_builder{
-					TenantId: b.Acme.Bytes(),
+					TenantId: b.Contoso.Bytes(),
 					Address:  z.Ptr(address),
 				}.Build(),
 			}.Build(),
@@ -217,9 +217,9 @@ func TestARowOutlivesThePersonItWasAbout(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	const address = "gone@acme.example"
+	const address = "gone@contoso.example"
 
-	who := b.holder(t, ctx, b.Acme, "gone")
+	who := b.holder(t, ctx, b.Contoso, "gone")
 	_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
 		Holder:  app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		Address: address,
@@ -271,8 +271,8 @@ func TestAWatchAnswersNothingAGetWouldRefuse(t *testing.T) {
 	defer stop()
 
 	// Somebody else's tenant, with somebody in it and a team they are on.
-	theirs := b.holder(t, ctx, b.Hooli, "theirs")
-	theirTeam := b.team(t, ctx, b.site(t, ctx, b.Hooli, "their-site"), "their-team")
+	theirs := b.holder(t, ctx, b.Fabrikam, "theirs")
+	theirTeam := b.team(t, ctx, b.site(t, ctx, b.Fabrikam, "their-site"), "their-team")
 
 	_, err := b.Ungated.TeamMembership().Add(ctx, app.TeamMembershipAddRequest_builder{
 		Holder: app.HolderRef_builder{Id: theirs.Bytes()}.Build(),
@@ -281,8 +281,8 @@ func TestAWatchAnswersNothingAGetWouldRefuse(t *testing.T) {
 	require.NoError(t, err)
 
 	conn := served(t, b.Server)
-	b.mayAnything(b.AcmeUser, b.Acme)
-	wire := asOverTheWire(ctx, b.AcmeUser)
+	b.mayAnything(b.ContosoUser, b.Contoso)
+	wire := asOverTheWire(ctx, b.ContosoUser)
 
 	t.Run("a row of another tenant", func(t *testing.T) {
 		x := require.New(t)
@@ -363,7 +363,7 @@ func TestAWatchAnswersNothingAGetWouldRefuse(t *testing.T) {
 	t.Run("and a row that leaves reach leaves the stream", func(t *testing.T) {
 		x := require.New(t)
 
-		who := b.holder(t, ctx, b.Acme, "watched")
+		who := b.holder(t, ctx, b.Contoso, "watched")
 		me := app.HolderRef_builder{Id: who.Bytes()}.Build()
 
 		c := watching(t, wire, conn, app.HolderWatchRequest_builder{
@@ -417,9 +417,9 @@ func TestNoFilterCarriesARowFromAnotherTenant(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	const address = "theirs@hooli.example"
+	const address = "theirs@fabrikam.example"
 
-	theirs := b.holder(t, ctx, b.Hooli, "theirs")
+	theirs := b.holder(t, ctx, b.Fabrikam, "theirs")
 	b.identity(t, ctx, theirs, "entra", "their-object-guid")
 
 	_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
@@ -428,7 +428,7 @@ func TestNoFilterCarriesARowFromAnotherTenant(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	theirTeam := b.team(t, ctx, b.site(t, ctx, b.Hooli, "their-site"), "their-team")
+	theirTeam := b.team(t, ctx, b.site(t, ctx, b.Fabrikam, "their-site"), "their-team")
 	_, err = b.Ungated.TeamMembership().Add(ctx, app.TeamMembershipAddRequest_builder{
 		Holder: app.HolderRef_builder{Id: theirs.Bytes()}.Build(),
 		Team:   app.TeamRef_builder{Id: theirTeam.Bytes()}.Build(),
@@ -436,8 +436,8 @@ func TestNoFilterCarriesARowFromAnotherTenant(t *testing.T) {
 	x.NoError(err)
 
 	conn := served(t, b.Server)
-	b.mayAnything(b.AcmeUser, b.Acme)
-	wire := asOverTheWire(ctx, b.AcmeUser)
+	b.mayAnything(b.ContosoUser, b.Contoso)
+	wire := asOverTheWire(ctx, b.ContosoUser)
 
 	// The control. Every list below has to come back empty, and an empty list
 	// is what a broken query answers too -- so first, the same calls with the
@@ -479,7 +479,7 @@ func TestNoFilterCarriesARowFromAnotherTenant(t *testing.T) {
 
 		vs, err := app.NewIdentityServiceClient(conn).List(wire, app.IdentityListRequest_builder{
 			Filters: []*app.IdentityFilter{
-				app.IdentityFilter_builder{TenantId: b.Hooli.Bytes()}.Build(),
+				app.IdentityFilter_builder{TenantId: b.Fabrikam.Bytes()}.Build(),
 			},
 		}.Build())
 		x.NoError(err)
@@ -495,7 +495,7 @@ func TestNoFilterCarriesARowFromAnotherTenant(t *testing.T) {
 		c := app.NewEmailServiceClient(conn)
 		ref := app.EmailRef_builder{
 			At: app.EmailRefByAt_builder{
-				TenantId: b.Hooli.Bytes(),
+				TenantId: b.Fabrikam.Bytes(),
 				Address:  z.Ptr(address),
 			}.Build(),
 		}.Build()
@@ -615,14 +615,14 @@ func TestNoVerifierIsAnsweredByThePortThatServesItsRow(t *testing.T) {
 		x := require.New(t)
 		b, ctx := d, dctx
 
-		b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+		b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
 		// A second factor beside it, because the two are one column and only
 		// one of them is a verifier. `Enrol` wraps the seed with the
 		// deployment's key; what must not leave is the ciphertext, since the
 		// process that would read it is the process that holds the key.
 		seed, err := b.keyedLocal(t).Enrol(ctx, app.VouchEnrolRequest_builder{
-			Who:  app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Who:  app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Kind: vouch.KindTotp,
 		}.Build())
 		x.NoError(err)
@@ -632,7 +632,7 @@ func TestNoVerifierIsAnsweredByThePortThatServesItsRow(t *testing.T) {
 		x.NoError(err)
 		x.Len(rows, 2, "a password and a second factor")
 
-		as := b.as(ctx, b.AcmeUser, b.Acme)
+		as := b.as(ctx, b.ContosoUser, b.Contoso)
 		c := b.Walled.Credential()
 
 		for _, row := range rows {
@@ -727,29 +727,29 @@ func TestNoRefusalSaysWhoIsHere(t *testing.T) {
 	)
 
 	_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
-		Holder:  app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
-		Address: "someone@acme.example",
+		Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Address: "someone@contoso.example",
 	}.Build())
 	x.NoError(err)
-	b.sets(t, ctx, b.AcmeUser, right)
+	b.sets(t, ctx, b.ContosoUser, right)
 
 	// Somebody suspended, with a password that is still correct. The right
 	// secret and not the wrong one, because the branch under test is the one
 	// that runs **before** the comparison: a version of it that fell through
 	// would answer `ok`.
-	off := b.holder(t, ctx, b.Acme, "suspended")
+	off := b.holder(t, ctx, b.Contoso, "suspended")
 	b.sets(t, ctx, off, right)
 	_, err = b.Ungated.Holder().Disable(ctx, app.HolderDisableRequest_builder{
 		Ref: app.HolderRef_builder{Id: off.Bytes()}.Build(),
 	}.Build())
 	x.NoError(err)
 
-	gone := b.holder(t, ctx, b.Acme, "leaver")
+	gone := b.holder(t, ctx, b.Contoso, "leaver")
 	b.sets(t, ctx, gone, right)
 	_, err = b.Ungated.Holder().Erase(ctx, app.HolderRef_builder{Id: gone.Bytes()}.Build())
 	x.NoError(err)
 
-	b.holder(t, ctx, b.Acme, "passwordless")
+	b.holder(t, ctx, b.Contoso, "passwordless")
 
 	v := b.vouched()
 	answer := func(t *testing.T, who *app.VouchWho, secret string) *app.VouchVerifyResponse {
@@ -765,7 +765,7 @@ func TestNoRefusalSaysWhoIsHere(t *testing.T) {
 
 	// The baseline every other answer is compared against: somebody who is
 	// certainly here, getting it wrong.
-	baseline := answer(t, app.VouchWho_builder{Tenant: "acme", Alias: "someone"}.Build(), wrong)
+	baseline := answer(t, app.VouchWho_builder{Tenant: "contoso", Alias: "someone"}.Build(), wrong)
 	x.False(baseline.GetOk(), "the control")
 
 	for _, tc := range []struct {
@@ -773,16 +773,16 @@ func TestNoRefusalSaysWhoIsHere(t *testing.T) {
 		who    *app.VouchWho
 		secret string
 	}{
-		{"a name nobody has", app.VouchWho_builder{Tenant: "acme", Alias: "nobody"}.Build(), wrong},
+		{"a name nobody has", app.VouchWho_builder{Tenant: "contoso", Alias: "nobody"}.Build(), wrong},
 		{"a tenant nobody serves", app.VouchWho_builder{Tenant: "nowhere", Alias: "someone"}.Build(), wrong},
 		{"an identifier nobody has", app.VouchWho_builder{Id: pdid.New(pd.HolderDomain).Bytes()}.Build(), wrong},
-		{"somebody with no secret of that kind", app.VouchWho_builder{Tenant: "acme", Alias: "passwordless"}.Build(), wrong},
-		{"somebody suspended, right secret", app.VouchWho_builder{Tenant: "acme", Alias: "suspended"}.Build(), right},
-		{"somebody erased, right secret", app.VouchWho_builder{Tenant: "acme", Alias: "leaver"}.Build(), right},
+		{"somebody with no secret of that kind", app.VouchWho_builder{Tenant: "contoso", Alias: "passwordless"}.Build(), wrong},
+		{"somebody suspended, right secret", app.VouchWho_builder{Tenant: "contoso", Alias: "suspended"}.Build(), right},
+		{"somebody erased, right secret", app.VouchWho_builder{Tenant: "contoso", Alias: "leaver"}.Build(), right},
 
-		{"an address nobody has", app.VouchWho_builder{Tenant: "acme", Address: "nobody@acme.example"}.Build(), wrong},
-		{"an address in a tenant nobody serves", app.VouchWho_builder{Tenant: "nowhere", Address: "someone@acme.example"}.Build(), wrong},
-		{"an address, wrong secret", app.VouchWho_builder{Tenant: "acme", Address: "someone@acme.example"}.Build(), wrong},
+		{"an address nobody has", app.VouchWho_builder{Tenant: "contoso", Address: "nobody@contoso.example"}.Build(), wrong},
+		{"an address in a tenant nobody serves", app.VouchWho_builder{Tenant: "nowhere", Address: "someone@contoso.example"}.Build(), wrong},
+		{"an address, wrong secret", app.VouchWho_builder{Tenant: "contoso", Address: "someone@contoso.example"}.Build(), wrong},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			x := require.New(t)
@@ -811,10 +811,10 @@ func TestNoRefusalSaysWhoIsHere(t *testing.T) {
 			desc string
 			who  *app.VouchWho
 		}{
-			{"a name nobody has", app.VouchWho_builder{Tenant: "acme", Alias: "nobody"}.Build()},
-			{"an address nobody has", app.VouchWho_builder{Tenant: "acme", Address: "nobody@acme.example"}.Build()},
-			{"somebody suspended", app.VouchWho_builder{Tenant: "acme", Alias: "suspended"}.Build()},
-			{"somebody erased", app.VouchWho_builder{Tenant: "acme", Alias: "leaver"}.Build()},
+			{"a name nobody has", app.VouchWho_builder{Tenant: "contoso", Alias: "nobody"}.Build()},
+			{"an address nobody has", app.VouchWho_builder{Tenant: "contoso", Address: "nobody@contoso.example"}.Build()},
+			{"somebody suspended", app.VouchWho_builder{Tenant: "contoso", Alias: "suspended"}.Build()},
+			{"somebody erased", app.VouchWho_builder{Tenant: "contoso", Alias: "leaver"}.Build()},
 		} {
 			for range vouch.MaxFailures + 1 {
 				got := answer(t, tc.who, wrong)
@@ -827,7 +827,7 @@ func TestNoRefusalSaysWhoIsHere(t *testing.T) {
 		// asserted above is the branch rather than a lockout nothing reaches.
 		var last *app.VouchVerifyResponse
 		for range vouch.MaxFailures {
-			last = answer(t, app.VouchWho_builder{Tenant: "acme", Alias: "someone"}.Build(), wrong)
+			last = answer(t, app.VouchWho_builder{Tenant: "contoso", Alias: "someone"}.Build(), wrong)
 		}
 		x.NotNil(last.GetLockedUntil(), "nothing locks, so the checks above looked at nothing")
 	})
@@ -884,7 +884,7 @@ func atTheDataPlane(t *testing.T, ctx context.Context, b *keyedBuilt) context.Co
 	x := require.New(t)
 
 	r, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
-		Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:   "everything",
 		Methods: []string{"/roster.*/*"},
 	}.Build())
@@ -896,5 +896,5 @@ func atTheDataPlane(t *testing.T, ctx context.Context, b *keyedBuilt) context.Co
 	}.Build())
 	x.NoError(err)
 
-	return frame.Into(ctx, frame.New(b.Who, b.Acme, frame.Whole()).WithScope(frame.Only(b.Acme)))
+	return frame.Into(ctx, frame.New(b.Who, b.Contoso, frame.Whole()).WithScope(frame.Only(b.Contoso)))
 }

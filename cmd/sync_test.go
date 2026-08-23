@@ -135,23 +135,23 @@ func TestAnAppHearsThatADecisionStoppedBeingGood(t *testing.T) {
 	defer stop()
 
 	conn := served(t, b.Server)
-	b.mayAnything(b.AcmeUser, b.Acme)
-	as := asOverTheWire(ctx, b.AcmeUser)
+	b.mayAnything(b.ContosoUser, b.Contoso)
+	as := asOverTheWire(ctx, b.ContosoUser)
 
 	// Somebody other than the caller, for the reason `watch_test.go` writes
 	// down: disabling the caller answers `Unauthenticated` to the call after
 	// it, which is D26 working and is not what this is about.
-	who := b.holder(t, ctx, b.Acme, "watched")
+	who := b.holder(t, ctx, b.Contoso, "watched")
 	ref := app.HolderRef_builder{Id: who.Bytes()}.Build()
 
-	c := syncing(t, as, conn, b.holder(t, ctx, b.Acme, "canary"))
+	c := syncing(t, as, conn, b.holder(t, ctx, b.Contoso, "canary"))
 	h := app.NewHolderServiceClient(conn)
 
 	_, err := h.Disable(as, app.HolderDisableRequest_builder{Ref: ref}.Build())
 	x.NoError(err)
 
 	v := about(t, c, who)
-	x.Equal(b.Acme.Bytes(), v.GetTenant(), "an app serving several tenants was not told which")
+	x.Equal(b.Contoso.Bytes(), v.GetTenant(), "an app serving several tenants was not told which")
 	x.NotNil(v.GetDateDisabled(), "the fact itself was left off the event")
 
 	t.Run("and that it may stop refusing them", func(t *testing.T) {
@@ -190,7 +190,7 @@ func TestAnAppHearsThatADecisionStoppedBeingGood(t *testing.T) {
 		v := about(t, c, who)
 		x.Equal(app.SyncReason_SYNC_REASON_ERASED, v.GetReason())
 		x.NotNil(v.GetDateErased(), "an app was told they are gone without being told since when")
-		x.Equal(b.Acme.Bytes(), v.GetTenant(), "and without being told whose they were")
+		x.Equal(b.Contoso.Bytes(), v.GetTenant(), "and without being told whose they were")
 	})
 }
 
@@ -209,13 +209,13 @@ func TestNobodyIsWokenForARename(t *testing.T) {
 	defer stop()
 
 	conn := served(t, b.Server)
-	b.mayAnything(b.AcmeUser, b.Acme)
-	as := asOverTheWire(ctx, b.AcmeUser)
+	b.mayAnything(b.ContosoUser, b.Contoso)
+	as := asOverTheWire(ctx, b.ContosoUser)
 
-	who := b.holder(t, ctx, b.Acme, "renamed")
+	who := b.holder(t, ctx, b.Contoso, "renamed")
 	ref := app.HolderRef_builder{Id: who.Bytes()}.Build()
 
-	c := syncing(t, as, conn, b.holder(t, ctx, b.Acme, "canary"))
+	c := syncing(t, as, conn, b.holder(t, ctx, b.Contoso, "canary"))
 	h := app.NewHolderServiceClient(conn)
 
 	// Two writes that mean nothing to a session, then one that means
@@ -257,16 +257,16 @@ func TestOneCustomerIsNotToldAboutAnother(t *testing.T) {
 	defer stop()
 
 	conn := served(t, b.Server)
-	b.mayAnything(b.AcmeUser, b.Acme)
-	as := asOverTheWire(ctx, b.AcmeUser)
+	b.mayAnything(b.ContosoUser, b.Contoso)
+	as := asOverTheWire(ctx, b.ContosoUser)
 
-	// Somebody who may write in hooli, so that the writes below are real writes
+	// Somebody who may write in fabrikam, so that the writes below are real writes
 	// and not refusals this test would pass for the wrong reason.
-	other := b.holder(t, ctx, b.Hooli, "theirs")
-	b.mayAnything(other, b.Hooli)
+	other := b.holder(t, ctx, b.Fabrikam, "theirs")
+	b.mayAnything(other, b.Fabrikam)
 	theirs := asOverTheWire(ctx, other)
 
-	c := syncing(t, as, conn, b.holder(t, ctx, b.Acme, "canary"))
+	c := syncing(t, as, conn, b.holder(t, ctx, b.Contoso, "canary"))
 	h := app.NewHolderServiceClient(conn)
 
 	_, err := h.Disable(theirs, app.HolderDisableRequest_builder{
@@ -274,11 +274,11 @@ func TestOneCustomerIsNotToldAboutAnother(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	// And then one in the caller's own tenant, after it. The acme event
-	// arriving is what makes the hooli one's absence a fact rather than a race:
+	// And then one in the caller's own tenant, after it. The contoso event
+	// arriving is what makes the fabrikam one's absence a fact rather than a race:
 	// the write that would have produced it landed first, so if it were coming
 	// it would already be here.
-	mine := b.holder(t, ctx, b.Acme, "mine")
+	mine := b.holder(t, ctx, b.Contoso, "mine")
 	_, err = h.Disable(as, app.HolderDisableRequest_builder{
 		Ref: app.HolderRef_builder{Id: mine.Bytes()}.Build(),
 	}.Build())

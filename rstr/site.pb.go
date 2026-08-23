@@ -227,8 +227,8 @@ type Site_builder struct {
 
 	Id     []byte
 	Tenant *Tenant
-	// Unique within the tenant, which is what makes `@acme/seoul` a name somebody
-	// can type into a configuration file.
+	// Unique within the tenant, which is what makes `@contoso/seoul` a name
+	// somebody can type into a configuration file.
 	Alias string
 	Name  string
 	Desc  string

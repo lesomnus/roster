@@ -16,15 +16,15 @@ func TestOnePersonHasSeveralAddresses(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	for _, a := range []string{"someone@acme.example", "someone@personal.example"} {
+	for _, a := range []string{"someone@contoso.example", "someone@personal.example"} {
 		_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
-			Holder:  app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Address: a,
 		}.Build())
 		x.NoError(err)
 	}
 
-	vs, err := b.Walled.Email().List(b.as(ctx, b.AcmeUser, b.Acme), app.EmailListRequest_builder{}.Build())
+	vs, err := b.Walled.Email().List(b.as(ctx, b.ContosoUser, b.Contoso), app.EmailListRequest_builder{}.Build())
 	x.NoError(err)
 	x.Len(vs.GetItems(), 2)
 }
@@ -37,8 +37,8 @@ func TestTheSameAddressTwiceForOnePersonIsRefused(t *testing.T) {
 
 	add := func() error {
 		_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
-			Holder:  app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
-			Address: "someone@acme.example",
+			Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+			Address: "someone@contoso.example",
 		}.Build())
 
 		return err
@@ -61,11 +61,11 @@ func TestTwoPeopleMayShareAnAddress(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	theirs := b.holder(t, ctx, b.Hooli, "consultant")
+	theirs := b.holder(t, ctx, b.Fabrikam, "consultant")
 
 	for _, of := range []struct {
 		holder []byte
-	}{{b.AcmeUser.Bytes()}, {theirs.Bytes()}} {
+	}{{b.ContosoUser.Bytes()}, {theirs.Bytes()}} {
 		_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
 			Holder:  app.HolderRef_builder{Id: of.holder}.Build(),
 			Address: "consultant@example.com",
@@ -85,8 +85,8 @@ func TestVerificationIsATimeAndNotAFlag(t *testing.T) {
 	b, ctx := build(t)
 
 	v, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
-		Holder:  app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
-		Address: "someone@acme.example",
+		Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Address: "someone@contoso.example",
 	}.Build())
 	x.NoError(err)
 	x.False(v.HasDateVerified(), "an address arrives unverified")
@@ -111,10 +111,10 @@ func TestAnAddressCanNameTheIdentityThatVouchedForIt(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	id := b.identity(t, ctx, b.AcmeUser, "github", "1074321")
+	id := b.identity(t, ctx, b.ContosoUser, "github", "1074321")
 
 	v, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
-		Holder:    app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Holder:    app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Address:   "someone@users.noreply.github.com",
 		VouchedBy: id.Ref(),
 	}.Build())
@@ -138,8 +138,8 @@ func TestAnAddressWithNoVoucherIsAllowed(t *testing.T) {
 	b, ctx := build(t)
 
 	v, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
-		Holder:  app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
-		Address: "typed-in@acme.example",
+		Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Address: "typed-in@contoso.example",
 	}.Build())
 	x.NoError(err)
 	x.False(v.HasVouchedBy())

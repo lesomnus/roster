@@ -48,8 +48,8 @@ export type Site = Message<"roster.Site"> & {
   tenant?: Tenant | undefined;
 
   /**
-   * Unique within the tenant, which is what makes `@acme/seoul` a name somebody
-   * can type into a configuration file.
+   * Unique within the tenant, which is what makes `@contoso/seoul` a name
+   * somebody can type into a configuration file.
    *
    * @generated from field: string alias = 4;
    */

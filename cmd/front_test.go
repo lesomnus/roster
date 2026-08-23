@@ -24,8 +24,8 @@ func TestAFrontDoorLearnsWhoseNameItIs(t *testing.T) {
 	b, ctx := build(t)
 
 	_, err := b.Ungated.Host().Add(ctx, app.HostAddRequest_builder{
-		Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
-		Name:   "acme.example.com",
+		Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
+		Name:   "contoso.example.com",
 	}.Build())
 	x.NoError(err)
 
@@ -35,10 +35,10 @@ func TestAFrontDoorLearnsWhoseNameItIs(t *testing.T) {
 		x := require.New(t)
 
 		v, err := f.WhoseHost(ctx, app.FrontWhoseHostRequest_builder{
-			Host: "acme.example.com",
+			Host: "contoso.example.com",
 		}.Build())
 		x.NoError(err)
-		x.Equal(b.Acme.Bytes(), v.GetTenant())
+		x.Equal(b.Contoso.Bytes(), v.GetTenant())
 	})
 
 	// A caller hands over `r.Host`, which carries a port whenever the app is
@@ -46,10 +46,10 @@ func TestAFrontDoorLearnsWhoseNameItIs(t *testing.T) {
 	t.Run("and it takes a host as a request carries one", func(t *testing.T) {
 		x := require.New(t)
 
-		for _, h := range []string{"ACME.Example.com", "acme.example.com:8443", "  acme.example.com  "} {
+		for _, h := range []string{"CONTOSO.Example.com", "contoso.example.com:8443", "  contoso.example.com  "} {
 			v, err := f.WhoseHost(ctx, app.FrontWhoseHostRequest_builder{Host: h}.Build())
 			x.NoError(err, h)
-			x.Equal(b.Acme.Bytes(), v.GetTenant(), h)
+			x.Equal(b.Contoso.Bytes(), v.GetTenant(), h)
 		}
 	})
 
@@ -60,7 +60,7 @@ func TestAFrontDoorLearnsWhoseNameItIs(t *testing.T) {
 		x := require.New(t)
 
 		_, err := f.WhoseHost(ctx, app.FrontWhoseHostRequest_builder{
-			Host: "hooli.example.com",
+			Host: "fabrikam.example.com",
 		}.Build())
 		x.Equal(codes.NotFound, status.Code(err))
 	})
@@ -72,8 +72,8 @@ func TestAFrontDoorLearnsWhoseNameItIs(t *testing.T) {
 		x := require.New(t)
 
 		_, err := b.Ungated.Host().Add(ctx, app.HostAddRequest_builder{
-			Tenant: app.TenantRef_builder{Id: b.Hooli.Bytes()}.Build(),
-			Name:   "acme.example.com",
+			Tenant: app.TenantRef_builder{Id: b.Fabrikam.Bytes()}.Build(),
+			Name:   "contoso.example.com",
 		}.Build())
 		x.Equal(codes.AlreadyExists, status.Code(err))
 	})
@@ -90,15 +90,15 @@ func TestAHostIsStoredAsItIsCompared(t *testing.T) {
 	b, ctx := build(t)
 
 	for _, tc := range []struct{ desc, name string }{
-		{"upper case", "ACME.example.com"},
-		{"a port", "acme.example.com:8443"},
-		{"whitespace", " acme.example.com"},
+		{"upper case", "CONTOSO.example.com"},
+		{"a port", "contoso.example.com:8443"},
+		{"whitespace", " contoso.example.com"},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			x := require.New(t)
 
 			_, err := b.Ungated.Host().Add(ctx, app.HostAddRequest_builder{
-				Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+				Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 				Name:   tc.name,
 			}.Build())
 			x.Equal(codes.InvalidArgument, status.Code(err))
@@ -106,7 +106,7 @@ func TestAHostIsStoredAsItIsCompared(t *testing.T) {
 			// And the message says what it should have been, because the
 			// alternative -- fixing it quietly -- hands back a row that differs
 			// from what the caller wrote and then disagrees with itself.
-			x.Contains(status.Convert(err).Message(), "acme.example.com")
+			x.Contains(status.Convert(err).Message(), "contoso.example.com")
 		})
 	}
 }
@@ -123,8 +123,8 @@ func TestWhereSomebodyAuthenticatesHangsOffTheDomain(t *testing.T) {
 	b, ctx := build(t)
 
 	_, err := b.Ungated.MailDomain().Add(ctx, app.MailDomainAddRequest_builder{
-		Tenant:   app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
-		Name:     "acme.com",
+		Tenant:   app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
+		Name:     "contoso.com",
 		Provider: "entra",
 	}.Build())
 	x.NoError(err)
@@ -136,10 +136,10 @@ func TestWhereSomebodyAuthenticatesHangsOffTheDomain(t *testing.T) {
 
 		var k []byte
 		switch tenant {
-		case "acme":
-			k = b.Acme.Bytes()
+		case "contoso":
+			k = b.Contoso.Bytes()
 		default:
-			k = b.Hooli.Bytes()
+			k = b.Fabrikam.Bytes()
 		}
 
 		v, err := f.WhereFrom(ctx, app.FrontWhereFromRequest_builder{
@@ -150,23 +150,23 @@ func TestWhereSomebodyAuthenticatesHangsOffTheDomain(t *testing.T) {
 		return v.GetProvider()
 	}
 
-	x.Equal("entra", where("acme", "somebody@acme.com"))
-	x.Equal("entra", where("acme", "acme.com"), "the domain alone is the same question")
-	x.Equal("entra", where("acme", "SOMEBODY@ACME.COM"))
+	x.Equal("entra", where("contoso", "somebody@contoso.com"))
+	x.Equal("entra", where("contoso", "contoso.com"), "the domain alone is the same question")
+	x.Equal("entra", where("contoso", "SOMEBODY@CONTOSO.COM"))
 
 	// Somebody nobody has heard of, at a domain that is routed. The answer is
 	// the domain's, which is the property that makes this safe to answer at
 	// all.
-	x.Equal("entra", where("acme", "nobody-at-all@acme.com"))
+	x.Equal("entra", where("contoso", "nobody-at-all@contoso.com"))
 
 	// A domain nothing says anything about is an empty answer rather than a
 	// refusal: there is nothing a caller could carry on wrongly with, and a
 	// front door that learns nothing offers whatever it offers everybody.
-	x.Empty(where("acme", "somebody@gmail.com"))
+	x.Empty(where("contoso", "somebody@gmail.com"))
 
 	// And it is one operator's fact. The same domain asked for by another
 	// tenant is not their answer.
-	x.Empty(where("hooli", "somebody@acme.com"),
+	x.Empty(where("fabrikam", "somebody@contoso.com"),
 		"one operator read another's routing")
 }
 
@@ -185,12 +185,12 @@ func TestSigningInByAddressIsF7Closed(t *testing.T) {
 	b, ctx := build(t)
 
 	_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
-		Holder:  app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
-		Address: "someone@acme.example",
+		Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Address: "someone@contoso.example",
 	}.Build())
 	x.NoError(err)
 
-	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
 	v := b.vouched()
 	verify := func(tenant, address, secret string) *app.VouchVerifyResponse {
@@ -208,9 +208,9 @@ func TestSigningInByAddressIsF7Closed(t *testing.T) {
 	t.Run("an address names one person now", func(t *testing.T) {
 		x := require.New(t)
 
-		res := verify("acme", "someone@acme.example", "correct horse battery staple")
+		res := verify("contoso", "someone@contoso.example", "correct horse battery staple")
 		x.True(res.GetOk())
-		x.Equal(b.AcmeUser.Bytes(), res.GetHolder())
+		x.Equal(b.ContosoUser.Bytes(), res.GetHolder())
 	})
 
 	// Every way of not being there is one answer, which is what D14 asks of
@@ -220,10 +220,10 @@ func TestSigningInByAddressIsF7Closed(t *testing.T) {
 		x := require.New(t)
 
 		for _, tc := range []struct{ desc, tenant, address, secret string }{
-			{"a wrong password", "acme", "someone@acme.example", "hunter2"},
-			{"an address nobody has", "acme", "nobody@acme.example", "hunter2"},
-			{"a tenant nobody serves", "nowhere", "someone@acme.example", "hunter2"},
-			{"the right password at the wrong tenant", "hooli", "someone@acme.example", "correct horse battery staple"},
+			{"a wrong password", "contoso", "someone@contoso.example", "hunter2"},
+			{"an address nobody has", "contoso", "nobody@contoso.example", "hunter2"},
+			{"a tenant nobody serves", "nowhere", "someone@contoso.example", "hunter2"},
+			{"the right password at the wrong tenant", "fabrikam", "someone@contoso.example", "correct horse battery staple"},
 		} {
 			res := verify(tc.tenant, tc.address, tc.secret)
 			x.False(res.GetOk(), tc.desc)
@@ -237,19 +237,19 @@ func TestSigningInByAddressIsF7Closed(t *testing.T) {
 	t.Run("and one address in two tenants is still two people", func(t *testing.T) {
 		x := require.New(t)
 
-		them := b.holder(t, ctx, b.Hooli, "consultant")
+		them := b.holder(t, ctx, b.Fabrikam, "consultant")
 		_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
 			Holder:  app.HolderRef_builder{Id: them.Bytes()}.Build(),
-			Address: "someone@acme.example",
+			Address: "someone@contoso.example",
 		}.Build())
 		x.NoError(err, "a consultant was refused the second account")
 
 		b.sets(t, ctx, them, "a different password")
 
-		x.Equal(b.AcmeUser.Bytes(),
-			verify("acme", "someone@acme.example", "correct horse battery staple").GetHolder())
+		x.Equal(b.ContosoUser.Bytes(),
+			verify("contoso", "someone@contoso.example", "correct horse battery staple").GetHolder())
 		x.Equal(them.Bytes(),
-			verify("hooli", "someone@acme.example", "a different password").GetHolder())
+			verify("fabrikam", "someone@contoso.example", "a different password").GetHolder())
 	})
 
 	// And within one tenant it is now refused, which is the constraint that
@@ -257,10 +257,10 @@ func TestSigningInByAddressIsF7Closed(t *testing.T) {
 	t.Run("and two people in one tenant cannot share one", func(t *testing.T) {
 		x := require.New(t)
 
-		other := b.holder(t, ctx, b.Acme, "second")
+		other := b.holder(t, ctx, b.Contoso, "second")
 		_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
 			Holder:  app.HolderRef_builder{Id: other.Bytes()}.Build(),
-			Address: "someone@acme.example",
+			Address: "someone@contoso.example",
 		}.Build())
 		x.Equal(codes.AlreadyExists, status.Code(err))
 	})
@@ -272,7 +272,7 @@ func TestSigningInByAddressIsF7Closed(t *testing.T) {
 
 		_, err := v.Verify(ctx, app.VouchVerifyRequest_builder{
 			Who: app.VouchWho_builder{
-				Tenant: "acme", Alias: "someone", Address: "someone@acme.example",
+				Tenant: "contoso", Alias: "someone", Address: "someone@contoso.example",
 			}.Build(),
 			Secret: []byte("whatever"),
 		}.Build())
@@ -294,12 +294,12 @@ func TestAConnectionIsRostersAndItsSecretIsNot(t *testing.T) {
 	b, ctx := build(t)
 
 	_, err := b.Ungated.Connection().Add(ctx, app.ConnectionAddRequest_builder{
-		Tenant:    app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant:    app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Name:      "entra",
-		Issuer:    "https://login.microsoftonline.com/acme/v2.0",
+		Issuer:    "https://login.microsoftonline.com/contoso/v2.0",
 		ClientId:  "a-client-id",
 		Scopes:    []string{"email"},
-		SecretRef: "env:ACME_ENTRA_SECRET",
+		SecretRef: "env:CONTOSO_ENTRA_SECRET",
 	}.Build())
 	x.NoError(err)
 
@@ -308,7 +308,7 @@ func TestAConnectionIsRostersAndItsSecretIsNot(t *testing.T) {
 	v, err := b.Ungated.Connection().Get(ctx, app.ConnectionGetRequest_builder{
 		Ref: app.ConnectionRef_builder{
 			At: app.ConnectionRefByAt_builder{
-				Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+				Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 				Name:   z.Ptr("entra"),
 			}.Build(),
 		}.Build(),
@@ -316,13 +316,13 @@ func TestAConnectionIsRostersAndItsSecretIsNot(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	x.Equal("https://login.microsoftonline.com/acme/v2.0", v.GetIssuer())
+	x.Equal("https://login.microsoftonline.com/contoso/v2.0", v.GetIssuer())
 	x.Equal("a-client-id", v.GetClientId())
 	x.Equal([]string{"email"}, v.GetScopes())
 
 	// A reference and never the thing. roster does not read it, and what it
 	// means is the front door's to know.
-	x.Equal("env:ACME_ENTRA_SECRET", v.GetSecretRef())
+	x.Equal("env:CONTOSO_ENTRA_SECRET", v.GetSecretRef())
 
 	// And the name is one per tenant, because two operators may both call one
 	// "entra" and mean two different directories.
@@ -330,15 +330,15 @@ func TestAConnectionIsRostersAndItsSecretIsNot(t *testing.T) {
 		x := require.New(t)
 
 		_, err := b.Ungated.Connection().Add(ctx, app.ConnectionAddRequest_builder{
-			Tenant:   app.TenantRef_builder{Id: b.Hooli.Bytes()}.Build(),
+			Tenant:   app.TenantRef_builder{Id: b.Fabrikam.Bytes()}.Build(),
 			Name:     "entra",
-			Issuer:   "https://login.microsoftonline.com/hooli/v2.0",
+			Issuer:   "https://login.microsoftonline.com/fabrikam/v2.0",
 			ClientId: "another-client-id",
 		}.Build())
 		x.NoError(err, "one operator's provider name took another's")
 
 		_, err = b.Ungated.Connection().Add(ctx, app.ConnectionAddRequest_builder{
-			Tenant:   app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+			Tenant:   app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 			Name:     "entra",
 			Issuer:   "https://example.test",
 			ClientId: "a-third",
@@ -352,14 +352,14 @@ func TestAConnectionIsRostersAndItsSecretIsNot(t *testing.T) {
 		x := require.New(t)
 
 		_, err := b.Ungated.Host().Add(ctx, app.HostAddRequest_builder{
-			Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
-			Name:   "acme.example.com",
+			Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
+			Name:   "contoso.example.com",
 		}.Build())
 		x.NoError(err)
 
 		_, err = b.Ungated.MailDomain().Add(ctx, app.MailDomainAddRequest_builder{
-			Tenant:   app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
-			Name:     "acme.com",
+			Tenant:   app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
+			Name:     "contoso.com",
 			Provider: "entra",
 		}.Build())
 		x.NoError(err)
@@ -367,12 +367,12 @@ func TestAConnectionIsRostersAndItsSecretIsNot(t *testing.T) {
 		f := front.New(b.Ungated)
 
 		whose, err := f.WhoseHost(ctx, app.FrontWhoseHostRequest_builder{
-			Host: "acme.example.com",
+			Host: "contoso.example.com",
 		}.Build())
 		x.NoError(err)
 
 		where, err := f.WhereFrom(ctx, app.FrontWhereFromRequest_builder{
-			Tenant: whose.GetTenant(), Address: "somebody@acme.com",
+			Tenant: whose.GetTenant(), Address: "somebody@contoso.com",
 		}.Build())
 		x.NoError(err)
 		x.Equal("entra", where.GetProvider())
@@ -387,6 +387,6 @@ func TestAConnectionIsRostersAndItsSecretIsNot(t *testing.T) {
 			Select: app.ConnectionSelect_builder{Issuer: z.Ptr(true)}.Build(),
 		}.Build())
 		x.NoError(err)
-		x.Equal("https://login.microsoftonline.com/acme/v2.0", got.GetIssuer())
+		x.Equal("https://login.microsoftonline.com/contoso/v2.0", got.GetIssuer())
 	})
 }

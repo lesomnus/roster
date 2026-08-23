@@ -40,18 +40,18 @@ func TestAKindNothingChecksIsRefusedBeforeAnybodyIsLookedFor(t *testing.T) {
 	b, ctx := build(t)
 
 	_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
-		Holder:  app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
-		Address: "someone@acme.example",
+		Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Address: "someone@contoso.example",
 	}.Build())
 	x.NoError(err)
 
-	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
 	ask := func(v *vouch.Server, kind, address string) error {
 		t.Helper()
 
 		_, err := v.Verify(ctx, app.VouchVerifyRequest_builder{
-			Who:    app.VouchWho_builder{Tenant: "acme", Address: address}.Build(),
+			Who:    app.VouchWho_builder{Tenant: "contoso", Address: address}.Build(),
 			Kind:   kind,
 			Secret: []byte("hunter2"),
 		}.Build())
@@ -65,8 +65,8 @@ func TestAKindNothingChecksIsRefusedBeforeAnybodyIsLookedFor(t *testing.T) {
 		x := require.New(t)
 		v := b.vouched()
 
-		here := ask(v, "recovery", "someone@acme.example")
-		gone := ask(v, "recovery", "nobody@acme.example")
+		here := ask(v, "recovery", "someone@contoso.example")
+		gone := ask(v, "recovery", "nobody@contoso.example")
 
 		x.Equal(codes.InvalidArgument, status.Code(here))
 		x.Equal(status.Code(here), status.Code(gone),
@@ -81,8 +81,8 @@ func TestAKindNothingChecksIsRefusedBeforeAnybodyIsLookedFor(t *testing.T) {
 		x := require.New(t)
 		v := b.vouched()
 
-		here := ask(v, vouch.KindTotp, "someone@acme.example")
-		gone := ask(v, vouch.KindTotp, "nobody@acme.example")
+		here := ask(v, vouch.KindTotp, "someone@contoso.example")
+		gone := ask(v, vouch.KindTotp, "nobody@contoso.example")
 
 		x.Equal(codes.Unimplemented, status.Code(here))
 		x.Equal(status.Code(here), status.Code(gone),
@@ -113,7 +113,7 @@ func TestAKindNothingChecksIsRefusedBeforeAnybodyIsLookedFor(t *testing.T) {
 			for range n {
 				at := time.Now()
 				_, _ = v.Verify(ctx, app.VouchVerifyRequest_builder{
-					Who:    app.VouchWho_builder{Tenant: "acme", Address: "nobody@acme.example"}.Build(),
+					Who:    app.VouchWho_builder{Tenant: "contoso", Address: "nobody@contoso.example"}.Build(),
 					Kind:   kind,
 					Secret: []byte("000000"),
 				}.Build())
@@ -155,7 +155,7 @@ func TestSetWritesOnlyAKindThisCanCheck(t *testing.T) {
 		t.Helper()
 
 		_, err := v.Set(ctx, app.VouchSetRequest_builder{
-			Who:    app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Kind:   kind,
 			Secret: []byte("correct horse battery staple"),
 		}.Build())
@@ -196,12 +196,12 @@ func TestSetWritesOnlyAKindThisCanCheck(t *testing.T) {
 	t.Run("and a sign-in still finishes", func(t *testing.T) {
 		x := require.New(t)
 
-		b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+		b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
 		// Framed, because a continuation is minted for whoever asked and it is
 		// the continuation path that a phantom factor blocks.
-		res, err := b.vouched().Verify(b.as(ctx, b.AcmeUser, b.Acme), app.VouchVerifyRequest_builder{
-			Who:    app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		res, err := b.vouched().Verify(b.as(ctx, b.ContosoUser, b.Contoso), app.VouchVerifyRequest_builder{
+			Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Secret: []byte("correct horse battery staple"),
 		}.Build())
 		x.NoError(err)
@@ -226,25 +226,25 @@ func TestASecretIsSetForTheAddressThatNamesSomebody(t *testing.T) {
 	b, ctx := build(t)
 
 	_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
-		Holder:  app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
-		Address: "someone@acme.example",
+		Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Address: "someone@contoso.example",
 	}.Build())
 	x.NoError(err)
 
 	who := func(address string) *app.VouchWho {
-		return app.VouchWho_builder{Tenant: "acme", Address: address}.Build()
+		return app.VouchWho_builder{Tenant: "contoso", Address: address}.Build()
 	}
 
 	v := b.vouched()
 
 	_, err = v.Set(ctx, app.VouchSetRequest_builder{
-		Who:    who("someone@acme.example"),
+		Who:    who("someone@contoso.example"),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
 
 	// And it is that person's secret, rather than a row hanging off nothing.
-	x.True(b.verifies(t, ctx, b.AcmeUser, "correct horse battery staple").GetOk())
+	x.True(b.verifies(t, ctx, b.ContosoUser, "correct horse battery staple").GetOk())
 
 	// And a reset by address is a **whole** reset, which is the half that was
 	// nearly lost making the other half work.
@@ -264,19 +264,19 @@ func TestASecretIsSetForTheAddressThatNamesSomebody(t *testing.T) {
 		x := require.New(t)
 
 		before, err := b.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
-			Ref:    app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Ref:    app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Select: app.HolderSelect_builder{DateInvalidated: z.Ptr(true)}.Build(),
 		}.Build())
 		x.NoError(err)
 		x.Nil(before.GetDateInvalidated())
 
-		res, err := v.Reset(ctx, app.VouchResetRequest_builder{Who: who("someone@acme.example")}.Build())
+		res, err := v.Reset(ctx, app.VouchResetRequest_builder{Who: who("someone@contoso.example")}.Build())
 		x.NoError(err)
 		x.NotEmpty(res.GetSecret())
-		x.True(b.verifies(t, ctx, b.AcmeUser, res.GetSecret()).GetOk())
+		x.True(b.verifies(t, ctx, b.ContosoUser, res.GetSecret()).GetOk())
 
 		after, err := b.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
-			Ref:    app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Ref:    app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Select: app.HolderSelect_builder{DateInvalidated: z.Ptr(true)}.Build(),
 		}.Build())
 		x.NoError(err)
@@ -293,14 +293,14 @@ func TestASecretIsSetForTheAddressThatNamesSomebody(t *testing.T) {
 		x := require.New(t)
 
 		v := b.operated()
-		as := b.as(ctx, b.AcmeUser, b.Acme)
+		as := b.as(ctx, b.ContosoUser, b.Contoso)
 
 		res, err := v.Reset(as, app.VouchResetRequest_builder{
-			Who: who("someone@acme.example"),
+			Who: who("someone@contoso.example"),
 		}.Build())
 		x.NoError(err)
 		x.NotEmpty(res.GetSecret())
-		x.True(b.verifies(t, ctx, b.AcmeUser, res.GetSecret()).GetOk())
+		x.True(b.verifies(t, ctx, b.ContosoUser, res.GetSecret()).GetOk())
 	})
 
 	// An address nobody has is `NotFound`, which is what every other call that
@@ -311,7 +311,7 @@ func TestASecretIsSetForTheAddressThatNamesSomebody(t *testing.T) {
 		x := require.New(t)
 
 		_, err := v.Set(ctx, app.VouchSetRequest_builder{
-			Who:    who("nobody@acme.example"),
+			Who:    who("nobody@contoso.example"),
 			Secret: []byte("correct horse battery staple"),
 		}.Build())
 		x.Equal(codes.NotFound, status.Code(err))

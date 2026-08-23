@@ -39,7 +39,7 @@ func TestTheLastWayInSurvivesTwoCallersAtOnce(t *testing.T) {
 
 	lost := 0
 	for i := range people {
-		who := b.holder(t, ctx, b.Acme, fmt.Sprintf("person-%d", i))
+		who := b.holder(t, ctx, b.Contoso, fmt.Sprintf("person-%d", i))
 		vs := []*app.Identity{
 			b.identity(t, ctx, who, "github", fmt.Sprintf("gh-%d", i)),
 			b.identity(t, ctx, who, "entra", fmt.Sprintf("en-%d", i)),
@@ -87,7 +87,7 @@ func TestTheLoserIsToldTheRuleAndNotAVersion(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	who := b.holder(t, ctx, b.Acme, "person")
+	who := b.holder(t, ctx, b.Contoso, "person")
 	one := b.identity(t, ctx, who, "github", "gh-1")
 	two := b.identity(t, ctx, who, "entra", "en-1")
 

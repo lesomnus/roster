@@ -101,7 +101,7 @@ func mayList(t *testing.T, ctx context.Context, b *keyedBuilt, who pdid.Id, meth
 	x := require.New(t)
 
 	role, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
-		Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:   "reader-" + method[len(method)-4:],
 		Methods: []string{method},
 	}.Build())
@@ -133,8 +133,8 @@ func TestADelegationIsThePersonAndNotTheApp(t *testing.T) {
 
 	// A second customer, so that "sees one tenant" is a claim with something to
 	// be wrong about.
-	hooli := add(t, ctx, b.Server, "hooli")
-	addHolder(t, ctx, b.Server, hooli, "erlich")
+	fabrikam := add(t, ctx, b.Server, "fabrikam")
+	addHolder(t, ctx, b.Server, fabrikam, "erlich")
 
 	const listHolders = "/roster.HolderService/List"
 	mayList(t, ctx, b, b.Who, listHolders)
@@ -175,7 +175,7 @@ func TestADelegationIsThePersonAndNotTheApp(t *testing.T) {
 		x := require.New(t)
 
 		// Bob may do nothing -- no binding at all.
-		bob := addHolder(t, ctx, b.Server, b.Acme, "bob")
+		bob := addHolder(t, ctx, b.Server, b.Contoso, "bob")
 		his := delegates(t, ctx, b, bob, []string{listHolders}, 0)
 
 		_, err := list(his)
@@ -236,7 +236,7 @@ func TestADelegationIsBoundToWhoeverWasGivenIt(t *testing.T) {
 		x.NoError(err)
 
 		x.Equal(b.Who.Bytes(), res.GetId(), "the holder, not the row")
-		x.Equal(b.Acme.Bytes(), res.GetTenantId())
+		x.Equal(b.Contoso.Bytes(), res.GetTenantId())
 
 		id, err := auth.IdentityFrom(res)
 		x.NoError(err)
@@ -598,7 +598,7 @@ func TestOverAskingIsRefusedBeforeThePasswordIsCompared(t *testing.T) {
 	// request rather than about the person.
 	_, err = app.NewVouchServiceClient(b.Conn).Delegate(bearing(ctx, b.Token),
 		app.VouchDelegateRequest_builder{
-			Who:     app.VouchWho_builder{Tenant: "acme", Alias: "nobody-at-all"}.Build(),
+			Who:     app.VouchWho_builder{Tenant: "contoso", Alias: "nobody-at-all"}.Build(),
 			Secret:  []byte("whatever"),
 			Methods: []string{"/roster.HolderService/Erase"},
 		}.Build())

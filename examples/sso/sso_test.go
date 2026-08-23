@@ -205,7 +205,7 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 	x.NoError(s.Control.Ent.Schema.Create(ctx))
 
 	seeded, err := cmd.Seed(ctx, s, cmd.Seeding{
-		Tenant:   "acme",
+		Tenant:   "contoso",
 		Holder:   "admin",
 		Operator: "ops",
 	})
@@ -406,7 +406,7 @@ func TestSomebodyRosterAlreadyKnows(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "acme"})
+	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "contoso"})
 	d.idp.subject = "1078"
 
 	// Invited: the Holder is put there first, and the identity linked to it.
@@ -442,7 +442,7 @@ func TestSomebodyRosterAlreadyKnows(t *testing.T) {
 func TestSomebodyNobodyInvited(t *testing.T) {
 	x := require.New(t)
 
-	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "acme"})
+	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "contoso"})
 	d.idp.subject = "2000"
 
 	res := d.signIn(t)
@@ -459,9 +459,9 @@ func TestSomebodyNobodyInvited(t *testing.T) {
 func TestEnrolled(t *testing.T) {
 	ctx := t.Context()
 
-	// The app is reached on 127.0.0.1 in this test, so that is acme's front
+	// The app is reached on 127.0.0.1 in this test, so that is contoso's front
 	// door. A deployment maps the names it actually serves.
-	d := serve(t, sso.Enrolling, map[string]string{"127.0.0.1": "acme"})
+	d := serve(t, sso.Enrolling, map[string]string{"127.0.0.1": "contoso"})
 
 	t.Run("a name this deployment serves", func(t *testing.T) {
 		x := require.New(t)
@@ -493,7 +493,7 @@ func TestEnrolled(t *testing.T) {
 			}.Build(),
 		}.Build())
 		x.NoError(err)
-		x.Equal("acme", v.GetHolder().GetTenant().GetAlias())
+		x.Equal("contoso", v.GetHolder().GetTenant().GetAlias())
 		x.Equal("grace", v.GetHolder().GetAlias())
 	})
 
@@ -504,7 +504,7 @@ func TestEnrolled(t *testing.T) {
 		// would need its own `redirect_uri` registered with the provider, so a
 		// test that only rewrote the `Host` header would be stopped by the state
 		// cookie belonging to the other name -- 400, for the wrong reason.
-		d2 := serve(t, sso.Enrolling, map[string]string{"acme.example.com": "acme"})
+		d2 := serve(t, sso.Enrolling, map[string]string{"contoso.example.com": "contoso"})
 		d2.idp.subject = "6100"
 		d2.idp.claims = map[string]any{"email": "eve@x.example", "email_verified": true}
 
@@ -518,24 +518,24 @@ func TestEnrolled(t *testing.T) {
 // followed through.
 //
 // `Identity` is unique on (tenant, provider, subject), so the same Google
-// account can sign up to acme's service and to beta's. Those are two Holders
+// account can sign up to contoso's service and to beta's. Those are two Holders
 // with two histories and two sets of permissions, and nothing relates them --
 // which is the point rather than a limitation: a row that spanned tenants would
 // have no owner, no answer to who may erase it, and no tenant whose trail it
 // belongs to.
 //
-// The lookup is inside a tenant, so beta's door does not find acme's row at
+// The lookup is inside a tenant, so beta's door does not find contoso's row at
 // all. There is no comparison to make and none to forget.
 func TestTheSameAccountAtTwoOperators(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	// This app is acme's front door. It is acme's and only acme's, because its
-	// credential is a Holder of acme and the wall narrows what it may read to
+	// This app is contoso's front door. It is contoso's and only contoso's, because its
+	// credential is a Holder of contoso and the wall narrows what it may read to
 	// that -- see the note on `serve`. A login app that fronts several
 	// operators needs a credential whose scope covers them, which is an API
 	// key rather than a person.
-	d := serve(t, sso.Enrolling, map[string]string{"127.0.0.1": "acme"})
+	d := serve(t, sso.Enrolling, map[string]string{"127.0.0.1": "contoso"})
 
 	beta, err := d.ungated.Tenant().Add(ctx, rstr.TenantAddRequest_builder{
 		Alias: "beta",
@@ -557,17 +557,17 @@ func TestTheSameAccountAtTwoOperators(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	// They arrive at acme with the same Google account.
+	// They arrive at contoso with the same Google account.
 	d.idp.subject = "8000"
 	d.idp.claims = map[string]any{
 		"email": "heidi@somewhere.example", "email_verified": true, "name": "Heidi",
 	}
 
 	res := d.signIn(t)
-	x.Equal(http.StatusOK, res.StatusCode, "they sign up to acme as well")
+	x.Equal(http.StatusOK, res.StatusCode, "they sign up to contoso as well")
 
-	// And beta's row is untouched: acme's door never saw it, because the
-	// lookup names a tenant and that one was acme's.
+	// And beta's row is untouched: contoso's door never saw it, because the
+	// lookup names a tenant and that one was contoso's.
 	got, err := d.ungated.Identity().List(ctx, rstr.IdentityListRequest_builder{
 		Filters: []*rstr.IdentityFilter{
 			rstr.IdentityFilter_builder{
@@ -586,13 +586,13 @@ func TestTheSameAccountAtTwoOperators(t *testing.T) {
 // TestTwoInOneTenantIsStillRefused: the account-takeover shape has not moved.
 //
 // Putting the tenant in the key widens what is allowed **across** tenants and
-// changes nothing inside one -- two Holders of acme claiming the same subject
+// changes nothing inside one -- two Holders of contoso claiming the same subject
 // at the same provider is still whoever-logs-in-next-wins.
 func TestTwoInOneTenantIsStillRefused(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "acme"})
+	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "contoso"})
 
 	one, err := d.ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
 		Tenant: rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),
@@ -626,7 +626,7 @@ func TestTwoInOneTenantIsStillRefused(t *testing.T) {
 func TestTheStateIsChecked(t *testing.T) {
 	x := require.New(t)
 
-	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "acme"})
+	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "contoso"})
 
 	// Straight to the callback, the way somebody else's page would send a
 	// browser: a code, a state, and no cookie from `/login`.
@@ -654,7 +654,7 @@ func TestAPasswordSignInReadsItsOwnRecord(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "acme"})
+	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "contoso"})
 
 	h, err := d.ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
 		Tenant: rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),
@@ -665,7 +665,7 @@ func TestAPasswordSignInReadsItsOwnRecord(t *testing.T) {
 
 	_, err = d.ungated.Email().Add(ctx, rstr.EmailAddRequest_builder{
 		Holder:  rstr.HolderRef_builder{Id: h.GetId()}.Build(),
-		Address: "erin@acme.example",
+		Address: "erin@contoso.example",
 	}.Build())
 	x.NoError(err)
 
@@ -745,7 +745,7 @@ func TestAPasswordSignInReadsItsOwnRecord(t *testing.T) {
 
 		x.Equal("erin", v.Alias)
 		x.Equal("Erin", v.Name)
-		x.Equal([]string{"erin@acme.example"}, v.Emails)
+		x.Equal([]string{"erin@contoso.example"}, v.Emails)
 
 		// One list rather than two, because a person reading this is asking
 		// *how can I get in* and the answer does not sort itself into what
@@ -821,7 +821,7 @@ func TestAPasswordSignInReadsItsOwnRecord(t *testing.T) {
 		c := &http.Client{Jar: jar}
 
 		res, err := c.Post(d.app.URL+"/session", "application/json",
-			strings.NewReader(`{"address":"erin@acme.example","password":"correct horse battery staple"}`))
+			strings.NewReader(`{"address":"erin@contoso.example","password":"correct horse battery staple"}`))
 		x.NoError(err)
 		defer res.Body.Close()
 		x.Equal(http.StatusNoContent, res.StatusCode)
@@ -846,7 +846,7 @@ func TestAPasswordSignInReadsItsOwnRecord(t *testing.T) {
 		// shape would be a list of which addresses have accounts, readable by
 		// anyone with a form.
 		miss, err := c.Post(d.app.URL+"/session", "application/json",
-			strings.NewReader(`{"address":"nobody@acme.example","password":"correct horse battery staple"}`))
+			strings.NewReader(`{"address":"nobody@contoso.example","password":"correct horse battery staple"}`))
 		x.NoError(err)
 		defer miss.Body.Close()
 		x.Equal(http.StatusUnauthorized, miss.StatusCode)
@@ -875,9 +875,9 @@ func TestTheProviderHalfHasADelegationNow(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	d := serve(t, func(c rstr.Client) sso.Enrol { return sso.Enrolling(c) }, map[string]string{"127.0.0.1": "acme"})
+	d := serve(t, func(c rstr.Client) sso.Enrol { return sso.Enrolling(c) }, map[string]string{"127.0.0.1": "contoso"})
 	d.idp.subject = "2049"
-	d.idp.claims = map[string]any{"email": "newcomer@acme.example", "email_verified": true}
+	d.idp.claims = map[string]any{"email": "newcomer@contoso.example", "email_verified": true}
 
 	jar, err := cookiejar.New(nil)
 	x.NoError(err)
@@ -979,7 +979,7 @@ func TestTwoFormsAndTheAppRemembersNothing(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "acme"})
+	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "contoso"})
 
 	h, err := d.ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
 		Tenant: rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),
@@ -1083,7 +1083,7 @@ func TestAWrongSecondFactorCostsTheFirstFormAgain(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "acme"})
+	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "contoso"})
 
 	h, err := d.ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
 		Tenant: rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),
@@ -1173,7 +1173,7 @@ type record struct {
 func TestTheAccountScreenIsServed(t *testing.T) {
 	x := require.New(t)
 
-	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "acme"})
+	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "contoso"})
 
 	res, err := http.Get(d.app.URL + "/account")
 	x.NoError(err)
@@ -1196,7 +1196,7 @@ func TestSomebodyRemovesAWayInFromTheirOwnPage(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "acme"})
+	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "contoso"})
 
 	h, err := d.ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
 		Tenant: rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),
@@ -1288,7 +1288,7 @@ func TestSigningOutEverywhereEndsBothHalves(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "acme"})
+	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "contoso"})
 
 	h, err := d.ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
 		Tenant: rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),
@@ -1368,7 +1368,7 @@ func TestSigningOutEverywhereEndsBothHalves(t *testing.T) {
 			Ref: rstr.HolderRef_builder{
 				Slug: rstr.HolderRefBySlug_builder{
 					Alias:  proto.String("login-app"),
-					Tenant: rstr.TenantRef_builder{Alias: proto.String("acme")}.Build(),
+					Tenant: rstr.TenantRef_builder{Alias: proto.String("contoso")}.Build(),
 				}.Build(),
 			}.Build(),
 			Select: rstr.HolderSelect_builder{DateInvalidated: proto.Bool(true)}.Build(),
@@ -1476,9 +1476,9 @@ func TestAddingAWayInIsRoutedNow(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	d := serve(t, func(c rstr.Client) sso.Enrol { return sso.Enrolling(c) }, map[string]string{"127.0.0.1": "acme"})
+	d := serve(t, func(c rstr.Client) sso.Enrol { return sso.Enrolling(c) }, map[string]string{"127.0.0.1": "contoso"})
 	d.idp.subject = "3001"
-	d.idp.claims = map[string]any{"email": "adder@acme.example", "email_verified": true}
+	d.idp.claims = map[string]any{"email": "adder@contoso.example", "email_verified": true}
 
 	jar, err := cookiejar.New(nil)
 	x.NoError(err)
@@ -1568,7 +1568,7 @@ func TestAddingAWayInIsRoutedNow(t *testing.T) {
 func TestAddingAWayInNeedsASessionFirst(t *testing.T) {
 	x := require.New(t)
 
-	d := serve(t, func(c rstr.Client) sso.Enrol { return sso.Enrolling(c) }, map[string]string{"127.0.0.1": "acme"})
+	d := serve(t, func(c rstr.Client) sso.Enrol { return sso.Enrolling(c) }, map[string]string{"127.0.0.1": "contoso"})
 
 	jar, err := cookiejar.New(nil)
 	x.NoError(err)
@@ -1593,7 +1593,7 @@ func TestSomebodyMintsAKeyFromTheirOwnPage(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "acme"})
+	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "contoso"})
 
 	h, err := d.ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
 		Tenant: rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),

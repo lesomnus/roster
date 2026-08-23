@@ -39,7 +39,7 @@ func TestNoVerifierReachesTheTrailInEitherColumn(t *testing.T) {
 	// document is what each compiles to.
 	for _, secret := range []string{"correct horse battery staple", "another one entirely"} {
 		_, err := v.Set(ctx, app.VouchSetRequest_builder{
-			Who:    app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Secret: []byte(secret),
 		}.Build())
 		x.NoError(err)

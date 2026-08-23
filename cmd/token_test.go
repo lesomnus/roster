@@ -70,7 +70,7 @@ func TestATokenSaysWhoItIs(t *testing.T) {
 	x.NoError(err)
 
 	x.Equal(b.Who.Bytes(), res.GetId(), "the holder, not the key")
-	x.Equal(b.Acme.Bytes(), res.GetTenantId())
+	x.Equal(b.Contoso.Bytes(), res.GetTenantId())
 
 	// And what payday makes of it, through the same decoder an app uses.
 	id, err := auth.IdentityFrom(res)

@@ -53,7 +53,7 @@ func New(open app.Server) *Server { return &Server{open: open} }
 // port removed and an address literal unbracketed.
 //
 // Exported because both sides need it and neither may disagree. A row written
-// as `Acme.Example.com:8443` is a row that silently never matches, and the
+// as `Contoso.Example.com:8443` is a row that silently never matches, and the
 // symptom is a sign-in page saying nobody is there.
 //
 // # Why the splitting is not done by hand
@@ -97,7 +97,7 @@ func Hostname(v string) string {
 // trims what it is handed, and the write did neither. So the unique index on
 // `(tenant_id, address)`, which is the whole of what makes an address name one
 // person, was comparing strings the lookup would never compare:
-// `Someone@Acme.example` and `someone@acme.example` are two rows to the index
+// `Someone@Contoso.example` and `someone@contoso.example` are two rows to the index
 // and one address to everything that reads it.
 //
 // What that cost is not a duplicate. It is that the second row wins: an address

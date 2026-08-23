@@ -101,10 +101,10 @@ func (s *Server) Link(ctx context.Context, req *app.VouchLinkRequest) (*app.Vouc
 	// read.
 	//
 	// Read unwalled, it minted a **spendable** way into another tenant. A
-	// holder in acme with `Vouch.Link` and `Vouch.Redeem` -- an ordinary
+	// holder in contoso with `Vouch.Link` and `Vouch.Redeem` -- an ordinary
 	// permission for an app that mails recovery links -- could name
-	// `@hooli/erlich`, be handed a real token, redeem it, and act as somebody
-	// in an organisation acme cannot otherwise see a row of.
+	// `@fabrikam/erlich`, be handed a real token, redeem it, and act as somebody
+	// in an organisation contoso cannot otherwise see a row of.
 	//
 	// Narrowed, that request answers what a request for a stranger answers:
 	// NotFound below, and the token that resolves to nobody. Which is the same

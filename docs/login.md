@@ -220,10 +220,10 @@ browser arrived at** says which operator — and roster holds that now:
 
 ```
 front door                                  roster
-     │  FrontService/WhoseHost "acme.example.com"  │
+     │  FrontService/WhoseHost "contoso.example.com"  │
      ├────────────────────────────────────────────>│
-     │<──────────────── acme ──────────────────────┤
-     │  Vouch.Verify {tenant: acme, address: …}    │
+     │<──────────────── contoso ──────────────────────┤
+     │  Vouch.Verify {tenant: contoso, address: …}    │
      ├────────────────────────────────────────────>│
 ```
 
@@ -241,7 +241,7 @@ in `Identity`'s key rather than checked afterwards.
 They have two accounts, and that is the whole answer.
 
 `Identity` is unique on `(tenant, provider, subject)`. The same Google account
-signs up to acme's service and to beta's, and those are two Holders with two
+signs up to contoso's service and to beta's, and those are two Holders with two
 histories and two sets of permissions. Nothing here relates them, and nothing
 should: a row that spanned tenants would have no owner, no answer to who may
 erase it, and no tenant whose trail it belongs to. A tenant is the wall, and
@@ -263,7 +263,7 @@ different operator's own domain, so the name the browser arrived at is the
 operator whose service they are signing in to.
 
 The email domain answers a different question -- where somebody
-**authenticates**, often at another organisation entirely. One of acme's people
+**authenticates**, often at another organisation entirely. One of contoso's people
 can perfectly well have a personal Google account.
 
 ### And what its own credential has to reach

@@ -31,7 +31,7 @@ func TestASeedIsNotAWayIn(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	who := b.holder(t, ctx, b.Acme, "erin")
+	who := b.holder(t, ctx, b.Contoso, "erin")
 	id := b.identity(t, ctx, who, "github", "gh-erin")
 
 	v := b.keyed2fa(t)
@@ -100,7 +100,7 @@ func TestASeedAloneSignsNobodyIn(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	who := b.holder(t, ctx, b.Acme, "erin")
+	who := b.holder(t, ctx, b.Contoso, "erin")
 
 	v := b.keyed2fa(t)
 
@@ -114,7 +114,7 @@ func TestASeedAloneSignsNobodyIn(t *testing.T) {
 
 	// Framed, which is every caller a deployment has: a key or a certificate
 	// carries an actor, and it is what an attempt is issued to.
-	as := b.as(ctx, who, b.Acme)
+	as := b.as(ctx, who, b.Contoso)
 
 	got, err := v.Verify(as, app.VouchVerifyRequest_builder{
 		Who:    app.VouchWho_builder{Id: who.Bytes()}.Build(),

@@ -45,7 +45,7 @@ func TestASecondFactorIsEnrolledOnceAndReadBackNever(t *testing.T) {
 	v := b.keyed2fa(t)
 
 	res, err := v.Enrol(ctx, app.VouchEnrolRequest_builder{
-		Who:    app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Kind:   vouch.KindTotp,
 		Issuer: "roster",
 	}.Build())
@@ -71,7 +71,7 @@ func TestASecondFactorIsEnrolledOnceAndReadBackNever(t *testing.T) {
 		x := require.New(t)
 
 		got, err := v.Verify(ctx, app.VouchVerifyRequest_builder{
-			Who:    app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Kind:   vouch.KindTotp,
 			Secret: []byte(vouch.CodeAt(seed, time.Now().Unix()/30)),
 		}.Build())
@@ -89,7 +89,7 @@ func TestASecondFactorIsEnrolledOnceAndReadBackNever(t *testing.T) {
 		code := []byte(vouch.CodeAt(seed, time.Now().Unix()/30))
 
 		again, err := v.Verify(ctx, app.VouchVerifyRequest_builder{
-			Who:    app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Kind:   vouch.KindTotp,
 			Secret: code,
 		}.Build())
@@ -108,10 +108,10 @@ func TestASecondFactorIsEnrolledOnceAndReadBackNever(t *testing.T) {
 	t.Run("and a password lives beside it", func(t *testing.T) {
 		x := require.New(t)
 
-		b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+		b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
 		got, err := v.Verify(ctx, app.VouchVerifyRequest_builder{
-			Who:    app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Secret: []byte("correct horse battery staple"),
 		}.Build())
 		x.NoError(err)
@@ -126,14 +126,14 @@ func TestASecondFactorIsEnrolledOnceAndReadBackNever(t *testing.T) {
 		x := require.New(t)
 
 		_, err := v.Enrol(ctx, app.VouchEnrolRequest_builder{
-			Who:  app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Who:  app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Kind: vouch.KindTotp,
 			Name: "the spare phone",
 		}.Build())
 		x.NoError(err, "a second authenticator was refused, which is WebAuthn's whole recovery story")
 
 		_, err = v.Enrol(ctx, app.VouchEnrolRequest_builder{
-			Who:  app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Who:  app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Kind: vouch.KindTotp,
 			Name: "the spare phone",
 		}.Build())
@@ -154,13 +154,13 @@ func TestADeploymentWithNoKeyHoldsNoSecondFactor(t *testing.T) {
 	v := b.vouched()
 
 	_, err := v.Enrol(ctx, app.VouchEnrolRequest_builder{
-		Who:  app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Who:  app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Kind: vouch.KindTotp,
 	}.Build())
 	x.Equal(codes.Unimplemented, status.Code(err))
 
 	_, err = v.Verify(ctx, app.VouchVerifyRequest_builder{
-		Who:    app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Kind:   vouch.KindTotp,
 		Secret: []byte("123456"),
 	}.Build())
@@ -168,8 +168,8 @@ func TestADeploymentWithNoKeyHoldsNoSecondFactor(t *testing.T) {
 
 	// And a password is unaffected, so this is about the kind rather than about
 	// the service.
-	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
-	x.True(b.verifies(t, ctx, b.AcmeUser, "correct horse battery staple").GetOk())
+	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
+	x.True(b.verifies(t, ctx, b.ContosoUser, "correct horse battery staple").GetOk())
 }
 
 // TestAKindNobodyChecksIsRefusedBeforeAnybodyIsRead.
@@ -189,8 +189,8 @@ func TestAKindNobodyChecksIsRefusedBeforeAnybodyIsRead(t *testing.T) {
 	v := b.keyed2fa(t)
 
 	for _, who := range []*app.VouchWho{
-		app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
-		app.VouchWho_builder{Tenant: "acme", Alias: "nobody-at-all"}.Build(),
+		app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		app.VouchWho_builder{Tenant: "contoso", Alias: "nobody-at-all"}.Build(),
 	} {
 		_, err := v.Verify(ctx, app.VouchVerifyRequest_builder{
 			Who:    who,

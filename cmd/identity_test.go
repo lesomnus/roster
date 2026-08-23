@@ -24,10 +24,10 @@ func TestOnePersonHasSeveralIdentities(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.identity(t, ctx, b.AcmeUser, "entra", "8f14e45f-ea1e-4f0e-9a1b-2c3d4e5f6a7b")
-	b.identity(t, ctx, b.AcmeUser, "github", "1074321")
+	b.identity(t, ctx, b.ContosoUser, "entra", "8f14e45f-ea1e-4f0e-9a1b-2c3d4e5f6a7b")
+	b.identity(t, ctx, b.ContosoUser, "github", "1074321")
 
-	vs, err := b.Walled.Identity().List(b.as(ctx, b.AcmeUser, b.Acme), app.IdentityListRequest_builder{}.Build())
+	vs, err := b.Walled.Identity().List(b.as(ctx, b.ContosoUser, b.Contoso), app.IdentityListRequest_builder{}.Build())
 	x.NoError(err)
 	x.Len(vs.GetItems(), 2)
 }
@@ -41,9 +41,9 @@ func TestTwoPeopleCannotBeOneSubject(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	other := b.holder(t, ctx, b.Acme, "somebody-else")
+	other := b.holder(t, ctx, b.Contoso, "somebody-else")
 
-	b.identity(t, ctx, b.AcmeUser, "github", "1074321")
+	b.identity(t, ctx, b.ContosoUser, "github", "1074321")
 
 	_, err := b.Ungated.Identity().Add(ctx, app.IdentityAddRequest_builder{
 		Holder:   app.HolderRef_builder{Id: other.Bytes()}.Build(),
@@ -60,10 +60,10 @@ func TestTheSameSubjectAtAnotherProviderIsAnotherIdentity(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.identity(t, ctx, b.AcmeUser, "github", "1074321")
+	b.identity(t, ctx, b.ContosoUser, "github", "1074321")
 
 	_, err := b.Ungated.Identity().Add(ctx, app.IdentityAddRequest_builder{
-		Holder:   app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Holder:   app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Provider: "gitlab",
 		Subject:  "1074321",
 	}.Build())
@@ -85,18 +85,18 @@ func TestAnUnlinkedSubjectComesFree(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	v := b.identity(t, ctx, b.AcmeUser, "github", "1074321")
+	v := b.identity(t, ctx, b.ContosoUser, "github", "1074321")
 
 	// With a password as well, because `server/core` refuses the removal of
 	// somebody's **last** way in -- which is a different rule and has its own
 	// test. This one is about what the subject does afterwards.
-	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
 	_, err := b.Ungated.Identity().Erase(ctx, v.Ref())
 	x.NoError(err)
 
 	_, err = b.Ungated.Identity().Add(ctx, app.IdentityAddRequest_builder{
-		Holder:   app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Holder:   app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Provider: "github",
 		Subject:  "1074321",
 	}.Build())
@@ -112,12 +112,12 @@ func TestTheWallReachesThroughTheHolder(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	v := b.identity(t, ctx, b.AcmeUser, "entra", "8f14e45f")
+	v := b.identity(t, ctx, b.ContosoUser, "entra", "8f14e45f")
 
-	hooliUser := b.holder(t, ctx, b.Hooli, "theirs")
+	fabrikamUser := b.holder(t, ctx, b.Fabrikam, "theirs")
 
 	_, err := b.Walled.Identity().Get(
-		b.as(ctx, hooliUser, b.Hooli),
+		b.as(ctx, fabrikamUser, b.Fabrikam),
 		app.IdentityGetRequest_builder{Ref: v.Ref()}.Build())
 
 	// NotFound and not PermissionDenied: a row outside the wall is a row the
@@ -138,9 +138,9 @@ func TestASubjectThatLooksLikeAnAddressIsRefused(t *testing.T) {
 	b, ctx := build(t)
 
 	_, err := b.Ungated.Identity().Add(ctx, app.IdentityAddRequest_builder{
-		Holder:   app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Holder:   app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Provider: "entra",
-		Subject:  "someone@acme.example",
+		Subject:  "someone@contoso.example",
 	}.Build())
 	x.Equal(codes.InvalidArgument, status.Code(err))
 
@@ -161,10 +161,10 @@ func TestASecondAccountAtOneProviderIsRefused(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.identity(t, ctx, b.AcmeUser, "github", "1074321")
+	b.identity(t, ctx, b.ContosoUser, "github", "1074321")
 
 	_, err := b.Ungated.Identity().Add(ctx, app.IdentityAddRequest_builder{
-		Holder:   app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Holder:   app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Provider: "github",
 		Subject:  "2222222",
 	}.Build())
@@ -192,14 +192,14 @@ func TestASecondAccountIsRefusedBehindAFullPage(t *testing.T) {
 	// holders because the rule under test is about one holder, and putting them
 	// on this one would be twenty violations of it.
 	for i := range 20 {
-		who := b.holder(t, ctx, b.Acme, fmt.Sprintf("early-%02d", i))
+		who := b.holder(t, ctx, b.Contoso, fmt.Sprintf("early-%02d", i))
 		b.identity(t, ctx, who, "github", fmt.Sprintf("90000%02d", i))
 	}
 
-	b.identity(t, ctx, b.AcmeUser, "github", "1074321")
+	b.identity(t, ctx, b.ContosoUser, "github", "1074321")
 
 	_, err := b.Ungated.Identity().Add(ctx, app.IdentityAddRequest_builder{
-		Holder:   app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Holder:   app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Provider: "github",
 		Subject:  "2222222",
 	}.Build())
@@ -223,12 +223,12 @@ func TestASecondAccountIsRefusedWhoeverTheRefNames(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.identity(t, ctx, b.AcmeUser, "github", "1074321")
+	b.identity(t, ctx, b.ContosoUser, "github", "1074321")
 
 	_, err := b.Ungated.Identity().Add(ctx, app.IdentityAddRequest_builder{
 		Holder: app.HolderRef_builder{
 			Slug: app.HolderRefBySlug_builder{
-				Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+				Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 				Alias:  proto.String("someone"),
 			}.Build(),
 		}.Build(),
@@ -246,7 +246,7 @@ func TestTheRulesApplyWithoutTheWallToo(t *testing.T) {
 	b, ctx := build(t)
 
 	_, err := b.Ungated.Identity().Add(ctx, app.IdentityAddRequest_builder{
-		Holder:   app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Holder:   app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Provider: "ldap",
 		Subject:  "",
 	}.Build())
@@ -267,7 +267,7 @@ func TestAProfileIsStoredOnTheHolder(t *testing.T) {
 	b, ctx := build(t)
 
 	v, err := b.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{
-		Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:  "ada",
 		Profile: app.Profile_builder{
 			DisplayName: "Ada Lovelace",
@@ -302,7 +302,7 @@ func TestAHolderWithNoProfileHasNone(t *testing.T) {
 	b, ctx := build(t)
 
 	v, err := b.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{
-		Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:  "plain",
 	}.Build())
 	x.NoError(err)
@@ -319,10 +319,10 @@ func TestIdentitiesCanBeListedByHolder(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	other := b.holder(t, ctx, b.Acme, "somebody-else")
+	other := b.holder(t, ctx, b.Contoso, "somebody-else")
 
-	b.identity(t, ctx, b.AcmeUser, "entra", "8f14e45f-ea1e-4f0e-9a1b-2c3d4e5f6a7b")
-	b.identity(t, ctx, b.AcmeUser, "github", "1074321")
+	b.identity(t, ctx, b.ContosoUser, "entra", "8f14e45f-ea1e-4f0e-9a1b-2c3d4e5f6a7b")
+	b.identity(t, ctx, b.ContosoUser, "github", "1074321")
 	b.identity(t, ctx, other, "github", "2200002")
 
 	of := func(who pdid.Id) *app.IdentityListRequest {
@@ -335,9 +335,9 @@ func TestIdentitiesCanBeListedByHolder(t *testing.T) {
 		}.Build()
 	}
 
-	as := b.as(ctx, b.AcmeUser, b.Acme)
+	as := b.as(ctx, b.ContosoUser, b.Contoso)
 
-	vs, err := b.Walled.Identity().List(as, of(b.AcmeUser))
+	vs, err := b.Walled.Identity().List(as, of(b.ContosoUser))
 	x.NoError(err)
 
 	got := []string{}
@@ -346,12 +346,12 @@ func TestIdentitiesCanBeListedByHolder(t *testing.T) {
 	}
 	x.ElementsMatch([]string{"entra", "github"}, got)
 
-	// And it is a filter, not a way in. Somebody in hooli naming an acme holder
+	// And it is a filter, not a way in. Somebody in fabrikam naming an contoso holder
 	// is answered with nothing: the wall reaches this entity through
 	// `holder.tenant` and runs first.
-	hooliUser := b.holder(t, ctx, b.Hooli, "outsider")
+	fabrikamUser := b.holder(t, ctx, b.Fabrikam, "outsider")
 
-	vs, err = b.Walled.Identity().List(b.as(ctx, hooliUser, b.Hooli), of(b.AcmeUser))
+	vs, err = b.Walled.Identity().List(b.as(ctx, fabrikamUser, b.Fabrikam), of(b.ContosoUser))
 	x.NoError(err)
 	x.Empty(vs.GetItems(), "a filter can only cut the scope down, never widen it")
 }
@@ -366,11 +366,11 @@ func TestIdentitiesCanBeListedByTenant(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	hooliUser := b.holder(t, ctx, b.Hooli, "outsider")
+	fabrikamUser := b.holder(t, ctx, b.Fabrikam, "outsider")
 
-	b.identity(t, ctx, b.AcmeUser, "entra", "8f14e45f-ea1e-4f0e-9a1b-2c3d4e5f6a7b")
-	b.identity(t, ctx, b.AcmeUser, "github", "1074321")
-	b.identity(t, ctx, hooliUser, "github", "9900001")
+	b.identity(t, ctx, b.ContosoUser, "entra", "8f14e45f-ea1e-4f0e-9a1b-2c3d4e5f6a7b")
+	b.identity(t, ctx, b.ContosoUser, "github", "1074321")
+	b.identity(t, ctx, fabrikamUser, "github", "9900001")
 
 	of := func(tenant pdid.Id) *app.IdentityListRequest {
 		return app.IdentityListRequest_builder{
@@ -380,9 +380,9 @@ func TestIdentitiesCanBeListedByTenant(t *testing.T) {
 		}.Build()
 	}
 
-	// The deployment, from outside every tenant, asks who signs in to acme and
+	// The deployment, from outside every tenant, asks who signs in to contoso and
 	// with what.
-	vs, err := b.Ungated.Identity().List(ctx, of(b.Acme))
+	vs, err := b.Ungated.Identity().List(ctx, of(b.Contoso))
 	x.NoError(err)
 
 	got := []string{}
@@ -391,9 +391,9 @@ func TestIdentitiesCanBeListedByTenant(t *testing.T) {
 	}
 	x.ElementsMatch([]string{"entra", "github"}, got)
 
-	// And it is a filter, not a way in: somebody in hooli naming acme is
+	// And it is a filter, not a way in: somebody in fabrikam naming contoso is
 	// answered with nothing. The wall reads the same column and ran first.
-	vs, err = b.Walled.Identity().List(b.as(ctx, hooliUser, b.Hooli), of(b.Acme))
+	vs, err = b.Walled.Identity().List(b.as(ctx, fabrikamUser, b.Fabrikam), of(b.Contoso))
 	x.NoError(err)
 	x.Empty(vs.GetItems(), "a filter can only cut the scope down, never widen it")
 }
@@ -409,16 +409,16 @@ func TestTheStampIsTheServersToWrite(t *testing.T) {
 	b, ctx := build(t)
 
 	v, err := b.Ungated.Identity().Add(ctx, app.IdentityAddRequest_builder{
-		Holder:   app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Holder:   app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Provider: "github",
 		Subject:  "7700007",
-		TenantId: b.Hooli.Bytes(),
+		TenantId: b.Fabrikam.Bytes(),
 	}.Build())
 	x.NoError(err)
 
 	got, err := pdid.From(v.GetTenantId())
 	x.NoError(err)
-	x.Equal(b.Acme, got, "what holder.tenant reaches, not what the caller wrote")
+	x.Equal(b.Contoso, got, "what holder.tenant reaches, not what the caller wrote")
 }
 
 // TestNobodyRemovesTheirLastWayIn is item 8 of PLAN.md's list.
@@ -438,7 +438,7 @@ func TestNobodyRemovesTheirLastWayIn(t *testing.T) {
 	t.Run("the only identity, and no password", func(t *testing.T) {
 		x := require.New(t)
 
-		who := b.holder(t, ctx, b.Acme, "one-way")
+		who := b.holder(t, ctx, b.Contoso, "one-way")
 		v := b.identity(t, ctx, who, "github", "9001")
 
 		_, err := b.Ungated.Identity().Erase(ctx, v.Ref())
@@ -448,7 +448,7 @@ func TestNobodyRemovesTheirLastWayIn(t *testing.T) {
 	t.Run("and the same one once they have a password", func(t *testing.T) {
 		x := require.New(t)
 
-		who := b.holder(t, ctx, b.Acme, "two-ways")
+		who := b.holder(t, ctx, b.Contoso, "two-ways")
 		v := b.identity(t, ctx, who, "github", "9002")
 		b.sets(t, ctx, who, "correct horse battery staple")
 
@@ -459,7 +459,7 @@ func TestNobodyRemovesTheirLastWayIn(t *testing.T) {
 	t.Run("and one of two providers", func(t *testing.T) {
 		x := require.New(t)
 
-		who := b.holder(t, ctx, b.Acme, "two-providers")
+		who := b.holder(t, ctx, b.Contoso, "two-providers")
 		v := b.identity(t, ctx, who, "github", "9003")
 		b.identity(t, ctx, who, "entra", "9004")
 
@@ -472,7 +472,7 @@ func TestNobodyRemovesTheirLastWayIn(t *testing.T) {
 	t.Run("and erasing the person is not stopped", func(t *testing.T) {
 		x := require.New(t)
 
-		who := b.holder(t, ctx, b.Acme, "leaving")
+		who := b.holder(t, ctx, b.Contoso, "leaving")
 		b.identity(t, ctx, who, "github", "9005")
 
 		_, err := b.Ungated.Holder().Erase(ctx, app.HolderRef_builder{Id: who.Bytes()}.Build())
@@ -484,7 +484,7 @@ func TestNobodyRemovesTheirLastWayIn(t *testing.T) {
 	t.Run("and erasing what is gone succeeds", func(t *testing.T) {
 		x := require.New(t)
 
-		who := b.holder(t, ctx, b.Acme, "already-gone")
+		who := b.holder(t, ctx, b.Contoso, "already-gone")
 		v := b.identity(t, ctx, who, "github", "9006")
 		b.sets(t, ctx, who, "correct horse battery staple")
 

@@ -65,10 +65,10 @@ func TestPlainDoesNotHandOutEveryTenant(t *testing.T) {
 	x.Nil(s.Control, "this deployment names no control plane")
 
 	// Two customers who must never see each other.
-	acme := add(t, ctx, s, "acme")
-	hooli := add(t, ctx, s, "hooli")
-	alice := addHolder(t, ctx, s, acme, "alice")
-	addHolder(t, ctx, s, hooli, "bob")
+	contoso := add(t, ctx, s, "contoso")
+	fabrikam := add(t, ctx, s, "fabrikam")
+	alice := addHolder(t, ctx, s, contoso, "alice")
+	addHolder(t, ctx, s, fabrikam, "bob")
 
 	// Alice may list holders, so that the baseline below is a read that
 	// succeeds. Without one, deny-by-default refuses her and the forgery could
@@ -76,7 +76,7 @@ func TestPlainDoesNotHandOutEveryTenant(t *testing.T) {
 	const listHolders = "/roster.HolderService/List"
 
 	role, err := s.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
-		Tenant:  app.TenantRef_builder{Id: acme.Bytes()}.Build(),
+		Tenant:  app.TenantRef_builder{Id: contoso.Bytes()}.Build(),
 		Alias:   "reader",
 		Methods: []string{listHolders},
 	}.Build())
@@ -102,7 +102,7 @@ func TestPlainDoesNotHandOutEveryTenant(t *testing.T) {
 	t.Run("a person sees one tenant", func(t *testing.T) {
 		x := require.New(t)
 
-		v, err := list(as(t, "@acme/alice"))
+		v, err := list(as(t, "@contoso/alice"))
 		x.NoError(err)
 		x.Len(v.GetItems(), 1)
 		x.Equal("alice", v.GetItems()[0].GetAlias())

@@ -21,14 +21,14 @@ The cast is the one the tests use:
 
 | | |
 | --- | --- |
-| **acme** | a customer of this deployment, and **hooli** is another one |
-| **seoul**, **frankfurt** | the two places acme runs the product |
-| **alice** | somebody at acme, who signs in with a password |
-| **erin** | an acme engineer, who arrives from acme's Entra |
-| **ops** | not at acme at all — whoever runs this deployment, and the only one of the four who uses the console |
+| **contoso** | a customer of this deployment, and **fabrikam** is another one |
+| **seoul**, **frankfurt** | the two places contoso runs the product |
+| **alice** | somebody at contoso, who signs in with a password |
+| **erin** | an contoso engineer, who arrives from contoso's Entra |
+| **ops** | not at contoso at all — whoever runs this deployment, and the only one of the four who uses the console |
 
-Nothing acme writes is visible to hooli, and that is the first fact rather than
-a feature: the wall is the only thing here that is never negotiable.
+Nothing contoso writes is visible to fabrikam, and that is the first fact rather
+than a feature: the wall is the only thing here that is never negotiable.
 
 ## The shape
 
@@ -91,15 +91,15 @@ erDiagram
 
 payday's rather than each app's, because everything that reads a request reads
 it: the wall narrows every query by it, the trail stamps it, a rate limit counts
-against it. Its `alias` is unique across the whole deployment, so `@acme/arm-01`
-says which tenant before it says which row. Unlike 👤 `Holder` it is erased
-**hard** -- nothing names a tenant the way every trail row names the holder that
-acted, so there is nothing for its row to outlive.
+against it. Its `alias` is unique across the whole deployment, so
+`@contoso/arm-01` says which tenant before it says which row. Unlike 👤 `Holder`
+it is erased **hard** -- nothing names a tenant the way every trail row names
+the holder that acted, so there is nothing for its row to outlive.
 
-> **acme** is a `Tenant`, and so is **hooli**. Every row below hangs off one of
-> them, and a read made in acme cannot answer with a row of hooli's -- not
-> because a rule says so on each table, but because the predicate that narrows
-> every query is this one edge.
+> **contoso** is a `Tenant`, and so is **fabrikam**. Every row below hangs off
+> one of them, and a read made in contoso cannot answer with a row of fabrikam's
+> -- not because a rule says so on each table, but because the predicate that
+> narrows every query is this one edge.
 
 ### 👤 `Holder` — who a request is from
 
@@ -116,8 +116,8 @@ which is temporary and belongs to 🔒 `Credential`, nor an erasure. Both are
 timestamps rather than flags because the value travels and is monotonic: a
 duplicate is a no-op and a stale one cannot un-revoke.
 
-> **alice** is a `Holder` in acme. Whatever signs her in -- a password here, an
-> account at Entra, a key in a script -- resolves to this one row, and the
+> **alice** is a `Holder` in contoso. Whatever signs her in -- a password here,
+> an account at Entra, a key in a script -- resolves to this one row, and the
 > identifier of it is the `sub` every product knows her by. Suspend her and the
 > session an app is already holding stops working, which is what `date_disabled`
 > is for.
@@ -127,13 +127,14 @@ duplicate is a no-op and a stale one cannot un-revoke.
 payday's **second axis**: a caller who may see a tenant does not thereby see
 every site in it. A row rather than a label because things point at it and
 because it has a name people say -- `alias` is unique within the tenant, which
-is what makes `@acme/seoul` something somebody types into a configuration file.
-`labels` is what an administrative grant matches on: *every site in Asia* is a
-selector over these, resolved to a set of sites by roster.
+is what makes `@contoso/seoul` something somebody types into a configuration
+file. `labels` is what an administrative grant matches on: *every site in Asia*
+is a selector over these, resolved to a set of sites by roster.
 
-> acme runs the product in **seoul** and in **frankfurt**, so those are two
-> `Site` rows in acme's tenant. hooli's own seoul is a different row and the two
-> never meet; `alias` is unique within the tenant, not across the deployment.
+> contoso runs the product in **seoul** and in **frankfurt**, so those are two
+> `Site` rows in contoso's tenant. fabrikam's own seoul is a different row and
+> the two never meet; `alias` is unique within the tenant, not across the
+> deployment.
 
 ### 🚩 `SiteMembership` — somebody being in a site, and not a grant
 
@@ -208,7 +209,7 @@ value and the right way round. A pattern rather than a list because a list is a
 snapshot of something that grows. There are no deny rules: permissions are a
 union, so read order cannot matter.
 
-> acme writes a role **operator** naming `/roster.HolderService/*`. It says
+> contoso writes a role **operator** naming `/roster.HolderService/*`. It says
 > nothing about seoul or frankfurt -- a role is what may be done and never
 > where.
 
@@ -221,7 +222,7 @@ for the whole tenant or one site. It does not name a team: *the administrator of
 a team manages its members* is a product invariant rather than something to
 configure, and what carries a role for a team is 🏅 `TeamMembership`.
 
-> acme binds **operator** to alice **within seoul**. She is an operator there
+> contoso binds **operator** to alice **within seoul**. She is an operator there
 > and nothing at all in frankfurt -- the 🚩 `SiteMembership` she has there
 > records that she audits the place and hands her none of it. A site's rows come
 > through this row, and only through this row.
@@ -248,9 +249,9 @@ Seoul -- `cmd/policy.go` unions the sites off the bindings that reach somebody
 and never reads their 🚩 `SiteMembership`. Read *a group in a site* as **whose
 group this is**, never as *whose people these are*.
 
-> acme makes a group **on-call**, with people from seoul and from frankfurt in
-> it. The group grants nothing until a 🔗 `Binding` names it -- and the binding's
-> site is what scopes what they get, not the group's.
+> contoso makes a group **on-call**, with people from seoul and from frankfurt
+> in it. The group grants nothing until a 🔗 `Binding` names it -- and the
+> binding's site is what scopes what they get, not the group's.
 
 ### 🫂 `GroupMembership` — somebody being in a group
 
@@ -317,10 +318,10 @@ counting attempts anywhere else counts them per process. The unique index is
 `(holder, kind, name)` and not `(holder, kind)`, because registering a second
 security key is the standard WebAuthn recovery advice.
 
-> alice has a `Credential` of kind `password` here, because acme wants somebody
-> who can sign in when Entra is down. erin has none -- she arrives from outside
-> -- and if alice later enrols an authenticator that is a second row, kind
-> `totp`, on the same holder.
+> alice has a `Credential` of kind `password` here, because contoso wants
+> somebody who can sign in when Entra is down. erin has none -- she arrives from
+> outside -- and if alice later enrols an authenticator that is a second row,
+> kind `totp`, on the same holder.
 
 ### 🪪 `Identity` — a subject at a provider, pointing at a holder
 
@@ -333,10 +334,10 @@ Unique on `(tenant_id, provider, subject)`: keeping the tenant in the key is
 what lets one human sign up to two operators with one Google account.
 
 > erin arrives as `entra` / `oid-9f3…`, which is the identifier Entra promises
-> never to change. That pair is unique within acme, so it lands on one `Holder`
-> and never on two -- and that very same `entra` / `oid-9f3…` pair may name
-> somebody in hooli too, which is what keeping the tenant in the key is for and
-> which neither tenant can tell.
+> never to change. That pair is unique within contoso, so it lands on one
+> `Holder` and never on two -- and that very same `entra` / `oid-9f3…` pair may
+> name somebody in fabrikam too, which is what keeping the tenant in the key is
+> for and which neither tenant can tell.
 
 ### 📧 `Email` — an address somebody uses, and whether anybody checked
 
@@ -348,7 +349,7 @@ question asked afterwards. `vouched_by` names the 🪪 `Identity` that vouched f
 it, since an address from a provider's claims is only as good as that provider's
 own check.
 
-> erin's address is `erin@acme.com`, and `vouched_by` names the 🪪 `Identity`
+> erin's address is `erin@contoso.com`, and `vouched_by` names the 🪪 `Identity`
 > above -- Entra is what asserted it. Whether anybody **checked** is the
 > separate `date_verified`, and no request may assert that one: `server/core`
 > refuses an `Add` that tries. alice adding an address to erin's holder is
@@ -375,10 +376,10 @@ and there is nowhere on a credential to write the second; nor would argon2id at
 dictionary that does not exist for 256 random bits. `methods` is written out in
 full rather than a role name, and empty allows nothing.
 
-> acme's nightly shift-report script holds an `rt_` that acts as erin, narrowed
-> to the two methods it calls. It is never wider than erin is, and revoking it
-> is one row erased -- which is why *sign out everywhere* deliberately leaves it
-> alone.
+> contoso's nightly shift-report script holds an `rt_` that acts as erin,
+> narrowed to the two methods it calls. It is never wider than erin is, and
+> revoking it is one row erased -- which is why *sign out everywhere*
+> deliberately leaves it alone.
 
 ## Credentials with a clock on them
 
@@ -405,7 +406,7 @@ instead of it. A delegation presented alone is nobody: it says who a call is
 and never a widening; what it may do is the intersection with what that person
 may do.
 
-> alice signs in at the product acme serves her, and that app gets an `rd_`
+> alice signs in at the product contoso serves her, and that app gets an `rd_`
 > valid for minutes. It sends it in `roster-as` **beside** its own key, so the
 > call says who is asking and who it is about, and what it may do is the app's
 > needs narrowed by alice's own.
@@ -477,7 +478,7 @@ there is a tenant to read it for.
 
 ### 🌐 `Host` — a name a front door answers at
 
-Turns the name a browser arrived at -- `acme.example.com`, lowercased and
+Turns the name a browser arrived at -- `contoso.example.com`, lowercased and
 without a port -- into a tenant. A row rather than a repeated field on
 🏢 `Tenant` because it has to be looked up, and a repeated field is one value to
 the database with no index. `name` is unique **across the deployment**, one of
@@ -488,40 +489,40 @@ on the server the wall was never installed on, with a tenant identifier and
 nothing else. The generated `HostService` stays behind the wall, for an operator
 managing their own names.
 
-> acme's people arrive at `acme.example.com`, and one row says that name is
-> acme's. A front door asks before it knows anybody, which is why the read is on
-> the unwalled server. hooli cannot claim that name -- and neither should acme
-> claim one it does not own, which is a grant the deployment withholds rather
-> than a rule roster enforces.
+> contoso's people arrive at `contoso.example.com`, and one row says that name
+> is contoso's. A front door asks before it knows anybody, which is why the read
+> is on the unwalled server. fabrikam cannot claim that name -- and neither
+> should contoso claim one it does not own, which is a grant the deployment
+> withholds rather than a rule roster enforces.
 
 ### 📮 `MailDomain` — where the people at an address authenticate
 
-*Addresses at `@acme.com` go to Entra* -- identifier-first routing, which every
-multi-tenant front door otherwise rewrites. It hangs off the domain rather than
-off a person on purpose: answered per person it is an account-enumeration
-oracle, while the answer for `nobody@acme.com` is the answer for everybody at
-acme. Keyed `(tenant, name)` and not deployment-wide, because this is a hint one
-operator holds about their own domains -- two may both say something about
+*Addresses at `@contoso.com` go to Entra* -- identifier-first routing, which
+every multi-tenant front door otherwise rewrites. It hangs off the domain rather
+than off a person on purpose: answered per person it is an account-enumeration
+oracle, while the answer for `nobody@contoso.com` is the answer for everybody at
+contoso. Keyed `(tenant, name)` and not deployment-wide, because this is a hint
+one operator holds about their own domains -- two may both say something about
 `@gmail.com`.
 
-> acme says `@acme.com` goes to `entra`. hooli may say something else about
-> `@acme.com` and the two never meet, because `FrontService.WhereFrom` is asked
-> with the tenant 🌐 `Host` just resolved. Nothing has to be proved here: acme is
-> only ever saying where **acme's** people go.
+> contoso says `@contoso.com` goes to `entra`. fabrikam may say something else
+> about `@contoso.com` and the two never meet, because `FrontService.WhereFrom`
+> is asked with the tenant 🌐 `Host` just resolved. Nothing has to be proved
+> here: contoso is only ever saying where **contoso's** people go.
 
 ### 🔌 `Connection` — which provider one operator's people arrive through
 
 Everything about a connection that varies per tenant is public -- `issuer`,
 `client_id`, `scopes` -- so roster stores it. The client secret is not here, and
 that is the decision: `secret_ref` is only *where the deployment keeps it*
-(`env:ACME_ENTRA_SECRET`), a string roster stores and answers with but never
+(`env:CONTOSO_ENTRA_SECRET`), a string roster stores and answers with but never
 reads. roster could not use it anyway -- using it means doing the OIDC exchange,
 which is being the relying party, and D19 says roster is not.
 
-> `entra` is a `Connection` in acme: an issuer, a client id, the scopes, and
-> `env:ACME_ENTRA_SECRET` saying where the deployment keeps the secret. roster
-> stores that string and never reads it, because reading it would mean doing the
-> exchange, and doing the exchange is being the relying party.
+> `entra` is a `Connection` in contoso: an issuer, a client id, the scopes, and
+> `env:CONTOSO_ENTRA_SECRET` saying where the deployment keeps the secret.
+> roster stores that string and never reads it, because reading it would mean
+> doing the exchange, and doing the exchange is being the relying party.
 
 ## The record
 
@@ -547,11 +548,11 @@ the row as the event left it, erase included, so a softly erased row's contents
 live on here -- which is what the retention policy in `docs/operating.md` is
 for, and what `roster forget` destroys per person.
 
-> Every write acme made above wrote a row here, inside the same transaction:
+> Every write contoso made above wrote a row here, inside the same transaction:
 > whoever made it as the actor, the row they touched as the object, and what it
 > looked like afterwards. **ops** signing in to the console wrote one too, in
-> the control plane's own trail, which acme cannot read. When acme has to answer
-> *who put erin in on-call*, this is the only table that can.
+> the control plane's own trail, which contoso cannot read. When contoso has to
+> answer *who put erin in on-call*, this is the only table that can.
 
 ### 📤 `Outbox` — a write that has to be published even if this process dies
 

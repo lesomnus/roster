@@ -45,7 +45,7 @@ type keyedBuilt struct {
 	Config cmd.Config
 
 	Conn  *grpc.ClientConn
-	Acme  pdid.Id
+	Contoso  pdid.Id
 	Who   pdid.Id
 	Token string
 }
@@ -78,8 +78,8 @@ func keyFor(t *testing.T, methods ...string) *keyedBuilt {
 	x.NoError(s.Control.Ent.Schema.Create(ctx))
 
 	// The data plane: a customer and somebody in it.
-	acme := add(t, ctx, s, "acme")
-	who := addHolder(t, ctx, s, acme, "someone")
+	contoso := add(t, ctx, s, "contoso")
+	who := addHolder(t, ctx, s, contoso, "someone")
 
 	// The control plane: the owner, one service, one key.
 	k := add(t, ctx, s.Control, "k")
@@ -100,7 +100,7 @@ func keyFor(t *testing.T, methods ...string) *keyedBuilt {
 		Server: s,
 		Config: c,
 		Conn:   served(t, s),
-		Acme:   acme, Who: who, Token: token,
+		Contoso:   contoso, Who: who, Token: token,
 	}
 }
 
@@ -191,7 +191,7 @@ func TestAKeyReachesNothingElse(t *testing.T) {
 	// grant and not some other thing that would have refused anyway.
 	//
 	// It also shows the scope: this key is in no tenant at all, and reads a
-	// person in `acme` -- `frame.Everything`, narrowed only by the list of
+	// person in `contoso` -- `frame.Everything`, narrowed only by the list of
 	// methods on the row.
 	other := keyFor(t, "/roster.HolderService/Get")
 	v, err := app.NewHolderServiceClient(other.Conn).Get(bearing(t.Context(), other.Token),
@@ -319,13 +319,13 @@ func TestTheTwoPlanesShareNothing(t *testing.T) {
 	b := keyFor(t, verify)
 	ctx := t.Context()
 
-	// The data plane holds acme and its person, and knows nothing of keys.
+	// The data plane holds contoso and its person, and knows nothing of keys.
 	n, err := b.Ent.ApiKey.Query().Count(ctx)
 	x.NoError(err)
 	x.Zero(n)
 
 	// The control plane holds the owner and the service, and knows nothing of
-	// acme.
+	// contoso.
 	vs, err := b.Control.Ent.Tenant.Query().All(ctx)
 	x.NoError(err)
 	x.Len(vs, 1)
@@ -355,7 +355,7 @@ func TestABatchIsTheSameKey(t *testing.T) {
 	_, err := pdpb.NewBatchServiceClient(b.Conn).Do(ctx, pdpb.BatchRequest_builder{
 		Ops: []*pdpb.Op{op("/roster.HolderService/Add",
 			app.HolderAddRequest_builder{
-				Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+				Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 				Alias:  "another",
 			}.Build())},
 	}.Build())

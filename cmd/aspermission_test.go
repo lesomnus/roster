@@ -85,19 +85,19 @@ func TestNobodyAttachesARoleByPatchingAMembership(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	seoul := b.site(t, ctx, b.Acme, "seoul")
+	seoul := b.site(t, ctx, b.Contoso, "seoul")
 	mine := b.team(t, ctx, seoul, "mine")
 
 	// Alice manages memberships across the tenant, and holds nothing else.
-	b.binds(t, b.AcmeUser, b.role(t, ctx, "manager", addMember, patchMembership), nil)
+	b.binds(t, b.ContosoUser, b.role(t, ctx, "manager", addMember, patchMembership), nil)
 
-	as := framed(ctx, b.AcmeUser, b.Acme)
+	as := framed(ctx, b.ContosoUser, b.Contoso)
 
 	// A membership of her own naming no role. Allowed, and it has to be: it is
 	// how somebody is put in a team without being given anything, and
 	// `TestAMembershipWithNoRoleIsStillAMembership` says so.
 	v, err := b.Walled.TeamMembership().Add(as, app.TeamMembershipAddRequest_builder{
-		Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Team:   app.TeamRef_builder{Id: mine.Bytes()}.Build(),
 	}.Build())
 	x.NoError(err)
@@ -119,8 +119,8 @@ func TestNobodyAttachesARoleByPatchingAMembership(t *testing.T) {
 	// something this person may ever call, so the membership above is not a
 	// row about a team -- it is her permissions.
 	conn := served(t, b.Server)
-	_, err = app.NewHolderServiceClient(conn).Erase(asOverTheWire(ctx, b.AcmeUser),
-		app.HolderRef_builder{Id: b.holder(t, ctx, b.Acme, "victim").Bytes()}.Build())
+	_, err = app.NewHolderServiceClient(conn).Erase(asOverTheWire(ctx, b.ContosoUser),
+		app.HolderRef_builder{Id: b.holder(t, ctx, b.Contoso, "victim").Bytes()}.Build())
 	x.Equal(codes.PermissionDenied, status.Code(err),
 		"she erased somebody, so the patch was written after all")
 }
@@ -143,10 +143,10 @@ func TestAGeneralWriteIsNotAWayRoundTheEscalationRule(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	seoul := b.site(t, ctx, b.Acme, "seoul")
+	seoul := b.site(t, ctx, b.Contoso, "seoul")
 	mine := b.team(t, ctx, seoul, "mine")
 
-	b.binds(t, b.AcmeUser, b.role(t, ctx, "manager", addMember, patchMembership), nil)
+	b.binds(t, b.ContosoUser, b.role(t, ctx, "manager", addMember, patchMembership), nil)
 
 	// A deployment that turned general writes on, which is one line of
 	// configuration and nothing else.
@@ -154,11 +154,11 @@ func TestAGeneralWriteIsNotAWayRoundTheEscalationRule(t *testing.T) {
 	x.NoError(err)
 
 	conn := pdtest.Serve(t, g)
-	wire := asOverTheWire(ctx, b.AcmeUser)
+	wire := asOverTheWire(ctx, b.ContosoUser)
 	c := app.NewTeamMembershipServiceClient(conn)
 
 	v, err := c.Add(wire, app.TeamMembershipAddRequest_builder{
-		Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Team:   app.TeamRef_builder{Id: mine.Bytes()}.Build(),
 	}.Build())
 	x.NoError(err)
@@ -174,7 +174,7 @@ func TestAGeneralWriteIsNotAWayRoundTheEscalationRule(t *testing.T) {
 	// The escalation itself, which is what this is about rather than which
 	// error code the patch answered with.
 	_, err = app.NewHolderServiceClient(conn).Erase(wire,
-		app.HolderRef_builder{Id: b.holder(t, ctx, b.Acme, "victim").Bytes()}.Build())
+		app.HolderRef_builder{Id: b.holder(t, ctx, b.Contoso, "victim").Bytes()}.Build())
 	x.Equal(codes.PermissionDenied, status.Code(err),
 		"two RPCs from 'she manages who is in what team' and she erased somebody")
 }
@@ -231,7 +231,7 @@ func TestNobodyMintsAKeyOnSomebodyElsesHolder(t *testing.T) {
 	ctx := t.Context()
 
 	alice := b.Who
-	boss := addHolder(t, ctx, b.Server, b.Acme, "boss")
+	boss := addHolder(t, ctx, b.Server, b.Contoso, "boss")
 
 	// The boss administers the tenant.
 	permitting(t, ctx, b, boss, "admin", "/roster.*/*")
@@ -272,7 +272,7 @@ func TestNobodyMintsAKeyOnSomebodyElsesHolder(t *testing.T) {
 
 	// Through the walled stack as Alice, which is what a console does; see
 	// `TestNobodyMintsAKeyForWhatTheyDoNotHold`, which mints the same way.
-	as := frame.Into(ctx, frame.New(alice, b.Acme, frame.Whole()).WithScope(frame.Only(b.Acme)))
+	as := frame.Into(ctx, frame.New(alice, b.Contoso, frame.Whole()).WithScope(frame.Only(b.Contoso)))
 
 	_, err = b.Walled.ApiKey().Add(as, app.ApiKeyAddRequest_builder{
 		Holder:  app.HolderRef_builder{Id: boss.Bytes()}.Build(),
@@ -315,7 +315,7 @@ func permitting(t *testing.T, ctx context.Context, b *keyedBuilt, who pdid.Id, a
 	x := require.New(t)
 
 	v, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
-		Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:   alias,
 		Methods: methods,
 	}.Build())
@@ -362,11 +362,11 @@ func permitting(t *testing.T, ctx context.Context, b *keyedBuilt, who pdid.Id, a
 func TestARoleHeldThroughATeamIsStillHeld(t *testing.T) {
 	b, ctx := build(t)
 
-	seoul := b.site(t, ctx, b.Acme, "seoul")
+	seoul := b.site(t, ctx, b.Contoso, "seoul")
 	mine := b.team(t, ctx, seoul, "mine")
 
 	// An administrator whose permission arrives only through a team.
-	boss := b.holder(t, ctx, b.Acme, "boss")
+	boss := b.holder(t, ctx, b.Contoso, "boss")
 	_, err := b.Ungated.TeamMembership().Add(ctx, app.TeamMembershipAddRequest_builder{
 		Holder: app.HolderRef_builder{Id: boss.Bytes()}.Build(),
 		Team:   app.TeamRef_builder{Id: mine.Bytes()}.Build(),
@@ -375,7 +375,7 @@ func TestARoleHeldThroughATeamIsStillHeld(t *testing.T) {
 	require.NoError(t, err)
 
 	// And an operator who may only look.
-	ops := b.holder(t, ctx, b.Acme, "ops")
+	ops := b.holder(t, ctx, b.Contoso, "ops")
 	asOps := b.mayCall(t, ctx, ops, "operator", getHolder)
 
 	set := func(who pdid.Id) error {
@@ -395,7 +395,7 @@ func TestARoleHeldThroughATeamIsStillHeld(t *testing.T) {
 
 		conn := served(t, b.Server)
 		_, err := app.NewHolderServiceClient(conn).Erase(asOverTheWire(ctx, boss),
-			app.HolderRef_builder{Id: b.holder(t, ctx, b.Acme, "stranger").Bytes()}.Build())
+			app.HolderRef_builder{Id: b.holder(t, ctx, b.Contoso, "stranger").Bytes()}.Build())
 		x.NoError(err,
 			"the premise is gone: a team role no longer reaches the tenant, and this test needs rewriting rather than deleting")
 	})
@@ -414,7 +414,7 @@ func TestARoleHeldThroughATeamIsStillHeld(t *testing.T) {
 	t.Run("while somebody who really holds nothing still may be", func(t *testing.T) {
 		x := require.New(t)
 
-		x.NoError(set(b.holder(t, ctx, b.Acme, "joe")))
+		x.NoError(set(b.holder(t, ctx, b.Contoso, "joe")))
 	})
 }
 
@@ -441,11 +441,11 @@ func TestABatchIsNoWayRoundTheEscalationRule(t *testing.T) {
 	b, ctx := build(t)
 
 	// Alice manages who is in what, and holds nothing else.
-	b.binds(t, b.AcmeUser, b.role(t, ctx, "manager",
+	b.binds(t, b.ContosoUser, b.role(t, ctx, "manager",
 		addRole, addBinding, pdpb.BatchService_Do_FullMethodName), nil)
 
 	conn := served(t, b.Server)
-	wire := asOverTheWire(ctx, b.AcmeUser)
+	wire := asOverTheWire(ctx, b.ContosoUser)
 
 	op := func(method string, m proto.Message) *pdpb.Op {
 		v, err := anypb.New(m)
@@ -457,7 +457,7 @@ func TestABatchIsNoWayRoundTheEscalationRule(t *testing.T) {
 	// The two RPCs `escalate.go` opens with, in one transaction.
 	_, err := pdpb.NewBatchServiceClient(conn).Do(wire, pdpb.BatchRequest_builder{
 		Ops: []*pdpb.Op{op(addRole, app.RoleAddRequest_builder{
-			Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+			Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 			Alias:   "sneaky",
 			Methods: []string{eraseHold},
 		}.Build())},
@@ -474,7 +474,7 @@ func TestABatchIsNoWayRoundTheEscalationRule(t *testing.T) {
 	// is the escalation and not the batch.
 	_, err = pdpb.NewBatchServiceClient(conn).Do(wire, pdpb.BatchRequest_builder{
 		Ops: []*pdpb.Op{op(addRole, app.RoleAddRequest_builder{
-			Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+			Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 			Alias:   "fine",
 			Methods: []string{addRole},
 		}.Build())},
@@ -512,14 +512,14 @@ func TestNobodyGrantsAPatternWiderThanAnythingTheyHold(t *testing.T) {
 	const listHolders = "/roster.HolderService/List"
 
 	// Alice manages who is in what, and holds two methods of one service.
-	b.binds(t, b.AcmeUser, b.role(t, ctx, "manager",
+	b.binds(t, b.ContosoUser, b.role(t, ctx, "manager",
 		addRole, addBinding, getHolder, eraseHold), nil)
 
 	conn := served(t, b.Server)
-	wire := asOverTheWire(ctx, b.AcmeUser)
+	wire := asOverTheWire(ctx, b.ContosoUser)
 
 	_, err := app.NewRoleServiceClient(conn).Add(wire, app.RoleAddRequest_builder{
-		Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:   "holders",
 		Methods: []string{"/roster.HolderService/*"},
 	}.Build())
@@ -531,7 +531,7 @@ func TestNobodyGrantsAPatternWiderThanAnythingTheyHold(t *testing.T) {
 	theirs := b.role(t, ctx, "holders-theirs", "/roster.HolderService/*")
 	_, err = app.NewBindingServiceClient(conn).Add(wire, app.BindingAddRequest_builder{
 		Role:   app.RoleRef_builder{Id: theirs.Bytes()}.Build(),
-		Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 	}.Build())
 	x.Equal(codes.PermissionDenied, status.Code(err),
 		"she bound herself a pattern no grant of hers covers")
@@ -547,12 +547,12 @@ func TestNobodyGrantsAPatternWiderThanAnythingTheyHold(t *testing.T) {
 	t.Run("and a pattern she holds is hers to pass on", func(t *testing.T) {
 		x := require.New(t)
 
-		other := b.holder(t, ctx, b.Acme, "wide")
+		other := b.holder(t, ctx, b.Contoso, "wide")
 		b.binds(t, other, b.role(t, ctx, "wide-manager", addRole, "/roster.HolderService/*"), nil)
 
 		_, err := app.NewRoleServiceClient(conn).Add(asOverTheWire(ctx, other),
 			app.RoleAddRequest_builder{
-				Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+				Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 				Alias:   "holders-again",
 				Methods: []string{"/roster.HolderService/*"},
 			}.Build())
@@ -588,23 +588,23 @@ func TestNobodyGrantsAPatternWiderThanAnythingTheyHold(t *testing.T) {
 func TestARoleWithNoMethodsIsStillAGrantOfScope(t *testing.T) {
 	b, ctx := build(t)
 
-	seoul := b.site(t, ctx, b.Acme, "seoul")
-	frankfurt := b.site(t, ctx, b.Acme, "frankfurt")
+	seoul := b.site(t, ctx, b.Contoso, "seoul")
+	frankfurt := b.site(t, ctx, b.Contoso, "frankfurt")
 	b.team(t, ctx, seoul, "ours")
 	b.team(t, ctx, frankfurt, "theirs")
 
 	// She administers Seoul: the role is Seoul's and so is her binding.
 	r, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
-		Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Site:    app.SiteRef_builder{Id: seoul.Bytes()}.Build(),
 		Alias:   "seoul-admin",
 		Methods: []string{listTeams, addRole, addBinding},
 	}.Build())
 	require.NoError(t, err)
-	b.binds(t, b.AcmeUser, mustId(t, r.GetId()), &seoul)
+	b.binds(t, b.ContosoUser, mustId(t, r.GetId()), &seoul)
 
 	conn := served(t, b.Server)
-	wire := asOverTheWire(ctx, b.AcmeUser)
+	wire := asOverTheWire(ctx, b.ContosoUser)
 
 	// What she reaches, which is the measure everything below is against.
 	reaches := func(t *testing.T) int {
@@ -621,7 +621,7 @@ func TestARoleWithNoMethodsIsStillAGrantOfScope(t *testing.T) {
 	bind := func(role []byte) error {
 		_, err := app.NewBindingServiceClient(conn).Add(wire, app.BindingAddRequest_builder{
 			Role:   app.RoleRef_builder{Id: role}.Build(),
-			Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			// No site, which is the whole tenant.
 		}.Build())
 
@@ -636,7 +636,7 @@ func TestARoleWithNoMethodsIsStillAGrantOfScope(t *testing.T) {
 		x := require.New(t)
 
 		v, err := app.NewRoleServiceClient(conn).Add(wire, app.RoleAddRequest_builder{
-			Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+			Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 			Site:   app.SiteRef_builder{Id: seoul.Bytes()}.Build(),
 			Alias:  "nothing-in-seoul",
 		}.Build())
@@ -663,7 +663,7 @@ func TestARoleWithNoMethodsIsStillAGrantOfScope(t *testing.T) {
 		x := require.New(t)
 
 		v, err := app.NewRoleServiceClient(conn).Add(wire, app.RoleAddRequest_builder{
-			Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+			Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 			Alias:  "nothing-at-all",
 		}.Build())
 		x.NoError(err)

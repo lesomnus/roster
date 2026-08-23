@@ -30,10 +30,10 @@ func TestNothingOfAnErasedHolderIsReadableByNamingThem(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	const address = "someone@acme.example"
+	const address = "someone@contoso.example"
 
 	_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
-		Holder:  app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Address: address,
 	}.Build())
 	x.NoError(err)
@@ -42,7 +42,7 @@ func TestNothingOfAnErasedHolderIsReadableByNamingThem(t *testing.T) {
 		_, err := s.Email().Get(ctx, app.EmailGetRequest_builder{
 			Ref: app.EmailRef_builder{
 				Address: app.EmailRefByAddress_builder{
-					Holder:  app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+					Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 					Address: z.Ptr(address),
 				}.Build(),
 			}.Build(),
@@ -54,7 +54,7 @@ func TestNothingOfAnErasedHolderIsReadableByNamingThem(t *testing.T) {
 
 	x.NoError(get(b.Ungated), "the control: while they are here, naming them finds it")
 
-	_, err = b.Ungated.Holder().Erase(ctx, app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build())
+	_, err = b.Ungated.Holder().Erase(ctx, app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build())
 	x.NoError(err)
 
 	// The unwalled stack, because that is the one with nothing else in front of

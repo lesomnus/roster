@@ -26,18 +26,18 @@ func TestMeAnswersAboutTheCaller(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	seoul := b.site(t, ctx, b.Acme, "seoul")
+	seoul := b.site(t, ctx, b.Contoso, "seoul")
 	team := b.team(t, ctx, seoul, "operators")
 
 	_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
-		Holder:  app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
-		Address: "someone@acme.example",
+		Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Address: "someone@contoso.example",
 	}.Build())
 	x.NoError(err)
 
 	admin := b.role(t, ctx, "operator", getHolder)
 	_, err = b.Ungated.TeamMembership().Add(ctx, app.TeamMembershipAddRequest_builder{
-		Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Team:   app.TeamRef_builder{Id: team.Bytes()}.Build(),
 		Role:   app.RoleRef_builder{Id: admin.Bytes()}.Build(),
 	}.Build())
@@ -45,16 +45,16 @@ func TestMeAnswersAboutTheCaller(t *testing.T) {
 
 	conn := served(t, b.Server)
 
-	v, err := app.NewMeServiceClient(conn).Get(asOverTheWire(ctx, b.AcmeUser),
+	v, err := app.NewMeServiceClient(conn).Get(asOverTheWire(ctx, b.ContosoUser),
 		app.MeGetRequest_builder{}.Build())
 	x.NoError(err)
 
-	x.Equal(b.AcmeUser.Bytes(), v.GetId())
-	x.Equal(b.Acme.Bytes(), v.GetTenant())
+	x.Equal(b.ContosoUser.Bytes(), v.GetId())
+	x.Equal(b.Contoso.Bytes(), v.GetTenant())
 	x.Equal("someone", v.GetAlias())
 
 	x.Len(v.GetEmails(), 1)
-	x.Equal("someone@acme.example", v.GetEmails()[0].GetAddress())
+	x.Equal("someone@contoso.example", v.GetEmails()[0].GetAddress())
 
 	// The team, with the site it is in -- a team's name means nothing without
 	// one, since `operators` exists in every site and names different people.
@@ -76,10 +76,10 @@ func TestMeSaysWhatTheGateSays(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.binds(t, b.AcmeUser, b.role(t, ctx, "reader", getHolder), nil)
+	b.binds(t, b.ContosoUser, b.role(t, ctx, "reader", getHolder), nil)
 
 	conn := served(t, b.Server)
-	wire := asOverTheWire(ctx, b.AcmeUser)
+	wire := asOverTheWire(ctx, b.ContosoUser)
 
 	v, err := app.NewMeServiceClient(conn).Get(wire, app.MeGetRequest_builder{}.Build())
 	x.NoError(err)
@@ -88,13 +88,13 @@ func TestMeSaysWhatTheGateSays(t *testing.T) {
 
 	// What it listed, the server allows.
 	_, err = app.NewHolderServiceClient(conn).Get(wire, app.HolderGetRequest_builder{
-		Ref: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Ref: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 	}.Build())
 	x.NoError(err)
 
 	// What it did not, the server refuses.
 	_, err = app.NewHolderServiceClient(conn).Erase(wire,
-		app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build())
+		app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build())
 	x.Equal(codes.PermissionDenied, status.Code(err))
 }
 
@@ -120,10 +120,10 @@ func TestSomebodyWithNothingCanStillAskWhatTheyHave(t *testing.T) {
 
 	conn := served(t, b.Server)
 
-	v, err := app.NewMeServiceClient(conn).Get(asOverTheWire(ctx, b.AcmeUser),
+	v, err := app.NewMeServiceClient(conn).Get(asOverTheWire(ctx, b.ContosoUser),
 		app.MeGetRequest_builder{}.Build())
 	x.NoError(err)
-	x.Equal(b.AcmeUser.Bytes(), v.GetId())
+	x.Equal(b.ContosoUser.Bytes(), v.GetId())
 	x.Empty(v.GetMethods(), "somebody who holds nothing was told they hold something")
 }
 
@@ -143,17 +143,17 @@ func TestMeAnswersHowSomebodySignsIn(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.identity(t, ctx, b.AcmeUser, "github", "1078")
-	b.identity(t, ctx, b.AcmeUser, "entra", "8bf1e0a2")
-	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+	b.identity(t, ctx, b.ContosoUser, "github", "1078")
+	b.identity(t, ctx, b.ContosoUser, "entra", "8bf1e0a2")
+	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
 	// Somebody else, in the same tenant, with an identity of their own -- so
 	// that "their own" is a claim with something to be wrong about.
-	other := b.holder(t, ctx, b.Acme, "somebody-else")
+	other := b.holder(t, ctx, b.Contoso, "somebody-else")
 	b.identity(t, ctx, other, "github", "2049")
 
 	v, err := me.New(b.Ent, cmd.Everything(b.Ent)).Get(
-		b.as(ctx, b.AcmeUser, b.Acme), app.MeGetRequest_builder{}.Build())
+		b.as(ctx, b.ContosoUser, b.Contoso), app.MeGetRequest_builder{}.Build())
 	x.NoError(err)
 
 	var providers []string
@@ -187,10 +187,10 @@ func TestAnOperatorSeesHowSomebodyElseSignsIn(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.identity(t, ctx, b.AcmeUser, "github", "1078")
-	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+	b.identity(t, ctx, b.ContosoUser, "github", "1078")
+	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
-	ref := app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build()
+	ref := app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build()
 
 	v, err := b.Ungated.Holder().SignsIn(ctx, app.HolderSignsInRequest_builder{Ref: ref}.Build())
 	x.NoError(err)
@@ -214,13 +214,13 @@ func TestAnOperatorSeesHowSomebodyElseSignsIn(t *testing.T) {
 	t.Run("and the wall answers first", func(t *testing.T) {
 		x := require.New(t)
 
-		them := b.holder(t, ctx, b.Hooli, "erlich")
+		them := b.holder(t, ctx, b.Fabrikam, "erlich")
 		b.identity(t, ctx, them, "github", "2049")
 
-		admin := b.holder(t, ctx, b.Acme, "admin")
-		b.mayAnything(admin, b.Acme)
+		admin := b.holder(t, ctx, b.Contoso, "admin")
+		b.mayAnything(admin, b.Contoso)
 
-		_, err := b.Walled.Holder().SignsIn(b.as(ctx, admin, b.Acme),
+		_, err := b.Walled.Holder().SignsIn(b.as(ctx, admin, b.Contoso),
 			app.HolderSignsInRequest_builder{
 				Ref: app.HolderRef_builder{Id: them.Bytes()}.Build(),
 			}.Build())
@@ -240,14 +240,14 @@ func TestAnOperatorSeesHowSomebodyElseSignsIn(t *testing.T) {
 func TestSomebodyRemovesTheirOwnWayInAndNobodyElseS(t *testing.T) {
 	b, ctx := build(t)
 
-	mine := b.identity(t, ctx, b.AcmeUser, "github", "1078")
-	b.identity(t, ctx, b.AcmeUser, "entra", "8bf1e0a2")
+	mine := b.identity(t, ctx, b.ContosoUser, "github", "1078")
+	b.identity(t, ctx, b.ContosoUser, "entra", "8bf1e0a2")
 
-	them := b.holder(t, ctx, b.Acme, "somebody-else")
+	them := b.holder(t, ctx, b.Contoso, "somebody-else")
 	theirs := b.identity(t, ctx, them, "github", "2049")
 
 	s := me.New(b.Ent, cmd.Everything(b.Ent), me.WithWrites(b.Walled))
-	as := b.as(ctx, b.AcmeUser, b.Acme)
+	as := b.as(ctx, b.ContosoUser, b.Contoso)
 
 	t.Run("their own goes", func(t *testing.T) {
 		x := require.New(t)
@@ -303,14 +303,14 @@ func TestSomebodySignsThemselvesOutOfEverything(t *testing.T) {
 	b, ctx := build(t)
 
 	s := me.New(b.Ent, cmd.Everything(b.Ent), me.WithWrites(b.Walled))
-	as := b.as(ctx, b.AcmeUser, b.Acme)
+	as := b.as(ctx, b.ContosoUser, b.Contoso)
 
 	res, err := s.SignOutEverywhere(as, app.MeSignOutEverywhereRequest_builder{}.Build())
 	x.NoError(err)
 	x.NotNil(res.GetDateInvalidated(), "nothing came back to compare a session against")
 
 	v, err := b.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
-		Ref:    app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Ref:    app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Select: app.HolderSelect_builder{All: z.Ptr(true)}.Build(),
 	}.Build())
 	x.NoError(err)
@@ -318,7 +318,7 @@ func TestSomebodySignsThemselvesOutOfEverything(t *testing.T) {
 
 	// And it is the caller's own row and nobody else's, which the missing
 	// subject is the whole of.
-	them := b.holder(t, ctx, b.Acme, "somebody-else")
+	them := b.holder(t, ctx, b.Contoso, "somebody-else")
 	other, err := b.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
 		Ref:    app.HolderRef_builder{Id: them.Bytes()}.Build(),
 		Select: app.HolderSelect_builder{All: z.Ptr(true)}.Build(),

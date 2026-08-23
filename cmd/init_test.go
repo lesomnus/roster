@@ -60,7 +60,7 @@ func inited(t *testing.T, control bool, args ...string) (*cmd.Server, string) {
 // deliberately about what the admin can **do** rather than what rows exist.
 //
 // Before this, `init` wrote a tenant and a holder and printed "sign in as
-// @acme/admin". Every row was right. The admin could call one method --
+// @contoso/admin". Every row was right. The admin could call one method --
 // `MeService.Get`, which told them they held nothing -- and there was no way
 // out, because writing the first role needs a binding that only writing the
 // first role could give them.
@@ -70,7 +70,7 @@ func TestInitLeavesADeploymentThatWorks(t *testing.T) {
 
 	s, out := inited(t, false)
 
-	x.Contains(out, "sign in as: @acme/admin")
+	x.Contains(out, "sign in as: @contoso/admin")
 
 	// The wildcard is said out loud where it is granted, in the words it was
 	// granted in. A permission nobody reads about is one nobody remembers is
@@ -79,14 +79,14 @@ func TestInitLeavesADeploymentThatWorks(t *testing.T) {
 	x.Contains(out, "every RPC roster serves")
 
 	conn := served(t, s)
-	asAdmin := metadata.NewOutgoingContext(ctx, as(t, "@acme/admin"))
+	asAdmin := metadata.NewOutgoingContext(ctx, as(t, "@contoso/admin"))
 
 	t.Run("the admin may write the second role", func(t *testing.T) {
 		x := require.New(t)
 
 		v, err := app.NewTenantServiceClient(conn).Get(asAdmin,
 			app.TenantGetRequest_builder{
-				Ref: app.TenantRef_builder{Alias: strPtr("acme")}.Build(),
+				Ref: app.TenantRef_builder{Alias: strPtr("contoso")}.Build(),
 			}.Build())
 		x.NoError(err)
 
@@ -207,20 +207,20 @@ func TestNobodyGrantsEverythingWhoDoesNotHoldIt(t *testing.T) {
 	const patch = "/roster.RoleService/Patch"
 
 	r, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
-		Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:   "admin-ish",
 		Methods: []string{write, bind, patch},
 	}.Build())
 	require.NoError(t, err)
-	b.binds(t, b.AcmeUser, mustId(t, r.GetId()), nil)
+	b.binds(t, b.ContosoUser, mustId(t, r.GetId()), nil)
 
-	as := framed(ctx, b.AcmeUser, b.Acme)
+	as := framed(ctx, b.ContosoUser, b.Contoso)
 
 	t.Run("not by writing such a role", func(t *testing.T) {
 		x := require.New(t)
 
 		_, err := b.Walled.Role().Add(as, app.RoleAddRequest_builder{
-			Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+			Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 			Alias:   "sneaky",
 			Methods: []string{"/roster.*/*"},
 		}.Build())
@@ -252,7 +252,7 @@ func TestNobodyGrantsEverythingWhoDoesNotHoldIt(t *testing.T) {
 		x := require.New(t)
 
 		w, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
-			Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+			Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 			Alias:   everythingAlias,
 			Methods: []string{"/roster.*/*"},
 		}.Build())
@@ -266,7 +266,7 @@ func TestNobodyGrantsEverythingWhoDoesNotHoldIt(t *testing.T) {
 
 		_, err = b.Walled.Binding().Add(as, app.BindingAddRequest_builder{
 			Role:   app.RoleRef_builder{Id: w.GetId()}.Build(),
-			Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		}.Build())
 		x.Error(err)
 		x.Equal(codes.PermissionDenied, status.Code(err))
@@ -321,14 +321,14 @@ func TestNobodyWidensARoleTheyHold(t *testing.T) {
 	const erase = "/roster.HolderService/Erase"
 
 	r, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
-		Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:   "editor",
 		Methods: []string{patch},
 	}.Build())
 	x.NoError(err)
-	b.binds(t, b.AcmeUser, mustId(t, r.GetId()), nil)
+	b.binds(t, b.ContosoUser, mustId(t, r.GetId()), nil)
 
-	as := framed(ctx, b.AcmeUser, b.Acme)
+	as := framed(ctx, b.ContosoUser, b.Contoso)
 
 	v, err := b.Walled.Role().Get(as, app.RoleGetRequest_builder{
 		Ref: app.RoleRef_builder{Id: r.GetId()}.Build(),
@@ -383,7 +383,7 @@ func TestAGivenPasswordIsTheOneThatSignsIn(t *testing.T) {
 
 	const given = "correct horse battery staple"
 
-	v, err := cmd.Seed(ctx, s, cmd.Seeding{Tenant: "acme", Holder: "admin", Operator: "ops", Password: given})
+	v, err := cmd.Seed(ctx, s, cmd.Seeding{Tenant: "contoso", Holder: "admin", Operator: "ops", Password: given})
 	x.NoError(err)
 	x.Equal(given, v.Password, "what was handed over is not what came back")
 
@@ -445,7 +445,7 @@ func TestTheFirstTenantCanBeGivenItsIdentifier(t *testing.T) {
 	t.Run("and nothing said still mints one", func(t *testing.T) {
 		x := require.New(t)
 
-		v, err := cmd.Seed(ctx, fresh(t), cmd.Seeding{Tenant: "acme", Holder: "admin", Operator: "ops"})
+		v, err := cmd.Seed(ctx, fresh(t), cmd.Seeding{Tenant: "contoso", Holder: "admin", Operator: "ops"})
 		x.NoError(err)
 		x.NotEqual(pdid.Nil, v.Tenant)
 		x.NotEqual(at, v.Tenant)
@@ -457,7 +457,7 @@ func TestTheFirstTenantCanBeGivenItsIdentifier(t *testing.T) {
 		x := require.New(t)
 
 		_, err := cmd.Seed(ctx, fresh(t), cmd.Seeding{
-			Tenant: "acme", Holder: "admin", Operator: "ops",
+			Tenant: "contoso", Holder: "admin", Operator: "ops",
 			TenantId: pdid.New(2),
 		})
 		x.Error(err)

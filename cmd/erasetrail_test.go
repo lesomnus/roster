@@ -42,13 +42,13 @@ func TestTheRecordOfAnEraseBelongsToWhoseRowItWas(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	// Somebody in acme, erased by somebody who is not in acme -- which is what
-	// makes the two tenants tell apart. The operator is hooli's, and through
+	// Somebody in contoso, erased by somebody who is not in contoso -- which is what
+	// makes the two tenants tell apart. The operator is fabrikam's, and through
 	// the ungated server, so nothing narrows the write itself.
-	who := b.holder(t, ctx, b.Acme, "leaver")
-	operator := b.holder(t, ctx, b.Hooli, "ops")
+	who := b.holder(t, ctx, b.Contoso, "leaver")
+	operator := b.holder(t, ctx, b.Fabrikam, "ops")
 
-	res, err := b.Ungated.Holder().Erase(b.asNobody(ctx, operator, b.Hooli),
+	res, err := b.Ungated.Holder().Erase(b.asNobody(ctx, operator, b.Fabrikam),
 		app.HolderRef_builder{Id: who.Bytes()}.Build())
 	x.NoError(err)
 	x.True(res.GetErased())
@@ -67,8 +67,8 @@ func TestTheRecordOfAnEraseBelongsToWhoseRowItWas(t *testing.T) {
 
 	v := vs[0]
 
-	// Under acme, whose row it was -- not under hooli, who did it.
-	x.Equal(b.Acme.Uuid(), v.TenantID,
+	// Under contoso, whose row it was -- not under fabrikam, who did it.
+	x.Equal(b.Contoso.Uuid(), v.TenantID,
 		"the record of an erase was filed away from the tenant whose row was erased")
 	x.Equal(operator.Uuid(), v.ActorID)
 
@@ -94,10 +94,10 @@ func TestAnEraseThroughTheWallIsFiledTheSameWay(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	who := b.holder(t, ctx, b.Acme, "leaver")
-	admin := b.holder(t, ctx, b.Acme, "admin")
+	who := b.holder(t, ctx, b.Contoso, "leaver")
+	admin := b.holder(t, ctx, b.Contoso, "admin")
 
-	_, err := b.Walled.Holder().Erase(b.as(ctx, admin, b.Acme),
+	_, err := b.Walled.Holder().Erase(b.as(ctx, admin, b.Contoso),
 		app.HolderRef_builder{Id: who.Bytes()}.Build())
 	x.NoError(err)
 
@@ -109,6 +109,6 @@ func TestAnEraseThroughTheWallIsFiledTheSameWay(t *testing.T) {
 		All(ctx)
 	x.NoError(err)
 	x.Len(vs, 1)
-	x.Equal(b.Acme.Uuid(), vs[0].TenantID)
+	x.Equal(b.Contoso.Uuid(), vs[0].TenantID)
 	x.NotEmpty(vs[0].Value)
 }

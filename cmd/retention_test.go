@@ -35,7 +35,7 @@ func TestWhatLeavesTheDatabaseIsInTheFileBeforeItLeaves(t *testing.T) {
 	b, ctx := build(t)
 
 	// Some writes, which is what makes trail rows: nothing writes one by hand.
-	who := b.holder(t, ctx, b.Acme, "leaver")
+	who := b.holder(t, ctx, b.Contoso, "leaver")
 	b.identity(t, ctx, who, "github", "gh-leaver")
 
 	was, err := b.Ent.Audit.Query().All(ctx)
@@ -93,12 +93,12 @@ func TestTwoRunsOverOneMonthDoNotShareAFile(t *testing.T) {
 
 	dir := t.TempDir()
 
-	b.holder(t, ctx, b.Acme, "first")
+	b.holder(t, ctx, b.Contoso, "first")
 	one, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Kinds{}, time.Now().Add(time.Hour), dir)
 	x.NoError(err)
 	x.NotZero(one)
 
-	b.holder(t, ctx, b.Acme, "second")
+	b.holder(t, ctx, b.Contoso, "second")
 	two, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Kinds{}, time.Now().Add(time.Hour), dir)
 	x.NoError(err)
 	x.NotZero(two)
@@ -145,7 +145,7 @@ func TestNothingLeavesTheDatabaseThatCouldNotBeWritten(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.holder(t, ctx, b.Acme, "leaver")
+	b.holder(t, ctx, b.Contoso, "leaver")
 
 	was, err := b.Ent.Audit.Query().Count(ctx)
 	x.NoError(err)
@@ -179,7 +179,7 @@ func TestThePolicyIsAppliedByTheProcessAndNotOnlyByAnOperator(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.holder(t, ctx, b.Acme, "leaver")
+	b.holder(t, ctx, b.Contoso, "leaver")
 
 	was, err := b.Ent.Audit.Query().Count(ctx)
 	x.NoError(err)
@@ -225,7 +225,7 @@ func TestTheWindowIsPerKindOfThing(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	who := b.holder(t, ctx, b.Acme, "somebody")
+	who := b.holder(t, ctx, b.Contoso, "somebody")
 	b.identity(t, ctx, who, "github", "gh-somebody")
 
 	holder, ok := pdid.DomainOf("holder")

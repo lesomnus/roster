@@ -1616,8 +1616,8 @@ type VouchEnrolRequest_builder struct {
 	// the challenge -- the three facts D20 named as the browser-facing half that
 	// roster does not know. So it carries all four.
 	//
-	//	{"rp_id": "acme.example",
-	//	 "origins": ["https://acme.example"],
+	//	{"rp_id": "contoso.example",
+	//	 "origins": ["https://contoso.example"],
 	//	 "challenge": "…",
 	//	 "response": { … what navigator.credentials.create() gave … }}
 	//

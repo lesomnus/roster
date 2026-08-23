@@ -110,7 +110,7 @@ func TestNothingTheWallIsWaivedForCanNameAnybody(t *testing.T) {
 
 	// Somebody real, holding nothing -- which is every account the moment it is
 	// created, and is the population this is about.
-	nobody := b.holder(t, ctx, b.Acme, "nobody")
+	nobody := b.holder(t, ctx, b.Contoso, "nobody")
 
 	p := cmd.Policy(b.Ent)
 	waived := []string{}
@@ -123,7 +123,7 @@ func TestNothingTheWallIsWaivedForCanNameAnybody(t *testing.T) {
 		for _, m := range info.Methods {
 			method := "/" + svc + "/" + m.Name
 
-			err := p.May(ctx, gate.Call{Actor: nobody, Tenant: b.Acme, Action: method})
+			err := p.May(ctx, gate.Call{Actor: nobody, Tenant: b.Contoso, Action: method})
 			if err != nil {
 				x.Equal(codes.PermissionDenied, status.Code(err),
 					"%s: refused for a reason that is not the wall", method)
@@ -223,12 +223,12 @@ func TestSigningYourselfOutIsNotSigningAnybodyElseOut(t *testing.T) {
 	b, ctx := build(t)
 
 	// The administrator, who has sessions worth ending.
-	boss := b.holder(t, ctx, b.Acme, "boss")
+	boss := b.holder(t, ctx, b.Contoso, "boss")
 	b.mayCall(t, ctx, boss, "admin", eraseHold, listHolders)
 
 	// And somebody with an account and no role, which is the population that
 	// reaches a self-service page.
-	mallory := b.holder(t, ctx, b.Acme, "mallory")
+	mallory := b.holder(t, ctx, b.Contoso, "mallory")
 
 	conn := served(t, b.Server)
 	wire := asOverTheWire(ctx, mallory)
@@ -317,13 +317,13 @@ func TestMeAnswersWithNothingOfAnybodyElseS(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	seoul := b.site(t, ctx, b.Acme, "seoul")
+	seoul := b.site(t, ctx, b.Contoso, "seoul")
 	mine := b.team(t, ctx, seoul, "mine")
 	yours := b.team(t, ctx, seoul, "yours")
 
 	// The caller, with one of each.
-	me := b.holder(t, ctx, b.Acme, "me")
-	b.addressOf(t, ctx, me, "me@acme.example")
+	me := b.holder(t, ctx, b.Contoso, "me")
+	b.addressOf(t, ctx, me, "me@contoso.example")
 	b.identity(t, ctx, me, "github", "1078")
 	b.sets(t, ctx, me, "correct horse battery staple")
 	b.inTeam(t, ctx, me, mine, b.role(t, ctx, "reader", getHolder))
@@ -331,8 +331,8 @@ func TestMeAnswersWithNothingOfAnybodyElseS(t *testing.T) {
 
 	// And a colleague in the same tenant with one of each of their own, every
 	// one of them distinguishable from the caller's.
-	them := b.holder(t, ctx, b.Acme, "them")
-	b.addressOf(t, ctx, them, "them@acme.example")
+	them := b.holder(t, ctx, b.Contoso, "them")
+	b.addressOf(t, ctx, them, "them@contoso.example")
 	b.identity(t, ctx, them, "entra", "8bf1e0a2")
 	b.sets(t, ctx, them, "hunter2")
 	b.inTeam(t, ctx, them, yours, b.role(t, ctx, "eraser", eraseHold))
@@ -345,11 +345,11 @@ func TestMeAnswersWithNothingOfAnybodyElseS(t *testing.T) {
 
 	// The person it is about, which every list below hangs off.
 	x.Equal(me.Bytes(), v.GetId())
-	x.Equal(b.Acme.Bytes(), v.GetTenant())
+	x.Equal(b.Contoso.Bytes(), v.GetTenant())
 
 	x.Len(v.GetEmails(), 1,
 		"a colleague's mailbox was on a page that says 'you' -- and a mailbox is where a link arrives")
-	x.Equal("me@acme.example", v.GetEmails()[0].GetAddress())
+	x.Equal("me@contoso.example", v.GetEmails()[0].GetAddress())
 
 	x.Len(v.GetTeams(), 1, "a colleague's team was answered as the caller's")
 	x.Equal("mine", v.GetTeams()[0].GetAlias())
@@ -463,12 +463,12 @@ func TestNobodyEnrolsASecondFactorOnSomebodyWiderThanThey(t *testing.T) {
 	b, ctx := build(t)
 
 	// The administrator, who may erase anybody.
-	boss := b.holder(t, ctx, b.Acme, "boss")
+	boss := b.holder(t, ctx, b.Contoso, "boss")
 	b.mayCall(t, ctx, boss, "admin", eraseHold, listHolders)
 
 	// And the desk, whose whole job is helping people who cannot sign in --
 	// which is the permission an organisation hands to its newest employee.
-	desk := b.holder(t, ctx, b.Acme, "desk")
+	desk := b.holder(t, ctx, b.Contoso, "desk")
 	asDesk := b.mayCall(t, ctx, desk, "desk", listHolders)
 
 	v := b.factoring(t)
@@ -487,7 +487,7 @@ func TestNobodyEnrolsASecondFactorOnSomebodyWiderThanThey(t *testing.T) {
 	t.Run("the desk enrols a factor for somebody who holds nothing", func(t *testing.T) {
 		x := require.New(t)
 
-		joe := b.holder(t, ctx, b.Acme, "joe")
+		joe := b.holder(t, ctx, b.Contoso, "joe")
 		x.NoError(enrol(asDesk, joe, "the phone"),
 			"the desk could not help somebody with no permissions at all")
 	})
@@ -534,7 +534,7 @@ func TestNobodyEnrolsASecondFactorOnSomebodyWiderThanThey(t *testing.T) {
 	t.Run("and not for somebody in another tenant at all", func(t *testing.T) {
 		x := require.New(t)
 
-		them := b.holder(t, ctx, b.Hooli, "erlich")
+		them := b.holder(t, ctx, b.Fabrikam, "erlich")
 
 		err := enrol(asDesk, them, "the phone")
 		x.Equal(codes.NotFound, status.Code(err),
@@ -553,7 +553,7 @@ func TestNobodyEnrolsASecondFactorOnSomebodyWiderThanThey(t *testing.T) {
 	t.Run("and anybody may enrol their own", func(t *testing.T) {
 		x := require.New(t)
 
-		asBoss := b.asNobody(ctx, boss, b.Acme)
+		asBoss := b.asNobody(ctx, boss, b.Contoso)
 		x.NoError(enrol(asBoss, boss, "my own phone"),
 			"an administrator could not add a second factor to their own account")
 	})
@@ -588,10 +588,10 @@ func TestAResetIsMadeByWhoeverIsAskingAndNotByTheDeployment(t *testing.T) {
 
 	const listSites = "/roster.SiteService/List"
 
-	boss := b.holder(t, ctx, b.Acme, "boss")
+	boss := b.holder(t, ctx, b.Contoso, "boss")
 	b.mayCall(t, ctx, boss, "admin", eraseHold, listHolders, listSites)
 
-	ops := b.holder(t, ctx, b.Acme, "ops")
+	ops := b.holder(t, ctx, b.Contoso, "ops")
 	asOps := b.mayCall(t, ctx, ops, "operator", listHolders, listSites)
 
 	v := b.operated()
@@ -608,7 +608,7 @@ func TestAResetIsMadeByWhoeverIsAskingAndNotByTheDeployment(t *testing.T) {
 	t.Run("an operator resets somebody narrower than they are", func(t *testing.T) {
 		x := require.New(t)
 
-		mate := b.holder(t, ctx, b.Acme, "mate")
+		mate := b.holder(t, ctx, b.Contoso, "mate")
 		b.mayCall(t, ctx, mate, "narrower", listHolders)
 
 		secret, err := reset(asOps, mate)

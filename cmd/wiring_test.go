@@ -308,7 +308,7 @@ func TestShutdownDoesNotWaitOnAStream(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.mayAnything(b.AcmeUser, b.Acme)
+	b.mayAnything(b.ContosoUser, b.Contoso)
 
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	x.NoError(err)
@@ -332,9 +332,9 @@ func TestShutdownDoesNotWaitOnAStream(t *testing.T) {
 	//
 	// Filtered because a watch has to say which rows it is about; which rows
 	// they are decides nothing here.
-	who := b.holder(t, ctx, b.Acme, "watched-while-stopping")
+	who := b.holder(t, ctx, b.Contoso, "watched-while-stopping")
 	out, err := app.NewHolderServiceClient(conn).Watch(
-		asOverTheWire(ctx, b.AcmeUser),
+		asOverTheWire(ctx, b.ContosoUser),
 		app.HolderWatchRequest_builder{
 			Filters: []*app.HolderFilter{
 				app.HolderFilter_builder{
@@ -507,8 +507,8 @@ func TestTheDataPlaneCountsAStreamToo(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.mayAnything(b.AcmeUser, b.Acme)
-	who := b.holder(t, ctx, b.Acme, "watched-while-limited")
+	b.mayAnything(b.ContosoUser, b.Contoso)
+	who := b.holder(t, ctx, b.Contoso, "watched-while-limited")
 
 	g, err := b.Grpc(ctx, cmd.Config{
 		Server: config.ServerConfig{Limit: config.LimitConfig{Rate: 1, Burst: 1}},
@@ -516,7 +516,7 @@ func TestTheDataPlaneCountsAStreamToo(t *testing.T) {
 	x.NoError(err)
 
 	conn := pdtest.Serve(t, g)
-	as := asOverTheWire(ctx, b.AcmeUser)
+	as := asOverTheWire(ctx, b.ContosoUser)
 
 	// The one token this deployment allows per second.
 	_, err = app.NewHolderServiceClient(conn).List(as, app.HolderListRequest_builder{}.Build())
@@ -629,9 +629,9 @@ func TestADeploymentWithEveryPortOpenStops(t *testing.T) {
 	defer conn.Close()
 
 	b := &built{Server: s}
-	b.Acme = b.tenant(t, ctx, "acme")
-	who := b.holder(t, ctx, b.Acme, "watched")
-	b.mayAnything(who, b.Acme)
+	b.Contoso = b.tenant(t, ctx, "contoso")
+	who := b.holder(t, ctx, b.Contoso, "watched")
+	b.mayAnything(who, b.Contoso)
 
 	// A real credential, because naming a control plane is what switches this
 	// deployment off `auth.Plain` -- and naming one is the whole point here,

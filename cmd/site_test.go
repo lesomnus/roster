@@ -16,30 +16,30 @@ func TestASiteBelongsToOneTenant(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	seoul := b.site(t, ctx, b.Acme, "seoul")
+	seoul := b.site(t, ctx, b.Contoso, "seoul")
 
-	hooliUser := b.holder(t, ctx, b.Hooli, "theirs")
+	fabrikamUser := b.holder(t, ctx, b.Fabrikam, "theirs")
 	_, err := b.Walled.Site().Get(
-		b.as(ctx, hooliUser, b.Hooli),
+		b.as(ctx, fabrikamUser, b.Fabrikam),
 		app.SiteGetRequest_builder{Ref: app.SiteRef_builder{Id: seoul.Bytes()}.Build()}.Build())
 	x.Equal(codes.NotFound, status.Code(err))
 }
 
 // TestASiteAliasIsUniqueWithinItsTenantAndNotBeyond, which is what makes
-// `@acme/seoul` a name somebody can put in a configuration file while another
+// `@contoso/seoul` a name somebody can put in a configuration file while another
 // customer is free to have a Seoul of their own.
 func TestASiteAliasIsUniqueWithinItsTenantAndNotBeyond(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.site(t, ctx, b.Acme, "seoul")
+	b.site(t, ctx, b.Contoso, "seoul")
 
 	// The same name in another tenant is a different site.
-	b.site(t, ctx, b.Hooli, "seoul")
+	b.site(t, ctx, b.Fabrikam, "seoul")
 
 	// The same name in the same tenant is the same site.
 	_, err := b.Ungated.Site().Add(ctx, app.SiteAddRequest_builder{
-		Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:  "seoul",
 	}.Build())
 	x.Equal(codes.AlreadyExists, status.Code(err))
@@ -55,7 +55,7 @@ func TestLabelsAreCarried(t *testing.T) {
 	b, ctx := build(t)
 
 	v, err := b.Ungated.Site().Add(ctx, app.SiteAddRequest_builder{
-		Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:  "seoul",
 		Labels: map[string]string{"region": "asia", "tier": "production"},
 	}.Build())
@@ -74,7 +74,7 @@ func TestAnErasedSiteFreesItsAlias(t *testing.T) {
 	b, ctx := build(t)
 
 	v, err := b.Ungated.Site().Add(ctx, app.SiteAddRequest_builder{
-		Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:  "seoul",
 	}.Build())
 	x.NoError(err)
@@ -83,7 +83,7 @@ func TestAnErasedSiteFreesItsAlias(t *testing.T) {
 	x.NoError(err)
 
 	_, err = b.Ungated.Site().Add(ctx, app.SiteAddRequest_builder{
-		Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:  "seoul",
 	}.Build())
 	x.NoError(err)

@@ -20,9 +20,9 @@ import (
 type built struct {
 	*cmd.Server
 
-	Acme     pdid.Id
-	AcmeUser pdid.Id
-	Hooli    pdid.Id
+	Contoso     pdid.Id
+	ContosoUser pdid.Id
+	Fabrikam    pdid.Id
 
 	// allowed is who has already been given the all-methods role, so that `as`
 	// is idempotent the way a caller expects it to be.
@@ -48,9 +48,9 @@ func build(t *testing.T) (*built, context.Context) {
 
 	b := &built{Server: s}
 
-	b.Acme = b.tenant(t, ctx, "acme")
-	b.Hooli = b.tenant(t, ctx, "hooli")
-	b.AcmeUser = b.holder(t, ctx, b.Acme, "someone")
+	b.Contoso = b.tenant(t, ctx, "contoso")
+	b.Fabrikam = b.tenant(t, ctx, "fabrikam")
+	b.ContosoUser = b.holder(t, ctx, b.Contoso, "someone")
 
 	return b, ctx
 }
@@ -227,7 +227,7 @@ func (b *built) role(t *testing.T, ctx context.Context, alias string, methods ..
 	t.Helper()
 
 	v, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
-		Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:   alias,
 		Methods: methods,
 	}.Build())

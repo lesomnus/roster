@@ -170,7 +170,7 @@ func TestEveryPlaneWritesToTheSameQueue(t *testing.T) {
 	x.NoError(s.Ent.Schema.Create(ctx))
 	x.NoError(s.Control.Ent.Schema.Create(ctx))
 
-	tenant, err := s.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: "acme"}.Build())
+	tenant, err := s.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: "contoso"}.Build())
 	x.NoError(err)
 
 	// Whatever adding a tenant queued is not what this is about.

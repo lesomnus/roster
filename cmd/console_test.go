@@ -486,7 +486,7 @@ func TestAConsoleReachesTheAdminPortOverHttp(t *testing.T) {
 	// The customer really is there.
 	n, err := s.Ent.Tenant.Query().Count(ctx)
 	x.NoError(err)
-	x.Equal(2, n, "acme from init, and the one the console made")
+	x.Equal(2, n, "contoso from init, and the one the console made")
 }
 
 // TestAConsoleReachesTheControlPlaneOverHttp is the **first** console's path.

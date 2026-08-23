@@ -36,7 +36,7 @@ import (
 // same argument holds here and the consequence is worse. The uniqueness that
 // makes an address name one person within a tenant is an index on
 // `(tenant_id, address)`, and `vouch.byAddress` lowers and trims what it is
-// handed. A row written as a provider sent it -- `Someone@Acme.example` -- is a
+// handed. A row written as a provider sent it -- `Someone@Contoso.example` -- is a
 // row the lookup never reaches, and the lowered spelling of it is a row the
 // index thinks is a different address.
 //

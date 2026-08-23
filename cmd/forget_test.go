@@ -29,9 +29,9 @@ func TestAnEraseDestroysNothing(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	who := b.holder(t, ctx, b.Acme, "erin")
+	who := b.holder(t, ctx, b.Contoso, "erin")
 	b.identity(t, ctx, who, "github", "gh-erin")
-	b.addressOf(t, ctx, who, "erin@acme.example")
+	b.addressOf(t, ctx, who, "erin@contoso.example")
 
 	_, err := b.Ungated.Holder().Erase(ctx, app.HolderRef_builder{Id: who.Bytes()}.Build())
 	x.NoError(err)
@@ -71,13 +71,13 @@ func TestForgettingSomebodyKeepsTheEventAndLosesTheContents(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	who := b.holder(t, ctx, b.Acme, "erin")
+	who := b.holder(t, ctx, b.Contoso, "erin")
 	id := b.identity(t, ctx, who, "github", "gh-erin")
-	b.addressOf(t, ctx, who, "erin@acme.example")
+	b.addressOf(t, ctx, who, "erin@contoso.example")
 
 	// Somebody else, whose everything must not move.
-	other := b.holder(t, ctx, b.Acme, "bystander")
-	b.addressOf(t, ctx, other, "bystander@acme.example")
+	other := b.holder(t, ctx, b.Contoso, "bystander")
+	b.addressOf(t, ctx, other, "bystander@contoso.example")
 
 	was, err := b.Ent.Audit.Query().Count(ctx)
 	x.NoError(err)
@@ -177,7 +177,7 @@ func TestTheGraceCanBeUndoneUntilItIsNot(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	who := b.holder(t, ctx, b.Acme, "erin")
+	who := b.holder(t, ctx, b.Contoso, "erin")
 
 	x.ErrorContains(forget.Restore(ctx, b.Ent, who), "has not been erased")
 
@@ -225,8 +225,8 @@ func TestForgettingReachesTheArchiveToo(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	who := b.holder(t, ctx, b.Acme, "erin")
-	b.addressOf(t, ctx, who, "erin@acme.example")
+	who := b.holder(t, ctx, b.Contoso, "erin")
+	b.addressOf(t, ctx, who, "erin@contoso.example")
 
 	dir := t.TempDir()
 

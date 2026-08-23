@@ -42,7 +42,7 @@ func TestAFrontDoorThatDidItsOwnCheckingIsBelieved(t *testing.T) {
 
 	// Somebody who arrives through a provider, which is the case with no
 	// password to prove.
-	who := addHolder(t, ctx, b.Server, b.Acme, "arrives-through-entra")
+	who := addHolder(t, ctx, b.Server, b.Contoso, "arrives-through-entra")
 	mustIdentity(t, ctx, b.Server, who, "entra", "entra-subject-1")
 
 	// What **they** may do, which is the ceiling on anything minted for them.
@@ -52,7 +52,7 @@ func TestAFrontDoorThatDidItsOwnCheckingIsBelieved(t *testing.T) {
 
 	res, err := c.Accept(bearing(ctx, b.Token), app.VouchAcceptRequest_builder{
 		Claim: app.VouchClaim_builder{
-			Tenant:   b.Acme.Bytes(),
+			Tenant:   b.Contoso.Bytes(),
 			Provider: "entra",
 			Subject:  "entra-subject-1",
 		}.Build(),
@@ -86,7 +86,7 @@ func TestAFrontDoorThatDidItsOwnCheckingIsBelieved(t *testing.T) {
 		// the same bound `Delegate` is under, unchanged.
 		_, err := c.Accept(bearing(ctx, b.Token), app.VouchAcceptRequest_builder{
 			Claim: app.VouchClaim_builder{
-				Tenant:   b.Acme.Bytes(),
+				Tenant:   b.Contoso.Bytes(),
 				Provider: "entra",
 				Subject:  "entra-subject-1",
 			}.Build(),
@@ -103,12 +103,12 @@ func TestAFrontDoorThatDidItsOwnCheckingIsBelieved(t *testing.T) {
 		// door minting for them gets a delegation that opens nothing, and that
 		// is the point: a token says who somebody is and never what they may
 		// do.
-		nobody := addHolder(t, ctx, b.Server, b.Acme, "no-roles")
+		nobody := addHolder(t, ctx, b.Server, b.Contoso, "no-roles")
 		mustIdentity(t, ctx, b.Server, nobody, "entra", "entra-subject-3")
 
 		res, err := c.Accept(bearing(ctx, b.Token), app.VouchAcceptRequest_builder{
 			Claim: app.VouchClaim_builder{
-				Tenant:   b.Acme.Bytes(),
+				Tenant:   b.Contoso.Bytes(),
 				Provider: "entra",
 				Subject:  "entra-subject-3",
 			}.Build(),
@@ -130,7 +130,7 @@ func TestAFrontDoorThatDidItsOwnCheckingIsBelieved(t *testing.T) {
 		// act with a different name.
 		_, err := c.Accept(bearing(ctx, b.Token), app.VouchAcceptRequest_builder{
 			Claim: app.VouchClaim_builder{
-				Tenant:   b.Acme.Bytes(),
+				Tenant:   b.Contoso.Bytes(),
 				Provider: "entra",
 				Subject:  "nobody-here",
 			}.Build(),
@@ -150,7 +150,7 @@ func TestAFrontDoorThatDidItsOwnCheckingIsBelieved(t *testing.T) {
 
 		_, err = c.Accept(bearing(ctx, b.Token), app.VouchAcceptRequest_builder{
 			Claim: app.VouchClaim_builder{
-				Tenant:   b.Acme.Bytes(),
+				Tenant:   b.Contoso.Bytes(),
 				Provider: "entra",
 				Subject:  "entra-subject-1",
 			}.Build(),
@@ -176,13 +176,13 @@ func TestNobodyAcceptsWithoutBeingAllowedTo(t *testing.T) {
 	b := keyFor(t, verify, listPeople)
 	ctx := t.Context()
 
-	who := addHolder(t, ctx, b.Server, b.Acme, "somebody")
+	who := addHolder(t, ctx, b.Server, b.Contoso, "somebody")
 	mustIdentity(t, ctx, b.Server, who, "entra", "entra-subject-2")
 
 	_, err := app.NewVouchServiceClient(b.Conn).Accept(bearing(ctx, b.Token),
 		app.VouchAcceptRequest_builder{
 			Claim: app.VouchClaim_builder{
-				Tenant:   b.Acme.Bytes(),
+				Tenant:   b.Contoso.Bytes(),
 				Provider: "entra",
 				Subject:  "entra-subject-2",
 			}.Build(),

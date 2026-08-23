@@ -50,8 +50,8 @@ const (
 //
 // Neither of those means anything unless the column holds what the lookup
 // compares. `vouch.byAddress` lowers and trims what it is handed, and for a
-// while the write did neither: `Someone@Acme.example` and
-// `someone@acme.example` were two rows to the index and one address to
+// while the write did neither: `Someone@Contoso.example` and
+// `someone@contoso.example` were two rows to the index and one address to
 // everything that read it. What that cost was not a duplicate -- it was that
 // the lowered spelling **wins**, so an address written as a provider sent it
 // could not sign in at all, and anybody who could add an address could write
@@ -279,9 +279,9 @@ type Email_builder struct {
 	Address string
 	// When somebody checked, and the zero time for never.
 	//
-	// A time rather than a flag because "when" is the question asked afterwards --
-	// a verification from three years ago is a different fact from one from this
-	// morning, and a boolean cannot tell them apart.
+	// A time rather than a flag because "when" is the question asked afterwards
+	// -- a verification from three years ago is a different fact from one from
+	// this morning, and a boolean cannot tell them apart.
 	//
 	// **Nullable**, and it has to be said out loud. A message field has presence
 	// in the generated API -- `HasDateVerified` exists -- but a NOT NULL column

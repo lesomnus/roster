@@ -26,7 +26,7 @@ func TestUpdateIsTheNarrowWrite(t *testing.T) {
 	const update = "/roster.HolderService/Update"
 
 	r, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
-		Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:  "editor",
 		// `Patch` among them, which is what makes the last case worth running:
 		// the general write is closed at the **transport**, so holding it
@@ -34,13 +34,13 @@ func TestUpdateIsTheNarrowWrite(t *testing.T) {
 		Methods: []string{update, getHolder, "/roster.HolderService/Patch"},
 	}.Build())
 	x.NoError(err)
-	b.binds(t, b.AcmeUser, mustId(t, r.GetId()), nil)
+	b.binds(t, b.ContosoUser, mustId(t, r.GetId()), nil)
 
 	conn := served(t, b.Server)
 	c := app.NewHolderServiceClient(conn)
-	as := asOverTheWire(ctx, b.AcmeUser)
+	as := asOverTheWire(ctx, b.ContosoUser)
 
-	me := app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build()
+	me := app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build()
 
 	was, err := c.Get(as, app.HolderGetRequest_builder{Ref: me}.Build())
 	x.NoError(err)
@@ -123,7 +123,7 @@ func TestUpdateIsTheNarrowWrite(t *testing.T) {
 	t.Run("and somebody who does not hold it may not call it", func(t *testing.T) {
 		x := require.New(t)
 
-		other := b.holder(t, ctx, b.Acme, "nobody")
+		other := b.holder(t, ctx, b.Contoso, "nobody")
 
 		_, err := c.Update(asOverTheWire(ctx, other), app.HolderUpdateRequest_builder{
 			Ref:     me,

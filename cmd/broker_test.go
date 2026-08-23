@@ -59,7 +59,7 @@ func TestAConsoleWatchingOneReplicaHearsTheOther(t *testing.T) {
 	// a defect.
 	time.Sleep(500 * time.Millisecond)
 
-	tenant, err := one.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: "acme"}.Build())
+	tenant, err := one.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: "contoso"}.Build())
 	x.NoError(err)
 
 	who, err := one.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{

@@ -45,7 +45,7 @@ other.
 ## Your first tenant and person
 
 ```sh
-roster init --tenant acme --holder admin
+roster init --tenant contoso --holder admin
 ```
 
 A tenant is not put up from inside one, so the first row cannot arrive over the
@@ -449,10 +449,10 @@ That is right for *this person has left*. For *destroy what you hold about them*
 there is a second act:
 
 ```sh
-roster forget @acme/erin        # now, because they asked
+roster forget @contoso/erin        # now, because they asked
 roster forget                   # everybody whose grace has run out
 roster forget --dry-run         # who that would be
-roster restore @acme/erin       # undo the erase, while there is one to undo
+roster restore @contoso/erin       # undo the erase, while there is one to undo
 ```
 
 ```yaml
@@ -762,8 +762,8 @@ name a browser arrived at *is* the operator whose service they are signing in
 to. That used to be a map in every app's configuration; it is a row now.
 
 ```
-HostService/Add        acme.example.com -> acme
-MailDomainService/Add  acme.com -> entra          (optional; where they authenticate)
+HostService/Add        contoso.example.com -> contoso
+MailDomainService/Add  contoso.com -> entra          (optional; where they authenticate)
 ```
 
 A front door asks `FrontService/WhoseHost` before it knows anything, and gets a
@@ -801,8 +801,8 @@ Three things to know:
 And which provider one operator's people arrive through:
 
 ```
-ConnectionService/Add  entra -> https://login.microsoftonline.com/acme/v2.0
-                       client_id, scopes, secret_ref: "env:ACME_ENTRA_SECRET"
+ConnectionService/Add  entra -> https://login.microsoftonline.com/contoso/v2.0
+                       client_id, scopes, secret_ref: "env:CONTOSO_ENTRA_SECRET"
 ```
 
 **The secret is not here.** roster stores a reference and does not read it —
@@ -817,7 +817,7 @@ resolves secrets.
 With a host, an address names one person again — so `VouchService` takes one:
 
 ```
-Vouch.Verify {who: {tenant: "acme", address: "erin@acme.example"}, secret: …}
+Vouch.Verify {who: {tenant: "contoso", address: "erin@contoso.example"}, secret: …}
 ```
 
 Always the tenant **and** the address. There is no form that takes an address

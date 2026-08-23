@@ -151,8 +151,8 @@ export const FrontService: GenService<{
    * Home-realm discovery, and it hangs off the **domain** rather than off a
    * person: answered per person it is the account-enumeration oracle D21 spent
    * a condition avoiding, since typing an address and being told a provider
-   * says whether that account is here. The answer for `nobody@acme.com` is the
-   * answer for everybody at acme.
+   * says whether that account is here. The answer for `nobody@contoso.com` is
+   * the answer for everybody at contoso.
    *
    * @generated from rpc roster.FrontService.WhereFrom
    */

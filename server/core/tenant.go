@@ -19,7 +19,7 @@ import (
 // membership, `tenant` for a team. A row that names two things reaches two, and
 // nothing compared them. So this was written and accepted:
 //
-//	SiteMembership{holder: somebody in acme, site: a site of hooli's}
+//	SiteMembership{holder: somebody in contoso, site: a site of fabrikam's}
 //
 // and whichever path the wall happened to take decided who could see it. One
 // tenant read a row naming the other's, which is the one thing the wall exists

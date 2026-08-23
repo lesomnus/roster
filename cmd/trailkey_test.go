@@ -36,10 +36,10 @@ func TestADeploymentKeyReadsEveryTenantsTrail(t *testing.T) {
 	b := keyFor(t, "/roster.AuditService/List")
 	ctx := t.Context()
 
-	// A second customer, with writes of its own. The harness makes `acme`; this
+	// A second customer, with writes of its own. The harness makes `contoso`; this
 	// is the one the key has no relationship with at all.
-	hooli := add(t, ctx, b.Server, "hooli")
-	addHolder(t, ctx, b.Server, hooli, "somebody-else")
+	fabrikam := add(t, ctx, b.Server, "fabrikam")
+	addHolder(t, ctx, b.Server, fabrikam, "somebody-else")
 
 	c := app.NewAuditServiceClient(b.Conn)
 
@@ -58,8 +58,8 @@ func TestADeploymentKeyReadsEveryTenantsTrail(t *testing.T) {
 		}
 	}
 
-	x.Contains(tenants, b.Acme)
-	x.Contains(tenants, hooli, "a deployment key saw one tenant's trail and not another's")
+	x.Contains(tenants, b.Contoso)
+	x.Contains(tenants, fabrikam, "a deployment key saw one tenant's trail and not another's")
 	x.NotZero(held, "the rows came back without their contents, which nothing here does")
 
 	t.Run("and a person sees only their own", func(t *testing.T) {
@@ -68,7 +68,7 @@ func TestADeploymentKeyReadsEveryTenantsTrail(t *testing.T) {
 		// The same read as somebody inside a tenant, allowed everything a role
 		// can allow. The wall is what differs, and it is the whole of the
 		// difference.
-		as := frame.Into(ctx, frame.New(b.Who, b.Acme, frame.Whole()).WithScope(frame.Only(b.Acme)))
+		as := frame.Into(ctx, frame.New(b.Who, b.Contoso, frame.Whole()).WithScope(frame.Only(b.Contoso)))
 
 		vs, err := b.Walled.Audit().List(as, app.AuditListRequest_builder{}.Build())
 		x.NoError(err)
@@ -79,7 +79,7 @@ func TestADeploymentKeyReadsEveryTenantsTrail(t *testing.T) {
 				continue
 			}
 
-			x.NotEqual(hooli, mustId(t, v.GetTenantId()),
+			x.NotEqual(fabrikam, mustId(t, v.GetTenantId()),
 				"a person read another customer's trail")
 		}
 	})

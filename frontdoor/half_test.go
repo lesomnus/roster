@@ -80,7 +80,7 @@ func doorFor(t *testing.T, f *vouch, with func(*Config)) *Door {
 		Sessions: authsession.New(authsession.NewMemStore()),
 		Vouch:    f,
 		Methods:  []string{rstr.MeService_Get_FullMethodName},
-		Tenant:   func(ctx context.Context, host string) (string, error) { return "acme", nil },
+		Tenant:   func(ctx context.Context, host string) (string, error) { return "contoso", nil },
 	}
 	if with != nil {
 		with(&c)
@@ -93,7 +93,7 @@ func doorFor(t *testing.T, f *vouch, with func(*Config)) *Door {
 }
 
 func post(d *Door, path string, body string, c *http.Cookie) *httptest.ResponseRecorder {
-	r := httptest.NewRequest(http.MethodPost, "http://acme.example.com"+path, strings.NewReader(body))
+	r := httptest.NewRequest(http.MethodPost, "http://contoso.example.com"+path, strings.NewReader(body))
 	if c != nil {
 		r.Header.Set("Cookie", c.Name+"="+c.Value)
 	}
@@ -182,7 +182,7 @@ func TestASignedInBrowserSurvivesAStraySecondForm(t *testing.T) {
 	x.Equal(1, f.delegates, "and nothing is spent asking")
 	x.Equal(0, f.revokes)
 
-	r := httptest.NewRequest(http.MethodGet, "http://acme.example.com/me", nil)
+	r := httptest.NewRequest(http.MethodGet, "http://contoso.example.com/me", nil)
 	r.Header.Set("Cookie", c.Name+"="+c.Value)
 
 	ctx, err := d.Acting(context.Background(), r)
@@ -265,7 +265,7 @@ func TestSigningOutRevokesEvenAWindowThatHasPassed(t *testing.T) {
 	d.held.by[key] = v
 	d.held.mu.Unlock()
 
-	r := httptest.NewRequest(http.MethodDelete, "http://acme.example.com/session", nil)
+	r := httptest.NewRequest(http.MethodDelete, "http://contoso.example.com/session", nil)
 	r.Header.Set("Cookie", c.Name+"="+c.Value)
 	w := httptest.NewRecorder()
 	d.Handler().ServeHTTP(w, r)

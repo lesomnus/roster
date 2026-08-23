@@ -45,7 +45,7 @@ func TestNoVerifierReachesTheQueueEither(t *testing.T) {
 	t.Cleanup(func() { s.Close() })
 	x.NoError(s.Ent.Schema.Create(ctx))
 
-	tenant, err := s.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: "acme"}.Build())
+	tenant, err := s.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: "contoso"}.Build())
 	x.NoError(err)
 
 	who, err := s.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{

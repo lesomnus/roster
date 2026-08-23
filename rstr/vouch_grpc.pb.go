@@ -149,8 +149,8 @@ type VouchServiceClient interface {
 	// somebody who does: a token, and an expiry. So does one for somebody in
 	// **another tenant**, which is the same sentence with the wall in it: the
 	// person is read through the walled server, so who is elsewhere is no more
-	// this caller's to learn than who is here at all. Otherwise the *sending* of a
-	// link answers *is this address here*, which is the question the whole
+	// this caller's to learn than who is here at all. Otherwise the *sending* of
+	// a link answers *is this address here*, which is the question the whole
 	// careful set of equal-cost refusals exists to refuse -- asked through a form
 	// that is meant to be filled in by strangers.
 	//
@@ -498,8 +498,8 @@ type VouchServiceServer interface {
 	// somebody who does: a token, and an expiry. So does one for somebody in
 	// **another tenant**, which is the same sentence with the wall in it: the
 	// person is read through the walled server, so who is elsewhere is no more
-	// this caller's to learn than who is here at all. Otherwise the *sending* of a
-	// link answers *is this address here*, which is the question the whole
+	// this caller's to learn than who is here at all. Otherwise the *sending* of
+	// a link answers *is this address here*, which is the question the whole
 	// careful set of equal-cost refusals exists to refuse -- asked through a form
 	// that is meant to be filled in by strangers.
 	//

@@ -30,10 +30,10 @@ import (
 // `EmailSelect` nests `IdentitySelect`, which nests `HolderSelect`, which nests
 // `TenantSelect`. So:
 //
-//	Alice may call Email.Add and Email.Get, in acme, and nothing else.
-//	She adds an address of her own, vouched for by an identity of hooli's.
+//	Alice may call Email.Add and Email.Get, in contoso, and nothing else.
+//	She adds an address of her own, vouched for by an identity of fabrikam's.
 //	She reads her own row back, selecting through the edge.
-//	She has hooli's provider subject, that person's name, and their tenant.
+//	She has fabrikam's provider subject, that person's name, and their tenant.
 //
 // Three hops, from two methods, with no permission anybody would question.
 //
@@ -47,7 +47,7 @@ func TestAnEdgeIsNotAWayThroughTheWall(t *testing.T) {
 	b, ctx := build(t)
 
 	// Somebody in the other tenant, with something worth not leaking.
-	outsider := b.holder(t, ctx, b.Hooli, "outsider")
+	outsider := b.holder(t, ctx, b.Fabrikam, "outsider")
 	_, err := b.Ungated.Holder().Patch(ctx, app.HolderPatchRequest_builder{
 		Ref:              app.HolderRef_builder{Id: outsider.Bytes()}.Build(),
 		Name:             z.Ptr("Gavin Belson"),
@@ -56,23 +56,23 @@ func TestAnEdgeIsNotAWayThroughTheWall(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	theirs := b.identity(t, ctx, outsider, "google", "hooli-secret-subject")
+	theirs := b.identity(t, ctx, outsider, "google", "fabrikam-secret-subject")
 
 	// A clerk. Two methods, and neither of them looks like a way to read
 	// another customer.
-	b.binds(t, b.AcmeUser, b.role(t, ctx, "clerk",
+	b.binds(t, b.ContosoUser, b.role(t, ctx, "clerk",
 		"/roster.EmailService/Add", "/roster.EmailService/Get"), nil)
 
 	conn := served(t, b.Server)
-	wire := asOverTheWire(ctx, b.AcmeUser)
+	wire := asOverTheWire(ctx, b.ContosoUser)
 	c := app.NewEmailServiceClient(conn)
 
 	t.Run("by identifier", func(t *testing.T) {
 		x := require.New(t)
 
 		_, err := c.Add(wire, app.EmailAddRequest_builder{
-			Holder:    app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
-			Address:   "alice@acme.example",
+			Holder:    app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+			Address:   "alice@contoso.example",
 			VouchedBy: app.IdentityRef_builder{Id: theirs.GetId()}.Build(),
 		}.Build())
 		x.Equal(codes.NotFound, status.Code(err),
@@ -88,13 +88,13 @@ func TestAnEdgeIsNotAWayThroughTheWall(t *testing.T) {
 		// answers differently for a subject that exists. An oracle before it is
 		// a leak.
 		_, err := c.Add(wire, app.EmailAddRequest_builder{
-			Holder:  app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
-			Address: "alice2@acme.example",
+			Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+			Address: "alice2@contoso.example",
 			VouchedBy: app.IdentityRef_builder{
 				Subject: app.IdentityRefBySubject_builder{
-					TenantId: b.Hooli.Bytes(),
+					TenantId: b.Fabrikam.Bytes(),
 					Provider: z.Ptr("google"),
-					Subject:  z.Ptr("hooli-secret-subject"),
+					Subject:  z.Ptr("fabrikam-secret-subject"),
 				}.Build(),
 			}.Build(),
 		}.Build())
@@ -103,11 +103,11 @@ func TestAnEdgeIsNotAWayThroughTheWall(t *testing.T) {
 		// And the same answer for one that is not there, so nothing is learned
 		// either way.
 		_, err = c.Add(wire, app.EmailAddRequest_builder{
-			Holder:  app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
-			Address: "alice3@acme.example",
+			Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+			Address: "alice3@contoso.example",
 			VouchedBy: app.IdentityRef_builder{
 				Subject: app.IdentityRefBySubject_builder{
-					TenantId: b.Hooli.Bytes(),
+					TenantId: b.Fabrikam.Bytes(),
 					Provider: z.Ptr("google"),
 					Subject:  z.Ptr("nobody-here-at-all"),
 				}.Build(),
@@ -125,13 +125,13 @@ func TestAnEdgeIsNotAWayThroughTheWall(t *testing.T) {
 		// `allow_general_writes` serves, and what `roster email patch` reaches
 		// at a shell, since the local CLI installs no `closed` interceptor.
 		v, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
-			Holder:  app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
-			Address: "alice4@acme.example",
+			Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+			Address: "alice4@contoso.example",
 		}.Build())
 		x.NoError(err)
 
 		as := frame.Into(ctx,
-			frame.New(b.AcmeUser, b.Acme, frame.Whole()).WithScope(frame.Only(b.Acme)))
+			frame.New(b.ContosoUser, b.Contoso, frame.Whole()).WithScope(frame.Only(b.Contoso)))
 
 		_, err = b.Walled.Email().Patch(as, app.EmailPatchRequest_builder{
 			Ref:              app.EmailRef_builder{Id: v.GetId()}.Build(),
@@ -145,11 +145,11 @@ func TestAnEdgeIsNotAWayThroughTheWall(t *testing.T) {
 	t.Run("and an edge inside the wall still works", func(t *testing.T) {
 		x := require.New(t)
 
-		ours := b.identity(t, ctx, b.AcmeUser, "google", "acme-subject")
+		ours := b.identity(t, ctx, b.ContosoUser, "google", "contoso-subject")
 
 		_, err := c.Add(wire, app.EmailAddRequest_builder{
-			Holder:    app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
-			Address:   "alice5@acme.example",
+			Holder:    app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+			Address:   "alice5@contoso.example",
 			VouchedBy: app.IdentityRef_builder{Id: ours.GetId()}.Build(),
 		}.Build())
 		x.NoError(err, "the check refuses what it should allow")
@@ -177,15 +177,15 @@ func TestNobodyAssertsThatTheirOwnAddressWasChecked(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.binds(t, b.AcmeUser, b.role(t, ctx, "desk", "/roster.EmailService/Add"), nil)
+	b.binds(t, b.ContosoUser, b.role(t, ctx, "desk", "/roster.EmailService/Add"), nil)
 
 	conn := served(t, b.Server)
-	wire := asOverTheWire(ctx, b.AcmeUser)
+	wire := asOverTheWire(ctx, b.ContosoUser)
 	c := app.NewEmailServiceClient(conn)
 
 	_, err := c.Add(wire, app.EmailAddRequest_builder{
-		Holder:       app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
-		Address:      "alice@acme.example",
+		Holder:       app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Address:      "alice@contoso.example",
 		DateVerified: timestamppb.Now(),
 	}.Build())
 	x.Equal(codes.InvalidArgument, status.Code(err),
@@ -196,8 +196,8 @@ func TestNobodyAssertsThatTheirOwnAddressWasChecked(t *testing.T) {
 		x := require.New(t)
 
 		_, err := c.Add(wire, app.EmailAddRequest_builder{
-			Holder:  app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
-			Address: "alice@acme.example",
+			Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+			Address: "alice@contoso.example",
 		}.Build())
 		x.NoError(err)
 	})
@@ -208,8 +208,8 @@ func TestNobodyAssertsThatTheirOwnAddressWasChecked(t *testing.T) {
 		// No frame, which is `init`, a seed, or a server writing through the
 		// unwalled stack -- the same opt-out `mayGrant` and `mayJoin` take.
 		_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
-			Holder:       app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
-			Address:      "seeded@acme.example",
+			Holder:       app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+			Address:      "seeded@contoso.example",
 			DateVerified: timestamppb.Now(),
 		}.Build())
 		x.NoError(err)

@@ -55,12 +55,12 @@ func TestASecretSetHereVerifiesHere(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
-	v := b.verifies(t, ctx, b.AcmeUser, "correct horse battery staple")
+	v := b.verifies(t, ctx, b.ContosoUser, "correct horse battery staple")
 	x.True(v.GetOk())
-	x.Equal(b.AcmeUser.Bytes(), v.GetHolder())
-	x.Equal(b.Acme.Bytes(), v.GetTenant())
+	x.Equal(b.ContosoUser.Bytes(), v.GetHolder())
+	x.Equal(b.Contoso.Bytes(), v.GetTenant())
 }
 
 // TestWhatIsStoredIsNotWhatWasSent is the reason hashing is this service's.
@@ -72,7 +72,7 @@ func TestWhatIsStoredIsNotWhatWasSent(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
 	v, err := b.Ent.Credential.Query().Only(ctx)
 	x.NoError(err)
@@ -85,9 +85,9 @@ func TestAWrongSecretIsRefusedAndSaysNothingElse(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
-	v := b.verifies(t, ctx, b.AcmeUser, "hunter2")
+	v := b.verifies(t, ctx, b.ContosoUser, "hunter2")
 	x.False(v.GetOk())
 
 	// Nothing about who it would have been. A refusal that carried the tenant
@@ -106,17 +106,17 @@ func TestSomebodyWhoIsNotHereIsRefusedTheSameWay(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
 	// Nobody at all.
 	nobody := b.verifies(t, ctx, pdid.New(pd.HolderDomain), "correct horse battery staple")
 
 	// Somebody real, who has no password.
-	other := b.holder(t, ctx, b.Acme, "passwordless")
+	other := b.holder(t, ctx, b.Contoso, "passwordless")
 	unset := b.verifies(t, ctx, other, "correct horse battery staple")
 
 	// And somebody real with the wrong one.
-	wrong := b.verifies(t, ctx, b.AcmeUser, "hunter2")
+	wrong := b.verifies(t, ctx, b.ContosoUser, "hunter2")
 
 	for _, v := range []*app.VouchVerifyResponse{nobody, unset, wrong} {
 		x.False(v.GetOk())
@@ -131,11 +131,11 @@ func TestEnoughWrongAnswersCloseTheAccount(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
 	var last *app.VouchVerifyResponse
 	for range vouch.MaxFailures {
-		last = b.verifies(t, ctx, b.AcmeUser, "hunter2")
+		last = b.verifies(t, ctx, b.ContosoUser, "hunter2")
 	}
 
 	x.False(last.GetOk())
@@ -144,7 +144,7 @@ func TestEnoughWrongAnswersCloseTheAccount(t *testing.T) {
 
 	// And the right one is refused for as long as it is closed. Otherwise the
 	// lockout is only a delay for whoever guesses correctly on the next try.
-	v := b.verifies(t, ctx, b.AcmeUser, "correct horse battery staple")
+	v := b.verifies(t, ctx, b.ContosoUser, "correct horse battery staple")
 	x.False(v.GetOk())
 	x.NotNil(v.GetLockedUntil())
 }
@@ -163,16 +163,16 @@ func TestTypingAtALockedAccountDoesNotPushTheLockOut(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 	for range vouch.MaxFailures {
-		b.verifies(t, ctx, b.AcmeUser, "hunter2")
+		b.verifies(t, ctx, b.ContosoUser, "hunter2")
 	}
 
 	before, err := b.Ent.Credential.Query().Only(ctx)
 	x.NoError(err)
 
 	for range 5 {
-		b.verifies(t, ctx, b.AcmeUser, "hunter2")
+		b.verifies(t, ctx, b.ContosoUser, "hunter2")
 	}
 
 	after, err := b.Ent.Credential.Query().Only(ctx)
@@ -186,13 +186,13 @@ func TestGettingItRightClearsWhatGettingItWrongLeftBehind(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
 	for range vouch.MaxFailures - 1 {
-		b.verifies(t, ctx, b.AcmeUser, "hunter2")
+		b.verifies(t, ctx, b.ContosoUser, "hunter2")
 	}
 
-	v := b.verifies(t, ctx, b.AcmeUser, "correct horse battery staple")
+	v := b.verifies(t, ctx, b.ContosoUser, "correct horse battery staple")
 	x.True(v.GetOk())
 
 	row, err := b.Ent.Credential.Query().Only(ctx)
@@ -209,13 +209,13 @@ func TestSigningInDoesNotWriteWhenNothingChanged(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
 	before, err := b.Ent.Credential.Query().Only(ctx)
 	x.NoError(err)
 
 	for range 3 {
-		x.True(b.verifies(t, ctx, b.AcmeUser, "correct horse battery staple").GetOk())
+		x.True(b.verifies(t, ctx, b.ContosoUser, "correct horse battery staple").GetOk())
 	}
 
 	after, err := b.Ent.Credential.Query().Only(ctx)
@@ -228,11 +228,11 @@ func TestANewSecretRetiresTheOldOne(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
-	b.sets(t, ctx, b.AcmeUser, "a different one entirely")
+	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
+	b.sets(t, ctx, b.ContosoUser, "a different one entirely")
 
-	x.False(b.verifies(t, ctx, b.AcmeUser, "correct horse battery staple").GetOk())
-	x.True(b.verifies(t, ctx, b.AcmeUser, "a different one entirely").GetOk())
+	x.False(b.verifies(t, ctx, b.ContosoUser, "correct horse battery staple").GetOk())
+	x.True(b.verifies(t, ctx, b.ContosoUser, "a different one entirely").GetOk())
 
 	// One row, not two: the unique index is on (holder, kind).
 	n, err := b.Ent.Credential.Query().Count(ctx)
@@ -246,14 +246,14 @@ func TestSettingASecretUnlocksTheAccount(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 	for range vouch.MaxFailures {
-		b.verifies(t, ctx, b.AcmeUser, "hunter2")
+		b.verifies(t, ctx, b.ContosoUser, "hunter2")
 	}
 
-	b.sets(t, ctx, b.AcmeUser, "a different one entirely")
+	b.sets(t, ctx, b.ContosoUser, "a different one entirely")
 
-	v := b.verifies(t, ctx, b.AcmeUser, "a different one entirely")
+	v := b.verifies(t, ctx, b.ContosoUser, "a different one entirely")
 	x.True(v.GetOk())
 	x.Nil(v.GetLockedUntil())
 }
@@ -264,15 +264,15 @@ func TestSomebodyNamedByTenantAndAlias(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
 	v, err := b.vouched().Verify(ctx, app.VouchVerifyRequest_builder{
-		Who:    app.VouchWho_builder{Tenant: "acme", Alias: "someone"}.Build(),
+		Who:    app.VouchWho_builder{Tenant: "contoso", Alias: "someone"}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
 	x.True(v.GetOk())
-	x.Equal(b.AcmeUser.Bytes(), v.GetHolder())
+	x.Equal(b.ContosoUser.Bytes(), v.GetHolder())
 }
 
 // TestAnAliasInAnotherTenantIsAnotherPerson, which is what makes an alias a
@@ -281,16 +281,16 @@ func TestAnAliasInAnotherTenantIsAnotherPerson(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	theirs := b.holder(t, ctx, b.Hooli, "someone")
-	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+	theirs := b.holder(t, ctx, b.Fabrikam, "someone")
+	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 	b.sets(t, ctx, theirs, "a different one entirely")
 
 	v, err := b.vouched().Verify(ctx, app.VouchVerifyRequest_builder{
-		Who:    app.VouchWho_builder{Tenant: "hooli", Alias: "someone"}.Build(),
+		Who:    app.VouchWho_builder{Tenant: "fabrikam", Alias: "someone"}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
-	x.False(v.GetOk(), "acme's password opened hooli's account")
+	x.False(v.GetOk(), "contoso's password opened fabrikam's account")
 }
 
 // TestARequestThatNamesNobodyOrTwoBodiesIsRefused.
@@ -304,7 +304,7 @@ func TestARequestThatNamesNobodyOrTwoBodiesIsRefused(t *testing.T) {
 		{"nobody", app.VouchWho_builder{}.Build()},
 		{"half a name", app.VouchWho_builder{Alias: "someone"}.Build()},
 		{"both ways", app.VouchWho_builder{
-			Id: b.AcmeUser.Bytes(), Tenant: "acme", Alias: "someone",
+			Id: b.ContosoUser.Bytes(), Tenant: "contoso", Alias: "someone",
 		}.Build()},
 	} {
 		t.Run(tt.what, func(t *testing.T) {
@@ -322,7 +322,7 @@ func TestAnEmptySecretIsNotASecret(t *testing.T) {
 	b, ctx := build(t)
 
 	_, err := b.vouched().Set(ctx, app.VouchSetRequest_builder{
-		Who: app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Who: app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 	}.Build())
 	require.Equal(t, codes.InvalidArgument, status.Code(err))
 }
@@ -337,19 +337,19 @@ func TestTheCredentialServiceIsNotOnTheWire(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
 	conn := served(t, b.Server)
 
 	// As somebody real, and somebody whose own row this is. Anonymously the
 	// call is refused before it is dispatched, which would make this test pass
 	// whether the service were registered or not.
-	ctx = auth.PlainProvider(b.AcmeUser.String()).Provide(ctx)
+	ctx = auth.PlainProvider(b.ContosoUser.String()).Provide(ctx)
 
 	_, err := app.NewCredentialServiceClient(conn).Get(ctx, app.CredentialGetRequest_builder{
 		Ref: app.CredentialRef_builder{
 			Kind: app.CredentialRefByKind_builder{
-				Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+				Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 				Kind:   z.Ptr(vouch.KindPassword),
 			}.Build(),
 		}.Build(),
@@ -373,13 +373,13 @@ func TestNobodyVerifiesAPasswordAnonymously(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
 	conn := served(t, b.Server)
 
 	// No credential at all, which is what a stranger has.
 	_, err := app.NewVouchServiceClient(conn).Verify(ctx, app.VouchVerifyRequest_builder{
-		Who:    app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 
@@ -390,12 +390,12 @@ func TestNobodyVerifiesAPasswordAnonymously(t *testing.T) {
 	// service. The role is what `roster init` binds to a deployment's first
 	// person; the policy denies by default, so without it this would refuse for
 	// the wrong reason.
-	b.mayAnything(b.AcmeUser, b.Acme)
+	b.mayAnything(b.ContosoUser, b.Contoso)
 
 	v, err := app.NewVouchServiceClient(conn).Verify(
-		auth.PlainProvider(b.AcmeUser.String()).Provide(ctx),
+		auth.PlainProvider(b.ContosoUser.String()).Provide(ctx),
 		app.VouchVerifyRequest_builder{
-			Who:    app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Secret: []byte("correct horse battery staple"),
 		}.Build())
 	x.NoError(err)
@@ -414,7 +414,7 @@ func TestTheApiKeyServiceCannotBeReachedEither(t *testing.T) {
 	b, ctx := build(t)
 
 	conn := served(t, b.Server)
-	ctx = auth.PlainProvider(b.AcmeUser.String()).Provide(ctx)
+	ctx = auth.PlainProvider(b.ContosoUser.String()).Provide(ctx)
 
 	_, err := app.NewApiKeyServiceClient(conn).List(ctx, app.ApiKeyListRequest_builder{}.Build())
 	x.Equal(codes.Unimplemented, status.Code(err), "the key service answered")
@@ -431,15 +431,15 @@ func TestABatchCannotCarryACredentialRead(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
 	conn := served(t, b.Server)
-	ctx = auth.PlainProvider(b.AcmeUser.String()).Provide(ctx)
+	ctx = auth.PlainProvider(b.ContosoUser.String()).Provide(ctx)
 
 	req, err := anypb.New(app.CredentialGetRequest_builder{
 		Ref: app.CredentialRef_builder{
 			Kind: app.CredentialRefByKind_builder{
-				Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+				Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 				Kind:   z.Ptr(vouch.KindPassword),
 			}.Build(),
 		}.Build(),
@@ -482,12 +482,12 @@ func TestAnErasedHolderCannotAuthenticate(t *testing.T) {
 		x := require.New(t)
 		b, ctx := build(t)
 
-		b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
-		x.True(b.verifies(t, ctx, b.AcmeUser, "correct horse battery staple").GetOk(), "the control")
+		b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
+		x.True(b.verifies(t, ctx, b.ContosoUser, "correct horse battery staple").GetOk(), "the control")
 
-		erase(t, b, ctx, b.AcmeUser)
+		erase(t, b, ctx, b.ContosoUser)
 
-		v := b.verifies(t, ctx, b.AcmeUser, "correct horse battery staple")
+		v := b.verifies(t, ctx, b.ContosoUser, "correct horse battery staple")
 		x.False(v.GetOk(), "an erased holder authenticated")
 		x.Nil(v.GetHolder(), "and was told who they were")
 	})
@@ -499,11 +499,11 @@ func TestAnErasedHolderCannotAuthenticate(t *testing.T) {
 		x := require.New(t)
 		b, ctx := build(t)
 
-		b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
-		erase(t, b, ctx, b.AcmeUser)
+		b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
+		erase(t, b, ctx, b.ContosoUser)
 
 		for range vouch.MaxFailures + 1 {
-			v := b.verifies(t, ctx, b.AcmeUser, "wrong")
+			v := b.verifies(t, ctx, b.ContosoUser, "wrong")
 			x.False(v.GetOk())
 			x.Nil(v.GetLockedUntil(), "a lockout tells a caller the account is there")
 		}
@@ -516,7 +516,7 @@ func TestAnErasedHolderCannotAuthenticate(t *testing.T) {
 		x := require.New(t)
 		b, ctx := build(t)
 
-		who := b.holder(t, ctx, b.Acme, "leaver")
+		who := b.holder(t, ctx, b.Contoso, "leaver")
 		erase(t, b, ctx, who)
 
 		_, err := b.vouched().Set(ctx, app.VouchSetRequest_builder{

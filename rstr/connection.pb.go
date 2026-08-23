@@ -25,9 +25,9 @@ const (
 
 // Connection is which provider one operator's people arrive through.
 //
-// "acme uses Entra, beta uses Google." A fact about a tenant, which every front
-// door would otherwise hold a stale copy of -- the same argument [Host] makes
-// about a name, one hop further along.
+// "contoso uses Entra, beta uses Google." A fact about a tenant, which every
+// front door would otherwise hold a stale copy of -- the same argument [Host]
+// makes about a name, one hop further along.
 //
 // # The secret is not here, and that is the decision
 //
@@ -288,7 +288,7 @@ type Connection_builder struct {
 	// name somebody.
 	Scopes []string
 	// Where the deployment keeps the client secret, in whatever words it uses
-	// for that -- "env:ACME_ENTRA_SECRET", "file:/run/secrets/acme-entra".
+	// for that -- "env:CONTOSO_ENTRA_SECRET", "file:/run/secrets/contoso-entra".
 	//
 	// **roster does not read this.** It is a string this app stores and answers
 	// with, and what it means is the front door's to know. That is the whole of

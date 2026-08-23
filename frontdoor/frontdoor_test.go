@@ -23,7 +23,7 @@ func TestAnAppHasToSayWhatItAsksFor(t *testing.T) {
 		Sessions: authsession.New(authsession.NewMemStore()),
 		Vouch:    rstr.NewVouchServiceClient(nil),
 		Methods:  []string{rstr.MeService_Get_FullMethodName},
-		Tenant:   func(ctx context.Context, host string) (string, error) { return "acme", nil },
+		Tenant:   func(ctx context.Context, host string) (string, error) { return "contoso", nil },
 	}
 
 	for _, tc := range []struct {

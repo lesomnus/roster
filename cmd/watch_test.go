@@ -95,14 +95,14 @@ func TestBeingGoneTravels(t *testing.T) {
 	defer stop()
 
 	conn := served(t, b.Server)
-	as := asOverTheWire(ctx, b.AcmeUser)
-	b.mayAnything(b.AcmeUser, b.Acme)
+	as := asOverTheWire(ctx, b.ContosoUser)
+	b.mayAnything(b.ContosoUser, b.Contoso)
 
 	// Somebody other than the caller, and the reason is worth writing down: the
 	// first draft watched and disabled the **caller**, and the call after the
 	// disable came back `Unauthenticated`. That is D26 working -- a disabled
 	// holder is not signed in -- and it is not what this test is about.
-	who := b.holder(t, ctx, b.Acme, "watched")
+	who := b.holder(t, ctx, b.Contoso, "watched")
 	me := app.HolderRef_builder{Id: who.Bytes()}.Build()
 	c := watching(t, as, conn, app.HolderWatchRequest_builder{
 		Filters: []*app.HolderFilter{app.HolderFilter_builder{Ref: me}.Build()},
@@ -165,7 +165,7 @@ func TestACredentialHashIsNotStreamed(t *testing.T) {
 	ctx, stop := context.WithCancel(ctx)
 	defer stop()
 
-	who := b.holder(t, ctx, b.Acme, "hashed")
+	who := b.holder(t, ctx, b.Contoso, "hashed")
 
 	// Written through `Ungated`, which answers with the column on purpose:
 	// `pd.Secret` is on the walled stack and on no other, because `vouch` and
@@ -181,7 +181,7 @@ func TestACredentialHashIsNotStreamed(t *testing.T) {
 	// And watched through `Walled`, which is the stack a caller reaches and the
 	// one the layer is on.
 	out := &collected{
-		ctx: b.as(ctx, b.AcmeUser, b.Acme),
+		ctx: b.as(ctx, b.ContosoUser, b.Contoso),
 		c:   make(chan *app.CredentialWatchResponse, 8),
 		bad: make(chan error, 1),
 	}

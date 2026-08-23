@@ -104,20 +104,20 @@ type Config struct {
 	Scopes []string
 
 	// Tenants is which tenant each name this deployment serves belongs to:
-	// "acme.example.com" -> "acme".
+	// "contoso.example.com" -> "contoso".
 	//
 	// # Why the host and not the email
 	//
 	// A tenant is the same service under a different operator's own domain, so
 	// the front door somebody came to *is* the operator whose service they are
 	// signing in to. Their email says where they authenticate, which is a
-	// different question and often a different organisation -- one of acme's
+	// different question and often a different organisation -- one of contoso's
 	// people can perfectly well have a personal Google account.
 	//
 	// # It is how a row is named, not a check applied afterwards
 	//
 	// `Identity` is unique on (tenant, provider, subject), so the tenant is
-	// part of naming one. Somebody who signs in at acme's door and then at
+	// part of naming one. Somebody who signs in at contoso's door and then at
 	// beta's is two Holders with two histories -- one human signing up to two
 	// operators' services, which is what a tenant being the wall already means.
 	// Nothing relates them and nothing should.

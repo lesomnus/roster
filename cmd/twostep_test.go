@@ -192,16 +192,16 @@ func TestTheCountIsOneCountAcrossTheSteps(t *testing.T) {
 	b, ctx := build(t)
 
 	v := b.keyedLocal(t)
-	enrolled(t, ctx, v, b.AcmeUser)
+	enrolled(t, ctx, v, b.ContosoUser)
 
 	// A frame, because a continuation is bound to whoever asked for one.
-	as := frame.Into(ctx, frame.New(b.AcmeUser, b.Acme, frame.Whole()).WithScope(frame.Only(b.Acme)))
+	as := frame.Into(ctx, frame.New(b.ContosoUser, b.Contoso, frame.Whole()).WithScope(frame.Only(b.Contoso)))
 
 	wrong := func() *app.VouchVerifyResponse {
 		t.Helper()
 
 		first, err := v.Verify(as, app.VouchVerifyRequest_builder{
-			Who:    app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Secret: []byte("correct horse battery staple"),
 		}.Build())
 		require.NoError(t, err)
@@ -225,7 +225,7 @@ func TestTheCountIsOneCountAcrossTheSteps(t *testing.T) {
 	x.False(wrong().GetOk())
 
 	shut, err := v.Verify(as, app.VouchVerifyRequest_builder{
-		Who:    app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)

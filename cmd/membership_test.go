@@ -29,14 +29,14 @@ func TestOnePersonIsInSeveralSites(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	seoul := b.site(t, ctx, b.Acme, "seoul")
-	frankfurt := b.site(t, ctx, b.Acme, "frankfurt")
+	seoul := b.site(t, ctx, b.Contoso, "seoul")
+	frankfurt := b.site(t, ctx, b.Contoso, "frankfurt")
 
-	b.joins(t, ctx, b.AcmeUser, seoul)
-	b.joins(t, ctx, b.AcmeUser, frankfurt)
+	b.joins(t, ctx, b.ContosoUser, seoul)
+	b.joins(t, ctx, b.ContosoUser, frankfurt)
 
 	vs, err := b.Walled.SiteMembership().List(
-		b.as(ctx, b.AcmeUser, b.Acme), app.SiteMembershipListRequest_builder{}.Build())
+		b.as(ctx, b.ContosoUser, b.Contoso), app.SiteMembershipListRequest_builder{}.Build())
 	x.NoError(err)
 	x.Len(vs.GetItems(), 2)
 }
@@ -47,11 +47,11 @@ func TestJoiningTwiceIsRefused(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	seoul := b.site(t, ctx, b.Acme, "seoul")
-	b.joins(t, ctx, b.AcmeUser, seoul)
+	seoul := b.site(t, ctx, b.Contoso, "seoul")
+	b.joins(t, ctx, b.ContosoUser, seoul)
 
 	_, err := b.Ungated.SiteMembership().Add(ctx, app.SiteMembershipAddRequest_builder{
-		Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Site:   app.SiteRef_builder{Id: seoul.Bytes()}.Build(),
 	}.Build())
 	x.Equal(codes.AlreadyExists, status.Code(err))
@@ -63,13 +63,13 @@ func TestMembershipsAreThemselvesOnTheSecondAxis(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	seoul := b.site(t, ctx, b.Acme, "seoul")
-	frankfurt := b.site(t, ctx, b.Acme, "frankfurt")
+	seoul := b.site(t, ctx, b.Contoso, "seoul")
+	frankfurt := b.site(t, ctx, b.Contoso, "frankfurt")
 
-	b.joins(t, ctx, b.AcmeUser, seoul)
-	b.joins(t, ctx, b.AcmeUser, frankfurt)
+	b.joins(t, ctx, b.ContosoUser, seoul)
+	b.joins(t, ctx, b.ContosoUser, frankfurt)
 
-	ctx = b.as(ctx, b.AcmeUser, b.Acme)
+	ctx = b.as(ctx, b.ContosoUser, b.Contoso)
 
 	vs, err := b.grouped(t, seoul).SiteMembership().List(ctx, app.SiteMembershipListRequest_builder{}.Build())
 	x.NoError(err)
@@ -87,11 +87,11 @@ func TestATeamMembershipReachesItsTenantThreeHopsAway(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	seoul := b.site(t, ctx, b.Acme, "seoul")
+	seoul := b.site(t, ctx, b.Contoso, "seoul")
 	team := b.team(t, ctx, seoul, "operators")
 
 	v, err := b.Ungated.TeamMembership().Add(ctx, app.TeamMembershipAddRequest_builder{
-		Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Team:   app.TeamRef_builder{Id: team.Bytes()}.Build(),
 		Role:   app.RoleRef_builder{Id: b.role(t, ctx, "operator").Bytes()}.Build(),
 	}.Build())
@@ -99,15 +99,15 @@ func TestATeamMembershipReachesItsTenantThreeHopsAway(t *testing.T) {
 
 	// Their own tenant sees it.
 	got, err := b.Walled.TeamMembership().Get(
-		b.as(ctx, b.AcmeUser, b.Acme),
+		b.as(ctx, b.ContosoUser, b.Contoso),
 		app.TeamMembershipGetRequest_builder{Ref: v.Ref()}.Build())
 	x.NoError(err)
 	x.NotNil(got.GetRole())
 
 	// Another tenant does not, three hops away.
-	hooliUser := b.holder(t, ctx, b.Hooli, "theirs")
+	fabrikamUser := b.holder(t, ctx, b.Fabrikam, "theirs")
 	_, err = b.Walled.TeamMembership().Get(
-		b.as(ctx, hooliUser, b.Hooli),
+		b.as(ctx, fabrikamUser, b.Fabrikam),
 		app.TeamMembershipGetRequest_builder{Ref: v.Ref()}.Build())
 	x.Equal(codes.NotFound, status.Code(err))
 }
@@ -118,8 +118,8 @@ func TestARoleIsPerTeamAndThereforePerSite(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	seoul := b.site(t, ctx, b.Acme, "seoul")
-	frankfurt := b.site(t, ctx, b.Acme, "frankfurt")
+	seoul := b.site(t, ctx, b.Contoso, "seoul")
+	frankfurt := b.site(t, ctx, b.Contoso, "frankfurt")
 
 	for _, v := range []struct {
 		site pdid.Id
@@ -127,7 +127,7 @@ func TestARoleIsPerTeamAndThereforePerSite(t *testing.T) {
 	}{{seoul, "operator"}, {frankfurt, "reader"}} {
 		team := b.team(t, ctx, v.site, "staff")
 		_, err := b.Ungated.TeamMembership().Add(ctx, app.TeamMembershipAddRequest_builder{
-			Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Team:   app.TeamRef_builder{Id: team.Bytes()}.Build(),
 			Role:   app.RoleRef_builder{Id: b.role(t, ctx, v.role).Bytes()}.Build(),
 		}.Build())
@@ -135,7 +135,7 @@ func TestARoleIsPerTeamAndThereforePerSite(t *testing.T) {
 	}
 
 	vs, err := b.Walled.TeamMembership().List(
-		b.as(ctx, b.AcmeUser, b.Acme), app.TeamMembershipListRequest_builder{}.Build())
+		b.as(ctx, b.ContosoUser, b.Contoso), app.TeamMembershipListRequest_builder{}.Build())
 	x.NoError(err)
 	x.Len(vs.GetItems(), 2, "one person, two roles, because they are two teams")
 }

@@ -33,8 +33,8 @@ func TestAHostStaysAsItIsComparedWhenItIsRenamed(t *testing.T) {
 	b, ctx := build(t)
 
 	v, err := b.Ungated.Host().Add(ctx, app.HostAddRequest_builder{
-		Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
-		Name:   "acme.example.com",
+		Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
+		Name:   "contoso.example.com",
 	}.Build())
 	x.NoError(err)
 
@@ -58,10 +58,10 @@ func TestAHostStaysAsItIsComparedWhenItIsRenamed(t *testing.T) {
 	}
 
 	for _, tc := range []struct{ desc, name, want string }{
-		{"upper case and a port at once", "Acme.Example.com:8443", "acme.example.com"},
-		{"upper case", "ACME.example.com", "acme.example.com"},
-		{"a port", "acme.example.com:8443", "acme.example.com"},
-		{"whitespace", " acme.example.com ", "acme.example.com"},
+		{"upper case and a port at once", "Contoso.Example.com:8443", "contoso.example.com"},
+		{"upper case", "CONTOSO.example.com", "contoso.example.com"},
+		{"a port", "contoso.example.com:8443", "contoso.example.com"},
+		{"whitespace", " contoso.example.com ", "contoso.example.com"},
 
 		// The brackets are not part of the name. They exist only to tell a
 		// colon inside an address from the colon before a port, so
@@ -122,7 +122,7 @@ func TestAHostStaysAsItIsComparedWhenItIsRenamed(t *testing.T) {
 			DateUpdated: v.GetDateUpdated(),
 		}.Build())
 		x.NoError(err)
-		x.Equal("acme.example.com", u.GetName())
+		x.Equal("contoso.example.com", u.GetName())
 
 		v = u
 	})
@@ -135,18 +135,18 @@ func TestAHostStaysAsItIsComparedWhenItIsRenamed(t *testing.T) {
 
 		u, err := b.Ungated.Host().Patch(ctx, app.HostPatchRequest_builder{
 			Ref:         v.Ref(),
-			Name:        z.Ptr("shop.acme.example.com"),
+			Name:        z.Ptr("shop.contoso.example.com"),
 			DateUpdated: v.GetDateUpdated(),
 		}.Build())
 		x.NoError(err)
-		x.Equal("shop.acme.example.com", u.GetName())
+		x.Equal("shop.contoso.example.com", u.GetName())
 
 		got, err := b.Ungated.Host().Get(ctx, app.HostGetRequest_builder{
-			Ref:    app.HostRef_builder{Name: z.Ptr("shop.acme.example.com")}.Build(),
+			Ref:    app.HostRef_builder{Name: z.Ptr("shop.contoso.example.com")}.Build(),
 			Select: app.HostSelect_builder{All: z.Ptr(true)}.Build(),
 		}.Build())
 		x.NoError(err)
-		x.Equal("shop.acme.example.com", got.GetName())
+		x.Equal("shop.contoso.example.com", got.GetName())
 	})
 }
 
@@ -154,7 +154,7 @@ func TestAHostStaysAsItIsComparedWhenItIsRenamed(t *testing.T) {
 // other name a front door looks up, and it was unpinned for the same reason.
 //
 // `FrontService.WhereFrom` takes an address, cuts it at the last `@` and
-// lowercases what is left, so a routing row stored as `ACME.example` is a row
+// lowercases what is left, so a routing row stored as `CONTOSO.example` is a row
 // no address ever matches. The failure is quieter than the host one:
 // `WhereFrom` answers an unknown domain with an **empty provider** rather than
 // `NotFound`, on purpose, so that it cannot be asked whether a domain exists
@@ -166,8 +166,8 @@ func TestAMailDomainStaysAsItIsComparedWhenItIsRenamed(t *testing.T) {
 	b, ctx := build(t)
 
 	v, err := b.Ungated.MailDomain().Add(ctx, app.MailDomainAddRequest_builder{
-		Tenant:   app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
-		Name:     "acme.example",
+		Tenant:   app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
+		Name:     "contoso.example",
 		Provider: "entra",
 	}.Build())
 	x.NoError(err)
@@ -187,13 +187,13 @@ func TestAMailDomainStaysAsItIsComparedWhenItIsRenamed(t *testing.T) {
 	}
 
 	for _, tc := range []struct{ desc, name, want string }{
-		{"upper case", "ACME.example", "acme.example"},
-		{"whitespace", " acme.example ", "acme.example"},
+		{"upper case", "CONTOSO.example", "contoso.example"},
+		{"whitespace", " contoso.example ", "contoso.example"},
 
 		// A whole address is the commonest thing to paste into this field, and
 		// what is looked up is the part after the `@`. Storing the address
 		// would be storing a row keyed by one person.
-		{"a whole address", "somebody@acme.example", "acme.example"},
+		{"a whole address", "somebody@contoso.example", "contoso.example"},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			x := require.New(t)
@@ -234,7 +234,7 @@ func TestAMailDomainStaysAsItIsComparedWhenItIsRenamed(t *testing.T) {
 			DateUpdated: v.GetDateUpdated(),
 		}.Build())
 		x.NoError(err)
-		x.Equal("acme.example", u.GetName())
+		x.Equal("contoso.example", u.GetName())
 		x.Equal("okta", u.GetProvider())
 
 		v = u
@@ -255,16 +255,16 @@ func TestAMailDomainStaysAsItIsComparedWhenItIsRenamed(t *testing.T) {
 		// about the line it names.
 		u, err := b.Ungated.MailDomain().Patch(ctx, app.MailDomainPatchRequest_builder{
 			Ref:              v.Ref(),
-			Name:             z.Ptr("acme.com"),
+			Name:             z.Ptr("contoso.com"),
 			DateUpdatedForce: z.Ptr(true),
 		}.Build())
 		x.NoError(err)
-		x.Equal("acme.com", u.GetName())
+		x.Equal("contoso.com", u.GetName())
 
 		f := front.New(b.Ungated)
 
 		res, err := f.WhereFrom(ctx, app.FrontWhereFromRequest_builder{
-			Tenant: b.Acme.Bytes(), Address: "somebody@acme.com",
+			Tenant: b.Contoso.Bytes(), Address: "somebody@contoso.com",
 		}.Build())
 		x.NoError(err)
 		x.Equal(u.GetProvider(), res.GetProvider(),

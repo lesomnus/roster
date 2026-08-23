@@ -45,21 +45,21 @@ func TestAttachingARoleIsGrantingIt(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	seoul := b.site(t, ctx, b.Acme, "seoul")
+	seoul := b.site(t, ctx, b.Contoso, "seoul")
 	mine := b.team(t, ctx, seoul, "mine")
 
 	// Alice manages memberships across the tenant, and holds nothing else.
-	b.binds(t, b.AcmeUser, b.role(t, ctx, "manager", addMember), nil)
+	b.binds(t, b.ContosoUser, b.role(t, ctx, "manager", addMember), nil)
 
 	conn := served(t, b.Server)
-	wire := asOverTheWire(ctx, b.AcmeUser)
+	wire := asOverTheWire(ctx, b.ContosoUser)
 
 	// The tenant's administrator role, which she does not hold.
 	admin := b.role(t, ctx, "admin", eraseHold)
 
 	_, err := app.NewTeamMembershipServiceClient(conn).Add(wire,
 		app.TeamMembershipAddRequest_builder{
-			Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Team:   app.TeamRef_builder{Id: mine.Bytes()}.Build(),
 			Role:   app.RoleRef_builder{Id: admin.Bytes()}.Build(),
 		}.Build())
@@ -71,7 +71,7 @@ func TestAttachingARoleIsGrantingIt(t *testing.T) {
 	// And the escalation the refusal exists to stop: had it been written, the
 	// gate would let her through for the method the role names.
 	_, err = app.NewHolderServiceClient(conn).Erase(wire,
-		app.HolderRef_builder{Id: b.holder(t, ctx, b.Acme, "victim").Bytes()}.Build())
+		app.HolderRef_builder{Id: b.holder(t, ctx, b.Contoso, "victim").Bytes()}.Build())
 	x.Equal(codes.PermissionDenied, status.Code(err),
 		"she erased somebody, so the membership was written after all")
 }
@@ -82,17 +82,17 @@ func TestWhatYouHoldYouMayAttach(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	seoul := b.site(t, ctx, b.Acme, "seoul")
+	seoul := b.site(t, ctx, b.Contoso, "seoul")
 	mine := b.team(t, ctx, seoul, "mine")
 
 	// She manages memberships and holds `Holder.Get` across the tenant.
-	b.binds(t, b.AcmeUser, b.role(t, ctx, "manager", addMember, getHolder), nil)
+	b.binds(t, b.ContosoUser, b.role(t, ctx, "manager", addMember, getHolder), nil)
 
 	conn := served(t, b.Server)
 
-	_, err := app.NewTeamMembershipServiceClient(conn).Add(asOverTheWire(ctx, b.AcmeUser),
+	_, err := app.NewTeamMembershipServiceClient(conn).Add(asOverTheWire(ctx, b.ContosoUser),
 		app.TeamMembershipAddRequest_builder{
-			Holder: app.HolderRef_builder{Id: b.holder(t, ctx, b.Acme, "newcomer").Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: b.holder(t, ctx, b.Contoso, "newcomer").Bytes()}.Build(),
 			Team:   app.TeamRef_builder{Id: mine.Bytes()}.Build(),
 			Role:   app.RoleRef_builder{Id: b.role(t, ctx, "reader", getHolder).Bytes()}.Build(),
 		}.Build())
@@ -108,16 +108,16 @@ func TestAMembershipWithNoRoleIsStillAMembership(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	seoul := b.site(t, ctx, b.Acme, "seoul")
+	seoul := b.site(t, ctx, b.Contoso, "seoul")
 	mine := b.team(t, ctx, seoul, "mine")
 
-	b.binds(t, b.AcmeUser, b.role(t, ctx, "manager", addMember), nil)
+	b.binds(t, b.ContosoUser, b.role(t, ctx, "manager", addMember), nil)
 
 	conn := served(t, b.Server)
 
-	_, err := app.NewTeamMembershipServiceClient(conn).Add(asOverTheWire(ctx, b.AcmeUser),
+	_, err := app.NewTeamMembershipServiceClient(conn).Add(asOverTheWire(ctx, b.ContosoUser),
 		app.TeamMembershipAddRequest_builder{
-			Holder: app.HolderRef_builder{Id: b.holder(t, ctx, b.Acme, "newcomer").Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: b.holder(t, ctx, b.Contoso, "newcomer").Bytes()}.Build(),
 			Team:   app.TeamRef_builder{Id: mine.Bytes()}.Build(),
 		}.Build())
 	x.NoError(err)
@@ -135,7 +135,7 @@ func TestATeamWithNoSiteIsTheTenantsOwn(t *testing.T) {
 
 	// A team of the tenant's own, with no site.
 	v, err := b.Ungated.Team().Add(ctx, app.TeamAddRequest_builder{
-		Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:  "floating",
 	}.Build())
 	x.NoError(err)
@@ -143,14 +143,14 @@ func TestATeamWithNoSiteIsTheTenantsOwn(t *testing.T) {
 
 	// She manages memberships across the tenant, and holds `Holder.Get` in
 	// Seoul alone.
-	seoul := b.site(t, ctx, b.Acme, "seoul")
-	b.binds(t, b.AcmeUser, b.role(t, ctx, "manager", addMember), nil)
-	b.binds(t, b.AcmeUser, b.role(t, ctx, "seoul-reader", getHolder), &seoul)
+	seoul := b.site(t, ctx, b.Contoso, "seoul")
+	b.binds(t, b.ContosoUser, b.role(t, ctx, "manager", addMember), nil)
+	b.binds(t, b.ContosoUser, b.role(t, ctx, "seoul-reader", getHolder), &seoul)
 
 	conn := served(t, b.Server)
-	wire := asOverTheWire(ctx, b.AcmeUser)
+	wire := asOverTheWire(ctx, b.ContosoUser)
 
-	newcomer := b.holder(t, ctx, b.Acme, "newcomer")
+	newcomer := b.holder(t, ctx, b.Contoso, "newcomer")
 	attach := func(team pdid.Id, role pdid.Id) error {
 		_, err := app.NewTeamMembershipServiceClient(conn).Add(wire,
 			app.TeamMembershipAddRequest_builder{
@@ -198,14 +198,14 @@ func TestJoiningAGroupIsGrantingYourselfWhatItHolds(t *testing.T) {
 	admins := b.groupHolding(t, ctx, "admins", b.role(t, ctx, "admin", eraseHold), nil)
 
 	// Alice manages memberships, and holds nothing else.
-	b.binds(t, b.AcmeUser, b.role(t, ctx, "manager", joinGroup), nil)
+	b.binds(t, b.ContosoUser, b.role(t, ctx, "manager", joinGroup), nil)
 
 	conn := served(t, b.Server)
-	wire := asOverTheWire(ctx, b.AcmeUser)
+	wire := asOverTheWire(ctx, b.ContosoUser)
 
 	_, err := app.NewGroupMembershipServiceClient(conn).Add(wire,
 		app.GroupMembershipAddRequest_builder{
-			Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Group:  app.GroupRef_builder{Id: admins.Bytes()}.Build(),
 		}.Build())
 	x.Equal(codes.PermissionDenied, status.Code(err),
@@ -215,7 +215,7 @@ func TestJoiningAGroupIsGrantingYourselfWhatItHolds(t *testing.T) {
 
 	// And the escalation it exists to stop.
 	_, err = app.NewHolderServiceClient(conn).Erase(wire,
-		app.HolderRef_builder{Id: b.holder(t, ctx, b.Acme, "victim").Bytes()}.Build())
+		app.HolderRef_builder{Id: b.holder(t, ctx, b.Contoso, "victim").Bytes()}.Build())
 	x.Equal(codes.PermissionDenied, status.Code(err),
 		"she erased somebody, so the membership was written after all")
 }
@@ -227,13 +227,13 @@ func TestWhatYouHoldYouMayPutSomebodyInto(t *testing.T) {
 	b, ctx := build(t)
 
 	readers := b.groupHolding(t, ctx, "readers", b.role(t, ctx, "reader", getHolder), nil)
-	b.binds(t, b.AcmeUser, b.role(t, ctx, "manager", joinGroup, getHolder), nil)
+	b.binds(t, b.ContosoUser, b.role(t, ctx, "manager", joinGroup, getHolder), nil)
 
 	conn := served(t, b.Server)
 
-	_, err := app.NewGroupMembershipServiceClient(conn).Add(asOverTheWire(ctx, b.AcmeUser),
+	_, err := app.NewGroupMembershipServiceClient(conn).Add(asOverTheWire(ctx, b.ContosoUser),
 		app.GroupMembershipAddRequest_builder{
-			Holder: app.HolderRef_builder{Id: b.holder(t, ctx, b.Acme, "newcomer").Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: b.holder(t, ctx, b.Contoso, "newcomer").Bytes()}.Build(),
 			Group:  app.GroupRef_builder{Id: readers.Bytes()}.Build(),
 		}.Build())
 	x.NoError(err)
@@ -250,23 +250,23 @@ func TestAGroupBoundInOneSiteIsNotAGroupBoundAcrossTheTenant(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	seoul := b.site(t, ctx, b.Acme, "seoul")
+	seoul := b.site(t, ctx, b.Contoso, "seoul")
 
 	// She manages memberships across the tenant, and holds `Holder.Get` in
 	// Seoul alone.
-	b.binds(t, b.AcmeUser, b.role(t, ctx, "manager", joinGroup), nil)
-	b.binds(t, b.AcmeUser, b.role(t, ctx, "seoul-reader", getHolder), &seoul)
+	b.binds(t, b.ContosoUser, b.role(t, ctx, "manager", joinGroup), nil)
+	b.binds(t, b.ContosoUser, b.role(t, ctx, "seoul-reader", getHolder), &seoul)
 
 	inSeoul := b.groupHolding(t, ctx, "seoul-readers", b.role(t, ctx, "reader", getHolder), &seoul)
 	wide := b.groupHolding(t, ctx, "everyone-readers", b.role(t, ctx, "wide-reader", getHolder), nil)
 
 	conn := served(t, b.Server)
-	wire := asOverTheWire(ctx, b.AcmeUser)
+	wire := asOverTheWire(ctx, b.ContosoUser)
 
 	n := 0
 	join := func(g pdid.Id) error {
 		n++
-		newcomer := b.holder(t, ctx, b.Acme, fmt.Sprintf("newcomer-%d", n))
+		newcomer := b.holder(t, ctx, b.Contoso, fmt.Sprintf("newcomer-%d", n))
 		_, err := app.NewGroupMembershipServiceClient(conn).Add(wire,
 			app.GroupMembershipAddRequest_builder{
 				Holder: app.HolderRef_builder{Id: newcomer.Bytes()}.Build(),
@@ -290,7 +290,7 @@ func (b *built) groupHolding(t *testing.T, ctx context.Context, alias string, ro
 	x := require.New(t)
 
 	g, err := b.Ungated.Group().Add(ctx, app.GroupAddRequest_builder{
-		Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:  alias,
 	}.Build())
 	x.NoError(err)
@@ -332,11 +332,11 @@ func TestAPermissionHeldThroughAGroupIsStillHeld(t *testing.T) {
 	b, ctx := build(t)
 
 	// An administrator whose permission arrives only through a group.
-	boss := b.holder(t, ctx, b.Acme, "boss")
+	boss := b.holder(t, ctx, b.Contoso, "boss")
 	b.inGroup(t, ctx, boss, "admins", b.role(t, ctx, "admin", eraseHold))
 
 	// And an operator who may only look.
-	ops := b.holder(t, ctx, b.Acme, "ops")
+	ops := b.holder(t, ctx, b.Contoso, "ops")
 	asOps := b.mayCall(t, ctx, ops, "operator", getHolder)
 
 	v := b.operated()
@@ -361,7 +361,7 @@ func TestAPermissionHeldThroughAGroupIsStillHeld(t *testing.T) {
 	t.Run("while somebody who really holds nothing still may be", func(t *testing.T) {
 		x := require.New(t)
 
-		x.NoError(set(b.holder(t, ctx, b.Acme, "joe")),
+		x.NoError(set(b.holder(t, ctx, b.Contoso, "joe")),
 			"the fast path was lost, so every reset now pays for two reads")
 	})
 }
@@ -377,14 +377,14 @@ func TestAGroupHeldPermissionIsYoursToPassOn(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.inGroup(t, ctx, b.AcmeUser, "managers",
+	b.inGroup(t, ctx, b.ContosoUser, "managers",
 		b.role(t, ctx, "manager", addBinding, addRole, getHolder))
 
 	conn := served(t, b.Server)
-	wire := asOverTheWire(ctx, b.AcmeUser)
+	wire := asOverTheWire(ctx, b.ContosoUser)
 
 	v, err := app.NewRoleServiceClient(conn).Add(wire, app.RoleAddRequest_builder{
-		Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:   "reader",
 		Methods: []string{getHolder},
 	}.Build())
@@ -392,7 +392,7 @@ func TestAGroupHeldPermissionIsYoursToPassOn(t *testing.T) {
 
 	_, err = app.NewBindingServiceClient(conn).Add(wire, app.BindingAddRequest_builder{
 		Role:   app.RoleRef_builder{Id: v.GetId()}.Build(),
-		Holder: app.HolderRef_builder{Id: b.holder(t, ctx, b.Acme, "newcomer").Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.holder(t, ctx, b.Contoso, "newcomer").Bytes()}.Build(),
 	}.Build())
 	x.NoError(err)
 }
@@ -404,7 +404,7 @@ func (b *built) inGroup(t *testing.T, ctx context.Context, who pdid.Id, alias st
 	x := require.New(t)
 
 	g, err := b.Ungated.Group().Add(ctx, app.GroupAddRequest_builder{
-		Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:  alias,
 	}.Build())
 	x.NoError(err)

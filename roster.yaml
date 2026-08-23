@@ -98,7 +98,7 @@ server:
 #     #
 #     #   bearer  an API key, checked against the control plane.
 #     #   plain   the caller says who it is and is believed, so the credential
-#     #           is a slug: "@acme/admin". This is what a deployment with **no
+#     #           is a slug: "@contoso/admin". This is what a deployment with **no
 #     #           control plane** serves, which is most of them on a first day
 #     #           -- and is not something to serve where anyone can reach it.
 #     #   none    send nothing, for a port that authenticates at the transport.

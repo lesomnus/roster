@@ -79,13 +79,13 @@ func TestTheSecondAxisNarrowsWithinATenant(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	seoul := b.site(t, ctx, b.Acme, "seoul")
-	frankfurt := b.site(t, ctx, b.Acme, "frankfurt")
+	seoul := b.site(t, ctx, b.Contoso, "seoul")
+	frankfurt := b.site(t, ctx, b.Contoso, "frankfurt")
 
 	b.team(t, ctx, seoul, "operators")
 	b.team(t, ctx, frankfurt, "operators")
 
-	ctx = b.as(ctx, b.AcmeUser, b.Acme)
+	ctx = b.as(ctx, b.ContosoUser, b.Contoso)
 
 	// The wall alone: one tenant, both teams.
 	all, err := b.Walled.Team().List(ctx, app.TeamListRequest_builder{}.Build())
@@ -123,11 +123,11 @@ func TestTheTenantWallStillApplies(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	theirs := b.site(t, ctx, b.Hooli, "theirs")
+	theirs := b.site(t, ctx, b.Fabrikam, "theirs")
 	b.team(t, ctx, theirs, "operators")
 
-	// Asking as Acme, while naming Hooli's site as the set.
-	ctx = b.as(ctx, b.AcmeUser, b.Acme)
+	// Asking as Contoso, while naming Fabrikam's site as the set.
+	ctx = b.as(ctx, b.ContosoUser, b.Contoso)
 
 	vs, err := b.grouped(t, theirs).Team().List(ctx, app.TeamListRequest_builder{}.Build())
 	x.NoError(err)
@@ -140,12 +140,12 @@ func TestATeamReachesItsTenantThroughItsSite(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	seoul := b.site(t, ctx, b.Acme, "seoul")
+	seoul := b.site(t, ctx, b.Contoso, "seoul")
 	team := b.team(t, ctx, seoul, "operators")
 
-	hooliUser := b.holder(t, ctx, b.Hooli, "theirs")
+	fabrikamUser := b.holder(t, ctx, b.Fabrikam, "theirs")
 	_, err := b.Walled.Team().Get(
-		b.as(ctx, hooliUser, b.Hooli),
+		b.as(ctx, fabrikamUser, b.Fabrikam),
 		app.TeamGetRequest_builder{Ref: app.TeamRef_builder{Id: team.Bytes()}.Build()}.Build())
 	x.Equal(codes.NotFound, status.Code(err))
 }
@@ -156,14 +156,14 @@ func TestATeamAliasIsUniqueWithinItsSite(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	seoul := b.site(t, ctx, b.Acme, "seoul")
-	frankfurt := b.site(t, ctx, b.Acme, "frankfurt")
+	seoul := b.site(t, ctx, b.Contoso, "seoul")
+	frankfurt := b.site(t, ctx, b.Contoso, "frankfurt")
 
 	b.team(t, ctx, seoul, "operators")
 	b.team(t, ctx, frankfurt, "operators")
 
 	_, err := b.Ungated.Team().Add(ctx, app.TeamAddRequest_builder{
-		Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Site:   app.SiteRef_builder{Id: seoul.Bytes()}.Build(),
 		Alias:  "operators",
 	}.Build())

@@ -26,20 +26,20 @@ func TestAMembershipCannotCrossTenants(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	theirs := b.site(t, ctx, b.Hooli, "theirs")
+	theirs := b.site(t, ctx, b.Fabrikam, "theirs")
 
 	_, err := b.Ungated.SiteMembership().Add(ctx, app.SiteMembershipAddRequest_builder{
-		Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Site:   app.SiteRef_builder{Id: theirs.Bytes()}.Build(),
 	}.Build())
 	x.Equal(codes.InvalidArgument, status.Code(err),
-		"an acme person was made a member of a hooli site")
+		"an contoso person was made a member of a fabrikam site")
 
 	// And the same row within one tenant is fine, so what refused is the
 	// disagreement rather than the shape of the call.
-	ours := b.site(t, ctx, b.Acme, "ours")
+	ours := b.site(t, ctx, b.Contoso, "ours")
 	_, err = b.Ungated.SiteMembership().Add(ctx, app.SiteMembershipAddRequest_builder{
-		Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Site:   app.SiteRef_builder{Id: ours.Bytes()}.Build(),
 	}.Build())
 	x.NoError(err)
@@ -51,10 +51,10 @@ func TestATeamCannotBeInAnotherTenantsSite(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	theirs := b.site(t, ctx, b.Hooli, "theirs")
+	theirs := b.site(t, ctx, b.Fabrikam, "theirs")
 
 	_, err := b.Ungated.Team().Add(ctx, app.TeamAddRequest_builder{
-		Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Site:   app.SiteRef_builder{Id: theirs.Bytes()}.Build(),
 		Alias:  "trespassers",
 	}.Build())
@@ -73,27 +73,27 @@ func TestATeamNeedsNoSite(t *testing.T) {
 	b, ctx := build(t)
 
 	_, err := b.Ungated.Team().Add(ctx, app.TeamAddRequest_builder{
-		Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:  "everybody",
 	}.Build())
 	x.NoError(err)
 
 	// Their own tenant sees it.
-	vs, err := b.Walled.Team().List(b.as(ctx, b.AcmeUser, b.Acme),
+	vs, err := b.Walled.Team().List(b.as(ctx, b.ContosoUser, b.Contoso),
 		app.TeamListRequest_builder{}.Build())
 	x.NoError(err)
 	x.Len(vs.GetItems(), 1)
 
 	// Another tenant does not.
-	hooliUser := b.holder(t, ctx, b.Hooli, "theirs")
-	vs, err = b.Walled.Team().List(b.as(ctx, hooliUser, b.Hooli),
+	fabrikamUser := b.holder(t, ctx, b.Fabrikam, "theirs")
+	vs, err = b.Walled.Team().List(b.as(ctx, fabrikamUser, b.Fabrikam),
 		app.TeamListRequest_builder{}.Build())
 	x.NoError(err)
 	x.Empty(vs.GetItems())
 
 	// And a read narrowed to a site does not, because it is in no site.
-	seoul := b.site(t, ctx, b.Acme, "seoul")
-	vs, err = b.grouped(t, seoul).Team().List(b.as(ctx, b.AcmeUser, b.Acme),
+	seoul := b.site(t, ctx, b.Contoso, "seoul")
+	vs, err = b.grouped(t, seoul).Team().List(b.as(ctx, b.ContosoUser, b.Contoso),
 		app.TeamListRequest_builder{}.Build())
 	x.NoError(err)
 	x.Empty(vs.GetItems())
@@ -107,7 +107,7 @@ func TestABindingGrantsToOneSubject(t *testing.T) {
 
 	role := b.role(t, ctx, "operator", "/roster.HolderService/Get")
 	group, err := b.Ungated.Group().Add(ctx, app.GroupAddRequest_builder{
-		Tenant: app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:  "admins",
 	}.Build())
 	x.NoError(err)
@@ -115,7 +115,7 @@ func TestABindingGrantsToOneSubject(t *testing.T) {
 	// Both.
 	_, err = b.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
 		Role:   app.RoleRef_builder{Id: role.Bytes()}.Build(),
-		Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Group:  app.GroupRef_builder{Id: group.GetId()}.Build(),
 	}.Build())
 	x.Equal(codes.InvalidArgument, status.Code(err))
@@ -129,7 +129,7 @@ func TestABindingGrantsToOneSubject(t *testing.T) {
 	// One.
 	_, err = b.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
 		Role:   app.RoleRef_builder{Id: role.Bytes()}.Build(),
-		Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 	}.Build())
 	x.NoError(err)
 }

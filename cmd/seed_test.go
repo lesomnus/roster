@@ -87,7 +87,7 @@ func TestInitRefusesToRunTwice(t *testing.T) {
 
 	// Named by the alias that collided, because the operator reading this is
 	// deciding whether they are looking at the wrong database or at a restart.
-	x.ErrorContains(err, "acme")
+	x.ErrorContains(err, "contoso")
 
 	s, err := cmd.Build(ctx, c)
 	x.NoError(err)
@@ -162,7 +162,7 @@ func TestASecondInitStopsBeforeTheOperator(t *testing.T) {
 
 	secret := passwordFrom(t, out)
 
-	_, err = initRun(t, c, "--tenant", "hooli")
+	_, err = initRun(t, c, "--tenant", "fabrikam")
 	x.Error(err, "a second init reseeded the control plane of a live deployment")
 	x.ErrorContains(err, "operator", "it failed somewhere other than the operator")
 
@@ -178,7 +178,7 @@ func TestASecondInitStopsBeforeTheOperator(t *testing.T) {
 
 		n, err := s.Ent.Tenant.Query().Count(ctx)
 		x.NoError(err)
-		x.Equal(2, n, "acme from the first run, hooli from the one that failed")
+		x.Equal(2, n, "contoso from the first run, fabrikam from the one that failed")
 	})
 
 	// The half that must not have.

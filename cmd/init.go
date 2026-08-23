@@ -30,7 +30,7 @@ import (
 //
 // # It grants, and it used to only create
 //
-// This wrote a tenant and a holder, printed "sign in as @acme/admin", and
+// This wrote a tenant and a holder, printed "sign in as @contoso/admin", and
 // stopped. Permissions are deny-by-default, so what it printed was somebody who
 // could call exactly one method -- `MeService.Get`, which would tell them they
 // held nothing.
@@ -67,7 +67,7 @@ func NewCmdInit(c *Config) *xli.Command {
 		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
 			tenant, ok := flg.Find[string](cmd, "tenant")
 			if !ok || tenant == "" {
-				tenant = "acme"
+				tenant = "contoso"
 			}
 
 			holder, ok := flg.Find[string](cmd, "holder")

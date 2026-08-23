@@ -15,8 +15,8 @@ import (
 // # Why it is a refusal and not a fixup
 //
 // Normalising on the way in would be kinder and is the wrong direction. A
-// caller that wrote `Acme.Example.com:8443` and got back a row saying
-// `acme.example.com` has had its value changed without being told, and the next
+// caller that wrote `Contoso.Example.com:8443` and got back a row saying
+// `contoso.example.com` has had its value changed without being told, and the next
 // thing it does is compare the two and disagree with itself. Worse, the
 // caller most likely to write one is a console reading it back to a person, who
 // then cannot find the name they just typed.

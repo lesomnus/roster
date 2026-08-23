@@ -34,10 +34,10 @@ func TestAFactorWithANameCanBeConfirmed(t *testing.T) {
 	b, ctx := build(t)
 
 	v := b.keyed2fa(t)
-	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
 	res, err := v.Enrol(ctx, app.VouchEnrolRequest_builder{
-		Who:  app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Who:  app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Kind: vouch.KindTotp,
 		Name: "the phone",
 	}.Build())
@@ -48,7 +48,7 @@ func TestAFactorWithANameCanBeConfirmed(t *testing.T) {
 
 	// The call the person makes with the app open in front of them.
 	got, err := v.Verify(ctx, app.VouchVerifyRequest_builder{
-		Who:    app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Kind:   vouch.KindTotp,
 		Name:   "the phone",
 		Secret: []byte(vouch.CodeAt(seed, time.Now().Unix()/30)),
@@ -70,10 +70,10 @@ func TestAConfirmedNamedFactorIsThenAsked(t *testing.T) {
 	b, ctx := build(t)
 
 	v := b.keyed2fa(t)
-	b.sets(t, ctx, b.AcmeUser, "correct horse battery staple")
+	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
 	res, err := v.Enrol(ctx, app.VouchEnrolRequest_builder{
-		Who:  app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Who:  app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Kind: vouch.KindTotp,
 		Name: "the phone",
 	}.Build())
@@ -84,13 +84,13 @@ func TestAConfirmedNamedFactorIsThenAsked(t *testing.T) {
 
 	// As somebody, because a continuation is minted for whoever asked and a
 	// frameless caller is answered the way this always answered.
-	asApp := b.as(ctx, b.AcmeUser, b.Acme)
+	asApp := b.as(ctx, b.ContosoUser, b.Contoso)
 
 	password := func() *app.VouchVerifyResponse {
 		t.Helper()
 
 		got, err := v.Verify(asApp, app.VouchVerifyRequest_builder{
-			Who:    app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Secret: []byte("correct horse battery staple"),
 		}.Build())
 		x.NoError(err)
@@ -111,7 +111,7 @@ func TestAConfirmedNamedFactorIsThenAsked(t *testing.T) {
 	// call is worth making anyway, and this is the one thing it is for -- the
 	// step is written whatever the answer, so the factor is now confirmed.
 	got, err = v.Verify(asApp, app.VouchVerifyRequest_builder{
-		Who:    app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Kind:   vouch.KindTotp,
 		Name:   "the phone",
 		Secret: []byte(vouch.CodeAt(seed, time.Now().Unix()/30-1)),
@@ -155,7 +155,7 @@ func TestAnUnnamedFactorIsStillTheOnlyOne(t *testing.T) {
 	v := b.keyed2fa(t)
 
 	res, err := v.Enrol(ctx, app.VouchEnrolRequest_builder{
-		Who:  app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Who:  app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Kind: vouch.KindTotp,
 		Name: "the phone",
 	}.Build())
@@ -166,7 +166,7 @@ func TestAnUnnamedFactorIsStillTheOnlyOne(t *testing.T) {
 
 	// Naming nothing does not stand for "whichever one you have".
 	got, err := v.Verify(ctx, app.VouchVerifyRequest_builder{
-		Who:    app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Kind:   vouch.KindTotp,
 		Secret: []byte(vouch.CodeAt(seed, time.Now().Unix()/30)),
 	}.Build())

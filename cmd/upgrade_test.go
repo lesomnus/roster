@@ -39,7 +39,7 @@ func TestADatabaseFromBeforeTheDomainColumnUpgrades(t *testing.T) {
 
 	// Writes on the old shape: made first, then the column is removed from
 	// under them, which is the state a deployment upgrades from.
-	who := b.holder(t, ctx, b.Acme, "erin")
+	who := b.holder(t, ctx, b.Contoso, "erin")
 
 	was, err := b.Ent.Audit.Query().Count(ctx)
 	x.NoError(err)

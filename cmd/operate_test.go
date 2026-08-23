@@ -35,7 +35,7 @@ func (b *built) mayCall(t *testing.T, ctx context.Context, who pdid.Id, alias st
 	x := require.New(t)
 
 	role, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
-		Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:   alias,
 		Methods: methods,
 	}.Build())
@@ -47,7 +47,7 @@ func (b *built) mayCall(t *testing.T, ctx context.Context, who pdid.Id, alias st
 	}.Build())
 	x.NoError(err)
 
-	return frame.Into(ctx, frame.New(who, b.Acme, frame.Whole()).WithScope(frame.Only(b.Acme)))
+	return frame.Into(ctx, frame.New(who, b.Contoso, frame.Whole()).WithScope(frame.Only(b.Contoso)))
 }
 
 // TestNobodyWritesTheCredentialOfSomebodyWiderThanThey is item 11, and the
@@ -66,14 +66,14 @@ func TestNobodyWritesTheCredentialOfSomebodyWiderThanThey(t *testing.T) {
 	const list = "/roster.HolderService/List"
 
 	// An administrator who may erase anybody, and an operator who may not.
-	boss := b.holder(t, ctx, b.Acme, "boss")
+	boss := b.holder(t, ctx, b.Contoso, "boss")
 	b.mayCall(t, ctx, boss, "admin", erase, list)
 
-	ops := b.holder(t, ctx, b.Acme, "ops")
+	ops := b.holder(t, ctx, b.Contoso, "ops")
 	asOps := b.mayCall(t, ctx, ops, "operator", list)
 
 	// And somebody ordinary, with nothing.
-	joe := b.holder(t, ctx, b.Acme, "joe")
+	joe := b.holder(t, ctx, b.Contoso, "joe")
 
 	v := b.operated()
 	set := func(c context.Context, who pdid.Id) error {
@@ -95,7 +95,7 @@ func TestNobodyWritesTheCredentialOfSomebodyWiderThanThey(t *testing.T) {
 		x := require.New(t)
 
 		// A second operator holding the same one method.
-		other := b.holder(t, ctx, b.Acme, "other-ops")
+		other := b.holder(t, ctx, b.Contoso, "other-ops")
 		b.mayCall(t, ctx, other, "operator-2", list)
 
 		x.NoError(set(asOps, other))
@@ -114,7 +114,7 @@ func TestNobodyWritesTheCredentialOfSomebodyWiderThanThey(t *testing.T) {
 	t.Run("and the administrator may write the operator", func(t *testing.T) {
 		x := require.New(t)
 
-		asBoss := frame.Into(ctx, frame.New(boss, b.Acme, frame.Whole()).WithScope(frame.Only(b.Acme)))
+		asBoss := frame.Into(ctx, frame.New(boss, b.Contoso, frame.Whole()).WithScope(frame.Only(b.Contoso)))
 		x.NoError(set(asBoss, ops))
 	})
 
@@ -124,7 +124,7 @@ func TestNobodyWritesTheCredentialOfSomebodyWiderThanThey(t *testing.T) {
 	t.Run("and anybody may write their own", func(t *testing.T) {
 		x := require.New(t)
 
-		asBossOwn := frame.Into(ctx, frame.New(boss, b.Acme, frame.Whole()).WithScope(frame.Only(b.Acme)))
+		asBossOwn := frame.Into(ctx, frame.New(boss, b.Contoso, frame.Whole()).WithScope(frame.Only(b.Contoso)))
 		x.NoError(set(asBossOwn, boss))
 	})
 
@@ -156,8 +156,8 @@ func TestALocalOperatorHandsSomebodyAPassword(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	joe := b.holder(t, ctx, b.Acme, "joe")
-	ops := b.holder(t, ctx, b.Acme, "ops")
+	joe := b.holder(t, ctx, b.Contoso, "joe")
+	ops := b.holder(t, ctx, b.Contoso, "ops")
 	asOps := b.mayCall(t, ctx, ops, "operator", "/roster.MeService/Get")
 
 	v := b.operated()
@@ -221,10 +221,10 @@ func TestALocalOperatorOpensAnAccountSomebodyElseClosed(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	joe := b.holder(t, ctx, b.Acme, "joe")
+	joe := b.holder(t, ctx, b.Contoso, "joe")
 	b.sets(t, ctx, joe, "correct horse battery staple")
 
-	ops := b.holder(t, ctx, b.Acme, "ops")
+	ops := b.holder(t, ctx, b.Contoso, "ops")
 	asOps := b.mayCall(t, ctx, ops, "operator", "/roster.MeService/Get")
 
 	v := b.operated()
@@ -295,7 +295,7 @@ func TestASecretSomebodyHasLostIsRefused(t *testing.T) {
 
 	set := func(secret string) error {
 		_, err := v.Set(ctx, app.VouchSetRequest_builder{
-			Who:    app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Secret: []byte(secret),
 		}.Build())
 
@@ -313,7 +313,7 @@ func TestASecretSomebodyHasLostIsRefused(t *testing.T) {
 		x := require.New(t)
 
 		_, err := v.Reset(ctx, app.VouchResetRequest_builder{
-			Who: app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Who: app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		}.Build())
 		x.NoError(err, "thirty-two random bytes were in a corpus of leaks")
 	})
@@ -324,7 +324,7 @@ func TestASecretSomebodyHasLostIsRefused(t *testing.T) {
 		x := require.New(t)
 
 		_, err := b.vouched().Set(ctx, app.VouchSetRequest_builder{
-			Who:    app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Secret: []byte("hunter2"),
 		}.Build())
 		x.NoError(err)

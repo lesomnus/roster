@@ -52,7 +52,7 @@ func TestOneContinuationMintsOneCredential(t *testing.T) {
 	// Called directly rather than over the connection: a shared HTTP/2 stream
 	// serialises enough that the window closes before anybody reaches it, and
 	// what is being asked about is the database and not the transport.
-	as := frame.Into(ctx, frame.New(b.Who, b.Acme, frame.Whole()).WithScope(frame.Only(b.Acme)))
+	as := frame.Into(ctx, frame.New(b.Who, b.Contoso, frame.Whole()).WithScope(frame.Only(b.Contoso)))
 
 	first, err := v.Delegate(as, app.VouchDelegateRequest_builder{
 		Who:     app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
@@ -121,7 +121,7 @@ func TestOneLinkMintsOneCredential(t *testing.T) {
 	mayList(t, ctx, b, b.Who, listHolders)
 
 	v := b.keyed(t)
-	as := frame.Into(ctx, frame.New(b.Who, b.Acme, frame.Whole()).WithScope(frame.Only(b.Acme)))
+	as := frame.Into(ctx, frame.New(b.Who, b.Contoso, frame.Whole()).WithScope(frame.Only(b.Contoso)))
 
 	made, err := v.Link(as, app.VouchLinkRequest_builder{
 		Who: app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),

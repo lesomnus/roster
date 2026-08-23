@@ -39,19 +39,19 @@ func TestAKeyIsEnrolledAndThenSignsSomebodyIn(t *testing.T) {
 	// takes the branch that cannot mint a continuation and answers `ok` to a
 	// first factor -- `init` and the sandbox -- and a two-step assertion would
 	// have nothing to be the first step of.
-	as := b.as(ctx, b.AcmeUser, b.Acme)
+	as := b.as(ctx, b.ContosoUser, b.Contoso)
 
 	// A password, because a security key is a **second** factor here and
 	// `vouch.Begins` answers no for it: somebody whose only credential is a key
 	// has nothing that can start a sign-in.
 	_, err := v.Set(as, app.VouchSetRequest_builder{
-		Who:    app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
 
 	res, err := v.Enrol(as, app.VouchEnrolRequest_builder{
-		Who:         app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Who:         app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Kind:        vouch.KindWebAuthn,
 		Name:        "the yubikey in the drawer",
 		Attestation: a.Register(t, vouchtest.Challenge(t)),
@@ -69,7 +69,7 @@ func TestAKeyIsEnrolledAndThenSignsSomebodyIn(t *testing.T) {
 		c := vouchtest.Challenge(t)
 
 		got, err := v.Verify(as, app.VouchVerifyRequest_builder{
-			Who:    app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Kind:   vouch.KindWebAuthn,
 			Name:   "the yubikey in the drawer",
 			Secret: a.Assert(t, c),
@@ -102,7 +102,7 @@ func TestAKeyIsEnrolledAndThenSignsSomebodyIn(t *testing.T) {
 		// Named, because this key was enrolled with one -- `Enrol` invites a
 		// name and `Verify` takes one for exactly that reason.
 		first, err := v.Verify(as, app.VouchVerifyRequest_builder{
-			Who:    app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Kind:   vouch.KindWebAuthn,
 			Name:   "the yubikey in the drawer",
 			Secret: once,
@@ -112,7 +112,7 @@ func TestAKeyIsEnrolledAndThenSignsSomebodyIn(t *testing.T) {
 		x.NotEmpty(first.GetContinuation(), "the first assertion was not accepted at all")
 
 		again, err := v.Verify(as, app.VouchVerifyRequest_builder{
-			Who:    app.VouchWho_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Kind:   vouch.KindWebAuthn,
 			Name:   "the yubikey in the drawer",
 			Secret: once,

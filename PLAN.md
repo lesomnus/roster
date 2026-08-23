@@ -210,7 +210,7 @@ own credential and the next call set a password they chose.
 `vouch.byAddress` lowers and trims; the write did neither. So the unique index
 on `(tenant_id, address)` -- the whole of what makes an address name one person,
 and what closed F7 -- was comparing strings the lookup never compares.
-`Someone@Acme.example` and `someone@acme.example` were two rows and one address.
+`Someone@Contoso.example` and `someone@contoso.example` were two rows and one address.
 
 Two failures, and the quiet one is worse than the attack: an address stored as a
 provider sent it could not sign in at all. The attack is that the lowered
@@ -239,8 +239,8 @@ is what the gate will actually let them call.
 
 `Vouch.Link` read the person through the **unwalled** server. `Verify` does that
 deliberately -- there is no frame yet -- and `Link` is not that call: it is made
-by an app holding a credential, about somebody it names. So a holder in acme
-with `Link` and `Redeem` could name `@hooli/erlich` and be handed a real,
+by an app holding a credential, about somebody it names. So a holder in contoso
+with `Link` and `Redeem` could name `@fabrikam/erlich` and be handed a real,
 spendable way into another organisation.
 
 Narrowed, that request answers what a request for a stranger answers: the token
@@ -471,10 +471,10 @@ it asserts the refusal and not where the refusal lives.
 The widest thing found in this app, and it needed a **clerk** rather than an
 administrator.
 
-    Alice may call Email.Add and Email.Get, in acme, and nothing else.
-    She adds an address of her own, vouched for by an identity of hooli's.
+    Alice may call Email.Add and Email.Get, in contoso, and nothing else.
+    She adds an address of her own, vouched for by an identity of fabrikam's.
     She reads her own row back, selecting through the edge.
-    She has hooli's provider subject, that person's name, and their tenant.
+    She has fabrikam's provider subject, that person's name, and their tenant.
 
 Reproduced over a real listener before anything was changed, and the three hops
 are `EmailSelect` → `IdentitySelect` → `HolderSelect` → `TenantSelect`, each of
@@ -2382,7 +2382,7 @@ answer *does this domain exist here*.
 #### A name is stored as it is compared, and it is refused rather than fixed
 
 Normalising on the way in is kinder and is the wrong direction: a caller that
-wrote `Acme.Example.com:8443` and read back `acme.example.com` has had its value
+wrote `Contoso.Example.com:8443` and read back `contoso.example.com` has had its value
 changed without being told, and the next thing it does is disagree with itself.
 Worse, the caller most likely to write one is a console reading it back to the
 person who typed it.
@@ -3223,7 +3223,7 @@ optional, and what was wrong is that the wall depended on one.
 
 And a row naming two things reached two tenants while only one was checked:
 
-    SiteMembership{holder: somebody in acme, site: a site of hooli's}
+    SiteMembership{holder: somebody in contoso, site: a site of fabrikam's}
 
 written, accepted, and visible to whichever tenant the wall's path happened to
 land on. One tenant read a row naming the other's, which is the single thing the
@@ -3963,7 +3963,7 @@ stays what it is, which is the question rather than the schedule.
    `FrontService.WhoseHost` to resolve one before anybody is anybody.
 
    The original entry: A multi-tenant app served at
-   `acme.example.com` has to turn that into a tenant, and roster has no way to
+   `contoso.example.com` has to turn that into a tenant, and roster has no way to
    answer. It is an overlay on `Tenant` in `proto/ext/payday/`, since that
    entity is payday's.
 
@@ -3977,7 +3977,7 @@ stays what it is, which is the question rather than the schedule.
    connection carries a secret and that is item 9 -- which is **done** since,
    `Connection` and P9.
 
-   The original entry: "Addresses at `@acme.com` go to Entra."
+   The original entry: "Addresses at `@contoso.com` go to Entra."
    Identifier-first sign-in is the thing every multi-tenant front door rewrites,
    and it is a fact about a tenant's domains.
 
@@ -4124,7 +4124,7 @@ stays what it is, which is the question rather than the schedule.
 
    The original entry:
    ...has a boundary question
-   rather than a schema question. "acme uses Entra, beta uses Google" is a fact
+   rather than a schema question. "contoso uses Entra, beta uses Google" is a fact
    about a tenant and every app would otherwise hold a stale copy — but a
    connection carries a client secret, and handing one back would make it the
    first secret roster returns rather than checks. D13 is the entry it argues

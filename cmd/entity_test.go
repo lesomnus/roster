@@ -55,16 +55,16 @@ func seeded(t *testing.T) *cmd.Config {
 	x.NoError(s.Ent.Schema.Create(ctx))
 
 	b := &built{Server: s}
-	b.Acme = b.tenant(t, ctx, "acme")
-	b.Hooli = b.tenant(t, ctx, "hooli")
-	admin := b.holder(t, ctx, b.Acme, "admin")
+	b.Contoso = b.tenant(t, ctx, "contoso")
+	b.Fabrikam = b.tenant(t, ctx, "fabrikam")
+	admin := b.holder(t, ctx, b.Contoso, "admin")
 
 	// What `roster init` binds: the whole of what this app serves. Without it
 	// the admin is somebody who can call one method and be told they hold
 	// nothing, which is the state `init` exists to avoid -- and a test that
 	// reaches this deployment over the wire would be testing that refusal
 	// rather than what it meant to.
-	b.mayAnything(admin, b.Acme)
+	b.mayAnything(admin, b.Contoso)
 
 	// Closed, because each command opens a server of its own on this database
 	// -- which is the thing being tested.
@@ -87,8 +87,8 @@ func TestTenantLs(t *testing.T) {
 	out, err := entities(t, c, "tenant", "ls")
 	x.NoError(err)
 
-	x.Contains(out, "acme")
-	x.Contains(out, "hooli")
+	x.Contains(out, "contoso")
+	x.Contains(out, "fabrikam")
 }
 
 // TestHolderGetNamesSomebodyBySlug, which is the form a person types.
@@ -97,7 +97,7 @@ func TestHolderGetNamesSomebodyBySlug(t *testing.T) {
 
 	c := seeded(t)
 
-	out, err := entities(t, c, "holder", "get", "@acme/admin")
+	out, err := entities(t, c, "holder", "get", "@contoso/admin")
 	x.NoError(err)
 	x.Contains(out, "admin")
 }
@@ -210,12 +210,12 @@ func TestClientAddrChoosesTheWire(t *testing.T) {
 
 	// A second customer, so that "sees one" is a claim with something to be
 	// wrong about.
-	add(t, ctx, b.Server, "hooli")
+	add(t, ctx, b.Server, "fabrikam")
 
 	// What the key's holder may do. A key cannot reach past what its holder
 	// holds, so the binding is what makes the remote call answer at all.
 	role, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
-		Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:   "reader",
 		Methods: []string{listTenants},
 	}.Build())
@@ -242,11 +242,11 @@ func TestClientAddrChoosesTheWire(t *testing.T) {
 	// no wall on it.
 	out, err := entities(t, &c, "tenant", "ls")
 	x.NoError(err)
-	x.Contains(out, "acme")
-	x.Contains(out, "hooli")
+	x.Contains(out, "contoso")
+	x.Contains(out, "fabrikam")
 
-	// Over the wire as a key belonging to somebody in acme: acme, and not
-	// hooli.
+	// Over the wire as a key belonging to somebody in contoso: contoso, and not
+	// fabrikam.
 	c.Client = cmd.ClientConfig{
 		Addr:     lis.Addr().String(),
 		Insecure: true,
@@ -255,8 +255,8 @@ func TestClientAddrChoosesTheWire(t *testing.T) {
 
 	out, err = entities(t, &c, "tenant", "ls")
 	x.NoError(err)
-	x.Contains(out, "acme")
-	x.NotContains(out, "hooli", "the wall did not run, so this did not go over the wire")
+	x.Contains(out, "contoso")
+	x.NotContains(out, "fabrikam", "the wall did not run, so this did not go over the wire")
 }
 
 const listTenants = "/roster.TenantService/List"
@@ -290,7 +290,7 @@ func TestPlainReachesADeploymentWithNoControlPlane(t *testing.T) {
 	c.Client = cmd.ClientConfig{
 		Addr:     lis.Addr().String(),
 		Insecure: true,
-		Auth:     cmd.ClientAuthConfig{Scheme: "plain", Credential: "@acme/admin"},
+		Auth:     cmd.ClientAuthConfig{Scheme: "plain", Credential: "@contoso/admin"},
 	}
 
 	out, err := entities(t, c, "holder", "ls")
@@ -299,7 +299,7 @@ func TestPlainReachesADeploymentWithNoControlPlane(t *testing.T) {
 
 	// And `bearer` against the same server does not, which is the half of the
 	// claim that says the setting is doing something.
-	c.Client.Auth = cmd.ClientAuthConfig{Scheme: "bearer", Credential: "@acme/admin"}
+	c.Client.Auth = cmd.ClientAuthConfig{Scheme: "bearer", Credential: "@contoso/admin"}
 
 	_, err = entities(t, c, "holder", "ls")
 	x.Error(err)
@@ -376,8 +376,8 @@ func TestTheSchemeSaysHowTheCredentialIsSent(t *testing.T) {
 
 	t.Run("plain is a slug, and the server believes it", func(t *testing.T) {
 		x := require.New(t)
-		x.Equal([]string{"Plain @acme/admin"},
-			sent(t, cmd.ClientAuthConfig{Scheme: "plain", Credential: "@acme/admin"}))
+		x.Equal([]string{"Plain @contoso/admin"},
+			sent(t, cmd.ClientAuthConfig{Scheme: "plain", Credential: "@contoso/admin"}))
 	})
 
 	t.Run("none sends nothing", func(t *testing.T) {
@@ -438,7 +438,7 @@ func TestACredentialWithNowhereToSendItIsRefused(t *testing.T) {
 
 	out, err := entities(t, c, "tenant", "ls")
 	x.NoError(err)
-	x.Contains(out, "acme")
+	x.Contains(out, "contoso")
 }
 
 // TestHalReadsTheDatabaseWhateverTheFileSays.
@@ -466,6 +466,6 @@ func TestHalReadsTheDatabaseWhateverTheFileSays(t *testing.T) {
 	// With it: the database, and the credential is deliberately unused.
 	out, err := entities(t, c, "--HAL", "tenant", "ls")
 	x.NoError(err)
-	x.Contains(out, "acme")
-	x.Contains(out, "hooli", "the local one has no wall, which is what it is for")
+	x.Contains(out, "contoso")
+	x.Contains(out, "fabrikam", "the local one has no wall, which is what it is for")
 }

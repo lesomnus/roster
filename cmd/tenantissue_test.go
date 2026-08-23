@@ -35,13 +35,13 @@ func TestACustomerMintsTheirOwnKeyOverTheWire(t *testing.T) {
 	b, ctx := build(t)
 
 	// She may mint keys, and may list the people in her tenant. Nothing else.
-	b.binds(t, b.AcmeUser, b.role(t, ctx, "self-serve", issueKey, listHolder), nil)
+	b.binds(t, b.ContosoUser, b.role(t, ctx, "self-serve", issueKey, listHolder), nil)
 
 	conn := served(t, b.Server)
-	wire := asOverTheWire(ctx, b.AcmeUser)
+	wire := asOverTheWire(ctx, b.ContosoUser)
 
 	res, err := app.NewIssueServiceClient(conn).IssueKey(wire, app.IssueKeyRequest_builder{
-		Holder:  app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Alias:   "ci",
 		Methods: []string{listHolder},
 	}.Build())
@@ -60,7 +60,7 @@ func TestACustomerMintsTheirOwnKeyOverTheWire(t *testing.T) {
 
 		v, err := b.Ent.ApiKey.Query().WithHolder().Only(ctx)
 		x.NoError(err)
-		x.Equal(b.AcmeUser.Uuid(), v.Edges.Holder.ID)
+		x.Equal(b.ContosoUser.Uuid(), v.Edges.Holder.ID)
 		x.Equal([]string{listHolder}, v.Methods)
 		x.Equal("ci", v.Alias)
 
@@ -94,13 +94,13 @@ func TestNobodyMintsAKeyWiderThanThemselves(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.binds(t, b.AcmeUser, b.role(t, ctx, "self-serve", issueKey, listHolder), nil)
+	b.binds(t, b.ContosoUser, b.role(t, ctx, "self-serve", issueKey, listHolder), nil)
 
 	conn := served(t, b.Server)
-	wire := asOverTheWire(ctx, b.AcmeUser)
+	wire := asOverTheWire(ctx, b.ContosoUser)
 
 	_, err := app.NewIssueServiceClient(conn).IssueKey(wire, app.IssueKeyRequest_builder{
-		Holder:  app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Alias:   "wider",
 		Methods: []string{listHolder, eraseHolder},
 	}.Build())
@@ -124,14 +124,14 @@ func TestNobodyMintsAKeyOnSomebodyElsesAccount(t *testing.T) {
 	b, ctx := build(t)
 
 	// The administrator, who may erase people.
-	boss := b.holder(t, ctx, b.Acme, "boss")
+	boss := b.holder(t, ctx, b.Contoso, "boss")
 	b.binds(t, boss, b.role(t, ctx, "admin", eraseHolder), nil)
 
 	// Alice, who may mint keys and list people, and cannot reach the boss.
-	b.binds(t, b.AcmeUser, b.role(t, ctx, "self-serve", issueKey, listHolder), nil)
+	b.binds(t, b.ContosoUser, b.role(t, ctx, "self-serve", issueKey, listHolder), nil)
 
 	conn := served(t, b.Server)
-	wire := asOverTheWire(ctx, b.AcmeUser)
+	wire := asOverTheWire(ctx, b.ContosoUser)
 
 	_, err := app.NewIssueServiceClient(conn).IssueKey(wire, app.IssueKeyRequest_builder{
 		// Only a method she holds, which is what makes this the interesting
@@ -154,11 +154,11 @@ func TestAKeyIsNotMintedIntoAnotherTenant(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	stranger := b.holder(t, ctx, b.Hooli, "stranger")
-	b.binds(t, b.AcmeUser, b.role(t, ctx, "self-serve", issueKey, listHolder), nil)
+	stranger := b.holder(t, ctx, b.Fabrikam, "stranger")
+	b.binds(t, b.ContosoUser, b.role(t, ctx, "self-serve", issueKey, listHolder), nil)
 
 	conn := served(t, b.Server)
-	wire := asOverTheWire(ctx, b.AcmeUser)
+	wire := asOverTheWire(ctx, b.ContosoUser)
 
 	_, err := app.NewIssueServiceClient(conn).IssueKey(wire, app.IssueKeyRequest_builder{
 		Holder:  app.HolderRef_builder{Id: stranger.Bytes()}.Build(),
@@ -181,10 +181,10 @@ func TestTheTwoPlanesNameAHolderTheirOwnWay(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	b.binds(t, b.AcmeUser, b.role(t, ctx, "self-serve", issueKey, listHolder), nil)
+	b.binds(t, b.ContosoUser, b.role(t, ctx, "self-serve", issueKey, listHolder), nil)
 
 	conn := served(t, b.Server)
-	wire := asOverTheWire(ctx, b.AcmeUser)
+	wire := asOverTheWire(ctx, b.ContosoUser)
 	c := app.NewIssueServiceClient(conn)
 
 	_, err := c.IssueKey(wire, app.IssueKeyRequest_builder{
@@ -197,7 +197,7 @@ func TestTheTwoPlanesNameAHolderTheirOwnWay(t *testing.T) {
 
 	_, err = c.IssueKey(wire, app.IssueKeyRequest_builder{
 		Service: "both",
-		Holder:  app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Alias:   "ci",
 		Methods: []string{listHolder},
 	}.Build())
@@ -205,7 +205,7 @@ func TestTheTwoPlanesNameAHolderTheirOwnWay(t *testing.T) {
 	x.Contains(status.Convert(err).Message(), "two ways")
 
 	_, err = c.IssueKey(wire, app.IssueKeyRequest_builder{
-		Holder: app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Alias:  "ci",
 	}.Build())
 	x.Equal(codes.InvalidArgument, status.Code(err))

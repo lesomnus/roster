@@ -27,8 +27,8 @@ const (
 //
 // # The question it exists to answer
 //
-// A multi-tenant app served at `acme.example.com` has to turn that name into a
-// tenant before it can look anybody up, and roster had no way to say. Every
+// A multi-tenant app served at `contoso.example.com` has to turn that name into
+// a tenant before it can look anybody up, and roster had no way to say. Every
 // front door held its own map instead -- `examples/sso` still takes one as
 // configuration -- which is a copy of a fact roster owns, in as many places as
 // there are apps, going stale independently.
@@ -37,8 +37,9 @@ const (
 // why: *a tenant is the same service under a different operator's own domain,
 // so the name the browser arrived at is the operator whose service they are
 // signing in to.* Where somebody **authenticates** is a different question,
-// often at another organisation entirely -- one of acme's people can perfectly
-// well have a personal Google account. That question is [MailDomain]'s.
+// often at another organisation entirely -- one of contoso's people can
+// perfectly well have a personal Google account. That question is
+// [MailDomain]'s.
 //
 // # Why it is a row rather than a field on Tenant
 //
@@ -52,17 +53,17 @@ const (
 //
 // Tenanted like everything else, so that an operator writes their own names and
 // sees nobody else's. But the read a front door makes happens **before anybody
-// has been resolved to a tenant** -- that is the whole point of it -- so it goes
-// through the unwalled server, exactly as `cmd.Resolver` and `vouch.Verify` do
-// and for the same stated reason: working out who somebody is cannot require
-// knowing who they are. `HostService` is what does that, and it answers with a
-// tenant identifier and nothing else.
+// has been resolved to a tenant** -- that is the whole point of it -- so it
+// goes through the unwalled server, exactly as `cmd.Resolver` and
+// `vouch.Verify` do and for the same stated reason: working out who somebody is
+// cannot require knowing who they are. `HostService` is what does that, and it
+// answers with a tenant identifier and nothing else.
 //
 // # The name is unique across the deployment
 //
-// Two operators cannot both own `acme.example.com`, so this is one of the few
-// constraints here that crosses the wall. What it costs is a small oracle --
-// the second operator to claim a name is told it is taken, by somebody they
+// Two operators cannot both own `contoso.example.com`, so this is one of the
+// few constraints here that crosses the wall. What it costs is a small oracle
+// -- the second operator to claim a name is told it is taken, by somebody they
 // cannot see -- and a hostname is a public fact, so that is the cheaper side of
 // the trade. `Email` deliberately went the other way, and D3 says why.
 //
@@ -257,7 +258,7 @@ type Host_builder struct {
 	Id     []byte
 	Tenant *Tenant
 	// The name a browser arrived at, lowercased and without a port:
-	// "acme.example.com".
+	// "contoso.example.com".
 	//
 	// Stored as it is compared. A host is case-insensitive and a port is not part
 	// of it, so whatever writes one normalises first -- `server/core` refuses one
@@ -286,16 +287,16 @@ func (b0 Host_builder) Build() *Host {
 
 // MailDomain is where the people at an address authenticate.
 //
-// "Addresses at `@acme.com` go to Entra." Identifier-first sign-in is the thing
-// every multi-tenant front door rewrites, and it is a fact about a tenant's
-// domains rather than about anybody in particular.
+// "Addresses at `@contoso.com` go to Entra." Identifier-first sign-in is the
+// thing every multi-tenant front door rewrites, and it is a fact about a
+// tenant's domains rather than about anybody in particular.
 //
 // # It hangs off the domain and not off a person, deliberately
 //
 // Answered per person it is an account-enumeration oracle: type an address, and
 // which provider comes back says whether that account is here. Answered per
 // domain it says nothing about any individual -- the answer for
-// `nobody@acme.com` is the answer for everybody at acme.
+// `nobody@contoso.com` is the answer for everybody at contoso.
 //
 // # What it names, and what it does not
 //
@@ -490,8 +491,8 @@ type MailDomain_builder struct {
 
 	Id     []byte
 	Tenant *Tenant
-	// The domain, lowercased and without the `@`: "acme.com". Normalised on the
-	// way in for [Host.name]'s reason.
+	// The domain, lowercased and without the `@`: "contoso.com". Normalised on
+	// the way in for [Host.name]'s reason.
 	Name string
 	// Which provider to send them to, by the name `Identity.provider` uses.
 	//

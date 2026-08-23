@@ -33,14 +33,14 @@ func TestATenantKeyIsTheirsAndNotTheDeploymentS(t *testing.T) {
 
 	// A second customer, so that "sees one tenant" is a claim with something to
 	// be wrong about.
-	hooli := add(t, ctx, b.Server, "hooli")
-	addHolder(t, ctx, b.Server, hooli, "erlich")
+	fabrikam := add(t, ctx, b.Server, "fabrikam")
+	addHolder(t, ctx, b.Server, fabrikam, "erlich")
 
 	const listHolders = "/roster.HolderService/List"
 
 	// Alice may list holders in her own tenant, the ordinary way.
 	role, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
-		Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:   "reader",
 		Methods: []string{listHolders},
 	}.Build())
@@ -65,7 +65,7 @@ func TestATenantKeyIsTheirsAndNotTheDeploymentS(t *testing.T) {
 		v, err := list(hers)
 		x.NoError(err)
 
-		// One tenant's worth of people. hooli exists and is not among them.
+		// One tenant's worth of people. fabrikam exists and is not among them.
 		for _, h := range v.GetItems() {
 			x.NotEqual("erlich", h.GetAlias(), "a customer's key read another customer")
 		}
@@ -80,8 +80,8 @@ func TestATenantKeyIsTheirsAndNotTheDeploymentS(t *testing.T) {
 
 		wide := keyFor(t, listHolders)
 
-		hooli := add(t, ctx, wide.Server, "hooli")
-		addHolder(t, ctx, wide.Server, hooli, "erlich")
+		fabrikam := add(t, ctx, wide.Server, "fabrikam")
+		addHolder(t, ctx, wide.Server, fabrikam, "erlich")
 
 		v, err := app.NewHolderServiceClient(wide.Conn).List(bearing(ctx, wide.Token),
 			app.HolderListRequest_builder{}.Build())
@@ -113,7 +113,7 @@ func TestATenantKeyIsTheirsAndNotTheDeploymentS(t *testing.T) {
 		x := require.New(t)
 
 		// Bob may do nothing -- no binding at all.
-		bob := addHolder(t, ctx, b.Server, b.Acme, "bob")
+		bob := addHolder(t, ctx, b.Server, b.Contoso, "bob")
 		his := mintFor(t, ctx, b, bob, "his-script", []string{listHolders}, time.Time{})
 
 		_, err := list(his)
@@ -196,7 +196,7 @@ func TestNobodyMintsAKeyForWhatTheyDoNotHold(t *testing.T) {
 
 	// Alice may mint keys, and may list holders. She may not erase one.
 	role, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
-		Tenant:  app.TenantRef_builder{Id: b.Acme.Bytes()}.Build(),
+		Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:   "minter",
 		Methods: []string{mint, listHolders},
 	}.Build())
@@ -214,7 +214,7 @@ func TestNobodyMintsAKeyForWhatTheyDoNotHold(t *testing.T) {
 	// in here. `ApiKeyService` is unregistered and closed, so there is no wire to
 	// go over -- see `cmd/serve.go`. What is being tested is the layer, and the
 	// layer runs behind the wall either way.
-	as := frame.Into(ctx, frame.New(b.Who, b.Acme, frame.Whole()).WithScope(frame.Only(b.Acme)))
+	as := frame.Into(ctx, frame.New(b.Who, b.Contoso, frame.Whole()).WithScope(frame.Only(b.Contoso)))
 
 	add := func(alias string, methods []string) (*app.ApiKey, error) {
 		return b.Walled.ApiKey().Add(as, app.ApiKeyAddRequest_builder{

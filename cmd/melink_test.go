@@ -22,12 +22,12 @@ func TestSomebodyAddsAWayIntoTheirOwnAccount(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	who := b.holder(t, ctx, b.Acme, "erin")
+	who := b.holder(t, ctx, b.Contoso, "erin")
 	b.identity(t, ctx, who, "google", "google-erin")
 
 	s := me.New(b.Ent, cmd.Everything(b.Ent), me.WithWrites(b.Walled))
 
-	v, err := s.Link(b.as(ctx, who, b.Acme), app.MeLinkRequest_builder{
+	v, err := s.Link(b.as(ctx, who, b.Contoso), app.MeLinkRequest_builder{
 		Provider: "entra",
 		Subject:  "entra-erin",
 	}.Build())
@@ -53,7 +53,7 @@ func TestSomebodyAddsAWayIntoTheirOwnAccount(t *testing.T) {
 
 		// `server/core` in as many words: *a second one is a link that found
 		// the wrong row, and linking it would join two people into one.*
-		_, err := s.Link(b.as(ctx, who, b.Acme), app.MeLinkRequest_builder{
+		_, err := s.Link(b.as(ctx, who, b.Contoso), app.MeLinkRequest_builder{
 			Provider: "google",
 			Subject:  "some-other-google",
 		}.Build())
@@ -63,10 +63,10 @@ func TestSomebodyAddsAWayIntoTheirOwnAccount(t *testing.T) {
 	t.Run("and one already somebody else's is refused without saying whose", func(t *testing.T) {
 		x := require.New(t)
 
-		other := b.holder(t, ctx, b.Acme, "somebody-else")
+		other := b.holder(t, ctx, b.Contoso, "somebody-else")
 		b.identity(t, ctx, other, "okta", "okta-taken")
 
-		_, err := s.Link(b.as(ctx, who, b.Acme), app.MeLinkRequest_builder{
+		_, err := s.Link(b.as(ctx, who, b.Contoso), app.MeLinkRequest_builder{
 			Provider: "okta",
 			Subject:  "okta-taken",
 		}.Build())
@@ -82,7 +82,7 @@ func TestSomebodyAddsAWayIntoTheirOwnAccount(t *testing.T) {
 	t.Run("and it takes a claim, not an empty one", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := s.Link(b.as(ctx, who, b.Acme), app.MeLinkRequest_builder{
+		_, err := s.Link(b.as(ctx, who, b.Contoso), app.MeLinkRequest_builder{
 			Subject: "no-provider",
 		}.Build())
 		x.Equal(codes.InvalidArgument, status.Code(err))

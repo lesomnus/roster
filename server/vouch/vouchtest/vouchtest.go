@@ -34,8 +34,8 @@ const (
 	// RelyingParty is the domain a credential is registered under, and Origin
 	// is where the browser was. A test that used one string for both would pass
 	// while the verifier compared the wrong pair.
-	RelyingParty = "acme.example"
-	Origin       = "https://acme.example"
+	RelyingParty = "contoso.example"
+	Origin       = "https://contoso.example"
 )
 
 // Authenticator is a WebAuthn authenticator, as much of one as a test needs.

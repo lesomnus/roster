@@ -532,7 +532,7 @@ func (s *Server) Unlink(ctx context.Context, req *app.MeUnlinkRequest) (*app.MeU
 // attached to somebody else comes back as a constraint failure. That is
 // answered as `AlreadyExists` with nothing about **whose** it is -- the same
 // care `Unlink` takes about an identifier that is not the caller's. Telling
-// somebody *that account belongs to alice@acme* would make this a lookup from
+// somebody *that account belongs to alice@contoso* would make this a lookup from
 // a provider subject to a person, which is a thing no caller here may do.
 func (s *Server) Link(ctx context.Context, req *app.MeLinkRequest) (*app.MeLinkResponse, error) {
 	f, ok := frame.From(ctx)

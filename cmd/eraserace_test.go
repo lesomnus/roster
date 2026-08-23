@@ -33,7 +33,7 @@ import (
 func TestErasingAMembershipThatIsNotThereSucceeds(t *testing.T) {
 	b, ctx := build(t)
 
-	seoul := b.site(t, ctx, b.Acme, "seoul")
+	seoul := b.site(t, ctx, b.Contoso, "seoul")
 	team := b.team(t, ctx, seoul, "operators")
 	role := b.role(t, ctx, "operator")
 
@@ -53,7 +53,7 @@ func TestErasingAMembershipThatIsNotThereSucceeds(t *testing.T) {
 	t.Run("the second erase of one membership", func(t *testing.T) {
 		x := require.New(t)
 
-		v := joins(t, b.AcmeUser)
+		v := joins(t, b.ContosoUser)
 
 		first, err := b.Ungated.TeamMembership().Erase(ctx, v.Ref())
 		x.NoError(err)
@@ -86,7 +86,7 @@ func TestErasingAMembershipThatIsNotThereSucceeds(t *testing.T) {
 
 		// Alice administers `operators` and holds no binding at all, so what
 		// she may do to `yours` is nothing.
-		alice := b.holder(t, ctx, b.Acme, "alice")
+		alice := b.holder(t, ctx, b.Contoso, "alice")
 		_, err := b.Ungated.TeamMembership().Add(ctx, app.TeamMembershipAddRequest_builder{
 			Holder: app.HolderRef_builder{Id: alice.Bytes()}.Build(),
 			Team:   app.TeamRef_builder{Id: team.Bytes()}.Build(),
@@ -94,7 +94,7 @@ func TestErasingAMembershipThatIsNotThereSucceeds(t *testing.T) {
 		}.Build())
 		x.NoError(err)
 
-		bob := b.holder(t, ctx, b.Acme, "bob")
+		bob := b.holder(t, ctx, b.Contoso, "bob")
 		theirs, err := b.Ungated.TeamMembership().Add(ctx, app.TeamMembershipAddRequest_builder{
 			Holder: app.HolderRef_builder{Id: bob.Bytes()}.Build(),
 			Team:   app.TeamRef_builder{Id: yours.Bytes()}.Build(),

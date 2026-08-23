@@ -663,8 +663,8 @@ export type VouchEnrolRequest = Message<"roster.VouchEnrolRequest"> & {
    * the challenge -- the three facts D20 named as the browser-facing half that
    * roster does not know. So it carries all four.
    *
-   *     {"rp_id": "acme.example",
-   *      "origins": ["https://acme.example"],
+   *     {"rp_id": "contoso.example",
+   *      "origins": ["https://contoso.example"],
    *      "challenge": "…",
    *      "response": { … what navigator.credentials.create() gave … }}
    *
@@ -1089,8 +1089,8 @@ export const VouchService: GenService<{
    * somebody who does: a token, and an expiry. So does one for somebody in
    * **another tenant**, which is the same sentence with the wall in it: the
    * person is read through the walled server, so who is elsewhere is no more
-   * this caller's to learn than who is here at all. Otherwise the *sending* of a
-   * link answers *is this address here*, which is the question the whole
+   * this caller's to learn than who is here at all. Otherwise the *sending* of
+   * a link answers *is this address here*, which is the question the whole
    * careful set of equal-cost refusals exists to refuse -- asked through a form
    * that is meant to be filled in by strangers.
    *

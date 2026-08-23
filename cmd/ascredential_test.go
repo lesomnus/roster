@@ -43,9 +43,9 @@ import (
 
 // permits binds a role of the named tenant to somebody.
 //
-// `mayList` is the same thing for one method in acme; this takes the tenant and
+// `mayList` is the same thing for one method in contoso; this takes the tenant and
 // the list, because half of what is being measured below is a caller in one
-// tenant reaching into another, and a helper that can only write acme's roles
+// tenant reaching into another, and a helper that can only write contoso's roles
 // cannot set that up.
 func permits(t *testing.T, ctx context.Context, b *keyedBuilt, in, who pdid.Id, alias string, methods ...string) {
 	t.Helper()
@@ -118,13 +118,13 @@ func rekeyed(t *testing.T, ctx context.Context, b *keyedBuilt, svc pdid.Id, alia
 // cannot reach into another, and that narrowing is the generated one.* `Link` is
 // the one that is not, and it is the one that needs no secret to spend.
 //
-// So the whole of it is two calls. Somebody in acme who holds
+// So the whole of it is two calls. Somebody in contoso who holds
 // `VouchService/Link` and `VouchService/Redeem` -- two entries in one role, not
-// an administrator, nothing that mentions hooli -- names a hooli person by
+// an administrator, nothing that mentions fabrikam -- names a fabrikam person by
 // tenant alias and user alias, is handed a link for them, redeems it, and is
 // holding a delegation that roster answers as that person. From there
-// `roster-as` reads hooli's rows, with hooli's bindings, under hooli's tenant,
-// from a credential that belongs to acme.
+// `roster-as` reads fabrikam's rows, with fabrikam's bindings, under fabrikam's tenant,
+// from a credential that belongs to contoso.
 //
 // The third method she holds is `HolderService/List`, which is an ordinary
 // thing to be able to do inside your own tenant and is here only so that the
@@ -151,15 +151,15 @@ func TestNobodyMintsAWayIntoAnotherTenant(t *testing.T) {
 	ctx := t.Context()
 
 	// A second customer with somebody in it, who may read their own tenant.
-	hooli := add(t, ctx, b.Server, "hooli")
-	erlich := addHolder(t, ctx, b.Server, hooli, "erlich")
-	permits(t, ctx, b, hooli, erlich, "hooli-reader", listHolders)
+	fabrikam := add(t, ctx, b.Server, "fabrikam")
+	erlich := addHolder(t, ctx, b.Server, fabrikam, "erlich")
+	permits(t, ctx, b, fabrikam, erlich, "fabrikam-reader", listHolders)
 
-	// And somebody in acme with those two methods, plus the ordinary right to
+	// And somebody in contoso with those two methods, plus the ordinary right to
 	// read her own tenant. Deliberately not the tenant's administrator: what is
 	// being measured is the smallest standing that reaches, and it turns out to
 	// be two entries in one role.
-	permits(t, ctx, b, b.Acme, b.Who, "front-door", link, redeem, listHolders)
+	permits(t, ctx, b, b.Contoso, b.Who, "front-door", link, redeem, listHolders)
 	hers := mintFor(t, ctx, b, b.Who, "her-login-app",
 		[]string{link, redeem, listHolders}, time.Time{})
 
@@ -172,19 +172,19 @@ func TestNobodyMintsAWayIntoAnotherTenant(t *testing.T) {
 	t.Run("her tenant's wall stops her writing his password", func(t *testing.T) {
 		x := require.New(t)
 
-		permits(t, ctx, b, b.Acme, b.Who, "setter", "/roster.VouchService/Set")
+		permits(t, ctx, b, b.Contoso, b.Who, "setter", "/roster.VouchService/Set")
 
 		_, err := c.Set(bearing(ctx, mintFor(t, ctx, b, b.Who, "setter-key",
 			[]string{"/roster.VouchService/Set"}, time.Time{})),
 			app.VouchSetRequest_builder{
-				Who:    app.VouchWho_builder{Tenant: "hooli", Alias: "erlich"}.Build(),
+				Who:    app.VouchWho_builder{Tenant: "fabrikam", Alias: "erlich"}.Build(),
 				Secret: []byte("correct horse battery staple"),
 			}.Build())
-		x.Error(err, "an acme caller wrote a hooli password")
+		x.Error(err, "an contoso caller wrote a fabrikam password")
 	})
 
 	made, err := c.Link(as, app.VouchLinkRequest_builder{
-		Who: app.VouchWho_builder{Tenant: "hooli", Alias: "erlich"}.Build(),
+		Who: app.VouchWho_builder{Tenant: "fabrikam", Alias: "erlich"}.Build(),
 	}.Build())
 	x.NoError(err, "asking is allowed to succeed -- TestAskingForALinkSaysNothingAboutWhoIsHere")
 
@@ -193,7 +193,7 @@ func TestNobodyMintsAWayIntoAnotherTenant(t *testing.T) {
 	// must never have been written.
 	n, err := b.Ent.Link.Query().Count(ctx)
 	x.NoError(err)
-	a.Zero(n, "a caller in acme was written a way into a hooli account")
+	a.Zero(n, "a caller in contoso was written a way into a fabrikam account")
 
 	res, err := c.Redeem(as, app.VouchRedeemRequest_builder{
 		Token:   made.GetToken(),
@@ -201,11 +201,11 @@ func TestNobodyMintsAWayIntoAnotherTenant(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 	a.False(res.GetVerified().GetOk(),
-		"a caller in acme signed in as somebody in hooli, holding nothing of theirs")
+		"a caller in contoso signed in as somebody in fabrikam, holding nothing of theirs")
 	a.Empty(res.GetToken(), "and was handed a credential for them")
 
 	// And the end of it, which is what the two calls above are worth: roster
-	// answering hooli's rows to an acme credential, as a hooli person.
+	// answering fabrikam's rows to an contoso credential, as a fabrikam person.
 	if res.GetToken() == "" {
 		return
 	}
@@ -216,7 +216,7 @@ func TestNobodyMintsAWayIntoAnotherTenant(t *testing.T) {
 
 	for _, h := range v.GetItems() {
 		a.NotEqual("erlich", h.GetAlias(),
-			"an acme credential read hooli, as a hooli person")
+			"an contoso credential read fabrikam, as a fabrikam person")
 	}
 }
 
@@ -241,14 +241,14 @@ func TestNobodyMintsAWayIntoAnotherTenant(t *testing.T) {
 //
 // So the assertion is not only the code. It is that the tenant the app was
 // **not** acting for stays unread, because `Unauthenticated` is what a fall-
-// through would not produce and reading hooli is what it would.
+// through would not produce and reading fabrikam is what it would.
 func TestADelegationThatDoesNotCheckOutIsNotTheAppInstead(t *testing.T) {
 	x := require.New(t)
 	b := keyFor(t, listHolders, delegate)
 	ctx := t.Context()
 
-	hooli := add(t, ctx, b.Server, "hooli")
-	addHolder(t, ctx, b.Server, hooli, "erlich")
+	fabrikam := add(t, ctx, b.Server, "fabrikam")
+	addHolder(t, ctx, b.Server, fabrikam, "erlich")
 
 	mayList(t, ctx, b, b.Who, listHolders)
 
@@ -430,8 +430,8 @@ func TestATenantKeysDelegationIsBoundToThePersonAndNotToTheKey(t *testing.T) {
 	b := keyFor(t, verify)
 	ctx := t.Context()
 
-	bob := addHolder(t, ctx, b.Server, b.Acme, "bob")
-	carol := addHolder(t, ctx, b.Server, b.Acme, "carol")
+	bob := addHolder(t, ctx, b.Server, b.Contoso, "bob")
+	carol := addHolder(t, ctx, b.Server, b.Contoso, "carol")
 
 	// Bob is who gets signed in; Alice and Carol are two colleagues who both
 	// run something that signs people in.
@@ -441,9 +441,9 @@ func TestATenantKeysDelegationIsBoundToThePersonAndNotToTheKey(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	permits(t, ctx, b, b.Acme, b.Who, "signer-alice", delegate, listHolders)
-	permits(t, ctx, b, b.Acme, carol, "signer-carol", delegate, listHolders)
-	permits(t, ctx, b, b.Acme, bob, "reader-bob", listHolders)
+	permits(t, ctx, b, b.Contoso, b.Who, "signer-alice", delegate, listHolders)
+	permits(t, ctx, b, b.Contoso, carol, "signer-carol", delegate, listHolders)
+	permits(t, ctx, b, b.Contoso, bob, "reader-bob", listHolders)
 
 	allowed := []string{delegate, listHolders}
 	alice := mintFor(t, ctx, b, b.Who, "alice-one", allowed, time.Time{})
@@ -554,7 +554,7 @@ func TestSigningOutReachesThePortWithNoWall(t *testing.T) {
 
 		n, err := s.Ent.Tenant.Query().Count(ctx)
 		x.NoError(err)
-		x.Equal(2, n, "a signed-out console wrote a customer") // acme, and `before`
+		x.Equal(2, n, "a signed-out console wrote a customer") // contoso, and `before`
 	})
 
 	// And a key is not a way round it. `rk_` is the deployment's own credential

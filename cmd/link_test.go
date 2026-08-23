@@ -145,17 +145,17 @@ func TestAskingForALinkSaysNothingAboutWhoIsHere(t *testing.T) {
 
 	_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
 		Holder:  app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
-		Address: "someone@acme.example",
+		Address: "someone@contoso.example",
 	}.Build())
 	x.NoError(err)
 
 	real, err := c.Link(as, app.VouchLinkRequest_builder{
-		Who: app.VouchWho_builder{Tenant: "acme", Address: "someone@acme.example"}.Build(),
+		Who: app.VouchWho_builder{Tenant: "contoso", Address: "someone@contoso.example"}.Build(),
 	}.Build())
 	x.NoError(err)
 
 	stranger, err := c.Link(as, app.VouchLinkRequest_builder{
-		Who: app.VouchWho_builder{Tenant: "acme", Address: "nobody@acme.example"}.Build(),
+		Who: app.VouchWho_builder{Tenant: "contoso", Address: "nobody@contoso.example"}.Build(),
 	}.Build())
 	x.NoError(err)
 

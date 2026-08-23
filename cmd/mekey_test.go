@@ -29,9 +29,9 @@ func TestSomebodyMintsAKeyThatActsAsThem(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	who := b.holder(t, ctx, b.Acme, "erin")
+	who := b.holder(t, ctx, b.Contoso, "erin")
 	s := me.New(b.Ent, cmd.Everything(b.Ent), me.WithWrites(b.Walled))
-	as := b.as(ctx, who, b.Acme)
+	as := b.as(ctx, who, b.Contoso)
 
 	v, err := s.IssueKey(as, app.MeIssueKeyRequest_builder{
 		Alias:   "the-nightly-job",
@@ -114,7 +114,7 @@ func TestNobodyMintsThemselvesAKeyWiderThanTheyAre(t *testing.T) {
 	const mine = "/roster.MeService/Get"
 	const theirs = "/roster.HolderService/Erase"
 
-	who := b.holder(t, ctx, b.Acme, "erin")
+	who := b.holder(t, ctx, b.Contoso, "erin")
 	as := b.mayCall(t, ctx, who, "modest", mine, app.MeService_IssueKey_FullMethodName)
 
 	s := me.New(b.Ent, cmd.Everything(b.Ent), me.WithWrites(b.Walled))
@@ -150,16 +150,16 @@ func TestARevokeIsAWhichAndNeverAWhose(t *testing.T) {
 
 	s := me.New(b.Ent, cmd.Everything(b.Ent), me.WithWrites(b.Walled))
 
-	who := b.holder(t, ctx, b.Acme, "erin")
-	other := b.holder(t, ctx, b.Acme, "sam")
+	who := b.holder(t, ctx, b.Contoso, "erin")
+	other := b.holder(t, ctx, b.Contoso, "sam")
 
-	v, err := s.IssueKey(b.as(ctx, other, b.Acme), app.MeIssueKeyRequest_builder{
+	v, err := s.IssueKey(b.as(ctx, other, b.Contoso), app.MeIssueKeyRequest_builder{
 		Alias:   "sams",
 		Methods: []string{app.MeService_Get_FullMethodName},
 	}.Build())
 	x.NoError(err)
 
-	_, err = s.RevokeKey(b.as(ctx, who, b.Acme), app.MeRevokeKeyRequest_builder{
+	_, err = s.RevokeKey(b.as(ctx, who, b.Contoso), app.MeRevokeKeyRequest_builder{
 		Id: v.GetKey().GetId(),
 	}.Build())
 	x.Equal(codes.NotFound, status.Code(err))
@@ -180,9 +180,9 @@ func TestAKeyThatAllowsNothingIsRefusedRatherThanMinted(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	who := b.holder(t, ctx, b.Acme, "erin")
+	who := b.holder(t, ctx, b.Contoso, "erin")
 	s := me.New(b.Ent, cmd.Everything(b.Ent), me.WithWrites(b.Walled))
-	as := b.as(ctx, who, b.Acme)
+	as := b.as(ctx, who, b.Contoso)
 
 	_, err := s.IssueKey(as, app.MeIssueKeyRequest_builder{
 		Methods: []string{app.MeService_Get_FullMethodName},

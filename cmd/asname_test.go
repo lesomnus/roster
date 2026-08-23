@@ -84,11 +84,11 @@ func TestNobodyWritesAWayInForSomebodyWiderThanThey(t *testing.T) {
 	b, ctx := build(t)
 
 	// The administrator, who may erase anybody.
-	boss := b.holder(t, ctx, b.Acme, "boss")
+	boss := b.holder(t, ctx, b.Contoso, "boss")
 	b.mayCall(t, ctx, boss, "admin", eraseHold, listHolders)
 
 	// And the desk, who may write down who somebody is and nothing else.
-	desk := b.holder(t, ctx, b.Acme, "desk")
+	desk := b.holder(t, ctx, b.Contoso, "desk")
 	asDesk := b.mayCall(t, ctx, desk, "desk", addIdentity, addAddress)
 
 	// A mailbox the desk reads, which is the whole of the attack: whatever
@@ -165,7 +165,7 @@ func TestNobodyWritesAWayInForSomebodyWiderThanThey(t *testing.T) {
 		v := b.operated()
 
 		made, err := v.Link(asDesk, app.VouchLinkRequest_builder{
-			Who: app.VouchWho_builder{Tenant: "acme", Address: mailbox}.Build(),
+			Who: app.VouchWho_builder{Tenant: "contoso", Address: mailbox}.Build(),
 		}.Build())
 		x.NoError(err)
 
@@ -199,18 +199,18 @@ func TestAnAddressNamesOnePersonInATenant(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	const theirs = "someone@acme.example"
+	const theirs = "someone@contoso.example"
 
 	_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
-		Holder:  app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Address: theirs,
 	}.Build())
 	x.NoError(err)
-	b.sets(t, ctx, b.AcmeUser, "the password they chose")
+	b.sets(t, ctx, b.ContosoUser, "the password they chose")
 
 	// Somebody else in the same tenant, with a password of their own so that
 	// which row answered is visible in the answer rather than inferred.
-	alice := b.holder(t, ctx, b.Acme, "alice")
+	alice := b.holder(t, ctx, b.Contoso, "alice")
 	b.sets(t, ctx, alice, "the one alice chose")
 
 	_, err = b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
@@ -219,14 +219,14 @@ func TestAnAddressNamesOnePersonInATenant(t *testing.T) {
 	}.Build())
 	x.Equal(codes.AlreadyExists, status.Code(err))
 
-	res := b.verifiesAt(t, ctx, "acme", theirs, "the password they chose")
+	res := b.verifiesAt(t, ctx, "contoso", theirs, "the password they chose")
 	x.True(res.GetOk(), "their own password stopped opening their own address")
-	x.Equal(b.AcmeUser.Bytes(), res.GetHolder())
+	x.Equal(b.ContosoUser.Bytes(), res.GetHolder())
 
 	// And the direction the refusal exists for. Alice's password at an address
 	// that is not hers is the same nothing anybody else gets, and the answer
 	// carries no holder -- told apart, a refusal would say whose address it is.
-	res = b.verifiesAt(t, ctx, "acme", theirs, "the one alice chose")
+	res = b.verifiesAt(t, ctx, "contoso", theirs, "the one alice chose")
 	x.False(res.GetOk(), "alice's password opened somebody else's address")
 	x.Empty(res.GetHolder())
 }
@@ -239,9 +239,9 @@ func TestAnAddressNamesOnePersonInATenant(t *testing.T) {
 // not canonical anything. Nothing normalises the write, so those two do not
 // agree, and everything between them is a second row for one address:
 //
-//	The victim's address arrived from Entra as `Someone@Acme.example`,
+//	The victim's address arrived from Entra as `Someone@Contoso.example`,
 //	which is how it is stored, because nothing lowered it.
-//	Alice adds `someone@acme.example` to her own Holder. The index compares
+//	Alice adds `someone@contoso.example` to her own Holder. The index compares
 //	two different strings and agrees.
 //	The victim types their own address at the sign-in screen. It is lowered,
 //	it finds Alice's row, and roster answers that this address is Alice.
@@ -270,14 +270,14 @@ func TestAnAddressIsStoredAsItIsLookedUp(t *testing.T) {
 	// As a provider's claims carry it, which is where most addresses here come
 	// from and is why this is the write that has to be refused rather than a
 	// spelling nobody would produce.
-	const asSent = "Someone@Acme.example"
-	const stored = "someone@acme.example"
+	const asSent = "Someone@Contoso.example"
+	const stored = "someone@contoso.example"
 
 	t.Run("the write says what it should have been", func(t *testing.T) {
 		x := require.New(t)
 
 		_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
-			Holder:  app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+			Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Address: asSent,
 		}.Build())
 		x.Equal(codes.InvalidArgument, status.Code(err))
@@ -287,13 +287,13 @@ func TestAnAddressIsStoredAsItIsLookedUp(t *testing.T) {
 
 	// So this is what is there, and it is the only form there can be.
 	_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
-		Holder:  app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Address: stored,
 	}.Build())
 	require.NoError(t, err)
-	b.sets(t, ctx, b.AcmeUser, "the password they chose")
+	b.sets(t, ctx, b.ContosoUser, "the password they chose")
 
-	alice := b.holder(t, ctx, b.Acme, "alice")
+	alice := b.holder(t, ctx, b.Contoso, "alice")
 	b.sets(t, ctx, alice, "the one alice chose")
 
 	// Every one of these is the same address, and each is a way the second row
@@ -302,12 +302,12 @@ func TestAnAddressIsStoredAsItIsLookedUp(t *testing.T) {
 	// does the person typing it in.
 	t.Run("and no way of writing it is a second row", func(t *testing.T) {
 		for _, tc := range []struct{ desc, address string }{
-			{"the local part in capitals", "SOMEONE@acme.example"},
-			{"the domain in capitals", "someone@ACME.EXAMPLE"},
+			{"the local part in capitals", "SOMEONE@contoso.example"},
+			{"the domain in capitals", "someone@CONTOSO.EXAMPLE"},
 			{"as the provider sent it", asSent},
 			{"exactly as it is stored", stored},
-			{"a space in front", " someone@acme.example"},
-			{"a space behind", "someone@acme.example "},
+			{"a space in front", " someone@contoso.example"},
+			{"a space behind", "someone@contoso.example "},
 		} {
 			t.Run(tc.desc, func(t *testing.T) {
 				x := require.New(t)
@@ -333,11 +333,11 @@ func TestAnAddressIsStoredAsItIsLookedUp(t *testing.T) {
 	t.Run("and the address answers with the person whose it is", func(t *testing.T) {
 		x := require.New(t)
 
-		res := b.verifiesAt(t, ctx, "acme", stored, "the password they chose")
+		res := b.verifiesAt(t, ctx, "contoso", stored, "the password they chose")
 		x.True(res.GetOk(), "their own password no longer opens their own address")
-		x.Equal(b.AcmeUser.Bytes(), res.GetHolder())
+		x.Equal(b.ContosoUser.Bytes(), res.GetHolder())
 
-		res = b.verifiesAt(t, ctx, "acme", stored, "the one alice chose")
+		res = b.verifiesAt(t, ctx, "contoso", stored, "the one alice chose")
 		x.False(res.GetOk(), "alice's password opened the victim's address")
 		x.NotEqual(alice.Bytes(), res.GetHolder(),
 			"roster answered that the victim's address is alice")
@@ -351,8 +351,8 @@ func TestAnAddressIsStoredAsItIsLookedUp(t *testing.T) {
 	t.Run("and it is found however it is typed", func(t *testing.T) {
 		x := require.New(t)
 
-		for _, typed := range []string{asSent, " " + stored + " ", "SOMEONE@ACME.EXAMPLE"} {
-			res := b.verifiesAt(t, ctx, "acme", typed, "the password they chose")
+		for _, typed := range []string{asSent, " " + stored + " ", "SOMEONE@CONTOSO.EXAMPLE"} {
+			res := b.verifiesAt(t, ctx, "contoso", typed, "the password they chose")
 			x.True(res.GetOk(), "%q did not reach the row it names", typed)
 		}
 	})
@@ -387,8 +387,8 @@ func (b *built) verifiesAt(t *testing.T, ctx context.Context, tenant, address, s
 // rather than a refusal -- that such a person exists is itself not to be said.
 //
 // The slug is the same claim asked as a read, and it is here because it is the
-// one shape where being answered *something* is plausible: `@hooli/someone`
-// and `@acme/someone` are the same alias, so a resolution that fell back to
+// one shape where being answered *something* is plausible: `@fabrikam/someone`
+// and `@contoso/someone` are the same alias, so a resolution that fell back to
 // the caller's own tenant when it could not see the named one would answer
 // with somebody real, whose row reads correctly, in a tenant the caller may
 // see -- and every read after it would be about the wrong person.
@@ -397,58 +397,58 @@ func TestNamingSomebodyInAnotherTenantNamesNobody(t *testing.T) {
 
 	// The same alias in both tenants, which is what makes an alias a name
 	// rather than an identifier -- and is the case a wrong answer hides in.
-	theirs := b.holder(t, ctx, b.Hooli, "someone")
+	theirs := b.holder(t, ctx, b.Fabrikam, "someone")
 
-	asAcme := b.as(ctx, b.AcmeUser, b.Acme)
-	asHooli := b.as(ctx, theirs, b.Hooli)
+	asContoso := b.as(ctx, b.ContosoUser, b.Contoso)
+	asFabrikam := b.as(ctx, theirs, b.Fabrikam)
 
 	t.Run("an identity written onto their person", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := b.Walled.Identity().Add(asAcme, app.IdentityAddRequest_builder{
+		_, err := b.Walled.Identity().Add(asContoso, app.IdentityAddRequest_builder{
 			Holder:   app.HolderRef_builder{Id: theirs.Bytes()}.Build(),
 			Provider: "github",
 			Subject:  "1074321",
 		}.Build())
 		x.Equal(codes.NotFound, status.Code(err),
-			"acme linked an account to somebody in hooli")
+			"contoso linked an account to somebody in fabrikam")
 
 		// And back the other way, because a wall that holds in one direction
 		// and not the other is a wall that was written for the test.
-		_, err = b.Walled.Identity().Add(asHooli, app.IdentityAddRequest_builder{
-			Holder:   app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
+		_, err = b.Walled.Identity().Add(asFabrikam, app.IdentityAddRequest_builder{
+			Holder:   app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Provider: "github",
 			Subject:  "2200002",
 		}.Build())
 		x.Equal(codes.NotFound, status.Code(err),
-			"hooli linked an account to somebody in acme")
+			"fabrikam linked an account to somebody in contoso")
 	})
 
 	t.Run("an address written onto their person", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := b.Walled.Email().Add(asAcme, app.EmailAddRequest_builder{
+		_, err := b.Walled.Email().Add(asContoso, app.EmailAddRequest_builder{
 			Holder:  app.HolderRef_builder{Id: theirs.Bytes()}.Build(),
-			Address: "acme@acme.example",
+			Address: "contoso@contoso.example",
 		}.Build())
 		x.Equal(codes.NotFound, status.Code(err),
-			"acme put a mailbox of its own on somebody in hooli")
+			"contoso put a mailbox of its own on somebody in fabrikam")
 
-		_, err = b.Walled.Email().Add(asHooli, app.EmailAddRequest_builder{
-			Holder:  app.HolderRef_builder{Id: b.AcmeUser.Bytes()}.Build(),
-			Address: "hooli@hooli.example",
+		_, err = b.Walled.Email().Add(asFabrikam, app.EmailAddRequest_builder{
+			Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+			Address: "fabrikam@fabrikam.example",
 		}.Build())
 		x.Equal(codes.NotFound, status.Code(err),
-			"hooli put a mailbox of its own on somebody in acme")
+			"fabrikam put a mailbox of its own on somebody in contoso")
 	})
 
 	t.Run("and a slug that names their tenant", func(t *testing.T) {
 		x := require.New(t)
 
-		v, err := b.Walled.Holder().Get(asAcme, app.HolderGetRequest_builder{
+		v, err := b.Walled.Holder().Get(asContoso, app.HolderGetRequest_builder{
 			Ref: app.HolderRef_builder{
 				Slug: app.HolderRefBySlug_builder{
-					Tenant: app.TenantRef_builder{Alias: z.Ptr("hooli")}.Build(),
+					Tenant: app.TenantRef_builder{Alias: z.Ptr("fabrikam")}.Build(),
 					Alias:  z.Ptr("someone"),
 				}.Build(),
 			}.Build(),
@@ -456,11 +456,11 @@ func TestNamingSomebodyInAnotherTenantNamesNobody(t *testing.T) {
 		x.Equal(codes.NotFound, status.Code(err))
 
 		// Neither of the two people it could have been. The second is the one
-		// worth asserting: answered with acme's own `someone`, every read
+		// worth asserting: answered with contoso's own `someone`, every read
 		// after it is about the right tenant and the wrong person, and nothing
 		// in the answer says so.
-		x.NotEqual(theirs.Bytes(), v.GetId(), "acme read hooli's person")
-		x.NotEqual(b.AcmeUser.Bytes(), v.GetId(),
+		x.NotEqual(theirs.Bytes(), v.GetId(), "contoso read fabrikam's person")
+		x.NotEqual(b.ContosoUser.Bytes(), v.GetId(),
 			"a slug naming another tenant was answered from the caller's own")
 	})
 }
@@ -484,9 +484,9 @@ func TestASubjectIsNotANameWithoutItsTenant(t *testing.T) {
 	b, ctx := build(t)
 
 	// One Google account, at two operators. Two people, by design.
-	theirs := b.holder(t, ctx, b.Hooli, "someone")
+	theirs := b.holder(t, ctx, b.Fabrikam, "someone")
 	b.identity(t, ctx, theirs, "github", "1074321")
-	b.identity(t, ctx, b.AcmeUser, "github", "1074321")
+	b.identity(t, ctx, b.ContosoUser, "github", "1074321")
 
 	at := func(tenant pdid.Id) *app.IdentityGetRequest {
 		return app.IdentityGetRequest_builder{
@@ -528,11 +528,11 @@ func TestASubjectIsNotANameWithoutItsTenant(t *testing.T) {
 	t.Run("and with a tenant it is that tenant's person", func(t *testing.T) {
 		x := require.New(t)
 
-		v, err := b.Ungated.Identity().Get(ctx, at(b.Acme))
+		v, err := b.Ungated.Identity().Get(ctx, at(b.Contoso))
 		x.NoError(err)
-		x.Equal(b.AcmeUser.Bytes(), v.GetHolder().GetId())
+		x.Equal(b.ContosoUser.Bytes(), v.GetHolder().GetId())
 
-		v, err = b.Ungated.Identity().Get(ctx, at(b.Hooli))
+		v, err = b.Ungated.Identity().Get(ctx, at(b.Fabrikam))
 		x.NoError(err)
 		x.Equal(theirs.Bytes(), v.GetHolder().GetId())
 	})
@@ -542,9 +542,9 @@ func TestASubjectIsNotANameWithoutItsTenant(t *testing.T) {
 	t.Run("and naming another tenant answers with nothing", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := b.Walled.Identity().Get(b.as(ctx, b.AcmeUser, b.Acme), at(b.Hooli))
+		_, err := b.Walled.Identity().Get(b.as(ctx, b.ContosoUser, b.Contoso), at(b.Fabrikam))
 		x.Equal(codes.NotFound, status.Code(err),
-			"acme read who signs in to hooli with that account")
+			"contoso read who signs in to fabrikam with that account")
 	})
 }
 
@@ -575,7 +575,7 @@ func TestASubjectIsNotANameWithoutItsTenant(t *testing.T) {
 func TestAnIdentifierNamesOnlyItsOwnKind(t *testing.T) {
 	b, ctx := build(t)
 
-	seoul := b.site(t, ctx, b.Acme, "seoul")
+	seoul := b.site(t, ctx, b.Contoso, "seoul")
 
 	// The same sixteen bytes with the domain rewritten to say `holder`. It is
 	// one line to write, which is the point: the byte is part of the request
@@ -594,7 +594,7 @@ func TestAnIdentifierNamesOnlyItsOwnKind(t *testing.T) {
 
 			_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
 				Holder:  app.HolderRef_builder{Id: tc.who.Bytes()}.Build(),
-				Address: "seoul@acme.example",
+				Address: "seoul@contoso.example",
 			}.Build())
 			x.Equal(codes.InvalidArgument, status.Code(err),
 				"an address was written for something that is not a person")

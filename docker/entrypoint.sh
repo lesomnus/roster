@@ -37,7 +37,7 @@ set -eu
 
 : "${ROSTER_ROOT_USER:=admin}"
 : "${ROSTER_ROOT_PASSWORD:=admin}"
-: "${ROSTER_SEED_TENANT:=acme}"
+: "${ROSTER_SEED_TENANT:=contoso}"
 : "${ROSTER_SEED_HOLDER:=admin}"
 : "${ROSTER_STATE:=/var/lib/roster}"
 

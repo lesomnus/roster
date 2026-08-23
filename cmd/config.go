@@ -267,7 +267,7 @@ type ClientAuthConfig struct {
 	//	bearer  an API key, checked against the control plane. What a
 	//	        deployment serving anybody uses.
 	//	plain   the caller says who it is and is believed, so the credential is
-	//	        a slug: "@acme/admin". It is what this app serves with **no
+	//	        a slug: "@contoso/admin". It is what this app serves with **no
 	//	        control plane configured**, which is a sandbox and not something
 	//	        to serve where anyone can reach it.
 	//	none    send nothing. For a port that authenticates at the transport --
