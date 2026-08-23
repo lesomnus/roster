@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file payday/entity.proto.
  */
 export const file_payday_entity: GenFile = /*@__PURE__*/
-  fileDesc("ChNwYXlkYXkvZW50aXR5LnByb3RvEgZwYXlkYXkihwUKBkVudGl0eRIOCgZkb21haW4YASABKA0SDAoEbmFtZRgCIAEoCRInCgZ0ZW5hbnQYAyABKAsyFS5wYXlkYXkuRW50aXR5LlRlbmFudEgAEisKCHRlbmFudGVkGAQgASgLMhcucGF5ZGF5LkVudGl0eS5UZW5hbnRlZEgAEicKBmdsb2JhbBgFIAEoCzIVLnBheWRheS5FbnRpdHkuR2xvYmFsSAASIQoEbGlzdBgGIAEoCzITLnBheWRheS5FbnRpdHkuTGlzdBIjCgV3YXRjaBgHIAEoCzIULnBheWRheS5FbnRpdHkuV2F0Y2gSIwoFZXJhc2UYCCABKAsyFC5wYXlkYXkuRW50aXR5LkVyYXNlEhgKA293bhgJIAEoDjILLnBheWRheS5Pd24aCAoGVGVuYW50GkUKCFRlbmFudGVkEgsKA3ZpYRgBIAEoCRINCgVmaWVsZBgCIAMoCRINCgVzdGFtcBgDIAEoCRIOCgZhZ3JlZXMYBCADKAkaCAoGR2xvYmFsGioKBUVyYXNlEiEKBGhhcmQYASABKAsyEy5wYXlkYXkuRW50aXR5LkhhcmQaBgoESGFyZBqFAQoETGlzdBIjCgVvcmRlchgBIAMoCzIULnBheWRheS5FbnRpdHkuT3JkZXISFgoEd2l0aBgCIAMoCzIILm9ybS5SZWYSFAoCYnkYAyADKAsyCC5vcm0uUmVmEgwKBHNpemUYBCABKA0SCwoDbWF4GAUgASgNEg8KB2ZpbHRlcnMYBiABKA0aBwoFV2F0Y2gaLgoFT3JkZXISFwoFZmllbGQYASABKAsyCC5vcm0uUmVmEgwKBGRlc2MYAiABKAhCCQoHdGVuYW5jeSIXCgVGaWVsZBIOCgZzZWNyZXQYASABKAgqWQoDT3duEhMKD09XTl9VTlNQRUNJRklFRBAAEg4KCk9XTl9URU5BTlQQARIOCgpPV05fSE9MREVSEAISDQoJT1dOX0FVRElUEAMSDgoKT1dOX09VVEJPWBAEQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcGF5ZGF5L3BkcGKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_orm_ref]);
+  fileDesc("ChNwYXlkYXkvZW50aXR5LnByb3RvEgZwYXlkYXkihwUKBkVudGl0eRIOCgZkb21haW4YASABKA0SDAoEbmFtZRgCIAEoCRInCgZ0ZW5hbnQYAyABKAsyFS5wYXlkYXkuRW50aXR5LlRlbmFudEgAEisKCHRlbmFudGVkGAQgASgLMhcucGF5ZGF5LkVudGl0eS5UZW5hbnRlZEgAEicKBmdsb2JhbBgFIAEoCzIVLnBheWRheS5FbnRpdHkuR2xvYmFsSAASIQoEbGlzdBgGIAEoCzITLnBheWRheS5FbnRpdHkuTGlzdBIjCgV3YXRjaBgHIAEoCzIULnBheWRheS5FbnRpdHkuV2F0Y2gSIwoFZXJhc2UYCCABKAsyFC5wYXlkYXkuRW50aXR5LkVyYXNlEhgKA293bhgJIAEoDjILLnBheWRheS5Pd24aCAoGVGVuYW50GkUKCFRlbmFudGVkEgsKA3ZpYRgBIAEoCRINCgVmaWVsZBgCIAMoCRINCgVzdGFtcBgDIAEoCRIOCgZhZ3JlZXMYBCADKAkaCAoGR2xvYmFsGioKBUVyYXNlEiEKBGhhcmQYASABKAsyEy5wYXlkYXkuRW50aXR5LkhhcmQaBgoESGFyZBqFAQoETGlzdBIjCgVvcmRlchgBIAMoCzIULnBheWRheS5FbnRpdHkuT3JkZXISFgoEd2l0aBgCIAMoCzIILm9ybS5SZWYSFAoCYnkYAyADKAsyCC5vcm0uUmVmEgwKBHNpemUYBCABKA0SCwoDbWF4GAUgASgNEg8KB2ZpbHRlcnMYBiABKA0aBwoFV2F0Y2gaLgoFT3JkZXISFwoFZmllbGQYASABKAsyCC5vcm0uUmVmEgwKBGRlc2MYAiABKAhCCQoHdGVuYW5jeSIoCgVGaWVsZBIOCgZzZWNyZXQYASABKAgSDwoHc3RhbXBlZBgCIAEoCCpZCgNPd24SEwoPT1dOX1VOU1BFQ0lGSUVEEAASDgoKT1dOX1RFTkFOVBABEg4KCk9XTl9IT0xERVIQAhINCglPV05fQVVESVQQAxIOCgpPV05fT1VUQk9YEARCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9wYXlkYXkvcGRwYpIDAggCYghlZGl0aW9uc3DoBw", [file_orm_ref]);
 
 /**
  * Entity is what payday has to be told about a message that `orm` already
@@ -296,14 +296,18 @@ export type Entity_Tenanted = Message<"payday.Entity.Tenanted"> & {
    *
    * # What it adds to what is already refused
    *
-   * The generated gate already reads every edge of an `Add` **through the
-   * wall**, so a caller cannot point a row at a row it cannot see. That is
-   * most of this, and it is free.
+   * The generated gate reads part of an `Add` **through the wall**: the first
+   * hop of the `via` path, and the field-3 set edge where an app declared
+   * one. Those are where the row itself lands, and they are free. Every other
+   * edge is read by nothing -- that a row points at another row is
+   * referential rather than tenancy, and asking it would be a read per edge
+   * on every write.
    *
-   * What it does not cover is a caller who can see both: an operator whose
-   * scope is several tenants passes that check with one edge in each. This is
-   * that case, and the one where a deployment writes through a server the
-   * wall was never installed on.
+   * A second path to a tenant is one of those, so it is looked at by nothing
+   * until it is named here. And even the hop that is read is not a
+   * comparison: a caller who can see both tenants passes it with one edge in
+   * each -- an operator whose scope is several -- as does a deployment
+   * writing through a server the wall was never installed on.
    *
    * Each is a path like `via` -- an edge, or a dotted one. What is compared
    * is the tenant each reaches.
@@ -351,8 +355,13 @@ export type Entity_Erase = Message<"payday.Entity.Erase"> & {
    *
    * It is a real answer and not a mistake to allow: a table of readings, of
    * events, of anything that arrives faster than anybody reads it, cannot be
-   * one nothing may ever be removed from -- and payday has no retention story
-   * to offer instead.
+   * one nothing may ever be removed from.
+   *
+   * The second half of that sentence used to be *and payday has no retention
+   * story to offer instead*. It has one now -- `trail`, named through
+   * `config.AuditConfig` -- and it is deliberately only about `Audit`: the
+   * trail is payday's own table, and what to do with an app's table of
+   * readings is the app's, which is what `hard:` is for.
    *
    * What it costs is what the trail then cannot say. `Audit.value` is read
    * off the row **after** the write, so for a row that is gone there is
@@ -362,8 +371,9 @@ export type Entity_Erase = Message<"payday.Entity.Erase"> & {
    *
    * Do not answer this by going to the database instead. A `DELETE` run
    * outside the app skips the trail, the version and the `Watch` -- and a
-   * watch says a row is gone by not sending it, so a row removed behind the
-   * app's back is one every client that has it keeps forever.
+   * watch says a row is gone by sending its identifier with no value, which
+   * only a write through the app publishes, so a row removed behind the app's
+   * back is one every client that has it keeps forever.
    *
    * @generated from field: payday.Entity.Hard hard = 1;
    */
@@ -562,10 +572,19 @@ export type Field = Message<"payday.Field"> & {
    *
    * # What it does
    *
-   * It comes out of every response: the entity message a `Get` answers with,
-   * the one a `List` carries, the one an `Add` echoes back. It comes out of the
-   * `Select` message too, so there is not even a way to ask -- a caller reading
-   * the schema can see that this is not something the server hands out.
+   * A generated layer clears it on the way out: out of the entity message a
+   * `Get` answers with, out of every item of a `List`, out of the one an `Add`
+   * echoes back, and out of what a `Watch` streams -- which is the read nobody
+   * could have narrowed by asking, since a watch has no `Select`.
+   *
+   * The field itself stays in the generated types, and that is not payday's to
+   * change: the entity message and its `Select` come from the ORM's generators,
+   * upstream of anything here. So a caller may still ask for the column and is
+   * answered with nothing rather than refused -- `Select{All: true}` is how a
+   * row is ordinarily asked for, and an error there would make the common call
+   * the failing one. What it costs is that this is a line in a deployment's
+   * stack rather than a property of the message: leave the layer out and the
+   * value goes out with the row.
    *
    * The **write** side is untouched. It is still in `Add` and in `Patch`,
    * because writing is the half that works: somebody sets a password, and
@@ -593,6 +612,51 @@ export type Field = Message<"payday.Field"> & {
    * @generated from field: bool secret = 1;
    */
   secret: boolean;
+
+  /**
+   * Stamped marks a field a caller may not set when the row is created.
+   *
+   * # The gap it fills, which took two apps to notice
+   *
+   * A stamp is a fact the deployment establishes and not one a request asserts:
+   * when an address was checked, when a device was attested, when a review was
+   * signed off. The ORM has `immutable`, which takes a field out of the
+   * **patch** request and leaves it in `Add` -- exactly the wrong way round for
+   * this, because what a stamp wants is the opposite: nobody asserts it when
+   * the row is created, and something writes it when the thing it records
+   * actually happens.
+   *
+   * Without a word for that, an app is left refusing the field in a layer of
+   * its own. That works and it is invisible: it is a line in a stack rather
+   * than a property of the message, so the next app writes the same field and
+   * does not know to write the same refusal.
+   *
+   * # What it does
+   *
+   * The generated `Add` refuses a request that sets it, with `InvalidArgument`
+   * naming the field. `Patch` is untouched, because that is the road the stamp
+   * is written by -- a deployment's own call, through a server it holds, on the
+   * day the thing happened.
+   *
+   * # Why a refusal and not a removal
+   *
+   * The field could be taken out of `AddRequest` entirely, and that would be
+   * the stronger shape -- `05792f6`'s *the test asserts there is no field to
+   * try*. It is not available here: the request messages come from the ORM's
+   * generators, upstream of anything payday says, and `payday.field` is read
+   * after they are written. Refusing is what is reachable, and it is refused in
+   * the **generated** server rather than in an app's layer, which is the half
+   * that makes it a property of the schema again.
+   *
+   * # And what it deliberately does not decide
+   *
+   * Who may write it afterwards. That is a permission, and permissions are an
+   * app's: a stamp being server-set says the request cannot assert it, and says
+   * nothing about which of the deployment's own calls is allowed to.
+   *
+   * @generated from field: bool stamped = 2;
+   */
+  stamped: boolean;
 };
 
 /**

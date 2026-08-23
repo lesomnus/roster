@@ -455,13 +455,16 @@ to be wrong: the entity `Watch` is not merely noisy for this, it refuses a
 subscription with no filters, and an app cannot name people who have not signed
 in yet.
 
-One thing is **written and waiting** rather than open, and it is upstream's turn
-rather than a decision: `Email.date_verified` should carry
-`(payday.field).stamped` instead of the layer in `server/core/email.go` that
-does the same refusal by hand. The option exists in payday; it reaches roster
-through `buf.build/payday/payday:dev`, and that label has not been pushed since.
-The swap is three lines the day it is, and the layer's own comment carries the
-command.
+The last thing that was **written and waiting** rather than open has landed too:
+`Email.date_verified` carries `(payday.field).stamped` now, and the layer in
+`server/core/email.go` that did the same refusal by hand is gone. It waited on a
+`buf push` rather than on a decision -- the option was in payday's checkout and
+reached roster only through `buf.build/payday/payday:dev`.
+
+`cmd/foreignedge_test.go` did not change, which was the point: it asserts the
+refusal and never where the refusal lives, including *the deployment's own work
+is not a request* -- which survives because the generated check sits in the
+**gate**, and the gate is installed on `Walled` alone.
 
 | | | |
 | --- | --- | --- |

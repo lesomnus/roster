@@ -287,6 +287,22 @@ type Email_builder struct {
 	// in the generated API -- `HasDateVerified` exists -- but a NOT NULL column
 	// cannot keep it: an address that was never verified reads back as verified
 	// at the zero time. The API promises something the storage cannot hold.
+	// **Stamped**, which is the whole of the rule about who writes it: the
+	// generated gate refuses an `Add` that asserts one. An address is verified by
+	// something checking it, and a request saying it was checked is the thing it
+	// must not be possible to say.
+	//
+	// This was a layer of roster's -- `server/core`'s `notVouchedForByTheCaller`
+	// -- because neither generator had a word for it. `orm.field` has `immutable`,
+	// which takes a field out of the **patch** request and leaves it in `Add`, and
+	// this wants the other way round. `payday.field.stamped` was added for exactly
+	// this, and a declaration beats a layer for the reason that layer's own
+	// comment gave: a line in a stack is invisible, so the next app writes the
+	// same field and does not know to write the same refusal.
+	//
+	// It says nothing about who may write it **afterwards**. That is a permission
+	// and permissions are roster's -- `Patch` is the road a real verification is
+	// stamped by, and it is closed at the transport anyway.
 	DateVerified *timestamppb.Timestamp
 	// Which [Identity] vouched for it, if one did. An address that arrived in a
 	// provider's claims is only as good as that provider's own check, and the
@@ -332,12 +348,12 @@ var File_app_email_proto protoreflect.FileDescriptor
 
 const file_app_email_proto_rawDesc = "" +
 	"\n" +
-	"\x0fapp/email.proto\x12\x06roster\x1a\x12app/identity.proto\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xb5\x05\n" +
+	"\x0fapp/email.proto\x12\x06roster\x1a\x12app/identity.proto\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xbb\x05\n" +
 	"\x05Email\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\x18\n" +
-	"\aaddress\x18\b \x01(\tR\aaddress\x12G\n" +
-	"\rdate_verified\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\fdateVerified\x127\n" +
+	"\aaddress\x18\b \x01(\tR\aaddress\x12M\n" +
+	"\rdate_verified\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\f\xea\x82\x16\x028\x01\xaa\xc1\x16\x02\x10\x01R\fdateVerified\x127\n" +
 	"\n" +
 	"vouched_by\x18\n" +
 	" \x01(\v2\x10.roster.IdentityB\x06\xf2\x82\x16\x028\x01R\tvouchedBy\x12%\n" +

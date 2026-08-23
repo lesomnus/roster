@@ -456,15 +456,22 @@ not a permission and not a column nobody may touch, it is a fact a *request* may
 not assert, and the gate is the layer that exists because there is a request.
 `Patch` is untouched, because that is the road the stamp is written by.
 
-roster cannot take it yet, and the reason is ordering rather than design: the
-option lives in payday's **buf module**, which roster depends on as
-`buf.build/payday/payday:dev`, and a schema using it does not compile until that
-module is published again -- `cannot resolve message field name for
-payday.Field`. `docs/MIGRATING.md` carries the same note about `secret:`.
+**And roster has taken it.** `Email.date_verified` carries
+`(payday.field) = {stamped: true}` and `notVouchedForByTheCaller` is gone.
 
-So the layer stays until the module moves, and the swap is three lines: the
-option on the field, the method deleted, and the test left exactly as it is --
-it asserts the refusal and not where the refusal lives.
+It waited on ordering rather than on design, which is worth writing down because
+it is the second time: the option lives in payday's **buf module**, which roster
+depends on as `buf.build/payday/payday:dev`, so a schema using it did not compile
+-- `cannot resolve message field name for payday.Field` -- until somebody ran
+`buf push --label dev ./proto`. The Go pin and the proto pin move independently,
+and `GOPROXY=direct go get …@<sha>` succeeding says nothing about the second.
+`docs/MIGRATING.md` carries the same note about `secret:`.
+
+The swap was the three lines it was predicted to be, and `cmd/foreignedge_test.go`
+did not change -- including its *the deployment's own work is not a request*
+case, which survives because the generated refusal is in the **gate** and the
+gate is installed on `Walled` alone. A test that asserts a refusal rather than a
+refuser is a test that outlives the layer it was written against.
 
 ### F19 · An edge is a read, and the gate was not asking about most of them -- **fixed upstream**
 

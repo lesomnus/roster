@@ -72,7 +72,26 @@ message Email {
   // in the generated API -- `HasDateVerified` exists -- but a NOT NULL column
   // cannot keep it: an address that was never verified reads back as verified
   // at the zero time. The API promises something the storage cannot hold.
-  google.protobuf.Timestamp date_verified = 9 [(orm.field) = {nullable: true}];
+  // **Stamped**, which is the whole of the rule about who writes it: the
+  // generated gate refuses an `Add` that asserts one. An address is verified by
+  // something checking it, and a request saying it was checked is the thing it
+  // must not be possible to say.
+  //
+  // This was a layer of roster's -- `server/core`'s `notVouchedForByTheCaller`
+  // -- because neither generator had a word for it. `orm.field` has `immutable`,
+  // which takes a field out of the **patch** request and leaves it in `Add`, and
+  // this wants the other way round. `payday.field.stamped` was added for exactly
+  // this, and a declaration beats a layer for the reason that layer's own
+  // comment gave: a line in a stack is invisible, so the next app writes the
+  // same field and does not know to write the same refusal.
+  //
+  // It says nothing about who may write it **afterwards**. That is a permission
+  // and permissions are roster's -- `Patch` is the road a real verification is
+  // stamped by, and it is closed at the transport anyway.
+  google.protobuf.Timestamp date_verified = 9 [
+    (orm.field) = {nullable: true},
+    (payday.field) = {stamped: true}
+  ];
 
   // Which [Identity] vouched for it, if one did. An address that arrived in a
   // provider's claims is only as good as that provider's own check, and the

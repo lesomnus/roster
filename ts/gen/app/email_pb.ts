@@ -19,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/email.proto.
  */
 export const file_app_email: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvZW1haWwucHJvdG8SBnJvc3RlciLXBAoFRW1haWwSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBmhvbGRlchgCIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgJAARIPCgdhZGRyZXNzGAggASgJEjkKDWRhdGVfdmVyaWZpZWQYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESLAoKdm91Y2hlZF9ieRgKIAEoCzIQLnJvc3Rlci5JZGVudGl0eUIG8oIWAjgBEhsKCXRlbmFudF9pZBgLIAEoDEII6oIWBBBAQAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOsMByvwVcBICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGiQSB2FkZHJlc3MaCgoGaG9sZGVyEAIaCwoHYWRkcmVzcxAIMAEaIhICYXQaDQoJdGVuYW50X2lkEAsaCwoHYWRkcmVzcxAIMAGKuxZLCAkyKQoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYgFChkOgAiGgoNaG9sZGVyLnRlbmFudBoJdGVuYW50X2lkQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_app_identity, file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg9hcHAvZW1haWwucHJvdG8SBnJvc3RlciLdBAoFRW1haWwSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBmhvbGRlchgCIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgJAARIPCgdhZGRyZXNzGAggASgJEj8KDWRhdGVfdmVyaWZpZWQYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgzqghYCOAGqwRYCEAESLAoKdm91Y2hlZF9ieRgKIAEoCzIQLnJvc3Rlci5JZGVudGl0eUIG8oIWAjgBEhsKCXRlbmFudF9pZBgLIAEoDEII6oIWBBBAQAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOsMByvwVcBICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGiQSB2FkZHJlc3MaCgoGaG9sZGVyEAIaCwoHYWRkcmVzcxAIMAEaIhICYXQaDQoJdGVuYW50X2lkEAsaCwoHYWRkcmVzcxAIMAGKuxZLCAkyKQoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYgFChkOgAiGgoNaG9sZGVyLnRlbmFudBoJdGVuYW50X2lkQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_app_identity, file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Email is an address a person uses, and whether anybody has checked that they
@@ -89,6 +89,22 @@ export type Email = Message<"roster.Email"> & {
    * in the generated API -- `HasDateVerified` exists -- but a NOT NULL column
    * cannot keep it: an address that was never verified reads back as verified
    * at the zero time. The API promises something the storage cannot hold.
+   * **Stamped**, which is the whole of the rule about who writes it: the
+   * generated gate refuses an `Add` that asserts one. An address is verified by
+   * something checking it, and a request saying it was checked is the thing it
+   * must not be possible to say.
+   *
+   * This was a layer of roster's -- `server/core`'s `notVouchedForByTheCaller`
+   * -- because neither generator had a word for it. `orm.field` has `immutable`,
+   * which takes a field out of the **patch** request and leaves it in `Add`, and
+   * this wants the other way round. `payday.field.stamped` was added for exactly
+   * this, and a declaration beats a layer for the reason that layer's own
+   * comment gave: a line in a stack is invisible, so the next app writes the
+   * same field and does not know to write the same refusal.
+   *
+   * It says nothing about who may write it **afterwards**. That is a permission
+   * and permissions are roster's -- `Patch` is the road a real verification is
+   * stamped by, and it is closed at the transport anyway.
    *
    * @generated from field: google.protobuf.Timestamp date_verified = 9;
    */

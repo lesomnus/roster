@@ -162,7 +162,11 @@ func TestAnEdgeIsNotAWayThroughTheWall(t *testing.T) {
 // caller writes* -- for `Identity.tenant_id`, with `immutable: true`. That word
 // is the right one there and the wrong one here: `immutable` takes a field out
 // of the **patch** request and leaves it in `Add`, and what `date_verified`
-// wants is the other way round. Neither generator can say it, so it is a layer.
+// wants is the other way round. Neither generator could say it, so it was a
+// layer of roster's -- and then `payday.field.stamped` was added for exactly
+// this and the layer went away. **This test did not change**, which is the
+// argument for the option in one line: it asserts the refusal and never where
+// the refusal lives.
 //
 // Nothing reads the column yet, which is what makes this cheap to close and the
 // reason to close it now. Its whole stated job is to decide whether an address

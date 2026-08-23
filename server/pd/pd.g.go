@@ -6541,6 +6541,10 @@ func (s Gate) Email() rstr.EmailServiceServer {
 // that a row exists is itself something a caller who may not see it
 // should not be told.
 func (s gateEmail) Add(ctx context.Context, req *rstr.EmailAddRequest) (*rstr.Email, error) {
+	if req.HasDateVerified() {
+		return nil, pderr.Invalidf("date_verified", "is established by this deployment and not asserted by a request")
+	}
+
 	if ref := req.GetHolder(); ref != nil {
 		if _, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{
 			Ref: ref,
