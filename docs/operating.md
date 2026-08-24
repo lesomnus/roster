@@ -115,57 +115,83 @@ list, which is the same reason `roster key add` will not take a key.
 That is the console's bootstrap. A console cannot be what creates the first
 person allowed to use it.
 
-### It used to seed a customer, and does not
-
-`init` took `--tenant` and `--holder`, defaulting to `contoso` and `admin`, so
-every deployment began life with a customer nobody had asked for — named after
-an example company, in a production database. And once a control plane became
-required, that person could not be signed in as anyway: a data plane holder gets
-no password and no key from `init`, and both writes that would give them one are
-served on `admin.addr`, by an operator.
-
-So making a customer is an operator's act, and it is the same act the hundredth
-time. `mayGrant` compares methods and **site** rather than tenants, so the
-operator's binding — tenant-wide, in the control plane — reaches a tenant that
-did not exist a moment ago, and `admin.addr` registers everything the act needs.
-
 ## Your first customer
 
-Sign in to the console and use the form above the customers list. It is four
-writes and the console makes them in order:
+`init` seeds no customer, so this is the first thing to do — and it is the same
+thing you will do for the hundredth. Four writes and then a way in.
 
-| | |
-| --- | --- |
-| `TenantService/Add` | the customer |
-| `HolderService/Add` | the first person in it |
-| `RoleService/Add` | `everything`, as the pattern above |
-| `BindingService/Add` | which ties the two together |
+```sh
+roster tenant add @newco
+roster holder add @newco/admin
+roster role   add @newco/everything '{"methods":["/roster.*/*"]}'
 
-Then give that person a way in, on their own panel: **new password**
-(`VouchService/Reset`) for somebody at a browser, or a key (`IssueService`,
-minting an `rt_`) for something that calls. Neither exists until you write it —
-creating somebody writes no credential, deliberately.
+# a binding has no alias of its own, so the whole request goes in
+echo '{"role":  {"alias":{"alias":"everything","tenant":{"alias":"newco"}}},
+       "holder":{"slug": {"alias":"admin",     "tenant":{"alias":"newco"}}}}' \
+  | roster binding add -
+```
 
-There is no fifth RPC that does all of this, and there should not be: each of
-the four is held to the same rules every other write on that port is, and a
-composite would be a fifth thing to hold to them. It is not a transaction
-either — `BatchService` is the data plane's and an operator's pattern is
-roster's own package, not payday's — so a failure part way leaves what came
-before it. That is survivable here and was not survivable in `init`: the
-deadlock `init` was fixed for was real because writing the first role needs a
-binding only writing the first role could give, and an operator writes it from
-outside every tenant. They can simply finish.
+Every entity command takes `[NAME] [REQ...]`: `NAME` is a reference — an
+identifier, or `@tenant` / `@tenant/alias` — and `REQ` is the rest of the
+request as JSON, merged over it. `-` reads stdin. Flags come before arguments,
+and `-o name` prints the identifier alone, which is what a script wants.
 
-`cmd/newcustomer_test.go` is the whole sequence, including both ways of writing
-a credential and the proof that the resulting key answers as the person rather
-than as the operator.
+A reference in JSON is the oneof it is declared as, so a role by name is
+`{"alias":{"alias":…,"tenant":…}}` and a person is `{"slug":{…}}` — the outer
+key says *which way of naming* and the inner one is the name. `roster <entity>
+add --help` prints the shape.
+
+They read the database directly and say so on stderr, which is what a shell on
+the box is: no wall, no gate, no rules. That is the same reason the first role
+can be written at all.
+
+### And a way in, which nothing writes for you
+
+Creating somebody writes no credential, deliberately. Give them one:
+
+```sh
+roster key add --tenant newco --holder admin --allow '/roster.*/*'
+```
+
+That prints an `rt_` to stdout and one line to stderr, so `$(roster key add …)`
+is the key and nothing else. It is shown **once** — what is stored is a hash.
+
+The prefix is a fact about which plane the key belongs to and is never something
+you name: `--service` is the deployment's own kind and `--tenant`/`--holder` is
+a customer's, and giving both is refused. Naming a service creates it, because
+the control plane has one tenant and a service is not something anybody sets up
+before they need it; naming a customer's person does **not**, because a
+customer's people are the customer's and a typo would otherwise write rows into
+somebody else's tenant.
+
+Then check it, which is the whole loop closed:
+
+```sh
+curl -sS -X POST http://127.0.0.1:8080/roster.MeService/Get \
+  -H 'content-type: application/json' -H 'connect-protocol-version: 1' \
+  -H "authorization: Bearer ${KEY}" -d '{}'
+```
+
+A key resolves to its **holder**, so what comes back is that person — their
+tenant, and `/roster.*/*` as the pattern rather than what it expands to.
+
+For somebody at a browser rather than something that calls, the way in is a
+password, and that is `VouchService.Reset` on `admin.addr` — the console, below.
+There is no CLI for it: a password is generated and read out to a person, which
+is an act with somebody on the other end of it.
 
 ### If an app already knows this organisation
 
-The console's form has an **identifier** field, empty almost always, and there
-is a case where it must be filled in. An app served by this roster anchors its
-own rows on the identifier a credential carries; when that app also has the
-tenant written down as a constant, the two have to agree from the start.
+`TenantAddRequest` takes an `id`, and there is a case where it must be given
+one:
+
+```sh
+roster tenant add @newco '{"id":"019ff2ab-…"}'
+```
+
+An app served by this roster anchors its own rows on the identifier a credential
+carries; when that app also has the tenant written down as a constant, the two
+have to agree from the start.
 
 **What happens without it is not an error**, which is why it is worth saying
 here. Both sides come up, somebody signs in, and the app makes a *second* tenant
@@ -174,9 +200,28 @@ one organisation, and the rows that belong together split across them, with
 nothing failing. It has to be a tenant-domain identifier and `Tenant.Add`
 refuses anything else, so the check is payday's rather than one written here.
 
-It was `roster init --tenant-id`, and the flag went with the customer. What is
-left is the console, and `roster tenant add <alias> '{"id":"…"}'` for somebody
-with a shell on the box.
+### The same thing from a console
+
+An operator with no shell does it from the customers screen, which has a form
+above the list: the same four writes in the same order, then a password or a key
+on the person's own panel. `admin.addr` is the port, and it needs a control
+plane because the session it reads names a holder of that plane.
+
+That path is not the local one with a UI on top. These commands go through
+`Ungated`; the console goes over a port, as a session, through every rule — and
+it works because `mayGrant` compares methods and **site** rather than tenants,
+so the operator's binding in the control plane reaches a tenant that did not
+exist a moment ago.
+
+There is no fifth RPC that does all four, in either path, and there should not
+be: each is held to the same rules every other write is, and a composite would
+be a fifth thing to hold to them. It is not a transaction either, so a failure
+part way leaves what came before it — a tenant with nobody in it, or somebody
+with no role. Both are finishable, because whoever is writing is outside every
+tenant.
+
+`cmd/newcustomer_test.go` is the console's sequence end to end and
+`cmd/customerkey_test.go` is this one.
 
 ## Locally, in one command
 

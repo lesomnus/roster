@@ -574,6 +574,66 @@ somebody reading the code to decide what is safe.
   credentials -- but *local is Ungated* was written down and *and general writes
   are open there* was not.
 
+### D57 · The terminal can finish what it starts
+
+`roster key add --tenant <alias> --holder <alias>` mints an `rt_` for one of a
+customer's people. It refused to, and said why:
+
+	The deployment's own. `roster key add` is the operator at a shell, and a
+	key for somebody inside a tenant is not something a shell on the box
+	should be handing out.
+
+#### The premise went away
+
+D56 stopped `init` seeding a customer, so somebody creates the first one -- and
+everything that creates it is a local command already. `roster tenant add`,
+`holder add`, `role add` and `binding add` all run through `Ungated`: no wall,
+no gate, no rules, by design and documented as such. A shell that has just bound
+`/roster.*/*` to a person and cannot then mint them a key is not holding a line;
+it is missing a step.
+
+What that missing step made necessary was a **browser**, on a deployment
+somebody is running from a terminal. The console is the right answer for an
+operator with no shell and the wrong one to require of somebody who has both the
+configuration file and the database.
+
+The boundary was never the command. It is who can read `roster.yaml` and open
+what it names, which is what `docs/operating.md` says about the local CLI
+everywhere else.
+
+#### Which plane, said by which flags
+
+`--service` is the deployment's own and `--tenant`/`--holder` is a customer's.
+Giving both is refused, and giving neither names the two forms rather than
+guessing.
+
+The prefix follows -- `rk_` there, `rt_` here -- and is never something a caller
+writes. `issue.proto` states the reason about the same act over the wire: a
+caller who could name a prefix could ask the customer-facing door for the
+deployment's own kind, and the two are told apart by exactly that string.
+
+#### And naming somebody does not create them
+
+The asymmetry with `serviceOf` beside it is the wall, not an inconsistency. The
+control plane has one tenant, so naming a service **is** the moment it becomes a
+caller -- asking for three commands to express one intent is how a runbook grows
+a step nobody remembers. The data plane has many, a customer's people are the
+customer's, and a command that made one by mentioning them would write rows into
+somebody else's tenant by typo. `IssueKeyRequest.holder` had already decided
+this for the RPC; the command agrees with it.
+
+#### What is still only a console
+
+A **password**. `VouchService.Reset` generates one and answers with it once, for
+an operator to read out to a person -- an act with somebody on the other end of
+it, which is the shape D28 arrived at for a deployment with no mail. A CLI form
+would be a secret on a terminal with nobody to hand it to, and the person who
+needs it is on a telephone with an operator who is signed in.
+
+So the terminal can stand a customer up and give a **machine** a way in, and the
+console is where a **person** gets one. That is a line worth having rather than
+one left over.
+
 ### D56 · A customer is an operator's act, not a seed
 
 `roster init` seeds the control plane and nothing else. The first customer is

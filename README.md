@@ -175,10 +175,28 @@ true` lets ent bring the database to the shape the schema says, and without it
 
 ```sh
 go run ./cmd/roster init          # the operator who runs this deployment
+go run ./cmd/roster serve
+
 go run ./cmd/roster config        # what this deployment is configured with
 go run ./cmd/roster config env    # every variable it can be told through
-go run ./cmd/roster serve
 ```
+
+`init` writes the **operator** and nothing else, so a fresh deployment has no
+customers. The first one is four local writes and a key, from a terminal:
+
+```sh
+roster tenant add @newco
+roster holder add @newco/admin
+roster role   add @newco/everything '{"methods":["/roster.*/*"]}'
+echo '{"role":  {"alias":{"alias":"everything","tenant":{"alias":"newco"}}},
+       "holder":{"slug": {"alias":"admin",     "tenant":{"alias":"newco"}}}}' \
+  | roster binding add -
+
+roster key add --tenant newco --holder admin --allow '/roster.*/*'
+```
+
+The key is printed once, resolves to that person, and is walled to their tenant.
+`docs/operating.md` is the long version, including the same act from a console.
 
 `init` is there because there is nowhere else it could be. A tenant is not put
 up from inside one, so the first row of a deployment cannot arrive over the API
@@ -187,13 +205,12 @@ holds but a server instance this process was handed. Running it twice is an
 error rather than a no-op, because an `init` that quietly did nothing is one
 somebody runs against the wrong deployment and believes.
 
-What it writes is the **operator** and nothing else. It used to write a customer
-as well — `--tenant contoso --holder admin` — so every deployment began life with
-one nobody had asked for, and once a control plane became required that person
-could not be signed in as anyway. Customers come from the console now, which
-makes an operator's first act the same act as their hundredth. PLAN.md D56.
+A customer is nobody's to seed. `init` writes no tenant, because a tenant is a
+customer and one written by a command is a customer nobody asked for — so the
+first act after `init` is the same act as the hundredth, whether it is typed at
+a shell or done from a console. PLAN.md D56.
 
-It also needs a `control:` database, and that is the one thing it refuses over.
+It needs a `control:` database, and that is the one thing it refuses over.
 Without one a deployment serves `auth.Plain` — every caller is whoever they type
 — and adding a control plane afterwards is not a migration: an `rt_` minted
 while nobody was checking sits inert in the data plane until the day something

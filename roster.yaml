@@ -33,8 +33,7 @@ server:
 # init` refuses a file with no `control.db`, which is the one setting it insists
 # on -- a deployment that adds a control plane later serves `auth.Plain` until
 # it does, and an `rt_` minted while nobody is checking becomes a working
-# credential the day one is named. It was commented here for one release, which
-# made a fresh checkout a deployment that could not be seeded.
+# credential the day one is named.
 #
 # `db` is what decides and not `addr`: a control plane is a database, and an
 # address is only how it is reached. A block with everything but the database is

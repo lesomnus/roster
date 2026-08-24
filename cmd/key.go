@@ -20,18 +20,33 @@ import (
 	"github.com/lesomnus/roster/server/keys"
 )
 
-// NewCmdKey is `roster key`: what the deployment's owner hands to their
-// services.
+// NewCmdKey is `roster key`: the keys this deployment is called with, on
+// either plane.
 //
-// It is a command rather than an RPC because of what it writes to. The control
-// plane is not served -- `ApiKeyService` is not registered and is closed to the
-// batch, for the reason every verifier is -- so the only way in is a server
-// instance this process holds, and the only thing holding one is this.
+// It is a command rather than an RPC because of what the first of those writes
+// to. The control plane is not served -- `ApiKeyService` is not registered and
+// is closed to the batch, for the reason every verifier is -- so the only way
+// in is a server instance this process holds, and the only thing holding one is
+// this.
 //
-// That is a real limitation and it is written down rather than worked around: a
-// deployment's owner needs a shell on the box to make a key. What replaces it
-// is an admin console, which is a thing this app does not have and which would
-// itself need a key to talk to. See PLAN.md.
+// # And a customer's, which it refused to mint
+//
+// `--tenant` and `--holder` mint an `rt_` for one of a customer's people. This
+// said, in as many words, that *a key for somebody inside a tenant is not
+// something a shell on the box should be handing out* -- and the console was
+// the answer.
+//
+// The premise went away. `roster init` seeds no customer (D56), so the first
+// one is created by somebody, and everything that creates it is already here:
+// `roster tenant add`, `holder add`, `role add`, `binding add`, all local, all
+// through `Ungated`, with no rules at all. A shell that has just bound
+// `/roster.*/*` to a person and cannot then mint them a key is not a boundary,
+// it is a missing step -- and what it made necessary was a browser, for a
+// deployment somebody is running from a terminal.
+//
+// The boundary is who holds the configuration file and the database, which is
+// what `docs/operating.md` says about the local CLI everywhere else. PLAN.md
+// D57.
 func NewCmdKey(c *Config) *xli.Command {
 	return &xli.Command{
 		Name:  "key",
@@ -53,10 +68,12 @@ func NewCmdKey(c *Config) *xli.Command {
 func newCmdKeyAdd(c *Config) *xli.Command {
 	return &xli.Command{
 		Name:  "add",
-		Brief: "mint a key for a service, and print it once",
+		Brief: "mint a key for a service or for one of a customer's people, and print it once",
 
 		Flags: flg.Flags{
 			&flg.String{Name: "service", Brief: "the holder in the control plane this key is for"},
+			&flg.String{Name: "tenant", Brief: "the customer, by alias or identifier, for a key on the data plane"},
+			&flg.String{Name: "holder", Brief: "whose key this is, inside --tenant"},
 			&flg.String{Name: "name", Brief: "what to call this key, unique per service"},
 			&flg.String{Name: "allow", Brief: "the methods it may call, comma separated"},
 			&flg.String{Name: "expires", Brief: "how long it lasts, e.g. 720h; empty is forever"},
@@ -64,8 +81,26 @@ func newCmdKeyAdd(c *Config) *xli.Command {
 
 		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
 			service, _ := flg.Find[string](cmd, "service")
-			if service == "" {
-				return errors.New("--service: which service is this key for")
+			tenant, _ := flg.Find[string](cmd, "tenant")
+			holder, _ := flg.Find[string](cmd, "holder")
+
+			// Which plane, said by which flags were given rather than by a
+			// `--kind` nobody would get right. The prefix follows from the
+			// plane and is never something a caller names -- `issue.proto` is
+			// explicit that a caller who could name one could ask the
+			// customer-facing door for the deployment's own kind.
+			switch {
+			case service != "" && (tenant != "" || holder != ""):
+				return errors.New(
+					"--service is the deployment's own and --tenant/--holder is a customer's; name one")
+			case service == "" && tenant == "" && holder == "":
+				return errors.New(
+					"--service: which service is this key for, " +
+						"or --tenant and --holder for one of a customer's people")
+			case holder != "" && tenant == "":
+				return fmt.Errorf("--tenant: which customer's %q, since an alias names one per tenant", holder)
+			case tenant != "" && holder == "":
+				return fmt.Errorf("--holder: whose key this is, inside %q", tenant)
 			}
 
 			name, _ := flg.Find[string](cmd, "name")
@@ -89,22 +124,48 @@ func newCmdKeyAdd(c *Config) *xli.Command {
 			}
 			defer s.Close()
 
-			if s.Control == nil {
-				return errors.New("this deployment has no control plane; see `control` in the configuration")
-			}
-			if err := s.Control.Ent.Schema.Create(ctx); err != nil {
-				return err
+			// Which server the row lands in, who it hangs off, and what the
+			// token is called. The three answers travel together because they
+			// are one decision.
+			var (
+				at     app.Server
+				who    pdid.Id
+				prefix string
+				whose  string
+			)
+			if service != "" {
+				if s.Control == nil {
+					return errors.New("this deployment has no control plane; see `control` in the configuration")
+				}
+				if err := s.Control.Ent.Schema.Create(ctx); err != nil {
+					return err
+				}
+
+				// Named into existence, which is `serviceOf`'s decision and the
+				// right one there: a service is not something somebody sets up
+				// on purpose before they need it, and the control plane has one
+				// tenant so an alias names one person.
+				who, err = serviceOf(ctx, s.Control, service)
+				if err != nil {
+					return err
+				}
+
+				at, prefix, whose = s.Control.Ungated, keys.PrefixDeployment, "@"+service
+			} else {
+				// Looked up and never created. A customer's people are the
+				// customer's, and a command that made one by mentioning them
+				// would be a way to write rows into somebody else's tenant by
+				// typo -- which is the rule `IssueKeyRequest.holder` already
+				// states about the same act over the wire.
+				who, err = customerOf(ctx, s, tenant, holder)
+				if err != nil {
+					return err
+				}
+
+				at, prefix, whose = s.Ungated, keys.PrefixTenant, "@"+tenant+"/"+holder
 			}
 
-			who, err := serviceOf(ctx, s.Control, service)
-			if err != nil {
-				return err
-			}
-
-			// The deployment's own. `roster key add` is the operator at a
-			// shell, and a key for somebody inside a tenant is not something a
-			// shell on the box should be handing out.
-			token, sum, err := keys.Mint(keys.PrefixDeployment)
+			token, sum, err := keys.Mint(prefix)
 			if err != nil {
 				return err
 			}
@@ -125,7 +186,7 @@ func newCmdKeyAdd(c *Config) *xli.Command {
 				req.DateExpires = timestamppb.New(time.Now().Add(d))
 			}
 
-			v, err := s.Control.Ungated.ApiKey().Add(ctx, req.Build())
+			v, err := at.ApiKey().Add(ctx, req.Build())
 			if err != nil {
 				return err
 			}
@@ -139,8 +200,8 @@ func newCmdKeyAdd(c *Config) *xli.Command {
 			// credential that reaches a log has been given away.
 			fmt.Fprintf(os.Stdout, "%s\n", token)
 			fmt.Fprintf(os.Stderr,
-				"key %s for @%s, allowing %d method(s). This is the only time it is shown.\n",
-				k, service, len(methods))
+				"key %s for %s, allowing %d method(s). This is the only time it is shown.\n",
+				k, whose, len(methods))
 
 			if v := Widest(methods); v != "" {
 				fmt.Fprintf(os.Stderr, "\n%s\n", v)
@@ -264,6 +325,47 @@ func serviceOf(ctx context.Context, s *Server, alias string) (pdid.Id, error) {
 	}
 
 	return holderOf(ctx, s, pdid.Id(t.ID), alias)
+}
+
+// customerOf is one of a customer's people, by the tenant they are in and their
+// alias, and is a refusal where there is no such person.
+//
+// Looked up and never created, which is the difference between this and
+// [serviceOf] beside it. The control plane has one tenant and a service is a
+// row somebody names when they need it; the data plane has many, a customer's
+// people are the customer's, and a command that made one by mentioning them
+// would write rows into somebody else's tenant by typo.
+//
+// The tenant is an alias or an identifier, because both are things somebody has
+// to hand: `roster tenant ls` prints the first and an app that anchors on this
+// organisation was given the second.
+func customerOf(ctx context.Context, s *Server, tenant string, alias string) (pdid.Id, error) {
+	v, err := s.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref: app.HolderRef_builder{
+			Slug: app.HolderRefBySlug_builder{
+				Alias:  z.Ptr(alias),
+				Tenant: tenantRef(tenant),
+			}.Build(),
+		}.Build(),
+	}.Build())
+	if err != nil {
+		return pdid.Nil, fmt.Errorf("@%s/%s: %w", tenant, alias, err)
+	}
+
+	return pdid.From(v.GetId())
+}
+
+// tenantRef is what somebody typed, as the reference an RPC takes.
+//
+// An identifier if it parses as one and an alias otherwise. There is no
+// ambiguity to resolve: an alias is `[a-z0-9-]` shaped and a UUID is not
+// something anybody chooses as one.
+func tenantRef(v string) *app.TenantRef {
+	if k, err := pdid.Parse(v); err == nil {
+		return app.TenantRef_builder{Id: k.Bytes()}.Build()
+	}
+
+	return app.TenantRef_builder{Alias: z.Ptr(v)}.Build()
 }
 
 func holderOf(ctx context.Context, s *Server, in pdid.Id, alias string) (pdid.Id, error) {
