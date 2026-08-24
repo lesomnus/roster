@@ -26,46 +26,56 @@ server:
     # 5173, and a different origin.
     origins: ["http://localhost:5173"]
 
-# Who may call this deployment, and who runs it. Without this the deployment
-# believes its callers and there is no console; see docs/operating.md.
+# Who may call this deployment, and who runs it: roster again, on its own
+# database, holding keys rather than people. See docs/operating.md.
 #
-# `db` is what decides, and not `addr`: a control plane is a database, and an
-# address is only how it is reached. So uncommenting the rest of this block
-# without it is refused rather than served -- it used to be a deployment on
-# `auth.Plain` with a control plane written down beside it.
+# **Not optional, and it is written out rather than commented out.** `roster
+# init` refuses a file with no `control.db`, which is the one setting it insists
+# on -- a deployment that adds a control plane later serves `auth.Plain` until
+# it does, and an `rt_` minted while nobody is checking becomes a working
+# credential the day one is named. It was commented here for one release, which
+# made a fresh checkout a deployment that could not be seeded.
 #
-# **`roster init` refuses a file with this block missing altogether**, which is
-# the one setting it insists on. Not tidiness: a deployment that adds a control
-# plane later serves `auth.Plain` until it does, and an `rt_` minted while
-# nobody is checking becomes a working credential the day one is named.
-#
-# control:
-#   db:
-#     driver: sqlite3
-#     dsn: "file:roster-control.db?_pragma=foreign_keys(1)"
-#   addr: "127.0.0.1:50052"
-#   # What the console talks to. A browser cannot speak gRPC, and this is the
-#   # port that has the rows a console is for.
-#   http:
-#     addr: "127.0.0.1:8082"
-#     allow_web: true
-#     origins: ["http://localhost:5173"]
-#   # Its own broker, and empty takes the one `watch.broker` names below. See
-#   # there for why the two planes do not share one.
-#   watch:
-#     broker: memory
+# `db` is what decides and not `addr`: a control plane is a database, and an
+# address is only how it is reached. A block with everything but the database is
+# refused rather than served.
+control:
+  db:
+    driver: sqlite3
+    dsn: "file:roster-control.db?_pragma=foreign_keys(1)"
+  addr: "127.0.0.1:50052"
+  # What the console talks to. A browser cannot speak gRPC, and this is the
+  # port that has the rows a console is for. `ts/src/main.tsx` looks here by
+  # default.
+  http:
+    addr: "127.0.0.1:8082"
+    allow_web: true
+    origins: ["http://localhost:5173"]
+  # Its own broker, and empty takes the one `watch.broker` names below. See
+  # there for why the two planes do not share one.
+  #
+  # watch:
+  #   broker: memory
 
 # Where an operator administers **customers**: the data plane with no wall,
 # behind a session. Its `http` is what a console talks to -- a browser cannot
 # speak gRPC, and the transcoder above is in front of the data plane, where an
 # operator's session names nobody.
 #
-# admin:
-#   addr: "127.0.0.1:50053"
-#   http:
-#     addr: "127.0.0.1:8081"
-#     allow_web: true
-#     origins: ["http://localhost:5173"]
+# This is where the **first customer** comes from. `init` seeds the control
+# plane and nothing else, so a fresh deployment has no tenants at all and the
+# console's customers screen is what makes one -- a tenant, somebody in it, the
+# role that administers it, and then a password or a key for them. Comment this
+# out and there is no way to make a customer but a shell on the box.
+#
+# It needs a control plane and is refused without one, because the session it
+# reads names a holder of that plane.
+admin:
+  addr: "127.0.0.1:50053"
+  http:
+    addr: "127.0.0.1:8081"
+    allow_web: true
+    origins: ["http://localhost:5173"]
 
 # Where `roster tenant ls`, `roster holder get` and the rest send their calls.
 #
