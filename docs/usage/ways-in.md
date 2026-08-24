@@ -141,6 +141,17 @@ Three other ways to get one, all the same row:
 | `IssueService.IssueKey` on `admin.addr` | an operator, from the console |
 | `MeService.IssueKey` | a person, for themselves — no subject in the request at all |
 
+As themselves, from their own terminal, that last one is:
+
+```sh
+roster me get                                        # what you are, and your keys
+roster me issue-key --name laptop --allow '/roster.MeService/Get'
+roster me revoke-key 01a03382-5adb-8788-bf0e-c99210575d01
+```
+
+`roster me` is remote only. Every method answers from the caller and a local run
+has none — it opens the database instead of calling a server.
+
 Two rules hold whichever door was used, and they are why this is safe to offer
 at all:
 
@@ -250,6 +261,16 @@ is a list of methods, and what you can grant is exactly what you can name:
 | `HolderService/Disable` | they are not to sign in. Sessions, tenant keys and delegations they held stop working |
 | `HolderService/Enable` | the other direction, and a separate grant on purpose |
 | `HolderService/Invalidate` | everything issued **before now** is void. No undo, and no time to give — the server stamps it |
+
+`Invalidate` is *sign out everywhere* as a **fact** rather than as a list: one
+timestamp, which roster answers and each app compares its own sessions against.
+There is no registry of live sessions here and there will not be.
+
+It **deliberately does not touch an API key**. A key is named, listed and
+revoked one at a time; killing somebody's scripts silently under "sign out
+everywhere" is an outage with nothing anywhere saying why. That is a second act
+and it has a second name — `roster key revoke`, or `roster me revoke-key` for
+your own.
 
 Those three are RPCs with no verb of their own on the CLI: a caller reaches them
 through a role, and an operator through the console. From a shell the same

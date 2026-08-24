@@ -124,7 +124,7 @@ roster tenant ls           # nothing yet, and that is correct
 `roster tenant ls` prints a line on stderr saying it is reading the database
 directly. That is the local CLI telling you which of its two modes it is in.
 
-## Reaching a deployment that is not this process
+## The CLI's other mode, which is the one most people are in
 
 Every entity command runs locally by default: it opens the database in `db` and
 reads it with no wall, no gate and no rules. That is right for a shell on the
@@ -141,6 +141,21 @@ client:
   auth:
     scheme: bearer
     credential_file: /run/secrets/roster-key
+```
+
+**This is not only for operators.** A customer's own person runs the same binary
+against the same address with their own `rt_`, and their configuration has no
+`db:` block at all — there is nothing for them to open:
+
+```yaml
+client:
+  addr: "roster.internal:50051"
+  auth: { scheme: bearer, credential_file: ~/.roster/key }
+```
+
+```sh
+roster holder ls          # the people in their tenant
+roster me get             # who this credential is, and what it may call
 ```
 
 `--HAL` on the root forces the local one whatever the file says, for somebody

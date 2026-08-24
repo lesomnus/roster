@@ -183,7 +183,19 @@ caller — `client.addr` with a key, or the tutorial's last section.
 
 ```sh
 roster binding ls -o wide
-roster role get @newco/support
+roster role ls -o wide
+roster role get 01a0337b-a3e5-8c98-810f-d8d04db3e47e
+```
+
+**`Role`, `Group` and `ApiKey` cannot be named `@tenant/alias`** the way a
+holder, a site or a team can — only by identifier, which `-o name` prints. It is
+not a rule about those entities: the CLI recognises a reference whose oneof
+field is called `slug`, and those three declare theirs as `alias`. `add` is the
+exception and takes the name either way, because there it is setting a field
+rather than finding a row.
+
+```sh
+roster role ls -o name | head -1        # the identifier a script wants
 ```
 
 and, as the person themselves, over the wire:

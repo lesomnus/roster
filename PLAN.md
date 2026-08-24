@@ -574,6 +574,99 @@ somebody reading the code to decide what is safe.
   credentials -- but *local is Ungated* was written down and *and general writes
   are open there* was not.
 
+### D58 · Everything from a terminal, for everybody
+
+The CLI is not an operator's tool with a remote mode bolted on. It is a client,
+and one of its two modes is a shell on the box.
+
+	local     no client.addr. Opens the database and writes through
+	          `Ungated`: no wall, no gate, no rules.
+	remote    client.addr set. An ordinary caller -- walled, gated, and
+	          resolved from whatever credential it carries.
+
+A **customer's own person** runs the same binary in the second mode with their
+own `rt_`, against a configuration that has no `db:` block at all, and gets
+exactly what their role allows:
+
+	roster holder ls        the people in their tenant, and no others
+	roster tenant ls        PermissionDenied, if their role does not say so
+
+That was true before this was written down and the documentation said otherwise:
+`docs/usage/` called the CLI an operator's tool and put the remote mode in a
+footnote about pointing commands at a server. A reader would have concluded that
+a person inside a tenant needs a browser.
+
+#### So the goal is every RPC
+
+Not soon, and not in one go. But *what can be done without a console* is a
+question with one correct answer, and the answer is everything. A gap that stays
+a gap becomes an argument that the console is required, and then a feature that
+only exists there.
+
+Twenty-six RPCs have no command today, and they are two different kinds of work:
+
+**Six are overlay methods on an entity service** -- `HolderService`'s `Update`,
+`Disable`, `Enable`, `Invalidate`, `SignsIn` and `RevokeKey`. `pdcmd` builds
+commands by matching a **fixed list of six verb names** against the service
+descriptor, so a method an app added in an overlay gets nothing, however
+ordinary its shape. Every piece is already there -- `pdcmd.verbs` is a table of
+`{name, method, stream, build}` and `cmdGet` is thirty lines -- so what is
+missing is a way for an app to add a row to it. That is payday's, and it is the
+one change that closes six of these at once and every future overlay method for
+free.
+
+**Nineteen are hand-written services.** `MeService` entire, most of
+`VouchService`, `FrontService`, `AuthService`, `IssueService.IssuePassword`, and
+`SyncService.Watch`. These are roster's, one at a time, and D57 had already done
+`vouch set|reset|unlock` and `key add` for both planes.
+
+`roster me` is done here, which leaves thirteen. It was the one to do first for
+the reason this decision exists: it is what a person asks about **themselves**,
+no request in it carries a subject, and the console had it while a terminal did
+not. `pdcmd.Tree.Add` and `Tree.WithConn` are the seam payday put there for
+exactly this, so it reaches the same connection the generated commands do rather
+than opening a second socket with a second credential to get right.
+
+It is remote-only, and that is not an omission: every method answers from the
+frame, and a local run has no caller because it opens the database. Being told
+to name `client.addr` is the useful answer; `Unimplemented` would be true and
+useless.
+
+#### And a third thing, which is neither
+
+Three entities cannot be named `@tenant/alias` on a command line at all --
+**`Role`, `Group` and `ApiKey`** -- so `roster role get @newco/support` is an
+error and only an identifier works. Two of those are the entities a permission
+question is mostly about.
+
+It is not a rule anybody chose. `pdcmd` fills a reference by looking for a field
+called **`slug`**, and the name of that field is the name of the **index** the
+entity declares: `holder.proto` calls its index `slug` and `role.proto` calls
+its `alias`, so one gets `HolderRefBySlug` and the other `RoleRefByAlias`. Same
+fields, same meaning, different name, and the CLI recognises one of them.
+
+The fix is one word per entity in a file that is roster's. What it costs is a
+**breaking proto change**: the ref message is renamed and so is the oneof field,
+which `buf breaking` will refuse and which every client including `ts/gen` has
+to move with. So it is worth doing deliberately and in one go rather than as a
+side effect of this, and it is written down here so that the next person to hit
+it finds the reason rather than the symptom.
+
+#### `Apply` is not on that list
+
+Twenty-two entity services have it and none of them will get a command.
+`pdcmd/verb.go` states the reason and it is roster's as well: it is one of the
+two general writes, closed unless a deployment opts in, and roster does not opt
+in. A command for it would fail on every deployment that took the default.
+
+#### What this does not change
+
+The local mode stays outside every rule. That is what `roster init` needs, what
+the first role in a tenant needs, and what `roster forget` needs -- and it is
+why *a command succeeded* proves the write is possible and proves nothing about
+whether a caller could make it. Both modes being the same binary is what makes
+that worth stating rather than obvious.
+
 ### D57 · The terminal can finish what it starts
 
 `roster key add --tenant <alias> --holder <alias>` mints an `rt_` for one of a

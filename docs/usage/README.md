@@ -55,19 +55,46 @@ the same six — `get`, `ls`, `watch`, `add`, `patch`, `erase` — and the comma
 is a client for exactly the RPC of that name, so what you learn typing is what
 you write in code.
 
-Two things do **not** follow from that, and both matter:
+**It is not an operator's tool.** It has two modes, and which one you are in is
+decided by the configuration rather than by who you are:
 
-- **The local CLI has no wall, no gate and no rules.** It opens the database and
-  writes through `Ungated`, which is the instance the deployment does its own
-  work through. So a command succeeding tells you the write is *possible*; it
-  tells you nothing about whether a caller holding a role could make it. That is
-  [permissions.md](permissions.md), and it is why the first role in a tenant can
-  be written at all.
-- **Not every RPC has a command.** The hand-written services — `MeService`,
-  `FrontService`, `AuthService`, most of `VouchService` — are what an app calls,
-  not what an operator types. `roster vouch` covers the three an operator needs
-  and no more.
+| | |
+| --- | --- |
+| **local** — no `client.addr` | opens the database and writes through `Ungated`: no wall, no gate, no rules. A shell on the box, doing what the deployment can do |
+| **remote** — `client.addr` set | an ordinary caller. The wall narrows what comes back and the gate decides what is allowed, exactly as for any other client |
 
-Point the commands at a running deployment instead by setting `client.addr`, and
-then the wall and the gate do apply, because it is an ordinary caller. See
-[first-run.md](first-run.md) § reaching a deployment that is not this process.
+So a customer's own person uses the same binary. Their configuration has no
+`db:` block at all — there is no database to open — only where to call and what
+to call with:
+
+```yaml
+client:
+  addr: "roster.internal:50051"
+  auth:
+    scheme: bearer
+    credential_file: ~/.roster/key      # an rt_, which resolves to them
+```
+
+```sh
+roster holder ls -o table              # the people in their tenant, and no others
+roster tenant ls                       # PermissionDenied, if their role does not say so
+```
+
+The one thing that does not follow: **a command succeeding locally says the
+write is possible, not that a caller could make it.** The local mode is outside
+every rule, which is why the first role in a tenant can be written at all. If
+you are working out what a role needs, test it remotely with a key.
+
+`roster init`, `roster key` and `roster vouch` have no remote form. What they
+write is not served, which is the whole reason they are commands.
+
+### Not every RPC has a command yet
+
+Nineteen do not, and that is a gap being closed rather than a boundary: the goal
+is that everything is possible from a terminal, with no console anywhere in the
+path. `HolderService`'s `Disable`, `Enable` and `Invalidate`, and most of
+`VouchService`, are the notable ones. Where a page here shows an RPC and no
+command, that is why. PLAN.md D58 is the list.
+
+`Apply` is the exception and is not on that list. It is one of the two general
+writes, closed unless a deployment opts in, and roster does not.

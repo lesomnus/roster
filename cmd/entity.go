@@ -91,7 +91,33 @@ func NewCmdEntities(c *Config) xli.Commands {
 	// one payday app, and roster links exactly one -- but saying it here means
 	// a second one arriving is a compile-time fact rather than an error at
 	// startup.
-	return pdcmd.NewIn(connector{c}, "roster").Commands()
+	t := pdcmd.NewIn(connector{c}, "roster")
+
+	// And this app's own, on the same connection.
+	//
+	// `Tree.Add` and `Tree.WithConn` are the seam payday put here for exactly
+	// this: a command an app wrote reaches the server the generated ones reach,
+	// rather than opening a second socket with a second credential to get right
+	// -- which for a connector that hands out an in-process server would be a
+	// second server.
+	//
+	// `me` is the first of them and will not be the last. Every RPC should have
+	// a command, because *what can be done without a console* has one correct
+	// answer; PLAN.md D58 is the list and why.
+	// The connection on the **parent**, which is where it belongs: `withConn`
+	// fires on `Run` and a command with a subcommand under it runs as
+	// `Run|Pass`, so one dial covers whichever verb was typed and closes after
+	// it. `RequireSubcommand` because `roster me` alone is not a question.
+	me := newCmdMe(c)
+	me.Handler = xli.Chain(t.WithConn(), xli.RequireSubcommand())
+
+	if err := t.Add("me", me); err != nil {
+		// A path that is already there, which is a mistake in this file rather
+		// than something a deployment can cause.
+		panic(err)
+	}
+
+	return t.Commands()
 }
 
 // connector is [local] or [remote], decided when the command runs.
