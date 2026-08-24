@@ -16,13 +16,13 @@ import (
 	"github.com/lesomnus/roster/server/keys"
 )
 
-// minted runs a command and answers with what it wrote to stdout.
+// stdoutOf runs a command and answers with what it wrote to stdout.
 //
 // `roster key add` prints the token there and the sentence about it to stderr,
 // which is the split that lets `$(roster key add …)` be the key and nothing
 // else. So a test that wants the token has to read the stream the design put it
 // on, rather than a buffer the command was handed.
-func minted(t *testing.T, k *xli.Command, args ...string) string {
+func stdoutOf(t *testing.T, k *xli.Command, args ...string) string {
 	t.Helper()
 	x := require.New(t)
 
@@ -39,7 +39,7 @@ func minted(t *testing.T, k *xli.Command, args ...string) string {
 
 	b, e := io.ReadAll(r)
 	x.NoError(e)
-	x.NoError(err, "key add: %s", b)
+	x.NoError(err, "%s: %s", strings.Join(args, " "), b)
 
 	return strings.TrimSpace(string(b))
 }
@@ -94,7 +94,7 @@ func TestTheCliMintsACustomersKey(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	token := minted(t, cmd.NewCmdKey(&c), "add",
+	token := stdoutOf(t, cmd.NewCmdKey(&c), "add",
 		"--tenant", "newco", "--holder", "admin", "--allow", "/roster.*/*")
 
 	// The prefix is a fact about which plane answered and never something a
@@ -197,4 +197,155 @@ func TestAKeyIsForOnePlaneOrTheOther(t *testing.T) {
 			x.ErrorContains(err, tc.says)
 		})
 	}
+}
+
+// TestRevokingReachesTheKeyItNames is a credential that was reported stopped
+// and had not been.
+//
+// `key revoke` erased on the **control plane** and nowhere else, and the
+// generated `Erase` answers no error for a row that is not there. So revoking
+// one of a customer's keys -- which `key add --tenant` mints, one command over
+// -- printed nothing, exited zero, and left the key working. That is the worst
+// direction for this particular act: somebody stopping a credential they
+// believe is leaked, being told it stopped.
+//
+// Nothing about the identifier says which plane it came from; both are `ApiKey`
+// rows in the same domain from the same generator. So it is a lookup, and one
+// on neither plane is a refusal rather than a silent success.
+func TestRevokingReachesTheKeyItNames(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	c := seedbed(t)
+
+	out, err := initRun(t, c)
+	x.NoError(err, "init: %s", out)
+
+	s, err := cmd.Build(ctx, c)
+	x.NoError(err)
+	t.Cleanup(func() { s.Close() })
+
+	tn, err := s.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: "newco"}.Build())
+	x.NoError(err)
+
+	h, err := s.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{
+		Tenant: app.TenantRef_builder{Id: tn.GetId()}.Build(),
+		Alias:  "alice",
+	}.Build())
+	x.NoError(err)
+
+	// Bound, because a key is never wider than the person it hangs off: one on
+	// somebody who holds nothing opens nothing, and this test would then pass
+	// on the wrong refusal.
+	r, err := s.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
+		Tenant:  app.TenantRef_builder{Id: tn.GetId()}.Build(),
+		Alias:   "reader",
+		Methods: []string{"/roster.MeService/Get"},
+	}.Build())
+	x.NoError(err)
+
+	_, err = s.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
+		Role:   app.RoleRef_builder{Id: r.GetId()}.Build(),
+		Holder: app.HolderRef_builder{Id: h.GetId()}.Build(),
+	}.Build())
+	x.NoError(err)
+	x.NoError(s.Close())
+
+	theirs := stdoutOf(t, cmd.NewCmdKey(&c), "add",
+		"--tenant", "newco", "--holder", "alice", "--allow", "/roster.MeService/Get")
+	ours := stdoutOf(t, cmd.NewCmdKey(&c), "add",
+		"--service", "custody", "--allow", "/roster.HolderService/Get")
+
+	// Both, which is the other half: this listed the control plane's alone, so
+	// the key the command beside it had just minted appeared nowhere.
+	vs := stdoutOf(t, cmd.NewCmdKey(&c), "list")
+	t.Logf("LIST:\n%s", vs)
+	x.Contains(vs, "@newco/alice/default", "a customer's key is not listed")
+	x.Contains(vs, "@owner/custody/default")
+
+	id := func(at string) string {
+		t.Helper()
+
+		for _, line := range strings.Split(vs, "\n") {
+			if strings.Contains(line, at) {
+				return strings.Fields(line)[0]
+			}
+		}
+
+		t.Fatalf("no key for %s in:\n%s", at, vs)
+
+		return ""
+	}
+
+	s2, err := cmd.Build(ctx, c)
+	x.NoError(err)
+	t.Cleanup(func() { s2.Close() })
+
+	conn := served(t, s2)
+
+	// Two probes, because the two kinds of key are not two of the same thing.
+	// An `rt_` **resolves to its holder**, so `MeService` answers about a
+	// person; an `rk_` presents as the key row and is nobody, so the same call
+	// is truthfully `NotFound` for it. Asking each what it is for is what makes
+	// a refusal here mean the key stopped rather than the probe being wrong.
+	refused := func(err error) bool {
+		t.Helper()
+		if err == nil {
+			return false
+		}
+
+		require.Equal(t, codes.Unauthenticated, status.Code(err), "%v", err)
+
+		return true
+	}
+
+	theirsWorks := func() bool {
+		t.Helper()
+
+		_, err := app.NewMeServiceClient(conn).Get(bearing(ctx, theirs),
+			app.MeGetRequest_builder{}.Build())
+
+		return !refused(err)
+	}
+
+	oursWorks := func() bool {
+		t.Helper()
+
+		_, err := app.NewHolderServiceClient(conn).Get(bearing(ctx, ours),
+			app.HolderGetRequest_builder{
+				Ref: app.HolderRef_builder{Id: h.GetId()}.Build(),
+			}.Build())
+
+		return !refused(err)
+	}
+
+	x.True(theirsWorks(), "the key does not work before it is revoked, so this proves nothing")
+	x.True(oursWorks())
+	x.NoError(s2.Close())
+
+	x.NoError(cmd.NewCmdKey(&c).Run(ctx, []string{"revoke", "--id", id("@newco/alice")}))
+
+	s3, err := cmd.Build(ctx, c)
+	x.NoError(err)
+	t.Cleanup(func() { s3.Close() })
+
+	conn = served(t, s3)
+	x.False(theirsWorks(), "a revoked key still opens the door")
+	x.True(oursWorks(), "revoking one key stopped another")
+
+	t.Run("and it is gone from the listing", func(t *testing.T) {
+		x := require.New(t)
+
+		// Erased rows filtered, which reading ent directly does not do: erasure
+		// is applied by the servers and this is under them.
+		x.NotContains(stdoutOf(t, cmd.NewCmdKey(&c), "list"), "@newco/alice/default")
+	})
+
+	t.Run("and a key on neither plane is a refusal", func(t *testing.T) {
+		x := require.New(t)
+
+		err := cmd.NewCmdKey(&c).Run(ctx, []string{"revoke", "--id", id("@newco/alice")})
+		x.Error(err, "revoking a key that is not there reported success")
+		x.ErrorContains(err, "either plane")
+	})
 }

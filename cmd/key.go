@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -13,8 +14,13 @@ import (
 	"github.com/lesomnus/z"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/google/uuid"
+
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
+
+	"github.com/lesomnus/roster/internal/ent"
+	entapikey "github.com/lesomnus/roster/internal/ent/apikey"
 
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
@@ -229,27 +235,16 @@ func newCmdKeyList(c *Config) *xli.Command {
 				return errors.New("this deployment has no control plane")
 			}
 
-			vs, err := s.Control.Ent.ApiKey.Query().WithHolder().All(ctx)
-			if err != nil {
+			// Both planes, because `add` writes to both. This listed the
+			// control plane's alone, so a customer's `rt_` -- which the command
+			// beside it mints -- appeared nowhere, and the only way to see one
+			// was `roster apikey ls`, which is a different command answering a
+			// different question.
+			if err := listKeys(ctx, os.Stdout, s.Control.Ent, ""); err != nil {
 				return err
 			}
 
-			for _, v := range vs {
-				who := "?"
-				if v.Edges.Holder != nil {
-					who = v.Edges.Holder.Alias
-				}
-
-				used := "never"
-				if v.DateUsed != nil {
-					used = v.DateUsed.Format(time.RFC3339)
-				}
-
-				fmt.Fprintf(os.Stdout, "%s\t@%s/%s\tused=%s\t%s\n",
-					pdid.Id(v.ID), who, v.Alias, used, strings.Join(v.Methods, ","))
-			}
-
-			return nil
+			return listKeys(ctx, os.Stdout, s.Ent, "")
 		}),
 	}
 }
@@ -289,7 +284,24 @@ func newCmdKeyRevoke(c *Config) *xli.Command {
 				return errors.New("this deployment has no control plane")
 			}
 
-			_, err = s.Control.Ungated.ApiKey().Erase(ctx,
+			// Which plane holds it, asked before anything is erased.
+			//
+			// This erased on the control plane and nowhere else, and the
+			// generated `Erase` answers no error for a row that is not there --
+			// so revoking a **customer's** key, which the command beside this
+			// one mints, reported success and left the key working. An operator
+			// stopping a leaked credential was told it had stopped.
+			//
+			// Nothing about the identifier says which plane it is on: both are
+			// `ApiKey` rows in the same domain, minted by the same generator.
+			// So it is a lookup and not a guess, and a key on neither plane is
+			// a refusal rather than a silent no-op.
+			at, err := keyPlane(ctx, s, k)
+			if err != nil {
+				return err
+			}
+
+			_, err = at.Ungated.ApiKey().Erase(ctx,
 				app.ApiKeyRef_builder{Id: k.Bytes()}.Build())
 
 			return err
@@ -468,3 +480,69 @@ const mintsForAnybody = "mints a credential for anybody, on the caller's word.\n
 	"`Vouch.Accept` is for a front door that did its own checking -- an OIDC flow --\n" +
 	"and it verifies nothing itself. An app that checks passwords through `Verify`\n" +
 	"does not need it, and should not have it."
+
+// listKeys writes one plane's keys, in the shape `roster key list` prints them.
+//
+// The tenant is printed as well as the alias, which the control plane's version
+// did not need and this one does: an alias is unique within a tenant, so
+// `@alice/laptop` is ambiguous across customers and `@newco/alice/laptop` is
+// not.
+func listKeys(ctx context.Context, w io.Writer, db *ent.Client, _ string) error {
+	// Erased rows left out, which reading ent directly does not do for you:
+	// erasure is applied by the servers and this is under them. A `list` that
+	// showed a key somebody had just revoked would be worse than one that is a
+	// moment behind.
+	vs, err := db.ApiKey.Query().
+		Where(entapikey.DateErasedIsNil()).
+		WithHolder(func(q *ent.HolderQuery) { q.WithTenant() }).
+		All(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, v := range vs {
+		who := "?"
+		if h := v.Edges.Holder; h != nil {
+			who = h.Alias
+			if t := h.Edges.Tenant; t != nil {
+				who = t.Alias + "/" + who
+			}
+		}
+
+		used := "never"
+		if v.DateUsed != nil {
+			used = v.DateUsed.Format(time.RFC3339)
+		}
+
+		fmt.Fprintf(w, "%s\t@%s/%s\tused=%s\t%s\n",
+			pdid.Id(v.ID), who, v.Alias, used, strings.Join(v.Methods, ","))
+	}
+
+	return nil
+}
+
+// keyPlane is the server holding the key with this identifier.
+//
+// Both planes are asked because both mint them and nothing about an identifier
+// says which one it came from -- they are `ApiKey` rows in the same domain from
+// the same generator. The control plane first, since that is where a key
+// somebody is revoking in a hurry usually is.
+//
+// A key on neither is an error. It was a silent success, which is the direction
+// that matters for this particular act: somebody stopping a credential they
+// believe is leaked must not be told it stopped when it did not.
+func keyPlane(ctx context.Context, s *Server, k pdid.Id) (*Server, error) {
+	for _, at := range []*Server{s.Control, s} {
+		n, err := at.Ent.ApiKey.Query().
+			Where(entapikey.IDEQ(uuid.UUID(k)), entapikey.DateErasedIsNil()).
+			Count(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if n > 0 {
+			return at, nil
+		}
+	}
+
+	return nil, fmt.Errorf("--id: no key %s on either plane", k)
+}

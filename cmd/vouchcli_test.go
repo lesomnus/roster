@@ -85,7 +85,7 @@ func TestTheCliWritesAWayInForAPerson(t *testing.T) {
 
 	// Generated here and answered with once, which is `IssueService`'s argument
 	// about a key unchanged: a secret the caller chose is one the caller knows.
-	secret := minted(t, cmd.NewCmdVouch(&c), "reset", "@newco/admin")
+	secret := stdoutOf(t, cmd.NewCmdVouch(&c), "reset", "@newco/admin")
 	x.NotEmpty(secret)
 
 	s2, err := cmd.Build(ctx, c)
@@ -177,7 +177,7 @@ func TestTheCliIsNotADoorPastTheCorpus(t *testing.T) {
 	t.Run("and a generated one goes through the same door", func(t *testing.T) {
 		x := require.New(t)
 
-		v := minted(t, cmd.NewCmdVouch(&c), "reset", "@newco/admin")
+		v := stdoutOf(t, cmd.NewCmdVouch(&c), "reset", "@newco/admin")
 		x.NotEmpty(v, "thirty-two random bytes were in a corpus of one")
 	})
 }
@@ -208,7 +208,7 @@ func TestUnlockSaysWhetherItDidAnything(t *testing.T) {
 	x.Error(err, "there was nothing to unlock and it said otherwise")
 	x.Equal(codes.NotFound, status.Code(err))
 
-	_ = minted(t, cmd.NewCmdVouch(&c), "reset", "@newco/admin")
+	_ = stdoutOf(t, cmd.NewCmdVouch(&c), "reset", "@newco/admin")
 
 	x.NoError(cmd.NewCmdVouch(&c).Run(ctx, []string{"unlock", "@newco/admin"}))
 
