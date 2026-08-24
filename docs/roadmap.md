@@ -517,3 +517,4 @@ is not a request* -- which survives because the generated check sits in the
 
 - [PLAN.md](../PLAN.md) — the decisions, and the twelve subjects
 - [position.md](position.md) — the line these are all on the near side of
+- [usage/](usage/) — what to type, per topic, and a tutorial

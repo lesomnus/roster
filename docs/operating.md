@@ -3,6 +3,12 @@
 Task-shaped: what to type, in the order it has to happen. What each part *is*
 lives in [position.md](position.md) and the package comments.
 
+If you are meeting roster for the first time, **[usage/](usage/)** is the
+gentler path — one page per topic, and a [tutorial](usage/tutorial.md) that
+takes an empty directory to a person signing in. This page is the same ground
+for somebody who has to run the thing: every port, the console, the audit trail,
+retention, and what goes wrong.
+
 ## The two planes
 
 roster runs twice in one process, on two databases.

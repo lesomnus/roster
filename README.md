@@ -197,8 +197,12 @@ roster key add --tenant newco --holder admin --allow '/roster.*/*'
 
 The key is printed once, resolves to that person, and is walled to their tenant.
 For a person rather than a machine, `roster vouch reset @newco/admin` prints a
-password instead. `docs/operating.md` is the long version, including the same
-acts from a console for an operator with no shell.
+password instead.
+
+**[docs/usage/](docs/usage/)** is this at length: what to type, page by page,
+with a [tutorial](docs/usage/tutorial.md) that goes from an empty directory to a
+person signing in. `docs/operating.md` is the operator's version — ports, the
+console, the trail, retention, upgrades.
 
 `init` is there because there is nowhere else it could be. A tenant is not put
 up from inside one, so the first row of a deployment cannot arrive over the API
