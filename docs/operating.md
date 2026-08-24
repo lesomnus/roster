@@ -176,9 +176,24 @@ A key resolves to its **holder**, so what comes back is that person — their
 tenant, and `/roster.*/*` as the pattern rather than what it expands to.
 
 For somebody at a browser rather than something that calls, the way in is a
-password, and that is `VouchService.Reset` on `admin.addr` — the console, below.
-There is no CLI for it: a password is generated and read out to a person, which
-is an act with somebody on the other end of it.
+password:
+
+```sh
+roster vouch reset @newco/admin              # generated here, printed once
+printf '%s' "${PASSWORD}" \
+  | roster vouch set --password-stdin @newco/admin   # one they chose
+roster vouch unlock @newco/admin             # wrong answers closed it
+```
+
+`reset` generates, because a secret the caller chose is a secret the caller
+knows. `set` never takes the password as an argument — an argument is in the
+shell history and in the process list, which is the same rule `roster init` and
+`roster key add` are on. Neither can tell anybody what a password *was*: what is
+stored is an argon2id hash.
+
+`vouch.breached` applies to all three. A deployment that named a corpus has said
+it will not hold a password somebody has already lost, and that is a fact about
+the secret rather than about the door it came through.
 
 ### If an app already knows this organisation
 
@@ -206,6 +221,10 @@ An operator with no shell does it from the customers screen, which has a form
 above the list: the same four writes in the same order, then a password or a key
 on the person's own panel. `admin.addr` is the port, and it needs a control
 plane because the session it reads names a holder of that plane.
+
+Nothing is only there and nothing is only here. Both reach the same services
+over the same rows, so which one an operator uses is about whether they have a
+shell rather than about what they are allowed to do.
 
 That path is not the local one with a UI on top. These commands go through
 `Ungated`; the console goes over a port, as a session, through every rule — and
@@ -1016,7 +1035,8 @@ the one feature whose whole job is to say yes.
 ### What a local operator does
 
 For a deployment with no mail, where the person who delivers a recovery code is
-a person.
+a person. `roster vouch reset|set|unlock` at a shell, or the person's own panel
+in the console; the same three RPCs either way.
 
 | | |
 | --- | --- |

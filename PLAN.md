@@ -622,17 +622,33 @@ customer's, and a command that made one by mentioning them would write rows into
 somebody else's tenant by typo. `IssueKeyRequest.holder` had already decided
 this for the RPC; the command agrees with it.
 
-#### What is still only a console
+#### And the way in for a person, which was nearly left behind
 
-A **password**. `VouchService.Reset` generates one and answers with it once, for
-an operator to read out to a person -- an act with somebody on the other end of
-it, which is the shape D28 arrived at for a deployment with no mail. A CLI form
-would be a secret on a terminal with nobody to hand it to, and the person who
-needs it is on a telephone with an operator who is signed in.
+This decision was first written with a password kept back: `VouchService.Reset`
+generates one and an operator reads it out, *an act with somebody on the other
+end of it*, so a terminal was the wrong place and the console was the right one.
 
-So the terminal can stand a customer up and give a **machine** a way in, and the
-console is where a **person** gets one. That is a line worth having rather than
-one left over.
+That is not a difference and it did not survive being said out loud. An operator
+at a console is a person at a screen reading a secret out; both reach the same
+service over the same rows, and `admin.addr` is one of them making an RPC
+exactly as a command is. What the reason described was which of the two had been
+written -- which is how a missing feature gets a principle attached to it.
+
+So `roster vouch reset`, `set` and `unlock`, which are the three acts
+`docs/operating.md` already listed as an operator's. `set` reads the password
+from **stdin** and there is no flag for it, which is `init --password-stdin`'s
+rule and `key add`'s reason for refusing to take a key.
+
+`WithBreached` and `WithKeys` are handed over exactly as `cmd/admin.go` hands
+them, and that is not decoration: leaving the corpus off one door made that door
+the only way a known-leaked password could get in, while every other one refused
+it and nothing said they disagreed. It happened once already, on the admin port.
+`WithReach` is left out, as it is there and for a plainer reason -- it reads
+what the caller holds, and a shell is not a caller.
+
+Which leaves the line where it should have been from the start: **nothing is
+only in one of them.** Whether an operator uses a terminal or a console is about
+whether they have a shell, not about what they may do.
 
 ### D56 · A customer is an operator's act, not a seed
 

@@ -505,6 +505,7 @@ func Cmd(c *Config) *xli.Command {
 			pdcmd.NewCmdConfig(Loader, c),
 			NewCmdInit(c),
 			NewCmdKey(c),
+			NewCmdVouch(c),
 			NewCmdTrail(c),
 			NewCmdForget(c),
 			NewCmdRestore(c),
