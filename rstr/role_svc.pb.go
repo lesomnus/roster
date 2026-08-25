@@ -365,10 +365,10 @@ func (x *RoleRef) GetId() []byte {
 	return nil
 }
 
-func (x *RoleRef) GetAlias() *RoleRefByAlias {
+func (x *RoleRef) GetSlug() *RoleRefBySlug {
 	if x != nil {
-		if x, ok := x.xxx_hidden_Key.(*roleRef_Alias); ok {
-			return x.Alias
+		if x, ok := x.xxx_hidden_Key.(*roleRef_Slug); ok {
+			return x.Slug
 		}
 	}
 	return nil
@@ -381,12 +381,12 @@ func (x *RoleRef) SetId(v []byte) {
 	x.xxx_hidden_Key = &roleRef_Id{v}
 }
 
-func (x *RoleRef) SetAlias(v *RoleRefByAlias) {
+func (x *RoleRef) SetSlug(v *RoleRefBySlug) {
 	if v == nil {
 		x.xxx_hidden_Key = nil
 		return
 	}
-	x.xxx_hidden_Key = &roleRef_Alias{v}
+	x.xxx_hidden_Key = &roleRef_Slug{v}
 }
 
 func (x *RoleRef) HasKey() bool {
@@ -404,11 +404,11 @@ func (x *RoleRef) HasId() bool {
 	return ok
 }
 
-func (x *RoleRef) HasAlias() bool {
+func (x *RoleRef) HasSlug() bool {
 	if x == nil {
 		return false
 	}
-	_, ok := x.xxx_hidden_Key.(*roleRef_Alias)
+	_, ok := x.xxx_hidden_Key.(*roleRef_Slug)
 	return ok
 }
 
@@ -422,15 +422,15 @@ func (x *RoleRef) ClearId() {
 	}
 }
 
-func (x *RoleRef) ClearAlias() {
-	if _, ok := x.xxx_hidden_Key.(*roleRef_Alias); ok {
+func (x *RoleRef) ClearSlug() {
+	if _, ok := x.xxx_hidden_Key.(*roleRef_Slug); ok {
 		x.xxx_hidden_Key = nil
 	}
 }
 
 const RoleRef_Key_not_set_case case_RoleRef_Key = 0
 const RoleRef_Id_case case_RoleRef_Key = 1
-const RoleRef_Alias_case case_RoleRef_Key = 2
+const RoleRef_Slug_case case_RoleRef_Key = 4
 
 func (x *RoleRef) WhichKey() case_RoleRef_Key {
 	if x == nil {
@@ -439,8 +439,8 @@ func (x *RoleRef) WhichKey() case_RoleRef_Key {
 	switch x.xxx_hidden_Key.(type) {
 	case *roleRef_Id:
 		return RoleRef_Id_case
-	case *roleRef_Alias:
-		return RoleRef_Alias_case
+	case *roleRef_Slug:
+		return RoleRef_Slug_case
 	default:
 		return RoleRef_Key_not_set_case
 	}
@@ -450,8 +450,8 @@ type RoleRef_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	// Fields of oneof xxx_hidden_Key:
-	Id    []byte
-	Alias *RoleRefByAlias
+	Id   []byte
+	Slug *RoleRefBySlug
 	// -- end of xxx_hidden_Key
 }
 
@@ -462,8 +462,8 @@ func (b0 RoleRef_builder) Build() *RoleRef {
 	if b.Id != nil {
 		x.xxx_hidden_Key = &roleRef_Id{b.Id}
 	}
-	if b.Alias != nil {
-		x.xxx_hidden_Key = &roleRef_Alias{b.Alias}
+	if b.Slug != nil {
+		x.xxx_hidden_Key = &roleRef_Slug{b.Slug}
 	}
 	return m0
 }
@@ -486,38 +486,38 @@ type roleRef_Id struct {
 	Id []byte `protobuf:"bytes,1,opt,name=id,oneof"`
 }
 
-type roleRef_Alias struct {
-	Alias *RoleRefByAlias `protobuf:"bytes,2,opt,name=alias,oneof"`
+type roleRef_Slug struct {
+	Slug *RoleRefBySlug `protobuf:"bytes,4,opt,name=slug,oneof"`
 }
 
 func (*roleRef_Id) isRoleRef_Key() {}
 
-func (*roleRef_Alias) isRoleRef_Key() {}
+func (*roleRef_Slug) isRoleRef_Key() {}
 
-type RoleRefByAlias struct {
+type RoleRefBySlug struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Tenant      *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
 	xxx_hidden_Alias       *string                `protobuf:"bytes,4,opt,name=alias"`
+	xxx_hidden_Tenant      *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
 
-func (x *RoleRefByAlias) Reset() {
-	*x = RoleRefByAlias{}
+func (x *RoleRefBySlug) Reset() {
+	*x = RoleRefBySlug{}
 	mi := &file_app_role_svc_g_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *RoleRefByAlias) String() string {
+func (x *RoleRefBySlug) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*RoleRefByAlias) ProtoMessage() {}
+func (*RoleRefBySlug) ProtoMessage() {}
 
-func (x *RoleRefByAlias) ProtoReflect() protoreflect.Message {
+func (x *RoleRefBySlug) ProtoReflect() protoreflect.Message {
 	mi := &file_app_role_svc_g_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -529,14 +529,7 @@ func (x *RoleRefByAlias) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *RoleRefByAlias) GetTenant() *TenantRef {
-	if x != nil {
-		return x.xxx_hidden_Tenant
-	}
-	return nil
-}
-
-func (x *RoleRefByAlias) GetAlias() string {
+func (x *RoleRefBySlug) GetAlias() string {
 	if x != nil {
 		if x.xxx_hidden_Alias != nil {
 			return *x.xxx_hidden_Alias
@@ -546,54 +539,61 @@ func (x *RoleRefByAlias) GetAlias() string {
 	return ""
 }
 
-func (x *RoleRefByAlias) SetTenant(v *TenantRef) {
+func (x *RoleRefBySlug) GetTenant() *TenantRef {
+	if x != nil {
+		return x.xxx_hidden_Tenant
+	}
+	return nil
+}
+
+func (x *RoleRefBySlug) SetAlias(v string) {
+	x.xxx_hidden_Alias = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 2)
+}
+
+func (x *RoleRefBySlug) SetTenant(v *TenantRef) {
 	x.xxx_hidden_Tenant = v
 }
 
-func (x *RoleRefByAlias) SetAlias(v string) {
-	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 2)
+func (x *RoleRefBySlug) HasAlias() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
 }
 
-func (x *RoleRefByAlias) HasTenant() bool {
+func (x *RoleRefBySlug) HasTenant() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Tenant != nil
 }
 
-func (x *RoleRefByAlias) HasAlias() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
-}
-
-func (x *RoleRefByAlias) ClearTenant() {
-	x.xxx_hidden_Tenant = nil
-}
-
-func (x *RoleRefByAlias) ClearAlias() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+func (x *RoleRefBySlug) ClearAlias() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Alias = nil
 }
 
-type RoleRefByAlias_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Tenant *TenantRef
-	Alias  *string
+func (x *RoleRefBySlug) ClearTenant() {
+	x.xxx_hidden_Tenant = nil
 }
 
-func (b0 RoleRefByAlias_builder) Build() *RoleRefByAlias {
-	m0 := &RoleRefByAlias{}
+type RoleRefBySlug_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Alias  *string
+	Tenant *TenantRef
+}
+
+func (b0 RoleRefBySlug_builder) Build() *RoleRefBySlug {
+	m0 := &RoleRefBySlug{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_Tenant = b.Tenant
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 2)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 2)
 		x.xxx_hidden_Alias = b.Alias
 	}
+	x.xxx_hidden_Tenant = b.Tenant
 	return m0
 }
 
@@ -2856,14 +2856,14 @@ const file_app_role_svc_g_proto_rawDesc = "" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"_\n" +
 	"\x0eRoleGetRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.roster.RoleRefR\x03ref\x12*\n" +
-	"\x06select\x18\x02 \x01(\v2\x12.roster.RoleSelectR\x06select\"R\n" +
+	"\x06select\x18\x02 \x01(\v2\x12.roster.RoleSelectR\x06select\"O\n" +
 	"\aRoleRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12.\n" +
-	"\x05alias\x18\x02 \x01(\v2\x16.roster.RoleRefByAliasH\x00R\x05aliasB\x05\n" +
-	"\x03key\"Q\n" +
-	"\x0eRoleRefByAlias\x12)\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x14\n" +
-	"\x05alias\x18\x04 \x01(\tR\x05alias\"\xb3\x02\n" +
+	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12+\n" +
+	"\x04slug\x18\x04 \x01(\v2\x15.roster.RoleRefBySlugH\x00R\x04slugB\x05\n" +
+	"\x03key\"P\n" +
+	"\rRoleRefBySlug\x12\x14\n" +
+	"\x05alias\x18\x04 \x01(\tR\x05alias\x12)\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\"\xb3\x02\n" +
 	"\n" +
 	"RoleSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
@@ -2963,7 +2963,7 @@ var file_app_role_svc_g_proto_goTypes = []any{
 	(*RoleAddRequest)(nil),        // 0: roster.RoleAddRequest
 	(*RoleGetRequest)(nil),        // 1: roster.RoleGetRequest
 	(*RoleRef)(nil),               // 2: roster.RoleRef
-	(*RoleRefByAlias)(nil),        // 3: roster.RoleRefByAlias
+	(*RoleRefBySlug)(nil),         // 3: roster.RoleRefBySlug
 	(*RoleSelect)(nil),            // 4: roster.RoleSelect
 	(*RolePatchRequest)(nil),      // 5: roster.RolePatchRequest
 	(*RoleApplyRequest)(nil),      // 6: roster.RoleApplyRequest
@@ -3000,8 +3000,8 @@ var file_app_role_svc_g_proto_depIdxs = []int32{
 	23, // 2: roster.RoleAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 3: roster.RoleGetRequest.ref:type_name -> roster.RoleRef
 	4,  // 4: roster.RoleGetRequest.select:type_name -> roster.RoleSelect
-	3,  // 5: roster.RoleRef.alias:type_name -> roster.RoleRefByAlias
-	21, // 6: roster.RoleRefByAlias.tenant:type_name -> roster.TenantRef
+	3,  // 5: roster.RoleRef.slug:type_name -> roster.RoleRefBySlug
+	21, // 6: roster.RoleRefBySlug.tenant:type_name -> roster.TenantRef
 	24, // 7: roster.RoleSelect.tenant:type_name -> roster.TenantSelect
 	25, // 8: roster.RoleSelect.site:type_name -> roster.SiteSelect
 	2,  // 9: roster.RolePatchRequest.ref:type_name -> roster.RoleRef
@@ -3072,7 +3072,7 @@ func file_app_role_svc_g_proto_init() {
 	file_roster_payday_tenant_svc_g_proto_init()
 	file_app_role_svc_g_proto_msgTypes[2].OneofWrappers = []any{
 		(*roleRef_Id)(nil),
-		(*roleRef_Alias)(nil),
+		(*roleRef_Slug)(nil),
 	}
 	file_app_role_svc_g_proto_msgTypes[13].OneofWrappers = []any{
 		(*bindingRef_Id)(nil),

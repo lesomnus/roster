@@ -43,14 +43,14 @@ message ApiKeyGetRequest {
 message ApiKeyRef {
   oneof key {
     bytes id = 1;
-    ApiKeyRefByAlias alias = 2;
+    ApiKeyRefBySlug slug = 4;
     bytes secret = 9;
   }
 }
 
-message ApiKeyRefByAlias {
-  HolderRef holder = 2;
+message ApiKeyRefBySlug {
   string alias = 4;
+  HolderRef holder = 2;
 }
 
 message ApiKeySelect {

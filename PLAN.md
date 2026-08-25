@@ -632,25 +632,49 @@ frame, and a local run has no caller because it opens the database. Being told
 to name `client.addr` is the useful answer; `Unimplemented` would be true and
 useless.
 
-#### And a third thing, which is neither
+#### And a third thing, which was neither -- done
 
-Three entities cannot be named `@tenant/alias` on a command line at all --
-**`Role`, `Group` and `ApiKey`** -- so `roster role get @newco/support` is an
-error and only an identifier works. Two of those are the entities a permission
+Three entities could not be named `@tenant/alias` on a command line at all --
+**`Role`, `Group` and `ApiKey`** -- so `roster role get @newco/support` was an
+error and only an identifier worked. Two of those are the entities a permission
 question is mostly about.
 
-It is not a rule anybody chose. `pdcmd` fills a reference by looking for a field
-called **`slug`**, and the name of that field is the name of the **index** the
-entity declares: `holder.proto` calls its index `slug` and `role.proto` calls
-its `alias`, so one gets `HolderRefBySlug` and the other `RoleRefByAlias`. Same
-fields, same meaning, different name, and the CLI recognises one of them.
+It was not a rule anybody chose. `pdcmd` fills a reference by looking for a
+field called **`slug`**, and the name of that field is the name of the **index**
+the entity declares: `holder.proto` called its index `slug` and `role.proto`
+called its `alias`, so one got `HolderRefBySlug` and the other
+`RoleRefByAlias`. Same fields, same meaning, different name, and the CLI
+recognised one of them.
 
-The fix is one word per entity in a file that is roster's. What it costs is a
-**breaking proto change**: the ref message is renamed and so is the oneof field,
-which `buf breaking` will refuse and which every client including `ts/gen` has
-to move with. So it is worth doing deliberately and in one go rather than as a
-side effect of this, and it is written down here so that the next person to hit
-it finds the reason rather than the symptom.
+The three also declared their `refs` in the other order -- parent first, then
+alias, where payday's `Holder` and roster's own `Site` and `Team` all put the
+alias first. That one changed nothing today: `pd gen` normalises fields before
+edges when it emits the ent index, so the SQL is `(alias, tenant)` either way
+and the generated diff shows no migration. What it did change is the field order
+of the generated ref message, and *nothing today* is a poor reason to keep two
+conventions.
+
+So both, in one go, for all three: `name: "slug"` and the alias first.
+
+##### What it broke, exactly
+
+	proto/app/apikey_svc.g.proto  message "ApiKeyRefByAlias" was deleted
+	                              field "2" name "alias" on "ApiKeyRef" was deleted
+	proto/app/group_svc.g.proto   message "GroupRefByAlias" was deleted
+	                              field "2" name "alias" on "GroupRef" was deleted
+	proto/app/role_svc.g.proto    message "RoleRefByAlias" was deleted
+	                              field "2" name "alias" on "RoleRef" was deleted
+
+Six, all of them the rename, and no field number moved. Anything already
+calling these protos migrates `RoleRef{alias:}` to `RoleRef{slug:}`, and the
+message it holds is `RoleRefBySlug`. Taken deliberately and now, while that is
+one caller under the same roof, because the shape of a reference is the last
+thing worth having two of.
+
+`buf breaking` in CI compares against `origin/main`, which on a push **is** the
+commit being pushed -- so it would have passed this without looking. The output
+above is from running it by hand against the commit before. A check that cannot
+see a break is not a reason to pretend there was none.
 
 #### `Apply` is not on that list
 

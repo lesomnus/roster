@@ -505,15 +505,15 @@ func pickRole(req *rstr.RoleRef) (predicate.Role, error) {
 		} else {
 			return role.IDEQ(v), nil
 		}
-	case rstr.RoleRef_Alias_case:
-		k := req.GetAlias()
+	case rstr.RoleRef_Slug_case:
+		k := req.GetSlug()
 		ps := make([]predicate.Role, 0, 2)
+		ps = append(ps, role.AliasEQ(k.GetAlias()))
 		if p, err := TenantPick(k.GetTenant()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "alias.tenant: %s", err)
+			return nil, status.Errorf(codes.InvalidArgument, "slug.tenant: %s", err)
 		} else {
 			ps = append(ps, role.HasTenantWith(p))
 		}
-		ps = append(ps, role.AliasEQ(k.GetAlias()))
 		return role.And(ps...), nil
 	case rstr.RoleRef_Key_not_set_case:
 		return nil, status.Errorf(codes.InvalidArgument, "key not set: Role")

@@ -88,10 +88,11 @@ message Group {
         ]
       },
       {
-        name: "alias"
+        // payday's shape: `slug`, alias before parent. See `Role` and D58.
+        name: "slug"
         refs: [
-          {name: "tenant", number: 2},
-          {name: "alias", number: 4}
+          {name: "alias", number: 4},
+          {name: "tenant", number: 2}
         ]
         unique: true
       }

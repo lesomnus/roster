@@ -53,7 +53,7 @@ roster tenant add @newco '{"name":"Newco Ltd"}'
 roster holder add @newco/admin '{"name":"Ada Admin"}'
 roster role   add @newco/everything '{"methods":["/roster.*/*"]}'
 
-echo '{"role":  {"alias":{"alias":"everything","tenant":{"alias":"newco"}}},
+echo '{"role":  {"slug":{"alias":"everything","tenant":{"alias":"newco"}}},
        "holder":{"slug": {"alias":"admin",     "tenant":{"alias":"newco"}}}}' \
   | roster binding add -
 ```
@@ -78,7 +78,7 @@ roster holder add @newco/alice '{"name":"Alice Nguyen"}'
 roster role   add @newco/support \
   '{"methods":["/roster.HolderService/Get","/roster.HolderService/List","/roster.MeService/Get"]}'
 
-echo '{"role":  {"alias":{"alias":"support","tenant":{"alias":"newco"}}},
+echo '{"role":  {"slug":{"alias":"support","tenant":{"alias":"newco"}}},
        "holder":{"slug": {"alias":"alice",   "tenant":{"alias":"newco"}}}}' \
   | roster binding add -
 ```

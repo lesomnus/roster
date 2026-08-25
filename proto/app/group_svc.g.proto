@@ -58,13 +58,13 @@ message GroupGetRequest {
 message GroupRef {
   oneof key {
     bytes id = 1;
-    GroupRefByAlias alias = 2;
+    GroupRefBySlug slug = 4;
   }
 }
 
-message GroupRefByAlias {
-  TenantRef tenant = 2;
+message GroupRefBySlug {
   string alias = 4;
+  TenantRef tenant = 2;
 }
 
 message GroupSelect {

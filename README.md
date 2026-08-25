@@ -188,7 +188,7 @@ customers. The first one is four local writes and a key, from a terminal:
 roster tenant add @newco
 roster holder add @newco/admin
 roster role   add @newco/everything '{"methods":["/roster.*/*"]}'
-echo '{"role":  {"alias":{"alias":"everything","tenant":{"alias":"newco"}}},
+echo '{"role":  {"slug":{"alias":"everything","tenant":{"alias":"newco"}}},
        "holder":{"slug": {"alias":"admin",     "tenant":{"alias":"newco"}}}}' \
   | roster binding add -
 

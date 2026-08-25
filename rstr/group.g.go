@@ -16,10 +16,10 @@ func (x *Group) Ref() *GroupRef {
 		return GroupById(v)
 	}
 	{
-		v1 := x.GetTenant()
-		v2 := x.GetAlias()
-		if v1 != nil && len(v2) > 0 {
-			return GroupByAlias(v1.Ref(), v2)
+		v1 := x.GetAlias()
+		v2 := x.GetTenant()
+		if len(v1) > 0 && v2 != nil {
+			return GroupBySlug(v1, v2.Ref())
 		}
 	}
 
@@ -34,10 +34,10 @@ func (x *GroupRef) Picks(v *Group) bool {
 	switch x.WhichKey() {
 	case GroupRef_Id_case:
 		return bytes.Equal(x.GetId(), v.GetId())
-	case GroupRef_Alias_case:
-		x := x.GetAlias()
-		return (x.GetTenant().Picks(v.GetTenant())) &&
-			(x.GetAlias() == v.GetAlias())
+	case GroupRef_Slug_case:
+		x := x.GetSlug()
+		return (x.GetAlias() == v.GetAlias()) &&
+			(x.GetTenant().Picks(v.GetTenant()))
 	default:
 		return false
 	}
@@ -64,15 +64,15 @@ func GroupGetById(v []byte) *GroupGetRequest {
 	return GroupGetRequest_builder{Ref: GroupById(v)}.Build()
 }
 
-func GroupByAlias(tenant *TenantRef, alias string) *GroupRef {
-	x := &GroupRefByAlias{}
-	x.SetTenant(tenant)
+func GroupBySlug(alias string, tenant *TenantRef) *GroupRef {
+	x := &GroupRefBySlug{}
 	x.SetAlias(alias)
-	return GroupRef_builder{Alias: x}.Build()
+	x.SetTenant(tenant)
+	return GroupRef_builder{Slug: x}.Build()
 }
 
-func GroupGetByAlias(tenant *TenantRef, alias string) *GroupGetRequest {
-	return GroupGetRequest_builder{Ref: GroupByAlias(tenant, alias)}.Build()
+func GroupGetBySlug(alias string, tenant *TenantRef) *GroupGetRequest {
+	return GroupGetRequest_builder{Ref: GroupBySlug(alias, tenant)}.Build()
 }
 
 func (x *GroupMembershipRef) Pick() *GroupMembershipGetRequest {

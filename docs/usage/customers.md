@@ -37,9 +37,16 @@ naming* and the inner one is the name:
 ```json
 {"tenant": {"alias": "newco"}}
 {"holder": {"slug": {"alias": "alice", "tenant": {"alias": "newco"}}}}
-{"role":   {"alias": {"alias": "everything", "tenant": {"alias": "newco"}}}}
+{"role":   {"slug": {"alias": "everything", "tenant": {"alias": "newco"}}}}
+{"team":   {"slug": {"alias": "eu-ops", "site": {"slug": {"alias": "eu", "…": ""}}}}}
 {"holder": {"id": "01a03322-4034-842a-8802-990533c39e6a"}}
 ```
+
+`Tenant` is the exception and carries the string directly, because a tenant's
+alias is unique on its own — there is no parent to name it within. Everything
+else is `{"slug": {"alias": …, "<parent>": …}}`, and the parent is whatever the
+alias is unique inside: a tenant for most, a **site** for a team, a **holder**
+for a key.
 
 `roster <entity> add --help` prints the shape when you cannot remember it.
 
@@ -98,7 +105,7 @@ roster tenant add @newco
 roster holder add @newco/admin
 roster role   add @newco/everything '{"methods":["/roster.*/*"]}'
 
-echo '{"role":  {"alias":{"alias":"everything","tenant":{"alias":"newco"}}},
+echo '{"role":  {"slug":{"alias":"everything","tenant":{"alias":"newco"}}},
        "holder":{"slug": {"alias":"admin",     "tenant":{"alias":"newco"}}}}' \
   | roster binding add -
 ```

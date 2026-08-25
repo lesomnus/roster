@@ -129,10 +129,15 @@ message ApiKey {
         ]
       },
       {
-        name: "alias"
+        // payday's shape: `slug`, alias before parent. The parent is a holder
+        // rather than a tenant, which changes nothing about the naming -- a key
+        // is unique among **one person's**, which is what makes `@acme/alice`
+        // the wrong half of a reference to it and its identifier the right one.
+        // See `Role` and D58.
+        name: "slug"
         refs: [
-          {name: "holder", number: 2},
-          {name: "alias", number: 4}
+          {name: "alias", number: 4},
+          {name: "holder", number: 2}
         ]
         unique: true
       }

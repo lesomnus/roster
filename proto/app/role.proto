@@ -119,10 +119,18 @@ message Role {
         ]
       },
       {
-        name: "alias"
+        // `slug`, and the alias before the parent, which is payday's shape --
+        // `Holder`, `Site` and `Team` all declare theirs this way. The name is
+        // not decoration: the ref message a contract gets is named after this
+        // index and so is its field, so `slug` here is `RoleRefBySlug{slug}`
+        // and `alias` here was `RoleRefByAlias{alias}` -- and `pdcmd` fills a
+        // reference from a field called `slug`, so `roster role get
+        // @acme/support` was an error and only an identifier worked. See
+        // PLAN.md D58.
+        name: "slug"
         refs: [
-          {name: "tenant", number: 2},
-          {name: "alias", number: 4}
+          {name: "alias", number: 4},
+          {name: "tenant", number: 2}
         ]
         unique: true
       }

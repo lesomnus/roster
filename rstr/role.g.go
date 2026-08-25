@@ -16,10 +16,10 @@ func (x *Role) Ref() *RoleRef {
 		return RoleById(v)
 	}
 	{
-		v1 := x.GetTenant()
-		v2 := x.GetAlias()
-		if v1 != nil && len(v2) > 0 {
-			return RoleByAlias(v1.Ref(), v2)
+		v1 := x.GetAlias()
+		v2 := x.GetTenant()
+		if len(v1) > 0 && v2 != nil {
+			return RoleBySlug(v1, v2.Ref())
 		}
 	}
 
@@ -34,10 +34,10 @@ func (x *RoleRef) Picks(v *Role) bool {
 	switch x.WhichKey() {
 	case RoleRef_Id_case:
 		return bytes.Equal(x.GetId(), v.GetId())
-	case RoleRef_Alias_case:
-		x := x.GetAlias()
-		return (x.GetTenant().Picks(v.GetTenant())) &&
-			(x.GetAlias() == v.GetAlias())
+	case RoleRef_Slug_case:
+		x := x.GetSlug()
+		return (x.GetAlias() == v.GetAlias()) &&
+			(x.GetTenant().Picks(v.GetTenant()))
 	default:
 		return false
 	}
@@ -64,15 +64,15 @@ func RoleGetById(v []byte) *RoleGetRequest {
 	return RoleGetRequest_builder{Ref: RoleById(v)}.Build()
 }
 
-func RoleByAlias(tenant *TenantRef, alias string) *RoleRef {
-	x := &RoleRefByAlias{}
-	x.SetTenant(tenant)
+func RoleBySlug(alias string, tenant *TenantRef) *RoleRef {
+	x := &RoleRefBySlug{}
 	x.SetAlias(alias)
-	return RoleRef_builder{Alias: x}.Build()
+	x.SetTenant(tenant)
+	return RoleRef_builder{Slug: x}.Build()
 }
 
-func RoleGetByAlias(tenant *TenantRef, alias string) *RoleGetRequest {
-	return RoleGetRequest_builder{Ref: RoleByAlias(tenant, alias)}.Build()
+func RoleGetBySlug(alias string, tenant *TenantRef) *RoleGetRequest {
+	return RoleGetRequest_builder{Ref: RoleBySlug(alias, tenant)}.Build()
 }
 
 func (x *BindingRef) Pick() *BindingGetRequest {

@@ -32,9 +32,10 @@ jobs:
 
       # One baseline, and only one: roster's buf module has no name, so it is
       # published nowhere and there is no BSR ref to compare against. That does
-      # not make the check pointless -- roster's protos are an API, and kamino2
-      # is already a caller of it. Breaking the wire on purpose is a migration
-      # and should be argued for in a review rather than discovered downstream.
+      # not make the check pointless -- roster's protos are an API and there is
+      # already an app on the other side of it. Breaking the wire on purpose is
+      # a migration and should be argued for in a review rather than discovered
+      # downstream.
       #
       # `ref=origin/main` rather than `branch=main`: a pull request is checked
       # out detached and has no local `main`.

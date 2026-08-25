@@ -498,15 +498,15 @@ func pickGroup(req *rstr.GroupRef) (predicate.Group, error) {
 		} else {
 			return group.IDEQ(v), nil
 		}
-	case rstr.GroupRef_Alias_case:
-		k := req.GetAlias()
+	case rstr.GroupRef_Slug_case:
+		k := req.GetSlug()
 		ps := make([]predicate.Group, 0, 2)
+		ps = append(ps, group.AliasEQ(k.GetAlias()))
 		if p, err := TenantPick(k.GetTenant()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "alias.tenant: %s", err)
+			return nil, status.Errorf(codes.InvalidArgument, "slug.tenant: %s", err)
 		} else {
 			ps = append(ps, group.HasTenantWith(p))
 		}
-		ps = append(ps, group.AliasEQ(k.GetAlias()))
 		return group.And(ps...), nil
 	case rstr.GroupRef_Key_not_set_case:
 		return nil, status.Errorf(codes.InvalidArgument, "key not set: Group")

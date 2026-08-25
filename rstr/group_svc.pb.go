@@ -351,10 +351,10 @@ func (x *GroupRef) GetId() []byte {
 	return nil
 }
 
-func (x *GroupRef) GetAlias() *GroupRefByAlias {
+func (x *GroupRef) GetSlug() *GroupRefBySlug {
 	if x != nil {
-		if x, ok := x.xxx_hidden_Key.(*groupRef_Alias); ok {
-			return x.Alias
+		if x, ok := x.xxx_hidden_Key.(*groupRef_Slug); ok {
+			return x.Slug
 		}
 	}
 	return nil
@@ -367,12 +367,12 @@ func (x *GroupRef) SetId(v []byte) {
 	x.xxx_hidden_Key = &groupRef_Id{v}
 }
 
-func (x *GroupRef) SetAlias(v *GroupRefByAlias) {
+func (x *GroupRef) SetSlug(v *GroupRefBySlug) {
 	if v == nil {
 		x.xxx_hidden_Key = nil
 		return
 	}
-	x.xxx_hidden_Key = &groupRef_Alias{v}
+	x.xxx_hidden_Key = &groupRef_Slug{v}
 }
 
 func (x *GroupRef) HasKey() bool {
@@ -390,11 +390,11 @@ func (x *GroupRef) HasId() bool {
 	return ok
 }
 
-func (x *GroupRef) HasAlias() bool {
+func (x *GroupRef) HasSlug() bool {
 	if x == nil {
 		return false
 	}
-	_, ok := x.xxx_hidden_Key.(*groupRef_Alias)
+	_, ok := x.xxx_hidden_Key.(*groupRef_Slug)
 	return ok
 }
 
@@ -408,15 +408,15 @@ func (x *GroupRef) ClearId() {
 	}
 }
 
-func (x *GroupRef) ClearAlias() {
-	if _, ok := x.xxx_hidden_Key.(*groupRef_Alias); ok {
+func (x *GroupRef) ClearSlug() {
+	if _, ok := x.xxx_hidden_Key.(*groupRef_Slug); ok {
 		x.xxx_hidden_Key = nil
 	}
 }
 
 const GroupRef_Key_not_set_case case_GroupRef_Key = 0
 const GroupRef_Id_case case_GroupRef_Key = 1
-const GroupRef_Alias_case case_GroupRef_Key = 2
+const GroupRef_Slug_case case_GroupRef_Key = 4
 
 func (x *GroupRef) WhichKey() case_GroupRef_Key {
 	if x == nil {
@@ -425,8 +425,8 @@ func (x *GroupRef) WhichKey() case_GroupRef_Key {
 	switch x.xxx_hidden_Key.(type) {
 	case *groupRef_Id:
 		return GroupRef_Id_case
-	case *groupRef_Alias:
-		return GroupRef_Alias_case
+	case *groupRef_Slug:
+		return GroupRef_Slug_case
 	default:
 		return GroupRef_Key_not_set_case
 	}
@@ -436,8 +436,8 @@ type GroupRef_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	// Fields of oneof xxx_hidden_Key:
-	Id    []byte
-	Alias *GroupRefByAlias
+	Id   []byte
+	Slug *GroupRefBySlug
 	// -- end of xxx_hidden_Key
 }
 
@@ -448,8 +448,8 @@ func (b0 GroupRef_builder) Build() *GroupRef {
 	if b.Id != nil {
 		x.xxx_hidden_Key = &groupRef_Id{b.Id}
 	}
-	if b.Alias != nil {
-		x.xxx_hidden_Key = &groupRef_Alias{b.Alias}
+	if b.Slug != nil {
+		x.xxx_hidden_Key = &groupRef_Slug{b.Slug}
 	}
 	return m0
 }
@@ -472,38 +472,38 @@ type groupRef_Id struct {
 	Id []byte `protobuf:"bytes,1,opt,name=id,oneof"`
 }
 
-type groupRef_Alias struct {
-	Alias *GroupRefByAlias `protobuf:"bytes,2,opt,name=alias,oneof"`
+type groupRef_Slug struct {
+	Slug *GroupRefBySlug `protobuf:"bytes,4,opt,name=slug,oneof"`
 }
 
 func (*groupRef_Id) isGroupRef_Key() {}
 
-func (*groupRef_Alias) isGroupRef_Key() {}
+func (*groupRef_Slug) isGroupRef_Key() {}
 
-type GroupRefByAlias struct {
+type GroupRefBySlug struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Tenant      *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
 	xxx_hidden_Alias       *string                `protobuf:"bytes,4,opt,name=alias"`
+	xxx_hidden_Tenant      *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
 
-func (x *GroupRefByAlias) Reset() {
-	*x = GroupRefByAlias{}
+func (x *GroupRefBySlug) Reset() {
+	*x = GroupRefBySlug{}
 	mi := &file_app_group_svc_g_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GroupRefByAlias) String() string {
+func (x *GroupRefBySlug) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GroupRefByAlias) ProtoMessage() {}
+func (*GroupRefBySlug) ProtoMessage() {}
 
-func (x *GroupRefByAlias) ProtoReflect() protoreflect.Message {
+func (x *GroupRefBySlug) ProtoReflect() protoreflect.Message {
 	mi := &file_app_group_svc_g_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -515,14 +515,7 @@ func (x *GroupRefByAlias) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *GroupRefByAlias) GetTenant() *TenantRef {
-	if x != nil {
-		return x.xxx_hidden_Tenant
-	}
-	return nil
-}
-
-func (x *GroupRefByAlias) GetAlias() string {
+func (x *GroupRefBySlug) GetAlias() string {
 	if x != nil {
 		if x.xxx_hidden_Alias != nil {
 			return *x.xxx_hidden_Alias
@@ -532,54 +525,61 @@ func (x *GroupRefByAlias) GetAlias() string {
 	return ""
 }
 
-func (x *GroupRefByAlias) SetTenant(v *TenantRef) {
+func (x *GroupRefBySlug) GetTenant() *TenantRef {
+	if x != nil {
+		return x.xxx_hidden_Tenant
+	}
+	return nil
+}
+
+func (x *GroupRefBySlug) SetAlias(v string) {
+	x.xxx_hidden_Alias = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 2)
+}
+
+func (x *GroupRefBySlug) SetTenant(v *TenantRef) {
 	x.xxx_hidden_Tenant = v
 }
 
-func (x *GroupRefByAlias) SetAlias(v string) {
-	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 2)
+func (x *GroupRefBySlug) HasAlias() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
 }
 
-func (x *GroupRefByAlias) HasTenant() bool {
+func (x *GroupRefBySlug) HasTenant() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Tenant != nil
 }
 
-func (x *GroupRefByAlias) HasAlias() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
-}
-
-func (x *GroupRefByAlias) ClearTenant() {
-	x.xxx_hidden_Tenant = nil
-}
-
-func (x *GroupRefByAlias) ClearAlias() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+func (x *GroupRefBySlug) ClearAlias() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Alias = nil
 }
 
-type GroupRefByAlias_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Tenant *TenantRef
-	Alias  *string
+func (x *GroupRefBySlug) ClearTenant() {
+	x.xxx_hidden_Tenant = nil
 }
 
-func (b0 GroupRefByAlias_builder) Build() *GroupRefByAlias {
-	m0 := &GroupRefByAlias{}
+type GroupRefBySlug_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Alias  *string
+	Tenant *TenantRef
+}
+
+func (b0 GroupRefBySlug_builder) Build() *GroupRefBySlug {
+	m0 := &GroupRefBySlug{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_Tenant = b.Tenant
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 2)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 2)
 		x.xxx_hidden_Alias = b.Alias
 	}
+	x.xxx_hidden_Tenant = b.Tenant
 	return m0
 }
 
@@ -2834,14 +2834,14 @@ const file_app_group_svc_g_proto_rawDesc = "" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"b\n" +
 	"\x0fGroupGetRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.roster.GroupRefR\x03ref\x12+\n" +
-	"\x06select\x18\x02 \x01(\v2\x13.roster.GroupSelectR\x06select\"T\n" +
+	"\x06select\x18\x02 \x01(\v2\x13.roster.GroupSelectR\x06select\"Q\n" +
 	"\bGroupRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12/\n" +
-	"\x05alias\x18\x02 \x01(\v2\x17.roster.GroupRefByAliasH\x00R\x05aliasB\x05\n" +
-	"\x03key\"R\n" +
-	"\x0fGroupRefByAlias\x12)\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x14\n" +
-	"\x05alias\x18\x04 \x01(\tR\x05alias\"\x9a\x02\n" +
+	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12,\n" +
+	"\x04slug\x18\x04 \x01(\v2\x16.roster.GroupRefBySlugH\x00R\x04slugB\x05\n" +
+	"\x03key\"Q\n" +
+	"\x0eGroupRefBySlug\x12\x14\n" +
+	"\x05alias\x18\x04 \x01(\tR\x05alias\x12)\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\"\x9a\x02\n" +
 	"\vGroupSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x14.roster.TenantSelectR\x06tenant\x12&\n" +
@@ -2936,7 +2936,7 @@ var file_app_group_svc_g_proto_goTypes = []any{
 	(*GroupAddRequest)(nil),              // 0: roster.GroupAddRequest
 	(*GroupGetRequest)(nil),              // 1: roster.GroupGetRequest
 	(*GroupRef)(nil),                     // 2: roster.GroupRef
-	(*GroupRefByAlias)(nil),              // 3: roster.GroupRefByAlias
+	(*GroupRefBySlug)(nil),               // 3: roster.GroupRefBySlug
 	(*GroupSelect)(nil),                  // 4: roster.GroupSelect
 	(*GroupPatchRequest)(nil),            // 5: roster.GroupPatchRequest
 	(*GroupApplyRequest)(nil),            // 6: roster.GroupApplyRequest
@@ -2972,8 +2972,8 @@ var file_app_group_svc_g_proto_depIdxs = []int32{
 	24, // 2: roster.GroupAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 3: roster.GroupGetRequest.ref:type_name -> roster.GroupRef
 	4,  // 4: roster.GroupGetRequest.select:type_name -> roster.GroupSelect
-	3,  // 5: roster.GroupRef.alias:type_name -> roster.GroupRefByAlias
-	22, // 6: roster.GroupRefByAlias.tenant:type_name -> roster.TenantRef
+	3,  // 5: roster.GroupRef.slug:type_name -> roster.GroupRefBySlug
+	22, // 6: roster.GroupRefBySlug.tenant:type_name -> roster.TenantRef
 	25, // 7: roster.GroupSelect.tenant:type_name -> roster.TenantSelect
 	26, // 8: roster.GroupSelect.site:type_name -> roster.SiteSelect
 	2,  // 9: roster.GroupPatchRequest.ref:type_name -> roster.GroupRef
@@ -3042,7 +3042,7 @@ func file_app_group_svc_g_proto_init() {
 	file_roster_payday_tenant_svc_g_proto_init()
 	file_app_group_svc_g_proto_msgTypes[2].OneofWrappers = []any{
 		(*groupRef_Id)(nil),
-		(*groupRef_Alias)(nil),
+		(*groupRef_Slug)(nil),
 	}
 	file_app_group_svc_g_proto_msgTypes[13].OneofWrappers = []any{
 		(*groupMembershipRef_Id)(nil),

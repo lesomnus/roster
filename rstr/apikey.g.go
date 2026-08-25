@@ -19,10 +19,10 @@ func (x *ApiKey) Ref() *ApiKeyRef {
 		return ApiKeyBySecret(v)
 	}
 	{
-		v1 := x.GetHolder()
-		v2 := x.GetAlias()
-		if v1 != nil && len(v2) > 0 {
-			return ApiKeyByAlias(v1.Ref(), v2)
+		v1 := x.GetAlias()
+		v2 := x.GetHolder()
+		if len(v1) > 0 && v2 != nil {
+			return ApiKeyBySlug(v1, v2.Ref())
 		}
 	}
 
@@ -39,10 +39,10 @@ func (x *ApiKeyRef) Picks(v *ApiKey) bool {
 		return bytes.Equal(x.GetId(), v.GetId())
 	case ApiKeyRef_Secret_case:
 		return bytes.Equal(x.GetSecret(), v.GetSecret())
-	case ApiKeyRef_Alias_case:
-		x := x.GetAlias()
-		return (x.GetHolder().Picks(v.GetHolder())) &&
-			(x.GetAlias() == v.GetAlias())
+	case ApiKeyRef_Slug_case:
+		x := x.GetSlug()
+		return (x.GetAlias() == v.GetAlias()) &&
+			(x.GetHolder().Picks(v.GetHolder()))
 	default:
 		return false
 	}
@@ -79,13 +79,13 @@ func ApiKeyGetBySecret(v []byte) *ApiKeyGetRequest {
 	return ApiKeyGetRequest_builder{Ref: ApiKeyBySecret(v)}.Build()
 }
 
-func ApiKeyByAlias(holder *HolderRef, alias string) *ApiKeyRef {
-	x := &ApiKeyRefByAlias{}
-	x.SetHolder(holder)
+func ApiKeyBySlug(alias string, holder *HolderRef) *ApiKeyRef {
+	x := &ApiKeyRefBySlug{}
 	x.SetAlias(alias)
-	return ApiKeyRef_builder{Alias: x}.Build()
+	x.SetHolder(holder)
+	return ApiKeyRef_builder{Slug: x}.Build()
 }
 
-func ApiKeyGetByAlias(holder *HolderRef, alias string) *ApiKeyGetRequest {
-	return ApiKeyGetRequest_builder{Ref: ApiKeyByAlias(holder, alias)}.Build()
+func ApiKeyGetBySlug(alias string, holder *HolderRef) *ApiKeyGetRequest {
+	return ApiKeyGetRequest_builder{Ref: ApiKeyBySlug(alias, holder)}.Build()
 }

@@ -60,13 +60,13 @@ message RoleGetRequest {
 message RoleRef {
   oneof key {
     bytes id = 1;
-    RoleRefByAlias alias = 2;
+    RoleRefBySlug slug = 4;
   }
 }
 
-message RoleRefByAlias {
-  TenantRef tenant = 2;
+message RoleRefBySlug {
   string alias = 4;
+  TenantRef tenant = 2;
 }
 
 message RoleSelect {

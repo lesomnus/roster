@@ -132,7 +132,7 @@ roster holder add @newco/admin
 roster role   add @newco/everything '{"methods":["/roster.*/*"]}'
 
 # a binding has no alias of its own, so the whole request goes in
-echo '{"role":  {"alias":{"alias":"everything","tenant":{"alias":"newco"}}},
+echo '{"role":  {"slug":{"alias":"everything","tenant":{"alias":"newco"}}},
        "holder":{"slug": {"alias":"admin",     "tenant":{"alias":"newco"}}}}' \
   | roster binding add -
 ```
@@ -142,10 +142,9 @@ identifier, or `@tenant` / `@tenant/alias` — and `REQ` is the rest of the
 request as JSON, merged over it. `-` reads stdin. Flags come before arguments,
 and `-o name` prints the identifier alone, which is what a script wants.
 
-A reference in JSON is the oneof it is declared as, so a role by name is
-`{"alias":{"alias":…,"tenant":…}}` and a person is `{"slug":{…}}` — the outer
-key says *which way of naming* and the inner one is the name. `roster <entity>
-add --help` prints the shape.
+A reference in JSON is the oneof it is declared as: `{"id":…}` or
+`{"slug":{"alias":…,"tenant":…}}`. The outer key says *which way of naming* and
+the inner one is the name. `roster <entity> add --help` prints the shape.
 
 They read the database directly and say so on stderr, which is what a shell on
 the box is: no wall, no gate, no rules. That is the same reason the first role

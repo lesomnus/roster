@@ -393,10 +393,10 @@ func (x *ApiKeyRef) GetId() []byte {
 	return nil
 }
 
-func (x *ApiKeyRef) GetAlias() *ApiKeyRefByAlias {
+func (x *ApiKeyRef) GetSlug() *ApiKeyRefBySlug {
 	if x != nil {
-		if x, ok := x.xxx_hidden_Key.(*apiKeyRef_Alias); ok {
-			return x.Alias
+		if x, ok := x.xxx_hidden_Key.(*apiKeyRef_Slug); ok {
+			return x.Slug
 		}
 	}
 	return nil
@@ -418,12 +418,12 @@ func (x *ApiKeyRef) SetId(v []byte) {
 	x.xxx_hidden_Key = &apiKeyRef_Id{v}
 }
 
-func (x *ApiKeyRef) SetAlias(v *ApiKeyRefByAlias) {
+func (x *ApiKeyRef) SetSlug(v *ApiKeyRefBySlug) {
 	if v == nil {
 		x.xxx_hidden_Key = nil
 		return
 	}
-	x.xxx_hidden_Key = &apiKeyRef_Alias{v}
+	x.xxx_hidden_Key = &apiKeyRef_Slug{v}
 }
 
 func (x *ApiKeyRef) SetSecret(v []byte) {
@@ -448,11 +448,11 @@ func (x *ApiKeyRef) HasId() bool {
 	return ok
 }
 
-func (x *ApiKeyRef) HasAlias() bool {
+func (x *ApiKeyRef) HasSlug() bool {
 	if x == nil {
 		return false
 	}
-	_, ok := x.xxx_hidden_Key.(*apiKeyRef_Alias)
+	_, ok := x.xxx_hidden_Key.(*apiKeyRef_Slug)
 	return ok
 }
 
@@ -474,8 +474,8 @@ func (x *ApiKeyRef) ClearId() {
 	}
 }
 
-func (x *ApiKeyRef) ClearAlias() {
-	if _, ok := x.xxx_hidden_Key.(*apiKeyRef_Alias); ok {
+func (x *ApiKeyRef) ClearSlug() {
+	if _, ok := x.xxx_hidden_Key.(*apiKeyRef_Slug); ok {
 		x.xxx_hidden_Key = nil
 	}
 }
@@ -488,7 +488,7 @@ func (x *ApiKeyRef) ClearSecret() {
 
 const ApiKeyRef_Key_not_set_case case_ApiKeyRef_Key = 0
 const ApiKeyRef_Id_case case_ApiKeyRef_Key = 1
-const ApiKeyRef_Alias_case case_ApiKeyRef_Key = 2
+const ApiKeyRef_Slug_case case_ApiKeyRef_Key = 4
 const ApiKeyRef_Secret_case case_ApiKeyRef_Key = 9
 
 func (x *ApiKeyRef) WhichKey() case_ApiKeyRef_Key {
@@ -498,8 +498,8 @@ func (x *ApiKeyRef) WhichKey() case_ApiKeyRef_Key {
 	switch x.xxx_hidden_Key.(type) {
 	case *apiKeyRef_Id:
 		return ApiKeyRef_Id_case
-	case *apiKeyRef_Alias:
-		return ApiKeyRef_Alias_case
+	case *apiKeyRef_Slug:
+		return ApiKeyRef_Slug_case
 	case *apiKeyRef_Secret:
 		return ApiKeyRef_Secret_case
 	default:
@@ -512,7 +512,7 @@ type ApiKeyRef_builder struct {
 
 	// Fields of oneof xxx_hidden_Key:
 	Id     []byte
-	Alias  *ApiKeyRefByAlias
+	Slug   *ApiKeyRefBySlug
 	Secret []byte
 	// -- end of xxx_hidden_Key
 }
@@ -524,8 +524,8 @@ func (b0 ApiKeyRef_builder) Build() *ApiKeyRef {
 	if b.Id != nil {
 		x.xxx_hidden_Key = &apiKeyRef_Id{b.Id}
 	}
-	if b.Alias != nil {
-		x.xxx_hidden_Key = &apiKeyRef_Alias{b.Alias}
+	if b.Slug != nil {
+		x.xxx_hidden_Key = &apiKeyRef_Slug{b.Slug}
 	}
 	if b.Secret != nil {
 		x.xxx_hidden_Key = &apiKeyRef_Secret{b.Secret}
@@ -551,8 +551,8 @@ type apiKeyRef_Id struct {
 	Id []byte `protobuf:"bytes,1,opt,name=id,oneof"`
 }
 
-type apiKeyRef_Alias struct {
-	Alias *ApiKeyRefByAlias `protobuf:"bytes,2,opt,name=alias,oneof"`
+type apiKeyRef_Slug struct {
+	Slug *ApiKeyRefBySlug `protobuf:"bytes,4,opt,name=slug,oneof"`
 }
 
 type apiKeyRef_Secret struct {
@@ -561,34 +561,34 @@ type apiKeyRef_Secret struct {
 
 func (*apiKeyRef_Id) isApiKeyRef_Key() {}
 
-func (*apiKeyRef_Alias) isApiKeyRef_Key() {}
+func (*apiKeyRef_Slug) isApiKeyRef_Key() {}
 
 func (*apiKeyRef_Secret) isApiKeyRef_Key() {}
 
-type ApiKeyRefByAlias struct {
+type ApiKeyRefBySlug struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Holder      *HolderRef             `protobuf:"bytes,2,opt,name=holder"`
 	xxx_hidden_Alias       *string                `protobuf:"bytes,4,opt,name=alias"`
+	xxx_hidden_Holder      *HolderRef             `protobuf:"bytes,2,opt,name=holder"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
 
-func (x *ApiKeyRefByAlias) Reset() {
-	*x = ApiKeyRefByAlias{}
+func (x *ApiKeyRefBySlug) Reset() {
+	*x = ApiKeyRefBySlug{}
 	mi := &file_app_apikey_svc_g_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ApiKeyRefByAlias) String() string {
+func (x *ApiKeyRefBySlug) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ApiKeyRefByAlias) ProtoMessage() {}
+func (*ApiKeyRefBySlug) ProtoMessage() {}
 
-func (x *ApiKeyRefByAlias) ProtoReflect() protoreflect.Message {
+func (x *ApiKeyRefBySlug) ProtoReflect() protoreflect.Message {
 	mi := &file_app_apikey_svc_g_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -600,14 +600,7 @@ func (x *ApiKeyRefByAlias) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *ApiKeyRefByAlias) GetHolder() *HolderRef {
-	if x != nil {
-		return x.xxx_hidden_Holder
-	}
-	return nil
-}
-
-func (x *ApiKeyRefByAlias) GetAlias() string {
+func (x *ApiKeyRefBySlug) GetAlias() string {
 	if x != nil {
 		if x.xxx_hidden_Alias != nil {
 			return *x.xxx_hidden_Alias
@@ -617,54 +610,61 @@ func (x *ApiKeyRefByAlias) GetAlias() string {
 	return ""
 }
 
-func (x *ApiKeyRefByAlias) SetHolder(v *HolderRef) {
+func (x *ApiKeyRefBySlug) GetHolder() *HolderRef {
+	if x != nil {
+		return x.xxx_hidden_Holder
+	}
+	return nil
+}
+
+func (x *ApiKeyRefBySlug) SetAlias(v string) {
+	x.xxx_hidden_Alias = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 2)
+}
+
+func (x *ApiKeyRefBySlug) SetHolder(v *HolderRef) {
 	x.xxx_hidden_Holder = v
 }
 
-func (x *ApiKeyRefByAlias) SetAlias(v string) {
-	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 2)
+func (x *ApiKeyRefBySlug) HasAlias() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
 }
 
-func (x *ApiKeyRefByAlias) HasHolder() bool {
+func (x *ApiKeyRefBySlug) HasHolder() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Holder != nil
 }
 
-func (x *ApiKeyRefByAlias) HasAlias() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
-}
-
-func (x *ApiKeyRefByAlias) ClearHolder() {
-	x.xxx_hidden_Holder = nil
-}
-
-func (x *ApiKeyRefByAlias) ClearAlias() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+func (x *ApiKeyRefBySlug) ClearAlias() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Alias = nil
 }
 
-type ApiKeyRefByAlias_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Holder *HolderRef
-	Alias  *string
+func (x *ApiKeyRefBySlug) ClearHolder() {
+	x.xxx_hidden_Holder = nil
 }
 
-func (b0 ApiKeyRefByAlias_builder) Build() *ApiKeyRefByAlias {
-	m0 := &ApiKeyRefByAlias{}
+type ApiKeyRefBySlug_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Alias  *string
+	Holder *HolderRef
+}
+
+func (b0 ApiKeyRefBySlug_builder) Build() *ApiKeyRefBySlug {
+	m0 := &ApiKeyRefBySlug{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_Holder = b.Holder
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 2)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 2)
 		x.xxx_hidden_Alias = b.Alias
 	}
+	x.xxx_hidden_Holder = b.Holder
 	return m0
 }
 
@@ -1866,15 +1866,15 @@ const file_app_apikey_svc_g_proto_rawDesc = "" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"e\n" +
 	"\x10ApiKeyGetRequest\x12#\n" +
 	"\x03ref\x18\x01 \x01(\v2\x11.roster.ApiKeyRefR\x03ref\x12,\n" +
-	"\x06select\x18\x02 \x01(\v2\x14.roster.ApiKeySelectR\x06select\"p\n" +
+	"\x06select\x18\x02 \x01(\v2\x14.roster.ApiKeySelectR\x06select\"m\n" +
 	"\tApiKeyRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x120\n" +
-	"\x05alias\x18\x02 \x01(\v2\x18.roster.ApiKeyRefByAliasH\x00R\x05alias\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12-\n" +
+	"\x04slug\x18\x04 \x01(\v2\x17.roster.ApiKeyRefBySlugH\x00R\x04slug\x12\x18\n" +
 	"\x06secret\x18\t \x01(\fH\x00R\x06secretB\x05\n" +
-	"\x03key\"S\n" +
-	"\x10ApiKeyRefByAlias\x12)\n" +
-	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x14\n" +
-	"\x05alias\x18\x04 \x01(\tR\x05alias\"\xd1\x02\n" +
+	"\x03key\"R\n" +
+	"\x0fApiKeyRefBySlug\x12\x14\n" +
+	"\x05alias\x18\x04 \x01(\tR\x05alias\x12)\n" +
+	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\"\xd1\x02\n" +
 	"\fApiKeySelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
 	"\x06holder\x18\x02 \x01(\v2\x14.roster.HolderSelectR\x06holder\x12\x14\n" +
@@ -1929,7 +1929,7 @@ var file_app_apikey_svc_g_proto_goTypes = []any{
 	(*ApiKeyAddRequest)(nil),      // 0: roster.ApiKeyAddRequest
 	(*ApiKeyGetRequest)(nil),      // 1: roster.ApiKeyGetRequest
 	(*ApiKeyRef)(nil),             // 2: roster.ApiKeyRef
-	(*ApiKeyRefByAlias)(nil),      // 3: roster.ApiKeyRefByAlias
+	(*ApiKeyRefBySlug)(nil),       // 3: roster.ApiKeyRefBySlug
 	(*ApiKeySelect)(nil),          // 4: roster.ApiKeySelect
 	(*ApiKeyPatchRequest)(nil),    // 5: roster.ApiKeyPatchRequest
 	(*ApiKeyApplyRequest)(nil),    // 6: roster.ApiKeyApplyRequest
@@ -1950,8 +1950,8 @@ var file_app_apikey_svc_g_proto_depIdxs = []int32{
 	12, // 3: roster.ApiKeyAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 4: roster.ApiKeyGetRequest.ref:type_name -> roster.ApiKeyRef
 	4,  // 5: roster.ApiKeyGetRequest.select:type_name -> roster.ApiKeySelect
-	3,  // 6: roster.ApiKeyRef.alias:type_name -> roster.ApiKeyRefByAlias
-	11, // 7: roster.ApiKeyRefByAlias.holder:type_name -> roster.HolderRef
+	3,  // 6: roster.ApiKeyRef.slug:type_name -> roster.ApiKeyRefBySlug
+	11, // 7: roster.ApiKeyRefBySlug.holder:type_name -> roster.HolderRef
 	13, // 8: roster.ApiKeySelect.holder:type_name -> roster.HolderSelect
 	2,  // 9: roster.ApiKeyPatchRequest.ref:type_name -> roster.ApiKeyRef
 	12, // 10: roster.ApiKeyPatchRequest.date_used:type_name -> google.protobuf.Timestamp
@@ -1991,7 +1991,7 @@ func file_app_apikey_svc_g_proto_init() {
 	file_roster_payday_holder_svc_g_proto_init()
 	file_app_apikey_svc_g_proto_msgTypes[2].OneofWrappers = []any{
 		(*apiKeyRef_Id)(nil),
-		(*apiKeyRef_Alias)(nil),
+		(*apiKeyRef_Slug)(nil),
 		(*apiKeyRef_Secret)(nil),
 	}
 	type x struct{}

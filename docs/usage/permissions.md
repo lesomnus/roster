@@ -11,7 +11,7 @@ A **role** is a list of methods. A **binding** attaches one to somebody.
 roster role add @newco/support '{"methods":["/roster.HolderService/Get",
                                             "/roster.HolderService/List"]}'
 
-echo '{"role":  {"alias":{"alias":"support","tenant":{"alias":"newco"}}},
+echo '{"role":  {"slug":{"alias":"support","tenant":{"alias":"newco"}}},
        "holder":{"slug": {"alias":"alice",  "tenant":{"alias":"newco"}}}}' \
   | roster binding add -
 ```
@@ -73,12 +73,12 @@ People who belong together for the purpose of being granted things at once.
 ```sh
 roster group add @newco/oncall
 
-echo '{"group": {"alias":{"alias":"oncall","tenant":{"alias":"newco"}}},
+echo '{"group": {"slug":{"alias":"oncall","tenant":{"alias":"newco"}}},
        "holder":{"slug": {"alias":"alice", "tenant":{"alias":"newco"}}}}' \
   | roster groupmembership add -
 
-echo '{"role": {"alias":{"alias":"support","tenant":{"alias":"newco"}}},
-       "group":{"alias":{"alias":"oncall", "tenant":{"alias":"newco"}}}}' \
+echo '{"role": {"slug":{"alias":"support","tenant":{"alias":"newco"}}},
+       "group":{"slug":{"alias":"oncall", "tenant":{"alias":"newco"}}}}' \
   | roster binding add -
 ```
 
@@ -96,7 +96,7 @@ roster role add @newco/eu-support \
   '{"site":{"slug":{"alias":"eu","tenant":{"alias":"newco"}}},
     "methods":["/roster.HolderService/Get"]}'
 
-echo '{"role":  {"alias":{"alias":"eu-support","tenant":{"alias":"newco"}}},
+echo '{"role":  {"slug":{"alias":"eu-support","tenant":{"alias":"newco"}}},
        "holder":{"slug": {"alias":"alice",     "tenant":{"alias":"newco"}}},
        "site":  {"slug": {"alias":"eu",        "tenant":{"alias":"newco"}}}}' \
   | roster binding add -
@@ -121,7 +121,7 @@ roster team add @newco/eu-ops '{"site":{"slug":{"alias":"eu","tenant":{"alias":"
 
 echo '{"team":  {"slug": {"alias":"eu-ops","site":{"slug":{"alias":"eu","tenant":{"alias":"newco"}}}}},
        "holder":{"slug": {"alias":"alice", "tenant":{"alias":"newco"}}},
-       "role":  {"alias":{"alias":"eu-support","tenant":{"alias":"newco"}}}}' \
+       "role":  {"slug":{"alias":"eu-support","tenant":{"alias":"newco"}}}}' \
   | roster teammembership add -
 ```
 
@@ -183,19 +183,8 @@ caller — `client.addr` with a key, or the tutorial's last section.
 
 ```sh
 roster binding ls -o wide
+roster role get @newco/support
 roster role ls -o wide
-roster role get 01a0337b-a3e5-8c98-810f-d8d04db3e47e
-```
-
-**`Role`, `Group` and `ApiKey` cannot be named `@tenant/alias`** the way a
-holder, a site or a team can — only by identifier, which `-o name` prints. It is
-not a rule about those entities: the CLI recognises a reference whose oneof
-field is called `slug`, and those three declare theirs as `alias`. `add` is the
-exception and takes the name either way, because there it is setting a field
-rather than finding a row.
-
-```sh
-roster role ls -o name | head -1        # the identifier a script wants
 ```
 
 and, as the person themselves, over the wire:

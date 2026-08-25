@@ -500,15 +500,15 @@ func pickApiKey(req *rstr.ApiKeyRef) (predicate.ApiKey, error) {
 		}
 	case rstr.ApiKeyRef_Secret_case:
 		return apikey.SecretEQ(req.GetSecret()), nil
-	case rstr.ApiKeyRef_Alias_case:
-		k := req.GetAlias()
+	case rstr.ApiKeyRef_Slug_case:
+		k := req.GetSlug()
 		ps := make([]predicate.ApiKey, 0, 2)
+		ps = append(ps, apikey.AliasEQ(k.GetAlias()))
 		if p, err := HolderPick(k.GetHolder()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "alias.holder: %s", err)
+			return nil, status.Errorf(codes.InvalidArgument, "slug.holder: %s", err)
 		} else {
 			ps = append(ps, apikey.HasHolderWith(p))
 		}
-		ps = append(ps, apikey.AliasEQ(k.GetAlias()))
 		return apikey.And(ps...), nil
 	case rstr.ApiKeyRef_Key_not_set_case:
 		return nil, status.Errorf(codes.InvalidArgument, "key not set: ApiKey")
