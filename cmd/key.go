@@ -81,7 +81,7 @@ func newCmdKeyAdd(c *Config) *xli.Command {
 			&flg.String{Name: "tenant", Brief: "the customer, by alias or identifier, for a key on the data plane"},
 			&flg.String{Name: "holder", Brief: "whose key this is, inside --tenant"},
 			&flg.String{Name: "name", Brief: "what to call this key, unique per service"},
-			&flg.String{Name: "allow", Brief: "the methods it may call, comma separated"},
+			&flg.Strings{Name: "allow", Brief: "the methods it may call; repeat it, or comma separate"},
 			&flg.String{Name: "expires", Brief: "how long it lasts, e.g. 720h; empty is forever"},
 		},
 
@@ -114,7 +114,7 @@ func newCmdKeyAdd(c *Config) *xli.Command {
 				name = "default"
 			}
 
-			allow, _ := flg.Find[string](cmd, "allow")
+			allow, _ := flg.Find[[]string](cmd, "allow")
 			methods := splitMethods(allow)
 			if len(methods) == 0 {
 				// Refused rather than defaulted, in either direction. Defaulting
@@ -410,16 +410,42 @@ func mustFrom(b []byte) pdid.Id {
 	return k
 }
 
-// splitMethods is the `--allow` list, tolerating the spacing a shell leaves.
-func splitMethods(v string) []string {
-	var vs []string
-	for _, s := range strings.Split(v, ",") {
-		if s = strings.TrimSpace(s); s != "" {
-			vs = append(vs, s)
+// splitMethods is the `--allow` list, however it was written.
+//
+// Every occurrence of the flag, and every comma inside one, so these are the
+// same key:
+//
+//	--allow a,b --allow c
+//	--allow a --allow b --allow c
+//	--allow 'a, b, c'
+//
+// The flag is `flg.Strings` and not `flg.String`, which is the whole of the
+// fix and was the whole of the bug. A scalar flag takes the **last**
+// occurrence -- which is right for `--config` and every other *choose one*
+// flag, and silently wrong for a list. `roster key add --service kamino
+// --allow /roster.VouchService/Verify --allow /roster.HolderService/Get` minted
+// a key allowing the second and nothing else, and the only sign was the line
+// this prints saying `allowing 1 method(s)`.
+//
+// It was documented that way in another app, which is how it was found: an
+// operator following a runbook gets a key that fails on its first call.
+//
+// xli already had the type. `flg.Strings` is `Multi[string, StringParser]` and
+// appends per occurrence -- so nothing was missing anywhere but here.
+//
+// The spacing is tolerated because a list somebody wrapped for a runbook has
+// some.
+func splitMethods(vs []string) []string {
+	var out []string
+	for _, v := range vs {
+		for _, s := range strings.Split(v, ",") {
+			if s = strings.TrimSpace(s); s != "" {
+				out = append(out, s)
+			}
 		}
 	}
 
-	return vs
+	return out
 }
 
 // Widest says so when a key's methods reach the one read that is wider than

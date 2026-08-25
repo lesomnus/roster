@@ -349,3 +349,72 @@ func TestRevokingReachesTheKeyItNames(t *testing.T) {
 		x.ErrorContains(err, "either plane")
 	})
 }
+
+// TestAllowIsALisHoweverItIsWritten.
+//
+// `--allow` was `flg.String`, which takes the **last** occurrence. That is
+// right for `--config` and every other *choose one* flag and silently wrong for
+// a list: four `--allow` flags minted a key allowing the fourth and nothing
+// else, and the only sign was the line the command prints saying `allowing 1
+// method(s)`.
+//
+// Found in another app's runbook, which documented exactly that form -- so
+// somebody following it got a key that fails on its first call, with a refusal
+// naming a method they believed they had granted.
+//
+// The fix is the flag type. xli already had `flg.Strings`, which appends per
+// occurrence, so nothing was missing anywhere but here. Both forms work and so
+// does mixing them, because a list is a list.
+func TestAllowIsAListHoweverItIsWritten(t *testing.T) {
+	const (
+		verify    = "/roster.VouchService/Verify"
+		introspec = "/payday.TokenService/Introspect"
+		get       = "/roster.HolderService/Get"
+	)
+
+	for _, tc := range []struct {
+		desc string
+		args []string
+	}{
+		{"repeated", []string{"--allow", verify, "--allow", introspec, "--allow", get}},
+		{"comma separated", []string{"--allow", verify + "," + introspec + "," + get}},
+		{"mixed", []string{"--allow", verify + "," + introspec, "--allow", get}},
+		{"and the spacing a runbook leaves", []string{
+			"--allow", verify + ", " + introspec, "--allow", " " + get}},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			x := require.New(t)
+			ctx := t.Context()
+
+			c := seedbed(t)
+
+			out, err := initRun(t, c)
+			x.NoError(err, "init: %s", out)
+
+			args := append([]string{"add", "--service", "custody"}, tc.args...)
+			x.NotEmpty(stdoutOf(t, cmd.NewCmdKey(&c), args...))
+
+			s, err := cmd.Build(ctx, c)
+			x.NoError(err)
+			t.Cleanup(func() { s.Close() })
+
+			v, err := s.Control.Ent.ApiKey.Query().Only(ctx)
+			x.NoError(err)
+			x.Equal([]string{verify, introspec, get}, v.Methods,
+				"the key does not allow what the command line said")
+		})
+	}
+
+	t.Run("and none of them is still a refusal", func(t *testing.T) {
+		x := require.New(t)
+
+		c := seedbed(t)
+
+		out, err := initRun(t, c)
+		x.NoError(err, "init: %s", out)
+
+		err = cmd.NewCmdKey(&c).Run(t.Context(), []string{"add", "--service", "custody"})
+		x.Error(err, "a key that allows nothing is not a key")
+		x.ErrorContains(err, "--allow")
+	})
+}

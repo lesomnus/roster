@@ -107,6 +107,15 @@ names one caller.
 `--allow` is required in both directions: everything hands out more than anybody
 asked for, and nothing mints a key that silently does not work.
 
+Write it however reads best — the flag repeats, and each occurrence may itself
+be a comma-separated list:
+
+```sh
+roster key add --service custody \
+  --allow /roster.VouchService/Verify \
+  --allow /roster.MeService/Get
+```
+
 **A deployment key is not walled by tenant.** It is the widest credential this
 deployment issues. Some methods are wider than they look and the command says so
 when you grant one:

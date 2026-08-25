@@ -143,7 +143,7 @@ func newCmdMeIssueKey(c *Config) *xli.Command {
 
 		Flags: flg.Flags{
 			&flg.String{Name: "name", Brief: "what to call it, unique among yours"},
-			&flg.String{Name: "allow", Brief: "the methods it may call, comma separated"},
+			&flg.Strings{Name: "allow", Brief: "the methods it may call; repeat it, or comma separate"},
 			&flg.String{Name: "expires", Brief: "how long it lasts, e.g. 720h; empty is forever"},
 		},
 
@@ -158,7 +158,7 @@ func newCmdMeIssueKey(c *Config) *xli.Command {
 				name = "default"
 			}
 
-			allow, _ := flg.Find[string](cmd, "allow")
+			allow, _ := flg.Find[[]string](cmd, "allow")
 			methods := splitMethods(allow)
 			if len(methods) == 0 {
 				return errors.New("--allow: a key that allows nothing is not a key; name the methods")
