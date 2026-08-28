@@ -158,7 +158,8 @@ func TestEnoughWrongAnswersCloseTheAccount(t *testing.T) {
 //
 // What this does **not** claim is that an account cannot be held locked. It
 // can: ten wrong guesses every fifteen minutes will do it, and that is inherent
-// to locking by name rather than something this avoids. See PLAN.md, D14.
+// to locking by name rather than something this avoids. See `server/vouch`'s
+// package comment.
 func TestTypingAtALockedAccountDoesNotPushTheLockOut(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)

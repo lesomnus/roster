@@ -321,7 +321,7 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 
 	// And the credential writes, which is what an operator with no mail has
 	// instead of one: reset a password, open an account ten wrong answers
-	// closed. PLAN.md's list, item 10, and D28 is the shape.
+	// closed. Roadmap.md's item 10, and D28 is the shape.
 	//
 	// # Without `WithReach`, and that is the decision rather than an omission
 	//

@@ -173,8 +173,9 @@ export const RoleSchema: GenMessage<Role> = /*@__PURE__*/
  *
  * It does **not** name a team. "The administrator of a team manages its
  * members" is a product invariant rather than a thing to configure, so it is
- * roster's own rule and lives in a layer; see PLAN.md, D17. What carries a role
- * for a team is the `TeamMembership` that already said somebody is in it.
+ * roster's own rule and lives in a layer; docs/position.md, § 'Authorization:
+ * what roster does', says why. What carries a role for a team is the
+ * `TeamMembership` that already said somebody is in it.
  *
  * @generated from message roster.Binding
  */

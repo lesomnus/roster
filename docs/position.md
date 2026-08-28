@@ -23,7 +23,7 @@ replaces an earlier version that listed things roster does not implement —
 "providers, MFA, magic links" — which the code has always contradicted, since
 verifying a password is precisely what a provider does. The list made roster
 look as though it had already overrun itself and left every new feature to be
-argued from nothing. PLAN.md D19 has the long form.
+argued from nothing.
 
 | inside | outside |
 | --- | --- |
@@ -89,23 +89,72 @@ parts; it is Ory's feature list, and building it is building Hydra.
 And roster does not shrink when Hydra arrives — Hydra has **no user database and
 does not authenticate anybody**. It waits to be told a `subject`, and choosing
 that string is exactly the problem roster was built for: Entra's own subject
-would make one human two the first time they arrive through GitHub. So the flow
-is
+would make one human two the first time they arrive through GitHub. Drawn out:
 
-    Login App --> roster: (provider, subject) -> Holder.id      <- this is `sub`
-    Login App --> roster: verify a password, if there is one
-    Login App --> roster: the tenant, and anything else the token carries
-    Login App --> Hydra:  acceptLoginRequest{subject: Holder.id}
+```mermaid
+sequenceDiagram
+  participant B as browser
+  participant A as product app
+  participant H as Hydra
+  participant L as Login App
+  participant E as Entra / GitHub
+  participant R as roster
+
+  B->>A: /login
+  A->>H: /oauth2/auth
+  H->>L: login_challenge
+  L->>E: the flow it runs
+  E-->>L: (provider, subject)
+
+  L->>R: ① Identity → Holder.id, which is `sub`
+  L->>R: ② VouchService.Verify — a password, a link
+  L->>R: ③ the tenant, and the token's other claims
+
+  L-->>H: acceptLoginRequest{subject: Holder.id}
+  H-->>A: code
+  Note over A: exchange, verify, keep a session
+  A->>R: ④ MeService — names, teams
+```
+
+- **① is the one that cannot be moved.** Use Entra's `oid` as `sub` and the
+  same human arriving through GitHub is a second person to every system
+  downstream.
+- **② only if this deployment has a password or a magic link at all.** A
+  provider-only deployment does not call it.
+- **③** because Hydra does not know what a tenant is either.
+- **④ is not sign-in.** It is the ordinary reading login.md describes — a
+  product app anchors a row and reads names when there is a screen to draw.
 
 **roster is in the flow once, at sign-in, and beside it afterwards — never in
-the per-request path.** Which is the property the request was actually after.
-PLAN.md, "Where roster sits when Hydra is in front", has the full picture.
+the per-request path.** No session check and no token check reaches it, which is
+the property the request was actually after, had without roster signing
+anything. And the caller list is unchanged by any of it — the Login App and
+admin consoles; a browser never sees roster — which is the sign it is the right
+shape.
 
 Worth knowing: this does not remove each app's own session. A browser has
 nowhere safe to keep a token, so a product app exchanges what Hydra gave it for
 an opaque cookie of its own. `payday/auth/authsession` is that, and the only
 thing it asks the app for is a `Verify` — which with roster behind it is one
 call.
+
+### One relying party, or many
+
+Since "after roster says yes" keeps coming up: roster answers whether a secret
+is somebody's, and the session belongs to whatever the browser talks to. So the
+boundary is not id/pw versus OIDC — it is **one relying party versus many**:
+
+| | needs Hydra? |
+| --- | --- |
+| one app, its own login | **no.** The app calls `Vouch.Verify`, sets its own cookie, and its `auth.Resolver` reads it back |
+| several apps, one sign-in | **yes.** App A's cookie means nothing to app B, and a signed credential with an issuer, a JWKS, expiry and revocation *is* OIDC |
+
+The no-Hydra half is `payday/auth/authsession` — an opaque cookie, a `Session`
+row the serving app owns, revocation as a delete — and roster's own console runs
+on it. An opaque session key is worth nothing to a second app **by
+construction**; that is not a shortcoming to fix, it is the reason the table
+ends in Hydra, and the line at the top of this document is why roster does not
+go there instead.
 
 ## Second factors
 
@@ -138,7 +187,7 @@ this person* is roster's: an app showing a second form should not have to
 remember who passed the first, since remembering it is the one part of the
 process an app developer was trying not to have. So `Vouch` answers with an
 opaque, short-lived `continuation` that only roster can resolve, and the app
-passes it back. roster still never sees a browser. PLAN.md D21.
+passes it back. roster still never sees a browser.
 
 Where that stops, in one line:
 
@@ -147,7 +196,7 @@ Where that stops, in one line:
 > offer, or what to call them.**
 
 So "step 2 of 2" is not something roster says — how many are enough is
-sufficiency, and D20 left that to the caller. Kratos' flows carry the UI as
+sufficiency, and sufficiency was left to the caller. Kratos' flows carry the UI as
 well, and that is why the shape of a Kratos login form belongs to Kratos.
 
 ## Authorization: what roster does
@@ -163,7 +212,7 @@ What it needs instead is wiring. The wall is a predicate on a server instance,
 and roster deliberately runs one it was never installed on, for the work that
 cannot be done from inside a tenant. Which of the two a hand-written service
 reads is an ordinary line: `Vouch.Link` read the unwalled one and could mint a
-spendable way into another organisation. PLAN.md D41.
+spendable way into another organisation.
 
 **2. Roles bound at a scope.** A `Role` is a list of RPCs. A `Binding` grants it
 to a `Holder` or a `Group`, either across the tenant or within one `Site`. This
@@ -259,5 +308,5 @@ ask, and the thing that answers "who is this" is the thing that should answer it
 
 ## See also
 
-- [PLAN.md](../PLAN.md) — the decisions, with the reasoning that produced them
+- [roadmap.md](roadmap.md) — the order it was built in, and what is open
 - [login.md](login.md) — what happens when somebody signs in, end to end

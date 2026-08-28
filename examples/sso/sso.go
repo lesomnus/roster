@@ -6,7 +6,7 @@
 // the interface honest, because a package with no consumer is guesswork about
 // what a consumer needs. The rule travels down a layer with it: when roster is
 // in the way of writing this app plainly, roster is what gets fixed, here and
-// not worked around here. PLAN.md D24.
+// not worked around here.
 //
 // # The scenario
 //

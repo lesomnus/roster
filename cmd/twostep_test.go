@@ -56,7 +56,7 @@ func enrolled(t *testing.T, ctx context.Context, v *vouch.Server, who pdid.Id) [
 	return seed
 }
 
-// TestASecondFactorIsAnAttemptRosterHoldsAndABrowserDoesNot is PLAN.md D21.
+// TestASecondFactorIsAnAttemptRosterHoldsAndABrowserDoesNot is D21.
 //
 // The question that found it: **an app showing a second form has to remember
 // who passed the first one.** An app developer wants to know who somebody is

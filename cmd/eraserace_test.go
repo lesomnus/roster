@@ -21,8 +21,8 @@ import (
 // afterwards. One reads to find out who to ask about and turns "already gone"
 // into an error; the other reads to count and lets the count go stale.
 
-// TestErasingAMembershipThatIsNotThereSucceeds, which is the rule PLAN.md
-// states and `keys.Undelegate` leans on.
+// TestErasingAMembershipThatIsNotThereSucceeds, which is the rule spend in
+// `server/vouch/step.go` states and `keys.Undelegate` leans on.
 //
 // It is the layer that has to agree with it: the generated `Erase` answers
 // `{erased: false}` for a row that was already gone, and `server/core` reads

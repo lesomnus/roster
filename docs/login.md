@@ -46,8 +46,8 @@ which is the question somebody working through a list of addresses is asking.
 
 The one refusal that is distinguishable is a lockout, and that is a deliberate
 trade: it says the person exists. The alternative is somebody locked out being
-told nothing and trying forever. See PLAN.md, D14 — including what a lockout
-does **not** fix.
+told nothing and trying forever. See `server/vouch`'s package comment —
+including what a lockout does **not** fix.
 
 ## What custody keeps, and what it does not
 
@@ -196,7 +196,7 @@ What does **not** come is how many steps there are in total, which of the
 available methods to offer, or what to call them. Those are the app's, and D21
 says why.
 
-See PLAN.md D20 and D21.
+See [position.md](position.md), § "Second factors".
 
 ## Signing in by address, and where the tenant comes from
 
@@ -313,7 +313,7 @@ rather than leaving a live credential until its clock runs out.
 `examples/sso` is the whole of it working, and it is honest about what it does
 not reach: a sign-in through the provider never calls `Vouch`, so there is
 nothing for a delegation to ride back on, and the page says so rather than
-falling back to the app's own credential. PLAN.md D23 and D25.
+falling back to the app's own credential. `delegation.proto` is the why.
 
 ## What a calling machine is, and where it lives
 
@@ -351,7 +351,6 @@ across every tenant — custody — and its own tests are where that is exercise
 
 ## See also
 
-- [PLAN.md](../PLAN.md) — D13, D14 and the open questions
 - [`server/vouch`](../server/vouch) — the package comment is the detail
 - [`examples/sso`](../examples/sso) — a relying party that signs somebody in
   with Google, Entra or GitHub and finds out who they are here. The package

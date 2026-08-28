@@ -8,8 +8,8 @@ under `proto/`, and those carry the argument at length -- why a row rather than
 a column, why a timestamp rather than a flag, what was tried first. What is here
 is short enough to read in one sitting and points at them.
 
-`PLAN.md` is what roster is for and every decision taken. `docs/roadmap.md` is
-the order they were built in.
+`docs/position.md` is what roster is for and where it stops. `docs/roadmap.md`
+is the order it was built in.
 
 ## One story, told twenty-three times
 
@@ -304,7 +304,7 @@ erDiagram
 > **Nobody writes a way into an account wider than their own.** All four of
 > these are ways to sign in as whoever the row is about, so all four are refused
 > unless that person's permissions are a subset of the caller's.
-> `server/core/escalate.go`, PLAN.md D40 and D41.
+> `server/core/escalate.go`; its file comment is the whole argument.
 
 ### 🔒 `Credential` — a secret somebody proves themselves with **here**
 
@@ -642,6 +642,5 @@ spending them on something else.
 | `proto/app/*.proto` | the entity, and the whole argument for it |
 | `proto/roster/payday/*.proto` | payday's four, **copied in** — do not edit; write an overlay in `proto/ext/payday/` |
 | `internal/ent/migrate/schema.go` | the tables as they are actually created |
-| `PLAN.md` | every decision, by number |
 | `docs/baseline.md` | what a normal user may rely on, and the test that pins each promise |
 | `docs/operating.md` | what an operator does with these |

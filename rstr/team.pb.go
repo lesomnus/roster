@@ -36,7 +36,7 @@ const (
 // top of the tenants they may see -- is generated from that one number.
 //
 // A team belongs to exactly **one** site, which is the condition. A Holder does
-// not, so a Holder has no site edge; see PLAN.md, D4.
+// not, so a Holder has no site edge.
 type Team struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
@@ -255,7 +255,7 @@ type Team_builder struct {
 	// What it is **not** any more is how this row reaches a tenant. It was, and
 	// then a team with no site reached none -- written, invisible to everybody,
 	// with nothing saying so. The wall goes through field 2 and field 3 only ever
-	// narrows; see PLAN.md, D18.
+	// narrows; `server/core/tenant.go` says why nothing else can state it.
 	Site *Site
 	// Unique within the site, so `operators` may exist in every one of them.
 	Alias       string

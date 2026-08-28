@@ -56,7 +56,7 @@ func TestTheSameAddressTwiceForOnePersonIsRefused(t *testing.T) {
 //
 // The cost is that nothing here can resolve anybody by address, which is
 // exactly what the design already requires: an address is not a key. See
-// PLAN.md, D3.
+// `email.proto`'s index comments.
 func TestTwoPeopleMayShareAnAddress(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)

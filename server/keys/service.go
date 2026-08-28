@@ -42,7 +42,8 @@ import (
 // rather than a check written here. Built on the data plane, this answers about
 // the data plane's keys and cannot see a control-plane key at all -- there is
 // no query from the one instance to the other. That is the same property the
-// control plane was split out for; see PLAN.md, D15.
+// control plane was split out for; see docs/position.md, § 'Two planes, one
+// schema'.
 //
 // # It reads through no wall
 //

@@ -21,7 +21,7 @@ import (
 // Delegate is [Server.Verify], and on a yes it mints a credential for the
 // person it just proved.
 //
-// PLAN.md D23 is the gap: nothing let a product app ask roster a question **as**
+// D23 is the gap: nothing let a product app ask roster a question **as**
 // somebody it had signed in, and the two obvious ways -- the app's own key,
 // which sees every tenant, and the app filtering its own reads, which is what
 // D17 called *the kind of thing that leaks by being forgotten* -- are both

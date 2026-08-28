@@ -996,7 +996,7 @@ export const VouchService: GenService<{
   },
   /**
    * Delegate is Verify, and on a yes it also mints a credential for the person
-   * it just proved. PLAN.md D23 and D25.
+   * it just proved. See `delegation.proto`.
    *
    * # Why it is not a field on Verify
    *
@@ -1027,7 +1027,7 @@ export const VouchService: GenService<{
   /**
    * Reset gives somebody a new password and answers with it **once**.
    *
-   * For a local operator in a deployment with no mail. PLAN.md's list, item 10:
+   * For a local operator in a deployment with no mail. Roadmap.md's item 10:
    * D13 closed `CredentialService` entirely, so nothing on the wire could set
    * a password and `init` plus a shell was the only way -- which is right for
    * the read and wrong for the write.

@@ -44,9 +44,10 @@ ports, the console, the audit trail, retention, upgrades. Where the two overlap
 it is the same material at a different length, and `operating.md` is the one
 that goes deeper.
 
-**Not the design.** [`../../PLAN.md`](../../PLAN.md) is every decision and why.
-If a page here says *this is refused* and you want to know what it cost to
-decide that, the answer is there and not here.
+**Not the design.** The why of a refusal is written beside the thing that
+refuses — the proto comment, the layer's file comment, or
+[`position.md`](../position.md). If a page here says *this is refused* and you
+want to know what it cost to decide that, that is where the answer lives.
 
 ## A note on the CLI, since everything here uses it
 
@@ -94,7 +95,7 @@ Nineteen do not, and that is a gap being closed rather than a boundary: the goal
 is that everything is possible from a terminal, with no console anywhere in the
 path. `HolderService`'s `Disable`, `Enable` and `Invalidate`, and most of
 `VouchService`, are the notable ones. Where a page here shows an RPC and no
-command, that is why. PLAN.md D58 is the list.
+command, that is why. The D58 row in [`roadmap.md`](../roadmap.md) is the list.
 
 `Apply` is the exception and is not on that list. It is one of the two general
 writes, closed unless a deployment opts in, and roster does not.

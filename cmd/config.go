@@ -72,7 +72,8 @@ type Config struct {
 	Watch  config.WatchConfig  `yaml:"watch"`
 
 	// Control is who may call this deployment, and it is roster again -- a
-	// second instance, in this process, on its own database. See PLAN.md, D15.
+	// second instance, in this process, on its own database. See
+	// docs/position.md, 'Two planes, one schema'.
 	//
 	// Nothing written down is a deployment that believes its callers, which
 	// `auth.Plain` announces once in the log. It is the default custody takes

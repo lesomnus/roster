@@ -135,7 +135,7 @@ func newCmdMeGet(c *Config) *xli.Command {
 // No subject in the request, which is the whole of what makes this safe to
 // grant: `IssueService.IssueKey` takes a `HolderRef` the wall narrows to the
 // caller's tenant, so the smallest role covering *mint a key for myself* there
-// is *mint one for anybody here*. See PLAN.md D54.
+// is *mint one for anybody here*. See `me.proto`'s IssueKey comment.
 func newCmdMeIssueKey(c *Config) *xli.Command {
 	return &xli.Command{
 		Name:  "issue-key",

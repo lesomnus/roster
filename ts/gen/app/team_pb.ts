@@ -35,7 +35,7 @@ export const file_app_team: GenFile = /*@__PURE__*/
  * top of the tenants they may see -- is generated from that one number.
  *
  * A team belongs to exactly **one** site, which is the condition. A Holder does
- * not, so a Holder has no site edge; see PLAN.md, D4.
+ * not, so a Holder has no site edge.
  *
  * @generated from message roster.Team
  */
@@ -68,7 +68,7 @@ export type Team = Message<"roster.Team"> & {
    * What it is **not** any more is how this row reaches a tenant. It was, and
    * then a team with no site reached none -- written, invisible to everybody,
    * with nothing saying so. The wall goes through field 2 and field 3 only ever
-   * narrows; see PLAN.md, D18.
+   * narrows; `server/core/tenant.go` says why nothing else can state it.
    *
    * @generated from field: roster.Site site = 3;
    */

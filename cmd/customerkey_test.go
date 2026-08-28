@@ -57,7 +57,7 @@ func stdoutOf(t *testing.T, k *xli.Command, args ...string) string {
 // Which is not a boundary. The same shell has just bound `/roster.*/*` to that
 // person; refusing the key refuses the last step of something already wholly
 // permitted, and what it made necessary was a browser -- for a deployment
-// somebody is running from a terminal. PLAN.md D57.
+// somebody is running from a terminal.
 func TestTheCliMintsACustomersKey(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()

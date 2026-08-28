@@ -57,8 +57,8 @@ func (b *built) mayCall(t *testing.T, ctx context.Context, who pdid.Id, alias st
 // reset anybody in their tenant effectively holds every permission in it -- two
 // operations, and it is exactly the shape `escalate.go` exists to close,
 // arriving through a door nobody had put a lock on because the door did not
-// exist yet. PLAN.md's list insisted the lock went in first, and this is the
-// test that says it did.
+// exist yet. The list of twelve insisted the lock went in first, and this is
+// the test that says it did.
 func TestNobodyWritesTheCredentialOfSomebodyWiderThanThey(t *testing.T) {
 	b, ctx := build(t)
 

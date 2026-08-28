@@ -13,8 +13,8 @@ is the one that day taught:
 
 > **A change to code under a baseline promise runs that promise's tests before
 > it ships, and a baseline test is never weakened to let a change pass.** If a
-> promise itself has to change, that is a decision for `PLAN.md` first, this
-> table second, and the test third — in that order.
+> promise itself has to change, that is a decision to write down first — beside
+> the thing it decides — this table second, and the test third, in that order.
 
 Every test named here is `cmd/…_test.go`, wire-level where the promise is
 about a caller: it dials a served port and presents the credential a real

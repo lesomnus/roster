@@ -10,7 +10,7 @@
  * All four exist because of one deployment shape. In an air gap there is no
  * mail, so the somebody else who delivers a recovery code is a **person** —
  * which makes recovery and an operator-initiated reset the same act reached two
- * ways, and makes a console the thing that reaches it. PLAN.md's list, items 3
+ * ways, and makes a console the thing that reaches it. Roadmap.md's items 3
  * and 10, and D28 is the shape.
  *
  * # What it shows that nothing else could

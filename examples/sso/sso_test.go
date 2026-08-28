@@ -645,7 +645,7 @@ func TestTheStateIsChecked(t *testing.T) {
 // TestAPasswordSignInReadsItsOwnRecord is what D24 says this app is for:
 // specifying the delegation rather than demonstrating it.
 //
-// It is the whole of PLAN.md D23 in one flow. The app holds a credential that
+// It is the whole of D23 in one flow. The app holds a credential that
 // can read every tenant it serves; the page below is somebody's own record, and
 // it is read with a credential narrowed to that person and to one method. The
 // two ways it is not done are the two D23 refuses -- the app's own key, and the
@@ -693,7 +693,7 @@ func TestAPasswordSignInReadsItsOwnRecord(t *testing.T) {
 
 	// The deployment's own work: setting somebody's first password is not
 	// something the front door may do, and `VouchService/Set` is not on its
-	// role. See `roster init` and PLAN.md's list, item 10.
+	// role. See `roster init` and roadmap.md's item 10.
 	_, err = vouch.New(d.ungated, d.ungated).Set(ctx, rstr.VouchSetRequest_builder{
 		Who:    rstr.VouchWho_builder{Id: h.GetId()}.Build(),
 		Secret: []byte("correct horse battery staple"),

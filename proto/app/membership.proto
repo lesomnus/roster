@@ -36,7 +36,7 @@ option go_package = "github.com/lesomnus/roster/rstr";
 //
 // A row rather than an edge on the Holder because it is many-to-many: a person
 // works at one factory and audits another, and a support engineer sees several.
-// That is why the Holder itself carries no site -- see PLAN.md, D4.
+// That is why the Holder itself carries no site -- see `team.proto`.
 //
 // It sits on the second axis itself. A caller narrowed to Seoul reads Seoul's
 // memberships and not Frankfurt's, which is what makes "who is here" answerable
@@ -107,7 +107,7 @@ message SiteMembership {
 // may **ever** call, and `server/core` refuses the wrong team per call. Which
 // means attaching a role here hands out its methods, and `Add` and `Patch` are
 // both refused when they name one the caller does not hold -- at the team's
-// site, which is the scope a team sits in. PLAN.md D35 and D41.
+// site, which is the scope a team sits in. `server/core/escalate.go`.
 //
 // The design derives roles from team membership **within a site**: the same
 // person is an operator in Seoul and a reader in Frankfurt, and a role that

@@ -80,7 +80,7 @@ type VouchServiceClient interface {
 	// Set writes a secret, hashing it here.
 	Set(ctx context.Context, in *VouchSetRequest, opts ...grpc.CallOption) (*VouchSetResponse, error)
 	// Delegate is Verify, and on a yes it also mints a credential for the person
-	// it just proved. PLAN.md D23 and D25.
+	// it just proved. See `delegation.proto`.
 	//
 	// # Why it is not a field on Verify
 	//
@@ -103,7 +103,7 @@ type VouchServiceClient interface {
 	Delegate(ctx context.Context, in *VouchDelegateRequest, opts ...grpc.CallOption) (*VouchDelegateResponse, error)
 	// Reset gives somebody a new password and answers with it **once**.
 	//
-	// For a local operator in a deployment with no mail. PLAN.md's list, item 10:
+	// For a local operator in a deployment with no mail. Roadmap.md's item 10:
 	// D13 closed `CredentialService` entirely, so nothing on the wire could set
 	// a password and `init` plus a shell was the only way -- which is right for
 	// the read and wrong for the write.
@@ -429,7 +429,7 @@ type VouchServiceServer interface {
 	// Set writes a secret, hashing it here.
 	Set(context.Context, *VouchSetRequest) (*VouchSetResponse, error)
 	// Delegate is Verify, and on a yes it also mints a credential for the person
-	// it just proved. PLAN.md D23 and D25.
+	// it just proved. See `delegation.proto`.
 	//
 	// # Why it is not a field on Verify
 	//
@@ -452,7 +452,7 @@ type VouchServiceServer interface {
 	Delegate(context.Context, *VouchDelegateRequest) (*VouchDelegateResponse, error)
 	// Reset gives somebody a new password and answers with it **once**.
 	//
-	// For a local operator in a deployment with no mail. PLAN.md's list, item 10:
+	// For a local operator in a deployment with no mail. Roadmap.md's item 10:
 	// D13 closed `CredentialService` entirely, so nothing on the wire could set
 	// a password and `init` plus a shell was the only way -- which is right for
 	// the read and wrong for the write.

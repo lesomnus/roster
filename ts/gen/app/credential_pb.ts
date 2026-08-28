@@ -158,7 +158,7 @@ export type Credential = Message<"roster.Credential"> & {
    * **unconfirmed**, and `Vouch` leaves an unconfirmed factor out of what a
    * person is asked for, because a QR somebody may have mis-scanned is a form
    * that cannot be filled. One code moves it, which is what `Verify` taking a
-   * name is for. PLAN.md D29 and D36.
+   * name is for; `VouchVerifyRequest.name` in `vouch.proto` says why at length.
    *
    * @generated from field: int64 last_step = 16;
    */

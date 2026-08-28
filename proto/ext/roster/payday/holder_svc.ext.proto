@@ -18,7 +18,7 @@ import "roster/payday/holder.proto";
 // have *replaced* it -- the file compiles, the tests that call it pass, and
 // what is gone is the wall, the trail and the narrowing that stood behind the
 // name. An overlay whose name matches no contract is reported too
-// (`@a06360f`); it used to merge nothing and generate cleanly. PLAN.md F20.
+// (`@a06360f`); it used to merge nothing and generate cleanly.
 service HolderService {
   // Update is the narrow write, and the one a caller is given.
   //

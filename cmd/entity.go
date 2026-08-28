@@ -103,7 +103,7 @@ func NewCmdEntities(c *Config) xli.Commands {
 	//
 	// `me` is the first of them and will not be the last. Every RPC should have
 	// a command, because *what can be done without a console* has one correct
-	// answer; PLAN.md D58 is the list and why.
+	// answer; docs/roadmap.md's D58 row is the list and why.
 	// The connection on the **parent**, which is where it belongs: `withConn`
 	// fires on `Run` and a command with a subcommand under it runs as
 	// `Run|Pass`, so one dial covers whichever verb was typed and closes after

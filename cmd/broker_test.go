@@ -17,10 +17,11 @@ import (
 
 // The one thing that did not cross replicas, and does now.
 //
-// PLAN.md D33 found everything else already externalised -- sessions, keys,
-// delegations, lockouts, all rows re-read per request -- and one exception: a
-// client watching against one process never heard about a write that landed on
-// another, on a stream that stayed open and looked healthy.
+// The statelessness review, D33, found everything else already externalised --
+// sessions, keys, delegations, lockouts, all rows re-read per request -- and
+// one exception: a client watching against one process never heard about a
+// write that landed on another, on a stream that stayed open and looked
+// healthy.
 //
 // `watch.broker: postgres` is the answer, and it needs no second piece of
 // infrastructure: `LISTEN`/`NOTIFY` on the database the rows are already in.

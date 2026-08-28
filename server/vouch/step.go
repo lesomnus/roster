@@ -21,7 +21,7 @@ import (
 
 // The attempt: what has been proved about somebody, part way through.
 //
-// PLAN.md D21 is the decision and `continuation.proto` is the row. This is the
+// D21 is the decision and `continuation.proto` is the row. This is the
 // half that moves.
 
 // PrefixContinuation is what a continuation looks like, so that one found in a

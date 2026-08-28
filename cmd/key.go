@@ -51,8 +51,7 @@ import (
 // deployment somebody is running from a terminal.
 //
 // The boundary is who holds the configuration file and the database, which is
-// what `docs/operating.md` says about the local CLI everywhere else. PLAN.md
-// D57.
+// what `docs/operating.md` says about the local CLI everywhere else.
 func NewCmdKey(c *Config) *xli.Command {
 	return &xli.Command{
 		Name:  "key",

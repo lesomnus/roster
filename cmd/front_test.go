@@ -12,7 +12,7 @@ import (
 	"github.com/lesomnus/roster/server/front"
 )
 
-// TestAFrontDoorLearnsWhoseNameItIs is item 1 of PLAN.md's list, and it closes
+// TestAFrontDoorLearnsWhoseNameItIs is item 1 of the twelve, and it closes
 // the hole every multi-tenant app was filling with a map of its own.
 //
 // A tenant is the same service under a different operator's own domain, so the

@@ -524,9 +524,9 @@ func (s Core) methodsOf(ctx context.Context, ref *app.RoleRef) ([]string, error)
 // arriving through a door nobody had put a lock on because the door did not
 // exist yet.
 //
-// It went in **before** the surface did, which is the order PLAN.md's list
-// insisted on and the only pair in that list where the order is a correctness
-// question rather than a convenience.
+// It went in **before** the surface did, which is the order the twelve
+// subjects (docs/roadmap.md) insisted on and the only pair in that list where
+// the order is a correctness question rather than a convenience.
 //
 // # The rule, and the one it is not
 //

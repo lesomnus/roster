@@ -30,8 +30,7 @@ export const file_app_identity: GenFile = /*@__PURE__*/
  * names: link an account you control to somebody's Holder and signing in at
  * that provider serves you as them. So writing one is refused unless that
  * person's permissions are a subset of yours -- the rule that guards a password,
- * applied to the other half of a sign-in. `server/core/escalate.go`, PLAN.md
- * D41.
+ * applied to the other half of a sign-in. `server/core/escalate.go`.
  *
  * # Why it is a row and not a column
  *

@@ -40,7 +40,8 @@
 # set them with, so every container started life with a customer named after an
 # example company. `init` seeds the control plane alone now: what comes up is a
 # deployment and an operator, and the first customer is made from the console
-# the same way the hundredth is. See PLAN.md D56.
+# the same way the hundredth is. See docs/operating.md, 'The same thing from a
+# console'.
 set -eu
 
 : "${ROSTER_ROOT_USER:=admin}"

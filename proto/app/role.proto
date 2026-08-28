@@ -126,7 +126,7 @@ message Role {
         // and `alias` here was `RoleRefByAlias{alias}` -- and `pdcmd` fills a
         // reference from a field called `slug`, so `roster role get
         // @acme/support` was an error and only an identifier worked. See
-        // PLAN.md D58.
+        // docs/roadmap.md, the D58 row.
         name: "slug"
         refs: [
           {name: "alias", number: 4},
@@ -167,8 +167,9 @@ message Role {
 //
 // It does **not** name a team. "The administrator of a team manages its
 // members" is a product invariant rather than a thing to configure, so it is
-// roster's own rule and lives in a layer; see PLAN.md, D17. What carries a role
-// for a team is the `TeamMembership` that already said somebody is in it.
+// roster's own rule and lives in a layer; docs/position.md, § 'Authorization:
+// what roster does', says why. What carries a role for a team is the
+// `TeamMembership` that already said somebody is in it.
 message Binding {
   bytes id = 1 [(orm.field) = {
     type: TYPE_UUID

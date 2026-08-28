@@ -25,7 +25,7 @@ const (
 
 // Continuation is what has been proved about somebody, part way through.
 //
-// PLAN.md D21 is the decision, and the question that found it: **an app showing
+// D21 is the decision, and the question that found it: **an app showing
 // a second form has to remember who passed the first one.** An app developer
 // wants to know who somebody is and does not want to be in the sign-in business
 // at all, so making them carry that is handing them the one part of the process
@@ -69,8 +69,8 @@ const (
 // `Erase` answers whether this call was the one that did it. Not the version
 // precondition, which cannot decide this -- a `Patch` carrying only a version
 // test compiles to an `Exist` check and no write, so both callers see the row
-// and both proceed. PLAN.md D34. A second column recording the same fact is a second thing
-// to drift.
+// and both proceed -- see spend in `server/vouch/step.go`. A second column
+// recording the same fact is a second thing to drift.
 type Continuation struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`

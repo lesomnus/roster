@@ -67,7 +67,8 @@ export function app(transport: Transport): App {
  * is the writes an operator makes -- about one person, and about standing a
  * customer up -- and a page reads through the store for everything else.
  *
- * `VouchService` is on that port for the reason PLAN.md item 10 gives -- an air
+ * `VouchService` is on that port for the reason roadmap.md's item 10 gives --
+ * an air
  * gap has an operator instead of a mail server -- and `cmd/admin.go` says what
  * it costs and what bounds it.
  *
@@ -76,7 +77,7 @@ export function app(transport: Transport): App {
  * customer is an operator, on this port, through the rules -- `mayGrant`
  * compares methods and site rather than tenants, so the whole-package pattern
  * an operator holds in the **control** plane reaches a tenant that did not
- * exist a moment ago. PLAN.md D56.
+ * exist a moment ago.
  */
 export interface Admin {
 	readonly holder: Client<typeof HolderService>

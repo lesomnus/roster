@@ -43,8 +43,8 @@ import (
 // the operator's binding -- tenant-wide, in the **control** plane -- reaches a
 // tenant that did not exist a moment ago; the admin port registers all four
 // writes plus the two that write a way in. `ts/src/customers.tsx` is the
-// screen, `cmd/newcustomer_test.go` is the whole sequence, and PLAN.md D56 is
-// why.
+// screen, `cmd/newcustomer_test.go` is the whole sequence, and
+// docs/operating.md, § 'The same thing from a console', is why.
 //
 // `Seed` still writes one when it is asked for a tenant, because a test and the
 // Wasm sandbox want a deployment with somebody in it and have no console to
@@ -395,7 +395,7 @@ func allow(ctx context.Context, s *Server, in pdid.Id, to pdid.Id) error {
 // Because what a console does first is put up a tenant, and that is not
 // something anybody inside a tenant does. The control plane is the deployment's
 // own roster -- its holders are the callers rather than the customers -- and an
-// operator is a caller. See PLAN.md, D15.
+// operator is a caller. See docs/position.md, 'Two planes, one schema'.
 //
 // # Why a password and not a key
 //

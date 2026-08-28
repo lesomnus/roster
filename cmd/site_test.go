@@ -49,7 +49,7 @@ func TestASiteAliasIsUniqueWithinItsTenantAndNotBeyond(t *testing.T) {
 //
 // "every site in Asia" is a match over these. Resolving that match to a set of
 // sites is roster's, because payday's grant carries identifiers rather than
-// selectors -- see PLAN.md, D4.
+// selectors.
 func TestLabelsAreCarried(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)

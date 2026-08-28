@@ -421,7 +421,7 @@ func TestTheStampIsTheServersToWrite(t *testing.T) {
 	x.Equal(b.Contoso, got, "what holder.tenant reaches, not what the caller wrote")
 }
 
-// TestNobodyRemovesTheirLastWayIn is item 8 of PLAN.md's list.
+// TestNobodyRemovesTheirLastWayIn is item 8 of the twelve (docs/roadmap.md).
 //
 // Removing it locks somebody out of their own account, and no deployment would
 // want that configured differently -- so it is a layer, the way D17 put the

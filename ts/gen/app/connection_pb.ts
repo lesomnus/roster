@@ -28,9 +28,9 @@ export const file_app_connection: GenFile = /*@__PURE__*/
  *
  * # The secret is not here, and that is the decision
  *
- * PLAN.md's item 9 left this open, because a connection carries a **client
- * secret** and handing one back would make it the first secret roster returns
- * rather than checks -- which is what D13 refuses.
+ * Item 9 of the twelve (docs/roadmap.md) left this open, because a connection
+ * carries a **client secret** and handing one back would make it the first
+ * secret roster returns rather than checks -- which is what D13 refuses.
  *
  * The way out is not to hold it. Everything about a connection that varies per
  * tenant is **public**: which issuer, which client id, which scopes. The secret

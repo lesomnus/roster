@@ -30,7 +30,7 @@ const (
 // In the **control plane**: a second roster, in the same process, on its own
 // database. Its one tenant is the deployment's owner, its holders are that
 // owner's services -- custody, and whatever else they run -- and these hang off
-// them. See PLAN.md, D15.
+// them. See docs/position.md, § 'Two planes, one schema'.
 //
 // Two databases because a key must not live in the same tables as the data it
 // protects: separate, a fault in the wall cannot reach one, since there is no

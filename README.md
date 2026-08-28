@@ -16,8 +16,8 @@ The line, so that it is on the first screen:
 
 So it checks a password and a second factor, and it does not run a login flow,
 mint a session for somebody else's browser, or sign a token another system
-verifies alone. [docs/position.md](docs/position.md) is that applied;
-[PLAN.md](PLAN.md) D19 is why it is worded as a test rather than as a list.
+verifies alone. [docs/position.md](docs/position.md) is that applied, including
+why it is worded as a test rather than as a list.
 
 | | |
 | --- | --- |
@@ -25,7 +25,6 @@ verifies alone. [docs/position.md](docs/position.md) is that applied;
 | [docs/entity.md](docs/entity.md) | the twenty-three tables, drawn, with a paragraph each |
 | [docs/operating.md](docs/operating.md) | running one: keys, roles, TLS |
 | [docs/login.md](docs/login.md) | what happens when somebody signs in |
-| [PLAN.md](PLAN.md) | every decision, with the reason that produced it |
 | [docs/roadmap.md](docs/roadmap.md) | what is being built next, in order, and how far it has got |
 
 ## What it does
@@ -76,7 +75,7 @@ every file that mentions both. And the proto package is `roster` and not `app`:
 protobuf's file registry and payday's `pdid` domains are per **process**, so
 two payday apps can be linked into one binary only if their proto packages
 differ -- which the reference app does, and which a product app embedding
-roster's login flow will do too. PLAN.md D10 and F8.
+roster's login flow will do too.
 
 ## What is where
 
@@ -224,7 +223,7 @@ somebody runs against the wrong deployment and believes.
 A customer is nobody's to seed. `init` writes no tenant, because a tenant is a
 customer and one written by a command is a customer nobody asked for — so the
 first act after `init` is the same act as the hundredth, whether it is typed at
-a shell or done from a console. PLAN.md D56.
+a shell or done from a console.
 
 It needs a `control:` database, and that is the one thing it refuses over.
 Without one a deployment serves `auth.Plain` — every caller is whoever they type

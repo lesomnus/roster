@@ -4,10 +4,12 @@ A [payday](https://github.com/lesomnus/payday) app. Most of it is **generated
 from `proto/`**, so the usual shape of a change is: edit the schema, regenerate,
 then write the part no schema can state.
 
-`PLAN.md` is what roster is for and every decision taken so far.
-`docs/roadmap.md` is what is being built next, in order, and how far it has got
--- **update its progress table in the same commit as the work.** `README.md` is
-the long version of the mechanics below.
+`docs/position.md` is what roster is for and where it stops. `docs/roadmap.md`
+is how it was built, what is open, and how far new work has got -- **update its
+progress table in the same commit as the work.** A decision's why is written
+beside the thing it decides -- a file comment, a proto comment, the relevant doc
+-- never in a central log; there no longer is one. `README.md` is the long
+version of the mechanics below.
 
 ## The one rule
 
@@ -33,7 +35,7 @@ addresses, and the tenants, sites and teams they belong to. It owns `sub`.
 It is **not** the identity provider. Hydra speaks the protocol and a Login App
 runs the flow; roster is what they ask. So its callers are machines -- the Login
 App, admin consoles -- and its own authentication is mTLS or an API key, never
-`authoidc`. See `PLAN.md`.
+`authoidc`. See `docs/position.md`.
 
 ### The other rule
 
@@ -48,7 +50,8 @@ make, and the answer is Hydra or the app's own `authsession`.
 
 Do not restate this as a list of things roster does not implement. That version
 existed, said "no providers, no MFA", and was already false: `VouchService`
-checks a password. `PLAN.md` D19 and D20, `docs/position.md`.
+checks a password. `docs/position.md`, § "The line, in one sentence" and
+§ "Second factors".
 
 ## Regenerate after touching the schema
 
@@ -187,8 +190,8 @@ keeping a directory tidy and each is a way to sign in as whoever the row is
 about.
 
 If you are adding a write, ask both questions of it before asking anything else.
-`server/core/escalate.go` is where the answers live and PLAN.md D40 and D41 are
-how they were arrived at.
+`server/core/escalate.go` is where the answers live; its file comment is how
+they were arrived at.
 
 ## Running
 

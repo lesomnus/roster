@@ -200,8 +200,8 @@ func TestAGeneralWriteIsNotAWayRoundTheEscalationRule(t *testing.T) {
 //	Alice signs in as the boss.
 //
 // The rule she walked round is the one that went in *before* the surface it
-// protects, because PLAN.md insisted the order there was a correctness question
-// rather than a convenience. This is that surface arriving anyway, one table
+// protects, because the list of twelve insisted the order there was a
+// correctness question rather than a convenience. This is that surface arriving anyway, one table
 // along: a key is a credential for a holder, so minting one is writing their
 // credential, and the same sentence `mayReach` is written in covers it --
 // **you may only write the credential of somebody whose permissions are a

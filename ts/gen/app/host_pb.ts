@@ -161,10 +161,9 @@ export const HostSchema: GenMessage<Host> = /*@__PURE__*/
  * A provider by the name `Identity.provider` already uses. Not a connection: a
  * connection carries a client secret, and handing one back would make it the
  * first secret roster returns rather than checks -- which argues with D13. A
- * name needs no secret, so this half came first; when `Connection` arrived
- * (PLAN.md's item 9) it kept the same rule from the other side, holding a
- * **reference** to where the deployment keeps the secret and never the secret
- * itself.
+ * name needs no secret, so this half came first; when `Connection` arrived it
+ * kept the same rule from the other side, holding a **reference** to where the
+ * deployment keeps the secret and never the secret itself.
  *
  * # Within a tenant, and only within one
  *

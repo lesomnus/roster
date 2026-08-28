@@ -369,7 +369,8 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	}
 
 	// The control plane: roster again, on its own database, holding keys rather
-	// than people. See PLAN.md, D15 and `ControlConfig`.
+	// than people. See `ControlConfig`, and docs/position.md, 'Two planes, one
+	// schema'.
 	//
 	// Built after this one and from a config with no `control` of its own,
 	// which is what stops the recursion -- one level, and the innermost
@@ -809,9 +810,11 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 // `Delegation` still declares no `watch:`, because a schema that says so is
 // better than a wiring that has to be remembered.
 //
-// It is said here rather than in the schema because there is nowhere in the
-// schema to say it: payday extends `MessageOptions` only, so no field can be
-// declared written-and-never-read. See PLAN.md, D13 and F6.
+// The schema says it too, since F6: `(payday.field).secret` is declared on
+// every one of those columns, and it is what keeps them out of the trail. The
+// registration is kept beside it because it is the stronger statement -- a
+// cleared field is a column an answer omits; a service that is not on the wire
+// cannot answer at all.
 //
 // Written out has a cost worth naming: an entity added to the schema tomorrow
 // is not served until somebody adds a line here. That is the direction to fail
@@ -906,7 +909,7 @@ func (s *Server) closed(c Config) func(method string) bool {
 // asking for. But they are not who is calling. The caller is custody, or a
 // Login App, or an admin console, and every one of those is a machine holding a
 // certificate long before any of this. roster is called by machines and never
-// by a browser, which PLAN.md decided before any of it was written.
+// by a browser, decided before any of it was written -- docs/position.md.
 //
 // Public gave up two things for nothing. Anybody who could reach the port could
 // guess passwords at the whole organisation -- and not slowly, since
@@ -1041,7 +1044,8 @@ func (v *shutdown) run() {
 // Watch loops until the **client** hangs up, the deadline the chain installs is
 // unary-only, and no connection is aged out unless a deployment configured
 // keepalive. So one product app holding the sync channel -- which is what
-// `PLAN.md` item 4 tells a product app to do -- meant `g.Serve` never returned:
+// roadmap.md's item 4 tells a product app to do -- meant `g.Serve` never
+// returned:
 // the deferred stops for the other listeners never ran, the errgroup below
 // never finished, and `signal.NotifyContext` had already fired so a second
 // Ctrl-C did nothing. The process had to be killed, which is exactly the thing

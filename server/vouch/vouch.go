@@ -4,13 +4,12 @@
 //
 // `Credential.secret` is a column, and the generated `CredentialService.Get`
 // will return any column it is asked for. That is right for a row this app
-// reads itself and wrong for anything on a wire, and payday has no way to say
-// "this field is written and never read" -- `payday.proto` extends
-// `MessageOptions` only, so there is no field-level option to put it in.
-//
-// So it is said where reachability is actually decided: `CredentialService` is
-// not registered, and it is closed to the batch. See `cmd.Grpc` and PLAN.md D13.
-// What is registered is this, and nothing here answers with a hash.
+// reads itself and wrong for anything on a wire. `(payday.field).secret` says
+// so beside the column now -- it did not exist when this package was written --
+// and the stronger statement is still made where reachability is actually
+// decided: `CredentialService` is not registered, and it is closed to the
+// batch. See `cmd.Grpc`. What is registered is this, and nothing here answers
+// with a hash.
 //
 // # Why the hashing is here too
 //
@@ -261,7 +260,8 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind, name strin
 		//
 		// It does not make the account un-lockable by somebody else, and
 		// nothing here can: ten wrong guesses every [LockFor] will close it
-		// again, which is what locking by name costs. See PLAN.md, D14.
+		// again, which is what locking by name costs; the package comment says
+		// why that is accepted.
 		return app.VouchVerifyResponse_builder{LockedUntil: until}.Build(), nil, nil
 	}
 

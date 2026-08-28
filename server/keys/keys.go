@@ -10,7 +10,8 @@
 //
 //   - A **deployment** key lives in the control plane: a second roster, in this
 //     process, on its own database, whose one tenant is the owner and whose
-//     holders are that owner's services. See PLAN.md, D15 and D16. It resolves
+//     holders are that owner's services (docs/position.md, § 'Two planes, one
+//     schema'). It resolves
 //     to the key itself, and the policy hands it every tenant there is.
 //   - A **tenant** key lives here, on an ordinary person. It resolves to that
 //     person, so nothing about the wall, the bindings or the sites is decided
@@ -84,8 +85,7 @@ import (
 //     product app calling as somebody it has just signed in. It resolves to the
 //     holder exactly as a tenant key does, and everything else about it is the
 //     short life and the binding -- minted per sign-in, expiring in minutes,
-//     usable only by the caller it was given to. PLAN.md D23 and D25, and
-//     `delegation.proto`.
+//     usable only by the caller it was given to. See `delegation.proto`.
 //
 // Which is the whole of the difference, and it is why they cannot share a
 // prefix: the first is the deployment and the rest are a customer, and telling

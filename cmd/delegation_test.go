@@ -114,7 +114,7 @@ func mayList(t *testing.T, ctx context.Context, b *keyedBuilt, who pdid.Id, meth
 	x.NoError(err)
 }
 
-// TestADelegationIsThePersonAndNotTheApp is PLAN.md D23, which exists because
+// TestADelegationIsThePersonAndNotTheApp is D23, which exists because
 // there was no way for a product app to ask roster a question **as** somebody
 // it had signed in.
 //

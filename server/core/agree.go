@@ -166,8 +166,9 @@ func (s coreTeamMembership) Patch(ctx context.Context, req *app.TeamMembershipPa
 // so it is read first -- and a read of what is gone answers NotFound. Passing
 // that on put this layer at odds with the RPC it stands in front of. The
 // generated `Erase` answers `{erased: false}` for a row that was already gone
-// or was never there, and PLAN.md states that as a rule rather than as a
-// detail: `keys.Undelegate` erases what may already be erased, and so does
+// or was never there, and spend in `server/vouch/step.go` states that as a
+// rule rather than as a detail: `keys.Undelegate` erases what may already be
+// erased, and so does
 // anybody cancelling something twice.
 //
 // The shape it was found in is two operators removing one person from one team.

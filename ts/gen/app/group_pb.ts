@@ -67,7 +67,7 @@ export type Group = Message<"roster.Group"> & {
    * carries no site at all -- no field 3, so the second axis does not reach it
    * -- and `server/core` refuses only a member from another **tenant**. A
    * `Holder` has no site of its own either, since being in one is
-   * `SiteMembership` and that is many-to-many; see PLAN.md D4.
+   * `SiteMembership` and that is many-to-many.
    *
    * So a group is the one place where people across several sites are one
    * subject, and that is what it is for. A team is the other shape and belongs
@@ -134,7 +134,8 @@ export const GroupSchema: GenMessage<Group> = /*@__PURE__*/
  * group is for -- so putting somebody in one hands them every binding that
  * names it. Which makes this a grant although it mentions no role, and it is
  * refused on the same terms `Binding.Add` is: nobody hands out what they do not
- * hold, each binding checked at the scope it was made in. PLAN.md D40.
+ * hold, each binding checked at the scope it was made in.
+ * `server/core/escalate.go`.
  *
  * A row rather than a list on either side, for the reason every membership here
  * is one: it is many-to-many, and it is a fact with a date of its own.

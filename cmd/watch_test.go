@@ -17,7 +17,7 @@ import (
 
 // The sync channel, at the increment that came free.
 //
-// PLAN.md D26 says it: `Holder` already declared `watch: {}`, justified in
+// D26 says it: `Holder` already declared `watch: {}`, justified in
 // `holder.proto` because *the one fact about somebody that has to travel is
 // that they are gone* -- and two more facts that have to travel were put on the
 // same row, so they arrive on a stream that already exists.

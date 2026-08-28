@@ -33,7 +33,7 @@ import (
 //
 // The control plane is roster again, in this process, on its own database: one
 // tenant for the owner, a holder per service, and keys under those. See
-// PLAN.md, D15.
+// docs/position.md, 'Two planes, one schema'.
 
 // keyed is a deployment with a control plane, and a key for one service.
 type keyedBuilt struct {

@@ -28,7 +28,7 @@ import (
 // An air-gapped deployment cannot live with that. There is no mail, so the
 // "somebody else" who delivers a recovery code is a **person**, which makes
 // recovery and an operator-initiated reset the same mechanism reached two ways
-// -- PLAN.md's list, items 3 and 10. What that person needs is a way to open an
+// -- roadmap.md's items 3 and 10. What that person needs is a way to open an
 // account and a way to hand somebody a new password, both from a console rather
 // than from a shell on the box.
 //
@@ -42,8 +42,8 @@ import (
 // Resetting a password is a way to **become** somebody. An operator who may
 // reset anybody in their tenant effectively holds every permission in it, which
 // is `server/core/escalate.go`'s shape arriving through a door that did not
-// exist when that file was written. It went in before this did, and PLAN.md's
-// list said so: it is the only pair in that list where the order is a
+// exist when that file was written. It went in before this did, and the list
+// of twelve said so: it is the only pair in that list where the order is a
 // correctness question rather than a convenience.
 
 // Reset gives somebody a new password and answers with it once.

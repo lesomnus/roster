@@ -811,7 +811,7 @@ of "the caller it was issued to", and the deliberate one: a delegation lives
 for minutes, and a caller whose credential has been replaced is not obviously
 the same caller — a key pasted into a build log and rotated out the same
 afternoon must not be able to spend the sign-ins its replacement performs, nor
-the other way round. PLAN.md D25.
+the other way round. The issuer comment in `delegation.proto` says why.
 
 What a tenant key costs is the trail: its writes are recorded as the person's,
 so `Audit` says who and not which of their keys. Revoking still works, since the
@@ -827,7 +827,7 @@ A **delegation** is different and is minted over the wire: `Vouch.Delegate` is
 the same at the end of a magic link. A separate RPC rather than a field on
 `Verify`, because a role here is a list of methods — so a Login App that must
 check passwords and never mint is a different grant from a product app that
-needs the token. PLAN.md D23 and D25.
+needs the token. See `delegation.proto`.
 
 ## Who may do what
 
@@ -1111,7 +1111,7 @@ Three things to know before handing these out:
 - **Nothing stops you suspending an administrator.** Escalation prevention
   covers everything that hands out a permission or writes a way in — the two
   tables above — and not this: suspending somebody is a denial of service rather
-  than a way to become them. PLAN.md's list, item 11.
+  than a way to become them. Roadmap.md's item 11.
 
 What an app in front does with `date_invalidated` is its own half: roster
 answers *invalid since when*, and the app answers *what is still alive*.
@@ -1132,8 +1132,8 @@ a `reason` beside them.
   dead-letter queue.
 - **It takes nothing because the wall is what narrows it.** A deployment `rk_`
   key hears every tenant; a credential that resolves to a person hears theirs.
-  There is no field to say whose events you want, deliberately -- see PLAN.md
-  D53.
+  There is no field to say whose events you want, deliberately -- see
+  `sync.proto`.
 - **Compare, do not drop.** The message carries the instants, not an
   instruction. A session minted after `date_invalidated` is untouched; one from
   before it is not a session. `reason` is a word for your log and is
@@ -1259,7 +1259,7 @@ other.
 The suite is SQLite unless `PDTEST_POSTGRES` names a server, and the two
 disagree in the direction that hides mistakes: a second concurrent writer gets
 `database is locked` on SQLite and dies, which makes a missing once-only
-guarantee look like a working one. PLAN.md D34 is what that hid.
+guarantee look like a working one. The single-use race, D34, is what that hid.
 
 ```sh
 PDTEST_POSTGRES=postgres://roster:...@localhost:5432/roster?sslmode=disable \
@@ -1330,7 +1330,8 @@ Nothing written down is plaintext, and it warns once.
 - **No second factor other than TOTP.** `Vouch.Enrol` writes a seed, `Verify`
   and `Continue` check the codes, and the `continuation` between them is an
   opaque handle carrying *this person satisfied the first factor* — so an app
-  serving two forms holds nothing but a string. PLAN.md D20, D21, D29 and D30.
+  serving two forms holds nothing but a string. [position.md](position.md),
+  § "Second factors", is the why.
 
   Two things about it are the operator's. It needs `vouch.keys`
   (`ROSTER_VOUCH_KEYS`), because a seed is the one secret roster has to be able
@@ -1359,4 +1360,5 @@ Nothing written down is plaintext, and it warns once.
   person, and what they hand over is a password from `Vouch.Reset`.
 - **Nothing here signs a token.** If several products need one sign-in, that is
   Hydra in front and roster answering it — login.md, "What changes when Hydra is
-  in front". Do not reach for a JWT minted here; PLAN.md D19 is why.
+  in front". Do not reach for a JWT minted here; [position.md](position.md),
+  § "The line, in one sentence", is why.

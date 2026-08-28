@@ -57,7 +57,7 @@ import (
 // It does not look at what a call is **about**. `gate.Call` carries the actor,
 // their tenant, the actor's own row and the method, and never the request -- so
 // "may manage the team they are in" is not here. That is `server/core`, which
-// is given the request; see PLAN.md, D17.
+// is given the request; see docs/position.md, § 'Authorization'.
 func Policy(db *ent.Client) gate.Policy { return policy{db} }
 
 type policy struct{ db *ent.Client }
@@ -296,7 +296,7 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 	// reach the layer that knows which team the call is about. What that costs
 	// is that the gate now lets them through for **any** team, which is why
 	// `server/core` refusing the wrong one is not optional. The two halves are
-	// written to be read together; see PLAN.md, D17.
+	// written to be read together.
 	ts, err := p.db.TeamMembership.Query().
 		Where(
 			teammembership.DateErasedIsNil(),
@@ -323,7 +323,7 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 		// no third level to narrow to. So being in a team means seeing its
 		// site's rows, and seeing only your own team is the app filtering
 		// rather than the wall narrowing. Written down here because it is the
-		// kind of thing that leaks by being forgotten; see PLAN.md, D17.
+		// kind of thing that leaks by being forgotten.
 		if v.Edges.Team != nil && v.Edges.Team.Edges.Site != nil {
 			h.sites = append(h.sites, v.Edges.Team.Edges.Site.ID)
 		}

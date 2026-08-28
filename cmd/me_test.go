@@ -127,7 +127,7 @@ func TestSomebodyWithNothingCanStillAskWhatTheyHave(t *testing.T) {
 	x.Empty(v.GetMethods(), "somebody who holds nothing was told they hold something")
 }
 
-// TestMeAnswersHowSomebodySignsIn is item 7 of PLAN.md's list, for the one case
+// TestMeAnswersHowSomebodySignsIn is item 7 of the twelve, for the one case
 // that is safe to answer: somebody's own.
 //
 // Neither half could be read any other way. `IdentityService` narrows by the

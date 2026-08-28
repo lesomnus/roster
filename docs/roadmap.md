@@ -1,23 +1,42 @@
 # Building it — the order, and how far it has got
 
-`PLAN.md` is what roster is and why, and its list of twelve is the **subjects**
-on the near side of D19's line. It deliberately takes no decisions and states no
-order.
+[position.md](position.md) is what roster is and why. This file is the record
+of building it: the twelve subjects on the near side of that line, the order
+they were taken in, the dependencies, and what is open now.
 
-This file is the other half: **the order, the dependencies, and what is done.**
-When the two disagree about a subject, PLAN.md is right; when they disagree
-about a sequence, this one is.
+Decision numbers below -- `D1`…`D58`, `F1`…`F20` -- name entries in the decision
+log this repository kept while it was being built (`PLAN.md`, since retired).
+Each number's row here keeps what was decided; the why lives beside the thing it
+decided -- a file comment, a proto comment, a section of a doc -- and the full
+accounts are in history: `git log -p -- PLAN.md`.
 
 **All twelve are done, and so is every phase below.** The last was item 4, the
 sync channel, which the list had carried since the first week and which D26 took
 the first half of for free: `SyncService`, D53. What is here now is a record of
-the order rather than a queue -- so a change to roster is a new decision in
-PLAN.md and a new row here, not the next line of a plan.
+the order rather than a queue -- so a change to roster is a new decision written
+beside what it decides, and a new row here, not the next line of a plan.
+
+## The twelve subjects
+
+Kept because code and docs cite them by number ("roadmap.md's item 10"):
+
+1. **A tenant from a hostname.** D27 -- `Host`, and `FrontService.WhoseHost`.
+2. **Home-realm discovery, by domain.** D27 -- `MailDomain` and `FrontService.WhereFrom`.
+3. **Recovery.** D28 and D31 -- an operator's `Vouch.Reset`/`Unlock`, and the magic link.
+4. **The sync channel, as an invalidation signal.** D53 -- `SyncService`, state and not a signal.
+5. **A breached-password check.** `vouch.Breached`, refused at set-time against a local corpus.
+6. **"Sign out everywhere", as a fact rather than a list.** D26 -- `Holder.date_invalidated`, one monotonic timestamp.
+7. **A read that answers which methods somebody has.** `MeService.Get`, and `MeSaysWhatTheGateSays` holds it to the gate.
+8. **Refusing to remove a last login method.** `server/core`'s last-way-in count, D42 for the race, D43 for what counts.
+9. **Per-tenant provider connections.** D27's neighbour -- `Connection`, config and never a token check.
+10. **A write surface for `Credential`.** D28 -- `Vouch.Reset`/`Set`/`Unlock`, an operator's, on the admin port.
+11. **Escalation prevention over credential writes.** D28, D35, D40, D41 -- both rules, every path.
+12. **A disabled state, which is neither a lockout nor an erasure.** D26 -- `Holder.date_disabled`, read wherever a credential resolves.
 
 ## What the list turned out to be
 
-The twelve items were written as they were found, so they are twelve subjects
-and not twelve pieces of work. Reading them together, four collapse.
+The twelve were written as they were found, so they are twelve subjects and not
+twelve pieces of work. Reading them together, four collapse.
 
 **Three of them share a test, and it turned out not to be a table.** D21's
 `continuation`, D23's delegation token and item 3's magic-link nonce are each
@@ -53,7 +72,7 @@ there — 11 and 12. Item 4 wants them to travel, and `Holder` already declares
 `watch: {}`, justified in `holder.proto` for precisely this: *the one fact about
 somebody that has to travel is that they are gone.* So item 4's first increment
 is a field arriving on a stream that already exists. The event stream it argues
-for is a second increment, and is taken: `SyncService`, PLAN.md D53. The thing
+for is a second increment, and is taken: `SyncService`, D53. The thing
 that settled it was not a rate but that the entity `Watch` refuses a
 subscription with no filters, so an app cannot subscribe for people who have not
 signed in yet.
@@ -257,7 +276,7 @@ phase.
 
 ### P5 · Item 11 before item 10
 
-**Forces the order:** stated in PLAN.md item 11, and it is the only pair in the
+**Forces the order:** stated in item 11 itself, and it is the only pair in the
 list where the order is a correctness question rather than a convenience.
 Resetting a password is a way to become somebody, and `escalate.go` does not
 cover it.
@@ -373,7 +392,7 @@ The event stream (item 4's second increment), the breached-password check (item
 5), per-tenant provider connections (item 9, which needed a decision first and
 has one), and extracting the components (D24 §6, last for D24's own reason).
 **All four are done.** The event stream is `SyncService` -- one stream that
-takes nothing, carrying three columns off `Holder` and no rows -- PLAN.md D53.
+takes nothing, carrying three columns off `Holder` and no rows -- D53.
 
 **§6 is done, and it answered smaller than D22 guessed.** The Go half is the
 whole of it -- `frontdoor`, which is the two forms, the half session, the
@@ -421,7 +440,7 @@ Writing it found F10 next door, which is in the table below.
 
 ## Decisions to take before the code that needs them
 
-Each takes a `D` in PLAN.md when it is taken. **All four have been**, and the
+Each took a decision number when it was taken. **All four have been**, and the
 bullets below are struck with the decision that took them; the section stays for
 what the questions were before anybody answered them.
 
@@ -449,7 +468,7 @@ what the questions were before anybody answered them.
 ## Progress
 
 Every payday finding is closed, every phase is done, and so is every one of
-PLAN.md's twelve. The last was P9's event stream, which the plan had deferred on
+the twelve. The last was P9's event stream, which the plan had deferred on
 purpose and which stopped being a deferral when the reason it was one turned out
 to be wrong: the entity `Watch` is not merely noisy for this, it refuses a
 subscription with no filters, and an app cannot name people who have not signed
@@ -469,25 +488,26 @@ is not a request* -- which survives because the generated check sits in the
 | | | |
 | --- | --- | --- |
 | P0 | F9 — a reference reached erased rows | **done** — fixed in `protoc-gen-orm-ent@3843c60`, pin moved, both symptoms tested here |
-| P1 | `Delegation` | **done** — the entity, `rd_`, the issuer binding, and `keys.Delegate`. PLAN.md D25. `Vouch.Delegate` mints one over the wire and `Vouch.Revoke` ends it; what has no wire surface is `DelegationService`, which is closed |
-| P2 | `Holder` epoch and disabled, and the refusals | **done** — PLAN.md D26. Closes list items 6 and 12, and item 4's first increment came free |
+| P1 | `Delegation` | **done** — the entity, `rd_`, the issuer binding, and `keys.Delegate`. D25. `Vouch.Delegate` mints one over the wire and `Vouch.Revoke` ends it; what has no wire surface is `DelegationService`, which is closed |
+| P2 | `Holder` epoch and disabled, and the refusals | **done** — D26. Closes list items 6 and 12, and item 4's first increment came free |
 | P3 | the reference app's spine | **done** — `Vouch.Delegate`/`Revoke`, `keys.Sweep`, the lifetime settled, identities and credentials on `MeGetResponse`, and `examples/sso` signing in with a password and reading its own record as the person |
-| P4 | hostname, mail domain, and F7 | **done** — PLAN.md D27. `Host`, `MailDomain`, `FrontService`, `Email` stamped and unique per tenant, `VouchWho.address`, and `examples/sso` asking roster rather than holding a map |
-| P5 | escalation over credential writes, then the write surface | **done** — PLAN.md D28, and D35, D40 and D41 for the five ways round it found later. `core.Reaching`, `Vouch.Reset`, `Vouch.Unlock`, the rule over `Vouch.Set`, and the second rule beside it: nobody writes a way in for somebody wider than they. And D48 closes the last of it: `IssueService` on the data plane mints an `rt_` over the wire, through the walled server so both rules run |
+| P4 | hostname, mail domain, and F7 | **done** — D27. `Host`, `MailDomain`, `FrontService`, `Email` stamped and unique per tenant, `VouchWho.address`, and `examples/sso` asking roster rather than holding a map |
+| P5 | escalation over credential writes, then the write surface | **done** — D28, and D35, D40 and D41 for the five ways round it found later. `core.Reaching`, `Vouch.Reset`, `Vouch.Unlock`, the rule over `Vouch.Set`, and the second rule beside it: nobody writes a way in for somebody wider than they. And D48 closes the last of it: `IssueService` on the data plane mints an `rt_` over the wire, through the walled server so both rules run |
 | P6 | the reads a screen needs, and the screens | **done** — the reads (items 7, 8), §5 the operator screen, §4 self-service in the reference app, and §6 the extraction. D24's order is complete. **And §4's *add an SSO method* is drawn now**, D50: `POST /me/ways` is the same redirect with a second cookie, `MeService.Link` is the write, and the session — never the browser — says whose account it is for |
-| P7 | two-step verification | **done** — PLAN.md D29 and D30, and `examples/sso` showing two forms with a half-session between them |
-| P8 | recovery and the magic link | **done** — PLAN.md D31. `Vouch.Link`/`Redeem`, a reset voiding what came before it, and the sweep over both short-lived tables. The air-gap half was already D28's |
-| P9 | the rest | **done** — session table, the breached-password check, **provider connections**, **§6**, and now the event stream: `SyncService`, PLAN.md D53. It sends state and not a signal, takes no argument because the wall is what narrows it, and does not snapshot because a snapshot here is every holder of every tenant |
-| — | D58 · everything from a terminal, for everybody | **stated, and partly done** — the CLI has two modes and the documentation described one: a customer's own person runs the same binary with `client.addr` and their `rt_`, against a config with no `db:` block, and is walled and gated like any caller. So the goal is a command for every RPC, because *what can be done without a console* has one correct answer. 26 have none: **6** are overlay methods on an entity service, which `pdcmd` cannot see because it matches a fixed list of six verb names — one upstream change closes all six and every future overlay method; **19** are hand-written services (`MeService` entire, most of `VouchService`, `FrontService`, `AuthService`, `SyncService`), which are roster's one at a time -- `roster me` is done, leaving thirteen. And a third thing that was neither, **done**: `Role`, `Group` and `ApiKey` could not be named `@tenant/alias` at all, because `pdcmd` fills a reference from a field called `slug` and those three declared their index as `alias` -- in the other `refs` order as well. Both aligned with payday, which renames three ref messages and three oneof fields and moves no field number; a caller migrates `RoleRef{alias:}` to `{slug:}`. No SQL moved: `pd gen` normalises fields before edges, so the index was `(alias, tenant)` either way. `Apply` × 22 is deliberately not a command. `cmd/mecmd_test.go`, PLAN.md D58 |
-| — | D57 · the terminal can finish what it starts | **done** — after D56 the first customer is created by somebody, and every command that creates one is local already (`tenant add`, `holder add`, `role add`, `binding add`, all through `Ungated`). Then nothing: `key add` was the control plane's alone, so a deployment run from a terminal needed a browser for the last step. `--tenant`/`--holder` mints an `rt_`; the plane is said by which flags were given and the prefix follows from it. Naming a customer's person does **not** create them, unlike a service -- that asymmetry is the wall. And `roster vouch reset|set|unlock` beside it: the password was first held back on the grounds that generating one is an act with a person on the other end, which is true of an operator at a console too and so was never a difference. `cmd/customerkey_test.go`, `cmd/vouchcli_test.go`, PLAN.md D57 |
-| — | D56 · a customer is an operator's act, not a seed | **done** — `roster init` took `--tenant contoso --holder admin`, so every deployment began life with a customer nobody asked for; and after D55 that person could not be signed in as anyway, since a data plane holder gets no credential from `init` and both writes that would give them one are served on `admin.addr`. It seeds the control plane alone now. What makes that possible was already true and never asserted end to end: `mayGrant` compares methods and **site** rather than tenants, so the operator's control-plane binding reaches a tenant created a moment ago. `ts/src/customers.tsx` is the screen, `cmd/newcustomer_test.go` is the sequence including both ways of writing a way in. PLAN.md D56 |
-| — | D55 · a control plane is not a thing to add later | **done** — `roster init` refuses a configuration with no `control.db`, which is the only setting it insists on. Not symmetry: under `auth.Plain` anybody can call `MeService.IssueKey`, the `rt_` lands on the data plane, nothing reads it because `auth.Bearer` is wired inside `if c.Control.Serves()`, and an expiry is optional — so naming a control plane later turns every key minted while nobody was checking into a working credential at once. `cmd.Seed` is not asked, which is where a test and the Wasm sandbox live. PLAN.md D55, `cmd/init_test.go` |
+| P7 | two-step verification | **done** — D29 and D30, and `examples/sso` showing two forms with a half-session between them |
+| P8 | recovery and the magic link | **done** — D31. `Vouch.Link`/`Redeem`, a reset voiding what came before it, and the sweep over both short-lived tables. The air-gap half was already D28's |
+| P9 | the rest | **done** — session table, the breached-password check, **provider connections**, **§6**, and now the event stream: `SyncService`, D53. It sends state and not a signal, takes no argument because the wall is what narrows it, and does not snapshot because a snapshot here is every holder of every tenant |
+| — | D58 · everything from a terminal, for everybody | **stated, and partly done** — the CLI has two modes and the documentation described one: a customer's own person runs the same binary with `client.addr` and their `rt_`, against a config with no `db:` block, and is walled and gated like any caller. So the goal is a command for every RPC, because *what can be done without a console* has one correct answer. 26 have none: **6** are overlay methods on an entity service, which `pdcmd` cannot see because it matches a fixed list of six verb names — one upstream change closes all six and every future overlay method; **19** are hand-written services (`MeService` entire, most of `VouchService`, `FrontService`, `AuthService`, `SyncService`), which are roster's one at a time -- `roster me` is done, leaving thirteen. And a third thing that was neither, **done**: `Role`, `Group` and `ApiKey` could not be named `@tenant/alias` at all, because `pdcmd` fills a reference from a field called `slug` and those three declared their index as `alias` -- in the other `refs` order as well. Both aligned with payday, which renames three ref messages and three oneof fields and moves no field number; a caller migrates `RoleRef{alias:}` to `{slug:}`. No SQL moved: `pd gen` normalises fields before edges, so the index was `(alias, tenant)` either way. `Apply` × 22 is deliberately not a command. `cmd/mecmd_test.go`, D58 |
+| — | D57 · the terminal can finish what it starts | **done** — after D56 the first customer is created by somebody, and every command that creates one is local already (`tenant add`, `holder add`, `role add`, `binding add`, all through `Ungated`). Then nothing: `key add` was the control plane's alone, so a deployment run from a terminal needed a browser for the last step. `--tenant`/`--holder` mints an `rt_`; the plane is said by which flags were given and the prefix follows from it. Naming a customer's person does **not** create them, unlike a service -- that asymmetry is the wall. And `roster vouch reset|set|unlock` beside it: the password was first held back on the grounds that generating one is an act with a person on the other end, which is true of an operator at a console too and so was never a difference. `cmd/customerkey_test.go`, `cmd/vouchcli_test.go`, D57 |
+| — | D56 · a customer is an operator's act, not a seed | **done** — `roster init` took `--tenant contoso --holder admin`, so every deployment began life with a customer nobody asked for; and after D55 that person could not be signed in as anyway, since a data plane holder gets no credential from `init` and both writes that would give them one are served on `admin.addr`. It seeds the control plane alone now. What makes that possible was already true and never asserted end to end: `mayGrant` compares methods and **site** rather than tenants, so the operator's control-plane binding reaches a tenant created a moment ago. `ts/src/customers.tsx` is the screen, `cmd/newcustomer_test.go` is the sequence including both ways of writing a way in. D56 |
+| — | D55 · a control plane is not a thing to add later | **done** — `roster init` refuses a configuration with no `control.db`, which is the only setting it insists on. Not symmetry: under `auth.Plain` anybody can call `MeService.IssueKey`, the `rt_` lands on the data plane, nothing reads it because `auth.Bearer` is wired inside `if c.Control.Serves()`, and an expiry is optional — so naming a control plane later turns every key minted while nobody was checking into a working credential at once. `cmd.Seed` is not asked, which is where a test and the Wasm sandbox live. D55, `cmd/init_test.go` |
 | — | F10 and F11, upstream | **done** — `pd.Secret` streamed the verifier it hides everywhere else, in payday's own reference app as much as here. `lesomnus/payday@b57f9a1`, pin moved, both halves pinned in `cmd/watch_test.go` |
 | — | F12, upstream | **done** — `pd doctor` reads the app's schema now, which its own comment said it did and did not. `lesomnus/payday@9a252e5` |
 | — | D33 · the broker | **done** — `watch.broker: postgres`, `LISTEN`/`NOTIFY` on the rows' own database. The last thing that did not cross replicas. `lesomnus/payday@73a90a0` |
 | — | D34 · single-use, upstream | **done** — `Erase` answered `Empty`, so nothing could tell a win from a loss and one continuation minted up to 24 credentials on Postgres. `protoc-gen-orm-service@efff3ac` + `protoc-gen-orm-ent@f892843`, pins moved through payday |
 | — | D35 · escalation, twice round | **done** — `TeamMembership.Add` handed out a role without asking, and a permission held through a group read as no permission at all — which `mayReach` allows on rather than refuses on. One query now answers all three readers. `cmd/escalate_test.go` |
-| — | the baseline | **done** — after the control plane spent a day refusing every key it held (every part tested, the documented journey not), the everyday promises were made a surface of their own: `docs/baseline.md` names what a normal user may rely on and the tests that pin each, `TestBaselineNamesRealTests` keeps the mapping honest, and the missing journeys were written — `TestTheTutorialRunsAsWritten` (usage/tutorial.md, step for step, over `server.http`), `TestARestartKeepsEveryCredential`, the port×credential refusal cells, sync and self-service under real keys. The pass found a second bug of the same class: `MeService.SignOutEverywhere` voided delegations and left every console session alive, because `server/session` never read the stamp — fixed, `TestInvalidateEndsTheConsolesOwnSessions`. And PLAN.md was condensed from 4.7k lines to an index that keeps every number citable |
+| — | the baseline | **done** — after the control plane spent a day refusing every key it held (every part tested, the documented journey not), the everyday promises were made a surface of their own: `docs/baseline.md` names what a normal user may rely on and the tests that pin each, `TestBaselineNamesRealTests` keeps the mapping honest, and the missing journeys were written — `TestTheTutorialRunsAsWritten` (usage/tutorial.md, step for step, over `server.http`), `TestARestartKeepsEveryCredential`, the port×credential refusal cells, sync and self-service under real keys. The pass found a second bug of the same class: `MeService.SignOutEverywhere` voided delegations and left every console session alive, because `server/session` never read the stamp — fixed, `TestInvalidateEndsTheConsolesOwnSessions`. And `PLAN.md` was condensed from 4.7k lines to an index that keeps every number citable |
+| — | the plan is retired | **done** — the condensed index dissolved too: the why of every decision lives beside the thing it decided, the twelve subjects and the open questions moved here, position.md took the full picture of where roster sits when Hydra is in front, and every `PLAN.md` citation in the tree now points at the living copy. The numbers stay citable through the rows above, and the full accounts are in history: `git log -p -- PLAN.md` |
 | — | D36 · the named factor nothing could confirm | **done** — `Enrol` invites a name and `Verify` took none, so the first named second-factor a person added was one no call could reach and the deployment silently had one factor. `VouchVerifyRequest.name`, `cmd/enrol_test.go` |
 | — | D37 · the review | **done** — every document read against the code, every finding attacked before it was believed. The admin port served without the leaked-password corpus and recorded half its writes; a rate counted no streams and built two buckets; a suspension did not reach `Introspect`; SIGTERM was ignored; `serve` checked one plane of two. One found and not fixed then, and closed since by D42: the last-way-in race, which turned out not to need a lock nobody offers — the schema's own version is one, once the count and the write share a transaction |
 | — | D41 · the question asked from the other end | **done** — five families of impersonation enumerated and attacked; eight were not refused. A way in written onto somebody else's row (`Identity`, `Email`, `ApiKey`), an address stored unlike it is looked up, `TeamMembership.Patch`, a team role invisible to `mayReach`, `Vouch.Link` across a tenant, and a select reaching an erased parent. `cmd/as*_test.go` |
@@ -495,7 +515,7 @@ is not a request* -- which survives because the generated check sits in the
 | — | F20 · two quiet generator holes | **done** — an overlay redeclaring a generated rpc replaced it and nothing said so (`lesomnus/payday@15a0e47`), and one whose name matched no contract was never merged at all (`@a06360f`). Plus `Email.date_verified`: a caller could assert their own address had been checked, which nothing reads **yet** — closed in `server/core/email.go`, because `immutable:` removes a field from Patch and keeps it in Add, which is backwards here. And payday now has the declaration this wanted — `payday.field.stamped`, `@1c2b63e` — which roster takes the moment payday's buf module is published again |
 | — | F19 · an edge is a read | **fixed upstream** — the widest thing found here, and it needed a clerk. `Email.vouched_by` is not the path to anybody's tenant, so the gate never asked about it — and a nested select walks it, so `Email.Add` + `Email.Get` read another tenant's identity, that person's name, and their tenant. F14's shape with scope where liveness was. Both key forms, and the by-subject one needs no identifier and answers as an oracle. `lesomnus/payday@7d19dea` and `@51284cf`, pin moved, `cmd/foreignedge_test.go` |
 | — | D52 · WebAuthn | **done** — the largest thing operating.md listed as not here, and it needed no new decision: D20 designed it while arguing about TOTP. roster verifies because the **signature counter** is state and state belongs to the row; the relying party, origins and challenge arrive inside the presented bytes, because the request is generic across kinds. Burns one ECDSA rather than one argon2, which is `kind.go`'s finding a second time. `server/vouch/webauthn.go`, `vouchtest` |
-| — | D54 · a key somebody mints for themselves | **done** — the last of `operating.md`'s *what is not here* that was a missing feature. `MeGetResponse.keys`, `MeService.IssueKey` and `MeService.RevokeKey`: no subject in any of them, so the smallest role covering one means *may mint a key that acts as you* rather than *for anybody in this tenant*. `server/core` still refuses a list wider than the person writing it, reached by writing through the walled stack. `examples/sso` draws it. PLAN.md D54 |
+| — | D54 · a key somebody mints for themselves | **done** — the last of `operating.md`'s *what is not here* that was a missing feature. `MeGetResponse.keys`, `MeService.IssueKey` and `MeService.RevokeKey`: no subject in any of them, so the smallest role covering one means *may mint a key that acts as you* rather than *for anybody in this tenant*. `server/core` still refuses a list wider than the person writing it, reached by writing through the walled stack. `examples/sso` draws it. D54 |
 | — | D51 · the screen a key is minted from | **done** — D48 left *nothing in `ts/src` calls it* true. It needed a read first: `ApiKeyService` is unregistered everywhere, so `HolderService.SignsIn` answers with keys as well as identities and credentials, verifier absent rather than deselected. `RevokeKey` beside it, a *which* within a *whose*. `IssueService` on the admin port too, because that is the port a console reaches. `cmd/holderkey_test.go` |
 | — | D50 · adding a way in | **done** — §4's undrawn half. `MeService.Link` beside `Unlink`, and **not** waived: `cmd/asself_test.go` failed on `MeLinkRequest.subject` and was right on the substance — what `aboutYourself` waives is what somebody must be able to do with no role, and attaching a provider account is a feature a deployment offers. The reference app does not grant it either, because doing so would mean its key could bind any role to anybody. `cmd/melink_test.go` |
 | — | D49 · a front door that checked is believed | **done** — D23's last open sentence. An OIDC-fronted deployment could find out who somebody was and could not act as them: the password half had `Delegate` and the provider half had nothing. roster does not check the token — `connection.proto` had already ruled that out as being the relying party — so `Vouch.Accept` takes the claim a front door verified and mints for whoever it reaches. Its own method because the grant is the whole control, and `roster key add` says so. `cmd/accept_test.go` |
@@ -515,8 +535,18 @@ is not a request* -- which survives because the generated check sits in the
 | — | F13, upstream | **done** — the record of a soft erase was filed under the actor's tenant with an empty value, because the row it recorded was already invisible to the read that records it. Every entity holding a person's data is soft-erased — `Tenant`, `Audit` and `Outbox` declare `hard:` and none of them is anybody. `lesomnus/payday@f1f9321`, pin moved, pinned here in `cmd/erasetrail_test.go` |
 | — | F3 | **already fixed upstream**, and this document was stale about it: `pdgen.checkPresence` refuses a message field that has `Has…` and a NOT NULL column, exempting the three server stamps by their declarations rather than their names. Confirmed here, through `pd doctor` |
 
+## Open, for whoever picks this up next
+
+- **A product app should not have to write a login endpoint.** The seam is a
+  `Verify`, and roster is already meant to be imported (D10). An exported
+  `authsession.Verify` backed by `VouchService` would make a product's whole
+  sign-in one line, with no new service and no new network surface -- a package,
+  not an endpoint. payday's side of the fence, and not started.
+- **Nineteen RPCs still have no command.** The D58 row above is the goal and the
+  list; `HolderService`'s `Disable`, `Enable` and `Invalidate`, and most of
+  `VouchService`, are the notable ones.
+
 ## See also
 
-- [PLAN.md](../PLAN.md) — the decisions, and the twelve subjects
 - [position.md](position.md) — the line these are all on the near side of
 - [usage/](usage/) — what to type, per topic, and a tutorial

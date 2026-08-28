@@ -346,8 +346,9 @@ func (b0 Role_builder) Build() *Role {
 //
 // It does **not** name a team. "The administrator of a team manages its
 // members" is a product invariant rather than a thing to configure, so it is
-// roster's own rule and lives in a layer; see PLAN.md, D17. What carries a role
-// for a team is the `TeamMembership` that already said somebody is in it.
+// roster's own rule and lives in a layer; docs/position.md, § 'Authorization:
+// what roster does', says why. What carries a role for a team is the
+// `TeamMembership` that already said somebody is in it.
 type Binding struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
