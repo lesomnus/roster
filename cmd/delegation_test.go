@@ -321,11 +321,12 @@ func TestNothingMintsADelegationThatOpensNoDoor(t *testing.T) {
 // behind, closed over the same kind of column.
 //
 // The generated `Get` answers with whatever it was asked for and one of those
-// is the verifier, so registration is left out -- which is also the only
-// control that covers a stream, since this app installs `grpcx.ClosedUnary`
-// rather than `grpcx.Closed`. The batch is the second door: it arrives as one
-// method carrying many and dispatches through the app's own table, so "not
-// registered" never reaches it.
+// is the verifier, so registration is left out. Streams stopped being a way
+// past that with F10 -- `ClosedUnary` and `ClosedStream` are installed as a
+// pair now -- but registration is still the stronger statement: a service that
+// is not on the wire cannot answer at all. The batch is the second door: it
+// arrives as one method carrying many and dispatches through the app's own
+// table, so "not registered" never reaches it.
 func TestADelegationIsNotOnTheWire(t *testing.T) {
 	b := keyFor(t, "/roster.DelegationService/Get", "/roster.DelegationService/Add",
 		pdpb.BatchService_Do_FullMethodName)

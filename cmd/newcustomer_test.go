@@ -85,6 +85,44 @@ func TestAnOperatorStandsUpACustomerThatCanBeUsed(t *testing.T) {
 
 	wire := served(t, s)
 
+	// And somebody who was only *created* is nobody yet, from the caller's
+	// side. Creating a person writes no credential and no permission --
+	// docs/usage/customers.md says so -- and the two halves are separate acts:
+	// no password answers for them until one is set, and even a key an
+	// operator mints for them opens nothing the gate decides, because what a
+	// key opens is its holder's bindings and they have none. (Minting it is
+	// allowed -- both escalation rules measure the **caller**, and an operator
+	// writing a way into an empty account is writing one narrower than their
+	// own. What it must not be is worth anything until a binding lands.)
+	t.Run("but a person alone is nobody yet", func(t *testing.T) {
+		x := require.New(t)
+
+		bare, err := app.NewHolderServiceClient(admin).Add(as, app.HolderAddRequest_builder{
+			Tenant: app.TenantRef_builder{Id: tn.GetId()}.Build(),
+			Alias:  "bare",
+		}.Build())
+		x.NoError(err)
+
+		v, err := app.NewVouchServiceClient(admin).Verify(as, app.VouchVerifyRequest_builder{
+			Who:    app.VouchWho_builder{Tenant: "newco", Alias: "bare"}.Build(),
+			Secret: []byte("anything"),
+		}.Build())
+		x.NoError(err)
+		x.False(v.GetOk(), "somebody with no credential was signed in")
+
+		k, err := app.NewIssueServiceClient(admin).IssueKey(as, app.IssueKeyRequest_builder{
+			Holder:  app.HolderRef_builder{Id: bare.GetId()}.Build(),
+			Alias:   "premature",
+			Methods: []string{"/roster.HolderService/List"},
+		}.Build())
+		x.NoError(err)
+
+		_, err = app.NewHolderServiceClient(wire).List(bearing(ctx, k.GetToken()),
+			app.HolderListRequest_builder{}.Build())
+		x.Equal(codes.PermissionDenied, status.Code(err),
+			"a key opened a door its holder's bindings do not")
+	})
+
 	t.Run("a key an operator mints, on the data plane's own port", func(t *testing.T) {
 		x := require.New(t)
 

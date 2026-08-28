@@ -12,6 +12,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/vouch"
 )
 
 const joinGroup = "/roster.GroupMembershipService/Add"
@@ -420,4 +421,47 @@ func (b *built) inGroup(t *testing.T, ctx context.Context, who pdid.Id, alias st
 		Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 	}.Build())
 	x.NoError(err)
+}
+
+// TestUnlockIsHeldToTheRuleResetIs closes the one credential write the
+// subset-rule tests never named. `Reset`, `Set` and `Enrol` each have a
+// refusal pinned; `Unlock` calls the same `mayReach` one line in -- and a line
+// nothing asserts is a line a refactor deletes without a test going red,
+// which for this one would mean a lockout an attacker caused being lifted by
+// any operator narrow enough to be phished.
+func TestUnlockIsHeldToTheRuleResetIs(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	boss := b.holder(t, ctx, b.Contoso, "boss")
+	b.binds(t, boss, b.role(t, ctx, "admin", eraseHold), nil)
+
+	joe := b.holder(t, ctx, b.Contoso, "joe")
+
+	// Both have a password, so the lookup finds a credential either way and
+	// the difference below is reach and nothing else.
+	for _, who := range []pdid.Id{boss, joe} {
+		_, err := vouch.New(b.Ungated, b.Ungated).Set(ctx, app.VouchSetRequest_builder{
+			Who:    app.VouchWho_builder{Id: who.Bytes()}.Build(),
+			Secret: []byte("correct horse battery staple"),
+		}.Build())
+		x.NoError(err)
+	}
+
+	ops := b.holder(t, ctx, b.Contoso, "ops")
+	asOps := b.mayCall(t, ctx, ops, "operator", getHolder)
+
+	v := b.operated()
+	unlock := func(who pdid.Id) error {
+		_, err := v.Unlock(asOps, app.VouchUnlockRequest_builder{
+			Who: app.VouchWho_builder{Id: who.Bytes()}.Build(),
+		}.Build())
+
+		return err
+	}
+
+	x.Equal(codes.PermissionDenied, status.Code(unlock(boss)),
+		"an operator opened an account wider than their own")
+	x.NoError(unlock(joe),
+		"unlocking somebody who holds nothing is the everyday case, and it broke")
 }

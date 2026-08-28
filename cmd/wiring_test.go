@@ -76,6 +76,37 @@ func TestBothPlanesAreChecked(t *testing.T) {
 	x.ErrorContains(err, "control", "the error does not say which of the two databases is wrong")
 }
 
+// TestTheDataPlaneIsCheckedToo is the same refusal the other way round, and it
+// is the **default**: `db.migrate` unset is a deployment whose data plane is
+// migrated by a step and not by `serve`, which is every deployment
+// `docs/upgrading.md` describes. A new binary over an old data plane must
+// refuse to start naming the right database, rather than serve wrong answers
+// about the rows every caller resolves through.
+func TestTheDataPlaneIsCheckedToo(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	drv, dsn := pdtest.DB(t)
+	cdrv, cdsn := pdtest.DB(t)
+
+	c := cmd.Config{
+		Db:    config.DbConfig{Driver: drv, Dsn: dsn},
+		Watch: config.WatchConfig{Broker: config.BrokerMemory},
+		Control: cmd.ControlConfig{
+			Db: config.DbConfig{Driver: cdrv, Dsn: cdsn, Migrate: true},
+		},
+	}
+
+	s, err := cmd.Build(ctx, c)
+	x.NoError(err)
+	t.Cleanup(func() { s.Close() })
+
+	err = s.Ready(ctx, c)
+	x.Error(err, "an empty data plane was served without a word")
+	x.NotContains(err.Error(), "control",
+		"the mismatch is the data plane's, and the error points at the other one")
+}
+
 // TestTheControlPlaneMigratesWhenItSaysSo is the other half: what
 // `control.db.migrate` was always documented to do.
 func TestTheControlPlaneMigratesWhenItSaysSo(t *testing.T) {

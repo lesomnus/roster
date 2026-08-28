@@ -350,3 +350,91 @@ func (c *collector) Send(v *app.SyncEvent) error {
 
 	return nil
 }
+
+// TestTheSyncStreamAnswersToRealKeys is the stream under the credentials a
+// deployment actually serves, which every other sync test stands in for with
+// `auth.Plain`.
+//
+// The two claims are the two kinds. A deployment key belongs to every tenant,
+// so the one stream is the whole deployment's changes -- which is the shape an
+// SSO app in front of many customers needs, and which nothing asserted. A
+// tenant key is somebody inside one, so the same argument-less stream narrows
+// to their tenant by the wall alone -- the claim
+// `TestOneCustomerIsNotToldAboutAnother` makes under Plain, re-asked with the
+// resolver and the key store in the path.
+func TestTheSyncStreamAnswersToRealKeys(t *testing.T) {
+	const (
+		watchSync  = "/roster.SyncService/Watch"
+		invalidate = "/roster.HolderService/Invalidate"
+		suspend    = "/roster.HolderService/Disable"
+	)
+
+	x := require.New(t)
+	b := keyFor(t, watchSync, invalidate, suspend)
+	ctx := t.Context()
+
+	fabrikam := add(t, ctx, b.Server, "fabrikam")
+
+	// Over the wire, as every sync test writes: an `Ungated` Go call slips
+	// under the watch interceptor and publishes nothing, which is not a
+	// shortcut but a different (and eventless) write.
+	disable := func(who pdid.Id) {
+		t.Helper()
+
+		_, err := app.NewHolderServiceClient(b.Conn).Disable(bearing(ctx, b.Token),
+			app.HolderDisableRequest_builder{
+				Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
+			}.Build())
+		x.NoError(err)
+	}
+
+	t.Run("a deployment key hears every tenant", func(t *testing.T) {
+		x := require.New(t)
+
+		ctx, stop := context.WithCancel(ctx)
+		defer stop()
+
+		c := syncing(t, bearing(ctx, b.Token), b.Conn, addHolder(t, ctx, b.Server, b.Contoso, "canary"))
+
+		victim := addHolder(t, ctx, b.Server, fabrikam, "victim")
+		disable(victim)
+
+		for {
+			v := about2(t, c)
+			if string(v.GetHolder()) == string(victim.Bytes()) {
+				x.NotNil(v.GetDateDisabled(), "the event carries the state, not a signal")
+
+				return
+			}
+		}
+	})
+
+	t.Run("a tenant key hears its own and no other", func(t *testing.T) {
+		x := require.New(t)
+
+		ctx, stop := context.WithCancel(ctx)
+		defer stop()
+
+		permits(t, ctx, b, b.Contoso, b.Who, "sync-reader", watchSync, invalidate)
+		key := mintFor(t, ctx, b, b.Who, "their-app", []string{watchSync, invalidate}, time.Time{})
+
+		c := syncing(t, bearing(ctx, key), b.Conn, addHolder(t, ctx, b.Server, b.Contoso, "canary-2"))
+
+		// Theirs first, then ours: the ordering is what makes the absence
+		// below a fact rather than a race, as in the Plain variant.
+		theirs := addHolder(t, ctx, b.Server, fabrikam, "victim-2")
+		disable(theirs)
+
+		mine := addHolder(t, ctx, b.Server, b.Contoso, "mine")
+		disable(mine)
+
+		for {
+			v := about2(t, c)
+			x.NotEqual(string(theirs.Bytes()), string(v.GetHolder()),
+				"a tenant key heard another customer's suspension")
+			if string(v.GetHolder()) == string(mine.Bytes()) {
+				return
+			}
+		}
+	})
+}

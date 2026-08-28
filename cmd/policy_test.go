@@ -447,6 +447,28 @@ func TestARoleMayNameAServiceOrAPackage(t *testing.T) {
 			x.NotEqual(b.Fabrikam.Bytes(), h.GetTenant().GetId())
 		}
 	})
+
+	// A pattern matches whole segments and nothing smaller. `*Get*` reads as
+	// "every read" to somebody arriving from glob, and a matcher that treated
+	// it as one would make the docs' promise -- what a role opens can be read
+	// off it -- false in the widest possible way. A partial segment must open
+	// **nothing**, rather than something a substring happens to reach.
+	t.Run("a partial segment opens nothing at all", func(t *testing.T) {
+		x := require.New(t)
+
+		who := b.holder(t, ctx, b.Contoso, "glob-writer")
+		b.binds(t, who, roleOf(t, "not-a-pattern",
+			"*Get*", "/roster.Holder*/Get", "roster.HolderService/Get"), nil)
+
+		conn := served(t, b.Server)
+		as := asOverTheWire(ctx, who)
+
+		_, err := app.NewHolderServiceClient(conn).Get(as, app.HolderGetRequest_builder{
+			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
+		}.Build())
+		x.Equal(codes.PermissionDenied, status.Code(err),
+			"a partial segment matched a method")
+	})
 }
 
 // TestASiteAdministratorStaysInTheirSite is the rule `role.proto` states and

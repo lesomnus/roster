@@ -1,8 +1,11 @@
 package cmd_test
 
 import (
+	"context"
 	"testing"
 	"time"
+
+	"github.com/lesomnus/z"
 
 	"github.com/lesomnus/payday/frame"
 
@@ -105,6 +108,68 @@ func TestATenantKeyIsTheirsAndNotTheDeploymentS(t *testing.T) {
 		_, err := list(narrow)
 		x.Error(err)
 		x.Equal(codes.PermissionDenied, status.Code(err))
+	})
+
+	// A slug naming the other tenant, on her key. fabrikam is given somebody
+	// with **her** alias first, so that a resolver that quietly substituted
+	// "the caller's tenant" for the one written down would have a row to
+	// answer with -- and the answer has to be that there is nobody, not that
+	// there is a namesake.
+	t.Run("a foreign slug names nobody, not a namesake", func(t *testing.T) {
+		x := require.New(t)
+
+		addHolder(t, ctx, b.Server, fabrikam, "someone")
+
+		const get = "/roster.HolderService/Get"
+		permits(t, ctx, b, b.Contoso, b.Who, "getter", get)
+		hers := mintFor(t, ctx, b, b.Who, "her-getter", []string{get}, time.Time{})
+
+		_, err := c.Get(bearing(ctx, hers), app.HolderGetRequest_builder{
+			Ref: app.HolderRef_builder{
+				Slug: app.HolderRefBySlug_builder{
+					Alias:  z.Ptr("someone"),
+					Tenant: app.TenantRef_builder{Alias: z.Ptr("fabrikam")}.Build(),
+				}.Build(),
+			}.Build(),
+		}.Build())
+		x.Equal(codes.NotFound, status.Code(err),
+			"a foreign slug was answered -- with whose row?")
+	})
+
+	// And her key's Watch is walled exactly as her reads are. Every rt_ in the
+	// suite so far read; a stream is narrowed by a different line of generated
+	// code, so "the wall applies to the key" has to be asserted once per shape.
+	t.Run("and a watch on her key agrees with her reads", func(t *testing.T) {
+		x := require.New(t)
+
+		erlich := addHolder(t, ctx, b.Server, fabrikam, "watched")
+
+		const watchHolders = "/roster.HolderService/Watch"
+		permits(t, ctx, b, b.Contoso, b.Who, "watcher", watchHolders, "/roster.HolderService/Get")
+		hers := mintFor(t, ctx, b, b.Who, "her-watcher",
+			[]string{watchHolders, "/roster.HolderService/Get"}, time.Time{})
+
+		wire, cancel := context.WithTimeout(bearing(ctx, hers), 3*time.Second)
+		defer cancel()
+
+		_, get := c.Get(wire, app.HolderGetRequest_builder{
+			Ref: app.HolderRef_builder{Id: erlich.Bytes()}.Build(),
+		}.Build())
+
+		out, err := c.Watch(wire, app.HolderWatchRequest_builder{
+			Filters: []*app.HolderFilter{
+				app.HolderFilter_builder{
+					Ref: app.HolderRef_builder{Id: erlich.Bytes()}.Build(),
+				}.Build(),
+			},
+		}.Build())
+		x.NoError(err, "the stream is refused on its first Recv, not on the call")
+
+		_, watch := out.Recv()
+
+		x.Equal(codes.NotFound, status.Code(get), "the control")
+		x.Equal(status.Code(get), status.Code(watch),
+			"her watch and her get disagreed about another tenant's row")
 	})
 
 	// A tenant key cannot reach past its holder either: the methods on the row

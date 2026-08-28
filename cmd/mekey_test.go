@@ -3,6 +3,7 @@ package cmd_test
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
@@ -191,4 +192,65 @@ func TestAKeyThatAllowsNothingIsRefusedRatherThanMinted(t *testing.T) {
 
 	_, err = s.IssueKey(as, app.MeIssueKeyRequest_builder{Alias: "empty"}.Build())
 	x.Equal(codes.InvalidArgument, status.Code(err), "a key that opens no door")
+}
+
+// TestSelfServiceOverTheWireWithHerOwnKey is `MeService` under the credential
+// a person actually holds, which the layer tests beside this stand in for with
+// a hand-built frame.
+//
+// Three sentences, one caller. Somebody with **no role** still reads their own
+// record -- `Get` is waived, which is only worth anything if the whole served
+// stack agrees -- and it answers `methods` as empty, because nothing is what
+// they may do. Minting themselves more than they are is refused through the
+// same stack. And a key that allows nothing is refused rather than minted.
+func TestSelfServiceOverTheWireWithHerOwnKey(t *testing.T) {
+	ctx := t.Context()
+
+	b := keyFor(t, verify)
+
+	const issue = "/roster.MeService/IssueKey"
+	const listHolders = "/roster.HolderService/List"
+
+	t.Run("somebody with no role still reads themselves", func(t *testing.T) {
+		x := require.New(t)
+
+		nobody := addHolder(t, ctx, b.Server, b.Contoso, "norole")
+		hers := mintFor(t, ctx, b, nobody, "her-laptop",
+			[]string{"/roster.MeService/Get"}, time.Time{})
+
+		v, err := app.NewMeServiceClient(b.Conn).Get(bearing(ctx, hers),
+			app.MeGetRequest_builder{}.Build())
+		x.NoError(err, "the waiver did not survive the served stack")
+		x.Equal("norole", v.GetAlias())
+		x.Empty(v.GetMethods(), "somebody who holds nothing was told otherwise")
+	})
+
+	t.Run("and cannot mint themselves more than they are", func(t *testing.T) {
+		x := require.New(t)
+
+		permits(t, ctx, b, b.Contoso, b.Who, "issuer", issue)
+		hers := mintFor(t, ctx, b, b.Who, "her-minter", []string{issue}, time.Time{})
+
+		c := app.NewMeServiceClient(b.Conn)
+
+		_, err := c.IssueKey(bearing(ctx, hers), app.MeIssueKeyRequest_builder{
+			Alias:   "wider",
+			Methods: []string{issue, listHolders},
+		}.Build())
+		x.Equal(codes.PermissionDenied, status.Code(err),
+			"somebody minted a key naming a method they do not hold")
+
+		_, err = c.IssueKey(bearing(ctx, hers), app.MeIssueKeyRequest_builder{
+			Alias: "for-nothing",
+		}.Build())
+		x.Equal(codes.InvalidArgument, status.Code(err),
+			"a key that allows nothing was minted rather than refused")
+
+		v, err := c.IssueKey(bearing(ctx, hers), app.MeIssueKeyRequest_builder{
+			Alias:   "exactly-her",
+			Methods: []string{issue},
+		}.Build())
+		x.NoError(err, "the two refusals above are rules, not a broken door")
+		x.True(strings.HasPrefix(v.GetToken(), keys.PrefixTenant))
+	})
 }

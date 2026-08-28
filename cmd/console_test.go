@@ -520,6 +520,7 @@ func TestAConsoleReachesTheControlPlaneOverHttp(t *testing.T) {
 
 	v := cmd.Login(s.Control)
 	h.Handle("POST /session", s.Sessions.Serve(v))
+	h.Handle("DELETE /session", s.Sessions.Serve(v))
 
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)
@@ -594,4 +595,80 @@ func TestAConsoleReachesTheControlPlaneOverHttp(t *testing.T) {
 		// on this port and no other.
 		x.NotContains(body, string(sum))
 	})
+
+	// `DELETE /session` is the sign-out the browser actually sends, and until
+	// now nothing sent it: the one sign-out test went through the gRPC
+	// `AuthService.SignOut`, which is the transcoded twin and not the route.
+	// The claim is immediacy -- the jar still holds the cookie, and the server
+	// no longer knows it.
+	t.Run("and DELETE /session ends it, immediately", func(t *testing.T) {
+		x := require.New(t)
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodDelete, srv.URL+"/session", nil)
+		x.NoError(err)
+
+		res, err := c.Do(req)
+		x.NoError(err)
+		res.Body.Close()
+		x.Equal(http.StatusNoContent, res.StatusCode)
+
+		code, body := post("/roster.MeService/Get", `{}`)
+		x.Equal(http.StatusUnauthorized, code,
+			"a signed-out cookie was served: %s", body)
+	})
+}
+
+// TestTheDataPlanesHttpSignsInNobody is `operating.md`'s warning about
+// `server.http`, asserted: `/session` is served on every listener that has
+// HTTP -- a console reaches one origin and signing in has to be there -- so on
+// the data plane's transcoder it **answers**, and the cookie it mints names
+// nobody every walled call can be made as. Signing in there is not an error
+// anybody is told about; it is a success that opens nothing, which is exactly
+// why it is worth a test and a paragraph.
+func TestTheDataPlanesHttpSignsInNobody(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	s, out := inited(t)
+
+	g, err := s.Grpc(ctx, cmd.Config{})
+	x.NoError(err)
+
+	// The mount `serveHttp` does, on the walled server's transcoder.
+	h, err := web.New(config.HttpConfig{AllowWeb: true}, g)
+	x.NoError(err)
+
+	v := cmd.Login(s.Control)
+	h.Handle("POST /session", s.Sessions.Serve(v))
+
+	srv := httptest.NewServer(h)
+	t.Cleanup(srv.Close)
+
+	jar, err := cookiejar.New(nil)
+	x.NoError(err)
+	c := &http.Client{Jar: jar}
+
+	post := func(path, body string) (int, string) {
+		t.Helper()
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL+path, strings.NewReader(body))
+		x.NoError(err)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Connect-Protocol-Version", "1")
+
+		res, err := c.Do(req)
+		x.NoError(err)
+		defer res.Body.Close()
+
+		b, _ := io.ReadAll(res.Body)
+
+		return res.StatusCode, string(b)
+	}
+
+	code, _ := post("/session", `{"alias":"ops","password":"`+passwordFrom(t, out)+`"}`)
+	x.Equal(http.StatusNoContent, code, "signing in answers -- that is the trap")
+
+	code, body := post("/roster.MeService/Get", `{}`)
+	x.Equal(http.StatusUnauthorized, code,
+		"an operator's session named somebody on the walled plane: %s", body)
 }

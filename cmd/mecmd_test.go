@@ -141,6 +141,20 @@ func TestTheCliIsAlsoACustomersPerson(t *testing.T) {
 		v := stdoutOf(t, root(t, &hers), "me", "issue-key",
 			"--name", "laptop", "--allow", "/roster.MeService/Get")
 		x.True(strings.HasPrefix(v, "rt_"), "%q", v)
+
+		// And what came off stdout is a working credential for **her**, which
+		// is the sentence the command is run for: `$(roster me issue-key …)`
+		// straight into a laptop's configuration. Narrowed to what it names,
+		// besides -- her role lists holders and this key must not.
+		laptop := hers
+		laptop.Client.Auth = cmd.ClientAuthConfig{Scheme: "bearer", Credential: v}
+
+		out := stdoutOf(t, root(t, &laptop), "me", "get")
+		x.Contains(out, "alice", "the minted key answers as somebody else")
+
+		err := root(t, &laptop).Run(ctx, []string{"holder", "ls"})
+		x.Equal(codes.PermissionDenied, status.Code(err),
+			"the minted key is wider than what it was allowed")
 	})
 
 	t.Run("and `me` locally is a refusal rather than an empty answer", func(t *testing.T) {

@@ -366,11 +366,13 @@ session cookie and resolves it against **that** database's holders, so with no
 control plane there is nobody to be. It used to open no listener and say
 nothing.
 
-`control.addr` takes **both**: a console's cookie and a service's `rk_`. The
-second is the one an integrating app uses — hold a key from `roster key add
---service`, introspect the tokens your callers present against this plane. It
-did not work until 2026-08-28, and the way it failed is worth recognising if
-you meet it on an older build: every key was refused with
+`control.addr` takes **both**: a console's cookie and a service's `rk_`. Not
+that a service introspects its callers' tokens here — those are `rt_`s, this
+plane cannot see one, and that question goes to `server.addr` (§ tokens a
+product app was handed) — but the port a deployment's own services are meant
+to call has to authenticate their keys at all. It did not until 2026-08-28,
+and the way it failed is worth recognising if you meet it on an older build:
+every key was refused with
 
 ```
 rpc error: code = Unauthenticated desc = who is asking?
@@ -804,7 +806,12 @@ on the request to be checkable at all.
 forever, which is the opposite of how `rk_` and `rt_` read that column.
 
 **Rotating an app's key invalidates the delegations it issued**, because the
-issuer is the key row. PLAN.md D25 says why that was the answer taken.
+issuer is the key **row** rather than the service behind it. That is a reading
+of "the caller it was issued to", and the deliberate one: a delegation lives
+for minutes, and a caller whose credential has been replaced is not obviously
+the same caller — a key pasted into a build log and rotated out the same
+afternoon must not be able to spend the sign-ins its replacement performs, nor
+the other way round. PLAN.md D25.
 
 What a tenant key costs is the trail: its writes are recorded as the person's,
 so `Audit` says who and not which of their keys. Revoking still works, since the

@@ -3,6 +3,10 @@ package cmd_test
 import (
 	"bytes"
 	"context"
+	"io"
+	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -548,4 +552,96 @@ func TestAnEmptyPasswordIsGeneratedInstead(t *testing.T) {
 	s, out := inited(t)
 	x.NotEmpty(passwordFrom(t, out), "nothing was generated")
 	_ = s
+}
+
+// TestInitLeavesTheTwoFilesTheTutorialNames is `roster init` against DSNs that
+// are **paths**, which is what every real first run is and no other test does:
+// the suite runs on pdtest's databases, so "two files appeared beside you" --
+// the tutorial's own sentence -- was a claim nothing had ever watched happen.
+// And the identifier init prints has to be the row it seeded, because writing
+// it down is what the output tells an operator to do.
+func TestInitLeavesTheTwoFilesTheTutorialNames(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	dir := t.TempDir()
+	c := cmd.Config{
+		Db: config.DbConfig{
+			Driver: "sqlite3",
+			Dsn:    "file:" + filepath.Join(dir, "roster.db") + "?_pragma=foreign_keys(1)",
+		},
+		Watch: config.WatchConfig{Broker: config.BrokerMemory},
+		Control: cmd.ControlConfig{Db: config.DbConfig{
+			Driver: "sqlite3",
+			Dsn:    "file:" + filepath.Join(dir, "roster-control.db") + "?_pragma=foreign_keys(1)",
+		}},
+	}
+
+	out, err := initRun(t, c)
+	x.NoError(err, "init: %s", out)
+
+	for _, name := range []string{"roster.db", "roster-control.db"} {
+		_, err := os.Stat(filepath.Join(dir, name))
+		x.NoError(err, "%s did not appear", name)
+	}
+
+	// "holder ops is <id>" -- parsed the way an operator's eye does.
+	m := regexp.MustCompile(`holder ops is (\S+)`).FindStringSubmatch(out)
+	x.NotNil(m, "init did not print the operator's identifier:\n%s", out)
+
+	id, err := pdid.Parse(m[1])
+	x.NoError(err)
+
+	s, err := cmd.Build(ctx, c)
+	x.NoError(err)
+	t.Cleanup(func() { s.Close() })
+
+	v, err := s.Control.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref: app.HolderRef_builder{Id: id.Bytes()}.Build(),
+	}.Build())
+	x.NoError(err, "the identifier init printed names nobody")
+	x.Equal("ops", v.GetAlias())
+}
+
+// TestTheShippedConfigurationIsAFirstRun is `roster.yaml` as it ships, run the
+// way the tutorial's first step runs it: copied beside you, `init`, and a
+// server built on what came out.
+//
+// The file is the one artifact no compiler reads. Every field of it can drift
+// from the code -- a renamed key, a broker this binary no longer links, a DSN
+// pragma the driver stopped accepting -- and the first run of a new user is
+// where that is discovered. The listeners' addresses are the one thing not
+// exercised: real ports on a CI box are a flake, and which port is a
+// deployment's own business anyway. `Ready` is the line `serve` refuses to
+// start without, so building and passing it is "serve answers" in everything
+// but the bind.
+func TestTheShippedConfigurationIsAFirstRun(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	src, err := os.ReadFile("../roster.yaml")
+	x.NoError(err)
+
+	dir := t.TempDir()
+	x.NoError(os.WriteFile(filepath.Join(dir, "roster.yaml"), src, 0o644))
+	t.Chdir(dir) // the DSNs are relative, exactly as shipped
+
+	var c cmd.Config
+	root := cmd.Cmd(&c)
+	root.Writer = io.Discard
+
+	x.NoError(root.Run(ctx, []string{"--config", "roster.yaml", "init"}),
+		"the shipped configuration does not init")
+
+	for _, name := range []string{"roster.db", "roster-control.db"} {
+		_, err := os.Stat(filepath.Join(dir, name))
+		x.NoError(err, "%s did not appear", name)
+	}
+
+	s, err := cmd.Build(ctx, c)
+	x.NoError(err, "the shipped configuration does not build")
+	t.Cleanup(func() { s.Close() })
+
+	x.NoError(s.Ready(ctx, c), "what init wrote is not what serve expects")
+	x.NotNil(s.Control, "the shipped file must name a control plane; init would refuse one that does not")
 }

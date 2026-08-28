@@ -105,13 +105,16 @@ func rekeyed(t *testing.T, ctx context.Context, b *keyedBuilt, svc pdid.Id, alia
 	return token
 }
 
-// TestNobodyMintsAWayIntoAnotherTenant is **red, and it is red about the app
-// and not about the test.** Read this before deleting it.
+// TestNobodyMintsAWayIntoAnotherTenant was **red about the app and not about
+// the test**, and holds the fix: `Link` now resolves through `s.walled`
+// (link.go says so beside the call). What follows is the hole as it stood,
+// kept because the shape of it -- a credential write that resolves its subject
+// through the open server -- is the shape to check any new one against.
 //
 // `VouchService.Link` mints a single-use way into an account and hands the
-// token straight back to whoever asked. What it does not do is ask whether the
-// caller had any business naming that account: it resolves the person through
-// `s.open`, the server the wall was never installed on, and writes the row.
+// token straight back to whoever asked. What it did not do is ask whether the
+// caller had any business naming that account: it resolved the person through
+// `s.open`, the server the wall was never installed on, and wrote the row.
 // Every other credential write in this service goes through `s.walled` -- `Set`,
 // `Reset`, `Unlock`, `Enrol` are all on the other side of that line, and the
 // package comment says why in as many words: *an administrator of one tenant
@@ -397,6 +400,28 @@ func TestADelegationIsBoundToTheKeyAndNotToTheAppBehindIt(t *testing.T) {
 			"a rotated key picked up the sign-ins the key it replaced performed")
 		x.Equal(codes.Unauthenticated, status.Code(list(b.Token, now)),
 			"a key that has been rotated away went on spending its replacement's sign-ins")
+	})
+
+	// And the end a rotation is actually run for: the old key is **revoked**,
+	// not merely joined by a replacement. Its sign-ins must die with it -- the
+	// binding above makes them unspendable by anybody else, and the erase makes
+	// them unspendable by the key itself, and only the two together mean a key
+	// pasted into a build log stops mattering. Fresh sign-ins through the
+	// replacement have to keep working, or a rotation is an outage.
+	t.Run("and revoking the key ends its sign-ins for good", func(t *testing.T) {
+		x := require.New(t)
+
+		_, err := b.Control.Ungated.ApiKey().Erase(ctx,
+			app.ApiKeyRef_builder{Secret: keys.Sum(b.Token)}.Build())
+		x.NoError(err)
+
+		x.Equal(codes.Unauthenticated, status.Code(list(b.Token, was)),
+			"a revoked key went on spending its sign-ins")
+		x.Equal(codes.Unauthenticated, status.Code(list(next, was)),
+			"a revoked key's sign-ins moved to its replacement")
+
+		x.NoError(list(next, signIn(next)),
+			"the replacement could not sign anybody in, which makes rotation an outage")
 	})
 }
 

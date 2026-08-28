@@ -121,10 +121,17 @@ func TestIntrospectSaysNoMoreThanNo(t *testing.T) {
 
 	c := pdpb.NewTokenServiceClient(b.Conn)
 
+	// A **real** deployment key, not a fabricated string: `b.Token` is a live
+	// row in the control plane, and it is the caller's own credential besides.
+	// The data plane's TokenService is built on the data plane's rows, so a
+	// control-plane key is not refused here -- it is invisible, which
+	// `operating.md` promises in as many words. A fabricated `rk_` proves the
+	// prefix is not special; only a minted one proves the population is.
 	for _, tc := range []struct{ desc, token string }{
 		{"never existed", "rk_" + "nothingatallwhatsoever"},
 		{"not one of ours", "not-even-prefixed"},
 		{"expired", stale},
+		{"a deployment key, and it is real", b.Token},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			x := require.New(t)
