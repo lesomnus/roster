@@ -101,6 +101,7 @@ the page, one of the two is wrong and both are load-bearing.
 | `Disable` stops the person at every door on their next call — their keys, their delegations, their password, and a console session if they are an operator | `TestADisabledHolderIsNotToSignInAndNotSignedIn` · `TestASuspendedPersonIsSuspendedInFrontOfEveryApp` · `TestADisabledHolderIsRefusedBareOverTheWire` |
 | `Invalidate` voids everything **issued** before now — sessions and delegations, the console's own included — and deliberately not named keys | `TestInvalidatingVoidsWhatWasIssuedBefore` · `TestInvalidateEndsTheConsolesOwnSessions` · `TestSomebodySignsThemselvesOutOfEverything` |
 | an erase makes somebody unreachable at the wire — key, password, name — while destroying nothing | `TestAnErasedHolderIsStoppedAtTheWire` · `TestAnErasedHolderCannotAuthenticate` · `TestNothingOfAnErasedHolderIsReadableThroughARowThatOutlivedThem` |
+| every one of these is a terminal command as well — `roster holder disable`, `enable`, `invalidate`, `signs-in`, `revoke-key` — walled and gated like any caller, and `roster sync watch` is where a stop is seen landing | `TestTheTerminalOperatesOnSomebody` · `TestSyncWatchFromATerminal` |
 
 ## What an app in front is told
 

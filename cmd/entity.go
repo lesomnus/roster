@@ -117,6 +117,51 @@ func NewCmdEntities(c *Config) xli.Commands {
 		panic(err)
 	}
 
+	// The rest of `HolderService`: the methods the overlay declared, which the
+	// six generated verbs cannot know about. `Tree.Unary` is the other half of
+	// the same seam -- everything around the call is payday's, and what a
+	// method *means* is this app's, which is why the briefs are written out
+	// here: "Disable" as its own description is a command somebody has to
+	// guess at.
+	//
+	// A method added to the overlay tomorrow is one line here, not a command
+	// to write.
+	for _, v := range []struct{ path, method, brief string }{
+		{"holder/update", "roster.HolderService.Update", "replace somebody's profile, whole"},
+		{"holder/disable", "roster.HolderService.Disable", "refuse somebody everywhere, now"},
+		{"holder/enable", "roster.HolderService.Enable", "let a disabled somebody back in"},
+		{"holder/invalidate", "roster.HolderService.Invalidate", "void everything issued to somebody before now"},
+		{"holder/signs-in", "roster.HolderService.SignsIn", "how somebody signs in: identities, credentials, keys"},
+		{"holder/revoke-key", "roster.HolderService.RevokeKey", "take one of somebody's keys away"},
+	} {
+		u, err := t.Unary(v.method)
+		if err != nil {
+			// A method that is not in the schema, which is a mistake in this
+			// file rather than something a deployment can cause.
+			panic(err)
+		}
+
+		u.Brief = v.brief
+		if err := t.Add(v.path, u); err != nil {
+			panic(err)
+		}
+	}
+
+	// And this app's other hand-written services, remote only for `me`'s
+	// reason each: they are questions to a served deployment, and the local
+	// pipe mounts the entity services alone.
+	front := newCmdFront(c)
+	front.Handler = xli.Chain(t.WithConn(), xli.RequireSubcommand())
+	if err := t.Add("front", front); err != nil {
+		panic(err)
+	}
+
+	sy := newCmdSync(c)
+	sy.Handler = xli.Chain(t.WithConn(), xli.RequireSubcommand())
+	if err := t.Add("sync", sy); err != nil {
+		panic(err)
+	}
+
 	return t.Commands()
 }
 

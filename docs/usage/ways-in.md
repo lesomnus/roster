@@ -281,22 +281,21 @@ everywhere" is an outage with nothing anywhere saying why. That is a second act
 and it has a second name — `roster key revoke`, or `roster me revoke-key` for
 your own.
 
-Those three are RPCs with no verb of their own on the CLI: a caller reaches them
-through a role, and an operator through the console. From a shell the same
-columns are a general write, which only the local CLI has open:
+Each is a verb of its own on the CLI, and they are ordinary RPCs — remote with
+a role that names them, local through `Ungated` like everything else:
 
 ```sh
-roster holder patch @newco/alice \
-  '{"date_disabled":"2026-08-24T10:00:00Z","date_updated_force":true}'
-
-roster holder patch @newco/alice \
-  '{"date_disabled_null":true,"date_updated_force":true}'
+roster holder disable @newco/alice          # and what they hold stops working
+roster holder enable @newco/alice           # the other direction
+roster holder invalidate @newco/alice       # everything issued before now is void
 ```
 
-`date_updated_force` is there because `patch` is an optimistic write: it wants
-the `date_updated` you read, so that two people editing one row notice. Forcing
-it says *write it anyway*, which is fine for a shell and is why `/Patch` is
-closed on the wire.
+The server stamps the time — there is none to give, so a stale clock cannot
+un-suspend anybody, and a suspension cannot lose a race with somebody editing a
+profile. `roster holder signs-in @newco/alice` is the read beside them: how
+somebody signs in, keys included, with no verifier anywhere in the answer. And
+`roster sync watch` is where a stop can be seen landing — one line per event,
+the same stream every app holds.
 
 ## Next
 

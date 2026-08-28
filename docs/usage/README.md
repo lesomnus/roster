@@ -91,11 +91,16 @@ write is not served, which is the whole reason they are commands.
 
 ### Not every RPC has a command yet
 
-Nineteen do not, and that is a gap being closed rather than a boundary: the goal
+Eight do not, and that is a gap being closed rather than a boundary: the goal
 is that everything is possible from a terminal, with no console anywhere in the
-path. `HolderService`'s `Disable`, `Enable` and `Invalidate`, and most of
-`VouchService`, are the notable ones. Where a page here shows an RPC and no
-command, that is why. The D58 row in [`roadmap.md`](../roadmap.md) is the list.
+path. What is left is most of `VouchService` — the sign-in surface a product
+app calls, where a secret is in the request and each command wants its own
+shape. `HolderService`'s overlay methods (`roster holder disable`, `enable`,
+`invalidate`, `update`, `signs-in`, `revoke-key`), `roster front` and
+`roster sync watch` answer now. Where a page here shows an RPC and no command,
+that is why. The D58 row in [`roadmap.md`](../roadmap.md) is the list.
 
 `Apply` is the exception and is not on that list. It is one of the two general
-writes, closed unless a deployment opts in, and roster does not.
+writes, closed unless a deployment opts in, and roster does not. `AuthService`
+is off it too, by nature rather than by work: it mints the console's session,
+and a session cookie is a browser's credential — a terminal's is a key.
