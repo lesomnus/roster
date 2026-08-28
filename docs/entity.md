@@ -643,4 +643,5 @@ spending them on something else.
 | `proto/roster/payday/*.proto` | payday's four, **copied in** — do not edit; write an overlay in `proto/ext/payday/` |
 | `internal/ent/migrate/schema.go` | the tables as they are actually created |
 | `PLAN.md` | every decision, by number |
+| `docs/baseline.md` | what a normal user may rely on, and the test that pins each promise |
 | `docs/operating.md` | what an operator does with these |

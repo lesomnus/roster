@@ -218,6 +218,9 @@ a browser holds and `auth` reads credentials rather than making them.
 ## Reference
 
 - `docs/entity.md` — the twenty-three entities, how they relate, one paragraph each
+- `docs/baseline.md` — the promises a normal user relies on, each pinned to its
+  tests. **Touching code under one of them means running its tests, and a
+  baseline test is never weakened to let a change pass.**
 - `README.md` — the same ground at length, including upgrading payday
 - <https://github.com/lesomnus/payday/tree/main/docs> — the guides and the
   references behind them
