@@ -138,6 +138,23 @@ func (s *Store) Get(ctx context.Context, key string) (authsession.Session, error
 		return authsession.Session{}, authsession.ErrNoSession
 	}
 
+	if w := h.DateInvalidated; w != nil && v.DateCreated.Before(*w) {
+		// Issued before the holder's stamp, so it is void -- and this store is
+		// the place that can say so, which is worth spelling out because
+		// `MeService.SignOutEverywhere`'s contract sounds like it forbids it.
+		// roster answers *invalid since when* and an app answers *what is
+		// still alive* -- and for the console's cookies, **roster is the
+		// app**. This is roster answering as one.
+		//
+		// Nothing here read the stamp until 2026-08-28, so "sign out
+		// everywhere" pressed in the console voided delegations a customer's
+		// apps held and left every console session alive -- including the one
+		// a takeover had opened, which is the session the button is for. The
+		// keys a person minted stay, as everywhere: a key is named, listed and
+		// revoked one at a time, and D26 says why that is a second act.
+		return authsession.Session{}, authsession.ErrNoSession
+	}
+
 	out := authsession.Session{
 		Key:      key,
 		Id:       pdid.Id(h.ID).String(),
