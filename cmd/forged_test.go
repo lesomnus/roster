@@ -130,6 +130,38 @@ func TestPlainDoesNotHandOutEveryTenant(t *testing.T) {
 		_, err := list(as(t, pdid.Id(uuid.New()).String()))
 		x.Error(err)
 	})
+
+	// The subtler forgery: an api-key identifier naming a row that **exists**.
+	// A tenant key is an `ApiKey` row in this plane's own database, and "a key
+	// is a row that exists" read against the wrong rows would take it -- as a
+	// deployment key, which is `frame.Everything` for the price of a row alice
+	// can mint about herself. `keys.Store` resolves an `rt_` to its holder for
+	// exactly this reason, and writing the row's identifier instead of
+	// presenting the token is the way around that switch.
+	//
+	// With no control plane there are no keys at all, so the row's existence
+	// must not matter here.
+	t.Run("a tenant key's row is not a deployment key", func(t *testing.T) {
+		x := require.New(t)
+
+		_, sum, err := keys.Mint(keys.PrefixTenant)
+		x.NoError(err)
+
+		v, err := s.Ungated.ApiKey().Add(ctx, app.ApiKeyAddRequest_builder{
+			Holder:  app.HolderRef_builder{Id: alice.Bytes()}.Build(),
+			Alias:   "alices-own",
+			Secret:  sum,
+			Methods: []string{listHolders},
+		}.Build())
+		x.NoError(err)
+
+		row, err := pdid.From(v.GetId())
+		x.NoError(err)
+
+		_, err = list(as(t, row.String()))
+		x.Error(err, "a tenant key's row was served as a deployment key")
+		x.Equal(codes.Unauthenticated, status.Code(err))
+	})
 }
 
 // TestAKeyIsARowThatExists is the same rule where there **is** a control plane.

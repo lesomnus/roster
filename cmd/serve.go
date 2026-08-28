@@ -628,15 +628,21 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// key presented to the control plane was refused with "this deployment has
 	// no keys" -- by the plane the keys are in.
 	//
-	// It is not a hole where there is no control plane at all. An api-key
-	// identifier is only ever produced by [keys.Store], which is installed
-	// beside a control plane and nowhere else; without one, nothing reaches
-	// `keyed` with an identifier of that domain. If something did, it now finds
-	// no row and is refused as a bad key, which is the same answer arrived at
-	// more honestly.
-	keyrows := s.Ungated
-	if s.Control != nil {
+	// The two nils are told apart by `Auth`: the control plane is built with
+	// one (see `Build`), and the deployment with no control plane is the only
+	// Server without -- that absence is what wires `Plain` above. Under Plain
+	// an identifier is whatever the caller writes, including one of this
+	// domain naming a **tenant** key's row in `s.Ungated` -- a row that
+	// exists, which `keyed` would take for a deployment key and the policy
+	// would hand `frame.Everything`. That is the escalation `keys.Store`
+	// resolves tenant keys to their holder to prevent, so here it stays what
+	// it always was: no control plane, no keys, refused.
+	var keyrows app.Server
+	switch {
+	case s.Control != nil:
 		keyrows = s.Control.Ungated
+	case s.Auth != nil:
+		keyrows = s.Ungated
 	}
 
 	r := Resolver(s.Ungated, keyrows)
