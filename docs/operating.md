@@ -366,6 +366,23 @@ session cookie and resolves it against **that** database's holders, so with no
 control plane there is nobody to be. It used to open no listener and say
 nothing.
 
+`control.addr` takes **both**: a console's cookie and a service's `rk_`. The
+second is the one an integrating app uses — hold a key from `roster key add
+--service`, introspect the tokens your callers present against this plane. It
+did not work until 2026-08-28, and the way it failed is worth recognising if
+you meet it on an older build: every key was refused with
+
+```
+rpc error: code = Unauthenticated desc = who is asking?
+```
+
+from the gate, with no frame and nothing naming a key. The resolver behind the
+port was reading its key rows from *its own* control plane, which is nil —
+that nil is what stops the recursion — so the plane the keys are in answered
+"this deployment has no keys" about all of them. Nothing caught it because
+nothing dialled the port with a key; the tests and the `admin` port beside it
+only ever used a cookie.
+
 A browser cannot speak gRPC, so a port without `http` is a port a console
 cannot reach — and `server.http` is the wrong one: it fronts the **walled**
 data plane, where an operator's session names nobody. Sign in there and there
