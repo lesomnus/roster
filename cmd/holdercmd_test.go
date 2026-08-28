@@ -2,6 +2,7 @@ package cmd_test
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"net"
 	"strings"
@@ -48,6 +49,10 @@ func cliUp(t *testing.T, methods ...string) *cliServed {
 		Db:      config.DbConfig{Driver: drv, Dsn: dsn},
 		Watch:   config.WatchConfig{Broker: config.BrokerMemory},
 		Control: cmd.ControlConfig{Db: config.DbConfig{Driver: cdrv, Dsn: cdsn}},
+
+		// A keyring, so the served deployment can wrap a TOTP seed -- which is
+		// what lets `roster vouch enrol` be tested against it.
+		Vouch: cmd.VouchConfig{Keys: []string{"one:" + base64.StdEncoding.EncodeToString(freshKey(t))}},
 	}
 
 	out, err := initRun(t, c)

@@ -73,6 +73,7 @@ the page, one of the two is wrong and both are load-bearing.
 | a person mints a key that acts as them and no more than them, from the wire and from their own terminal | `TestSomebodyMintsAKeyThatActsAsThem` · `TestSelfServiceOverTheWireWithHerOwnKey` · `TestTheCliIsAlsoACustomersPerson` |
 | a key calls its allow list and nothing else, and never more than its holder | `TestAKeyReachesWhatItWasMadeFor` · `TestAKeyReachesNothingElse` · `TestATenantKeyIsTheirsAndNotTheDeploymentS` |
 | a key is a row that exists — an identifier nobody minted is refused, on every plane, under every handler | `TestAKeyIsARowThatExists` · `TestAKeyNobodyMintedIsRefused` · `TestPlainDoesNotHandOutEveryTenant` |
+| `roster issue` is the wire mint from a terminal — a customer's key and an operator's first password, printed once, held to the same rules | `TestIssueMintsOverTheWire` |
 
 ## Signing somebody in
 
@@ -82,6 +83,7 @@ the page, one of the two is wrong and both are load-bearing.
 | a delegation is bound to the person it was minted about **and** the key it was minted through; alone, or beside another app's key, it is worth nothing | `TestADelegationAloneIsWorthNothing` · `TestADelegationIsBoundToTheKeyAndNotToTheAppBehindIt` · `TestATenantKeysDelegationIsBoundToThePersonAndNotToTheKey` |
 | enough wrong answers close the account before the password is compared, and getting it right clears what getting it wrong left | `TestEnoughWrongAnswersCloseTheAccount` · `TestGettingItRightClearsWhatGettingItWrongLeftBehind` |
 | the console's cookie is minted by `POST /session`, ended by `DELETE /session`, and the end is immediate | `TestAnOperatorSignsIn` · `TestAConsoleReachesTheControlPlaneOverHttp` |
+| the whole sign-in surface is a terminal command as well — verify, delegate, continue, link/redeem, revoke, enrol/confirm, accept — secrets on stdin, tokens printed once, and the uniform no surviving the shell | `TestTheTerminalIsACallerThatSignsPeopleIn` · `TestASecondFactorEndToEndAtAShell` · `TestContinueProvesAndDelegateMints` |
 
 ## The four ports
 

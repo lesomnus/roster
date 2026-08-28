@@ -194,8 +194,9 @@ Both, and that is what makes it checkable — a delegation on its own is refused
 It cannot be presented with `auth.Plain` or mTLS at all, because those name a
 caller without resolving to a row and there is nothing to compare.
 
-There is no command for one. It is a thing an app asks for at the moment it
-needs it.
+An app asks for one at the moment it needs it, and a shell can too:
+`roster vouch delegate` prints one for scripting the same flow, bound to the
+key in `client.auth` exactly as an app's would be.
 
 ## An account somewhere else — an identity
 

@@ -166,8 +166,11 @@ Naming `auth` with no `addr` is refused: a credential with nowhere to send it
 would otherwise read the database directly while you believed you were calling a
 server.
 
-`roster init`, `roster key` and `roster vouch` have **no remote form**. What they
-write is not served, which is the whole reason they are commands.
+`roster init`, `roster key add` and `roster vouch reset|set|unlock` have **no
+remote form**: what they write is not served, which is the whole reason they are
+commands. The rest of `roster vouch` (the sign-in surface -- `verify`,
+`delegate`, `link` and the others) and `roster issue` are the other way round,
+**remote only**, because those are a caller's calls and a local run has none.
 
 ## Next
 

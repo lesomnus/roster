@@ -86,21 +86,25 @@ write is possible, not that a caller could make it.** The local mode is outside
 every rule, which is why the first role in a tenant can be written at all. If
 you are working out what a role needs, test it remotely with a key.
 
-`roster init`, `roster key` and `roster vouch` have no remote form. What they
-write is not served, which is the whole reason they are commands.
+`roster init` and `roster key add` have no remote form -- what they write is
+not served, which is the whole reason they are commands. `roster issue` is the
+same mint over the wire, held to every rule; and `vouch`'s sign-in half
+(`verify`, `delegate`, `link` and the rest) is remote **only**, because those
+calls are a caller's and a local run has no caller.
 
-### Not every RPC has a command yet
+### Every roster RPC that can have a command has one
 
-Eight do not, and that is a gap being closed rather than a boundary: the goal
-is that everything is possible from a terminal, with no console anywhere in the
-path. What is left is most of `VouchService` — the sign-in surface a product
-app calls, where a secret is in the request and each command wants its own
-shape. `HolderService`'s overlay methods (`roster holder disable`, `enable`,
-`invalidate`, `update`, `signs-in`, `revoke-key`), `roster front` and
-`roster sync watch` answer now. Where a page here shows an RPC and no command,
-that is why. The D58 row in [`roadmap.md`](../roadmap.md) is the list.
+The goal — everything roster owns is possible from a terminal, with no console
+anywhere in the path — is reached. Three of roster's own methods are left out on
+purpose: `Apply` (one of the two general writes, closed unless a deployment opts
+in, and roster does not); `AuthService` (it mints the console's session, and a
+session cookie is a browser's credential where a terminal's is a key); and
+minting a *service's* key over the wire (minting is granting, the grant rule
+reads bindings, and a key holds none — the mints for a service are `roster key
+add` and a console).
 
-`Apply` is the exception and is not on that list. It is one of the two general
-writes, closed unless a deployment opts in, and roster does not. `AuthService`
-is off it too, by nature rather than by work: it mints the console's session,
-and a session cookie is a browser's credential — a terminal's is a key.
+payday's own framework services are a separate matter and get no `roster`
+command: `TokenService/Introspect` is what an app calls to check a credential
+(the SDK's job, not an operator's), and `BatchService` is the generic multi-write
+an app composes. Neither is roster's to wrap. The D58 row in
+[`roadmap.md`](../roadmap.md) is the record.

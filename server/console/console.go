@@ -223,7 +223,31 @@ func (i issuer) IssueKey(ctx context.Context, req *app.IssueKeyRequest) (*app.Is
 	return app.IssueKeyResponse_builder{Token: token, Key: v}.Build(), nil
 }
 
+// IssuePassword is the control plane's alone, and refuses on the other.
+//
+// It names somebody by a bare alias, which only says one person where there is
+// one tenant -- the control plane. On the data plane an alias names one person
+// per customer, and this does not take a tenant to tell them apart: it would
+// resolve against `holder`'s `Tenant.Query().First()`, an arbitrary tenant, and
+// make the row if it were not there. So a data-plane caller holding this method
+// could set -- and create -- a password on somebody in a tenant they never
+// named, through the issuer's own `vouch.New(s, s)`, which carries no
+// `WithReach`: the escalation rule that guards every other credential write is
+// not in this path. `IssueKey` is safe there because `whose` refuses a bare
+// name and reads the reference back through the wall; this took neither guard.
+//
+// A customer's person gets a password the guarded way -- `VouchService.Reset`
+// or `Set`, served on the data plane with `WithReach` -- so nothing is lost by
+// closing this here. `roster issue password` is control-plane only for exactly
+// this reason, and now it is the server that says so rather than a brief.
 func (i issuer) IssuePassword(ctx context.Context, req *app.IssuePasswordRequest) (*app.IssuePasswordResponse, error) {
+	if i.prefix != keys.PrefixDeployment {
+		return nil, status.Error(codes.Unimplemented,
+			"IssuePassword names somebody by a bare alias, which is one person only where there "+
+				"is one tenant -- the control plane. A customer's person is given a password by "+
+				"VouchService.Reset or Set, which run the escalation rule this does not")
+	}
+
 	if req.GetAlias() == "" {
 		return nil, status.Error(codes.InvalidArgument, "whose")
 	}

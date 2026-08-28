@@ -62,12 +62,23 @@ import (
 func NewCmdVouch(c *Config) *xli.Command {
 	return &xli.Command{
 		Name:  "vouch",
-		Brief: "the way in for a person: a password, and the lockout that closed it",
+		Brief: "a person's way in: check it, mint it, hand it out, end it",
 
 		Commands: xli.Commands{
 			newCmdVouchReset(c),
 			newCmdVouchSet(c),
 			newCmdVouchUnlock(c),
+
+			// The wire half, which dials where the three above open the
+			// database; `vouchwire.go` says why the line falls there.
+			newCmdVouchVerify(c),
+			newCmdVouchDelegate(c),
+			newCmdVouchContinue(c),
+			newCmdVouchLink(c),
+			newCmdVouchRedeem(c),
+			newCmdVouchRevoke(c),
+			newCmdVouchEnrol(c),
+			newCmdVouchAccept(c),
 		},
 	}
 }

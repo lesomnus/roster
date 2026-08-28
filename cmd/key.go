@@ -475,6 +475,7 @@ func Widest(methods []string) string {
 		{app.AuditService_List_FullMethodName, readsTheTrail},
 		{app.AuditService_Get_FullMethodName, readsTheTrail},
 		{app.VouchService_Accept_FullMethodName, mintsForAnybody},
+		{app.IssueService_IssuePassword_FullMethodName, becomesAnOperator},
 	}
 
 	for _, held := range methods {
@@ -505,6 +506,17 @@ const mintsForAnybody = "mints a credential for anybody, on the caller's word.\n
 	"`Vouch.Accept` is for a front door that did its own checking -- an OIDC flow --\n" +
 	"and it verifies nothing itself. An app that checks passwords through `Verify`\n" +
 	"does not need it, and should not have it."
+
+// And the third, found by pointing `roster issue` at the control port: the
+// grant rule reads bindings and a key holds none, so a key can never mint a
+// key -- but writing a credential asks the *reach* rule, which everything a
+// deployment key carries covers. So a key whose methods reach `IssuePassword`
+// hands out first passwords, and a first password for an operator is a way to
+// become them.
+const becomesAnOperator = "hands out first passwords, on the caller's word.\n" +
+	"Against the control plane that is every operator of this deployment: a key is\n" +
+	"not a person, so no binding narrows whose credential it may write. Grant it\n" +
+	"only to a console."
 
 // listKeys writes one plane's keys, in the shape `roster key list` prints them.
 //
