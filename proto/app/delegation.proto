@@ -191,10 +191,13 @@ message Delegation {
       max: 100
     }
 
-    // And **no** `watch:`, deliberately. payday's `Secret` layer overrides
-    // Add/Get/Patch/Apply/List and not Watch, and this app installs
-    // `grpcx.ClosedUnary` rather than `grpcx.Closed`, so a watchable entity
-    // with a verifier streams it and neither control can stop it. `Credential`
-    // already has that shape and is saved only by never being registered.
+    // And **no** `watch:`, still -- but no longer for the reason this comment
+    // used to give. It said `Secret` does not cover Watch, and since F10 that
+    // is false: payday's `Secret` wraps the stream and clears the column, and
+    // `pd.Secret`+`watch:` together are safe. What keeps it off is smaller:
+    // nothing consumes it. The change an app must hear about -- somebody's
+    // standing stopped being good -- travels on `SyncService`, and a stream of
+    // delegation rows would be a second channel for a fact that already has
+    // one. The day something needs one, adding `watch:` is safe on its own.
   };
 }

@@ -1,6 +1,13 @@
 // Package sso signs somebody in with an external identity provider and finds
 // out who they are here.
 //
+// It is also the reference app, and that is a standing role rather than a
+// demo's: it is to roster what roster is to payday -- the consumer that makes
+// the interface honest, because a package with no consumer is guesswork about
+// what a consumer needs. The rule travels down a layer with it: when roster is
+// in the way of writing this app plainly, roster is what gets fixed, here and
+// not worked around here. PLAN.md D24.
+//
 // # The scenario
 //
 // One app, its own sign-in page, and Google (or Entra, or GitHub) instead of a

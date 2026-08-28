@@ -68,6 +68,16 @@ no edge to stand on. What it will not do is rewrite the Go you wrote: the
 imports in `cmd/` are yours, and moving the package is a compile error until you
 follow it.
 
+Two names in that arrangement are choices worth knowing the reason for. The Go
+package is `rstr` and not `api`, because these messages are meant to be
+**imported by other apps** -- `api` is what every app calls its own generated
+package, and a product importing roster's would be aliasing one of the two on
+every file that mentions both. And the proto package is `roster` and not `app`:
+protobuf's file registry and payday's `pdid` domains are per **process**, so
+two payday apps can be linked into one binary only if their proto packages
+differ -- which the reference app does, and which a product app embedding
+roster's login flow will do too. PLAN.md D10 and F8.
+
 ## What is where
 
 Two rules, and between them they say whether a file is yours.

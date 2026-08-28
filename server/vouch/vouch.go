@@ -9,7 +9,7 @@
 // `MessageOptions` only, so there is no field-level option to put it in.
 //
 // So it is said where reachability is actually decided: `CredentialService` is
-// not registered, and it is closed to the batch. See `cmd.Grpc` and PLAN.md D11.
+// not registered, and it is closed to the batch. See `cmd.Grpc` and PLAN.md D13.
 // What is registered is this, and nothing here answers with a hash.
 //
 // # Why the hashing is here too

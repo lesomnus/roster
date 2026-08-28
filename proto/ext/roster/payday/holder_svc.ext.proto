@@ -10,16 +10,15 @@ import "roster/payday/holder.proto";
 
 // What this app adds to the generated contract for `Holder`.
 //
-// An overlay may only **add**, and that is a rule this file keeps rather than
-// one anything enforces. It used to say generation refuses an overlay that
-// redeclares something payday generated; it does not. `protobuf-merge` matches
-// rpcs by name and emits the **overlay's** request, response and body, payday
-// invokes it without `Strict`, and the conflict kinds it can report cover
-// fields and editions and not rpcs at all -- so redeclaring `Get` here would
-// replace it, silently, and nothing anywhere would say so.
-//
-// It is written down rather than worked around because the fix belongs
-// upstream. See PLAN.md.
+// An overlay may only **add**, and generation refuses one that does not --
+// since `lesomnus/payday@15a0e47`, which compares each rpc against the
+// contract as merged so far. It matters because the failure it closes is
+// silent in the worst way: `protobuf-merge` matches rpcs by name and emits the
+// **overlay's** request, response and body, so redeclaring `Get` here would
+// have *replaced* it -- the file compiles, the tests that call it pass, and
+// what is gone is the wall, the trail and the narrowing that stood behind the
+// name. An overlay whose name matches no contract is reported too
+// (`@a06360f`); it used to merge nothing and generate cleanly. PLAN.md F20.
 service HolderService {
   // Update is the narrow write, and the one a caller is given.
   //
