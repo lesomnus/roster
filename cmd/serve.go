@@ -618,10 +618,23 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 		h = auth.Plain()
 	}
 
-	// The resolver is given the control plane, which is what makes an api-key
-	// identifier a row rather than a shape: see `keyed`. Nil here is a
-	// deployment with no keys, and then there is no such identifier to resolve.
-	var keyrows app.Server
+	// The rows an api-key identifier is checked against, which is what makes it
+	// a row rather than a shape: see `keyed`.
+	//
+	// A deployment's keys live on its control plane. **The control plane's own
+	// live on itself**, and that is the second case here: `GrpcControl` builds
+	// from a `Server` whose `.Control` is nil, because a nil one is what stops
+	// the recursion. Read from `s.Control` alone this was nil there, and every
+	// key presented to the control plane was refused with "this deployment has
+	// no keys" -- by the plane the keys are in.
+	//
+	// It is not a hole where there is no control plane at all. An api-key
+	// identifier is only ever produced by [keys.Store], which is installed
+	// beside a control plane and nowhere else; without one, nothing reaches
+	// `keyed` with an identifier of that domain. If something did, it now finds
+	// no row and is refused as a bad key, which is the same answer arrived at
+	// more honestly.
+	keyrows := s.Ungated
 	if s.Control != nil {
 		keyrows = s.Control.Ungated
 	}
