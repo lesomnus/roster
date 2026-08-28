@@ -1283,9 +1283,6 @@ What a normal user may rely on, and the tests that hold each promise, is
 
 ### Open questions for whoever reads this next
 
-- **The repository is private.** custody is public; making roster public was
-  refused by a permission check rather than decided, so it is worth an explicit
-  choice.
 - **A product app should not have to write a login endpoint.** The seam is a
   `Verify`, and roster is already meant to be imported (D10). An exported
   `authsession.Verify` backed by `VouchService` would make a product's whole
