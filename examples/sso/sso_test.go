@@ -166,6 +166,12 @@ type deployment struct {
 	// keyring is what this deployment wraps a seed with, so that a test may
 	// enrol one and the served instance can read it.
 	keyring vouch.Keyring
+
+	// server is the built deployment, kept so a test that needs a **second**
+	// caller -- an administrator beside the front door -- can open its own
+	// connection to the same roster with its own credential. `server.Grpc`
+	// answers a fresh gRPC server over the same store each time it is called.
+	server *cmd.Server
 }
 
 // serve builds roster and the app in front of it.
@@ -298,7 +304,7 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 
 	d := &deployment{
 		roster: client, tenant: seeded.Tenant, ungated: s.Ungated,
-		idp: newIdp(t), keyring: s.Keyring,
+		idp: newIdp(t), keyring: s.Keyring, server: s,
 	}
 
 	sessions := authsession.New(authsession.NewMemStore(), authsession.Insecure())
