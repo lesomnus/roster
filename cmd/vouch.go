@@ -210,7 +210,7 @@ func newCmdVouchSet(c *Config) *xli.Command {
 				return errors.New("--password-stdin was given and stdin was empty")
 			}
 
-			s, v, err := vouching(ctx, c)
+			s, _, err := vouching(ctx, c)
 			if err != nil {
 				return err
 			}
@@ -223,8 +223,10 @@ func newCmdVouchSet(c *Config) *xli.Command {
 
 			kind, _ := flg.Find[string](cmd, "kind")
 
-			if _, err := v.Set(ctx, app.VouchSetRequest_builder{
-				Who:    who,
+			// Set is a `Credential` write now, named by reference. Locally,
+			// through `Ungated`, where a frameless caller waives the reach rule.
+			if _, err := s.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+				Ref:    app.HolderRef_builder{Id: who.GetId()}.Build(),
 				Kind:   kind,
 				Secret: []byte(secret),
 			}.Build()); err != nil {

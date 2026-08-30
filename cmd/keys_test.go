@@ -26,7 +26,6 @@ import (
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
-	"github.com/lesomnus/roster/server/vouch"
 )
 
 // roster answering to keys rather than to whoever its callers say they are.
@@ -149,8 +148,8 @@ func TestAKeyReachesWhatItWasMadeFor(t *testing.T) {
 	ctx := t.Context()
 
 	// A password to check, set through the server rather than by hand.
-	_, err := vouch.New(b.Ungated, b.Ungated).Set(ctx, app.VouchSetRequest_builder{
-		Who:    app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
+	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+		Ref:    app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)

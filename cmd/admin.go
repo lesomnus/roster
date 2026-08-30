@@ -77,7 +77,13 @@ func Admin(s *Server) (app.Server, error) {
 	// `core` reading the **control** plane. Its judgements are about the
 	// caller -- what they hold, what they may pass on -- and the caller is
 	// there.
-	return app.Build(s.sink.WithWatch(s.Watch), core.Build(Rules(s.Control.Ent)), pd.AuditBuild())
+	// `core.WithBreached`, because `Credential.Set` reads the corpus through
+	// this layer now and the admin port is the one door such a password could
+	// otherwise still come through -- the reasoning the vouch registration below
+	// gives at length, arriving here because the write moved onto the entity.
+	return app.Build(s.sink.WithWatch(s.Watch),
+		core.Build(Rules(s.Control.Ent), core.WithBreached(core.Breached(s.Breached))),
+		pd.AuditBuild())
 }
 
 // Intent records that an operator decided to do something, in the control

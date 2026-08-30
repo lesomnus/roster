@@ -20,7 +20,6 @@ import (
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
-	"github.com/lesomnus/roster/server/vouch"
 )
 
 // Becoming somebody else by acquiring their permissions.
@@ -50,7 +49,7 @@ const (
 	patchMembership = "/roster.TeamMembershipService/Patch"
 
 	// Writing somebody's password, which is what a helpdesk holds.
-	writeSecret = "/roster.VouchService/Set"
+	writeSecret = "/roster.CredentialService/Set"
 
 	mintKey   = "/roster.ApiKeyService/Add"
 	listTeams = "/roster.TeamService/List"
@@ -241,16 +240,16 @@ func TestNobodyMintsAKeyOnSomebodyElsesHolder(t *testing.T) {
 
 	// And the boss has a password, which is the thing that must still be his
 	// at the end of this.
-	_, err := vouch.New(b.Ungated, b.Ungated).Set(ctx, app.VouchSetRequest_builder{
-		Who:    app.VouchWho_builder{Id: boss.Bytes()}.Build(),
+	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+		Ref:    app.HolderRef_builder{Id: boss.Bytes()}.Build(),
 		Secret: []byte("the one he chose"),
 	}.Build())
 	require.NoError(t, err)
 
 	c := app.NewVouchServiceClient(b.Conn)
 	set := func(as string, secret string) error {
-		_, err := c.Set(bearing(ctx, as), app.VouchSetRequest_builder{
-			Who:    app.VouchWho_builder{Id: boss.Bytes()}.Build(),
+		_, err := app.NewCredentialServiceClient(b.Conn).Set(bearing(ctx, as), app.CredentialSetRequest_builder{
+			Ref:    app.HolderRef_builder{Id: boss.Bytes()}.Build(),
 			Secret: []byte(secret),
 		}.Build())
 
@@ -379,8 +378,8 @@ func TestARoleHeldThroughATeamIsStillHeld(t *testing.T) {
 	asOps := b.mayCall(t, ctx, ops, "operator", getHolder)
 
 	set := func(who pdid.Id) error {
-		_, err := b.operated().Set(asOps, app.VouchSetRequest_builder{
-			Who:    app.VouchWho_builder{Id: who.Bytes()}.Build(),
+		_, err := b.Walled.Credential().Set(asOps, app.CredentialSetRequest_builder{
+			Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
 			Secret: []byte("a new one"),
 		}.Build())
 

@@ -27,8 +27,8 @@ func (b *built) vouched() *vouch.Server { return vouch.New(b.Ungated, b.Ungated)
 func (b *built) sets(t *testing.T, ctx context.Context, who pdid.Id, secret string) {
 	t.Helper()
 
-	_, err := b.vouched().Set(ctx, app.VouchSetRequest_builder{
-		Who:    app.VouchWho_builder{Id: who.Bytes()}.Build(),
+	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+		Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		Secret: []byte(secret),
 	}.Build())
 	require.NoError(t, err)
@@ -322,8 +322,8 @@ func TestARequestThatNamesNobodyOrTwoBodiesIsRefused(t *testing.T) {
 func TestAnEmptySecretIsNotASecret(t *testing.T) {
 	b, ctx := build(t)
 
-	_, err := b.vouched().Set(ctx, app.VouchSetRequest_builder{
-		Who: app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
+	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+		Ref: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 	}.Build())
 	require.Equal(t, codes.InvalidArgument, status.Code(err))
 }
@@ -525,8 +525,8 @@ func TestAnErasedHolderCannotAuthenticate(t *testing.T) {
 		who := b.holder(t, ctx, b.Contoso, "leaver")
 		erase(t, b, ctx, who)
 
-		_, err := b.vouched().Set(ctx, app.VouchSetRequest_builder{
-			Who:    app.VouchWho_builder{Id: who.Bytes()}.Build(),
+		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+			Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
 			Secret: []byte("a fresh one"),
 		}.Build())
 		x.Equal(codes.NotFound, status.Code(err), "somebody who is gone was given a password")

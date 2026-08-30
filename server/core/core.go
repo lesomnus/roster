@@ -51,7 +51,20 @@ type Core struct {
 	// transaction* and does its work in whatever it was handed, which is also
 	// what it does inside a batch.
 	drv dialect.Driver
+
+	// breached answers whether a secret is one somebody has already lost, when
+	// the deployment has a corpus. It is the same question `server/vouch` asks,
+	// handed to this layer because `Credential.Set` now writes here -- nil is a
+	// deployment with no corpus, which refuses no secret.
+	breached Breached
 }
+
+// Breached is whether a secret is in a corpus of leaked ones. Nil refuses none.
+type Breached func(ctx context.Context, secret []byte) (bool, error)
+
+// WithBreached gives the layer the corpus check, so a credential write can
+// refuse a leaked secret without a service reaching back for the rule.
+func WithBreached(v Breached) Option { return func(s *Core) { s.breached = v } }
 
 // Rules is what this layer has to know about a caller and cannot work out.
 //

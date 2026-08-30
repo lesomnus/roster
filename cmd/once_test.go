@@ -47,7 +47,7 @@ func TestOneContinuationMintsOneCredential(t *testing.T) {
 	mayList(t, ctx, b, b.Who, listHolders)
 
 	v := b.keyed(t)
-	seed := enrolled(t, ctx, v, b.Who)
+	seed := enrolled(t, ctx, b.Ungated.Credential(), v, b.Who)
 
 	// Called directly rather than over the connection: a shared HTTP/2 stream
 	// serialises enough that the window closes before anybody reaches it, and

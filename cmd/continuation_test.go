@@ -21,7 +21,7 @@ func halfway(t *testing.T) (*keyedBuilt, []byte, string) {
 	ctx := t.Context()
 
 	b := keyFor(t, delegate)
-	seed := enrolled(t, ctx, b.keyed(t), b.Who)
+	seed := enrolled(t, ctx, b.Ungated.Credential(), b.keyed(t), b.Who)
 
 	first, err := app.NewVouchServiceClient(b.Conn).Delegate(bearing(ctx, b.Token),
 		app.VouchDelegateRequest_builder{

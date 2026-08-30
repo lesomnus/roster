@@ -151,11 +151,11 @@ func TestAKindNothingChecksIsRefusedBeforeAnybodyIsLookedFor(t *testing.T) {
 func TestSetWritesOnlyAKindThisCanCheck(t *testing.T) {
 	b, ctx := build(t)
 
-	set := func(v *vouch.Server, kind string) error {
+	set := func(kind string) error {
 		t.Helper()
 
-		_, err := v.Set(ctx, app.VouchSetRequest_builder{
-			Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+			Ref:    app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Kind:   kind,
 			Secret: []byte("correct horse battery staple"),
 		}.Build())
@@ -166,7 +166,7 @@ func TestSetWritesOnlyAKindThisCanCheck(t *testing.T) {
 	t.Run("a kind nothing checks is refused", func(t *testing.T) {
 		x := require.New(t)
 
-		err := set(b.vouched(), "recovery")
+		err := set("recovery")
 		x.Equal(codes.InvalidArgument, status.Code(err))
 
 		n, err := b.Ent.Credential.Query().Count(ctx)
@@ -177,14 +177,16 @@ func TestSetWritesOnlyAKindThisCanCheck(t *testing.T) {
 	// A second factor is real and is still not this call's: `Set` argon2-hashes
 	// what it is handed and a seed must be read back, so a `totp` row written
 	// here is a factor that can never answer. `vouch.proto` says so under
-	// `Enrol` and nothing enforced it -- and it is refused the same way whether
-	// or not this deployment holds a key, because which act a caller is doing
-	// is not a fact about the deployment.
+	// `Enrol` and nothing enforced it.
+	//
+	// One call, not two: this is `Credential.Set` now, which never consults a
+	// keyring -- the settable-kind check is a fact about the kind, so a
+	// deployment that holds a key to wrap a seed with is refused for the same
+	// reason as one that does not, and there is no second path to demonstrate.
 	t.Run("and a second factor is Enrol's", func(t *testing.T) {
 		x := require.New(t)
 
-		x.Equal(codes.InvalidArgument, status.Code(set(b.vouched(), vouch.KindTotp)))
-		x.Equal(codes.InvalidArgument, status.Code(set(b.keyed2fa(t), vouch.KindTotp)))
+		x.Equal(codes.InvalidArgument, status.Code(set(vouch.KindTotp)))
 
 		n, err := b.Ent.Credential.Query().Count(ctx)
 		x.NoError(err)
@@ -210,18 +212,22 @@ func TestSetWritesOnlyAKindThisCanCheck(t *testing.T) {
 	})
 }
 
-// TestASecretIsSetForTheAddressThatNamesSomebody.
+// TestASecretIsResetForTheAddressThatNamesSomebody.
 //
 // `VouchWho.address` is *what most sign-in forms actually collect*, and every
-// sibling resolves it: `Verify`, `Unlock`, `Enrol`, `Link`. `Set` alone passed
-// `refOf`'s nil answer -- which is how it says *this one is a lookup* -- straight
-// into `Holder().Get`, so the caller was told `key not set: Holder`, naming a
-// generated type they had never sent, for the one way of naming somebody the
-// form in front of them collects.
+// sibling that still takes a `VouchWho` resolves it: `Verify`, `Unlock`,
+// `Enrol`, `Link`, and -- the operator's recovery flow -- `Reset`. Setting a
+// secret is `Credential.Set` now and names a holder by reference (option 2), so
+// the address form stays where it belongs: resetting by email is how somebody
+// who cannot get in is given a way back, and it is the write where the form in
+// front of the operator collects an address rather than a key.
 //
-// `Reset` is the call that made it matter: resetting by email is the operator
-// flow, and it inherits this one because it resets **through** `Set`.
-func TestASecretIsSetForTheAddressThatNamesSomebody(t *testing.T) {
+// `Reset` resolves `refOf`'s nil answer -- its way of saying *this one is a
+// lookup* -- through a `byAddress` lookup, and it asked a second time to know
+// whose epoch to move. The bug this pins is that the two disagreed: `refOf`
+// answers nil for an address, so a reset by email changed the password and left
+// every stolen session alive, on the one form an operator actually uses.
+func TestASecretIsResetForTheAddressThatNamesSomebody(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
@@ -237,52 +243,35 @@ func TestASecretIsSetForTheAddressThatNamesSomebody(t *testing.T) {
 
 	v := b.vouched()
 
-	_, err = v.Set(ctx, app.VouchSetRequest_builder{
-		Who:    who("someone@contoso.example"),
-		Secret: []byte("correct horse battery staple"),
+	// A reset by address is a **whole** reset, which is the half that was nearly
+	// lost making the other half work.
+	//
+	// D26 keeps the epoch off a self-service change on purpose -- somebody
+	// changing their own password must not sign themselves out of everything
+	// with nothing having said so -- and puts it on `Reset`, because that is
+	// somebody else giving them a new one, which is where recovery from a
+	// takeover happens. So the sessions the takeover opened have to go with it.
+	before, err := b.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref:    app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Select: app.HolderSelect_builder{DateInvalidated: z.Ptr(true)}.Build(),
 	}.Build())
 	x.NoError(err)
+	x.Nil(before.GetDateInvalidated())
+
+	res, err := v.Reset(ctx, app.VouchResetRequest_builder{Who: who("someone@contoso.example")}.Build())
+	x.NoError(err)
+	x.NotEmpty(res.GetSecret())
 
 	// And it is that person's secret, rather than a row hanging off nothing.
-	x.True(b.verifies(t, ctx, b.ContosoUser, "correct horse battery staple").GetOk())
+	x.True(b.verifies(t, ctx, b.ContosoUser, res.GetSecret()).GetOk())
 
-	// And a reset by address is a **whole** reset, which is the half that was
-	// nearly lost making the other half work.
-	//
-	// D26 keeps the epoch off `Set` on purpose -- somebody changing their own
-	// password must not sign themselves out of everything with nothing having
-	// said so -- and puts it on `Reset`, because that is somebody else giving
-	// them a new one, which is where recovery from a takeover happens. So the
-	// sessions the takeover opened have to go with it.
-	//
-	// `Reset` asked `refOf` a second time to know whose epoch to move, and
-	// `refOf` answers nil for an address. Before, that was invisible: the reset
-	// failed outright one call earlier. After, it would have been a password
-	// changed and every stolen session left alive, on the form an operator
-	// actually uses, with a success returned.
-	t.Run("and a reset by address moves the epoch too", func(t *testing.T) {
-		x := require.New(t)
-
-		before, err := b.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
-			Ref:    app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
-			Select: app.HolderSelect_builder{DateInvalidated: z.Ptr(true)}.Build(),
-		}.Build())
-		x.NoError(err)
-		x.Nil(before.GetDateInvalidated())
-
-		res, err := v.Reset(ctx, app.VouchResetRequest_builder{Who: who("someone@contoso.example")}.Build())
-		x.NoError(err)
-		x.NotEmpty(res.GetSecret())
-		x.True(b.verifies(t, ctx, b.ContosoUser, res.GetSecret()).GetOk())
-
-		after, err := b.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
-			Ref:    app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
-			Select: app.HolderSelect_builder{DateInvalidated: z.Ptr(true)}.Build(),
-		}.Build())
-		x.NoError(err)
-		x.NotNil(after.GetDateInvalidated(),
-			"a reset by email left every session it was recovering from alive")
-	})
+	after, err := b.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref:    app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Select: app.HolderSelect_builder{DateInvalidated: z.Ptr(true)}.Build(),
+	}.Build())
+	x.NoError(err)
+	x.NotNil(after.GetDateInvalidated(),
+		"a reset by email left every session it was recovering from alive")
 
 	// And through the stack `cmd.Grpc` actually wires, which is not the one
 	// above: `b.vouched()` is the unwalled server with no escalation rule on
@@ -310,9 +299,8 @@ func TestASecretIsSetForTheAddressThatNamesSomebody(t *testing.T) {
 	t.Run("and an address nobody has is not found", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := v.Set(ctx, app.VouchSetRequest_builder{
-			Who:    who("nobody@contoso.example"),
-			Secret: []byte("correct horse battery staple"),
+		_, err := v.Reset(ctx, app.VouchResetRequest_builder{
+			Who: who("nobody@contoso.example"),
 		}.Build())
 		x.Equal(codes.NotFound, status.Code(err))
 	})

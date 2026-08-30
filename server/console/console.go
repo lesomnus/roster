@@ -129,7 +129,7 @@ func (a authed) SignOut(ctx context.Context, req *app.AuthSignOutRequest) (*app.
 
 // Issue is `IssueService` over this plane's rows.
 func Issue(s app.Server, db *ent.Client) app.IssueServiceServer {
-	return issuer{s: s, db: db, v: vouch.New(s, s), prefix: keys.PrefixDeployment}
+	return issuer{s: s, db: db, prefix: keys.PrefixDeployment}
 }
 
 // IssueTenant is the same service on the **data plane**, minting a customer's
@@ -161,7 +161,7 @@ func Issue(s app.Server, db *ent.Client) app.IssueServiceServer {
 // replaces is `roster key add`, which is a shell on the box, and a shell is not
 // something a customer has or should be given.
 func IssueTenant(s app.Server, db *ent.Client) app.IssueServiceServer {
-	return issuer{s: s, db: db, v: vouch.New(s, s), prefix: keys.PrefixTenant}
+	return issuer{s: s, db: db, prefix: keys.PrefixTenant}
 }
 
 type issuer struct {
@@ -169,7 +169,6 @@ type issuer struct {
 
 	s  app.Server
 	db *ent.Client
-	v  app.VouchServiceServer
 
 	// prefix is which plane this instance mints for, and it is not in any
 	// request: a caller that could name it could ask the customer-facing port
@@ -231,10 +230,11 @@ func (i issuer) IssueKey(ctx context.Context, req *app.IssueKeyRequest) (*app.Is
 // resolve against `holder`'s `Tenant.Query().First()`, an arbitrary tenant, and
 // make the row if it were not there. So a data-plane caller holding this method
 // could set -- and create -- a password on somebody in a tenant they never
-// named, through the issuer's own `vouch.New(s, s)`, which carries no
-// `WithReach`: the escalation rule that guards every other credential write is
-// not in this path. `IssueKey` is safe there because `whose` refuses a bare
-// name and reads the reference back through the wall; this took neither guard.
+// named, through the generated `Credential` verbs, which `server/core` leaves
+// unguarded for the deployment's own work: the escalation rule that guards
+// every other credential write is not in this path. `IssueKey` is safe there
+// because `whose` refuses a bare name and reads the reference back through the
+// wall; this took neither guard.
 //
 // A customer's person gets a password the guarded way -- `VouchService.Reset`
 // or `Set`, served on the data plane with `WithReach` -- so nothing is lost by
@@ -262,12 +262,55 @@ func (i issuer) IssuePassword(ctx context.Context, req *app.IssuePasswordRequest
 		return nil, err
 	}
 
-	// Hashed by the service that will later check it, so the argon2 parameters
-	// are in one place. A hash computed here would be a second set of them, and
-	// the weaker of the two is the one that matters.
-	if _, err := i.v.Set(ctx, app.VouchSetRequest_builder{
-		Who:    app.VouchWho_builder{Id: who.Bytes()}.Build(),
-		Secret: []byte(secret),
+	// Hashed with `vouch.Hash`, so the argon2 parameters are the ones the check
+	// later uses and not a second, weaker set.
+	sum, err := vouch.Hash([]byte(secret))
+	if err != nil {
+		return nil, status.Error(codes.Internal, "the secret cannot be stored just now")
+	}
+
+	// Written without the escalation rule, on purpose, and through the generated
+	// `Credential` verbs rather than `coreCredential.Set`. `Set` runs `mayReach`
+	// -- *nobody writes a credential for a person who holds more than they do*
+	// -- and here that would refuse a console key setting an operator's password
+	// on the grounds that the key holds nothing, which is the whole act rather
+	// than a hole. This is the deployment's own work about its own operators:
+	// one tenant, reached only over the control plane, and `roster key add`
+	// warns that a key that reaches here can become an operator. The old path
+	// was `vouch.New(s, s)` carrying no `WithReach` for the same reason; the
+	// generated verbs are what `server/core` leaves unguarded for exactly this
+	// (see `core.Reaching`).
+	ref := app.HolderRef_builder{Id: who.Bytes()}.Build()
+	byKind := app.CredentialRef_builder{
+		Kind: app.CredentialRefByKind_builder{Holder: ref, Kind: z.Ptr(vouch.KindPassword)}.Build(),
+	}.Build()
+
+	v, err := i.s.Credential().Get(ctx, app.CredentialGetRequest_builder{
+		Ref:    byKind,
+		Select: app.CredentialSelect_builder{DateUpdated: z.Ptr(true)}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) != codes.NotFound {
+			return nil, err
+		}
+
+		if _, err := i.s.Credential().Add(ctx, app.CredentialAddRequest_builder{
+			Holder: ref,
+			Kind:   vouch.KindPassword,
+			Secret: sum,
+		}.Build()); err != nil {
+			return nil, err
+		}
+
+		return app.IssuePasswordResponse_builder{Password: secret}.Build(), nil
+	}
+
+	if _, err := i.s.Credential().Patch(ctx, app.CredentialPatchRequest_builder{
+		Ref:            app.CredentialRef_builder{Id: v.GetId()}.Build(),
+		Secret:         sum,
+		Failures:       z.Ptr(int32(0)),
+		DateLockedNull: z.Ptr(true),
+		DateUpdated:    v.GetDateUpdated(),
 	}.Build()); err != nil {
 		return nil, err
 	}

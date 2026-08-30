@@ -16,7 +16,6 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
-	"github.com/lesomnus/roster/server/vouch"
 )
 
 // NewCmdInit is `roster init`: the person who runs this deployment, and the
@@ -443,8 +442,8 @@ func seedOperator(ctx context.Context, s *Server, alias, given string) (pdid.Id,
 	// Hashed by the service that will later check it, so the argon2 parameters
 	// are in one place. A hash computed here would be a second set of them, and
 	// the weaker of the two is the one that matters.
-	if _, err := vouch.New(s.Ungated, s.Ungated).Set(ctx, app.VouchSetRequest_builder{
-		Who:    app.VouchWho_builder{Id: who.Bytes()}.Build(),
+	if _, err := s.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+		Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		Secret: []byte(secret),
 	}.Build()); err != nil {
 		return pdid.Nil, "", err

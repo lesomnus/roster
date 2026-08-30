@@ -58,8 +58,8 @@ func TestADisabledHolderIsNotToSignInAndNotSignedIn(t *testing.T) {
 	mayList(t, ctx, b, b.Who, listHolders)
 
 	v := vouch.New(b.Ungated, b.Ungated)
-	_, err := v.Set(ctx, app.VouchSetRequest_builder{
-		Who:    app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
+	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+		Ref:    app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)

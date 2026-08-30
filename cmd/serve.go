@@ -304,48 +304,6 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		return nil, err
 	}
 
-	// The stack a caller reaches. `pd.Gate` is outermost, so nothing behind it
-	// asks again.
-	// `core` is inside the gate and outside the sink: it reads through the wall
-	// to make its judgements, so it must be behind whatever installs one, and it
-	// refuses before the write happens rather than after.
-	// `pd.Secret` is on the walled stack and on no other. What it clears is
-	// what a caller is answered with; `vouch` and `keys` read the same columns
-	// through `Ungated`, deliberately, because comparing a verifier is the whole
-	// of their job.
-	//
-	// What keeps it out of the **trail** is not this layer -- the recorder is
-	// behind every layer -- but the declaration on the field, which the recorder
-	// reads for itself. See `Credential.secret`.
-	stacked, err := app.Build(walled.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client))), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
-	if err != nil {
-		db.Close()
-		return nil, err
-	}
-
-	// And the same servers with no wall and no gate, which is what the
-	// deployment does its own work through. It is not a privilege anybody
-	// holds: it is an instance somebody was handed, so going around the wall
-	// is a line of wiring a reader can find rather than a rule that opens up
-	// whenever nobody is asking.
-	// The same rules with no wall. Going around the wall is not going around
-	// what this app means -- an identity linked by `init` or by an admin console
-	// is still an identity, and a subject that is an email address is still
-	// wrong.
-	ungated, err := app.Build(sink.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client))), pd.AuditBuild())
-	if err != nil {
-		db.Close()
-		return nil, err
-	}
-
-	// Read here rather than where it is used, so that a deployment whose keys
-	// are malformed finds out when it starts rather than when somebody enrols.
-	keyring, err := vouch.NewKeyring(c.Vouch.Keys)
-	if err != nil {
-		db.Close()
-		return nil, err
-	}
-
 	// The corpus, checked for the order it has to be in rather than trusted:
 	// one that is not sorted answers *no* to things that are in it, which is
 	// the direction that fails quietly.
@@ -361,6 +319,48 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 			db.Close()
 			return nil, err
 		}
+	}
+
+	// The stack a caller reaches. `pd.Gate` is outermost, so nothing behind it
+	// asks again.
+	// `core` is inside the gate and outside the sink: it reads through the wall
+	// to make its judgements, so it must be behind whatever installs one, and it
+	// refuses before the write happens rather than after.
+	// `pd.Secret` is on the walled stack and on no other. What it clears is
+	// what a caller is answered with; `vouch` and `keys` read the same columns
+	// through `Ungated`, deliberately, because comparing a verifier is the whole
+	// of their job.
+	//
+	// What keeps it out of the **trail** is not this layer -- the recorder is
+	// behind every layer -- but the declaration on the field, which the recorder
+	// reads for itself. See `Credential.secret`.
+	stacked, err := app.Build(walled.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked))), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+
+	// And the same servers with no wall and no gate, which is what the
+	// deployment does its own work through. It is not a privilege anybody
+	// holds: it is an instance somebody was handed, so going around the wall
+	// is a line of wiring a reader can find rather than a rule that opens up
+	// whenever nobody is asking.
+	// The same rules with no wall. Going around the wall is not going around
+	// what this app means -- an identity linked by `init` or by an admin console
+	// is still an identity, and a subject that is an email address is still
+	// wrong.
+	ungated, err := app.Build(sink.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked))), pd.AuditBuild())
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+
+	// Read here rather than where it is used, so that a deployment whose keys
+	// are malformed finds out when it starts rather than when somebody enrols.
+	keyring, err := vouch.NewKeyring(c.Vouch.Keys)
+	if err != nil {
+		db.Close()
+		return nil, err
 	}
 
 	s := &Server{

@@ -98,8 +98,8 @@ func TestNobodyWritesAWayInForSomebodyWiderThanThey(t *testing.T) {
 	t.Run("the credential door is shut", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := b.operated().Set(asDesk, app.VouchSetRequest_builder{
-			Who:    app.VouchWho_builder{Id: boss.Bytes()}.Build(),
+		_, err := b.Walled.Credential().Set(asDesk, app.CredentialSetRequest_builder{
+			Ref:    app.HolderRef_builder{Id: boss.Bytes()}.Build(),
 			Secret: []byte("a new one"),
 		}.Build())
 		x.Equal(codes.PermissionDenied, status.Code(err),

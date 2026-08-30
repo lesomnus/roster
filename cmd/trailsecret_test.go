@@ -33,13 +33,11 @@ func TestNoVerifierReachesTheTrailInEitherColumn(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	v := b.vouched()
-
 	// Twice, because the first is an Add and the second a Patch, and a patch
 	// document is what each compiles to.
 	for _, secret := range []string{"correct horse battery staple", "another one entirely"} {
-		_, err := v.Set(ctx, app.VouchSetRequest_builder{
-			Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+			Ref:    app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Secret: []byte(secret),
 		}.Build())
 		x.NoError(err)

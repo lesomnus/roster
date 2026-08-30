@@ -188,7 +188,7 @@ func TestALinkDoesNotSkipASecondFactor(t *testing.T) {
 	ctx := t.Context()
 
 	v := b.keyed(t)
-	seed := enrolled(t, ctx, v, b.Who)
+	seed := enrolled(t, ctx, b.Ungated.Credential(), v, b.Who)
 
 	c := app.NewVouchServiceClient(b.Conn)
 	as := bearing(ctx, b.Token)
@@ -236,8 +236,8 @@ func TestAResetVoidsWhatCameBeforeIt(t *testing.T) {
 	ctx := t.Context()
 
 	mayList(t, ctx, b, b.Who, listHolders)
-	b.vouchedLocal().Set(ctx, app.VouchSetRequest_builder{
-		Who:    app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
+	b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+		Ref:    app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 

@@ -94,8 +94,8 @@ func pipedErr(t *testing.T, in string, k *xli.Command, args ...string) (string, 
 func sets(t *testing.T, b *cliServed, who []byte, secret string) {
 	t.Helper()
 
-	_, err := vouch.New(b.Server.Ungated, b.Server.Ungated).Set(t.Context(), app.VouchSetRequest_builder{
-		Who:    app.VouchWho_builder{Id: who}.Build(),
+	_, err := b.Server.Ungated.Credential().Set(t.Context(), app.CredentialSetRequest_builder{
+		Ref:    app.HolderRef_builder{Id: who}.Build(),
 		Secret: []byte(secret),
 	}.Build())
 	require.NoError(t, err)

@@ -74,8 +74,8 @@ func TestASeedIsNotAWayIn(t *testing.T) {
 		// The control, and the reason this is not simply *nothing may be
 		// erased*: a way in that can begin a sign-in still counts, so the same
 		// erase goes through the moment there is one.
-		_, err := v.Set(ctx, app.VouchSetRequest_builder{
-			Who:    app.VouchWho_builder{Id: who.Bytes()}.Build(),
+		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+			Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
 			Secret: []byte("correct horse battery staple"),
 		}.Build())
 		x.NoError(err)
@@ -133,8 +133,8 @@ func TestASeedAloneSignsNobodyIn(t *testing.T) {
 		// second to, and not about the order the two are proved in -- so the
 		// same call against the same seed answers with an attempt the moment
 		// the person has something that could have begun one.
-		_, err := v.Set(ctx, app.VouchSetRequest_builder{
-			Who:    app.VouchWho_builder{Id: who.Bytes()}.Build(),
+		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+			Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
 			Secret: []byte("correct horse battery staple"),
 		}.Build())
 		x.NoError(err)

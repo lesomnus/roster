@@ -20,7 +20,6 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	VouchService_Verify_FullMethodName   = "/roster.VouchService/Verify"
-	VouchService_Set_FullMethodName      = "/roster.VouchService/Set"
 	VouchService_Delegate_FullMethodName = "/roster.VouchService/Delegate"
 	VouchService_Reset_FullMethodName    = "/roster.VouchService/Reset"
 	VouchService_Link_FullMethodName     = "/roster.VouchService/Link"
@@ -76,8 +75,6 @@ const (
 type VouchServiceClient interface {
 	// Verify answers whether a secret is the one held for somebody.
 	Verify(ctx context.Context, in *VouchVerifyRequest, opts ...grpc.CallOption) (*VouchVerifyResponse, error)
-	// Set writes a secret, hashing it here.
-	Set(ctx context.Context, in *VouchSetRequest, opts ...grpc.CallOption) (*VouchSetResponse, error)
 	// Delegate is Verify, and on a yes it also mints a credential for the person
 	// it just proved. See `delegation.proto`.
 	//
@@ -267,16 +264,6 @@ func (c *vouchServiceClient) Verify(ctx context.Context, in *VouchVerifyRequest,
 	return out, nil
 }
 
-func (c *vouchServiceClient) Set(ctx context.Context, in *VouchSetRequest, opts ...grpc.CallOption) (*VouchSetResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(VouchSetResponse)
-	err := c.cc.Invoke(ctx, VouchService_Set_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *vouchServiceClient) Delegate(ctx context.Context, in *VouchDelegateRequest, opts ...grpc.CallOption) (*VouchDelegateResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(VouchDelegateResponse)
@@ -402,8 +389,6 @@ func (c *vouchServiceClient) Accept(ctx context.Context, in *VouchAcceptRequest,
 type VouchServiceServer interface {
 	// Verify answers whether a secret is the one held for somebody.
 	Verify(context.Context, *VouchVerifyRequest) (*VouchVerifyResponse, error)
-	// Set writes a secret, hashing it here.
-	Set(context.Context, *VouchSetRequest) (*VouchSetResponse, error)
 	// Delegate is Verify, and on a yes it also mints a credential for the person
 	// it just proved. See `delegation.proto`.
 	//
@@ -586,9 +571,6 @@ type UnimplementedVouchServiceServer struct{}
 func (UnimplementedVouchServiceServer) Verify(context.Context, *VouchVerifyRequest) (*VouchVerifyResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Verify not implemented")
 }
-func (UnimplementedVouchServiceServer) Set(context.Context, *VouchSetRequest) (*VouchSetResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Set not implemented")
-}
 func (UnimplementedVouchServiceServer) Delegate(context.Context, *VouchDelegateRequest) (*VouchDelegateResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Delegate not implemented")
 }
@@ -648,24 +630,6 @@ func _VouchService_Verify_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(VouchServiceServer).Verify(ctx, req.(*VouchVerifyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _VouchService_Set_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(VouchSetRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(VouchServiceServer).Set(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: VouchService_Set_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(VouchServiceServer).Set(ctx, req.(*VouchSetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -824,10 +788,6 @@ var VouchService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Verify",
 			Handler:    _VouchService_Verify_Handler,
-		},
-		{
-			MethodName: "Set",
-			Handler:    _VouchService_Set_Handler,
 		},
 		{
 			MethodName: "Delegate",

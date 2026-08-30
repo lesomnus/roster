@@ -14,7 +14,6 @@ import (
 
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
-	"github.com/lesomnus/roster/server/vouch"
 )
 
 // These are docs/usage/ways-in.md § stopping one, asked at the doors a caller
@@ -117,8 +116,8 @@ func TestAnErasedHolderIsStoppedAtTheWire(t *testing.T) {
 
 	b := keyFor(t, verify)
 
-	_, err := vouch.New(b.Ungated, b.Ungated).Set(ctx, app.VouchSetRequest_builder{
-		Who:    app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
+	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+		Ref:    app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
@@ -178,8 +177,8 @@ func TestADisabledHolderIsRefusedBareOverTheWire(t *testing.T) {
 
 	b := keyFor(t, verify)
 
-	_, err := vouch.New(b.Ungated, b.Ungated).Set(ctx, app.VouchSetRequest_builder{
-		Who:    app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
+	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+		Ref:    app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
@@ -212,8 +211,8 @@ func TestEveryNoOverTheWireIsTheSameNo(t *testing.T) {
 
 	b := keyFor(t, verify)
 
-	_, err := vouch.New(b.Ungated, b.Ungated).Set(ctx, app.VouchSetRequest_builder{
-		Who:    app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
+	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+		Ref:    app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)

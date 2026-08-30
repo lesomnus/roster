@@ -20,12 +20,12 @@ import (
 
 // enrolled gives somebody a password and a confirmed second factor, and answers
 // with the seed.
-func enrolled(t *testing.T, ctx context.Context, v *vouch.Server, who pdid.Id) []byte {
+func enrolled(t *testing.T, ctx context.Context, cred app.CredentialServiceServer, v *vouch.Server, who pdid.Id) []byte {
 	t.Helper()
 	x := require.New(t)
 
-	_, err := v.Set(ctx, app.VouchSetRequest_builder{
-		Who:    app.VouchWho_builder{Id: who.Bytes()}.Build(),
+	_, err := cred.Set(ctx, app.CredentialSetRequest_builder{
+		Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
@@ -74,7 +74,7 @@ func TestASecondFactorIsAnAttemptRosterHoldsAndABrowserDoesNot(t *testing.T) {
 	mayList(t, ctx, b, b.Who, listHolders)
 
 	v := b.keyed(t)
-	seed := enrolled(t, ctx, v, b.Who)
+	seed := enrolled(t, ctx, b.Ungated.Credential(), v, b.Who)
 
 	c := app.NewVouchServiceClient(b.Conn)
 	as := bearing(ctx, b.Token)
@@ -152,8 +152,8 @@ func TestOneFactorPaysNothingForTwo(t *testing.T) {
 	b := keyFor(t, delegate)
 	ctx := t.Context()
 
-	_, err := b.vouchedLocal().Set(ctx, app.VouchSetRequest_builder{
-		Who:    app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
+	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+		Ref:    app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
@@ -192,7 +192,7 @@ func TestTheCountIsOneCountAcrossTheSteps(t *testing.T) {
 	b, ctx := build(t)
 
 	v := b.keyedLocal(t)
-	enrolled(t, ctx, v, b.ContosoUser)
+	enrolled(t, ctx, b.Ungated.Credential(), v, b.ContosoUser)
 
 	// A frame, because a continuation is bound to whoever asked for one.
 	as := frame.Into(ctx, frame.New(b.ContosoUser, b.Contoso, frame.Whole()).WithScope(frame.Only(b.Contoso)))
@@ -241,7 +241,7 @@ func TestAnAttemptBelongsToWhoeverOpenedIt(t *testing.T) {
 	ctx := t.Context()
 
 	v := b.keyed(t)
-	seed := enrolled(t, ctx, v, b.Who)
+	seed := enrolled(t, ctx, b.Ungated.Credential(), v, b.Who)
 
 	c := app.NewVouchServiceClient(b.Conn)
 

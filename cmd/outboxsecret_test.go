@@ -11,7 +11,6 @@ import (
 
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
-	"github.com/lesomnus/roster/server/vouch"
 )
 
 // TestNoVerifierReachesTheQueueEither.
@@ -54,13 +53,11 @@ func TestNoVerifierReachesTheQueueEither(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	v := vouch.New(s.Ungated, s.Ungated)
-
 	// The first `Set` adds the row and has no patch document at all. The
 	// second is the one that compiles to one, which is the whole subject here.
 	for _, secret := range []string{"correct horse battery staple", "a second one entirely"} {
-		_, err := v.Set(ctx, app.VouchSetRequest_builder{
-			Who:    app.VouchWho_builder{Id: who.GetId()}.Build(),
+		_, err := s.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+			Ref:    app.HolderRef_builder{Id: who.GetId()}.Build(),
 			Secret: []byte(secret),
 		}.Build())
 		x.NoError(err)

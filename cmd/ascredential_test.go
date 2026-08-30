@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
@@ -17,7 +18,6 @@ import (
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
-	"github.com/lesomnus/roster/server/vouch"
 )
 
 // Every credential roster takes resolves to somebody, and this file is the one
@@ -175,12 +175,18 @@ func TestNobodyMintsAWayIntoAnotherTenant(t *testing.T) {
 	t.Run("her tenant's wall stops her writing his password", func(t *testing.T) {
 		x := require.New(t)
 
-		permits(t, ctx, b, b.Contoso, b.Who, "setter", "/roster.VouchService/Set")
+		permits(t, ctx, b, b.Contoso, b.Who, "setter", "/roster.CredentialService/Set")
 
-		_, err := c.Set(bearing(ctx, mintFor(t, ctx, b, b.Who, "setter-key",
-			[]string{"/roster.VouchService/Set"}, time.Time{})),
-			app.VouchSetRequest_builder{
-				Who:    app.VouchWho_builder{Tenant: "fabrikam", Alias: "erlich"}.Build(),
+		_, err := app.NewCredentialServiceClient(b.Conn).Set(
+			bearing(ctx, mintFor(t, ctx, b, b.Who, "setter-key",
+				[]string{"/roster.CredentialService/Set"}, time.Time{})),
+			app.CredentialSetRequest_builder{
+				Ref: app.HolderRef_builder{
+					Slug: app.HolderRefBySlug_builder{
+						Tenant: app.TenantRef_builder{Alias: z.Ptr("fabrikam")}.Build(),
+						Alias:  z.Ptr("erlich"),
+					}.Build(),
+				}.Build(),
 				Secret: []byte("correct horse battery staple"),
 			}.Build())
 		x.Error(err, "an contoso caller wrote a fabrikam password")
@@ -280,8 +286,8 @@ func TestADelegationThatDoesNotCheckOutIsNotTheAppInstead(t *testing.T) {
 	// live row for a real person -- what is wrong with it is only whose it is.
 	theirs := keyed(t, ctx, b, "another-app", []string{delegate, listHolders})
 
-	_, err := vouch.New(b.Ungated, b.Ungated).Set(ctx, app.VouchSetRequest_builder{
-		Who:    app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
+	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+		Ref:    app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
@@ -349,8 +355,8 @@ func TestADelegationIsBoundToTheKeyAndNotToTheAppBehindIt(t *testing.T) {
 
 	mayList(t, ctx, b, b.Who, listHolders)
 
-	_, err := vouch.New(b.Ungated, b.Ungated).Set(ctx, app.VouchSetRequest_builder{
-		Who:    app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
+	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+		Ref:    app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
@@ -460,8 +466,8 @@ func TestATenantKeysDelegationIsBoundToThePersonAndNotToTheKey(t *testing.T) {
 
 	// Bob is who gets signed in; Alice and Carol are two colleagues who both
 	// run something that signs people in.
-	_, err := vouch.New(b.Ungated, b.Ungated).Set(ctx, app.VouchSetRequest_builder{
-		Who:    app.VouchWho_builder{Id: bob.Bytes()}.Build(),
+	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+		Ref:    app.HolderRef_builder{Id: bob.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)

@@ -49,9 +49,6 @@ service VouchService {
   // Verify answers whether a secret is the one held for somebody.
   rpc Verify(VouchVerifyRequest) returns (VouchVerifyResponse);
 
-  // Set writes a secret, hashing it here.
-  rpc Set(VouchSetRequest) returns (VouchSetResponse);
-
   // Delegate is Verify, and on a yes it also mints a credential for the person
   // it just proved. See `delegation.proto`.
   //
@@ -97,7 +94,6 @@ service VouchService {
   // permission in it -- `server/core/escalate.go` is the rule and it went in
   // before this did.
   rpc Reset(VouchResetRequest) returns (VouchResetResponse);
-
 
   // Link mints a way in for somebody and answers with it **once**.
   //
@@ -438,15 +434,6 @@ message VouchContinueResponse {
   VouchVerifyResponse verified = 1;
 }
 
-message VouchSetRequest {
-  VouchWho who = 1;
-
-  string kind = 8;
-  bytes secret = 9;
-}
-
-message VouchSetResponse {}
-
 message VouchDelegateRequest {
   // Whoever is signing in, and the secret they typed -- **or** a continuation
   // that has already proved them.
@@ -621,8 +608,6 @@ message VouchResetResponse {
   // them their key.
   string secret = 1;
 }
-
-
 
 message VouchLinkRequest {
   VouchWho who = 1;

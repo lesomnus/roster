@@ -30,8 +30,8 @@ func TestAPersonChangesTheirOwnPassword(t *testing.T) {
 	const old, next = "correct horse battery staple", "a whole new set of words entirely"
 
 	// Alice has a password, set the operator way.
-	_, err := vouch.New(b.Ungated, b.Ungated).Set(ctx, app.VouchSetRequest_builder{
-		Who:    app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
+	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+		Ref:    app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 		Secret: []byte(old),
 	}.Build())
 	x.NoError(err)

@@ -152,8 +152,8 @@ func TestTheCorpusIsTheDeploymentsAndNotThePorts(t *testing.T) {
 
 	v := app.NewVouchServiceClient(conn)
 	set := func(secret string) error {
-		_, err := v.Set(as, app.VouchSetRequest_builder{
-			Who:    app.VouchWho_builder{Id: who}.Build(),
+		_, err := app.NewCredentialServiceClient(conn).Set(as, app.CredentialSetRequest_builder{
+			Ref:    app.HolderRef_builder{Id: who}.Build(),
 			Secret: []byte(secret),
 		}.Build())
 
@@ -208,9 +208,9 @@ func TestEveryOperatorWriteLeavesBothTrails(t *testing.T) {
 		name string
 		call func(context.Context) error
 	}{
-		{"/roster.VouchService/Set", func(as context.Context) error {
-			_, err := app.NewVouchServiceClient(conn).Set(as, app.VouchSetRequest_builder{
-				Who:    app.VouchWho_builder{Id: who}.Build(),
+		{"/roster.CredentialService/Set", func(as context.Context) error {
+			_, err := app.NewCredentialServiceClient(conn).Set(as, app.CredentialSetRequest_builder{
+				Ref:    app.HolderRef_builder{Id: who}.Build(),
 				Secret: []byte("correct horse battery staple"),
 			}.Build())
 

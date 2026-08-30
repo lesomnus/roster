@@ -29,7 +29,7 @@ type built struct {
 	allowed map[pdid.Id]bool
 }
 
-func build(t *testing.T) (*built, context.Context) {
+func build(t *testing.T, with ...func(*cmd.Config)) (*built, context.Context) {
 	t.Helper()
 	x := require.New(t)
 	ctx := t.Context()
@@ -38,10 +38,15 @@ func build(t *testing.T) (*built, context.Context) {
 	// is SQL, and the two disagree in the directions that hide mistakes.
 	drv, dsn := pdtest.DB(t)
 
-	s, err := cmd.Build(ctx, cmd.Config{
+	cfg := cmd.Config{
 		Db:    config.DbConfig{Driver: drv, Dsn: dsn},
 		Watch: config.WatchConfig{Broker: config.BrokerMemory},
-	})
+	}
+	for _, w := range with {
+		w(&cfg)
+	}
+
+	s, err := cmd.Build(ctx, cfg)
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })
 	x.NoError(s.Ent.Schema.Create(ctx))

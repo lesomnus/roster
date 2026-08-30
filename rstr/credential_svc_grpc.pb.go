@@ -28,6 +28,7 @@ const (
 	CredentialService_Watch_FullMethodName      = "/roster.CredentialService/Watch"
 	CredentialService_ChangeMine_FullMethodName = "/roster.CredentialService/ChangeMine"
 	CredentialService_Unlock_FullMethodName     = "/roster.CredentialService/Unlock"
+	CredentialService_Set_FullMethodName        = "/roster.CredentialService/Set"
 )
 
 // CredentialServiceClient is the client API for CredentialService service.
@@ -93,6 +94,20 @@ type CredentialServiceClient interface {
 	// so "may open a locked account" is grantable only by being nameable, apart
 	// from "may rewrite the row". The same argument `HolderService.Enable` makes.
 	Unlock(ctx context.Context, in *CredentialUnlockRequest, opts ...grpc.CallOption) (*CredentialUnlockResponse, error)
+	// Set writes somebody's secret to the one given, hashing it. The operator
+	// write `Vouch.Set` was, now on the entity, named by a reference rather than
+	// a sign-in form -- the email/address addressing stays with the recovery
+	// flow, which is where the Email lookup belongs.
+	//
+	// It hashes because it compares (D14): the caller sends plaintext, the layer
+	// chooses the argon2 parameters. Refused for a secret in the leaked corpus,
+	// and held to `mayReach` -- writing a secret is a way to become somebody, so
+	// you may write nobody's whose permissions are not a subset of your own.
+	//
+	// A first password and a rotation are one call: absent, it is added; present,
+	// it is replaced and the lockout cleared, because somebody who set it is not
+	// who the lockout was protecting against.
+	Set(ctx context.Context, in *CredentialSetRequest, opts ...grpc.CallOption) (*CredentialSetResponse, error)
 }
 
 type credentialServiceClient struct {
@@ -202,6 +217,16 @@ func (c *credentialServiceClient) Unlock(ctx context.Context, in *CredentialUnlo
 	return out, nil
 }
 
+func (c *credentialServiceClient) Set(ctx context.Context, in *CredentialSetRequest, opts ...grpc.CallOption) (*CredentialSetResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CredentialSetResponse)
+	err := c.cc.Invoke(ctx, CredentialService_Set_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CredentialServiceServer is the server API for CredentialService service.
 // All implementations must embed UnimplementedCredentialServiceServer
 // for forward compatibility.
@@ -265,6 +290,20 @@ type CredentialServiceServer interface {
 	// so "may open a locked account" is grantable only by being nameable, apart
 	// from "may rewrite the row". The same argument `HolderService.Enable` makes.
 	Unlock(context.Context, *CredentialUnlockRequest) (*CredentialUnlockResponse, error)
+	// Set writes somebody's secret to the one given, hashing it. The operator
+	// write `Vouch.Set` was, now on the entity, named by a reference rather than
+	// a sign-in form -- the email/address addressing stays with the recovery
+	// flow, which is where the Email lookup belongs.
+	//
+	// It hashes because it compares (D14): the caller sends plaintext, the layer
+	// chooses the argon2 parameters. Refused for a secret in the leaked corpus,
+	// and held to `mayReach` -- writing a secret is a way to become somebody, so
+	// you may write nobody's whose permissions are not a subset of your own.
+	//
+	// A first password and a rotation are one call: absent, it is added; present,
+	// it is replaced and the lockout cleared, because somebody who set it is not
+	// who the lockout was protecting against.
+	Set(context.Context, *CredentialSetRequest) (*CredentialSetResponse, error)
 	mustEmbedUnimplementedCredentialServiceServer()
 }
 
@@ -301,6 +340,9 @@ func (UnimplementedCredentialServiceServer) ChangeMine(context.Context, *Credent
 }
 func (UnimplementedCredentialServiceServer) Unlock(context.Context, *CredentialUnlockRequest) (*CredentialUnlockResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Unlock not implemented")
+}
+func (UnimplementedCredentialServiceServer) Set(context.Context, *CredentialSetRequest) (*CredentialSetResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Set not implemented")
 }
 func (UnimplementedCredentialServiceServer) mustEmbedUnimplementedCredentialServiceServer() {}
 func (UnimplementedCredentialServiceServer) testEmbeddedByValue()                           {}
@@ -478,6 +520,24 @@ func _CredentialService_Unlock_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CredentialService_Set_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CredentialSetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CredentialServiceServer).Set(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CredentialService_Set_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CredentialServiceServer).Set(ctx, req.(*CredentialSetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CredentialService_ServiceDesc is the grpc.ServiceDesc for CredentialService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -516,6 +576,10 @@ var CredentialService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Unlock",
 			Handler:    _CredentialService_Unlock_Handler,
+		},
+		{
+			MethodName: "Set",
+			Handler:    _CredentialService_Set_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

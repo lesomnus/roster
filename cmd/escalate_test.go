@@ -12,7 +12,6 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
-	"github.com/lesomnus/roster/server/vouch"
 )
 
 const joinGroup = "/roster.GroupMembershipService/Add"
@@ -340,10 +339,9 @@ func TestAPermissionHeldThroughAGroupIsStillHeld(t *testing.T) {
 	ops := b.holder(t, ctx, b.Contoso, "ops")
 	asOps := b.mayCall(t, ctx, ops, "operator", getHolder)
 
-	v := b.operated()
 	set := func(who pdid.Id) error {
-		_, err := v.Set(asOps, app.VouchSetRequest_builder{
-			Who:    app.VouchWho_builder{Id: who.Bytes()}.Build(),
+		_, err := b.Walled.Credential().Set(asOps, app.CredentialSetRequest_builder{
+			Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
 			Secret: []byte("a new one"),
 		}.Build())
 
@@ -441,8 +439,8 @@ func TestUnlockIsHeldToTheRuleResetIs(t *testing.T) {
 	// Both have a password, so the lookup finds a credential either way and
 	// the difference below is reach and nothing else.
 	for _, who := range []pdid.Id{boss, joe} {
-		_, err := vouch.New(b.Ungated, b.Ungated).Set(ctx, app.VouchSetRequest_builder{
-			Who:    app.VouchWho_builder{Id: who.Bytes()}.Build(),
+		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+			Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
 			Secret: []byte("correct horse battery staple"),
 		}.Build())
 		x.NoError(err)

@@ -19,7 +19,6 @@ import (
 
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
-	"github.com/lesomnus/roster/server/vouch"
 )
 
 const (
@@ -513,9 +512,8 @@ func TestDelegateIsVerifyAndOneMoreThing(t *testing.T) {
 
 	mayList(t, ctx, b, b.Who, listHolders)
 
-	v := vouch.New(b.Ungated, b.Ungated)
-	_, err := v.Set(ctx, app.VouchSetRequest_builder{
-		Who:    app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
+	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+		Ref:    app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
@@ -570,9 +568,8 @@ func TestOverAskingIsRefusedBeforeThePasswordIsCompared(t *testing.T) {
 	b := keyFor(t, delegate)
 	ctx := t.Context()
 
-	v := vouch.New(b.Ungated, b.Ungated)
-	_, err := v.Set(ctx, app.VouchSetRequest_builder{
-		Who:    app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
+	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+		Ref:    app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
@@ -619,9 +616,8 @@ func TestRevokeIsTheDeleteD23PromisedAndDidNotHave(t *testing.T) {
 
 	mayList(t, ctx, b, b.Who, listHolders)
 
-	v := vouch.New(b.Ungated, b.Ungated)
-	_, err := v.Set(ctx, app.VouchSetRequest_builder{
-		Who:    app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
+	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+		Ref:    app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)

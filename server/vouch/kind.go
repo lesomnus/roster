@@ -181,15 +181,25 @@ var errAlone = status.Error(codes.FailedPrecondition,
 // `vouch.proto` said so under `Enrol` and nothing enforced it. Refused as
 // `InvalidArgument` whether or not this deployment holds a key, because which
 // act a caller is doing is not a fact about the deployment.
-func (s *Server) settable(kind string) error {
+// It is a package function rather than a method because the caller that hashes
+// a secret is `server/core`'s `Credential.Set` now, not this service, and a
+// keyring is exactly what the answer does not turn on: the two kinds this
+// refuses are refused before anything that would need one, and what is left is
+// checked with a plaintext compare. `verifierOf` is the method form's authority
+// on which kinds are known; the ones it recognises are `password`, `totp` and
+// `webauthn`, and with the last two struck out here `password` is what remains
+// -- a new plaintext-checkable kind is a change in both places, and the note is
+// here so the second place is not forgotten.
+func Settable(kind string) error {
 	if k := kindOf(kind); k == KindTotp || k == KindWebAuthn {
 		return status.Errorf(codes.InvalidArgument,
 			"kind: %q is not something to set; a second factor is Enrol", k)
 	}
+	if kindOf(kind) != KindPassword {
+		return status.Errorf(codes.InvalidArgument, "kind: %q is not something this checks", kind)
+	}
 
-	_, err := s.verifierOf(kind)
-
-	return err
+	return nil
 }
 
 // password is argon2id, and is what every deployment has.

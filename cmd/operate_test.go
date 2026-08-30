@@ -75,10 +75,9 @@ func TestNobodyWritesTheCredentialOfSomebodyWiderThanThey(t *testing.T) {
 	// And somebody ordinary, with nothing.
 	joe := b.holder(t, ctx, b.Contoso, "joe")
 
-	v := b.operated()
 	set := func(c context.Context, who pdid.Id) error {
-		_, err := v.Set(c, app.VouchSetRequest_builder{
-			Who:    app.VouchWho_builder{Id: who.Bytes()}.Build(),
+		_, err := b.Walled.Credential().Set(c, app.CredentialSetRequest_builder{
+			Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
 			Secret: []byte("a new one"),
 		}.Build())
 
@@ -129,16 +128,15 @@ func TestNobodyWritesTheCredentialOfSomebodyWiderThanThey(t *testing.T) {
 	})
 
 	// The deployment's own work through an unwalled server -- `init`, the
-	// sandbox, a migration. There is nobody to refuse, and the stack is the one
-	// those actually use: `vouch.New(Ungated, Ungated)`, where the read the
-	// walled half would make has no frame to narrow by either.
+	// sandbox, a migration. There is nobody to refuse: `Ungated` carries the
+	// escalation rule like any stack, and `mayReach` reads a frameless call as
+	// the deployment itself and passes it, which is the door `init` sets the
+	// first administrator's password through.
 	t.Run("and a call with no frame is the deployment itself", func(t *testing.T) {
 		x := require.New(t)
 
-		own := vouch.New(b.Ungated, b.Ungated, vouch.WithReach(core.Reaching(cmd.Rules(b.Ent))))
-
-		_, err := own.Set(ctx, app.VouchSetRequest_builder{
-			Who:    app.VouchWho_builder{Id: boss.Bytes()}.Build(),
+		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+			Ref:    app.HolderRef_builder{Id: boss.Bytes()}.Build(),
 			Secret: []byte("a new one"),
 		}.Build())
 		x.NoError(err, "init could not set the first administrator's password")
@@ -281,21 +279,21 @@ func TestALocalOperatorOpensAnAccountSomebodyElseClosed(t *testing.T) {
 // is, and roster is the only thing that sees it.
 func TestASecretSomebodyHasLostIsRefused(t *testing.T) {
 	x := require.New(t)
-	b, ctx := build(t)
 
+	// The corpus is a fact about the deployment now, not about one server built
+	// beside it: `Credential.Set` reads it through the same layer every write
+	// goes through. So it is named in the config and written before the build
+	// that loads and sorts it.
 	sum := sha1.Sum([]byte("hunter2"))
 	at := filepath.Join(t.TempDir(), "leaked.txt")
 	x.NoError(os.WriteFile(at,
 		[]byte(strings.ToUpper(hex.EncodeToString(sum[:]))+":12\n"), 0o600))
 
-	in, err := vouch.BreachedIn(at)
-	x.NoError(err)
-
-	v := vouch.New(b.Ungated, b.Ungated, vouch.WithBreached(in))
+	b, ctx := build(t, func(c *cmd.Config) { c.Vouch.Breached = at })
 
 	set := func(secret string) error {
-		_, err := v.Set(ctx, app.VouchSetRequest_builder{
-			Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+			Ref:    app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Secret: []byte(secret),
 		}.Build())
 
@@ -312,19 +310,22 @@ func TestASecretSomebodyHasLostIsRefused(t *testing.T) {
 	t.Run("and a reset goes through the same check", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := v.Reset(ctx, app.VouchResetRequest_builder{
-			Who: app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
-		}.Build())
+		_, err := vouch.New(b.Ungated, b.Ungated, vouch.WithBreached(b.Breached)).Reset(ctx,
+			app.VouchResetRequest_builder{
+				Who: app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
+			}.Build())
 		x.NoError(err, "thirty-two random bytes were in a corpus of leaks")
 	})
 
 	// A deployment that named no corpus refuses nothing, which is every
-	// deployment that has not said otherwise.
+	// deployment that has not said otherwise -- a whole other build, since the
+	// corpus is the one above's and not something a single call turns off.
 	t.Run("and a deployment with no corpus checks nothing", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := b.vouched().Set(ctx, app.VouchSetRequest_builder{
-			Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		nb, nctx := build(t)
+		_, err := nb.Ungated.Credential().Set(nctx, app.CredentialSetRequest_builder{
+			Ref:    app.HolderRef_builder{Id: nb.ContosoUser.Bytes()}.Build(),
 			Secret: []byte("hunter2"),
 		}.Build())
 		x.NoError(err)

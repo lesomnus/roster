@@ -716,7 +716,7 @@ roster key revoke --id <id>     # a delete, so the next call carrying it fails
 | `/roster.SyncService/Watch` | one stream, held open, that says when somebody's sessions stopped being good — so the recheck above is a fallback rather than the mechanism |
 | `/payday.TokenService/Introspect` | only if the app takes API tokens, or asks about a delegation it was given; see below |
 
-Not `VouchService/Set` — changing a password belongs to whatever account portal
+Not `CredentialService/Set` — changing a password belongs to whatever account portal
 owns the person — and no `Holder` writes, since a product does not own the
 people it serves.
 
@@ -910,7 +910,7 @@ same act:
 
 | | |
 | --- | --- |
-| `VouchService/Set`, `/Reset`, `/Unlock` | their secret |
+| `CredentialService/Set`, `/Unlock`, `VouchService/Reset` | their secret |
 | `VouchService/Enrol` | their second factor |
 | `IdentityService/Add` | an account at a provider that signs in as them |
 | `EmailService/Add` | a mailbox a recovery link is sent to |
@@ -1049,7 +1049,7 @@ a service because the deployment this is most careful about has no network at
 all; the lookup halves the file rather than loading it, so the size of the
 corpus costs nothing but disk.
 
-Named and it is a **refusal**: `Vouch.Set` and `Vouch.Reset` answer
+Named and it is a **refusal**: `Credential.Set` and `Vouch.Reset` answer
 `FailedPrecondition` and the person picks again. Unnamed and nothing is checked,
 which is every deployment that has not said otherwise.
 
@@ -1071,7 +1071,7 @@ in the console; the same three RPCs either way.
 | --- | --- |
 | `/roster.VouchService/Reset` | a new password, generated here and answered with **once**. The operator reads it out |
 | `/roster.CredentialService/Unlock` | opens an account ten wrong answers closed, without changing the secret (moved from `VouchService`) |
-| `/roster.VouchService/Set` | writes a password somebody chose — an account portal's, not an operator's |
+| `/roster.CredentialService/Set` | writes a password somebody chose — an account portal's, not an operator's |
 
 **You may only write the credential of somebody whose permissions are a subset
 of yours.** Resetting a password is a way to become somebody, so without that

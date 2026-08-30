@@ -9,6 +9,7 @@ import (
 
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/vouch"
@@ -172,4 +173,109 @@ func (s coreCredential) Unlock(ctx context.Context, req *app.CredentialUnlockReq
 	}
 
 	return res.Build(), nil
+}
+
+// Set writes somebody's secret to the one given, hashing it -- the operator
+// write `Vouch.Set` was, now on the entity and named by a reference. The
+// email/sign-in-form addressing stays with the recovery flow (option 2), so
+// this takes a HolderRef and does no address lookup.
+//
+// A first password and a rotation are one call: absent, it is added; present,
+// it is replaced and the lockout cleared. The three rules `Vouch.Set` carried
+// travel with it -- the settable-kind check, the leaked-corpus refusal, and
+// `mayReach` -- the last two now `server/core`'s own.
+func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) (*app.CredentialSetResponse, error) {
+	if len(req.GetSecret()) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "secret: must not be empty")
+	}
+
+	kind := req.GetKind()
+	if kind == "" {
+		kind = vouch.KindPassword
+	}
+	// Only a kind something can later check, which is `vouch.Settable`'s whole
+	// subject: a second factor is `Enrol`'s and a kind nothing checks is a row
+	// no call on any plane can take back. See its comment.
+	if err := vouch.Settable(kind); err != nil {
+		return nil, err
+	}
+
+	// A leaked secret is refused before anything is read or hashed -- a fact
+	// about the secret, not about the person, so the refusal cannot depend on
+	// whether they exist.
+	if s.breached != nil {
+		bad, err := s.breached(ctx, req.GetSecret())
+		if err != nil {
+			return nil, status.Error(codes.Internal, "whether this secret is known cannot be answered just now")
+		}
+		if bad {
+			return nil, status.Error(codes.FailedPrecondition,
+				"this one is in a corpus of leaked passwords; pick another")
+		}
+	}
+
+	sum, err := vouch.Hash(req.GetSecret())
+	if err != nil {
+		return nil, status.Error(codes.Internal, "the secret cannot be stored just now")
+	}
+
+	// Read the person before writing, so the escalation rule has an id to
+	// compare and an Add cannot point its edge at somebody who is gone.
+	who, err := s.Next().Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref:    req.GetRef(),
+		Select: app.HolderSelect_builder{All: z.Ptr(true)}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	holder, err := pdid.From(who.GetId())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.mayReach(ctx, "ref", holder); err != nil {
+		return nil, err
+	}
+
+	ref := app.HolderRef_builder{Id: who.GetId()}.Build()
+	byKind := app.CredentialRef_builder{
+		Kind: app.CredentialRefByKind_builder{Holder: ref, Kind: z.Ptr(kind)}.Build(),
+	}.Build()
+
+	v, err := s.Next().Credential().Get(ctx, app.CredentialGetRequest_builder{
+		Ref:    byKind,
+		Select: app.CredentialSelect_builder{DateUpdated: z.Ptr(true)}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) != codes.NotFound {
+			return nil, err
+		}
+
+		// None yet: add it.
+		if _, err := s.Next().Credential().Add(ctx, app.CredentialAddRequest_builder{
+			Holder: ref,
+			Kind:   kind,
+			Secret: sum,
+		}.Build()); err != nil {
+			return nil, err
+		}
+
+		return &app.CredentialSetResponse{}, nil
+	}
+
+	// Replace it, clearing the lockout -- somebody who set it is not who the
+	// lockout was protecting against -- under the version read, so a concurrent
+	// write is reported rather than lost.
+	if _, err := s.Next().Credential().Patch(ctx, app.CredentialPatchRequest_builder{
+		Ref:            app.CredentialRef_builder{Id: v.GetId()}.Build(),
+		Secret:         sum,
+		Failures:       z.Ptr(int32(0)),
+		DateLockedNull: z.Ptr(true),
+		DateRotated:    timestamppb.Now(),
+		DateUpdated:    v.GetDateUpdated(),
+	}.Build()); err != nil {
+		return nil, err
+	}
+
+	return &app.CredentialSetResponse{}, nil
 }

@@ -700,8 +700,8 @@ func TestAPasswordSignInReadsItsOwnRecord(t *testing.T) {
 	// The deployment's own work: setting somebody's first password is not
 	// something the front door may do, and `VouchService/Set` is not on its
 	// role. See `roster init` and roadmap.md's item 10.
-	_, err = vouch.New(d.ungated, d.ungated).Set(ctx, rstr.VouchSetRequest_builder{
-		Who:    rstr.VouchWho_builder{Id: h.GetId()}.Build(),
+	_, err = d.ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
+		Ref:    rstr.HolderRef_builder{Id: h.GetId()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
@@ -933,8 +933,8 @@ func TestTheTenantComesFromRoster(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	_, err = vouch.New(d.ungated, d.ungated).Set(ctx, rstr.VouchSetRequest_builder{
-		Who:    rstr.VouchWho_builder{Id: h.GetId()}.Build(),
+	_, err = d.ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
+		Ref:    rstr.HolderRef_builder{Id: h.GetId()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
@@ -995,8 +995,8 @@ func TestTwoFormsAndTheAppRemembersNothing(t *testing.T) {
 
 	v := vouch.New(d.ungated, d.ungated, vouch.WithKeys(d.keyring))
 
-	_, err = v.Set(ctx, rstr.VouchSetRequest_builder{
-		Who:    rstr.VouchWho_builder{Id: h.GetId()}.Build(),
+	_, err = d.ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
+		Ref:    rstr.HolderRef_builder{Id: h.GetId()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
@@ -1099,8 +1099,8 @@ func TestAWrongSecondFactorCostsTheFirstFormAgain(t *testing.T) {
 
 	v := vouch.New(d.ungated, d.ungated, vouch.WithKeys(d.keyring))
 
-	_, err = v.Set(ctx, rstr.VouchSetRequest_builder{
-		Who:    rstr.VouchWho_builder{Id: h.GetId()}.Build(),
+	_, err = d.ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
+		Ref:    rstr.HolderRef_builder{Id: h.GetId()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
@@ -1217,8 +1217,8 @@ func TestSomebodyRemovesAWayInFromTheirOwnPage(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	_, err = vouch.New(d.ungated, d.ungated).Set(ctx, rstr.VouchSetRequest_builder{
-		Who:    rstr.VouchWho_builder{Id: h.GetId()}.Build(),
+	_, err = d.ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
+		Ref:    rstr.HolderRef_builder{Id: h.GetId()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
@@ -1302,8 +1302,8 @@ func TestSigningOutEverywhereEndsBothHalves(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	_, err = vouch.New(d.ungated, d.ungated).Set(ctx, rstr.VouchSetRequest_builder{
-		Who:    rstr.VouchWho_builder{Id: h.GetId()}.Build(),
+	_, err = d.ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
+		Ref:    rstr.HolderRef_builder{Id: h.GetId()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
@@ -1627,8 +1627,8 @@ func TestSomebodyMintsAKeyFromTheirOwnPage(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	_, err = vouch.New(d.ungated, d.ungated).Set(ctx, rstr.VouchSetRequest_builder{
-		Who:    rstr.VouchWho_builder{Id: h.GetId()}.Build(),
+	_, err = d.ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
+		Ref:    rstr.HolderRef_builder{Id: h.GetId()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
