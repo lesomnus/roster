@@ -61,6 +61,38 @@
 		which is a rule the server keeps rather than this page.
 	</p>
 
+	<!--
+		Changing a password names nobody: the row is whoever the delegation is
+		for, so this form grants *your own* and could not name anybody else if it
+		tried. The current one is the reauth -- a delegation that can act as this
+		person still cannot change what they sign in with without knowing it.
+	-->
+	<form id="password">
+		<label>current <input name="current" type="password" autocomplete="current-password" /></label>
+		<label>new <input name="secret" type="password" autocomplete="new-password" /></label>
+		<button>change password</button>
+		<span class="none" id="password-ok" hidden>changed.</span>
+		<p class="bad" id="password-bad" hidden></p>
+	</form>
+
+	<h2>second factors</h2>
+	<!--
+		A phone code the person adds to their own account. What comes back is the
+		seed as an `otpauth://` URI, shown once -- scanned into an authenticator
+		app and then proved with one code, which is what confirms it. It does not
+		count until it is proved, which is the server's rule and not this page's.
+	-->
+	<form id="factor">
+		<label>name <input name="name" placeholder="the phone" /></label>
+		<button>add a phone code (TOTP)</button>
+		<p class="bad" id="factor-bad" hidden></p>
+	</form>
+	<p id="factored" hidden>
+		Scan this with an authenticator app, then prove it with one code — it is
+		shown once.<br />
+		<code id="factored-uri"></code>
+	</p>
+
 	<h2>addresses</h2>
 	<ul id="emails"></ul>
 
@@ -318,6 +350,46 @@
 		const v = await res.json()
 		$('minted-token').textContent = v.token
 		show($('minted'), true)
+		e.target.reset()
+
+		await draw()
+	}
+
+	$('password').onsubmit = async (e) => {
+		e.preventDefault()
+		show($('password-bad'), false)
+		show($('password-ok'), false)
+
+		const f = new FormData(e.target)
+		const res = await post('/me/password', {
+			current: f.get('current'),
+			secret: f.get('secret'),
+		})
+		if (!res.ok) {
+			$('password-bad').textContent = await res.text()
+			show($('password-bad'), true)
+			return
+		}
+		show($('password-ok'), true)
+		e.target.reset()
+	}
+
+	$('factor').onsubmit = async (e) => {
+		e.preventDefault()
+		show($('factor-bad'), false)
+		show($('factored'), false)
+
+		const f = new FormData(e.target)
+		const res = await post('/me/factors', { name: f.get('name') })
+		if (!res.ok) {
+			$('factor-bad').textContent = await res.text()
+			show($('factor-bad'), true)
+			return
+		}
+
+		const v = await res.json()
+		$('factored-uri').textContent = v.uri
+		show($('factored'), true)
 		e.target.reset()
 
 		await draw()

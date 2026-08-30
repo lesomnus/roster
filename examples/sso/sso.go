@@ -269,6 +269,14 @@ func New(ctx context.Context, c Config, conn *grpc.ClientConn, s *authsession.Se
 			rstr.MeService_SignOutEverywhere_FullMethodName,
 			rstr.MeService_IssueKey_FullMethodName,
 			rstr.MeService_RevokeKey_FullMethodName,
+
+			// The two self-service credential writes, which are subject-less
+			// like the `MeService` ones above and grant, when named in a role,
+			// exactly *do this to your own account*: change your password, add a
+			// second factor. Whoever holds this app's screens holds these, and a
+			// delegation narrows them to what the person themselves may do.
+			rstr.CredentialService_ChangeMine_FullMethodName,
+			rstr.CredentialService_EnrolMine_FullMethodName,
 		},
 
 		Tenant: func(ctx context.Context, host string) (string, error) {
@@ -334,6 +342,8 @@ func (a *App) Handler() http.Handler {
 	m.HandleFunc("POST /me/sign-out-everywhere", a.everywhere)
 	m.HandleFunc("POST /me/keys", a.mintKey)
 	m.HandleFunc("DELETE /me/keys/{id}", a.revokeKey)
+	m.HandleFunc("POST /me/password", a.changePassword)
+	m.HandleFunc("POST /me/factors", a.enrolFactor)
 	m.HandleFunc("GET /account", a.Account)
 
 	// The module `account.html` imports. Mounted by this app rather than by

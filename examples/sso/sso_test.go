@@ -1720,3 +1720,119 @@ func TestSomebodyMintsAKeyFromTheirOwnPage(t *testing.T) {
 		x.Empty(v.Keys)
 	})
 }
+
+// TestSomebodyChangesTheirPasswordAndAddsAFactor is the two self-service writes
+// the account screen grew: the password half through `Credential.ChangeMine`,
+// the second-factor half through `Credential.EnrolMine`. Both are subject-less,
+// so the delegation this app holds carries them the same way it carries the
+// `MeService` ones, and both need a role -- the account screen is where a person
+// enhances their own way in, which the server makes a grant rather than a
+// waiver.
+func TestSomebodyChangesTheirPasswordAndAddsAFactor(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	d := serve(t, func(rstr.Client) sso.Enrol { return sso.Invited() }, map[string]string{"127.0.0.1": "contoso"})
+
+	h, err := d.ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),
+		Alias:  "erin",
+	}.Build())
+	x.NoError(err)
+
+	const first = "correct horse battery staple"
+	_, err = d.ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
+		Ref:    rstr.HolderRef_builder{Id: h.GetId()}.Build(),
+		Secret: []byte(first),
+	}.Build())
+	x.NoError(err)
+
+	// Erin holds the two self-service writes, which the account screen needs a
+	// role for, plus reading her own record.
+	role, err := d.ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),
+		Alias:  "self",
+		Methods: []string{
+			"/roster.MeService/Get",
+			"/roster.CredentialService/ChangeMine",
+			"/roster.CredentialService/EnrolMine",
+		},
+	}.Build())
+	x.NoError(err)
+
+	_, err = d.ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
+		Role:   rstr.RoleRef_builder{Id: role.GetId()}.Build(),
+		Holder: rstr.HolderRef_builder{Id: h.GetId()}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	jar, err := cookiejar.New(nil)
+	x.NoError(err)
+	c := &http.Client{Jar: jar}
+
+	signIn := func(cl *http.Client, password string) int {
+		t.Helper()
+
+		res, err := cl.Post(d.app.URL+"/session", "application/json",
+			strings.NewReader(`{"alias":"erin","password":"`+password+`"}`))
+		x.NoError(err)
+		res.Body.Close()
+
+		return res.StatusCode
+	}
+
+	x.Equal(http.StatusNoContent, signIn(c, first), "the first password did not sign in")
+
+	const next = "a whole new set of words entirely"
+
+	t.Run("changes their own password", func(t *testing.T) {
+		x := require.New(t)
+
+		res, err := c.Post(d.app.URL+"/me/password", "application/json",
+			strings.NewReader(`{"current":"`+first+`","secret":"`+next+`"}`))
+		x.NoError(err)
+		res.Body.Close()
+		x.Equal(http.StatusNoContent, res.StatusCode)
+
+		// The new one signs in and the old one does not -- in a fresh browser,
+		// so it is the credential that changed and not this session.
+		fresh, err := cookiejar.New(nil)
+		x.NoError(err)
+		other := &http.Client{Jar: fresh}
+
+		x.Equal(http.StatusNoContent, signIn(other, next), "the new password does not work")
+		x.Equal(http.StatusUnauthorized, signIn(other, first), "the old password still works")
+	})
+
+	t.Run("and the wrong current password is refused", func(t *testing.T) {
+		x := require.New(t)
+
+		res, err := c.Post(d.app.URL+"/me/password", "application/json",
+			strings.NewReader(`{"current":"not it","secret":"whatever comes next"}`))
+		x.NoError(err)
+		res.Body.Close()
+		x.Equal(http.StatusForbidden, res.StatusCode)
+	})
+
+	t.Run("adds a second factor of their own", func(t *testing.T) {
+		x := require.New(t)
+
+		res, err := c.Post(d.app.URL+"/me/factors", "application/json",
+			strings.NewReader(`{"name":"the phone"}`))
+		x.NoError(err)
+		defer res.Body.Close()
+		x.Equal(http.StatusOK, res.StatusCode)
+
+		var v struct {
+			Uri string `json:"uri"`
+		}
+		x.NoError(json.NewDecoder(res.Body).Decode(&v))
+		x.Contains(v.Uri, "otpauth://totp/", "no seed came back to scan")
+
+		// That it landed on Erin's own account and nobody she might have named
+		// is `EnrolMine`'s to guarantee -- it takes no subject -- and
+		// `cmd.TestAPersonEnrolsTheirOwnSecondFactor` is where that is proved.
+		// Here it is enough that the delegation carried the write and the seed
+		// came back.
+	})
+}

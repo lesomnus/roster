@@ -280,6 +280,100 @@ func (a *App) revokeKey(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// changePassword is the person changing their own, through `CredentialService.
+// ChangeMine`.
+//
+// Subject-less, like everything else this page calls: the row is the frame's
+// actor, so the delegation carrying `/roster.CredentialService/ChangeMine`
+// grants *change your own password* and not one over the tenant. The current
+// password is the reauth -- roster verifies it before writing the new one, so a
+// stolen delegation that could act as this person still cannot change what they
+// sign in with without knowing it.
+//
+// Nothing is answered with. A `CredentialChangeMineResponse` is empty, because
+// what would go in it is the password the caller just chose.
+func (a *App) changePassword(w http.ResponseWriter, r *http.Request) {
+	ctx, err := a.acting(r.Context(), r)
+	if err != nil {
+		http.Error(w, "no", http.StatusForbidden)
+		return
+	}
+
+	var in struct {
+		Current string `json:"current"`
+		Secret  string `json:"secret"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		http.Error(w, "no", http.StatusBadRequest)
+		return
+	}
+
+	if _, err := a.roster.Credential().ChangeMine(ctx, rstr.CredentialChangeMineRequest_builder{
+		Current: []byte(in.Current),
+		Secret:  []byte(in.Secret),
+	}.Build()); err != nil {
+		switch status.Code(err) {
+		case codes.InvalidArgument:
+			http.Error(w, "a new password", http.StatusBadRequest)
+		case codes.PermissionDenied:
+			http.Error(w, "that is not your current password", http.StatusForbidden)
+		case codes.FailedPrecondition:
+			http.Error(w, "you have no password to change; a first one is set for you, not by you", http.StatusConflict)
+		default:
+			http.Error(w, "no", http.StatusBadGateway)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// enrolFactor is the person adding a second factor of their own, through
+// `CredentialService.EnrolMine`.
+//
+// TOTP only from this page: a `webauthn` enrolment is a browser ceremony that
+// needs `navigator.credentials.create()` and the attestation it answers, which
+// is a page this example does not draw. What comes back for `totp` is the seed
+// as an `otpauth://` URI, shown once -- the page turns it into a QR code and
+// tells the person to prove it with one code, which is what confirms it.
+func (a *App) enrolFactor(w http.ResponseWriter, r *http.Request) {
+	ctx, err := a.acting(r.Context(), r)
+	if err != nil {
+		http.Error(w, "no", http.StatusForbidden)
+		return
+	}
+
+	var in struct {
+		Name string `json:"name"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		http.Error(w, "no", http.StatusBadRequest)
+		return
+	}
+
+	v, err := a.roster.Credential().EnrolMine(ctx, rstr.CredentialEnrolMineRequest_builder{
+		Kind: "totp",
+		Name: in.Name,
+	}.Build())
+	if err != nil {
+		switch status.Code(err) {
+		case codes.InvalidArgument:
+			http.Error(w, "a name for the factor", http.StatusBadRequest)
+		case codes.Unimplemented:
+			http.Error(w, "this deployment holds no key, so it cannot hold a second factor", http.StatusNotImplemented)
+		default:
+			http.Error(w, "no", http.StatusBadGateway)
+		}
+		return
+	}
+
+	w.Header().Set("content-type", "application/json")
+	w.Header().Set("cache-control", "no-store")
+	_ = json.NewEncoder(w).Encode(struct {
+		Uri string `json:"uri"`
+	}{Uri: v.GetUri()})
+}
+
 func addresses(v *rstr.MeGetResponse) []string {
 	out := make([]string, 0, len(v.GetEmails()))
 	for _, e := range v.GetEmails() {
