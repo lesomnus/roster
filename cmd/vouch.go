@@ -46,13 +46,14 @@ import (
 // so `reset` generates and answers once, and `set` writes what somebody else
 // chose. Neither can tell anybody what theirs was.
 //
-// # The corpus and the keyring travel with it
+// # The keyring travels with it; the corpus is core's
 //
-// Built the way `cmd/admin.go` builds the same service, and for the reason that
-// file gives at length: leaving `WithBreached` out made the console the one
-// door in the deployment a known-leaked password could still come through,
-// while the data plane refused it and nothing said the two disagreed. A command
-// is a door as well.
+// Built the way `cmd/admin.go` builds the same service. The keyring is handed
+// to the vouch server, for the seed `enrol` wraps. The leaked-password corpus
+// is not: it moved to `core` with the credential write, so `reset` and `set`
+// run it through the layer -- this command reaches the same `Ungated` stack
+// every caller does, and leaving the corpus off the vouch server here is not
+// leaving it off the command.
 //
 // `WithReach` is left out here as it is there. It refuses somebody writing the
 // credential of a person who holds more than they do, and it reads what the
@@ -94,8 +95,7 @@ func vouching(ctx context.Context, c *Config) (*Server, *vouch.Server, error) {
 	}
 
 	return s, vouch.New(s.Ungated, s.Ungated,
-		vouch.WithKeys(s.Keyring),
-		vouch.WithBreached(s.Breached)), nil
+		vouch.WithKeys(s.Keyring)), nil
 }
 
 // whom is the person a command was pointed at.

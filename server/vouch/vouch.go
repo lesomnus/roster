@@ -76,10 +76,6 @@ type Server struct {
 	walled app.Server
 	reach  Reach
 	keys   Keyring
-
-	// breached is whether a secret is one somebody has already lost, when this
-	// deployment has a way to know. See `server/vouch/breached.go`.
-	breached Breached
 }
 
 // Reach answers whether the caller may write this person's credential, and
@@ -456,45 +452,6 @@ func (s *Server) passed(ctx context.Context, v *app.Credential, step int64, done
 	}
 
 	return err
-}
-
-// credential reads the row, and asks for the columns this needs by name.
-//
-// `All` is deliberately not used. What comes back includes the hash, and a
-// select that names its fields is one a reader can check against what the
-// function does with them.
-func (s *Server) credential(ctx context.Context, from app.Server, ref *app.HolderRef, kind string) (*app.Credential, error) {
-	return from.Credential().Get(ctx, app.CredentialGetRequest_builder{
-		Ref: app.CredentialRef_builder{
-			Kind: app.CredentialRefByKind_builder{
-				Holder: ref,
-				Kind:   z.Ptr(kindOf(kind)),
-			}.Build(),
-		}.Build(),
-		Select: app.CredentialSelect_builder{
-			Secret:     z.Ptr(true),
-			Failures:   z.Ptr(true),
-			DateLocked: z.Ptr(true),
-			LastStep:   z.Ptr(true),
-
-			// The version, because every write below is a compare-and-swap and
-			// payday refuses one that did not say what it expected to find.
-			DateUpdated: z.Ptr(true),
-
-			Holder: app.HolderSelect_builder{
-				Tenant: app.TenantSelect_builder{}.Build(),
-
-				// Whether they are still here, which this has to ask for
-				// rather than rely on. See [Server.Verify].
-				DateErased: z.Ptr(true),
-
-				// And whether they are allowed to be, which nothing generated
-				// reads at all -- a new column is inert until somebody writes
-				// the refusal.
-				DateDisabled: z.Ptr(true),
-			}.Build(),
-		}.Build(),
-	}.Build())
 }
 
 // no is the answer to everything that is not somebody proving themselves.

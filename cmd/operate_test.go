@@ -306,11 +306,14 @@ func TestASecretSomebodyHasLostIsRefused(t *testing.T) {
 	x.NoError(set("correct horse battery staple"))
 
 	// And a generated one is checked too, because nothing about being generated
-	// makes it absent from a list -- it is the same path.
+	// makes it absent from a list -- it is the same path: `Reset` hands its
+	// write to `Credential.Set`, which is where the corpus check now lives, so
+	// the corpus travels through `b.Ungated`'s `core` stack and not a vouch
+	// server built beside it.
 	t.Run("and a reset goes through the same check", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := vouch.New(b.Ungated, b.Ungated, vouch.WithBreached(b.Breached)).Reset(ctx,
+		_, err := vouch.New(b.Ungated, b.Ungated).Reset(ctx,
 			app.VouchResetRequest_builder{
 				Who: app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			}.Build())

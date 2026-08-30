@@ -10,9 +10,6 @@ import (
 	"os"
 	"sort"
 	"strings"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // Whether a secret is one somebody has already lost.
@@ -51,9 +48,6 @@ import (
 // package cannot reach -- a service, a shared mount, a bloom filter somebody
 // already has -- writes a function instead of a file.
 type Breached func(ctx context.Context, secret []byte) (bool, error)
-
-// WithBreached refuses a secret that is in a corpus of leaks.
-func WithBreached(v Breached) Option { return func(s *Server) { s.breached = v } }
 
 // BreachedIn is [Breached] over a file of SHA-1 hashes.
 //
@@ -228,34 +222,6 @@ func prefixOf(line string) string {
 	}
 
 	return line
-}
-
-// mayHold refuses a secret this deployment has said it will not hold.
-//
-// A refusal and not a warning: a deployment that configured a corpus has said
-// the answer matters, and a check whose result is advice is a check nobody acts
-// on. `FailedPrecondition` rather than `InvalidArgument`, because there is
-// nothing wrong with the request -- the world changed under the value in it.
-//
-// A corpus that cannot be read is an **error** rather than a pass. The other
-// way round, a deployment whose file went missing would go on accepting
-// passwords it had said it would not, and nothing would say so until somebody
-// looked.
-func (s *Server) mayHold(ctx context.Context, secret []byte) error {
-	if s.breached == nil {
-		return nil
-	}
-
-	bad, err := s.breached(ctx, secret)
-	if err != nil {
-		return status.Error(codes.Internal, "whether this secret is known cannot be answered just now")
-	}
-	if bad {
-		return status.Error(codes.FailedPrecondition,
-			"this one is in a corpus of leaked passwords; pick another")
-	}
-
-	return nil
 }
 
 // Sorted answers whether a corpus is in the order the search needs.

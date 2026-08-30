@@ -11,7 +11,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/lesomnus/payday/pderr"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	app "github.com/lesomnus/roster/rstr"
 )
@@ -87,44 +86,16 @@ func (s *Server) Reset(ctx context.Context, req *app.VouchResetRequest) (*app.Vo
 		return nil, status.Error(codes.Internal, "a secret cannot be made just now")
 	}
 
-	// A generated secret is checked against the corpus too: nothing about being
-	// generated makes it absent from a list, and routing through `Set` was what
-	// used to give this for free. Until `Reset` moves onto `Credential`, the
-	// check is here beside the write it guards.
-	if err := s.mayHold(ctx, []byte(secret)); err != nil {
-		return nil, err
-	}
-
-	// The write, inline. `Set` moved onto `CredentialService` (option 2), and a
-	// service cannot call back into a layer that already reaches it -- so until
-	// `Reset` moves there too, its write is here: hash, the escalation rule,
-	// and the upsert `Set` did, on the reference already resolved above.
-	sum, err := Hash([]byte(secret))
-	if err != nil {
-		return nil, status.Error(codes.Internal, "the secret cannot be stored just now")
-	}
-	if err := s.mayReach(ctx, ref.GetId()); err != nil {
-		return nil, err
-	}
-
-	if v, err := s.credential(ctx, s.walled, ref, req.GetKind()); err != nil {
-		if status.Code(err) != codes.NotFound {
-			return nil, err
-		}
-		if _, err := s.walled.Credential().Add(ctx, app.CredentialAddRequest_builder{
-			Holder: ref,
-			Kind:   kindOf(req.GetKind()),
-			Secret: sum,
-		}.Build()); err != nil {
-			return nil, err
-		}
-	} else if _, err := s.walled.Credential().Patch(ctx, app.CredentialPatchRequest_builder{
-		Ref:            app.CredentialRef_builder{Id: v.GetId()}.Build(),
-		Secret:         sum,
-		Failures:       z.Ptr(int32(0)),
-		DateLockedNull: z.Ptr(true),
-		DateRotated:    timestamppb.Now(),
-		DateUpdated:    v.GetDateUpdated(),
+	// The write is `Credential.Set`'s: it hashes, refuses a leaked secret,
+	// runs the escalation rule and upserts -- all in the layer that owns the
+	// row. `Reset` is the recovery form on top of that: it resolves the address
+	// (`Set` takes a reference, so the email lookup is done here and once,
+	// above) and generates the passphrase, then hands both over. No cycle,
+	// because `s.walled` answers the generated `Server` interface and
+	// `Credential()` on it is a method call, not an import of `server/core`.
+	if _, err := s.walled.Credential().Set(ctx, app.CredentialSetRequest_builder{
+		Ref:    ref,
+		Secret: []byte(secret),
 	}.Build()); err != nil {
 		return nil, err
 	}

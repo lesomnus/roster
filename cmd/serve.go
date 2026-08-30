@@ -726,8 +726,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// the gate reads, handed over rather than asked for a second time.
 	app.RegisterVouchServiceServer(g, vouch.New(s.Ungated, s.Walled,
 		vouch.WithReach(core.Reaching(Rules(s.Ent))),
-		vouch.WithKeys(s.Keyring),
-		vouch.WithBreached(s.Breached)))
+		vouch.WithKeys(s.Keyring)))
 
 	// What a front door asks before it knows anything, and therefore through
 	// the server the wall was never installed on. Neither RPC answers with a

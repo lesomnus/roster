@@ -366,23 +366,25 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 	// `EmailService/Add` on this port is granting the account, exactly as
 	// granting `Vouch.Reset` is, and it does not look like it.
 	//
-	// # With `WithBreached`, which was never a decision
+	// # The corpus reaches this port through `core`, not the vouch server
 	//
 	// `WithReach` is about the caller and does not survive the crossing between
 	// the two databases, which is the paragraph above. A corpus of leaked
 	// passwords is about none of that: it answers *has this secret already been
 	// lost*, before anybody is read, so it is a fact about the value and not
 	// about who is writing it or where they reached the server. A deployment
-	// that named one has said it will not hold that password, full stop.
+	// that named one has said it will not hold that password, full stop -- and
+	// this port is the one door it could still come through, since setting a
+	// password for somebody who has just phoned support is the whole reason
+	// `VouchService` is registered here at all.
 	//
-	// Left out, this port was the one door in the deployment such a password
-	// could still come through -- and it is the door that matters most, since
-	// setting a password for somebody who has just phoned support is the whole
-	// reason `VouchService` is registered here at all. The data plane refused
-	// it, the console accepted it, and nothing said the two disagreed.
+	// It applies here because `Admin` builds its `core` stack with
+	// `core.WithBreached`, and the writes served on this port run through it:
+	// `Reset` hands its write to `Credential.Set`, where the check lives now. So
+	// the vouch server below carries only the keyring, and the corpus is
+	// `core`'s on both planes -- one wire rather than three.
 	app.RegisterVouchServiceServer(g, vouch.New(admin, admin,
-		vouch.WithKeys(s.Keyring),
-		vouch.WithBreached(s.Breached)))
+		vouch.WithKeys(s.Keyring)))
 
 	// And minting a key for one of a customer's people, which is the fifth
 	// thing an operator does about somebody who cannot get in -- or the first
