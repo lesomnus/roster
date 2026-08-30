@@ -27,6 +27,7 @@ const (
 	CredentialService_List_FullMethodName       = "/roster.CredentialService/List"
 	CredentialService_Watch_FullMethodName      = "/roster.CredentialService/Watch"
 	CredentialService_ChangeMine_FullMethodName = "/roster.CredentialService/ChangeMine"
+	CredentialService_EnrolMine_FullMethodName  = "/roster.CredentialService/EnrolMine"
 	CredentialService_Unlock_FullMethodName     = "/roster.CredentialService/Unlock"
 	CredentialService_Set_FullMethodName        = "/roster.CredentialService/Set"
 	CredentialService_Enrol_FullMethodName      = "/roster.CredentialService/Enrol"
@@ -84,6 +85,15 @@ type CredentialServiceClient interface {
 	// operator/recovery path, because a bearer setting a first password with
 	// nothing to reauth against is the account takeover this closes.
 	ChangeMine(ctx context.Context, in *CredentialChangeMineRequest, opts ...grpc.CallOption) (*CredentialChangeMineResponse, error)
+	// EnrolMine adds a second factor to the **caller's own** account, and only
+	// the caller's. It is `Enrol` with no subject: the row is the frame's actor,
+	// and no field can redirect it -- the same "a which with no whose" that makes
+	// `ChangeMine` and `MeService.IssueKey` safe to grant. A role naming it means
+	// *may add a factor to your own account*, where the smallest role over `Enrol`
+	// (which takes a reference) would mean *enrol one on anybody no wider than
+	// you*. It is what a self-service screen calls, the way `ChangeMine` is the
+	// password half of the same page.
+	EnrolMine(ctx context.Context, in *CredentialEnrolMineRequest, opts ...grpc.CallOption) (*CredentialEnrolMineResponse, error)
 	// Unlock opens an account too many wrong answers closed, without touching the
 	// secret. Whose credential it is, by reference -- an operator naming somebody
 	// they already know, so no sign-in form and no email lookup (that stays with
@@ -224,6 +234,16 @@ func (c *credentialServiceClient) ChangeMine(ctx context.Context, in *Credential
 	return out, nil
 }
 
+func (c *credentialServiceClient) EnrolMine(ctx context.Context, in *CredentialEnrolMineRequest, opts ...grpc.CallOption) (*CredentialEnrolMineResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CredentialEnrolMineResponse)
+	err := c.cc.Invoke(ctx, CredentialService_EnrolMine_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *credentialServiceClient) Unlock(ctx context.Context, in *CredentialUnlockRequest, opts ...grpc.CallOption) (*CredentialUnlockResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CredentialUnlockResponse)
@@ -306,6 +326,15 @@ type CredentialServiceServer interface {
 	// operator/recovery path, because a bearer setting a first password with
 	// nothing to reauth against is the account takeover this closes.
 	ChangeMine(context.Context, *CredentialChangeMineRequest) (*CredentialChangeMineResponse, error)
+	// EnrolMine adds a second factor to the **caller's own** account, and only
+	// the caller's. It is `Enrol` with no subject: the row is the frame's actor,
+	// and no field can redirect it -- the same "a which with no whose" that makes
+	// `ChangeMine` and `MeService.IssueKey` safe to grant. A role naming it means
+	// *may add a factor to your own account*, where the smallest role over `Enrol`
+	// (which takes a reference) would mean *enrol one on anybody no wider than
+	// you*. It is what a self-service screen calls, the way `ChangeMine` is the
+	// password half of the same page.
+	EnrolMine(context.Context, *CredentialEnrolMineRequest) (*CredentialEnrolMineResponse, error)
 	// Unlock opens an account too many wrong answers closed, without touching the
 	// secret. Whose credential it is, by reference -- an operator naming somebody
 	// they already know, so no sign-in form and no email lookup (that stays with
@@ -380,6 +409,9 @@ func (UnimplementedCredentialServiceServer) Watch(*CredentialWatchRequest, grpc.
 }
 func (UnimplementedCredentialServiceServer) ChangeMine(context.Context, *CredentialChangeMineRequest) (*CredentialChangeMineResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ChangeMine not implemented")
+}
+func (UnimplementedCredentialServiceServer) EnrolMine(context.Context, *CredentialEnrolMineRequest) (*CredentialEnrolMineResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method EnrolMine not implemented")
 }
 func (UnimplementedCredentialServiceServer) Unlock(context.Context, *CredentialUnlockRequest) (*CredentialUnlockResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Unlock not implemented")
@@ -548,6 +580,24 @@ func _CredentialService_ChangeMine_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CredentialService_EnrolMine_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CredentialEnrolMineRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CredentialServiceServer).EnrolMine(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CredentialService_EnrolMine_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CredentialServiceServer).EnrolMine(ctx, req.(*CredentialEnrolMineRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _CredentialService_Unlock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CredentialUnlockRequest)
 	if err := dec(in); err != nil {
@@ -636,6 +686,10 @@ var CredentialService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ChangeMine",
 			Handler:    _CredentialService_ChangeMine_Handler,
+		},
+		{
+			MethodName: "EnrolMine",
+			Handler:    _CredentialService_EnrolMine_Handler,
 		},
 		{
 			MethodName: "Unlock",

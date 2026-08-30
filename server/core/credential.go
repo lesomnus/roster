@@ -298,22 +298,27 @@ func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) 
 // is one of the two things they sign in with, so you may enrol a factor for
 // nobody whose permissions are not a subset of yours. The row goes in
 // unconfirmed (`Verify` moves its step), which is `server/vouch`'s to enforce.
-func (s coreCredential) Enrol(ctx context.Context, req *app.CredentialEnrolRequest) (*app.CredentialEnrolResponse, error) {
-	kind := req.GetKind()
+// enrol is the work `Enrol` and `EnrolMine` share: a factor made for `ref`,
+// answered as a seed and URI (both empty for webauthn). The two differ only in
+// how they name the holder -- a reference or the frame's own actor -- and the
+// escalation rule is the same either way: `mayReach` passes for the caller
+// writing their own (`EnrolMine`) and refuses one wider than the caller
+// (`Enrol`).
+func (s coreCredential) enrol(ctx context.Context, ref *app.HolderRef, kind, name, issuer string, attestation []byte) (string, string, error) {
 	switch kind {
 	case vouch.KindTotp:
-		if len(req.GetAttestation()) > 0 {
-			return nil, pderr.Invalidf("attestation",
+		if len(attestation) > 0 {
+			return "", "", pderr.Invalidf("attestation",
 				"a seed is made here; a request carrying one has not decided which ceremony it is doing")
 		}
 		if s.keyring.Current == "" {
-			return nil, status.Error(codes.Unimplemented,
+			return "", "", status.Error(codes.Unimplemented,
 				"this deployment holds no key to wrap a seed with, so it cannot hold a second factor")
 		}
 
 	case vouch.KindWebAuthn:
-		if len(req.GetAttestation()) == 0 {
-			return nil, pderr.Invalidf("attestation",
+		if len(attestation) == 0 {
+			return "", "", pderr.Invalidf("attestation",
 				"an authenticator makes this one; roster is handed the public half")
 		}
 
@@ -321,43 +326,43 @@ func (s coreCredential) Enrol(ctx context.Context, req *app.CredentialEnrolReque
 		// A password is `Set` or `Reset`, and neither is a thing a phone or a
 		// key holds. Refused rather than routed: a caller asking for one here
 		// has misunderstood which act they are doing.
-		return nil, status.Errorf(codes.InvalidArgument,
-			"kind: %q is not something to enrol; a password is Set or Reset", req.GetKind())
+		return "", "", status.Errorf(codes.InvalidArgument,
+			"kind: %q is not something to enrol; a password is Set or Reset", kind)
 	}
 
 	// Read the person before writing, for the alias the URI carries and the id
 	// the escalation rule compares -- and through `Next()`, so a caller who
 	// cannot see them cannot enrol a way into their account either.
 	who, err := s.Next().Holder().Get(ctx, app.HolderGetRequest_builder{
-		Ref:    req.GetRef(),
+		Ref:    ref,
 		Select: app.HolderSelect_builder{Alias: z.Ptr(true)}.Build(),
 	}.Build())
 	if err != nil {
-		return nil, err
+		return "", "", err
 	}
 
 	holder, err := pdid.From(who.GetId())
 	if err != nil {
-		return nil, err
+		return "", "", err
 	}
 	if err := s.mayReach(ctx, "ref", holder); err != nil {
-		return nil, err
+		return "", "", err
 	}
 
-	ref := app.HolderRef_builder{Id: who.GetId()}.Build()
+	on := app.HolderRef_builder{Id: who.GetId()}.Build()
 
 	if kind == vouch.KindWebAuthn {
 		// Checked before it is written: an attestation nobody verified is a row
 		// that answers to whoever sent it.
-		v, err := vouch.Register(req.GetAttestation())
+		v, err := vouch.Register(attestation)
 		if err != nil {
-			return nil, pderr.Invalidf("attestation", "%s", err)
+			return "", "", pderr.Invalidf("attestation", "%s", err)
 		}
 
 		if _, err := s.Next().Credential().Add(ctx, app.CredentialAddRequest_builder{
-			Holder: ref,
+			Holder: on,
 			Kind:   vouch.KindWebAuthn,
-			Name:   req.GetName(),
+			Name:   name,
 			Secret: v.Stored,
 
 			// The counter the authenticator reported, so the first assertion has
@@ -365,38 +370,71 @@ func (s coreCredential) Enrol(ctx context.Context, req *app.CredentialEnrolReque
 			// seed there is no unconfirmed state to be in.
 			LastStep: v.Count,
 		}.Build()); err != nil {
-			return nil, err
+			return "", "", err
 		}
 
-		return app.CredentialEnrolResponse_builder{}.Build(), nil
+		// The private half never left the authenticator, so there is nothing to
+		// answer with.
+		return "", "", nil
 	}
 
 	seed, err := vouch.TotpSeed()
 	if err != nil {
-		return nil, status.Error(codes.Internal, "a seed cannot be made just now")
+		return "", "", status.Error(codes.Internal, "a seed cannot be made just now")
 	}
 
 	stored, err := s.keyring.Wrap(seed)
 	if err != nil {
-		return nil, status.Error(codes.Internal, "a seed cannot be stored just now")
+		return "", "", status.Error(codes.Internal, "a seed cannot be stored just now")
 	}
 
 	if _, err := s.Next().Credential().Add(ctx, app.CredentialAddRequest_builder{
-		Holder: ref,
+		Holder: on,
 		Kind:   vouch.KindTotp,
-		Name:   req.GetName(),
+		Name:   name,
 		Secret: stored,
 	}.Build()); err != nil {
-		return nil, err
+		return "", "", err
 	}
 
-	issuer := req.GetIssuer()
 	if issuer == "" {
 		issuer = "roster"
 	}
 
-	return app.CredentialEnrolResponse_builder{
-		Seed: base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(seed),
-		Uri:  vouch.TotpUri(issuer, who.GetAlias(), seed),
-	}.Build(), nil
+	return base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(seed),
+		vouch.TotpUri(issuer, who.GetAlias(), seed), nil
+}
+
+// Enrol makes a second factor and answers with it once -- the write `Vouch.Enrol`
+// was, on the entity it writes a row to, named by a reference. See [coreCredential.enrol].
+func (s coreCredential) Enrol(ctx context.Context, req *app.CredentialEnrolRequest) (*app.CredentialEnrolResponse, error) {
+	seed, uri, err := s.enrol(ctx, req.GetRef(), req.GetKind(), req.GetName(), req.GetIssuer(), req.GetAttestation())
+	if err != nil {
+		return nil, err
+	}
+
+	return app.CredentialEnrolResponse_builder{Seed: seed, Uri: uri}.Build(), nil
+}
+
+// EnrolMine adds a second factor to the caller's own account, and only theirs.
+//
+// It takes no subject -- the row is the frame's actor -- so a role naming it
+// grants exactly *add a factor to your own account* and nothing wider, the way
+// `ChangeMine` is the password half of the same self-service screen. The
+// escalation rule it runs is inert by construction (the target is the caller,
+// which `mayReach` passes), and it is there rather than skipped so that the one
+// path is the one every credential write takes.
+func (s coreCredential) EnrolMine(ctx context.Context, req *app.CredentialEnrolMineRequest) (*app.CredentialEnrolMineResponse, error) {
+	f, ok := frame.From(ctx)
+	if !ok || f.Actor.IsZero() {
+		return nil, status.Error(codes.Unauthenticated, "adding a factor to your own account is a thing only a caller can do, and nothing here says who that is")
+	}
+
+	ref := app.HolderRef_builder{Id: f.Actor.Bytes()}.Build()
+	seed, uri, err := s.enrol(ctx, ref, req.GetKind(), req.GetName(), req.GetIssuer(), req.GetAttestation())
+	if err != nil {
+		return nil, err
+	}
+
+	return app.CredentialEnrolMineResponse_builder{Seed: seed, Uri: uri}.Build(), nil
 }
