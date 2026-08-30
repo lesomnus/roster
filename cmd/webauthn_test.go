@@ -50,8 +50,8 @@ func TestAKeyIsEnrolledAndThenSignsSomebodyIn(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	res, err := v.Enrol(as, app.VouchEnrolRequest_builder{
-		Who:         app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
+	res, err := b.Ungated.Credential().Enrol(as, app.CredentialEnrolRequest_builder{
+		Ref:         app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Kind:        vouch.KindWebAuthn,
 		Name:        "the yubikey in the drawer",
 		Attestation: a.Register(t, vouchtest.Challenge(t)),

@@ -2,8 +2,6 @@ package cmd_test
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"strings"
 	"testing"
 
@@ -22,7 +20,6 @@ import (
 	"github.com/lesomnus/roster/internal/ent/credential"
 	entholder "github.com/lesomnus/roster/internal/ent/holder"
 	app "github.com/lesomnus/roster/rstr"
-	"github.com/lesomnus/roster/server/core"
 	"github.com/lesomnus/roster/server/vouch"
 )
 
@@ -423,23 +420,6 @@ func (b *built) inTeam(t *testing.T, ctx context.Context, who, team, role pdid.I
 // it: a keyring to wrap a seed with, and the rule about whose credential a
 // caller may write.
 //
-// `keyed2fa` is the same service without the rule, which is right for the tests
-// that are about seeds and codes and is exactly what must not be assumed here.
-func (b *built) factoring(t *testing.T) *vouch.Server {
-	t.Helper()
-	x := require.New(t)
-
-	raw := make([]byte, 32)
-	_, err := rand.Read(raw)
-	x.NoError(err)
-
-	k, err := vouch.NewKeyring([]string{"one:" + base64.StdEncoding.EncodeToString(raw)})
-	x.NoError(err)
-
-	return vouch.New(b.Ungated, b.Walled,
-		vouch.WithKeys(k),
-		vouch.WithReach(core.Reaching(cmd.Rules(b.Ent))))
-}
 
 // TestNobodyEnrolsASecondFactorOnSomebodyWiderThanThey is item 11's rule at the
 // door `Enrol` opened, and `operate.go` says why it belongs there: *adding a
@@ -471,10 +451,9 @@ func TestNobodyEnrolsASecondFactorOnSomebodyWiderThanThey(t *testing.T) {
 	desk := b.holder(t, ctx, b.Contoso, "desk")
 	asDesk := b.mayCall(t, ctx, desk, "desk", listHolders)
 
-	v := b.factoring(t)
 	enrol := func(c context.Context, who pdid.Id, name string) error {
-		_, err := v.Enrol(c, app.VouchEnrolRequest_builder{
-			Who:  app.VouchWho_builder{Id: who.Bytes()}.Build(),
+		_, err := b.Walled.Credential().Enrol(c, app.CredentialEnrolRequest_builder{
+			Ref:  app.HolderRef_builder{Id: who.Bytes()}.Build(),
 			Kind: vouch.KindTotp,
 			Name: name,
 		}.Build())

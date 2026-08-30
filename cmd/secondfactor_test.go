@@ -36,8 +36,8 @@ func TestASeedIsNotAWayIn(t *testing.T) {
 
 	v := b.keyed2fa(t)
 
-	res, err := v.Enrol(ctx, app.VouchEnrolRequest_builder{
-		Who:  app.VouchWho_builder{Id: who.Bytes()}.Build(),
+	res, err := b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{
+		Ref:  app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		Kind: vouch.KindTotp,
 	}.Build())
 	x.NoError(err)
@@ -104,8 +104,8 @@ func TestASeedAloneSignsNobodyIn(t *testing.T) {
 
 	v := b.keyed2fa(t)
 
-	res, err := v.Enrol(ctx, app.VouchEnrolRequest_builder{
-		Who:  app.VouchWho_builder{Id: who.Bytes()}.Build(),
+	res, err := b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{
+		Ref:  app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		Kind: vouch.KindTotp,
 	}.Build())
 	x.NoError(err)

@@ -147,30 +147,6 @@ service VouchService {
   // first two proved.
   rpc Continue(VouchContinueRequest) returns (VouchContinueResponse);
 
-  // Enrol makes a second factor and answers with it **once**.
-  //
-  // # Why Set cannot do it
-  //
-  // `Set` argon2-hashes whatever it is handed, which is the one thing a TOTP
-  // seed must not be: computing the code somebody is about to type means
-  // holding the seed, so the row **is** the secret rather than a verifier of
-  // one. A seed put through `Set` is a seed nobody can ever read back.
-  //
-  // # Why the caller does not choose it
-  //
-  // `IssueService`'s argument about a key, unchanged: a secret the caller chose
-  // is a secret the caller knows, and one generated in a browser is only as
-  // good as that page's `crypto`. Here it is `crypto/rand` on the server, and
-  // what leaves is a base32 seed and an `otpauth://` URI for a QR code.
-  //
-  // # It does not count until it is proved
-  //
-  // The row is written unconfirmed, and one code has to verify before it is a
-  // factor anybody may be asked for. A seed that counted the moment it was
-  // written would make a mis-scanned QR something somebody discovers when they
-  // are already half signed in and cannot finish.
-  rpc Enrol(VouchEnrolRequest) returns (VouchEnrolResponse);
-
   // Revoke ends a delegation before its expiry.
   //
   // D23 says *revoking it is a delete* and for a while nothing could:
@@ -529,61 +505,6 @@ message VouchDelegateResponse {
 
   // When it stops working, which is always set when a token is.
   google.protobuf.Timestamp expires = 11;
-}
-
-message VouchEnrolRequest {
-  VouchWho who = 1;
-
-  // Which kind: "totp" or "webauthn". A password is `Set` or `Reset`, and
-  // neither of those is something a person's phone or key holds.
-  //
-  // The two arrive by opposite roads and that is why they are one method. For
-  // `totp` roster **makes** the secret and answers with it once, because a seed
-  // has to be read back and a browser generating one is a browser's `crypto`
-  // deciding how good it is. For `webauthn` the authenticator makes it and
-  // roster is handed the public half -- there is nothing to answer with, and
-  // the response is empty.
-  string kind = 8;
-
-  // What they call it, when there is more than one to tell apart -- "the
-  // phone", "the yubikey in the drawer". Empty is the only one of its kind.
-  string name = 5;
-
-  // What the authenticator app shows in its list, and it is the deployment's
-  // name rather than the tenant's: a person with accounts at two operators
-  // needs to tell the two entries apart, and both are this roster.
-  string issuer = 9;
-
-  // What the browser answered with, for `webauthn`, and nothing for `totp`.
-  //
-  // An envelope rather than the raw attestation: the response alone is not
-  // checkable, because verifying it needs the relying-party id, the origin and
-  // the challenge -- the three facts D20 named as the browser-facing half that
-  // roster does not know. So it carries all four.
-  //
-  //     {"rp_id": "contoso.example",
-  //      "origins": ["https://contoso.example"],
-  //      "challenge": "…",
-  //      "response": { … what navigator.credentials.create() gave … }}
-  //
-  // Refused for `totp`, which makes its own secret: a request carrying both has
-  // not decided which ceremony it is doing.
-  bytes attestation = 10;
-}
-
-message VouchEnrolResponse {
-  // Both empty for `webauthn`: the authenticator kept the private half and
-  // roster was handed the public one, so there is nothing here that was not
-  // already in the browser.
-  //
-  // The seed, base32, uppercase and unpadded -- the only time it is readable.
-  //
-  // Padding is legal and some apps refuse it, which is the sort of thing only
-  // discovered in front of a phone that will not scan.
-  string seed = 1;
-
-  // The same thing as a QR code's worth of URI.
-  string uri = 2;
 }
 
 message VouchRevokeRequest {

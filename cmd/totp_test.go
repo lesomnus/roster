@@ -1,9 +1,7 @@
 package cmd_test
 
 import (
-	"crypto/rand"
 	"encoding/base32"
-	"encoding/base64"
 	"testing"
 	"time"
 
@@ -19,16 +17,12 @@ import (
 // second factors has and no other deployment does.
 func (b *built) keyed2fa(t *testing.T) *vouch.Server {
 	t.Helper()
-	x := require.New(t)
 
-	raw := make([]byte, 32)
-	_, err := rand.Read(raw)
-	x.NoError(err)
-
-	k, err := vouch.NewKeyring([]string{"one:" + base64.StdEncoding.EncodeToString(raw)})
-	x.NoError(err)
-
-	return vouch.New(b.Ungated, b.Ungated, vouch.WithKeys(k))
+	// The deployment's own keyring, which `build` configures and `server/core`
+	// enrols with -- so a seed `Credential.Enrol` wrapped is one this server can
+	// unwrap and verify. A fresh key here would verify against a seed wrapped
+	// under a different one, which is the mismatch this exists to avoid.
+	return vouch.New(b.Ungated, b.Ungated, vouch.WithKeys(b.Keyring))
 }
 
 // TestASecondFactorIsEnrolledOnceAndReadBackNever.
@@ -44,8 +38,8 @@ func TestASecondFactorIsEnrolledOnceAndReadBackNever(t *testing.T) {
 
 	v := b.keyed2fa(t)
 
-	res, err := v.Enrol(ctx, app.VouchEnrolRequest_builder{
-		Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
+	res, err := b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{
+		Ref:    app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Kind:   vouch.KindTotp,
 		Issuer: "roster",
 	}.Build())
@@ -125,15 +119,15 @@ func TestASecondFactorIsEnrolledOnceAndReadBackNever(t *testing.T) {
 	t.Run("and two of a kind are told apart by name", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := v.Enrol(ctx, app.VouchEnrolRequest_builder{
-			Who:  app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		_, err := b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{
+			Ref:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Kind: vouch.KindTotp,
 			Name: "the spare phone",
 		}.Build())
 		x.NoError(err, "a second authenticator was refused, which is WebAuthn's whole recovery story")
 
-		_, err = v.Enrol(ctx, app.VouchEnrolRequest_builder{
-			Who:  app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		_, err = b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{
+			Ref:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Kind: vouch.KindTotp,
 			Name: "the spare phone",
 		}.Build())
@@ -149,12 +143,12 @@ func TestASecondFactorIsEnrolledOnceAndReadBackNever(t *testing.T) {
 // person it happens to is the one who cannot sign in.
 func TestADeploymentWithNoKeyHoldsNoSecondFactor(t *testing.T) {
 	x := require.New(t)
-	b, ctx := build(t)
+	b, ctx := build(t, withoutKeyring)
 
 	v := b.vouched()
 
-	_, err := v.Enrol(ctx, app.VouchEnrolRequest_builder{
-		Who:  app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
+	_, err := b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{
+		Ref:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Kind: vouch.KindTotp,
 	}.Build())
 	x.Equal(codes.Unimplemented, status.Code(err))

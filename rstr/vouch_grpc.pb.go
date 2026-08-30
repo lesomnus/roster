@@ -25,7 +25,6 @@ const (
 	VouchService_Link_FullMethodName     = "/roster.VouchService/Link"
 	VouchService_Redeem_FullMethodName   = "/roster.VouchService/Redeem"
 	VouchService_Continue_FullMethodName = "/roster.VouchService/Continue"
-	VouchService_Enrol_FullMethodName    = "/roster.VouchService/Enrol"
 	VouchService_Revoke_FullMethodName   = "/roster.VouchService/Revoke"
 	VouchService_Accept_FullMethodName   = "/roster.VouchService/Accept"
 )
@@ -168,29 +167,6 @@ type VouchServiceClient interface {
 	// `Delegate` -> `Continue` -> `Delegate`, and the last call spends what the
 	// first two proved.
 	Continue(ctx context.Context, in *VouchContinueRequest, opts ...grpc.CallOption) (*VouchContinueResponse, error)
-	// Enrol makes a second factor and answers with it **once**.
-	//
-	// # Why Set cannot do it
-	//
-	// `Set` argon2-hashes whatever it is handed, which is the one thing a TOTP
-	// seed must not be: computing the code somebody is about to type means
-	// holding the seed, so the row **is** the secret rather than a verifier of
-	// one. A seed put through `Set` is a seed nobody can ever read back.
-	//
-	// # Why the caller does not choose it
-	//
-	// `IssueService`'s argument about a key, unchanged: a secret the caller chose
-	// is a secret the caller knows, and one generated in a browser is only as
-	// good as that page's `crypto`. Here it is `crypto/rand` on the server, and
-	// what leaves is a base32 seed and an `otpauth://` URI for a QR code.
-	//
-	// # It does not count until it is proved
-	//
-	// The row is written unconfirmed, and one code has to verify before it is a
-	// factor anybody may be asked for. A seed that counted the moment it was
-	// written would make a mis-scanned QR something somebody discovers when they
-	// are already half signed in and cannot finish.
-	Enrol(ctx context.Context, in *VouchEnrolRequest, opts ...grpc.CallOption) (*VouchEnrolResponse, error)
 	// Revoke ends a delegation before its expiry.
 	//
 	// D23 says *revoking it is a delete* and for a while nothing could:
@@ -308,16 +284,6 @@ func (c *vouchServiceClient) Continue(ctx context.Context, in *VouchContinueRequ
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(VouchContinueResponse)
 	err := c.cc.Invoke(ctx, VouchService_Continue_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *vouchServiceClient) Enrol(ctx context.Context, in *VouchEnrolRequest, opts ...grpc.CallOption) (*VouchEnrolResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(VouchEnrolResponse)
-	err := c.cc.Invoke(ctx, VouchService_Enrol_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -482,29 +448,6 @@ type VouchServiceServer interface {
 	// `Delegate` -> `Continue` -> `Delegate`, and the last call spends what the
 	// first two proved.
 	Continue(context.Context, *VouchContinueRequest) (*VouchContinueResponse, error)
-	// Enrol makes a second factor and answers with it **once**.
-	//
-	// # Why Set cannot do it
-	//
-	// `Set` argon2-hashes whatever it is handed, which is the one thing a TOTP
-	// seed must not be: computing the code somebody is about to type means
-	// holding the seed, so the row **is** the secret rather than a verifier of
-	// one. A seed put through `Set` is a seed nobody can ever read back.
-	//
-	// # Why the caller does not choose it
-	//
-	// `IssueService`'s argument about a key, unchanged: a secret the caller chose
-	// is a secret the caller knows, and one generated in a browser is only as
-	// good as that page's `crypto`. Here it is `crypto/rand` on the server, and
-	// what leaves is a base32 seed and an `otpauth://` URI for a QR code.
-	//
-	// # It does not count until it is proved
-	//
-	// The row is written unconfirmed, and one code has to verify before it is a
-	// factor anybody may be asked for. A seed that counted the moment it was
-	// written would make a mis-scanned QR something somebody discovers when they
-	// are already half signed in and cannot finish.
-	Enrol(context.Context, *VouchEnrolRequest) (*VouchEnrolResponse, error)
 	// Revoke ends a delegation before its expiry.
 	//
 	// D23 says *revoking it is a delete* and for a while nothing could:
@@ -585,9 +528,6 @@ func (UnimplementedVouchServiceServer) Redeem(context.Context, *VouchRedeemReque
 }
 func (UnimplementedVouchServiceServer) Continue(context.Context, *VouchContinueRequest) (*VouchContinueResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Continue not implemented")
-}
-func (UnimplementedVouchServiceServer) Enrol(context.Context, *VouchEnrolRequest) (*VouchEnrolResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Enrol not implemented")
 }
 func (UnimplementedVouchServiceServer) Revoke(context.Context, *VouchRevokeRequest) (*VouchRevokeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Revoke not implemented")
@@ -724,24 +664,6 @@ func _VouchService_Continue_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-func _VouchService_Enrol_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(VouchEnrolRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(VouchServiceServer).Enrol(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: VouchService_Enrol_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(VouchServiceServer).Enrol(ctx, req.(*VouchEnrolRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _VouchService_Revoke_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(VouchRevokeRequest)
 	if err := dec(in); err != nil {
@@ -808,10 +730,6 @@ var VouchService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Continue",
 			Handler:    _VouchService_Continue_Handler,
-		},
-		{
-			MethodName: "Enrol",
-			Handler:    _VouchService_Enrol_Handler,
 		},
 		{
 			MethodName: "Revoke",

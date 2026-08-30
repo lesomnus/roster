@@ -258,7 +258,7 @@ func TestASecondFactorEndToEndAtAShell(t *testing.T) {
 		holderGet = "/roster.HolderService/Get"
 		verify    = "/roster.VouchService/Verify"
 		delegate  = "/roster.VouchService/Delegate"
-		enrol     = "/roster.VouchService/Enrol"
+		enrol     = "/roster.CredentialService/Enrol"
 	)
 
 	x := require.New(t)
@@ -309,7 +309,7 @@ func TestContinueProvesAndDelegateMints(t *testing.T) {
 		holderGet = "/roster.HolderService/Get"
 		verify    = "/roster.VouchService/Verify"
 		delegate  = "/roster.VouchService/Delegate"
-		enrol     = "/roster.VouchService/Enrol"
+		enrol     = "/roster.CredentialService/Enrol"
 		cont      = "/roster.VouchService/Continue"
 	)
 
@@ -362,7 +362,7 @@ func TestDelegateRefusesTwoWaysOfNamingSomebody(t *testing.T) {
 // command with no WHO, which names nobody.
 func TestTheEnrolHintNamesWhom(t *testing.T) {
 	x := require.New(t)
-	b := cliUp(t, "/roster.VouchService/Enrol", "/roster.VouchService/Verify")
+	b := cliUp(t, "/roster.CredentialService/Enrol", "/roster.VouchService/Verify")
 	sets(t, b, b.Alice.GetId(), "correct horse battery staple")
 
 	_, hint, err := pipedErr(t, "", cmd.Cmd(&b.Hers),

@@ -29,6 +29,7 @@ const (
 	CredentialService_ChangeMine_FullMethodName = "/roster.CredentialService/ChangeMine"
 	CredentialService_Unlock_FullMethodName     = "/roster.CredentialService/Unlock"
 	CredentialService_Set_FullMethodName        = "/roster.CredentialService/Set"
+	CredentialService_Enrol_FullMethodName      = "/roster.CredentialService/Enrol"
 )
 
 // CredentialServiceClient is the client API for CredentialService service.
@@ -108,6 +109,22 @@ type CredentialServiceClient interface {
 	// it is replaced and the lockout cleared, because somebody who set it is not
 	// who the lockout was protecting against.
 	Set(ctx context.Context, in *CredentialSetRequest, opts ...grpc.CallOption) (*CredentialSetResponse, error)
+	// Enrol makes a second factor and answers with it once. The write `Vouch.Enrol`
+	// was, on the entity: a `totp` seed roster generates, wraps and answers with
+	// exactly once, or a `webauthn` public key an authenticator made and roster
+	// was handed. Named by a reference, like every other write here -- a person
+	// adding a factor to their own account, or an operator to somebody they may
+	// reach.
+	//
+	// A password is not this: that is `Set` or `Reset`, and neither is a thing a
+	// phone or a key holds. The kind check refuses one the same way `Set` refuses
+	// a second factor, from opposite ends of the one line `vouch.Settable` draws.
+	//
+	// It does not count until it is proved: the row goes in with its step at zero,
+	// and one `Verify` has to pass before the factor is offered at a sign-in. So a
+	// mis-scanned QR is a thing somebody discovers now rather than when they are
+	// already half in and cannot finish.
+	Enrol(ctx context.Context, in *CredentialEnrolRequest, opts ...grpc.CallOption) (*CredentialEnrolResponse, error)
 }
 
 type credentialServiceClient struct {
@@ -227,6 +244,16 @@ func (c *credentialServiceClient) Set(ctx context.Context, in *CredentialSetRequ
 	return out, nil
 }
 
+func (c *credentialServiceClient) Enrol(ctx context.Context, in *CredentialEnrolRequest, opts ...grpc.CallOption) (*CredentialEnrolResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CredentialEnrolResponse)
+	err := c.cc.Invoke(ctx, CredentialService_Enrol_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CredentialServiceServer is the server API for CredentialService service.
 // All implementations must embed UnimplementedCredentialServiceServer
 // for forward compatibility.
@@ -304,6 +331,22 @@ type CredentialServiceServer interface {
 	// it is replaced and the lockout cleared, because somebody who set it is not
 	// who the lockout was protecting against.
 	Set(context.Context, *CredentialSetRequest) (*CredentialSetResponse, error)
+	// Enrol makes a second factor and answers with it once. The write `Vouch.Enrol`
+	// was, on the entity: a `totp` seed roster generates, wraps and answers with
+	// exactly once, or a `webauthn` public key an authenticator made and roster
+	// was handed. Named by a reference, like every other write here -- a person
+	// adding a factor to their own account, or an operator to somebody they may
+	// reach.
+	//
+	// A password is not this: that is `Set` or `Reset`, and neither is a thing a
+	// phone or a key holds. The kind check refuses one the same way `Set` refuses
+	// a second factor, from opposite ends of the one line `vouch.Settable` draws.
+	//
+	// It does not count until it is proved: the row goes in with its step at zero,
+	// and one `Verify` has to pass before the factor is offered at a sign-in. So a
+	// mis-scanned QR is a thing somebody discovers now rather than when they are
+	// already half in and cannot finish.
+	Enrol(context.Context, *CredentialEnrolRequest) (*CredentialEnrolResponse, error)
 	mustEmbedUnimplementedCredentialServiceServer()
 }
 
@@ -343,6 +386,9 @@ func (UnimplementedCredentialServiceServer) Unlock(context.Context, *CredentialU
 }
 func (UnimplementedCredentialServiceServer) Set(context.Context, *CredentialSetRequest) (*CredentialSetResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Set not implemented")
+}
+func (UnimplementedCredentialServiceServer) Enrol(context.Context, *CredentialEnrolRequest) (*CredentialEnrolResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Enrol not implemented")
 }
 func (UnimplementedCredentialServiceServer) mustEmbedUnimplementedCredentialServiceServer() {}
 func (UnimplementedCredentialServiceServer) testEmbeddedByValue()                           {}
@@ -538,6 +584,24 @@ func _CredentialService_Set_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CredentialService_Enrol_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CredentialEnrolRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CredentialServiceServer).Enrol(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CredentialService_Enrol_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CredentialServiceServer).Enrol(ctx, req.(*CredentialEnrolRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CredentialService_ServiceDesc is the grpc.ServiceDesc for CredentialService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -580,6 +644,10 @@ var CredentialService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Set",
 			Handler:    _CredentialService_Set_Handler,
+		},
+		{
+			MethodName: "Enrol",
+			Handler:    _CredentialService_Enrol_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

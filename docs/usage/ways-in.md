@@ -233,8 +233,8 @@ did the verifying, and `Add` refuses a request carrying one.
 ## A second factor
 
 ```
-VouchService.Enrol  { who: …, kind: "totp" | "webauthn", name: "phone" }
-VouchService.Verify { who: …, kind: "totp", secret: "123456" }
+CredentialService.Enrol { ref: …, kind: "totp" | "webauthn", name: "phone" }
+VouchService.Verify     { who: …, kind: "totp", secret: "123456" }
 ```
 
 A TOTP **seed** is the one secret roster has to be able to read back — computing

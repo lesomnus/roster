@@ -30,8 +30,8 @@ func enrolled(t *testing.T, ctx context.Context, cred app.CredentialServiceServe
 	}.Build())
 	x.NoError(err)
 
-	res, err := v.Enrol(ctx, app.VouchEnrolRequest_builder{
-		Who:  app.VouchWho_builder{Id: who.Bytes()}.Build(),
+	res, err := cred.Enrol(ctx, app.CredentialEnrolRequest_builder{
+		Ref:  app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		Kind: vouch.KindTotp,
 	}.Build())
 	x.NoError(err)
@@ -293,11 +293,12 @@ func (b *keyedBuilt) keyed(t *testing.T) *vouch.Server {
 	return vouch.New(b.Ungated, b.Ungated, vouch.WithKeys(b.Keyring))
 }
 
-// keyedLocal is the same on the plain harness.
+// keyedLocal is the same on the plain harness -- the deployment's keyring, which
+// `build` configures, so a seed `server/core` wrapped is one this verifies.
 func (b *built) keyedLocal(t *testing.T) *vouch.Server {
 	t.Helper()
 
-	return vouch.New(b.Ungated, b.Ungated, vouch.WithKeys(newKeyring(t)))
+	return vouch.New(b.Ungated, b.Ungated, vouch.WithKeys(b.Keyring))
 }
 
 func newKeyring(t *testing.T) vouch.Keyring {

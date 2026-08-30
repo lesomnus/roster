@@ -2,6 +2,7 @@ package cmd_test
 
 import (
 	"context"
+	"encoding/base64"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -41,6 +42,14 @@ func build(t *testing.T, with ...func(*cmd.Config)) (*built, context.Context) {
 	cfg := cmd.Config{
 		Db:    config.DbConfig{Driver: drv, Dsn: dsn},
 		Watch: config.WatchConfig{Broker: config.BrokerMemory},
+
+		// A keyring by default, so `server/core` can wrap a TOTP seed when a
+		// test enrols one -- the deployment `keyFor` already builds this way.
+		// `Credential.Enrol` makes the seed here now, and the hand-built vouch
+		// servers a test verifies with take the same `b.Keyring`, so the two
+		// halves share a key. A test that wants the no-key behaviour clears it
+		// with `withoutKeyring`.
+		Vouch: cmd.VouchConfig{Keys: []string{"one:" + base64.StdEncoding.EncodeToString(freshKey(t))}},
 	}
 	for _, w := range with {
 		w(&cfg)
@@ -59,6 +68,11 @@ func build(t *testing.T, with ...func(*cmd.Config)) (*built, context.Context) {
 
 	return b, ctx
 }
+
+// withoutKeyring clears the keyring `build` configures by default, for the one
+// deployment that must hold no key -- so `Credential.Enrol` refuses a second
+// factor rather than wrapping a seed nothing can read back.
+func withoutKeyring(c *cmd.Config) { c.Vouch.Keys = nil }
 
 // served is this app's data plane on a listener that is a channel, dialed.
 //

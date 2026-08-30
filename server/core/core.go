@@ -15,6 +15,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/vouch"
 )
 
 // Core is the layer that answers what this app decided.
@@ -57,6 +58,14 @@ type Core struct {
 	// handed to this layer because `Credential.Set` now writes here -- nil is a
 	// deployment with no corpus, which refuses no secret.
 	breached Breached
+
+	// keyring is what wraps a TOTP seed, handed to this layer because
+	// `Credential.Enrol` makes one here now. The zero value holds no key, which
+	// is a deployment that cannot store a second factor -- `Enrol` refuses a
+	// `totp` there rather than writing a seed nothing can read back. It is the
+	// same keyring `server/vouch` verifies a code with, so a factor enrolled
+	// here is one that plane can check.
+	keyring vouch.Keyring
 }
 
 // Breached is whether a secret is in a corpus of leaked ones. Nil refuses none.
@@ -65,6 +74,11 @@ type Breached func(ctx context.Context, secret []byte) (bool, error)
 // WithBreached gives the layer the corpus check, so a credential write can
 // refuse a leaked secret without a service reaching back for the rule.
 func WithBreached(v Breached) Option { return func(s *Core) { s.breached = v } }
+
+// WithKeyring gives the layer the key a TOTP seed is wrapped with, so
+// `Credential.Enrol` can make a second factor without a service holding the
+// crypto. Left out, the layer holds no key and refuses a `totp` enrolment.
+func WithKeyring(v vouch.Keyring) Option { return func(s *Core) { s.keyring = v } }
 
 // Rules is what this layer has to know about a caller and cannot work out.
 //
@@ -172,5 +186,11 @@ func (s Core) WithDriver(drv dialect.Driver) (app.Server, error) {
 	// transaction somebody else opened, and a rule that began its own inside
 	// that one would be a transaction nested in a transaction. Nil is how
 	// [Core.only] is told the caller has already arranged one.
-	return New(next, s.rules), nil
+	//
+	// The corpus and the keyring **are**, for the reason `Rules` is: a
+	// `Credential.Set` or `Enrol` made inside a batch is still a write that must
+	// refuse a leaked secret and must wrap a seed with the deployment's key.
+	// Dropped, a rebuilt stack would accept a breached password and refuse every
+	// second factor the moment two writes shared a transaction.
+	return New(next, s.rules, WithBreached(s.breached), WithKeyring(s.keyring)), nil
 }

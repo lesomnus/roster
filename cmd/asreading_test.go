@@ -621,8 +621,8 @@ func TestNoVerifierIsAnsweredByThePortThatServesItsRow(t *testing.T) {
 		// one of them is a verifier. `Enrol` wraps the seed with the
 		// deployment's key; what must not leave is the ciphertext, since the
 		// process that would read it is the process that holds the key.
-		seed, err := b.keyedLocal(t).Enrol(ctx, app.VouchEnrolRequest_builder{
-			Who:  app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		seed, err := b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{
+			Ref:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Kind: vouch.KindTotp,
 		}.Build())
 		x.NoError(err)

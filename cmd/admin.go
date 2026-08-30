@@ -82,7 +82,9 @@ func Admin(s *Server) (app.Server, error) {
 	// otherwise still come through -- the reasoning the vouch registration below
 	// gives at length, arriving here because the write moved onto the entity.
 	return app.Build(s.sink.WithWatch(s.Watch),
-		core.Build(Rules(s.Control.Ent), core.WithBreached(core.Breached(s.Breached))),
+		core.Build(Rules(s.Control.Ent),
+			core.WithBreached(core.Breached(s.Breached)),
+			core.WithKeyring(s.Keyring)),
 		pd.AuditBuild())
 }
 

@@ -622,22 +622,3 @@ func holdsAt(mine []Grant, at pdid.Id, m string) bool {
 
 	return false
 }
-
-// Reaching is [Core.mayReach] as a function, for the services that are not
-// layers.
-//
-// `VouchService` is written by hand and is not part of `app.Server`, so no
-// layer wraps it -- and it is the service that writes credentials. Rather than
-// a second implementation of the rule, it is handed this one.
-//
-// The generated `CredentialService` is not covered and does not need to be: it
-// is unregistered and in `closed`, so nothing on the wire or in a batch reaches
-// it. What does reach it is this process, through `Ungated`, where there is no
-// frame and the rule reads that as the deployment's own work.
-func Reaching(rules Rules) func(ctx context.Context, target pdid.Id) error {
-	s := Core{rules: rules}
-
-	return func(ctx context.Context, target pdid.Id) error {
-		return s.mayReach(ctx, "who", target)
-	}
-}

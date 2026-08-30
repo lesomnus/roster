@@ -1001,8 +1001,8 @@ func TestTwoFormsAndTheAppRemembersNothing(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	enrolled, err := v.Enrol(ctx, rstr.VouchEnrolRequest_builder{
-		Who:  rstr.VouchWho_builder{Id: h.GetId()}.Build(),
+	enrolled, err := d.ungated.Credential().Enrol(ctx, rstr.CredentialEnrolRequest_builder{
+		Ref:  rstr.HolderRef_builder{Id: h.GetId()}.Build(),
 		Kind: vouch.KindTotp,
 	}.Build())
 	x.NoError(err)
@@ -1105,8 +1105,8 @@ func TestAWrongSecondFactorCostsTheFirstFormAgain(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	enrolled, err := v.Enrol(ctx, rstr.VouchEnrolRequest_builder{
-		Who:  rstr.VouchWho_builder{Id: h.GetId()}.Build(),
+	enrolled, err := d.ungated.Credential().Enrol(ctx, rstr.CredentialEnrolRequest_builder{
+		Ref:  rstr.HolderRef_builder{Id: h.GetId()}.Build(),
 		Kind: vouch.KindTotp,
 	}.Build())
 	x.NoError(err)

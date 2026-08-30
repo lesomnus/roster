@@ -18,14 +18,16 @@ import (
 
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
-	"github.com/lesomnus/roster/server/core"
 	"github.com/lesomnus/roster/server/vouch"
 )
 
-// operated is the service as `cmd.Grpc` wires it: with the rule about who may
-// write whose credential, which is the half of this that is not the surface.
+// operated is the service as `cmd.Grpc` wires it: over the **walled** stack, so
+// the rule about who may write whose credential runs where it lives now -- in
+// `server/core`, which `Reset` reaches through `Credential.Set`. The vouch
+// service no longer carries the rule itself; it is a fact about the stack it
+// writes through.
 func (b *built) operated() *vouch.Server {
-	return vouch.New(b.Ungated, b.Walled, vouch.WithReach(core.Reaching(cmd.Rules(b.Ent))))
+	return vouch.New(b.Ungated, b.Walled)
 }
 
 // mayCall gives somebody a binding across their tenant and answers with a

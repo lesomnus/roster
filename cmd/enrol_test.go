@@ -36,8 +36,8 @@ func TestAFactorWithANameCanBeConfirmed(t *testing.T) {
 	v := b.keyed2fa(t)
 	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
-	res, err := v.Enrol(ctx, app.VouchEnrolRequest_builder{
-		Who:  app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
+	res, err := b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{
+		Ref:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Kind: vouch.KindTotp,
 		Name: "the phone",
 	}.Build())
@@ -72,8 +72,8 @@ func TestAConfirmedNamedFactorIsThenAsked(t *testing.T) {
 	v := b.keyed2fa(t)
 	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
-	res, err := v.Enrol(ctx, app.VouchEnrolRequest_builder{
-		Who:  app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
+	res, err := b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{
+		Ref:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Kind: vouch.KindTotp,
 		Name: "the phone",
 	}.Build())
@@ -154,8 +154,8 @@ func TestAnUnnamedFactorIsStillTheOnlyOne(t *testing.T) {
 
 	v := b.keyed2fa(t)
 
-	res, err := v.Enrol(ctx, app.VouchEnrolRequest_builder{
-		Who:  app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
+	res, err := b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{
+		Ref:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Kind: vouch.KindTotp,
 		Name: "the phone",
 	}.Build())

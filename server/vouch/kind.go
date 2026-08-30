@@ -259,7 +259,7 @@ func (v Totp) Burn(secret []byte) {
 // against the milliseconds this exists to spend. What it buys is that a person
 // with no second factor costs what a person with one costs.
 func (v Totp) dummy() []byte {
-	seed, err := totpSeed()
+	seed, err := TotpSeed()
 	if err != nil {
 		return nil
 	}

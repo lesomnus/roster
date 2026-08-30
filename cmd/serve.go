@@ -321,6 +321,14 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		}
 	}
 
+	// Read here rather than where it is used, so that a deployment whose keys
+	// are malformed finds out when it starts rather than when somebody enrols.
+	keyring, err := vouch.NewKeyring(c.Vouch.Keys)
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+
 	// The stack a caller reaches. `pd.Gate` is outermost, so nothing behind it
 	// asks again.
 	// `core` is inside the gate and outside the sink: it reads through the wall
@@ -334,7 +342,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	// What keeps it out of the **trail** is not this layer -- the recorder is
 	// behind every layer -- but the declaration on the field, which the recorder
 	// reads for itself. See `Credential.secret`.
-	stacked, err := app.Build(walled.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked))), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
+	stacked, err := app.Build(walled.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring)), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -349,15 +357,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	// what this app means -- an identity linked by `init` or by an admin console
 	// is still an identity, and a subject that is an email address is still
 	// wrong.
-	ungated, err := app.Build(sink.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked))), pd.AuditBuild())
-	if err != nil {
-		db.Close()
-		return nil, err
-	}
-
-	// Read here rather than where it is used, so that a deployment whose keys
-	// are malformed finds out when it starts rather than when somebody enrols.
-	keyring, err := vouch.NewKeyring(c.Vouch.Keys)
+	ungated, err := app.Build(sink.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring)), pd.AuditBuild())
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -725,7 +725,6 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// because `VouchService` is hand-written and no layer wraps it. Same rules
 	// the gate reads, handed over rather than asked for a second time.
 	app.RegisterVouchServiceServer(g, vouch.New(s.Ungated, s.Walled,
-		vouch.WithReach(core.Reaching(Rules(s.Ent))),
 		vouch.WithKeys(s.Keyring)))
 
 	// What a front door asks before it knows anything, and therefore through

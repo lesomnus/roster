@@ -41,8 +41,8 @@ const (
 	totpSeedLen = 20
 )
 
-// totpSeed is a new secret somebody's phone can hold, unwrapped.
-func totpSeed() ([]byte, error) {
+// TotpSeed is a new secret somebody's phone can hold, unwrapped.
+func TotpSeed() ([]byte, error) {
 	b := make([]byte, totpSeedLen)
 	if _, err := randRead(b); err != nil {
 		return nil, fmt.Errorf("vouch: no seed: %w", err)

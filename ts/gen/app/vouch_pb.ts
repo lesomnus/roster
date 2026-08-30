@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/vouch.proto.
  */
 export const file_app_vouch: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJGCghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCSI/CgpWb3VjaENsYWltEg4KBnRlbmFudBgBIAEoDBIQCghwcm92aWRlchgCIAEoCRIPCgdzdWJqZWN0GAMgASgJIl8KElZvdWNoVmVyaWZ5UmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSDAoEbmFtZRgFIAEoCSJbCgtWb3VjaEZhY3RvchIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSMAoMbG9ja2VkX3VudGlsGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCLEAQoTVm91Y2hWZXJpZnlSZXNwb25zZRIKCgJvaxgBIAEoCBIOCgZob2xkZXIYAiABKAwSDgoGdGVuYW50GAMgASgMEjAKDGxvY2tlZF91bnRpbBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEQoJc2F0aXNmaWVkGAogAygJEiYKCWF2YWlsYWJsZRgLIAMoCzITLnJvc3Rlci5Wb3VjaEZhY3RvchIUCgxjb250aW51YXRpb24YDCABKAkiWAoUVm91Y2hDb250aW51ZVJlcXVlc3QSFAoMY29udGludWF0aW9uGAEgASgJEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMEgwKBG5hbWUYBSABKAkiRgoVVm91Y2hDb250aW51ZVJlc3BvbnNlEi0KCHZlcmlmaWVkGAEgASgLMhsucm9zdGVyLlZvdWNoVmVyaWZ5UmVzcG9uc2UitQEKFFZvdWNoRGVsZWdhdGVSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJEg4KBnNlY3JldBgJIAEoDBIUCgxjb250aW51YXRpb24YDCABKAkSDAoEbmFtZRgFIAEoCRIPCgdtZXRob2RzGAogAygJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wInUKElZvdWNoQWNjZXB0UmVxdWVzdBIhCgVjbGFpbRgBIAEoCzISLnJvc3Rlci5Wb3VjaENsYWltEg8KB21ldGhvZHMYAiADKAkSKwoHZXhwaXJlcxgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiggEKFVZvdWNoRGVsZWdhdGVSZXNwb25zZRItCgh2ZXJpZmllZBgBIAEoCzIbLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlEg0KBXRva2VuGAogASgJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wInMKEVZvdWNoRW5yb2xSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSDgoGaXNzdWVyGAkgASgJEhMKC2F0dGVzdGF0aW9uGAogASgMIi8KElZvdWNoRW5yb2xSZXNwb25zZRIMCgRzZWVkGAEgASgJEgsKA3VyaRgCIAEoCSIjChJWb3VjaFJldm9rZVJlcXVlc3QSDQoFdG9rZW4YASABKAkiFQoTVm91Y2hSZXZva2VSZXNwb25zZSJAChFWb3VjaFJlc2V0UmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCSIkChJWb3VjaFJlc2V0UmVzcG9uc2USDgoGc2VjcmV0GAEgASgJIl4KEFZvdWNoTGlua1JlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIk8KEVZvdWNoTGlua1Jlc3BvbnNlEg0KBXRva2VuGAEgASgJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wImEKElZvdWNoUmVkZWVtUmVxdWVzdBINCgV0b2tlbhgBIAEoCRIPCgdtZXRob2RzGAogAygJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wMu0ECgxWb3VjaFNlcnZpY2USQQoGVmVyaWZ5Ehoucm9zdGVyLlZvdWNoVmVyaWZ5UmVxdWVzdBobLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlEkcKCERlbGVnYXRlEhwucm9zdGVyLlZvdWNoRGVsZWdhdGVSZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoRGVsZWdhdGVSZXNwb25zZRI+CgVSZXNldBIZLnJvc3Rlci5Wb3VjaFJlc2V0UmVxdWVzdBoaLnJvc3Rlci5Wb3VjaFJlc2V0UmVzcG9uc2USOwoETGluaxIYLnJvc3Rlci5Wb3VjaExpbmtSZXF1ZXN0Ghkucm9zdGVyLlZvdWNoTGlua1Jlc3BvbnNlEkMKBlJlZGVlbRIaLnJvc3Rlci5Wb3VjaFJlZGVlbVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlEkcKCENvbnRpbnVlEhwucm9zdGVyLlZvdWNoQ29udGludWVSZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoQ29udGludWVSZXNwb25zZRI+CgVFbnJvbBIZLnJvc3Rlci5Wb3VjaEVucm9sUmVxdWVzdBoaLnJvc3Rlci5Wb3VjaEVucm9sUmVzcG9uc2USQQoGUmV2b2tlEhoucm9zdGVyLlZvdWNoUmV2b2tlUmVxdWVzdBobLnJvc3Rlci5Wb3VjaFJldm9rZVJlc3BvbnNlEkMKBkFjY2VwdBIaLnJvc3Rlci5Wb3VjaEFjY2VwdFJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp]);
+  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJGCghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCSI/CgpWb3VjaENsYWltEg4KBnRlbmFudBgBIAEoDBIQCghwcm92aWRlchgCIAEoCRIPCgdzdWJqZWN0GAMgASgJIl8KElZvdWNoVmVyaWZ5UmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSDAoEbmFtZRgFIAEoCSJbCgtWb3VjaEZhY3RvchIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSMAoMbG9ja2VkX3VudGlsGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCLEAQoTVm91Y2hWZXJpZnlSZXNwb25zZRIKCgJvaxgBIAEoCBIOCgZob2xkZXIYAiABKAwSDgoGdGVuYW50GAMgASgMEjAKDGxvY2tlZF91bnRpbBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEQoJc2F0aXNmaWVkGAogAygJEiYKCWF2YWlsYWJsZRgLIAMoCzITLnJvc3Rlci5Wb3VjaEZhY3RvchIUCgxjb250aW51YXRpb24YDCABKAkiWAoUVm91Y2hDb250aW51ZVJlcXVlc3QSFAoMY29udGludWF0aW9uGAEgASgJEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMEgwKBG5hbWUYBSABKAkiRgoVVm91Y2hDb250aW51ZVJlc3BvbnNlEi0KCHZlcmlmaWVkGAEgASgLMhsucm9zdGVyLlZvdWNoVmVyaWZ5UmVzcG9uc2UitQEKFFZvdWNoRGVsZWdhdGVSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJEg4KBnNlY3JldBgJIAEoDBIUCgxjb250aW51YXRpb24YDCABKAkSDAoEbmFtZRgFIAEoCRIPCgdtZXRob2RzGAogAygJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wInUKElZvdWNoQWNjZXB0UmVxdWVzdBIhCgVjbGFpbRgBIAEoCzISLnJvc3Rlci5Wb3VjaENsYWltEg8KB21ldGhvZHMYAiADKAkSKwoHZXhwaXJlcxgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiggEKFVZvdWNoRGVsZWdhdGVSZXNwb25zZRItCgh2ZXJpZmllZBgBIAEoCzIbLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlEg0KBXRva2VuGAogASgJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIiMKElZvdWNoUmV2b2tlUmVxdWVzdBINCgV0b2tlbhgBIAEoCSIVChNWb3VjaFJldm9rZVJlc3BvbnNlIkAKEVZvdWNoUmVzZXRSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJIiQKElZvdWNoUmVzZXRSZXNwb25zZRIOCgZzZWNyZXQYASABKAkiXgoQVm91Y2hMaW5rUmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiTwoRVm91Y2hMaW5rUmVzcG9uc2USDQoFdG9rZW4YASABKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiYQoSVm91Y2hSZWRlZW1SZXF1ZXN0Eg0KBXRva2VuGAEgASgJEg8KB21ldGhvZHMYCiADKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAyrQQKDFZvdWNoU2VydmljZRJBCgZWZXJpZnkSGi5yb3N0ZXIuVm91Y2hWZXJpZnlSZXF1ZXN0Ghsucm9zdGVyLlZvdWNoVmVyaWZ5UmVzcG9uc2USRwoIRGVsZWdhdGUSHC5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlEj4KBVJlc2V0Ehkucm9zdGVyLlZvdWNoUmVzZXRSZXF1ZXN0Ghoucm9zdGVyLlZvdWNoUmVzZXRSZXNwb25zZRI7CgRMaW5rEhgucm9zdGVyLlZvdWNoTGlua1JlcXVlc3QaGS5yb3N0ZXIuVm91Y2hMaW5rUmVzcG9uc2USQwoGUmVkZWVtEhoucm9zdGVyLlZvdWNoUmVkZWVtUmVxdWVzdBodLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVzcG9uc2USRwoIQ29udGludWUSHC5yb3N0ZXIuVm91Y2hDb250aW51ZVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hDb250aW51ZVJlc3BvbnNlEkEKBlJldm9rZRIaLnJvc3Rlci5Wb3VjaFJldm9rZVJlcXVlc3QaGy5yb3N0ZXIuVm91Y2hSZXZva2VSZXNwb25zZRJDCgZBY2NlcHQSGi5yb3N0ZXIuVm91Y2hBY2NlcHRSZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoRGVsZWdhdGVSZXNwb25zZUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp]);
 
 /**
  * VouchWho names somebody in the words a sign-in form collects.
@@ -575,108 +575,6 @@ export const VouchDelegateResponseSchema: GenMessage<VouchDelegateResponse> = /*
   messageDesc(file_app_vouch, 9);
 
 /**
- * @generated from message roster.VouchEnrolRequest
- */
-export type VouchEnrolRequest = Message<"roster.VouchEnrolRequest"> & {
-  /**
-   * @generated from field: roster.VouchWho who = 1;
-   */
-  who?: VouchWho | undefined;
-
-  /**
-   * Which kind: "totp" or "webauthn". A password is `Set` or `Reset`, and
-   * neither of those is something a person's phone or key holds.
-   *
-   * The two arrive by opposite roads and that is why they are one method. For
-   * `totp` roster **makes** the secret and answers with it once, because a seed
-   * has to be read back and a browser generating one is a browser's `crypto`
-   * deciding how good it is. For `webauthn` the authenticator makes it and
-   * roster is handed the public half -- there is nothing to answer with, and
-   * the response is empty.
-   *
-   * @generated from field: string kind = 8;
-   */
-  kind: string;
-
-  /**
-   * What they call it, when there is more than one to tell apart -- "the
-   * phone", "the yubikey in the drawer". Empty is the only one of its kind.
-   *
-   * @generated from field: string name = 5;
-   */
-  name: string;
-
-  /**
-   * What the authenticator app shows in its list, and it is the deployment's
-   * name rather than the tenant's: a person with accounts at two operators
-   * needs to tell the two entries apart, and both are this roster.
-   *
-   * @generated from field: string issuer = 9;
-   */
-  issuer: string;
-
-  /**
-   * What the browser answered with, for `webauthn`, and nothing for `totp`.
-   *
-   * An envelope rather than the raw attestation: the response alone is not
-   * checkable, because verifying it needs the relying-party id, the origin and
-   * the challenge -- the three facts D20 named as the browser-facing half that
-   * roster does not know. So it carries all four.
-   *
-   *     {"rp_id": "contoso.example",
-   *      "origins": ["https://contoso.example"],
-   *      "challenge": "…",
-   *      "response": { … what navigator.credentials.create() gave … }}
-   *
-   * Refused for `totp`, which makes its own secret: a request carrying both has
-   * not decided which ceremony it is doing.
-   *
-   * @generated from field: bytes attestation = 10;
-   */
-  attestation: Uint8Array;
-};
-
-/**
- * Describes the message roster.VouchEnrolRequest.
- * Use `create(VouchEnrolRequestSchema)` to create a new message.
- */
-export const VouchEnrolRequestSchema: GenMessage<VouchEnrolRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 10);
-
-/**
- * @generated from message roster.VouchEnrolResponse
- */
-export type VouchEnrolResponse = Message<"roster.VouchEnrolResponse"> & {
-  /**
-   * Both empty for `webauthn`: the authenticator kept the private half and
-   * roster was handed the public one, so there is nothing here that was not
-   * already in the browser.
-   *
-   * The seed, base32, uppercase and unpadded -- the only time it is readable.
-   *
-   * Padding is legal and some apps refuse it, which is the sort of thing only
-   * discovered in front of a phone that will not scan.
-   *
-   * @generated from field: string seed = 1;
-   */
-  seed: string;
-
-  /**
-   * The same thing as a QR code's worth of URI.
-   *
-   * @generated from field: string uri = 2;
-   */
-  uri: string;
-};
-
-/**
- * Describes the message roster.VouchEnrolResponse.
- * Use `create(VouchEnrolResponseSchema)` to create a new message.
- */
-export const VouchEnrolResponseSchema: GenMessage<VouchEnrolResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 11);
-
-/**
  * @generated from message roster.VouchRevokeRequest
  */
 export type VouchRevokeRequest = Message<"roster.VouchRevokeRequest"> & {
@@ -693,7 +591,7 @@ export type VouchRevokeRequest = Message<"roster.VouchRevokeRequest"> & {
  * Use `create(VouchRevokeRequestSchema)` to create a new message.
  */
 export const VouchRevokeRequestSchema: GenMessage<VouchRevokeRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 12);
+  messageDesc(file_app_vouch, 10);
 
 /**
  * @generated from message roster.VouchRevokeResponse
@@ -706,7 +604,7 @@ export type VouchRevokeResponse = Message<"roster.VouchRevokeResponse"> & {
  * Use `create(VouchRevokeResponseSchema)` to create a new message.
  */
 export const VouchRevokeResponseSchema: GenMessage<VouchRevokeResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 13);
+  messageDesc(file_app_vouch, 11);
 
 /**
  * @generated from message roster.VouchResetRequest
@@ -732,7 +630,7 @@ export type VouchResetRequest = Message<"roster.VouchResetRequest"> & {
  * Use `create(VouchResetRequestSchema)` to create a new message.
  */
 export const VouchResetRequestSchema: GenMessage<VouchResetRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 14);
+  messageDesc(file_app_vouch, 12);
 
 /**
  * @generated from message roster.VouchResetResponse
@@ -753,7 +651,7 @@ export type VouchResetResponse = Message<"roster.VouchResetResponse"> & {
  * Use `create(VouchResetResponseSchema)` to create a new message.
  */
 export const VouchResetResponseSchema: GenMessage<VouchResetResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 15);
+  messageDesc(file_app_vouch, 13);
 
 /**
  * @generated from message roster.VouchLinkRequest
@@ -782,7 +680,7 @@ export type VouchLinkRequest = Message<"roster.VouchLinkRequest"> & {
  * Use `create(VouchLinkRequestSchema)` to create a new message.
  */
 export const VouchLinkRequestSchema: GenMessage<VouchLinkRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 16);
+  messageDesc(file_app_vouch, 14);
 
 /**
  * @generated from message roster.VouchLinkResponse
@@ -810,7 +708,7 @@ export type VouchLinkResponse = Message<"roster.VouchLinkResponse"> & {
  * Use `create(VouchLinkResponseSchema)` to create a new message.
  */
 export const VouchLinkResponseSchema: GenMessage<VouchLinkResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 17);
+  messageDesc(file_app_vouch, 15);
 
 /**
  * @generated from message roster.VouchRedeemRequest
@@ -845,7 +743,7 @@ export type VouchRedeemRequest = Message<"roster.VouchRedeemRequest"> & {
  * Use `create(VouchRedeemRequestSchema)` to create a new message.
  */
 export const VouchRedeemRequestSchema: GenMessage<VouchRedeemRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 18);
+  messageDesc(file_app_vouch, 16);
 
 /**
  * VouchService is how a secret is used without ever leaving the store.
@@ -1032,37 +930,6 @@ export const VouchService: GenService<{
     methodKind: "unary";
     input: typeof VouchContinueRequestSchema;
     output: typeof VouchContinueResponseSchema;
-  },
-  /**
-   * Enrol makes a second factor and answers with it **once**.
-   *
-   * # Why Set cannot do it
-   *
-   * `Set` argon2-hashes whatever it is handed, which is the one thing a TOTP
-   * seed must not be: computing the code somebody is about to type means
-   * holding the seed, so the row **is** the secret rather than a verifier of
-   * one. A seed put through `Set` is a seed nobody can ever read back.
-   *
-   * # Why the caller does not choose it
-   *
-   * `IssueService`'s argument about a key, unchanged: a secret the caller chose
-   * is a secret the caller knows, and one generated in a browser is only as
-   * good as that page's `crypto`. Here it is `crypto/rand` on the server, and
-   * what leaves is a base32 seed and an `otpauth://` URI for a QR code.
-   *
-   * # It does not count until it is proved
-   *
-   * The row is written unconfirmed, and one code has to verify before it is a
-   * factor anybody may be asked for. A seed that counted the moment it was
-   * written would make a mis-scanned QR something somebody discovers when they
-   * are already half signed in and cannot finish.
-   *
-   * @generated from rpc roster.VouchService.Enrol
-   */
-  enrol: {
-    methodKind: "unary";
-    input: typeof VouchEnrolRequestSchema;
-    output: typeof VouchEnrolResponseSchema;
   },
   /**
    * Revoke ends a delegation before its expiry.

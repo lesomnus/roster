@@ -2,12 +2,14 @@ package core
 
 import (
 	"context"
+	"encoding/base32"
 
 	"github.com/lesomnus/z"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/lesomnus/payday/frame"
+	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -278,4 +280,123 @@ func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) 
 	}
 
 	return &app.CredentialSetResponse{}, nil
+}
+
+// Enrol makes a second factor and answers with it once -- the write `Vouch.Enrol`
+// was, on the entity it writes a row to. A `totp` seed is generated, wrapped
+// with the deployment's key and answered once (the row itself is the secret, so
+// it cannot go through `Set`, which hashes); a `webauthn` public key is checked
+// and kept, with nothing to answer.
+//
+// The seed is wrapped with `server/core`'s keyring, which is the same one
+// `server/vouch` reads a code back with -- handed to the layer by
+// `core.WithKeyring` so the crypto stays in `server/vouch` and only the
+// orchestration is here. A deployment that holds no key refuses a `totp`, since
+// a seed it cannot wrap is one nothing can ever read back.
+//
+// Held to `mayReach` like every credential write: adding a way in for somebody
+// is one of the two things they sign in with, so you may enrol a factor for
+// nobody whose permissions are not a subset of yours. The row goes in
+// unconfirmed (`Verify` moves its step), which is `server/vouch`'s to enforce.
+func (s coreCredential) Enrol(ctx context.Context, req *app.CredentialEnrolRequest) (*app.CredentialEnrolResponse, error) {
+	kind := req.GetKind()
+	switch kind {
+	case vouch.KindTotp:
+		if len(req.GetAttestation()) > 0 {
+			return nil, pderr.Invalidf("attestation",
+				"a seed is made here; a request carrying one has not decided which ceremony it is doing")
+		}
+		if s.keyring.Current == "" {
+			return nil, status.Error(codes.Unimplemented,
+				"this deployment holds no key to wrap a seed with, so it cannot hold a second factor")
+		}
+
+	case vouch.KindWebAuthn:
+		if len(req.GetAttestation()) == 0 {
+			return nil, pderr.Invalidf("attestation",
+				"an authenticator makes this one; roster is handed the public half")
+		}
+
+	default:
+		// A password is `Set` or `Reset`, and neither is a thing a phone or a
+		// key holds. Refused rather than routed: a caller asking for one here
+		// has misunderstood which act they are doing.
+		return nil, status.Errorf(codes.InvalidArgument,
+			"kind: %q is not something to enrol; a password is Set or Reset", req.GetKind())
+	}
+
+	// Read the person before writing, for the alias the URI carries and the id
+	// the escalation rule compares -- and through `Next()`, so a caller who
+	// cannot see them cannot enrol a way into their account either.
+	who, err := s.Next().Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref:    req.GetRef(),
+		Select: app.HolderSelect_builder{Alias: z.Ptr(true)}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	holder, err := pdid.From(who.GetId())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.mayReach(ctx, "ref", holder); err != nil {
+		return nil, err
+	}
+
+	ref := app.HolderRef_builder{Id: who.GetId()}.Build()
+
+	if kind == vouch.KindWebAuthn {
+		// Checked before it is written: an attestation nobody verified is a row
+		// that answers to whoever sent it.
+		v, err := vouch.Register(req.GetAttestation())
+		if err != nil {
+			return nil, pderr.Invalidf("attestation", "%s", err)
+		}
+
+		if _, err := s.Next().Credential().Add(ctx, app.CredentialAddRequest_builder{
+			Holder: ref,
+			Kind:   vouch.KindWebAuthn,
+			Name:   req.GetName(),
+			Secret: v.Stored,
+
+			// The counter the authenticator reported, so the first assertion has
+			// something to exceed. Registering **is** the proof here, so unlike a
+			// seed there is no unconfirmed state to be in.
+			LastStep: v.Count,
+		}.Build()); err != nil {
+			return nil, err
+		}
+
+		return app.CredentialEnrolResponse_builder{}.Build(), nil
+	}
+
+	seed, err := vouch.TotpSeed()
+	if err != nil {
+		return nil, status.Error(codes.Internal, "a seed cannot be made just now")
+	}
+
+	stored, err := s.keyring.Wrap(seed)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "a seed cannot be stored just now")
+	}
+
+	if _, err := s.Next().Credential().Add(ctx, app.CredentialAddRequest_builder{
+		Holder: ref,
+		Kind:   vouch.KindTotp,
+		Name:   req.GetName(),
+		Secret: stored,
+	}.Build()); err != nil {
+		return nil, err
+	}
+
+	issuer := req.GetIssuer()
+	if issuer == "" {
+		issuer = "roster"
+	}
+
+	return app.CredentialEnrolResponse_builder{
+		Seed: base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(seed),
+		Uri:  vouch.TotpUri(issuer, who.GetAlias(), seed),
+	}.Build(), nil
 }

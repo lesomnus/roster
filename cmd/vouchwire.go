@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lesomnus/z"
+
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/arg"
 	"github.com/lesomnus/xli/flg"
@@ -58,6 +60,20 @@ import (
 
 // wired is the connection, or the sentence somebody needs when there is none.
 func wired(ctx context.Context, c *Config) (app.VouchServiceClient, func(), error) {
+	conn, done, err := dialed(ctx, c)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return app.NewVouchServiceClient(conn), done, nil
+}
+
+// dialed is the wire these commands call a served deployment over, with the one
+// refusal that is the same for all of them: this half needs a caller, so it
+// needs `client.addr`. `enrol` reaches for the connection rather than a
+// `VouchService` client on it, because the write it makes is `CredentialService`'s
+// now.
+func dialed(ctx context.Context, c *Config) (pdcmd.Conn, func(), error) {
 	if c.Client.Local || c.Client.Addr == "" {
 		return nil, nil, errors.New(
 			"this half of `vouch` calls a served deployment as a caller -- a delegation, a link " +
@@ -65,12 +81,32 @@ func wired(ctx context.Context, c *Config) (app.VouchServiceClient, func(), erro
 				"has none. name client.addr; the local half is `vouch reset|set|unlock`")
 	}
 
-	conn, done, err := remote{c}.Connect(ctx)
-	if err != nil {
-		return nil, nil, err
+	return remote{c}.Connect(ctx)
+}
+
+// refFrom is [whoSaid]'s answer as a `HolderRef`, for the writes that name a
+// holder rather than a sign-in form. An address is refused here rather than at
+// the server: `Credential.Enrol` names a holder, and an email is a sign-in
+// form's way of finding one -- which recovery does and this does not.
+func refFrom(who *app.VouchWho) (*app.HolderRef, error) {
+	if id := who.GetId(); len(id) > 0 {
+		return app.HolderRef_builder{Id: id}.Build(), nil
+	}
+	if who.GetAddress() != "" {
+		return nil, errors.New(
+			"enrol names a holder by @tenant/alias or an identifier, not an address -- " +
+				"an email is how recovery finds somebody, not how a factor is added")
+	}
+	if who.GetTenant() != "" && who.GetAlias() != "" {
+		return app.HolderRef_builder{
+			Slug: app.HolderRefBySlug_builder{
+				Tenant: app.TenantRef_builder{Alias: z.Ptr(who.GetTenant())}.Build(),
+				Alias:  z.Ptr(who.GetAlias()),
+			}.Build(),
+		}.Build(), nil
 	}
 
-	return app.NewVouchServiceClient(conn), done, nil
+	return nil, errors.New("who: @tenant/alias or an identifier")
 }
 
 // whoSaid is the person, in the words a sign-in form collects.
@@ -628,6 +664,13 @@ func newCmdVouchRevoke(c *Config) *xli.Command {
 // What lands on stdout is the `otpauth://` URI, which carries the seed in its
 // `secret` parameter: one line that a QR encoder takes whole and a person can
 // still read the seed out of.
+//
+// Remote, because this is the write a customer makes for their own account: a
+// person with a key adds a factor to it, the way `set` and `unlock` are the
+// operator's local writes. `Vouch.Enrol` moved onto `Credential`, so it names a
+// holder by reference now -- `refFrom` turns the sign-in form the shell collects
+// into one, and refuses an address, which is recovery's way of naming somebody
+// and not this.
 func newCmdVouchEnrol(c *Config) *xli.Command {
 	return &xli.Command{
 		Name:  "enrol",
@@ -651,7 +694,7 @@ func newCmdVouchEnrol(c *Config) *xli.Command {
 						"public half; there is nothing a shell can attest with")
 			}
 
-			cl, done, err := wired(ctx, c)
+			conn, done, err := dialed(ctx, c)
 			if err != nil {
 				return err
 			}
@@ -661,12 +704,16 @@ func newCmdVouchEnrol(c *Config) *xli.Command {
 			if err != nil {
 				return err
 			}
+			ref, err := refFrom(who)
+			if err != nil {
+				return err
+			}
 
 			name, _ := flg.Find[string](cmd, "name")
 			issuer, _ := flg.Find[string](cmd, "issuer")
 
-			v, err := cl.Enrol(ctx, app.VouchEnrolRequest_builder{
-				Who:    who,
+			v, err := app.NewCredentialServiceClient(conn).Enrol(ctx, app.CredentialEnrolRequest_builder{
+				Ref:    ref,
 				Kind:   kind,
 				Name:   name,
 				Issuer: issuer,

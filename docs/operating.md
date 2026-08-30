@@ -911,7 +911,7 @@ same act:
 | | |
 | --- | --- |
 | `CredentialService/Set`, `/Unlock`, `VouchService/Reset` | their secret |
-| `VouchService/Enrol` | their second factor |
+| `CredentialService/Enrol` | their second factor |
 | `IdentityService/Add` | an account at a provider that signs in as them |
 | `EmailService/Add` | a mailbox a recovery link is sent to |
 | `ApiKeyService/Add` | a key that **acts as** them |
@@ -1327,7 +1327,7 @@ Nothing written down is plaintext, and it warns once.
 - **`Binding` cannot be re-pointed.** Its edges are immutable, so changing who
   holds what is a delete and an add. That is the safe direction and it is worth
   knowing before writing a console screen that looks like an edit.
-- **No second factor other than TOTP.** `Vouch.Enrol` writes a seed, `Verify`
+- **No second factor other than TOTP.** `Credential.Enrol` writes a seed, `Verify`
   and `Continue` check the codes, and the `continuation` between them is an
   opaque handle carrying *this person satisfied the first factor* — so an app
   serving two forms holds nothing but a string. [position.md](position.md),
@@ -1340,7 +1340,7 @@ Nothing written down is plaintext, and it warns once.
   not roster's either way — that belongs wherever the browser is; roster
   answers what is left to prove.
 
-  **WebAuthn is here too.** `Vouch.Enrol` with `kind: webauthn` takes what
+  **WebAuthn is here too.** `Credential.Enrol` with `kind: webauthn` takes what
   `navigator.credentials.create()` answered with, and `Verify`/`Continue` take
   an assertion — each in an envelope carrying the relying-party id, the origins
   and the challenge, because roster does not know which page a browser was on.

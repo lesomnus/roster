@@ -74,32 +74,11 @@ type Server struct {
 
 	open   app.Server
 	walled app.Server
-	reach  Reach
 	keys   Keyring
 }
 
-// Reach answers whether the caller may write this person's credential, and
-// refuses with the reason when they may not.
-//
-// Given rather than computed, the way `me.Held` is and for the same reason:
-// `cmd` already reads what a caller holds for `gate.Policy`, and a second
-// implementation of one question is two that drift. `core.Reaching` is the
-// implementation and `server/core/escalate.go` is the rule.
-//
-// **Nil refuses nothing**, which is the zero value a stack assembled without it
-// gets -- and it is the right direction here rather than the safe-looking one:
-// this is a seam for a rule about *callers*, and a server with no frame at all
-// (`init`, the sandbox, a migration) has no caller to judge. A deployment that
-// serves this on a port and forgets to wire it is a deployment `pd doctor`
-// cannot help with either, which is why `cmd/serve.go` wires it beside the
-// stack rather than somewhere a reader has to go looking.
-type Reach func(ctx context.Context, target pdid.Id) error
-
 // Option is how a deployment says what this service is allowed to assume.
 type Option func(*Server)
-
-// WithReach gives the service the rule about who may write whose credential.
-func WithReach(v Reach) Option { return func(s *Server) { s.reach = v } }
 
 // WithKeys gives the service what it needs to hold a secret it must read back.
 //
@@ -575,18 +554,4 @@ func (s *Server) byAddress(ctx context.Context, tenant, address string) (*app.Ho
 	}
 
 	return app.HolderRef_builder{Id: h.GetId()}.Build(), nil
-}
-
-// mayReach is the rule about who may write whose credential, when there is one.
-func (s *Server) mayReach(ctx context.Context, target []byte) error {
-	if s.reach == nil {
-		return nil
-	}
-
-	k, err := pdid.From(target)
-	if err != nil {
-		return err
-	}
-
-	return s.reach(ctx, k)
 }

@@ -3,14 +3,10 @@ package vouch
 import (
 	"context"
 	"crypto/rand"
-	"encoding/base32"
 	"encoding/base64"
 
-	"github.com/lesomnus/z"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	"github.com/lesomnus/payday/pderr"
 
 	app "github.com/lesomnus/roster/rstr"
 )
@@ -130,137 +126,4 @@ func passphrase() (string, error) {
 	}
 
 	return base64.RawURLEncoding.EncodeToString(b), nil
-}
-
-// Enrol makes a second factor and answers with it once.
-//
-// # It does not count until it is proved
-//
-// The row goes in with `last_step` at zero, which is what **unconfirmed** means
-// for this kind: one code has to verify before the column moves. A seed that
-// counted the moment it was written would make a mis-scanned QR something
-// somebody discovers when they are already half signed in and cannot finish.
-//
-// An unconfirmed factor still **verifies** -- that is how it gets confirmed --
-// and it does not appear in what a person *has*. The two are different
-// questions and only the second one is about whether to ask for it.
-//
-// Which is why `Verify` takes a name. A first factor is its kind's only one
-// when somebody is signing in, so the name was `Continue`'s alone -- and the
-// call that confirms what was just enrolled is a first-factor call about a row
-// that may be named. Without it the first named factor a person adds is one
-// nothing can reach: `Verify` matched the unnamed row, and no continuation is
-// minted to reach `Continue` with, because there is nothing left to prove.
-func (s *Server) Enrol(ctx context.Context, req *app.VouchEnrolRequest) (*app.VouchEnrolResponse, error) {
-	kind := kindOf(req.GetKind())
-	switch kind {
-	case KindTotp:
-		if len(req.GetAttestation()) > 0 {
-			return nil, pderr.Invalidf("attestation",
-				"a seed is made here; a request carrying one has not decided which ceremony it is doing")
-		}
-		if s.keys.Current == "" {
-			return nil, status.Error(codes.Unimplemented,
-				"this deployment holds no key to wrap a seed with, so it cannot hold a second factor")
-		}
-
-	case KindWebAuthn:
-		if len(req.GetAttestation()) == 0 {
-			return nil, pderr.Invalidf("attestation",
-				"an authenticator makes this one; roster is handed the public half")
-		}
-
-	default:
-		// A password is `Set` or `Reset`, and neither of those is a thing a
-		// phone or a key holds. Refused rather than routed, because a caller
-		// asking for one here has misunderstood which act they are doing.
-		return nil, status.Errorf(codes.InvalidArgument,
-			"kind: %q is not something to enrol; a password is Set or Reset", req.GetKind())
-	}
-
-	ref, err := refOf(req.GetWho())
-	if err != nil {
-		return nil, err
-	}
-	if ref == nil {
-		ref, err = s.byAddress(ctx, req.GetWho().GetTenant(), req.GetWho().GetAddress())
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	who, err := s.walled.Holder().Get(ctx, app.HolderGetRequest_builder{
-		Ref:    ref,
-		Select: app.HolderSelect_builder{Alias: z.Ptr(true)}.Build(),
-	}.Build())
-	if err != nil {
-		return nil, err
-	}
-
-	// Adding a way in for somebody is not quite writing their credential, and
-	// it is close enough: an operator who could enrol a factor on an
-	// administrator's account would hold one of the two things that person
-	// signs in with. Same rule, same place.
-	if err := s.mayReach(ctx, who.GetId()); err != nil {
-		return nil, err
-	}
-
-	if kind == KindWebAuthn {
-		// Checked before it is written, which is the whole of what this branch
-		// is: an attestation nobody verified is a row that answers to whoever
-		// sent it.
-		v, err := Register(req.GetAttestation())
-		if err != nil {
-			return nil, pderr.Invalidf("attestation", "%s", err)
-		}
-
-		if _, err := s.walled.Credential().Add(ctx, app.CredentialAddRequest_builder{
-			Holder: ref,
-			Kind:   KindWebAuthn,
-			Name:   req.GetName(),
-			Secret: v.Stored,
-
-			// The counter the authenticator reported, so the first assertion
-			// has something to have to exceed. Unlike a seed there is no
-			// *unconfirmed* state to be in: registering **is** the proof, since
-			// the attestation is a signature over a challenge this deployment
-			// chose.
-			LastStep: v.Count,
-		}.Build()); err != nil {
-			return nil, err
-		}
-
-		// Nothing to answer with, and that is the shape rather than an
-		// omission: the private half never left the authenticator.
-		return app.VouchEnrolResponse_builder{}.Build(), nil
-	}
-
-	seed, err := totpSeed()
-	if err != nil {
-		return nil, status.Error(codes.Internal, "a seed cannot be made just now")
-	}
-
-	stored, err := s.keys.Wrap(seed)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "a seed cannot be stored just now")
-	}
-
-	if _, err := s.walled.Credential().Add(ctx, app.CredentialAddRequest_builder{
-		Holder: ref,
-		Kind:   KindTotp,
-		Name:   req.GetName(),
-		Secret: stored,
-	}.Build()); err != nil {
-		return nil, err
-	}
-
-	issuer := req.GetIssuer()
-	if issuer == "" {
-		issuer = "roster"
-	}
-
-	return app.VouchEnrolResponse_builder{
-		Seed: base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(seed),
-		Uri:  TotpUri(issuer, who.GetAlias(), seed),
-	}.Build(), nil
 }
