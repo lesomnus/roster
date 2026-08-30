@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/lesomnus/payday/frame"
+	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/vouch"
@@ -114,4 +115,61 @@ func (s coreCredential) ChangeMine(ctx context.Context, req *app.CredentialChang
 	}
 
 	return &app.CredentialChangeMineResponse{}, nil
+}
+
+// Unlock opens an account too many wrong answers closed, without touching the
+// secret. It is the operator write `Vouch.Unlock` was, now on the entity it is
+// about and named by reference rather than by a sign-in form.
+//
+// Held to `mayReach`: a lockout you may clear is one you could have caused, so
+// you may clear it for nobody whose permissions are not a subset of yours. That
+// rule is `server/core`'s own -- the same `mayReach` every credential write
+// meets -- so it is a line here rather than a service reaching back for it.
+func (s coreCredential) Unlock(ctx context.Context, req *app.CredentialUnlockRequest) (*app.CredentialUnlockResponse, error) {
+	kind := req.GetKind()
+	if kind == "" {
+		kind = vouch.KindPassword
+	}
+
+	v, err := s.Next().Credential().Get(ctx, app.CredentialGetRequest_builder{
+		Ref: app.CredentialRef_builder{
+			Kind: app.CredentialRefByKind_builder{
+				Holder: req.GetRef(),
+				Kind:   z.Ptr(kind),
+			}.Build(),
+		}.Build(),
+		Select: app.CredentialSelect_builder{
+			DateLocked:  z.Ptr(true),
+			DateUpdated: z.Ptr(true),
+			Holder:      app.HolderSelect_builder{}.Build(),
+		}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	holder, err := pdid.From(v.GetHolder().GetId())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.mayReach(ctx, "ref", holder); err != nil {
+		return nil, err
+	}
+
+	was := v.GetDateLocked()
+	if _, err := s.Next().Credential().Patch(ctx, app.CredentialPatchRequest_builder{
+		Ref:            app.CredentialRef_builder{Id: v.GetId()}.Build(),
+		Failures:       z.Ptr(int32(0)),
+		DateLockedNull: z.Ptr(true),
+		DateUpdated:    v.GetDateUpdated(),
+	}.Build()); err != nil {
+		return nil, err
+	}
+
+	res := app.CredentialUnlockResponse_builder{}
+	if was != nil {
+		res.WasLockedUntil = was
+	}
+
+	return res.Build(), nil
 }

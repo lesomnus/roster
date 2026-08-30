@@ -205,9 +205,9 @@ export function Person(props: {
 				    name costs: an account can be held closed by somebody else,
 				    and a person on site can simply open it. */}
 				<button
-					disabled={!props.may('/roster.VouchService/Unlock')}
+					disabled={!props.may('/roster.CredentialService/Unlock')}
 					onClick={() =>
-						run(props.admin.vouch.unlock({ who: { id: key } }), 'the account is open')
+						run(props.admin.credential.unlock({ ref: who }), 'the account is open')
 					}
 				>
 					unlock

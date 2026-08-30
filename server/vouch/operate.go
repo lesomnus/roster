@@ -9,7 +9,6 @@ import (
 	"github.com/lesomnus/z"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/pderr"
 
@@ -116,59 +115,6 @@ func (s *Server) Reset(ctx context.Context, req *app.VouchResetRequest) (*app.Vo
 	_, _ = s.walled.Holder().Invalidate(ctx, app.HolderInvalidateRequest_builder{Ref: ref}.Build())
 
 	return app.VouchResetResponse_builder{Secret: secret}.Build(), nil
-}
-
-// Unlock opens an account too many wrong answers closed.
-//
-// It clears the lockout and the count and leaves the secret alone, which is
-// what makes it a different act from [Server.Reset]: somebody who forgot their
-// password needs a new one, and somebody who was locked out by an attacker
-// needs their old one back.
-//
-// The version is a precondition, as everywhere else here, and a conflict is
-// reported rather than forced -- two operators opening one account at once is
-// one of them finding out.
-func (s *Server) Unlock(ctx context.Context, req *app.VouchUnlockRequest) (*app.VouchUnlockResponse, error) {
-	ref, err := refOf(req.GetWho())
-	if err != nil {
-		return nil, err
-	}
-	if ref == nil {
-		ref, err = s.byAddress(ctx, req.GetWho().GetTenant(), req.GetWho().GetAddress())
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	v, err := s.credential(ctx, s.walled, ref, req.GetKind())
-	if err != nil {
-		return nil, err
-	}
-	if err := s.mayReach(ctx, v.GetHolder().GetId()); err != nil {
-		return nil, err
-	}
-
-	was := v.GetDateLocked()
-
-	_, err = s.walled.Credential().Patch(ctx, app.CredentialPatchRequest_builder{
-		Ref:            app.CredentialRef_builder{Id: v.GetId()}.Build(),
-		Failures:       z.Ptr(int32(0)),
-		DateLockedNull: z.Ptr(true),
-		DateUpdated:    v.GetDateUpdated(),
-	}.Build())
-	if err != nil {
-		return nil, err
-	}
-
-	res := app.VouchUnlockResponse_builder{}
-	if was != nil {
-		// Answered rather than swallowed, so that an operator can tell "I
-		// opened it" from "it was not closed" -- which is the question they are
-		// about to be asked by whoever called them.
-		res.WasLockedUntil = timestamppb.New(was.AsTime())
-	}
-
-	return res.Build(), nil
 }
 
 // passphrase is thirty-two bytes somebody can read out over a radio.

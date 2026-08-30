@@ -246,8 +246,8 @@ func TestALocalOperatorOpensAnAccountSomebodyElseClosed(t *testing.T) {
 	x.False(shut.GetOk(), "the right password worked while the account was closed")
 	x.NotNil(shut.GetLockedUntil())
 
-	out, err := v.Unlock(asOps, app.VouchUnlockRequest_builder{
-		Who: app.VouchWho_builder{Id: joe.Bytes()}.Build(),
+	out, err := b.Walled.Credential().Unlock(asOps, app.CredentialUnlockRequest_builder{
+		Ref: app.HolderRef_builder{Id: joe.Bytes()}.Build(),
 	}.Build())
 	x.NoError(err)
 	x.NotNil(out.GetWasLockedUntil(), "an operator cannot tell 'I opened it' from 'it was not closed'")
@@ -265,8 +265,8 @@ func TestALocalOperatorOpensAnAccountSomebodyElseClosed(t *testing.T) {
 	t.Run("and an account that was open says so", func(t *testing.T) {
 		x := require.New(t)
 
-		again, err := v.Unlock(asOps, app.VouchUnlockRequest_builder{
-			Who: app.VouchWho_builder{Id: joe.Bytes()}.Build(),
+		again, err := b.Walled.Credential().Unlock(asOps, app.CredentialUnlockRequest_builder{
+			Ref: app.HolderRef_builder{Id: joe.Bytes()}.Build(),
 		}.Build())
 		x.NoError(err)
 		x.Nil(again.GetWasLockedUntil())

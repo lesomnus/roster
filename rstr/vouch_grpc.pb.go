@@ -23,7 +23,6 @@ const (
 	VouchService_Set_FullMethodName      = "/roster.VouchService/Set"
 	VouchService_Delegate_FullMethodName = "/roster.VouchService/Delegate"
 	VouchService_Reset_FullMethodName    = "/roster.VouchService/Reset"
-	VouchService_Unlock_FullMethodName   = "/roster.VouchService/Unlock"
 	VouchService_Link_FullMethodName     = "/roster.VouchService/Link"
 	VouchService_Redeem_FullMethodName   = "/roster.VouchService/Redeem"
 	VouchService_Continue_FullMethodName = "/roster.VouchService/Continue"
@@ -123,19 +122,6 @@ type VouchServiceClient interface {
 	// permission in it -- `server/core/escalate.go` is the rule and it went in
 	// before this did.
 	Reset(ctx context.Context, in *VouchResetRequest, opts ...grpc.CallOption) (*VouchResetResponse, error)
-	// Unlock opens an account that too many wrong answers closed.
-	//
-	// A convenience rather than a necessity -- a lockout releases itself after
-	// fifteen minutes (D14) -- and it is also the answer to the limitation D14
-	// recorded and could not close from where it was: *an account can still be
-	// held closed by somebody else*, ten wrong guesses every fifteen minutes,
-	// for as long as somebody cares to. A person on site can simply open it.
-	//
-	// It does not change the secret, so the same rule guards it for a smaller
-	// reason: being able to open an account is not being able to enter it, but
-	// it is a step of the same walk and refusing it separately would be a
-	// permission nobody could explain.
-	Unlock(ctx context.Context, in *VouchUnlockRequest, opts ...grpc.CallOption) (*VouchUnlockResponse, error)
 	// Link mints a way in for somebody and answers with it **once**.
 	//
 	// What roster does not do is send it. D19 puts the delivery outside, and
@@ -311,16 +297,6 @@ func (c *vouchServiceClient) Reset(ctx context.Context, in *VouchResetRequest, o
 	return out, nil
 }
 
-func (c *vouchServiceClient) Unlock(ctx context.Context, in *VouchUnlockRequest, opts ...grpc.CallOption) (*VouchUnlockResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(VouchUnlockResponse)
-	err := c.cc.Invoke(ctx, VouchService_Unlock_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *vouchServiceClient) Link(ctx context.Context, in *VouchLinkRequest, opts ...grpc.CallOption) (*VouchLinkResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(VouchLinkResponse)
@@ -472,19 +448,6 @@ type VouchServiceServer interface {
 	// permission in it -- `server/core/escalate.go` is the rule and it went in
 	// before this did.
 	Reset(context.Context, *VouchResetRequest) (*VouchResetResponse, error)
-	// Unlock opens an account that too many wrong answers closed.
-	//
-	// A convenience rather than a necessity -- a lockout releases itself after
-	// fifteen minutes (D14) -- and it is also the answer to the limitation D14
-	// recorded and could not close from where it was: *an account can still be
-	// held closed by somebody else*, ten wrong guesses every fifteen minutes,
-	// for as long as somebody cares to. A person on site can simply open it.
-	//
-	// It does not change the secret, so the same rule guards it for a smaller
-	// reason: being able to open an account is not being able to enter it, but
-	// it is a step of the same walk and refusing it separately would be a
-	// permission nobody could explain.
-	Unlock(context.Context, *VouchUnlockRequest) (*VouchUnlockResponse, error)
 	// Link mints a way in for somebody and answers with it **once**.
 	//
 	// What roster does not do is send it. D19 puts the delivery outside, and
@@ -632,9 +595,6 @@ func (UnimplementedVouchServiceServer) Delegate(context.Context, *VouchDelegateR
 func (UnimplementedVouchServiceServer) Reset(context.Context, *VouchResetRequest) (*VouchResetResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Reset not implemented")
 }
-func (UnimplementedVouchServiceServer) Unlock(context.Context, *VouchUnlockRequest) (*VouchUnlockResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Unlock not implemented")
-}
 func (UnimplementedVouchServiceServer) Link(context.Context, *VouchLinkRequest) (*VouchLinkResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Link not implemented")
 }
@@ -742,24 +702,6 @@ func _VouchService_Reset_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(VouchServiceServer).Reset(ctx, req.(*VouchResetRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _VouchService_Unlock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(VouchUnlockRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(VouchServiceServer).Unlock(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: VouchService_Unlock_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(VouchServiceServer).Unlock(ctx, req.(*VouchUnlockRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -894,10 +836,6 @@ var VouchService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Reset",
 			Handler:    _VouchService_Reset_Handler,
-		},
-		{
-			MethodName: "Unlock",
-			Handler:    _VouchService_Unlock_Handler,
 		},
 		{
 			MethodName: "Link",

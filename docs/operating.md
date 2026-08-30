@@ -1070,7 +1070,7 @@ in the console; the same three RPCs either way.
 | | |
 | --- | --- |
 | `/roster.VouchService/Reset` | a new password, generated here and answered with **once**. The operator reads it out |
-| `/roster.VouchService/Unlock` | opens an account ten wrong answers closed, without changing the secret |
+| `/roster.CredentialService/Unlock` | opens an account ten wrong answers closed, without changing the secret (moved from `VouchService`) |
 | `/roster.VouchService/Set` | writes a password somebody chose — an account portal's, not an operator's |
 
 **You may only write the credential of somebody whose permissions are a subset

@@ -451,10 +451,12 @@ func TestUnlockIsHeldToTheRuleResetIs(t *testing.T) {
 	ops := b.holder(t, ctx, b.Contoso, "ops")
 	asOps := b.mayCall(t, ctx, ops, "operator", getHolder)
 
-	v := b.operated()
+	// Unlock is a `Credential` write now, so the reach rule is `server/core`'s
+	// own -- the walled stack carries it.
+	cred := b.Walled.Credential()
 	unlock := func(who pdid.Id) error {
-		_, err := v.Unlock(asOps, app.VouchUnlockRequest_builder{
-			Who: app.VouchWho_builder{Id: who.Bytes()}.Build(),
+		_, err := cred.Unlock(asOps, app.CredentialUnlockRequest_builder{
+			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		}.Build())
 
 		return err

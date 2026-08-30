@@ -26,6 +26,7 @@ import { MeService } from '../gen/app/me_pb.js'
 import { TenantService } from '../gen/roster/payday/tenant_svc_pb.js'
 import { HolderService } from '../gen/roster/payday/holder_svc_pb.js'
 import { VouchService } from '../gen/app/vouch_pb.js'
+import { CredentialService } from '../gen/app/credential_svc_pb.js'
 import { IssueService } from '../gen/app/issue_pb.js'
 import { BatchService } from '@lesomnus/payday/pdpb'
 
@@ -82,6 +83,7 @@ export function app(transport: Transport): App {
 export interface Admin {
 	readonly holder: Client<typeof HolderService>
 	readonly vouch: Client<typeof VouchService>
+	readonly credential: Client<typeof CredentialService>
 
 	/** The four writes that stand a customer up; see `customers.tsx`. */
 	readonly tenant: Client<typeof TenantService>
@@ -103,6 +105,7 @@ export function admin(transport: Transport): Admin {
 	return {
 		holder: createClient(HolderService, transport),
 		vouch: createClient(VouchService, transport),
+		credential: createClient(CredentialService, transport),
 		tenant: createClient(TenantService, transport),
 		role: createClient(RoleService, transport),
 		binding: createClient(BindingService, transport),

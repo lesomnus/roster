@@ -256,7 +256,7 @@ func newCmdVouchUnlock(c *Config) *xli.Command {
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
-			s, v, err := vouching(ctx, c)
+			s, _, err := vouching(ctx, c)
 			if err != nil {
 				return err
 			}
@@ -269,7 +269,13 @@ func newCmdVouchUnlock(c *Config) *xli.Command {
 
 			kind, _ := flg.Find[string](cmd, "kind")
 
-			res, err := v.Unlock(ctx, app.VouchUnlockRequest_builder{Who: who, Kind: kind}.Build())
+			// Unlock is a `Credential` write now (`Vouch.Unlock` moved onto the
+			// entity), named by reference. Locally, through `Ungated`, so the
+			// escalation rule waives itself for a frameless caller.
+			res, err := s.Ungated.Credential().Unlock(ctx, app.CredentialUnlockRequest_builder{
+				Ref:  app.HolderRef_builder{Id: who.GetId()}.Build(),
+				Kind: kind,
+			}.Build())
 			if err != nil {
 				return err
 			}

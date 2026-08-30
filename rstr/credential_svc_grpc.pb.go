@@ -27,6 +27,7 @@ const (
 	CredentialService_List_FullMethodName       = "/roster.CredentialService/List"
 	CredentialService_Watch_FullMethodName      = "/roster.CredentialService/Watch"
 	CredentialService_ChangeMine_FullMethodName = "/roster.CredentialService/ChangeMine"
+	CredentialService_Unlock_FullMethodName     = "/roster.CredentialService/Unlock"
 )
 
 // CredentialServiceClient is the client API for CredentialService service.
@@ -81,6 +82,17 @@ type CredentialServiceClient interface {
 	// operator/recovery path, because a bearer setting a first password with
 	// nothing to reauth against is the account takeover this closes.
 	ChangeMine(ctx context.Context, in *CredentialChangeMineRequest, opts ...grpc.CallOption) (*CredentialChangeMineResponse, error)
+	// Unlock opens an account too many wrong answers closed, without touching the
+	// secret. Whose credential it is, by reference -- an operator naming somebody
+	// they already know, so no sign-in form and no email lookup (that stays with
+	// the recovery flow). Held to `mayReach`: you may unlock nobody whose
+	// permissions are not a subset of your own, because a lockout you can clear
+	// is a lockout you could also have caused.
+	//
+	// A name of its own rather than a `Patch` field: a role is a list of methods,
+	// so "may open a locked account" is grantable only by being nameable, apart
+	// from "may rewrite the row". The same argument `HolderService.Enable` makes.
+	Unlock(ctx context.Context, in *CredentialUnlockRequest, opts ...grpc.CallOption) (*CredentialUnlockResponse, error)
 }
 
 type credentialServiceClient struct {
@@ -180,6 +192,16 @@ func (c *credentialServiceClient) ChangeMine(ctx context.Context, in *Credential
 	return out, nil
 }
 
+func (c *credentialServiceClient) Unlock(ctx context.Context, in *CredentialUnlockRequest, opts ...grpc.CallOption) (*CredentialUnlockResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CredentialUnlockResponse)
+	err := c.cc.Invoke(ctx, CredentialService_Unlock_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CredentialServiceServer is the server API for CredentialService service.
 // All implementations must embed UnimplementedCredentialServiceServer
 // for forward compatibility.
@@ -232,6 +254,17 @@ type CredentialServiceServer interface {
 	// operator/recovery path, because a bearer setting a first password with
 	// nothing to reauth against is the account takeover this closes.
 	ChangeMine(context.Context, *CredentialChangeMineRequest) (*CredentialChangeMineResponse, error)
+	// Unlock opens an account too many wrong answers closed, without touching the
+	// secret. Whose credential it is, by reference -- an operator naming somebody
+	// they already know, so no sign-in form and no email lookup (that stays with
+	// the recovery flow). Held to `mayReach`: you may unlock nobody whose
+	// permissions are not a subset of your own, because a lockout you can clear
+	// is a lockout you could also have caused.
+	//
+	// A name of its own rather than a `Patch` field: a role is a list of methods,
+	// so "may open a locked account" is grantable only by being nameable, apart
+	// from "may rewrite the row". The same argument `HolderService.Enable` makes.
+	Unlock(context.Context, *CredentialUnlockRequest) (*CredentialUnlockResponse, error)
 	mustEmbedUnimplementedCredentialServiceServer()
 }
 
@@ -265,6 +298,9 @@ func (UnimplementedCredentialServiceServer) Watch(*CredentialWatchRequest, grpc.
 }
 func (UnimplementedCredentialServiceServer) ChangeMine(context.Context, *CredentialChangeMineRequest) (*CredentialChangeMineResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ChangeMine not implemented")
+}
+func (UnimplementedCredentialServiceServer) Unlock(context.Context, *CredentialUnlockRequest) (*CredentialUnlockResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Unlock not implemented")
 }
 func (UnimplementedCredentialServiceServer) mustEmbedUnimplementedCredentialServiceServer() {}
 func (UnimplementedCredentialServiceServer) testEmbeddedByValue()                           {}
@@ -424,6 +460,24 @@ func _CredentialService_ChangeMine_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CredentialService_Unlock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CredentialUnlockRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CredentialServiceServer).Unlock(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CredentialService_Unlock_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CredentialServiceServer).Unlock(ctx, req.(*CredentialUnlockRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CredentialService_ServiceDesc is the grpc.ServiceDesc for CredentialService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -458,6 +512,10 @@ var CredentialService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ChangeMine",
 			Handler:    _CredentialService_ChangeMine_Handler,
+		},
+		{
+			MethodName: "Unlock",
+			Handler:    _CredentialService_Unlock_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
