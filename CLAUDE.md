@@ -119,6 +119,33 @@ Field numbers are read by name across every entity:
 - **8–12 and 16+** are yours. An entity that does not want 4–7 **leaves those
   numbers empty** rather than spending them on something else.
 
+## Overlay before service, layer before overlay
+
+Most of what looks like a new service is a method on an entity that already has
+one. Before writing a `*_svc` proto, ask **which single entity's rows this
+reads or writes**:
+
+- **It transforms or guards a generated verb** — hashes the secret on
+  `Credential.Add`, strips a column out of a `Get`, refuses a field on `Patch`.
+  That is a **layer** in `server/core`, in front of the generated `Gate`; it
+  needs no new RPC. `pd.Secret` is the shape (`cmd/serve.go`), and per-target
+  rules live here because the gate sees only the method, not the request.
+- **It is a new verb on those same rows** — `Verify` a secret, `Unlock` a
+  lockout, `Disable` somebody. That is an **overlay** in `proto/ext/`: a method
+  added to the entity's own service. `HolderService`'s `Disable`/`Enable`/
+  `Invalidate`/`Update`/`SignsIn`/`RevokeKey` are the pattern — *a second
+  service would be one more name for the same rows.*
+
+A new service is justified only when the operation belongs to **no single
+entity**: it reads the caller from the frame (`MeService`), it answers before
+anybody is resolved to a tenant so it reads the unwalled server and hands back
+one identifier and no row (`FrontService`), or it mints/spends secrets across
+several rows in one flow (the sign-in flow, `AuthService`). Each such service
+carries a `// Why it is not XService` paragraph naming which case it is, and
+that paragraph is **required**: a service that cannot write it is the smell this
+section exists to catch. `Vouch.Set` was `Credential.Add` with a hash, invisible
+once written; the writes that hid there belong on `CredentialService`.
+
 ## Writing a layer
 
 A layer embeds `Overlay` — and must also write `WithDriver`, which nothing

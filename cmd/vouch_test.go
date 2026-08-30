@@ -330,10 +330,15 @@ func TestAnEmptySecretIsNotASecret(t *testing.T) {
 
 // TestTheCredentialServiceIsNotOnTheWire is the door this all rests on.
 //
-// `server/vouch` exists because the generated `CredentialService.Get` returns
-// whatever columns it is asked for, and one of them is the verifier. This is
-// the assertion that it cannot be called -- not that it narrows, not that it
-// refuses, but that there is no such method on this server.
+// The generated `CredentialService.Get` returns whatever columns it is asked
+// for, and one of them is the verifier. The service is **registered** now --
+// for its overlays, `ChangeMine` and the writes moving onto it -- so this is no
+// longer "no such method". It is that `Get` is closed **by method**, and closed
+// even to a caller who holds it: that is the stronger statement, and the one the
+// reopening has to keep true. So this grants the caller everything, to get past
+// the gate, and asks whether the closed door still refuses -- because a test
+// run as a role-less caller would pass on the gate's refusal whether `Get` were
+// closed or not.
 func TestTheCredentialServiceIsNotOnTheWire(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
@@ -342,9 +347,9 @@ func TestTheCredentialServiceIsNotOnTheWire(t *testing.T) {
 
 	conn := served(t, b.Server)
 
-	// As somebody real, and somebody whose own row this is. Anonymously the
-	// call is refused before it is dispatched, which would make this test pass
-	// whether the service were registered or not.
+	// Holding every method, so what refuses `Get` is the closed door and not a
+	// missing role.
+	b.mayAnything(b.ContosoUser, b.Contoso)
 	ctx = auth.PlainProvider(b.ContosoUser.String()).Provide(ctx)
 
 	_, err := app.NewCredentialServiceClient(conn).Get(ctx, app.CredentialGetRequest_builder{

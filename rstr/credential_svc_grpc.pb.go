@@ -19,13 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	CredentialService_Add_FullMethodName   = "/roster.CredentialService/Add"
-	CredentialService_Get_FullMethodName   = "/roster.CredentialService/Get"
-	CredentialService_Patch_FullMethodName = "/roster.CredentialService/Patch"
-	CredentialService_Apply_FullMethodName = "/roster.CredentialService/Apply"
-	CredentialService_Erase_FullMethodName = "/roster.CredentialService/Erase"
-	CredentialService_List_FullMethodName  = "/roster.CredentialService/List"
-	CredentialService_Watch_FullMethodName = "/roster.CredentialService/Watch"
+	CredentialService_Add_FullMethodName        = "/roster.CredentialService/Add"
+	CredentialService_Get_FullMethodName        = "/roster.CredentialService/Get"
+	CredentialService_Patch_FullMethodName      = "/roster.CredentialService/Patch"
+	CredentialService_Apply_FullMethodName      = "/roster.CredentialService/Apply"
+	CredentialService_Erase_FullMethodName      = "/roster.CredentialService/Erase"
+	CredentialService_List_FullMethodName       = "/roster.CredentialService/List"
+	CredentialService_Watch_FullMethodName      = "/roster.CredentialService/Watch"
+	CredentialService_ChangeMine_FullMethodName = "/roster.CredentialService/ChangeMine"
 )
 
 // CredentialServiceClient is the client API for CredentialService service.
@@ -56,6 +57,30 @@ type CredentialServiceClient interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(ctx context.Context, in *CredentialWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CredentialWatchResponse], error)
+	// ChangeMine changes the **caller's own** password, and only the caller's.
+	//
+	// No `holder`/`who` field, deliberately: the row is the frame's actor and no
+	// field can redirect it, the same "a which with no whose" that makes
+	// `MeService.IssueKey` safe to grant. So a role naming this method means
+	// exactly *may change your own password*, where the smallest role over the
+	// operator write (`Set`, which takes a subject) would mean *reset anybody no
+	// wider than you*.
+	//
+	// # `current` is the reauth, and it is what makes this safe to hold
+	//
+	// The new secret is written only after the current one is verified. That is
+	// what keeps a credential which merely *acts as* somebody -- a key pasted
+	// into a build log -- from changing their password: it can act as them and
+	// still not know the password it would be replacing. The guarantee does not
+	// depend on **how** the caller authenticated, which is deliberate -- payday
+	// keeps the auth method for the log and refuses to let a rule turn on it, so
+	// the proof lives in the request rather than in a check on the credential's
+	// kind.
+	//
+	// A first password (there is none to verify against) is not this: it is the
+	// operator/recovery path, because a bearer setting a first password with
+	// nothing to reauth against is the account takeover this closes.
+	ChangeMine(ctx context.Context, in *CredentialChangeMineRequest, opts ...grpc.CallOption) (*CredentialChangeMineResponse, error)
 }
 
 type credentialServiceClient struct {
@@ -145,6 +170,16 @@ func (c *credentialServiceClient) Watch(ctx context.Context, in *CredentialWatch
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type CredentialService_WatchClient = grpc.ServerStreamingClient[CredentialWatchResponse]
 
+func (c *credentialServiceClient) ChangeMine(ctx context.Context, in *CredentialChangeMineRequest, opts ...grpc.CallOption) (*CredentialChangeMineResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CredentialChangeMineResponse)
+	err := c.cc.Invoke(ctx, CredentialService_ChangeMine_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CredentialServiceServer is the server API for CredentialService service.
 // All implementations must embed UnimplementedCredentialServiceServer
 // for forward compatibility.
@@ -173,6 +208,30 @@ type CredentialServiceServer interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(*CredentialWatchRequest, grpc.ServerStreamingServer[CredentialWatchResponse]) error
+	// ChangeMine changes the **caller's own** password, and only the caller's.
+	//
+	// No `holder`/`who` field, deliberately: the row is the frame's actor and no
+	// field can redirect it, the same "a which with no whose" that makes
+	// `MeService.IssueKey` safe to grant. So a role naming this method means
+	// exactly *may change your own password*, where the smallest role over the
+	// operator write (`Set`, which takes a subject) would mean *reset anybody no
+	// wider than you*.
+	//
+	// # `current` is the reauth, and it is what makes this safe to hold
+	//
+	// The new secret is written only after the current one is verified. That is
+	// what keeps a credential which merely *acts as* somebody -- a key pasted
+	// into a build log -- from changing their password: it can act as them and
+	// still not know the password it would be replacing. The guarantee does not
+	// depend on **how** the caller authenticated, which is deliberate -- payday
+	// keeps the auth method for the log and refuses to let a rule turn on it, so
+	// the proof lives in the request rather than in a check on the credential's
+	// kind.
+	//
+	// A first password (there is none to verify against) is not this: it is the
+	// operator/recovery path, because a bearer setting a first password with
+	// nothing to reauth against is the account takeover this closes.
+	ChangeMine(context.Context, *CredentialChangeMineRequest) (*CredentialChangeMineResponse, error)
 	mustEmbedUnimplementedCredentialServiceServer()
 }
 
@@ -203,6 +262,9 @@ func (UnimplementedCredentialServiceServer) List(context.Context, *CredentialLis
 }
 func (UnimplementedCredentialServiceServer) Watch(*CredentialWatchRequest, grpc.ServerStreamingServer[CredentialWatchResponse]) error {
 	return status.Error(codes.Unimplemented, "method Watch not implemented")
+}
+func (UnimplementedCredentialServiceServer) ChangeMine(context.Context, *CredentialChangeMineRequest) (*CredentialChangeMineResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ChangeMine not implemented")
 }
 func (UnimplementedCredentialServiceServer) mustEmbedUnimplementedCredentialServiceServer() {}
 func (UnimplementedCredentialServiceServer) testEmbeddedByValue()                           {}
@@ -344,6 +406,24 @@ func _CredentialService_Watch_Handler(srv interface{}, stream grpc.ServerStream)
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type CredentialService_WatchServer = grpc.ServerStreamingServer[CredentialWatchResponse]
 
+func _CredentialService_ChangeMine_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CredentialChangeMineRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CredentialServiceServer).ChangeMine(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CredentialService_ChangeMine_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CredentialServiceServer).ChangeMine(ctx, req.(*CredentialChangeMineRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CredentialService_ServiceDesc is the grpc.ServiceDesc for CredentialService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -374,6 +454,10 @@ var CredentialService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _CredentialService_List_Handler,
+		},
+		{
+			MethodName: "ChangeMine",
+			Handler:    _CredentialService_ChangeMine_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

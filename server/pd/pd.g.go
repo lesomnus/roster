@@ -10180,6 +10180,19 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 
 		return anypb.New(res)
 
+	case rstr.CredentialService_ChangeMine_FullMethodName:
+		v := &rstr.CredentialChangeMineRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Credential().ChangeMine(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
 	case rstr.DelegationService_Add_FullMethodName:
 		v := &rstr.DelegationAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
