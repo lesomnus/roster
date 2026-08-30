@@ -629,7 +629,7 @@ func newCmdVouchRevoke(c *Config) *xli.Command {
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
-			cl, done, err := wired(ctx, c)
+			conn, done, err := dialed(ctx, c)
 			if err != nil {
 				return err
 			}
@@ -640,7 +640,11 @@ func newCmdVouchRevoke(c *Config) *xli.Command {
 				return err
 			}
 
-			if _, err := cl.Revoke(ctx, app.VouchRevokeRequest_builder{
+			// `Revoke` is a `Delegation` write now (`Vouch.Revoke` moved onto the
+			// entity), so this dials the `DelegationService` client. The command
+			// keeps its `vouch revoke` name -- what a person types is not where
+			// the RPC lives.
+			if _, err := app.NewDelegationServiceClient(conn).Revoke(ctx, app.DelegationRevokeRequest_builder{
 				Token: string(token),
 			}.Build()); err != nil {
 				return err

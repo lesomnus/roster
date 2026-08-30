@@ -18,7 +18,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/delegation_svc.g.proto.
  */
 export const file_app_delegation_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChphcHAvZGVsZWdhdGlvbl9zdmMuZy5wcm90bxIGcm9zdGVyIugBChREZWxlZ2F0aW9uQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEg8KB21ldGhvZHMYCCADKAkSFQoGc2VjcmV0GAkgASgMQgWqAQIIAhIVCgZpc3N1ZXIYCiABKAxCBaoBAggCEjAKDGRhdGVfZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJkChREZWxlZ2F0aW9uR2V0UmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuRGVsZWdhdGlvblJlZhIoCgZzZWxlY3QYAiABKAsyGC5yb3N0ZXIuRGVsZWdhdGlvblNlbGVjdCI2Cg1EZWxlZ2F0aW9uUmVmEgwKAmlkGAEgASgMSAASEAoGc2VjcmV0GAkgASgMSABCBQoDa2V5Is0BChBEZWxlZ2F0aW9uU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0Eg8KB21ldGhvZHMYCCABKAgSDgoGc2VjcmV0GAkgASgIEg4KBmlzc3VlchgKIAEoCBIUCgxkYXRlX2V4cGlyZXMYCyABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKKAQoWRGVsZWdhdGlvblBhdGNoUmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuRGVsZWdhdGlvblJlZhIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCCJZChZEZWxlZ2F0aW9uQXBwbHlSZXF1ZXN0EiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5EZWxlZ2F0aW9uUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giKQoXRGVsZWdhdGlvbkVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIm0KFURlbGVnYXRpb25MaXN0UmVxdWVzdBIpCgdmaWx0ZXJzGAEgAygLMhgucm9zdGVyLkRlbGVnYXRpb25GaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIlAKFkRlbGVnYXRpb25MaXN0UmVzcG9uc2USIQoFaXRlbXMYASADKAsyEi5yb3N0ZXIuRGVsZWdhdGlvbhITCgRuZXh0GAIgASgJQgWqAQIIAiI2ChBEZWxlZ2F0aW9uRmlsdGVyEiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5EZWxlZ2F0aW9uUmVmMocDChFEZWxlZ2F0aW9uU2VydmljZRI3CgNBZGQSHC5yb3N0ZXIuRGVsZWdhdGlvbkFkZFJlcXVlc3QaEi5yb3N0ZXIuRGVsZWdhdGlvbhI3CgNHZXQSHC5yb3N0ZXIuRGVsZWdhdGlvbkdldFJlcXVlc3QaEi5yb3N0ZXIuRGVsZWdhdGlvbhI7CgVQYXRjaBIeLnJvc3Rlci5EZWxlZ2F0aW9uUGF0Y2hSZXF1ZXN0GhIucm9zdGVyLkRlbGVnYXRpb24SOwoFQXBwbHkSHi5yb3N0ZXIuRGVsZWdhdGlvbkFwcGx5UmVxdWVzdBoSLnJvc3Rlci5EZWxlZ2F0aW9uEj8KBUVyYXNlEhUucm9zdGVyLkRlbGVnYXRpb25SZWYaHy5yb3N0ZXIuRGVsZWdhdGlvbkVyYXNlUmVzcG9uc2USRQoETGlzdBIdLnJvc3Rlci5EZWxlZ2F0aW9uTGlzdFJlcXVlc3QaHi5yb3N0ZXIuRGVsZWdhdGlvbkxpc3RSZXNwb25zZUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_delegation, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChphcHAvZGVsZWdhdGlvbl9zdmMuZy5wcm90bxIGcm9zdGVyIugBChREZWxlZ2F0aW9uQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEg8KB21ldGhvZHMYCCADKAkSFQoGc2VjcmV0GAkgASgMQgWqAQIIAhIVCgZpc3N1ZXIYCiABKAxCBaoBAggCEjAKDGRhdGVfZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJkChREZWxlZ2F0aW9uR2V0UmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuRGVsZWdhdGlvblJlZhIoCgZzZWxlY3QYAiABKAsyGC5yb3N0ZXIuRGVsZWdhdGlvblNlbGVjdCI2Cg1EZWxlZ2F0aW9uUmVmEgwKAmlkGAEgASgMSAASEAoGc2VjcmV0GAkgASgMSABCBQoDa2V5Is0BChBEZWxlZ2F0aW9uU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0Eg8KB21ldGhvZHMYCCABKAgSDgoGc2VjcmV0GAkgASgIEg4KBmlzc3VlchgKIAEoCBIUCgxkYXRlX2V4cGlyZXMYCyABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKKAQoWRGVsZWdhdGlvblBhdGNoUmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuRGVsZWdhdGlvblJlZhIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCCJZChZEZWxlZ2F0aW9uQXBwbHlSZXF1ZXN0EiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5EZWxlZ2F0aW9uUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giKQoXRGVsZWdhdGlvbkVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIm0KFURlbGVnYXRpb25MaXN0UmVxdWVzdBIpCgdmaWx0ZXJzGAEgAygLMhgucm9zdGVyLkRlbGVnYXRpb25GaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIlAKFkRlbGVnYXRpb25MaXN0UmVzcG9uc2USIQoFaXRlbXMYASADKAsyEi5yb3N0ZXIuRGVsZWdhdGlvbhITCgRuZXh0GAIgASgJQgWqAQIIAiI2ChBEZWxlZ2F0aW9uRmlsdGVyEiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5EZWxlZ2F0aW9uUmVmIi8KF0RlbGVnYXRpb25SZXZva2VSZXF1ZXN0EhQKBXRva2VuGAEgASgJQgWqAQIIAiIaChhEZWxlZ2F0aW9uUmV2b2tlUmVzcG9uc2Uy1AMKEURlbGVnYXRpb25TZXJ2aWNlEjcKA0FkZBIcLnJvc3Rlci5EZWxlZ2F0aW9uQWRkUmVxdWVzdBoSLnJvc3Rlci5EZWxlZ2F0aW9uEjcKA0dldBIcLnJvc3Rlci5EZWxlZ2F0aW9uR2V0UmVxdWVzdBoSLnJvc3Rlci5EZWxlZ2F0aW9uEjsKBVBhdGNoEh4ucm9zdGVyLkRlbGVnYXRpb25QYXRjaFJlcXVlc3QaEi5yb3N0ZXIuRGVsZWdhdGlvbhI7CgVBcHBseRIeLnJvc3Rlci5EZWxlZ2F0aW9uQXBwbHlSZXF1ZXN0GhIucm9zdGVyLkRlbGVnYXRpb24SPwoFRXJhc2USFS5yb3N0ZXIuRGVsZWdhdGlvblJlZhofLnJvc3Rlci5EZWxlZ2F0aW9uRXJhc2VSZXNwb25zZRJFCgRMaXN0Eh0ucm9zdGVyLkRlbGVnYXRpb25MaXN0UmVxdWVzdBoeLnJvc3Rlci5EZWxlZ2F0aW9uTGlzdFJlc3BvbnNlEksKBlJldm9rZRIfLnJvc3Rlci5EZWxlZ2F0aW9uUmV2b2tlUmVxdWVzdBogLnJvc3Rlci5EZWxlZ2F0aW9uUmV2b2tlUmVzcG9uc2VCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_delegation, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.DelegationAddRequest
@@ -348,6 +348,38 @@ export const DelegationFilterSchema: GenMessage<DelegationFilter> = /*@__PURE__*
   messageDesc(file_app_delegation_svc_g, 9);
 
 /**
+ * @generated from message roster.DelegationRevokeRequest
+ */
+export type DelegationRevokeRequest = Message<"roster.DelegationRevokeRequest"> & {
+  /**
+   * The delegation to end, as it was handed over.
+   *
+   * @generated from field: string token = 1 [features.field_presence = IMPLICIT];
+   */
+  token: string;
+};
+
+/**
+ * Describes the message roster.DelegationRevokeRequest.
+ * Use `create(DelegationRevokeRequestSchema)` to create a new message.
+ */
+export const DelegationRevokeRequestSchema: GenMessage<DelegationRevokeRequest> = /*@__PURE__*/
+  messageDesc(file_app_delegation_svc_g, 10);
+
+/**
+ * @generated from message roster.DelegationRevokeResponse
+ */
+export type DelegationRevokeResponse = Message<"roster.DelegationRevokeResponse"> & {
+};
+
+/**
+ * Describes the message roster.DelegationRevokeResponse.
+ * Use `create(DelegationRevokeResponseSchema)` to create a new message.
+ */
+export const DelegationRevokeResponseSchema: GenMessage<DelegationRevokeResponse> = /*@__PURE__*/
+  messageDesc(file_app_delegation_svc_g, 11);
+
+/**
  * @generated from service roster.DelegationService
  */
 export const DelegationService: GenService<{
@@ -410,6 +442,24 @@ export const DelegationService: GenService<{
     methodKind: "unary";
     input: typeof DelegationListRequestSchema;
     output: typeof DelegationListResponseSchema;
+  },
+  /**
+   * Revoke ends a delegation before its expiry -- the delete D23 said a sign-out
+   * has to be able to make.
+   *
+   * Everything answers the same: a token that was never here, one that has
+   * expired, one somebody else was issued -- each succeeds and removes nothing,
+   * which is `Erase`'s rule (*erasing what is not there succeeds*) and what
+   * keeps the answer from telling whoever holds a found string whether it is
+   * real, whose it is, or still alive. What a caller may rely on is that a
+   * delegation **it** was issued is gone afterwards.
+   *
+   * @generated from rpc roster.DelegationService.Revoke
+   */
+  revoke: {
+    methodKind: "unary";
+    input: typeof DelegationRevokeRequestSchema;
+    output: typeof DelegationRevokeResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_app_delegation_svc_g, 0);

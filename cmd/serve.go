@@ -823,6 +823,10 @@ func register(g grpc.ServiceRegistrar, s app.Server) {
 	// its generated reads and raw `Add`/`Erase` are shut by method in
 	// `closed` -- so nothing on the wire answers with the `secret` column.
 	app.RegisterCredentialServiceServer(g, s.Credential())
+	// `DelegationService`, like `CredentialService`, for its overlay (`Revoke`)
+	// -- its reads and raw writes are shut by method in `closed`, so nothing on
+	// the wire answers with the token column.
+	app.RegisterDelegationServiceServer(g, s.Delegation())
 	app.RegisterTenantServiceServer(g, s.Tenant())
 	app.RegisterHostServiceServer(g, s.Host())
 	app.RegisterMailDomainServiceServer(g, s.MailDomain())
@@ -862,13 +866,11 @@ func register(g grpc.ServiceRegistrar, s app.Server) {
 func (s *Server) closed(c Config) func(method string) bool {
 	was := c.Server.Closed()
 
-	// And `DelegationService` beside it, for the same reason and with no
-	// exception: unlike `ApiKeyService` there is no port whose reason for
-	// existing is managing these. Nobody manages a credential that lives for
-	// minutes; what a person does with one is stop using it.
-	shut := []string{
-		app.DelegationService_ServiceDesc.ServiceName,
-	}
+	// `DelegationService` is registered now for its `Revoke` overlay, so it too
+	// is shut a method at a time rather than whole: the reads answer the token
+	// column and the raw writes take a caller-chosen one, and only `Revoke` --
+	// which answers nothing -- is meant to reach the wire.
+	shut := []string{}
 
 	// `ApiKey.Add` takes a verifier from the caller, so serving it beside
 	// `IssueService` would be offering the thing `Issue` exists to stop: a key
@@ -889,6 +891,12 @@ func (s *Server) closed(c Config) func(method string) bool {
 		app.CredentialService_Watch_FullMethodName,
 		app.CredentialService_Add_FullMethodName,
 		app.CredentialService_Erase_FullMethodName,
+		app.DelegationService_Get_FullMethodName,
+		app.DelegationService_List_FullMethodName,
+		app.DelegationService_Add_FullMethodName,
+		app.DelegationService_Erase_FullMethodName,
+		app.DelegationService_Patch_FullMethodName,
+		app.DelegationService_Apply_FullMethodName,
 	}
 	if !s.Keys {
 		// Everywhere but the one port whose reason for existing is managing

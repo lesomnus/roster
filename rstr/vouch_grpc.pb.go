@@ -25,7 +25,6 @@ const (
 	VouchService_Link_FullMethodName     = "/roster.VouchService/Link"
 	VouchService_Redeem_FullMethodName   = "/roster.VouchService/Redeem"
 	VouchService_Continue_FullMethodName = "/roster.VouchService/Continue"
-	VouchService_Revoke_FullMethodName   = "/roster.VouchService/Revoke"
 	VouchService_Accept_FullMethodName   = "/roster.VouchService/Accept"
 )
 
@@ -167,14 +166,6 @@ type VouchServiceClient interface {
 	// `Delegate` -> `Continue` -> `Delegate`, and the last call spends what the
 	// first two proved.
 	Continue(ctx context.Context, in *VouchContinueRequest, opts ...grpc.CallOption) (*VouchContinueResponse, error)
-	// Revoke ends a delegation before its expiry.
-	//
-	// D23 says *revoking it is a delete* and for a while nothing could:
-	// `DelegationService` is unregistered and closed, so a person clicking sign
-	// out left the app holding a credential that went on working. This is the
-	// delete, and the caller who may make it is the one that can prove it holds
-	// the token -- which is the same pair `roster-as` already carries.
-	Revoke(ctx context.Context, in *VouchRevokeRequest, opts ...grpc.CallOption) (*VouchRevokeResponse, error)
 	// Accept mints for somebody a front door has **already** checked, and it is
 	// the one method here that verifies nothing.
 	//
@@ -284,16 +275,6 @@ func (c *vouchServiceClient) Continue(ctx context.Context, in *VouchContinueRequ
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(VouchContinueResponse)
 	err := c.cc.Invoke(ctx, VouchService_Continue_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *vouchServiceClient) Revoke(ctx context.Context, in *VouchRevokeRequest, opts ...grpc.CallOption) (*VouchRevokeResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(VouchRevokeResponse)
-	err := c.cc.Invoke(ctx, VouchService_Revoke_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -448,14 +429,6 @@ type VouchServiceServer interface {
 	// `Delegate` -> `Continue` -> `Delegate`, and the last call spends what the
 	// first two proved.
 	Continue(context.Context, *VouchContinueRequest) (*VouchContinueResponse, error)
-	// Revoke ends a delegation before its expiry.
-	//
-	// D23 says *revoking it is a delete* and for a while nothing could:
-	// `DelegationService` is unregistered and closed, so a person clicking sign
-	// out left the app holding a credential that went on working. This is the
-	// delete, and the caller who may make it is the one that can prove it holds
-	// the token -- which is the same pair `roster-as` already carries.
-	Revoke(context.Context, *VouchRevokeRequest) (*VouchRevokeResponse, error)
 	// Accept mints for somebody a front door has **already** checked, and it is
 	// the one method here that verifies nothing.
 	//
@@ -528,9 +501,6 @@ func (UnimplementedVouchServiceServer) Redeem(context.Context, *VouchRedeemReque
 }
 func (UnimplementedVouchServiceServer) Continue(context.Context, *VouchContinueRequest) (*VouchContinueResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Continue not implemented")
-}
-func (UnimplementedVouchServiceServer) Revoke(context.Context, *VouchRevokeRequest) (*VouchRevokeResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Revoke not implemented")
 }
 func (UnimplementedVouchServiceServer) Accept(context.Context, *VouchAcceptRequest) (*VouchDelegateResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Accept not implemented")
@@ -664,24 +634,6 @@ func _VouchService_Continue_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-func _VouchService_Revoke_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(VouchRevokeRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(VouchServiceServer).Revoke(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: VouchService_Revoke_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(VouchServiceServer).Revoke(ctx, req.(*VouchRevokeRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _VouchService_Accept_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(VouchAcceptRequest)
 	if err := dec(in); err != nil {
@@ -730,10 +682,6 @@ var VouchService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Continue",
 			Handler:    _VouchService_Continue_Handler,
-		},
-		{
-			MethodName: "Revoke",
-			Handler:    _VouchService_Revoke_Handler,
 		},
 		{
 			MethodName: "Accept",

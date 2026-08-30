@@ -19,12 +19,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	DelegationService_Add_FullMethodName   = "/roster.DelegationService/Add"
-	DelegationService_Get_FullMethodName   = "/roster.DelegationService/Get"
-	DelegationService_Patch_FullMethodName = "/roster.DelegationService/Patch"
-	DelegationService_Apply_FullMethodName = "/roster.DelegationService/Apply"
-	DelegationService_Erase_FullMethodName = "/roster.DelegationService/Erase"
-	DelegationService_List_FullMethodName  = "/roster.DelegationService/List"
+	DelegationService_Add_FullMethodName    = "/roster.DelegationService/Add"
+	DelegationService_Get_FullMethodName    = "/roster.DelegationService/Get"
+	DelegationService_Patch_FullMethodName  = "/roster.DelegationService/Patch"
+	DelegationService_Apply_FullMethodName  = "/roster.DelegationService/Apply"
+	DelegationService_Erase_FullMethodName  = "/roster.DelegationService/Erase"
+	DelegationService_List_FullMethodName   = "/roster.DelegationService/List"
+	DelegationService_Revoke_FullMethodName = "/roster.DelegationService/Revoke"
 )
 
 // DelegationServiceClient is the client API for DelegationService service.
@@ -43,6 +44,16 @@ type DelegationServiceClient interface {
 	Erase(ctx context.Context, in *DelegationRef, opts ...grpc.CallOption) (*DelegationEraseResponse, error)
 	// List reads Delegations a page at a time.
 	List(ctx context.Context, in *DelegationListRequest, opts ...grpc.CallOption) (*DelegationListResponse, error)
+	// Revoke ends a delegation before its expiry -- the delete D23 said a sign-out
+	// has to be able to make.
+	//
+	// Everything answers the same: a token that was never here, one that has
+	// expired, one somebody else was issued -- each succeeds and removes nothing,
+	// which is `Erase`'s rule (*erasing what is not there succeeds*) and what
+	// keeps the answer from telling whoever holds a found string whether it is
+	// real, whose it is, or still alive. What a caller may rely on is that a
+	// delegation **it** was issued is gone afterwards.
+	Revoke(ctx context.Context, in *DelegationRevokeRequest, opts ...grpc.CallOption) (*DelegationRevokeResponse, error)
 }
 
 type delegationServiceClient struct {
@@ -113,6 +124,16 @@ func (c *delegationServiceClient) List(ctx context.Context, in *DelegationListRe
 	return out, nil
 }
 
+func (c *delegationServiceClient) Revoke(ctx context.Context, in *DelegationRevokeRequest, opts ...grpc.CallOption) (*DelegationRevokeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DelegationRevokeResponse)
+	err := c.cc.Invoke(ctx, DelegationService_Revoke_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DelegationServiceServer is the server API for DelegationService service.
 // All implementations must embed UnimplementedDelegationServiceServer
 // for forward compatibility.
@@ -129,6 +150,16 @@ type DelegationServiceServer interface {
 	Erase(context.Context, *DelegationRef) (*DelegationEraseResponse, error)
 	// List reads Delegations a page at a time.
 	List(context.Context, *DelegationListRequest) (*DelegationListResponse, error)
+	// Revoke ends a delegation before its expiry -- the delete D23 said a sign-out
+	// has to be able to make.
+	//
+	// Everything answers the same: a token that was never here, one that has
+	// expired, one somebody else was issued -- each succeeds and removes nothing,
+	// which is `Erase`'s rule (*erasing what is not there succeeds*) and what
+	// keeps the answer from telling whoever holds a found string whether it is
+	// real, whose it is, or still alive. What a caller may rely on is that a
+	// delegation **it** was issued is gone afterwards.
+	Revoke(context.Context, *DelegationRevokeRequest) (*DelegationRevokeResponse, error)
 	mustEmbedUnimplementedDelegationServiceServer()
 }
 
@@ -156,6 +187,9 @@ func (UnimplementedDelegationServiceServer) Erase(context.Context, *DelegationRe
 }
 func (UnimplementedDelegationServiceServer) List(context.Context, *DelegationListRequest) (*DelegationListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
+}
+func (UnimplementedDelegationServiceServer) Revoke(context.Context, *DelegationRevokeRequest) (*DelegationRevokeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Revoke not implemented")
 }
 func (UnimplementedDelegationServiceServer) mustEmbedUnimplementedDelegationServiceServer() {}
 func (UnimplementedDelegationServiceServer) testEmbeddedByValue()                           {}
@@ -286,6 +320,24 @@ func _DelegationService_List_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DelegationService_Revoke_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DelegationRevokeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DelegationServiceServer).Revoke(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DelegationService_Revoke_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DelegationServiceServer).Revoke(ctx, req.(*DelegationRevokeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // DelegationService_ServiceDesc is the grpc.ServiceDesc for DelegationService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -316,6 +368,10 @@ var DelegationService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _DelegationService_List_Handler,
+		},
+		{
+			MethodName: "Revoke",
+			Handler:    _DelegationService_Revoke_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

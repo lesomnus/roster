@@ -134,7 +134,7 @@ func TestTheTerminalIsACallerThatSignsPeopleIn(t *testing.T) {
 		delegate  = "/roster.VouchService/Delegate"
 		link      = "/roster.VouchService/Link"
 		redeem    = "/roster.VouchService/Redeem"
-		revoke    = "/roster.VouchService/Revoke"
+		revoke    = "/roster.DelegationService/Revoke"
 		accept    = "/roster.VouchService/Accept"
 	)
 

@@ -10323,6 +10323,19 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 
 		return anypb.New(res)
 
+	case rstr.DelegationService_Revoke_FullMethodName:
+		v := &rstr.DelegationRevokeRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Delegation().Revoke(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
 	case rstr.IdentityService_Add_FullMethodName:
 		v := &rstr.IdentityAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {

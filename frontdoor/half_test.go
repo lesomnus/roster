@@ -27,6 +27,7 @@ import (
 // quietly called `Verify` would otherwise pass.
 type vouch struct {
 	rstr.VouchServiceClient
+	rstr.DelegationServiceClient
 
 	delegate  func(*rstr.VouchDelegateRequest) (*rstr.VouchDelegateResponse, error)
 	delegates int
@@ -38,9 +39,9 @@ func (f *vouch) Delegate(ctx context.Context, in *rstr.VouchDelegateRequest, _ .
 	return f.delegate(in)
 }
 
-func (f *vouch) Revoke(ctx context.Context, in *rstr.VouchRevokeRequest, _ ...grpc.CallOption) (*rstr.VouchRevokeResponse, error) {
+func (f *vouch) Revoke(ctx context.Context, in *rstr.DelegationRevokeRequest, _ ...grpc.CallOption) (*rstr.DelegationRevokeResponse, error) {
 	f.revokes++
-	return rstr.VouchRevokeResponse_builder{}.Build(), nil
+	return rstr.DelegationRevokeResponse_builder{}.Build(), nil
 }
 
 var (
@@ -77,10 +78,11 @@ func doorFor(t *testing.T, f *vouch, with func(*Config)) *Door {
 	t.Helper()
 
 	c := Config{
-		Sessions: authsession.New(authsession.NewMemStore()),
-		Vouch:    f,
-		Methods:  []string{rstr.MeService_Get_FullMethodName},
-		Tenant:   func(ctx context.Context, host string) (string, error) { return "contoso", nil },
+		Sessions:   authsession.New(authsession.NewMemStore()),
+		Vouch:      f,
+		Delegation: f,
+		Methods:    []string{rstr.MeService_Get_FullMethodName},
+		Tenant:     func(ctx context.Context, host string) (string, error) { return "contoso", nil },
 	}
 	if with != nil {
 		with(&c)

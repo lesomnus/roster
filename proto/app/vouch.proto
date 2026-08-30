@@ -147,15 +147,6 @@ service VouchService {
   // first two proved.
   rpc Continue(VouchContinueRequest) returns (VouchContinueResponse);
 
-  // Revoke ends a delegation before its expiry.
-  //
-  // D23 says *revoking it is a delete* and for a while nothing could:
-  // `DelegationService` is unregistered and closed, so a person clicking sign
-  // out left the app holding a credential that went on working. This is the
-  // delete, and the caller who may make it is the one that can prove it holds
-  // the token -- which is the same pair `roster-as` already carries.
-  rpc Revoke(VouchRevokeRequest) returns (VouchRevokeResponse);
-
   // Accept mints for somebody a front door has **already** checked, and it is
   // the one method here that verifies nothing.
   //
@@ -506,13 +497,6 @@ message VouchDelegateResponse {
   // When it stops working, which is always set when a token is.
   google.protobuf.Timestamp expires = 11;
 }
-
-message VouchRevokeRequest {
-  // The delegation to end, as it was handed over.
-  string token = 1;
-}
-
-message VouchRevokeResponse {}
 
 message VouchResetRequest {
   VouchWho who = 1;

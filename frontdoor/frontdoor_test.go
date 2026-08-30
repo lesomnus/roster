@@ -20,10 +20,11 @@ import (
 
 func TestAnAppHasToSayWhatItAsksFor(t *testing.T) {
 	ok := Config{
-		Sessions: authsession.New(authsession.NewMemStore()),
-		Vouch:    rstr.NewVouchServiceClient(nil),
-		Methods:  []string{rstr.MeService_Get_FullMethodName},
-		Tenant:   func(ctx context.Context, host string) (string, error) { return "contoso", nil },
+		Sessions:   authsession.New(authsession.NewMemStore()),
+		Vouch:      rstr.NewVouchServiceClient(nil),
+		Delegation: rstr.NewDelegationServiceClient(nil),
+		Methods:    []string{rstr.MeService_Get_FullMethodName},
+		Tenant:     func(ctx context.Context, host string) (string, error) { return "contoso", nil },
 	}
 
 	for _, tc := range []struct {

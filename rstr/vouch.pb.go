@@ -1341,107 +1341,6 @@ func (b0 VouchDelegateResponse_builder) Build() *VouchDelegateResponse {
 	return m0
 }
 
-type VouchRevokeRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Token string                 `protobuf:"bytes,1,opt,name=token"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *VouchRevokeRequest) Reset() {
-	*x = VouchRevokeRequest{}
-	mi := &file_app_vouch_proto_msgTypes[10]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *VouchRevokeRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*VouchRevokeRequest) ProtoMessage() {}
-
-func (x *VouchRevokeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[10]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *VouchRevokeRequest) GetToken() string {
-	if x != nil {
-		return x.xxx_hidden_Token
-	}
-	return ""
-}
-
-func (x *VouchRevokeRequest) SetToken(v string) {
-	x.xxx_hidden_Token = v
-}
-
-type VouchRevokeRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	// The delegation to end, as it was handed over.
-	Token string
-}
-
-func (b0 VouchRevokeRequest_builder) Build() *VouchRevokeRequest {
-	m0 := &VouchRevokeRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Token = b.Token
-	return m0
-}
-
-type VouchRevokeResponse struct {
-	state         protoimpl.MessageState `protogen:"opaque.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *VouchRevokeResponse) Reset() {
-	*x = VouchRevokeResponse{}
-	mi := &file_app_vouch_proto_msgTypes[11]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *VouchRevokeResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*VouchRevokeResponse) ProtoMessage() {}
-
-func (x *VouchRevokeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[11]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-type VouchRevokeResponse_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-}
-
-func (b0 VouchRevokeResponse_builder) Build() *VouchRevokeResponse {
-	m0 := &VouchRevokeResponse{}
-	b, x := &b0, m0
-	_, _ = b, x
-	return m0
-}
-
 type VouchResetRequest struct {
 	state           protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Who  *VouchWho              `protobuf:"bytes,1,opt,name=who"`
@@ -1452,7 +1351,7 @@ type VouchResetRequest struct {
 
 func (x *VouchResetRequest) Reset() {
 	*x = VouchResetRequest{}
-	mi := &file_app_vouch_proto_msgTypes[12]
+	mi := &file_app_vouch_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1464,7 +1363,7 @@ func (x *VouchResetRequest) String() string {
 func (*VouchResetRequest) ProtoMessage() {}
 
 func (x *VouchResetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[12]
+	mi := &file_app_vouch_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1536,7 +1435,7 @@ type VouchResetResponse struct {
 
 func (x *VouchResetResponse) Reset() {
 	*x = VouchResetResponse{}
-	mi := &file_app_vouch_proto_msgTypes[13]
+	mi := &file_app_vouch_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1548,7 +1447,7 @@ func (x *VouchResetResponse) String() string {
 func (*VouchResetResponse) ProtoMessage() {}
 
 func (x *VouchResetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[13]
+	mi := &file_app_vouch_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1597,7 +1496,7 @@ type VouchLinkRequest struct {
 
 func (x *VouchLinkRequest) Reset() {
 	*x = VouchLinkRequest{}
-	mi := &file_app_vouch_proto_msgTypes[14]
+	mi := &file_app_vouch_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1609,7 +1508,7 @@ func (x *VouchLinkRequest) String() string {
 func (*VouchLinkRequest) ProtoMessage() {}
 
 func (x *VouchLinkRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[14]
+	mi := &file_app_vouch_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1696,7 +1595,7 @@ type VouchLinkResponse struct {
 
 func (x *VouchLinkResponse) Reset() {
 	*x = VouchLinkResponse{}
-	mi := &file_app_vouch_proto_msgTypes[15]
+	mi := &file_app_vouch_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1708,7 +1607,7 @@ func (x *VouchLinkResponse) String() string {
 func (*VouchLinkResponse) ProtoMessage() {}
 
 func (x *VouchLinkResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[15]
+	mi := &file_app_vouch_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1784,7 +1683,7 @@ type VouchRedeemRequest struct {
 
 func (x *VouchRedeemRequest) Reset() {
 	*x = VouchRedeemRequest{}
-	mi := &file_app_vouch_proto_msgTypes[16]
+	mi := &file_app_vouch_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1796,7 +1695,7 @@ func (x *VouchRedeemRequest) String() string {
 func (*VouchRedeemRequest) ProtoMessage() {}
 
 func (x *VouchRedeemRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[16]
+	mi := &file_app_vouch_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1931,10 +1830,7 @@ const file_app_vouch_proto_rawDesc = "" +
 	"\bverified\x18\x01 \x01(\v2\x1b.roster.VouchVerifyResponseR\bverified\x12\x14\n" +
 	"\x05token\x18\n" +
 	" \x01(\tR\x05token\x124\n" +
-	"\aexpires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\"*\n" +
-	"\x12VouchRevokeRequest\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token\"\x15\n" +
-	"\x13VouchRevokeResponse\"K\n" +
+	"\aexpires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\"K\n" +
 	"\x11VouchResetRequest\x12\"\n" +
 	"\x03who\x18\x01 \x01(\v2\x10.roster.VouchWhoR\x03who\x12\x12\n" +
 	"\x04kind\x18\b \x01(\tR\x04kind\",\n" +
@@ -1950,18 +1846,17 @@ const file_app_vouch_proto_rawDesc = "" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12\x18\n" +
 	"\amethods\x18\n" +
 	" \x03(\tR\amethods\x124\n" +
-	"\aexpires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\aexpires2\xad\x04\n" +
+	"\aexpires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\aexpires2\xea\x03\n" +
 	"\fVouchService\x12A\n" +
 	"\x06Verify\x12\x1a.roster.VouchVerifyRequest\x1a\x1b.roster.VouchVerifyResponse\x12G\n" +
 	"\bDelegate\x12\x1c.roster.VouchDelegateRequest\x1a\x1d.roster.VouchDelegateResponse\x12>\n" +
 	"\x05Reset\x12\x19.roster.VouchResetRequest\x1a\x1a.roster.VouchResetResponse\x12;\n" +
 	"\x04Link\x12\x18.roster.VouchLinkRequest\x1a\x19.roster.VouchLinkResponse\x12C\n" +
 	"\x06Redeem\x12\x1a.roster.VouchRedeemRequest\x1a\x1d.roster.VouchDelegateResponse\x12G\n" +
-	"\bContinue\x12\x1c.roster.VouchContinueRequest\x1a\x1d.roster.VouchContinueResponse\x12A\n" +
-	"\x06Revoke\x12\x1a.roster.VouchRevokeRequest\x1a\x1b.roster.VouchRevokeResponse\x12C\n" +
+	"\bContinue\x12\x1c.roster.VouchContinueRequest\x1a\x1d.roster.VouchContinueResponse\x12C\n" +
 	"\x06Accept\x12\x1a.roster.VouchAcceptRequest\x1a\x1d.roster.VouchDelegateResponseB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_app_vouch_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_app_vouch_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_app_vouch_proto_goTypes = []any{
 	(*VouchWho)(nil),              // 0: roster.VouchWho
 	(*VouchClaim)(nil),            // 1: roster.VouchClaim
@@ -1973,50 +1868,46 @@ var file_app_vouch_proto_goTypes = []any{
 	(*VouchDelegateRequest)(nil),  // 7: roster.VouchDelegateRequest
 	(*VouchAcceptRequest)(nil),    // 8: roster.VouchAcceptRequest
 	(*VouchDelegateResponse)(nil), // 9: roster.VouchDelegateResponse
-	(*VouchRevokeRequest)(nil),    // 10: roster.VouchRevokeRequest
-	(*VouchRevokeResponse)(nil),   // 11: roster.VouchRevokeResponse
-	(*VouchResetRequest)(nil),     // 12: roster.VouchResetRequest
-	(*VouchResetResponse)(nil),    // 13: roster.VouchResetResponse
-	(*VouchLinkRequest)(nil),      // 14: roster.VouchLinkRequest
-	(*VouchLinkResponse)(nil),     // 15: roster.VouchLinkResponse
-	(*VouchRedeemRequest)(nil),    // 16: roster.VouchRedeemRequest
-	(*timestamppb.Timestamp)(nil), // 17: google.protobuf.Timestamp
+	(*VouchResetRequest)(nil),     // 10: roster.VouchResetRequest
+	(*VouchResetResponse)(nil),    // 11: roster.VouchResetResponse
+	(*VouchLinkRequest)(nil),      // 12: roster.VouchLinkRequest
+	(*VouchLinkResponse)(nil),     // 13: roster.VouchLinkResponse
+	(*VouchRedeemRequest)(nil),    // 14: roster.VouchRedeemRequest
+	(*timestamppb.Timestamp)(nil), // 15: google.protobuf.Timestamp
 }
 var file_app_vouch_proto_depIdxs = []int32{
 	0,  // 0: roster.VouchVerifyRequest.who:type_name -> roster.VouchWho
-	17, // 1: roster.VouchFactor.locked_until:type_name -> google.protobuf.Timestamp
-	17, // 2: roster.VouchVerifyResponse.locked_until:type_name -> google.protobuf.Timestamp
+	15, // 1: roster.VouchFactor.locked_until:type_name -> google.protobuf.Timestamp
+	15, // 2: roster.VouchVerifyResponse.locked_until:type_name -> google.protobuf.Timestamp
 	3,  // 3: roster.VouchVerifyResponse.available:type_name -> roster.VouchFactor
 	4,  // 4: roster.VouchContinueResponse.verified:type_name -> roster.VouchVerifyResponse
 	0,  // 5: roster.VouchDelegateRequest.who:type_name -> roster.VouchWho
-	17, // 6: roster.VouchDelegateRequest.expires:type_name -> google.protobuf.Timestamp
+	15, // 6: roster.VouchDelegateRequest.expires:type_name -> google.protobuf.Timestamp
 	1,  // 7: roster.VouchAcceptRequest.claim:type_name -> roster.VouchClaim
-	17, // 8: roster.VouchAcceptRequest.expires:type_name -> google.protobuf.Timestamp
+	15, // 8: roster.VouchAcceptRequest.expires:type_name -> google.protobuf.Timestamp
 	4,  // 9: roster.VouchDelegateResponse.verified:type_name -> roster.VouchVerifyResponse
-	17, // 10: roster.VouchDelegateResponse.expires:type_name -> google.protobuf.Timestamp
+	15, // 10: roster.VouchDelegateResponse.expires:type_name -> google.protobuf.Timestamp
 	0,  // 11: roster.VouchResetRequest.who:type_name -> roster.VouchWho
 	0,  // 12: roster.VouchLinkRequest.who:type_name -> roster.VouchWho
-	17, // 13: roster.VouchLinkRequest.expires:type_name -> google.protobuf.Timestamp
-	17, // 14: roster.VouchLinkResponse.expires:type_name -> google.protobuf.Timestamp
-	17, // 15: roster.VouchRedeemRequest.expires:type_name -> google.protobuf.Timestamp
+	15, // 13: roster.VouchLinkRequest.expires:type_name -> google.protobuf.Timestamp
+	15, // 14: roster.VouchLinkResponse.expires:type_name -> google.protobuf.Timestamp
+	15, // 15: roster.VouchRedeemRequest.expires:type_name -> google.protobuf.Timestamp
 	2,  // 16: roster.VouchService.Verify:input_type -> roster.VouchVerifyRequest
 	7,  // 17: roster.VouchService.Delegate:input_type -> roster.VouchDelegateRequest
-	12, // 18: roster.VouchService.Reset:input_type -> roster.VouchResetRequest
-	14, // 19: roster.VouchService.Link:input_type -> roster.VouchLinkRequest
-	16, // 20: roster.VouchService.Redeem:input_type -> roster.VouchRedeemRequest
+	10, // 18: roster.VouchService.Reset:input_type -> roster.VouchResetRequest
+	12, // 19: roster.VouchService.Link:input_type -> roster.VouchLinkRequest
+	14, // 20: roster.VouchService.Redeem:input_type -> roster.VouchRedeemRequest
 	5,  // 21: roster.VouchService.Continue:input_type -> roster.VouchContinueRequest
-	10, // 22: roster.VouchService.Revoke:input_type -> roster.VouchRevokeRequest
-	8,  // 23: roster.VouchService.Accept:input_type -> roster.VouchAcceptRequest
-	4,  // 24: roster.VouchService.Verify:output_type -> roster.VouchVerifyResponse
-	9,  // 25: roster.VouchService.Delegate:output_type -> roster.VouchDelegateResponse
-	13, // 26: roster.VouchService.Reset:output_type -> roster.VouchResetResponse
-	15, // 27: roster.VouchService.Link:output_type -> roster.VouchLinkResponse
-	9,  // 28: roster.VouchService.Redeem:output_type -> roster.VouchDelegateResponse
-	6,  // 29: roster.VouchService.Continue:output_type -> roster.VouchContinueResponse
-	11, // 30: roster.VouchService.Revoke:output_type -> roster.VouchRevokeResponse
-	9,  // 31: roster.VouchService.Accept:output_type -> roster.VouchDelegateResponse
-	24, // [24:32] is the sub-list for method output_type
-	16, // [16:24] is the sub-list for method input_type
+	8,  // 22: roster.VouchService.Accept:input_type -> roster.VouchAcceptRequest
+	4,  // 23: roster.VouchService.Verify:output_type -> roster.VouchVerifyResponse
+	9,  // 24: roster.VouchService.Delegate:output_type -> roster.VouchDelegateResponse
+	11, // 25: roster.VouchService.Reset:output_type -> roster.VouchResetResponse
+	13, // 26: roster.VouchService.Link:output_type -> roster.VouchLinkResponse
+	9,  // 27: roster.VouchService.Redeem:output_type -> roster.VouchDelegateResponse
+	6,  // 28: roster.VouchService.Continue:output_type -> roster.VouchContinueResponse
+	9,  // 29: roster.VouchService.Accept:output_type -> roster.VouchDelegateResponse
+	23, // [23:30] is the sub-list for method output_type
+	16, // [16:23] is the sub-list for method input_type
 	16, // [16:16] is the sub-list for extension type_name
 	16, // [16:16] is the sub-list for extension extendee
 	0,  // [0:16] is the sub-list for field type_name
@@ -2033,7 +1924,7 @@ func file_app_vouch_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_vouch_proto_rawDesc), len(file_app_vouch_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   17,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

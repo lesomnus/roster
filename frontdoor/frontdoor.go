@@ -76,8 +76,15 @@ type Config struct {
 	// decisions about a deployment, not about signing in.
 	Sessions *authsession.Sessions
 
-	// Vouch is roster, as this app authenticates to it.
+	// Vouch is roster's sign-in flow, as this app authenticates to it: the two
+	// forms that prove somebody and mint a delegation for them (`Delegate`,
+	// `Accept`).
 	Vouch rstr.VouchServiceClient
+
+	// Delegation is roster's delegation surface, which is where a sign-out ends
+	// one: `Revoke` moved onto the entity it was always about, off the sign-in
+	// flow that mints them.
+	Delegation rstr.DelegationServiceClient
 
 	// Methods is what the delegation is minted with, and it is the list this
 	// app's own screens need rather than the list the person holds. A
@@ -131,6 +138,8 @@ func New(c Config) (*Door, error) {
 		return nil, errors.New("frontdoor: Sessions: the cookie is the app's, so the app makes it")
 	case c.Vouch == nil:
 		return nil, errors.New("frontdoor: Vouch: which roster this signs in against")
+	case c.Delegation == nil:
+		return nil, errors.New("frontdoor: Delegation: where a sign-out ends the delegation it minted")
 	case len(c.Methods) == 0:
 		return nil, errors.New("frontdoor: Methods: a delegation that allows nothing opens no door")
 	case c.Tenant == nil:
@@ -351,7 +360,7 @@ func (d *Door) SignOut(w http.ResponseWriter, r *http.Request) {
 		// Best effort, and after the local drop. A roster that cannot be
 		// reached must not stop somebody signing out of this app; what is lost
 		// is a row that expires on its own.
-		_, _ = d.c.Vouch.Revoke(ctx, rstr.VouchRevokeRequest_builder{Token: v.token}.Build())
+		_, _ = d.c.Delegation.Revoke(ctx, rstr.DelegationRevokeRequest_builder{Token: v.token}.Build())
 	}
 
 	http.SetCookie(w, d.c.Sessions.End(ctx, key))

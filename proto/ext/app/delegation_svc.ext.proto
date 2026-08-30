@@ -1,0 +1,43 @@
+edition = "2023";
+
+package roster;
+
+// What this app adds to the generated contract for `Delegation`.
+//
+// # Why a Delegation grows a verb instead of a VouchService keeping one
+//
+// `Vouch.Revoke` was `Delegation.Erase` said about a token rather than a row --
+// a verb on delegation rows wearing the sign-in flow's clothes, and the sign-in
+// flow is what mints one, not what ends it. The rule (CLAUDE.md, *Overlay
+// before service, layer before overlay*): a new verb on one entity's rows is an
+// overlay here. So it is `Revoke`, on the entity, and `VouchService` is left
+// with the flow that proves somebody and mints for them.
+//
+// # The service is served for this, and its token never travels
+//
+// `DelegationService` was closed whole, for `CredentialService`'s reason one
+// entity over: its generated `Get` answers with the `secret` column, and a
+// delegation's secret is the token itself. Reopening it does not undo that --
+// `cmd/serve` registers the service but shuts `Get`/`List`/`Watch`/`Add`/
+// `Erase`/`Patch`/`Apply` by method, so only `Revoke` reaches the wire, and it
+// answers nothing. A caller proves it holds a token by naming it; it is not
+// handed one back.
+service DelegationService {
+  // Revoke ends a delegation before its expiry -- the delete D23 said a sign-out
+  // has to be able to make.
+  //
+  // Everything answers the same: a token that was never here, one that has
+  // expired, one somebody else was issued -- each succeeds and removes nothing,
+  // which is `Erase`'s rule (*erasing what is not there succeeds*) and what
+  // keeps the answer from telling whoever holds a found string whether it is
+  // real, whose it is, or still alive. What a caller may rely on is that a
+  // delegation **it** was issued is gone afterwards.
+  rpc Revoke(DelegationRevokeRequest) returns (DelegationRevokeResponse);
+}
+
+message DelegationRevokeRequest {
+  // The delegation to end, as it was handed over.
+  string token = 1 [features.field_presence = IMPLICIT];
+}
+
+message DelegationRevokeResponse {}

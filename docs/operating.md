@@ -708,7 +708,7 @@ roster key revoke --id <id>     # a delete, so the next call carrying it fails
 | --- | --- |
 | `/roster.VouchService/Verify` | checking a password |
 | `/roster.VouchService/Delegate` | checking one **and** getting a credential to act for that person. A separate grant from `Verify`, on purpose: an app that only signs people in never needs it |
-| `/roster.VouchService/Revoke` | ending one when somebody signs out |
+| `/roster.DelegationService/Revoke` | ending one when somebody signs out |
 | `/roster.FrontService/WhoseHost` | which tenant serves the name a browser arrived at |
 | `/roster.FrontService/WhereFrom` | where the people at an address authenticate |
 | `/roster.MeService/Get` | somebody's own record, through a delegation |

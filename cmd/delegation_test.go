@@ -23,7 +23,7 @@ import (
 
 const (
 	delegate    = "/roster.VouchService/Delegate"
-	revoke      = "/roster.VouchService/Revoke"
+	revoke      = "/roster.DelegationService/Revoke"
 	listHolders = "/roster.HolderService/List"
 )
 
@@ -633,7 +633,7 @@ func TestRevokeIsTheDeleteD23PromisedAndDidNotHave(t *testing.T) {
 	}
 	x.NoError(list(), "the control")
 
-	c := app.NewVouchServiceClient(b.Conn)
+	c := app.NewDelegationServiceClient(b.Conn)
 
 	// A second app revoking it changes nothing, and is not told so -- every
 	// answer here is the same answer, for the reason `Erase` gives.
@@ -642,7 +642,7 @@ func TestRevokeIsTheDeleteD23PromisedAndDidNotHave(t *testing.T) {
 
 		theirs := keyed(t, ctx, b, "someone-else", []string{revoke})
 
-		_, err := c.Revoke(bearing(ctx, theirs), app.VouchRevokeRequest_builder{Token: token}.Build())
+		_, err := c.Revoke(bearing(ctx, theirs), app.DelegationRevokeRequest_builder{Token: token}.Build())
 		x.NoError(err, "and the answer says nothing about whose it was")
 		x.NoError(list(), "one app revoked what another was issued")
 	})
@@ -650,7 +650,7 @@ func TestRevokeIsTheDeleteD23PromisedAndDidNotHave(t *testing.T) {
 	t.Run("and the app it was issued to ends it", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := c.Revoke(bearing(ctx, b.Token), app.VouchRevokeRequest_builder{Token: token}.Build())
+		_, err := c.Revoke(bearing(ctx, b.Token), app.DelegationRevokeRequest_builder{Token: token}.Build())
 		x.NoError(err)
 
 		x.Equal(codes.Unauthenticated, status.Code(list()), "a revoked delegation went on working")
@@ -659,11 +659,11 @@ func TestRevokeIsTheDeleteD23PromisedAndDidNotHave(t *testing.T) {
 	t.Run("and revoking what is gone succeeds", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := c.Revoke(bearing(ctx, b.Token), app.VouchRevokeRequest_builder{Token: token}.Build())
+		_, err := c.Revoke(bearing(ctx, b.Token), app.DelegationRevokeRequest_builder{Token: token}.Build())
 		x.NoError(err)
 
 		_, err = c.Revoke(bearing(ctx, b.Token),
-			app.VouchRevokeRequest_builder{Token: "rd_nothing-at-all"}.Build())
+			app.DelegationRevokeRequest_builder{Token: "rd_nothing-at-all"}.Build())
 		x.NoError(err, "a token that was never here told the caller it was never here")
 	})
 }

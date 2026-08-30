@@ -253,7 +253,10 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 			// roster believing it. An app that only checks passwords does not
 			// get this line -- see D49, and the warning `roster key add` gives.
 			"/roster.VouchService/Accept",
-			"/roster.VouchService/Revoke",
+
+			// Ending a delegation is `DelegationService/Revoke` now -- the delete
+			// a sign-out makes, moved onto the entity off the sign-in flow.
+			"/roster.DelegationService/Revoke",
 			"/roster.MeService/Get",
 			"/roster.MeService/Unlink",
 			"/roster.MeService/Link",

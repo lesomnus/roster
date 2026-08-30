@@ -1349,6 +1349,107 @@ func (b0 DelegationFilter_builder) Build() *DelegationFilter {
 	return m0
 }
 
+type DelegationRevokeRequest struct {
+	state            protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Token string                 `protobuf:"bytes,1,opt,name=token"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *DelegationRevokeRequest) Reset() {
+	*x = DelegationRevokeRequest{}
+	mi := &file_app_delegation_svc_g_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DelegationRevokeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DelegationRevokeRequest) ProtoMessage() {}
+
+func (x *DelegationRevokeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_app_delegation_svc_g_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *DelegationRevokeRequest) GetToken() string {
+	if x != nil {
+		return x.xxx_hidden_Token
+	}
+	return ""
+}
+
+func (x *DelegationRevokeRequest) SetToken(v string) {
+	x.xxx_hidden_Token = v
+}
+
+type DelegationRevokeRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The delegation to end, as it was handed over.
+	Token string
+}
+
+func (b0 DelegationRevokeRequest_builder) Build() *DelegationRevokeRequest {
+	m0 := &DelegationRevokeRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Token = b.Token
+	return m0
+}
+
+type DelegationRevokeResponse struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DelegationRevokeResponse) Reset() {
+	*x = DelegationRevokeResponse{}
+	mi := &file_app_delegation_svc_g_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DelegationRevokeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DelegationRevokeResponse) ProtoMessage() {}
+
+func (x *DelegationRevokeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_app_delegation_svc_g_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type DelegationRevokeResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 DelegationRevokeResponse_builder) Build() *DelegationRevokeResponse {
+	m0 := &DelegationRevokeResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
 var File_app_delegation_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_delegation_svc_g_proto_rawDesc = "" +
@@ -1399,46 +1500,52 @@ const file_app_delegation_svc_g_proto_rawDesc = "" +
 	"\x05items\x18\x01 \x03(\v2\x12.roster.DelegationR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\";\n" +
 	"\x10DelegationFilter\x12'\n" +
-	"\x03ref\x18\x01 \x01(\v2\x15.roster.DelegationRefR\x03ref2\x87\x03\n" +
+	"\x03ref\x18\x01 \x01(\v2\x15.roster.DelegationRefR\x03ref\"6\n" +
+	"\x17DelegationRevokeRequest\x12\x1b\n" +
+	"\x05token\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05token\"\x1a\n" +
+	"\x18DelegationRevokeResponse2\xd4\x03\n" +
 	"\x11DelegationService\x127\n" +
 	"\x03Add\x12\x1c.roster.DelegationAddRequest\x1a\x12.roster.Delegation\x127\n" +
 	"\x03Get\x12\x1c.roster.DelegationGetRequest\x1a\x12.roster.Delegation\x12;\n" +
 	"\x05Patch\x12\x1e.roster.DelegationPatchRequest\x1a\x12.roster.Delegation\x12;\n" +
 	"\x05Apply\x12\x1e.roster.DelegationApplyRequest\x1a\x12.roster.Delegation\x12?\n" +
 	"\x05Erase\x12\x15.roster.DelegationRef\x1a\x1f.roster.DelegationEraseResponse\x12E\n" +
-	"\x04List\x12\x1d.roster.DelegationListRequest\x1a\x1e.roster.DelegationListResponseB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
+	"\x04List\x12\x1d.roster.DelegationListRequest\x1a\x1e.roster.DelegationListResponse\x12K\n" +
+	"\x06Revoke\x12\x1f.roster.DelegationRevokeRequest\x1a .roster.DelegationRevokeResponseB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_delegation_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_app_delegation_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_app_delegation_svc_g_proto_goTypes = []any{
-	(*DelegationAddRequest)(nil),    // 0: roster.DelegationAddRequest
-	(*DelegationGetRequest)(nil),    // 1: roster.DelegationGetRequest
-	(*DelegationRef)(nil),           // 2: roster.DelegationRef
-	(*DelegationSelect)(nil),        // 3: roster.DelegationSelect
-	(*DelegationPatchRequest)(nil),  // 4: roster.DelegationPatchRequest
-	(*DelegationApplyRequest)(nil),  // 5: roster.DelegationApplyRequest
-	(*DelegationEraseResponse)(nil), // 6: roster.DelegationEraseResponse
-	(*DelegationListRequest)(nil),   // 7: roster.DelegationListRequest
-	(*DelegationListResponse)(nil),  // 8: roster.DelegationListResponse
-	(*DelegationFilter)(nil),        // 9: roster.DelegationFilter
-	(*HolderRef)(nil),               // 10: roster.HolderRef
-	(*timestamppb.Timestamp)(nil),   // 11: google.protobuf.Timestamp
-	(*HolderSelect)(nil),            // 12: roster.HolderSelect
-	(*patchpb.Patch)(nil),           // 13: patch.Patch
-	(*Delegation)(nil),              // 14: roster.Delegation
+	(*DelegationAddRequest)(nil),     // 0: roster.DelegationAddRequest
+	(*DelegationGetRequest)(nil),     // 1: roster.DelegationGetRequest
+	(*DelegationRef)(nil),            // 2: roster.DelegationRef
+	(*DelegationSelect)(nil),         // 3: roster.DelegationSelect
+	(*DelegationPatchRequest)(nil),   // 4: roster.DelegationPatchRequest
+	(*DelegationApplyRequest)(nil),   // 5: roster.DelegationApplyRequest
+	(*DelegationEraseResponse)(nil),  // 6: roster.DelegationEraseResponse
+	(*DelegationListRequest)(nil),    // 7: roster.DelegationListRequest
+	(*DelegationListResponse)(nil),   // 8: roster.DelegationListResponse
+	(*DelegationFilter)(nil),         // 9: roster.DelegationFilter
+	(*DelegationRevokeRequest)(nil),  // 10: roster.DelegationRevokeRequest
+	(*DelegationRevokeResponse)(nil), // 11: roster.DelegationRevokeResponse
+	(*HolderRef)(nil),                // 12: roster.HolderRef
+	(*timestamppb.Timestamp)(nil),    // 13: google.protobuf.Timestamp
+	(*HolderSelect)(nil),             // 14: roster.HolderSelect
+	(*patchpb.Patch)(nil),            // 15: patch.Patch
+	(*Delegation)(nil),               // 16: roster.Delegation
 }
 var file_app_delegation_svc_g_proto_depIdxs = []int32{
-	10, // 0: roster.DelegationAddRequest.holder:type_name -> roster.HolderRef
-	11, // 1: roster.DelegationAddRequest.date_expires:type_name -> google.protobuf.Timestamp
-	11, // 2: roster.DelegationAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	12, // 0: roster.DelegationAddRequest.holder:type_name -> roster.HolderRef
+	13, // 1: roster.DelegationAddRequest.date_expires:type_name -> google.protobuf.Timestamp
+	13, // 2: roster.DelegationAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 3: roster.DelegationGetRequest.ref:type_name -> roster.DelegationRef
 	3,  // 4: roster.DelegationGetRequest.select:type_name -> roster.DelegationSelect
-	12, // 5: roster.DelegationSelect.holder:type_name -> roster.HolderSelect
+	14, // 5: roster.DelegationSelect.holder:type_name -> roster.HolderSelect
 	2,  // 6: roster.DelegationPatchRequest.ref:type_name -> roster.DelegationRef
-	11, // 7: roster.DelegationPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	13, // 7: roster.DelegationPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
 	2,  // 8: roster.DelegationApplyRequest.ref:type_name -> roster.DelegationRef
-	13, // 9: roster.DelegationApplyRequest.patch:type_name -> patch.Patch
+	15, // 9: roster.DelegationApplyRequest.patch:type_name -> patch.Patch
 	9,  // 10: roster.DelegationListRequest.filters:type_name -> roster.DelegationFilter
-	14, // 11: roster.DelegationListResponse.items:type_name -> roster.Delegation
+	16, // 11: roster.DelegationListResponse.items:type_name -> roster.Delegation
 	2,  // 12: roster.DelegationFilter.ref:type_name -> roster.DelegationRef
 	0,  // 13: roster.DelegationService.Add:input_type -> roster.DelegationAddRequest
 	1,  // 14: roster.DelegationService.Get:input_type -> roster.DelegationGetRequest
@@ -1446,14 +1553,16 @@ var file_app_delegation_svc_g_proto_depIdxs = []int32{
 	5,  // 16: roster.DelegationService.Apply:input_type -> roster.DelegationApplyRequest
 	2,  // 17: roster.DelegationService.Erase:input_type -> roster.DelegationRef
 	7,  // 18: roster.DelegationService.List:input_type -> roster.DelegationListRequest
-	14, // 19: roster.DelegationService.Add:output_type -> roster.Delegation
-	14, // 20: roster.DelegationService.Get:output_type -> roster.Delegation
-	14, // 21: roster.DelegationService.Patch:output_type -> roster.Delegation
-	14, // 22: roster.DelegationService.Apply:output_type -> roster.Delegation
-	6,  // 23: roster.DelegationService.Erase:output_type -> roster.DelegationEraseResponse
-	8,  // 24: roster.DelegationService.List:output_type -> roster.DelegationListResponse
-	19, // [19:25] is the sub-list for method output_type
-	13, // [13:19] is the sub-list for method input_type
+	10, // 19: roster.DelegationService.Revoke:input_type -> roster.DelegationRevokeRequest
+	16, // 20: roster.DelegationService.Add:output_type -> roster.Delegation
+	16, // 21: roster.DelegationService.Get:output_type -> roster.Delegation
+	16, // 22: roster.DelegationService.Patch:output_type -> roster.Delegation
+	16, // 23: roster.DelegationService.Apply:output_type -> roster.Delegation
+	6,  // 24: roster.DelegationService.Erase:output_type -> roster.DelegationEraseResponse
+	8,  // 25: roster.DelegationService.List:output_type -> roster.DelegationListResponse
+	11, // 26: roster.DelegationService.Revoke:output_type -> roster.DelegationRevokeResponse
+	20, // [20:27] is the sub-list for method output_type
+	13, // [13:20] is the sub-list for method input_type
 	13, // [13:13] is the sub-list for extension type_name
 	13, // [13:13] is the sub-list for extension extendee
 	0,  // [0:13] is the sub-list for field type_name
@@ -1476,7 +1585,7 @@ func file_app_delegation_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_delegation_svc_g_proto_rawDesc), len(file_app_delegation_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

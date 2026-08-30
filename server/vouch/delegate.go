@@ -146,36 +146,6 @@ func (s *Server) mint(ctx context.Context, res *app.VouchVerifyResponse, who, is
 	}.Build(), nil
 }
 
-// Revoke ends a delegation before its expiry.
-//
-// D23 says *revoking it is a delete*, and for a while nothing could: the
-// generated service is unregistered and closed, so signing out of an app left
-// that app holding a credential which went on working. This is the delete.
-//
-// # Everything answers the same
-//
-// A token that was never here, one that has expired, one somebody else was
-// issued: all of them succeed and remove nothing. That is `Erase`'s rule --
-// *erasing what is not there succeeds*, and out of reach is not there -- and it
-// is also what keeps this from telling whoever holds a found string whether it
-// is real, whose it is, or whether it is still alive.
-//
-// The consequence worth knowing: a caller cannot learn from the answer that it
-// revoked anything. What it can rely on is that a delegation **it** was issued
-// is gone afterwards.
-func (s *Server) Revoke(ctx context.Context, req *app.VouchRevokeRequest) (*app.VouchRevokeResponse, error) {
-	issuer, err := issuerOf(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := keys.Undelegate(ctx, s.open, req.GetToken(), issuer); err != nil {
-		return nil, err
-	}
-
-	return app.VouchRevokeResponse_builder{}.Build(), nil
-}
-
 // mayDelegate refuses a caller minting wider than itself.
 //
 // The escalation is real and is not about the person: a delegation is bounded

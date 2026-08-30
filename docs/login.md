@@ -307,7 +307,7 @@ rather than a sentence. One that leaks is worth nothing without the key it was
 minted for.
 
 What it can do is the intersection: never wider than the person, and never wider
-than the methods it was minted with. Signing out revokes it — `Vouch.Revoke` —
+than the methods it was minted with. Signing out revokes it — `Delegation.Revoke` —
 rather than leaving a live credential until its clock runs out.
 
 `examples/sso` is the whole of it working, and it is honest about what it does

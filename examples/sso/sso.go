@@ -254,8 +254,9 @@ func New(ctx context.Context, c Config, conn *grpc.ClientConn, s *authsession.Se
 	}
 
 	door, err := frontdoor.New(frontdoor.Config{
-		Sessions: s,
-		Vouch:    rstr.NewVouchServiceClient(conn),
+		Sessions:   s,
+		Vouch:      rstr.NewVouchServiceClient(conn),
+		Delegation: rstr.NewDelegationServiceClient(conn),
 
 		// What **this app's screens** need, rather than what the person holds.
 		// A delegation narrows to the intersection, so asking for less than

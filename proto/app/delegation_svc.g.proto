@@ -21,6 +21,16 @@ service DelegationService {
   rpc Erase(DelegationRef) returns (DelegationEraseResponse);
   // List reads Delegations a page at a time.
   rpc List(DelegationListRequest) returns (DelegationListResponse);
+  // Revoke ends a delegation before its expiry -- the delete D23 said a sign-out
+  // has to be able to make.
+  //
+  // Everything answers the same: a token that was never here, one that has
+  // expired, one somebody else was issued -- each succeeds and removes nothing,
+  // which is `Erase`'s rule (*erasing what is not there succeeds*) and what
+  // keeps the answer from telling whoever holds a found string whether it is
+  // real, whose it is, or still alive. What a caller may rely on is that a
+  // delegation **it** was issued is gone afterwards.
+  rpc Revoke(DelegationRevokeRequest) returns (DelegationRevokeResponse);
 }
 
 message DelegationAddRequest {
@@ -122,3 +132,10 @@ message DelegationListResponse {
 message DelegationFilter {
   DelegationRef ref = 1;
 }
+
+message DelegationRevokeRequest {
+  // The delegation to end, as it was handed over.
+  string token = 1 [features.field_presence = IMPLICIT];
+}
+
+message DelegationRevokeResponse {}

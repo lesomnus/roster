@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/vouch.proto.
  */
 export const file_app_vouch: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJGCghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCSI/CgpWb3VjaENsYWltEg4KBnRlbmFudBgBIAEoDBIQCghwcm92aWRlchgCIAEoCRIPCgdzdWJqZWN0GAMgASgJIl8KElZvdWNoVmVyaWZ5UmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSDAoEbmFtZRgFIAEoCSJbCgtWb3VjaEZhY3RvchIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSMAoMbG9ja2VkX3VudGlsGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCLEAQoTVm91Y2hWZXJpZnlSZXNwb25zZRIKCgJvaxgBIAEoCBIOCgZob2xkZXIYAiABKAwSDgoGdGVuYW50GAMgASgMEjAKDGxvY2tlZF91bnRpbBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEQoJc2F0aXNmaWVkGAogAygJEiYKCWF2YWlsYWJsZRgLIAMoCzITLnJvc3Rlci5Wb3VjaEZhY3RvchIUCgxjb250aW51YXRpb24YDCABKAkiWAoUVm91Y2hDb250aW51ZVJlcXVlc3QSFAoMY29udGludWF0aW9uGAEgASgJEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMEgwKBG5hbWUYBSABKAkiRgoVVm91Y2hDb250aW51ZVJlc3BvbnNlEi0KCHZlcmlmaWVkGAEgASgLMhsucm9zdGVyLlZvdWNoVmVyaWZ5UmVzcG9uc2UitQEKFFZvdWNoRGVsZWdhdGVSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJEg4KBnNlY3JldBgJIAEoDBIUCgxjb250aW51YXRpb24YDCABKAkSDAoEbmFtZRgFIAEoCRIPCgdtZXRob2RzGAogAygJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wInUKElZvdWNoQWNjZXB0UmVxdWVzdBIhCgVjbGFpbRgBIAEoCzISLnJvc3Rlci5Wb3VjaENsYWltEg8KB21ldGhvZHMYAiADKAkSKwoHZXhwaXJlcxgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiggEKFVZvdWNoRGVsZWdhdGVSZXNwb25zZRItCgh2ZXJpZmllZBgBIAEoCzIbLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlEg0KBXRva2VuGAogASgJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIiMKElZvdWNoUmV2b2tlUmVxdWVzdBINCgV0b2tlbhgBIAEoCSIVChNWb3VjaFJldm9rZVJlc3BvbnNlIkAKEVZvdWNoUmVzZXRSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJIiQKElZvdWNoUmVzZXRSZXNwb25zZRIOCgZzZWNyZXQYASABKAkiXgoQVm91Y2hMaW5rUmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiTwoRVm91Y2hMaW5rUmVzcG9uc2USDQoFdG9rZW4YASABKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiYQoSVm91Y2hSZWRlZW1SZXF1ZXN0Eg0KBXRva2VuGAEgASgJEg8KB21ldGhvZHMYCiADKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAyrQQKDFZvdWNoU2VydmljZRJBCgZWZXJpZnkSGi5yb3N0ZXIuVm91Y2hWZXJpZnlSZXF1ZXN0Ghsucm9zdGVyLlZvdWNoVmVyaWZ5UmVzcG9uc2USRwoIRGVsZWdhdGUSHC5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlEj4KBVJlc2V0Ehkucm9zdGVyLlZvdWNoUmVzZXRSZXF1ZXN0Ghoucm9zdGVyLlZvdWNoUmVzZXRSZXNwb25zZRI7CgRMaW5rEhgucm9zdGVyLlZvdWNoTGlua1JlcXVlc3QaGS5yb3N0ZXIuVm91Y2hMaW5rUmVzcG9uc2USQwoGUmVkZWVtEhoucm9zdGVyLlZvdWNoUmVkZWVtUmVxdWVzdBodLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVzcG9uc2USRwoIQ29udGludWUSHC5yb3N0ZXIuVm91Y2hDb250aW51ZVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hDb250aW51ZVJlc3BvbnNlEkEKBlJldm9rZRIaLnJvc3Rlci5Wb3VjaFJldm9rZVJlcXVlc3QaGy5yb3N0ZXIuVm91Y2hSZXZva2VSZXNwb25zZRJDCgZBY2NlcHQSGi5yb3N0ZXIuVm91Y2hBY2NlcHRSZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoRGVsZWdhdGVSZXNwb25zZUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp]);
+  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJGCghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCSI/CgpWb3VjaENsYWltEg4KBnRlbmFudBgBIAEoDBIQCghwcm92aWRlchgCIAEoCRIPCgdzdWJqZWN0GAMgASgJIl8KElZvdWNoVmVyaWZ5UmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSDAoEbmFtZRgFIAEoCSJbCgtWb3VjaEZhY3RvchIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSMAoMbG9ja2VkX3VudGlsGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCLEAQoTVm91Y2hWZXJpZnlSZXNwb25zZRIKCgJvaxgBIAEoCBIOCgZob2xkZXIYAiABKAwSDgoGdGVuYW50GAMgASgMEjAKDGxvY2tlZF91bnRpbBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEQoJc2F0aXNmaWVkGAogAygJEiYKCWF2YWlsYWJsZRgLIAMoCzITLnJvc3Rlci5Wb3VjaEZhY3RvchIUCgxjb250aW51YXRpb24YDCABKAkiWAoUVm91Y2hDb250aW51ZVJlcXVlc3QSFAoMY29udGludWF0aW9uGAEgASgJEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMEgwKBG5hbWUYBSABKAkiRgoVVm91Y2hDb250aW51ZVJlc3BvbnNlEi0KCHZlcmlmaWVkGAEgASgLMhsucm9zdGVyLlZvdWNoVmVyaWZ5UmVzcG9uc2UitQEKFFZvdWNoRGVsZWdhdGVSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJEg4KBnNlY3JldBgJIAEoDBIUCgxjb250aW51YXRpb24YDCABKAkSDAoEbmFtZRgFIAEoCRIPCgdtZXRob2RzGAogAygJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wInUKElZvdWNoQWNjZXB0UmVxdWVzdBIhCgVjbGFpbRgBIAEoCzISLnJvc3Rlci5Wb3VjaENsYWltEg8KB21ldGhvZHMYAiADKAkSKwoHZXhwaXJlcxgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiggEKFVZvdWNoRGVsZWdhdGVSZXNwb25zZRItCgh2ZXJpZmllZBgBIAEoCzIbLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlEg0KBXRva2VuGAogASgJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIkAKEVZvdWNoUmVzZXRSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJIiQKElZvdWNoUmVzZXRSZXNwb25zZRIOCgZzZWNyZXQYASABKAkiXgoQVm91Y2hMaW5rUmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiTwoRVm91Y2hMaW5rUmVzcG9uc2USDQoFdG9rZW4YASABKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiYQoSVm91Y2hSZWRlZW1SZXF1ZXN0Eg0KBXRva2VuGAEgASgJEg8KB21ldGhvZHMYCiADKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAy6gMKDFZvdWNoU2VydmljZRJBCgZWZXJpZnkSGi5yb3N0ZXIuVm91Y2hWZXJpZnlSZXF1ZXN0Ghsucm9zdGVyLlZvdWNoVmVyaWZ5UmVzcG9uc2USRwoIRGVsZWdhdGUSHC5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlEj4KBVJlc2V0Ehkucm9zdGVyLlZvdWNoUmVzZXRSZXF1ZXN0Ghoucm9zdGVyLlZvdWNoUmVzZXRSZXNwb25zZRI7CgRMaW5rEhgucm9zdGVyLlZvdWNoTGlua1JlcXVlc3QaGS5yb3N0ZXIuVm91Y2hMaW5rUmVzcG9uc2USQwoGUmVkZWVtEhoucm9zdGVyLlZvdWNoUmVkZWVtUmVxdWVzdBodLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVzcG9uc2USRwoIQ29udGludWUSHC5yb3N0ZXIuVm91Y2hDb250aW51ZVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hDb250aW51ZVJlc3BvbnNlEkMKBkFjY2VwdBIaLnJvc3Rlci5Wb3VjaEFjY2VwdFJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp]);
 
 /**
  * VouchWho names somebody in the words a sign-in form collects.
@@ -575,38 +575,6 @@ export const VouchDelegateResponseSchema: GenMessage<VouchDelegateResponse> = /*
   messageDesc(file_app_vouch, 9);
 
 /**
- * @generated from message roster.VouchRevokeRequest
- */
-export type VouchRevokeRequest = Message<"roster.VouchRevokeRequest"> & {
-  /**
-   * The delegation to end, as it was handed over.
-   *
-   * @generated from field: string token = 1;
-   */
-  token: string;
-};
-
-/**
- * Describes the message roster.VouchRevokeRequest.
- * Use `create(VouchRevokeRequestSchema)` to create a new message.
- */
-export const VouchRevokeRequestSchema: GenMessage<VouchRevokeRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 10);
-
-/**
- * @generated from message roster.VouchRevokeResponse
- */
-export type VouchRevokeResponse = Message<"roster.VouchRevokeResponse"> & {
-};
-
-/**
- * Describes the message roster.VouchRevokeResponse.
- * Use `create(VouchRevokeResponseSchema)` to create a new message.
- */
-export const VouchRevokeResponseSchema: GenMessage<VouchRevokeResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 11);
-
-/**
  * @generated from message roster.VouchResetRequest
  */
 export type VouchResetRequest = Message<"roster.VouchResetRequest"> & {
@@ -630,7 +598,7 @@ export type VouchResetRequest = Message<"roster.VouchResetRequest"> & {
  * Use `create(VouchResetRequestSchema)` to create a new message.
  */
 export const VouchResetRequestSchema: GenMessage<VouchResetRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 12);
+  messageDesc(file_app_vouch, 10);
 
 /**
  * @generated from message roster.VouchResetResponse
@@ -651,7 +619,7 @@ export type VouchResetResponse = Message<"roster.VouchResetResponse"> & {
  * Use `create(VouchResetResponseSchema)` to create a new message.
  */
 export const VouchResetResponseSchema: GenMessage<VouchResetResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 13);
+  messageDesc(file_app_vouch, 11);
 
 /**
  * @generated from message roster.VouchLinkRequest
@@ -680,7 +648,7 @@ export type VouchLinkRequest = Message<"roster.VouchLinkRequest"> & {
  * Use `create(VouchLinkRequestSchema)` to create a new message.
  */
 export const VouchLinkRequestSchema: GenMessage<VouchLinkRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 14);
+  messageDesc(file_app_vouch, 12);
 
 /**
  * @generated from message roster.VouchLinkResponse
@@ -708,7 +676,7 @@ export type VouchLinkResponse = Message<"roster.VouchLinkResponse"> & {
  * Use `create(VouchLinkResponseSchema)` to create a new message.
  */
 export const VouchLinkResponseSchema: GenMessage<VouchLinkResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 15);
+  messageDesc(file_app_vouch, 13);
 
 /**
  * @generated from message roster.VouchRedeemRequest
@@ -743,7 +711,7 @@ export type VouchRedeemRequest = Message<"roster.VouchRedeemRequest"> & {
  * Use `create(VouchRedeemRequestSchema)` to create a new message.
  */
 export const VouchRedeemRequestSchema: GenMessage<VouchRedeemRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 16);
+  messageDesc(file_app_vouch, 14);
 
 /**
  * VouchService is how a secret is used without ever leaving the store.
@@ -930,22 +898,6 @@ export const VouchService: GenService<{
     methodKind: "unary";
     input: typeof VouchContinueRequestSchema;
     output: typeof VouchContinueResponseSchema;
-  },
-  /**
-   * Revoke ends a delegation before its expiry.
-   *
-   * D23 says *revoking it is a delete* and for a while nothing could:
-   * `DelegationService` is unregistered and closed, so a person clicking sign
-   * out left the app holding a credential that went on working. This is the
-   * delete, and the caller who may make it is the one that can prove it holds
-   * the token -- which is the same pair `roster-as` already carries.
-   *
-   * @generated from rpc roster.VouchService.Revoke
-   */
-  revoke: {
-    methodKind: "unary";
-    input: typeof VouchRevokeRequestSchema;
-    output: typeof VouchRevokeResponseSchema;
   },
   /**
    * Accept mints for somebody a front door has **already** checked, and it is
