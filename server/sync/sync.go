@@ -7,6 +7,20 @@
 // column on that row, and item 4 says why an app should not watch the row
 // instead: *a `Holder` changes for reasons nobody needs to hear about.*
 //
+// # Why it is not HolderService
+//
+// It reads `Holder` rows, so *Overlay before service* asks whether it is a
+// `Holder.Sync` overlay rather than a service of its own -- and the answer is
+// the sentence above. The generated `Watch` carries the whole row and every
+// change to it, because that is what a watch is; this carries three columns and
+// only when one of them moved, with a rename or a re-label swallowed. That is
+// not a narrowing an overlay in front of the watch could add: the machinery
+// keeps state *per person* to say which of the three facts changed, and sends
+// nothing to somebody nothing has happened to. It is a projection with its own
+// memory, not a verb on the row -- which is the one case *Overlay before
+// service* leaves to a service, and the paragraph it requires so that a service
+// which could not write it is the smell caught instead of shipped.
+//
 // # How it knows what changed, without being told
 //
 // It does not read the RPC, and could not usefully: `watch.Next` answers with
