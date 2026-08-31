@@ -185,11 +185,12 @@ func TestTheCookieOpensTheControlPlane(t *testing.T) {
 
 // TestAConsoleManagesKeys is what the control plane's own listener is for.
 //
-// `ApiKeyService` is unregistered and closed on the data plane, because its
-// generated `Get` answers with the verifier column to anybody the wall lets
-// read a row. Here it is the point of the port — which is why that port is an
-// address a console can reach and nothing else can, and why nothing in this
-// process can enforce that.
+// `ApiKeyService`'s management -- its reads and raw writes -- is closed on the
+// data plane, because its generated `Get` answers with the verifier column to
+// anybody the wall lets read a row. (Its one open verb there is `Issue`, the
+// mint, which answers a token once and never a stored hash.) Here management is
+// the point of the port — which is why that port is an address a console can
+// reach and nothing else can, and why nothing in this process can enforce that.
 func TestAConsoleManagesKeys(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
@@ -201,8 +202,11 @@ func TestAConsoleManagesKeys(t *testing.T) {
 	conn := servedControl(t, s)
 	as := metadata.NewOutgoingContext(ctx, metadata.Pairs("cookie", c.Name+"="+c.Value))
 
-	// Nothing on the data plane's port answers about keys, which is what the
-	// second listener exists to change.
+	// Nothing on the data plane's port manages keys, which is what the second
+	// listener exists to change. `ApiKeyService` is registered there now for
+	// its `Issue` overlay, so a management read is refused at the door -- an
+	// uncredentialed reader is turned away before dispatch -- rather than at a
+	// missing handler. Either way the data plane says nothing about them.
 	t.Run("the data plane still says nothing about them", func(t *testing.T) {
 		x := require.New(t)
 
@@ -210,7 +214,7 @@ func TestAConsoleManagesKeys(t *testing.T) {
 		_, err := app.NewApiKeyServiceClient(other).List(ctx,
 			app.ApiKeyListRequest_builder{}.Build())
 		x.Error(err)
-		x.Equal(codes.Unimplemented, status.Code(err))
+		x.Equal(codes.Unauthenticated, status.Code(err))
 	})
 
 	t.Run("an operator lists what exists", func(t *testing.T) {

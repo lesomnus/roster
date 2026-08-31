@@ -21,6 +21,15 @@ service ApiKeyService {
   rpc Erase(ApiKeyRef) returns (ApiKeyEraseResponse);
   // List reads ApiKeys a page at a time.
   rpc List(ApiKeyListRequest) returns (ApiKeyListResponse);
+  // Issue makes a key for somebody and answers with it once.
+  //
+  // Whose it is names one of two ways, the same pair `Issue.IssueKey` took: a
+  // `holder` reference on a plane with many tenants, where a name alone answers
+  // to more than one person and the wall narrows a reference to the ones this
+  // caller sees; or a `service` alias on the control plane's one tenant, which
+  // is created if it is not there, because a service is not something set up on
+  // purpose before it is needed. Giving both is refused.
+  rpc Issue(ApiKeyIssueRequest) returns (ApiKeyIssueResponse);
 }
 
 message ApiKeyAddRequest {
@@ -148,4 +157,37 @@ message ApiKeyListResponse {
 message ApiKeyFilter {
   ApiKeyRef ref = 1;
   HolderRef holder = 2;
+}
+
+message ApiKeyIssueRequest {
+  // The holder it is for, by alias within this plane's one tenant, created if
+  // it is not there. **Control plane only.** Giving both this and `holder` is
+  // refused.
+  string service = 1 [features.field_presence = IMPLICIT];
+
+  // What somebody calls this key when deciding whether to revoke it.
+  string alias = 2 [features.field_presence = IMPLICIT];
+
+  // What it may be used for, in full. Empty is refused rather than defaulted:
+  // everything hands out more than was asked for, and nothing mints a key that
+  // silently does not work.
+  repeated string methods = 3;
+
+  // When it stops working, unset for one that does not.
+  google.protobuf.Timestamp expires = 4;
+
+  // Whose it is, in full. **Data plane only**, and a reference rather than an
+  // alias because the wall has many tenants and a name alone is a question with
+  // more than one answer. Naming one that is not there is a refusal, not a
+  // creation: a customer's people are the customer's.
+  HolderRef holder = 5;
+}
+
+message ApiKeyIssueResponse {
+  // The key, and the only time it is ever readable. What is stored is a hash.
+  string token = 1 [features.field_presence = IMPLICIT];
+
+  // The row, so a console can list it beside the others without asking again.
+  // Its `secret` is cleared like any other answer.
+  ApiKey key = 2;
 }

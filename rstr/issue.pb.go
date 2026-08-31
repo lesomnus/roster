@@ -9,7 +9,6 @@ package rstr
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	unsafe "unsafe"
 )
@@ -21,258 +20,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type IssueKeyRequest struct {
-	state              protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Service string                 `protobuf:"bytes,1,opt,name=service"`
-	xxx_hidden_Alias   string                 `protobuf:"bytes,2,opt,name=alias"`
-	xxx_hidden_Methods []string               `protobuf:"bytes,3,rep,name=methods"`
-	xxx_hidden_Expires *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=expires"`
-	xxx_hidden_Holder  *HolderRef             `protobuf:"bytes,5,opt,name=holder"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
-}
-
-func (x *IssueKeyRequest) Reset() {
-	*x = IssueKeyRequest{}
-	mi := &file_app_issue_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *IssueKeyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*IssueKeyRequest) ProtoMessage() {}
-
-func (x *IssueKeyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_issue_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *IssueKeyRequest) GetService() string {
-	if x != nil {
-		return x.xxx_hidden_Service
-	}
-	return ""
-}
-
-func (x *IssueKeyRequest) GetAlias() string {
-	if x != nil {
-		return x.xxx_hidden_Alias
-	}
-	return ""
-}
-
-func (x *IssueKeyRequest) GetMethods() []string {
-	if x != nil {
-		return x.xxx_hidden_Methods
-	}
-	return nil
-}
-
-func (x *IssueKeyRequest) GetExpires() *timestamppb.Timestamp {
-	if x != nil {
-		return x.xxx_hidden_Expires
-	}
-	return nil
-}
-
-func (x *IssueKeyRequest) GetHolder() *HolderRef {
-	if x != nil {
-		return x.xxx_hidden_Holder
-	}
-	return nil
-}
-
-func (x *IssueKeyRequest) SetService(v string) {
-	x.xxx_hidden_Service = v
-}
-
-func (x *IssueKeyRequest) SetAlias(v string) {
-	x.xxx_hidden_Alias = v
-}
-
-func (x *IssueKeyRequest) SetMethods(v []string) {
-	x.xxx_hidden_Methods = v
-}
-
-func (x *IssueKeyRequest) SetExpires(v *timestamppb.Timestamp) {
-	x.xxx_hidden_Expires = v
-}
-
-func (x *IssueKeyRequest) SetHolder(v *HolderRef) {
-	x.xxx_hidden_Holder = v
-}
-
-func (x *IssueKeyRequest) HasExpires() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Expires != nil
-}
-
-func (x *IssueKeyRequest) HasHolder() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Holder != nil
-}
-
-func (x *IssueKeyRequest) ClearExpires() {
-	x.xxx_hidden_Expires = nil
-}
-
-func (x *IssueKeyRequest) ClearHolder() {
-	x.xxx_hidden_Holder = nil
-}
-
-type IssueKeyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	// The holder it is for, by alias within this plane's one tenant. Naming one
-	// that is not there creates it: a service is not something somebody sets up
-	// on purpose before they need it, which is what `roster key add` already
-	// decided.
-	//
-	// **Control plane only.** There is one tenant there, so an alias names one
-	// person; on the data plane it names one per customer and creating a holder
-	// by mentioning them is not a thing to do across a wall.
-	Service string
-	// What somebody calls this key when deciding whether to revoke it.
-	Alias string
-	// What it may be used for, in full: "/roster.VouchService/Verify".
-	//
-	// Empty is refused rather than defaulted in either direction. Everything
-	// hands out more than was asked for; nothing mints a key that silently does
-	// not work.
-	Methods []string
-	// When it stops working, unset for one that does not.
-	Expires *timestamppb.Timestamp
-	// Whose it is, in full.
-	//
-	// **Data plane only**, and the reason it is a reference rather than an alias
-	// is the wall: an alias is unique within a tenant and this plane has many, so
-	// a name alone is a question with more than one answer. A reference carries
-	// the tenant, and the wall narrows it to the ones this caller can see.
-	//
-	// Naming one that is not there is a refusal rather than a creation. A
-	// customer's people are the customer's, and a call that made one by
-	// mentioning them would be a way to write rows into somebody else's tenant by
-	// typo.
-	//
-	// Giving both this and `service` is refused, the way `VouchWho` refuses a
-	// person named two ways: a caller that filled in both has not decided which
-	// it means, and picking one makes the answer depend on a precedence rule
-	// nothing states.
-	Holder *HolderRef
-}
-
-func (b0 IssueKeyRequest_builder) Build() *IssueKeyRequest {
-	m0 := &IssueKeyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Service = b.Service
-	x.xxx_hidden_Alias = b.Alias
-	x.xxx_hidden_Methods = b.Methods
-	x.xxx_hidden_Expires = b.Expires
-	x.xxx_hidden_Holder = b.Holder
-	return m0
-}
-
-type IssueKeyResponse struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Token string                 `protobuf:"bytes,1,opt,name=token"`
-	xxx_hidden_Key   *ApiKey                `protobuf:"bytes,2,opt,name=key"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *IssueKeyResponse) Reset() {
-	*x = IssueKeyResponse{}
-	mi := &file_app_issue_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *IssueKeyResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*IssueKeyResponse) ProtoMessage() {}
-
-func (x *IssueKeyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_issue_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *IssueKeyResponse) GetToken() string {
-	if x != nil {
-		return x.xxx_hidden_Token
-	}
-	return ""
-}
-
-func (x *IssueKeyResponse) GetKey() *ApiKey {
-	if x != nil {
-		return x.xxx_hidden_Key
-	}
-	return nil
-}
-
-func (x *IssueKeyResponse) SetToken(v string) {
-	x.xxx_hidden_Token = v
-}
-
-func (x *IssueKeyResponse) SetKey(v *ApiKey) {
-	x.xxx_hidden_Key = v
-}
-
-func (x *IssueKeyResponse) HasKey() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Key != nil
-}
-
-func (x *IssueKeyResponse) ClearKey() {
-	x.xxx_hidden_Key = nil
-}
-
-type IssueKeyResponse_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	// The key, and the only time it is ever readable. What is stored is a hash,
-	// for the reason every password store has one.
-	Token string
-	// The row, so that a console can list it beside the others without asking
-	// again. Its `secret` is cleared like any other answer.
-	Key *ApiKey
-}
-
-func (b0 IssueKeyResponse_builder) Build() *IssueKeyResponse {
-	m0 := &IssueKeyResponse{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Token = b.Token
-	x.xxx_hidden_Key = b.Key
-	return m0
-}
-
 type IssuePasswordRequest struct {
 	state            protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Alias string                 `protobuf:"bytes,1,opt,name=alias"`
@@ -282,7 +29,7 @@ type IssuePasswordRequest struct {
 
 func (x *IssuePasswordRequest) Reset() {
 	*x = IssuePasswordRequest{}
-	mi := &file_app_issue_proto_msgTypes[2]
+	mi := &file_app_issue_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -294,7 +41,7 @@ func (x *IssuePasswordRequest) String() string {
 func (*IssuePasswordRequest) ProtoMessage() {}
 
 func (x *IssuePasswordRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_issue_proto_msgTypes[2]
+	mi := &file_app_issue_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -340,7 +87,7 @@ type IssuePasswordResponse struct {
 
 func (x *IssuePasswordResponse) Reset() {
 	*x = IssuePasswordResponse{}
-	mi := &file_app_issue_proto_msgTypes[3]
+	mi := &file_app_issue_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -352,7 +99,7 @@ func (x *IssuePasswordResponse) String() string {
 func (*IssuePasswordResponse) ProtoMessage() {}
 
 func (x *IssuePasswordResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_issue_proto_msgTypes[3]
+	mi := &file_app_issue_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -395,47 +142,27 @@ var File_app_issue_proto protoreflect.FileDescriptor
 
 const file_app_issue_proto_rawDesc = "" +
 	"\n" +
-	"\x0fapp/issue.proto\x12\x06roster\x1a\x10app/apikey.proto\x1a roster/payday/holder_svc.g.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xbc\x01\n" +
-	"\x0fIssueKeyRequest\x12\x18\n" +
-	"\aservice\x18\x01 \x01(\tR\aservice\x12\x14\n" +
-	"\x05alias\x18\x02 \x01(\tR\x05alias\x12\x18\n" +
-	"\amethods\x18\x03 \x03(\tR\amethods\x124\n" +
-	"\aexpires\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\x12)\n" +
-	"\x06holder\x18\x05 \x01(\v2\x11.roster.HolderRefR\x06holder\"J\n" +
-	"\x10IssueKeyResponse\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token\x12 \n" +
-	"\x03key\x18\x02 \x01(\v2\x0e.roster.ApiKeyR\x03key\",\n" +
+	"\x0fapp/issue.proto\x12\x06roster\",\n" +
 	"\x14IssuePasswordRequest\x12\x14\n" +
 	"\x05alias\x18\x01 \x01(\tR\x05alias\"3\n" +
 	"\x15IssuePasswordResponse\x12\x1a\n" +
-	"\bpassword\x18\x01 \x01(\tR\bpassword2\x9b\x01\n" +
-	"\fIssueService\x12=\n" +
-	"\bIssueKey\x12\x17.roster.IssueKeyRequest\x1a\x18.roster.IssueKeyResponse\x12L\n" +
+	"\bpassword\x18\x01 \x01(\tR\bpassword2\\\n" +
+	"\fIssueService\x12L\n" +
 	"\rIssuePassword\x12\x1c.roster.IssuePasswordRequest\x1a\x1d.roster.IssuePasswordResponseB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_app_issue_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_app_issue_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_app_issue_proto_goTypes = []any{
-	(*IssueKeyRequest)(nil),       // 0: roster.IssueKeyRequest
-	(*IssueKeyResponse)(nil),      // 1: roster.IssueKeyResponse
-	(*IssuePasswordRequest)(nil),  // 2: roster.IssuePasswordRequest
-	(*IssuePasswordResponse)(nil), // 3: roster.IssuePasswordResponse
-	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
-	(*HolderRef)(nil),             // 5: roster.HolderRef
-	(*ApiKey)(nil),                // 6: roster.ApiKey
+	(*IssuePasswordRequest)(nil),  // 0: roster.IssuePasswordRequest
+	(*IssuePasswordResponse)(nil), // 1: roster.IssuePasswordResponse
 }
 var file_app_issue_proto_depIdxs = []int32{
-	4, // 0: roster.IssueKeyRequest.expires:type_name -> google.protobuf.Timestamp
-	5, // 1: roster.IssueKeyRequest.holder:type_name -> roster.HolderRef
-	6, // 2: roster.IssueKeyResponse.key:type_name -> roster.ApiKey
-	0, // 3: roster.IssueService.IssueKey:input_type -> roster.IssueKeyRequest
-	2, // 4: roster.IssueService.IssuePassword:input_type -> roster.IssuePasswordRequest
-	1, // 5: roster.IssueService.IssueKey:output_type -> roster.IssueKeyResponse
-	3, // 6: roster.IssueService.IssuePassword:output_type -> roster.IssuePasswordResponse
-	5, // [5:7] is the sub-list for method output_type
-	3, // [3:5] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	0, // 0: roster.IssueService.IssuePassword:input_type -> roster.IssuePasswordRequest
+	1, // 1: roster.IssueService.IssuePassword:output_type -> roster.IssuePasswordResponse
+	1, // [1:2] is the sub-list for method output_type
+	0, // [0:1] is the sub-list for method input_type
+	0, // [0:0] is the sub-list for extension type_name
+	0, // [0:0] is the sub-list for extension extendee
+	0, // [0:0] is the sub-list for field type_name
 }
 
 func init() { file_app_issue_proto_init() }
@@ -443,15 +170,13 @@ func file_app_issue_proto_init() {
 	if File_app_issue_proto != nil {
 		return
 	}
-	file_app_apikey_proto_init()
-	file_roster_payday_holder_svc_g_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_issue_proto_rawDesc), len(file_app_issue_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

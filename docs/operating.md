@@ -753,13 +753,13 @@ the row, which table in it, and who the token is served as.
 | | | |
 | --- | --- | --- |
 | `rk_` | the deployment's | `roster key add`. Resolves to the **key**, holds no tenant, sees every tenant there is |
-| `rt_` | a tenant's | `IssueService/IssueKey` on the data plane. Belongs to a holder, resolves to that **holder**, so the wall, the bindings and the sites all apply exactly as when that person calls |
+| `rt_` | a tenant's | `ApiKeyService/Issue` on the data plane. Belongs to a holder, resolves to that **holder**, so the wall, the bindings and the sites all apply exactly as when that person calls |
 | `rd_` | a **delegation** | a product app calling as somebody it just signed in. Resolves to that holder in the same way — but it does **not** go in `authorization`: it rides in `roster-as`, beside the app's own key |
 
 #### A customer mints their own
 
 ```
-IssueService/IssueKey { holder: {...}, alias: "ci", methods: ["/roster.HolderService/List"] }
+ApiKeyService/Issue { holder: {...}, alias: "ci", methods: ["/roster.HolderService/List"] }
   → { token: "rt_…", key: {...} }
 ```
 
@@ -817,7 +817,7 @@ What a tenant key costs is the trail: its writes are recorded as the person's,
 so `Audit` says who and not which of their keys. Revoking still works, since the
 row is what the token resolves through.
 
-A `rt_` is minted over the wire by `IssueService/IssueKey` on the data plane —
+A `rt_` is minted over the wire by `ApiKeyService/Issue` on the data plane —
 see "A customer mints their own" above. `ApiKeyService` stays unregistered, and
 the issuing exception lives in its own RPC rather than as a hole in the rule
 that keeps a verifier out of every answer.
@@ -1190,7 +1190,7 @@ chooses to offer, so they are named on a role like anything else.
 Reach for these rather than the operator's equivalents on any screen a person
 draws about themselves. `IdentityService` and `ApiKeyService` narrow by
 **tenant**, so the smallest role covering *remove my own account* through them
-is *remove anybody's*, and `IssueService.IssueKey` and
+is *remove anybody's*, and `ApiKeyService.Issue` and
 `HolderService.RevokeKey` take a subject for the same reason. That is the leak
 D17 named, arriving on the screen it is most tempting on.
 

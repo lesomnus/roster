@@ -52,19 +52,14 @@ func NewCmdIssue(c *Config) *xli.Command {
 }
 
 // issuing is the connection, or the sentence somebody needs when there is none.
-func issuing(ctx context.Context, c *Config) (app.IssueServiceClient, func(), error) {
+func issuing(ctx context.Context, c *Config) (pdcmd.Conn, func(), error) {
 	if c.Client.Local || c.Client.Addr == "" {
 		return nil, nil, errors.New(
 			"`issue` mints over the wire, as a caller; the shell-on-the-box form is " +
 				"`roster key add` and `roster vouch reset`. name client.addr")
 	}
 
-	conn, done, err := remote{c}.Connect(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return app.NewIssueServiceClient(conn), done, nil
+	return remote{c}.Connect(ctx)
 }
 
 func newCmdIssueKey(c *Config) *xli.Command {
@@ -83,13 +78,15 @@ func newCmdIssueKey(c *Config) *xli.Command {
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
-			cl, done, err := issuing(ctx, c)
+			conn, done, err := issuing(ctx, c)
 			if err != nil {
 				return err
 			}
 			defer done()
 
-			req := app.IssueKeyRequest_builder{}
+			// Minting a key is `ApiKey.Issue` now (`IssueService.IssueKey` moved
+			// onto the entity); the command keeps its `issue key` name.
+			req := app.ApiKeyIssueRequest_builder{}
 
 			ref, named := arg.Get[pdcmd.Ref](cmd, "WHO")
 			if !named {
@@ -134,7 +131,7 @@ func newCmdIssueKey(c *Config) *xli.Command {
 			name, _ := flg.Find[string](cmd, "name")
 			req.Alias = name
 
-			v, err := cl.IssueKey(ctx, req.Build())
+			v, err := app.NewApiKeyServiceClient(conn).Issue(ctx, req.Build())
 			if err != nil {
 				return err
 			}
@@ -172,7 +169,7 @@ func newCmdIssuePassword(c *Config) *xli.Command {
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
-			cl, done, err := issuing(ctx, c)
+			conn, done, err := issuing(ctx, c)
 			if err != nil {
 				return err
 			}
@@ -183,7 +180,7 @@ func newCmdIssuePassword(c *Config) *xli.Command {
 				return errors.New("ALIAS: whose")
 			}
 
-			v, err := cl.IssuePassword(ctx, app.IssuePasswordRequest_builder{
+			v, err := app.NewIssueServiceClient(conn).IssuePassword(ctx, app.IssuePasswordRequest_builder{
 				Alias: alias,
 			}.Build())
 			if err != nil {

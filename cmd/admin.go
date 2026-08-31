@@ -17,8 +17,8 @@ import (
 
 	"github.com/lesomnus/roster/internal/ent"
 	app "github.com/lesomnus/roster/rstr"
-	"github.com/lesomnus/roster/server/console"
 	"github.com/lesomnus/roster/server/core"
+	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/pd"
 	"github.com/lesomnus/roster/server/vouch"
 )
@@ -84,7 +84,11 @@ func Admin(s *Server) (app.Server, error) {
 	return app.Build(s.sink.WithWatch(s.Watch),
 		core.Build(Rules(s.Control.Ent),
 			core.WithBreached(core.Breached(s.Breached)),
-			core.WithKeyring(s.Keyring)),
+			core.WithKeyring(s.Keyring),
+
+			// The data plane's kind: the admin port mints `rt_` for a customer's
+			// person, the same key that plane serves through `MeService`.
+			core.WithPrefix(keys.PrefixTenant)),
 		pd.AuditBuild())
 }
 
@@ -388,20 +392,10 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 	app.RegisterVouchServiceServer(g, vouch.New(admin, admin,
 		vouch.WithKeys(s.Keyring)))
 
-	// And minting a key for one of a customer's people, which is the fifth
-	// thing an operator does about somebody who cannot get in -- or the first
-	// thing they do about somebody whose scripts need one.
-	//
-	// The same service the data plane serves, on the same rows, minting the
-	// same `rt_`. It is here as well because this is the port a console
-	// reaches, and a console with a list of somebody's keys and no way to add
-	// one is a screen that sends an operator to a shell.
-	//
-	// `admin` is the data plane with **no wall**, which is what this whole port
-	// is -- an operator has no tenant, so a walled read shows them nothing. What
-	// still runs is `server/core`, which is on that stack too: a key is a grant
-	// and a way into an account, and both rules are checked whichever port asked.
-	app.RegisterIssueServiceServer(g, console.IssueTenant(admin, s.Ent))
+	// Minting a key for one of a customer's people is `ApiKey.Issue` now, and
+	// `register` above already served it on this port -- the same `rt_`, on the
+	// same rows, on the data-plane stack this port answers through, which
+	// `Admin` built with `core.WithPrefix(keys.PrefixTenant)`.
 
 	return g, nil
 }

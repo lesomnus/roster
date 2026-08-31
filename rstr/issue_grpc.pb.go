@@ -19,62 +19,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	IssueService_IssueKey_FullMethodName      = "/roster.IssueService/IssueKey"
 	IssueService_IssuePassword_FullMethodName = "/roster.IssueService/IssuePassword"
 )
 
 // IssueServiceClient is the client API for IssueService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// IssueService makes a secret, stores what verifies it, and answers with it
-// **once**.
-//
-// # Why the generated Add cannot do this
-//
-// `ApiKey.secret` is declared `(payday.field).secret`, so the layer in front of
-// the sink clears it on the way out -- including out of `Add`'s own answer. A
-// server that minted a key there could not hand it back.
-//
-// That is not a limitation to work around. It is the declaration doing its job:
-// the column is written and never answered with, and the one exception is the
-// moment it is created. An exception belongs in its own RPC rather than as a
-// hole in a rule that holds everywhere else.
-//
-// So `Add` stays what the servers write through and this is what a caller asks.
-// The same convention `Patch` and `Apply` already have -- *not served; it is how
-// the servers write, not how a caller asks* -- extended to one more method of
-// one entity.
-//
-// # It is served on both planes, and the prefix says which
-//
-// The control plane mints `rk_`: the deployment's own services, which are
-// holders of that plane. The data plane mints `rt_`: a key belonging to
-// somebody inside a customer's tenant, which resolves to that person and is
-// narrowed by what they may do.
-//
-// Which one an instance mints is not in the request and cannot be. A caller
-// that could name a prefix could ask the customer-facing port for a key of the
-// deployment's own kind, and the two are told apart by exactly that string --
-// see `server/keys`. It is a fact about which server answered.
-//
-// What **is** in the request is who the key is for, and the two planes name a
-// holder differently because they are shaped differently: the control plane has
-// one tenant and a service is created by being named, and the data plane has
-// many and a customer's people are the customer's to create.
-//
-// # Why the caller does not send the secret
-//
-// It could: `ApiKeyAddRequest` takes a verifier, so a console could generate
-// thirty-two bytes, hash them and send the hash. Then key generation is in a
-// browser, its quality is whatever that page's `crypto` gave it, and the prefix
-// that says which plane a key belongs to is chosen by the caller.
-//
-// Here it is `crypto/rand` on the server, the prefix is not a claim anybody
-// makes, and the row holds a hash before the answer leaves.
 type IssueServiceClient interface {
-	// IssueKey mints a key for a service and answers with it once.
-	IssueKey(ctx context.Context, in *IssueKeyRequest, opts ...grpc.CallOption) (*IssueKeyResponse, error)
 	// IssuePassword sets somebody's password to a generated one and answers with
 	// it once.
 	//
@@ -92,16 +43,6 @@ func NewIssueServiceClient(cc grpc.ClientConnInterface) IssueServiceClient {
 	return &issueServiceClient{cc}
 }
 
-func (c *issueServiceClient) IssueKey(ctx context.Context, in *IssueKeyRequest, opts ...grpc.CallOption) (*IssueKeyResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(IssueKeyResponse)
-	err := c.cc.Invoke(ctx, IssueService_IssueKey_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *issueServiceClient) IssuePassword(ctx context.Context, in *IssuePasswordRequest, opts ...grpc.CallOption) (*IssuePasswordResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(IssuePasswordResponse)
@@ -115,55 +56,7 @@ func (c *issueServiceClient) IssuePassword(ctx context.Context, in *IssuePasswor
 // IssueServiceServer is the server API for IssueService service.
 // All implementations must embed UnimplementedIssueServiceServer
 // for forward compatibility.
-//
-// IssueService makes a secret, stores what verifies it, and answers with it
-// **once**.
-//
-// # Why the generated Add cannot do this
-//
-// `ApiKey.secret` is declared `(payday.field).secret`, so the layer in front of
-// the sink clears it on the way out -- including out of `Add`'s own answer. A
-// server that minted a key there could not hand it back.
-//
-// That is not a limitation to work around. It is the declaration doing its job:
-// the column is written and never answered with, and the one exception is the
-// moment it is created. An exception belongs in its own RPC rather than as a
-// hole in a rule that holds everywhere else.
-//
-// So `Add` stays what the servers write through and this is what a caller asks.
-// The same convention `Patch` and `Apply` already have -- *not served; it is how
-// the servers write, not how a caller asks* -- extended to one more method of
-// one entity.
-//
-// # It is served on both planes, and the prefix says which
-//
-// The control plane mints `rk_`: the deployment's own services, which are
-// holders of that plane. The data plane mints `rt_`: a key belonging to
-// somebody inside a customer's tenant, which resolves to that person and is
-// narrowed by what they may do.
-//
-// Which one an instance mints is not in the request and cannot be. A caller
-// that could name a prefix could ask the customer-facing port for a key of the
-// deployment's own kind, and the two are told apart by exactly that string --
-// see `server/keys`. It is a fact about which server answered.
-//
-// What **is** in the request is who the key is for, and the two planes name a
-// holder differently because they are shaped differently: the control plane has
-// one tenant and a service is created by being named, and the data plane has
-// many and a customer's people are the customer's to create.
-//
-// # Why the caller does not send the secret
-//
-// It could: `ApiKeyAddRequest` takes a verifier, so a console could generate
-// thirty-two bytes, hash them and send the hash. Then key generation is in a
-// browser, its quality is whatever that page's `crypto` gave it, and the prefix
-// that says which plane a key belongs to is chosen by the caller.
-//
-// Here it is `crypto/rand` on the server, the prefix is not a claim anybody
-// makes, and the row holds a hash before the answer leaves.
 type IssueServiceServer interface {
-	// IssueKey mints a key for a service and answers with it once.
-	IssueKey(context.Context, *IssueKeyRequest) (*IssueKeyResponse, error)
 	// IssuePassword sets somebody's password to a generated one and answers with
 	// it once.
 	//
@@ -181,9 +74,6 @@ type IssueServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedIssueServiceServer struct{}
 
-func (UnimplementedIssueServiceServer) IssueKey(context.Context, *IssueKeyRequest) (*IssueKeyResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method IssueKey not implemented")
-}
 func (UnimplementedIssueServiceServer) IssuePassword(context.Context, *IssuePasswordRequest) (*IssuePasswordResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method IssuePassword not implemented")
 }
@@ -206,24 +96,6 @@ func RegisterIssueServiceServer(s grpc.ServiceRegistrar, srv IssueServiceServer)
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&IssueService_ServiceDesc, srv)
-}
-
-func _IssueService_IssueKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(IssueKeyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(IssueServiceServer).IssueKey(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: IssueService_IssueKey_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(IssueServiceServer).IssueKey(ctx, req.(*IssueKeyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _IssueService_IssuePassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -251,10 +123,6 @@ var IssueService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "roster.IssueService",
 	HandlerType: (*IssueServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "IssueKey",
-			Handler:    _IssueService_IssueKey_Handler,
-		},
 		{
 			MethodName: "IssuePassword",
 			Handler:    _IssueService_IssuePassword_Handler,

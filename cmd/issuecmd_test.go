@@ -30,7 +30,7 @@ func TestIssueMintsOverTheWire(t *testing.T) {
 	// customer self-serve `IssueKey` -- and the review's point was that it also
 	// reaches `IssuePassword`. So this test holds it, to prove the server guard
 	// (not just a narrow grant) is what refuses the password mint.
-	b := cliUp(t, holderGet, "/roster.IssueService/*")
+	b := cliUp(t, holderGet, "/roster.ApiKeyService/Issue", "/roster.IssueService/*")
 
 	t.Run("a key for a customer's person, from the data port", func(t *testing.T) {
 		x := require.New(t)

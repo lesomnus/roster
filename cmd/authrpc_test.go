@@ -99,7 +99,7 @@ func TestTheConsoleSignsInAsAnRpc(t *testing.T) {
 	t.Run("and issues a key, readable once", func(t *testing.T) {
 		x := require.New(t)
 
-		code, body := post("/roster.IssueService/IssueKey",
+		code, body := post("/roster.ApiKeyService/Issue",
 			`{"service":"custody","alias":"production","methods":["/roster.VouchService/Verify"]}`)
 		x.Equal(http.StatusOK, code, body)
 		x.Contains(body, `"rk_`, "the key was not in the answer")
@@ -114,7 +114,7 @@ func TestTheConsoleSignsInAsAnRpc(t *testing.T) {
 	t.Run("a key that allows nothing is refused", func(t *testing.T) {
 		x := require.New(t)
 
-		code, _ := post("/roster.IssueService/IssueKey",
+		code, _ := post("/roster.ApiKeyService/Issue",
 			`{"service":"custody","alias":"empty","methods":[]}`)
 		x.Equal(http.StatusBadRequest, code)
 	})

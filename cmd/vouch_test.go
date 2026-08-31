@@ -420,6 +420,11 @@ func TestTheApiKeyServiceCannotBeReachedEither(t *testing.T) {
 	b, ctx := build(t)
 
 	conn := served(t, b.Server)
+
+	// Holding every method, so what refuses `List` is the closed door and not a
+	// missing role -- `ApiKeyService` is registered now for its `Issue` overlay,
+	// so the gate would answer first for a caller who holds nothing.
+	b.mayAnything(b.ContosoUser, b.Contoso)
 	ctx = auth.PlainProvider(b.ContosoUser.String()).Provide(ctx)
 
 	_, err := app.NewApiKeyServiceClient(conn).List(ctx, app.ApiKeyListRequest_builder{}.Build())

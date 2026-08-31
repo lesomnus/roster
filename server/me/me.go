@@ -44,7 +44,6 @@ import (
 	"github.com/lesomnus/roster/internal/ent/identity"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
 	app "github.com/lesomnus/roster/rstr"
-	"github.com/lesomnus/roster/server/keys"
 )
 
 // Held is the union `gate.Policy` enforces, asked here so that what a page
@@ -354,8 +353,9 @@ func (s *Server) keys(ctx context.Context, who pdid.Id) ([]*app.SignInKey, error
 //
 // # And the prefix is not in the request
 //
-// `keys.PrefixTenant`, because this server is the data plane and a key minted
-// here belongs to somebody inside a customer's tenant. `issue.proto` argues
+// It is the stack's, stamped by `ApiKey.Issue` from `core.WithPrefix` -- `rt_`
+// here, because this server is the data plane and a key minted for the caller
+// belongs to somebody inside a customer's tenant. `apikey_svc.ext.proto` argues
 // that at length: a caller that could name a prefix could ask the
 // customer-facing port for a key of the deployment's own kind.
 func (s *Server) IssueKey(ctx context.Context, req *app.MeIssueKeyRequest) (*app.MeIssueKeyResponse, error) {
@@ -378,25 +378,25 @@ func (s *Server) IssueKey(ctx context.Context, req *app.MeIssueKeyRequest) (*app
 		return nil, pderr.Invalidf("methods", "a key that allows nothing opens no door")
 	}
 
-	token, sum, err := keys.Mint(keys.PrefixTenant)
-	if err != nil {
-		return nil, err
-	}
-
-	add := app.ApiKeyAddRequest_builder{
+	// The mint is `ApiKey.Issue`'s now: it makes the secret with the plane's
+	// prefix (a person's key is `rt_`, so the walled stack this runs through is
+	// stamped that way) and runs the two escalation rules on the way in. This
+	// answers about the caller's own account -- the holder is the frame's actor,
+	// which is what keeps `MeService.IssueKey` subject-less.
+	issue := app.ApiKeyIssueRequest_builder{
 		Holder:  app.HolderRef_builder{Id: f.Actor.Bytes()}.Build(),
 		Alias:   req.GetAlias(),
-		Secret:  sum,
 		Methods: req.GetMethods(),
 	}
 	if v := req.GetExpires(); v != nil {
-		add.DateExpires = v
+		issue.Expires = v
 	}
 
-	v, err := s.walled.ApiKey().Add(ctx, add.Build())
+	res, err := s.walled.ApiKey().Issue(ctx, issue.Build())
 	if err != nil {
 		return nil, err
 	}
+	token, v := res.GetToken(), res.GetKey()
 
 	// Answered in the shape the list is in, so a page that has just minted one
 	// puts it beside the others without asking again -- and so that the secret

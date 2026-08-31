@@ -5,120 +5,13 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
-import type { ApiKey } from "./apikey_pb.js";
-import { file_app_apikey } from "./apikey_pb.js";
-import type { HolderRef } from "../roster/payday/holder_svc_pb.js";
-import { file_roster_payday_holder_svc_g } from "../roster/payday/holder_svc_pb.js";
-import type { Timestamp } from "@bufbuild/protobuf/wkt";
-import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file app/issue.proto.
  */
 export const file_app_issue: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvaXNzdWUucHJvdG8SBnJvc3RlciKSAQoPSXNzdWVLZXlSZXF1ZXN0Eg8KB3NlcnZpY2UYASABKAkSDQoFYWxpYXMYAiABKAkSDwoHbWV0aG9kcxgDIAMoCRIrCgdleHBpcmVzGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIhCgZob2xkZXIYBSABKAsyES5yb3N0ZXIuSG9sZGVyUmVmIj4KEElzc3VlS2V5UmVzcG9uc2USDQoFdG9rZW4YASABKAkSGwoDa2V5GAIgASgLMg4ucm9zdGVyLkFwaUtleSIlChRJc3N1ZVBhc3N3b3JkUmVxdWVzdBINCgVhbGlhcxgBIAEoCSIpChVJc3N1ZVBhc3N3b3JkUmVzcG9uc2USEAoIcGFzc3dvcmQYASABKAkymwEKDElzc3VlU2VydmljZRI9CghJc3N1ZUtleRIXLnJvc3Rlci5Jc3N1ZUtleVJlcXVlc3QaGC5yb3N0ZXIuSXNzdWVLZXlSZXNwb25zZRJMCg1Jc3N1ZVBhc3N3b3JkEhwucm9zdGVyLklzc3VlUGFzc3dvcmRSZXF1ZXN0Gh0ucm9zdGVyLklzc3VlUGFzc3dvcmRSZXNwb25zZUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_app_apikey, file_roster_payday_holder_svc_g, file_google_protobuf_timestamp]);
-
-/**
- * @generated from message roster.IssueKeyRequest
- */
-export type IssueKeyRequest = Message<"roster.IssueKeyRequest"> & {
-  /**
-   * The holder it is for, by alias within this plane's one tenant. Naming one
-   * that is not there creates it: a service is not something somebody sets up
-   * on purpose before they need it, which is what `roster key add` already
-   * decided.
-   *
-   * **Control plane only.** There is one tenant there, so an alias names one
-   * person; on the data plane it names one per customer and creating a holder
-   * by mentioning them is not a thing to do across a wall.
-   *
-   * @generated from field: string service = 1;
-   */
-  service: string;
-
-  /**
-   * What somebody calls this key when deciding whether to revoke it.
-   *
-   * @generated from field: string alias = 2;
-   */
-  alias: string;
-
-  /**
-   * What it may be used for, in full: "/roster.VouchService/Verify".
-   *
-   * Empty is refused rather than defaulted in either direction. Everything
-   * hands out more than was asked for; nothing mints a key that silently does
-   * not work.
-   *
-   * @generated from field: repeated string methods = 3;
-   */
-  methods: string[];
-
-  /**
-   * When it stops working, unset for one that does not.
-   *
-   * @generated from field: google.protobuf.Timestamp expires = 4;
-   */
-  expires?: Timestamp | undefined;
-
-  /**
-   * Whose it is, in full.
-   *
-   * **Data plane only**, and the reason it is a reference rather than an alias
-   * is the wall: an alias is unique within a tenant and this plane has many, so
-   * a name alone is a question with more than one answer. A reference carries
-   * the tenant, and the wall narrows it to the ones this caller can see.
-   *
-   * Naming one that is not there is a refusal rather than a creation. A
-   * customer's people are the customer's, and a call that made one by
-   * mentioning them would be a way to write rows into somebody else's tenant by
-   * typo.
-   *
-   * Giving both this and `service` is refused, the way `VouchWho` refuses a
-   * person named two ways: a caller that filled in both has not decided which
-   * it means, and picking one makes the answer depend on a precedence rule
-   * nothing states.
-   *
-   * @generated from field: roster.HolderRef holder = 5;
-   */
-  holder?: HolderRef | undefined;
-};
-
-/**
- * Describes the message roster.IssueKeyRequest.
- * Use `create(IssueKeyRequestSchema)` to create a new message.
- */
-export const IssueKeyRequestSchema: GenMessage<IssueKeyRequest> = /*@__PURE__*/
-  messageDesc(file_app_issue, 0);
-
-/**
- * @generated from message roster.IssueKeyResponse
- */
-export type IssueKeyResponse = Message<"roster.IssueKeyResponse"> & {
-  /**
-   * The key, and the only time it is ever readable. What is stored is a hash,
-   * for the reason every password store has one.
-   *
-   * @generated from field: string token = 1;
-   */
-  token: string;
-
-  /**
-   * The row, so that a console can list it beside the others without asking
-   * again. Its `secret` is cleared like any other answer.
-   *
-   * @generated from field: roster.ApiKey key = 2;
-   */
-  key?: ApiKey | undefined;
-};
-
-/**
- * Describes the message roster.IssueKeyResponse.
- * Use `create(IssueKeyResponseSchema)` to create a new message.
- */
-export const IssueKeyResponseSchema: GenMessage<IssueKeyResponse> = /*@__PURE__*/
-  messageDesc(file_app_issue, 1);
+  fileDesc("Cg9hcHAvaXNzdWUucHJvdG8SBnJvc3RlciIlChRJc3N1ZVBhc3N3b3JkUmVxdWVzdBINCgVhbGlhcxgBIAEoCSIpChVJc3N1ZVBhc3N3b3JkUmVzcG9uc2USEAoIcGFzc3dvcmQYASABKAkyXAoMSXNzdWVTZXJ2aWNlEkwKDUlzc3VlUGFzc3dvcmQSHC5yb3N0ZXIuSXNzdWVQYXNzd29yZFJlcXVlc3QaHS5yb3N0ZXIuSXNzdWVQYXNzd29yZFJlc3BvbnNlQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac");
 
 /**
  * @generated from message roster.IssuePasswordRequest
@@ -137,7 +30,7 @@ export type IssuePasswordRequest = Message<"roster.IssuePasswordRequest"> & {
  * Use `create(IssuePasswordRequestSchema)` to create a new message.
  */
 export const IssuePasswordRequestSchema: GenMessage<IssuePasswordRequest> = /*@__PURE__*/
-  messageDesc(file_app_issue, 2);
+  messageDesc(file_app_issue, 0);
 
 /**
  * @generated from message roster.IssuePasswordResponse
@@ -158,68 +51,12 @@ export type IssuePasswordResponse = Message<"roster.IssuePasswordResponse"> & {
  * Use `create(IssuePasswordResponseSchema)` to create a new message.
  */
 export const IssuePasswordResponseSchema: GenMessage<IssuePasswordResponse> = /*@__PURE__*/
-  messageDesc(file_app_issue, 3);
+  messageDesc(file_app_issue, 1);
 
 /**
- * IssueService makes a secret, stores what verifies it, and answers with it
- * **once**.
- *
- * # Why the generated Add cannot do this
- *
- * `ApiKey.secret` is declared `(payday.field).secret`, so the layer in front of
- * the sink clears it on the way out -- including out of `Add`'s own answer. A
- * server that minted a key there could not hand it back.
- *
- * That is not a limitation to work around. It is the declaration doing its job:
- * the column is written and never answered with, and the one exception is the
- * moment it is created. An exception belongs in its own RPC rather than as a
- * hole in a rule that holds everywhere else.
- *
- * So `Add` stays what the servers write through and this is what a caller asks.
- * The same convention `Patch` and `Apply` already have -- *not served; it is how
- * the servers write, not how a caller asks* -- extended to one more method of
- * one entity.
- *
- * # It is served on both planes, and the prefix says which
- *
- * The control plane mints `rk_`: the deployment's own services, which are
- * holders of that plane. The data plane mints `rt_`: a key belonging to
- * somebody inside a customer's tenant, which resolves to that person and is
- * narrowed by what they may do.
- *
- * Which one an instance mints is not in the request and cannot be. A caller
- * that could name a prefix could ask the customer-facing port for a key of the
- * deployment's own kind, and the two are told apart by exactly that string --
- * see `server/keys`. It is a fact about which server answered.
- *
- * What **is** in the request is who the key is for, and the two planes name a
- * holder differently because they are shaped differently: the control plane has
- * one tenant and a service is created by being named, and the data plane has
- * many and a customer's people are the customer's to create.
- *
- * # Why the caller does not send the secret
- *
- * It could: `ApiKeyAddRequest` takes a verifier, so a console could generate
- * thirty-two bytes, hash them and send the hash. Then key generation is in a
- * browser, its quality is whatever that page's `crypto` gave it, and the prefix
- * that says which plane a key belongs to is chosen by the caller.
- *
- * Here it is `crypto/rand` on the server, the prefix is not a claim anybody
- * makes, and the row holds a hash before the answer leaves.
- *
  * @generated from service roster.IssueService
  */
 export const IssueService: GenService<{
-  /**
-   * IssueKey mints a key for a service and answers with it once.
-   *
-   * @generated from rpc roster.IssueService.IssueKey
-   */
-  issueKey: {
-    methodKind: "unary";
-    input: typeof IssueKeyRequestSchema;
-    output: typeof IssueKeyResponseSchema;
-  },
   /**
    * IssuePassword sets somebody's password to a generated one and answers with
    * it once.

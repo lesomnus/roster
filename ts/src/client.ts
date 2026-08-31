@@ -27,7 +27,6 @@ import { TenantService } from '../gen/roster/payday/tenant_svc_pb.js'
 import { HolderService } from '../gen/roster/payday/holder_svc_pb.js'
 import { VouchService } from '../gen/app/vouch_pb.js'
 import { CredentialService } from '../gen/app/credential_svc_pb.js'
-import { IssueService } from '../gen/app/issue_pb.js'
 import { BatchService } from '@lesomnus/payday/pdpb'
 
 export interface App {
@@ -98,7 +97,7 @@ export interface Admin {
 	 * reaches, and a screen that lists somebody's keys and cannot add one is a
 	 * screen that sends an operator to a shell.
 	 */
-	readonly issue: Client<typeof IssueService>
+	readonly apiKey: Client<typeof ApiKeyService>
 }
 
 export function admin(transport: Transport): Admin {
@@ -109,6 +108,6 @@ export function admin(transport: Transport): Admin {
 		tenant: createClient(TenantService, transport),
 		role: createClient(RoleService, transport),
 		binding: createClient(BindingService, transport),
-		issue: createClient(IssueService, transport),
+		apiKey: createClient(ApiKeyService, transport),
 	}
 }

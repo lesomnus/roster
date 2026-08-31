@@ -110,7 +110,7 @@ func TestAnOperatorStandsUpACustomerThatCanBeUsed(t *testing.T) {
 		x.NoError(err)
 		x.False(v.GetOk(), "somebody with no credential was signed in")
 
-		k, err := app.NewIssueServiceClient(admin).IssueKey(as, app.IssueKeyRequest_builder{
+		k, err := app.NewApiKeyServiceClient(admin).Issue(as, app.ApiKeyIssueRequest_builder{
 			Holder:  app.HolderRef_builder{Id: bare.GetId()}.Build(),
 			Alias:   "premature",
 			Methods: []string{"/roster.HolderService/List"},
@@ -126,7 +126,7 @@ func TestAnOperatorStandsUpACustomerThatCanBeUsed(t *testing.T) {
 	t.Run("a key an operator mints, on the data plane's own port", func(t *testing.T) {
 		x := require.New(t)
 
-		v, err := app.NewIssueServiceClient(admin).IssueKey(as, app.IssueKeyRequest_builder{
+		v, err := app.NewApiKeyServiceClient(admin).Issue(as, app.ApiKeyIssueRequest_builder{
 			Holder:  app.HolderRef_builder{Id: h.GetId()}.Build(),
 			Alias:   "bootstrap",
 			Methods: []string{"/roster.*/*"},

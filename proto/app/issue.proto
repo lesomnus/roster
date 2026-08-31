@@ -2,62 +2,34 @@ edition = "2023";
 
 package roster;
 
-import "app/apikey.proto";
-import "roster/payday/holder_svc.g.proto";
-import "google/protobuf/timestamp.proto";
-
 option features.field_presence = IMPLICIT;
 option go_package = "github.com/lesomnus/roster/rstr";
 
-// IssueService makes a secret, stores what verifies it, and answers with it
-// **once**.
+// IssueService is the deployment's control-plane bootstrap for a first password.
 //
-// # Why the generated Add cannot do this
+// It was two methods -- `IssueKey` and `IssuePassword` -- that shared a shape:
+// a secret made on the server, stored as a verifier, answered once. The key
+// half is `ApiKey.Mint` now, an overlay on the entity it writes (see
+// `apikey_svc.ext.proto`), because minting a key is a verb on api-key rows. The
+// password half stayed, and this is why.
 //
-// `ApiKey.secret` is declared `(payday.field).secret`, so the layer in front of
-// the sink clears it on the way out -- including out of `Add`'s own answer. A
-// server that minted a key there could not hand it back.
+// # Why it is not CredentialService
 //
-// That is not a limitation to work around. It is the declaration doing its job:
-// the column is written and never answered with, and the one exception is the
-// moment it is created. An exception belongs in its own RPC rather than as a
-// hole in a rule that holds everywhere else.
+// `IssuePassword` generates a password for a new operator on the **control
+// plane**, which has one tenant, so it names them by a bare alias. It is the
+// deployment's own bootstrap -- the first way in for somebody a console just
+// created -- and runs with no reach rule and no epoch, because there is nobody
+// to escalate past and no session to end. A reach-guarded `Credential` overlay
+// cannot be that: on the control plane a console key holds nothing, so `mayReach`
+// would refuse the very act this exists for. `server/console` writes it inline
+// through the generated `Credential` verbs, which `server/core` leaves unguarded
+// for the deployment's own work; this is the RPC a console reaches to ask.
 //
-// So `Add` stays what the servers write through and this is what a caller asks.
-// The same convention `Patch` and `Apply` already have -- *not served; it is how
-// the servers write, not how a caller asks* -- extended to one more method of
-// one entity.
-//
-// # It is served on both planes, and the prefix says which
-//
-// The control plane mints `rk_`: the deployment's own services, which are
-// holders of that plane. The data plane mints `rt_`: a key belonging to
-// somebody inside a customer's tenant, which resolves to that person and is
-// narrowed by what they may do.
-//
-// Which one an instance mints is not in the request and cannot be. A caller
-// that could name a prefix could ask the customer-facing port for a key of the
-// deployment's own kind, and the two are told apart by exactly that string --
-// see `server/keys`. It is a fact about which server answered.
-//
-// What **is** in the request is who the key is for, and the two planes name a
-// holder differently because they are shaped differently: the control plane has
-// one tenant and a service is created by being named, and the data plane has
-// many and a customer's people are the customer's to create.
-//
-// # Why the caller does not send the secret
-//
-// It could: `ApiKeyAddRequest` takes a verifier, so a console could generate
-// thirty-two bytes, hash them and send the hash. Then key generation is in a
-// browser, its quality is whatever that page's `crypto` gave it, and the prefix
-// that says which plane a key belongs to is chosen by the caller.
-//
-// Here it is `crypto/rand` on the server, the prefix is not a claim anybody
-// makes, and the row holds a hash before the answer leaves.
-service IssueService {
-  // IssueKey mints a key for a service and answers with it once.
-  rpc IssueKey(IssueKeyRequest) returns (IssueKeyResponse);
+// Off the control plane it refuses: a bare alias there names one person per
+// customer, and a customer's person is given a password the guarded way
+// (`Credential.Set`, `Vouch.Reset`).
 
+service IssueService {
   // IssuePassword sets somebody's password to a generated one and answers with
   // it once.
   //
@@ -65,59 +37,6 @@ service IssueService {
   // they do with it is change it -- which is `VouchService.Set`, and needs the
   // old one, and is therefore not this.
   rpc IssuePassword(IssuePasswordRequest) returns (IssuePasswordResponse);
-}
-
-message IssueKeyRequest {
-  // The holder it is for, by alias within this plane's one tenant. Naming one
-  // that is not there creates it: a service is not something somebody sets up
-  // on purpose before they need it, which is what `roster key add` already
-  // decided.
-  //
-  // **Control plane only.** There is one tenant there, so an alias names one
-  // person; on the data plane it names one per customer and creating a holder
-  // by mentioning them is not a thing to do across a wall.
-  string service = 1;
-
-  // What somebody calls this key when deciding whether to revoke it.
-  string alias = 2;
-
-  // What it may be used for, in full: "/roster.VouchService/Verify".
-  //
-  // Empty is refused rather than defaulted in either direction. Everything
-  // hands out more than was asked for; nothing mints a key that silently does
-  // not work.
-  repeated string methods = 3;
-
-  // When it stops working, unset for one that does not.
-  google.protobuf.Timestamp expires = 4;
-
-  // Whose it is, in full.
-  //
-  // **Data plane only**, and the reason it is a reference rather than an alias
-  // is the wall: an alias is unique within a tenant and this plane has many, so
-  // a name alone is a question with more than one answer. A reference carries
-  // the tenant, and the wall narrows it to the ones this caller can see.
-  //
-  // Naming one that is not there is a refusal rather than a creation. A
-  // customer's people are the customer's, and a call that made one by
-  // mentioning them would be a way to write rows into somebody else's tenant by
-  // typo.
-  //
-  // Giving both this and `service` is refused, the way `VouchWho` refuses a
-  // person named two ways: a caller that filled in both has not decided which
-  // it means, and picking one makes the answer depend on a precedence rule
-  // nothing states.
-  HolderRef holder = 5;
-}
-
-message IssueKeyResponse {
-  // The key, and the only time it is ever readable. What is stored is a hash,
-  // for the reason every password store has one.
-  string token = 1;
-
-  // The row, so that a console can list it beside the others without asking
-  // again. Its `secret` is cleared like any other answer.
-  ApiKey key = 2;
 }
 
 message IssuePasswordRequest {

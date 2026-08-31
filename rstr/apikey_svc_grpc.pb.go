@@ -25,6 +25,7 @@ const (
 	ApiKeyService_Apply_FullMethodName = "/roster.ApiKeyService/Apply"
 	ApiKeyService_Erase_FullMethodName = "/roster.ApiKeyService/Erase"
 	ApiKeyService_List_FullMethodName  = "/roster.ApiKeyService/List"
+	ApiKeyService_Issue_FullMethodName = "/roster.ApiKeyService/Issue"
 )
 
 // ApiKeyServiceClient is the client API for ApiKeyService service.
@@ -43,6 +44,15 @@ type ApiKeyServiceClient interface {
 	Erase(ctx context.Context, in *ApiKeyRef, opts ...grpc.CallOption) (*ApiKeyEraseResponse, error)
 	// List reads ApiKeys a page at a time.
 	List(ctx context.Context, in *ApiKeyListRequest, opts ...grpc.CallOption) (*ApiKeyListResponse, error)
+	// Issue makes a key for somebody and answers with it once.
+	//
+	// Whose it is names one of two ways, the same pair `Issue.IssueKey` took: a
+	// `holder` reference on a plane with many tenants, where a name alone answers
+	// to more than one person and the wall narrows a reference to the ones this
+	// caller sees; or a `service` alias on the control plane's one tenant, which
+	// is created if it is not there, because a service is not something set up on
+	// purpose before it is needed. Giving both is refused.
+	Issue(ctx context.Context, in *ApiKeyIssueRequest, opts ...grpc.CallOption) (*ApiKeyIssueResponse, error)
 }
 
 type apiKeyServiceClient struct {
@@ -113,6 +123,16 @@ func (c *apiKeyServiceClient) List(ctx context.Context, in *ApiKeyListRequest, o
 	return out, nil
 }
 
+func (c *apiKeyServiceClient) Issue(ctx context.Context, in *ApiKeyIssueRequest, opts ...grpc.CallOption) (*ApiKeyIssueResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ApiKeyIssueResponse)
+	err := c.cc.Invoke(ctx, ApiKeyService_Issue_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ApiKeyServiceServer is the server API for ApiKeyService service.
 // All implementations must embed UnimplementedApiKeyServiceServer
 // for forward compatibility.
@@ -129,6 +149,15 @@ type ApiKeyServiceServer interface {
 	Erase(context.Context, *ApiKeyRef) (*ApiKeyEraseResponse, error)
 	// List reads ApiKeys a page at a time.
 	List(context.Context, *ApiKeyListRequest) (*ApiKeyListResponse, error)
+	// Issue makes a key for somebody and answers with it once.
+	//
+	// Whose it is names one of two ways, the same pair `Issue.IssueKey` took: a
+	// `holder` reference on a plane with many tenants, where a name alone answers
+	// to more than one person and the wall narrows a reference to the ones this
+	// caller sees; or a `service` alias on the control plane's one tenant, which
+	// is created if it is not there, because a service is not something set up on
+	// purpose before it is needed. Giving both is refused.
+	Issue(context.Context, *ApiKeyIssueRequest) (*ApiKeyIssueResponse, error)
 	mustEmbedUnimplementedApiKeyServiceServer()
 }
 
@@ -156,6 +185,9 @@ func (UnimplementedApiKeyServiceServer) Erase(context.Context, *ApiKeyRef) (*Api
 }
 func (UnimplementedApiKeyServiceServer) List(context.Context, *ApiKeyListRequest) (*ApiKeyListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
+}
+func (UnimplementedApiKeyServiceServer) Issue(context.Context, *ApiKeyIssueRequest) (*ApiKeyIssueResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Issue not implemented")
 }
 func (UnimplementedApiKeyServiceServer) mustEmbedUnimplementedApiKeyServiceServer() {}
 func (UnimplementedApiKeyServiceServer) testEmbeddedByValue()                       {}
@@ -286,6 +318,24 @@ func _ApiKeyService_List_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ApiKeyService_Issue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ApiKeyIssueRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ApiKeyServiceServer).Issue(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ApiKeyService_Issue_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ApiKeyServiceServer).Issue(ctx, req.(*ApiKeyIssueRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ApiKeyService_ServiceDesc is the grpc.ServiceDesc for ApiKeyService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -316,6 +366,10 @@ var ApiKeyService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _ApiKeyService_List_Handler,
+		},
+		{
+			MethodName: "Issue",
+			Handler:    _ApiKeyService_Issue_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

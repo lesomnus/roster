@@ -177,51 +177,6 @@ type issuer struct {
 	prefix string
 }
 
-func (i issuer) IssueKey(ctx context.Context, req *app.IssueKeyRequest) (*app.IssueKeyResponse, error) {
-	if req.GetAlias() == "" {
-		return nil, status.Error(codes.InvalidArgument, "a name for the key")
-	}
-	if len(req.GetMethods()) == 0 {
-		// Refused rather than defaulted in either direction. Everything hands
-		// out more than was asked for; nothing mints a key that silently does
-		// not work.
-		return nil, status.Error(codes.InvalidArgument, "methods: a key that allows nothing opens no door")
-	}
-
-	ref, err := i.whose(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	// Which kind is a fact about which server answered, and not a field. See
-	// [issuer.prefix].
-	token, sum, err := keys.Mint(i.prefix)
-	if err != nil {
-		return nil, err
-	}
-
-	add := app.ApiKeyAddRequest_builder{
-		Holder:  ref,
-		Alias:   req.GetAlias(),
-		Secret:  sum,
-		Methods: req.GetMethods(),
-	}
-	if v := req.GetExpires(); v != nil {
-		add.DateExpires = v
-	}
-
-	// Through the **walled** server, so the escalation rule runs: nobody hands
-	// out a method they do not hold. `roster key add` goes around it through
-	// `Ungated`, where there is no frame at all, which is the deployment doing
-	// its own work rather than anybody asking.
-	v, err := i.s.ApiKey().Add(ctx, add.Build())
-	if err != nil {
-		return nil, err
-	}
-
-	return app.IssueKeyResponse_builder{Token: token, Key: v}.Build(), nil
-}
-
 // IssuePassword is the control plane's alone, and refuses on the other.
 //
 // It names somebody by a bare alias, which only says one person where there is
@@ -324,64 +279,6 @@ func (i issuer) IssuePassword(ctx context.Context, req *app.IssuePasswordRequest
 // service is the moment it becomes a caller of this deployment, and asking for
 // two commands to express one intent is how a runbook grows a step nobody
 // remembers.
-// whose is who the key is for, and it refuses a request that said twice or not
-// at all.
-//
-// The two forms are not interchangeable and are not a convenience. `service` is
-// an alias in the one tenant this plane has, and names a holder **into
-// existence** if there is none -- which is right there and wrong here, because
-// a customer's people are the customer's and a call that made one by mentioning
-// them is a way to write rows into somebody else's tenant by typo.
-//
-// `holder` is a reference, so it carries a tenant and the wall narrows it. It
-// is refused on the control plane rather than accepted, because the field means
-// *this exists already* and there it might not.
-//
-// Both, or neither, is a caller that has not decided -- the refusal
-// `vouch.refOf` makes about a person named two ways, for the same reason.
-func (i issuer) whose(ctx context.Context, req *app.IssueKeyRequest) (*app.HolderRef, error) {
-	service, ref := req.GetService(), req.GetHolder()
-
-	byName := service != ""
-	byRef := ref != nil
-
-	switch {
-	case byName && byRef:
-		return nil, status.Error(codes.InvalidArgument,
-			"a service and a holder name whose key this is two ways; give one")
-
-	case i.prefix == keys.PrefixTenant:
-		if !byRef {
-			return nil, status.Error(codes.InvalidArgument,
-				"holder: whose key this is; `service` is the other plane's, where there is one tenant")
-		}
-
-		// Read back through the walled server, so that a reference this caller
-		// cannot see is a NotFound rather than a key minted into a tenant they
-		// have no business in. `ApiKey.Add` would narrow it too; this is so the
-		// refusal says which field.
-		v, err := i.s.Holder().Get(ctx, app.HolderGetRequest_builder{Ref: ref}.Build())
-		if err != nil {
-			return nil, err
-		}
-
-		return app.HolderRef_builder{Id: v.GetId()}.Build(), nil
-
-	case byRef:
-		return nil, status.Error(codes.InvalidArgument,
-			"holder: this plane has one tenant, so a key is for a `service` by name")
-
-	case !byName:
-		return nil, status.Error(codes.InvalidArgument, "service: whose key this is")
-	}
-
-	who, err := i.holder(ctx, service)
-	if err != nil {
-		return nil, err
-	}
-
-	return app.HolderRef_builder{Id: who.Bytes()}.Build(), nil
-}
 
 func (i issuer) holder(ctx context.Context, alias string) (pdid.Id, error) {
 	t, err := i.db.Tenant.Query().First(ctx)

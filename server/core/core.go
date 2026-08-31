@@ -66,6 +66,14 @@ type Core struct {
 	// same keyring `server/vouch` verifies a code with, so a factor enrolled
 	// here is one that plane can check.
 	keyring vouch.Keyring
+
+	// prefix is which plane a minted key belongs to -- `rk_` on the control
+	// plane, `rt_` on the data plane -- handed to this layer because
+	// `ApiKey.Mint` makes the secret here now. It is a fact about the server
+	// that answered and never a field, so a caller cannot ask one port for the
+	// other's kind. The zero value is `keys.PrefixTenant`'s empty sibling, which
+	// `Mint` refuses rather than mint an unprefixed key.
+	prefix string
 }
 
 // Breached is whether a secret is in a corpus of leaked ones. Nil refuses none.
@@ -79,6 +87,11 @@ func WithBreached(v Breached) Option { return func(s *Core) { s.breached = v } }
 // `Credential.Enrol` can make a second factor without a service holding the
 // crypto. Left out, the layer holds no key and refuses a `totp` enrolment.
 func WithKeyring(v vouch.Keyring) Option { return func(s *Core) { s.keyring = v } }
+
+// WithPrefix gives the layer the plane a minted key belongs to (`rk_`/`rt_`),
+// so `ApiKey.Mint` can make the secret without a service choosing which port's
+// kind it is. One per stack; see `server/keys`.
+func WithPrefix(v string) Option { return func(s *Core) { s.prefix = v } }
 
 // Rules is what this layer has to know about a caller and cannot work out.
 //
@@ -192,5 +205,5 @@ func (s Core) WithDriver(drv dialect.Driver) (app.Server, error) {
 	// refuse a leaked secret and must wrap a seed with the deployment's key.
 	// Dropped, a rebuilt stack would accept a breached password and refuse every
 	// second factor the moment two writes shared a transaction.
-	return New(next, s.rules, WithBreached(s.breached), WithKeyring(s.keyring)), nil
+	return New(next, s.rules, WithBreached(s.breached), WithKeyring(s.keyring), WithPrefix(s.prefix)), nil
 }

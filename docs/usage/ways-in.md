@@ -146,8 +146,8 @@ Three other ways to get one, all the same row:
 
 | | |
 | --- | --- |
-| `IssueService.IssueKey` on `server.addr` | a customer's own admin, for somebody in their tenant |
-| `IssueService.IssueKey` on `admin.addr` | an operator, from the console |
+| `ApiKeyService.Issue` on `server.addr` | a customer's own admin, for somebody in their tenant |
+| `ApiKeyService.Issue` on `admin.addr` | an operator, from the console |
 | `MeService.IssueKey` | a person, for themselves — no subject in the request at all |
 
 As themselves, from their own terminal, that last one is:

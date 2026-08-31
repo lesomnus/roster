@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	issueKey    = "/roster.IssueService/IssueKey"
+	issueKey    = "/roster.ApiKeyService/Issue"
 	listHolder  = "/roster.HolderService/List"
 	eraseHolder = "/roster.HolderService/Erase"
 )
@@ -40,7 +40,7 @@ func TestACustomerMintsTheirOwnKeyOverTheWire(t *testing.T) {
 	conn := served(t, b.Server)
 	wire := asOverTheWire(ctx, b.ContosoUser)
 
-	res, err := app.NewIssueServiceClient(conn).IssueKey(wire, app.IssueKeyRequest_builder{
+	res, err := app.NewApiKeyServiceClient(conn).Issue(wire, app.ApiKeyIssueRequest_builder{
 		Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Alias:   "ci",
 		Methods: []string{listHolder},
@@ -99,7 +99,7 @@ func TestNobodyMintsAKeyWiderThanThemselves(t *testing.T) {
 	conn := served(t, b.Server)
 	wire := asOverTheWire(ctx, b.ContosoUser)
 
-	_, err := app.NewIssueServiceClient(conn).IssueKey(wire, app.IssueKeyRequest_builder{
+	_, err := app.NewApiKeyServiceClient(conn).Issue(wire, app.ApiKeyIssueRequest_builder{
 		Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Alias:   "wider",
 		Methods: []string{listHolder, eraseHolder},
@@ -133,7 +133,7 @@ func TestNobodyMintsAKeyOnSomebodyElsesAccount(t *testing.T) {
 	conn := served(t, b.Server)
 	wire := asOverTheWire(ctx, b.ContosoUser)
 
-	_, err := app.NewIssueServiceClient(conn).IssueKey(wire, app.IssueKeyRequest_builder{
+	_, err := app.NewApiKeyServiceClient(conn).Issue(wire, app.ApiKeyIssueRequest_builder{
 		// Only a method she holds, which is what makes this the interesting
 		// case: the methods check passes and the key is still an account.
 		Holder:  app.HolderRef_builder{Id: boss.Bytes()}.Build(),
@@ -160,7 +160,7 @@ func TestAKeyIsNotMintedIntoAnotherTenant(t *testing.T) {
 	conn := served(t, b.Server)
 	wire := asOverTheWire(ctx, b.ContosoUser)
 
-	_, err := app.NewIssueServiceClient(conn).IssueKey(wire, app.IssueKeyRequest_builder{
+	_, err := app.NewApiKeyServiceClient(conn).Issue(wire, app.ApiKeyIssueRequest_builder{
 		Holder:  app.HolderRef_builder{Id: stranger.Bytes()}.Build(),
 		Alias:   "across",
 		Methods: []string{listHolder},
@@ -185,9 +185,9 @@ func TestTheTwoPlanesNameAHolderTheirOwnWay(t *testing.T) {
 
 	conn := served(t, b.Server)
 	wire := asOverTheWire(ctx, b.ContosoUser)
-	c := app.NewIssueServiceClient(conn)
+	c := app.NewApiKeyServiceClient(conn)
 
-	_, err := c.IssueKey(wire, app.IssueKeyRequest_builder{
+	_, err := c.Issue(wire, app.ApiKeyIssueRequest_builder{
 		Service: "made-up-by-mentioning",
 		Alias:   "ci",
 		Methods: []string{listHolder},
@@ -195,7 +195,7 @@ func TestTheTwoPlanesNameAHolderTheirOwnWay(t *testing.T) {
 	x.Equal(codes.InvalidArgument, status.Code(err))
 	x.Contains(status.Convert(err).Message(), "holder:")
 
-	_, err = c.IssueKey(wire, app.IssueKeyRequest_builder{
+	_, err = c.Issue(wire, app.ApiKeyIssueRequest_builder{
 		Service: "both",
 		Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Alias:   "ci",
@@ -204,7 +204,7 @@ func TestTheTwoPlanesNameAHolderTheirOwnWay(t *testing.T) {
 	x.Equal(codes.InvalidArgument, status.Code(err))
 	x.Contains(status.Convert(err).Message(), "two ways")
 
-	_, err = c.IssueKey(wire, app.IssueKeyRequest_builder{
+	_, err = c.Issue(wire, app.ApiKeyIssueRequest_builder{
 		Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Alias:  "ci",
 	}.Build())

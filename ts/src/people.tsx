@@ -354,13 +354,13 @@ function Keys(props: {
 				/>
 				<button
 					disabled={
-						!props.may('/roster.IssueService/IssueKey') ||
+						!props.may('/roster.ApiKeyService/Issue') ||
 						alias === '' ||
 						methods.trim() === ''
 					}
 					onClick={() => {
-						void props.admin.issue
-							.issueKey({
+						void props.admin.apiKey
+							.issue({
 								holder: who,
 								alias,
 								methods: methods

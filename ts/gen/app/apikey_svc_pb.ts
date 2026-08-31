@@ -18,7 +18,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/apikey_svc.g.proto.
  */
 export const file_app_apikey_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChZhcHAvYXBpa2V5X3N2Yy5nLnByb3RvEgZyb3N0ZXIipwIKEEFwaUtleUFkZFJlcXVlc3QSCgoCaWQYASABKAwSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIUCgVhbGlhcxgEIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISDwoHbWV0aG9kcxgIIAMoCRIVCgZzZWNyZXQYCSABKAxCBaoBAggCEi0KCWRhdGVfdXNlZBgKIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlgKEEFwaUtleUdldFJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLkFwaUtleVJlZhIkCgZzZWxlY3QYAiABKAsyFC5yb3N0ZXIuQXBpS2V5U2VsZWN0IlsKCUFwaUtleVJlZhIMCgJpZBgBIAEoDEgAEicKBHNsdWcYBCABKAsyFy5yb3N0ZXIuQXBpS2V5UmVmQnlTbHVnSAASEAoGc2VjcmV0GAkgASgMSABCBQoDa2V5IkMKD0FwaUtleVJlZkJ5U2x1ZxINCgVhbGlhcxgEIAEoCRIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmIukBCgxBcGlLZXlTZWxlY3QSCwoDYWxsGAEgASgIEiQKBmhvbGRlchgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSDQoFYWxpYXMYBCABKAgSDAoEZGVzYxgGIAEoCBIPCgdtZXRob2RzGAggASgIEg4KBnNlY3JldBgJIAEoCBIRCglkYXRlX3VzZWQYCiABKAgSFAoMZGF0ZV9leHBpcmVzGAsgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgi1AIKEkFwaUtleVBhdGNoUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuQXBpS2V5UmVmEg0KBWFsaWFzGAggASgJEgwKBGRlc2MYDCABKAkSDwoHbWV0aG9kcxgQIAMoCRIOCgZzZWNyZXQYEiABKAwSLQoJZGF0ZV91c2VkGBQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIWCg5kYXRlX3VzZWRfbnVsbBgVIAEoCBIwCgxkYXRlX2V4cGlyZXMYFiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhkKEWRhdGVfZXhwaXJlc19udWxsGBcgASgIEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIlEKEkFwaUtleUFwcGx5UmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuQXBpS2V5UmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giJQoTQXBpS2V5RXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiZQoRQXBpS2V5TGlzdFJlcXVlc3QSJQoHZmlsdGVycxgBIAMoCzIULnJvc3Rlci5BcGlLZXlGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIkgKEkFwaUtleUxpc3RSZXNwb25zZRIdCgVpdGVtcxgBIAMoCzIOLnJvc3Rlci5BcGlLZXkSEwoEbmV4dBgCIAEoCUIFqgECCAIiUQoMQXBpS2V5RmlsdGVyEh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5BcGlLZXlSZWYSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZjLTAgoNQXBpS2V5U2VydmljZRIvCgNBZGQSGC5yb3N0ZXIuQXBpS2V5QWRkUmVxdWVzdBoOLnJvc3Rlci5BcGlLZXkSLwoDR2V0Ehgucm9zdGVyLkFwaUtleUdldFJlcXVlc3QaDi5yb3N0ZXIuQXBpS2V5EjMKBVBhdGNoEhoucm9zdGVyLkFwaUtleVBhdGNoUmVxdWVzdBoOLnJvc3Rlci5BcGlLZXkSMwoFQXBwbHkSGi5yb3N0ZXIuQXBpS2V5QXBwbHlSZXF1ZXN0Gg4ucm9zdGVyLkFwaUtleRI3CgVFcmFzZRIRLnJvc3Rlci5BcGlLZXlSZWYaGy5yb3N0ZXIuQXBpS2V5RXJhc2VSZXNwb25zZRI9CgRMaXN0Ehkucm9zdGVyLkFwaUtleUxpc3RSZXF1ZXN0Ghoucm9zdGVyLkFwaUtleUxpc3RSZXNwb25zZUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_apikey, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChZhcHAvYXBpa2V5X3N2Yy5nLnByb3RvEgZyb3N0ZXIipwIKEEFwaUtleUFkZFJlcXVlc3QSCgoCaWQYASABKAwSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIUCgVhbGlhcxgEIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISDwoHbWV0aG9kcxgIIAMoCRIVCgZzZWNyZXQYCSABKAxCBaoBAggCEi0KCWRhdGVfdXNlZBgKIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlgKEEFwaUtleUdldFJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLkFwaUtleVJlZhIkCgZzZWxlY3QYAiABKAsyFC5yb3N0ZXIuQXBpS2V5U2VsZWN0IlsKCUFwaUtleVJlZhIMCgJpZBgBIAEoDEgAEicKBHNsdWcYBCABKAsyFy5yb3N0ZXIuQXBpS2V5UmVmQnlTbHVnSAASEAoGc2VjcmV0GAkgASgMSABCBQoDa2V5IkMKD0FwaUtleVJlZkJ5U2x1ZxINCgVhbGlhcxgEIAEoCRIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmIukBCgxBcGlLZXlTZWxlY3QSCwoDYWxsGAEgASgIEiQKBmhvbGRlchgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSDQoFYWxpYXMYBCABKAgSDAoEZGVzYxgGIAEoCBIPCgdtZXRob2RzGAggASgIEg4KBnNlY3JldBgJIAEoCBIRCglkYXRlX3VzZWQYCiABKAgSFAoMZGF0ZV9leHBpcmVzGAsgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgi1AIKEkFwaUtleVBhdGNoUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuQXBpS2V5UmVmEg0KBWFsaWFzGAggASgJEgwKBGRlc2MYDCABKAkSDwoHbWV0aG9kcxgQIAMoCRIOCgZzZWNyZXQYEiABKAwSLQoJZGF0ZV91c2VkGBQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIWCg5kYXRlX3VzZWRfbnVsbBgVIAEoCBIwCgxkYXRlX2V4cGlyZXMYFiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhkKEWRhdGVfZXhwaXJlc19udWxsGBcgASgIEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIlEKEkFwaUtleUFwcGx5UmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuQXBpS2V5UmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giJQoTQXBpS2V5RXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiZQoRQXBpS2V5TGlzdFJlcXVlc3QSJQoHZmlsdGVycxgBIAMoCzIULnJvc3Rlci5BcGlLZXlGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIkgKEkFwaUtleUxpc3RSZXNwb25zZRIdCgVpdGVtcxgBIAMoCzIOLnJvc3Rlci5BcGlLZXkSEwoEbmV4dBgCIAEoCUIFqgECCAIiUQoMQXBpS2V5RmlsdGVyEh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5BcGlLZXlSZWYSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZiKjAQoSQXBpS2V5SXNzdWVSZXF1ZXN0EhYKB3NlcnZpY2UYASABKAlCBaoBAggCEhQKBWFsaWFzGAIgASgJQgWqAQIIAhIPCgdtZXRob2RzGAMgAygJEisKB2V4cGlyZXMYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEiEKBmhvbGRlchgFIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYiSAoTQXBpS2V5SXNzdWVSZXNwb25zZRIUCgV0b2tlbhgBIAEoCUIFqgECCAISGwoDa2V5GAIgASgLMg4ucm9zdGVyLkFwaUtleTKVAwoNQXBpS2V5U2VydmljZRIvCgNBZGQSGC5yb3N0ZXIuQXBpS2V5QWRkUmVxdWVzdBoOLnJvc3Rlci5BcGlLZXkSLwoDR2V0Ehgucm9zdGVyLkFwaUtleUdldFJlcXVlc3QaDi5yb3N0ZXIuQXBpS2V5EjMKBVBhdGNoEhoucm9zdGVyLkFwaUtleVBhdGNoUmVxdWVzdBoOLnJvc3Rlci5BcGlLZXkSMwoFQXBwbHkSGi5yb3N0ZXIuQXBpS2V5QXBwbHlSZXF1ZXN0Gg4ucm9zdGVyLkFwaUtleRI3CgVFcmFzZRIRLnJvc3Rlci5BcGlLZXlSZWYaGy5yb3N0ZXIuQXBpS2V5RXJhc2VSZXNwb25zZRI9CgRMaXN0Ehkucm9zdGVyLkFwaUtleUxpc3RSZXF1ZXN0Ghoucm9zdGVyLkFwaUtleUxpc3RSZXNwb25zZRJACgVJc3N1ZRIaLnJvc3Rlci5BcGlLZXlJc3N1ZVJlcXVlc3QaGy5yb3N0ZXIuQXBpS2V5SXNzdWVSZXNwb25zZUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_apikey, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.ApiKeyAddRequest
@@ -451,6 +451,87 @@ export const ApiKeyFilterSchema: GenMessage<ApiKeyFilter> = /*@__PURE__*/
   messageDesc(file_app_apikey_svc_g, 10);
 
 /**
+ * @generated from message roster.ApiKeyIssueRequest
+ */
+export type ApiKeyIssueRequest = Message<"roster.ApiKeyIssueRequest"> & {
+  /**
+   * The holder it is for, by alias within this plane's one tenant, created if
+   * it is not there. **Control plane only.** Giving both this and `holder` is
+   * refused.
+   *
+   * @generated from field: string service = 1 [features.field_presence = IMPLICIT];
+   */
+  service: string;
+
+  /**
+   * What somebody calls this key when deciding whether to revoke it.
+   *
+   * @generated from field: string alias = 2 [features.field_presence = IMPLICIT];
+   */
+  alias: string;
+
+  /**
+   * What it may be used for, in full. Empty is refused rather than defaulted:
+   * everything hands out more than was asked for, and nothing mints a key that
+   * silently does not work.
+   *
+   * @generated from field: repeated string methods = 3;
+   */
+  methods: string[];
+
+  /**
+   * When it stops working, unset for one that does not.
+   *
+   * @generated from field: google.protobuf.Timestamp expires = 4;
+   */
+  expires?: Timestamp | undefined;
+
+  /**
+   * Whose it is, in full. **Data plane only**, and a reference rather than an
+   * alias because the wall has many tenants and a name alone is a question with
+   * more than one answer. Naming one that is not there is a refusal, not a
+   * creation: a customer's people are the customer's.
+   *
+   * @generated from field: roster.HolderRef holder = 5;
+   */
+  holder?: HolderRef | undefined;
+};
+
+/**
+ * Describes the message roster.ApiKeyIssueRequest.
+ * Use `create(ApiKeyIssueRequestSchema)` to create a new message.
+ */
+export const ApiKeyIssueRequestSchema: GenMessage<ApiKeyIssueRequest> = /*@__PURE__*/
+  messageDesc(file_app_apikey_svc_g, 11);
+
+/**
+ * @generated from message roster.ApiKeyIssueResponse
+ */
+export type ApiKeyIssueResponse = Message<"roster.ApiKeyIssueResponse"> & {
+  /**
+   * The key, and the only time it is ever readable. What is stored is a hash.
+   *
+   * @generated from field: string token = 1 [features.field_presence = IMPLICIT];
+   */
+  token: string;
+
+  /**
+   * The row, so a console can list it beside the others without asking again.
+   * Its `secret` is cleared like any other answer.
+   *
+   * @generated from field: roster.ApiKey key = 2;
+   */
+  key?: ApiKey | undefined;
+};
+
+/**
+ * Describes the message roster.ApiKeyIssueResponse.
+ * Use `create(ApiKeyIssueResponseSchema)` to create a new message.
+ */
+export const ApiKeyIssueResponseSchema: GenMessage<ApiKeyIssueResponse> = /*@__PURE__*/
+  messageDesc(file_app_apikey_svc_g, 12);
+
+/**
  * @generated from service roster.ApiKeyService
  */
 export const ApiKeyService: GenService<{
@@ -513,6 +594,23 @@ export const ApiKeyService: GenService<{
     methodKind: "unary";
     input: typeof ApiKeyListRequestSchema;
     output: typeof ApiKeyListResponseSchema;
+  },
+  /**
+   * Issue makes a key for somebody and answers with it once.
+   *
+   * Whose it is names one of two ways, the same pair `Issue.IssueKey` took: a
+   * `holder` reference on a plane with many tenants, where a name alone answers
+   * to more than one person and the wall narrows a reference to the ones this
+   * caller sees; or a `service` alias on the control plane's one tenant, which
+   * is created if it is not there, because a service is not something set up on
+   * purpose before it is needed. Giving both is refused.
+   *
+   * @generated from rpc roster.ApiKeyService.Issue
+   */
+  issue: {
+    methodKind: "unary";
+    input: typeof ApiKeyIssueRequestSchema;
+    output: typeof ApiKeyIssueResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_app_apikey_svc_g, 0);

@@ -9946,6 +9946,19 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 
 		return anypb.New(res)
 
+	case rstr.ApiKeyService_Issue_FullMethodName:
+		v := &rstr.ApiKeyIssueRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.ApiKey().Issue(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
 	case rstr.ConnectionService_Add_FullMethodName:
 		v := &rstr.ConnectionAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {

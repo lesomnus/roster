@@ -3,9 +3,14 @@ package core
 import (
 	"context"
 
+	"github.com/lesomnus/z"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/keys"
 )
 
 // A key is a grant, so writing one is held to the rule every other grant is.
@@ -85,4 +90,149 @@ func (s coreApiKey) Patch(ctx context.Context, req *app.ApiKeyPatchRequest) (*ap
 	}
 
 	return s.ApiKeyServiceServer.Patch(ctx, req)
+}
+
+// Issue makes a key for somebody and answers with it once -- the write
+// `Issue.IssueKey` was, on the entity. It makes the secret with `crypto/rand`
+// and the plane's prefix, stores the hash through [coreApiKey.Add] so the two
+// escalation rules run (nobody hands out a method they do not hold; nobody
+// writes a way into an account wider than their own), and answers the token the
+// one time it is readable.
+//
+// The prefix is `WithPrefix`'s, one per stack, so a caller cannot ask the
+// customer port for a key of the deployment's own kind. See `server/keys`.
+func (s coreApiKey) Issue(ctx context.Context, req *app.ApiKeyIssueRequest) (*app.ApiKeyIssueResponse, error) {
+	if req.GetAlias() == "" {
+		return nil, status.Error(codes.InvalidArgument, "a name for the key")
+	}
+	if len(req.GetMethods()) == 0 {
+		// Refused rather than defaulted in either direction. Everything hands
+		// out more than was asked for; nothing mints a key that silently does
+		// not work.
+		return nil, status.Error(codes.InvalidArgument, "methods: a key that allows nothing opens no door")
+	}
+	if s.prefix == "" {
+		// A stack assembled without `WithPrefix` cannot say which plane a key
+		// belongs to, so it mints none rather than an unprefixed one.
+		return nil, status.Error(codes.Unimplemented,
+			"this server was not told which kind of key it mints")
+	}
+
+	ref, err := s.whoseKey(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	// Which kind is a fact about which server answered, and not a field. See
+	// [Core.prefix].
+	token, sum, err := keys.Mint(s.prefix)
+	if err != nil {
+		return nil, err
+	}
+
+	add := app.ApiKeyAddRequest_builder{
+		Holder:  ref,
+		Alias:   req.GetAlias(),
+		Secret:  sum,
+		Methods: req.GetMethods(),
+	}
+	if v := req.GetExpires(); v != nil {
+		add.DateExpires = v
+	}
+
+	// Through this layer's own `Add`, so the escalation rules run: `roster key
+	// add` goes around them through `Ungated`, where there is no frame at all,
+	// which is the deployment doing its own work rather than anybody asking.
+	v, err := s.Add(ctx, add.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	// The hash never leaves, even here. `Add` answered through `Next()`, which
+	// is below the layer that clears `secret` on the way out -- and that layer
+	// clears a top-level `ApiKey` answer, not one nested in this response -- so
+	// this clears it, the way the token is the one thing that is readable and
+	// exactly once. See `Credential.secret`.
+	v.SetSecret(nil)
+
+	return app.ApiKeyIssueResponse_builder{Token: token, Key: v}.Build(), nil
+}
+
+// whoseKey resolves whom a minted key is for, the same pair `Issue.IssueKey`
+// took and told apart by the plane: a `holder` reference on the data plane
+// (`rt_`), a `service` alias created if absent on the control plane (`rk_`).
+func (s coreApiKey) whoseKey(ctx context.Context, req *app.ApiKeyIssueRequest) (*app.HolderRef, error) {
+	service, ref := req.GetService(), req.GetHolder()
+	byName := service != ""
+	byRef := ref != nil
+
+	switch {
+	case byName && byRef:
+		return nil, status.Error(codes.InvalidArgument,
+			"a service and a holder name whose key this is two ways; give one")
+
+	case s.prefix == keys.PrefixTenant:
+		if !byRef {
+			return nil, status.Error(codes.InvalidArgument,
+				"holder: whose key this is; `service` is the other plane's, where there is one tenant")
+		}
+
+		// Read back through the wall, so a reference this caller cannot see is a
+		// NotFound rather than a key minted into a tenant they have no business
+		// in. `Add` would narrow it too; this is so the refusal says which field.
+		v, err := s.Next().Holder().Get(ctx, app.HolderGetRequest_builder{Ref: ref}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		return app.HolderRef_builder{Id: v.GetId()}.Build(), nil
+
+	case byRef:
+		return nil, status.Error(codes.InvalidArgument,
+			"holder: this plane has one tenant, so a key is for a `service` by name")
+
+	case !byName:
+		return nil, status.Error(codes.InvalidArgument, "service: whose key this is")
+	}
+
+	return s.serviceHolder(ctx, service)
+}
+
+// serviceHolder is a control-plane service by alias, made if it is not there --
+// because a service is not something set up on purpose before it is needed,
+// which is what `roster key add` already decided.
+func (s coreApiKey) serviceHolder(ctx context.Context, alias string) (*app.HolderRef, error) {
+	ts, err := s.Next().Tenant().List(ctx, app.TenantListRequest_builder{Size: 1}.Build())
+	if err != nil {
+		return nil, err
+	}
+	if len(ts.GetItems()) == 0 {
+		return nil, status.Error(codes.FailedPrecondition, "this deployment has no owner")
+	}
+	tenant := ts.GetItems()[0].GetId()
+
+	byAlias := app.HolderRef_builder{
+		Slug: app.HolderRefBySlug_builder{
+			Alias:  z.Ptr(alias),
+			Tenant: app.TenantRef_builder{Id: tenant}.Build(),
+		}.Build(),
+	}.Build()
+
+	v, err := s.Next().Holder().Get(ctx, app.HolderGetRequest_builder{Ref: byAlias}.Build())
+	if err == nil {
+		return app.HolderRef_builder{Id: v.GetId()}.Build(), nil
+	}
+	if status.Code(err) != codes.NotFound {
+		return nil, err
+	}
+
+	made, err := s.Next().Holder().Add(ctx, app.HolderAddRequest_builder{
+		Tenant: app.TenantRef_builder{Id: tenant}.Build(),
+		Alias:  alias,
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	return app.HolderRef_builder{Id: made.GetId()}.Build(), nil
 }

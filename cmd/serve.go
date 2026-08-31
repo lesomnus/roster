@@ -179,6 +179,12 @@ var ErrOutboxHasNowhereToGo = errors.New("watch.outbox: nothing would ever publi
 // with the domain of its entity and refuses one of another, [pd.Wall] narrows
 // every read to the tenants the caller may see.
 func Build(ctx context.Context, c Config) (*Server, error) {
+	// The data plane, and a standalone with no control: people and customers
+	// mint `rt_`. The control plane recurses with `keys.PrefixDeployment` below.
+	return build(ctx, c, keys.PrefixTenant)
+}
+
+func build(ctx context.Context, c Config, prefix string) (*Server, error) {
 	// The two blocks that are answered by silence when the one field they hang
 	// off is missing, refused before anything is opened.
 	//
@@ -342,7 +348,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	// What keeps it out of the **trail** is not this layer -- the recorder is
 	// behind every layer -- but the declaration on the field, which the recorder
 	// reads for itself. See `Credential.secret`.
-	stacked, err := app.Build(walled.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring)), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
+	stacked, err := app.Build(walled.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix)), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -357,7 +363,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	// what this app means -- an identity linked by `init` or by an admin console
 	// is still an identity, and a subject that is an email address is still
 	// wrong.
-	ungated, err := app.Build(sink.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring)), pd.AuditBuild())
+	ungated, err := app.Build(sink.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix)), pd.AuditBuild())
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -376,7 +382,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	// which is what stops the recursion -- one level, and the innermost
 	// instance answers to nothing but the CLI that seeds it.
 	if c.Control.Serves() {
-		control, err := Build(ctx, Config{
+		control, err := build(ctx, Config{
 			Db: c.Control.Db,
 
 			// Its own broker, and now its own **setting**. A control plane
@@ -386,7 +392,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 			// was written down: this said `memory` in the code, which made the
 			// console the one screen a second replica broke without saying so.
 			Watch: c.Control.watch(c.Watch),
-		})
+		}, keys.PrefixDeployment)
 		if err != nil {
 			db.Close()
 
@@ -715,10 +721,6 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// `rt_` is at most a second copy of a credential its holder already has,
 	// and less, since it names methods. What it replaces is `roster key add`,
 	// which is a shell, and a shell is not a thing a customer has.
-	if !s.Keys {
-		app.RegisterIssueServiceServer(g, console.IssueTenant(s.Walled, s.Ent))
-	}
-
 	// The one service that is not an entity: it answers yes or no about a row
 	// nothing else may read. See `server/vouch`.
 	// The rule about who may write whose credential travels with the service,
@@ -827,6 +829,11 @@ func register(g grpc.ServiceRegistrar, s app.Server) {
 	// -- its reads and raw writes are shut by method in `closed`, so nothing on
 	// the wire answers with the token column.
 	app.RegisterDelegationServiceServer(g, s.Delegation())
+	// `ApiKeyService` for its `Issue` overlay -- the mint `IssueService.IssueKey`
+	// was. Its reads and raw `Add`/`Erase` are shut by method in `closed` (and
+	// the management verbs everywhere but the keys port), so only `Issue`
+	// answers here and the prefix it stamps is the stack's, not the caller's.
+	app.RegisterApiKeyServiceServer(g, s.ApiKey())
 	app.RegisterTenantServiceServer(g, s.Tenant())
 	app.RegisterHostServiceServer(g, s.Host())
 	app.RegisterMailDomainServiceServer(g, s.MailDomain())
@@ -900,8 +907,16 @@ func (s *Server) closed(c Config) func(method string) bool {
 	}
 	if !s.Keys {
 		// Everywhere but the one port whose reason for existing is managing
-		// them; see [Server.Keys].
-		shut = append(shut, app.ApiKeyService_ServiceDesc.ServiceName)
+		// them (see [Server.Keys]), the reads and the management writes are shut
+		// -- but not the whole service: `Issue` is the mint, and it is served on
+		// every port that a caller reaches, stamping the stack's own prefix.
+		byMethod = append(byMethod,
+			app.ApiKeyService_Get_FullMethodName,
+			app.ApiKeyService_List_FullMethodName,
+			app.ApiKeyService_Erase_FullMethodName,
+			app.ApiKeyService_Patch_FullMethodName,
+			app.ApiKeyService_Apply_FullMethodName,
+		)
 	}
 
 	return func(method string) bool {
@@ -1126,7 +1141,6 @@ func (s *Server) GrpcControl(ctx context.Context, c Config, opts ...grpc.ServerO
 	// port must not be reachable by anybody who is not administering the
 	// deployment. Nothing in this process can enforce that; the address is what
 	// enforces it.
-	app.RegisterApiKeyServiceServer(g, s.Control.Walled.ApiKey())
 
 	// What a console asks that no entity answers: a session, and a secret that
 	// is readable exactly once. See `server/console`.
