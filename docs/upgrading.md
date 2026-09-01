@@ -18,6 +18,31 @@ wrongly rather than not at all.
 So an upgrade is: read what moved, decide whether it is safe to apply
 automatically, apply it, start.
 
+## From `47cd900` — every table was renamed
+
+roster now builds on a fork of ent that names a table after its entity without
+pluralizing it. `user` rather than `users`, `site` rather than `sites`, and so
+on for every table this deployment has. Index names do not move, having been
+built from the singular already, and neither do the join tables of a
+many-to-many edge, which are named after the edge. Foreign key constraint
+symbols carry two table names and move with them.
+
+This is the largest database change roster has had. It touches every table, and
+nothing in the schema or the code says it happened — the names are derived, so
+the diff is entirely in the database.
+
+**Applying it.** `db.migrate: true` and ent plans the rename with everything
+else. Read the plan first: a rename is cheap, but ent decides between renaming
+a table and creating a new one beside the old, and the second would leave every
+row behind. `migrate.Check` refuses to start against a database that has not
+been moved, so a deployment that skips this stops rather than reads empty
+tables.
+
+**Anything that names a table itself** has to move by hand: a dashboard query,
+a backup script that copies named tables, a report, an external reader. Nothing
+inside roster does — it goes through the generated constants — but a deployment
+usually has something outside it that does.
+
 ## From `dec419b` — the trail grew a column, and an erase learned to destroy
 
 ### The database moves, and one part of it is not free
