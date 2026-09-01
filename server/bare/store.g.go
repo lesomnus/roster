@@ -6,7 +6,6 @@ import (
 	context "context"
 	errors "errors"
 	fmt "fmt"
-	uuid "github.com/google/uuid"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
 	apikey "github.com/lesomnus/roster/internal/ent/apikey"
@@ -40,6 +39,7 @@ import (
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	time "time"
+	uuid "uuid"
 )
 
 // Store is what every server of this package runs with: the client its

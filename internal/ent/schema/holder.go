@@ -4,7 +4,6 @@
 package schema
 
 import (
-	uuid "github.com/google/uuid"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent "github.com/protobuf-orm/ent"
 	entsql "github.com/protobuf-orm/ent/dialect/entsql"
@@ -22,7 +21,7 @@ type Holder struct {
 
 func (Holder) Fields() []ent.Field {
 	return []ent.Field{
-		field.Uuid("id", uuid.UUID{}).
+		field.Uuid("id").
 			Unique().
 			Immutable(),
 		field.String("alias"),
@@ -50,7 +49,7 @@ func (Holder) Fields() []ent.Field {
 		field.Time("date_disabled").
 			Nillable().
 			Optional(),
-		field.Uuid("tenant_id", uuid.UUID{}).
+		field.Uuid("tenant_id").
 			Immutable(),
 	}
 }

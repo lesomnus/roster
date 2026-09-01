@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/email"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/identity"
@@ -175,7 +175,10 @@ func (_c *EmailCreate) sqlSave(ctx context.Context) (*Email, error) {
 	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := _c.createSpec()
+	_node, _spec, err := _c.createSpec()
+	if err != nil {
+		return nil, err
+	}
 	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
@@ -183,10 +186,17 @@ func (_c *EmailCreate) sqlSave(ctx context.Context) (*Email, error) {
 		return nil, err
 	}
 	if _spec.Id.Value != nil {
-		if id, ok := _spec.Id.Value.(*uuid.UUID); ok {
-			_node.Id = *id
-		} else if err := _node.Id.Scan(_spec.Id.Value); err != nil {
+		sv, ok := _spec.Id.Value.(field.ValueScanner)
+		if !ok {
+			sv = email.ValueScanner.Id.ScanValue()
+			if err := sv.Scan(_spec.Id.Value); err != nil {
+				return nil, err
+			}
+		}
+		if value, err := email.ValueScanner.Id.FromValue(sv); err != nil {
 			return nil, err
+		} else {
+			_node.Id = value
 		}
 	}
 	_c.mutation.id = &_node.Id
@@ -194,14 +204,18 @@ func (_c *EmailCreate) sqlSave(ctx context.Context) (*Email, error) {
 	return _node, nil
 }
 
-func (_c *EmailCreate) createSpec() (*Email, *sqlgraph.CreateSpec) {
+func (_c *EmailCreate) createSpec() (*Email, *sqlgraph.CreateSpec, error) {
 	var (
 		_node = &Email{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(email.Table, sqlgraph.NewFieldSpec(email.FieldId, field.TypeUuid))
 	)
 	if id, ok := _c.mutation.Id(); ok {
 		_node.Id = id
-		_spec.Id.Value = &id
+		vv, err := email.ValueScanner.Id.Value(id)
+		if err != nil {
+			return nil, nil, err
+		}
+		_spec.Id.Value = vv
 	}
 	if value, ok := _c.mutation.Address(); ok {
 		_spec.SetField(email.FieldAddress, field.TypeString, value)
@@ -212,7 +226,11 @@ func (_c *EmailCreate) createSpec() (*Email, *sqlgraph.CreateSpec) {
 		_node.DateVerified = &value
 	}
 	if value, ok := _c.mutation.TenantId(); ok {
-		_spec.SetField(email.FieldTenantId, field.TypeUuid, value)
+		vv, err := email.ValueScanner.TenantId.Value(value)
+		if err != nil {
+			return nil, nil, err
+		}
+		_spec.SetField(email.FieldTenantId, field.TypeUuid, vv)
 		_node.TenantId = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
@@ -239,7 +257,11 @@ func (_c *EmailCreate) createSpec() (*Email, *sqlgraph.CreateSpec) {
 			},
 		}
 		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
+			vv, err := holder.ValueScanner.Id.Value(k)
+			if err != nil {
+				return nil, nil, err
+			}
+			edge.Target.Nodes = append(edge.Target.Nodes, vv)
 		}
 		_node.HolderId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
@@ -256,12 +278,16 @@ func (_c *EmailCreate) createSpec() (*Email, *sqlgraph.CreateSpec) {
 			},
 		}
 		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
+			vv, err := identity.ValueScanner.Id.Value(k)
+			if err != nil {
+				return nil, nil, err
+			}
+			edge.Target.Nodes = append(edge.Target.Nodes, vv)
 		}
 		_node.VouchedById = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	return _node, _spec
+	return _node, _spec, nil
 }
 
 // EmailCreateBulk is the builder for creating many Email entities in bulk.
@@ -292,7 +318,10 @@ func (_c *EmailCreateBulk) Save(ctx context.Context) ([]*Email, error) {
 				}
 				builder.mutation = mutation
 				var err error
-				nodes[i], specs[i] = builder.createSpec()
+				nodes[i], specs[i], err = builder.createSpec()
+				if err != nil {
+					return nil, err
+				}
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
@@ -308,6 +337,20 @@ func (_c *EmailCreateBulk) Save(ctx context.Context) ([]*Email, error) {
 					return nil, err
 				}
 				mutation.id = &nodes[i].Id
+				if specs[i].Id.Value != nil {
+					sv, ok := specs[i].Id.Value.(field.ValueScanner)
+					if !ok {
+						sv = email.ValueScanner.Id.ScanValue()
+						if err := sv.Scan(specs[i].Id.Value); err != nil {
+							return nil, err
+						}
+					}
+					if id, err := email.ValueScanner.Id.FromValue(sv); err != nil {
+						return nil, err
+					} else {
+						nodes[i].Id = id
+					}
+				}
 				mutation.done = true
 				return nodes[i], nil
 			})

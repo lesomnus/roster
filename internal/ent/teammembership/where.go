@@ -4,8 +4,8 @@ package teammembership
 
 import (
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/predicate"
 	"github.com/protobuf-orm/ent/dialect/sql"
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -13,47 +13,72 @@ import (
 
 // Id filters vertices based on their Id field.
 func Id(id uuid.UUID) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldEQ(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.TeamMembershipOrErr(sql.FieldEQ(FieldId, vc), err)
 }
 
 // IdEQ applies the EQ predicate on the Id field.
 func IdEQ(id uuid.UUID) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldEQ(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.TeamMembershipOrErr(sql.FieldEQ(FieldId, vc), err)
 }
 
 // IdNEQ applies the NEQ predicate on the Id field.
 func IdNEQ(id uuid.UUID) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldNEQ(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.TeamMembershipOrErr(sql.FieldNEQ(FieldId, vc), err)
 }
 
 // IdIn applies the In predicate on the Id field.
 func IdIn(ids ...uuid.UUID) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldIn(FieldId, ids...))
+	var (
+		err error
+		vcs = make([]any, len(ids))
+	)
+	for i := range vcs {
+		if vcs[i], err = ValueScanner.Id.Value(ids[i]); err != nil {
+			break
+		}
+	}
+	return predicate.TeamMembershipOrErr(sql.FieldIn(FieldId, vcs...), err)
 }
 
 // IdNotIn applies the NotIn predicate on the Id field.
 func IdNotIn(ids ...uuid.UUID) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldNotIn(FieldId, ids...))
+	var (
+		err error
+		vcs = make([]any, len(ids))
+	)
+	for i := range vcs {
+		if vcs[i], err = ValueScanner.Id.Value(ids[i]); err != nil {
+			break
+		}
+	}
+	return predicate.TeamMembershipOrErr(sql.FieldNotIn(FieldId, vcs...), err)
 }
 
 // IdGT applies the GT predicate on the Id field.
 func IdGT(id uuid.UUID) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldGT(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.TeamMembershipOrErr(sql.FieldGT(FieldId, vc), err)
 }
 
 // IdGTE applies the GTE predicate on the Id field.
 func IdGTE(id uuid.UUID) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldGTE(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.TeamMembershipOrErr(sql.FieldGTE(FieldId, vc), err)
 }
 
 // IdLT applies the LT predicate on the Id field.
 func IdLT(id uuid.UUID) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldLT(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.TeamMembershipOrErr(sql.FieldLT(FieldId, vc), err)
 }
 
 // IdLTE applies the LTE predicate on the Id field.
 func IdLTE(id uuid.UUID) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldLTE(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.TeamMembershipOrErr(sql.FieldLTE(FieldId, vc), err)
 }
 
 // DateUpdated applies equality check predicate on the "date_updated" field. It's identical to DateUpdatedEQ.
@@ -73,17 +98,20 @@ func DateCreated(v time.Time) predicate.TeamMembership {
 
 // HolderId applies equality check predicate on the "holder_id" field. It's identical to HolderIdEQ.
 func HolderId(v uuid.UUID) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldEQ(FieldHolderId, v))
+	vc, err := ValueScanner.HolderId.Value(v)
+	return predicate.TeamMembershipOrErr(sql.FieldEQ(FieldHolderId, vc), err)
 }
 
 // TeamId applies equality check predicate on the "team_id" field. It's identical to TeamIdEQ.
 func TeamId(v uuid.UUID) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldEQ(FieldTeamId, v))
+	vc, err := ValueScanner.TeamId.Value(v)
+	return predicate.TeamMembershipOrErr(sql.FieldEQ(FieldTeamId, vc), err)
 }
 
 // RoleId applies equality check predicate on the "role_id" field. It's identical to RoleIdEQ.
 func RoleId(v uuid.UUID) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldEQ(FieldRoleId, v))
+	vc, err := ValueScanner.RoleId.Value(v)
+	return predicate.TeamMembershipOrErr(sql.FieldEQ(FieldRoleId, vc), err)
 }
 
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
@@ -228,62 +256,122 @@ func DateCreatedNotNil() predicate.TeamMembership {
 
 // HolderIdEQ applies the EQ predicate on the "holder_id" field.
 func HolderIdEQ(v uuid.UUID) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldEQ(FieldHolderId, v))
+	vc, err := ValueScanner.HolderId.Value(v)
+	return predicate.TeamMembershipOrErr(sql.FieldEQ(FieldHolderId, vc), err)
 }
 
 // HolderIdNEQ applies the NEQ predicate on the "holder_id" field.
 func HolderIdNEQ(v uuid.UUID) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldNEQ(FieldHolderId, v))
+	vc, err := ValueScanner.HolderId.Value(v)
+	return predicate.TeamMembershipOrErr(sql.FieldNEQ(FieldHolderId, vc), err)
 }
 
 // HolderIdIn applies the In predicate on the "holder_id" field.
 func HolderIdIn(vs ...uuid.UUID) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldIn(FieldHolderId, vs...))
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.HolderId.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.TeamMembershipOrErr(sql.FieldIn(FieldHolderId, v...), err)
 }
 
 // HolderIdNotIn applies the NotIn predicate on the "holder_id" field.
 func HolderIdNotIn(vs ...uuid.UUID) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldNotIn(FieldHolderId, vs...))
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.HolderId.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.TeamMembershipOrErr(sql.FieldNotIn(FieldHolderId, v...), err)
 }
 
 // TeamIdEQ applies the EQ predicate on the "team_id" field.
 func TeamIdEQ(v uuid.UUID) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldEQ(FieldTeamId, v))
+	vc, err := ValueScanner.TeamId.Value(v)
+	return predicate.TeamMembershipOrErr(sql.FieldEQ(FieldTeamId, vc), err)
 }
 
 // TeamIdNEQ applies the NEQ predicate on the "team_id" field.
 func TeamIdNEQ(v uuid.UUID) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldNEQ(FieldTeamId, v))
+	vc, err := ValueScanner.TeamId.Value(v)
+	return predicate.TeamMembershipOrErr(sql.FieldNEQ(FieldTeamId, vc), err)
 }
 
 // TeamIdIn applies the In predicate on the "team_id" field.
 func TeamIdIn(vs ...uuid.UUID) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldIn(FieldTeamId, vs...))
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.TeamId.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.TeamMembershipOrErr(sql.FieldIn(FieldTeamId, v...), err)
 }
 
 // TeamIdNotIn applies the NotIn predicate on the "team_id" field.
 func TeamIdNotIn(vs ...uuid.UUID) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldNotIn(FieldTeamId, vs...))
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.TeamId.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.TeamMembershipOrErr(sql.FieldNotIn(FieldTeamId, v...), err)
 }
 
 // RoleIdEQ applies the EQ predicate on the "role_id" field.
 func RoleIdEQ(v uuid.UUID) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldEQ(FieldRoleId, v))
+	vc, err := ValueScanner.RoleId.Value(v)
+	return predicate.TeamMembershipOrErr(sql.FieldEQ(FieldRoleId, vc), err)
 }
 
 // RoleIdNEQ applies the NEQ predicate on the "role_id" field.
 func RoleIdNEQ(v uuid.UUID) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldNEQ(FieldRoleId, v))
+	vc, err := ValueScanner.RoleId.Value(v)
+	return predicate.TeamMembershipOrErr(sql.FieldNEQ(FieldRoleId, vc), err)
 }
 
 // RoleIdIn applies the In predicate on the "role_id" field.
 func RoleIdIn(vs ...uuid.UUID) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldIn(FieldRoleId, vs...))
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.RoleId.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.TeamMembershipOrErr(sql.FieldIn(FieldRoleId, v...), err)
 }
 
 // RoleIdNotIn applies the NotIn predicate on the "role_id" field.
 func RoleIdNotIn(vs ...uuid.UUID) predicate.TeamMembership {
-	return predicate.TeamMembership(sql.FieldNotIn(FieldRoleId, vs...))
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.RoleId.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.TeamMembershipOrErr(sql.FieldNotIn(FieldRoleId, v...), err)
 }
 
 // RoleIdIsNil applies the IsNil predicate on the "role_id" field.

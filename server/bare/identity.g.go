@@ -6,7 +6,6 @@ package bare
 import (
 	context "context"
 	errors "errors"
-	uuid "github.com/google/uuid"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
 	holder "github.com/lesomnus/roster/internal/ent/holder"
@@ -17,8 +16,10 @@ import (
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
+	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	uuid "uuid"
 )
 
 type IdentityServiceServer struct {
@@ -94,7 +95,7 @@ func (s IdentityServiceServer) Add(ctx context.Context, req *rstr.IdentityAddReq
 	q := st.Db.Identity.Create()
 	var k uuid.UUID
 	if req.HasId() {
-		if v, err := uuid.FromBytes(req.GetId()); err != nil {
+		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
@@ -115,7 +116,7 @@ func (s IdentityServiceServer) Add(ctx context.Context, req *rstr.IdentityAddReq
 	}
 	q.SetProvider(req.GetProvider())
 	q.SetSubject(req.GetSubject())
-	if v, err := uuid.FromBytes(req.GetTenantId()); err != nil {
+	if v, err := entuuid.FromBytes(req.GetTenantId()); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "tenant_id: %s", err)
 	} else {
 		q.SetTenantId(v)
@@ -257,7 +258,7 @@ func (s IdentityServiceServer) Patch(ctx context.Context, req *rstr.IdentityPatc
 func IdentityGetKey(ctx context.Context, db *ent.Client, ref *rstr.IdentityRef) (uuid.UUID, error) {
 	var z uuid.UUID
 	if ref.HasId() {
-		if v, err := uuid.FromBytes(ref.GetId()); err != nil {
+		if v, err := entuuid.FromBytes(ref.GetId()); err != nil {
 			return z, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			return v, nil
@@ -479,7 +480,7 @@ func IdentityPick(req *rstr.IdentityRef) (predicate.Identity, error) {
 func pickIdentity(req *rstr.IdentityRef) (predicate.Identity, error) {
 	switch req.WhichKey() {
 	case rstr.IdentityRef_Id_case:
-		if v, err := uuid.FromBytes(req.GetId()); err != nil {
+		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			return identity.IdEQ(v), nil
@@ -487,7 +488,7 @@ func pickIdentity(req *rstr.IdentityRef) (predicate.Identity, error) {
 	case rstr.IdentityRef_Subject_case:
 		k := req.GetSubject()
 		ps := make([]predicate.Identity, 0, 3)
-		if v, err := uuid.FromBytes(k.GetTenantId()); err != nil {
+		if v, err := entuuid.FromBytes(k.GetTenantId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "subject.tenant_id: %s", err)
 		} else {
 			ps = append(ps, identity.TenantIdEQ(v))

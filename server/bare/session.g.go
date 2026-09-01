@@ -6,7 +6,6 @@ package bare
 import (
 	context "context"
 	errors "errors"
-	uuid "github.com/google/uuid"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
 	holder "github.com/lesomnus/roster/internal/ent/holder"
@@ -17,8 +16,10 @@ import (
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
+	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	uuid "uuid"
 )
 
 type SessionServiceServer struct {
@@ -94,7 +95,7 @@ func (s SessionServiceServer) Add(ctx context.Context, req *rstr.SessionAddReque
 	q := st.Db.Session.Create()
 	var k uuid.UUID
 	if req.HasId() {
-		if v, err := uuid.FromBytes(req.GetId()); err != nil {
+		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
@@ -261,7 +262,7 @@ func (s SessionServiceServer) Patch(ctx context.Context, req *rstr.SessionPatchR
 func SessionGetKey(ctx context.Context, db *ent.Client, ref *rstr.SessionRef) (uuid.UUID, error) {
 	var z uuid.UUID
 	if ref.HasId() {
-		if v, err := uuid.FromBytes(ref.GetId()); err != nil {
+		if v, err := entuuid.FromBytes(ref.GetId()); err != nil {
 			return z, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			return v, nil
@@ -483,7 +484,7 @@ func SessionPick(req *rstr.SessionRef) (predicate.Session, error) {
 func pickSession(req *rstr.SessionRef) (predicate.Session, error) {
 	switch req.WhichKey() {
 	case rstr.SessionRef_Id_case:
-		if v, err := uuid.FromBytes(req.GetId()); err != nil {
+		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			return session.IdEQ(v), nil

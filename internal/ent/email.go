@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/email"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/identity"
@@ -80,12 +80,18 @@ func (*Email) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case email.FieldId:
+			values[i] = email.ValueScanner.Id.ScanValue()
 		case email.FieldAddress:
 			values[i] = new(sql.NullString)
 		case email.FieldDateVerified, email.FieldDateUpdated, email.FieldDateErased, email.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case email.FieldId, email.FieldTenantId, email.FieldHolderId, email.FieldVouchedById:
-			values[i] = new(uuid.UUID)
+		case email.FieldTenantId:
+			values[i] = email.ValueScanner.TenantId.ScanValue()
+		case email.FieldHolderId:
+			values[i] = email.ValueScanner.HolderId.ScanValue()
+		case email.FieldVouchedById:
+			values[i] = email.ValueScanner.VouchedById.ScanValue()
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -102,10 +108,10 @@ func (_m *Email) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case email.FieldId:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				_m.Id = *value
+			if value, err := email.ValueScanner.Id.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.Id = value
 			}
 		case email.FieldAddress:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -121,10 +127,10 @@ func (_m *Email) assignValues(columns []string, values []any) error {
 				*_m.DateVerified = value.Time
 			}
 		case email.FieldTenantId:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
-			} else if value != nil {
-				_m.TenantId = *value
+			if value, err := email.ValueScanner.TenantId.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.TenantId = value
 			}
 		case email.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -146,16 +152,16 @@ func (_m *Email) assignValues(columns []string, values []any) error {
 				_m.DateCreated = value.Time
 			}
 		case email.FieldHolderId:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field holder_id", values[i])
-			} else if value != nil {
-				_m.HolderId = *value
+			if value, err := email.ValueScanner.HolderId.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.HolderId = value
 			}
 		case email.FieldVouchedById:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field vouched_by_id", values[i])
-			} else if value != nil {
-				_m.VouchedById = *value
+			if value, err := email.ValueScanner.VouchedById.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.VouchedById = value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])

@@ -4,7 +4,6 @@
 package schema
 
 import (
-	uuid "github.com/google/uuid"
 	ent "github.com/protobuf-orm/ent"
 	entsql "github.com/protobuf-orm/ent/dialect/entsql"
 	schema "github.com/protobuf-orm/ent/schema"
@@ -19,7 +18,7 @@ type Continuation struct {
 
 func (Continuation) Fields() []ent.Field {
 	return []ent.Field{
-		field.Uuid("id", uuid.UUID{}).
+		field.Uuid("id").
 			Unique().
 			Immutable(),
 		field.Json("satisfied", []string{}).
@@ -29,7 +28,7 @@ func (Continuation) Fields() []ent.Field {
 			Immutable(),
 		field.Bytes("issuer").
 			Immutable(),
-		field.Uuid("metered_by", uuid.UUID{}).
+		field.Uuid("metered_by").
 			Nillable().
 			Immutable().
 			Optional(),
@@ -44,7 +43,7 @@ func (Continuation) Fields() []ent.Field {
 		field.Time("date_created").
 			Immutable().
 			Optional(),
-		field.Uuid("holder_id", uuid.UUID{}).
+		field.Uuid("holder_id").
 			Immutable(),
 	}
 }

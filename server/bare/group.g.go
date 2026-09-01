@@ -6,7 +6,6 @@ package bare
 import (
 	context "context"
 	errors "errors"
-	uuid "github.com/google/uuid"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
 	group "github.com/lesomnus/roster/internal/ent/group"
@@ -19,8 +18,10 @@ import (
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
+	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	uuid "uuid"
 )
 
 type GroupServiceServer struct {
@@ -96,7 +97,7 @@ func (s GroupServiceServer) Add(ctx context.Context, req *rstr.GroupAddRequest) 
 	q := st.Db.Group.Create()
 	var k uuid.UUID
 	if req.HasId() {
-		if v, err := uuid.FromBytes(req.GetId()); err != nil {
+		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
@@ -271,7 +272,7 @@ func (s GroupServiceServer) Patch(ctx context.Context, req *rstr.GroupPatchReque
 func GroupGetKey(ctx context.Context, db *ent.Client, ref *rstr.GroupRef) (uuid.UUID, error) {
 	var z uuid.UUID
 	if ref.HasId() {
-		if v, err := uuid.FromBytes(ref.GetId()); err != nil {
+		if v, err := entuuid.FromBytes(ref.GetId()); err != nil {
 			return z, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			return v, nil
@@ -493,7 +494,7 @@ func GroupPick(req *rstr.GroupRef) (predicate.Group, error) {
 func pickGroup(req *rstr.GroupRef) (predicate.Group, error) {
 	switch req.WhichKey() {
 	case rstr.GroupRef_Id_case:
-		if v, err := uuid.FromBytes(req.GetId()); err != nil {
+		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			return group.IdEQ(v), nil
@@ -588,7 +589,7 @@ func (s GroupMembershipServiceServer) Add(ctx context.Context, req *rstr.GroupMe
 	q := st.Db.GroupMembership.Create()
 	var k uuid.UUID
 	if req.HasId() {
-		if v, err := uuid.FromBytes(req.GetId()); err != nil {
+		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
@@ -750,7 +751,7 @@ func (s GroupMembershipServiceServer) Patch(ctx context.Context, req *rstr.Group
 func GroupMembershipGetKey(ctx context.Context, db *ent.Client, ref *rstr.GroupMembershipRef) (uuid.UUID, error) {
 	var z uuid.UUID
 	if ref.HasId() {
-		if v, err := uuid.FromBytes(ref.GetId()); err != nil {
+		if v, err := entuuid.FromBytes(ref.GetId()); err != nil {
 			return z, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			return v, nil
@@ -972,7 +973,7 @@ func GroupMembershipPick(req *rstr.GroupMembershipRef) (predicate.GroupMembershi
 func pickGroupMembership(req *rstr.GroupMembershipRef) (predicate.GroupMembership, error) {
 	switch req.WhichKey() {
 	case rstr.GroupMembershipRef_Id_case:
-		if v, err := uuid.FromBytes(req.GetId()); err != nil {
+		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			return groupmembership.IdEQ(v), nil

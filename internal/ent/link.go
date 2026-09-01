@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/link"
 	"github.com/protobuf-orm/ent"
@@ -64,12 +64,14 @@ func (*Link) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case link.FieldId:
+			values[i] = link.ValueScanner.Id.ScanValue()
 		case link.FieldSecret, link.FieldIssuer:
 			values[i] = new([]byte)
 		case link.FieldDateExpires, link.FieldDateUpdated, link.FieldDateErased, link.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case link.FieldId, link.FieldHolderId:
-			values[i] = new(uuid.UUID)
+		case link.FieldHolderId:
+			values[i] = link.ValueScanner.HolderId.ScanValue()
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -86,10 +88,10 @@ func (_m *Link) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case link.FieldId:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				_m.Id = *value
+			if value, err := link.ValueScanner.Id.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.Id = value
 			}
 		case link.FieldSecret:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -130,10 +132,10 @@ func (_m *Link) assignValues(columns []string, values []any) error {
 				_m.DateCreated = value.Time
 			}
 		case link.FieldHolderId:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field holder_id", values[i])
-			} else if value != nil {
-				_m.HolderId = *value
+			if value, err := link.ValueScanner.HolderId.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.HolderId = value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])

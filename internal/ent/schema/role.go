@@ -4,7 +4,6 @@
 package schema
 
 import (
-	uuid "github.com/google/uuid"
 	ent "github.com/protobuf-orm/ent"
 	entsql "github.com/protobuf-orm/ent/dialect/entsql"
 	schema "github.com/protobuf-orm/ent/schema"
@@ -19,7 +18,7 @@ type Role struct {
 
 func (Role) Fields() []ent.Field {
 	return []ent.Field{
-		field.Uuid("id", uuid.UUID{}).
+		field.Uuid("id").
 			Unique().
 			Immutable(),
 		field.String("alias"),
@@ -34,9 +33,9 @@ func (Role) Fields() []ent.Field {
 		field.Time("date_created").
 			Immutable().
 			Optional(),
-		field.Uuid("tenant_id", uuid.UUID{}).
+		field.Uuid("tenant_id").
 			Immutable(),
-		field.Uuid("site_id", uuid.UUID{}).
+		field.Uuid("site_id").
 			Optional().
 			Immutable(),
 	}
@@ -78,7 +77,7 @@ type Binding struct {
 
 func (Binding) Fields() []ent.Field {
 	return []ent.Field{
-		field.Uuid("id", uuid.UUID{}).
+		field.Uuid("id").
 			Unique().
 			Immutable(),
 		field.Time("date_updated"),
@@ -88,15 +87,15 @@ func (Binding) Fields() []ent.Field {
 		field.Time("date_created").
 			Immutable().
 			Optional(),
-		field.Uuid("role_id", uuid.UUID{}).
+		field.Uuid("role_id").
 			Immutable(),
-		field.Uuid("site_id", uuid.UUID{}).
+		field.Uuid("site_id").
 			Optional().
 			Immutable(),
-		field.Uuid("holder_id", uuid.UUID{}).
+		field.Uuid("holder_id").
 			Optional().
 			Immutable(),
-		field.Uuid("group_id", uuid.UUID{}).
+		field.Uuid("group_id").
 			Optional().
 			Immutable(),
 	}

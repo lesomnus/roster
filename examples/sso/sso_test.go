@@ -87,7 +87,7 @@ func newIdp(t *testing.T) *idp {
 
 	m.HandleFunc("/keys", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("content-type", "application/json")
-		json.NewEncoder(w).Encode(jose.JsonWebKeySet{Keys: []jose.JsonWebKey{
+		json.NewEncoder(w).Encode(jose.JSONWebKeySet{Keys: []jose.JSONWebKey{
 			{Key: &k.PublicKey, Algorithm: "RS256", Use: "sig"},
 		}})
 	})

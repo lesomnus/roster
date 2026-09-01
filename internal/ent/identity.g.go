@@ -4,9 +4,9 @@
 package ent
 
 import (
-	uuid "github.com/google/uuid"
 	rstr "github.com/lesomnus/roster/rstr"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	uuid "uuid"
 )
 
 func (e *Identity) Proto() *rstr.Identity {

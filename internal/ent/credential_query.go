@@ -6,8 +6,8 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/credential"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/predicate"
@@ -209,8 +209,13 @@ func (_q *CredentialQuery) Ids(ctx context.Context) (ids []uuid.UUID, err error)
 		_q.Unique(true)
 	}
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIds)
-	if err = _q.Select(credential.FieldId).Scan(ctx, &ids); err != nil {
+	var nodes []*Credential
+	if nodes, err = _q.Select(credential.FieldId).All(ctx); err != nil {
 		return nil, err
+	}
+	ids = make([]uuid.UUID, len(nodes))
+	for i := range nodes {
+		ids[i] = nodes[i].Id
 	}
 	return ids, nil
 }

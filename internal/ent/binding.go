@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/binding"
 	"github.com/lesomnus/roster/internal/ent/group"
 	"github.com/lesomnus/roster/internal/ent/holder"
@@ -106,10 +106,18 @@ func (*Binding) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case binding.FieldId:
+			values[i] = binding.ValueScanner.Id.ScanValue()
 		case binding.FieldDateUpdated, binding.FieldDateErased, binding.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case binding.FieldId, binding.FieldRoleId, binding.FieldSiteId, binding.FieldHolderId, binding.FieldGroupId:
-			values[i] = new(uuid.UUID)
+		case binding.FieldRoleId:
+			values[i] = binding.ValueScanner.RoleId.ScanValue()
+		case binding.FieldSiteId:
+			values[i] = binding.ValueScanner.SiteId.ScanValue()
+		case binding.FieldHolderId:
+			values[i] = binding.ValueScanner.HolderId.ScanValue()
+		case binding.FieldGroupId:
+			values[i] = binding.ValueScanner.GroupId.ScanValue()
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -126,10 +134,10 @@ func (_m *Binding) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case binding.FieldId:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				_m.Id = *value
+			if value, err := binding.ValueScanner.Id.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.Id = value
 			}
 		case binding.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -151,28 +159,28 @@ func (_m *Binding) assignValues(columns []string, values []any) error {
 				_m.DateCreated = value.Time
 			}
 		case binding.FieldRoleId:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field role_id", values[i])
-			} else if value != nil {
-				_m.RoleId = *value
+			if value, err := binding.ValueScanner.RoleId.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.RoleId = value
 			}
 		case binding.FieldSiteId:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field site_id", values[i])
-			} else if value != nil {
-				_m.SiteId = *value
+			if value, err := binding.ValueScanner.SiteId.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.SiteId = value
 			}
 		case binding.FieldHolderId:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field holder_id", values[i])
-			} else if value != nil {
-				_m.HolderId = *value
+			if value, err := binding.ValueScanner.HolderId.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.HolderId = value
 			}
 		case binding.FieldGroupId:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field group_id", values[i])
-			} else if value != nil {
-				_m.GroupId = *value
+			if value, err := binding.ValueScanner.GroupId.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.GroupId = value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])

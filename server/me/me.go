@@ -34,7 +34,7 @@ import (
 	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
 
-	"github.com/google/uuid"
+	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 
 	"github.com/lesomnus/roster/internal/ent"
 	"github.com/lesomnus/roster/internal/ent/apikey"
@@ -432,7 +432,7 @@ func (s *Server) RevokeKey(ctx context.Context, req *app.MeRevokeKeyRequest) (*a
 		return nil, status.Error(codes.Unimplemented, "this server cannot write")
 	}
 
-	id, err := uuid.FromBytes(req.GetId())
+	id, err := entuuid.FromBytes(req.GetId())
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 	}
@@ -484,7 +484,7 @@ func (s *Server) Unlink(ctx context.Context, req *app.MeUnlinkRequest) (*app.MeU
 		return nil, status.Error(codes.Unimplemented, "this server cannot write")
 	}
 
-	id, err := uuid.FromBytes(req.GetId())
+	id, err := entuuid.FromBytes(req.GetId())
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 	}

@@ -4,7 +4,6 @@
 package schema
 
 import (
-	uuid "github.com/google/uuid"
 	ent "github.com/protobuf-orm/ent"
 	entsql "github.com/protobuf-orm/ent/dialect/entsql"
 	schema "github.com/protobuf-orm/ent/schema"
@@ -19,12 +18,12 @@ type Identity struct {
 
 func (Identity) Fields() []ent.Field {
 	return []ent.Field{
-		field.Uuid("id", uuid.UUID{}).
+		field.Uuid("id").
 			Unique().
 			Immutable(),
 		field.String("provider"),
 		field.String("subject"),
-		field.Uuid("tenant_id", uuid.UUID{}).
+		field.Uuid("tenant_id").
 			Immutable(),
 		field.Time("date_updated"),
 		field.Time("date_erased").
@@ -33,7 +32,7 @@ func (Identity) Fields() []ent.Field {
 		field.Time("date_created").
 			Immutable().
 			Optional(),
-		field.Uuid("holder_id", uuid.UUID{}).
+		field.Uuid("holder_id").
 			Immutable(),
 	}
 }

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/host"
 	"github.com/lesomnus/roster/internal/ent/tenant"
 	"github.com/protobuf-orm/ent"
@@ -62,12 +62,14 @@ func (*Host) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case host.FieldId:
+			values[i] = host.ValueScanner.Id.ScanValue()
 		case host.FieldName, host.FieldDesc:
 			values[i] = new(sql.NullString)
 		case host.FieldDateUpdated, host.FieldDateErased, host.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case host.FieldId, host.FieldTenantId:
-			values[i] = new(uuid.UUID)
+		case host.FieldTenantId:
+			values[i] = host.ValueScanner.TenantId.ScanValue()
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -84,10 +86,10 @@ func (_m *Host) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case host.FieldId:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				_m.Id = *value
+			if value, err := host.ValueScanner.Id.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.Id = value
 			}
 		case host.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -121,10 +123,10 @@ func (_m *Host) assignValues(columns []string, values []any) error {
 				_m.DateCreated = value.Time
 			}
 		case host.FieldTenantId:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
-			} else if value != nil {
-				_m.TenantId = *value
+			if value, err := host.ValueScanner.TenantId.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.TenantId = value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])

@@ -242,7 +242,7 @@ func TestEveryOperatorWriteLeavesBothTrails(t *testing.T) {
 			data := adminTrailSince(t, s.Ent, was)
 			x.NotEmpty(data, "the data plane recorded nothing about the write")
 			for _, v := range data {
-				x.NotEmpty(v.TraceID,
+				x.NotEmpty(v.TraceId,
 					"%s: no trace on %s, so nothing to join it to", w.name, v.Action)
 			}
 
@@ -263,9 +263,9 @@ func TestEveryOperatorWriteLeavesBothTrails(t *testing.T) {
 
 			traces := map[string]bool{}
 			for _, v := range data {
-				traces[string(v.TraceID)] = true
+				traces[string(v.TraceId)] = true
 			}
-			x.True(traces[string(intent.TraceID)],
+			x.True(traces[string(intent.TraceId)],
 				"the two trails carry different traces and cannot be joined")
 
 			who, err := s.Control.Ent.Holder.Get(ctx, intent.ActorId)

@@ -4,8 +4,8 @@ package credential
 
 import (
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/predicate"
 	"github.com/protobuf-orm/ent/dialect/sql"
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -13,47 +13,72 @@ import (
 
 // Id filters vertices based on their Id field.
 func Id(id uuid.UUID) predicate.Credential {
-	return predicate.Credential(sql.FieldEQ(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.CredentialOrErr(sql.FieldEQ(FieldId, vc), err)
 }
 
 // IdEQ applies the EQ predicate on the Id field.
 func IdEQ(id uuid.UUID) predicate.Credential {
-	return predicate.Credential(sql.FieldEQ(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.CredentialOrErr(sql.FieldEQ(FieldId, vc), err)
 }
 
 // IdNEQ applies the NEQ predicate on the Id field.
 func IdNEQ(id uuid.UUID) predicate.Credential {
-	return predicate.Credential(sql.FieldNEQ(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.CredentialOrErr(sql.FieldNEQ(FieldId, vc), err)
 }
 
 // IdIn applies the In predicate on the Id field.
 func IdIn(ids ...uuid.UUID) predicate.Credential {
-	return predicate.Credential(sql.FieldIn(FieldId, ids...))
+	var (
+		err error
+		vcs = make([]any, len(ids))
+	)
+	for i := range vcs {
+		if vcs[i], err = ValueScanner.Id.Value(ids[i]); err != nil {
+			break
+		}
+	}
+	return predicate.CredentialOrErr(sql.FieldIn(FieldId, vcs...), err)
 }
 
 // IdNotIn applies the NotIn predicate on the Id field.
 func IdNotIn(ids ...uuid.UUID) predicate.Credential {
-	return predicate.Credential(sql.FieldNotIn(FieldId, ids...))
+	var (
+		err error
+		vcs = make([]any, len(ids))
+	)
+	for i := range vcs {
+		if vcs[i], err = ValueScanner.Id.Value(ids[i]); err != nil {
+			break
+		}
+	}
+	return predicate.CredentialOrErr(sql.FieldNotIn(FieldId, vcs...), err)
 }
 
 // IdGT applies the GT predicate on the Id field.
 func IdGT(id uuid.UUID) predicate.Credential {
-	return predicate.Credential(sql.FieldGT(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.CredentialOrErr(sql.FieldGT(FieldId, vc), err)
 }
 
 // IdGTE applies the GTE predicate on the Id field.
 func IdGTE(id uuid.UUID) predicate.Credential {
-	return predicate.Credential(sql.FieldGTE(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.CredentialOrErr(sql.FieldGTE(FieldId, vc), err)
 }
 
 // IdLT applies the LT predicate on the Id field.
 func IdLT(id uuid.UUID) predicate.Credential {
-	return predicate.Credential(sql.FieldLT(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.CredentialOrErr(sql.FieldLT(FieldId, vc), err)
 }
 
 // IdLTE applies the LTE predicate on the Id field.
 func IdLTE(id uuid.UUID) predicate.Credential {
-	return predicate.Credential(sql.FieldLTE(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.CredentialOrErr(sql.FieldLTE(FieldId, vc), err)
 }
 
 // Name applies equality check predicate on the "name" field. It's identical to NameEQ.
@@ -108,7 +133,8 @@ func DateCreated(v time.Time) predicate.Credential {
 
 // HolderId applies equality check predicate on the "holder_id" field. It's identical to HolderIdEQ.
 func HolderId(v uuid.UUID) predicate.Credential {
-	return predicate.Credential(sql.FieldEQ(FieldHolderId, v))
+	vc, err := ValueScanner.HolderId.Value(v)
+	return predicate.CredentialOrErr(sql.FieldEQ(FieldHolderId, vc), err)
 }
 
 // NameEQ applies the EQ predicate on the "name" field.
@@ -603,22 +629,42 @@ func DateCreatedNotNil() predicate.Credential {
 
 // HolderIdEQ applies the EQ predicate on the "holder_id" field.
 func HolderIdEQ(v uuid.UUID) predicate.Credential {
-	return predicate.Credential(sql.FieldEQ(FieldHolderId, v))
+	vc, err := ValueScanner.HolderId.Value(v)
+	return predicate.CredentialOrErr(sql.FieldEQ(FieldHolderId, vc), err)
 }
 
 // HolderIdNEQ applies the NEQ predicate on the "holder_id" field.
 func HolderIdNEQ(v uuid.UUID) predicate.Credential {
-	return predicate.Credential(sql.FieldNEQ(FieldHolderId, v))
+	vc, err := ValueScanner.HolderId.Value(v)
+	return predicate.CredentialOrErr(sql.FieldNEQ(FieldHolderId, vc), err)
 }
 
 // HolderIdIn applies the In predicate on the "holder_id" field.
 func HolderIdIn(vs ...uuid.UUID) predicate.Credential {
-	return predicate.Credential(sql.FieldIn(FieldHolderId, vs...))
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.HolderId.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.CredentialOrErr(sql.FieldIn(FieldHolderId, v...), err)
 }
 
 // HolderIdNotIn applies the NotIn predicate on the "holder_id" field.
 func HolderIdNotIn(vs ...uuid.UUID) predicate.Credential {
-	return predicate.Credential(sql.FieldNotIn(FieldHolderId, vs...))
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.HolderId.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.CredentialOrErr(sql.FieldNotIn(FieldHolderId, v...), err)
 }
 
 // HasHolder applies the HasEdge predicate on the "holder" edge.

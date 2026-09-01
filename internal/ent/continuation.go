@@ -7,12 +7,13 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/continuation"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/protobuf-orm/ent"
 	"github.com/protobuf-orm/ent/dialect/sql"
+	"github.com/protobuf-orm/ent/schema/field"
 )
 
 // Continuation is the model entity for the Continuation schema.
@@ -69,14 +70,16 @@ func (*Continuation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case continuation.FieldMeteredBy:
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+		case continuation.FieldId:
+			values[i] = continuation.ValueScanner.Id.ScanValue()
 		case continuation.FieldSatisfied, continuation.FieldSecret, continuation.FieldIssuer:
 			values[i] = new([]byte)
 		case continuation.FieldDateExpires, continuation.FieldDateUpdated, continuation.FieldDateErased, continuation.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case continuation.FieldId, continuation.FieldHolderId:
-			values[i] = new(uuid.UUID)
+		case continuation.FieldMeteredBy:
+			values[i] = continuation.ValueScanner.MeteredBy.ScanValue()
+		case continuation.FieldHolderId:
+			values[i] = continuation.ValueScanner.HolderId.ScanValue()
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -93,10 +96,10 @@ func (_m *Continuation) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case continuation.FieldId:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				_m.Id = *value
+			if value, err := continuation.ValueScanner.Id.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.Id = value
 			}
 		case continuation.FieldSatisfied:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -119,11 +122,10 @@ func (_m *Continuation) assignValues(columns []string, values []any) error {
 				_m.Issuer = *value
 			}
 		case continuation.FieldMeteredBy:
-			if value, ok := values[i].(*sql.NullScanner); !ok {
-				return fmt.Errorf("unexpected type %T for field metered_by", values[i])
-			} else if value.Valid {
-				_m.MeteredBy = new(uuid.UUID)
-				*_m.MeteredBy = *value.S.(*uuid.UUID)
+			if value, err := field.NillableFromValue(continuation.ValueScanner.MeteredBy, values[i]); err != nil {
+				return err
+			} else {
+				_m.MeteredBy = value
 			}
 		case continuation.FieldDateExpires:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -152,10 +154,10 @@ func (_m *Continuation) assignValues(columns []string, values []any) error {
 				_m.DateCreated = value.Time
 			}
 		case continuation.FieldHolderId:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field holder_id", values[i])
-			} else if value != nil {
-				_m.HolderId = *value
+			if value, err := continuation.ValueScanner.HolderId.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.HolderId = value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])

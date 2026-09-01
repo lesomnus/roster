@@ -29,16 +29,15 @@ require (
 	github.com/fxamacker/cbor/v2 v2.9.2
 	github.com/go-jose/go-jose/v4 v4.1.4
 	github.com/go-webauthn/webauthn v0.17.4
-	github.com/google/uuid v1.6.0
 	github.com/lesomnus/grpc-dgram v0.0.0-20260808164022-d993065403e1
 	github.com/lesomnus/otx v0.0.0-20260807173743-977a5687d6ba
-	github.com/lesomnus/payday v0.0.0-20260901221328-edf51cff1739
+	github.com/lesomnus/payday v0.0.0-20260901233019-10ca9bdc5c33
 	github.com/lesomnus/protobuf-patch v0.0.0-20260803175157-e1b7a0c2804f
 	github.com/lesomnus/xli v0.0.0-20260717171524-bf8cac633057
 	github.com/lesomnus/z v0.0.0-20260531102454-3f1853bb4278
-	github.com/protobuf-orm/ent v0.0.0-20260901221134-1d321ed5f02c
-	github.com/protobuf-orm/protobuf-orm v0.0.0-20260901155106-6bf45a2a1e67
-	github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20260901221219-a2f9385c7295
+	github.com/protobuf-orm/ent v0.0.0-20260901230746-4115dcfc4087
+	github.com/protobuf-orm/protobuf-orm v0.0.0-20260901231226-61630a70f09e
+	github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20260901232630-700411e09bed
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/otel/trace v1.45.0
 	golang.org/x/crypto v0.55.0
@@ -72,6 +71,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-tpm v0.9.8 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/hcl/v2 v2.24.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
@@ -92,7 +92,7 @@ require (
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/protobuf-orm/protobuf-merge v0.0.0-20260901155249-39cbf4c6c20f // indirect
-	github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20260901221219-a2f9385c7295 // indirect
+	github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20260901232630-700411e09bed // indirect
 	github.com/protobuf-orm/protoc-gen-orm-go v0.0.0-20260901155244-4237381a6615 // indirect
 	github.com/protobuf-orm/protoc-gen-orm-service v0.0.0-20260901155246-12064a5a7fa8 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect

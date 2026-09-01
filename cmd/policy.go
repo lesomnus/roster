@@ -7,9 +7,9 @@ import (
 	"github.com/protobuf-orm/ent/dialect"
 	"slices"
 
-	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"uuid"
 
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/gate"

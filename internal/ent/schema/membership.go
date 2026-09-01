@@ -4,7 +4,6 @@
 package schema
 
 import (
-	uuid "github.com/google/uuid"
 	ent "github.com/protobuf-orm/ent"
 	entsql "github.com/protobuf-orm/ent/dialect/entsql"
 	schema "github.com/protobuf-orm/ent/schema"
@@ -19,7 +18,7 @@ type SiteMembership struct {
 
 func (SiteMembership) Fields() []ent.Field {
 	return []ent.Field{
-		field.Uuid("id", uuid.UUID{}).
+		field.Uuid("id").
 			Unique().
 			Immutable(),
 		field.Time("date_updated"),
@@ -29,9 +28,9 @@ func (SiteMembership) Fields() []ent.Field {
 		field.Time("date_created").
 			Immutable().
 			Optional(),
-		field.Uuid("holder_id", uuid.UUID{}).
+		field.Uuid("holder_id").
 			Immutable(),
-		field.Uuid("site_id", uuid.UUID{}).
+		field.Uuid("site_id").
 			Immutable(),
 	}
 }
@@ -72,7 +71,7 @@ type TeamMembership struct {
 
 func (TeamMembership) Fields() []ent.Field {
 	return []ent.Field{
-		field.Uuid("id", uuid.UUID{}).
+		field.Uuid("id").
 			Unique().
 			Immutable(),
 		field.Time("date_updated"),
@@ -82,11 +81,11 @@ func (TeamMembership) Fields() []ent.Field {
 		field.Time("date_created").
 			Immutable().
 			Optional(),
-		field.Uuid("holder_id", uuid.UUID{}).
+		field.Uuid("holder_id").
 			Immutable(),
-		field.Uuid("team_id", uuid.UUID{}).
+		field.Uuid("team_id").
 			Immutable(),
-		field.Uuid("role_id", uuid.UUID{}).
+		field.Uuid("role_id").
 			Optional(),
 	}
 }

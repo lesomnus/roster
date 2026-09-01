@@ -101,7 +101,7 @@ func post(d *Door, path string, body string, c *http.Cookie) *httptest.ResponseR
 	}
 
 	w := httptest.NewRecorder()
-	d.Handler().ServeHttp(w, r)
+	d.Handler().ServeHTTP(w, r)
 
 	return w
 }
@@ -270,7 +270,7 @@ func TestSigningOutRevokesEvenAWindowThatHasPassed(t *testing.T) {
 	r := httptest.NewRequest(http.MethodDelete, "http://contoso.example.com/session", nil)
 	r.Header.Set("Cookie", c.Name+"="+c.Value)
 	w := httptest.NewRecorder()
-	d.Handler().ServeHttp(w, r)
+	d.Handler().ServeHTTP(w, r)
 
 	x.Equal(http.StatusNoContent, w.Code)
 	x.Equal(1, f.revokes,

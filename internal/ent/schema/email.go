@@ -4,7 +4,6 @@
 package schema
 
 import (
-	uuid "github.com/google/uuid"
 	ent "github.com/protobuf-orm/ent"
 	entsql "github.com/protobuf-orm/ent/dialect/entsql"
 	schema "github.com/protobuf-orm/ent/schema"
@@ -19,14 +18,14 @@ type Email struct {
 
 func (Email) Fields() []ent.Field {
 	return []ent.Field{
-		field.Uuid("id", uuid.UUID{}).
+		field.Uuid("id").
 			Unique().
 			Immutable(),
 		field.String("address"),
 		field.Time("date_verified").
 			Nillable().
 			Optional(),
-		field.Uuid("tenant_id", uuid.UUID{}).
+		field.Uuid("tenant_id").
 			Immutable(),
 		field.Time("date_updated"),
 		field.Time("date_erased").
@@ -35,9 +34,9 @@ func (Email) Fields() []ent.Field {
 		field.Time("date_created").
 			Immutable().
 			Optional(),
-		field.Uuid("holder_id", uuid.UUID{}).
+		field.Uuid("holder_id").
 			Immutable(),
-		field.Uuid("vouched_by_id", uuid.UUID{}).
+		field.Uuid("vouched_by_id").
 			Optional(),
 	}
 }

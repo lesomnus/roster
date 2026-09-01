@@ -9,32 +9,142 @@ import (
 // ApiKey is the predicate function for apikey builders.
 type ApiKey func(*sql.Selector)
 
+// ApiKeyOrErr calls the predicate only if the error is not nit.
+func ApiKeyOrErr(p ApiKey, err error) ApiKey {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
 // Audit is the predicate function for audit builders.
 type Audit func(*sql.Selector)
+
+// AuditOrErr calls the predicate only if the error is not nit.
+func AuditOrErr(p Audit, err error) Audit {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
 
 // Binding is the predicate function for binding builders.
 type Binding func(*sql.Selector)
 
+// BindingOrErr calls the predicate only if the error is not nit.
+func BindingOrErr(p Binding, err error) Binding {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
 // Connection is the predicate function for connection builders.
 type Connection func(*sql.Selector)
+
+// ConnectionOrErr calls the predicate only if the error is not nit.
+func ConnectionOrErr(p Connection, err error) Connection {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
 
 // Continuation is the predicate function for continuation builders.
 type Continuation func(*sql.Selector)
 
+// ContinuationOrErr calls the predicate only if the error is not nit.
+func ContinuationOrErr(p Continuation, err error) Continuation {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
 // Credential is the predicate function for credential builders.
 type Credential func(*sql.Selector)
+
+// CredentialOrErr calls the predicate only if the error is not nit.
+func CredentialOrErr(p Credential, err error) Credential {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
 
 // Delegation is the predicate function for delegation builders.
 type Delegation func(*sql.Selector)
 
+// DelegationOrErr calls the predicate only if the error is not nit.
+func DelegationOrErr(p Delegation, err error) Delegation {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
 // Email is the predicate function for email builders.
 type Email func(*sql.Selector)
+
+// EmailOrErr calls the predicate only if the error is not nit.
+func EmailOrErr(p Email, err error) Email {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
 
 // Group is the predicate function for group builders.
 type Group func(*sql.Selector)
 
+// GroupOrErr calls the predicate only if the error is not nit.
+func GroupOrErr(p Group, err error) Group {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
 // GroupMembership is the predicate function for groupmembership builders.
 type GroupMembership func(*sql.Selector)
+
+// GroupMembershipOrErr calls the predicate only if the error is not nit.
+func GroupMembershipOrErr(p GroupMembership, err error) GroupMembership {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
 
 // Holder is the predicate function for holder builders.
 type Holder func(*sql.Selector)
@@ -53,35 +163,167 @@ func HolderOrErr(p Holder, err error) Holder {
 // Host is the predicate function for host builders.
 type Host func(*sql.Selector)
 
+// HostOrErr calls the predicate only if the error is not nit.
+func HostOrErr(p Host, err error) Host {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
 // Identity is the predicate function for identity builders.
 type Identity func(*sql.Selector)
+
+// IdentityOrErr calls the predicate only if the error is not nit.
+func IdentityOrErr(p Identity, err error) Identity {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
 
 // Link is the predicate function for link builders.
 type Link func(*sql.Selector)
 
+// LinkOrErr calls the predicate only if the error is not nit.
+func LinkOrErr(p Link, err error) Link {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
 // MailDomain is the predicate function for maildomain builders.
 type MailDomain func(*sql.Selector)
+
+// MailDomainOrErr calls the predicate only if the error is not nit.
+func MailDomainOrErr(p MailDomain, err error) MailDomain {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
 
 // Outbox is the predicate function for outbox builders.
 type Outbox func(*sql.Selector)
 
+// OutboxOrErr calls the predicate only if the error is not nit.
+func OutboxOrErr(p Outbox, err error) Outbox {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
 // Role is the predicate function for role builders.
 type Role func(*sql.Selector)
+
+// RoleOrErr calls the predicate only if the error is not nit.
+func RoleOrErr(p Role, err error) Role {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
 
 // Session is the predicate function for session builders.
 type Session func(*sql.Selector)
 
+// SessionOrErr calls the predicate only if the error is not nit.
+func SessionOrErr(p Session, err error) Session {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
 // Site is the predicate function for site builders.
 type Site func(*sql.Selector)
+
+// SiteOrErr calls the predicate only if the error is not nit.
+func SiteOrErr(p Site, err error) Site {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
 
 // SiteMembership is the predicate function for sitemembership builders.
 type SiteMembership func(*sql.Selector)
 
+// SiteMembershipOrErr calls the predicate only if the error is not nit.
+func SiteMembershipOrErr(p SiteMembership, err error) SiteMembership {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
 // Team is the predicate function for team builders.
 type Team func(*sql.Selector)
+
+// TeamOrErr calls the predicate only if the error is not nit.
+func TeamOrErr(p Team, err error) Team {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
 
 // TeamMembership is the predicate function for teammembership builders.
 type TeamMembership func(*sql.Selector)
 
+// TeamMembershipOrErr calls the predicate only if the error is not nit.
+func TeamMembershipOrErr(p TeamMembership, err error) TeamMembership {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
 // Tenant is the predicate function for tenant builders.
 type Tenant func(*sql.Selector)
+
+// TenantOrErr calls the predicate only if the error is not nit.
+func TenantOrErr(p Tenant, err error) Tenant {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}

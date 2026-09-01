@@ -18,6 +18,17 @@ wrongly rather than not at all.
 So an upgrade is: read what moved, decide whether it is safe to apply
 automatically, apply it, start.
 
+## From `10ca9bd` — a UUID is the standard library's
+
+Nothing moves in the database. Every identifier column holds the same text it
+held before: `github.com/google/uuid` and the standard library's `uuid` both
+write a UUID out in the canonical form, and so does ent's codec for the type.
+The wire is unchanged too, since a UUID has always crossed it as sixteen bytes.
+
+It is here only so that an operator reading a diff of the binary's dependencies
+and finding `github.com/google/uuid` gone knows it was deliberate and that
+nothing has to be applied.
+
 ## From `47cd900` — every table was renamed
 
 roster now builds on a fork of ent that names a table after its entity without

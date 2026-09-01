@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/email"
 	"github.com/lesomnus/roster/internal/ent/identity"
 	"github.com/lesomnus/roster/internal/ent/predicate"
@@ -234,7 +234,11 @@ func (_u *EmailUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			},
 		}
 		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
+			vv, err := identity.ValueScanner.Id.Value(k)
+			if err != nil {
+				return 0, err
+			}
+			edge.Target.Nodes = append(edge.Target.Nodes, vv)
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
@@ -427,7 +431,11 @@ func (_u *EmailUpdateOne) sqlSave(ctx context.Context) (_node *Email, err error)
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Email.id" for update`)}
 	}
-	_spec.Node.Id.Value = id
+	vv, err := email.ValueScanner.Id.Value(id)
+	if err != nil {
+		return nil, err
+	}
+	_spec.Node.Id.Value = vv
 	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, email.FieldId)
@@ -493,7 +501,11 @@ func (_u *EmailUpdateOne) sqlSave(ctx context.Context) (_node *Email, err error)
 			},
 		}
 		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
+			vv, err := identity.ValueScanner.Id.Value(k)
+			if err != nil {
+				return nil, err
+			}
+			edge.Target.Nodes = append(edge.Target.Nodes, vv)
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}

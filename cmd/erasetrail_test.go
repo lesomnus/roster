@@ -83,7 +83,7 @@ func TestTheRecordOfAnEraseBelongsToWhoseRowItWas(t *testing.T) {
 	// empty blob and nothing notices; on PostgreSql it is SQL NULL and the
 	// write is refused, which is the shape that has to be asserted here rather
 	// than discovered by an operator.
-	x.NotNil(v.TraceID)
+	x.NotNil(v.TraceId)
 	x.NotNil(v.Patch)
 	x.NotNil(v.Value)
 }

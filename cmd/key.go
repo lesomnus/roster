@@ -14,7 +14,7 @@ import (
 	"github.com/lesomnus/z"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/google/uuid"
+	"uuid"
 
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"

@@ -6,7 +6,6 @@ package bare
 import (
 	context "context"
 	errors "errors"
-	uuid "github.com/google/uuid"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
 	email "github.com/lesomnus/roster/internal/ent/email"
@@ -19,9 +18,11 @@ import (
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
+	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	uuid "uuid"
 )
 
 type EmailServiceServer struct {
@@ -97,7 +98,7 @@ func (s EmailServiceServer) Add(ctx context.Context, req *rstr.EmailAddRequest) 
 	q := st.Db.Email.Create()
 	var k uuid.UUID
 	if req.HasId() {
-		if v, err := uuid.FromBytes(req.GetId()); err != nil {
+		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
@@ -130,7 +131,7 @@ func (s EmailServiceServer) Add(ctx context.Context, req *rstr.EmailAddRequest) 
 			})
 		}
 	}
-	if v, err := uuid.FromBytes(req.GetTenantId()); err != nil {
+	if v, err := entuuid.FromBytes(req.GetTenantId()); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "tenant_id: %s", err)
 	} else {
 		q.SetTenantId(v)
@@ -289,7 +290,7 @@ func (s EmailServiceServer) Patch(ctx context.Context, req *rstr.EmailPatchReque
 func EmailGetKey(ctx context.Context, db *ent.Client, ref *rstr.EmailRef) (uuid.UUID, error) {
 	var z uuid.UUID
 	if ref.HasId() {
-		if v, err := uuid.FromBytes(ref.GetId()); err != nil {
+		if v, err := entuuid.FromBytes(ref.GetId()); err != nil {
 			return z, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			return v, nil
@@ -511,7 +512,7 @@ func EmailPick(req *rstr.EmailRef) (predicate.Email, error) {
 func pickEmail(req *rstr.EmailRef) (predicate.Email, error) {
 	switch req.WhichKey() {
 	case rstr.EmailRef_Id_case:
-		if v, err := uuid.FromBytes(req.GetId()); err != nil {
+		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			return email.IdEQ(v), nil
@@ -529,7 +530,7 @@ func pickEmail(req *rstr.EmailRef) (predicate.Email, error) {
 	case rstr.EmailRef_At_case:
 		k := req.GetAt()
 		ps := make([]predicate.Email, 0, 2)
-		if v, err := uuid.FromBytes(k.GetTenantId()); err != nil {
+		if v, err := entuuid.FromBytes(k.GetTenantId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "at.tenant_id: %s", err)
 		} else {
 			ps = append(ps, email.TenantIdEQ(v))

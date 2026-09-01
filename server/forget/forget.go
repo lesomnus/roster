@@ -51,7 +51,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
+	"uuid"
 
 	"github.com/lesomnus/otx/log"
 

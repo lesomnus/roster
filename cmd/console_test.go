@@ -37,7 +37,7 @@ func signIn(t *testing.T, s *cmd.Server, alias, password string) *http.Cookie {
 
 	r := httptest.NewRequest(http.MethodPost, "/session", bytes.NewReader(body))
 	w := httptest.NewRecorder()
-	s.Sessions.Serve(cmd.Login(s.Control)).ServeHttp(w, r)
+	s.Sessions.Serve(cmd.Login(s.Control)).ServeHTTP(w, r)
 
 	res := w.Result()
 	t.Cleanup(func() { _ = res.Body.Close() })
@@ -356,7 +356,7 @@ func TestTheTwoTrailsAreJoined(t *testing.T) {
 		}
 	}
 	x.NotNil(data, "the data plane recorded nothing about the customer")
-	x.NotEmpty(data.TraceID, "no trace, so nothing to join it to")
+	x.NotEmpty(data.TraceId, "no trace, so nothing to join it to")
 
 	// The control plane's row: who decided, written before the attempt.
 	cs, err := s.Control.Ent.Audit.Query().All(ctx)
@@ -365,7 +365,7 @@ func TestTheTwoTrailsAreJoined(t *testing.T) {
 
 	var intent *ent.Audit
 	for _, v := range cs {
-		if string(v.TraceID) == string(data.TraceID) {
+		if string(v.TraceId) == string(data.TraceId) {
 			intent = v
 		}
 	}

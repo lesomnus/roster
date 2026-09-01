@@ -24,8 +24,8 @@ import (
 	"crypto/sha256"
 	"time"
 
-	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
+	"uuid"
 
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/auth/authsession"
@@ -232,7 +232,7 @@ func decode(b []byte) frame.Grant {
 }
 
 func tenantOf(h *ent.Holder) string {
-	if h.TenantId == uuid.Nil {
+	if h.TenantId == uuid.Nil() {
 		return ""
 	}
 

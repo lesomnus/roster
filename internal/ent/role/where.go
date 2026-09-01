@@ -4,8 +4,8 @@ package role
 
 import (
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/predicate"
 	"github.com/protobuf-orm/ent/dialect/sql"
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -13,47 +13,72 @@ import (
 
 // Id filters vertices based on their Id field.
 func Id(id uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldEQ(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.RoleOrErr(sql.FieldEQ(FieldId, vc), err)
 }
 
 // IdEQ applies the EQ predicate on the Id field.
 func IdEQ(id uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldEQ(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.RoleOrErr(sql.FieldEQ(FieldId, vc), err)
 }
 
 // IdNEQ applies the NEQ predicate on the Id field.
 func IdNEQ(id uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldNEQ(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.RoleOrErr(sql.FieldNEQ(FieldId, vc), err)
 }
 
 // IdIn applies the In predicate on the Id field.
 func IdIn(ids ...uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldIn(FieldId, ids...))
+	var (
+		err error
+		vcs = make([]any, len(ids))
+	)
+	for i := range vcs {
+		if vcs[i], err = ValueScanner.Id.Value(ids[i]); err != nil {
+			break
+		}
+	}
+	return predicate.RoleOrErr(sql.FieldIn(FieldId, vcs...), err)
 }
 
 // IdNotIn applies the NotIn predicate on the Id field.
 func IdNotIn(ids ...uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldNotIn(FieldId, ids...))
+	var (
+		err error
+		vcs = make([]any, len(ids))
+	)
+	for i := range vcs {
+		if vcs[i], err = ValueScanner.Id.Value(ids[i]); err != nil {
+			break
+		}
+	}
+	return predicate.RoleOrErr(sql.FieldNotIn(FieldId, vcs...), err)
 }
 
 // IdGT applies the GT predicate on the Id field.
 func IdGT(id uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldGT(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.RoleOrErr(sql.FieldGT(FieldId, vc), err)
 }
 
 // IdGTE applies the GTE predicate on the Id field.
 func IdGTE(id uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldGTE(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.RoleOrErr(sql.FieldGTE(FieldId, vc), err)
 }
 
 // IdLT applies the LT predicate on the Id field.
 func IdLT(id uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldLT(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.RoleOrErr(sql.FieldLT(FieldId, vc), err)
 }
 
 // IdLTE applies the LTE predicate on the Id field.
 func IdLTE(id uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldLTE(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.RoleOrErr(sql.FieldLTE(FieldId, vc), err)
 }
 
 // Alias applies equality check predicate on the "alias" field. It's identical to AliasEQ.
@@ -88,12 +113,14 @@ func DateCreated(v time.Time) predicate.Role {
 
 // TenantId applies equality check predicate on the "tenant_id" field. It's identical to TenantIdEQ.
 func TenantId(v uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldEQ(FieldTenantId, v))
+	vc, err := ValueScanner.TenantId.Value(v)
+	return predicate.RoleOrErr(sql.FieldEQ(FieldTenantId, vc), err)
 }
 
 // SiteId applies equality check predicate on the "site_id" field. It's identical to SiteIdEQ.
 func SiteId(v uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldEQ(FieldSiteId, v))
+	vc, err := ValueScanner.SiteId.Value(v)
+	return predicate.RoleOrErr(sql.FieldEQ(FieldSiteId, vc), err)
 }
 
 // AliasEQ applies the EQ predicate on the "alias" field.
@@ -443,42 +470,82 @@ func DateCreatedNotNil() predicate.Role {
 
 // TenantIdEQ applies the EQ predicate on the "tenant_id" field.
 func TenantIdEQ(v uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldEQ(FieldTenantId, v))
+	vc, err := ValueScanner.TenantId.Value(v)
+	return predicate.RoleOrErr(sql.FieldEQ(FieldTenantId, vc), err)
 }
 
 // TenantIdNEQ applies the NEQ predicate on the "tenant_id" field.
 func TenantIdNEQ(v uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldNEQ(FieldTenantId, v))
+	vc, err := ValueScanner.TenantId.Value(v)
+	return predicate.RoleOrErr(sql.FieldNEQ(FieldTenantId, vc), err)
 }
 
 // TenantIdIn applies the In predicate on the "tenant_id" field.
 func TenantIdIn(vs ...uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldIn(FieldTenantId, vs...))
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.TenantId.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.RoleOrErr(sql.FieldIn(FieldTenantId, v...), err)
 }
 
 // TenantIdNotIn applies the NotIn predicate on the "tenant_id" field.
 func TenantIdNotIn(vs ...uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldNotIn(FieldTenantId, vs...))
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.TenantId.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.RoleOrErr(sql.FieldNotIn(FieldTenantId, v...), err)
 }
 
 // SiteIdEQ applies the EQ predicate on the "site_id" field.
 func SiteIdEQ(v uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldEQ(FieldSiteId, v))
+	vc, err := ValueScanner.SiteId.Value(v)
+	return predicate.RoleOrErr(sql.FieldEQ(FieldSiteId, vc), err)
 }
 
 // SiteIdNEQ applies the NEQ predicate on the "site_id" field.
 func SiteIdNEQ(v uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldNEQ(FieldSiteId, v))
+	vc, err := ValueScanner.SiteId.Value(v)
+	return predicate.RoleOrErr(sql.FieldNEQ(FieldSiteId, vc), err)
 }
 
 // SiteIdIn applies the In predicate on the "site_id" field.
 func SiteIdIn(vs ...uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldIn(FieldSiteId, vs...))
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.SiteId.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.RoleOrErr(sql.FieldIn(FieldSiteId, v...), err)
 }
 
 // SiteIdNotIn applies the NotIn predicate on the "site_id" field.
 func SiteIdNotIn(vs ...uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldNotIn(FieldSiteId, vs...))
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.SiteId.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.RoleOrErr(sql.FieldNotIn(FieldSiteId, v...), err)
 }
 
 // SiteIdIsNil applies the IsNil predicate on the "site_id" field.

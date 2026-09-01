@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/group"
 	"github.com/lesomnus/roster/internal/ent/groupmembership"
 	"github.com/lesomnus/roster/internal/ent/holder"
@@ -74,10 +74,14 @@ func (*GroupMembership) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case groupmembership.FieldId:
+			values[i] = groupmembership.ValueScanner.Id.ScanValue()
 		case groupmembership.FieldDateUpdated, groupmembership.FieldDateErased, groupmembership.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case groupmembership.FieldId, groupmembership.FieldHolderId, groupmembership.FieldGroupId:
-			values[i] = new(uuid.UUID)
+		case groupmembership.FieldHolderId:
+			values[i] = groupmembership.ValueScanner.HolderId.ScanValue()
+		case groupmembership.FieldGroupId:
+			values[i] = groupmembership.ValueScanner.GroupId.ScanValue()
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -94,10 +98,10 @@ func (_m *GroupMembership) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case groupmembership.FieldId:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				_m.Id = *value
+			if value, err := groupmembership.ValueScanner.Id.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.Id = value
 			}
 		case groupmembership.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -119,16 +123,16 @@ func (_m *GroupMembership) assignValues(columns []string, values []any) error {
 				_m.DateCreated = value.Time
 			}
 		case groupmembership.FieldHolderId:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field holder_id", values[i])
-			} else if value != nil {
-				_m.HolderId = *value
+			if value, err := groupmembership.ValueScanner.HolderId.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.HolderId = value
 			}
 		case groupmembership.FieldGroupId:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field group_id", values[i])
-			} else if value != nil {
-				_m.GroupId = *value
+			if value, err := groupmembership.ValueScanner.GroupId.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.GroupId = value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])

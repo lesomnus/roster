@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/apikey"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/protobuf-orm/ent"
@@ -71,14 +71,16 @@ func (*ApiKey) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case apikey.FieldId:
+			values[i] = apikey.ValueScanner.Id.ScanValue()
 		case apikey.FieldMethods, apikey.FieldSecret:
 			values[i] = new([]byte)
 		case apikey.FieldAlias, apikey.FieldDesc:
 			values[i] = new(sql.NullString)
 		case apikey.FieldDateUsed, apikey.FieldDateExpires, apikey.FieldDateUpdated, apikey.FieldDateErased, apikey.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case apikey.FieldId, apikey.FieldHolderId:
-			values[i] = new(uuid.UUID)
+		case apikey.FieldHolderId:
+			values[i] = apikey.ValueScanner.HolderId.ScanValue()
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -95,10 +97,10 @@ func (_m *ApiKey) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case apikey.FieldId:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				_m.Id = *value
+			if value, err := apikey.ValueScanner.Id.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.Id = value
 			}
 		case apikey.FieldAlias:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -160,10 +162,10 @@ func (_m *ApiKey) assignValues(columns []string, values []any) error {
 				_m.DateCreated = value.Time
 			}
 		case apikey.FieldHolderId:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field holder_id", values[i])
-			} else if value != nil {
-				_m.HolderId = *value
+			if value, err := apikey.ValueScanner.HolderId.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.HolderId = value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])

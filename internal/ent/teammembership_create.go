@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/lesomnus/roster/internal/ent/team"
@@ -161,7 +161,10 @@ func (_c *TeamMembershipCreate) sqlSave(ctx context.Context) (*TeamMembership, e
 	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := _c.createSpec()
+	_node, _spec, err := _c.createSpec()
+	if err != nil {
+		return nil, err
+	}
 	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
@@ -169,10 +172,17 @@ func (_c *TeamMembershipCreate) sqlSave(ctx context.Context) (*TeamMembership, e
 		return nil, err
 	}
 	if _spec.Id.Value != nil {
-		if id, ok := _spec.Id.Value.(*uuid.UUID); ok {
-			_node.Id = *id
-		} else if err := _node.Id.Scan(_spec.Id.Value); err != nil {
+		sv, ok := _spec.Id.Value.(field.ValueScanner)
+		if !ok {
+			sv = teammembership.ValueScanner.Id.ScanValue()
+			if err := sv.Scan(_spec.Id.Value); err != nil {
+				return nil, err
+			}
+		}
+		if value, err := teammembership.ValueScanner.Id.FromValue(sv); err != nil {
 			return nil, err
+		} else {
+			_node.Id = value
 		}
 	}
 	_c.mutation.id = &_node.Id
@@ -180,14 +190,18 @@ func (_c *TeamMembershipCreate) sqlSave(ctx context.Context) (*TeamMembership, e
 	return _node, nil
 }
 
-func (_c *TeamMembershipCreate) createSpec() (*TeamMembership, *sqlgraph.CreateSpec) {
+func (_c *TeamMembershipCreate) createSpec() (*TeamMembership, *sqlgraph.CreateSpec, error) {
 	var (
 		_node = &TeamMembership{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(teammembership.Table, sqlgraph.NewFieldSpec(teammembership.FieldId, field.TypeUuid))
 	)
 	if id, ok := _c.mutation.Id(); ok {
 		_node.Id = id
-		_spec.Id.Value = &id
+		vv, err := teammembership.ValueScanner.Id.Value(id)
+		if err != nil {
+			return nil, nil, err
+		}
+		_spec.Id.Value = vv
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(teammembership.FieldDateUpdated, field.TypeTime, value)
@@ -213,7 +227,11 @@ func (_c *TeamMembershipCreate) createSpec() (*TeamMembership, *sqlgraph.CreateS
 			},
 		}
 		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
+			vv, err := holder.ValueScanner.Id.Value(k)
+			if err != nil {
+				return nil, nil, err
+			}
+			edge.Target.Nodes = append(edge.Target.Nodes, vv)
 		}
 		_node.HolderId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
@@ -230,7 +248,11 @@ func (_c *TeamMembershipCreate) createSpec() (*TeamMembership, *sqlgraph.CreateS
 			},
 		}
 		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
+			vv, err := team.ValueScanner.Id.Value(k)
+			if err != nil {
+				return nil, nil, err
+			}
+			edge.Target.Nodes = append(edge.Target.Nodes, vv)
 		}
 		_node.TeamId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
@@ -247,12 +269,16 @@ func (_c *TeamMembershipCreate) createSpec() (*TeamMembership, *sqlgraph.CreateS
 			},
 		}
 		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
+			vv, err := role.ValueScanner.Id.Value(k)
+			if err != nil {
+				return nil, nil, err
+			}
+			edge.Target.Nodes = append(edge.Target.Nodes, vv)
 		}
 		_node.RoleId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	return _node, _spec
+	return _node, _spec, nil
 }
 
 // TeamMembershipCreateBulk is the builder for creating many TeamMembership entities in bulk.
@@ -283,7 +309,10 @@ func (_c *TeamMembershipCreateBulk) Save(ctx context.Context) ([]*TeamMembership
 				}
 				builder.mutation = mutation
 				var err error
-				nodes[i], specs[i] = builder.createSpec()
+				nodes[i], specs[i], err = builder.createSpec()
+				if err != nil {
+					return nil, err
+				}
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
@@ -299,6 +328,20 @@ func (_c *TeamMembershipCreateBulk) Save(ctx context.Context) ([]*TeamMembership
 					return nil, err
 				}
 				mutation.id = &nodes[i].Id
+				if specs[i].Id.Value != nil {
+					sv, ok := specs[i].Id.Value.(field.ValueScanner)
+					if !ok {
+						sv = teammembership.ValueScanner.Id.ScanValue()
+						if err := sv.Scan(specs[i].Id.Value); err != nil {
+							return nil, err
+						}
+					}
+					if id, err := teammembership.ValueScanner.Id.FromValue(sv); err != nil {
+						return nil, err
+					} else {
+						nodes[i].Id = id
+					}
+				}
 				mutation.done = true
 				return nodes[i], nil
 			})

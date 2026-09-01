@@ -4,8 +4,8 @@ package email
 
 import (
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/predicate"
 	"github.com/protobuf-orm/ent/dialect/sql"
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -13,47 +13,72 @@ import (
 
 // Id filters vertices based on their Id field.
 func Id(id uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldEQ(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.EmailOrErr(sql.FieldEQ(FieldId, vc), err)
 }
 
 // IdEQ applies the EQ predicate on the Id field.
 func IdEQ(id uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldEQ(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.EmailOrErr(sql.FieldEQ(FieldId, vc), err)
 }
 
 // IdNEQ applies the NEQ predicate on the Id field.
 func IdNEQ(id uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldNEQ(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.EmailOrErr(sql.FieldNEQ(FieldId, vc), err)
 }
 
 // IdIn applies the In predicate on the Id field.
 func IdIn(ids ...uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldIn(FieldId, ids...))
+	var (
+		err error
+		vcs = make([]any, len(ids))
+	)
+	for i := range vcs {
+		if vcs[i], err = ValueScanner.Id.Value(ids[i]); err != nil {
+			break
+		}
+	}
+	return predicate.EmailOrErr(sql.FieldIn(FieldId, vcs...), err)
 }
 
 // IdNotIn applies the NotIn predicate on the Id field.
 func IdNotIn(ids ...uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldNotIn(FieldId, ids...))
+	var (
+		err error
+		vcs = make([]any, len(ids))
+	)
+	for i := range vcs {
+		if vcs[i], err = ValueScanner.Id.Value(ids[i]); err != nil {
+			break
+		}
+	}
+	return predicate.EmailOrErr(sql.FieldNotIn(FieldId, vcs...), err)
 }
 
 // IdGT applies the GT predicate on the Id field.
 func IdGT(id uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldGT(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.EmailOrErr(sql.FieldGT(FieldId, vc), err)
 }
 
 // IdGTE applies the GTE predicate on the Id field.
 func IdGTE(id uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldGTE(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.EmailOrErr(sql.FieldGTE(FieldId, vc), err)
 }
 
 // IdLT applies the LT predicate on the Id field.
 func IdLT(id uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldLT(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.EmailOrErr(sql.FieldLT(FieldId, vc), err)
 }
 
 // IdLTE applies the LTE predicate on the Id field.
 func IdLTE(id uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldLTE(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.EmailOrErr(sql.FieldLTE(FieldId, vc), err)
 }
 
 // Address applies equality check predicate on the "address" field. It's identical to AddressEQ.
@@ -68,7 +93,8 @@ func DateVerified(v time.Time) predicate.Email {
 
 // TenantId applies equality check predicate on the "tenant_id" field. It's identical to TenantIdEQ.
 func TenantId(v uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldEQ(FieldTenantId, v))
+	vc, err := ValueScanner.TenantId.Value(v)
+	return predicate.EmailOrErr(sql.FieldEQ(FieldTenantId, vc), err)
 }
 
 // DateUpdated applies equality check predicate on the "date_updated" field. It's identical to DateUpdatedEQ.
@@ -88,12 +114,14 @@ func DateCreated(v time.Time) predicate.Email {
 
 // HolderId applies equality check predicate on the "holder_id" field. It's identical to HolderIdEQ.
 func HolderId(v uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldEQ(FieldHolderId, v))
+	vc, err := ValueScanner.HolderId.Value(v)
+	return predicate.EmailOrErr(sql.FieldEQ(FieldHolderId, vc), err)
 }
 
 // VouchedById applies equality check predicate on the "vouched_by_id" field. It's identical to VouchedByIdEQ.
 func VouchedById(v uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldEQ(FieldVouchedById, v))
+	vc, err := ValueScanner.VouchedById.Value(v)
+	return predicate.EmailOrErr(sql.FieldEQ(FieldVouchedById, vc), err)
 }
 
 // AddressEQ applies the EQ predicate on the "address" field.
@@ -213,42 +241,66 @@ func DateVerifiedNotNil() predicate.Email {
 
 // TenantIdEQ applies the EQ predicate on the "tenant_id" field.
 func TenantIdEQ(v uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldEQ(FieldTenantId, v))
+	vc, err := ValueScanner.TenantId.Value(v)
+	return predicate.EmailOrErr(sql.FieldEQ(FieldTenantId, vc), err)
 }
 
 // TenantIdNEQ applies the NEQ predicate on the "tenant_id" field.
 func TenantIdNEQ(v uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldNEQ(FieldTenantId, v))
+	vc, err := ValueScanner.TenantId.Value(v)
+	return predicate.EmailOrErr(sql.FieldNEQ(FieldTenantId, vc), err)
 }
 
 // TenantIdIn applies the In predicate on the "tenant_id" field.
 func TenantIdIn(vs ...uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldIn(FieldTenantId, vs...))
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.TenantId.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.EmailOrErr(sql.FieldIn(FieldTenantId, v...), err)
 }
 
 // TenantIdNotIn applies the NotIn predicate on the "tenant_id" field.
 func TenantIdNotIn(vs ...uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldNotIn(FieldTenantId, vs...))
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.TenantId.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.EmailOrErr(sql.FieldNotIn(FieldTenantId, v...), err)
 }
 
 // TenantIdGT applies the GT predicate on the "tenant_id" field.
 func TenantIdGT(v uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldGT(FieldTenantId, v))
+	vc, err := ValueScanner.TenantId.Value(v)
+	return predicate.EmailOrErr(sql.FieldGT(FieldTenantId, vc), err)
 }
 
 // TenantIdGTE applies the GTE predicate on the "tenant_id" field.
 func TenantIdGTE(v uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldGTE(FieldTenantId, v))
+	vc, err := ValueScanner.TenantId.Value(v)
+	return predicate.EmailOrErr(sql.FieldGTE(FieldTenantId, vc), err)
 }
 
 // TenantIdLT applies the LT predicate on the "tenant_id" field.
 func TenantIdLT(v uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldLT(FieldTenantId, v))
+	vc, err := ValueScanner.TenantId.Value(v)
+	return predicate.EmailOrErr(sql.FieldLT(FieldTenantId, vc), err)
 }
 
 // TenantIdLTE applies the LTE predicate on the "tenant_id" field.
 func TenantIdLTE(v uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldLTE(FieldTenantId, v))
+	vc, err := ValueScanner.TenantId.Value(v)
+	return predicate.EmailOrErr(sql.FieldLTE(FieldTenantId, vc), err)
 }
 
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
@@ -393,42 +445,82 @@ func DateCreatedNotNil() predicate.Email {
 
 // HolderIdEQ applies the EQ predicate on the "holder_id" field.
 func HolderIdEQ(v uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldEQ(FieldHolderId, v))
+	vc, err := ValueScanner.HolderId.Value(v)
+	return predicate.EmailOrErr(sql.FieldEQ(FieldHolderId, vc), err)
 }
 
 // HolderIdNEQ applies the NEQ predicate on the "holder_id" field.
 func HolderIdNEQ(v uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldNEQ(FieldHolderId, v))
+	vc, err := ValueScanner.HolderId.Value(v)
+	return predicate.EmailOrErr(sql.FieldNEQ(FieldHolderId, vc), err)
 }
 
 // HolderIdIn applies the In predicate on the "holder_id" field.
 func HolderIdIn(vs ...uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldIn(FieldHolderId, vs...))
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.HolderId.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.EmailOrErr(sql.FieldIn(FieldHolderId, v...), err)
 }
 
 // HolderIdNotIn applies the NotIn predicate on the "holder_id" field.
 func HolderIdNotIn(vs ...uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldNotIn(FieldHolderId, vs...))
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.HolderId.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.EmailOrErr(sql.FieldNotIn(FieldHolderId, v...), err)
 }
 
 // VouchedByIdEQ applies the EQ predicate on the "vouched_by_id" field.
 func VouchedByIdEQ(v uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldEQ(FieldVouchedById, v))
+	vc, err := ValueScanner.VouchedById.Value(v)
+	return predicate.EmailOrErr(sql.FieldEQ(FieldVouchedById, vc), err)
 }
 
 // VouchedByIdNEQ applies the NEQ predicate on the "vouched_by_id" field.
 func VouchedByIdNEQ(v uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldNEQ(FieldVouchedById, v))
+	vc, err := ValueScanner.VouchedById.Value(v)
+	return predicate.EmailOrErr(sql.FieldNEQ(FieldVouchedById, vc), err)
 }
 
 // VouchedByIdIn applies the In predicate on the "vouched_by_id" field.
 func VouchedByIdIn(vs ...uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldIn(FieldVouchedById, vs...))
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.VouchedById.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.EmailOrErr(sql.FieldIn(FieldVouchedById, v...), err)
 }
 
 // VouchedByIdNotIn applies the NotIn predicate on the "vouched_by_id" field.
 func VouchedByIdNotIn(vs ...uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldNotIn(FieldVouchedById, vs...))
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.VouchedById.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.EmailOrErr(sql.FieldNotIn(FieldVouchedById, v...), err)
 }
 
 // VouchedByIdIsNil applies the IsNil predicate on the "vouched_by_id" field.

@@ -5,9 +5,9 @@ import (
 	"crypto/rand"
 	"strings"
 
-	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
+	"uuid"
 
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/frame"
@@ -164,7 +164,7 @@ func Intent(control *ent.Client) grpc.UnaryServerInterceptor {
 				// object, which is what it is for: this trail answers *who
 				// decided*, and *what changed* is the other one, joined by the
 				// trace.
-				SetObjectId(uuid.Nil).
+				SetObjectId(uuid.Nil()).
 
 				// Empty, and required to be said. `patch` is the document a
 				// write was compiled from and `value` is the row afterwards;

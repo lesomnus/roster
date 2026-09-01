@@ -6,7 +6,6 @@ package bare
 import (
 	context "context"
 	errors "errors"
-	uuid "github.com/google/uuid"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
 	binding "github.com/lesomnus/roster/internal/ent/binding"
@@ -20,8 +19,10 @@ import (
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
+	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	uuid "uuid"
 )
 
 type RoleServiceServer struct {
@@ -97,7 +98,7 @@ func (s RoleServiceServer) Add(ctx context.Context, req *rstr.RoleAddRequest) (*
 	q := st.Db.Role.Create()
 	var k uuid.UUID
 	if req.HasId() {
-		if v, err := uuid.FromBytes(req.GetId()); err != nil {
+		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
@@ -278,7 +279,7 @@ func (s RoleServiceServer) Patch(ctx context.Context, req *rstr.RolePatchRequest
 func RoleGetKey(ctx context.Context, db *ent.Client, ref *rstr.RoleRef) (uuid.UUID, error) {
 	var z uuid.UUID
 	if ref.HasId() {
-		if v, err := uuid.FromBytes(ref.GetId()); err != nil {
+		if v, err := entuuid.FromBytes(ref.GetId()); err != nil {
 			return z, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			return v, nil
@@ -500,7 +501,7 @@ func RolePick(req *rstr.RoleRef) (predicate.Role, error) {
 func pickRole(req *rstr.RoleRef) (predicate.Role, error) {
 	switch req.WhichKey() {
 	case rstr.RoleRef_Id_case:
-		if v, err := uuid.FromBytes(req.GetId()); err != nil {
+		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			return role.IdEQ(v), nil
@@ -595,7 +596,7 @@ func (s BindingServiceServer) Add(ctx context.Context, req *rstr.BindingAddReque
 	q := st.Db.Binding.Create()
 	var k uuid.UUID
 	if req.HasId() {
-		if v, err := uuid.FromBytes(req.GetId()); err != nil {
+		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
@@ -793,7 +794,7 @@ func (s BindingServiceServer) Patch(ctx context.Context, req *rstr.BindingPatchR
 func BindingGetKey(ctx context.Context, db *ent.Client, ref *rstr.BindingRef) (uuid.UUID, error) {
 	var z uuid.UUID
 	if ref.HasId() {
-		if v, err := uuid.FromBytes(ref.GetId()); err != nil {
+		if v, err := entuuid.FromBytes(ref.GetId()); err != nil {
 			return z, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			return v, nil
@@ -1015,7 +1016,7 @@ func BindingPick(req *rstr.BindingRef) (predicate.Binding, error) {
 func pickBinding(req *rstr.BindingRef) (predicate.Binding, error) {
 	switch req.WhichKey() {
 	case rstr.BindingRef_Id_case:
-		if v, err := uuid.FromBytes(req.GetId()); err != nil {
+		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			return binding.IdEQ(v), nil

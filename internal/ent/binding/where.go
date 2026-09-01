@@ -4,8 +4,8 @@ package binding
 
 import (
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/predicate"
 	"github.com/protobuf-orm/ent/dialect/sql"
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -13,47 +13,72 @@ import (
 
 // Id filters vertices based on their Id field.
 func Id(id uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldEQ(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.BindingOrErr(sql.FieldEQ(FieldId, vc), err)
 }
 
 // IdEQ applies the EQ predicate on the Id field.
 func IdEQ(id uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldEQ(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.BindingOrErr(sql.FieldEQ(FieldId, vc), err)
 }
 
 // IdNEQ applies the NEQ predicate on the Id field.
 func IdNEQ(id uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldNEQ(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.BindingOrErr(sql.FieldNEQ(FieldId, vc), err)
 }
 
 // IdIn applies the In predicate on the Id field.
 func IdIn(ids ...uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldIn(FieldId, ids...))
+	var (
+		err error
+		vcs = make([]any, len(ids))
+	)
+	for i := range vcs {
+		if vcs[i], err = ValueScanner.Id.Value(ids[i]); err != nil {
+			break
+		}
+	}
+	return predicate.BindingOrErr(sql.FieldIn(FieldId, vcs...), err)
 }
 
 // IdNotIn applies the NotIn predicate on the Id field.
 func IdNotIn(ids ...uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldNotIn(FieldId, ids...))
+	var (
+		err error
+		vcs = make([]any, len(ids))
+	)
+	for i := range vcs {
+		if vcs[i], err = ValueScanner.Id.Value(ids[i]); err != nil {
+			break
+		}
+	}
+	return predicate.BindingOrErr(sql.FieldNotIn(FieldId, vcs...), err)
 }
 
 // IdGT applies the GT predicate on the Id field.
 func IdGT(id uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldGT(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.BindingOrErr(sql.FieldGT(FieldId, vc), err)
 }
 
 // IdGTE applies the GTE predicate on the Id field.
 func IdGTE(id uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldGTE(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.BindingOrErr(sql.FieldGTE(FieldId, vc), err)
 }
 
 // IdLT applies the LT predicate on the Id field.
 func IdLT(id uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldLT(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.BindingOrErr(sql.FieldLT(FieldId, vc), err)
 }
 
 // IdLTE applies the LTE predicate on the Id field.
 func IdLTE(id uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldLTE(FieldId, id))
+	vc, err := ValueScanner.Id.Value(id)
+	return predicate.BindingOrErr(sql.FieldLTE(FieldId, vc), err)
 }
 
 // DateUpdated applies equality check predicate on the "date_updated" field. It's identical to DateUpdatedEQ.
@@ -73,22 +98,26 @@ func DateCreated(v time.Time) predicate.Binding {
 
 // RoleId applies equality check predicate on the "role_id" field. It's identical to RoleIdEQ.
 func RoleId(v uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldEQ(FieldRoleId, v))
+	vc, err := ValueScanner.RoleId.Value(v)
+	return predicate.BindingOrErr(sql.FieldEQ(FieldRoleId, vc), err)
 }
 
 // SiteId applies equality check predicate on the "site_id" field. It's identical to SiteIdEQ.
 func SiteId(v uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldEQ(FieldSiteId, v))
+	vc, err := ValueScanner.SiteId.Value(v)
+	return predicate.BindingOrErr(sql.FieldEQ(FieldSiteId, vc), err)
 }
 
 // HolderId applies equality check predicate on the "holder_id" field. It's identical to HolderIdEQ.
 func HolderId(v uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldEQ(FieldHolderId, v))
+	vc, err := ValueScanner.HolderId.Value(v)
+	return predicate.BindingOrErr(sql.FieldEQ(FieldHolderId, vc), err)
 }
 
 // GroupId applies equality check predicate on the "group_id" field. It's identical to GroupIdEQ.
 func GroupId(v uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldEQ(FieldGroupId, v))
+	vc, err := ValueScanner.GroupId.Value(v)
+	return predicate.BindingOrErr(sql.FieldEQ(FieldGroupId, vc), err)
 }
 
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
@@ -233,42 +262,82 @@ func DateCreatedNotNil() predicate.Binding {
 
 // RoleIdEQ applies the EQ predicate on the "role_id" field.
 func RoleIdEQ(v uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldEQ(FieldRoleId, v))
+	vc, err := ValueScanner.RoleId.Value(v)
+	return predicate.BindingOrErr(sql.FieldEQ(FieldRoleId, vc), err)
 }
 
 // RoleIdNEQ applies the NEQ predicate on the "role_id" field.
 func RoleIdNEQ(v uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldNEQ(FieldRoleId, v))
+	vc, err := ValueScanner.RoleId.Value(v)
+	return predicate.BindingOrErr(sql.FieldNEQ(FieldRoleId, vc), err)
 }
 
 // RoleIdIn applies the In predicate on the "role_id" field.
 func RoleIdIn(vs ...uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldIn(FieldRoleId, vs...))
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.RoleId.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.BindingOrErr(sql.FieldIn(FieldRoleId, v...), err)
 }
 
 // RoleIdNotIn applies the NotIn predicate on the "role_id" field.
 func RoleIdNotIn(vs ...uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldNotIn(FieldRoleId, vs...))
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.RoleId.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.BindingOrErr(sql.FieldNotIn(FieldRoleId, v...), err)
 }
 
 // SiteIdEQ applies the EQ predicate on the "site_id" field.
 func SiteIdEQ(v uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldEQ(FieldSiteId, v))
+	vc, err := ValueScanner.SiteId.Value(v)
+	return predicate.BindingOrErr(sql.FieldEQ(FieldSiteId, vc), err)
 }
 
 // SiteIdNEQ applies the NEQ predicate on the "site_id" field.
 func SiteIdNEQ(v uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldNEQ(FieldSiteId, v))
+	vc, err := ValueScanner.SiteId.Value(v)
+	return predicate.BindingOrErr(sql.FieldNEQ(FieldSiteId, vc), err)
 }
 
 // SiteIdIn applies the In predicate on the "site_id" field.
 func SiteIdIn(vs ...uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldIn(FieldSiteId, vs...))
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.SiteId.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.BindingOrErr(sql.FieldIn(FieldSiteId, v...), err)
 }
 
 // SiteIdNotIn applies the NotIn predicate on the "site_id" field.
 func SiteIdNotIn(vs ...uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldNotIn(FieldSiteId, vs...))
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.SiteId.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.BindingOrErr(sql.FieldNotIn(FieldSiteId, v...), err)
 }
 
 // SiteIdIsNil applies the IsNil predicate on the "site_id" field.
@@ -283,22 +352,42 @@ func SiteIdNotNil() predicate.Binding {
 
 // HolderIdEQ applies the EQ predicate on the "holder_id" field.
 func HolderIdEQ(v uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldEQ(FieldHolderId, v))
+	vc, err := ValueScanner.HolderId.Value(v)
+	return predicate.BindingOrErr(sql.FieldEQ(FieldHolderId, vc), err)
 }
 
 // HolderIdNEQ applies the NEQ predicate on the "holder_id" field.
 func HolderIdNEQ(v uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldNEQ(FieldHolderId, v))
+	vc, err := ValueScanner.HolderId.Value(v)
+	return predicate.BindingOrErr(sql.FieldNEQ(FieldHolderId, vc), err)
 }
 
 // HolderIdIn applies the In predicate on the "holder_id" field.
 func HolderIdIn(vs ...uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldIn(FieldHolderId, vs...))
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.HolderId.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.BindingOrErr(sql.FieldIn(FieldHolderId, v...), err)
 }
 
 // HolderIdNotIn applies the NotIn predicate on the "holder_id" field.
 func HolderIdNotIn(vs ...uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldNotIn(FieldHolderId, vs...))
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.HolderId.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.BindingOrErr(sql.FieldNotIn(FieldHolderId, v...), err)
 }
 
 // HolderIdIsNil applies the IsNil predicate on the "holder_id" field.
@@ -313,22 +402,42 @@ func HolderIdNotNil() predicate.Binding {
 
 // GroupIdEQ applies the EQ predicate on the "group_id" field.
 func GroupIdEQ(v uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldEQ(FieldGroupId, v))
+	vc, err := ValueScanner.GroupId.Value(v)
+	return predicate.BindingOrErr(sql.FieldEQ(FieldGroupId, vc), err)
 }
 
 // GroupIdNEQ applies the NEQ predicate on the "group_id" field.
 func GroupIdNEQ(v uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldNEQ(FieldGroupId, v))
+	vc, err := ValueScanner.GroupId.Value(v)
+	return predicate.BindingOrErr(sql.FieldNEQ(FieldGroupId, vc), err)
 }
 
 // GroupIdIn applies the In predicate on the "group_id" field.
 func GroupIdIn(vs ...uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldIn(FieldGroupId, vs...))
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.GroupId.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.BindingOrErr(sql.FieldIn(FieldGroupId, v...), err)
 }
 
 // GroupIdNotIn applies the NotIn predicate on the "group_id" field.
 func GroupIdNotIn(vs ...uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldNotIn(FieldGroupId, vs...))
+	var (
+		err error
+		v   = make([]any, len(vs))
+	)
+	for i := range v {
+		if v[i], err = ValueScanner.GroupId.Value(vs[i]); err != nil {
+			break
+		}
+	}
+	return predicate.BindingOrErr(sql.FieldNotIn(FieldGroupId, v...), err)
 }
 
 // GroupIdIsNil applies the IsNil predicate on the "group_id" field.

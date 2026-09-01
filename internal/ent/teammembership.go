@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/lesomnus/roster/internal/ent/team"
@@ -90,10 +90,16 @@ func (*TeamMembership) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case teammembership.FieldId:
+			values[i] = teammembership.ValueScanner.Id.ScanValue()
 		case teammembership.FieldDateUpdated, teammembership.FieldDateErased, teammembership.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case teammembership.FieldId, teammembership.FieldHolderId, teammembership.FieldTeamId, teammembership.FieldRoleId:
-			values[i] = new(uuid.UUID)
+		case teammembership.FieldHolderId:
+			values[i] = teammembership.ValueScanner.HolderId.ScanValue()
+		case teammembership.FieldTeamId:
+			values[i] = teammembership.ValueScanner.TeamId.ScanValue()
+		case teammembership.FieldRoleId:
+			values[i] = teammembership.ValueScanner.RoleId.ScanValue()
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -110,10 +116,10 @@ func (_m *TeamMembership) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case teammembership.FieldId:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				_m.Id = *value
+			if value, err := teammembership.ValueScanner.Id.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.Id = value
 			}
 		case teammembership.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -135,22 +141,22 @@ func (_m *TeamMembership) assignValues(columns []string, values []any) error {
 				_m.DateCreated = value.Time
 			}
 		case teammembership.FieldHolderId:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field holder_id", values[i])
-			} else if value != nil {
-				_m.HolderId = *value
+			if value, err := teammembership.ValueScanner.HolderId.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.HolderId = value
 			}
 		case teammembership.FieldTeamId:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field team_id", values[i])
-			} else if value != nil {
-				_m.TeamId = *value
+			if value, err := teammembership.ValueScanner.TeamId.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.TeamId = value
 			}
 		case teammembership.FieldRoleId:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field role_id", values[i])
-			} else if value != nil {
-				_m.RoleId = *value
+			if value, err := teammembership.ValueScanner.RoleId.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.RoleId = value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
