@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"entgo.io/ent"
-	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/lesomnus/roster/internal/ent/site"
 	"github.com/lesomnus/roster/internal/ent/tenant"
+	"github.com/protobuf-orm/ent"
+	"github.com/protobuf-orm/ent/dialect/sql"
 )
 
 // Role is the model entity for the Role schema.
@@ -247,5 +247,5 @@ func (_m *Role) String() string {
 	return builder.String()
 }
 
-// Roles is a parsable slice of Role.
-type Roles []*Role
+// RoleList is a parsable slice of Role.
+type RoleList []*Role

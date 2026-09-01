@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"entgo.io/ent"
-	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/email"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/identity"
+	"github.com/protobuf-orm/ent"
+	"github.com/protobuf-orm/ent/dialect/sql"
 )
 
 // Email is the model entity for the Email schema.
@@ -234,5 +234,5 @@ func (_m *Email) String() string {
 	return builder.String()
 }
 
-// Emails is a parsable slice of Email.
-type Emails []*Email
+// EmailList is a parsable slice of Email.
+type EmailList []*Email

@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"entgo.io/ent"
-	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/credential"
 	"github.com/lesomnus/roster/internal/ent/holder"
+	"github.com/protobuf-orm/ent"
+	"github.com/protobuf-orm/ent/dialect/sql"
 )
 
 // Credential is the model entity for the Credential schema.
@@ -255,5 +255,5 @@ func (_m *Credential) String() string {
 	return builder.String()
 }
 
-// Credentials is a parsable slice of Credential.
-type Credentials []*Credential
+// CredentialList is a parsable slice of Credential.
+type CredentialList []*Credential

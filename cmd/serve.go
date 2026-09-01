@@ -13,10 +13,10 @@ import (
 	"sync"
 	"time"
 
-	"entgo.io/ent/dialect"
-	entsql "entgo.io/ent/dialect/sql"
 	"github.com/lesomnus/otx/log"
 	"github.com/lesomnus/xli"
+	"github.com/protobuf-orm/ent/dialect"
+	entsql "github.com/protobuf-orm/ent/dialect/sql"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 

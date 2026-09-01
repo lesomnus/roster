@@ -5,7 +5,6 @@ package bare
 
 import (
 	context "context"
-	sqlgraph "entgo.io/ent/dialect/sql/sqlgraph"
 	errors "errors"
 	uuid "github.com/google/uuid"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
@@ -16,6 +15,7 @@ import (
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	site "github.com/lesomnus/roster/internal/ent/site"
 	rstr "github.com/lesomnus/roster/rstr"
+	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
@@ -139,10 +139,10 @@ func (s GroupServiceServer) Add(ctx context.Context, req *rstr.GroupAddRequest) 
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
 			if sqlgraph.IsUniqueConstraintError(err) {
-				return nil, status.Errorf(codes.AlreadyExists, "Group already exists: %s", err.Unwrap())
+				return nil, status.Error(codes.AlreadyExists, "Group already exists")
 			}
 			if sqlgraph.IsForeignKeyConstraintError(err) {
-				return nil, status.Errorf(codes.NotFound, "Group: referenced entity not found: %s", err.Unwrap())
+				return nil, status.Error(codes.NotFound, "Group: referenced entity not found")
 			}
 		}
 		return nil, err
@@ -376,10 +376,10 @@ func (s GroupServiceServer) apply(ctx context.Context, ref *rstr.GroupRef, doc *
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
-					return nil, status.Errorf(codes.AlreadyExists, "Group already exists: %s", err.Unwrap())
+					return nil, status.Error(codes.AlreadyExists, "Group already exists")
 				}
 				if sqlgraph.IsForeignKeyConstraintError(err) {
-					return nil, status.Errorf(codes.NotFound, "Group: referenced entity not found: %s", err.Unwrap())
+					return nil, status.Error(codes.NotFound, "Group: referenced entity not found")
 				}
 			}
 			return nil, err
@@ -626,10 +626,10 @@ func (s GroupMembershipServiceServer) Add(ctx context.Context, req *rstr.GroupMe
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
 			if sqlgraph.IsUniqueConstraintError(err) {
-				return nil, status.Errorf(codes.AlreadyExists, "GroupMembership already exists: %s", err.Unwrap())
+				return nil, status.Error(codes.AlreadyExists, "GroupMembership already exists")
 			}
 			if sqlgraph.IsForeignKeyConstraintError(err) {
-				return nil, status.Errorf(codes.NotFound, "GroupMembership: referenced entity not found: %s", err.Unwrap())
+				return nil, status.Error(codes.NotFound, "GroupMembership: referenced entity not found")
 			}
 		}
 		return nil, err
@@ -855,10 +855,10 @@ func (s GroupMembershipServiceServer) apply(ctx context.Context, ref *rstr.Group
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
-					return nil, status.Errorf(codes.AlreadyExists, "GroupMembership already exists: %s", err.Unwrap())
+					return nil, status.Error(codes.AlreadyExists, "GroupMembership already exists")
 				}
 				if sqlgraph.IsForeignKeyConstraintError(err) {
-					return nil, status.Errorf(codes.NotFound, "GroupMembership: referenced entity not found: %s", err.Unwrap())
+					return nil, status.Error(codes.NotFound, "GroupMembership: referenced entity not found")
 				}
 			}
 			return nil, err

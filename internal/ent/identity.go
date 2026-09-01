@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"entgo.io/ent"
-	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/identity"
+	"github.com/protobuf-orm/ent"
+	"github.com/protobuf-orm/ent/dialect/sql"
 )
 
 // Identity is the model entity for the Identity schema.
@@ -201,5 +201,5 @@ func (_m *Identity) String() string {
 	return builder.String()
 }
 
-// Identities is a parsable slice of Identity.
-type Identities []*Identity
+// IdentityList is a parsable slice of Identity.
+type IdentityList []*Identity

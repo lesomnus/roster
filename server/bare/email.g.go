@@ -5,7 +5,6 @@ package bare
 
 import (
 	context "context"
-	sqlgraph "entgo.io/ent/dialect/sql/sqlgraph"
 	errors "errors"
 	uuid "github.com/google/uuid"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
@@ -15,6 +14,7 @@ import (
 	identity "github.com/lesomnus/roster/internal/ent/identity"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
+	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	graph "github.com/protobuf-orm/protobuf-orm/graph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
@@ -146,10 +146,10 @@ func (s EmailServiceServer) Add(ctx context.Context, req *rstr.EmailAddRequest) 
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
 			if sqlgraph.IsUniqueConstraintError(err) {
-				return nil, status.Errorf(codes.AlreadyExists, "Email already exists: %s", err.Unwrap())
+				return nil, status.Error(codes.AlreadyExists, "Email already exists")
 			}
 			if sqlgraph.IsForeignKeyConstraintError(err) {
-				return nil, status.Errorf(codes.NotFound, "Email: referenced entity not found: %s", err.Unwrap())
+				return nil, status.Error(codes.NotFound, "Email: referenced entity not found")
 			}
 		}
 		return nil, err
@@ -394,10 +394,10 @@ func (s EmailServiceServer) apply(ctx context.Context, ref *rstr.EmailRef, doc *
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
-					return nil, status.Errorf(codes.AlreadyExists, "Email already exists: %s", err.Unwrap())
+					return nil, status.Error(codes.AlreadyExists, "Email already exists")
 				}
 				if sqlgraph.IsForeignKeyConstraintError(err) {
-					return nil, status.Errorf(codes.NotFound, "Email: referenced entity not found: %s", err.Unwrap())
+					return nil, status.Error(codes.NotFound, "Email: referenced entity not found")
 				}
 			}
 			return nil, err

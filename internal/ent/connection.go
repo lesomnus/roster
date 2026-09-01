@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"entgo.io/ent"
-	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/connection"
 	"github.com/lesomnus/roster/internal/ent/tenant"
+	"github.com/protobuf-orm/ent"
+	"github.com/protobuf-orm/ent/dialect/sql"
 )
 
 // Connection is the model entity for the Connection schema.
@@ -239,5 +239,5 @@ func (_m *Connection) String() string {
 	return builder.String()
 }
 
-// Connections is a parsable slice of Connection.
-type Connections []*Connection
+// ConnectionList is a parsable slice of Connection.
+type ConnectionList []*Connection

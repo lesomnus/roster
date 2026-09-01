@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"entgo.io/ent"
-	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/delegation"
 	"github.com/lesomnus/roster/internal/ent/holder"
+	"github.com/protobuf-orm/ent"
+	"github.com/protobuf-orm/ent/dialect/sql"
 )
 
 // Delegation is the model entity for the Delegation schema.
@@ -218,5 +218,5 @@ func (_m *Delegation) String() string {
 	return builder.String()
 }
 
-// Delegations is a parsable slice of Delegation.
-type Delegations []*Delegation
+// DelegationList is a parsable slice of Delegation.
+type DelegationList []*Delegation

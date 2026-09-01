@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"entgo.io/ent/dialect"
+	"github.com/protobuf-orm/ent/dialect"
 	"slices"
 
 	"github.com/google/uuid"

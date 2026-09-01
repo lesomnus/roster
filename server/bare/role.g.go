@@ -5,7 +5,6 @@ package bare
 
 import (
 	context "context"
-	sqlgraph "entgo.io/ent/dialect/sql/sqlgraph"
 	errors "errors"
 	uuid "github.com/google/uuid"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
@@ -17,6 +16,7 @@ import (
 	role "github.com/lesomnus/roster/internal/ent/role"
 	site "github.com/lesomnus/roster/internal/ent/site"
 	rstr "github.com/lesomnus/roster/rstr"
+	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
@@ -143,10 +143,10 @@ func (s RoleServiceServer) Add(ctx context.Context, req *rstr.RoleAddRequest) (*
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
 			if sqlgraph.IsUniqueConstraintError(err) {
-				return nil, status.Errorf(codes.AlreadyExists, "Role already exists: %s", err.Unwrap())
+				return nil, status.Error(codes.AlreadyExists, "Role already exists")
 			}
 			if sqlgraph.IsForeignKeyConstraintError(err) {
-				return nil, status.Errorf(codes.NotFound, "Role: referenced entity not found: %s", err.Unwrap())
+				return nil, status.Error(codes.NotFound, "Role: referenced entity not found")
 			}
 		}
 		return nil, err
@@ -383,10 +383,10 @@ func (s RoleServiceServer) apply(ctx context.Context, ref *rstr.RoleRef, doc *pa
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
-					return nil, status.Errorf(codes.AlreadyExists, "Role already exists: %s", err.Unwrap())
+					return nil, status.Error(codes.AlreadyExists, "Role already exists")
 				}
 				if sqlgraph.IsForeignKeyConstraintError(err) {
-					return nil, status.Errorf(codes.NotFound, "Role: referenced entity not found: %s", err.Unwrap())
+					return nil, status.Error(codes.NotFound, "Role: referenced entity not found")
 				}
 			}
 			return nil, err
@@ -655,10 +655,10 @@ func (s BindingServiceServer) Add(ctx context.Context, req *rstr.BindingAddReque
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
 			if sqlgraph.IsUniqueConstraintError(err) {
-				return nil, status.Errorf(codes.AlreadyExists, "Binding already exists: %s", err.Unwrap())
+				return nil, status.Error(codes.AlreadyExists, "Binding already exists")
 			}
 			if sqlgraph.IsForeignKeyConstraintError(err) {
-				return nil, status.Errorf(codes.NotFound, "Binding: referenced entity not found: %s", err.Unwrap())
+				return nil, status.Error(codes.NotFound, "Binding: referenced entity not found")
 			}
 		}
 		return nil, err
@@ -898,10 +898,10 @@ func (s BindingServiceServer) apply(ctx context.Context, ref *rstr.BindingRef, d
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
-					return nil, status.Errorf(codes.AlreadyExists, "Binding already exists: %s", err.Unwrap())
+					return nil, status.Error(codes.AlreadyExists, "Binding already exists")
 				}
 				if sqlgraph.IsForeignKeyConstraintError(err) {
-					return nil, status.Errorf(codes.NotFound, "Binding: referenced entity not found: %s", err.Unwrap())
+					return nil, status.Error(codes.NotFound, "Binding: referenced entity not found")
 				}
 			}
 			return nil, err

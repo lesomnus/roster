@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"entgo.io/ent"
-	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/apikey"
 	"github.com/lesomnus/roster/internal/ent/holder"
+	"github.com/protobuf-orm/ent"
+	"github.com/protobuf-orm/ent/dialect/sql"
 )
 
 // ApiKey is the model entity for the ApiKey schema.
@@ -245,5 +245,5 @@ func (_m *ApiKey) String() string {
 	return builder.String()
 }
 
-// ApiKeys is a parsable slice of ApiKey.
-type ApiKeys []*ApiKey
+// ApiKeyList is a parsable slice of ApiKey.
+type ApiKeyList []*ApiKey

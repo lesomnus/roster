@@ -12,10 +12,6 @@ import (
 	uuid "github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/migrate"
 
-	"entgo.io/ent"
-	"entgo.io/ent/dialect"
-	"entgo.io/ent/dialect/sql"
-	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/lesomnus/roster/internal/ent/apikey"
 	"github.com/lesomnus/roster/internal/ent/audit"
 	"github.com/lesomnus/roster/internal/ent/binding"
@@ -39,6 +35,10 @@ import (
 	"github.com/lesomnus/roster/internal/ent/team"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
 	"github.com/lesomnus/roster/internal/ent/tenant"
+	"github.com/protobuf-orm/ent"
+	"github.com/protobuf-orm/ent/dialect"
+	"github.com/protobuf-orm/ent/dialect/sql"
+	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 )
 
 // Client is the client that holds all ent builders.
@@ -469,7 +469,7 @@ func (c *ApiKeyClient) DeleteOne(_m *ApiKey) *ApiKeyDeleteOne {
 func (c *ApiKeyClient) DeleteOneID(id uuid.UUID) *ApiKeyDeleteOne {
 	builder := c.Delete().Where(apikey.ID(id))
 	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
+	builder.mutation.SetOp(OpDeleteOne)
 	return &ApiKeyDeleteOne{builder}
 }
 
@@ -618,7 +618,7 @@ func (c *AuditClient) DeleteOne(_m *Audit) *AuditDeleteOne {
 func (c *AuditClient) DeleteOneID(id uuid.UUID) *AuditDeleteOne {
 	builder := c.Delete().Where(audit.ID(id))
 	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
+	builder.mutation.SetOp(OpDeleteOne)
 	return &AuditDeleteOne{builder}
 }
 
@@ -751,7 +751,7 @@ func (c *BindingClient) DeleteOne(_m *Binding) *BindingDeleteOne {
 func (c *BindingClient) DeleteOneID(id uuid.UUID) *BindingDeleteOne {
 	builder := c.Delete().Where(binding.ID(id))
 	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
+	builder.mutation.SetOp(OpDeleteOne)
 	return &BindingDeleteOne{builder}
 }
 
@@ -948,7 +948,7 @@ func (c *ConnectionClient) DeleteOne(_m *Connection) *ConnectionDeleteOne {
 func (c *ConnectionClient) DeleteOneID(id uuid.UUID) *ConnectionDeleteOne {
 	builder := c.Delete().Where(connection.ID(id))
 	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
+	builder.mutation.SetOp(OpDeleteOne)
 	return &ConnectionDeleteOne{builder}
 }
 
@@ -1097,7 +1097,7 @@ func (c *ContinuationClient) DeleteOne(_m *Continuation) *ContinuationDeleteOne 
 func (c *ContinuationClient) DeleteOneID(id uuid.UUID) *ContinuationDeleteOne {
 	builder := c.Delete().Where(continuation.ID(id))
 	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
+	builder.mutation.SetOp(OpDeleteOne)
 	return &ContinuationDeleteOne{builder}
 }
 
@@ -1246,7 +1246,7 @@ func (c *CredentialClient) DeleteOne(_m *Credential) *CredentialDeleteOne {
 func (c *CredentialClient) DeleteOneID(id uuid.UUID) *CredentialDeleteOne {
 	builder := c.Delete().Where(credential.ID(id))
 	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
+	builder.mutation.SetOp(OpDeleteOne)
 	return &CredentialDeleteOne{builder}
 }
 
@@ -1395,7 +1395,7 @@ func (c *DelegationClient) DeleteOne(_m *Delegation) *DelegationDeleteOne {
 func (c *DelegationClient) DeleteOneID(id uuid.UUID) *DelegationDeleteOne {
 	builder := c.Delete().Where(delegation.ID(id))
 	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
+	builder.mutation.SetOp(OpDeleteOne)
 	return &DelegationDeleteOne{builder}
 }
 
@@ -1544,7 +1544,7 @@ func (c *EmailClient) DeleteOne(_m *Email) *EmailDeleteOne {
 func (c *EmailClient) DeleteOneID(id uuid.UUID) *EmailDeleteOne {
 	builder := c.Delete().Where(email.ID(id))
 	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
+	builder.mutation.SetOp(OpDeleteOne)
 	return &EmailDeleteOne{builder}
 }
 
@@ -1709,7 +1709,7 @@ func (c *GroupClient) DeleteOne(_m *Group) *GroupDeleteOne {
 func (c *GroupClient) DeleteOneID(id uuid.UUID) *GroupDeleteOne {
 	builder := c.Delete().Where(group.ID(id))
 	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
+	builder.mutation.SetOp(OpDeleteOne)
 	return &GroupDeleteOne{builder}
 }
 
@@ -1874,7 +1874,7 @@ func (c *GroupMembershipClient) DeleteOne(_m *GroupMembership) *GroupMembershipD
 func (c *GroupMembershipClient) DeleteOneID(id uuid.UUID) *GroupMembershipDeleteOne {
 	builder := c.Delete().Where(groupmembership.ID(id))
 	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
+	builder.mutation.SetOp(OpDeleteOne)
 	return &GroupMembershipDeleteOne{builder}
 }
 
@@ -2039,7 +2039,7 @@ func (c *HolderClient) DeleteOne(_m *Holder) *HolderDeleteOne {
 func (c *HolderClient) DeleteOneID(id uuid.UUID) *HolderDeleteOne {
 	builder := c.Delete().Where(holder.ID(id))
 	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
+	builder.mutation.SetOp(OpDeleteOne)
 	return &HolderDeleteOne{builder}
 }
 
@@ -2188,7 +2188,7 @@ func (c *HostClient) DeleteOne(_m *Host) *HostDeleteOne {
 func (c *HostClient) DeleteOneID(id uuid.UUID) *HostDeleteOne {
 	builder := c.Delete().Where(host.ID(id))
 	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
+	builder.mutation.SetOp(OpDeleteOne)
 	return &HostDeleteOne{builder}
 }
 
@@ -2337,7 +2337,7 @@ func (c *IdentityClient) DeleteOne(_m *Identity) *IdentityDeleteOne {
 func (c *IdentityClient) DeleteOneID(id uuid.UUID) *IdentityDeleteOne {
 	builder := c.Delete().Where(identity.ID(id))
 	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
+	builder.mutation.SetOp(OpDeleteOne)
 	return &IdentityDeleteOne{builder}
 }
 
@@ -2486,7 +2486,7 @@ func (c *LinkClient) DeleteOne(_m *Link) *LinkDeleteOne {
 func (c *LinkClient) DeleteOneID(id uuid.UUID) *LinkDeleteOne {
 	builder := c.Delete().Where(link.ID(id))
 	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
+	builder.mutation.SetOp(OpDeleteOne)
 	return &LinkDeleteOne{builder}
 }
 
@@ -2635,7 +2635,7 @@ func (c *MailDomainClient) DeleteOne(_m *MailDomain) *MailDomainDeleteOne {
 func (c *MailDomainClient) DeleteOneID(id uuid.UUID) *MailDomainDeleteOne {
 	builder := c.Delete().Where(maildomain.ID(id))
 	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
+	builder.mutation.SetOp(OpDeleteOne)
 	return &MailDomainDeleteOne{builder}
 }
 
@@ -2784,7 +2784,7 @@ func (c *OutboxClient) DeleteOne(_m *Outbox) *OutboxDeleteOne {
 func (c *OutboxClient) DeleteOneID(id uuid.UUID) *OutboxDeleteOne {
 	builder := c.Delete().Where(outbox.ID(id))
 	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
+	builder.mutation.SetOp(OpDeleteOne)
 	return &OutboxDeleteOne{builder}
 }
 
@@ -2917,7 +2917,7 @@ func (c *RoleClient) DeleteOne(_m *Role) *RoleDeleteOne {
 func (c *RoleClient) DeleteOneID(id uuid.UUID) *RoleDeleteOne {
 	builder := c.Delete().Where(role.ID(id))
 	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
+	builder.mutation.SetOp(OpDeleteOne)
 	return &RoleDeleteOne{builder}
 }
 
@@ -3082,7 +3082,7 @@ func (c *SessionClient) DeleteOne(_m *Session) *SessionDeleteOne {
 func (c *SessionClient) DeleteOneID(id uuid.UUID) *SessionDeleteOne {
 	builder := c.Delete().Where(session.ID(id))
 	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
+	builder.mutation.SetOp(OpDeleteOne)
 	return &SessionDeleteOne{builder}
 }
 
@@ -3231,7 +3231,7 @@ func (c *SiteClient) DeleteOne(_m *Site) *SiteDeleteOne {
 func (c *SiteClient) DeleteOneID(id uuid.UUID) *SiteDeleteOne {
 	builder := c.Delete().Where(site.ID(id))
 	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
+	builder.mutation.SetOp(OpDeleteOne)
 	return &SiteDeleteOne{builder}
 }
 
@@ -3380,7 +3380,7 @@ func (c *SiteMembershipClient) DeleteOne(_m *SiteMembership) *SiteMembershipDele
 func (c *SiteMembershipClient) DeleteOneID(id uuid.UUID) *SiteMembershipDeleteOne {
 	builder := c.Delete().Where(sitemembership.ID(id))
 	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
+	builder.mutation.SetOp(OpDeleteOne)
 	return &SiteMembershipDeleteOne{builder}
 }
 
@@ -3545,7 +3545,7 @@ func (c *TeamClient) DeleteOne(_m *Team) *TeamDeleteOne {
 func (c *TeamClient) DeleteOneID(id uuid.UUID) *TeamDeleteOne {
 	builder := c.Delete().Where(team.ID(id))
 	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
+	builder.mutation.SetOp(OpDeleteOne)
 	return &TeamDeleteOne{builder}
 }
 
@@ -3710,7 +3710,7 @@ func (c *TeamMembershipClient) DeleteOne(_m *TeamMembership) *TeamMembershipDele
 func (c *TeamMembershipClient) DeleteOneID(id uuid.UUID) *TeamMembershipDeleteOne {
 	builder := c.Delete().Where(teammembership.ID(id))
 	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
+	builder.mutation.SetOp(OpDeleteOne)
 	return &TeamMembershipDeleteOne{builder}
 }
 
@@ -3891,7 +3891,7 @@ func (c *TenantClient) DeleteOne(_m *Tenant) *TenantDeleteOne {
 func (c *TenantClient) DeleteOneID(id uuid.UUID) *TenantDeleteOne {
 	builder := c.Delete().Where(tenant.ID(id))
 	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
+	builder.mutation.SetOp(OpDeleteOne)
 	return &TenantDeleteOne{builder}
 }
 

@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"entgo.io/ent"
-	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/session"
+	"github.com/protobuf-orm/ent"
+	"github.com/protobuf-orm/ent/dialect/sql"
 )
 
 // Session is the model entity for the Session schema.
@@ -218,5 +218,5 @@ func (_m *Session) String() string {
 	return builder.String()
 }
 
-// Sessions is a parsable slice of Session.
-type Sessions []*Session
+// SessionList is a parsable slice of Session.
+type SessionList []*Session

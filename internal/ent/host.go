@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"entgo.io/ent"
-	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/host"
 	"github.com/lesomnus/roster/internal/ent/tenant"
+	"github.com/protobuf-orm/ent"
+	"github.com/protobuf-orm/ent/dialect/sql"
 )
 
 // Host is the model entity for the Host schema.
@@ -190,5 +190,5 @@ func (_m *Host) String() string {
 	return builder.String()
 }
 
-// Hosts is a parsable slice of Host.
-type Hosts []*Host
+// HostList is a parsable slice of Host.
+type HostList []*Host

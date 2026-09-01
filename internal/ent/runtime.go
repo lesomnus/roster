@@ -8,7 +8,7 @@ import (
 	"github.com/lesomnus/roster/rstr"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	"entgo.io/ent/schema/field"
+	"github.com/protobuf-orm/ent/schema/field"
 )
 
 // The init function reads all schema descriptors with runtime code

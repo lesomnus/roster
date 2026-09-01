@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"entgo.io/ent"
-	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/group"
 	"github.com/lesomnus/roster/internal/ent/site"
 	"github.com/lesomnus/roster/internal/ent/tenant"
+	"github.com/protobuf-orm/ent"
+	"github.com/protobuf-orm/ent/dialect/sql"
 )
 
 // Group is the model entity for the Group schema.
@@ -231,5 +231,5 @@ func (_m *Group) String() string {
 	return builder.String()
 }
 
-// Groups is a parsable slice of Group.
-type Groups []*Group
+// GroupList is a parsable slice of Group.
+type GroupList []*Group

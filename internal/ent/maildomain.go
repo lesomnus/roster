@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"entgo.io/ent"
-	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/maildomain"
 	"github.com/lesomnus/roster/internal/ent/tenant"
+	"github.com/protobuf-orm/ent"
+	"github.com/protobuf-orm/ent/dialect/sql"
 )
 
 // MailDomain is the model entity for the MailDomain schema.
@@ -201,5 +201,5 @@ func (_m *MailDomain) String() string {
 	return builder.String()
 }
 
-// MailDomains is a parsable slice of MailDomain.
-type MailDomains []*MailDomain
+// MailDomainList is a parsable slice of MailDomain.
+type MailDomainList []*MailDomain

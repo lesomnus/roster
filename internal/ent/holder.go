@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"entgo.io/ent"
-	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/tenant"
 	"github.com/lesomnus/roster/rstr"
+	"github.com/protobuf-orm/ent"
+	"github.com/protobuf-orm/ent/dialect/sql"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
@@ -287,5 +287,5 @@ func (_m *Holder) String() string {
 	return builder.String()
 }
 
-// Holders is a parsable slice of Holder.
-type Holders []*Holder
+// HolderList is a parsable slice of Holder.
+type HolderList []*Holder

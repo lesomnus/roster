@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	entsql "entgo.io/ent/dialect/sql"
+	entsql "github.com/protobuf-orm/ent/dialect/sql"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"

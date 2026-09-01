@@ -3,7 +3,7 @@ package core
 import (
 	"context"
 
-	"entgo.io/ent/dialect"
+	"github.com/protobuf-orm/ent/dialect"
 	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 
 	"github.com/lesomnus/payday/pdid"

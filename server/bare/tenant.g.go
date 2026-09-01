@@ -5,7 +5,6 @@ package bare
 
 import (
 	context "context"
-	sqlgraph "entgo.io/ent/dialect/sql/sqlgraph"
 	errors "errors"
 	uuid "github.com/google/uuid"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
@@ -13,6 +12,7 @@ import (
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	tenant "github.com/lesomnus/roster/internal/ent/tenant"
 	rstr "github.com/lesomnus/roster/rstr"
+	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
@@ -116,10 +116,10 @@ func (s TenantServiceServer) Add(ctx context.Context, req *rstr.TenantAddRequest
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
 			if sqlgraph.IsUniqueConstraintError(err) {
-				return nil, status.Errorf(codes.AlreadyExists, "Tenant already exists: %s", err.Unwrap())
+				return nil, status.Error(codes.AlreadyExists, "Tenant already exists")
 			}
 			if sqlgraph.IsForeignKeyConstraintError(err) {
-				return nil, status.Errorf(codes.NotFound, "Tenant: referenced entity not found: %s", err.Unwrap())
+				return nil, status.Error(codes.NotFound, "Tenant: referenced entity not found")
 			}
 		}
 		return nil, err
@@ -336,10 +336,10 @@ func (s TenantServiceServer) apply(ctx context.Context, ref *rstr.TenantRef, doc
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
-					return nil, status.Errorf(codes.AlreadyExists, "Tenant already exists: %s", err.Unwrap())
+					return nil, status.Error(codes.AlreadyExists, "Tenant already exists")
 				}
 				if sqlgraph.IsForeignKeyConstraintError(err) {
-					return nil, status.Errorf(codes.NotFound, "Tenant: referenced entity not found: %s", err.Unwrap())
+					return nil, status.Error(codes.NotFound, "Tenant: referenced entity not found")
 				}
 			}
 			return nil, err

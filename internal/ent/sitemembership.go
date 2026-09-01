@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"entgo.io/ent"
-	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/site"
 	"github.com/lesomnus/roster/internal/ent/sitemembership"
+	"github.com/protobuf-orm/ent"
+	"github.com/protobuf-orm/ent/dialect/sql"
 )
 
 // SiteMembership is the model entity for the SiteMembership schema.
@@ -196,5 +196,5 @@ func (_m *SiteMembership) String() string {
 	return builder.String()
 }
 
-// SiteMemberships is a parsable slice of SiteMembership.
-type SiteMemberships []*SiteMembership
+// SiteMembershipList is a parsable slice of SiteMembership.
+type SiteMembershipList []*SiteMembership

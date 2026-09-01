@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"entgo.io/ent"
-	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/lesomnus/roster/internal/ent/team"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
+	"github.com/protobuf-orm/ent"
+	"github.com/protobuf-orm/ent/dialect/sql"
 )
 
 // TeamMembership is the model entity for the TeamMembership schema.
@@ -226,5 +226,5 @@ func (_m *TeamMembership) String() string {
 	return builder.String()
 }
 
-// TeamMemberships is a parsable slice of TeamMembership.
-type TeamMemberships []*TeamMembership
+// TeamMembershipList is a parsable slice of TeamMembership.
+type TeamMembershipList []*TeamMembership

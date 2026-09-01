@@ -7,14 +7,14 @@ import (
 	"strings"
 	"time"
 
-	"entgo.io/ent"
-	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/binding"
 	"github.com/lesomnus/roster/internal/ent/group"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/lesomnus/roster/internal/ent/site"
+	"github.com/protobuf-orm/ent"
+	"github.com/protobuf-orm/ent/dialect/sql"
 )
 
 // Binding is the model entity for the Binding schema.
@@ -256,5 +256,5 @@ func (_m *Binding) String() string {
 	return builder.String()
 }
 
-// Bindings is a parsable slice of Binding.
-type Bindings []*Binding
+// BindingList is a parsable slice of Binding.
+type BindingList []*Binding

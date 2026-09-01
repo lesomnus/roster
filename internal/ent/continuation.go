@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"entgo.io/ent"
-	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/continuation"
 	"github.com/lesomnus/roster/internal/ent/holder"
+	"github.com/protobuf-orm/ent"
+	"github.com/protobuf-orm/ent/dialect/sql"
 )
 
 // Continuation is the model entity for the Continuation schema.
@@ -234,5 +234,5 @@ func (_m *Continuation) String() string {
 	return builder.String()
 }
 
-// Continuations is a parsable slice of Continuation.
-type Continuations []*Continuation
+// ContinuationList is a parsable slice of Continuation.
+type ContinuationList []*Continuation

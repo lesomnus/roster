@@ -5,7 +5,6 @@ package bare
 
 import (
 	context "context"
-	sqlgraph "entgo.io/ent/dialect/sql/sqlgraph"
 	errors "errors"
 	uuid "github.com/google/uuid"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
@@ -14,6 +13,7 @@ import (
 	maildomain "github.com/lesomnus/roster/internal/ent/maildomain"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
+	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
@@ -126,10 +126,10 @@ func (s HostServiceServer) Add(ctx context.Context, req *rstr.HostAddRequest) (*
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
 			if sqlgraph.IsUniqueConstraintError(err) {
-				return nil, status.Errorf(codes.AlreadyExists, "Host already exists: %s", err.Unwrap())
+				return nil, status.Error(codes.AlreadyExists, "Host already exists")
 			}
 			if sqlgraph.IsForeignKeyConstraintError(err) {
-				return nil, status.Errorf(codes.NotFound, "Host: referenced entity not found: %s", err.Unwrap())
+				return nil, status.Error(codes.NotFound, "Host: referenced entity not found")
 			}
 		}
 		return nil, err
@@ -353,10 +353,10 @@ func (s HostServiceServer) apply(ctx context.Context, ref *rstr.HostRef, doc *pa
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
-					return nil, status.Errorf(codes.AlreadyExists, "Host already exists: %s", err.Unwrap())
+					return nil, status.Error(codes.AlreadyExists, "Host already exists")
 				}
 				if sqlgraph.IsForeignKeyConstraintError(err) {
-					return nil, status.Errorf(codes.NotFound, "Host: referenced entity not found: %s", err.Unwrap())
+					return nil, status.Error(codes.NotFound, "Host: referenced entity not found")
 				}
 			}
 			return nil, err
@@ -590,10 +590,10 @@ func (s MailDomainServiceServer) Add(ctx context.Context, req *rstr.MailDomainAd
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
 			if sqlgraph.IsUniqueConstraintError(err) {
-				return nil, status.Errorf(codes.AlreadyExists, "MailDomain already exists: %s", err.Unwrap())
+				return nil, status.Error(codes.AlreadyExists, "MailDomain already exists")
 			}
 			if sqlgraph.IsForeignKeyConstraintError(err) {
-				return nil, status.Errorf(codes.NotFound, "MailDomain: referenced entity not found: %s", err.Unwrap())
+				return nil, status.Error(codes.NotFound, "MailDomain: referenced entity not found")
 			}
 		}
 		return nil, err
@@ -820,10 +820,10 @@ func (s MailDomainServiceServer) apply(ctx context.Context, ref *rstr.MailDomain
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
-					return nil, status.Errorf(codes.AlreadyExists, "MailDomain already exists: %s", err.Unwrap())
+					return nil, status.Error(codes.AlreadyExists, "MailDomain already exists")
 				}
 				if sqlgraph.IsForeignKeyConstraintError(err) {
-					return nil, status.Errorf(codes.NotFound, "MailDomain: referenced entity not found: %s", err.Unwrap())
+					return nil, status.Error(codes.NotFound, "MailDomain: referenced entity not found")
 				}
 			}
 			return nil, err

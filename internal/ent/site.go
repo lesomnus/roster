@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"entgo.io/ent"
-	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/site"
 	"github.com/lesomnus/roster/internal/ent/tenant"
+	"github.com/protobuf-orm/ent"
+	"github.com/protobuf-orm/ent/dialect/sql"
 )
 
 // Site is the model entity for the Site schema.
@@ -217,5 +217,5 @@ func (_m *Site) String() string {
 	return builder.String()
 }
 
-// Sites is a parsable slice of Site.
-type Sites []*Site
+// SiteList is a parsable slice of Site.
+type SiteList []*Site

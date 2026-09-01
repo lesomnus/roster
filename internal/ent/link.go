@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"entgo.io/ent"
-	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/link"
+	"github.com/protobuf-orm/ent"
+	"github.com/protobuf-orm/ent/dialect/sql"
 )
 
 // Link is the model entity for the Link schema.
@@ -204,5 +204,5 @@ func (_m *Link) String() string {
 	return builder.String()
 }
 
-// Links is a parsable slice of Link.
-type Links []*Link
+// LinkList is a parsable slice of Link.
+type LinkList []*Link

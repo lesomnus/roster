@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"time"
 
-	"entgo.io/ent/dialect/sql"
-	"entgo.io/ent/dialect/sql/sqlgraph"
-	"entgo.io/ent/schema/field"
 	"github.com/lesomnus/roster/internal/ent/predicate"
 	"github.com/lesomnus/roster/internal/ent/sitemembership"
+	"github.com/protobuf-orm/ent/dialect/sql"
+	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
+	"github.com/protobuf-orm/ent/schema/field"
 )
 
 // SiteMembershipUpdate is the builder for updating SiteMembership entities.
@@ -117,7 +117,7 @@ func (_u *SiteMembershipUpdate) sqlSave(ctx context.Context) (_node int, err err
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(sitemembership.Table, sitemembership.Columns, sqlgraph.NewFieldSpec(sitemembership.FieldID, field.TypeUUID))
-	if ps := _u.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.Predicates(); len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -276,7 +276,7 @@ func (_u *SiteMembershipUpdateOne) sqlSave(ctx context.Context) (_node *SiteMemb
 			}
 		}
 	}
-	if ps := _u.mutation.predicates; len(ps) > 0 {
+	if ps := _u.mutation.Predicates(); len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)

@@ -5,7 +5,6 @@ package bare
 
 import (
 	context "context"
-	sqlgraph "entgo.io/ent/dialect/sql/sqlgraph"
 	errors "errors"
 	uuid "github.com/google/uuid"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
@@ -14,6 +13,7 @@ import (
 	holder "github.com/lesomnus/roster/internal/ent/holder"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
+	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
@@ -132,10 +132,10 @@ func (s DelegationServiceServer) Add(ctx context.Context, req *rstr.DelegationAd
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
 			if sqlgraph.IsUniqueConstraintError(err) {
-				return nil, status.Errorf(codes.AlreadyExists, "Delegation already exists: %s", err.Unwrap())
+				return nil, status.Error(codes.AlreadyExists, "Delegation already exists")
 			}
 			if sqlgraph.IsForeignKeyConstraintError(err) {
-				return nil, status.Errorf(codes.NotFound, "Delegation: referenced entity not found: %s", err.Unwrap())
+				return nil, status.Error(codes.NotFound, "Delegation: referenced entity not found")
 			}
 		}
 		return nil, err
@@ -366,10 +366,10 @@ func (s DelegationServiceServer) apply(ctx context.Context, ref *rstr.Delegation
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
-					return nil, status.Errorf(codes.AlreadyExists, "Delegation already exists: %s", err.Unwrap())
+					return nil, status.Error(codes.AlreadyExists, "Delegation already exists")
 				}
 				if sqlgraph.IsForeignKeyConstraintError(err) {
-					return nil, status.Errorf(codes.NotFound, "Delegation: referenced entity not found: %s", err.Unwrap())
+					return nil, status.Error(codes.NotFound, "Delegation: referenced entity not found")
 				}
 			}
 			return nil, err
