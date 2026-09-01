@@ -7,7 +7,6 @@ import (
 	uuid "github.com/google/uuid"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent "github.com/protobuf-orm/ent"
-	dialect "github.com/protobuf-orm/ent/dialect"
 	entsql "github.com/protobuf-orm/ent/dialect/entsql"
 	schema "github.com/protobuf-orm/ent/schema"
 	edge "github.com/protobuf-orm/ent/schema/edge"
@@ -41,9 +40,9 @@ func (Holder) Fields() []ent.Field {
 		field.String("idp_subject").
 			Nillable().
 			Optional(),
-		field.String("profile").GoType(&rstr.Profile{}).ValueScanner(entpb.ValueScanner[*rstr.Profile]{}).SchemaType(map[string]string{dialect.Postgres: "jsonb", dialect.MySQL: "json"}).
+		field.JSON("profile", &rstr.Profile{}).ValueScanner(entpb.ValueScanner[*rstr.Profile]{}).
 			Optional(),
-		field.String("data").GoType(&anypb.Any{}).ValueScanner(entpb.ValueScanner[*anypb.Any]{}).SchemaType(map[string]string{dialect.Postgres: "jsonb", dialect.MySQL: "json"}).
+		field.JSON("data", &anypb.Any{}).ValueScanner(entpb.ValueScanner[*anypb.Any]{}).
 			Optional(),
 		field.Time("date_invalidated").
 			Nillable().

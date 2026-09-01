@@ -280,7 +280,10 @@ func (_c *HolderCreate) createSpec() (*Holder, *sqlgraph.CreateSpec, error) {
 		if err != nil {
 			return nil, nil, err
 		}
-		_spec.SetField(holder.FieldProfile, field.TypeString, vv)
+		if vv, err = field.JSONValue(vv); err != nil {
+			return nil, nil, err
+		}
+		_spec.SetField(holder.FieldProfile, field.TypeJSON, vv)
 		_node.Profile = value
 	}
 	if value, ok := _c.mutation.Data(); ok {
@@ -288,7 +291,10 @@ func (_c *HolderCreate) createSpec() (*Holder, *sqlgraph.CreateSpec, error) {
 		if err != nil {
 			return nil, nil, err
 		}
-		_spec.SetField(holder.FieldData, field.TypeString, vv)
+		if vv, err = field.JSONValue(vv); err != nil {
+			return nil, nil, err
+		}
+		_spec.SetField(holder.FieldData, field.TypeJSON, vv)
 		_node.Data = value
 	}
 	if value, ok := _c.mutation.DateInvalidated(); ok {

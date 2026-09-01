@@ -133,16 +133,6 @@ func ByIdpSubject(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldIdpSubject, opts...).ToFunc()
 }
 
-// ByProfile orders the results by the profile field.
-func ByProfile(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldProfile, opts...).ToFunc()
-}
-
-// ByData orders the results by the data field.
-func ByData(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldData, opts...).ToFunc()
-}
-
 // ByDateInvalidated orders the results by the date_invalidated field.
 func ByDateInvalidated(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDateInvalidated, opts...).ToFunc()

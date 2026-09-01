@@ -3,15 +3,12 @@
 package holder
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/lesomnus/roster/internal/ent/predicate"
-	"github.com/lesomnus/roster/rstr"
 	"github.com/protobuf-orm/ent/dialect/sql"
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // ID filters vertices based on their ID field.
@@ -92,18 +89,6 @@ func DateCreated(v time.Time) predicate.Holder {
 // IdpSubject applies equality check predicate on the "idp_subject" field. It's identical to IdpSubjectEQ.
 func IdpSubject(v string) predicate.Holder {
 	return predicate.Holder(sql.FieldEQ(FieldIdpSubject, v))
-}
-
-// Profile applies equality check predicate on the "profile" field. It's identical to ProfileEQ.
-func Profile(v *rstr.Profile) predicate.Holder {
-	vc, err := ValueScanner.Profile.Value(v)
-	return predicate.HolderOrErr(sql.FieldEQ(FieldProfile, vc), err)
-}
-
-// Data applies equality check predicate on the "data" field. It's identical to DataEQ.
-func Data(v *anypb.Any) predicate.Holder {
-	vc, err := ValueScanner.Data.Value(v)
-	return predicate.HolderOrErr(sql.FieldEQ(FieldData, vc), err)
 }
 
 // DateInvalidated applies equality check predicate on the "date_invalidated" field. It's identical to DateInvalidatedEQ.
@@ -541,100 +526,6 @@ func IdpSubjectContainsFold(v string) predicate.Holder {
 	return predicate.Holder(sql.FieldContainsFold(FieldIdpSubject, v))
 }
 
-// ProfileEQ applies the EQ predicate on the "profile" field.
-func ProfileEQ(v *rstr.Profile) predicate.Holder {
-	vc, err := ValueScanner.Profile.Value(v)
-	return predicate.HolderOrErr(sql.FieldEQ(FieldProfile, vc), err)
-}
-
-// ProfileNEQ applies the NEQ predicate on the "profile" field.
-func ProfileNEQ(v *rstr.Profile) predicate.Holder {
-	vc, err := ValueScanner.Profile.Value(v)
-	return predicate.HolderOrErr(sql.FieldNEQ(FieldProfile, vc), err)
-}
-
-// ProfileIn applies the In predicate on the "profile" field.
-func ProfileIn(vs ...*rstr.Profile) predicate.Holder {
-	var (
-		err error
-		v   = make([]any, len(vs))
-	)
-	for i := range v {
-		if v[i], err = ValueScanner.Profile.Value(vs[i]); err != nil {
-			break
-		}
-	}
-	return predicate.HolderOrErr(sql.FieldIn(FieldProfile, v...), err)
-}
-
-// ProfileNotIn applies the NotIn predicate on the "profile" field.
-func ProfileNotIn(vs ...*rstr.Profile) predicate.Holder {
-	var (
-		err error
-		v   = make([]any, len(vs))
-	)
-	for i := range v {
-		if v[i], err = ValueScanner.Profile.Value(vs[i]); err != nil {
-			break
-		}
-	}
-	return predicate.HolderOrErr(sql.FieldNotIn(FieldProfile, v...), err)
-}
-
-// ProfileGT applies the GT predicate on the "profile" field.
-func ProfileGT(v *rstr.Profile) predicate.Holder {
-	vc, err := ValueScanner.Profile.Value(v)
-	return predicate.HolderOrErr(sql.FieldGT(FieldProfile, vc), err)
-}
-
-// ProfileGTE applies the GTE predicate on the "profile" field.
-func ProfileGTE(v *rstr.Profile) predicate.Holder {
-	vc, err := ValueScanner.Profile.Value(v)
-	return predicate.HolderOrErr(sql.FieldGTE(FieldProfile, vc), err)
-}
-
-// ProfileLT applies the LT predicate on the "profile" field.
-func ProfileLT(v *rstr.Profile) predicate.Holder {
-	vc, err := ValueScanner.Profile.Value(v)
-	return predicate.HolderOrErr(sql.FieldLT(FieldProfile, vc), err)
-}
-
-// ProfileLTE applies the LTE predicate on the "profile" field.
-func ProfileLTE(v *rstr.Profile) predicate.Holder {
-	vc, err := ValueScanner.Profile.Value(v)
-	return predicate.HolderOrErr(sql.FieldLTE(FieldProfile, vc), err)
-}
-
-// ProfileContains applies the Contains predicate on the "profile" field.
-func ProfileContains(v *rstr.Profile) predicate.Holder {
-	vc, err := ValueScanner.Profile.Value(v)
-	vcs, ok := vc.(string)
-	if err == nil && !ok {
-		err = fmt.Errorf("profile value is not a string: %T", vc)
-	}
-	return predicate.HolderOrErr(sql.FieldContains(FieldProfile, vcs), err)
-}
-
-// ProfileHasPrefix applies the HasPrefix predicate on the "profile" field.
-func ProfileHasPrefix(v *rstr.Profile) predicate.Holder {
-	vc, err := ValueScanner.Profile.Value(v)
-	vcs, ok := vc.(string)
-	if err == nil && !ok {
-		err = fmt.Errorf("profile value is not a string: %T", vc)
-	}
-	return predicate.HolderOrErr(sql.FieldHasPrefix(FieldProfile, vcs), err)
-}
-
-// ProfileHasSuffix applies the HasSuffix predicate on the "profile" field.
-func ProfileHasSuffix(v *rstr.Profile) predicate.Holder {
-	vc, err := ValueScanner.Profile.Value(v)
-	vcs, ok := vc.(string)
-	if err == nil && !ok {
-		err = fmt.Errorf("profile value is not a string: %T", vc)
-	}
-	return predicate.HolderOrErr(sql.FieldHasSuffix(FieldProfile, vcs), err)
-}
-
 // ProfileIsNil applies the IsNil predicate on the "profile" field.
 func ProfileIsNil() predicate.Holder {
 	return predicate.Holder(sql.FieldIsNull(FieldProfile))
@@ -645,120 +536,6 @@ func ProfileNotNil() predicate.Holder {
 	return predicate.Holder(sql.FieldNotNull(FieldProfile))
 }
 
-// ProfileEqualFold applies the EqualFold predicate on the "profile" field.
-func ProfileEqualFold(v *rstr.Profile) predicate.Holder {
-	vc, err := ValueScanner.Profile.Value(v)
-	vcs, ok := vc.(string)
-	if err == nil && !ok {
-		err = fmt.Errorf("profile value is not a string: %T", vc)
-	}
-	return predicate.HolderOrErr(sql.FieldEqualFold(FieldProfile, vcs), err)
-}
-
-// ProfileContainsFold applies the ContainsFold predicate on the "profile" field.
-func ProfileContainsFold(v *rstr.Profile) predicate.Holder {
-	vc, err := ValueScanner.Profile.Value(v)
-	vcs, ok := vc.(string)
-	if err == nil && !ok {
-		err = fmt.Errorf("profile value is not a string: %T", vc)
-	}
-	return predicate.HolderOrErr(sql.FieldContainsFold(FieldProfile, vcs), err)
-}
-
-// DataEQ applies the EQ predicate on the "data" field.
-func DataEQ(v *anypb.Any) predicate.Holder {
-	vc, err := ValueScanner.Data.Value(v)
-	return predicate.HolderOrErr(sql.FieldEQ(FieldData, vc), err)
-}
-
-// DataNEQ applies the NEQ predicate on the "data" field.
-func DataNEQ(v *anypb.Any) predicate.Holder {
-	vc, err := ValueScanner.Data.Value(v)
-	return predicate.HolderOrErr(sql.FieldNEQ(FieldData, vc), err)
-}
-
-// DataIn applies the In predicate on the "data" field.
-func DataIn(vs ...*anypb.Any) predicate.Holder {
-	var (
-		err error
-		v   = make([]any, len(vs))
-	)
-	for i := range v {
-		if v[i], err = ValueScanner.Data.Value(vs[i]); err != nil {
-			break
-		}
-	}
-	return predicate.HolderOrErr(sql.FieldIn(FieldData, v...), err)
-}
-
-// DataNotIn applies the NotIn predicate on the "data" field.
-func DataNotIn(vs ...*anypb.Any) predicate.Holder {
-	var (
-		err error
-		v   = make([]any, len(vs))
-	)
-	for i := range v {
-		if v[i], err = ValueScanner.Data.Value(vs[i]); err != nil {
-			break
-		}
-	}
-	return predicate.HolderOrErr(sql.FieldNotIn(FieldData, v...), err)
-}
-
-// DataGT applies the GT predicate on the "data" field.
-func DataGT(v *anypb.Any) predicate.Holder {
-	vc, err := ValueScanner.Data.Value(v)
-	return predicate.HolderOrErr(sql.FieldGT(FieldData, vc), err)
-}
-
-// DataGTE applies the GTE predicate on the "data" field.
-func DataGTE(v *anypb.Any) predicate.Holder {
-	vc, err := ValueScanner.Data.Value(v)
-	return predicate.HolderOrErr(sql.FieldGTE(FieldData, vc), err)
-}
-
-// DataLT applies the LT predicate on the "data" field.
-func DataLT(v *anypb.Any) predicate.Holder {
-	vc, err := ValueScanner.Data.Value(v)
-	return predicate.HolderOrErr(sql.FieldLT(FieldData, vc), err)
-}
-
-// DataLTE applies the LTE predicate on the "data" field.
-func DataLTE(v *anypb.Any) predicate.Holder {
-	vc, err := ValueScanner.Data.Value(v)
-	return predicate.HolderOrErr(sql.FieldLTE(FieldData, vc), err)
-}
-
-// DataContains applies the Contains predicate on the "data" field.
-func DataContains(v *anypb.Any) predicate.Holder {
-	vc, err := ValueScanner.Data.Value(v)
-	vcs, ok := vc.(string)
-	if err == nil && !ok {
-		err = fmt.Errorf("data value is not a string: %T", vc)
-	}
-	return predicate.HolderOrErr(sql.FieldContains(FieldData, vcs), err)
-}
-
-// DataHasPrefix applies the HasPrefix predicate on the "data" field.
-func DataHasPrefix(v *anypb.Any) predicate.Holder {
-	vc, err := ValueScanner.Data.Value(v)
-	vcs, ok := vc.(string)
-	if err == nil && !ok {
-		err = fmt.Errorf("data value is not a string: %T", vc)
-	}
-	return predicate.HolderOrErr(sql.FieldHasPrefix(FieldData, vcs), err)
-}
-
-// DataHasSuffix applies the HasSuffix predicate on the "data" field.
-func DataHasSuffix(v *anypb.Any) predicate.Holder {
-	vc, err := ValueScanner.Data.Value(v)
-	vcs, ok := vc.(string)
-	if err == nil && !ok {
-		err = fmt.Errorf("data value is not a string: %T", vc)
-	}
-	return predicate.HolderOrErr(sql.FieldHasSuffix(FieldData, vcs), err)
-}
-
 // DataIsNil applies the IsNil predicate on the "data" field.
 func DataIsNil() predicate.Holder {
 	return predicate.Holder(sql.FieldIsNull(FieldData))
@@ -767,26 +544,6 @@ func DataIsNil() predicate.Holder {
 // DataNotNil applies the NotNil predicate on the "data" field.
 func DataNotNil() predicate.Holder {
 	return predicate.Holder(sql.FieldNotNull(FieldData))
-}
-
-// DataEqualFold applies the EqualFold predicate on the "data" field.
-func DataEqualFold(v *anypb.Any) predicate.Holder {
-	vc, err := ValueScanner.Data.Value(v)
-	vcs, ok := vc.(string)
-	if err == nil && !ok {
-		err = fmt.Errorf("data value is not a string: %T", vc)
-	}
-	return predicate.HolderOrErr(sql.FieldEqualFold(FieldData, vcs), err)
-}
-
-// DataContainsFold applies the ContainsFold predicate on the "data" field.
-func DataContainsFold(v *anypb.Any) predicate.Holder {
-	vc, err := ValueScanner.Data.Value(v)
-	vcs, ok := vc.(string)
-	if err == nil && !ok {
-		err = fmt.Errorf("data value is not a string: %T", vc)
-	}
-	return predicate.HolderOrErr(sql.FieldContainsFold(FieldData, vcs), err)
 }
 
 // DateInvalidatedEQ applies the EQ predicate on the "date_invalidated" field.
