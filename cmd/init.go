@@ -23,7 +23,7 @@ import (
 //
 // It exists because there is nowhere else it could happen. A tenant is not put
 // up from inside one, so the first row of a deployment cannot arrive over the
-// API. What puts it there is [Server.Ungated], which is not a privilege anybody
+// Api. What puts it there is [Server.Ungated], which is not a privilege anybody
 // holds: it is a server instance this process was handed, reachable from this
 // command and from nowhere a request can get to.
 //
@@ -63,7 +63,7 @@ import (
 // unnoticed because this command had no test.
 //
 // So it binds a role, and the role is a pattern rather than a list. A list
-// written here is a snapshot: the next release adds an RPC the first operator
+// written here is a snapshot: the next release adds an Rpc the first operator
 // cannot call, and cannot grant themselves either, because granting is refused
 // for anything the granter does not already hold. That is now about the
 // operator alone, and it is why `allow` is still here.
@@ -170,7 +170,7 @@ func NewCmdInit(c *Config) *xli.Command {
 
 			cmd.Printf("control plane\n")
 			cmd.Printf("  holder %s is %s\n", operator, v.Operator)
-			cmd.Printf("  bound to role %q = %s -- every RPC roster serves, now and after an upgrade\n", everything, everyRosterMethod)
+			cmd.Printf("  bound to role %q = %s -- every Rpc roster serves, now and after an upgrade\n", everything, everyRosterMethod)
 			cmd.Printf("  password  %s\n", v.Password)
 			cmd.Printf("\nsign in to the console as %s. that password is shown once and is not stored -- write it down now.\n", operator)
 
@@ -360,7 +360,7 @@ func allow(ctx context.Context, s *Server, in pdid.Id, to pdid.Id) error {
 	r, err := s.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
 		Tenant: app.TenantRef_builder{Id: in.Bytes()}.Build(),
 		Alias:  everything,
-		Desc:   "Every RPC roster serves, including ones added by a later release.",
+		Desc:   "Every Rpc roster serves, including ones added by a later release.",
 
 		// A pattern rather than an enumeration, for the reason in
 		// `Role.methods`: a list written here is what existed the day it was
@@ -427,7 +427,7 @@ func seedOperator(ctx context.Context, s *Server, alias, given string) (pdid.Id,
 	if err != nil {
 		return pdid.Nil, "", err
 	}
-	if err := allow(ctx, s, pdid.Id(t.ID), who); err != nil {
+	if err := allow(ctx, s, pdid.Id(t.Id), who); err != nil {
 		return pdid.Nil, "", err
 	}
 

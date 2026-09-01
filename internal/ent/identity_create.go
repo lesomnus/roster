@@ -34,9 +34,9 @@ func (_c *IdentityCreate) SetSubject(v string) *IdentityCreate {
 	return _c
 }
 
-// SetTenantID sets the "tenant_id" field.
-func (_c *IdentityCreate) SetTenantID(v uuid.UUID) *IdentityCreate {
-	_c.mutation.SetTenantID(v)
+// SetTenantId sets the "tenant_id" field.
+func (_c *IdentityCreate) SetTenantId(v uuid.UUID) *IdentityCreate {
+	_c.mutation.SetTenantId(v)
 	return _c
 }
 
@@ -74,21 +74,21 @@ func (_c *IdentityCreate) SetNillableDateCreated(v *time.Time) *IdentityCreate {
 	return _c
 }
 
-// SetHolderID sets the "holder_id" field.
-func (_c *IdentityCreate) SetHolderID(v uuid.UUID) *IdentityCreate {
-	_c.mutation.SetHolderID(v)
+// SetHolderId sets the "holder_id" field.
+func (_c *IdentityCreate) SetHolderId(v uuid.UUID) *IdentityCreate {
+	_c.mutation.SetHolderId(v)
 	return _c
 }
 
-// SetID sets the "id" field.
-func (_c *IdentityCreate) SetID(v uuid.UUID) *IdentityCreate {
-	_c.mutation.SetID(v)
+// SetId sets the "id" field.
+func (_c *IdentityCreate) SetId(v uuid.UUID) *IdentityCreate {
+	_c.mutation.SetId(v)
 	return _c
 }
 
 // SetHolder sets the "holder" edge to the Holder entity.
 func (_c *IdentityCreate) SetHolder(v *Holder) *IdentityCreate {
-	return _c.SetHolderID(v.ID)
+	return _c.SetHolderId(v.Id)
 }
 
 // Mutation returns the IdentityMutation object of the builder.
@@ -131,16 +131,16 @@ func (_c *IdentityCreate) check() error {
 	if _, ok := _c.mutation.Subject(); !ok {
 		return &ValidationError{Name: "subject", err: errors.New(`ent: missing required field "Identity.subject"`)}
 	}
-	if _, ok := _c.mutation.TenantID(); !ok {
+	if _, ok := _c.mutation.TenantId(); !ok {
 		return &ValidationError{Name: "tenant_id", err: errors.New(`ent: missing required field "Identity.tenant_id"`)}
 	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Identity.date_updated"`)}
 	}
-	if _, ok := _c.mutation.HolderID(); !ok {
+	if _, ok := _c.mutation.HolderId(); !ok {
 		return &ValidationError{Name: "holder_id", err: errors.New(`ent: missing required field "Identity.holder_id"`)}
 	}
-	if len(_c.mutation.HolderIDs()) == 0 {
+	if len(_c.mutation.HolderIds()) == 0 {
 		return &ValidationError{Name: "holder", err: errors.New(`ent: missing required edge "Identity.holder"`)}
 	}
 	return nil
@@ -157,14 +157,14 @@ func (_c *IdentityCreate) sqlSave(ctx context.Context) (*Identity, error) {
 		}
 		return nil, err
 	}
-	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+	if _spec.Id.Value != nil {
+		if id, ok := _spec.Id.Value.(*uuid.UUID); ok {
+			_node.Id = *id
+		} else if err := _node.Id.Scan(_spec.Id.Value); err != nil {
 			return nil, err
 		}
 	}
-	_c.mutation.id = &_node.ID
+	_c.mutation.id = &_node.Id
 	_c.mutation.done = true
 	return _node, nil
 }
@@ -172,11 +172,11 @@ func (_c *IdentityCreate) sqlSave(ctx context.Context) (*Identity, error) {
 func (_c *IdentityCreate) createSpec() (*Identity, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Identity{config: _c.config}
-		_spec = sqlgraph.NewCreateSpec(identity.Table, sqlgraph.NewFieldSpec(identity.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(identity.Table, sqlgraph.NewFieldSpec(identity.FieldId, field.TypeUuid))
 	)
-	if id, ok := _c.mutation.ID(); ok {
-		_node.ID = id
-		_spec.ID.Value = &id
+	if id, ok := _c.mutation.Id(); ok {
+		_node.Id = id
+		_spec.Id.Value = &id
 	}
 	if value, ok := _c.mutation.Provider(); ok {
 		_spec.SetField(identity.FieldProvider, field.TypeString, value)
@@ -186,9 +186,9 @@ func (_c *IdentityCreate) createSpec() (*Identity, *sqlgraph.CreateSpec) {
 		_spec.SetField(identity.FieldSubject, field.TypeString, value)
 		_node.Subject = value
 	}
-	if value, ok := _c.mutation.TenantID(); ok {
-		_spec.SetField(identity.FieldTenantID, field.TypeUUID, value)
-		_node.TenantID = value
+	if value, ok := _c.mutation.TenantId(); ok {
+		_spec.SetField(identity.FieldTenantId, field.TypeUuid, value)
+		_node.TenantId = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(identity.FieldDateUpdated, field.TypeTime, value)
@@ -202,7 +202,7 @@ func (_c *IdentityCreate) createSpec() (*Identity, *sqlgraph.CreateSpec) {
 		_spec.SetField(identity.FieldDateCreated, field.TypeTime, value)
 		_node.DateCreated = value
 	}
-	if nodes := _c.mutation.HolderIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.HolderIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -210,13 +210,13 @@ func (_c *IdentityCreate) createSpec() (*Identity, *sqlgraph.CreateSpec) {
 			Columns: []string{identity.HolderColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(holder.FieldID, field.TypeUUID),
+				IdSpec: sqlgraph.NewFieldSpec(holder.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.HolderID = nodes[0]
+		_node.HolderId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -265,7 +265,7 @@ func (_c *IdentityCreateBulk) Save(ctx context.Context) ([]*Identity, error) {
 				if err != nil {
 					return nil, err
 				}
-				mutation.id = &nodes[i].ID
+				mutation.id = &nodes[i].Id
 				mutation.done = true
 				return nodes[i], nil
 			})

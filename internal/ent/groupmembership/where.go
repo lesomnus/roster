@@ -11,49 +11,49 @@ import (
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 )
 
-// ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.GroupMembership {
-	return predicate.GroupMembership(sql.FieldEQ(FieldID, id))
+// Id filters vertices based on their Id field.
+func Id(id uuid.UUID) predicate.GroupMembership {
+	return predicate.GroupMembership(sql.FieldEQ(FieldId, id))
 }
 
-// IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.GroupMembership {
-	return predicate.GroupMembership(sql.FieldEQ(FieldID, id))
+// IdEQ applies the EQ predicate on the Id field.
+func IdEQ(id uuid.UUID) predicate.GroupMembership {
+	return predicate.GroupMembership(sql.FieldEQ(FieldId, id))
 }
 
-// IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.GroupMembership {
-	return predicate.GroupMembership(sql.FieldNEQ(FieldID, id))
+// IdNEQ applies the NEQ predicate on the Id field.
+func IdNEQ(id uuid.UUID) predicate.GroupMembership {
+	return predicate.GroupMembership(sql.FieldNEQ(FieldId, id))
 }
 
-// IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.GroupMembership {
-	return predicate.GroupMembership(sql.FieldIn(FieldID, ids...))
+// IdIn applies the In predicate on the Id field.
+func IdIn(ids ...uuid.UUID) predicate.GroupMembership {
+	return predicate.GroupMembership(sql.FieldIn(FieldId, ids...))
 }
 
-// IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.GroupMembership {
-	return predicate.GroupMembership(sql.FieldNotIn(FieldID, ids...))
+// IdNotIn applies the NotIn predicate on the Id field.
+func IdNotIn(ids ...uuid.UUID) predicate.GroupMembership {
+	return predicate.GroupMembership(sql.FieldNotIn(FieldId, ids...))
 }
 
-// IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.GroupMembership {
-	return predicate.GroupMembership(sql.FieldGT(FieldID, id))
+// IdGT applies the GT predicate on the Id field.
+func IdGT(id uuid.UUID) predicate.GroupMembership {
+	return predicate.GroupMembership(sql.FieldGT(FieldId, id))
 }
 
-// IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.GroupMembership {
-	return predicate.GroupMembership(sql.FieldGTE(FieldID, id))
+// IdGTE applies the GTE predicate on the Id field.
+func IdGTE(id uuid.UUID) predicate.GroupMembership {
+	return predicate.GroupMembership(sql.FieldGTE(FieldId, id))
 }
 
-// IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.GroupMembership {
-	return predicate.GroupMembership(sql.FieldLT(FieldID, id))
+// IdLT applies the LT predicate on the Id field.
+func IdLT(id uuid.UUID) predicate.GroupMembership {
+	return predicate.GroupMembership(sql.FieldLT(FieldId, id))
 }
 
-// IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.GroupMembership {
-	return predicate.GroupMembership(sql.FieldLTE(FieldID, id))
+// IdLTE applies the LTE predicate on the Id field.
+func IdLTE(id uuid.UUID) predicate.GroupMembership {
+	return predicate.GroupMembership(sql.FieldLTE(FieldId, id))
 }
 
 // DateUpdated applies equality check predicate on the "date_updated" field. It's identical to DateUpdatedEQ.
@@ -71,14 +71,14 @@ func DateCreated(v time.Time) predicate.GroupMembership {
 	return predicate.GroupMembership(sql.FieldEQ(FieldDateCreated, v))
 }
 
-// HolderID applies equality check predicate on the "holder_id" field. It's identical to HolderIDEQ.
-func HolderID(v uuid.UUID) predicate.GroupMembership {
-	return predicate.GroupMembership(sql.FieldEQ(FieldHolderID, v))
+// HolderId applies equality check predicate on the "holder_id" field. It's identical to HolderIdEQ.
+func HolderId(v uuid.UUID) predicate.GroupMembership {
+	return predicate.GroupMembership(sql.FieldEQ(FieldHolderId, v))
 }
 
-// GroupID applies equality check predicate on the "group_id" field. It's identical to GroupIDEQ.
-func GroupID(v uuid.UUID) predicate.GroupMembership {
-	return predicate.GroupMembership(sql.FieldEQ(FieldGroupID, v))
+// GroupId applies equality check predicate on the "group_id" field. It's identical to GroupIdEQ.
+func GroupId(v uuid.UUID) predicate.GroupMembership {
+	return predicate.GroupMembership(sql.FieldEQ(FieldGroupId, v))
 }
 
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
@@ -221,51 +221,51 @@ func DateCreatedNotNil() predicate.GroupMembership {
 	return predicate.GroupMembership(sql.FieldNotNull(FieldDateCreated))
 }
 
-// HolderIDEQ applies the EQ predicate on the "holder_id" field.
-func HolderIDEQ(v uuid.UUID) predicate.GroupMembership {
-	return predicate.GroupMembership(sql.FieldEQ(FieldHolderID, v))
+// HolderIdEQ applies the EQ predicate on the "holder_id" field.
+func HolderIdEQ(v uuid.UUID) predicate.GroupMembership {
+	return predicate.GroupMembership(sql.FieldEQ(FieldHolderId, v))
 }
 
-// HolderIDNEQ applies the NEQ predicate on the "holder_id" field.
-func HolderIDNEQ(v uuid.UUID) predicate.GroupMembership {
-	return predicate.GroupMembership(sql.FieldNEQ(FieldHolderID, v))
+// HolderIdNEQ applies the NEQ predicate on the "holder_id" field.
+func HolderIdNEQ(v uuid.UUID) predicate.GroupMembership {
+	return predicate.GroupMembership(sql.FieldNEQ(FieldHolderId, v))
 }
 
-// HolderIDIn applies the In predicate on the "holder_id" field.
-func HolderIDIn(vs ...uuid.UUID) predicate.GroupMembership {
-	return predicate.GroupMembership(sql.FieldIn(FieldHolderID, vs...))
+// HolderIdIn applies the In predicate on the "holder_id" field.
+func HolderIdIn(vs ...uuid.UUID) predicate.GroupMembership {
+	return predicate.GroupMembership(sql.FieldIn(FieldHolderId, vs...))
 }
 
-// HolderIDNotIn applies the NotIn predicate on the "holder_id" field.
-func HolderIDNotIn(vs ...uuid.UUID) predicate.GroupMembership {
-	return predicate.GroupMembership(sql.FieldNotIn(FieldHolderID, vs...))
+// HolderIdNotIn applies the NotIn predicate on the "holder_id" field.
+func HolderIdNotIn(vs ...uuid.UUID) predicate.GroupMembership {
+	return predicate.GroupMembership(sql.FieldNotIn(FieldHolderId, vs...))
 }
 
-// GroupIDEQ applies the EQ predicate on the "group_id" field.
-func GroupIDEQ(v uuid.UUID) predicate.GroupMembership {
-	return predicate.GroupMembership(sql.FieldEQ(FieldGroupID, v))
+// GroupIdEQ applies the EQ predicate on the "group_id" field.
+func GroupIdEQ(v uuid.UUID) predicate.GroupMembership {
+	return predicate.GroupMembership(sql.FieldEQ(FieldGroupId, v))
 }
 
-// GroupIDNEQ applies the NEQ predicate on the "group_id" field.
-func GroupIDNEQ(v uuid.UUID) predicate.GroupMembership {
-	return predicate.GroupMembership(sql.FieldNEQ(FieldGroupID, v))
+// GroupIdNEQ applies the NEQ predicate on the "group_id" field.
+func GroupIdNEQ(v uuid.UUID) predicate.GroupMembership {
+	return predicate.GroupMembership(sql.FieldNEQ(FieldGroupId, v))
 }
 
-// GroupIDIn applies the In predicate on the "group_id" field.
-func GroupIDIn(vs ...uuid.UUID) predicate.GroupMembership {
-	return predicate.GroupMembership(sql.FieldIn(FieldGroupID, vs...))
+// GroupIdIn applies the In predicate on the "group_id" field.
+func GroupIdIn(vs ...uuid.UUID) predicate.GroupMembership {
+	return predicate.GroupMembership(sql.FieldIn(FieldGroupId, vs...))
 }
 
-// GroupIDNotIn applies the NotIn predicate on the "group_id" field.
-func GroupIDNotIn(vs ...uuid.UUID) predicate.GroupMembership {
-	return predicate.GroupMembership(sql.FieldNotIn(FieldGroupID, vs...))
+// GroupIdNotIn applies the NotIn predicate on the "group_id" field.
+func GroupIdNotIn(vs ...uuid.UUID) predicate.GroupMembership {
+	return predicate.GroupMembership(sql.FieldNotIn(FieldGroupId, vs...))
 }
 
 // HasHolder applies the HasEdge predicate on the "holder" edge.
 func HasHolder() predicate.GroupMembership {
 	return predicate.GroupMembership(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
+			sqlgraph.From(Table, FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, HolderTable, HolderColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
@@ -288,7 +288,7 @@ func HasHolderWith(preds ...predicate.Holder) predicate.GroupMembership {
 func HasGroup() predicate.GroupMembership {
 	return predicate.GroupMembership(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
+			sqlgraph.From(Table, FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, GroupTable, GroupColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)

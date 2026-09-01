@@ -11,17 +11,17 @@ import (
 
 func (e *Role) Proto() *rstr.Role {
 	x := &rstr.Role{}
-	x.SetId(e.ID[:])
+	x.SetId(e.Id[:])
 	if v := e.Edges.Tenant; v != nil {
 		x.SetTenant(v.Proto())
-	} else if v := e.TenantID; v != *new(uuid.UUID) {
+	} else if v := e.TenantId; v != *new(uuid.UUID) {
 		r := &rstr.Tenant{}
 		r.SetId(v[:])
 		x.SetTenant(r)
 	}
 	if v := e.Edges.Site; v != nil {
 		x.SetSite(v.Proto())
-	} else if v := e.SiteID; v != *new(uuid.UUID) {
+	} else if v := e.SiteId; v != *new(uuid.UUID) {
 		r := &rstr.Site{}
 		r.SetId(v[:])
 		x.SetSite(r)
@@ -39,31 +39,31 @@ func (e *Role) Proto() *rstr.Role {
 }
 func (e *Binding) Proto() *rstr.Binding {
 	x := &rstr.Binding{}
-	x.SetId(e.ID[:])
+	x.SetId(e.Id[:])
 	if v := e.Edges.Role; v != nil {
 		x.SetRole(v.Proto())
-	} else if v := e.RoleID; v != *new(uuid.UUID) {
+	} else if v := e.RoleId; v != *new(uuid.UUID) {
 		r := &rstr.Role{}
 		r.SetId(v[:])
 		x.SetRole(r)
 	}
 	if v := e.Edges.Site; v != nil {
 		x.SetSite(v.Proto())
-	} else if v := e.SiteID; v != *new(uuid.UUID) {
+	} else if v := e.SiteId; v != *new(uuid.UUID) {
 		r := &rstr.Site{}
 		r.SetId(v[:])
 		x.SetSite(r)
 	}
 	if v := e.Edges.Holder; v != nil {
 		x.SetHolder(v.Proto())
-	} else if v := e.HolderID; v != *new(uuid.UUID) {
+	} else if v := e.HolderId; v != *new(uuid.UUID) {
 		r := &rstr.Holder{}
 		r.SetId(v[:])
 		x.SetHolder(r)
 	}
 	if v := e.Edges.Group; v != nil {
 		x.SetGroup(v.Proto())
-	} else if v := e.GroupID; v != *new(uuid.UUID) {
+	} else if v := e.GroupId; v != *new(uuid.UUID) {
 		r := &rstr.Group{}
 		r.SetId(v[:])
 		x.SetGroup(r)

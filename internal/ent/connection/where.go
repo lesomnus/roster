@@ -11,49 +11,49 @@ import (
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 )
 
-// ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.Connection {
-	return predicate.Connection(sql.FieldEQ(FieldID, id))
+// Id filters vertices based on their Id field.
+func Id(id uuid.UUID) predicate.Connection {
+	return predicate.Connection(sql.FieldEQ(FieldId, id))
 }
 
-// IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.Connection {
-	return predicate.Connection(sql.FieldEQ(FieldID, id))
+// IdEQ applies the EQ predicate on the Id field.
+func IdEQ(id uuid.UUID) predicate.Connection {
+	return predicate.Connection(sql.FieldEQ(FieldId, id))
 }
 
-// IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.Connection {
-	return predicate.Connection(sql.FieldNEQ(FieldID, id))
+// IdNEQ applies the NEQ predicate on the Id field.
+func IdNEQ(id uuid.UUID) predicate.Connection {
+	return predicate.Connection(sql.FieldNEQ(FieldId, id))
 }
 
-// IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.Connection {
-	return predicate.Connection(sql.FieldIn(FieldID, ids...))
+// IdIn applies the In predicate on the Id field.
+func IdIn(ids ...uuid.UUID) predicate.Connection {
+	return predicate.Connection(sql.FieldIn(FieldId, ids...))
 }
 
-// IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.Connection {
-	return predicate.Connection(sql.FieldNotIn(FieldID, ids...))
+// IdNotIn applies the NotIn predicate on the Id field.
+func IdNotIn(ids ...uuid.UUID) predicate.Connection {
+	return predicate.Connection(sql.FieldNotIn(FieldId, ids...))
 }
 
-// IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.Connection {
-	return predicate.Connection(sql.FieldGT(FieldID, id))
+// IdGT applies the GT predicate on the Id field.
+func IdGT(id uuid.UUID) predicate.Connection {
+	return predicate.Connection(sql.FieldGT(FieldId, id))
 }
 
-// IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.Connection {
-	return predicate.Connection(sql.FieldGTE(FieldID, id))
+// IdGTE applies the GTE predicate on the Id field.
+func IdGTE(id uuid.UUID) predicate.Connection {
+	return predicate.Connection(sql.FieldGTE(FieldId, id))
 }
 
-// IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.Connection {
-	return predicate.Connection(sql.FieldLT(FieldID, id))
+// IdLT applies the LT predicate on the Id field.
+func IdLT(id uuid.UUID) predicate.Connection {
+	return predicate.Connection(sql.FieldLT(FieldId, id))
 }
 
-// IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.Connection {
-	return predicate.Connection(sql.FieldLTE(FieldID, id))
+// IdLTE applies the LTE predicate on the Id field.
+func IdLTE(id uuid.UUID) predicate.Connection {
+	return predicate.Connection(sql.FieldLTE(FieldId, id))
 }
 
 // Name applies equality check predicate on the "name" field. It's identical to NameEQ.
@@ -71,9 +71,9 @@ func Issuer(v string) predicate.Connection {
 	return predicate.Connection(sql.FieldEQ(FieldIssuer, v))
 }
 
-// ClientID applies equality check predicate on the "client_id" field. It's identical to ClientIDEQ.
-func ClientID(v string) predicate.Connection {
-	return predicate.Connection(sql.FieldEQ(FieldClientID, v))
+// ClientId applies equality check predicate on the "client_id" field. It's identical to ClientIdEQ.
+func ClientId(v string) predicate.Connection {
+	return predicate.Connection(sql.FieldEQ(FieldClientId, v))
 }
 
 // SecretRef applies equality check predicate on the "secret_ref" field. It's identical to SecretRefEQ.
@@ -96,9 +96,9 @@ func DateCreated(v time.Time) predicate.Connection {
 	return predicate.Connection(sql.FieldEQ(FieldDateCreated, v))
 }
 
-// TenantID applies equality check predicate on the "tenant_id" field. It's identical to TenantIDEQ.
-func TenantID(v uuid.UUID) predicate.Connection {
-	return predicate.Connection(sql.FieldEQ(FieldTenantID, v))
+// TenantId applies equality check predicate on the "tenant_id" field. It's identical to TenantIdEQ.
+func TenantId(v uuid.UUID) predicate.Connection {
+	return predicate.Connection(sql.FieldEQ(FieldTenantId, v))
 }
 
 // NameEQ applies the EQ predicate on the "name" field.
@@ -296,69 +296,69 @@ func IssuerContainsFold(v string) predicate.Connection {
 	return predicate.Connection(sql.FieldContainsFold(FieldIssuer, v))
 }
 
-// ClientIDEQ applies the EQ predicate on the "client_id" field.
-func ClientIDEQ(v string) predicate.Connection {
-	return predicate.Connection(sql.FieldEQ(FieldClientID, v))
+// ClientIdEQ applies the EQ predicate on the "client_id" field.
+func ClientIdEQ(v string) predicate.Connection {
+	return predicate.Connection(sql.FieldEQ(FieldClientId, v))
 }
 
-// ClientIDNEQ applies the NEQ predicate on the "client_id" field.
-func ClientIDNEQ(v string) predicate.Connection {
-	return predicate.Connection(sql.FieldNEQ(FieldClientID, v))
+// ClientIdNEQ applies the NEQ predicate on the "client_id" field.
+func ClientIdNEQ(v string) predicate.Connection {
+	return predicate.Connection(sql.FieldNEQ(FieldClientId, v))
 }
 
-// ClientIDIn applies the In predicate on the "client_id" field.
-func ClientIDIn(vs ...string) predicate.Connection {
-	return predicate.Connection(sql.FieldIn(FieldClientID, vs...))
+// ClientIdIn applies the In predicate on the "client_id" field.
+func ClientIdIn(vs ...string) predicate.Connection {
+	return predicate.Connection(sql.FieldIn(FieldClientId, vs...))
 }
 
-// ClientIDNotIn applies the NotIn predicate on the "client_id" field.
-func ClientIDNotIn(vs ...string) predicate.Connection {
-	return predicate.Connection(sql.FieldNotIn(FieldClientID, vs...))
+// ClientIdNotIn applies the NotIn predicate on the "client_id" field.
+func ClientIdNotIn(vs ...string) predicate.Connection {
+	return predicate.Connection(sql.FieldNotIn(FieldClientId, vs...))
 }
 
-// ClientIDGT applies the GT predicate on the "client_id" field.
-func ClientIDGT(v string) predicate.Connection {
-	return predicate.Connection(sql.FieldGT(FieldClientID, v))
+// ClientIdGT applies the GT predicate on the "client_id" field.
+func ClientIdGT(v string) predicate.Connection {
+	return predicate.Connection(sql.FieldGT(FieldClientId, v))
 }
 
-// ClientIDGTE applies the GTE predicate on the "client_id" field.
-func ClientIDGTE(v string) predicate.Connection {
-	return predicate.Connection(sql.FieldGTE(FieldClientID, v))
+// ClientIdGTE applies the GTE predicate on the "client_id" field.
+func ClientIdGTE(v string) predicate.Connection {
+	return predicate.Connection(sql.FieldGTE(FieldClientId, v))
 }
 
-// ClientIDLT applies the LT predicate on the "client_id" field.
-func ClientIDLT(v string) predicate.Connection {
-	return predicate.Connection(sql.FieldLT(FieldClientID, v))
+// ClientIdLT applies the LT predicate on the "client_id" field.
+func ClientIdLT(v string) predicate.Connection {
+	return predicate.Connection(sql.FieldLT(FieldClientId, v))
 }
 
-// ClientIDLTE applies the LTE predicate on the "client_id" field.
-func ClientIDLTE(v string) predicate.Connection {
-	return predicate.Connection(sql.FieldLTE(FieldClientID, v))
+// ClientIdLTE applies the LTE predicate on the "client_id" field.
+func ClientIdLTE(v string) predicate.Connection {
+	return predicate.Connection(sql.FieldLTE(FieldClientId, v))
 }
 
-// ClientIDContains applies the Contains predicate on the "client_id" field.
-func ClientIDContains(v string) predicate.Connection {
-	return predicate.Connection(sql.FieldContains(FieldClientID, v))
+// ClientIdContains applies the Contains predicate on the "client_id" field.
+func ClientIdContains(v string) predicate.Connection {
+	return predicate.Connection(sql.FieldContains(FieldClientId, v))
 }
 
-// ClientIDHasPrefix applies the HasPrefix predicate on the "client_id" field.
-func ClientIDHasPrefix(v string) predicate.Connection {
-	return predicate.Connection(sql.FieldHasPrefix(FieldClientID, v))
+// ClientIdHasPrefix applies the HasPrefix predicate on the "client_id" field.
+func ClientIdHasPrefix(v string) predicate.Connection {
+	return predicate.Connection(sql.FieldHasPrefix(FieldClientId, v))
 }
 
-// ClientIDHasSuffix applies the HasSuffix predicate on the "client_id" field.
-func ClientIDHasSuffix(v string) predicate.Connection {
-	return predicate.Connection(sql.FieldHasSuffix(FieldClientID, v))
+// ClientIdHasSuffix applies the HasSuffix predicate on the "client_id" field.
+func ClientIdHasSuffix(v string) predicate.Connection {
+	return predicate.Connection(sql.FieldHasSuffix(FieldClientId, v))
 }
 
-// ClientIDEqualFold applies the EqualFold predicate on the "client_id" field.
-func ClientIDEqualFold(v string) predicate.Connection {
-	return predicate.Connection(sql.FieldEqualFold(FieldClientID, v))
+// ClientIdEqualFold applies the EqualFold predicate on the "client_id" field.
+func ClientIdEqualFold(v string) predicate.Connection {
+	return predicate.Connection(sql.FieldEqualFold(FieldClientId, v))
 }
 
-// ClientIDContainsFold applies the ContainsFold predicate on the "client_id" field.
-func ClientIDContainsFold(v string) predicate.Connection {
-	return predicate.Connection(sql.FieldContainsFold(FieldClientID, v))
+// ClientIdContainsFold applies the ContainsFold predicate on the "client_id" field.
+func ClientIdContainsFold(v string) predicate.Connection {
+	return predicate.Connection(sql.FieldContainsFold(FieldClientId, v))
 }
 
 // ScopesIsNil applies the IsNil predicate on the "scopes" field.
@@ -576,31 +576,31 @@ func DateCreatedNotNil() predicate.Connection {
 	return predicate.Connection(sql.FieldNotNull(FieldDateCreated))
 }
 
-// TenantIDEQ applies the EQ predicate on the "tenant_id" field.
-func TenantIDEQ(v uuid.UUID) predicate.Connection {
-	return predicate.Connection(sql.FieldEQ(FieldTenantID, v))
+// TenantIdEQ applies the EQ predicate on the "tenant_id" field.
+func TenantIdEQ(v uuid.UUID) predicate.Connection {
+	return predicate.Connection(sql.FieldEQ(FieldTenantId, v))
 }
 
-// TenantIDNEQ applies the NEQ predicate on the "tenant_id" field.
-func TenantIDNEQ(v uuid.UUID) predicate.Connection {
-	return predicate.Connection(sql.FieldNEQ(FieldTenantID, v))
+// TenantIdNEQ applies the NEQ predicate on the "tenant_id" field.
+func TenantIdNEQ(v uuid.UUID) predicate.Connection {
+	return predicate.Connection(sql.FieldNEQ(FieldTenantId, v))
 }
 
-// TenantIDIn applies the In predicate on the "tenant_id" field.
-func TenantIDIn(vs ...uuid.UUID) predicate.Connection {
-	return predicate.Connection(sql.FieldIn(FieldTenantID, vs...))
+// TenantIdIn applies the In predicate on the "tenant_id" field.
+func TenantIdIn(vs ...uuid.UUID) predicate.Connection {
+	return predicate.Connection(sql.FieldIn(FieldTenantId, vs...))
 }
 
-// TenantIDNotIn applies the NotIn predicate on the "tenant_id" field.
-func TenantIDNotIn(vs ...uuid.UUID) predicate.Connection {
-	return predicate.Connection(sql.FieldNotIn(FieldTenantID, vs...))
+// TenantIdNotIn applies the NotIn predicate on the "tenant_id" field.
+func TenantIdNotIn(vs ...uuid.UUID) predicate.Connection {
+	return predicate.Connection(sql.FieldNotIn(FieldTenantId, vs...))
 }
 
 // HasTenant applies the HasEdge predicate on the "tenant" edge.
 func HasTenant() predicate.Connection {
 	return predicate.Connection(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
+			sqlgraph.From(Table, FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, TenantTable, TenantColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)

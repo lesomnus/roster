@@ -19,12 +19,12 @@ type Identity struct {
 
 func (Identity) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
+		field.Uuid("id", uuid.UUID{}).
 			Unique().
 			Immutable(),
 		field.String("provider"),
 		field.String("subject"),
-		field.UUID("tenant_id", uuid.UUID{}).
+		field.Uuid("tenant_id", uuid.UUID{}).
 			Immutable(),
 		field.Time("date_updated"),
 		field.Time("date_erased").
@@ -33,7 +33,7 @@ func (Identity) Fields() []ent.Field {
 		field.Time("date_created").
 			Immutable().
 			Optional(),
-		field.UUID("holder_id", uuid.UUID{}).
+		field.Uuid("holder_id", uuid.UUID{}).
 			Immutable(),
 	}
 }

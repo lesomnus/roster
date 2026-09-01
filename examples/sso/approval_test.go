@@ -24,7 +24,7 @@ import (
 
 // TestAnAccountIsInertUntilAdmitted is the whole of the pattern the user asked
 // about, end to end and over a real browser session: somebody signs in with
-// SSO, may do nothing, an administrator admits them, and now they may -- with
+// Sso, may do nothing, an administrator admits them, and now they may -- with
 // nothing about their sign-in having changed, and roster unmodified.
 func TestAnAccountIsInertUntilAdmitted(t *testing.T) {
 	x := require.New(t)
@@ -238,7 +238,7 @@ func (d *deployment) adminClient(t *testing.T, alias string, methods []string) r
 	return rstr.NewClient(serveRoster(t, g, auth.BearerProvider(token)))
 }
 
-// holderOf resolves the Holder an SSO subject was enrolled onto.
+// holderOf resolves the Holder an Sso subject was enrolled onto.
 func (d *deployment) holderOf(t *testing.T, provider, subject string) pdid.Id {
 	t.Helper()
 	x := require.New(t)

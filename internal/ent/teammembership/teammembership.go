@@ -10,20 +10,20 @@ import (
 const (
 	// Label holds the string label denoting the teammembership type in the database.
 	Label = "team_membership"
-	// FieldID holds the string denoting the id field in the database.
-	FieldID = "id"
+	// FieldId holds the string denoting the id field in the database.
+	FieldId = "id"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
 	FieldDateErased = "date_erased"
 	// FieldDateCreated holds the string denoting the date_created field in the database.
 	FieldDateCreated = "date_created"
-	// FieldHolderID holds the string denoting the holder_id field in the database.
-	FieldHolderID = "holder_id"
-	// FieldTeamID holds the string denoting the team_id field in the database.
-	FieldTeamID = "team_id"
-	// FieldRoleID holds the string denoting the role_id field in the database.
-	FieldRoleID = "role_id"
+	// FieldHolderId holds the string denoting the holder_id field in the database.
+	FieldHolderId = "holder_id"
+	// FieldTeamId holds the string denoting the team_id field in the database.
+	FieldTeamId = "team_id"
+	// FieldRoleId holds the string denoting the role_id field in the database.
+	FieldRoleId = "role_id"
 	// EdgeHolder holds the string denoting the holder edge name in mutations.
 	EdgeHolder = "holder"
 	// EdgeTeam holds the string denoting the team edge name in mutations.
@@ -55,15 +55,15 @@ const (
 	RoleColumn = "role_id"
 )
 
-// Columns holds all SQL columns for teammembership fields.
+// Columns holds all Sql columns for teammembership fields.
 var Columns = []string{
-	FieldID,
+	FieldId,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
-	FieldHolderID,
-	FieldTeamID,
-	FieldRoleID,
+	FieldHolderId,
+	FieldTeamId,
+	FieldRoleId,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -79,9 +79,9 @@ func ValidColumn(column string) bool {
 // OrderOption defines the ordering options for the TeamMembership queries.
 type OrderOption func(*sql.Selector)
 
-// ByID orders the results by the id field.
-func ByID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldID, opts...).ToFunc()
+// ById orders the results by the id field.
+func ById(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldId, opts...).ToFunc()
 }
 
 // ByDateUpdated orders the results by the date_updated field.
@@ -99,19 +99,19 @@ func ByDateCreated(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDateCreated, opts...).ToFunc()
 }
 
-// ByHolderID orders the results by the holder_id field.
-func ByHolderID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldHolderID, opts...).ToFunc()
+// ByHolderId orders the results by the holder_id field.
+func ByHolderId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldHolderId, opts...).ToFunc()
 }
 
-// ByTeamID orders the results by the team_id field.
-func ByTeamID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldTeamID, opts...).ToFunc()
+// ByTeamId orders the results by the team_id field.
+func ByTeamId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTeamId, opts...).ToFunc()
 }
 
-// ByRoleID orders the results by the role_id field.
-func ByRoleID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldRoleID, opts...).ToFunc()
+// ByRoleId orders the results by the role_id field.
+func ByRoleId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRoleId, opts...).ToFunc()
 }
 
 // ByHolderField orders the results by holder field.
@@ -136,22 +136,22 @@ func ByRoleField(field string, opts ...sql.OrderTermOption) OrderOption {
 }
 func newHolderStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(HolderInverseTable, FieldID),
+		sqlgraph.From(Table, FieldId),
+		sqlgraph.To(HolderInverseTable, FieldId),
 		sqlgraph.Edge(sqlgraph.M2O, false, HolderTable, HolderColumn),
 	)
 }
 func newTeamStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(TeamInverseTable, FieldID),
+		sqlgraph.From(Table, FieldId),
+		sqlgraph.To(TeamInverseTable, FieldId),
 		sqlgraph.Edge(sqlgraph.M2O, false, TeamTable, TeamColumn),
 	)
 }
 func newRoleStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(RoleInverseTable, FieldID),
+		sqlgraph.From(Table, FieldId),
+		sqlgraph.To(RoleInverseTable, FieldId),
 		sqlgraph.Edge(sqlgraph.M2O, false, RoleTable, RoleColumn),
 	)
 }

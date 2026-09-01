@@ -643,7 +643,7 @@ func newCmdVouchRevoke(c *Config) *xli.Command {
 			// `Revoke` is a `Delegation` write now (`Vouch.Revoke` moved onto the
 			// entity), so this dials the `DelegationService` client. The command
 			// keeps its `vouch revoke` name -- what a person types is not where
-			// the RPC lives.
+			// the Rpc lives.
 			if _, err := app.NewDelegationServiceClient(conn).Revoke(ctx, app.DelegationRevokeRequest_builder{
 				Token: string(token),
 			}.Build()); err != nil {
@@ -665,7 +665,7 @@ func newCmdVouchRevoke(c *Config) *xli.Command {
 // makes the secret and roster is handed the public half -- and a shell has
 // nothing to attest with.
 //
-// What lands on stdout is the `otpauth://` URI, which carries the seed in its
+// What lands on stdout is the `otpauth://` Uri, which carries the seed in its
 // `secret` parameter: one line that a QR encoder takes whole and a person can
 // still read the seed out of.
 //
@@ -678,7 +678,7 @@ func newCmdVouchRevoke(c *Config) *xli.Command {
 func newCmdVouchEnrol(c *Config) *xli.Command {
 	return &xli.Command{
 		Name:  "enrol",
-		Brief: "make a second factor for somebody, printed once as an otpauth:// URI",
+		Brief: "make a second factor for somebody, printed once as an otpauth:// Uri",
 
 		Args: whoArg(),
 		Flags: append(whoFlags(),
@@ -728,7 +728,7 @@ func newCmdVouchEnrol(c *Config) *xli.Command {
 
 			fmt.Fprintf(os.Stdout, "%s\n", v.GetUri())
 			fmt.Fprintf(os.Stderr,
-				"the seed is the `secret` parameter of the URI, and this is the only time it is "+
+				"the seed is the `secret` parameter of the Uri, and this is the only time it is "+
 					"shown. It does not count until it is proved: one code, via\n  roster vouch "+
 					"verify --kind %s%s --secret-stdin %s\n",
 				kind, nameFlag(name), whoTyped(cmd))

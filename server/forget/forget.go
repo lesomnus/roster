@@ -139,7 +139,7 @@ func Forget(ctx context.Context, db *ent.Client, who pdid.Id, archive string) (R
 	// other write here: the servers refuse most of this, and the ones that do
 	// not would record it -- and a record of *what was destroyed* is the thing
 	// being destroyed.
-	u := db.Holder.UpdateOneID(who.Uuid()).
+	u := db.Holder.UpdateOneId(who.Uuid()).
 		SetAlias("").
 		SetName("").
 		SetDesc("").
@@ -207,7 +207,7 @@ func Restore(ctx context.Context, db *ent.Client, who pdid.Id) error {
 		return fmt.Errorf("%s has been forgotten; what is left is an identifier, and it names nobody", who)
 	}
 
-	return db.Holder.UpdateOneID(who.Uuid()).
+	return db.Holder.UpdateOneId(who.Uuid()).
 		ClearDateErased().
 		SetDateUpdated(time.Now()).
 		Exec(ctx)
@@ -226,7 +226,7 @@ func Due(ctx context.Context, db *ent.Client, before time.Time) ([]pdid.Id, erro
 			holder.DateErasedLT(before),
 			holder.AliasNEQ(""),
 		).
-		IDs(ctx)
+		Ids(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -259,28 +259,28 @@ func subjects() []subject {
 		{
 			name: "email",
 			ids: func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
-				return db.Email.Query().Where(email.HasHolderWith(holder.IDEQ(k))).IDs(ctx)
+				return db.Email.Query().Where(email.HasHolderWith(holder.IdEQ(k))).Ids(ctx)
 			},
 			remove: func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
-				return db.Email.Delete().Where(email.HasHolderWith(holder.IDEQ(k))).Exec(ctx)
+				return db.Email.Delete().Where(email.HasHolderWith(holder.IdEQ(k))).Exec(ctx)
 			},
 		},
 		{
 			name: "identity",
 			ids: func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
-				return db.Identity.Query().Where(identity.HasHolderWith(holder.IDEQ(k))).IDs(ctx)
+				return db.Identity.Query().Where(identity.HasHolderWith(holder.IdEQ(k))).Ids(ctx)
 			},
 			remove: func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
-				return db.Identity.Delete().Where(identity.HasHolderWith(holder.IDEQ(k))).Exec(ctx)
+				return db.Identity.Delete().Where(identity.HasHolderWith(holder.IdEQ(k))).Exec(ctx)
 			},
 		},
 		{
 			name: "credential",
 			ids: func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
-				return db.Credential.Query().Where(credential.HasHolderWith(holder.IDEQ(k))).IDs(ctx)
+				return db.Credential.Query().Where(credential.HasHolderWith(holder.IdEQ(k))).Ids(ctx)
 			},
 			remove: func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
-				return db.Credential.Delete().Where(credential.HasHolderWith(holder.IDEQ(k))).Exec(ctx)
+				return db.Credential.Delete().Where(credential.HasHolderWith(holder.IdEQ(k))).Exec(ctx)
 			},
 		},
 		// The credentials issued to them, and the half-finished sign-ins. These
@@ -289,46 +289,46 @@ func subjects() []subject {
 		{
 			name: "api key",
 			ids: func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
-				return db.ApiKey.Query().Where(apikey.HasHolderWith(holder.IDEQ(k))).IDs(ctx)
+				return db.ApiKey.Query().Where(apikey.HasHolderWith(holder.IdEQ(k))).Ids(ctx)
 			},
 			remove: func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
-				return db.ApiKey.Delete().Where(apikey.HasHolderWith(holder.IDEQ(k))).Exec(ctx)
+				return db.ApiKey.Delete().Where(apikey.HasHolderWith(holder.IdEQ(k))).Exec(ctx)
 			},
 		},
 		{
 			name: "session",
 			ids: func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
-				return db.Session.Query().Where(session.HasHolderWith(holder.IDEQ(k))).IDs(ctx)
+				return db.Session.Query().Where(session.HasHolderWith(holder.IdEQ(k))).Ids(ctx)
 			},
 			remove: func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
-				return db.Session.Delete().Where(session.HasHolderWith(holder.IDEQ(k))).Exec(ctx)
+				return db.Session.Delete().Where(session.HasHolderWith(holder.IdEQ(k))).Exec(ctx)
 			},
 		},
 		{
 			name: "delegation",
 			ids: func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
-				return db.Delegation.Query().Where(delegation.HasHolderWith(holder.IDEQ(k))).IDs(ctx)
+				return db.Delegation.Query().Where(delegation.HasHolderWith(holder.IdEQ(k))).Ids(ctx)
 			},
 			remove: func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
-				return db.Delegation.Delete().Where(delegation.HasHolderWith(holder.IDEQ(k))).Exec(ctx)
+				return db.Delegation.Delete().Where(delegation.HasHolderWith(holder.IdEQ(k))).Exec(ctx)
 			},
 		},
 		{
 			name: "continuation",
 			ids: func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
-				return db.Continuation.Query().Where(continuation.HasHolderWith(holder.IDEQ(k))).IDs(ctx)
+				return db.Continuation.Query().Where(continuation.HasHolderWith(holder.IdEQ(k))).Ids(ctx)
 			},
 			remove: func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
-				return db.Continuation.Delete().Where(continuation.HasHolderWith(holder.IDEQ(k))).Exec(ctx)
+				return db.Continuation.Delete().Where(continuation.HasHolderWith(holder.IdEQ(k))).Exec(ctx)
 			},
 		},
 		{
 			name: "link",
 			ids: func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
-				return db.Link.Query().Where(link.HasHolderWith(holder.IDEQ(k))).IDs(ctx)
+				return db.Link.Query().Where(link.HasHolderWith(holder.IdEQ(k))).Ids(ctx)
 			},
 			remove: func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
-				return db.Link.Delete().Where(link.HasHolderWith(holder.IDEQ(k))).Exec(ctx)
+				return db.Link.Delete().Where(link.HasHolderWith(holder.IdEQ(k))).Exec(ctx)
 			},
 		},
 		// And what they may do. A destroyed person holding permissions is a row
@@ -346,37 +346,37 @@ func subjects() []subject {
 		{
 			name: "binding",
 			ids: func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
-				return db.Binding.Query().Where(binding.HasHolderWith(holder.IDEQ(k))).IDs(ctx)
+				return db.Binding.Query().Where(binding.HasHolderWith(holder.IdEQ(k))).Ids(ctx)
 			},
 			remove: func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
-				return db.Binding.Delete().Where(binding.HasHolderWith(holder.IDEQ(k))).Exec(ctx)
+				return db.Binding.Delete().Where(binding.HasHolderWith(holder.IdEQ(k))).Exec(ctx)
 			},
 		},
 		{
 			name: "site membership",
 			ids: func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
-				return db.SiteMembership.Query().Where(sitemembership.HasHolderWith(holder.IDEQ(k))).IDs(ctx)
+				return db.SiteMembership.Query().Where(sitemembership.HasHolderWith(holder.IdEQ(k))).Ids(ctx)
 			},
 			remove: func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
-				return db.SiteMembership.Delete().Where(sitemembership.HasHolderWith(holder.IDEQ(k))).Exec(ctx)
+				return db.SiteMembership.Delete().Where(sitemembership.HasHolderWith(holder.IdEQ(k))).Exec(ctx)
 			},
 		},
 		{
 			name: "team membership",
 			ids: func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
-				return db.TeamMembership.Query().Where(teammembership.HasHolderWith(holder.IDEQ(k))).IDs(ctx)
+				return db.TeamMembership.Query().Where(teammembership.HasHolderWith(holder.IdEQ(k))).Ids(ctx)
 			},
 			remove: func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
-				return db.TeamMembership.Delete().Where(teammembership.HasHolderWith(holder.IDEQ(k))).Exec(ctx)
+				return db.TeamMembership.Delete().Where(teammembership.HasHolderWith(holder.IdEQ(k))).Exec(ctx)
 			},
 		},
 		{
 			name: "group membership",
 			ids: func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
-				return db.GroupMembership.Query().Where(groupmembership.HasHolderWith(holder.IDEQ(k))).IDs(ctx)
+				return db.GroupMembership.Query().Where(groupmembership.HasHolderWith(holder.IdEQ(k))).Ids(ctx)
 			},
 			remove: func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
-				return db.GroupMembership.Delete().Where(groupmembership.HasHolderWith(holder.IDEQ(k))).Exec(ctx)
+				return db.GroupMembership.Delete().Where(groupmembership.HasHolderWith(holder.IdEQ(k))).Exec(ctx)
 			},
 		},
 	}

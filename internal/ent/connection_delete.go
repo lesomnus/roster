@@ -40,7 +40,7 @@ func (_d *ConnectionDelete) ExecX(ctx context.Context) int {
 }
 
 func (_d *ConnectionDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(connection.Table, sqlgraph.NewFieldSpec(connection.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(connection.Table, sqlgraph.NewFieldSpec(connection.FieldId, field.TypeUuid))
 	if ps := _d.mutation.Predicates(); len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

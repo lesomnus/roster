@@ -258,9 +258,9 @@ func TestARowOutlivesThePersonItWasAbout(t *testing.T) {
 // change could take away one at a time; **the same answer as the read whose
 // narrowing is generated and reviewed**.
 //
-// Both entity shapes, because the wall reaches them by different SQL and only
+// Both entity shapes, because the wall reaches them by different Sql and only
 // one of them is a column on the row. `Holder` is `tenant_id IN (...)`.
-// `TeamMembership` is `HasHolderWith(TenantIDIn(...))` -- a correlated subquery
+// `TeamMembership` is `HasHolderWith(TenantIdIn(...))` -- a correlated subquery
 // through a second table, which is the shape somebody optimises away.
 func TestAWatchAnswersNothingAGetWouldRefuse(t *testing.T) {
 	b, ctx := build(t)
@@ -562,7 +562,7 @@ func TestNoFilterCarriesARowFromAnotherTenant(t *testing.T) {
 // same column and is checked here beside the hash rather than trusted to be.
 func TestNoVerifierIsAnsweredByThePortThatServesItsRow(t *testing.T) {
 	// Both deployments are stood up **here** rather than in the subtests that
-	// use them, and that is not tidiness. `pdtest.DB` names a PostgreSQL schema
+	// use them, and that is not tidiness. `pdtest.DB` names a PostgreSql schema
 	// after the running test and truncates it to sixty-three characters, and
 	// the counter that gives a second database in one test its own name is a
 	// suffix -- so inside a subtest, where the name is already long, the
@@ -590,7 +590,7 @@ func TestNoVerifierIsAnsweredByThePortThatServesItsRow(t *testing.T) {
 		c := b.Control.Walled.ApiKey()
 
 		v, err := c.Get(as, app.ApiKeyGetRequest_builder{
-			Ref:    app.ApiKeyRef_builder{Id: row.ID[:]}.Build(),
+			Ref:    app.ApiKeyRef_builder{Id: row.Id[:]}.Build(),
 			Select: app.ApiKeySelect_builder{All: z.Ptr(true)}.Build(),
 		}.Build())
 		x.NoError(err)
@@ -637,7 +637,7 @@ func TestNoVerifierIsAnsweredByThePortThatServesItsRow(t *testing.T) {
 
 		for _, row := range rows {
 			v, err := c.Get(as, app.CredentialGetRequest_builder{
-				Ref:    app.CredentialRef_builder{Id: row.ID[:]}.Build(),
+				Ref:    app.CredentialRef_builder{Id: row.Id[:]}.Build(),
 				Select: app.CredentialSelect_builder{All: z.Ptr(true)}.Build(),
 			}.Build())
 			x.NoError(err)
@@ -654,7 +654,7 @@ func TestNoVerifierIsAnsweredByThePortThatServesItsRow(t *testing.T) {
 
 		// Still in the database, which is the half that was never the problem.
 		for _, row := range rows {
-			got, err := b.Ent.Credential.Get(ctx, row.ID)
+			got, err := b.Ent.Credential.Get(ctx, row.Id)
 			x.NoError(err)
 			x.Equal(row.Secret, got.Secret)
 		}

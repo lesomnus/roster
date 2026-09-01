@@ -10,24 +10,24 @@ import (
 const (
 	// Label holds the string label denoting the email type in the database.
 	Label = "email"
-	// FieldID holds the string denoting the id field in the database.
-	FieldID = "id"
+	// FieldId holds the string denoting the id field in the database.
+	FieldId = "id"
 	// FieldAddress holds the string denoting the address field in the database.
 	FieldAddress = "address"
 	// FieldDateVerified holds the string denoting the date_verified field in the database.
 	FieldDateVerified = "date_verified"
-	// FieldTenantID holds the string denoting the tenant_id field in the database.
-	FieldTenantID = "tenant_id"
+	// FieldTenantId holds the string denoting the tenant_id field in the database.
+	FieldTenantId = "tenant_id"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
 	FieldDateErased = "date_erased"
 	// FieldDateCreated holds the string denoting the date_created field in the database.
 	FieldDateCreated = "date_created"
-	// FieldHolderID holds the string denoting the holder_id field in the database.
-	FieldHolderID = "holder_id"
-	// FieldVouchedByID holds the string denoting the vouched_by_id field in the database.
-	FieldVouchedByID = "vouched_by_id"
+	// FieldHolderId holds the string denoting the holder_id field in the database.
+	FieldHolderId = "holder_id"
+	// FieldVouchedById holds the string denoting the vouched_by_id field in the database.
+	FieldVouchedById = "vouched_by_id"
 	// EdgeHolder holds the string denoting the holder edge name in mutations.
 	EdgeHolder = "holder"
 	// EdgeVouchedBy holds the string denoting the vouched_by edge name in mutations.
@@ -50,17 +50,17 @@ const (
 	VouchedByColumn = "vouched_by_id"
 )
 
-// Columns holds all SQL columns for email fields.
+// Columns holds all Sql columns for email fields.
 var Columns = []string{
-	FieldID,
+	FieldId,
 	FieldAddress,
 	FieldDateVerified,
-	FieldTenantID,
+	FieldTenantId,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
-	FieldHolderID,
-	FieldVouchedByID,
+	FieldHolderId,
+	FieldVouchedById,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -76,9 +76,9 @@ func ValidColumn(column string) bool {
 // OrderOption defines the ordering options for the Email queries.
 type OrderOption func(*sql.Selector)
 
-// ByID orders the results by the id field.
-func ByID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldID, opts...).ToFunc()
+// ById orders the results by the id field.
+func ById(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldId, opts...).ToFunc()
 }
 
 // ByAddress orders the results by the address field.
@@ -91,9 +91,9 @@ func ByDateVerified(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDateVerified, opts...).ToFunc()
 }
 
-// ByTenantID orders the results by the tenant_id field.
-func ByTenantID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldTenantID, opts...).ToFunc()
+// ByTenantId orders the results by the tenant_id field.
+func ByTenantId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTenantId, opts...).ToFunc()
 }
 
 // ByDateUpdated orders the results by the date_updated field.
@@ -111,14 +111,14 @@ func ByDateCreated(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDateCreated, opts...).ToFunc()
 }
 
-// ByHolderID orders the results by the holder_id field.
-func ByHolderID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldHolderID, opts...).ToFunc()
+// ByHolderId orders the results by the holder_id field.
+func ByHolderId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldHolderId, opts...).ToFunc()
 }
 
-// ByVouchedByID orders the results by the vouched_by_id field.
-func ByVouchedByID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldVouchedByID, opts...).ToFunc()
+// ByVouchedById orders the results by the vouched_by_id field.
+func ByVouchedById(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldVouchedById, opts...).ToFunc()
 }
 
 // ByHolderField orders the results by holder field.
@@ -136,15 +136,15 @@ func ByVouchedByField(field string, opts ...sql.OrderTermOption) OrderOption {
 }
 func newHolderStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(HolderInverseTable, FieldID),
+		sqlgraph.From(Table, FieldId),
+		sqlgraph.To(HolderInverseTable, FieldId),
 		sqlgraph.Edge(sqlgraph.M2O, false, HolderTable, HolderColumn),
 	)
 }
 func newVouchedByStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(VouchedByInverseTable, FieldID),
+		sqlgraph.From(Table, FieldId),
+		sqlgraph.To(VouchedByInverseTable, FieldId),
 		sqlgraph.Edge(sqlgraph.M2O, false, VouchedByTable, VouchedByColumn),
 	)
 }

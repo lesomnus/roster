@@ -25,14 +25,14 @@ import (
 // NewCmdTrail is `roster trail`: what happens to the record of what happened,
 // after long enough.
 //
-// # Why it is a command and not an RPC
+// # Why it is a command and not an Rpc
 //
 // The same reason `roster key` is one, and a stronger version of it. The layer
 // in front of `AuditService` refuses every write -- *"the trail is written by
-// what happened, not by anybody asking"* -- and a retention RPC beside it would
+// what happened, not by anybody asking"* -- and a retention Rpc beside it would
 // be the exception that makes the sentence false. What a trail is worth is that
 // the credential which lets somebody act is not the credential that lets them
-// erase the record of having acted, and an API key that prunes is a stolen key
+// erase the record of having acted, and an Api key that prunes is a stolen key
 // that prunes.
 //
 // So this needs the database, which is the boundary that was being asked for.

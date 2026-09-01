@@ -39,7 +39,7 @@ import (
 // # What it does not check
 //
 // That the methods exist. They are opaque strings here on purpose: a key may
-// name another app's RPCs, which roster has no descriptors for and should not
+// name another app's Rpcs, which roster has no descriptors for and should not
 // try to acquire -- see `payday.TokenService`. What makes that safe is that a
 // grant only ever takes away, so a method named on a key that its holder cannot
 // call is still refused where the call lands.

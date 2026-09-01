@@ -19,7 +19,7 @@ type Credential struct {
 
 func (Credential) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
+		field.Uuid("id", uuid.UUID{}).
 			Unique().
 			Immutable(),
 		field.String("name"),
@@ -40,7 +40,7 @@ func (Credential) Fields() []ent.Field {
 		field.Time("date_created").
 			Immutable().
 			Optional(),
-		field.UUID("holder_id", uuid.UUID{}).
+		field.Uuid("holder_id", uuid.UUID{}).
 			Immutable(),
 	}
 }

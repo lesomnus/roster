@@ -105,12 +105,12 @@ func (s GroupServiceServer) Add(ctx context.Context, req *rstr.GroupAddRequest) 
 	if v, err := mint(ctx, s.Mint, "roster.Group", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
-		q.SetID(v)
+		q.SetId(v)
 	}
 	if k, err := TenantGetKey(ctx, st.Db, req.GetTenant()); err != nil {
 		return nil, err
 	} else {
-		q.SetTenantID(k)
+		q.SetTenantId(k)
 		ds = append(ds, func(v *rstr.Group) {
 			v.SetTenant(rstr.Tenant_builder{Id: k[:]}.Build())
 		})
@@ -119,7 +119,7 @@ func (s GroupServiceServer) Add(ctx context.Context, req *rstr.GroupAddRequest) 
 		if k, err := SiteGetKey(ctx, st.Db, req.GetSite()); err != nil {
 			return nil, err
 		} else {
-			q.SetSiteID(k)
+			q.SetSiteId(k)
 			ds = append(ds, func(v *rstr.Group) {
 				v.SetSite(rstr.Site_builder{Id: k[:]}.Build())
 			})
@@ -150,7 +150,7 @@ func (s GroupServiceServer) Add(ctx context.Context, req *rstr.GroupAddRequest) 
 
 	if err := record(ctx, s.Rec, st.Db, Change{
 		By:  rstr.GroupService_Add_FullMethodName,
-		Key: u.ID,
+		Key: u.Id,
 	}); err != nil {
 		return nil, err
 	}
@@ -189,7 +189,7 @@ func (s GroupServiceServer) Get(ctx context.Context, req *rstr.GroupGetRequest) 
 }
 
 func selectGroupKey(q *ent.GroupQuery) {
-	q.Select(group.FieldID)
+	q.Select(group.FieldId)
 }
 
 func GroupSelectedFields(m *rstr.GroupSelect) []string {
@@ -199,7 +199,7 @@ func GroupSelectedFields(m *rstr.GroupSelect) []string {
 
 	vs := make([]string, 0, len(group.Columns))
 	{
-		vs = append(vs, group.FieldID)
+		vs = append(vs, group.FieldId)
 	}
 	if m.GetAlias() {
 		vs = append(vs, group.FieldAlias)
@@ -283,7 +283,7 @@ func GroupGetKey(ctx context.Context, db *ent.Client, ref *rstr.GroupRef) (uuid.
 		return z, err
 	}
 
-	v, err := db.Group.Query().Where(p).OnlyID(ctx)
+	v, err := db.Group.Query().Where(p).OnlyId(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return z, status.Error(codes.NotFound, "Group not found")
@@ -297,7 +297,7 @@ func GroupGetKey(ctx context.Context, db *ent.Client, ref *rstr.GroupRef) (uuid.
 var groupOrmEntity = ormpatch.MustEntityOf(rstr.File_app_group_proto, "Group")
 
 var groupPatchColumns = entpatch.Columns{
-	1: group.FieldID, 2: group.TenantColumn, 3: group.SiteColumn, 4: group.FieldAlias, 5: group.FieldName, 6: group.FieldDesc, 13: group.FieldDateUpdated, 14: group.FieldDateErased, 15: group.FieldDateCreated}
+	1: group.FieldId, 2: group.TenantColumn, 3: group.SiteColumn, 4: group.FieldAlias, 5: group.FieldName, 6: group.FieldDesc, 13: group.FieldDateUpdated, 14: group.FieldDateErased, 15: group.FieldDateCreated}
 
 func (s GroupServiceServer) Apply(ctx context.Context, req *rstr.GroupApplyRequest) (*rstr.Group, error) {
 	if !req.HasPatch() {
@@ -342,7 +342,7 @@ func (s GroupServiceServer) apply(ctx context.Context, ref *rstr.GroupRef, doc *
 	}
 	at := &rstr.GroupRef{}
 	at.SetId(k[:])
-	p, err := s.narrow(ctx, group.IDEQ(k))
+	p, err := s.narrow(ctx, group.IdEQ(k))
 	if err != nil {
 		return nil, err
 	}
@@ -436,7 +436,7 @@ func (s GroupServiceServer) Erase(ctx context.Context, req *rstr.GroupRef) (*rst
 
 	var k any
 	if s.Rec != nil {
-		v, err := st.Db.Group.Query().Where(p).OnlyID(ctx)
+		v, err := st.Db.Group.Query().Where(p).OnlyId(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.GroupEraseResponse{}, nil
@@ -445,7 +445,7 @@ func (s GroupServiceServer) Erase(ctx context.Context, req *rstr.GroupRef) (*rst
 		}
 
 		k = v
-		p = group.And(p, group.IDEQ(v))
+		p = group.And(p, group.IdEQ(v))
 	}
 
 	u := st.Db.Group.Update().Where(p)
@@ -496,7 +496,7 @@ func pickGroup(req *rstr.GroupRef) (predicate.Group, error) {
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
-			return group.IDEQ(v), nil
+			return group.IdEQ(v), nil
 		}
 	case rstr.GroupRef_Slug_case:
 		k := req.GetSlug()
@@ -597,12 +597,12 @@ func (s GroupMembershipServiceServer) Add(ctx context.Context, req *rstr.GroupMe
 	if v, err := mint(ctx, s.Mint, "roster.GroupMembership", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
-		q.SetID(v)
+		q.SetId(v)
 	}
 	if k, err := HolderGetKey(ctx, st.Db, req.GetHolder()); err != nil {
 		return nil, err
 	} else {
-		q.SetHolderID(k)
+		q.SetHolderId(k)
 		ds = append(ds, func(v *rstr.GroupMembership) {
 			v.SetHolder(rstr.Holder_builder{Id: k[:]}.Build())
 		})
@@ -610,7 +610,7 @@ func (s GroupMembershipServiceServer) Add(ctx context.Context, req *rstr.GroupMe
 	if k, err := GroupGetKey(ctx, st.Db, req.GetGroup()); err != nil {
 		return nil, err
 	} else {
-		q.SetGroupID(k)
+		q.SetGroupId(k)
 		ds = append(ds, func(v *rstr.GroupMembership) {
 			v.SetGroup(rstr.Group_builder{Id: k[:]}.Build())
 		})
@@ -637,7 +637,7 @@ func (s GroupMembershipServiceServer) Add(ctx context.Context, req *rstr.GroupMe
 
 	if err := record(ctx, s.Rec, st.Db, Change{
 		By:  rstr.GroupMembershipService_Add_FullMethodName,
-		Key: u.ID,
+		Key: u.Id,
 	}); err != nil {
 		return nil, err
 	}
@@ -676,7 +676,7 @@ func (s GroupMembershipServiceServer) Get(ctx context.Context, req *rstr.GroupMe
 }
 
 func selectGroupMembershipKey(q *ent.GroupMembershipQuery) {
-	q.Select(groupmembership.FieldID)
+	q.Select(groupmembership.FieldId)
 }
 
 func GroupMembershipSelectedFields(m *rstr.GroupMembershipSelect) []string {
@@ -686,7 +686,7 @@ func GroupMembershipSelectedFields(m *rstr.GroupMembershipSelect) []string {
 
 	vs := make([]string, 0, len(groupmembership.Columns))
 	{
-		vs = append(vs, groupmembership.FieldID)
+		vs = append(vs, groupmembership.FieldId)
 	}
 	if m.GetDateUpdated() {
 		vs = append(vs, groupmembership.FieldDateUpdated)
@@ -762,7 +762,7 @@ func GroupMembershipGetKey(ctx context.Context, db *ent.Client, ref *rstr.GroupM
 		return z, err
 	}
 
-	v, err := db.GroupMembership.Query().Where(p).OnlyID(ctx)
+	v, err := db.GroupMembership.Query().Where(p).OnlyId(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return z, status.Error(codes.NotFound, "GroupMembership not found")
@@ -776,7 +776,7 @@ func GroupMembershipGetKey(ctx context.Context, db *ent.Client, ref *rstr.GroupM
 var groupMembershipOrmEntity = ormpatch.MustEntityOf(rstr.File_app_group_proto, "GroupMembership")
 
 var groupMembershipPatchColumns = entpatch.Columns{
-	1: groupmembership.FieldID, 2: groupmembership.HolderColumn, 8: groupmembership.GroupColumn, 13: groupmembership.FieldDateUpdated, 14: groupmembership.FieldDateErased, 15: groupmembership.FieldDateCreated}
+	1: groupmembership.FieldId, 2: groupmembership.HolderColumn, 8: groupmembership.GroupColumn, 13: groupmembership.FieldDateUpdated, 14: groupmembership.FieldDateErased, 15: groupmembership.FieldDateCreated}
 
 func (s GroupMembershipServiceServer) Apply(ctx context.Context, req *rstr.GroupMembershipApplyRequest) (*rstr.GroupMembership, error) {
 	if !req.HasPatch() {
@@ -821,7 +821,7 @@ func (s GroupMembershipServiceServer) apply(ctx context.Context, ref *rstr.Group
 	}
 	at := &rstr.GroupMembershipRef{}
 	at.SetId(k[:])
-	p, err := s.narrow(ctx, groupmembership.IDEQ(k))
+	p, err := s.narrow(ctx, groupmembership.IdEQ(k))
 	if err != nil {
 		return nil, err
 	}
@@ -915,7 +915,7 @@ func (s GroupMembershipServiceServer) Erase(ctx context.Context, req *rstr.Group
 
 	var k any
 	if s.Rec != nil {
-		v, err := st.Db.GroupMembership.Query().Where(p).OnlyID(ctx)
+		v, err := st.Db.GroupMembership.Query().Where(p).OnlyId(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.GroupMembershipEraseResponse{}, nil
@@ -924,7 +924,7 @@ func (s GroupMembershipServiceServer) Erase(ctx context.Context, req *rstr.Group
 		}
 
 		k = v
-		p = groupmembership.And(p, groupmembership.IDEQ(v))
+		p = groupmembership.And(p, groupmembership.IdEQ(v))
 	}
 
 	u := st.Db.GroupMembership.Update().Where(p)
@@ -975,7 +975,7 @@ func pickGroupMembership(req *rstr.GroupMembershipRef) (predicate.GroupMembershi
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
-			return groupmembership.IDEQ(v), nil
+			return groupmembership.IdEQ(v), nil
 		}
 	case rstr.GroupMembershipRef_Member_case:
 		k := req.GetMember()

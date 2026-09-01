@@ -103,12 +103,12 @@ func (s CredentialServiceServer) Add(ctx context.Context, req *rstr.CredentialAd
 	if v, err := mint(ctx, s.Mint, "roster.Credential", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
-		q.SetID(v)
+		q.SetId(v)
 	}
 	if k, err := HolderGetKey(ctx, st.Db, req.GetHolder()); err != nil {
 		return nil, err
 	} else {
-		q.SetHolderID(k)
+		q.SetHolderId(k)
 		ds = append(ds, func(v *rstr.Credential) {
 			v.SetHolder(rstr.Holder_builder{Id: k[:]}.Build())
 		})
@@ -146,7 +146,7 @@ func (s CredentialServiceServer) Add(ctx context.Context, req *rstr.CredentialAd
 
 	if err := record(ctx, s.Rec, st.Db, Change{
 		By:  rstr.CredentialService_Add_FullMethodName,
-		Key: u.ID,
+		Key: u.Id,
 	}); err != nil {
 		return nil, err
 	}
@@ -185,7 +185,7 @@ func (s CredentialServiceServer) Get(ctx context.Context, req *rstr.CredentialGe
 }
 
 func selectCredentialKey(q *ent.CredentialQuery) {
-	q.Select(credential.FieldID)
+	q.Select(credential.FieldId)
 }
 
 func CredentialSelectedFields(m *rstr.CredentialSelect) []string {
@@ -195,7 +195,7 @@ func CredentialSelectedFields(m *rstr.CredentialSelect) []string {
 
 	vs := make([]string, 0, len(credential.Columns))
 	{
-		vs = append(vs, credential.FieldID)
+		vs = append(vs, credential.FieldId)
 	}
 	if m.GetName() {
 		vs = append(vs, credential.FieldName)
@@ -285,7 +285,7 @@ func CredentialGetKey(ctx context.Context, db *ent.Client, ref *rstr.CredentialR
 		return z, err
 	}
 
-	v, err := db.Credential.Query().Where(p).OnlyID(ctx)
+	v, err := db.Credential.Query().Where(p).OnlyId(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return z, status.Error(codes.NotFound, "Credential not found")
@@ -299,7 +299,7 @@ func CredentialGetKey(ctx context.Context, db *ent.Client, ref *rstr.CredentialR
 var credentialOrmEntity = ormpatch.MustEntityOf(rstr.File_app_credential_proto, "Credential")
 
 var credentialPatchColumns = entpatch.Columns{
-	1: credential.FieldID, 2: credential.HolderColumn, 5: credential.FieldName, 8: credential.FieldKind, 9: credential.FieldSecret, 10: credential.FieldFailures, 11: credential.FieldDateLocked, 12: credential.FieldDateRotated, 16: credential.FieldLastStep, 13: credential.FieldDateUpdated, 14: credential.FieldDateErased, 15: credential.FieldDateCreated}
+	1: credential.FieldId, 2: credential.HolderColumn, 5: credential.FieldName, 8: credential.FieldKind, 9: credential.FieldSecret, 10: credential.FieldFailures, 11: credential.FieldDateLocked, 12: credential.FieldDateRotated, 16: credential.FieldLastStep, 13: credential.FieldDateUpdated, 14: credential.FieldDateErased, 15: credential.FieldDateCreated}
 
 func (s CredentialServiceServer) Apply(ctx context.Context, req *rstr.CredentialApplyRequest) (*rstr.Credential, error) {
 	if !req.HasPatch() {
@@ -344,7 +344,7 @@ func (s CredentialServiceServer) apply(ctx context.Context, ref *rstr.Credential
 	}
 	at := &rstr.CredentialRef{}
 	at.SetId(k[:])
-	p, err := s.narrow(ctx, credential.IDEQ(k))
+	p, err := s.narrow(ctx, credential.IdEQ(k))
 	if err != nil {
 		return nil, err
 	}
@@ -438,7 +438,7 @@ func (s CredentialServiceServer) Erase(ctx context.Context, req *rstr.Credential
 
 	var k any
 	if s.Rec != nil {
-		v, err := st.Db.Credential.Query().Where(p).OnlyID(ctx)
+		v, err := st.Db.Credential.Query().Where(p).OnlyId(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.CredentialEraseResponse{}, nil
@@ -447,7 +447,7 @@ func (s CredentialServiceServer) Erase(ctx context.Context, req *rstr.Credential
 		}
 
 		k = v
-		p = credential.And(p, credential.IDEQ(v))
+		p = credential.And(p, credential.IdEQ(v))
 	}
 
 	u := st.Db.Credential.Update().Where(p)
@@ -498,7 +498,7 @@ func pickCredential(req *rstr.CredentialRef) (predicate.Credential, error) {
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
-			return credential.IDEQ(v), nil
+			return credential.IdEQ(v), nil
 		}
 	case rstr.CredentialRef_Kind_case:
 		k := req.GetKind()

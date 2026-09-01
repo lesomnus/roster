@@ -204,7 +204,7 @@ func TestGettingItRightClearsWhatGettingItWrongLeftBehind(t *testing.T) {
 // TestSigningInDoesNotWriteWhenNothingChanged.
 //
 // Every sign-in would otherwise bump a row version, write an audit entry and
-// publish a watch event for a fact that did not change -- on the busiest RPC
+// publish a watch event for a fact that did not change -- on the busiest Rpc
 // this app has.
 func TestSigningInDoesNotWriteWhenNothingChanged(t *testing.T) {
 	x := require.New(t)
@@ -412,7 +412,7 @@ func TestNobodyVerifiesAPasswordAnonymously(t *testing.T) {
 // verifier too.
 //
 // **Reached** and not "registered", because from out here the two doors are one
-// answer -- `grpcx.ErrClosed` is `Unimplemented` and so is a method gRPC cannot
+// answer -- `grpcx.ErrClosed` is `Unimplemented` and so is a method gRpc cannot
 // dispatch. Which is right for a caller and worth saying for a reader: this
 // passes with either door shut, and it was checked by opening both.
 func TestTheApiKeyServiceCannotBeReachedEither(t *testing.T) {

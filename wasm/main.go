@@ -12,7 +12,7 @@
 // the same stack, the same wall from the same schema, and the **control
 // plane** built the way `Build` builds it. Two things differ and both are one
 // line: the databases are SQLite in a Worker rather than files, and calls
-// arrive over a message port rather than HTTP/2.
+// arrive over a message port rather than Http/2.
 //
 // # Signing in, and the one thing a page cannot have here
 //
@@ -108,7 +108,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// A server that is not gRPC's, taking the same services.
+	// A server that is not gRpc's, taking the same services.
 	gw := jsport.NewGateway()
 
 	// The same interceptors the process serves with, because the stack behind

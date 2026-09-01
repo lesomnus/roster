@@ -19,14 +19,14 @@ type Connection struct {
 
 func (Connection) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
+		field.Uuid("id", uuid.UUID{}).
 			Unique().
 			Immutable(),
 		field.String("name"),
 		field.String("desc"),
 		field.String("issuer"),
 		field.String("client_id"),
-		field.JSON("scopes", []string{}).
+		field.Json("scopes", []string{}).
 			Optional(),
 		field.String("secret_ref"),
 		field.Time("date_updated"),
@@ -36,7 +36,7 @@ func (Connection) Fields() []ent.Field {
 		field.Time("date_created").
 			Immutable().
 			Optional(),
-		field.UUID("tenant_id", uuid.UUID{}).
+		field.Uuid("tenant_id", uuid.UUID{}).
 			Immutable(),
 	}
 }

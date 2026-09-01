@@ -22,7 +22,7 @@ var randRead = rand.Read
 // no credential of this kind and a wrong secret are one response, and the first
 // two burn so that they take as long as the third.*
 //
-// A TOTP comparison is three HMAC-SHA1s and a decrypt -- microseconds. So the
+// A TOTP comparison is three HMac-SHA1s and a decrypt -- microseconds. So the
 // moment a second kind exists, a `totp` verify against somebody who has none
 // costs forty milliseconds and one against somebody who has one costs nothing,
 // and the sign of the difference is **inverted** from what D14 built. That is a
@@ -231,7 +231,7 @@ func (v Totp) Compare(stored, secret []byte, since int64) (bool, int64, error) {
 	return ok, step, nil
 }
 
-// Burn is the decrypt and the three HMACs a real comparison would have done.
+// Burn is the decrypt and the three HMacs a real comparison would have done.
 //
 // Against a seed this deployment made rather than a constant, so that the
 // unwrap costs what an unwrap costs. What is being matched is the **time**, and

@@ -96,21 +96,21 @@ func (_c *SessionCreate) SetNillableDateCreated(v *time.Time) *SessionCreate {
 	return _c
 }
 
-// SetHolderID sets the "holder_id" field.
-func (_c *SessionCreate) SetHolderID(v uuid.UUID) *SessionCreate {
-	_c.mutation.SetHolderID(v)
+// SetHolderId sets the "holder_id" field.
+func (_c *SessionCreate) SetHolderId(v uuid.UUID) *SessionCreate {
+	_c.mutation.SetHolderId(v)
 	return _c
 }
 
-// SetID sets the "id" field.
-func (_c *SessionCreate) SetID(v uuid.UUID) *SessionCreate {
-	_c.mutation.SetID(v)
+// SetId sets the "id" field.
+func (_c *SessionCreate) SetId(v uuid.UUID) *SessionCreate {
+	_c.mutation.SetId(v)
 	return _c
 }
 
 // SetHolder sets the "holder" edge to the Holder entity.
 func (_c *SessionCreate) SetHolder(v *Holder) *SessionCreate {
-	return _c.SetHolderID(v.ID)
+	return _c.SetHolderId(v.Id)
 }
 
 // Mutation returns the SessionMutation object of the builder.
@@ -156,10 +156,10 @@ func (_c *SessionCreate) check() error {
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Session.date_updated"`)}
 	}
-	if _, ok := _c.mutation.HolderID(); !ok {
+	if _, ok := _c.mutation.HolderId(); !ok {
 		return &ValidationError{Name: "holder_id", err: errors.New(`ent: missing required field "Session.holder_id"`)}
 	}
-	if len(_c.mutation.HolderIDs()) == 0 {
+	if len(_c.mutation.HolderIds()) == 0 {
 		return &ValidationError{Name: "holder", err: errors.New(`ent: missing required edge "Session.holder"`)}
 	}
 	return nil
@@ -176,14 +176,14 @@ func (_c *SessionCreate) sqlSave(ctx context.Context) (*Session, error) {
 		}
 		return nil, err
 	}
-	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+	if _spec.Id.Value != nil {
+		if id, ok := _spec.Id.Value.(*uuid.UUID); ok {
+			_node.Id = *id
+		} else if err := _node.Id.Scan(_spec.Id.Value); err != nil {
 			return nil, err
 		}
 	}
-	_c.mutation.id = &_node.ID
+	_c.mutation.id = &_node.Id
 	_c.mutation.done = true
 	return _node, nil
 }
@@ -191,11 +191,11 @@ func (_c *SessionCreate) sqlSave(ctx context.Context) (*Session, error) {
 func (_c *SessionCreate) createSpec() (*Session, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Session{config: _c.config}
-		_spec = sqlgraph.NewCreateSpec(session.Table, sqlgraph.NewFieldSpec(session.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(session.Table, sqlgraph.NewFieldSpec(session.FieldId, field.TypeUuid))
 	)
-	if id, ok := _c.mutation.ID(); ok {
-		_node.ID = id
-		_spec.ID.Value = &id
+	if id, ok := _c.mutation.Id(); ok {
+		_node.Id = id
+		_spec.Id.Value = &id
 	}
 	if value, ok := _c.mutation.Grant(); ok {
 		_spec.SetField(session.FieldGrant, field.TypeBytes, value)
@@ -225,7 +225,7 @@ func (_c *SessionCreate) createSpec() (*Session, *sqlgraph.CreateSpec) {
 		_spec.SetField(session.FieldDateCreated, field.TypeTime, value)
 		_node.DateCreated = value
 	}
-	if nodes := _c.mutation.HolderIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.HolderIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -233,13 +233,13 @@ func (_c *SessionCreate) createSpec() (*Session, *sqlgraph.CreateSpec) {
 			Columns: []string{session.HolderColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(holder.FieldID, field.TypeUUID),
+				IdSpec: sqlgraph.NewFieldSpec(holder.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.HolderID = nodes[0]
+		_node.HolderId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -288,7 +288,7 @@ func (_c *SessionCreateBulk) Save(ctx context.Context) ([]*Session, error) {
 				if err != nil {
 					return nil, err
 				}
-				mutation.id = &nodes[i].ID
+				mutation.id = &nodes[i].Id
 				mutation.done = true
 				return nodes[i], nil
 			})

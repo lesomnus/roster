@@ -103,12 +103,12 @@ func (s ContinuationServiceServer) Add(ctx context.Context, req *rstr.Continuati
 	if v, err := mint(ctx, s.Mint, "roster.Continuation", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
-		q.SetID(v)
+		q.SetId(v)
 	}
 	if k, err := HolderGetKey(ctx, st.Db, req.GetHolder()); err != nil {
 		return nil, err
 	} else {
-		q.SetHolderID(k)
+		q.SetHolderId(k)
 		ds = append(ds, func(v *rstr.Continuation) {
 			v.SetHolder(rstr.Holder_builder{Id: k[:]}.Build())
 		})
@@ -150,7 +150,7 @@ func (s ContinuationServiceServer) Add(ctx context.Context, req *rstr.Continuati
 
 	if err := record(ctx, s.Rec, st.Db, Change{
 		By:  rstr.ContinuationService_Add_FullMethodName,
-		Key: u.ID,
+		Key: u.Id,
 	}); err != nil {
 		return nil, err
 	}
@@ -189,7 +189,7 @@ func (s ContinuationServiceServer) Get(ctx context.Context, req *rstr.Continuati
 }
 
 func selectContinuationKey(q *ent.ContinuationQuery) {
-	q.Select(continuation.FieldID)
+	q.Select(continuation.FieldId)
 }
 
 func ContinuationSelectedFields(m *rstr.ContinuationSelect) []string {
@@ -199,7 +199,7 @@ func ContinuationSelectedFields(m *rstr.ContinuationSelect) []string {
 
 	vs := make([]string, 0, len(continuation.Columns))
 	{
-		vs = append(vs, continuation.FieldID)
+		vs = append(vs, continuation.FieldId)
 	}
 	if m.GetSatisfied() {
 		vs = append(vs, continuation.FieldSatisfied)
@@ -283,7 +283,7 @@ func ContinuationGetKey(ctx context.Context, db *ent.Client, ref *rstr.Continuat
 		return z, err
 	}
 
-	v, err := db.Continuation.Query().Where(p).OnlyID(ctx)
+	v, err := db.Continuation.Query().Where(p).OnlyId(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return z, status.Error(codes.NotFound, "Continuation not found")
@@ -297,7 +297,7 @@ func ContinuationGetKey(ctx context.Context, db *ent.Client, ref *rstr.Continuat
 var continuationOrmEntity = ormpatch.MustEntityOf(rstr.File_app_continuation_proto, "Continuation")
 
 var continuationPatchColumns = entpatch.Columns{
-	1: continuation.FieldID, 2: continuation.HolderColumn, 8: continuation.FieldSatisfied, 9: continuation.FieldSecret, 10: continuation.FieldIssuer, 12: continuation.FieldMeteredBy, 11: continuation.FieldDateExpires, 13: continuation.FieldDateUpdated, 14: continuation.FieldDateErased, 15: continuation.FieldDateCreated}
+	1: continuation.FieldId, 2: continuation.HolderColumn, 8: continuation.FieldSatisfied, 9: continuation.FieldSecret, 10: continuation.FieldIssuer, 12: continuation.FieldMeteredBy, 11: continuation.FieldDateExpires, 13: continuation.FieldDateUpdated, 14: continuation.FieldDateErased, 15: continuation.FieldDateCreated}
 
 func (s ContinuationServiceServer) Apply(ctx context.Context, req *rstr.ContinuationApplyRequest) (*rstr.Continuation, error) {
 	if !req.HasPatch() {
@@ -342,7 +342,7 @@ func (s ContinuationServiceServer) apply(ctx context.Context, ref *rstr.Continua
 	}
 	at := &rstr.ContinuationRef{}
 	at.SetId(k[:])
-	p, err := s.narrow(ctx, continuation.IDEQ(k))
+	p, err := s.narrow(ctx, continuation.IdEQ(k))
 	if err != nil {
 		return nil, err
 	}
@@ -436,7 +436,7 @@ func (s ContinuationServiceServer) Erase(ctx context.Context, req *rstr.Continua
 
 	var k any
 	if s.Rec != nil {
-		v, err := st.Db.Continuation.Query().Where(p).OnlyID(ctx)
+		v, err := st.Db.Continuation.Query().Where(p).OnlyId(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.ContinuationEraseResponse{}, nil
@@ -445,7 +445,7 @@ func (s ContinuationServiceServer) Erase(ctx context.Context, req *rstr.Continua
 		}
 
 		k = v
-		p = continuation.And(p, continuation.IDEQ(v))
+		p = continuation.And(p, continuation.IdEQ(v))
 	}
 
 	u := st.Db.Continuation.Update().Where(p)
@@ -496,7 +496,7 @@ func pickContinuation(req *rstr.ContinuationRef) (predicate.Continuation, error)
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
-			return continuation.IDEQ(v), nil
+			return continuation.IdEQ(v), nil
 		}
 	case rstr.ContinuationRef_Secret_case:
 		return continuation.SecretEQ(req.GetSecret()), nil

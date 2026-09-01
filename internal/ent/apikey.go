@@ -18,8 +18,8 @@ import (
 // ApiKey is the model entity for the ApiKey schema.
 type ApiKey struct {
 	config `json:"-"`
-	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	// Id of the ent.
+	Id uuid.UUID `json:"id,omitempty"`
 	// Alias holds the value of the "alias" field.
 	Alias string `json:"alias,omitempty"`
 	// Desc holds the value of the "desc" field.
@@ -38,8 +38,8 @@ type ApiKey struct {
 	DateErased *time.Time `json:"date_erased,omitempty"`
 	// DateCreated holds the value of the "date_created" field.
 	DateCreated time.Time `json:"date_created,omitempty"`
-	// HolderID holds the value of the "holder_id" field.
-	HolderID uuid.UUID `json:"holder_id,omitempty"`
+	// HolderId holds the value of the "holder_id" field.
+	HolderId uuid.UUID `json:"holder_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ApiKeyQuery when eager-loading is set.
 	Edges        ApiKeyEdges `json:"edges"`
@@ -77,7 +77,7 @@ func (*ApiKey) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case apikey.FieldDateUsed, apikey.FieldDateExpires, apikey.FieldDateUpdated, apikey.FieldDateErased, apikey.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case apikey.FieldID, apikey.FieldHolderID:
+		case apikey.FieldId, apikey.FieldHolderId:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -94,11 +94,11 @@ func (_m *ApiKey) assignValues(columns []string, values []any) error {
 	}
 	for i := range columns {
 		switch columns[i] {
-		case apikey.FieldID:
+		case apikey.FieldId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				_m.ID = *value
+				_m.Id = *value
 			}
 		case apikey.FieldAlias:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -159,11 +159,11 @@ func (_m *ApiKey) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.DateCreated = value.Time
 			}
-		case apikey.FieldHolderID:
+		case apikey.FieldHolderId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field holder_id", values[i])
 			} else if value != nil {
-				_m.HolderID = *value
+				_m.HolderId = *value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -205,7 +205,7 @@ func (_m *ApiKey) Unwrap() *ApiKey {
 func (_m *ApiKey) String() string {
 	var builder strings.Builder
 	builder.WriteString("ApiKey(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.Id))
 	builder.WriteString("alias=")
 	builder.WriteString(_m.Alias)
 	builder.WriteString(", ")
@@ -240,7 +240,7 @@ func (_m *ApiKey) String() string {
 	builder.WriteString(_m.DateCreated.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("holder_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.HolderID))
+	builder.WriteString(fmt.Sprintf("%v", _m.HolderId))
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -99,29 +99,29 @@ func (_u *EmailUpdate) ClearDateErased() *EmailUpdate {
 	return _u
 }
 
-// SetVouchedByID sets the "vouched_by_id" field.
-func (_u *EmailUpdate) SetVouchedByID(v uuid.UUID) *EmailUpdate {
-	_u.mutation.SetVouchedByID(v)
+// SetVouchedById sets the "vouched_by_id" field.
+func (_u *EmailUpdate) SetVouchedById(v uuid.UUID) *EmailUpdate {
+	_u.mutation.SetVouchedById(v)
 	return _u
 }
 
-// SetNillableVouchedByID sets the "vouched_by_id" field if the given value is not nil.
-func (_u *EmailUpdate) SetNillableVouchedByID(v *uuid.UUID) *EmailUpdate {
+// SetNillableVouchedById sets the "vouched_by_id" field if the given value is not nil.
+func (_u *EmailUpdate) SetNillableVouchedById(v *uuid.UUID) *EmailUpdate {
 	if v != nil {
-		_u.SetVouchedByID(*v)
+		_u.SetVouchedById(*v)
 	}
 	return _u
 }
 
-// ClearVouchedByID clears the value of the "vouched_by_id" field.
-func (_u *EmailUpdate) ClearVouchedByID() *EmailUpdate {
-	_u.mutation.ClearVouchedByID()
+// ClearVouchedById clears the value of the "vouched_by_id" field.
+func (_u *EmailUpdate) ClearVouchedById() *EmailUpdate {
+	_u.mutation.ClearVouchedById()
 	return _u
 }
 
 // SetVouchedBy sets the "vouched_by" edge to the Identity entity.
 func (_u *EmailUpdate) SetVouchedBy(v *Identity) *EmailUpdate {
-	return _u.SetVouchedByID(v.ID)
+	return _u.SetVouchedById(v.Id)
 }
 
 // Mutation returns the EmailMutation object of the builder.
@@ -164,7 +164,7 @@ func (_u *EmailUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *EmailUpdate) check() error {
-	if _u.mutation.HolderCleared() && len(_u.mutation.HolderIDs()) > 0 {
+	if _u.mutation.HolderCleared() && len(_u.mutation.HolderIds()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Email.holder"`)
 	}
 	return nil
@@ -180,7 +180,7 @@ func (_u *EmailUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(email.Table, email.Columns, sqlgraph.NewFieldSpec(email.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(email.Table, email.Columns, sqlgraph.NewFieldSpec(email.FieldId, field.TypeUuid))
 	if ps := _u.mutation.Predicates(); len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -217,12 +217,12 @@ func (_u *EmailUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Columns: []string{email.VouchedByColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(identity.FieldID, field.TypeUUID),
+				IdSpec: sqlgraph.NewFieldSpec(identity.FieldId, field.TypeUuid),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.VouchedByIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.VouchedByIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -230,7 +230,7 @@ func (_u *EmailUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Columns: []string{email.VouchedByColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(identity.FieldID, field.TypeUUID),
+				IdSpec: sqlgraph.NewFieldSpec(identity.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {
@@ -328,29 +328,29 @@ func (_u *EmailUpdateOne) ClearDateErased() *EmailUpdateOne {
 	return _u
 }
 
-// SetVouchedByID sets the "vouched_by_id" field.
-func (_u *EmailUpdateOne) SetVouchedByID(v uuid.UUID) *EmailUpdateOne {
-	_u.mutation.SetVouchedByID(v)
+// SetVouchedById sets the "vouched_by_id" field.
+func (_u *EmailUpdateOne) SetVouchedById(v uuid.UUID) *EmailUpdateOne {
+	_u.mutation.SetVouchedById(v)
 	return _u
 }
 
-// SetNillableVouchedByID sets the "vouched_by_id" field if the given value is not nil.
-func (_u *EmailUpdateOne) SetNillableVouchedByID(v *uuid.UUID) *EmailUpdateOne {
+// SetNillableVouchedById sets the "vouched_by_id" field if the given value is not nil.
+func (_u *EmailUpdateOne) SetNillableVouchedById(v *uuid.UUID) *EmailUpdateOne {
 	if v != nil {
-		_u.SetVouchedByID(*v)
+		_u.SetVouchedById(*v)
 	}
 	return _u
 }
 
-// ClearVouchedByID clears the value of the "vouched_by_id" field.
-func (_u *EmailUpdateOne) ClearVouchedByID() *EmailUpdateOne {
-	_u.mutation.ClearVouchedByID()
+// ClearVouchedById clears the value of the "vouched_by_id" field.
+func (_u *EmailUpdateOne) ClearVouchedById() *EmailUpdateOne {
+	_u.mutation.ClearVouchedById()
 	return _u
 }
 
 // SetVouchedBy sets the "vouched_by" edge to the Identity entity.
 func (_u *EmailUpdateOne) SetVouchedBy(v *Identity) *EmailUpdateOne {
-	return _u.SetVouchedByID(v.ID)
+	return _u.SetVouchedById(v.Id)
 }
 
 // Mutation returns the EmailMutation object of the builder.
@@ -406,7 +406,7 @@ func (_u *EmailUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *EmailUpdateOne) check() error {
-	if _u.mutation.HolderCleared() && len(_u.mutation.HolderIDs()) > 0 {
+	if _u.mutation.HolderCleared() && len(_u.mutation.HolderIds()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Email.holder"`)
 	}
 	return nil
@@ -422,20 +422,20 @@ func (_u *EmailUpdateOne) sqlSave(ctx context.Context) (_node *Email, err error)
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(email.Table, email.Columns, sqlgraph.NewFieldSpec(email.FieldID, field.TypeUUID))
-	id, ok := _u.mutation.ID()
+	_spec := sqlgraph.NewUpdateSpec(email.Table, email.Columns, sqlgraph.NewFieldSpec(email.FieldId, field.TypeUuid))
+	id, ok := _u.mutation.Id()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Email.id" for update`)}
 	}
-	_spec.Node.ID.Value = id
+	_spec.Node.Id.Value = id
 	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, email.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, email.FieldId)
 		for _, f := range fields {
 			if !email.ValidColumn(f) {
 				return nil, &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 			}
-			if f != email.FieldID {
+			if f != email.FieldId {
 				_spec.Node.Columns = append(_spec.Node.Columns, f)
 			}
 		}
@@ -476,12 +476,12 @@ func (_u *EmailUpdateOne) sqlSave(ctx context.Context) (_node *Email, err error)
 			Columns: []string{email.VouchedByColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(identity.FieldID, field.TypeUUID),
+				IdSpec: sqlgraph.NewFieldSpec(identity.FieldId, field.TypeUuid),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.VouchedByIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.VouchedByIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -489,7 +489,7 @@ func (_u *EmailUpdateOne) sqlSave(ctx context.Context) (_node *Email, err error)
 			Columns: []string{email.VouchedByColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(identity.FieldID, field.TypeUUID),
+				IdSpec: sqlgraph.NewFieldSpec(identity.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {

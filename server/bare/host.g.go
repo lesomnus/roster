@@ -103,12 +103,12 @@ func (s HostServiceServer) Add(ctx context.Context, req *rstr.HostAddRequest) (*
 	if v, err := mint(ctx, s.Mint, "roster.Host", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
-		q.SetID(v)
+		q.SetId(v)
 	}
 	if k, err := TenantGetKey(ctx, st.Db, req.GetTenant()); err != nil {
 		return nil, err
 	} else {
-		q.SetTenantID(k)
+		q.SetTenantId(k)
 		ds = append(ds, func(v *rstr.Host) {
 			v.SetTenant(rstr.Tenant_builder{Id: k[:]}.Build())
 		})
@@ -137,7 +137,7 @@ func (s HostServiceServer) Add(ctx context.Context, req *rstr.HostAddRequest) (*
 
 	if err := record(ctx, s.Rec, st.Db, Change{
 		By:  rstr.HostService_Add_FullMethodName,
-		Key: u.ID,
+		Key: u.Id,
 	}); err != nil {
 		return nil, err
 	}
@@ -176,7 +176,7 @@ func (s HostServiceServer) Get(ctx context.Context, req *rstr.HostGetRequest) (*
 }
 
 func selectHostKey(q *ent.HostQuery) {
-	q.Select(host.FieldID)
+	q.Select(host.FieldId)
 }
 
 func HostSelectedFields(m *rstr.HostSelect) []string {
@@ -186,7 +186,7 @@ func HostSelectedFields(m *rstr.HostSelect) []string {
 
 	vs := make([]string, 0, len(host.Columns))
 	{
-		vs = append(vs, host.FieldID)
+		vs = append(vs, host.FieldId)
 	}
 	if m.GetName() {
 		vs = append(vs, host.FieldName)
@@ -260,7 +260,7 @@ func HostGetKey(ctx context.Context, db *ent.Client, ref *rstr.HostRef) (uuid.UU
 		return z, err
 	}
 
-	v, err := db.Host.Query().Where(p).OnlyID(ctx)
+	v, err := db.Host.Query().Where(p).OnlyId(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return z, status.Error(codes.NotFound, "Host not found")
@@ -274,7 +274,7 @@ func HostGetKey(ctx context.Context, db *ent.Client, ref *rstr.HostRef) (uuid.UU
 var hostOrmEntity = ormpatch.MustEntityOf(rstr.File_app_host_proto, "Host")
 
 var hostPatchColumns = entpatch.Columns{
-	1: host.FieldID, 2: host.TenantColumn, 5: host.FieldName, 6: host.FieldDesc, 13: host.FieldDateUpdated, 14: host.FieldDateErased, 15: host.FieldDateCreated}
+	1: host.FieldId, 2: host.TenantColumn, 5: host.FieldName, 6: host.FieldDesc, 13: host.FieldDateUpdated, 14: host.FieldDateErased, 15: host.FieldDateCreated}
 
 func (s HostServiceServer) Apply(ctx context.Context, req *rstr.HostApplyRequest) (*rstr.Host, error) {
 	if !req.HasPatch() {
@@ -319,7 +319,7 @@ func (s HostServiceServer) apply(ctx context.Context, ref *rstr.HostRef, doc *pa
 	}
 	at := &rstr.HostRef{}
 	at.SetId(k[:])
-	p, err := s.narrow(ctx, host.IDEQ(k))
+	p, err := s.narrow(ctx, host.IdEQ(k))
 	if err != nil {
 		return nil, err
 	}
@@ -413,7 +413,7 @@ func (s HostServiceServer) Erase(ctx context.Context, req *rstr.HostRef) (*rstr.
 
 	var k any
 	if s.Rec != nil {
-		v, err := st.Db.Host.Query().Where(p).OnlyID(ctx)
+		v, err := st.Db.Host.Query().Where(p).OnlyId(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.HostEraseResponse{}, nil
@@ -422,7 +422,7 @@ func (s HostServiceServer) Erase(ctx context.Context, req *rstr.HostRef) (*rstr.
 		}
 
 		k = v
-		p = host.And(p, host.IDEQ(v))
+		p = host.And(p, host.IdEQ(v))
 	}
 
 	u := st.Db.Host.Update().Where(p)
@@ -473,7 +473,7 @@ func pickHost(req *rstr.HostRef) (predicate.Host, error) {
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
-			return host.IDEQ(v), nil
+			return host.IdEQ(v), nil
 		}
 	case rstr.HostRef_Name_case:
 		return host.NameEQ(req.GetName()), nil
@@ -566,12 +566,12 @@ func (s MailDomainServiceServer) Add(ctx context.Context, req *rstr.MailDomainAd
 	if v, err := mint(ctx, s.Mint, "roster.MailDomain", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
-		q.SetID(v)
+		q.SetId(v)
 	}
 	if k, err := TenantGetKey(ctx, st.Db, req.GetTenant()); err != nil {
 		return nil, err
 	} else {
-		q.SetTenantID(k)
+		q.SetTenantId(k)
 		ds = append(ds, func(v *rstr.MailDomain) {
 			v.SetTenant(rstr.Tenant_builder{Id: k[:]}.Build())
 		})
@@ -601,7 +601,7 @@ func (s MailDomainServiceServer) Add(ctx context.Context, req *rstr.MailDomainAd
 
 	if err := record(ctx, s.Rec, st.Db, Change{
 		By:  rstr.MailDomainService_Add_FullMethodName,
-		Key: u.ID,
+		Key: u.Id,
 	}); err != nil {
 		return nil, err
 	}
@@ -640,7 +640,7 @@ func (s MailDomainServiceServer) Get(ctx context.Context, req *rstr.MailDomainGe
 }
 
 func selectMailDomainKey(q *ent.MailDomainQuery) {
-	q.Select(maildomain.FieldID)
+	q.Select(maildomain.FieldId)
 }
 
 func MailDomainSelectedFields(m *rstr.MailDomainSelect) []string {
@@ -650,7 +650,7 @@ func MailDomainSelectedFields(m *rstr.MailDomainSelect) []string {
 
 	vs := make([]string, 0, len(maildomain.Columns))
 	{
-		vs = append(vs, maildomain.FieldID)
+		vs = append(vs, maildomain.FieldId)
 	}
 	if m.GetName() {
 		vs = append(vs, maildomain.FieldName)
@@ -727,7 +727,7 @@ func MailDomainGetKey(ctx context.Context, db *ent.Client, ref *rstr.MailDomainR
 		return z, err
 	}
 
-	v, err := db.MailDomain.Query().Where(p).OnlyID(ctx)
+	v, err := db.MailDomain.Query().Where(p).OnlyId(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return z, status.Error(codes.NotFound, "MailDomain not found")
@@ -741,7 +741,7 @@ func MailDomainGetKey(ctx context.Context, db *ent.Client, ref *rstr.MailDomainR
 var mailDomainOrmEntity = ormpatch.MustEntityOf(rstr.File_app_host_proto, "MailDomain")
 
 var mailDomainPatchColumns = entpatch.Columns{
-	1: maildomain.FieldID, 2: maildomain.TenantColumn, 5: maildomain.FieldName, 9: maildomain.FieldProvider, 6: maildomain.FieldDesc, 13: maildomain.FieldDateUpdated, 14: maildomain.FieldDateErased, 15: maildomain.FieldDateCreated}
+	1: maildomain.FieldId, 2: maildomain.TenantColumn, 5: maildomain.FieldName, 9: maildomain.FieldProvider, 6: maildomain.FieldDesc, 13: maildomain.FieldDateUpdated, 14: maildomain.FieldDateErased, 15: maildomain.FieldDateCreated}
 
 func (s MailDomainServiceServer) Apply(ctx context.Context, req *rstr.MailDomainApplyRequest) (*rstr.MailDomain, error) {
 	if !req.HasPatch() {
@@ -786,7 +786,7 @@ func (s MailDomainServiceServer) apply(ctx context.Context, ref *rstr.MailDomain
 	}
 	at := &rstr.MailDomainRef{}
 	at.SetId(k[:])
-	p, err := s.narrow(ctx, maildomain.IDEQ(k))
+	p, err := s.narrow(ctx, maildomain.IdEQ(k))
 	if err != nil {
 		return nil, err
 	}
@@ -880,7 +880,7 @@ func (s MailDomainServiceServer) Erase(ctx context.Context, req *rstr.MailDomain
 
 	var k any
 	if s.Rec != nil {
-		v, err := st.Db.MailDomain.Query().Where(p).OnlyID(ctx)
+		v, err := st.Db.MailDomain.Query().Where(p).OnlyId(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.MailDomainEraseResponse{}, nil
@@ -889,7 +889,7 @@ func (s MailDomainServiceServer) Erase(ctx context.Context, req *rstr.MailDomain
 		}
 
 		k = v
-		p = maildomain.And(p, maildomain.IDEQ(v))
+		p = maildomain.And(p, maildomain.IdEQ(v))
 	}
 
 	u := st.Db.MailDomain.Update().Where(p)
@@ -940,7 +940,7 @@ func pickMailDomain(req *rstr.MailDomainRef) (predicate.MailDomain, error) {
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
-			return maildomain.IDEQ(v), nil
+			return maildomain.IdEQ(v), nil
 		}
 	case rstr.MailDomainRef_At_case:
 		k := req.GetAt()

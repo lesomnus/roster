@@ -96,13 +96,13 @@ func (m *Mutation) ResetDateVerified() {
 	delete(m.clearedFields, FieldDateVerified)
 }
 
-// SetTenantID sets the "tenant_id" field.
-func (m *Mutation) SetTenantID(u uuid.UUID) {
+// SetTenantId sets the "tenant_id" field.
+func (m *Mutation) SetTenantId(u uuid.UUID) {
 	m.tenant_id = &u
 }
 
-// TenantID returns the value of the "tenant_id" field in the mutation.
-func (m *Mutation) TenantID() (r uuid.UUID, exists bool) {
+// TenantId returns the value of the "tenant_id" field in the mutation.
+func (m *Mutation) TenantId() (r uuid.UUID, exists bool) {
 	v := m.tenant_id
 	if v == nil {
 		return
@@ -110,8 +110,8 @@ func (m *Mutation) TenantID() (r uuid.UUID, exists bool) {
 	return *v, true
 }
 
-// ResetTenantID resets all changes to the "tenant_id" field.
-func (m *Mutation) ResetTenantID() {
+// ResetTenantId resets all changes to the "tenant_id" field.
+func (m *Mutation) ResetTenantId() {
 	m.tenant_id = nil
 }
 
@@ -198,13 +198,13 @@ func (m *Mutation) ResetDateCreated() {
 	delete(m.clearedFields, FieldDateCreated)
 }
 
-// SetHolderID sets the "holder_id" field.
-func (m *Mutation) SetHolderID(u uuid.UUID) {
+// SetHolderId sets the "holder_id" field.
+func (m *Mutation) SetHolderId(u uuid.UUID) {
 	m.holder = &u
 }
 
-// HolderID returns the value of the "holder_id" field in the mutation.
-func (m *Mutation) HolderID() (r uuid.UUID, exists bool) {
+// HolderId returns the value of the "holder_id" field in the mutation.
+func (m *Mutation) HolderId() (r uuid.UUID, exists bool) {
 	v := m.holder
 	if v == nil {
 		return
@@ -212,18 +212,18 @@ func (m *Mutation) HolderID() (r uuid.UUID, exists bool) {
 	return *v, true
 }
 
-// ResetHolderID resets all changes to the "holder_id" field.
-func (m *Mutation) ResetHolderID() {
+// ResetHolderId resets all changes to the "holder_id" field.
+func (m *Mutation) ResetHolderId() {
 	m.holder = nil
 }
 
-// SetVouchedByID sets the "vouched_by_id" field.
-func (m *Mutation) SetVouchedByID(u uuid.UUID) {
+// SetVouchedById sets the "vouched_by_id" field.
+func (m *Mutation) SetVouchedById(u uuid.UUID) {
 	m.vouched_by = &u
 }
 
-// VouchedByID returns the value of the "vouched_by_id" field in the mutation.
-func (m *Mutation) VouchedByID() (r uuid.UUID, exists bool) {
+// VouchedById returns the value of the "vouched_by_id" field in the mutation.
+func (m *Mutation) VouchedById() (r uuid.UUID, exists bool) {
 	v := m.vouched_by
 	if v == nil {
 		return
@@ -231,28 +231,28 @@ func (m *Mutation) VouchedByID() (r uuid.UUID, exists bool) {
 	return *v, true
 }
 
-// ClearVouchedByID clears the value of the "vouched_by_id" field.
-func (m *Mutation) ClearVouchedByID() {
+// ClearVouchedById clears the value of the "vouched_by_id" field.
+func (m *Mutation) ClearVouchedById() {
 	m.vouched_by = nil
-	m.clearedFields[FieldVouchedByID] = struct{}{}
+	m.clearedFields[FieldVouchedById] = struct{}{}
 }
 
-// VouchedByIDCleared returns if the "vouched_by_id" field was cleared in this mutation.
-func (m *Mutation) VouchedByIDCleared() bool {
-	_, ok := m.clearedFields[FieldVouchedByID]
+// VouchedByIdCleared returns if the "vouched_by_id" field was cleared in this mutation.
+func (m *Mutation) VouchedByIdCleared() bool {
+	_, ok := m.clearedFields[FieldVouchedById]
 	return ok
 }
 
-// ResetVouchedByID resets all changes to the "vouched_by_id" field.
-func (m *Mutation) ResetVouchedByID() {
+// ResetVouchedById resets all changes to the "vouched_by_id" field.
+func (m *Mutation) ResetVouchedById() {
 	m.vouched_by = nil
-	delete(m.clearedFields, FieldVouchedByID)
+	delete(m.clearedFields, FieldVouchedById)
 }
 
 // ClearHolder clears the "holder" edge to the Holder entity.
 func (m *Mutation) ClearHolder() {
 	m.clearedholder = true
-	m.clearedFields[FieldHolderID] = struct{}{}
+	m.clearedFields[FieldHolderId] = struct{}{}
 }
 
 // HolderCleared reports if the "holder" edge to the Holder entity was cleared.
@@ -260,10 +260,10 @@ func (m *Mutation) HolderCleared() bool {
 	return m.clearedholder
 }
 
-// HolderIDs returns the "holder" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// HolderID instead. It exists only for internal usage by the builders.
-func (m *Mutation) HolderIDs() (ids []uuid.UUID) {
+// HolderIds returns the "holder" edge Ids in the mutation.
+// Note that Ids always returns len(Ids) <= 1 for unique edges, and you should use
+// HolderId instead. It exists only for internal usage by the builders.
+func (m *Mutation) HolderIds() (ids []uuid.UUID) {
 	if id := m.holder; id != nil {
 		ids = append(ids, *id)
 	}
@@ -279,18 +279,18 @@ func (m *Mutation) ResetHolder() {
 // ClearVouchedBy clears the "vouched_by" edge to the Identity entity.
 func (m *Mutation) ClearVouchedBy() {
 	m.clearedvouched_by = true
-	m.clearedFields[FieldVouchedByID] = struct{}{}
+	m.clearedFields[FieldVouchedById] = struct{}{}
 }
 
 // VouchedByCleared reports if the "vouched_by" edge to the Identity entity was cleared.
 func (m *Mutation) VouchedByCleared() bool {
-	return m.VouchedByIDCleared() || m.clearedvouched_by
+	return m.VouchedByIdCleared() || m.clearedvouched_by
 }
 
-// VouchedByIDs returns the "vouched_by" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// VouchedByID instead. It exists only for internal usage by the builders.
-func (m *Mutation) VouchedByIDs() (ids []uuid.UUID) {
+// VouchedByIds returns the "vouched_by" edge Ids in the mutation.
+// Note that Ids always returns len(Ids) <= 1 for unique edges, and you should use
+// VouchedById instead. It exists only for internal usage by the builders.
+func (m *Mutation) VouchedByIds() (ids []uuid.UUID) {
 	if id := m.vouched_by; id != nil {
 		ids = append(ids, *id)
 	}
@@ -345,7 +345,7 @@ func (m *Mutation) Fields() []string {
 		fields = append(fields, FieldDateVerified)
 	}
 	if m.tenant_id != nil {
-		fields = append(fields, FieldTenantID)
+		fields = append(fields, FieldTenantId)
 	}
 	if m.date_updated != nil {
 		fields = append(fields, FieldDateUpdated)
@@ -357,10 +357,10 @@ func (m *Mutation) Fields() []string {
 		fields = append(fields, FieldDateCreated)
 	}
 	if m.holder != nil {
-		fields = append(fields, FieldHolderID)
+		fields = append(fields, FieldHolderId)
 	}
 	if m.vouched_by != nil {
-		fields = append(fields, FieldVouchedByID)
+		fields = append(fields, FieldVouchedById)
 	}
 	return fields
 }
@@ -374,18 +374,18 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.Address()
 	case FieldDateVerified:
 		return m.DateVerified()
-	case FieldTenantID:
-		return m.TenantID()
+	case FieldTenantId:
+		return m.TenantId()
 	case FieldDateUpdated:
 		return m.DateUpdated()
 	case FieldDateErased:
 		return m.DateErased()
 	case FieldDateCreated:
 		return m.DateCreated()
-	case FieldHolderID:
-		return m.HolderID()
-	case FieldVouchedByID:
-		return m.VouchedByID()
+	case FieldHolderId:
+		return m.HolderId()
+	case FieldVouchedById:
+		return m.VouchedById()
 	}
 	return nil, false
 }
@@ -416,12 +416,12 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDateVerified(v)
 		return nil
-	case FieldTenantID:
+	case FieldTenantId:
 		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetTenantID(v)
+		m.SetTenantId(v)
 		return nil
 	case FieldDateUpdated:
 		v, ok := value.(time.Time)
@@ -444,19 +444,19 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDateCreated(v)
 		return nil
-	case FieldHolderID:
+	case FieldHolderId:
 		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetHolderID(v)
+		m.SetHolderId(v)
 		return nil
-	case FieldVouchedByID:
+	case FieldVouchedById:
 		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetVouchedByID(v)
+		m.SetVouchedById(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Email field %s", name)
@@ -497,8 +497,8 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldDateCreated) {
 		fields = append(fields, FieldDateCreated)
 	}
-	if m.FieldCleared(FieldVouchedByID) {
-		fields = append(fields, FieldVouchedByID)
+	if m.FieldCleared(FieldVouchedById) {
+		fields = append(fields, FieldVouchedById)
 	}
 	return fields
 }
@@ -523,8 +523,8 @@ func (m *Mutation) ClearField(name string) error {
 	case FieldDateCreated:
 		m.ClearDateCreated()
 		return nil
-	case FieldVouchedByID:
-		m.ClearVouchedByID()
+	case FieldVouchedById:
+		m.ClearVouchedById()
 		return nil
 	}
 	return fmt.Errorf("unknown Email nullable field %s", name)
@@ -540,8 +540,8 @@ func (m *Mutation) ResetField(name string) error {
 	case FieldDateVerified:
 		m.ResetDateVerified()
 		return nil
-	case FieldTenantID:
-		m.ResetTenantID()
+	case FieldTenantId:
+		m.ResetTenantId()
 		return nil
 	case FieldDateUpdated:
 		m.ResetDateUpdated()
@@ -552,11 +552,11 @@ func (m *Mutation) ResetField(name string) error {
 	case FieldDateCreated:
 		m.ResetDateCreated()
 		return nil
-	case FieldHolderID:
-		m.ResetHolderID()
+	case FieldHolderId:
+		m.ResetHolderId()
 		return nil
-	case FieldVouchedByID:
-		m.ResetVouchedByID()
+	case FieldVouchedById:
+		m.ResetVouchedById()
 		return nil
 	}
 	return fmt.Errorf("unknown Email field %s", name)
@@ -574,9 +574,9 @@ func (m *Mutation) AddedEdges() []string {
 	return edges
 }
 
-// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// AddedIds returns all Ids (to other nodes) that were added for the given edge
 // name in this mutation.
-func (m *Mutation) AddedIDs(name string) []ent.Value {
+func (m *Mutation) AddedIds(name string) []ent.Value {
 	switch name {
 	case EdgeHolder:
 		if id := m.holder; id != nil {
@@ -596,9 +596,9 @@ func (m *Mutation) RemovedEdges() []string {
 	return edges
 }
 
-// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// RemovedIds returns all Ids (to other nodes) that were removed for the edge with
 // the given name in this mutation.
-func (m *Mutation) RemovedIDs(name string) []ent.Value {
+func (m *Mutation) RemovedIds(name string) []ent.Value {
 	return nil
 }
 

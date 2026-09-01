@@ -22,13 +22,13 @@ type Holder struct {
 
 func (Holder) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
+		field.Uuid("id", uuid.UUID{}).
 			Unique().
 			Immutable(),
 		field.String("alias"),
 		field.String("name"),
 		field.String("desc"),
-		field.JSON("labels", map[string]string{}).
+		field.Json("labels", map[string]string{}).
 			Optional(),
 		field.Time("date_updated"),
 		field.Time("date_erased").
@@ -40,9 +40,9 @@ func (Holder) Fields() []ent.Field {
 		field.String("idp_subject").
 			Nillable().
 			Optional(),
-		field.JSON("profile", &rstr.Profile{}).ValueScanner(entpb.ValueScanner[*rstr.Profile]{}).
+		field.Json("profile", &rstr.Profile{}).ValueScanner(entpb.ValueScanner[*rstr.Profile]{}).
 			Optional(),
-		field.JSON("data", &anypb.Any{}).ValueScanner(entpb.ValueScanner[*anypb.Any]{}).
+		field.Json("data", &anypb.Any{}).ValueScanner(entpb.ValueScanner[*anypb.Any]{}).
 			Optional(),
 		field.Time("date_invalidated").
 			Nillable().
@@ -50,7 +50,7 @@ func (Holder) Fields() []ent.Field {
 		field.Time("date_disabled").
 			Nillable().
 			Optional(),
-		field.UUID("tenant_id", uuid.UUID{}).
+		field.Uuid("tenant_id", uuid.UUID{}).
 			Immutable(),
 	}
 }

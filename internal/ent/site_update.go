@@ -151,7 +151,7 @@ func (_u *SiteUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *SiteUpdate) check() error {
-	if _u.mutation.TenantCleared() && len(_u.mutation.TenantIDs()) > 0 {
+	if _u.mutation.TenantCleared() && len(_u.mutation.TenantIds()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Site.tenant"`)
 	}
 	return nil
@@ -167,7 +167,7 @@ func (_u *SiteUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(site.Table, site.Columns, sqlgraph.NewFieldSpec(site.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(site.Table, site.Columns, sqlgraph.NewFieldSpec(site.FieldId, field.TypeUuid))
 	if ps := _u.mutation.Predicates(); len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -185,10 +185,10 @@ func (_u *SiteUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		_spec.SetField(site.FieldDesc, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Labels(); ok {
-		_spec.SetField(site.FieldLabels, field.TypeJSON, value)
+		_spec.SetField(site.FieldLabels, field.TypeJson, value)
 	}
 	if _u.mutation.LabelsCleared() {
-		_spec.ClearField(site.FieldLabels, field.TypeJSON)
+		_spec.ClearField(site.FieldLabels, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(site.FieldDateUpdated, field.TypeTime, value)
@@ -359,7 +359,7 @@ func (_u *SiteUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *SiteUpdateOne) check() error {
-	if _u.mutation.TenantCleared() && len(_u.mutation.TenantIDs()) > 0 {
+	if _u.mutation.TenantCleared() && len(_u.mutation.TenantIds()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Site.tenant"`)
 	}
 	return nil
@@ -375,20 +375,20 @@ func (_u *SiteUpdateOne) sqlSave(ctx context.Context) (_node *Site, err error) {
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(site.Table, site.Columns, sqlgraph.NewFieldSpec(site.FieldID, field.TypeUUID))
-	id, ok := _u.mutation.ID()
+	_spec := sqlgraph.NewUpdateSpec(site.Table, site.Columns, sqlgraph.NewFieldSpec(site.FieldId, field.TypeUuid))
+	id, ok := _u.mutation.Id()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Site.id" for update`)}
 	}
-	_spec.Node.ID.Value = id
+	_spec.Node.Id.Value = id
 	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, site.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, site.FieldId)
 		for _, f := range fields {
 			if !site.ValidColumn(f) {
 				return nil, &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 			}
-			if f != site.FieldID {
+			if f != site.FieldId {
 				_spec.Node.Columns = append(_spec.Node.Columns, f)
 			}
 		}
@@ -410,10 +410,10 @@ func (_u *SiteUpdateOne) sqlSave(ctx context.Context) (_node *Site, err error) {
 		_spec.SetField(site.FieldDesc, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Labels(); ok {
-		_spec.SetField(site.FieldLabels, field.TypeJSON, value)
+		_spec.SetField(site.FieldLabels, field.TypeJson, value)
 	}
 	if _u.mutation.LabelsCleared() {
-		_spec.ClearField(site.FieldLabels, field.TypeJSON)
+		_spec.ClearField(site.FieldLabels, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(site.FieldDateUpdated, field.TypeTime, value)

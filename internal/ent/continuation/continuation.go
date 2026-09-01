@@ -10,8 +10,8 @@ import (
 const (
 	// Label holds the string label denoting the continuation type in the database.
 	Label = "continuation"
-	// FieldID holds the string denoting the id field in the database.
-	FieldID = "id"
+	// FieldId holds the string denoting the id field in the database.
+	FieldId = "id"
 	// FieldSatisfied holds the string denoting the satisfied field in the database.
 	FieldSatisfied = "satisfied"
 	// FieldSecret holds the string denoting the secret field in the database.
@@ -28,8 +28,8 @@ const (
 	FieldDateErased = "date_erased"
 	// FieldDateCreated holds the string denoting the date_created field in the database.
 	FieldDateCreated = "date_created"
-	// FieldHolderID holds the string denoting the holder_id field in the database.
-	FieldHolderID = "holder_id"
+	// FieldHolderId holds the string denoting the holder_id field in the database.
+	FieldHolderId = "holder_id"
 	// EdgeHolder holds the string denoting the holder edge name in mutations.
 	EdgeHolder = "holder"
 	// Table holds the table name of the continuation in the database.
@@ -43,9 +43,9 @@ const (
 	HolderColumn = "holder_id"
 )
 
-// Columns holds all SQL columns for continuation fields.
+// Columns holds all Sql columns for continuation fields.
 var Columns = []string{
-	FieldID,
+	FieldId,
 	FieldSatisfied,
 	FieldSecret,
 	FieldIssuer,
@@ -54,7 +54,7 @@ var Columns = []string{
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
-	FieldHolderID,
+	FieldHolderId,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -70,9 +70,9 @@ func ValidColumn(column string) bool {
 // OrderOption defines the ordering options for the Continuation queries.
 type OrderOption func(*sql.Selector)
 
-// ByID orders the results by the id field.
-func ByID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldID, opts...).ToFunc()
+// ById orders the results by the id field.
+func ById(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldId, opts...).ToFunc()
 }
 
 // ByMeteredBy orders the results by the metered_by field.
@@ -100,9 +100,9 @@ func ByDateCreated(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDateCreated, opts...).ToFunc()
 }
 
-// ByHolderID orders the results by the holder_id field.
-func ByHolderID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldHolderID, opts...).ToFunc()
+// ByHolderId orders the results by the holder_id field.
+func ByHolderId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldHolderId, opts...).ToFunc()
 }
 
 // ByHolderField orders the results by holder field.
@@ -113,8 +113,8 @@ func ByHolderField(field string, opts ...sql.OrderTermOption) OrderOption {
 }
 func newHolderStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(HolderInverseTable, FieldID),
+		sqlgraph.From(Table, FieldId),
+		sqlgraph.To(HolderInverseTable, FieldId),
 		sqlgraph.Edge(sqlgraph.M2O, false, HolderTable, HolderColumn),
 	)
 }

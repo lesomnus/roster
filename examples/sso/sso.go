@@ -36,7 +36,7 @@
 // tenant -- so the wall narrows what it may read to that one. That is right for
 // a front door serving one operator and is the reason this example is written
 // as one. A deployment fronting several needs a credential whose actor is not
-// inside a tenant, which is an API key rather than a person.
+// inside a tenant, which is an Api key rather than a person.
 //
 // # What is actually this deployment's to decide
 //
@@ -229,7 +229,7 @@ type App struct {
 
 // New reads the provider's discovery document and builds the app.
 //
-// It is done here rather than per request because it is an HTTP round trip to
+// It is done here rather than per request because it is an Http round trip to
 // somebody else's server: an app that did it on every sign-in would be down
 // whenever they were slow.
 // `conn` is the same connection `roster` was built on, and it is taken as well
@@ -330,7 +330,7 @@ func New(ctx context.Context, c Config, conn *grpc.ClientConn, s *authsession.Se
 // other front door -- a password, checked by roster -- and `/me` is what it
 // answers with spent. `/account` is the screen over all of it, which is D24 §4;
 // `password.go` says why the second front door is here at all and what it does
-// not reach, and `account.go` says why the screen is one file of HTML.
+// not reach, and `account.go` says why the screen is one file of Html.
 func (a *App) Handler() http.Handler {
 	m := http.NewServeMux()
 	m.HandleFunc("/login", a.login)

@@ -76,8 +76,8 @@ func (_q *EmailQuery) QueryHolder() *HolderQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(email.Table, email.FieldID, selector),
-			sqlgraph.To(holder.Table, holder.FieldID),
+			sqlgraph.From(email.Table, email.FieldId, selector),
+			sqlgraph.To(holder.Table, holder.FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, email.HolderTable, email.HolderColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
@@ -98,8 +98,8 @@ func (_q *EmailQuery) QueryVouchedBy() *IdentityQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(email.Table, email.FieldID, selector),
-			sqlgraph.To(identity.Table, identity.FieldID),
+			sqlgraph.From(email.Table, email.FieldId, selector),
+			sqlgraph.To(identity.Table, identity.FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, email.VouchedByTable, email.VouchedByColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
@@ -130,11 +130,11 @@ func (_q *EmailQuery) FirstX(ctx context.Context) *Email {
 	return node
 }
 
-// FirstID returns the first Email ID from the query.
-// Returns a *NotFoundError when no Email ID was found.
-func (_q *EmailQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+// FirstId returns the first Email Id from the query.
+// Returns a *NotFoundError when no Email Id was found.
+func (_q *EmailQuery) FirstId(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
+	if ids, err = _q.Limit(1).Ids(setContextOp(ctx, _q.ctx, ent.OpQueryFirstId)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -144,9 +144,9 @@ func (_q *EmailQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	return ids[0], nil
 }
 
-// FirstIDX is like FirstID, but panics if an error occurs.
-func (_q *EmailQuery) FirstIDX(ctx context.Context) uuid.UUID {
-	id, err := _q.FirstID(ctx)
+// FirstIdX is like FirstId, but panics if an error occurs.
+func (_q *EmailQuery) FirstIdX(ctx context.Context) uuid.UUID {
+	id, err := _q.FirstId(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -180,12 +180,12 @@ func (_q *EmailQuery) OnlyX(ctx context.Context) *Email {
 	return node
 }
 
-// OnlyID is like Only, but returns the only Email ID in the query.
-// Returns a *NotSingularError when more than one Email ID is found.
+// OnlyId is like Only, but returns the only Email Id in the query.
+// Returns a *NotSingularError when more than one Email Id is found.
 // Returns a *NotFoundError when no entities are found.
-func (_q *EmailQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *EmailQuery) OnlyId(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
+	if ids, err = _q.Limit(2).Ids(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyId)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -199,9 +199,9 @@ func (_q *EmailQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	return
 }
 
-// OnlyIDX is like OnlyID, but panics if an error occurs.
-func (_q *EmailQuery) OnlyIDX(ctx context.Context) uuid.UUID {
-	id, err := _q.OnlyID(ctx)
+// OnlyIdX is like OnlyId, but panics if an error occurs.
+func (_q *EmailQuery) OnlyIdX(ctx context.Context) uuid.UUID {
+	id, err := _q.OnlyId(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -227,21 +227,21 @@ func (_q *EmailQuery) AllX(ctx context.Context) []*Email {
 	return nodes
 }
 
-// IDs executes the query and returns a list of Email IDs.
-func (_q *EmailQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+// Ids executes the query and returns a list of Email Ids.
+func (_q *EmailQuery) Ids(ctx context.Context) (ids []uuid.UUID, err error) {
 	if _q.ctx.Unique == nil && _q.path != nil {
 		_q.Unique(true)
 	}
-	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
-	if err = _q.Select(email.FieldID).Scan(ctx, &ids); err != nil {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIds)
+	if err = _q.Select(email.FieldId).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
-// IDsX is like IDs, but panics if an error occurs.
-func (_q *EmailQuery) IDsX(ctx context.Context) []uuid.UUID {
-	ids, err := _q.IDs(ctx)
+// IdsX is like Ids, but panics if an error occurs.
+func (_q *EmailQuery) IdsX(ctx context.Context) []uuid.UUID {
+	ids, err := _q.Ids(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -269,7 +269,7 @@ func (_q *EmailQuery) CountX(ctx context.Context) int {
 // Exist returns true if the query has elements in the graph.
 func (_q *EmailQuery) Exist(ctx context.Context) (bool, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
-	switch _, err := _q.FirstID(ctx); {
+	switch _, err := _q.FirstId(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -454,7 +454,7 @@ func (_q *EmailQuery) loadHolder(ctx context.Context, query *HolderQuery, nodes 
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*Email)
 	for i := range nodes {
-		fk := nodes[i].HolderID
+		fk := nodes[i].HolderId
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -463,15 +463,15 @@ func (_q *EmailQuery) loadHolder(ctx context.Context, query *HolderQuery, nodes 
 	if len(ids) == 0 {
 		return nil
 	}
-	query.Where(holder.IDIn(ids...))
+	query.Where(holder.IdIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		nodes, ok := nodeids[n.Id]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "holder_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "holder_id" returned %v`, n.Id)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -483,7 +483,7 @@ func (_q *EmailQuery) loadVouchedBy(ctx context.Context, query *IdentityQuery, n
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*Email)
 	for i := range nodes {
-		fk := nodes[i].VouchedByID
+		fk := nodes[i].VouchedById
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -492,15 +492,15 @@ func (_q *EmailQuery) loadVouchedBy(ctx context.Context, query *IdentityQuery, n
 	if len(ids) == 0 {
 		return nil
 	}
-	query.Where(identity.IDIn(ids...))
+	query.Where(identity.IdIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		nodes, ok := nodeids[n.Id]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "vouched_by_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "vouched_by_id" returned %v`, n.Id)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -522,7 +522,7 @@ func (_q *EmailQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (_q *EmailQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(email.Table, email.Columns, sqlgraph.NewFieldSpec(email.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(email.Table, email.Columns, sqlgraph.NewFieldSpec(email.FieldId, field.TypeUuid))
 	_spec.From = _q.sql
 	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -531,17 +531,17 @@ func (_q *EmailQuery) querySpec() *sqlgraph.QuerySpec {
 	}
 	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, email.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, email.FieldId)
 		for i := range fields {
-			if fields[i] != email.FieldID {
+			if fields[i] != email.FieldId {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
 		if _q.withHolder != nil {
-			_spec.Node.AddColumnOnce(email.FieldHolderID)
+			_spec.Node.AddColumnOnce(email.FieldHolderId)
 		}
 		if _q.withVouchedBy != nil {
-			_spec.Node.AddColumnOnce(email.FieldVouchedByID)
+			_spec.Node.AddColumnOnce(email.FieldVouchedById)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

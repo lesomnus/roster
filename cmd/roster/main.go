@@ -21,9 +21,9 @@ func main() {
 	//
 	// `os.Interrupt` alone is Ctrl-C at a terminal. `docker stop` and every
 	// orchestrator send SIGTERM, and the image in `docker/` runs
-	// `exec roster serve`, which makes roster PID 1 -- where SIGTERM has no
+	// `exec roster serve`, which makes roster PId 1 -- where SIGTERM has no
 	// default handler at all. So every `docker stop` sat out the grace period
-	// and ended in SIGKILL, and anywhere that is not PID 1 the default
+	// and ended in SIGKILL, and anywhere that is not PId 1 the default
 	// disposition killed the process on the spot. Either way the graceful path
 	// -- `GracefulStop`, the spin teardown, the deferred stops for the other
 	// listeners -- was written, wired, and never once executed in the way this

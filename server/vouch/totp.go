@@ -18,7 +18,7 @@ const KindTotp = "totp"
 
 // What RFC 6238 leaves open and what an authenticator app has already decided.
 //
-// None of these is a preference. HMAC-SHA1, a thirty-second step and six digits
+// None of these is a preference. HMac-SHA1, a thirty-second step and six digits
 // are what Google Authenticator and everything shaped like it implement, and a
 // deployment that chose SHA-256 because it is a better hash would have a second
 // factor nobody's phone can produce. They are constants rather than
@@ -106,7 +106,7 @@ func pow10(n int) uint32 {
 //
 // It does not stop at the first match, and that is not an oversight: returning
 // early makes the time taken say **which** step matched, and the near steps are
-// where a code somebody is about to use lives. Three HMACs are microseconds and
+// where a code somebody is about to use lives. Three HMacs are microseconds and
 // the comparison is constant time, so the answer costs the same whatever it is.
 //
 // # A step that has been spent is not accepted again

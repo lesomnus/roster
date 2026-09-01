@@ -11,17 +11,17 @@ import (
 var (
 	// ApikeyColumns holds the columns for the "apikey" table.
 	ApikeyColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "id", Type: field.TypeUuid, Unique: true},
 		{Name: "alias", Type: field.TypeString},
 		{Name: "desc", Type: field.TypeString},
-		{Name: "methods", Type: field.TypeJSON, Nullable: true},
+		{Name: "methods", Type: field.TypeJson, Nullable: true},
 		{Name: "secret", Type: field.TypeBytes},
 		{Name: "date_used", Type: field.TypeTime, Nullable: true},
 		{Name: "date_expires", Type: field.TypeTime, Nullable: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
-		{Name: "holder_id", Type: field.TypeUUID},
+		{Name: "holder_id", Type: field.TypeUuid},
 	}
 	// ApikeyTable holds the schema information for the "apikey" table.
 	ApikeyTable = &schema.Table{
@@ -62,17 +62,17 @@ var (
 	}
 	// AuditColumns holds the columns for the "audit" table.
 	AuditColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "tenant_id", Type: field.TypeUUID},
-		{Name: "actor_id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "actor_id", Type: field.TypeUuid},
 		{Name: "trace_id", Type: field.TypeBytes},
 		{Name: "action", Type: field.TypeString},
-		{Name: "object_id", Type: field.TypeUUID},
+		{Name: "object_id", Type: field.TypeUuid},
 		{Name: "patch", Type: field.TypeBytes},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
-		{Name: "actor_tenant_id", Type: field.TypeUUID},
+		{Name: "actor_tenant_id", Type: field.TypeUuid},
 		{Name: "value", Type: field.TypeBytes},
-		{Name: "counterpart_tenant_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "counterpart_tenant_id", Type: field.TypeUuid, Nullable: true},
 		{Name: "domain", Type: field.TypeUint32, Nullable: true},
 	}
 	// AuditTable holds the schema information for the "audit" table.
@@ -115,14 +115,14 @@ var (
 	}
 	// BindingColumns holds the columns for the "binding" table.
 	BindingColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "id", Type: field.TypeUuid, Unique: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
-		{Name: "role_id", Type: field.TypeUUID},
-		{Name: "site_id", Type: field.TypeUUID, Nullable: true},
-		{Name: "holder_id", Type: field.TypeUUID, Nullable: true},
-		{Name: "group_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "role_id", Type: field.TypeUuid},
+		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
+		{Name: "holder_id", Type: field.TypeUuid, Nullable: true},
+		{Name: "group_id", Type: field.TypeUuid, Nullable: true},
 	}
 	// BindingTable holds the schema information for the "binding" table.
 	BindingTable = &schema.Table{
@@ -165,17 +165,17 @@ var (
 	}
 	// ConnectionColumns holds the columns for the "connection" table.
 	ConnectionColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "id", Type: field.TypeUuid, Unique: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "desc", Type: field.TypeString},
 		{Name: "issuer", Type: field.TypeString},
 		{Name: "client_id", Type: field.TypeString},
-		{Name: "scopes", Type: field.TypeJSON, Nullable: true},
+		{Name: "scopes", Type: field.TypeJson, Nullable: true},
 		{Name: "secret_ref", Type: field.TypeString},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
-		{Name: "tenant_id", Type: field.TypeUUID},
+		{Name: "tenant_id", Type: field.TypeUuid},
 	}
 	// ConnectionTable holds the schema information for the "connection" table.
 	ConnectionTable = &schema.Table{
@@ -208,16 +208,16 @@ var (
 	}
 	// ContinuationColumns holds the columns for the "continuation" table.
 	ContinuationColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "satisfied", Type: field.TypeJSON, Nullable: true},
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "satisfied", Type: field.TypeJson, Nullable: true},
 		{Name: "secret", Type: field.TypeBytes},
 		{Name: "issuer", Type: field.TypeBytes},
-		{Name: "metered_by", Type: field.TypeUUID, Nullable: true},
+		{Name: "metered_by", Type: field.TypeUuid, Nullable: true},
 		{Name: "date_expires", Type: field.TypeTime, Nullable: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
-		{Name: "holder_id", Type: field.TypeUUID},
+		{Name: "holder_id", Type: field.TypeUuid},
 	}
 	// ContinuationTable holds the schema information for the "continuation" table.
 	ContinuationTable = &schema.Table{
@@ -250,7 +250,7 @@ var (
 	}
 	// CredentialColumns holds the columns for the "credential" table.
 	CredentialColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "id", Type: field.TypeUuid, Unique: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "kind", Type: field.TypeString},
 		{Name: "secret", Type: field.TypeBytes},
@@ -261,7 +261,7 @@ var (
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
-		{Name: "holder_id", Type: field.TypeUUID},
+		{Name: "holder_id", Type: field.TypeUuid},
 	}
 	// CredentialTable holds the schema information for the "credential" table.
 	CredentialTable = &schema.Table{
@@ -294,15 +294,15 @@ var (
 	}
 	// DelegationColumns holds the columns for the "delegation" table.
 	DelegationColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "methods", Type: field.TypeJSON, Nullable: true},
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "methods", Type: field.TypeJson, Nullable: true},
 		{Name: "secret", Type: field.TypeBytes},
 		{Name: "issuer", Type: field.TypeBytes},
 		{Name: "date_expires", Type: field.TypeTime, Nullable: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
-		{Name: "holder_id", Type: field.TypeUUID},
+		{Name: "holder_id", Type: field.TypeUuid},
 	}
 	// DelegationTable holds the schema information for the "delegation" table.
 	DelegationTable = &schema.Table{
@@ -335,15 +335,15 @@ var (
 	}
 	// EmailColumns holds the columns for the "email" table.
 	EmailColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "id", Type: field.TypeUuid, Unique: true},
 		{Name: "address", Type: field.TypeString},
 		{Name: "date_verified", Type: field.TypeTime, Nullable: true},
-		{Name: "tenant_id", Type: field.TypeUUID},
+		{Name: "tenant_id", Type: field.TypeUuid},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
-		{Name: "holder_id", Type: field.TypeUUID},
-		{Name: "vouched_by_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "holder_id", Type: field.TypeUuid},
+		{Name: "vouched_by_id", Type: field.TypeUuid, Nullable: true},
 	}
 	// EmailTable holds the schema information for the "email" table.
 	EmailTable = &schema.Table{
@@ -390,15 +390,15 @@ var (
 	}
 	// GroupColumns holds the columns for the "group" table.
 	GroupColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "id", Type: field.TypeUuid, Unique: true},
 		{Name: "alias", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString},
 		{Name: "desc", Type: field.TypeString},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
-		{Name: "tenant_id", Type: field.TypeUUID},
-		{Name: "site_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
 	}
 	// GroupTable holds the schema information for the "group" table.
 	GroupTable = &schema.Table{
@@ -437,12 +437,12 @@ var (
 	}
 	// GroupmembershipColumns holds the columns for the "groupmembership" table.
 	GroupmembershipColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "id", Type: field.TypeUuid, Unique: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
-		{Name: "holder_id", Type: field.TypeUUID},
-		{Name: "group_id", Type: field.TypeUUID},
+		{Name: "holder_id", Type: field.TypeUuid},
+		{Name: "group_id", Type: field.TypeUuid},
 	}
 	// GroupmembershipTable holds the schema information for the "groupmembership" table.
 	GroupmembershipTable = &schema.Table{
@@ -481,20 +481,20 @@ var (
 	}
 	// HolderColumns holds the columns for the "holder" table.
 	HolderColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "id", Type: field.TypeUuid, Unique: true},
 		{Name: "alias", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString},
 		{Name: "desc", Type: field.TypeString},
-		{Name: "labels", Type: field.TypeJSON, Nullable: true},
+		{Name: "labels", Type: field.TypeJson, Nullable: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
 		{Name: "idp_subject", Type: field.TypeString, Nullable: true},
-		{Name: "profile", Type: field.TypeJSON, Nullable: true},
-		{Name: "data", Type: field.TypeJSON, Nullable: true},
+		{Name: "profile", Type: field.TypeJson, Nullable: true},
+		{Name: "data", Type: field.TypeJson, Nullable: true},
 		{Name: "date_invalidated", Type: field.TypeTime, Nullable: true},
 		{Name: "date_disabled", Type: field.TypeTime, Nullable: true},
-		{Name: "tenant_id", Type: field.TypeUUID},
+		{Name: "tenant_id", Type: field.TypeUuid},
 	}
 	// HolderTable holds the schema information for the "holder" table.
 	HolderTable = &schema.Table{
@@ -530,13 +530,13 @@ var (
 	}
 	// HostColumns holds the columns for the "host" table.
 	HostColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "id", Type: field.TypeUuid, Unique: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "desc", Type: field.TypeString},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
-		{Name: "tenant_id", Type: field.TypeUUID},
+		{Name: "tenant_id", Type: field.TypeUuid},
 	}
 	// HostTable holds the schema information for the "host" table.
 	HostTable = &schema.Table{
@@ -569,14 +569,14 @@ var (
 	}
 	// IdentityColumns holds the columns for the "identity" table.
 	IdentityColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "id", Type: field.TypeUuid, Unique: true},
 		{Name: "provider", Type: field.TypeString},
 		{Name: "subject", Type: field.TypeString},
-		{Name: "tenant_id", Type: field.TypeUUID},
+		{Name: "tenant_id", Type: field.TypeUuid},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
-		{Name: "holder_id", Type: field.TypeUUID},
+		{Name: "holder_id", Type: field.TypeUuid},
 	}
 	// IdentityTable holds the schema information for the "identity" table.
 	IdentityTable = &schema.Table{
@@ -609,14 +609,14 @@ var (
 	}
 	// LinkColumns holds the columns for the "link" table.
 	LinkColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "id", Type: field.TypeUuid, Unique: true},
 		{Name: "secret", Type: field.TypeBytes},
 		{Name: "issuer", Type: field.TypeBytes},
 		{Name: "date_expires", Type: field.TypeTime, Nullable: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
-		{Name: "holder_id", Type: field.TypeUUID},
+		{Name: "holder_id", Type: field.TypeUuid},
 	}
 	// LinkTable holds the schema information for the "link" table.
 	LinkTable = &schema.Table{
@@ -649,14 +649,14 @@ var (
 	}
 	// MaildomainColumns holds the columns for the "maildomain" table.
 	MaildomainColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "id", Type: field.TypeUuid, Unique: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "provider", Type: field.TypeString},
 		{Name: "desc", Type: field.TypeString},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
-		{Name: "tenant_id", Type: field.TypeUUID},
+		{Name: "tenant_id", Type: field.TypeUuid},
 	}
 	// MaildomainTable holds the schema information for the "maildomain" table.
 	MaildomainTable = &schema.Table{
@@ -689,12 +689,12 @@ var (
 	}
 	// OutboxColumns holds the columns for the "outbox" table.
 	OutboxColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "tenant_id", Type: field.TypeUUID},
-		{Name: "actor_id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "actor_id", Type: field.TypeUuid},
 		{Name: "method", Type: field.TypeString},
 		{Name: "by", Type: field.TypeString},
-		{Name: "object_id", Type: field.TypeUUID},
+		{Name: "object_id", Type: field.TypeUuid},
 		{Name: "patch", Type: field.TypeBytes},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
 	}
@@ -713,16 +713,16 @@ var (
 	}
 	// RoleColumns holds the columns for the "role" table.
 	RoleColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "id", Type: field.TypeUuid, Unique: true},
 		{Name: "alias", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString},
 		{Name: "desc", Type: field.TypeString},
-		{Name: "methods", Type: field.TypeJSON, Nullable: true},
+		{Name: "methods", Type: field.TypeJson, Nullable: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
-		{Name: "tenant_id", Type: field.TypeUUID},
-		{Name: "site_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
 	}
 	// RoleTable holds the schema information for the "role" table.
 	RoleTable = &schema.Table{
@@ -761,7 +761,7 @@ var (
 	}
 	// SessionColumns holds the columns for the "session" table.
 	SessionColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "id", Type: field.TypeUuid, Unique: true},
 		{Name: "grant", Type: field.TypeBytes},
 		{Name: "secret", Type: field.TypeBytes},
 		{Name: "date_expires", Type: field.TypeTime, Nullable: true},
@@ -769,7 +769,7 @@ var (
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
-		{Name: "holder_id", Type: field.TypeUUID},
+		{Name: "holder_id", Type: field.TypeUuid},
 	}
 	// SessionTable holds the schema information for the "session" table.
 	SessionTable = &schema.Table{
@@ -802,15 +802,15 @@ var (
 	}
 	// SiteColumns holds the columns for the "site" table.
 	SiteColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "id", Type: field.TypeUuid, Unique: true},
 		{Name: "alias", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString},
 		{Name: "desc", Type: field.TypeString},
-		{Name: "labels", Type: field.TypeJSON, Nullable: true},
+		{Name: "labels", Type: field.TypeJson, Nullable: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
-		{Name: "tenant_id", Type: field.TypeUUID},
+		{Name: "tenant_id", Type: field.TypeUuid},
 	}
 	// SiteTable holds the schema information for the "site" table.
 	SiteTable = &schema.Table{
@@ -843,12 +843,12 @@ var (
 	}
 	// SitemembershipColumns holds the columns for the "sitemembership" table.
 	SitemembershipColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "id", Type: field.TypeUuid, Unique: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
-		{Name: "holder_id", Type: field.TypeUUID},
-		{Name: "site_id", Type: field.TypeUUID},
+		{Name: "holder_id", Type: field.TypeUuid},
+		{Name: "site_id", Type: field.TypeUuid},
 	}
 	// SitemembershipTable holds the schema information for the "sitemembership" table.
 	SitemembershipTable = &schema.Table{
@@ -887,15 +887,15 @@ var (
 	}
 	// TeamColumns holds the columns for the "team" table.
 	TeamColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "id", Type: field.TypeUuid, Unique: true},
 		{Name: "alias", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString},
 		{Name: "desc", Type: field.TypeString},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
-		{Name: "tenant_id", Type: field.TypeUUID},
-		{Name: "site_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
 	}
 	// TeamTable holds the schema information for the "team" table.
 	TeamTable = &schema.Table{
@@ -934,13 +934,13 @@ var (
 	}
 	// TeammembershipColumns holds the columns for the "teammembership" table.
 	TeammembershipColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "id", Type: field.TypeUuid, Unique: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
-		{Name: "holder_id", Type: field.TypeUUID},
-		{Name: "team_id", Type: field.TypeUUID},
-		{Name: "role_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "holder_id", Type: field.TypeUuid},
+		{Name: "team_id", Type: field.TypeUuid},
+		{Name: "role_id", Type: field.TypeUuid, Nullable: true},
 	}
 	// TeammembershipTable holds the schema information for the "teammembership" table.
 	TeammembershipTable = &schema.Table{
@@ -985,11 +985,11 @@ var (
 	}
 	// TenantColumns holds the columns for the "tenant" table.
 	TenantColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "id", Type: field.TypeUuid, Unique: true},
 		{Name: "alias", Type: field.TypeString, Unique: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "desc", Type: field.TypeString},
-		{Name: "labels", Type: field.TypeJSON, Nullable: true},
+		{Name: "labels", Type: field.TypeJson, Nullable: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
 	}

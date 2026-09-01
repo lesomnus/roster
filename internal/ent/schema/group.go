@@ -19,7 +19,7 @@ type Group struct {
 
 func (Group) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
+		field.Uuid("id", uuid.UUID{}).
 			Unique().
 			Immutable(),
 		field.String("alias"),
@@ -32,9 +32,9 @@ func (Group) Fields() []ent.Field {
 		field.Time("date_created").
 			Immutable().
 			Optional(),
-		field.UUID("tenant_id", uuid.UUID{}).
+		field.Uuid("tenant_id", uuid.UUID{}).
 			Immutable(),
-		field.UUID("site_id", uuid.UUID{}).
+		field.Uuid("site_id", uuid.UUID{}).
 			Optional().
 			Immutable(),
 	}
@@ -76,7 +76,7 @@ type GroupMembership struct {
 
 func (GroupMembership) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
+		field.Uuid("id", uuid.UUID{}).
 			Unique().
 			Immutable(),
 		field.Time("date_updated"),
@@ -86,9 +86,9 @@ func (GroupMembership) Fields() []ent.Field {
 		field.Time("date_created").
 			Immutable().
 			Optional(),
-		field.UUID("holder_id", uuid.UUID{}).
+		field.Uuid("holder_id", uuid.UUID{}).
 			Immutable(),
-		field.UUID("group_id", uuid.UUID{}).
+		field.Uuid("group_id", uuid.UUID{}).
 			Immutable(),
 	}
 }

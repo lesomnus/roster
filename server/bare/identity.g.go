@@ -103,12 +103,12 @@ func (s IdentityServiceServer) Add(ctx context.Context, req *rstr.IdentityAddReq
 	if v, err := mint(ctx, s.Mint, "roster.Identity", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
-		q.SetID(v)
+		q.SetId(v)
 	}
 	if k, err := HolderGetKey(ctx, st.Db, req.GetHolder()); err != nil {
 		return nil, err
 	} else {
-		q.SetHolderID(k)
+		q.SetHolderId(k)
 		ds = append(ds, func(v *rstr.Identity) {
 			v.SetHolder(rstr.Holder_builder{Id: k[:]}.Build())
 		})
@@ -118,7 +118,7 @@ func (s IdentityServiceServer) Add(ctx context.Context, req *rstr.IdentityAddReq
 	if v, err := uuid.FromBytes(req.GetTenantId()); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "tenant_id: %s", err)
 	} else {
-		q.SetTenantID(v)
+		q.SetTenantId(v)
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
@@ -142,7 +142,7 @@ func (s IdentityServiceServer) Add(ctx context.Context, req *rstr.IdentityAddReq
 
 	if err := record(ctx, s.Rec, st.Db, Change{
 		By:  rstr.IdentityService_Add_FullMethodName,
-		Key: u.ID,
+		Key: u.Id,
 	}); err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func (s IdentityServiceServer) Get(ctx context.Context, req *rstr.IdentityGetReq
 }
 
 func selectIdentityKey(q *ent.IdentityQuery) {
-	q.Select(identity.FieldID)
+	q.Select(identity.FieldId)
 }
 
 func IdentitySelectedFields(m *rstr.IdentitySelect) []string {
@@ -191,7 +191,7 @@ func IdentitySelectedFields(m *rstr.IdentitySelect) []string {
 
 	vs := make([]string, 0, len(identity.Columns))
 	{
-		vs = append(vs, identity.FieldID)
+		vs = append(vs, identity.FieldId)
 	}
 	if m.GetProvider() {
 		vs = append(vs, identity.FieldProvider)
@@ -200,7 +200,7 @@ func IdentitySelectedFields(m *rstr.IdentitySelect) []string {
 		vs = append(vs, identity.FieldSubject)
 	}
 	if m.GetTenantId() {
-		vs = append(vs, identity.FieldTenantID)
+		vs = append(vs, identity.FieldTenantId)
 	}
 	if m.GetDateUpdated() {
 		vs = append(vs, identity.FieldDateUpdated)
@@ -269,7 +269,7 @@ func IdentityGetKey(ctx context.Context, db *ent.Client, ref *rstr.IdentityRef) 
 		return z, err
 	}
 
-	v, err := db.Identity.Query().Where(p).OnlyID(ctx)
+	v, err := db.Identity.Query().Where(p).OnlyId(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return z, status.Error(codes.NotFound, "Identity not found")
@@ -283,7 +283,7 @@ func IdentityGetKey(ctx context.Context, db *ent.Client, ref *rstr.IdentityRef) 
 var identityOrmEntity = ormpatch.MustEntityOf(rstr.File_app_identity_proto, "Identity")
 
 var identityPatchColumns = entpatch.Columns{
-	1: identity.FieldID, 2: identity.HolderColumn, 8: identity.FieldProvider, 9: identity.FieldSubject, 10: identity.FieldTenantID, 13: identity.FieldDateUpdated, 14: identity.FieldDateErased, 15: identity.FieldDateCreated}
+	1: identity.FieldId, 2: identity.HolderColumn, 8: identity.FieldProvider, 9: identity.FieldSubject, 10: identity.FieldTenantId, 13: identity.FieldDateUpdated, 14: identity.FieldDateErased, 15: identity.FieldDateCreated}
 
 func (s IdentityServiceServer) Apply(ctx context.Context, req *rstr.IdentityApplyRequest) (*rstr.Identity, error) {
 	if !req.HasPatch() {
@@ -328,7 +328,7 @@ func (s IdentityServiceServer) apply(ctx context.Context, ref *rstr.IdentityRef,
 	}
 	at := &rstr.IdentityRef{}
 	at.SetId(k[:])
-	p, err := s.narrow(ctx, identity.IDEQ(k))
+	p, err := s.narrow(ctx, identity.IdEQ(k))
 	if err != nil {
 		return nil, err
 	}
@@ -422,7 +422,7 @@ func (s IdentityServiceServer) Erase(ctx context.Context, req *rstr.IdentityRef)
 
 	var k any
 	if s.Rec != nil {
-		v, err := st.Db.Identity.Query().Where(p).OnlyID(ctx)
+		v, err := st.Db.Identity.Query().Where(p).OnlyId(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.IdentityEraseResponse{}, nil
@@ -431,7 +431,7 @@ func (s IdentityServiceServer) Erase(ctx context.Context, req *rstr.IdentityRef)
 		}
 
 		k = v
-		p = identity.And(p, identity.IDEQ(v))
+		p = identity.And(p, identity.IdEQ(v))
 	}
 
 	u := st.Db.Identity.Update().Where(p)
@@ -482,7 +482,7 @@ func pickIdentity(req *rstr.IdentityRef) (predicate.Identity, error) {
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
-			return identity.IDEQ(v), nil
+			return identity.IdEQ(v), nil
 		}
 	case rstr.IdentityRef_Subject_case:
 		k := req.GetSubject()
@@ -490,7 +490,7 @@ func pickIdentity(req *rstr.IdentityRef) (predicate.Identity, error) {
 		if v, err := uuid.FromBytes(k.GetTenantId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "subject.tenant_id: %s", err)
 		} else {
-			ps = append(ps, identity.TenantIDEQ(v))
+			ps = append(ps, identity.TenantIdEQ(v))
 		}
 		ps = append(ps, identity.ProviderEQ(k.GetProvider()))
 		ps = append(ps, identity.SubjectEQ(k.GetSubject()))

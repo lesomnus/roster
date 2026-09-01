@@ -57,7 +57,7 @@ func TestSomebodyMintsAKeyThatActsAsThem(t *testing.T) {
 
 		owner, err := u.QueryHolder().Only(ctx)
 		x.NoError(err)
-		x.Equal(who.Uuid(), owner.ID)
+		x.Equal(who.Uuid(), owner.Id)
 	})
 
 	t.Run("and their own page lists it", func(t *testing.T) {

@@ -3,7 +3,7 @@
 // # Why the join is roster's and not a page's
 //
 // Every part of the answer is readable on its own. What is not is the
-// **union**: which RPCs somebody effectively holds is bindings, plus the groups
+// **union**: which Rpcs somebody effectively holds is bindings, plus the groups
 // carrying bindings, plus a role held in a team, and an app that added those up
 // from the parts would be a second implementation of `gate.Policy` -- one that
 // decides what to show, drifting from the one that decides what is allowed.
@@ -96,7 +96,7 @@ func (s *Server) Get(ctx context.Context, _ *app.MeGetRequest) (*app.MeGetRespon
 	}
 
 	v, err := s.db.Holder.Query().
-		Where(holder.IDEQ(f.Actor.Uuid())).
+		Where(holder.IdEQ(f.Actor.Uuid())).
 		WithTenant().
 		Only(ctx)
 	if err != nil {
@@ -174,7 +174,7 @@ func (s *Server) Get(ctx context.Context, _ *app.MeGetRequest) (*app.MeGetRespon
 // wants to prompt somebody needs the difference.
 func (s *Server) emails(ctx context.Context, who pdid.Id) ([]*app.MeEmail, error) {
 	vs, err := s.db.Email.Query().
-		Where(email.DateErasedIsNil(), email.HasHolderWith(holder.IDEQ(who.Uuid()))).
+		Where(email.DateErasedIsNil(), email.HasHolderWith(holder.IdEQ(who.Uuid()))).
 		All(ctx)
 	if err != nil {
 		return nil, err
@@ -202,7 +202,7 @@ func (s *Server) teams(ctx context.Context, who pdid.Id) ([]*app.MeTeam, error) 
 	vs, err := s.db.TeamMembership.Query().
 		Where(
 			teammembership.DateErasedIsNil(),
-			teammembership.HasHolderWith(holder.IDEQ(who.Uuid())),
+			teammembership.HasHolderWith(holder.IdEQ(who.Uuid())),
 		).
 		WithRole().
 		WithTeam(func(q *ent.TeamQuery) { q.WithSite() }).
@@ -219,12 +219,12 @@ func (s *Server) teams(ctx context.Context, who pdid.Id) ([]*app.MeTeam, error) 
 		}
 
 		m := app.MeTeam_builder{
-			Id:    t.ID[:],
+			Id:    t.Id[:],
 			Alias: t.Alias,
 			Name:  t.Name,
 		}
 		if t.Edges.Site != nil {
-			m.Site = t.Edges.Site.ID[:]
+			m.Site = t.Edges.Site.Id[:]
 			m.SiteAlias = t.Edges.Site.Alias
 		}
 		if v.Edges.Role != nil {
@@ -246,7 +246,7 @@ func (s *Server) teams(ctx context.Context, who pdid.Id) ([]*app.MeTeam, error) 
 // at anybody else.
 func (s *Server) identities(ctx context.Context, who pdid.Id) ([]*app.SignInIdentity, error) {
 	vs, err := s.db.Identity.Query().
-		Where(identity.DateErasedIsNil(), identity.HasHolderWith(holder.IDEQ(who.Uuid()))).
+		Where(identity.DateErasedIsNil(), identity.HasHolderWith(holder.IdEQ(who.Uuid()))).
 		All(ctx)
 	if err != nil {
 		return nil, err
@@ -255,7 +255,7 @@ func (s *Server) identities(ctx context.Context, who pdid.Id) ([]*app.SignInIden
 	out := make([]*app.SignInIdentity, 0, len(vs))
 	for _, v := range vs {
 		out = append(out, app.SignInIdentity_builder{
-			Id:          v.ID[:],
+			Id:          v.Id[:],
 			Provider:    v.Provider,
 			Subject:     v.Subject,
 			DateCreated: timestamppb.New(v.DateCreated),
@@ -273,7 +273,7 @@ func (s *Server) identities(ctx context.Context, who pdid.Id) ([]*app.SignInIden
 // the read that replaces it for the one case that is safe: somebody's own.
 func (s *Server) credentials(ctx context.Context, who pdid.Id) ([]*app.SignInCredential, error) {
 	vs, err := s.db.Credential.Query().
-		Where(credential.DateErasedIsNil(), credential.HasHolderWith(holder.IDEQ(who.Uuid()))).
+		Where(credential.DateErasedIsNil(), credential.HasHolderWith(holder.IdEQ(who.Uuid()))).
 		All(ctx)
 	if err != nil {
 		return nil, err
@@ -311,7 +311,7 @@ func (s *Server) credentials(ctx context.Context, who pdid.Id) ([]*app.SignInCre
 // themselves and what an operator sees about them.
 func (s *Server) keys(ctx context.Context, who pdid.Id) ([]*app.SignInKey, error) {
 	vs, err := s.db.ApiKey.Query().
-		Where(apikey.DateErasedIsNil(), apikey.HasHolderWith(holder.IDEQ(who.Uuid()))).
+		Where(apikey.DateErasedIsNil(), apikey.HasHolderWith(holder.IdEQ(who.Uuid()))).
 		All(ctx)
 	if err != nil {
 		return nil, err
@@ -320,7 +320,7 @@ func (s *Server) keys(ctx context.Context, who pdid.Id) ([]*app.SignInKey, error
 	out := make([]*app.SignInKey, 0, len(vs))
 	for _, v := range vs {
 		k := app.SignInKey_builder{
-			Id:      v.ID[:],
+			Id:      v.Id[:],
 			Alias:   v.Alias,
 			Methods: v.Methods,
 		}
@@ -440,8 +440,8 @@ func (s *Server) RevokeKey(ctx context.Context, req *app.MeRevokeKeyRequest) (*a
 	n, err := s.db.ApiKey.Query().
 		Where(
 			apikey.DateErasedIsNil(),
-			apikey.HasHolderWith(holder.IDEQ(f.Actor.Uuid())),
-			apikey.IDEQ(id),
+			apikey.HasHolderWith(holder.IdEQ(f.Actor.Uuid())),
+			apikey.IdEQ(id),
 		).
 		Count(ctx)
 	if err != nil {
@@ -494,8 +494,8 @@ func (s *Server) Unlink(ctx context.Context, req *app.MeUnlinkRequest) (*app.MeU
 	n, err := s.db.Identity.Query().
 		Where(
 			identity.DateErasedIsNil(),
-			identity.HasHolderWith(holder.IDEQ(f.Actor.Uuid())),
-			identity.IDEQ(id),
+			identity.HasHolderWith(holder.IdEQ(f.Actor.Uuid())),
+			identity.IdEQ(id),
 		).
 		Count(ctx)
 	if err != nil {

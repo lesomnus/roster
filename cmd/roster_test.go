@@ -36,7 +36,7 @@ func build(t *testing.T, with ...func(*cmd.Config)) (*built, context.Context) {
 	ctx := t.Context()
 
 	// SQLite unless PDTEST_POSTGRES names another. Everything roster generates
-	// is SQL, and the two disagree in the directions that hide mistakes.
+	// is Sql, and the two disagree in the directions that hide mistakes.
 	drv, dsn := pdtest.DB(t)
 
 	cfg := cmd.Config{
@@ -193,7 +193,7 @@ func (b *built) asNobody(ctx context.Context, actor, tenant pdid.Id) context.Con
 
 // mayAnything binds an all-methods role to somebody, once.
 //
-// Every RPC this app serves, listed off the server's own descriptors rather
+// Every Rpc this app serves, listed off the server's own descriptors rather
 // than written out -- a list written by hand is one that is right on the day it
 // is written, and a method added tomorrow would silently be denied to every
 // test.

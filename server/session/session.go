@@ -61,7 +61,7 @@ func (s *Store) Put(ctx context.Context, v authsession.Session) error {
 		Only(ctx)
 	switch {
 	case err == nil:
-		u := s.db.Session.UpdateOneID(was.ID).SetDateUpdated(time.Now())
+		u := s.db.Session.UpdateOneId(was.Id).SetDateUpdated(time.Now())
 		if v.Idle.IsZero() {
 			u = u.ClearDateIdle()
 		} else {
@@ -87,8 +87,8 @@ func (s *Store) Put(ctx context.Context, v authsession.Session) error {
 	}
 
 	c := s.db.Session.Create().
-		SetID(uuid.New()).
-		SetHolderID(who.Uuid()).
+		SetId(uuid.New()).
+		SetHolderId(who.Uuid()).
 		SetSecret(sum).
 		SetGrant(grant).
 		SetDateUpdated(time.Now()).
@@ -157,7 +157,7 @@ func (s *Store) Get(ctx context.Context, key string) (authsession.Session, error
 
 	out := authsession.Session{
 		Key:      key,
-		Id:       pdid.Id(h.ID).String(),
+		Id:       pdid.Id(h.Id).String(),
 		TenantId: tenantOf(h),
 		Grant:    decode(v.Grant),
 	}
@@ -232,9 +232,9 @@ func decode(b []byte) frame.Grant {
 }
 
 func tenantOf(h *ent.Holder) string {
-	if h.TenantID == uuid.Nil {
+	if h.TenantId == uuid.Nil {
 		return ""
 	}
 
-	return pdid.Id(h.TenantID).String()
+	return pdid.Id(h.TenantId).String()
 }

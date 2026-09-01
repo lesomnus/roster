@@ -19,17 +19,17 @@ type Continuation struct {
 
 func (Continuation) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
+		field.Uuid("id", uuid.UUID{}).
 			Unique().
 			Immutable(),
-		field.JSON("satisfied", []string{}).
+		field.Json("satisfied", []string{}).
 			Immutable().
 			Optional(),
 		field.Bytes("secret").
 			Immutable(),
 		field.Bytes("issuer").
 			Immutable(),
-		field.UUID("metered_by", uuid.UUID{}).
+		field.Uuid("metered_by", uuid.UUID{}).
 			Nillable().
 			Immutable().
 			Optional(),
@@ -44,7 +44,7 @@ func (Continuation) Fields() []ent.Field {
 		field.Time("date_created").
 			Immutable().
 			Optional(),
-		field.UUID("holder_id", uuid.UUID{}).
+		field.Uuid("holder_id", uuid.UUID{}).
 			Immutable(),
 	}
 }

@@ -22,7 +22,7 @@ import (
 // A way in that roster mints and somebody else delivers.
 //
 // `link.proto` is the row and roadmap.md's item 3 is the subject. What is here is
-// the pair of RPCs and the one property that is easy to lose: **minting says
+// the pair of Rpcs and the one property that is easy to lose: **minting says
 // nothing about whether anybody is there.**
 
 // PrefixLink is what a link looks like, so that one in a log is recognisable.

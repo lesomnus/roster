@@ -61,7 +61,7 @@ const HeaderActing = "roster-as"
 // which is what [Store] answers for each and therefore what a delegation minted
 // by one has stamped on it.
 //
-// What cannot present one is `auth.Plain` or mTLS. Both name a caller and
+// What cannot present one is `auth.Plain` or mTls. Both name a caller and
 // neither resolves to an identifier **here** -- a header carries an alias and a
 // certificate carries a subject, and turning either into a row is
 // `cmd.Resolver`'s work, which runs after this. So there is nothing to compare

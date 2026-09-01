@@ -11,49 +11,49 @@ import (
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 )
 
-// ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldEQ(FieldID, id))
+// Id filters vertices based on their Id field.
+func Id(id uuid.UUID) predicate.Role {
+	return predicate.Role(sql.FieldEQ(FieldId, id))
 }
 
-// IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldEQ(FieldID, id))
+// IdEQ applies the EQ predicate on the Id field.
+func IdEQ(id uuid.UUID) predicate.Role {
+	return predicate.Role(sql.FieldEQ(FieldId, id))
 }
 
-// IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldNEQ(FieldID, id))
+// IdNEQ applies the NEQ predicate on the Id field.
+func IdNEQ(id uuid.UUID) predicate.Role {
+	return predicate.Role(sql.FieldNEQ(FieldId, id))
 }
 
-// IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldIn(FieldID, ids...))
+// IdIn applies the In predicate on the Id field.
+func IdIn(ids ...uuid.UUID) predicate.Role {
+	return predicate.Role(sql.FieldIn(FieldId, ids...))
 }
 
-// IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldNotIn(FieldID, ids...))
+// IdNotIn applies the NotIn predicate on the Id field.
+func IdNotIn(ids ...uuid.UUID) predicate.Role {
+	return predicate.Role(sql.FieldNotIn(FieldId, ids...))
 }
 
-// IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldGT(FieldID, id))
+// IdGT applies the GT predicate on the Id field.
+func IdGT(id uuid.UUID) predicate.Role {
+	return predicate.Role(sql.FieldGT(FieldId, id))
 }
 
-// IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldGTE(FieldID, id))
+// IdGTE applies the GTE predicate on the Id field.
+func IdGTE(id uuid.UUID) predicate.Role {
+	return predicate.Role(sql.FieldGTE(FieldId, id))
 }
 
-// IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldLT(FieldID, id))
+// IdLT applies the LT predicate on the Id field.
+func IdLT(id uuid.UUID) predicate.Role {
+	return predicate.Role(sql.FieldLT(FieldId, id))
 }
 
-// IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldLTE(FieldID, id))
+// IdLTE applies the LTE predicate on the Id field.
+func IdLTE(id uuid.UUID) predicate.Role {
+	return predicate.Role(sql.FieldLTE(FieldId, id))
 }
 
 // Alias applies equality check predicate on the "alias" field. It's identical to AliasEQ.
@@ -86,14 +86,14 @@ func DateCreated(v time.Time) predicate.Role {
 	return predicate.Role(sql.FieldEQ(FieldDateCreated, v))
 }
 
-// TenantID applies equality check predicate on the "tenant_id" field. It's identical to TenantIDEQ.
-func TenantID(v uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldEQ(FieldTenantID, v))
+// TenantId applies equality check predicate on the "tenant_id" field. It's identical to TenantIdEQ.
+func TenantId(v uuid.UUID) predicate.Role {
+	return predicate.Role(sql.FieldEQ(FieldTenantId, v))
 }
 
-// SiteID applies equality check predicate on the "site_id" field. It's identical to SiteIDEQ.
-func SiteID(v uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldEQ(FieldSiteID, v))
+// SiteId applies equality check predicate on the "site_id" field. It's identical to SiteIdEQ.
+func SiteId(v uuid.UUID) predicate.Role {
+	return predicate.Role(sql.FieldEQ(FieldSiteId, v))
 }
 
 // AliasEQ applies the EQ predicate on the "alias" field.
@@ -441,61 +441,61 @@ func DateCreatedNotNil() predicate.Role {
 	return predicate.Role(sql.FieldNotNull(FieldDateCreated))
 }
 
-// TenantIDEQ applies the EQ predicate on the "tenant_id" field.
-func TenantIDEQ(v uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldEQ(FieldTenantID, v))
+// TenantIdEQ applies the EQ predicate on the "tenant_id" field.
+func TenantIdEQ(v uuid.UUID) predicate.Role {
+	return predicate.Role(sql.FieldEQ(FieldTenantId, v))
 }
 
-// TenantIDNEQ applies the NEQ predicate on the "tenant_id" field.
-func TenantIDNEQ(v uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldNEQ(FieldTenantID, v))
+// TenantIdNEQ applies the NEQ predicate on the "tenant_id" field.
+func TenantIdNEQ(v uuid.UUID) predicate.Role {
+	return predicate.Role(sql.FieldNEQ(FieldTenantId, v))
 }
 
-// TenantIDIn applies the In predicate on the "tenant_id" field.
-func TenantIDIn(vs ...uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldIn(FieldTenantID, vs...))
+// TenantIdIn applies the In predicate on the "tenant_id" field.
+func TenantIdIn(vs ...uuid.UUID) predicate.Role {
+	return predicate.Role(sql.FieldIn(FieldTenantId, vs...))
 }
 
-// TenantIDNotIn applies the NotIn predicate on the "tenant_id" field.
-func TenantIDNotIn(vs ...uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldNotIn(FieldTenantID, vs...))
+// TenantIdNotIn applies the NotIn predicate on the "tenant_id" field.
+func TenantIdNotIn(vs ...uuid.UUID) predicate.Role {
+	return predicate.Role(sql.FieldNotIn(FieldTenantId, vs...))
 }
 
-// SiteIDEQ applies the EQ predicate on the "site_id" field.
-func SiteIDEQ(v uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldEQ(FieldSiteID, v))
+// SiteIdEQ applies the EQ predicate on the "site_id" field.
+func SiteIdEQ(v uuid.UUID) predicate.Role {
+	return predicate.Role(sql.FieldEQ(FieldSiteId, v))
 }
 
-// SiteIDNEQ applies the NEQ predicate on the "site_id" field.
-func SiteIDNEQ(v uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldNEQ(FieldSiteID, v))
+// SiteIdNEQ applies the NEQ predicate on the "site_id" field.
+func SiteIdNEQ(v uuid.UUID) predicate.Role {
+	return predicate.Role(sql.FieldNEQ(FieldSiteId, v))
 }
 
-// SiteIDIn applies the In predicate on the "site_id" field.
-func SiteIDIn(vs ...uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldIn(FieldSiteID, vs...))
+// SiteIdIn applies the In predicate on the "site_id" field.
+func SiteIdIn(vs ...uuid.UUID) predicate.Role {
+	return predicate.Role(sql.FieldIn(FieldSiteId, vs...))
 }
 
-// SiteIDNotIn applies the NotIn predicate on the "site_id" field.
-func SiteIDNotIn(vs ...uuid.UUID) predicate.Role {
-	return predicate.Role(sql.FieldNotIn(FieldSiteID, vs...))
+// SiteIdNotIn applies the NotIn predicate on the "site_id" field.
+func SiteIdNotIn(vs ...uuid.UUID) predicate.Role {
+	return predicate.Role(sql.FieldNotIn(FieldSiteId, vs...))
 }
 
-// SiteIDIsNil applies the IsNil predicate on the "site_id" field.
-func SiteIDIsNil() predicate.Role {
-	return predicate.Role(sql.FieldIsNull(FieldSiteID))
+// SiteIdIsNil applies the IsNil predicate on the "site_id" field.
+func SiteIdIsNil() predicate.Role {
+	return predicate.Role(sql.FieldIsNull(FieldSiteId))
 }
 
-// SiteIDNotNil applies the NotNil predicate on the "site_id" field.
-func SiteIDNotNil() predicate.Role {
-	return predicate.Role(sql.FieldNotNull(FieldSiteID))
+// SiteIdNotNil applies the NotNil predicate on the "site_id" field.
+func SiteIdNotNil() predicate.Role {
+	return predicate.Role(sql.FieldNotNull(FieldSiteId))
 }
 
 // HasTenant applies the HasEdge predicate on the "tenant" edge.
 func HasTenant() predicate.Role {
 	return predicate.Role(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
+			sqlgraph.From(Table, FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, TenantTable, TenantColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
@@ -518,7 +518,7 @@ func HasTenantWith(preds ...predicate.Tenant) predicate.Role {
 func HasSite() predicate.Role {
 	return predicate.Role(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
+			sqlgraph.From(Table, FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, SiteTable, SiteColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)

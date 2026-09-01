@@ -98,7 +98,7 @@ func Admin(s *Server) (app.Server, error) {
 // # Why before, and why not one transaction
 //
 // Because they are two events and only one of them is about the operator. "This
-// operator called this RPC" is true whether or not the write then succeeded --
+// operator called this Rpc" is true whether or not the write then succeeded --
 // and a failed attempt is a thing an audit wants to keep, not one to roll back.
 // A record written afterwards would be missing exactly the attempts worth
 // looking at.
@@ -147,13 +147,13 @@ func Intent(control *ent.Client) grpc.UnaryServerInterceptor {
 				// Minted here, because `pd.Minter` is a hook on the sink and
 				// this write does not go through one. The domain is what makes
 				// an identifier say what it names; see `pdid`.
-				SetID(pdid.New(pd.AuditDomain).Uuid()).
+				SetId(pdid.New(pd.AuditDomain).Uuid()).
 				// Filed under the operator's own tenant, which is the one this
 				// database has, so the wall lets them read their own trail.
-				SetTenantID(f.Tenant.Uuid()).
-				SetActorTenantID(f.Tenant.Uuid()).
-				SetActorID(f.Actor.Uuid()).
-				SetTraceID(traceOf(ctx)).
+				SetTenantId(f.Tenant.Uuid()).
+				SetActorTenantId(f.Tenant.Uuid()).
+				SetActorId(f.Actor.Uuid()).
+				SetTraceId(traceOf(ctx)).
 				SetAction(info.FullMethod).
 
 				// The zero identifier, because there is no object yet -- that
@@ -164,14 +164,14 @@ func Intent(control *ent.Client) grpc.UnaryServerInterceptor {
 				// object, which is what it is for: this trail answers *who
 				// decided*, and *what changed* is the other one, joined by the
 				// trace.
-				SetObjectID(uuid.Nil).
+				SetObjectId(uuid.Nil).
 
 				// Empty, and required to be said. `patch` is the document a
 				// write was compiled from and `value` is the row afterwards;
 				// this record is neither, because it is made before there is
 				// either one.
 				//
-				// An empty slice and not nil. Nil is SQL NULL, which Postgres
+				// An empty slice and not nil. Nil is Sql NULL, which Postgres
 				// refuses on a non-null column and SQLite accepts -- so nil
 				// here is green on a checkout and broken on a deployment.
 				SetPatch([]byte{}).
@@ -213,7 +213,7 @@ func Intent(control *ent.Client) grpc.UnaryServerInterceptor {
 func writes(method string) bool {
 	i := strings.LastIndex(method, "/")
 	if i < 0 {
-		// Not something gRPC dispatched, which cannot arrive at this end of an
+		// Not something gRpc dispatched, which cannot arrive at this end of an
 		// interceptor. Recorded rather than skipped, for the reason above.
 		return true
 	}

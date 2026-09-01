@@ -80,21 +80,21 @@ func (_c *SiteCreate) SetNillableDateCreated(v *time.Time) *SiteCreate {
 	return _c
 }
 
-// SetTenantID sets the "tenant_id" field.
-func (_c *SiteCreate) SetTenantID(v uuid.UUID) *SiteCreate {
-	_c.mutation.SetTenantID(v)
+// SetTenantId sets the "tenant_id" field.
+func (_c *SiteCreate) SetTenantId(v uuid.UUID) *SiteCreate {
+	_c.mutation.SetTenantId(v)
 	return _c
 }
 
-// SetID sets the "id" field.
-func (_c *SiteCreate) SetID(v uuid.UUID) *SiteCreate {
-	_c.mutation.SetID(v)
+// SetId sets the "id" field.
+func (_c *SiteCreate) SetId(v uuid.UUID) *SiteCreate {
+	_c.mutation.SetId(v)
 	return _c
 }
 
 // SetTenant sets the "tenant" edge to the Tenant entity.
 func (_c *SiteCreate) SetTenant(v *Tenant) *SiteCreate {
-	return _c.SetTenantID(v.ID)
+	return _c.SetTenantId(v.Id)
 }
 
 // Mutation returns the SiteMutation object of the builder.
@@ -143,10 +143,10 @@ func (_c *SiteCreate) check() error {
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Site.date_updated"`)}
 	}
-	if _, ok := _c.mutation.TenantID(); !ok {
+	if _, ok := _c.mutation.TenantId(); !ok {
 		return &ValidationError{Name: "tenant_id", err: errors.New(`ent: missing required field "Site.tenant_id"`)}
 	}
-	if len(_c.mutation.TenantIDs()) == 0 {
+	if len(_c.mutation.TenantIds()) == 0 {
 		return &ValidationError{Name: "tenant", err: errors.New(`ent: missing required edge "Site.tenant"`)}
 	}
 	return nil
@@ -163,14 +163,14 @@ func (_c *SiteCreate) sqlSave(ctx context.Context) (*Site, error) {
 		}
 		return nil, err
 	}
-	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+	if _spec.Id.Value != nil {
+		if id, ok := _spec.Id.Value.(*uuid.UUID); ok {
+			_node.Id = *id
+		} else if err := _node.Id.Scan(_spec.Id.Value); err != nil {
 			return nil, err
 		}
 	}
-	_c.mutation.id = &_node.ID
+	_c.mutation.id = &_node.Id
 	_c.mutation.done = true
 	return _node, nil
 }
@@ -178,11 +178,11 @@ func (_c *SiteCreate) sqlSave(ctx context.Context) (*Site, error) {
 func (_c *SiteCreate) createSpec() (*Site, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Site{config: _c.config}
-		_spec = sqlgraph.NewCreateSpec(site.Table, sqlgraph.NewFieldSpec(site.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(site.Table, sqlgraph.NewFieldSpec(site.FieldId, field.TypeUuid))
 	)
-	if id, ok := _c.mutation.ID(); ok {
-		_node.ID = id
-		_spec.ID.Value = &id
+	if id, ok := _c.mutation.Id(); ok {
+		_node.Id = id
+		_spec.Id.Value = &id
 	}
 	if value, ok := _c.mutation.Alias(); ok {
 		_spec.SetField(site.FieldAlias, field.TypeString, value)
@@ -197,7 +197,7 @@ func (_c *SiteCreate) createSpec() (*Site, *sqlgraph.CreateSpec) {
 		_node.Desc = value
 	}
 	if value, ok := _c.mutation.Labels(); ok {
-		_spec.SetField(site.FieldLabels, field.TypeJSON, value)
+		_spec.SetField(site.FieldLabels, field.TypeJson, value)
 		_node.Labels = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
@@ -212,7 +212,7 @@ func (_c *SiteCreate) createSpec() (*Site, *sqlgraph.CreateSpec) {
 		_spec.SetField(site.FieldDateCreated, field.TypeTime, value)
 		_node.DateCreated = value
 	}
-	if nodes := _c.mutation.TenantIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.TenantIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -220,13 +220,13 @@ func (_c *SiteCreate) createSpec() (*Site, *sqlgraph.CreateSpec) {
 			Columns: []string{site.TenantColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(tenant.FieldID, field.TypeUUID),
+				IdSpec: sqlgraph.NewFieldSpec(tenant.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.TenantID = nodes[0]
+		_node.TenantId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -275,7 +275,7 @@ func (_c *SiteCreateBulk) Save(ctx context.Context) ([]*Site, error) {
 				if err != nil {
 					return nil, err
 				}
-				mutation.id = &nodes[i].ID
+				mutation.id = &nodes[i].Id
 				mutation.done = true
 				return nodes[i], nil
 			})

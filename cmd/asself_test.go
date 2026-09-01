@@ -520,7 +520,7 @@ func TestNobodyEnrolsASecondFactorOnSomebodyWiderThanThey(t *testing.T) {
 			"one customer put an authenticator on another customer's person")
 
 		n, err := b.Ent.Credential.Query().
-			Where(credential.HasHolderWith(entholder.IDEQ(them.Uuid()))).
+			Where(credential.HasHolderWith(entholder.IdEQ(them.Uuid()))).
 			Count(ctx)
 		x.NoError(err)
 		x.Zero(n, "a way in was written for somebody the caller cannot even read")

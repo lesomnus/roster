@@ -40,7 +40,7 @@ func (_d *ContinuationDelete) ExecX(ctx context.Context) int {
 }
 
 func (_d *ContinuationDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(continuation.Table, sqlgraph.NewFieldSpec(continuation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(continuation.Table, sqlgraph.NewFieldSpec(continuation.FieldId, field.TypeUuid))
 	if ps := _d.mutation.Predicates(); len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

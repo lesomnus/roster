@@ -17,22 +17,22 @@ import (
 // Identity is the model entity for the Identity schema.
 type Identity struct {
 	config `json:"-"`
-	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	// Id of the ent.
+	Id uuid.UUID `json:"id,omitempty"`
 	// Provider holds the value of the "provider" field.
 	Provider string `json:"provider,omitempty"`
 	// Subject holds the value of the "subject" field.
 	Subject string `json:"subject,omitempty"`
-	// TenantID holds the value of the "tenant_id" field.
-	TenantID uuid.UUID `json:"tenant_id,omitempty"`
+	// TenantId holds the value of the "tenant_id" field.
+	TenantId uuid.UUID `json:"tenant_id,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
 	DateErased *time.Time `json:"date_erased,omitempty"`
 	// DateCreated holds the value of the "date_created" field.
 	DateCreated time.Time `json:"date_created,omitempty"`
-	// HolderID holds the value of the "holder_id" field.
-	HolderID uuid.UUID `json:"holder_id,omitempty"`
+	// HolderId holds the value of the "holder_id" field.
+	HolderId uuid.UUID `json:"holder_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the IdentityQuery when eager-loading is set.
 	Edges        IdentityEdges `json:"edges"`
@@ -68,7 +68,7 @@ func (*Identity) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case identity.FieldDateUpdated, identity.FieldDateErased, identity.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case identity.FieldID, identity.FieldTenantID, identity.FieldHolderID:
+		case identity.FieldId, identity.FieldTenantId, identity.FieldHolderId:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -85,11 +85,11 @@ func (_m *Identity) assignValues(columns []string, values []any) error {
 	}
 	for i := range columns {
 		switch columns[i] {
-		case identity.FieldID:
+		case identity.FieldId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				_m.ID = *value
+				_m.Id = *value
 			}
 		case identity.FieldProvider:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -103,11 +103,11 @@ func (_m *Identity) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Subject = value.String
 			}
-		case identity.FieldTenantID:
+		case identity.FieldTenantId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
 			} else if value != nil {
-				_m.TenantID = *value
+				_m.TenantId = *value
 			}
 		case identity.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -128,11 +128,11 @@ func (_m *Identity) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.DateCreated = value.Time
 			}
-		case identity.FieldHolderID:
+		case identity.FieldHolderId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field holder_id", values[i])
 			} else if value != nil {
-				_m.HolderID = *value
+				_m.HolderId = *value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -174,7 +174,7 @@ func (_m *Identity) Unwrap() *Identity {
 func (_m *Identity) String() string {
 	var builder strings.Builder
 	builder.WriteString("Identity(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.Id))
 	builder.WriteString("provider=")
 	builder.WriteString(_m.Provider)
 	builder.WriteString(", ")
@@ -182,7 +182,7 @@ func (_m *Identity) String() string {
 	builder.WriteString(_m.Subject)
 	builder.WriteString(", ")
 	builder.WriteString("tenant_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.TenantID))
+	builder.WriteString(fmt.Sprintf("%v", _m.TenantId))
 	builder.WriteString(", ")
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))
@@ -196,7 +196,7 @@ func (_m *Identity) String() string {
 	builder.WriteString(_m.DateCreated.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("holder_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.HolderID))
+	builder.WriteString(fmt.Sprintf("%v", _m.HolderId))
 	builder.WriteByte(')')
 	return builder.String()
 }

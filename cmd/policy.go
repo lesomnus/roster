@@ -102,7 +102,7 @@ func (p policy) May(ctx context.Context, c gate.Call) error {
 // argument is what makes this safe rather than a judgement about the handler.
 //
 // A list of methods and not a prefix, which is the opposite of custody's
-// catalogue. There every RPC is public and a second one added tomorrow should
+// catalogue. There every Rpc is public and a second one added tomorrow should
 // be too. Here they are named one at a time, and a method added to `MeService`
 // tomorrow needs a decision rather than inheriting one.
 //
@@ -253,25 +253,25 @@ func bindingsReaching(ctx context.Context, db *ent.Client, who uuid.UUID) ([]*en
 	gs, err := db.GroupMembership.Query().
 		Where(
 			groupmembership.DateErasedIsNil(),
-			groupmembership.HasHolderWith(holder.IDEQ(who)),
+			groupmembership.HasHolderWith(holder.IdEQ(who)),
 		).
 		QueryGroup().
 		Where(group.DateErasedIsNil()).
-		IDs(ctx)
+		Ids(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	q := db.Binding.Query().Where(
 		binding.DateErasedIsNil(),
-		binding.HasHolderWith(holder.IDEQ(who)),
+		binding.HasHolderWith(holder.IdEQ(who)),
 	)
 	if len(gs) > 0 {
 		q = db.Binding.Query().Where(
 			binding.DateErasedIsNil(),
 			binding.Or(
-				binding.HasHolderWith(holder.IDEQ(who)),
-				binding.HasGroupWith(group.IDIn(gs...)),
+				binding.HasHolderWith(holder.IdEQ(who)),
+				binding.HasGroupWith(group.IdIn(gs...)),
 			),
 		)
 	}
@@ -300,7 +300,7 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 	ts, err := p.db.TeamMembership.Query().
 		Where(
 			teammembership.DateErasedIsNil(),
-			teammembership.HasHolderWith(holder.IDEQ(who)),
+			teammembership.HasHolderWith(holder.IdEQ(who)),
 		).
 		WithRole().
 		WithTeam(func(q *ent.TeamQuery) { q.WithSite() }).
@@ -325,7 +325,7 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 		// rather than the wall narrowing. Written down here because it is the
 		// kind of thing that leaks by being forgotten.
 		if v.Edges.Team != nil && v.Edges.Team.Edges.Site != nil {
-			h.sites = append(h.sites, v.Edges.Team.Edges.Site.ID)
+			h.sites = append(h.sites, v.Edges.Team.Edges.Site.Id)
 		}
 	}
 
@@ -343,7 +343,7 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 			continue
 		}
 
-		h.sites = append(h.sites, v.Edges.Site.ID)
+		h.sites = append(h.sites, v.Edges.Site.Id)
 	}
 
 	return h, nil
@@ -360,7 +360,7 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 //
 // # Why the write is here and not there
 //
-// Because there is nothing in the generated API that makes one. A `Patch`
+// Because there is nothing in the generated Api that makes one. A `Patch`
 // carrying only a version precondition compiles to an existence check and no
 // write at all -- which is D34's finding, arriving in a second place a year
 // later -- and a `Patch` naming a real field would be this rule editing
@@ -393,7 +393,7 @@ func Locking(db *ent.Client) core.Lock {
 		}
 
 		n, err := db.Holder.Update().
-			Where(holder.IDEQ(who.Uuid())).
+			Where(holder.IdEQ(who.Uuid())).
 			SetDateUpdated(time.Now()).
 			Save(ctx)
 		if err != nil {
@@ -433,7 +433,7 @@ func Rules(db *ent.Client) core.Rules {
 // and flattened into a single list the two are the same strings. That is not
 // hypothetical: somebody bound to a role in Seoul had those methods in a flat
 // list with no trace of Seoul on them, so `mayGrant` compared them against a
-// tenant-wide write and agreed. Two RPCs later they held the tenant.
+// tenant-wide write and agreed. Two Rpcs later they held the tenant.
 //
 // Kept together, `mayGrant` takes the scope being written to and only what
 // reaches it counts. A site administrator delegates inside their own site,
@@ -483,7 +483,7 @@ func Joining(db *ent.Client) core.Joining {
 		vs, err := db.Binding.Query().
 			Where(
 				binding.DateErasedIsNil(),
-				binding.HasGroupWith(group.IDEQ(id.Uuid()), group.DateErasedIsNil()),
+				binding.HasGroupWith(group.IdEQ(id.Uuid()), group.DateErasedIsNil()),
 			).
 			WithRole().
 			WithSite().
@@ -526,7 +526,7 @@ func Holding(db *ent.Client) core.Holding {
 		ts, err := db.TeamMembership.Query().
 			Where(
 				teammembership.DateErasedIsNil(),
-				teammembership.HasHolderWith(holder.IDEQ(who.Uuid())),
+				teammembership.HasHolderWith(holder.IdEQ(who.Uuid())),
 			).
 			WithRole().
 			All(ctx)
@@ -561,7 +561,7 @@ func grantsOf(vs []*ent.Binding) []core.Grant {
 
 		g := core.Grant{Methods: v.Edges.Role.Methods}
 		if v.Edges.Site != nil {
-			g.Site = pdid.Id(v.Edges.Site.ID)
+			g.Site = pdid.Id(v.Edges.Site.Id)
 		}
 
 		gs = append(gs, g)
@@ -604,8 +604,8 @@ func Holds(db *ent.Client) core.Holds {
 		ts, err := db.TeamMembership.Query().
 			Where(
 				teammembership.DateErasedIsNil(),
-				teammembership.HasHolderWith(holder.IDEQ(who.Uuid())),
-				teammembership.HasTeamWith(entteam.IDEQ(team.Uuid())),
+				teammembership.HasHolderWith(holder.IdEQ(who.Uuid())),
+				teammembership.HasTeamWith(entteam.IdEQ(team.Uuid())),
 			).
 			WithRole().
 			All(ctx)

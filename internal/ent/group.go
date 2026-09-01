@@ -18,8 +18,8 @@ import (
 // Group is the model entity for the Group schema.
 type Group struct {
 	config `json:"-"`
-	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	// Id of the ent.
+	Id uuid.UUID `json:"id,omitempty"`
 	// Alias holds the value of the "alias" field.
 	Alias string `json:"alias,omitempty"`
 	// Name holds the value of the "name" field.
@@ -32,10 +32,10 @@ type Group struct {
 	DateErased *time.Time `json:"date_erased,omitempty"`
 	// DateCreated holds the value of the "date_created" field.
 	DateCreated time.Time `json:"date_created,omitempty"`
-	// TenantID holds the value of the "tenant_id" field.
-	TenantID uuid.UUID `json:"tenant_id,omitempty"`
-	// SiteID holds the value of the "site_id" field.
-	SiteID uuid.UUID `json:"site_id,omitempty"`
+	// TenantId holds the value of the "tenant_id" field.
+	TenantId uuid.UUID `json:"tenant_id,omitempty"`
+	// SiteId holds the value of the "site_id" field.
+	SiteId uuid.UUID `json:"site_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the GroupQuery when eager-loading is set.
 	Edges        GroupEdges `json:"edges"`
@@ -84,7 +84,7 @@ func (*Group) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case group.FieldDateUpdated, group.FieldDateErased, group.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case group.FieldID, group.FieldTenantID, group.FieldSiteID:
+		case group.FieldId, group.FieldTenantId, group.FieldSiteId:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -101,11 +101,11 @@ func (_m *Group) assignValues(columns []string, values []any) error {
 	}
 	for i := range columns {
 		switch columns[i] {
-		case group.FieldID:
+		case group.FieldId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				_m.ID = *value
+				_m.Id = *value
 			}
 		case group.FieldAlias:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -144,17 +144,17 @@ func (_m *Group) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.DateCreated = value.Time
 			}
-		case group.FieldTenantID:
+		case group.FieldTenantId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
 			} else if value != nil {
-				_m.TenantID = *value
+				_m.TenantId = *value
 			}
-		case group.FieldSiteID:
+		case group.FieldSiteId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field site_id", values[i])
 			} else if value != nil {
-				_m.SiteID = *value
+				_m.SiteId = *value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -201,7 +201,7 @@ func (_m *Group) Unwrap() *Group {
 func (_m *Group) String() string {
 	var builder strings.Builder
 	builder.WriteString("Group(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.Id))
 	builder.WriteString("alias=")
 	builder.WriteString(_m.Alias)
 	builder.WriteString(", ")
@@ -223,10 +223,10 @@ func (_m *Group) String() string {
 	builder.WriteString(_m.DateCreated.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("tenant_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.TenantID))
+	builder.WriteString(fmt.Sprintf("%v", _m.TenantId))
 	builder.WriteString(", ")
 	builder.WriteString("site_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.SiteID))
+	builder.WriteString(fmt.Sprintf("%v", _m.SiteId))
 	builder.WriteByte(')')
 	return builder.String()
 }

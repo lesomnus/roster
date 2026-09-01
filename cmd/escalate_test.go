@@ -39,7 +39,7 @@ const joinGroup = "/roster.GroupMembershipService/Add"
 //	Alice attaches the tenant's admin role to herself, in any team.
 //	Alice may now erase anybody.
 //
-// Two RPCs and no method she did not already hold -- from "Alice manages who
+// Two Rpcs and no method she did not already hold -- from "Alice manages who
 // is in what", which is the same sentence that made `Binding.Add` dangerous.
 func TestAttachingARoleIsGrantingIt(t *testing.T) {
 	x := require.New(t)
@@ -189,7 +189,7 @@ func TestATeamWithNoSiteIsTheTenantsOwn(t *testing.T) {
 //	Alice puts herself in the group the deployment binds its admin role to.
 //	Alice may now erase anybody.
 //
-// Two RPCs, and neither of them names a role.
+// Two Rpcs, and neither of them names a role.
 func TestJoiningAGroupIsGrantingYourselfWhatItHolds(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)

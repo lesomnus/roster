@@ -3,7 +3,7 @@
 // D22 says what this is and why it is a package rather than a service: *the
 // wish behind this is right -- somebody building an app wants to put up their
 // brand and write their business logic, not to learn what a second factor
-// costs. Handing them a store and a list of RPCs leaves the hardest, most
+// costs. Handing them a store and a list of Rpcs leaves the hardest, most
 // security-shaped part of the job on their desk. The answer is to write that
 // part and ship it as something they import. The answer is not to serve it.*
 //

@@ -334,7 +334,7 @@ func (a *App) changePassword(w http.ResponseWriter, r *http.Request) {
 // TOTP only from this page: a `webauthn` enrolment is a browser ceremony that
 // needs `navigator.credentials.create()` and the attestation it answers, which
 // is a page this example does not draw. What comes back for `totp` is the seed
-// as an `otpauth://` URI, shown once -- the page turns it into a QR code and
+// as an `otpauth://` Uri, shown once -- the page turns it into a QR code and
 // tells the person to prove it with one code, which is what confirms it.
 func (a *App) enrolFactor(w http.ResponseWriter, r *http.Request) {
 	ctx, err := a.acting(r.Context(), r)

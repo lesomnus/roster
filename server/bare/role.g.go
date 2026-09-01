@@ -106,12 +106,12 @@ func (s RoleServiceServer) Add(ctx context.Context, req *rstr.RoleAddRequest) (*
 	if v, err := mint(ctx, s.Mint, "roster.Role", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
-		q.SetID(v)
+		q.SetId(v)
 	}
 	if k, err := TenantGetKey(ctx, st.Db, req.GetTenant()); err != nil {
 		return nil, err
 	} else {
-		q.SetTenantID(k)
+		q.SetTenantId(k)
 		ds = append(ds, func(v *rstr.Role) {
 			v.SetTenant(rstr.Tenant_builder{Id: k[:]}.Build())
 		})
@@ -120,7 +120,7 @@ func (s RoleServiceServer) Add(ctx context.Context, req *rstr.RoleAddRequest) (*
 		if k, err := SiteGetKey(ctx, st.Db, req.GetSite()); err != nil {
 			return nil, err
 		} else {
-			q.SetSiteID(k)
+			q.SetSiteId(k)
 			ds = append(ds, func(v *rstr.Role) {
 				v.SetSite(rstr.Site_builder{Id: k[:]}.Build())
 			})
@@ -154,7 +154,7 @@ func (s RoleServiceServer) Add(ctx context.Context, req *rstr.RoleAddRequest) (*
 
 	if err := record(ctx, s.Rec, st.Db, Change{
 		By:  rstr.RoleService_Add_FullMethodName,
-		Key: u.ID,
+		Key: u.Id,
 	}); err != nil {
 		return nil, err
 	}
@@ -193,7 +193,7 @@ func (s RoleServiceServer) Get(ctx context.Context, req *rstr.RoleGetRequest) (*
 }
 
 func selectRoleKey(q *ent.RoleQuery) {
-	q.Select(role.FieldID)
+	q.Select(role.FieldId)
 }
 
 func RoleSelectedFields(m *rstr.RoleSelect) []string {
@@ -203,7 +203,7 @@ func RoleSelectedFields(m *rstr.RoleSelect) []string {
 
 	vs := make([]string, 0, len(role.Columns))
 	{
-		vs = append(vs, role.FieldID)
+		vs = append(vs, role.FieldId)
 	}
 	if m.GetAlias() {
 		vs = append(vs, role.FieldAlias)
@@ -290,7 +290,7 @@ func RoleGetKey(ctx context.Context, db *ent.Client, ref *rstr.RoleRef) (uuid.UU
 		return z, err
 	}
 
-	v, err := db.Role.Query().Where(p).OnlyID(ctx)
+	v, err := db.Role.Query().Where(p).OnlyId(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return z, status.Error(codes.NotFound, "Role not found")
@@ -304,7 +304,7 @@ func RoleGetKey(ctx context.Context, db *ent.Client, ref *rstr.RoleRef) (uuid.UU
 var roleOrmEntity = ormpatch.MustEntityOf(rstr.File_app_role_proto, "Role")
 
 var rolePatchColumns = entpatch.Columns{
-	1: role.FieldID, 2: role.TenantColumn, 3: role.SiteColumn, 4: role.FieldAlias, 5: role.FieldName, 6: role.FieldDesc, 8: role.FieldMethods, 13: role.FieldDateUpdated, 14: role.FieldDateErased, 15: role.FieldDateCreated}
+	1: role.FieldId, 2: role.TenantColumn, 3: role.SiteColumn, 4: role.FieldAlias, 5: role.FieldName, 6: role.FieldDesc, 8: role.FieldMethods, 13: role.FieldDateUpdated, 14: role.FieldDateErased, 15: role.FieldDateCreated}
 
 func (s RoleServiceServer) Apply(ctx context.Context, req *rstr.RoleApplyRequest) (*rstr.Role, error) {
 	if !req.HasPatch() {
@@ -349,7 +349,7 @@ func (s RoleServiceServer) apply(ctx context.Context, ref *rstr.RoleRef, doc *pa
 	}
 	at := &rstr.RoleRef{}
 	at.SetId(k[:])
-	p, err := s.narrow(ctx, role.IDEQ(k))
+	p, err := s.narrow(ctx, role.IdEQ(k))
 	if err != nil {
 		return nil, err
 	}
@@ -443,7 +443,7 @@ func (s RoleServiceServer) Erase(ctx context.Context, req *rstr.RoleRef) (*rstr.
 
 	var k any
 	if s.Rec != nil {
-		v, err := st.Db.Role.Query().Where(p).OnlyID(ctx)
+		v, err := st.Db.Role.Query().Where(p).OnlyId(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.RoleEraseResponse{}, nil
@@ -452,7 +452,7 @@ func (s RoleServiceServer) Erase(ctx context.Context, req *rstr.RoleRef) (*rstr.
 		}
 
 		k = v
-		p = role.And(p, role.IDEQ(v))
+		p = role.And(p, role.IdEQ(v))
 	}
 
 	u := st.Db.Role.Update().Where(p)
@@ -503,7 +503,7 @@ func pickRole(req *rstr.RoleRef) (predicate.Role, error) {
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
-			return role.IDEQ(v), nil
+			return role.IdEQ(v), nil
 		}
 	case rstr.RoleRef_Slug_case:
 		k := req.GetSlug()
@@ -604,12 +604,12 @@ func (s BindingServiceServer) Add(ctx context.Context, req *rstr.BindingAddReque
 	if v, err := mint(ctx, s.Mint, "roster.Binding", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
-		q.SetID(v)
+		q.SetId(v)
 	}
 	if k, err := RoleGetKey(ctx, st.Db, req.GetRole()); err != nil {
 		return nil, err
 	} else {
-		q.SetRoleID(k)
+		q.SetRoleId(k)
 		ds = append(ds, func(v *rstr.Binding) {
 			v.SetRole(rstr.Role_builder{Id: k[:]}.Build())
 		})
@@ -618,7 +618,7 @@ func (s BindingServiceServer) Add(ctx context.Context, req *rstr.BindingAddReque
 		if k, err := SiteGetKey(ctx, st.Db, req.GetSite()); err != nil {
 			return nil, err
 		} else {
-			q.SetSiteID(k)
+			q.SetSiteId(k)
 			ds = append(ds, func(v *rstr.Binding) {
 				v.SetSite(rstr.Site_builder{Id: k[:]}.Build())
 			})
@@ -628,7 +628,7 @@ func (s BindingServiceServer) Add(ctx context.Context, req *rstr.BindingAddReque
 		if k, err := HolderGetKey(ctx, st.Db, req.GetHolder()); err != nil {
 			return nil, err
 		} else {
-			q.SetHolderID(k)
+			q.SetHolderId(k)
 			ds = append(ds, func(v *rstr.Binding) {
 				v.SetHolder(rstr.Holder_builder{Id: k[:]}.Build())
 			})
@@ -638,7 +638,7 @@ func (s BindingServiceServer) Add(ctx context.Context, req *rstr.BindingAddReque
 		if k, err := GroupGetKey(ctx, st.Db, req.GetGroup()); err != nil {
 			return nil, err
 		} else {
-			q.SetGroupID(k)
+			q.SetGroupId(k)
 			ds = append(ds, func(v *rstr.Binding) {
 				v.SetGroup(rstr.Group_builder{Id: k[:]}.Build())
 			})
@@ -666,7 +666,7 @@ func (s BindingServiceServer) Add(ctx context.Context, req *rstr.BindingAddReque
 
 	if err := record(ctx, s.Rec, st.Db, Change{
 		By:  rstr.BindingService_Add_FullMethodName,
-		Key: u.ID,
+		Key: u.Id,
 	}); err != nil {
 		return nil, err
 	}
@@ -705,7 +705,7 @@ func (s BindingServiceServer) Get(ctx context.Context, req *rstr.BindingGetReque
 }
 
 func selectBindingKey(q *ent.BindingQuery) {
-	q.Select(binding.FieldID)
+	q.Select(binding.FieldId)
 }
 
 func BindingSelectedFields(m *rstr.BindingSelect) []string {
@@ -715,7 +715,7 @@ func BindingSelectedFields(m *rstr.BindingSelect) []string {
 
 	vs := make([]string, 0, len(binding.Columns))
 	{
-		vs = append(vs, binding.FieldID)
+		vs = append(vs, binding.FieldId)
 	}
 	if m.GetDateUpdated() {
 		vs = append(vs, binding.FieldDateUpdated)
@@ -805,7 +805,7 @@ func BindingGetKey(ctx context.Context, db *ent.Client, ref *rstr.BindingRef) (u
 		return z, err
 	}
 
-	v, err := db.Binding.Query().Where(p).OnlyID(ctx)
+	v, err := db.Binding.Query().Where(p).OnlyId(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return z, status.Error(codes.NotFound, "Binding not found")
@@ -819,7 +819,7 @@ func BindingGetKey(ctx context.Context, db *ent.Client, ref *rstr.BindingRef) (u
 var bindingOrmEntity = ormpatch.MustEntityOf(rstr.File_app_role_proto, "Binding")
 
 var bindingPatchColumns = entpatch.Columns{
-	1: binding.FieldID, 2: binding.RoleColumn, 3: binding.SiteColumn, 8: binding.HolderColumn, 9: binding.GroupColumn, 13: binding.FieldDateUpdated, 14: binding.FieldDateErased, 15: binding.FieldDateCreated}
+	1: binding.FieldId, 2: binding.RoleColumn, 3: binding.SiteColumn, 8: binding.HolderColumn, 9: binding.GroupColumn, 13: binding.FieldDateUpdated, 14: binding.FieldDateErased, 15: binding.FieldDateCreated}
 
 func (s BindingServiceServer) Apply(ctx context.Context, req *rstr.BindingApplyRequest) (*rstr.Binding, error) {
 	if !req.HasPatch() {
@@ -864,7 +864,7 @@ func (s BindingServiceServer) apply(ctx context.Context, ref *rstr.BindingRef, d
 	}
 	at := &rstr.BindingRef{}
 	at.SetId(k[:])
-	p, err := s.narrow(ctx, binding.IDEQ(k))
+	p, err := s.narrow(ctx, binding.IdEQ(k))
 	if err != nil {
 		return nil, err
 	}
@@ -958,7 +958,7 @@ func (s BindingServiceServer) Erase(ctx context.Context, req *rstr.BindingRef) (
 
 	var k any
 	if s.Rec != nil {
-		v, err := st.Db.Binding.Query().Where(p).OnlyID(ctx)
+		v, err := st.Db.Binding.Query().Where(p).OnlyId(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.BindingEraseResponse{}, nil
@@ -967,7 +967,7 @@ func (s BindingServiceServer) Erase(ctx context.Context, req *rstr.BindingRef) (
 		}
 
 		k = v
-		p = binding.And(p, binding.IDEQ(v))
+		p = binding.And(p, binding.IdEQ(v))
 	}
 
 	u := st.Db.Binding.Update().Where(p)
@@ -1018,7 +1018,7 @@ func pickBinding(req *rstr.BindingRef) (predicate.Binding, error) {
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
-			return binding.IDEQ(v), nil
+			return binding.IdEQ(v), nil
 		}
 	case rstr.BindingRef_Key_not_set_case:
 		return nil, status.Errorf(codes.InvalidArgument, "key not set: Binding")

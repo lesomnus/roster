@@ -102,12 +102,12 @@ func (s SiteServiceServer) Add(ctx context.Context, req *rstr.SiteAddRequest) (*
 	if v, err := mint(ctx, s.Mint, "roster.Site", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
-		q.SetID(v)
+		q.SetId(v)
 	}
 	if k, err := TenantGetKey(ctx, st.Db, req.GetTenant()); err != nil {
 		return nil, err
 	} else {
-		q.SetTenantID(k)
+		q.SetTenantId(k)
 		ds = append(ds, func(v *rstr.Site) {
 			v.SetTenant(rstr.Tenant_builder{Id: k[:]}.Build())
 		})
@@ -140,7 +140,7 @@ func (s SiteServiceServer) Add(ctx context.Context, req *rstr.SiteAddRequest) (*
 
 	if err := record(ctx, s.Rec, st.Db, Change{
 		By:  rstr.SiteService_Add_FullMethodName,
-		Key: u.ID,
+		Key: u.Id,
 	}); err != nil {
 		return nil, err
 	}
@@ -179,7 +179,7 @@ func (s SiteServiceServer) Get(ctx context.Context, req *rstr.SiteGetRequest) (*
 }
 
 func selectSiteKey(q *ent.SiteQuery) {
-	q.Select(site.FieldID)
+	q.Select(site.FieldId)
 }
 
 func SiteSelectedFields(m *rstr.SiteSelect) []string {
@@ -189,7 +189,7 @@ func SiteSelectedFields(m *rstr.SiteSelect) []string {
 
 	vs := make([]string, 0, len(site.Columns))
 	{
-		vs = append(vs, site.FieldID)
+		vs = append(vs, site.FieldId)
 	}
 	if m.GetAlias() {
 		vs = append(vs, site.FieldAlias)
@@ -269,7 +269,7 @@ func SiteGetKey(ctx context.Context, db *ent.Client, ref *rstr.SiteRef) (uuid.UU
 		return z, err
 	}
 
-	v, err := db.Site.Query().Where(p).OnlyID(ctx)
+	v, err := db.Site.Query().Where(p).OnlyId(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return z, status.Error(codes.NotFound, "Site not found")
@@ -283,7 +283,7 @@ func SiteGetKey(ctx context.Context, db *ent.Client, ref *rstr.SiteRef) (uuid.UU
 var siteOrmEntity = ormpatch.MustEntityOf(rstr.File_app_site_proto, "Site")
 
 var sitePatchColumns = entpatch.Columns{
-	1: site.FieldID, 2: site.TenantColumn, 4: site.FieldAlias, 5: site.FieldName, 6: site.FieldDesc, 7: site.FieldLabels, 13: site.FieldDateUpdated, 14: site.FieldDateErased, 15: site.FieldDateCreated}
+	1: site.FieldId, 2: site.TenantColumn, 4: site.FieldAlias, 5: site.FieldName, 6: site.FieldDesc, 7: site.FieldLabels, 13: site.FieldDateUpdated, 14: site.FieldDateErased, 15: site.FieldDateCreated}
 
 func (s SiteServiceServer) Apply(ctx context.Context, req *rstr.SiteApplyRequest) (*rstr.Site, error) {
 	if !req.HasPatch() {
@@ -328,7 +328,7 @@ func (s SiteServiceServer) apply(ctx context.Context, ref *rstr.SiteRef, doc *pa
 	}
 	at := &rstr.SiteRef{}
 	at.SetId(k[:])
-	p, err := s.narrow(ctx, site.IDEQ(k))
+	p, err := s.narrow(ctx, site.IdEQ(k))
 	if err != nil {
 		return nil, err
 	}
@@ -422,7 +422,7 @@ func (s SiteServiceServer) Erase(ctx context.Context, req *rstr.SiteRef) (*rstr.
 
 	var k any
 	if s.Rec != nil {
-		v, err := st.Db.Site.Query().Where(p).OnlyID(ctx)
+		v, err := st.Db.Site.Query().Where(p).OnlyId(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.SiteEraseResponse{}, nil
@@ -431,7 +431,7 @@ func (s SiteServiceServer) Erase(ctx context.Context, req *rstr.SiteRef) (*rstr.
 		}
 
 		k = v
-		p = site.And(p, site.IDEQ(v))
+		p = site.And(p, site.IdEQ(v))
 	}
 
 	u := st.Db.Site.Update().Where(p)
@@ -482,7 +482,7 @@ func pickSite(req *rstr.SiteRef) (predicate.Site, error) {
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
-			return site.IDEQ(v), nil
+			return site.IdEQ(v), nil
 		}
 	case rstr.SiteRef_Slug_case:
 		k := req.GetSlug()

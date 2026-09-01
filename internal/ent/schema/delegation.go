@@ -19,10 +19,10 @@ type Delegation struct {
 
 func (Delegation) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
+		field.Uuid("id", uuid.UUID{}).
 			Unique().
 			Immutable(),
-		field.JSON("methods", []string{}).
+		field.Json("methods", []string{}).
 			Immutable().
 			Optional(),
 		field.Bytes("secret").
@@ -40,7 +40,7 @@ func (Delegation) Fields() []ent.Field {
 		field.Time("date_created").
 			Immutable().
 			Optional(),
-		field.UUID("holder_id", uuid.UUID{}).
+		field.Uuid("holder_id", uuid.UUID{}).
 			Immutable(),
 	}
 }

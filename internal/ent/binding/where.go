@@ -11,49 +11,49 @@ import (
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 )
 
-// ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldEQ(FieldID, id))
+// Id filters vertices based on their Id field.
+func Id(id uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldEQ(FieldId, id))
 }
 
-// IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldEQ(FieldID, id))
+// IdEQ applies the EQ predicate on the Id field.
+func IdEQ(id uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldEQ(FieldId, id))
 }
 
-// IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldNEQ(FieldID, id))
+// IdNEQ applies the NEQ predicate on the Id field.
+func IdNEQ(id uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldNEQ(FieldId, id))
 }
 
-// IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldIn(FieldID, ids...))
+// IdIn applies the In predicate on the Id field.
+func IdIn(ids ...uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldIn(FieldId, ids...))
 }
 
-// IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldNotIn(FieldID, ids...))
+// IdNotIn applies the NotIn predicate on the Id field.
+func IdNotIn(ids ...uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldNotIn(FieldId, ids...))
 }
 
-// IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldGT(FieldID, id))
+// IdGT applies the GT predicate on the Id field.
+func IdGT(id uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldGT(FieldId, id))
 }
 
-// IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldGTE(FieldID, id))
+// IdGTE applies the GTE predicate on the Id field.
+func IdGTE(id uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldGTE(FieldId, id))
 }
 
-// IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldLT(FieldID, id))
+// IdLT applies the LT predicate on the Id field.
+func IdLT(id uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldLT(FieldId, id))
 }
 
-// IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldLTE(FieldID, id))
+// IdLTE applies the LTE predicate on the Id field.
+func IdLTE(id uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldLTE(FieldId, id))
 }
 
 // DateUpdated applies equality check predicate on the "date_updated" field. It's identical to DateUpdatedEQ.
@@ -71,24 +71,24 @@ func DateCreated(v time.Time) predicate.Binding {
 	return predicate.Binding(sql.FieldEQ(FieldDateCreated, v))
 }
 
-// RoleID applies equality check predicate on the "role_id" field. It's identical to RoleIDEQ.
-func RoleID(v uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldEQ(FieldRoleID, v))
+// RoleId applies equality check predicate on the "role_id" field. It's identical to RoleIdEQ.
+func RoleId(v uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldEQ(FieldRoleId, v))
 }
 
-// SiteID applies equality check predicate on the "site_id" field. It's identical to SiteIDEQ.
-func SiteID(v uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldEQ(FieldSiteID, v))
+// SiteId applies equality check predicate on the "site_id" field. It's identical to SiteIdEQ.
+func SiteId(v uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldEQ(FieldSiteId, v))
 }
 
-// HolderID applies equality check predicate on the "holder_id" field. It's identical to HolderIDEQ.
-func HolderID(v uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldEQ(FieldHolderID, v))
+// HolderId applies equality check predicate on the "holder_id" field. It's identical to HolderIdEQ.
+func HolderId(v uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldEQ(FieldHolderId, v))
 }
 
-// GroupID applies equality check predicate on the "group_id" field. It's identical to GroupIDEQ.
-func GroupID(v uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldEQ(FieldGroupID, v))
+// GroupId applies equality check predicate on the "group_id" field. It's identical to GroupIdEQ.
+func GroupId(v uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldEQ(FieldGroupId, v))
 }
 
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
@@ -231,121 +231,121 @@ func DateCreatedNotNil() predicate.Binding {
 	return predicate.Binding(sql.FieldNotNull(FieldDateCreated))
 }
 
-// RoleIDEQ applies the EQ predicate on the "role_id" field.
-func RoleIDEQ(v uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldEQ(FieldRoleID, v))
+// RoleIdEQ applies the EQ predicate on the "role_id" field.
+func RoleIdEQ(v uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldEQ(FieldRoleId, v))
 }
 
-// RoleIDNEQ applies the NEQ predicate on the "role_id" field.
-func RoleIDNEQ(v uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldNEQ(FieldRoleID, v))
+// RoleIdNEQ applies the NEQ predicate on the "role_id" field.
+func RoleIdNEQ(v uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldNEQ(FieldRoleId, v))
 }
 
-// RoleIDIn applies the In predicate on the "role_id" field.
-func RoleIDIn(vs ...uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldIn(FieldRoleID, vs...))
+// RoleIdIn applies the In predicate on the "role_id" field.
+func RoleIdIn(vs ...uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldIn(FieldRoleId, vs...))
 }
 
-// RoleIDNotIn applies the NotIn predicate on the "role_id" field.
-func RoleIDNotIn(vs ...uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldNotIn(FieldRoleID, vs...))
+// RoleIdNotIn applies the NotIn predicate on the "role_id" field.
+func RoleIdNotIn(vs ...uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldNotIn(FieldRoleId, vs...))
 }
 
-// SiteIDEQ applies the EQ predicate on the "site_id" field.
-func SiteIDEQ(v uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldEQ(FieldSiteID, v))
+// SiteIdEQ applies the EQ predicate on the "site_id" field.
+func SiteIdEQ(v uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldEQ(FieldSiteId, v))
 }
 
-// SiteIDNEQ applies the NEQ predicate on the "site_id" field.
-func SiteIDNEQ(v uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldNEQ(FieldSiteID, v))
+// SiteIdNEQ applies the NEQ predicate on the "site_id" field.
+func SiteIdNEQ(v uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldNEQ(FieldSiteId, v))
 }
 
-// SiteIDIn applies the In predicate on the "site_id" field.
-func SiteIDIn(vs ...uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldIn(FieldSiteID, vs...))
+// SiteIdIn applies the In predicate on the "site_id" field.
+func SiteIdIn(vs ...uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldIn(FieldSiteId, vs...))
 }
 
-// SiteIDNotIn applies the NotIn predicate on the "site_id" field.
-func SiteIDNotIn(vs ...uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldNotIn(FieldSiteID, vs...))
+// SiteIdNotIn applies the NotIn predicate on the "site_id" field.
+func SiteIdNotIn(vs ...uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldNotIn(FieldSiteId, vs...))
 }
 
-// SiteIDIsNil applies the IsNil predicate on the "site_id" field.
-func SiteIDIsNil() predicate.Binding {
-	return predicate.Binding(sql.FieldIsNull(FieldSiteID))
+// SiteIdIsNil applies the IsNil predicate on the "site_id" field.
+func SiteIdIsNil() predicate.Binding {
+	return predicate.Binding(sql.FieldIsNull(FieldSiteId))
 }
 
-// SiteIDNotNil applies the NotNil predicate on the "site_id" field.
-func SiteIDNotNil() predicate.Binding {
-	return predicate.Binding(sql.FieldNotNull(FieldSiteID))
+// SiteIdNotNil applies the NotNil predicate on the "site_id" field.
+func SiteIdNotNil() predicate.Binding {
+	return predicate.Binding(sql.FieldNotNull(FieldSiteId))
 }
 
-// HolderIDEQ applies the EQ predicate on the "holder_id" field.
-func HolderIDEQ(v uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldEQ(FieldHolderID, v))
+// HolderIdEQ applies the EQ predicate on the "holder_id" field.
+func HolderIdEQ(v uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldEQ(FieldHolderId, v))
 }
 
-// HolderIDNEQ applies the NEQ predicate on the "holder_id" field.
-func HolderIDNEQ(v uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldNEQ(FieldHolderID, v))
+// HolderIdNEQ applies the NEQ predicate on the "holder_id" field.
+func HolderIdNEQ(v uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldNEQ(FieldHolderId, v))
 }
 
-// HolderIDIn applies the In predicate on the "holder_id" field.
-func HolderIDIn(vs ...uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldIn(FieldHolderID, vs...))
+// HolderIdIn applies the In predicate on the "holder_id" field.
+func HolderIdIn(vs ...uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldIn(FieldHolderId, vs...))
 }
 
-// HolderIDNotIn applies the NotIn predicate on the "holder_id" field.
-func HolderIDNotIn(vs ...uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldNotIn(FieldHolderID, vs...))
+// HolderIdNotIn applies the NotIn predicate on the "holder_id" field.
+func HolderIdNotIn(vs ...uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldNotIn(FieldHolderId, vs...))
 }
 
-// HolderIDIsNil applies the IsNil predicate on the "holder_id" field.
-func HolderIDIsNil() predicate.Binding {
-	return predicate.Binding(sql.FieldIsNull(FieldHolderID))
+// HolderIdIsNil applies the IsNil predicate on the "holder_id" field.
+func HolderIdIsNil() predicate.Binding {
+	return predicate.Binding(sql.FieldIsNull(FieldHolderId))
 }
 
-// HolderIDNotNil applies the NotNil predicate on the "holder_id" field.
-func HolderIDNotNil() predicate.Binding {
-	return predicate.Binding(sql.FieldNotNull(FieldHolderID))
+// HolderIdNotNil applies the NotNil predicate on the "holder_id" field.
+func HolderIdNotNil() predicate.Binding {
+	return predicate.Binding(sql.FieldNotNull(FieldHolderId))
 }
 
-// GroupIDEQ applies the EQ predicate on the "group_id" field.
-func GroupIDEQ(v uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldEQ(FieldGroupID, v))
+// GroupIdEQ applies the EQ predicate on the "group_id" field.
+func GroupIdEQ(v uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldEQ(FieldGroupId, v))
 }
 
-// GroupIDNEQ applies the NEQ predicate on the "group_id" field.
-func GroupIDNEQ(v uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldNEQ(FieldGroupID, v))
+// GroupIdNEQ applies the NEQ predicate on the "group_id" field.
+func GroupIdNEQ(v uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldNEQ(FieldGroupId, v))
 }
 
-// GroupIDIn applies the In predicate on the "group_id" field.
-func GroupIDIn(vs ...uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldIn(FieldGroupID, vs...))
+// GroupIdIn applies the In predicate on the "group_id" field.
+func GroupIdIn(vs ...uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldIn(FieldGroupId, vs...))
 }
 
-// GroupIDNotIn applies the NotIn predicate on the "group_id" field.
-func GroupIDNotIn(vs ...uuid.UUID) predicate.Binding {
-	return predicate.Binding(sql.FieldNotIn(FieldGroupID, vs...))
+// GroupIdNotIn applies the NotIn predicate on the "group_id" field.
+func GroupIdNotIn(vs ...uuid.UUID) predicate.Binding {
+	return predicate.Binding(sql.FieldNotIn(FieldGroupId, vs...))
 }
 
-// GroupIDIsNil applies the IsNil predicate on the "group_id" field.
-func GroupIDIsNil() predicate.Binding {
-	return predicate.Binding(sql.FieldIsNull(FieldGroupID))
+// GroupIdIsNil applies the IsNil predicate on the "group_id" field.
+func GroupIdIsNil() predicate.Binding {
+	return predicate.Binding(sql.FieldIsNull(FieldGroupId))
 }
 
-// GroupIDNotNil applies the NotNil predicate on the "group_id" field.
-func GroupIDNotNil() predicate.Binding {
-	return predicate.Binding(sql.FieldNotNull(FieldGroupID))
+// GroupIdNotNil applies the NotNil predicate on the "group_id" field.
+func GroupIdNotNil() predicate.Binding {
+	return predicate.Binding(sql.FieldNotNull(FieldGroupId))
 }
 
 // HasRole applies the HasEdge predicate on the "role" edge.
 func HasRole() predicate.Binding {
 	return predicate.Binding(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
+			sqlgraph.From(Table, FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, RoleTable, RoleColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
@@ -368,7 +368,7 @@ func HasRoleWith(preds ...predicate.Role) predicate.Binding {
 func HasSite() predicate.Binding {
 	return predicate.Binding(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
+			sqlgraph.From(Table, FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, SiteTable, SiteColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
@@ -391,7 +391,7 @@ func HasSiteWith(preds ...predicate.Site) predicate.Binding {
 func HasHolder() predicate.Binding {
 	return predicate.Binding(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
+			sqlgraph.From(Table, FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, HolderTable, HolderColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
@@ -414,7 +414,7 @@ func HasHolderWith(preds ...predicate.Holder) predicate.Binding {
 func HasGroup() predicate.Binding {
 	return predicate.Binding(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
+			sqlgraph.From(Table, FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, GroupTable, GroupColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)

@@ -57,32 +57,32 @@ func (_c *GroupMembershipCreate) SetNillableDateCreated(v *time.Time) *GroupMemb
 	return _c
 }
 
-// SetHolderID sets the "holder_id" field.
-func (_c *GroupMembershipCreate) SetHolderID(v uuid.UUID) *GroupMembershipCreate {
-	_c.mutation.SetHolderID(v)
+// SetHolderId sets the "holder_id" field.
+func (_c *GroupMembershipCreate) SetHolderId(v uuid.UUID) *GroupMembershipCreate {
+	_c.mutation.SetHolderId(v)
 	return _c
 }
 
-// SetGroupID sets the "group_id" field.
-func (_c *GroupMembershipCreate) SetGroupID(v uuid.UUID) *GroupMembershipCreate {
-	_c.mutation.SetGroupID(v)
+// SetGroupId sets the "group_id" field.
+func (_c *GroupMembershipCreate) SetGroupId(v uuid.UUID) *GroupMembershipCreate {
+	_c.mutation.SetGroupId(v)
 	return _c
 }
 
-// SetID sets the "id" field.
-func (_c *GroupMembershipCreate) SetID(v uuid.UUID) *GroupMembershipCreate {
-	_c.mutation.SetID(v)
+// SetId sets the "id" field.
+func (_c *GroupMembershipCreate) SetId(v uuid.UUID) *GroupMembershipCreate {
+	_c.mutation.SetId(v)
 	return _c
 }
 
 // SetHolder sets the "holder" edge to the Holder entity.
 func (_c *GroupMembershipCreate) SetHolder(v *Holder) *GroupMembershipCreate {
-	return _c.SetHolderID(v.ID)
+	return _c.SetHolderId(v.Id)
 }
 
 // SetGroup sets the "group" edge to the Group entity.
 func (_c *GroupMembershipCreate) SetGroup(v *Group) *GroupMembershipCreate {
-	return _c.SetGroupID(v.ID)
+	return _c.SetGroupId(v.Id)
 }
 
 // Mutation returns the GroupMembershipMutation object of the builder.
@@ -122,16 +122,16 @@ func (_c *GroupMembershipCreate) check() error {
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "GroupMembership.date_updated"`)}
 	}
-	if _, ok := _c.mutation.HolderID(); !ok {
+	if _, ok := _c.mutation.HolderId(); !ok {
 		return &ValidationError{Name: "holder_id", err: errors.New(`ent: missing required field "GroupMembership.holder_id"`)}
 	}
-	if _, ok := _c.mutation.GroupID(); !ok {
+	if _, ok := _c.mutation.GroupId(); !ok {
 		return &ValidationError{Name: "group_id", err: errors.New(`ent: missing required field "GroupMembership.group_id"`)}
 	}
-	if len(_c.mutation.HolderIDs()) == 0 {
+	if len(_c.mutation.HolderIds()) == 0 {
 		return &ValidationError{Name: "holder", err: errors.New(`ent: missing required edge "GroupMembership.holder"`)}
 	}
-	if len(_c.mutation.GroupIDs()) == 0 {
+	if len(_c.mutation.GroupIds()) == 0 {
 		return &ValidationError{Name: "group", err: errors.New(`ent: missing required edge "GroupMembership.group"`)}
 	}
 	return nil
@@ -148,14 +148,14 @@ func (_c *GroupMembershipCreate) sqlSave(ctx context.Context) (*GroupMembership,
 		}
 		return nil, err
 	}
-	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+	if _spec.Id.Value != nil {
+		if id, ok := _spec.Id.Value.(*uuid.UUID); ok {
+			_node.Id = *id
+		} else if err := _node.Id.Scan(_spec.Id.Value); err != nil {
 			return nil, err
 		}
 	}
-	_c.mutation.id = &_node.ID
+	_c.mutation.id = &_node.Id
 	_c.mutation.done = true
 	return _node, nil
 }
@@ -163,11 +163,11 @@ func (_c *GroupMembershipCreate) sqlSave(ctx context.Context) (*GroupMembership,
 func (_c *GroupMembershipCreate) createSpec() (*GroupMembership, *sqlgraph.CreateSpec) {
 	var (
 		_node = &GroupMembership{config: _c.config}
-		_spec = sqlgraph.NewCreateSpec(groupmembership.Table, sqlgraph.NewFieldSpec(groupmembership.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(groupmembership.Table, sqlgraph.NewFieldSpec(groupmembership.FieldId, field.TypeUuid))
 	)
-	if id, ok := _c.mutation.ID(); ok {
-		_node.ID = id
-		_spec.ID.Value = &id
+	if id, ok := _c.mutation.Id(); ok {
+		_node.Id = id
+		_spec.Id.Value = &id
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(groupmembership.FieldDateUpdated, field.TypeTime, value)
@@ -181,7 +181,7 @@ func (_c *GroupMembershipCreate) createSpec() (*GroupMembership, *sqlgraph.Creat
 		_spec.SetField(groupmembership.FieldDateCreated, field.TypeTime, value)
 		_node.DateCreated = value
 	}
-	if nodes := _c.mutation.HolderIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.HolderIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -189,16 +189,16 @@ func (_c *GroupMembershipCreate) createSpec() (*GroupMembership, *sqlgraph.Creat
 			Columns: []string{groupmembership.HolderColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(holder.FieldID, field.TypeUUID),
+				IdSpec: sqlgraph.NewFieldSpec(holder.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.HolderID = nodes[0]
+		_node.HolderId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := _c.mutation.GroupIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.GroupIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -206,13 +206,13 @@ func (_c *GroupMembershipCreate) createSpec() (*GroupMembership, *sqlgraph.Creat
 			Columns: []string{groupmembership.GroupColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID),
+				IdSpec: sqlgraph.NewFieldSpec(group.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.GroupID = nodes[0]
+		_node.GroupId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -261,7 +261,7 @@ func (_c *GroupMembershipCreateBulk) Save(ctx context.Context) ([]*GroupMembersh
 				if err != nil {
 					return nil, err
 				}
-				mutation.id = &nodes[i].ID
+				mutation.id = &nodes[i].Id
 				mutation.done = true
 				return nodes[i], nil
 			})

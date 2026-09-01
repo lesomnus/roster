@@ -20,7 +20,7 @@ import (
 // care and a test that builds one deployment has room for the leak.
 //
 // A suite does not. Every test here that needs keys, a console or an operator
-// builds both planes, and each of them left a pool behind: against PostgreSQL
+// builds both planes, and each of them left a pool behind: against PostgreSql
 // with the hundred connections its image allows -- which is what this app's own
 // CI gives it -- the package ran out part way through and the failures came
 // back as `too many clients already` against whichever tests happened to be

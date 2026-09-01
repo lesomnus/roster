@@ -59,78 +59,78 @@ func (_c *BindingCreate) SetNillableDateCreated(v *time.Time) *BindingCreate {
 	return _c
 }
 
-// SetRoleID sets the "role_id" field.
-func (_c *BindingCreate) SetRoleID(v uuid.UUID) *BindingCreate {
-	_c.mutation.SetRoleID(v)
+// SetRoleId sets the "role_id" field.
+func (_c *BindingCreate) SetRoleId(v uuid.UUID) *BindingCreate {
+	_c.mutation.SetRoleId(v)
 	return _c
 }
 
-// SetSiteID sets the "site_id" field.
-func (_c *BindingCreate) SetSiteID(v uuid.UUID) *BindingCreate {
-	_c.mutation.SetSiteID(v)
+// SetSiteId sets the "site_id" field.
+func (_c *BindingCreate) SetSiteId(v uuid.UUID) *BindingCreate {
+	_c.mutation.SetSiteId(v)
 	return _c
 }
 
-// SetNillableSiteID sets the "site_id" field if the given value is not nil.
-func (_c *BindingCreate) SetNillableSiteID(v *uuid.UUID) *BindingCreate {
+// SetNillableSiteId sets the "site_id" field if the given value is not nil.
+func (_c *BindingCreate) SetNillableSiteId(v *uuid.UUID) *BindingCreate {
 	if v != nil {
-		_c.SetSiteID(*v)
+		_c.SetSiteId(*v)
 	}
 	return _c
 }
 
-// SetHolderID sets the "holder_id" field.
-func (_c *BindingCreate) SetHolderID(v uuid.UUID) *BindingCreate {
-	_c.mutation.SetHolderID(v)
+// SetHolderId sets the "holder_id" field.
+func (_c *BindingCreate) SetHolderId(v uuid.UUID) *BindingCreate {
+	_c.mutation.SetHolderId(v)
 	return _c
 }
 
-// SetNillableHolderID sets the "holder_id" field if the given value is not nil.
-func (_c *BindingCreate) SetNillableHolderID(v *uuid.UUID) *BindingCreate {
+// SetNillableHolderId sets the "holder_id" field if the given value is not nil.
+func (_c *BindingCreate) SetNillableHolderId(v *uuid.UUID) *BindingCreate {
 	if v != nil {
-		_c.SetHolderID(*v)
+		_c.SetHolderId(*v)
 	}
 	return _c
 }
 
-// SetGroupID sets the "group_id" field.
-func (_c *BindingCreate) SetGroupID(v uuid.UUID) *BindingCreate {
-	_c.mutation.SetGroupID(v)
+// SetGroupId sets the "group_id" field.
+func (_c *BindingCreate) SetGroupId(v uuid.UUID) *BindingCreate {
+	_c.mutation.SetGroupId(v)
 	return _c
 }
 
-// SetNillableGroupID sets the "group_id" field if the given value is not nil.
-func (_c *BindingCreate) SetNillableGroupID(v *uuid.UUID) *BindingCreate {
+// SetNillableGroupId sets the "group_id" field if the given value is not nil.
+func (_c *BindingCreate) SetNillableGroupId(v *uuid.UUID) *BindingCreate {
 	if v != nil {
-		_c.SetGroupID(*v)
+		_c.SetGroupId(*v)
 	}
 	return _c
 }
 
-// SetID sets the "id" field.
-func (_c *BindingCreate) SetID(v uuid.UUID) *BindingCreate {
-	_c.mutation.SetID(v)
+// SetId sets the "id" field.
+func (_c *BindingCreate) SetId(v uuid.UUID) *BindingCreate {
+	_c.mutation.SetId(v)
 	return _c
 }
 
 // SetRole sets the "role" edge to the Role entity.
 func (_c *BindingCreate) SetRole(v *Role) *BindingCreate {
-	return _c.SetRoleID(v.ID)
+	return _c.SetRoleId(v.Id)
 }
 
 // SetSite sets the "site" edge to the Site entity.
 func (_c *BindingCreate) SetSite(v *Site) *BindingCreate {
-	return _c.SetSiteID(v.ID)
+	return _c.SetSiteId(v.Id)
 }
 
 // SetHolder sets the "holder" edge to the Holder entity.
 func (_c *BindingCreate) SetHolder(v *Holder) *BindingCreate {
-	return _c.SetHolderID(v.ID)
+	return _c.SetHolderId(v.Id)
 }
 
 // SetGroup sets the "group" edge to the Group entity.
 func (_c *BindingCreate) SetGroup(v *Group) *BindingCreate {
-	return _c.SetGroupID(v.ID)
+	return _c.SetGroupId(v.Id)
 }
 
 // Mutation returns the BindingMutation object of the builder.
@@ -170,10 +170,10 @@ func (_c *BindingCreate) check() error {
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Binding.date_updated"`)}
 	}
-	if _, ok := _c.mutation.RoleID(); !ok {
+	if _, ok := _c.mutation.RoleId(); !ok {
 		return &ValidationError{Name: "role_id", err: errors.New(`ent: missing required field "Binding.role_id"`)}
 	}
-	if len(_c.mutation.RoleIDs()) == 0 {
+	if len(_c.mutation.RoleIds()) == 0 {
 		return &ValidationError{Name: "role", err: errors.New(`ent: missing required edge "Binding.role"`)}
 	}
 	return nil
@@ -190,14 +190,14 @@ func (_c *BindingCreate) sqlSave(ctx context.Context) (*Binding, error) {
 		}
 		return nil, err
 	}
-	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+	if _spec.Id.Value != nil {
+		if id, ok := _spec.Id.Value.(*uuid.UUID); ok {
+			_node.Id = *id
+		} else if err := _node.Id.Scan(_spec.Id.Value); err != nil {
 			return nil, err
 		}
 	}
-	_c.mutation.id = &_node.ID
+	_c.mutation.id = &_node.Id
 	_c.mutation.done = true
 	return _node, nil
 }
@@ -205,11 +205,11 @@ func (_c *BindingCreate) sqlSave(ctx context.Context) (*Binding, error) {
 func (_c *BindingCreate) createSpec() (*Binding, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Binding{config: _c.config}
-		_spec = sqlgraph.NewCreateSpec(binding.Table, sqlgraph.NewFieldSpec(binding.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(binding.Table, sqlgraph.NewFieldSpec(binding.FieldId, field.TypeUuid))
 	)
-	if id, ok := _c.mutation.ID(); ok {
-		_node.ID = id
-		_spec.ID.Value = &id
+	if id, ok := _c.mutation.Id(); ok {
+		_node.Id = id
+		_spec.Id.Value = &id
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(binding.FieldDateUpdated, field.TypeTime, value)
@@ -223,7 +223,7 @@ func (_c *BindingCreate) createSpec() (*Binding, *sqlgraph.CreateSpec) {
 		_spec.SetField(binding.FieldDateCreated, field.TypeTime, value)
 		_node.DateCreated = value
 	}
-	if nodes := _c.mutation.RoleIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.RoleIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -231,16 +231,16 @@ func (_c *BindingCreate) createSpec() (*Binding, *sqlgraph.CreateSpec) {
 			Columns: []string{binding.RoleColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(role.FieldID, field.TypeUUID),
+				IdSpec: sqlgraph.NewFieldSpec(role.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.RoleID = nodes[0]
+		_node.RoleId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := _c.mutation.SiteIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.SiteIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -248,16 +248,16 @@ func (_c *BindingCreate) createSpec() (*Binding, *sqlgraph.CreateSpec) {
 			Columns: []string{binding.SiteColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(site.FieldID, field.TypeUUID),
+				IdSpec: sqlgraph.NewFieldSpec(site.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.SiteID = nodes[0]
+		_node.SiteId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := _c.mutation.HolderIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.HolderIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -265,16 +265,16 @@ func (_c *BindingCreate) createSpec() (*Binding, *sqlgraph.CreateSpec) {
 			Columns: []string{binding.HolderColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(holder.FieldID, field.TypeUUID),
+				IdSpec: sqlgraph.NewFieldSpec(holder.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.HolderID = nodes[0]
+		_node.HolderId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := _c.mutation.GroupIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.GroupIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -282,13 +282,13 @@ func (_c *BindingCreate) createSpec() (*Binding, *sqlgraph.CreateSpec) {
 			Columns: []string{binding.GroupColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID),
+				IdSpec: sqlgraph.NewFieldSpec(group.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.GroupID = nodes[0]
+		_node.GroupId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -337,7 +337,7 @@ func (_c *BindingCreateBulk) Save(ctx context.Context) ([]*Binding, error) {
 				if err != nil {
 					return nil, err
 				}
-				mutation.id = &nodes[i].ID
+				mutation.id = &nodes[i].Id
 				mutation.done = true
 				return nodes[i], nil
 			})

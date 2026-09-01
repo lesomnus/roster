@@ -37,7 +37,7 @@ func signIn(t *testing.T, s *cmd.Server, alias, password string) *http.Cookie {
 
 	r := httptest.NewRequest(http.MethodPost, "/session", bytes.NewReader(body))
 	w := httptest.NewRecorder()
-	s.Sessions.Serve(cmd.Login(s.Control)).ServeHTTP(w, r)
+	s.Sessions.Serve(cmd.Login(s.Control)).ServeHttp(w, r)
 
 	res := w.Result()
 	t.Cleanup(func() { _ = res.Body.Close() })
@@ -58,7 +58,7 @@ func signIn(t *testing.T, s *cmd.Server, alias, password string) *http.Cookie {
 // `roster init` printed.
 //
 // It is the seam payday left and could not fill: `auth` reads a credential and
-// does not issue one, and issuing is an HTTP endpoint. A browser has nowhere
+// does not issue one, and issuing is an Http endpoint. A browser has nowhere
 // safe to keep a secret, so what it gets is an opaque cookie naming a session
 // this server keeps.
 func TestAnOperatorSignsIn(t *testing.T) {
@@ -351,7 +351,7 @@ func TestTheTwoTrailsAreJoined(t *testing.T) {
 
 	var data *ent.Audit
 	for _, v := range ds {
-		if pdid.Id(v.ObjectID) == newco {
+		if pdid.Id(v.ObjectId) == newco {
 			data = v
 		}
 	}
@@ -374,9 +374,9 @@ func TestTheTwoTrailsAreJoined(t *testing.T) {
 	// And the join is worth making: the actor the data plane could not resolve
 	// is a row here.
 	x.Equal("/roster.TenantService/Add", intent.Action)
-	x.Equal(data.ActorID, intent.ActorID)
+	x.Equal(data.ActorId, intent.ActorId)
 
-	who, err := s.Control.Ent.Holder.Get(ctx, intent.ActorID)
+	who, err := s.Control.Ent.Holder.Get(ctx, intent.ActorId)
 	x.NoError(err, "the operator does not resolve in the plane that recorded them")
 	x.Equal("ops", who.Alias)
 }
@@ -401,7 +401,7 @@ func TestNoVerifierReachesTheTrail(t *testing.T) {
 	s, out := inited(t)
 	x.NotEmpty(passwordFrom(t, out))
 
-	// The operator's password, hashed by the RPC that hashes it.
+	// The operator's password, hashed by the Rpc that hashes it.
 	cred, err := s.Control.Ent.Credential.Query().Only(ctx)
 	x.NoError(err)
 	x.NotEmpty(cred.Secret, "nothing was stored, so this proves nothing")
@@ -441,7 +441,7 @@ func TestNoVerifierReachesTheTrail(t *testing.T) {
 
 // TestAConsoleReachesTheAdminPortOverHttp is what a browser can actually do.
 //
-// A browser cannot speak gRPC, so a port with no transcoder is a port a console
+// A browser cannot speak gRpc, so a port with no transcoder is a port a console
 // cannot reach. Until this, the only one was in front of the **data plane**,
 // where an operator's session names nobody -- so a console could sign in and
 // then had nothing to call.
@@ -492,7 +492,7 @@ func TestAConsoleReachesTheAdminPortOverHttp(t *testing.T) {
 		`{"alias":"ops","password":"`+passwordFrom(t, out)+`"}`)
 	x.Equal(http.StatusNoContent, code, body)
 
-	// And now the thing a console is for, over JSON, with the cookie the
+	// And now the thing a console is for, over Json, with the cookie the
 	// browser is carrying.
 	code, body = post("/roster.TenantService/Add", `{"alias":"newco"}`)
 	x.Equal(http.StatusOK, code, body)
@@ -601,7 +601,7 @@ func TestAConsoleReachesTheControlPlaneOverHttp(t *testing.T) {
 	})
 
 	// `DELETE /session` is the sign-out the browser actually sends, and until
-	// now nothing sent it: the one sign-out test went through the gRPC
+	// now nothing sent it: the one sign-out test went through the gRpc
 	// `AuthService.SignOut`, which is the transcoded twin and not the route.
 	// The claim is immediacy -- the jar still holds the cookie, and the server
 	// no longer knows it.
@@ -624,7 +624,7 @@ func TestAConsoleReachesTheControlPlaneOverHttp(t *testing.T) {
 
 // TestTheDataPlanesHttpSignsInNobody is `operating.md`'s warning about
 // `server.http`, asserted: `/session` is served on every listener that has
-// HTTP -- a console reaches one origin and signing in has to be there -- so on
+// Http -- a console reaches one origin and signing in has to be there -- so on
 // the data plane's transcoder it **answers**, and the cookie it mints names
 // nobody every walled call can be made as. Signing in there is not an error
 // anybody is told about; it is a success that opens nothing, which is exactly

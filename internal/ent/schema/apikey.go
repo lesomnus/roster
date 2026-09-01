@@ -19,12 +19,12 @@ type ApiKey struct {
 
 func (ApiKey) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
+		field.Uuid("id", uuid.UUID{}).
 			Unique().
 			Immutable(),
 		field.String("alias"),
 		field.String("desc"),
-		field.JSON("methods", []string{}).
+		field.Json("methods", []string{}).
 			Optional(),
 		field.Bytes("secret"),
 		field.Time("date_used").
@@ -40,7 +40,7 @@ func (ApiKey) Fields() []ent.Field {
 		field.Time("date_created").
 			Immutable().
 			Optional(),
-		field.UUID("holder_id", uuid.UUID{}).
+		field.Uuid("holder_id", uuid.UUID{}).
 			Immutable(),
 	}
 }

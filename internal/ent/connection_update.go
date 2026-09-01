@@ -72,16 +72,16 @@ func (_u *ConnectionUpdate) SetNillableIssuer(v *string) *ConnectionUpdate {
 	return _u
 }
 
-// SetClientID sets the "client_id" field.
-func (_u *ConnectionUpdate) SetClientID(v string) *ConnectionUpdate {
-	_u.mutation.SetClientID(v)
+// SetClientId sets the "client_id" field.
+func (_u *ConnectionUpdate) SetClientId(v string) *ConnectionUpdate {
+	_u.mutation.SetClientId(v)
 	return _u
 }
 
-// SetNillableClientID sets the "client_id" field if the given value is not nil.
-func (_u *ConnectionUpdate) SetNillableClientID(v *string) *ConnectionUpdate {
+// SetNillableClientId sets the "client_id" field if the given value is not nil.
+func (_u *ConnectionUpdate) SetNillableClientId(v *string) *ConnectionUpdate {
 	if v != nil {
-		_u.SetClientID(*v)
+		_u.SetClientId(*v)
 	}
 	return _u
 }
@@ -186,7 +186,7 @@ func (_u *ConnectionUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *ConnectionUpdate) check() error {
-	if _u.mutation.TenantCleared() && len(_u.mutation.TenantIDs()) > 0 {
+	if _u.mutation.TenantCleared() && len(_u.mutation.TenantIds()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Connection.tenant"`)
 	}
 	return nil
@@ -202,7 +202,7 @@ func (_u *ConnectionUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(connection.Table, connection.Columns, sqlgraph.NewFieldSpec(connection.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(connection.Table, connection.Columns, sqlgraph.NewFieldSpec(connection.FieldId, field.TypeUuid))
 	if ps := _u.mutation.Predicates(); len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -219,11 +219,11 @@ func (_u *ConnectionUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.Issuer(); ok {
 		_spec.SetField(connection.FieldIssuer, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.ClientID(); ok {
-		_spec.SetField(connection.FieldClientID, field.TypeString, value)
+	if value, ok := _u.mutation.ClientId(); ok {
+		_spec.SetField(connection.FieldClientId, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Scopes(); ok {
-		_spec.SetField(connection.FieldScopes, field.TypeJSON, value)
+		_spec.SetField(connection.FieldScopes, field.TypeJson, value)
 	}
 	if value, ok := _u.mutation.AppendedScopes(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
@@ -231,7 +231,7 @@ func (_u *ConnectionUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 		})
 	}
 	if _u.mutation.ScopesCleared() {
-		_spec.ClearField(connection.FieldScopes, field.TypeJSON)
+		_spec.ClearField(connection.FieldScopes, field.TypeJson)
 	}
 	if value, ok := _u.mutation.SecretRef(); ok {
 		_spec.SetField(connection.FieldSecretRef, field.TypeString, value)
@@ -312,16 +312,16 @@ func (_u *ConnectionUpdateOne) SetNillableIssuer(v *string) *ConnectionUpdateOne
 	return _u
 }
 
-// SetClientID sets the "client_id" field.
-func (_u *ConnectionUpdateOne) SetClientID(v string) *ConnectionUpdateOne {
-	_u.mutation.SetClientID(v)
+// SetClientId sets the "client_id" field.
+func (_u *ConnectionUpdateOne) SetClientId(v string) *ConnectionUpdateOne {
+	_u.mutation.SetClientId(v)
 	return _u
 }
 
-// SetNillableClientID sets the "client_id" field if the given value is not nil.
-func (_u *ConnectionUpdateOne) SetNillableClientID(v *string) *ConnectionUpdateOne {
+// SetNillableClientId sets the "client_id" field if the given value is not nil.
+func (_u *ConnectionUpdateOne) SetNillableClientId(v *string) *ConnectionUpdateOne {
 	if v != nil {
-		_u.SetClientID(*v)
+		_u.SetClientId(*v)
 	}
 	return _u
 }
@@ -439,7 +439,7 @@ func (_u *ConnectionUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *ConnectionUpdateOne) check() error {
-	if _u.mutation.TenantCleared() && len(_u.mutation.TenantIDs()) > 0 {
+	if _u.mutation.TenantCleared() && len(_u.mutation.TenantIds()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Connection.tenant"`)
 	}
 	return nil
@@ -455,20 +455,20 @@ func (_u *ConnectionUpdateOne) sqlSave(ctx context.Context) (_node *Connection, 
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(connection.Table, connection.Columns, sqlgraph.NewFieldSpec(connection.FieldID, field.TypeUUID))
-	id, ok := _u.mutation.ID()
+	_spec := sqlgraph.NewUpdateSpec(connection.Table, connection.Columns, sqlgraph.NewFieldSpec(connection.FieldId, field.TypeUuid))
+	id, ok := _u.mutation.Id()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Connection.id" for update`)}
 	}
-	_spec.Node.ID.Value = id
+	_spec.Node.Id.Value = id
 	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, connection.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, connection.FieldId)
 		for _, f := range fields {
 			if !connection.ValidColumn(f) {
 				return nil, &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 			}
-			if f != connection.FieldID {
+			if f != connection.FieldId {
 				_spec.Node.Columns = append(_spec.Node.Columns, f)
 			}
 		}
@@ -489,11 +489,11 @@ func (_u *ConnectionUpdateOne) sqlSave(ctx context.Context) (_node *Connection, 
 	if value, ok := _u.mutation.Issuer(); ok {
 		_spec.SetField(connection.FieldIssuer, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.ClientID(); ok {
-		_spec.SetField(connection.FieldClientID, field.TypeString, value)
+	if value, ok := _u.mutation.ClientId(); ok {
+		_spec.SetField(connection.FieldClientId, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Scopes(); ok {
-		_spec.SetField(connection.FieldScopes, field.TypeJSON, value)
+		_spec.SetField(connection.FieldScopes, field.TypeJson, value)
 	}
 	if value, ok := _u.mutation.AppendedScopes(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
@@ -501,7 +501,7 @@ func (_u *ConnectionUpdateOne) sqlSave(ctx context.Context) (_node *Connection, 
 		})
 	}
 	if _u.mutation.ScopesCleared() {
-		_spec.ClearField(connection.FieldScopes, field.TypeJSON)
+		_spec.ClearField(connection.FieldScopes, field.TypeJson)
 	}
 	if value, ok := _u.mutation.SecretRef(); ok {
 		_spec.SetField(connection.FieldSecretRef, field.TypeString, value)

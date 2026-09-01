@@ -20,8 +20,8 @@ import (
 // Holder is the model entity for the Holder schema.
 type Holder struct {
 	config `json:"-"`
-	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	// Id of the ent.
+	Id uuid.UUID `json:"id,omitempty"`
 	// Alias holds the value of the "alias" field.
 	Alias string `json:"alias,omitempty"`
 	// Name holds the value of the "name" field.
@@ -46,8 +46,8 @@ type Holder struct {
 	DateInvalidated *time.Time `json:"date_invalidated,omitempty"`
 	// DateDisabled holds the value of the "date_disabled" field.
 	DateDisabled *time.Time `json:"date_disabled,omitempty"`
-	// TenantID holds the value of the "tenant_id" field.
-	TenantID uuid.UUID `json:"tenant_id,omitempty"`
+	// TenantId holds the value of the "tenant_id" field.
+	TenantId uuid.UUID `json:"tenant_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the HolderQuery when eager-loading is set.
 	Edges        HolderEdges `json:"edges"`
@@ -85,7 +85,7 @@ func (*Holder) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case holder.FieldDateUpdated, holder.FieldDateErased, holder.FieldDateCreated, holder.FieldDateInvalidated, holder.FieldDateDisabled:
 			values[i] = new(sql.NullTime)
-		case holder.FieldID, holder.FieldTenantID:
+		case holder.FieldId, holder.FieldTenantId:
 			values[i] = new(uuid.UUID)
 		case holder.FieldProfile:
 			values[i] = holder.ValueScanner.Profile.ScanValue()
@@ -106,11 +106,11 @@ func (_m *Holder) assignValues(columns []string, values []any) error {
 	}
 	for i := range columns {
 		switch columns[i] {
-		case holder.FieldID:
+		case holder.FieldId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				_m.ID = *value
+				_m.Id = *value
 			}
 		case holder.FieldAlias:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -190,11 +190,11 @@ func (_m *Holder) assignValues(columns []string, values []any) error {
 				_m.DateDisabled = new(time.Time)
 				*_m.DateDisabled = value.Time
 			}
-		case holder.FieldTenantID:
+		case holder.FieldTenantId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
 			} else if value != nil {
-				_m.TenantID = *value
+				_m.TenantId = *value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -236,7 +236,7 @@ func (_m *Holder) Unwrap() *Holder {
 func (_m *Holder) String() string {
 	var builder strings.Builder
 	builder.WriteString("Holder(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.Id))
 	builder.WriteString("alias=")
 	builder.WriteString(_m.Alias)
 	builder.WriteString(", ")
@@ -282,7 +282,7 @@ func (_m *Holder) String() string {
 	}
 	builder.WriteString(", ")
 	builder.WriteString("tenant_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.TenantID))
+	builder.WriteString(fmt.Sprintf("%v", _m.TenantId))
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -57,32 +57,32 @@ func (_c *SiteMembershipCreate) SetNillableDateCreated(v *time.Time) *SiteMember
 	return _c
 }
 
-// SetHolderID sets the "holder_id" field.
-func (_c *SiteMembershipCreate) SetHolderID(v uuid.UUID) *SiteMembershipCreate {
-	_c.mutation.SetHolderID(v)
+// SetHolderId sets the "holder_id" field.
+func (_c *SiteMembershipCreate) SetHolderId(v uuid.UUID) *SiteMembershipCreate {
+	_c.mutation.SetHolderId(v)
 	return _c
 }
 
-// SetSiteID sets the "site_id" field.
-func (_c *SiteMembershipCreate) SetSiteID(v uuid.UUID) *SiteMembershipCreate {
-	_c.mutation.SetSiteID(v)
+// SetSiteId sets the "site_id" field.
+func (_c *SiteMembershipCreate) SetSiteId(v uuid.UUID) *SiteMembershipCreate {
+	_c.mutation.SetSiteId(v)
 	return _c
 }
 
-// SetID sets the "id" field.
-func (_c *SiteMembershipCreate) SetID(v uuid.UUID) *SiteMembershipCreate {
-	_c.mutation.SetID(v)
+// SetId sets the "id" field.
+func (_c *SiteMembershipCreate) SetId(v uuid.UUID) *SiteMembershipCreate {
+	_c.mutation.SetId(v)
 	return _c
 }
 
 // SetHolder sets the "holder" edge to the Holder entity.
 func (_c *SiteMembershipCreate) SetHolder(v *Holder) *SiteMembershipCreate {
-	return _c.SetHolderID(v.ID)
+	return _c.SetHolderId(v.Id)
 }
 
 // SetSite sets the "site" edge to the Site entity.
 func (_c *SiteMembershipCreate) SetSite(v *Site) *SiteMembershipCreate {
-	return _c.SetSiteID(v.ID)
+	return _c.SetSiteId(v.Id)
 }
 
 // Mutation returns the SiteMembershipMutation object of the builder.
@@ -122,16 +122,16 @@ func (_c *SiteMembershipCreate) check() error {
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "SiteMembership.date_updated"`)}
 	}
-	if _, ok := _c.mutation.HolderID(); !ok {
+	if _, ok := _c.mutation.HolderId(); !ok {
 		return &ValidationError{Name: "holder_id", err: errors.New(`ent: missing required field "SiteMembership.holder_id"`)}
 	}
-	if _, ok := _c.mutation.SiteID(); !ok {
+	if _, ok := _c.mutation.SiteId(); !ok {
 		return &ValidationError{Name: "site_id", err: errors.New(`ent: missing required field "SiteMembership.site_id"`)}
 	}
-	if len(_c.mutation.HolderIDs()) == 0 {
+	if len(_c.mutation.HolderIds()) == 0 {
 		return &ValidationError{Name: "holder", err: errors.New(`ent: missing required edge "SiteMembership.holder"`)}
 	}
-	if len(_c.mutation.SiteIDs()) == 0 {
+	if len(_c.mutation.SiteIds()) == 0 {
 		return &ValidationError{Name: "site", err: errors.New(`ent: missing required edge "SiteMembership.site"`)}
 	}
 	return nil
@@ -148,14 +148,14 @@ func (_c *SiteMembershipCreate) sqlSave(ctx context.Context) (*SiteMembership, e
 		}
 		return nil, err
 	}
-	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+	if _spec.Id.Value != nil {
+		if id, ok := _spec.Id.Value.(*uuid.UUID); ok {
+			_node.Id = *id
+		} else if err := _node.Id.Scan(_spec.Id.Value); err != nil {
 			return nil, err
 		}
 	}
-	_c.mutation.id = &_node.ID
+	_c.mutation.id = &_node.Id
 	_c.mutation.done = true
 	return _node, nil
 }
@@ -163,11 +163,11 @@ func (_c *SiteMembershipCreate) sqlSave(ctx context.Context) (*SiteMembership, e
 func (_c *SiteMembershipCreate) createSpec() (*SiteMembership, *sqlgraph.CreateSpec) {
 	var (
 		_node = &SiteMembership{config: _c.config}
-		_spec = sqlgraph.NewCreateSpec(sitemembership.Table, sqlgraph.NewFieldSpec(sitemembership.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(sitemembership.Table, sqlgraph.NewFieldSpec(sitemembership.FieldId, field.TypeUuid))
 	)
-	if id, ok := _c.mutation.ID(); ok {
-		_node.ID = id
-		_spec.ID.Value = &id
+	if id, ok := _c.mutation.Id(); ok {
+		_node.Id = id
+		_spec.Id.Value = &id
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(sitemembership.FieldDateUpdated, field.TypeTime, value)
@@ -181,7 +181,7 @@ func (_c *SiteMembershipCreate) createSpec() (*SiteMembership, *sqlgraph.CreateS
 		_spec.SetField(sitemembership.FieldDateCreated, field.TypeTime, value)
 		_node.DateCreated = value
 	}
-	if nodes := _c.mutation.HolderIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.HolderIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -189,16 +189,16 @@ func (_c *SiteMembershipCreate) createSpec() (*SiteMembership, *sqlgraph.CreateS
 			Columns: []string{sitemembership.HolderColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(holder.FieldID, field.TypeUUID),
+				IdSpec: sqlgraph.NewFieldSpec(holder.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.HolderID = nodes[0]
+		_node.HolderId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := _c.mutation.SiteIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.SiteIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -206,13 +206,13 @@ func (_c *SiteMembershipCreate) createSpec() (*SiteMembership, *sqlgraph.CreateS
 			Columns: []string{sitemembership.SiteColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(site.FieldID, field.TypeUUID),
+				IdSpec: sqlgraph.NewFieldSpec(site.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.SiteID = nodes[0]
+		_node.SiteId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -261,7 +261,7 @@ func (_c *SiteMembershipCreateBulk) Save(ctx context.Context) ([]*SiteMembership
 				if err != nil {
 					return nil, err
 				}
-				mutation.id = &nodes[i].ID
+				mutation.id = &nodes[i].Id
 				mutation.done = true
 				return nodes[i], nil
 			})

@@ -40,9 +40,9 @@ func (_c *ConnectionCreate) SetIssuer(v string) *ConnectionCreate {
 	return _c
 }
 
-// SetClientID sets the "client_id" field.
-func (_c *ConnectionCreate) SetClientID(v string) *ConnectionCreate {
-	_c.mutation.SetClientID(v)
+// SetClientId sets the "client_id" field.
+func (_c *ConnectionCreate) SetClientId(v string) *ConnectionCreate {
+	_c.mutation.SetClientId(v)
 	return _c
 }
 
@@ -92,21 +92,21 @@ func (_c *ConnectionCreate) SetNillableDateCreated(v *time.Time) *ConnectionCrea
 	return _c
 }
 
-// SetTenantID sets the "tenant_id" field.
-func (_c *ConnectionCreate) SetTenantID(v uuid.UUID) *ConnectionCreate {
-	_c.mutation.SetTenantID(v)
+// SetTenantId sets the "tenant_id" field.
+func (_c *ConnectionCreate) SetTenantId(v uuid.UUID) *ConnectionCreate {
+	_c.mutation.SetTenantId(v)
 	return _c
 }
 
-// SetID sets the "id" field.
-func (_c *ConnectionCreate) SetID(v uuid.UUID) *ConnectionCreate {
-	_c.mutation.SetID(v)
+// SetId sets the "id" field.
+func (_c *ConnectionCreate) SetId(v uuid.UUID) *ConnectionCreate {
+	_c.mutation.SetId(v)
 	return _c
 }
 
 // SetTenant sets the "tenant" edge to the Tenant entity.
 func (_c *ConnectionCreate) SetTenant(v *Tenant) *ConnectionCreate {
-	return _c.SetTenantID(v.ID)
+	return _c.SetTenantId(v.Id)
 }
 
 // Mutation returns the ConnectionMutation object of the builder.
@@ -152,7 +152,7 @@ func (_c *ConnectionCreate) check() error {
 	if _, ok := _c.mutation.Issuer(); !ok {
 		return &ValidationError{Name: "issuer", err: errors.New(`ent: missing required field "Connection.issuer"`)}
 	}
-	if _, ok := _c.mutation.ClientID(); !ok {
+	if _, ok := _c.mutation.ClientId(); !ok {
 		return &ValidationError{Name: "client_id", err: errors.New(`ent: missing required field "Connection.client_id"`)}
 	}
 	if _, ok := _c.mutation.SecretRef(); !ok {
@@ -161,10 +161,10 @@ func (_c *ConnectionCreate) check() error {
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Connection.date_updated"`)}
 	}
-	if _, ok := _c.mutation.TenantID(); !ok {
+	if _, ok := _c.mutation.TenantId(); !ok {
 		return &ValidationError{Name: "tenant_id", err: errors.New(`ent: missing required field "Connection.tenant_id"`)}
 	}
-	if len(_c.mutation.TenantIDs()) == 0 {
+	if len(_c.mutation.TenantIds()) == 0 {
 		return &ValidationError{Name: "tenant", err: errors.New(`ent: missing required edge "Connection.tenant"`)}
 	}
 	return nil
@@ -181,14 +181,14 @@ func (_c *ConnectionCreate) sqlSave(ctx context.Context) (*Connection, error) {
 		}
 		return nil, err
 	}
-	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+	if _spec.Id.Value != nil {
+		if id, ok := _spec.Id.Value.(*uuid.UUID); ok {
+			_node.Id = *id
+		} else if err := _node.Id.Scan(_spec.Id.Value); err != nil {
 			return nil, err
 		}
 	}
-	_c.mutation.id = &_node.ID
+	_c.mutation.id = &_node.Id
 	_c.mutation.done = true
 	return _node, nil
 }
@@ -196,11 +196,11 @@ func (_c *ConnectionCreate) sqlSave(ctx context.Context) (*Connection, error) {
 func (_c *ConnectionCreate) createSpec() (*Connection, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Connection{config: _c.config}
-		_spec = sqlgraph.NewCreateSpec(connection.Table, sqlgraph.NewFieldSpec(connection.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(connection.Table, sqlgraph.NewFieldSpec(connection.FieldId, field.TypeUuid))
 	)
-	if id, ok := _c.mutation.ID(); ok {
-		_node.ID = id
-		_spec.ID.Value = &id
+	if id, ok := _c.mutation.Id(); ok {
+		_node.Id = id
+		_spec.Id.Value = &id
 	}
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(connection.FieldName, field.TypeString, value)
@@ -214,12 +214,12 @@ func (_c *ConnectionCreate) createSpec() (*Connection, *sqlgraph.CreateSpec) {
 		_spec.SetField(connection.FieldIssuer, field.TypeString, value)
 		_node.Issuer = value
 	}
-	if value, ok := _c.mutation.ClientID(); ok {
-		_spec.SetField(connection.FieldClientID, field.TypeString, value)
-		_node.ClientID = value
+	if value, ok := _c.mutation.ClientId(); ok {
+		_spec.SetField(connection.FieldClientId, field.TypeString, value)
+		_node.ClientId = value
 	}
 	if value, ok := _c.mutation.Scopes(); ok {
-		_spec.SetField(connection.FieldScopes, field.TypeJSON, value)
+		_spec.SetField(connection.FieldScopes, field.TypeJson, value)
 		_node.Scopes = value
 	}
 	if value, ok := _c.mutation.SecretRef(); ok {
@@ -238,7 +238,7 @@ func (_c *ConnectionCreate) createSpec() (*Connection, *sqlgraph.CreateSpec) {
 		_spec.SetField(connection.FieldDateCreated, field.TypeTime, value)
 		_node.DateCreated = value
 	}
-	if nodes := _c.mutation.TenantIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.TenantIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -246,13 +246,13 @@ func (_c *ConnectionCreate) createSpec() (*Connection, *sqlgraph.CreateSpec) {
 			Columns: []string{connection.TenantColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(tenant.FieldID, field.TypeUUID),
+				IdSpec: sqlgraph.NewFieldSpec(tenant.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.TenantID = nodes[0]
+		_node.TenantId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -301,7 +301,7 @@ func (_c *ConnectionCreateBulk) Save(ctx context.Context) ([]*Connection, error)
 				if err != nil {
 					return nil, err
 				}
-				mutation.id = &nodes[i].ID
+				mutation.id = &nodes[i].Id
 				mutation.done = true
 				return nodes[i], nil
 			})

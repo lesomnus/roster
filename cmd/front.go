@@ -79,7 +79,7 @@ func newCmdFrontWhoseHost(c *Config) *xli.Command {
 				return err
 			}
 
-			// The identifier and nothing else, exactly as the RPC answers --
+			// The identifier and nothing else, exactly as the Rpc answers --
 			// so `$(roster front whose-host …)` is a tenant for the next
 			// command, the same way a front door uses it.
 			k, _ := pdid.From(v.GetTenant())

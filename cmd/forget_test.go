@@ -113,7 +113,7 @@ func TestForgettingSomebodyKeepsTheEventAndLosesTheContents(t *testing.T) {
 		// The identifier stays, and that is the point of keeping the row: it is
 		// `Audit.actor_id`, and what makes it personal data is that it
 		// resolves. Emptied, it is a pseudonym reaching nothing.
-		x.Equal(who.Uuid(), v.ID)
+		x.Equal(who.Uuid(), v.Id)
 	})
 
 	t.Run("the trail keeps every event", func(t *testing.T) {
@@ -131,7 +131,7 @@ func TestForgettingSomebodyKeepsTheEventAndLosesTheContents(t *testing.T) {
 		// because `Audit.value` for a write to an `Email` is the address and
 		// that row's object is the email's identifier, not the person's.
 		for _, k := range []pdid.Id{who, mustId(t, id.GetId())} {
-			vs, err := b.Ent.Audit.Query().Where(entaudit.ObjectIDEQ(k.Uuid())).All(ctx)
+			vs, err := b.Ent.Audit.Query().Where(entaudit.ObjectIdEQ(k.Uuid())).All(ctx)
 			x.NoError(err)
 			x.NotEmpty(vs, "%s has no trail, so this proves nothing", k)
 
@@ -151,7 +151,7 @@ func TestForgettingSomebodyKeepsTheEventAndLosesTheContents(t *testing.T) {
 		x.NoError(err)
 		x.Equal("bystander", v.Alias)
 
-		vs, err := b.Ent.Audit.Query().Where(entaudit.ObjectIDEQ(other.Uuid())).All(ctx)
+		vs, err := b.Ent.Audit.Query().Where(entaudit.ObjectIdEQ(other.Uuid())).All(ctx)
 		x.NoError(err)
 		x.NotEmpty(vs)
 

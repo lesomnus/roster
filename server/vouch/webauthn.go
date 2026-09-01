@@ -77,7 +77,7 @@ type presented struct {
 	// browser encodes it.
 	Challenge string `json:"challenge"`
 
-	// Response is the raw JSON the browser's credential API answered with.
+	// Response is the raw Json the browser's credential Api answered with.
 	Response json.RawMessage `json:"response"`
 }
 
@@ -250,7 +250,7 @@ func (v WebAuthn) Compare(row, b []byte, since int64) (bool, int64, error) {
 	if err := res.Verify(
 		p.Challenge,
 		p.RelyingParty,
-		"", // no appID: the U2F compatibility path is not offered
+		"", // no appId: the U2F compatibility path is not offered
 		p.Origins,
 		nil,
 		protocol.TopOriginExplicitVerificationMode,
@@ -293,12 +293,12 @@ func (v WebAuthn) Burn(b []byte) {
 	_ = ecdsa.VerifyASN1(&k.PublicKey, sum[:], b)
 }
 
-// CredentialId is what a browser is told to look for, read off a stored row.
+// CredentialID is what a browser is told to look for, read off a stored row.
 //
 // For the half of the ceremony roster does not run: an app asking for an
 // assertion has to name which credentials it will accept, and that list is a
 // fact about the person which is what this app is.
-func CredentialId(row []byte) (string, error) {
+func CredentialID(row []byte) (string, error) {
 	var s stored
 	if err := json.Unmarshal(row, &s); err != nil {
 		return "", err

@@ -7,10 +7,10 @@ import (
 
 // The screen somebody sees about themselves.
 //
-// D24 §4: *self-service: my record, add and remove an SSO method, sign out
+// D24 §4: *self-service: my record, add and remove an Sso method, sign out
 // everywhere.*
 //
-// # Why it is one file of HTML and not a build
+// # Why it is one file of Html and not a build
 //
 // Because the app it belongs to is a Go example, and because D24 §6 puts
 // extracting components **last** for a reason it states: *extracting first
@@ -29,7 +29,7 @@ import (
 // the delegation. The browser never holds one and never sees roster: it holds a
 // cookie for the app in front of it, which is D21's split drawn as a page.
 //
-// And the three RPCs behind it take no subject. That is not a coincidence -- a
+// And the three Rpcs behind it take no subject. That is not a coincidence -- a
 // screen a person draws about themselves is exactly where a method that took
 // one would be a permission over everybody in their tenant.
 

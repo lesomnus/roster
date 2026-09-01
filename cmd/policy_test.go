@@ -260,7 +260,7 @@ const (
 )
 
 // TestNobodyGrantsWhatTheyDoNotHold is the hole this closes, written as the two
-// RPCs it used to take.
+// Rpcs it used to take.
 //
 // Being allowed to write bindings was being allowed everything: write a role
 // holding anything, bind it to yourself, done. Two calls, from a permission an
@@ -479,7 +479,7 @@ func TestARoleMayNameAServiceOrAPackage(t *testing.T) {
 // from writing a rule that lands outside it* -- and until this, nothing read
 // that sentence. Found by an adversarial pass over something else entirely.
 //
-// The escalation was two RPCs, used no method the attacker did not already
+// The escalation was two Rpcs, used no method the attacker did not already
 // hold, and nothing refused or logged: bound to a Seoul role **in Seoul**, bind
 // that same role to yourself with no site, and the second axis answers "every
 // site" for you afterwards.

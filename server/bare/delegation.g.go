@@ -103,12 +103,12 @@ func (s DelegationServiceServer) Add(ctx context.Context, req *rstr.DelegationAd
 	if v, err := mint(ctx, s.Mint, "roster.Delegation", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
-		q.SetID(v)
+		q.SetId(v)
 	}
 	if k, err := HolderGetKey(ctx, st.Db, req.GetHolder()); err != nil {
 		return nil, err
 	} else {
-		q.SetHolderID(k)
+		q.SetHolderId(k)
 		ds = append(ds, func(v *rstr.Delegation) {
 			v.SetHolder(rstr.Holder_builder{Id: k[:]}.Build())
 		})
@@ -143,7 +143,7 @@ func (s DelegationServiceServer) Add(ctx context.Context, req *rstr.DelegationAd
 
 	if err := record(ctx, s.Rec, st.Db, Change{
 		By:  rstr.DelegationService_Add_FullMethodName,
-		Key: u.ID,
+		Key: u.Id,
 	}); err != nil {
 		return nil, err
 	}
@@ -182,7 +182,7 @@ func (s DelegationServiceServer) Get(ctx context.Context, req *rstr.DelegationGe
 }
 
 func selectDelegationKey(q *ent.DelegationQuery) {
-	q.Select(delegation.FieldID)
+	q.Select(delegation.FieldId)
 }
 
 func DelegationSelectedFields(m *rstr.DelegationSelect) []string {
@@ -192,7 +192,7 @@ func DelegationSelectedFields(m *rstr.DelegationSelect) []string {
 
 	vs := make([]string, 0, len(delegation.Columns))
 	{
-		vs = append(vs, delegation.FieldID)
+		vs = append(vs, delegation.FieldId)
 	}
 	if m.GetMethods() {
 		vs = append(vs, delegation.FieldMethods)
@@ -273,7 +273,7 @@ func DelegationGetKey(ctx context.Context, db *ent.Client, ref *rstr.DelegationR
 		return z, err
 	}
 
-	v, err := db.Delegation.Query().Where(p).OnlyID(ctx)
+	v, err := db.Delegation.Query().Where(p).OnlyId(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return z, status.Error(codes.NotFound, "Delegation not found")
@@ -287,7 +287,7 @@ func DelegationGetKey(ctx context.Context, db *ent.Client, ref *rstr.DelegationR
 var delegationOrmEntity = ormpatch.MustEntityOf(rstr.File_app_delegation_proto, "Delegation")
 
 var delegationPatchColumns = entpatch.Columns{
-	1: delegation.FieldID, 2: delegation.HolderColumn, 8: delegation.FieldMethods, 9: delegation.FieldSecret, 10: delegation.FieldIssuer, 11: delegation.FieldDateExpires, 13: delegation.FieldDateUpdated, 14: delegation.FieldDateErased, 15: delegation.FieldDateCreated}
+	1: delegation.FieldId, 2: delegation.HolderColumn, 8: delegation.FieldMethods, 9: delegation.FieldSecret, 10: delegation.FieldIssuer, 11: delegation.FieldDateExpires, 13: delegation.FieldDateUpdated, 14: delegation.FieldDateErased, 15: delegation.FieldDateCreated}
 
 func (s DelegationServiceServer) Apply(ctx context.Context, req *rstr.DelegationApplyRequest) (*rstr.Delegation, error) {
 	if !req.HasPatch() {
@@ -332,7 +332,7 @@ func (s DelegationServiceServer) apply(ctx context.Context, ref *rstr.Delegation
 	}
 	at := &rstr.DelegationRef{}
 	at.SetId(k[:])
-	p, err := s.narrow(ctx, delegation.IDEQ(k))
+	p, err := s.narrow(ctx, delegation.IdEQ(k))
 	if err != nil {
 		return nil, err
 	}
@@ -426,7 +426,7 @@ func (s DelegationServiceServer) Erase(ctx context.Context, req *rstr.Delegation
 
 	var k any
 	if s.Rec != nil {
-		v, err := st.Db.Delegation.Query().Where(p).OnlyID(ctx)
+		v, err := st.Db.Delegation.Query().Where(p).OnlyId(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.DelegationEraseResponse{}, nil
@@ -435,7 +435,7 @@ func (s DelegationServiceServer) Erase(ctx context.Context, req *rstr.Delegation
 		}
 
 		k = v
-		p = delegation.And(p, delegation.IDEQ(v))
+		p = delegation.And(p, delegation.IdEQ(v))
 	}
 
 	u := st.Db.Delegation.Update().Where(p)
@@ -486,7 +486,7 @@ func pickDelegation(req *rstr.DelegationRef) (predicate.Delegation, error) {
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
-			return delegation.IDEQ(v), nil
+			return delegation.IdEQ(v), nil
 		}
 	case rstr.DelegationRef_Secret_case:
 		return delegation.SecretEQ(req.GetSecret()), nil

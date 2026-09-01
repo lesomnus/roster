@@ -73,7 +73,7 @@ const (
 //	Alice patches that membership to name the tenant's admin role.
 //	Alice may now erase anybody.
 //
-// Two RPCs, no method she did not already hold, and the second one is the one
+// Two Rpcs, no method she did not already hold, and the second one is the one
 // `Add` was taught to refuse. It is the same mistake `Role.Patch` was found to
 // have -- a rule wired to `Add` and not to the write that can change the same
 // column afterwards -- and that one was closed in the layer rather than left to
@@ -132,10 +132,10 @@ func TestNobodyAttachesARoleByPatchingAMembership(t *testing.T) {
 // the missing check above look like somebody else's problem -- and it is not
 // the reading the rest of the file was written to: `Role.Patch` and
 // `ApiKey.Patch` both ask `mayGrant`, in the layer, precisely so that the
-// setting is a decision about the API rather than about who may become the
+// setting is a decision about the Api rather than about who may become the
 // administrator.
 //
-// So this is the same two RPCs against a server built the way that deployment
+// So this is the same two Rpcs against a server built the way that deployment
 // builds one, and it shows what they buy: a caller who manages memberships
 // erases a person she was never allowed to read.
 func TestAGeneralWriteIsNotAWayRoundTheEscalationRule(t *testing.T) {
@@ -175,7 +175,7 @@ func TestAGeneralWriteIsNotAWayRoundTheEscalationRule(t *testing.T) {
 	_, err = app.NewHolderServiceClient(conn).Erase(wire,
 		app.HolderRef_builder{Id: b.holder(t, ctx, b.Contoso, "victim").Bytes()}.Build())
 	x.Equal(codes.PermissionDenied, status.Code(err),
-		"two RPCs from 'she manages who is in what team' and she erased somebody")
+		"two Rpcs from 'she manages who is in what team' and she erased somebody")
 }
 
 // TestNobodyMintsAKeyOnSomebodyElsesHolder.
@@ -427,9 +427,9 @@ func TestARoleHeldThroughATeamIsStillHeld(t *testing.T) {
 // straight into the sink.
 //
 // Nothing about that is visible from a unit test of the layer, from the wiring,
-// or from any single-RPC call: `core` is asked on every ordinary write and the
+// or from any single-Rpc call: `core` is asked on every ordinary write and the
 // suite is green. It comes apart only inside a transaction, which is a batch or
-// a multi-write RPC -- and what comes apart is not a crash but the escalation
+// a multi-write Rpc -- and what comes apart is not a crash but the escalation
 // rule not being asked. Alice writes the role she may not write, binds it to
 // herself, and both operations commit together.
 //
@@ -453,7 +453,7 @@ func TestABatchIsNoWayRoundTheEscalationRule(t *testing.T) {
 		return pdpb.Op_builder{Method: method, Request: v}.Build()
 	}
 
-	// The two RPCs `escalate.go` opens with, in one transaction.
+	// The two Rpcs `escalate.go` opens with, in one transaction.
 	_, err := pdpb.NewBatchServiceClient(conn).Do(wire, pdpb.BatchRequest_builder{
 		Ops: []*pdpb.Op{op(addRole, app.RoleAddRequest_builder{
 			Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),

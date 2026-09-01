@@ -24,7 +24,7 @@
 //
 // The person signing in has no credential -- that is what they are asking for
 // -- but they are not who is **calling**. The caller is custody, or a Login
-// App, or an admin console, and roster is reached by nothing else. Both RPCs
+// App, or an admin console, and roster is reached by nothing else. Both Rpcs
 // therefore need the caller's certificate, like everything else here. See
 // `cmd.public`, which says what it cost to get this wrong for an afternoon.
 //
@@ -92,7 +92,7 @@ func WithKeys(v Keyring) Option { return func(s *Server) { s.keys = v } }
 //
 // `open` is the one the wall was never installed on and `walled` is the one it
 // was; they are separate arguments rather than one server plus a flag, because
-// which of them an RPC uses is the whole of what distinguishes these two RPCs
+// which of them an Rpc uses is the whole of what distinguishes these two Rpcs
 // and it should not be possible to get it wrong by passing a boolean.
 func New(open, walled app.Server, opts ...Option) *Server {
 	s := &Server{open: open, walled: walled}

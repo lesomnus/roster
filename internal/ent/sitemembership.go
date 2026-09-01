@@ -18,18 +18,18 @@ import (
 // SiteMembership is the model entity for the SiteMembership schema.
 type SiteMembership struct {
 	config `json:"-"`
-	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	// Id of the ent.
+	Id uuid.UUID `json:"id,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
 	DateErased *time.Time `json:"date_erased,omitempty"`
 	// DateCreated holds the value of the "date_created" field.
 	DateCreated time.Time `json:"date_created,omitempty"`
-	// HolderID holds the value of the "holder_id" field.
-	HolderID uuid.UUID `json:"holder_id,omitempty"`
-	// SiteID holds the value of the "site_id" field.
-	SiteID uuid.UUID `json:"site_id,omitempty"`
+	// HolderId holds the value of the "holder_id" field.
+	HolderId uuid.UUID `json:"holder_id,omitempty"`
+	// SiteId holds the value of the "site_id" field.
+	SiteId uuid.UUID `json:"site_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the SiteMembershipQuery when eager-loading is set.
 	Edges        SiteMembershipEdges `json:"edges"`
@@ -76,7 +76,7 @@ func (*SiteMembership) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case sitemembership.FieldDateUpdated, sitemembership.FieldDateErased, sitemembership.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case sitemembership.FieldID, sitemembership.FieldHolderID, sitemembership.FieldSiteID:
+		case sitemembership.FieldId, sitemembership.FieldHolderId, sitemembership.FieldSiteId:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -93,11 +93,11 @@ func (_m *SiteMembership) assignValues(columns []string, values []any) error {
 	}
 	for i := range columns {
 		switch columns[i] {
-		case sitemembership.FieldID:
+		case sitemembership.FieldId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				_m.ID = *value
+				_m.Id = *value
 			}
 		case sitemembership.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -118,17 +118,17 @@ func (_m *SiteMembership) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.DateCreated = value.Time
 			}
-		case sitemembership.FieldHolderID:
+		case sitemembership.FieldHolderId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field holder_id", values[i])
 			} else if value != nil {
-				_m.HolderID = *value
+				_m.HolderId = *value
 			}
-		case sitemembership.FieldSiteID:
+		case sitemembership.FieldSiteId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field site_id", values[i])
 			} else if value != nil {
-				_m.SiteID = *value
+				_m.SiteId = *value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -175,7 +175,7 @@ func (_m *SiteMembership) Unwrap() *SiteMembership {
 func (_m *SiteMembership) String() string {
 	var builder strings.Builder
 	builder.WriteString("SiteMembership(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.Id))
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))
 	builder.WriteString(", ")
@@ -188,10 +188,10 @@ func (_m *SiteMembership) String() string {
 	builder.WriteString(_m.DateCreated.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("holder_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.HolderID))
+	builder.WriteString(fmt.Sprintf("%v", _m.HolderId))
 	builder.WriteString(", ")
 	builder.WriteString("site_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.SiteID))
+	builder.WriteString(fmt.Sprintf("%v", _m.SiteId))
 	builder.WriteByte(')')
 	return builder.String()
 }

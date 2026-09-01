@@ -207,7 +207,7 @@ func whoIs(ctx context.Context, db *ent.Client, ref pdcmd.Ref) (pdid.Id, error) 
 		return pdid.Nil, fmt.Errorf("no holder is called %q", ref.Alias)
 
 	case 1:
-		return pdid.Id(vs[0].ID), nil
+		return pdid.Id(vs[0].Id), nil
 
 	default:
 		// An alias is unique **within a tenant and among the living**, so two

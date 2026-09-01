@@ -78,8 +78,8 @@ func (_q *TeamMembershipQuery) QueryHolder() *HolderQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(teammembership.Table, teammembership.FieldID, selector),
-			sqlgraph.To(holder.Table, holder.FieldID),
+			sqlgraph.From(teammembership.Table, teammembership.FieldId, selector),
+			sqlgraph.To(holder.Table, holder.FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, teammembership.HolderTable, teammembership.HolderColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
@@ -100,8 +100,8 @@ func (_q *TeamMembershipQuery) QueryTeam() *TeamQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(teammembership.Table, teammembership.FieldID, selector),
-			sqlgraph.To(team.Table, team.FieldID),
+			sqlgraph.From(teammembership.Table, teammembership.FieldId, selector),
+			sqlgraph.To(team.Table, team.FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, teammembership.TeamTable, teammembership.TeamColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
@@ -122,8 +122,8 @@ func (_q *TeamMembershipQuery) QueryRole() *RoleQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(teammembership.Table, teammembership.FieldID, selector),
-			sqlgraph.To(role.Table, role.FieldID),
+			sqlgraph.From(teammembership.Table, teammembership.FieldId, selector),
+			sqlgraph.To(role.Table, role.FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, teammembership.RoleTable, teammembership.RoleColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
@@ -154,11 +154,11 @@ func (_q *TeamMembershipQuery) FirstX(ctx context.Context) *TeamMembership {
 	return node
 }
 
-// FirstID returns the first TeamMembership ID from the query.
-// Returns a *NotFoundError when no TeamMembership ID was found.
-func (_q *TeamMembershipQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+// FirstId returns the first TeamMembership Id from the query.
+// Returns a *NotFoundError when no TeamMembership Id was found.
+func (_q *TeamMembershipQuery) FirstId(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
+	if ids, err = _q.Limit(1).Ids(setContextOp(ctx, _q.ctx, ent.OpQueryFirstId)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -168,9 +168,9 @@ func (_q *TeamMembershipQuery) FirstID(ctx context.Context) (id uuid.UUID, err e
 	return ids[0], nil
 }
 
-// FirstIDX is like FirstID, but panics if an error occurs.
-func (_q *TeamMembershipQuery) FirstIDX(ctx context.Context) uuid.UUID {
-	id, err := _q.FirstID(ctx)
+// FirstIdX is like FirstId, but panics if an error occurs.
+func (_q *TeamMembershipQuery) FirstIdX(ctx context.Context) uuid.UUID {
+	id, err := _q.FirstId(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -204,12 +204,12 @@ func (_q *TeamMembershipQuery) OnlyX(ctx context.Context) *TeamMembership {
 	return node
 }
 
-// OnlyID is like Only, but returns the only TeamMembership ID in the query.
-// Returns a *NotSingularError when more than one TeamMembership ID is found.
+// OnlyId is like Only, but returns the only TeamMembership Id in the query.
+// Returns a *NotSingularError when more than one TeamMembership Id is found.
 // Returns a *NotFoundError when no entities are found.
-func (_q *TeamMembershipQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *TeamMembershipQuery) OnlyId(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
+	if ids, err = _q.Limit(2).Ids(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyId)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -223,9 +223,9 @@ func (_q *TeamMembershipQuery) OnlyID(ctx context.Context) (id uuid.UUID, err er
 	return
 }
 
-// OnlyIDX is like OnlyID, but panics if an error occurs.
-func (_q *TeamMembershipQuery) OnlyIDX(ctx context.Context) uuid.UUID {
-	id, err := _q.OnlyID(ctx)
+// OnlyIdX is like OnlyId, but panics if an error occurs.
+func (_q *TeamMembershipQuery) OnlyIdX(ctx context.Context) uuid.UUID {
+	id, err := _q.OnlyId(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -251,21 +251,21 @@ func (_q *TeamMembershipQuery) AllX(ctx context.Context) []*TeamMembership {
 	return nodes
 }
 
-// IDs executes the query and returns a list of TeamMembership IDs.
-func (_q *TeamMembershipQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+// Ids executes the query and returns a list of TeamMembership Ids.
+func (_q *TeamMembershipQuery) Ids(ctx context.Context) (ids []uuid.UUID, err error) {
 	if _q.ctx.Unique == nil && _q.path != nil {
 		_q.Unique(true)
 	}
-	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
-	if err = _q.Select(teammembership.FieldID).Scan(ctx, &ids); err != nil {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIds)
+	if err = _q.Select(teammembership.FieldId).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
-// IDsX is like IDs, but panics if an error occurs.
-func (_q *TeamMembershipQuery) IDsX(ctx context.Context) []uuid.UUID {
-	ids, err := _q.IDs(ctx)
+// IdsX is like Ids, but panics if an error occurs.
+func (_q *TeamMembershipQuery) IdsX(ctx context.Context) []uuid.UUID {
+	ids, err := _q.Ids(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -293,7 +293,7 @@ func (_q *TeamMembershipQuery) CountX(ctx context.Context) int {
 // Exist returns true if the query has elements in the graph.
 func (_q *TeamMembershipQuery) Exist(ctx context.Context) (bool, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
-	switch _, err := _q.FirstID(ctx); {
+	switch _, err := _q.FirstId(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -497,7 +497,7 @@ func (_q *TeamMembershipQuery) loadHolder(ctx context.Context, query *HolderQuer
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*TeamMembership)
 	for i := range nodes {
-		fk := nodes[i].HolderID
+		fk := nodes[i].HolderId
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -506,15 +506,15 @@ func (_q *TeamMembershipQuery) loadHolder(ctx context.Context, query *HolderQuer
 	if len(ids) == 0 {
 		return nil
 	}
-	query.Where(holder.IDIn(ids...))
+	query.Where(holder.IdIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		nodes, ok := nodeids[n.Id]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "holder_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "holder_id" returned %v`, n.Id)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -526,7 +526,7 @@ func (_q *TeamMembershipQuery) loadTeam(ctx context.Context, query *TeamQuery, n
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*TeamMembership)
 	for i := range nodes {
-		fk := nodes[i].TeamID
+		fk := nodes[i].TeamId
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -535,15 +535,15 @@ func (_q *TeamMembershipQuery) loadTeam(ctx context.Context, query *TeamQuery, n
 	if len(ids) == 0 {
 		return nil
 	}
-	query.Where(team.IDIn(ids...))
+	query.Where(team.IdIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		nodes, ok := nodeids[n.Id]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "team_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "team_id" returned %v`, n.Id)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -555,7 +555,7 @@ func (_q *TeamMembershipQuery) loadRole(ctx context.Context, query *RoleQuery, n
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*TeamMembership)
 	for i := range nodes {
-		fk := nodes[i].RoleID
+		fk := nodes[i].RoleId
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -564,15 +564,15 @@ func (_q *TeamMembershipQuery) loadRole(ctx context.Context, query *RoleQuery, n
 	if len(ids) == 0 {
 		return nil
 	}
-	query.Where(role.IDIn(ids...))
+	query.Where(role.IdIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		nodes, ok := nodeids[n.Id]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "role_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "role_id" returned %v`, n.Id)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -594,7 +594,7 @@ func (_q *TeamMembershipQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (_q *TeamMembershipQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(teammembership.Table, teammembership.Columns, sqlgraph.NewFieldSpec(teammembership.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(teammembership.Table, teammembership.Columns, sqlgraph.NewFieldSpec(teammembership.FieldId, field.TypeUuid))
 	_spec.From = _q.sql
 	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -603,20 +603,20 @@ func (_q *TeamMembershipQuery) querySpec() *sqlgraph.QuerySpec {
 	}
 	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, teammembership.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, teammembership.FieldId)
 		for i := range fields {
-			if fields[i] != teammembership.FieldID {
+			if fields[i] != teammembership.FieldId {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
 		if _q.withHolder != nil {
-			_spec.Node.AddColumnOnce(teammembership.FieldHolderID)
+			_spec.Node.AddColumnOnce(teammembership.FieldHolderId)
 		}
 		if _q.withTeam != nil {
-			_spec.Node.AddColumnOnce(teammembership.FieldTeamID)
+			_spec.Node.AddColumnOnce(teammembership.FieldTeamId)
 		}
 		if _q.withRole != nil {
-			_spec.Node.AddColumnOnce(teammembership.FieldRoleID)
+			_spec.Node.AddColumnOnce(teammembership.FieldRoleId)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

@@ -298,7 +298,7 @@ func TestTheControlPlaneTakesTheBrokerItWasGiven(t *testing.T) {
 //
 // A control plane publishing into the data plane's would have a key changing
 // look like a person changing, to every client watching -- and a client cannot
-// tell them apart, because what a watch carries is the row and the RPC that
+// tell them apart, because what a watch carries is the row and the Rpc that
 // touched it.
 func TestTheTwoPlanesDoNotShareABroker(t *testing.T) {
 	x := require.New(t)

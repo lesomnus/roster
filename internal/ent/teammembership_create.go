@@ -58,51 +58,51 @@ func (_c *TeamMembershipCreate) SetNillableDateCreated(v *time.Time) *TeamMember
 	return _c
 }
 
-// SetHolderID sets the "holder_id" field.
-func (_c *TeamMembershipCreate) SetHolderID(v uuid.UUID) *TeamMembershipCreate {
-	_c.mutation.SetHolderID(v)
+// SetHolderId sets the "holder_id" field.
+func (_c *TeamMembershipCreate) SetHolderId(v uuid.UUID) *TeamMembershipCreate {
+	_c.mutation.SetHolderId(v)
 	return _c
 }
 
-// SetTeamID sets the "team_id" field.
-func (_c *TeamMembershipCreate) SetTeamID(v uuid.UUID) *TeamMembershipCreate {
-	_c.mutation.SetTeamID(v)
+// SetTeamId sets the "team_id" field.
+func (_c *TeamMembershipCreate) SetTeamId(v uuid.UUID) *TeamMembershipCreate {
+	_c.mutation.SetTeamId(v)
 	return _c
 }
 
-// SetRoleID sets the "role_id" field.
-func (_c *TeamMembershipCreate) SetRoleID(v uuid.UUID) *TeamMembershipCreate {
-	_c.mutation.SetRoleID(v)
+// SetRoleId sets the "role_id" field.
+func (_c *TeamMembershipCreate) SetRoleId(v uuid.UUID) *TeamMembershipCreate {
+	_c.mutation.SetRoleId(v)
 	return _c
 }
 
-// SetNillableRoleID sets the "role_id" field if the given value is not nil.
-func (_c *TeamMembershipCreate) SetNillableRoleID(v *uuid.UUID) *TeamMembershipCreate {
+// SetNillableRoleId sets the "role_id" field if the given value is not nil.
+func (_c *TeamMembershipCreate) SetNillableRoleId(v *uuid.UUID) *TeamMembershipCreate {
 	if v != nil {
-		_c.SetRoleID(*v)
+		_c.SetRoleId(*v)
 	}
 	return _c
 }
 
-// SetID sets the "id" field.
-func (_c *TeamMembershipCreate) SetID(v uuid.UUID) *TeamMembershipCreate {
-	_c.mutation.SetID(v)
+// SetId sets the "id" field.
+func (_c *TeamMembershipCreate) SetId(v uuid.UUID) *TeamMembershipCreate {
+	_c.mutation.SetId(v)
 	return _c
 }
 
 // SetHolder sets the "holder" edge to the Holder entity.
 func (_c *TeamMembershipCreate) SetHolder(v *Holder) *TeamMembershipCreate {
-	return _c.SetHolderID(v.ID)
+	return _c.SetHolderId(v.Id)
 }
 
 // SetTeam sets the "team" edge to the Team entity.
 func (_c *TeamMembershipCreate) SetTeam(v *Team) *TeamMembershipCreate {
-	return _c.SetTeamID(v.ID)
+	return _c.SetTeamId(v.Id)
 }
 
 // SetRole sets the "role" edge to the Role entity.
 func (_c *TeamMembershipCreate) SetRole(v *Role) *TeamMembershipCreate {
-	return _c.SetRoleID(v.ID)
+	return _c.SetRoleId(v.Id)
 }
 
 // Mutation returns the TeamMembershipMutation object of the builder.
@@ -142,16 +142,16 @@ func (_c *TeamMembershipCreate) check() error {
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "TeamMembership.date_updated"`)}
 	}
-	if _, ok := _c.mutation.HolderID(); !ok {
+	if _, ok := _c.mutation.HolderId(); !ok {
 		return &ValidationError{Name: "holder_id", err: errors.New(`ent: missing required field "TeamMembership.holder_id"`)}
 	}
-	if _, ok := _c.mutation.TeamID(); !ok {
+	if _, ok := _c.mutation.TeamId(); !ok {
 		return &ValidationError{Name: "team_id", err: errors.New(`ent: missing required field "TeamMembership.team_id"`)}
 	}
-	if len(_c.mutation.HolderIDs()) == 0 {
+	if len(_c.mutation.HolderIds()) == 0 {
 		return &ValidationError{Name: "holder", err: errors.New(`ent: missing required edge "TeamMembership.holder"`)}
 	}
-	if len(_c.mutation.TeamIDs()) == 0 {
+	if len(_c.mutation.TeamIds()) == 0 {
 		return &ValidationError{Name: "team", err: errors.New(`ent: missing required edge "TeamMembership.team"`)}
 	}
 	return nil
@@ -168,14 +168,14 @@ func (_c *TeamMembershipCreate) sqlSave(ctx context.Context) (*TeamMembership, e
 		}
 		return nil, err
 	}
-	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+	if _spec.Id.Value != nil {
+		if id, ok := _spec.Id.Value.(*uuid.UUID); ok {
+			_node.Id = *id
+		} else if err := _node.Id.Scan(_spec.Id.Value); err != nil {
 			return nil, err
 		}
 	}
-	_c.mutation.id = &_node.ID
+	_c.mutation.id = &_node.Id
 	_c.mutation.done = true
 	return _node, nil
 }
@@ -183,11 +183,11 @@ func (_c *TeamMembershipCreate) sqlSave(ctx context.Context) (*TeamMembership, e
 func (_c *TeamMembershipCreate) createSpec() (*TeamMembership, *sqlgraph.CreateSpec) {
 	var (
 		_node = &TeamMembership{config: _c.config}
-		_spec = sqlgraph.NewCreateSpec(teammembership.Table, sqlgraph.NewFieldSpec(teammembership.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(teammembership.Table, sqlgraph.NewFieldSpec(teammembership.FieldId, field.TypeUuid))
 	)
-	if id, ok := _c.mutation.ID(); ok {
-		_node.ID = id
-		_spec.ID.Value = &id
+	if id, ok := _c.mutation.Id(); ok {
+		_node.Id = id
+		_spec.Id.Value = &id
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(teammembership.FieldDateUpdated, field.TypeTime, value)
@@ -201,7 +201,7 @@ func (_c *TeamMembershipCreate) createSpec() (*TeamMembership, *sqlgraph.CreateS
 		_spec.SetField(teammembership.FieldDateCreated, field.TypeTime, value)
 		_node.DateCreated = value
 	}
-	if nodes := _c.mutation.HolderIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.HolderIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -209,16 +209,16 @@ func (_c *TeamMembershipCreate) createSpec() (*TeamMembership, *sqlgraph.CreateS
 			Columns: []string{teammembership.HolderColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(holder.FieldID, field.TypeUUID),
+				IdSpec: sqlgraph.NewFieldSpec(holder.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.HolderID = nodes[0]
+		_node.HolderId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := _c.mutation.TeamIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.TeamIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -226,16 +226,16 @@ func (_c *TeamMembershipCreate) createSpec() (*TeamMembership, *sqlgraph.CreateS
 			Columns: []string{teammembership.TeamColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(team.FieldID, field.TypeUUID),
+				IdSpec: sqlgraph.NewFieldSpec(team.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.TeamID = nodes[0]
+		_node.TeamId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := _c.mutation.RoleIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.RoleIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -243,13 +243,13 @@ func (_c *TeamMembershipCreate) createSpec() (*TeamMembership, *sqlgraph.CreateS
 			Columns: []string{teammembership.RoleColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(role.FieldID, field.TypeUUID),
+				IdSpec: sqlgraph.NewFieldSpec(role.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.RoleID = nodes[0]
+		_node.RoleId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -298,7 +298,7 @@ func (_c *TeamMembershipCreateBulk) Save(ctx context.Context) ([]*TeamMembership
 				if err != nil {
 					return nil, err
 				}
-				mutation.id = &nodes[i].ID
+				mutation.id = &nodes[i].Id
 				mutation.done = true
 				return nodes[i], nil
 			})

@@ -200,7 +200,7 @@ func newCmdMeRevokeKey(c *Config) *xli.Command {
 		Brief: "stop one of your keys, now",
 
 		Args: arg.Args{
-			&arg.String{Name: "ID", Brief: "the key, as `me get` prints it"},
+			&arg.String{Name: "Id", Brief: "the key, as `me get` prints it"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
@@ -209,14 +209,14 @@ func newCmdMeRevokeKey(c *Config) *xli.Command {
 				return err
 			}
 
-			v, ok := arg.Get[string](cmd, "ID")
+			v, ok := arg.Get[string](cmd, "Id")
 			if !ok || v == "" {
-				return errors.New("ID: which key")
+				return errors.New("Id: which key")
 			}
 
 			k, err := pdid.Parse(v)
 			if err != nil {
-				return fmt.Errorf("ID: %w", err)
+				return fmt.Errorf("Id: %w", err)
 			}
 
 			_, err = app.NewMeServiceClient(conn).RevokeKey(ctx,
@@ -274,7 +274,7 @@ func newCmdMeUnlink(c *Config) *xli.Command {
 		Brief: "take back a provider account of yours",
 
 		Args: arg.Args{
-			&arg.String{Name: "ID", Brief: "the identity, as `me get` prints it"},
+			&arg.String{Name: "Id", Brief: "the identity, as `me get` prints it"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
@@ -283,14 +283,14 @@ func newCmdMeUnlink(c *Config) *xli.Command {
 				return err
 			}
 
-			v, ok := arg.Get[string](cmd, "ID")
+			v, ok := arg.Get[string](cmd, "Id")
 			if !ok || v == "" {
-				return errors.New("ID: which identity")
+				return errors.New("Id: which identity")
 			}
 
 			k, err := pdid.Parse(v)
 			if err != nil {
-				return fmt.Errorf("ID: %w", err)
+				return fmt.Errorf("Id: %w", err)
 			}
 
 			_, err = app.NewMeServiceClient(conn).Unlink(ctx,

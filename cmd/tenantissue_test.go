@@ -60,7 +60,7 @@ func TestACustomerMintsTheirOwnKeyOverTheWire(t *testing.T) {
 
 		v, err := b.Ent.ApiKey.Query().WithHolder().Only(ctx)
 		x.NoError(err)
-		x.Equal(b.ContosoUser.Uuid(), v.Edges.Holder.ID)
+		x.Equal(b.ContosoUser.Uuid(), v.Edges.Holder.Id)
 		x.Equal([]string{listHolder}, v.Methods)
 		x.Equal("ci", v.Alias)
 

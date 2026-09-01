@@ -103,12 +103,12 @@ func (s LinkServiceServer) Add(ctx context.Context, req *rstr.LinkAddRequest) (*
 	if v, err := mint(ctx, s.Mint, "roster.Link", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
-		q.SetID(v)
+		q.SetId(v)
 	}
 	if k, err := HolderGetKey(ctx, st.Db, req.GetHolder()); err != nil {
 		return nil, err
 	} else {
-		q.SetHolderID(k)
+		q.SetHolderId(k)
 		ds = append(ds, func(v *rstr.Link) {
 			v.SetHolder(rstr.Holder_builder{Id: k[:]}.Build())
 		})
@@ -140,7 +140,7 @@ func (s LinkServiceServer) Add(ctx context.Context, req *rstr.LinkAddRequest) (*
 
 	if err := record(ctx, s.Rec, st.Db, Change{
 		By:  rstr.LinkService_Add_FullMethodName,
-		Key: u.ID,
+		Key: u.Id,
 	}); err != nil {
 		return nil, err
 	}
@@ -179,7 +179,7 @@ func (s LinkServiceServer) Get(ctx context.Context, req *rstr.LinkGetRequest) (*
 }
 
 func selectLinkKey(q *ent.LinkQuery) {
-	q.Select(link.FieldID)
+	q.Select(link.FieldId)
 }
 
 func LinkSelectedFields(m *rstr.LinkSelect) []string {
@@ -189,7 +189,7 @@ func LinkSelectedFields(m *rstr.LinkSelect) []string {
 
 	vs := make([]string, 0, len(link.Columns))
 	{
-		vs = append(vs, link.FieldID)
+		vs = append(vs, link.FieldId)
 	}
 	if m.GetSecret() {
 		vs = append(vs, link.FieldSecret)
@@ -267,7 +267,7 @@ func LinkGetKey(ctx context.Context, db *ent.Client, ref *rstr.LinkRef) (uuid.UU
 		return z, err
 	}
 
-	v, err := db.Link.Query().Where(p).OnlyID(ctx)
+	v, err := db.Link.Query().Where(p).OnlyId(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return z, status.Error(codes.NotFound, "Link not found")
@@ -281,7 +281,7 @@ func LinkGetKey(ctx context.Context, db *ent.Client, ref *rstr.LinkRef) (uuid.UU
 var linkOrmEntity = ormpatch.MustEntityOf(rstr.File_app_link_proto, "Link")
 
 var linkPatchColumns = entpatch.Columns{
-	1: link.FieldID, 2: link.HolderColumn, 9: link.FieldSecret, 10: link.FieldIssuer, 11: link.FieldDateExpires, 13: link.FieldDateUpdated, 14: link.FieldDateErased, 15: link.FieldDateCreated}
+	1: link.FieldId, 2: link.HolderColumn, 9: link.FieldSecret, 10: link.FieldIssuer, 11: link.FieldDateExpires, 13: link.FieldDateUpdated, 14: link.FieldDateErased, 15: link.FieldDateCreated}
 
 func (s LinkServiceServer) Apply(ctx context.Context, req *rstr.LinkApplyRequest) (*rstr.Link, error) {
 	if !req.HasPatch() {
@@ -326,7 +326,7 @@ func (s LinkServiceServer) apply(ctx context.Context, ref *rstr.LinkRef, doc *pa
 	}
 	at := &rstr.LinkRef{}
 	at.SetId(k[:])
-	p, err := s.narrow(ctx, link.IDEQ(k))
+	p, err := s.narrow(ctx, link.IdEQ(k))
 	if err != nil {
 		return nil, err
 	}
@@ -420,7 +420,7 @@ func (s LinkServiceServer) Erase(ctx context.Context, req *rstr.LinkRef) (*rstr.
 
 	var k any
 	if s.Rec != nil {
-		v, err := st.Db.Link.Query().Where(p).OnlyID(ctx)
+		v, err := st.Db.Link.Query().Where(p).OnlyId(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.LinkEraseResponse{}, nil
@@ -429,7 +429,7 @@ func (s LinkServiceServer) Erase(ctx context.Context, req *rstr.LinkRef) (*rstr.
 		}
 
 		k = v
-		p = link.And(p, link.IDEQ(v))
+		p = link.And(p, link.IdEQ(v))
 	}
 
 	u := st.Db.Link.Update().Where(p)
@@ -480,7 +480,7 @@ func pickLink(req *rstr.LinkRef) (predicate.Link, error) {
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
-			return link.IDEQ(v), nil
+			return link.IdEQ(v), nil
 		}
 	case rstr.LinkRef_Secret_case:
 		return link.SecretEQ(req.GetSecret()), nil

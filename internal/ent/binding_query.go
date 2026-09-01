@@ -80,8 +80,8 @@ func (_q *BindingQuery) QueryRole() *RoleQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(binding.Table, binding.FieldID, selector),
-			sqlgraph.To(role.Table, role.FieldID),
+			sqlgraph.From(binding.Table, binding.FieldId, selector),
+			sqlgraph.To(role.Table, role.FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, binding.RoleTable, binding.RoleColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
@@ -102,8 +102,8 @@ func (_q *BindingQuery) QuerySite() *SiteQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(binding.Table, binding.FieldID, selector),
-			sqlgraph.To(site.Table, site.FieldID),
+			sqlgraph.From(binding.Table, binding.FieldId, selector),
+			sqlgraph.To(site.Table, site.FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, binding.SiteTable, binding.SiteColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
@@ -124,8 +124,8 @@ func (_q *BindingQuery) QueryHolder() *HolderQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(binding.Table, binding.FieldID, selector),
-			sqlgraph.To(holder.Table, holder.FieldID),
+			sqlgraph.From(binding.Table, binding.FieldId, selector),
+			sqlgraph.To(holder.Table, holder.FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, binding.HolderTable, binding.HolderColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
@@ -146,8 +146,8 @@ func (_q *BindingQuery) QueryGroup() *GroupQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(binding.Table, binding.FieldID, selector),
-			sqlgraph.To(group.Table, group.FieldID),
+			sqlgraph.From(binding.Table, binding.FieldId, selector),
+			sqlgraph.To(group.Table, group.FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, binding.GroupTable, binding.GroupColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
@@ -178,11 +178,11 @@ func (_q *BindingQuery) FirstX(ctx context.Context) *Binding {
 	return node
 }
 
-// FirstID returns the first Binding ID from the query.
-// Returns a *NotFoundError when no Binding ID was found.
-func (_q *BindingQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+// FirstId returns the first Binding Id from the query.
+// Returns a *NotFoundError when no Binding Id was found.
+func (_q *BindingQuery) FirstId(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
+	if ids, err = _q.Limit(1).Ids(setContextOp(ctx, _q.ctx, ent.OpQueryFirstId)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -192,9 +192,9 @@ func (_q *BindingQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	return ids[0], nil
 }
 
-// FirstIDX is like FirstID, but panics if an error occurs.
-func (_q *BindingQuery) FirstIDX(ctx context.Context) uuid.UUID {
-	id, err := _q.FirstID(ctx)
+// FirstIdX is like FirstId, but panics if an error occurs.
+func (_q *BindingQuery) FirstIdX(ctx context.Context) uuid.UUID {
+	id, err := _q.FirstId(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -228,12 +228,12 @@ func (_q *BindingQuery) OnlyX(ctx context.Context) *Binding {
 	return node
 }
 
-// OnlyID is like Only, but returns the only Binding ID in the query.
-// Returns a *NotSingularError when more than one Binding ID is found.
+// OnlyId is like Only, but returns the only Binding Id in the query.
+// Returns a *NotSingularError when more than one Binding Id is found.
 // Returns a *NotFoundError when no entities are found.
-func (_q *BindingQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *BindingQuery) OnlyId(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
+	if ids, err = _q.Limit(2).Ids(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyId)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -247,9 +247,9 @@ func (_q *BindingQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	return
 }
 
-// OnlyIDX is like OnlyID, but panics if an error occurs.
-func (_q *BindingQuery) OnlyIDX(ctx context.Context) uuid.UUID {
-	id, err := _q.OnlyID(ctx)
+// OnlyIdX is like OnlyId, but panics if an error occurs.
+func (_q *BindingQuery) OnlyIdX(ctx context.Context) uuid.UUID {
+	id, err := _q.OnlyId(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -275,21 +275,21 @@ func (_q *BindingQuery) AllX(ctx context.Context) []*Binding {
 	return nodes
 }
 
-// IDs executes the query and returns a list of Binding IDs.
-func (_q *BindingQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+// Ids executes the query and returns a list of Binding Ids.
+func (_q *BindingQuery) Ids(ctx context.Context) (ids []uuid.UUID, err error) {
 	if _q.ctx.Unique == nil && _q.path != nil {
 		_q.Unique(true)
 	}
-	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
-	if err = _q.Select(binding.FieldID).Scan(ctx, &ids); err != nil {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIds)
+	if err = _q.Select(binding.FieldId).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
-// IDsX is like IDs, but panics if an error occurs.
-func (_q *BindingQuery) IDsX(ctx context.Context) []uuid.UUID {
-	ids, err := _q.IDs(ctx)
+// IdsX is like Ids, but panics if an error occurs.
+func (_q *BindingQuery) IdsX(ctx context.Context) []uuid.UUID {
+	ids, err := _q.Ids(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -317,7 +317,7 @@ func (_q *BindingQuery) CountX(ctx context.Context) int {
 // Exist returns true if the query has elements in the graph.
 func (_q *BindingQuery) Exist(ctx context.Context) (bool, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
-	switch _, err := _q.FirstID(ctx); {
+	switch _, err := _q.FirstId(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -540,7 +540,7 @@ func (_q *BindingQuery) loadRole(ctx context.Context, query *RoleQuery, nodes []
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*Binding)
 	for i := range nodes {
-		fk := nodes[i].RoleID
+		fk := nodes[i].RoleId
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -549,15 +549,15 @@ func (_q *BindingQuery) loadRole(ctx context.Context, query *RoleQuery, nodes []
 	if len(ids) == 0 {
 		return nil
 	}
-	query.Where(role.IDIn(ids...))
+	query.Where(role.IdIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		nodes, ok := nodeids[n.Id]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "role_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "role_id" returned %v`, n.Id)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -569,7 +569,7 @@ func (_q *BindingQuery) loadSite(ctx context.Context, query *SiteQuery, nodes []
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*Binding)
 	for i := range nodes {
-		fk := nodes[i].SiteID
+		fk := nodes[i].SiteId
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -578,15 +578,15 @@ func (_q *BindingQuery) loadSite(ctx context.Context, query *SiteQuery, nodes []
 	if len(ids) == 0 {
 		return nil
 	}
-	query.Where(site.IDIn(ids...))
+	query.Where(site.IdIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		nodes, ok := nodeids[n.Id]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "site_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "site_id" returned %v`, n.Id)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -598,7 +598,7 @@ func (_q *BindingQuery) loadHolder(ctx context.Context, query *HolderQuery, node
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*Binding)
 	for i := range nodes {
-		fk := nodes[i].HolderID
+		fk := nodes[i].HolderId
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -607,15 +607,15 @@ func (_q *BindingQuery) loadHolder(ctx context.Context, query *HolderQuery, node
 	if len(ids) == 0 {
 		return nil
 	}
-	query.Where(holder.IDIn(ids...))
+	query.Where(holder.IdIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		nodes, ok := nodeids[n.Id]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "holder_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "holder_id" returned %v`, n.Id)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -627,7 +627,7 @@ func (_q *BindingQuery) loadGroup(ctx context.Context, query *GroupQuery, nodes 
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*Binding)
 	for i := range nodes {
-		fk := nodes[i].GroupID
+		fk := nodes[i].GroupId
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -636,15 +636,15 @@ func (_q *BindingQuery) loadGroup(ctx context.Context, query *GroupQuery, nodes 
 	if len(ids) == 0 {
 		return nil
 	}
-	query.Where(group.IDIn(ids...))
+	query.Where(group.IdIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		nodes, ok := nodeids[n.Id]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "group_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "group_id" returned %v`, n.Id)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -666,7 +666,7 @@ func (_q *BindingQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (_q *BindingQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(binding.Table, binding.Columns, sqlgraph.NewFieldSpec(binding.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(binding.Table, binding.Columns, sqlgraph.NewFieldSpec(binding.FieldId, field.TypeUuid))
 	_spec.From = _q.sql
 	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -675,23 +675,23 @@ func (_q *BindingQuery) querySpec() *sqlgraph.QuerySpec {
 	}
 	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, binding.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, binding.FieldId)
 		for i := range fields {
-			if fields[i] != binding.FieldID {
+			if fields[i] != binding.FieldId {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
 		if _q.withRole != nil {
-			_spec.Node.AddColumnOnce(binding.FieldRoleID)
+			_spec.Node.AddColumnOnce(binding.FieldRoleId)
 		}
 		if _q.withSite != nil {
-			_spec.Node.AddColumnOnce(binding.FieldSiteID)
+			_spec.Node.AddColumnOnce(binding.FieldSiteId)
 		}
 		if _q.withHolder != nil {
-			_spec.Node.AddColumnOnce(binding.FieldHolderID)
+			_spec.Node.AddColumnOnce(binding.FieldHolderId)
 		}
 		if _q.withGroup != nil {
-			_spec.Node.AddColumnOnce(binding.FieldGroupID)
+			_spec.Node.AddColumnOnce(binding.FieldGroupId)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

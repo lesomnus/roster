@@ -27,7 +27,7 @@ import (
 // expired -- which for a key is possibly never. The one act whose whole purpose
 // is *this person, not now* did not reach where the person actually is.
 //
-// Refused as `NotFound`, which is what this RPC answers for every token it will
+// Refused as `NotFound`, which is what this Rpc answers for every token it will
 // not vouch for. An app hearing it stops trusting the string and sends the
 // person to authenticate again, which is where they are told -- the same
 // reading `cmd.Resolver` gives by answering `ErrNoCredential` rather than a

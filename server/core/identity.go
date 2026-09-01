@@ -50,7 +50,7 @@ func (s coreIdentity) Add(ctx context.Context, req *app.IdentityAddRequest) (*ap
 // subjectIsStable refuses a subject that is obviously the wrong value.
 //
 // A provider's subject has to be the identifier that provider treats as
-// immutable -- a numeric ID for GitHub, `objectGUID` or `entryUUID` for LDAP,
+// immutable -- a numeric Id for GitHub, `objectGuid` or `entryUuid` for LDAP,
 // `oid` for Entra. What gets written by mistake is the username or the email
 // address, because both are visible in the same claims and both read like a
 // name.
@@ -202,7 +202,7 @@ func (s coreIdentity) oneAccountPerProvider(ctx context.Context, req *app.Identi
 // person's last two identities each count before either writes, each see the
 // other's still live, and both go through -- so the state this exists to refuse
 // is reached by asking for it twice at the same time. Forty people, each
-// unlinked twice at once, lost 39 on PostgreSQL and four on SQLite. It was not
+// unlinked twice at once, lost 39 on PostgreSql and four on SQLite. It was not
 // a narrow window and it was not one dialect's.
 //
 // The count and the erase share a transaction now, with one write both callers
@@ -226,7 +226,7 @@ func (s coreIdentity) Erase(ctx context.Context, req *app.IdentityRef) (*app.Ide
 			// generated `Erase` already states and this must not change.
 			//
 			// And `erased` is false, which is the same answer the generated one
-			// gives for a row that was already gone: the RPC does not fail, and
+			// gives for a row that was already gone: the Rpc does not fail, and
 			// it does not pretend either.
 			return app.IdentityEraseResponse_builder{}.Build(), nil
 		}

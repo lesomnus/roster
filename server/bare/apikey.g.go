@@ -103,12 +103,12 @@ func (s ApiKeyServiceServer) Add(ctx context.Context, req *rstr.ApiKeyAddRequest
 	if v, err := mint(ctx, s.Mint, "roster.ApiKey", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
-		q.SetID(v)
+		q.SetId(v)
 	}
 	if k, err := HolderGetKey(ctx, st.Db, req.GetHolder()); err != nil {
 		return nil, err
 	} else {
-		q.SetHolderID(k)
+		q.SetHolderId(k)
 		ds = append(ds, func(v *rstr.ApiKey) {
 			v.SetHolder(rstr.Holder_builder{Id: k[:]}.Build())
 		})
@@ -147,7 +147,7 @@ func (s ApiKeyServiceServer) Add(ctx context.Context, req *rstr.ApiKeyAddRequest
 
 	if err := record(ctx, s.Rec, st.Db, Change{
 		By:  rstr.ApiKeyService_Add_FullMethodName,
-		Key: u.ID,
+		Key: u.Id,
 	}); err != nil {
 		return nil, err
 	}
@@ -186,7 +186,7 @@ func (s ApiKeyServiceServer) Get(ctx context.Context, req *rstr.ApiKeyGetRequest
 }
 
 func selectApiKeyKey(q *ent.ApiKeyQuery) {
-	q.Select(apikey.FieldID)
+	q.Select(apikey.FieldId)
 }
 
 func ApiKeySelectedFields(m *rstr.ApiKeySelect) []string {
@@ -196,7 +196,7 @@ func ApiKeySelectedFields(m *rstr.ApiKeySelect) []string {
 
 	vs := make([]string, 0, len(apikey.Columns))
 	{
-		vs = append(vs, apikey.FieldID)
+		vs = append(vs, apikey.FieldId)
 	}
 	if m.GetAlias() {
 		vs = append(vs, apikey.FieldAlias)
@@ -283,7 +283,7 @@ func ApiKeyGetKey(ctx context.Context, db *ent.Client, ref *rstr.ApiKeyRef) (uui
 		return z, err
 	}
 
-	v, err := db.ApiKey.Query().Where(p).OnlyID(ctx)
+	v, err := db.ApiKey.Query().Where(p).OnlyId(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return z, status.Error(codes.NotFound, "ApiKey not found")
@@ -297,7 +297,7 @@ func ApiKeyGetKey(ctx context.Context, db *ent.Client, ref *rstr.ApiKeyRef) (uui
 var apiKeyOrmEntity = ormpatch.MustEntityOf(rstr.File_app_apikey_proto, "ApiKey")
 
 var apiKeyPatchColumns = entpatch.Columns{
-	1: apikey.FieldID, 2: apikey.HolderColumn, 4: apikey.FieldAlias, 6: apikey.FieldDesc, 8: apikey.FieldMethods, 9: apikey.FieldSecret, 10: apikey.FieldDateUsed, 11: apikey.FieldDateExpires, 13: apikey.FieldDateUpdated, 14: apikey.FieldDateErased, 15: apikey.FieldDateCreated}
+	1: apikey.FieldId, 2: apikey.HolderColumn, 4: apikey.FieldAlias, 6: apikey.FieldDesc, 8: apikey.FieldMethods, 9: apikey.FieldSecret, 10: apikey.FieldDateUsed, 11: apikey.FieldDateExpires, 13: apikey.FieldDateUpdated, 14: apikey.FieldDateErased, 15: apikey.FieldDateCreated}
 
 func (s ApiKeyServiceServer) Apply(ctx context.Context, req *rstr.ApiKeyApplyRequest) (*rstr.ApiKey, error) {
 	if !req.HasPatch() {
@@ -342,7 +342,7 @@ func (s ApiKeyServiceServer) apply(ctx context.Context, ref *rstr.ApiKeyRef, doc
 	}
 	at := &rstr.ApiKeyRef{}
 	at.SetId(k[:])
-	p, err := s.narrow(ctx, apikey.IDEQ(k))
+	p, err := s.narrow(ctx, apikey.IdEQ(k))
 	if err != nil {
 		return nil, err
 	}
@@ -436,7 +436,7 @@ func (s ApiKeyServiceServer) Erase(ctx context.Context, req *rstr.ApiKeyRef) (*r
 
 	var k any
 	if s.Rec != nil {
-		v, err := st.Db.ApiKey.Query().Where(p).OnlyID(ctx)
+		v, err := st.Db.ApiKey.Query().Where(p).OnlyId(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.ApiKeyEraseResponse{}, nil
@@ -445,7 +445,7 @@ func (s ApiKeyServiceServer) Erase(ctx context.Context, req *rstr.ApiKeyRef) (*r
 		}
 
 		k = v
-		p = apikey.And(p, apikey.IDEQ(v))
+		p = apikey.And(p, apikey.IdEQ(v))
 	}
 
 	u := st.Db.ApiKey.Update().Where(p)
@@ -496,7 +496,7 @@ func pickApiKey(req *rstr.ApiKeyRef) (predicate.ApiKey, error) {
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
-			return apikey.IDEQ(v), nil
+			return apikey.IdEQ(v), nil
 		}
 	case rstr.ApiKeyRef_Secret_case:
 		return apikey.SecretEQ(req.GetSecret()), nil

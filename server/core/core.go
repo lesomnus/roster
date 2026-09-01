@@ -28,7 +28,7 @@ type Core struct {
 
 	// lock is a write on somebody's own row that nothing asked for. See
 	// [Core.only]: it is what makes two callers removing a person's last two
-	// ways in contend for something, and there is nothing in the generated API
+	// ways in contend for something, and there is nothing in the generated Api
 	// that does it -- a `Patch` carrying only a version test compiles to an
 	// existence check and no write at all, which is D34's finding arriving in a
 	// second place.

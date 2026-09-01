@@ -129,13 +129,13 @@ func (m *Mutation) ResetDateCreated() {
 	delete(m.clearedFields, FieldDateCreated)
 }
 
-// SetRoleID sets the "role_id" field.
-func (m *Mutation) SetRoleID(u uuid.UUID) {
+// SetRoleId sets the "role_id" field.
+func (m *Mutation) SetRoleId(u uuid.UUID) {
 	m.role = &u
 }
 
-// RoleID returns the value of the "role_id" field in the mutation.
-func (m *Mutation) RoleID() (r uuid.UUID, exists bool) {
+// RoleId returns the value of the "role_id" field in the mutation.
+func (m *Mutation) RoleId() (r uuid.UUID, exists bool) {
 	v := m.role
 	if v == nil {
 		return
@@ -143,18 +143,18 @@ func (m *Mutation) RoleID() (r uuid.UUID, exists bool) {
 	return *v, true
 }
 
-// ResetRoleID resets all changes to the "role_id" field.
-func (m *Mutation) ResetRoleID() {
+// ResetRoleId resets all changes to the "role_id" field.
+func (m *Mutation) ResetRoleId() {
 	m.role = nil
 }
 
-// SetSiteID sets the "site_id" field.
-func (m *Mutation) SetSiteID(u uuid.UUID) {
+// SetSiteId sets the "site_id" field.
+func (m *Mutation) SetSiteId(u uuid.UUID) {
 	m.site = &u
 }
 
-// SiteID returns the value of the "site_id" field in the mutation.
-func (m *Mutation) SiteID() (r uuid.UUID, exists bool) {
+// SiteId returns the value of the "site_id" field in the mutation.
+func (m *Mutation) SiteId() (r uuid.UUID, exists bool) {
 	v := m.site
 	if v == nil {
 		return
@@ -162,31 +162,31 @@ func (m *Mutation) SiteID() (r uuid.UUID, exists bool) {
 	return *v, true
 }
 
-// ClearSiteID clears the value of the "site_id" field.
-func (m *Mutation) ClearSiteID() {
+// ClearSiteId clears the value of the "site_id" field.
+func (m *Mutation) ClearSiteId() {
 	m.site = nil
-	m.clearedFields[FieldSiteID] = struct{}{}
+	m.clearedFields[FieldSiteId] = struct{}{}
 }
 
-// SiteIDCleared returns if the "site_id" field was cleared in this mutation.
-func (m *Mutation) SiteIDCleared() bool {
-	_, ok := m.clearedFields[FieldSiteID]
+// SiteIdCleared returns if the "site_id" field was cleared in this mutation.
+func (m *Mutation) SiteIdCleared() bool {
+	_, ok := m.clearedFields[FieldSiteId]
 	return ok
 }
 
-// ResetSiteID resets all changes to the "site_id" field.
-func (m *Mutation) ResetSiteID() {
+// ResetSiteId resets all changes to the "site_id" field.
+func (m *Mutation) ResetSiteId() {
 	m.site = nil
-	delete(m.clearedFields, FieldSiteID)
+	delete(m.clearedFields, FieldSiteId)
 }
 
-// SetHolderID sets the "holder_id" field.
-func (m *Mutation) SetHolderID(u uuid.UUID) {
+// SetHolderId sets the "holder_id" field.
+func (m *Mutation) SetHolderId(u uuid.UUID) {
 	m.holder = &u
 }
 
-// HolderID returns the value of the "holder_id" field in the mutation.
-func (m *Mutation) HolderID() (r uuid.UUID, exists bool) {
+// HolderId returns the value of the "holder_id" field in the mutation.
+func (m *Mutation) HolderId() (r uuid.UUID, exists bool) {
 	v := m.holder
 	if v == nil {
 		return
@@ -194,31 +194,31 @@ func (m *Mutation) HolderID() (r uuid.UUID, exists bool) {
 	return *v, true
 }
 
-// ClearHolderID clears the value of the "holder_id" field.
-func (m *Mutation) ClearHolderID() {
+// ClearHolderId clears the value of the "holder_id" field.
+func (m *Mutation) ClearHolderId() {
 	m.holder = nil
-	m.clearedFields[FieldHolderID] = struct{}{}
+	m.clearedFields[FieldHolderId] = struct{}{}
 }
 
-// HolderIDCleared returns if the "holder_id" field was cleared in this mutation.
-func (m *Mutation) HolderIDCleared() bool {
-	_, ok := m.clearedFields[FieldHolderID]
+// HolderIdCleared returns if the "holder_id" field was cleared in this mutation.
+func (m *Mutation) HolderIdCleared() bool {
+	_, ok := m.clearedFields[FieldHolderId]
 	return ok
 }
 
-// ResetHolderID resets all changes to the "holder_id" field.
-func (m *Mutation) ResetHolderID() {
+// ResetHolderId resets all changes to the "holder_id" field.
+func (m *Mutation) ResetHolderId() {
 	m.holder = nil
-	delete(m.clearedFields, FieldHolderID)
+	delete(m.clearedFields, FieldHolderId)
 }
 
-// SetGroupID sets the "group_id" field.
-func (m *Mutation) SetGroupID(u uuid.UUID) {
+// SetGroupId sets the "group_id" field.
+func (m *Mutation) SetGroupId(u uuid.UUID) {
 	m.group = &u
 }
 
-// GroupID returns the value of the "group_id" field in the mutation.
-func (m *Mutation) GroupID() (r uuid.UUID, exists bool) {
+// GroupId returns the value of the "group_id" field in the mutation.
+func (m *Mutation) GroupId() (r uuid.UUID, exists bool) {
 	v := m.group
 	if v == nil {
 		return
@@ -226,28 +226,28 @@ func (m *Mutation) GroupID() (r uuid.UUID, exists bool) {
 	return *v, true
 }
 
-// ClearGroupID clears the value of the "group_id" field.
-func (m *Mutation) ClearGroupID() {
+// ClearGroupId clears the value of the "group_id" field.
+func (m *Mutation) ClearGroupId() {
 	m.group = nil
-	m.clearedFields[FieldGroupID] = struct{}{}
+	m.clearedFields[FieldGroupId] = struct{}{}
 }
 
-// GroupIDCleared returns if the "group_id" field was cleared in this mutation.
-func (m *Mutation) GroupIDCleared() bool {
-	_, ok := m.clearedFields[FieldGroupID]
+// GroupIdCleared returns if the "group_id" field was cleared in this mutation.
+func (m *Mutation) GroupIdCleared() bool {
+	_, ok := m.clearedFields[FieldGroupId]
 	return ok
 }
 
-// ResetGroupID resets all changes to the "group_id" field.
-func (m *Mutation) ResetGroupID() {
+// ResetGroupId resets all changes to the "group_id" field.
+func (m *Mutation) ResetGroupId() {
 	m.group = nil
-	delete(m.clearedFields, FieldGroupID)
+	delete(m.clearedFields, FieldGroupId)
 }
 
 // ClearRole clears the "role" edge to the Role entity.
 func (m *Mutation) ClearRole() {
 	m.clearedrole = true
-	m.clearedFields[FieldRoleID] = struct{}{}
+	m.clearedFields[FieldRoleId] = struct{}{}
 }
 
 // RoleCleared reports if the "role" edge to the Role entity was cleared.
@@ -255,10 +255,10 @@ func (m *Mutation) RoleCleared() bool {
 	return m.clearedrole
 }
 
-// RoleIDs returns the "role" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// RoleID instead. It exists only for internal usage by the builders.
-func (m *Mutation) RoleIDs() (ids []uuid.UUID) {
+// RoleIds returns the "role" edge Ids in the mutation.
+// Note that Ids always returns len(Ids) <= 1 for unique edges, and you should use
+// RoleId instead. It exists only for internal usage by the builders.
+func (m *Mutation) RoleIds() (ids []uuid.UUID) {
 	if id := m.role; id != nil {
 		ids = append(ids, *id)
 	}
@@ -274,18 +274,18 @@ func (m *Mutation) ResetRole() {
 // ClearSite clears the "site" edge to the Site entity.
 func (m *Mutation) ClearSite() {
 	m.clearedsite = true
-	m.clearedFields[FieldSiteID] = struct{}{}
+	m.clearedFields[FieldSiteId] = struct{}{}
 }
 
 // SiteCleared reports if the "site" edge to the Site entity was cleared.
 func (m *Mutation) SiteCleared() bool {
-	return m.SiteIDCleared() || m.clearedsite
+	return m.SiteIdCleared() || m.clearedsite
 }
 
-// SiteIDs returns the "site" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// SiteID instead. It exists only for internal usage by the builders.
-func (m *Mutation) SiteIDs() (ids []uuid.UUID) {
+// SiteIds returns the "site" edge Ids in the mutation.
+// Note that Ids always returns len(Ids) <= 1 for unique edges, and you should use
+// SiteId instead. It exists only for internal usage by the builders.
+func (m *Mutation) SiteIds() (ids []uuid.UUID) {
 	if id := m.site; id != nil {
 		ids = append(ids, *id)
 	}
@@ -301,18 +301,18 @@ func (m *Mutation) ResetSite() {
 // ClearHolder clears the "holder" edge to the Holder entity.
 func (m *Mutation) ClearHolder() {
 	m.clearedholder = true
-	m.clearedFields[FieldHolderID] = struct{}{}
+	m.clearedFields[FieldHolderId] = struct{}{}
 }
 
 // HolderCleared reports if the "holder" edge to the Holder entity was cleared.
 func (m *Mutation) HolderCleared() bool {
-	return m.HolderIDCleared() || m.clearedholder
+	return m.HolderIdCleared() || m.clearedholder
 }
 
-// HolderIDs returns the "holder" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// HolderID instead. It exists only for internal usage by the builders.
-func (m *Mutation) HolderIDs() (ids []uuid.UUID) {
+// HolderIds returns the "holder" edge Ids in the mutation.
+// Note that Ids always returns len(Ids) <= 1 for unique edges, and you should use
+// HolderId instead. It exists only for internal usage by the builders.
+func (m *Mutation) HolderIds() (ids []uuid.UUID) {
 	if id := m.holder; id != nil {
 		ids = append(ids, *id)
 	}
@@ -328,18 +328,18 @@ func (m *Mutation) ResetHolder() {
 // ClearGroup clears the "group" edge to the Group entity.
 func (m *Mutation) ClearGroup() {
 	m.clearedgroup = true
-	m.clearedFields[FieldGroupID] = struct{}{}
+	m.clearedFields[FieldGroupId] = struct{}{}
 }
 
 // GroupCleared reports if the "group" edge to the Group entity was cleared.
 func (m *Mutation) GroupCleared() bool {
-	return m.GroupIDCleared() || m.clearedgroup
+	return m.GroupIdCleared() || m.clearedgroup
 }
 
-// GroupIDs returns the "group" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// GroupID instead. It exists only for internal usage by the builders.
-func (m *Mutation) GroupIDs() (ids []uuid.UUID) {
+// GroupIds returns the "group" edge Ids in the mutation.
+// Note that Ids always returns len(Ids) <= 1 for unique edges, and you should use
+// GroupId instead. It exists only for internal usage by the builders.
+func (m *Mutation) GroupIds() (ids []uuid.UUID) {
 	if id := m.group; id != nil {
 		ids = append(ids, *id)
 	}
@@ -397,16 +397,16 @@ func (m *Mutation) Fields() []string {
 		fields = append(fields, FieldDateCreated)
 	}
 	if m.role != nil {
-		fields = append(fields, FieldRoleID)
+		fields = append(fields, FieldRoleId)
 	}
 	if m.site != nil {
-		fields = append(fields, FieldSiteID)
+		fields = append(fields, FieldSiteId)
 	}
 	if m.holder != nil {
-		fields = append(fields, FieldHolderID)
+		fields = append(fields, FieldHolderId)
 	}
 	if m.group != nil {
-		fields = append(fields, FieldGroupID)
+		fields = append(fields, FieldGroupId)
 	}
 	return fields
 }
@@ -422,14 +422,14 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.DateErased()
 	case FieldDateCreated:
 		return m.DateCreated()
-	case FieldRoleID:
-		return m.RoleID()
-	case FieldSiteID:
-		return m.SiteID()
-	case FieldHolderID:
-		return m.HolderID()
-	case FieldGroupID:
-		return m.GroupID()
+	case FieldRoleId:
+		return m.RoleId()
+	case FieldSiteId:
+		return m.SiteId()
+	case FieldHolderId:
+		return m.HolderId()
+	case FieldGroupId:
+		return m.GroupId()
 	}
 	return nil, false
 }
@@ -467,33 +467,33 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDateCreated(v)
 		return nil
-	case FieldRoleID:
+	case FieldRoleId:
 		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetRoleID(v)
+		m.SetRoleId(v)
 		return nil
-	case FieldSiteID:
+	case FieldSiteId:
 		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetSiteID(v)
+		m.SetSiteId(v)
 		return nil
-	case FieldHolderID:
+	case FieldHolderId:
 		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetHolderID(v)
+		m.SetHolderId(v)
 		return nil
-	case FieldGroupID:
+	case FieldGroupId:
 		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetGroupID(v)
+		m.SetGroupId(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Binding field %s", name)
@@ -531,14 +531,14 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldDateCreated) {
 		fields = append(fields, FieldDateCreated)
 	}
-	if m.FieldCleared(FieldSiteID) {
-		fields = append(fields, FieldSiteID)
+	if m.FieldCleared(FieldSiteId) {
+		fields = append(fields, FieldSiteId)
 	}
-	if m.FieldCleared(FieldHolderID) {
-		fields = append(fields, FieldHolderID)
+	if m.FieldCleared(FieldHolderId) {
+		fields = append(fields, FieldHolderId)
 	}
-	if m.FieldCleared(FieldGroupID) {
-		fields = append(fields, FieldGroupID)
+	if m.FieldCleared(FieldGroupId) {
+		fields = append(fields, FieldGroupId)
 	}
 	return fields
 }
@@ -560,14 +560,14 @@ func (m *Mutation) ClearField(name string) error {
 	case FieldDateCreated:
 		m.ClearDateCreated()
 		return nil
-	case FieldSiteID:
-		m.ClearSiteID()
+	case FieldSiteId:
+		m.ClearSiteId()
 		return nil
-	case FieldHolderID:
-		m.ClearHolderID()
+	case FieldHolderId:
+		m.ClearHolderId()
 		return nil
-	case FieldGroupID:
-		m.ClearGroupID()
+	case FieldGroupId:
+		m.ClearGroupId()
 		return nil
 	}
 	return fmt.Errorf("unknown Binding nullable field %s", name)
@@ -586,17 +586,17 @@ func (m *Mutation) ResetField(name string) error {
 	case FieldDateCreated:
 		m.ResetDateCreated()
 		return nil
-	case FieldRoleID:
-		m.ResetRoleID()
+	case FieldRoleId:
+		m.ResetRoleId()
 		return nil
-	case FieldSiteID:
-		m.ResetSiteID()
+	case FieldSiteId:
+		m.ResetSiteId()
 		return nil
-	case FieldHolderID:
-		m.ResetHolderID()
+	case FieldHolderId:
+		m.ResetHolderId()
 		return nil
-	case FieldGroupID:
-		m.ResetGroupID()
+	case FieldGroupId:
+		m.ResetGroupId()
 		return nil
 	}
 	return fmt.Errorf("unknown Binding field %s", name)
@@ -620,9 +620,9 @@ func (m *Mutation) AddedEdges() []string {
 	return edges
 }
 
-// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// AddedIds returns all Ids (to other nodes) that were added for the given edge
 // name in this mutation.
-func (m *Mutation) AddedIDs(name string) []ent.Value {
+func (m *Mutation) AddedIds(name string) []ent.Value {
 	switch name {
 	case EdgeRole:
 		if id := m.role; id != nil {
@@ -650,9 +650,9 @@ func (m *Mutation) RemovedEdges() []string {
 	return edges
 }
 
-// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// RemovedIds returns all Ids (to other nodes) that were removed for the edge with
 // the given name in this mutation.
-func (m *Mutation) RemovedIDs(name string) []ent.Value {
+func (m *Mutation) RemovedIds(name string) []ent.Value {
 	return nil
 }
 

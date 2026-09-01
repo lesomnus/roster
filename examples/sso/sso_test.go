@@ -40,15 +40,15 @@ import (
 
 // The whole flow, run.
 //
-// An example that has never been executed is a guess about an API, and the two
+// An example that has never been executed is a guess about an Api, and the two
 // halves here are exactly the ones that are easy to guess wrong: what a
 // provider hands back, and what roster answers for somebody it has never seen.
-// So the provider below is real enough to be talked to over HTTP -- discovery,
+// So the provider below is real enough to be talked to over Http -- discovery,
 // JWKS, authorize, token -- and roster is a real server on a real connection.
 
-const clientID = "example-app"
+const clientId = "example-app"
 
-// idp is an OpenID Provider, small but not a mock: it serves the documents
+// idp is an OpenId Provider, small but not a mock: it serves the documents
 // `go-oidc` fetches and signs tokens `go-oidc` verifies. A mock would agree
 // with whatever this package believes, which is the one thing not worth
 // checking.
@@ -87,7 +87,7 @@ func newIdp(t *testing.T) *idp {
 
 	m.HandleFunc("/keys", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("content-type", "application/json")
-		json.NewEncoder(w).Encode(jose.JSONWebKeySet{Keys: []jose.JSONWebKey{
+		json.NewEncoder(w).Encode(jose.JsonWebKeySet{Keys: []jose.JsonWebKey{
 			{Key: &k.PublicKey, Algorithm: "RS256", Use: "sig"},
 		}})
 	})
@@ -108,7 +108,7 @@ func newIdp(t *testing.T) *idp {
 	m.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
 		claims := map[string]any{
 			"iss": p.URL,
-			"aud": clientID,
+			"aud": clientId,
 			"sub": p.subject,
 			"exp": 4102444800, // 2100
 			"iat": 1700000000,
@@ -170,7 +170,7 @@ type deployment struct {
 	// server is the built deployment, kept so a test that needs a **second**
 	// caller -- an administrator beside the front door -- can open its own
 	// connection to the same roster with its own credential. `server.Grpc`
-	// answers a fresh gRPC server over the same store each time it is called.
+	// answers a fresh gRpc server over the same store each time it is called.
 	server *cmd.Server
 }
 
@@ -222,7 +222,7 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 	// answer to "which credential does the login app call roster with", and
 	// writing the methods out is the answer to "and what may it do with it".
 	//
-	// A deployment mints an API key for this holder and the connection carries
+	// A deployment mints an Api key for this holder and the connection carries
 	// it, which is what happens below: an `rt_`, because this app is one
 	// operator's front door and therefore somebody inside that tenant.
 	svc, err := s.Ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
@@ -319,7 +319,7 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 
 	a, err := sso.New(ctx, sso.Config{
 		Issuer:       d.idp.URL,
-		ClientID:     clientID,
+		ClientID:     clientId,
 		ClientSecret: "unused",
 		RedirectURL:  addr + "/callback",
 		Provider:     "example",
@@ -354,7 +354,7 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 //
 // `pdtest.Serve` is the same thing without the credential; this adds
 // `auth.Inject`, which is the whole of how a client of a payday app says who it
-// is. A deployment does exactly this with an API key instead.
+// is. A deployment does exactly this with an Api key instead.
 func serveRoster(t *testing.T, g *grpc.Server, as auth.Provider) *grpc.ClientConn {
 	t.Helper()
 	x := require.New(t)
@@ -542,7 +542,7 @@ func TestTheSameAccountAtTwoOperators(t *testing.T) {
 	// This app is contoso's front door. It is contoso's and only contoso's, because its
 	// credential is a Holder of contoso and the wall narrows what it may read to
 	// that -- see the note on `serve`. A login app that fronts several
-	// operators needs a credential whose scope covers them, which is an API
+	// operators needs a credential whose scope covers them, which is an Api
 	// key rather than a person.
 	d := serve(t, sso.Enrolling, map[string]string{"127.0.0.1": "contoso"})
 

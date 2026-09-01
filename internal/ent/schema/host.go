@@ -19,7 +19,7 @@ type Host struct {
 
 func (Host) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
+		field.Uuid("id", uuid.UUID{}).
 			Unique().
 			Immutable(),
 		field.String("name"),
@@ -31,7 +31,7 @@ func (Host) Fields() []ent.Field {
 		field.Time("date_created").
 			Immutable().
 			Optional(),
-		field.UUID("tenant_id", uuid.UUID{}).
+		field.Uuid("tenant_id", uuid.UUID{}).
 			Immutable(),
 	}
 }
@@ -67,7 +67,7 @@ type MailDomain struct {
 
 func (MailDomain) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
+		field.Uuid("id", uuid.UUID{}).
 			Unique().
 			Immutable(),
 		field.String("name"),
@@ -80,7 +80,7 @@ func (MailDomain) Fields() []ent.Field {
 		field.Time("date_created").
 			Immutable().
 			Optional(),
-		field.UUID("tenant_id", uuid.UUID{}).
+		field.Uuid("tenant_id", uuid.UUID{}).
 			Immutable(),
 	}
 }

@@ -106,12 +106,12 @@ func (s EmailServiceServer) Add(ctx context.Context, req *rstr.EmailAddRequest) 
 	if v, err := mint(ctx, s.Mint, "roster.Email", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
-		q.SetID(v)
+		q.SetId(v)
 	}
 	if k, err := HolderGetKey(ctx, st.Db, req.GetHolder()); err != nil {
 		return nil, err
 	} else {
-		q.SetHolderID(k)
+		q.SetHolderId(k)
 		ds = append(ds, func(v *rstr.Email) {
 			v.SetHolder(rstr.Holder_builder{Id: k[:]}.Build())
 		})
@@ -124,7 +124,7 @@ func (s EmailServiceServer) Add(ctx context.Context, req *rstr.EmailAddRequest) 
 		if k, err := IdentityGetKey(ctx, st.Db, req.GetVouchedBy()); err != nil {
 			return nil, err
 		} else {
-			q.SetVouchedByID(k)
+			q.SetVouchedById(k)
 			ds = append(ds, func(v *rstr.Email) {
 				v.SetVouchedBy(rstr.Identity_builder{Id: k[:]}.Build())
 			})
@@ -133,7 +133,7 @@ func (s EmailServiceServer) Add(ctx context.Context, req *rstr.EmailAddRequest) 
 	if v, err := uuid.FromBytes(req.GetTenantId()); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "tenant_id: %s", err)
 	} else {
-		q.SetTenantID(v)
+		q.SetTenantId(v)
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
@@ -157,7 +157,7 @@ func (s EmailServiceServer) Add(ctx context.Context, req *rstr.EmailAddRequest) 
 
 	if err := record(ctx, s.Rec, st.Db, Change{
 		By:  rstr.EmailService_Add_FullMethodName,
-		Key: u.ID,
+		Key: u.Id,
 	}); err != nil {
 		return nil, err
 	}
@@ -196,7 +196,7 @@ func (s EmailServiceServer) Get(ctx context.Context, req *rstr.EmailGetRequest) 
 }
 
 func selectEmailKey(q *ent.EmailQuery) {
-	q.Select(email.FieldID)
+	q.Select(email.FieldId)
 }
 
 func EmailSelectedFields(m *rstr.EmailSelect) []string {
@@ -206,7 +206,7 @@ func EmailSelectedFields(m *rstr.EmailSelect) []string {
 
 	vs := make([]string, 0, len(email.Columns))
 	{
-		vs = append(vs, email.FieldID)
+		vs = append(vs, email.FieldId)
 	}
 	if m.GetAddress() {
 		vs = append(vs, email.FieldAddress)
@@ -215,7 +215,7 @@ func EmailSelectedFields(m *rstr.EmailSelect) []string {
 		vs = append(vs, email.FieldDateVerified)
 	}
 	if m.GetTenantId() {
-		vs = append(vs, email.FieldTenantID)
+		vs = append(vs, email.FieldTenantId)
 	}
 	if m.GetDateUpdated() {
 		vs = append(vs, email.FieldDateUpdated)
@@ -301,7 +301,7 @@ func EmailGetKey(ctx context.Context, db *ent.Client, ref *rstr.EmailRef) (uuid.
 		return z, err
 	}
 
-	v, err := db.Email.Query().Where(p).OnlyID(ctx)
+	v, err := db.Email.Query().Where(p).OnlyId(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return z, status.Error(codes.NotFound, "Email not found")
@@ -315,7 +315,7 @@ func EmailGetKey(ctx context.Context, db *ent.Client, ref *rstr.EmailRef) (uuid.
 var emailOrmEntity = ormpatch.MustEntityOf(rstr.File_app_email_proto, "Email")
 
 var emailPatchColumns = entpatch.Columns{
-	1: email.FieldID, 2: email.HolderColumn, 8: email.FieldAddress, 9: email.FieldDateVerified, 10: email.VouchedByColumn, 11: email.FieldTenantID, 13: email.FieldDateUpdated, 14: email.FieldDateErased, 15: email.FieldDateCreated}
+	1: email.FieldId, 2: email.HolderColumn, 8: email.FieldAddress, 9: email.FieldDateVerified, 10: email.VouchedByColumn, 11: email.FieldTenantId, 13: email.FieldDateUpdated, 14: email.FieldDateErased, 15: email.FieldDateCreated}
 
 func (s EmailServiceServer) Apply(ctx context.Context, req *rstr.EmailApplyRequest) (*rstr.Email, error) {
 	if !req.HasPatch() {
@@ -360,7 +360,7 @@ func (s EmailServiceServer) apply(ctx context.Context, ref *rstr.EmailRef, doc *
 	}
 	at := &rstr.EmailRef{}
 	at.SetId(k[:])
-	p, err := s.narrow(ctx, email.IDEQ(k))
+	p, err := s.narrow(ctx, email.IdEQ(k))
 	if err != nil {
 		return nil, err
 	}
@@ -454,7 +454,7 @@ func (s EmailServiceServer) Erase(ctx context.Context, req *rstr.EmailRef) (*rst
 
 	var k any
 	if s.Rec != nil {
-		v, err := st.Db.Email.Query().Where(p).OnlyID(ctx)
+		v, err := st.Db.Email.Query().Where(p).OnlyId(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.EmailEraseResponse{}, nil
@@ -463,7 +463,7 @@ func (s EmailServiceServer) Erase(ctx context.Context, req *rstr.EmailRef) (*rst
 		}
 
 		k = v
-		p = email.And(p, email.IDEQ(v))
+		p = email.And(p, email.IdEQ(v))
 	}
 
 	u := st.Db.Email.Update().Where(p)
@@ -514,7 +514,7 @@ func pickEmail(req *rstr.EmailRef) (predicate.Email, error) {
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
-			return email.IDEQ(v), nil
+			return email.IdEQ(v), nil
 		}
 	case rstr.EmailRef_Address_case:
 		k := req.GetAddress()
@@ -532,7 +532,7 @@ func pickEmail(req *rstr.EmailRef) (predicate.Email, error) {
 		if v, err := uuid.FromBytes(k.GetTenantId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "at.tenant_id: %s", err)
 		} else {
-			ps = append(ps, email.TenantIDEQ(v))
+			ps = append(ps, email.TenantIdEQ(v))
 		}
 		ps = append(ps, email.AddressEQ(k.GetAddress()))
 		return email.And(ps...), nil

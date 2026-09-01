@@ -19,20 +19,20 @@ import (
 // TeamMembership is the model entity for the TeamMembership schema.
 type TeamMembership struct {
 	config `json:"-"`
-	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	// Id of the ent.
+	Id uuid.UUID `json:"id,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
 	DateErased *time.Time `json:"date_erased,omitempty"`
 	// DateCreated holds the value of the "date_created" field.
 	DateCreated time.Time `json:"date_created,omitempty"`
-	// HolderID holds the value of the "holder_id" field.
-	HolderID uuid.UUID `json:"holder_id,omitempty"`
-	// TeamID holds the value of the "team_id" field.
-	TeamID uuid.UUID `json:"team_id,omitempty"`
-	// RoleID holds the value of the "role_id" field.
-	RoleID uuid.UUID `json:"role_id,omitempty"`
+	// HolderId holds the value of the "holder_id" field.
+	HolderId uuid.UUID `json:"holder_id,omitempty"`
+	// TeamId holds the value of the "team_id" field.
+	TeamId uuid.UUID `json:"team_id,omitempty"`
+	// RoleId holds the value of the "role_id" field.
+	RoleId uuid.UUID `json:"role_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the TeamMembershipQuery when eager-loading is set.
 	Edges        TeamMembershipEdges `json:"edges"`
@@ -92,7 +92,7 @@ func (*TeamMembership) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case teammembership.FieldDateUpdated, teammembership.FieldDateErased, teammembership.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case teammembership.FieldID, teammembership.FieldHolderID, teammembership.FieldTeamID, teammembership.FieldRoleID:
+		case teammembership.FieldId, teammembership.FieldHolderId, teammembership.FieldTeamId, teammembership.FieldRoleId:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -109,11 +109,11 @@ func (_m *TeamMembership) assignValues(columns []string, values []any) error {
 	}
 	for i := range columns {
 		switch columns[i] {
-		case teammembership.FieldID:
+		case teammembership.FieldId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				_m.ID = *value
+				_m.Id = *value
 			}
 		case teammembership.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -134,23 +134,23 @@ func (_m *TeamMembership) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.DateCreated = value.Time
 			}
-		case teammembership.FieldHolderID:
+		case teammembership.FieldHolderId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field holder_id", values[i])
 			} else if value != nil {
-				_m.HolderID = *value
+				_m.HolderId = *value
 			}
-		case teammembership.FieldTeamID:
+		case teammembership.FieldTeamId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field team_id", values[i])
 			} else if value != nil {
-				_m.TeamID = *value
+				_m.TeamId = *value
 			}
-		case teammembership.FieldRoleID:
+		case teammembership.FieldRoleId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field role_id", values[i])
 			} else if value != nil {
-				_m.RoleID = *value
+				_m.RoleId = *value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -202,7 +202,7 @@ func (_m *TeamMembership) Unwrap() *TeamMembership {
 func (_m *TeamMembership) String() string {
 	var builder strings.Builder
 	builder.WriteString("TeamMembership(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.Id))
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))
 	builder.WriteString(", ")
@@ -215,13 +215,13 @@ func (_m *TeamMembership) String() string {
 	builder.WriteString(_m.DateCreated.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("holder_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.HolderID))
+	builder.WriteString(fmt.Sprintf("%v", _m.HolderId))
 	builder.WriteString(", ")
 	builder.WriteString("team_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.TeamID))
+	builder.WriteString(fmt.Sprintf("%v", _m.TeamId))
 	builder.WriteString(", ")
 	builder.WriteString("role_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.RoleID))
+	builder.WriteString(fmt.Sprintf("%v", _m.RoleId))
 	builder.WriteByte(')')
 	return builder.String()
 }

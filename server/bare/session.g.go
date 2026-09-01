@@ -103,12 +103,12 @@ func (s SessionServiceServer) Add(ctx context.Context, req *rstr.SessionAddReque
 	if v, err := mint(ctx, s.Mint, "roster.Session", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
-		q.SetID(v)
+		q.SetId(v)
 	}
 	if k, err := HolderGetKey(ctx, st.Db, req.GetHolder()); err != nil {
 		return nil, err
 	} else {
-		q.SetHolderID(k)
+		q.SetHolderId(k)
 		ds = append(ds, func(v *rstr.Session) {
 			v.SetHolder(rstr.Holder_builder{Id: k[:]}.Build())
 		})
@@ -143,7 +143,7 @@ func (s SessionServiceServer) Add(ctx context.Context, req *rstr.SessionAddReque
 
 	if err := record(ctx, s.Rec, st.Db, Change{
 		By:  rstr.SessionService_Add_FullMethodName,
-		Key: u.ID,
+		Key: u.Id,
 	}); err != nil {
 		return nil, err
 	}
@@ -182,7 +182,7 @@ func (s SessionServiceServer) Get(ctx context.Context, req *rstr.SessionGetReque
 }
 
 func selectSessionKey(q *ent.SessionQuery) {
-	q.Select(session.FieldID)
+	q.Select(session.FieldId)
 }
 
 func SessionSelectedFields(m *rstr.SessionSelect) []string {
@@ -192,7 +192,7 @@ func SessionSelectedFields(m *rstr.SessionSelect) []string {
 
 	vs := make([]string, 0, len(session.Columns))
 	{
-		vs = append(vs, session.FieldID)
+		vs = append(vs, session.FieldId)
 	}
 	if m.GetGrant() {
 		vs = append(vs, session.FieldGrant)
@@ -273,7 +273,7 @@ func SessionGetKey(ctx context.Context, db *ent.Client, ref *rstr.SessionRef) (u
 		return z, err
 	}
 
-	v, err := db.Session.Query().Where(p).OnlyID(ctx)
+	v, err := db.Session.Query().Where(p).OnlyId(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return z, status.Error(codes.NotFound, "Session not found")
@@ -287,7 +287,7 @@ func SessionGetKey(ctx context.Context, db *ent.Client, ref *rstr.SessionRef) (u
 var sessionOrmEntity = ormpatch.MustEntityOf(rstr.File_app_session_proto, "Session")
 
 var sessionPatchColumns = entpatch.Columns{
-	1: session.FieldID, 2: session.HolderColumn, 8: session.FieldGrant, 9: session.FieldSecret, 11: session.FieldDateExpires, 12: session.FieldDateIdle, 13: session.FieldDateUpdated, 14: session.FieldDateErased, 15: session.FieldDateCreated}
+	1: session.FieldId, 2: session.HolderColumn, 8: session.FieldGrant, 9: session.FieldSecret, 11: session.FieldDateExpires, 12: session.FieldDateIdle, 13: session.FieldDateUpdated, 14: session.FieldDateErased, 15: session.FieldDateCreated}
 
 func (s SessionServiceServer) Apply(ctx context.Context, req *rstr.SessionApplyRequest) (*rstr.Session, error) {
 	if !req.HasPatch() {
@@ -332,7 +332,7 @@ func (s SessionServiceServer) apply(ctx context.Context, ref *rstr.SessionRef, d
 	}
 	at := &rstr.SessionRef{}
 	at.SetId(k[:])
-	p, err := s.narrow(ctx, session.IDEQ(k))
+	p, err := s.narrow(ctx, session.IdEQ(k))
 	if err != nil {
 		return nil, err
 	}
@@ -426,7 +426,7 @@ func (s SessionServiceServer) Erase(ctx context.Context, req *rstr.SessionRef) (
 
 	var k any
 	if s.Rec != nil {
-		v, err := st.Db.Session.Query().Where(p).OnlyID(ctx)
+		v, err := st.Db.Session.Query().Where(p).OnlyId(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.SessionEraseResponse{}, nil
@@ -435,7 +435,7 @@ func (s SessionServiceServer) Erase(ctx context.Context, req *rstr.SessionRef) (
 		}
 
 		k = v
-		p = session.And(p, session.IDEQ(v))
+		p = session.And(p, session.IdEQ(v))
 	}
 
 	u := st.Db.Session.Update().Where(p)
@@ -486,7 +486,7 @@ func pickSession(req *rstr.SessionRef) (predicate.Session, error) {
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
-			return session.IDEQ(v), nil
+			return session.IdEQ(v), nil
 		}
 	case rstr.SessionRef_Secret_case:
 		return session.SecretEQ(req.GetSecret()), nil

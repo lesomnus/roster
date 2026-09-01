@@ -67,7 +67,7 @@ func TestWhatLeavesTheDatabaseIsInTheFileBeforeItLeaves(t *testing.T) {
 
 	x.Len(got, len(was), "the file holds fewer rows than the database gave up")
 	for _, v := range was {
-		x.Equal(v.Action, got[string(pdid.Id(v.ID).Bytes())],
+		x.Equal(v.Action, got[string(pdid.Id(v.Id).Bytes())],
 			"a row left the database and is not in the file")
 	}
 }

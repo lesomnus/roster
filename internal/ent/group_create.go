@@ -75,40 +75,40 @@ func (_c *GroupCreate) SetNillableDateCreated(v *time.Time) *GroupCreate {
 	return _c
 }
 
-// SetTenantID sets the "tenant_id" field.
-func (_c *GroupCreate) SetTenantID(v uuid.UUID) *GroupCreate {
-	_c.mutation.SetTenantID(v)
+// SetTenantId sets the "tenant_id" field.
+func (_c *GroupCreate) SetTenantId(v uuid.UUID) *GroupCreate {
+	_c.mutation.SetTenantId(v)
 	return _c
 }
 
-// SetSiteID sets the "site_id" field.
-func (_c *GroupCreate) SetSiteID(v uuid.UUID) *GroupCreate {
-	_c.mutation.SetSiteID(v)
+// SetSiteId sets the "site_id" field.
+func (_c *GroupCreate) SetSiteId(v uuid.UUID) *GroupCreate {
+	_c.mutation.SetSiteId(v)
 	return _c
 }
 
-// SetNillableSiteID sets the "site_id" field if the given value is not nil.
-func (_c *GroupCreate) SetNillableSiteID(v *uuid.UUID) *GroupCreate {
+// SetNillableSiteId sets the "site_id" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableSiteId(v *uuid.UUID) *GroupCreate {
 	if v != nil {
-		_c.SetSiteID(*v)
+		_c.SetSiteId(*v)
 	}
 	return _c
 }
 
-// SetID sets the "id" field.
-func (_c *GroupCreate) SetID(v uuid.UUID) *GroupCreate {
-	_c.mutation.SetID(v)
+// SetId sets the "id" field.
+func (_c *GroupCreate) SetId(v uuid.UUID) *GroupCreate {
+	_c.mutation.SetId(v)
 	return _c
 }
 
 // SetTenant sets the "tenant" edge to the Tenant entity.
 func (_c *GroupCreate) SetTenant(v *Tenant) *GroupCreate {
-	return _c.SetTenantID(v.ID)
+	return _c.SetTenantId(v.Id)
 }
 
 // SetSite sets the "site" edge to the Site entity.
 func (_c *GroupCreate) SetSite(v *Site) *GroupCreate {
-	return _c.SetSiteID(v.ID)
+	return _c.SetSiteId(v.Id)
 }
 
 // Mutation returns the GroupMutation object of the builder.
@@ -157,10 +157,10 @@ func (_c *GroupCreate) check() error {
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Group.date_updated"`)}
 	}
-	if _, ok := _c.mutation.TenantID(); !ok {
+	if _, ok := _c.mutation.TenantId(); !ok {
 		return &ValidationError{Name: "tenant_id", err: errors.New(`ent: missing required field "Group.tenant_id"`)}
 	}
-	if len(_c.mutation.TenantIDs()) == 0 {
+	if len(_c.mutation.TenantIds()) == 0 {
 		return &ValidationError{Name: "tenant", err: errors.New(`ent: missing required edge "Group.tenant"`)}
 	}
 	return nil
@@ -177,14 +177,14 @@ func (_c *GroupCreate) sqlSave(ctx context.Context) (*Group, error) {
 		}
 		return nil, err
 	}
-	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+	if _spec.Id.Value != nil {
+		if id, ok := _spec.Id.Value.(*uuid.UUID); ok {
+			_node.Id = *id
+		} else if err := _node.Id.Scan(_spec.Id.Value); err != nil {
 			return nil, err
 		}
 	}
-	_c.mutation.id = &_node.ID
+	_c.mutation.id = &_node.Id
 	_c.mutation.done = true
 	return _node, nil
 }
@@ -192,11 +192,11 @@ func (_c *GroupCreate) sqlSave(ctx context.Context) (*Group, error) {
 func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Group{config: _c.config}
-		_spec = sqlgraph.NewCreateSpec(group.Table, sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(group.Table, sqlgraph.NewFieldSpec(group.FieldId, field.TypeUuid))
 	)
-	if id, ok := _c.mutation.ID(); ok {
-		_node.ID = id
-		_spec.ID.Value = &id
+	if id, ok := _c.mutation.Id(); ok {
+		_node.Id = id
+		_spec.Id.Value = &id
 	}
 	if value, ok := _c.mutation.Alias(); ok {
 		_spec.SetField(group.FieldAlias, field.TypeString, value)
@@ -222,7 +222,7 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 		_spec.SetField(group.FieldDateCreated, field.TypeTime, value)
 		_node.DateCreated = value
 	}
-	if nodes := _c.mutation.TenantIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.TenantIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -230,16 +230,16 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 			Columns: []string{group.TenantColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(tenant.FieldID, field.TypeUUID),
+				IdSpec: sqlgraph.NewFieldSpec(tenant.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.TenantID = nodes[0]
+		_node.TenantId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := _c.mutation.SiteIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.SiteIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -247,13 +247,13 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 			Columns: []string{group.SiteColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(site.FieldID, field.TypeUUID),
+				IdSpec: sqlgraph.NewFieldSpec(site.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.SiteID = nodes[0]
+		_node.SiteId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -302,7 +302,7 @@ func (_c *GroupCreateBulk) Save(ctx context.Context) ([]*Group, error) {
 				if err != nil {
 					return nil, err
 				}
-				mutation.id = &nodes[i].ID
+				mutation.id = &nodes[i].Id
 				mutation.done = true
 				return nodes[i], nil
 			})

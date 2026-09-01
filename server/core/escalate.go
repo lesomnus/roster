@@ -24,7 +24,7 @@ import (
 //	Alice writes a Role holding Holder.Erase, and binds it to herself.
 //	Alice may now erase anybody.
 //
-// Two RPCs and one round trip, from a permission an administrator would grant
+// Two Rpcs and one round trip, from a permission an administrator would grant
 // without hesitating -- "Alice manages who is in what". The permission system
 // was a formality that anybody inside it could step over.
 //
@@ -229,7 +229,7 @@ func (s Core) mayGrant(ctx context.Context, field string, methods []string, at p
 //	Alice puts herself in the group the deployment binds its admin role to.
 //	Alice may now erase anybody.
 //
-// Two RPCs, from "Alice manages who is in what group" -- which is a permission
+// Two Rpcs, from "Alice manages who is in what group" -- which is a permission
 // an administrator grants without hesitating, and is the same sentence that
 // made `Binding.Add` and `TeamMembership.Add` dangerous.
 //
@@ -296,7 +296,7 @@ func (s Core) mayJoin(ctx context.Context, ref *app.GroupRef) error {
 //	Alice links her own GitHub account to the administrator's row.
 //	Alice signs in with GitHub and is served as the administrator.
 //
-// Two RPCs, no password guessed, no method she did not already hold -- from
+// Two Rpcs, no password guessed, no method she did not already hold -- from
 // "Alice keeps people's contact details up to date". The mailbox is the same
 // move one door along: an `Email` of hers on his row, then `Vouch.Link` at that
 // address, then a link she reads.
@@ -370,7 +370,7 @@ func (s Core) groupOf(ctx context.Context, ref *app.GroupRef) (pdid.Id, error) {
 //
 // What that cost, found by writing it: somebody bound to a Seoul role, in
 // Seoul, could bind that same role to themselves with **no site**. The second
-// axis then answered "every site" for them and they held the tenant. Two RPCs,
+// axis then answered "every site" for them and they held the tenant. Two Rpcs,
 // no method they did not already hold, and nothing refused or logged.
 //
 // # Why it is not the tenant check

@@ -331,13 +331,13 @@ func (m *Mutation) ResetDateCreated() {
 	delete(m.clearedFields, FieldDateCreated)
 }
 
-// SetHolderID sets the "holder_id" field.
-func (m *Mutation) SetHolderID(u uuid.UUID) {
+// SetHolderId sets the "holder_id" field.
+func (m *Mutation) SetHolderId(u uuid.UUID) {
 	m.holder = &u
 }
 
-// HolderID returns the value of the "holder_id" field in the mutation.
-func (m *Mutation) HolderID() (r uuid.UUID, exists bool) {
+// HolderId returns the value of the "holder_id" field in the mutation.
+func (m *Mutation) HolderId() (r uuid.UUID, exists bool) {
 	v := m.holder
 	if v == nil {
 		return
@@ -345,15 +345,15 @@ func (m *Mutation) HolderID() (r uuid.UUID, exists bool) {
 	return *v, true
 }
 
-// ResetHolderID resets all changes to the "holder_id" field.
-func (m *Mutation) ResetHolderID() {
+// ResetHolderId resets all changes to the "holder_id" field.
+func (m *Mutation) ResetHolderId() {
 	m.holder = nil
 }
 
 // ClearHolder clears the "holder" edge to the Holder entity.
 func (m *Mutation) ClearHolder() {
 	m.clearedholder = true
-	m.clearedFields[FieldHolderID] = struct{}{}
+	m.clearedFields[FieldHolderId] = struct{}{}
 }
 
 // HolderCleared reports if the "holder" edge to the Holder entity was cleared.
@@ -361,10 +361,10 @@ func (m *Mutation) HolderCleared() bool {
 	return m.clearedholder
 }
 
-// HolderIDs returns the "holder" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// HolderID instead. It exists only for internal usage by the builders.
-func (m *Mutation) HolderIDs() (ids []uuid.UUID) {
+// HolderIds returns the "holder" edge Ids in the mutation.
+// Note that Ids always returns len(Ids) <= 1 for unique edges, and you should use
+// HolderId instead. It exists only for internal usage by the builders.
+func (m *Mutation) HolderIds() (ids []uuid.UUID) {
 	if id := m.holder; id != nil {
 		ids = append(ids, *id)
 	}
@@ -443,7 +443,7 @@ func (m *Mutation) Fields() []string {
 		fields = append(fields, FieldDateCreated)
 	}
 	if m.holder != nil {
-		fields = append(fields, FieldHolderID)
+		fields = append(fields, FieldHolderId)
 	}
 	return fields
 }
@@ -473,8 +473,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.DateErased()
 	case FieldDateCreated:
 		return m.DateCreated()
-	case FieldHolderID:
-		return m.HolderID()
+	case FieldHolderId:
+		return m.HolderId()
 	}
 	return nil, false
 }
@@ -561,12 +561,12 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDateCreated(v)
 		return nil
-	case FieldHolderID:
+	case FieldHolderId:
 		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetHolderID(v)
+		m.SetHolderId(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Credential field %s", name)
@@ -701,8 +701,8 @@ func (m *Mutation) ResetField(name string) error {
 	case FieldDateCreated:
 		m.ResetDateCreated()
 		return nil
-	case FieldHolderID:
-		m.ResetHolderID()
+	case FieldHolderId:
+		m.ResetHolderId()
 		return nil
 	}
 	return fmt.Errorf("unknown Credential field %s", name)
@@ -717,9 +717,9 @@ func (m *Mutation) AddedEdges() []string {
 	return edges
 }
 
-// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// AddedIds returns all Ids (to other nodes) that were added for the given edge
 // name in this mutation.
-func (m *Mutation) AddedIDs(name string) []ent.Value {
+func (m *Mutation) AddedIds(name string) []ent.Value {
 	switch name {
 	case EdgeHolder:
 		if id := m.holder; id != nil {
@@ -735,9 +735,9 @@ func (m *Mutation) RemovedEdges() []string {
 	return edges
 }
 
-// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// RemovedIds returns all Ids (to other nodes) that were removed for the edge with
 // the given name in this mutation.
-func (m *Mutation) RemovedIDs(name string) []ent.Value {
+func (m *Mutation) RemovedIds(name string) []ent.Value {
 	return nil
 }
 

@@ -20,22 +20,22 @@ import (
 // Binding is the model entity for the Binding schema.
 type Binding struct {
 	config `json:"-"`
-	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	// Id of the ent.
+	Id uuid.UUID `json:"id,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
 	DateErased *time.Time `json:"date_erased,omitempty"`
 	// DateCreated holds the value of the "date_created" field.
 	DateCreated time.Time `json:"date_created,omitempty"`
-	// RoleID holds the value of the "role_id" field.
-	RoleID uuid.UUID `json:"role_id,omitempty"`
-	// SiteID holds the value of the "site_id" field.
-	SiteID uuid.UUID `json:"site_id,omitempty"`
-	// HolderID holds the value of the "holder_id" field.
-	HolderID uuid.UUID `json:"holder_id,omitempty"`
-	// GroupID holds the value of the "group_id" field.
-	GroupID uuid.UUID `json:"group_id,omitempty"`
+	// RoleId holds the value of the "role_id" field.
+	RoleId uuid.UUID `json:"role_id,omitempty"`
+	// SiteId holds the value of the "site_id" field.
+	SiteId uuid.UUID `json:"site_id,omitempty"`
+	// HolderId holds the value of the "holder_id" field.
+	HolderId uuid.UUID `json:"holder_id,omitempty"`
+	// GroupId holds the value of the "group_id" field.
+	GroupId uuid.UUID `json:"group_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the BindingQuery when eager-loading is set.
 	Edges        BindingEdges `json:"edges"`
@@ -108,7 +108,7 @@ func (*Binding) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case binding.FieldDateUpdated, binding.FieldDateErased, binding.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case binding.FieldID, binding.FieldRoleID, binding.FieldSiteID, binding.FieldHolderID, binding.FieldGroupID:
+		case binding.FieldId, binding.FieldRoleId, binding.FieldSiteId, binding.FieldHolderId, binding.FieldGroupId:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -125,11 +125,11 @@ func (_m *Binding) assignValues(columns []string, values []any) error {
 	}
 	for i := range columns {
 		switch columns[i] {
-		case binding.FieldID:
+		case binding.FieldId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				_m.ID = *value
+				_m.Id = *value
 			}
 		case binding.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -150,29 +150,29 @@ func (_m *Binding) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.DateCreated = value.Time
 			}
-		case binding.FieldRoleID:
+		case binding.FieldRoleId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field role_id", values[i])
 			} else if value != nil {
-				_m.RoleID = *value
+				_m.RoleId = *value
 			}
-		case binding.FieldSiteID:
+		case binding.FieldSiteId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field site_id", values[i])
 			} else if value != nil {
-				_m.SiteID = *value
+				_m.SiteId = *value
 			}
-		case binding.FieldHolderID:
+		case binding.FieldHolderId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field holder_id", values[i])
 			} else if value != nil {
-				_m.HolderID = *value
+				_m.HolderId = *value
 			}
-		case binding.FieldGroupID:
+		case binding.FieldGroupId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field group_id", values[i])
 			} else if value != nil {
-				_m.GroupID = *value
+				_m.GroupId = *value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -229,7 +229,7 @@ func (_m *Binding) Unwrap() *Binding {
 func (_m *Binding) String() string {
 	var builder strings.Builder
 	builder.WriteString("Binding(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.Id))
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))
 	builder.WriteString(", ")
@@ -242,16 +242,16 @@ func (_m *Binding) String() string {
 	builder.WriteString(_m.DateCreated.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("role_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.RoleID))
+	builder.WriteString(fmt.Sprintf("%v", _m.RoleId))
 	builder.WriteString(", ")
 	builder.WriteString("site_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.SiteID))
+	builder.WriteString(fmt.Sprintf("%v", _m.SiteId))
 	builder.WriteString(", ")
 	builder.WriteString("holder_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.HolderID))
+	builder.WriteString(fmt.Sprintf("%v", _m.HolderId))
 	builder.WriteString(", ")
 	builder.WriteString("group_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.GroupID))
+	builder.WriteString(fmt.Sprintf("%v", _m.GroupId))
 	builder.WriteByte(')')
 	return builder.String()
 }

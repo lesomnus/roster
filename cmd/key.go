@@ -29,7 +29,7 @@ import (
 // NewCmdKey is `roster key`: the keys this deployment is called with, on
 // either plane.
 //
-// It is a command rather than an RPC because of what the first of those writes
+// It is a command rather than an Rpc because of what the first of those writes
 // to. The control plane is not served -- `ApiKeyService` is not registered and
 // is closed to the batch, for the reason every verifier is -- so the only way
 // in is a server instance this process holds, and the only thing holding one is
@@ -335,7 +335,7 @@ func serviceOf(ctx context.Context, s *Server, alias string) (pdid.Id, error) {
 		return holderOf(ctx, s, mustFrom(v.GetId()), alias)
 	}
 
-	return holderOf(ctx, s, pdid.Id(t.ID), alias)
+	return holderOf(ctx, s, pdid.Id(t.Id), alias)
 }
 
 // customerOf is one of a customer's people, by the tenant they are in and their
@@ -366,7 +366,7 @@ func customerOf(ctx context.Context, s *Server, tenant string, alias string) (pd
 	return pdid.From(v.GetId())
 }
 
-// tenantRef is what somebody typed, as the reference an RPC takes.
+// tenantRef is what somebody typed, as the reference an Rpc takes.
 //
 // An identifier if it parses as one and an alias otherwise. There is no
 // ambiguity to resolve: an alias is `[a-z0-9-]` shaped and a UUID is not
@@ -552,7 +552,7 @@ func listKeys(ctx context.Context, w io.Writer, db *ent.Client, _ string) error 
 		}
 
 		fmt.Fprintf(w, "%s\t@%s/%s\tused=%s\t%s\n",
-			pdid.Id(v.ID), who, v.Alias, used, strings.Join(v.Methods, ","))
+			pdid.Id(v.Id), who, v.Alias, used, strings.Join(v.Methods, ","))
 	}
 
 	return nil
@@ -571,7 +571,7 @@ func listKeys(ctx context.Context, w io.Writer, db *ent.Client, _ string) error 
 func keyPlane(ctx context.Context, s *Server, k pdid.Id) (*Server, error) {
 	for _, at := range []*Server{s.Control, s} {
 		n, err := at.Ent.ApiKey.Query().
-			Where(entapikey.IDEQ(uuid.UUID(k)), entapikey.DateErasedIsNil()).
+			Where(entapikey.IdEQ(uuid.UUID(k)), entapikey.DateErasedIsNil()).
 			Count(ctx)
 		if err != nil {
 			return nil, err

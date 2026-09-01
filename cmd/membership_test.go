@@ -81,7 +81,7 @@ func TestMembershipsAreThemselvesOnTheSecondAxis(t *testing.T) {
 // tenant.
 //
 // It is generated as one predicate --
-// `HasTeamWith(HasSiteWith(TenantIDIn(…)))` -- rather than as three reads, and
+// `HasTeamWith(HasSiteWith(TenantIdIn(…)))` -- rather than as three reads, and
 // this asserts the wall it produces actually holds.
 func TestATeamMembershipReachesItsTenantThreeHopsAway(t *testing.T) {
 	x := require.New(t)

@@ -22,7 +22,7 @@ func kindsOf(vs []*app.VouchFactor) []string {
 }
 
 // TestAKeyIsEnrolledAndThenSignsSomebodyIn is the whole ceremony, through the
-// two RPCs an app actually calls.
+// two Rpcs an app actually calls.
 //
 // The parts above check the arithmetic; this checks that the row written by one
 // call is the row read by the other, and that the counter survives the trip

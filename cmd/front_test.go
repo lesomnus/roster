@@ -297,7 +297,7 @@ func TestAConnectionIsRostersAndItsSecretIsNot(t *testing.T) {
 		Tenant:    app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Name:      "entra",
 		Issuer:    "https://login.microsoftonline.com/contoso/v2.0",
-		ClientId:  "a-client-id",
+		ClientID:  "a-client-id",
 		Scopes:    []string{"email"},
 		SecretRef: "env:CONTOSO_ENTRA_SECRET",
 	}.Build())
@@ -333,7 +333,7 @@ func TestAConnectionIsRostersAndItsSecretIsNot(t *testing.T) {
 			Tenant:   app.TenantRef_builder{Id: b.Fabrikam.Bytes()}.Build(),
 			Name:     "entra",
 			Issuer:   "https://login.microsoftonline.com/fabrikam/v2.0",
-			ClientId: "another-client-id",
+			ClientID: "another-client-id",
 		}.Build())
 		x.NoError(err, "one operator's provider name took another's")
 
@@ -341,7 +341,7 @@ func TestAConnectionIsRostersAndItsSecretIsNot(t *testing.T) {
 			Tenant:   app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 			Name:     "entra",
 			Issuer:   "https://example.test",
-			ClientId: "a-third",
+			ClientID: "a-third",
 		}.Build())
 		x.Equal(codes.AlreadyExists, status.Code(err))
 	})

@@ -10,22 +10,22 @@ import (
 const (
 	// Label holds the string label denoting the identity type in the database.
 	Label = "identity"
-	// FieldID holds the string denoting the id field in the database.
-	FieldID = "id"
+	// FieldId holds the string denoting the id field in the database.
+	FieldId = "id"
 	// FieldProvider holds the string denoting the provider field in the database.
 	FieldProvider = "provider"
 	// FieldSubject holds the string denoting the subject field in the database.
 	FieldSubject = "subject"
-	// FieldTenantID holds the string denoting the tenant_id field in the database.
-	FieldTenantID = "tenant_id"
+	// FieldTenantId holds the string denoting the tenant_id field in the database.
+	FieldTenantId = "tenant_id"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
 	FieldDateErased = "date_erased"
 	// FieldDateCreated holds the string denoting the date_created field in the database.
 	FieldDateCreated = "date_created"
-	// FieldHolderID holds the string denoting the holder_id field in the database.
-	FieldHolderID = "holder_id"
+	// FieldHolderId holds the string denoting the holder_id field in the database.
+	FieldHolderId = "holder_id"
 	// EdgeHolder holds the string denoting the holder edge name in mutations.
 	EdgeHolder = "holder"
 	// Table holds the table name of the identity in the database.
@@ -39,16 +39,16 @@ const (
 	HolderColumn = "holder_id"
 )
 
-// Columns holds all SQL columns for identity fields.
+// Columns holds all Sql columns for identity fields.
 var Columns = []string{
-	FieldID,
+	FieldId,
 	FieldProvider,
 	FieldSubject,
-	FieldTenantID,
+	FieldTenantId,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
-	FieldHolderID,
+	FieldHolderId,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -64,9 +64,9 @@ func ValidColumn(column string) bool {
 // OrderOption defines the ordering options for the Identity queries.
 type OrderOption func(*sql.Selector)
 
-// ByID orders the results by the id field.
-func ByID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldID, opts...).ToFunc()
+// ById orders the results by the id field.
+func ById(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldId, opts...).ToFunc()
 }
 
 // ByProvider orders the results by the provider field.
@@ -79,9 +79,9 @@ func BySubject(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSubject, opts...).ToFunc()
 }
 
-// ByTenantID orders the results by the tenant_id field.
-func ByTenantID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldTenantID, opts...).ToFunc()
+// ByTenantId orders the results by the tenant_id field.
+func ByTenantId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTenantId, opts...).ToFunc()
 }
 
 // ByDateUpdated orders the results by the date_updated field.
@@ -99,9 +99,9 @@ func ByDateCreated(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDateCreated, opts...).ToFunc()
 }
 
-// ByHolderID orders the results by the holder_id field.
-func ByHolderID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldHolderID, opts...).ToFunc()
+// ByHolderId orders the results by the holder_id field.
+func ByHolderId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldHolderId, opts...).ToFunc()
 }
 
 // ByHolderField orders the results by holder field.
@@ -112,8 +112,8 @@ func ByHolderField(field string, opts ...sql.OrderTermOption) OrderOption {
 }
 func newHolderStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(HolderInverseTable, FieldID),
+		sqlgraph.From(Table, FieldId),
+		sqlgraph.To(HolderInverseTable, FieldId),
 		sqlgraph.Edge(sqlgraph.M2O, false, HolderTable, HolderColumn),
 	)
 }

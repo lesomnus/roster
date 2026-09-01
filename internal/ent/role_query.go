@@ -76,8 +76,8 @@ func (_q *RoleQuery) QueryTenant() *TenantQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(role.Table, role.FieldID, selector),
-			sqlgraph.To(tenant.Table, tenant.FieldID),
+			sqlgraph.From(role.Table, role.FieldId, selector),
+			sqlgraph.To(tenant.Table, tenant.FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, role.TenantTable, role.TenantColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
@@ -98,8 +98,8 @@ func (_q *RoleQuery) QuerySite() *SiteQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(role.Table, role.FieldID, selector),
-			sqlgraph.To(site.Table, site.FieldID),
+			sqlgraph.From(role.Table, role.FieldId, selector),
+			sqlgraph.To(site.Table, site.FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, role.SiteTable, role.SiteColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
@@ -130,11 +130,11 @@ func (_q *RoleQuery) FirstX(ctx context.Context) *Role {
 	return node
 }
 
-// FirstID returns the first Role ID from the query.
-// Returns a *NotFoundError when no Role ID was found.
-func (_q *RoleQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+// FirstId returns the first Role Id from the query.
+// Returns a *NotFoundError when no Role Id was found.
+func (_q *RoleQuery) FirstId(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
+	if ids, err = _q.Limit(1).Ids(setContextOp(ctx, _q.ctx, ent.OpQueryFirstId)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -144,9 +144,9 @@ func (_q *RoleQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	return ids[0], nil
 }
 
-// FirstIDX is like FirstID, but panics if an error occurs.
-func (_q *RoleQuery) FirstIDX(ctx context.Context) uuid.UUID {
-	id, err := _q.FirstID(ctx)
+// FirstIdX is like FirstId, but panics if an error occurs.
+func (_q *RoleQuery) FirstIdX(ctx context.Context) uuid.UUID {
+	id, err := _q.FirstId(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -180,12 +180,12 @@ func (_q *RoleQuery) OnlyX(ctx context.Context) *Role {
 	return node
 }
 
-// OnlyID is like Only, but returns the only Role ID in the query.
-// Returns a *NotSingularError when more than one Role ID is found.
+// OnlyId is like Only, but returns the only Role Id in the query.
+// Returns a *NotSingularError when more than one Role Id is found.
 // Returns a *NotFoundError when no entities are found.
-func (_q *RoleQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *RoleQuery) OnlyId(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
-	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
+	if ids, err = _q.Limit(2).Ids(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyId)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -199,9 +199,9 @@ func (_q *RoleQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	return
 }
 
-// OnlyIDX is like OnlyID, but panics if an error occurs.
-func (_q *RoleQuery) OnlyIDX(ctx context.Context) uuid.UUID {
-	id, err := _q.OnlyID(ctx)
+// OnlyIdX is like OnlyId, but panics if an error occurs.
+func (_q *RoleQuery) OnlyIdX(ctx context.Context) uuid.UUID {
+	id, err := _q.OnlyId(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -227,21 +227,21 @@ func (_q *RoleQuery) AllX(ctx context.Context) []*Role {
 	return nodes
 }
 
-// IDs executes the query and returns a list of Role IDs.
-func (_q *RoleQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+// Ids executes the query and returns a list of Role Ids.
+func (_q *RoleQuery) Ids(ctx context.Context) (ids []uuid.UUID, err error) {
 	if _q.ctx.Unique == nil && _q.path != nil {
 		_q.Unique(true)
 	}
-	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
-	if err = _q.Select(role.FieldID).Scan(ctx, &ids); err != nil {
+	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIds)
+	if err = _q.Select(role.FieldId).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
-// IDsX is like IDs, but panics if an error occurs.
-func (_q *RoleQuery) IDsX(ctx context.Context) []uuid.UUID {
-	ids, err := _q.IDs(ctx)
+// IdsX is like Ids, but panics if an error occurs.
+func (_q *RoleQuery) IdsX(ctx context.Context) []uuid.UUID {
+	ids, err := _q.Ids(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -269,7 +269,7 @@ func (_q *RoleQuery) CountX(ctx context.Context) int {
 // Exist returns true if the query has elements in the graph.
 func (_q *RoleQuery) Exist(ctx context.Context) (bool, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
-	switch _, err := _q.FirstID(ctx); {
+	switch _, err := _q.FirstId(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -454,7 +454,7 @@ func (_q *RoleQuery) loadTenant(ctx context.Context, query *TenantQuery, nodes [
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*Role)
 	for i := range nodes {
-		fk := nodes[i].TenantID
+		fk := nodes[i].TenantId
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -463,15 +463,15 @@ func (_q *RoleQuery) loadTenant(ctx context.Context, query *TenantQuery, nodes [
 	if len(ids) == 0 {
 		return nil
 	}
-	query.Where(tenant.IDIn(ids...))
+	query.Where(tenant.IdIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		nodes, ok := nodeids[n.Id]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "tenant_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "tenant_id" returned %v`, n.Id)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -483,7 +483,7 @@ func (_q *RoleQuery) loadSite(ctx context.Context, query *SiteQuery, nodes []*Ro
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*Role)
 	for i := range nodes {
-		fk := nodes[i].SiteID
+		fk := nodes[i].SiteId
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -492,15 +492,15 @@ func (_q *RoleQuery) loadSite(ctx context.Context, query *SiteQuery, nodes []*Ro
 	if len(ids) == 0 {
 		return nil
 	}
-	query.Where(site.IDIn(ids...))
+	query.Where(site.IdIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		nodes, ok := nodeids[n.Id]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "site_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "site_id" returned %v`, n.Id)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -522,7 +522,7 @@ func (_q *RoleQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (_q *RoleQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(role.Table, role.Columns, sqlgraph.NewFieldSpec(role.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(role.Table, role.Columns, sqlgraph.NewFieldSpec(role.FieldId, field.TypeUuid))
 	_spec.From = _q.sql
 	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -531,17 +531,17 @@ func (_q *RoleQuery) querySpec() *sqlgraph.QuerySpec {
 	}
 	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, role.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, role.FieldId)
 		for i := range fields {
-			if fields[i] != role.FieldID {
+			if fields[i] != role.FieldId {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
 		if _q.withTenant != nil {
-			_spec.Node.AddColumnOnce(role.FieldTenantID)
+			_spec.Node.AddColumnOnce(role.FieldTenantId)
 		}
 		if _q.withSite != nil {
-			_spec.Node.AddColumnOnce(role.FieldSiteID)
+			_spec.Node.AddColumnOnce(role.FieldSiteId)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

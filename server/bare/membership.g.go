@@ -109,12 +109,12 @@ func (s SiteMembershipServiceServer) Add(ctx context.Context, req *rstr.SiteMemb
 	if v, err := mint(ctx, s.Mint, "roster.SiteMembership", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
-		q.SetID(v)
+		q.SetId(v)
 	}
 	if k, err := HolderGetKey(ctx, st.Db, req.GetHolder()); err != nil {
 		return nil, err
 	} else {
-		q.SetHolderID(k)
+		q.SetHolderId(k)
 		ds = append(ds, func(v *rstr.SiteMembership) {
 			v.SetHolder(rstr.Holder_builder{Id: k[:]}.Build())
 		})
@@ -122,7 +122,7 @@ func (s SiteMembershipServiceServer) Add(ctx context.Context, req *rstr.SiteMemb
 	if k, err := SiteGetKey(ctx, st.Db, req.GetSite()); err != nil {
 		return nil, err
 	} else {
-		q.SetSiteID(k)
+		q.SetSiteId(k)
 		ds = append(ds, func(v *rstr.SiteMembership) {
 			v.SetSite(rstr.Site_builder{Id: k[:]}.Build())
 		})
@@ -149,7 +149,7 @@ func (s SiteMembershipServiceServer) Add(ctx context.Context, req *rstr.SiteMemb
 
 	if err := record(ctx, s.Rec, st.Db, Change{
 		By:  rstr.SiteMembershipService_Add_FullMethodName,
-		Key: u.ID,
+		Key: u.Id,
 	}); err != nil {
 		return nil, err
 	}
@@ -188,7 +188,7 @@ func (s SiteMembershipServiceServer) Get(ctx context.Context, req *rstr.SiteMemb
 }
 
 func selectSiteMembershipKey(q *ent.SiteMembershipQuery) {
-	q.Select(sitemembership.FieldID)
+	q.Select(sitemembership.FieldId)
 }
 
 func SiteMembershipSelectedFields(m *rstr.SiteMembershipSelect) []string {
@@ -198,7 +198,7 @@ func SiteMembershipSelectedFields(m *rstr.SiteMembershipSelect) []string {
 
 	vs := make([]string, 0, len(sitemembership.Columns))
 	{
-		vs = append(vs, sitemembership.FieldID)
+		vs = append(vs, sitemembership.FieldId)
 	}
 	if m.GetDateUpdated() {
 		vs = append(vs, sitemembership.FieldDateUpdated)
@@ -274,7 +274,7 @@ func SiteMembershipGetKey(ctx context.Context, db *ent.Client, ref *rstr.SiteMem
 		return z, err
 	}
 
-	v, err := db.SiteMembership.Query().Where(p).OnlyID(ctx)
+	v, err := db.SiteMembership.Query().Where(p).OnlyId(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return z, status.Error(codes.NotFound, "SiteMembership not found")
@@ -288,7 +288,7 @@ func SiteMembershipGetKey(ctx context.Context, db *ent.Client, ref *rstr.SiteMem
 var siteMembershipOrmEntity = ormpatch.MustEntityOf(rstr.File_app_membership_proto, "SiteMembership")
 
 var siteMembershipPatchColumns = entpatch.Columns{
-	1: sitemembership.FieldID, 2: sitemembership.HolderColumn, 3: sitemembership.SiteColumn, 13: sitemembership.FieldDateUpdated, 14: sitemembership.FieldDateErased, 15: sitemembership.FieldDateCreated}
+	1: sitemembership.FieldId, 2: sitemembership.HolderColumn, 3: sitemembership.SiteColumn, 13: sitemembership.FieldDateUpdated, 14: sitemembership.FieldDateErased, 15: sitemembership.FieldDateCreated}
 
 func (s SiteMembershipServiceServer) Apply(ctx context.Context, req *rstr.SiteMembershipApplyRequest) (*rstr.SiteMembership, error) {
 	if !req.HasPatch() {
@@ -333,7 +333,7 @@ func (s SiteMembershipServiceServer) apply(ctx context.Context, ref *rstr.SiteMe
 	}
 	at := &rstr.SiteMembershipRef{}
 	at.SetId(k[:])
-	p, err := s.narrow(ctx, sitemembership.IDEQ(k))
+	p, err := s.narrow(ctx, sitemembership.IdEQ(k))
 	if err != nil {
 		return nil, err
 	}
@@ -427,7 +427,7 @@ func (s SiteMembershipServiceServer) Erase(ctx context.Context, req *rstr.SiteMe
 
 	var k any
 	if s.Rec != nil {
-		v, err := st.Db.SiteMembership.Query().Where(p).OnlyID(ctx)
+		v, err := st.Db.SiteMembership.Query().Where(p).OnlyId(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.SiteMembershipEraseResponse{}, nil
@@ -436,7 +436,7 @@ func (s SiteMembershipServiceServer) Erase(ctx context.Context, req *rstr.SiteMe
 		}
 
 		k = v
-		p = sitemembership.And(p, sitemembership.IDEQ(v))
+		p = sitemembership.And(p, sitemembership.IdEQ(v))
 	}
 
 	u := st.Db.SiteMembership.Update().Where(p)
@@ -487,7 +487,7 @@ func pickSiteMembership(req *rstr.SiteMembershipRef) (predicate.SiteMembership, 
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
-			return sitemembership.IDEQ(v), nil
+			return sitemembership.IdEQ(v), nil
 		}
 	case rstr.SiteMembershipRef_Member_case:
 		k := req.GetMember()
@@ -592,12 +592,12 @@ func (s TeamMembershipServiceServer) Add(ctx context.Context, req *rstr.TeamMemb
 	if v, err := mint(ctx, s.Mint, "roster.TeamMembership", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
-		q.SetID(v)
+		q.SetId(v)
 	}
 	if k, err := HolderGetKey(ctx, st.Db, req.GetHolder()); err != nil {
 		return nil, err
 	} else {
-		q.SetHolderID(k)
+		q.SetHolderId(k)
 		ds = append(ds, func(v *rstr.TeamMembership) {
 			v.SetHolder(rstr.Holder_builder{Id: k[:]}.Build())
 		})
@@ -605,7 +605,7 @@ func (s TeamMembershipServiceServer) Add(ctx context.Context, req *rstr.TeamMemb
 	if k, err := TeamGetKey(ctx, st.Db, req.GetTeam()); err != nil {
 		return nil, err
 	} else {
-		q.SetTeamID(k)
+		q.SetTeamId(k)
 		ds = append(ds, func(v *rstr.TeamMembership) {
 			v.SetTeam(rstr.Team_builder{Id: k[:]}.Build())
 		})
@@ -614,7 +614,7 @@ func (s TeamMembershipServiceServer) Add(ctx context.Context, req *rstr.TeamMemb
 		if k, err := RoleGetKey(ctx, st.Db, req.GetRole()); err != nil {
 			return nil, err
 		} else {
-			q.SetRoleID(k)
+			q.SetRoleId(k)
 			ds = append(ds, func(v *rstr.TeamMembership) {
 				v.SetRole(rstr.Role_builder{Id: k[:]}.Build())
 			})
@@ -642,7 +642,7 @@ func (s TeamMembershipServiceServer) Add(ctx context.Context, req *rstr.TeamMemb
 
 	if err := record(ctx, s.Rec, st.Db, Change{
 		By:  rstr.TeamMembershipService_Add_FullMethodName,
-		Key: u.ID,
+		Key: u.Id,
 	}); err != nil {
 		return nil, err
 	}
@@ -681,7 +681,7 @@ func (s TeamMembershipServiceServer) Get(ctx context.Context, req *rstr.TeamMemb
 }
 
 func selectTeamMembershipKey(q *ent.TeamMembershipQuery) {
-	q.Select(teammembership.FieldID)
+	q.Select(teammembership.FieldId)
 }
 
 func TeamMembershipSelectedFields(m *rstr.TeamMembershipSelect) []string {
@@ -691,7 +691,7 @@ func TeamMembershipSelectedFields(m *rstr.TeamMembershipSelect) []string {
 
 	vs := make([]string, 0, len(teammembership.Columns))
 	{
-		vs = append(vs, teammembership.FieldID)
+		vs = append(vs, teammembership.FieldId)
 	}
 	if m.GetDateUpdated() {
 		vs = append(vs, teammembership.FieldDateUpdated)
@@ -784,7 +784,7 @@ func TeamMembershipGetKey(ctx context.Context, db *ent.Client, ref *rstr.TeamMem
 		return z, err
 	}
 
-	v, err := db.TeamMembership.Query().Where(p).OnlyID(ctx)
+	v, err := db.TeamMembership.Query().Where(p).OnlyId(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return z, status.Error(codes.NotFound, "TeamMembership not found")
@@ -798,7 +798,7 @@ func TeamMembershipGetKey(ctx context.Context, db *ent.Client, ref *rstr.TeamMem
 var teamMembershipOrmEntity = ormpatch.MustEntityOf(rstr.File_app_membership_proto, "TeamMembership")
 
 var teamMembershipPatchColumns = entpatch.Columns{
-	1: teammembership.FieldID, 2: teammembership.HolderColumn, 8: teammembership.TeamColumn, 9: teammembership.RoleColumn, 13: teammembership.FieldDateUpdated, 14: teammembership.FieldDateErased, 15: teammembership.FieldDateCreated}
+	1: teammembership.FieldId, 2: teammembership.HolderColumn, 8: teammembership.TeamColumn, 9: teammembership.RoleColumn, 13: teammembership.FieldDateUpdated, 14: teammembership.FieldDateErased, 15: teammembership.FieldDateCreated}
 
 func (s TeamMembershipServiceServer) Apply(ctx context.Context, req *rstr.TeamMembershipApplyRequest) (*rstr.TeamMembership, error) {
 	if !req.HasPatch() {
@@ -843,7 +843,7 @@ func (s TeamMembershipServiceServer) apply(ctx context.Context, ref *rstr.TeamMe
 	}
 	at := &rstr.TeamMembershipRef{}
 	at.SetId(k[:])
-	p, err := s.narrow(ctx, teammembership.IDEQ(k))
+	p, err := s.narrow(ctx, teammembership.IdEQ(k))
 	if err != nil {
 		return nil, err
 	}
@@ -937,7 +937,7 @@ func (s TeamMembershipServiceServer) Erase(ctx context.Context, req *rstr.TeamMe
 
 	var k any
 	if s.Rec != nil {
-		v, err := st.Db.TeamMembership.Query().Where(p).OnlyID(ctx)
+		v, err := st.Db.TeamMembership.Query().Where(p).OnlyId(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.TeamMembershipEraseResponse{}, nil
@@ -946,7 +946,7 @@ func (s TeamMembershipServiceServer) Erase(ctx context.Context, req *rstr.TeamMe
 		}
 
 		k = v
-		p = teammembership.And(p, teammembership.IDEQ(v))
+		p = teammembership.And(p, teammembership.IdEQ(v))
 	}
 
 	u := st.Db.TeamMembership.Update().Where(p)
@@ -997,7 +997,7 @@ func pickTeamMembership(req *rstr.TeamMembershipRef) (predicate.TeamMembership, 
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
-			return teammembership.IDEQ(v), nil
+			return teammembership.IdEQ(v), nil
 		}
 	case rstr.TeamMembershipRef_Member_case:
 		k := req.GetMember()

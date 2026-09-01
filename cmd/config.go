@@ -28,7 +28,7 @@ import (
 	// The two engines this app runs on, blank-imported here rather than by
 	// payday so that an app does not carry one it never opens.
 	//
-	// Both, because both are used: `compose.yaml` runs it on PostgreSQL and a
+	// Both, because both are used: `compose.yaml` runs it on PostgreSql and a
 	// test runs it on SQLite. Linking only the second made `docker compose up`
 	// -- the quickstart `docs/operating.md` gives -- fail at
 	// `unknown driver "pgx"`, which is a sentence about a name rather than
@@ -41,7 +41,7 @@ import (
 	//
 	// The one thing that stopped roster running more than one replica was that
 	// a client watching against one never heard about a write that landed on
-	// another -- and the answer for a deployment already on PostgreSQL needs no
+	// another -- and the answer for a deployment already on PostgreSql needs no
 	// second piece of infrastructure. See `docs/operating.md`, "Running more
 	// than one".
 	//
@@ -220,7 +220,7 @@ type VouchConfig struct {
 // So a deployment that wants the wire says so, and one that does not gets a
 // line in the log every time saying what it is doing.
 type ClientConfig struct {
-	// Addr is what to dial, and empty is this process. It is a gRPC target:
+	// Addr is what to dial, and empty is this process. It is a gRpc target:
 	// "dns:///roster.internal:8080".
 	//
 	// Which port to name is a decision with an answer that is not obvious; see
@@ -259,14 +259,14 @@ type ClientConfig struct {
 //
 // The scheme is a setting because roster serves more than one and which it
 // serves depends on the rest of this file: with a control plane the data plane
-// reads `Bearer` and checks an API key, and without one it reads `Plain` and
+// reads `Bearer` and checks an Api key, and without one it reads `Plain` and
 // believes whatever the caller writes. A command that could only send one of
 // them would work against half the deployments this app supports.
 type ClientAuthConfig struct {
 	// Scheme is `bearer`, `plain`, or `none`, and it is the word that goes
 	// before the credential in `authorization`.
 	//
-	//	bearer  an API key, checked against the control plane. What a
+	//	bearer  an Api key, checked against the control plane. What a
 	//	        deployment serving anybody uses.
 	//	plain   the caller says who it is and is believed, so the credential is
 	//	        a slug: "@contoso/admin". It is what this app serves with **no

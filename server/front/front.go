@@ -11,9 +11,9 @@
 // cannot require knowing who they are.* There is no frame to narrow by, because
 // producing one is what the caller is trying to do.
 //
-// What keeps that honest is that neither RPC answers with a **row**. One
+// What keeps that honest is that neither Rpc answers with a **row**. One
 // identifier, or one provider name. There is no `Select` to get wrong, nothing
-// that could be pointed at anything but a name somebody typed into DNS, and no
+// that could be pointed at anything but a name somebody typed into Dns, and no
 // shape for a field to be added to later without somebody noticing.
 //
 // # Neither half is public

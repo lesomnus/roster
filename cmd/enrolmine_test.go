@@ -53,5 +53,5 @@ func TestAPersonEnrolsTheirOwnSecondFactor(t *testing.T) {
 	row, err := b.Ent.Credential.Query().Only(ctx)
 	x.NoError(err)
 	x.Equal(vouch.KindTotp, row.Kind)
-	x.Equal(b.Who.Uuid(), row.HolderID, "the factor landed on somebody other than the caller")
+	x.Equal(b.Who.Uuid(), row.HolderId, "the factor landed on somebody other than the caller")
 }

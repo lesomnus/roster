@@ -349,7 +349,7 @@ func TestTheCredentialFileWinsOverTheLiteral(t *testing.T) {
 //
 // roster serves more than one and which it serves depends on the rest of the
 // configuration: with a control plane the data plane reads `Bearer` and checks
-// an API key, without one it reads `Plain` and believes what the caller writes.
+// an Api key, without one it reads `Plain` and believes what the caller writes.
 // A command that could only send one would work against half the deployments
 // this app supports.
 func TestTheSchemeSaysHowTheCredentialIsSent(t *testing.T) {

@@ -96,7 +96,7 @@ func (a *Authenticator) authData(t *testing.T, attested bool) []byte {
 	out = binary.BigEndian.AppendUint32(out, a.count)
 
 	if attested {
-		out = append(out, make([]byte, 16)...) // AAGUID
+		out = append(out, make([]byte, 16)...) // AAGuid
 		out = binary.BigEndian.AppendUint16(out, uint16(len(a.id)))
 		out = append(out, a.id...)
 		out = append(out, a.cose(t)...)
@@ -140,7 +140,7 @@ func (a *Authenticator) Register(t *testing.T, challenge string) []byte {
 		"rawId": base64.RawURLEncoding.EncodeToString(a.id),
 		"type":  "public-key",
 		"response": map[string]any{
-			"clientDataJSON":    base64.RawURLEncoding.EncodeToString(client),
+			"clientDataJson":    base64.RawURLEncoding.EncodeToString(client),
 			"attestationObject": base64.RawURLEncoding.EncodeToString(att),
 		},
 	})
@@ -190,7 +190,7 @@ func (a *Authenticator) AssertFor(t *testing.T, signed, expected string) []byte 
 		"rawId": base64.RawURLEncoding.EncodeToString(a.id),
 		"type":  "public-key",
 		"response": map[string]any{
-			"clientDataJSON":    base64.RawURLEncoding.EncodeToString(client),
+			"clientDataJson":    base64.RawURLEncoding.EncodeToString(client),
 			"authenticatorData": base64.RawURLEncoding.EncodeToString(data),
 			"signature":         base64.RawURLEncoding.EncodeToString(sig),
 		},

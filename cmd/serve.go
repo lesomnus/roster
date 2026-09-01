@@ -123,7 +123,7 @@ type Server struct {
 	// **kind** on each -- `rk_` there and `rt_` here. `Grpc` registers the
 	// customer's one unless this flag says otherwise, and `GrpcControl` adds
 	// the deployment's own after; without the flag they would both land on the
-	// control plane's server, and gRPC refuses a service registered twice. It
+	// control plane's server, and gRpc refuses a service registered twice. It
 	// did, loudly, which is the good direction for that mistake to fail in.
 	Keys bool
 
@@ -236,7 +236,7 @@ func build(ctx context.Context, c Config, prefix string) (*Server, error) {
 	//
 	// Two things are said to it rather than to the stack, and for the same
 	// reason -- both are about the statement that runs. The trail is kept by
-	// the servers that do the writing, since every RPC that changes anything
+	// the servers that do the writing, since every Rpc that changes anything
 	// has to report itself from inside the transaction that changes it. The
 	// wall is a predicate and a predicate belongs in the WHERE.
 	b, err := c.Watch.Build(c.Db)
@@ -251,7 +251,7 @@ func build(ctx context.Context, c Config, prefix string) (*Server, error) {
 		// further down spins only where there is a broker to publish into, so
 		// this combination -- two plain environment variables, and the loader
 		// accepts both -- wrote a row inside every transaction that nothing
-		// would ever publish or delete. `OutboxService` answers no RPC, so not
+		// would ever publish or delete. `OutboxService` answers no Rpc, so not
 		// even an operator could drain it by hand; the table grows until the
 		// database is full, which is the failure `outbox.proto` warns about in
 		// as many words.
@@ -584,7 +584,7 @@ func build(ctx context.Context, c Config, prefix string) (*Server, error) {
 // A process on its way out does not care, which is why it went unnoticed: the
 // one caller in production calls this once and then exits. A suite is the
 // caller that does care -- every test that needs keys, a console or an operator
-// builds both planes -- and against PostgreSQL with the hundred connections its
+// builds both planes -- and against PostgreSql with the hundred connections its
 // image allows, the package ran out part way through. What came back was
 // `too many clients already` against whichever tests were running when the last
 // connection was taken: a different set every run, which reads exactly like a
@@ -730,7 +730,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 		vouch.WithKeys(s.Keyring)))
 
 	// What a front door asks before it knows anything, and therefore through
-	// the server the wall was never installed on. Neither RPC answers with a
+	// the server the wall was never installed on. Neither Rpc answers with a
 	// row -- one identifier or one provider name -- which is what keeps that
 	// from being a hole; `server/front` says it at length.
 	app.RegisterFrontServiceServer(g, front.New(s.Ungated))
@@ -762,7 +762,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 
 	// The batch, with the same rules the chain above enforces -- read off the
 	// same configuration rather than written out again, which is the only way
-	// the two stay in step. What they enforce by looking at the method gRPC
+	// the two stay in step. What they enforce by looking at the method gRpc
 	// dispatched, this enforces per operation.
 	//
 	// `Closed` is replaced with the same function the chain got, and that is not
@@ -856,7 +856,7 @@ func register(g grpc.ServiceRegistrar, s app.Server) {
 // closed is what this server does not answer at all.
 //
 // Whatever the configuration closed, and `CredentialService` on top of it. Not
-// registering it is already enough for gRPC, which dispatches by name and has
+// registering it is already enough for gRpc, which dispatches by name and has
 // nothing to dispatch to -- this is for the batch, which arrives as one method
 // carrying many and would otherwise be a way to ask for exactly the reads that
 // were taken off the wire.
@@ -958,7 +958,7 @@ func (s *Server) closed(c Config) func(method string) bool {
 func public(method string) bool {
 	// Signing in, and only on the port that serves it. A caller asking for a
 	// credential does not have one, which is the whole of the argument -- the
-	// same one `/session` made when this was an HTTP endpoint.
+	// same one `/session` made when this was an Http endpoint.
 	//
 	// What it costs is what that cost: anybody who reaches the port may guess
 	// passwords, and `grpcx.Limit` counts per tenant off a frame a public call
@@ -1205,11 +1205,11 @@ func (s *Server) serveAdmin(ctx context.Context, c Config, g *grpc.Server) (func
 	return func() { stopping(g) }, nil
 }
 
-// serveHttp is the second listener, for whatever cannot speak gRPC -- which is
+// serveHttp is the second listener, for whatever cannot speak gRpc -- which is
 // every browser. Nothing is opened unless the configuration named an address.
 //
-// It is the **same** `g`: a page reaches the handlers a gRPC client reaches,
-// through the interceptors a gRPC client goes through, behind the same wall.
+// It is the **same** `g`: a page reaches the handlers a gRpc client reaches,
+// through the interceptors a gRpc client goes through, behind the same wall.
 // There is no second stack here for a rule to be missing from.
 func (s *Server) serveHttp(ctx context.Context, c Config, g *grpc.Server) (func(), error) {
 	return s.http(ctx, "http", c.Server.Http, g)
@@ -1231,7 +1231,7 @@ func (s *Server) serveControlHttp(ctx context.Context, c Config, g *grpc.Server)
 // serveAdminHttp is the same for the admin listener, and it is what a console
 // actually talks to.
 //
-// A browser cannot speak gRPC, so a port without one of these is a port a
+// A browser cannot speak gRpc, so a port without one of these is a port a
 // console cannot reach -- and until this, the only transcoder was in front of
 // the **data plane**, where an operator's session names nobody. The console
 // could sign in and then had nothing to call.
@@ -1258,10 +1258,10 @@ func (s *Server) http(ctx context.Context, name string, c config.HttpConfig, g *
 	}
 
 	// The console's sign-in, which is the seam payday left and could not fill:
-	// `auth` reads a credential and does not issue one, and issuing is an HTTP
+	// `auth` reads a credential and does not issue one, and issuing is an Http
 	// endpoint. See `Login`.
 	//
-	// A gRPC path is `/<service>/<method>`, so an ordinary route cannot collide
+	// A gRpc path is `/<service>/<method>`, so an ordinary route cannot collide
 	// with one -- and `ServeMux` panics rather than shadowing if one somehow
 	// does.
 	//

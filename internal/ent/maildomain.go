@@ -17,8 +17,8 @@ import (
 // MailDomain is the model entity for the MailDomain schema.
 type MailDomain struct {
 	config `json:"-"`
-	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	// Id of the ent.
+	Id uuid.UUID `json:"id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Provider holds the value of the "provider" field.
@@ -31,8 +31,8 @@ type MailDomain struct {
 	DateErased *time.Time `json:"date_erased,omitempty"`
 	// DateCreated holds the value of the "date_created" field.
 	DateCreated time.Time `json:"date_created,omitempty"`
-	// TenantID holds the value of the "tenant_id" field.
-	TenantID uuid.UUID `json:"tenant_id,omitempty"`
+	// TenantId holds the value of the "tenant_id" field.
+	TenantId uuid.UUID `json:"tenant_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the MailDomainQuery when eager-loading is set.
 	Edges        MailDomainEdges `json:"edges"`
@@ -68,7 +68,7 @@ func (*MailDomain) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case maildomain.FieldDateUpdated, maildomain.FieldDateErased, maildomain.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case maildomain.FieldID, maildomain.FieldTenantID:
+		case maildomain.FieldId, maildomain.FieldTenantId:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -85,11 +85,11 @@ func (_m *MailDomain) assignValues(columns []string, values []any) error {
 	}
 	for i := range columns {
 		switch columns[i] {
-		case maildomain.FieldID:
+		case maildomain.FieldId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				_m.ID = *value
+				_m.Id = *value
 			}
 		case maildomain.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -128,11 +128,11 @@ func (_m *MailDomain) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.DateCreated = value.Time
 			}
-		case maildomain.FieldTenantID:
+		case maildomain.FieldTenantId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
 			} else if value != nil {
-				_m.TenantID = *value
+				_m.TenantId = *value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -174,7 +174,7 @@ func (_m *MailDomain) Unwrap() *MailDomain {
 func (_m *MailDomain) String() string {
 	var builder strings.Builder
 	builder.WriteString("MailDomain(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.Id))
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
@@ -196,7 +196,7 @@ func (_m *MailDomain) String() string {
 	builder.WriteString(_m.DateCreated.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("tenant_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.TenantID))
+	builder.WriteString(fmt.Sprintf("%v", _m.TenantId))
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -11,10 +11,10 @@ import (
 
 func (e *Connection) Proto() *rstr.Connection {
 	x := &rstr.Connection{}
-	x.SetId(e.ID[:])
+	x.SetId(e.Id[:])
 	if v := e.Edges.Tenant; v != nil {
 		x.SetTenant(v.Proto())
-	} else if v := e.TenantID; v != *new(uuid.UUID) {
+	} else if v := e.TenantId; v != *new(uuid.UUID) {
 		r := &rstr.Tenant{}
 		r.SetId(v[:])
 		x.SetTenant(r)
@@ -22,7 +22,7 @@ func (e *Connection) Proto() *rstr.Connection {
 	x.SetName(e.Name)
 	x.SetDesc(e.Desc)
 	x.SetIssuer(e.Issuer)
-	x.SetClientId(e.ClientID)
+	x.SetClientId(e.ClientId)
 	x.SetScopes(e.Scopes)
 	x.SetSecretRef(e.SecretRef)
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))

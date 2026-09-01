@@ -357,7 +357,7 @@ func (c *collector) Send(v *app.SyncEvent) error {
 //
 // The two claims are the two kinds. A deployment key belongs to every tenant,
 // so the one stream is the whole deployment's changes -- which is the shape an
-// SSO app in front of many customers needs, and which nothing asserted. A
+// Sso app in front of many customers needs, and which nothing asserted. A
 // tenant key is somebody inside one, so the same argument-less stream narrows
 // to their tenant by the wall alone -- the claim
 // `TestOneCustomerIsNotToldAboutAnother` makes under Plain, re-asked with the

@@ -10,22 +10,22 @@ import (
 const (
 	// Label holds the string label denoting the binding type in the database.
 	Label = "binding"
-	// FieldID holds the string denoting the id field in the database.
-	FieldID = "id"
+	// FieldId holds the string denoting the id field in the database.
+	FieldId = "id"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
 	FieldDateErased = "date_erased"
 	// FieldDateCreated holds the string denoting the date_created field in the database.
 	FieldDateCreated = "date_created"
-	// FieldRoleID holds the string denoting the role_id field in the database.
-	FieldRoleID = "role_id"
-	// FieldSiteID holds the string denoting the site_id field in the database.
-	FieldSiteID = "site_id"
-	// FieldHolderID holds the string denoting the holder_id field in the database.
-	FieldHolderID = "holder_id"
-	// FieldGroupID holds the string denoting the group_id field in the database.
-	FieldGroupID = "group_id"
+	// FieldRoleId holds the string denoting the role_id field in the database.
+	FieldRoleId = "role_id"
+	// FieldSiteId holds the string denoting the site_id field in the database.
+	FieldSiteId = "site_id"
+	// FieldHolderId holds the string denoting the holder_id field in the database.
+	FieldHolderId = "holder_id"
+	// FieldGroupId holds the string denoting the group_id field in the database.
+	FieldGroupId = "group_id"
 	// EdgeRole holds the string denoting the role edge name in mutations.
 	EdgeRole = "role"
 	// EdgeSite holds the string denoting the site edge name in mutations.
@@ -66,16 +66,16 @@ const (
 	GroupColumn = "group_id"
 )
 
-// Columns holds all SQL columns for binding fields.
+// Columns holds all Sql columns for binding fields.
 var Columns = []string{
-	FieldID,
+	FieldId,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
-	FieldRoleID,
-	FieldSiteID,
-	FieldHolderID,
-	FieldGroupID,
+	FieldRoleId,
+	FieldSiteId,
+	FieldHolderId,
+	FieldGroupId,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -91,9 +91,9 @@ func ValidColumn(column string) bool {
 // OrderOption defines the ordering options for the Binding queries.
 type OrderOption func(*sql.Selector)
 
-// ByID orders the results by the id field.
-func ByID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldID, opts...).ToFunc()
+// ById orders the results by the id field.
+func ById(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldId, opts...).ToFunc()
 }
 
 // ByDateUpdated orders the results by the date_updated field.
@@ -111,24 +111,24 @@ func ByDateCreated(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDateCreated, opts...).ToFunc()
 }
 
-// ByRoleID orders the results by the role_id field.
-func ByRoleID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldRoleID, opts...).ToFunc()
+// ByRoleId orders the results by the role_id field.
+func ByRoleId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRoleId, opts...).ToFunc()
 }
 
-// BySiteID orders the results by the site_id field.
-func BySiteID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldSiteID, opts...).ToFunc()
+// BySiteId orders the results by the site_id field.
+func BySiteId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSiteId, opts...).ToFunc()
 }
 
-// ByHolderID orders the results by the holder_id field.
-func ByHolderID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldHolderID, opts...).ToFunc()
+// ByHolderId orders the results by the holder_id field.
+func ByHolderId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldHolderId, opts...).ToFunc()
 }
 
-// ByGroupID orders the results by the group_id field.
-func ByGroupID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldGroupID, opts...).ToFunc()
+// ByGroupId orders the results by the group_id field.
+func ByGroupId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldGroupId, opts...).ToFunc()
 }
 
 // ByRoleField orders the results by role field.
@@ -160,29 +160,29 @@ func ByGroupField(field string, opts ...sql.OrderTermOption) OrderOption {
 }
 func newRoleStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(RoleInverseTable, FieldID),
+		sqlgraph.From(Table, FieldId),
+		sqlgraph.To(RoleInverseTable, FieldId),
 		sqlgraph.Edge(sqlgraph.M2O, false, RoleTable, RoleColumn),
 	)
 }
 func newSiteStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(SiteInverseTable, FieldID),
+		sqlgraph.From(Table, FieldId),
+		sqlgraph.To(SiteInverseTable, FieldId),
 		sqlgraph.Edge(sqlgraph.M2O, false, SiteTable, SiteColumn),
 	)
 }
 func newHolderStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(HolderInverseTable, FieldID),
+		sqlgraph.From(Table, FieldId),
+		sqlgraph.To(HolderInverseTable, FieldId),
 		sqlgraph.Edge(sqlgraph.M2O, false, HolderTable, HolderColumn),
 	)
 }
 func newGroupStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(GroupInverseTable, FieldID),
+		sqlgraph.From(Table, FieldId),
+		sqlgraph.To(GroupInverseTable, FieldId),
 		sqlgraph.Edge(sqlgraph.M2O, false, GroupTable, GroupColumn),
 	)
 }

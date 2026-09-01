@@ -54,8 +54,8 @@ type Delegated struct {
 // It is not on the wire and is not meant to be. D23 says the answer rides back
 // with the yes -- `VouchService.Verify` has already proved the person, and this
 // is the credential that goes with that answer -- so what calls this is a
-// service in this process, holding the frame of the app that asked. An RPC that
-// minted one for anybody named would be an RPC that hands out a credential for
+// service in this process, holding the frame of the app that asked. An Rpc that
+// minted one for anybody named would be an Rpc that hands out a credential for
 // a person nobody proved.
 //
 // `s` is the unwalled server for the reason `vouch.Verify` reads one: this

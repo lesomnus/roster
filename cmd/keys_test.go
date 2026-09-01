@@ -263,7 +263,7 @@ func TestRevokingAKeyStopsItAtOnce(t *testing.T) {
 	x.NoError(err)
 
 	_, err = b.Control.Ungated.ApiKey().Erase(ctx,
-		app.ApiKeyRef_builder{Id: v.ID[:]}.Build())
+		app.ApiKeyRef_builder{Id: v.Id[:]}.Build())
 	x.NoError(err)
 
 	_, err = app.NewVouchServiceClient(b.Conn).Verify(bearing(ctx, b.Token),
@@ -284,7 +284,7 @@ func TestAnExpiredKeyIsRefused(t *testing.T) {
 	x.NoError(err)
 
 	_, err = b.Control.Ungated.ApiKey().Patch(ctx, app.ApiKeyPatchRequest_builder{
-		Ref:              app.ApiKeyRef_builder{Id: v.ID[:]}.Build(),
+		Ref:              app.ApiKeyRef_builder{Id: v.Id[:]}.Build(),
 		DateExpires:      timestamppb.New(time.Now().Add(-time.Minute)),
 		DateUpdatedForce: z.Ptr(true),
 	}.Build())
@@ -410,7 +410,7 @@ func TestTheFirstKeyMakesWhatItNeeds(t *testing.T) {
 	v, err := s.Control.Ent.Holder.Query().Only(ctx)
 	x.NoError(err)
 	x.Equal("custody", v.Alias)
-	x.Equal(who.String(), pdid.Id(v.ID).String())
+	x.Equal(who.String(), pdid.Id(v.Id).String())
 
 	// And asking again is the same service rather than a second one.
 	again, err := cmd.ServiceOf(ctx, s.Control, "custody")

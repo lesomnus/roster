@@ -11,49 +11,49 @@ import (
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 )
 
-// ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.Identity {
-	return predicate.Identity(sql.FieldEQ(FieldID, id))
+// Id filters vertices based on their Id field.
+func Id(id uuid.UUID) predicate.Identity {
+	return predicate.Identity(sql.FieldEQ(FieldId, id))
 }
 
-// IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.Identity {
-	return predicate.Identity(sql.FieldEQ(FieldID, id))
+// IdEQ applies the EQ predicate on the Id field.
+func IdEQ(id uuid.UUID) predicate.Identity {
+	return predicate.Identity(sql.FieldEQ(FieldId, id))
 }
 
-// IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.Identity {
-	return predicate.Identity(sql.FieldNEQ(FieldID, id))
+// IdNEQ applies the NEQ predicate on the Id field.
+func IdNEQ(id uuid.UUID) predicate.Identity {
+	return predicate.Identity(sql.FieldNEQ(FieldId, id))
 }
 
-// IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.Identity {
-	return predicate.Identity(sql.FieldIn(FieldID, ids...))
+// IdIn applies the In predicate on the Id field.
+func IdIn(ids ...uuid.UUID) predicate.Identity {
+	return predicate.Identity(sql.FieldIn(FieldId, ids...))
 }
 
-// IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.Identity {
-	return predicate.Identity(sql.FieldNotIn(FieldID, ids...))
+// IdNotIn applies the NotIn predicate on the Id field.
+func IdNotIn(ids ...uuid.UUID) predicate.Identity {
+	return predicate.Identity(sql.FieldNotIn(FieldId, ids...))
 }
 
-// IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.Identity {
-	return predicate.Identity(sql.FieldGT(FieldID, id))
+// IdGT applies the GT predicate on the Id field.
+func IdGT(id uuid.UUID) predicate.Identity {
+	return predicate.Identity(sql.FieldGT(FieldId, id))
 }
 
-// IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.Identity {
-	return predicate.Identity(sql.FieldGTE(FieldID, id))
+// IdGTE applies the GTE predicate on the Id field.
+func IdGTE(id uuid.UUID) predicate.Identity {
+	return predicate.Identity(sql.FieldGTE(FieldId, id))
 }
 
-// IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.Identity {
-	return predicate.Identity(sql.FieldLT(FieldID, id))
+// IdLT applies the LT predicate on the Id field.
+func IdLT(id uuid.UUID) predicate.Identity {
+	return predicate.Identity(sql.FieldLT(FieldId, id))
 }
 
-// IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.Identity {
-	return predicate.Identity(sql.FieldLTE(FieldID, id))
+// IdLTE applies the LTE predicate on the Id field.
+func IdLTE(id uuid.UUID) predicate.Identity {
+	return predicate.Identity(sql.FieldLTE(FieldId, id))
 }
 
 // Provider applies equality check predicate on the "provider" field. It's identical to ProviderEQ.
@@ -66,9 +66,9 @@ func Subject(v string) predicate.Identity {
 	return predicate.Identity(sql.FieldEQ(FieldSubject, v))
 }
 
-// TenantID applies equality check predicate on the "tenant_id" field. It's identical to TenantIDEQ.
-func TenantID(v uuid.UUID) predicate.Identity {
-	return predicate.Identity(sql.FieldEQ(FieldTenantID, v))
+// TenantId applies equality check predicate on the "tenant_id" field. It's identical to TenantIdEQ.
+func TenantId(v uuid.UUID) predicate.Identity {
+	return predicate.Identity(sql.FieldEQ(FieldTenantId, v))
 }
 
 // DateUpdated applies equality check predicate on the "date_updated" field. It's identical to DateUpdatedEQ.
@@ -86,9 +86,9 @@ func DateCreated(v time.Time) predicate.Identity {
 	return predicate.Identity(sql.FieldEQ(FieldDateCreated, v))
 }
 
-// HolderID applies equality check predicate on the "holder_id" field. It's identical to HolderIDEQ.
-func HolderID(v uuid.UUID) predicate.Identity {
-	return predicate.Identity(sql.FieldEQ(FieldHolderID, v))
+// HolderId applies equality check predicate on the "holder_id" field. It's identical to HolderIdEQ.
+func HolderId(v uuid.UUID) predicate.Identity {
+	return predicate.Identity(sql.FieldEQ(FieldHolderId, v))
 }
 
 // ProviderEQ applies the EQ predicate on the "provider" field.
@@ -221,44 +221,44 @@ func SubjectContainsFold(v string) predicate.Identity {
 	return predicate.Identity(sql.FieldContainsFold(FieldSubject, v))
 }
 
-// TenantIDEQ applies the EQ predicate on the "tenant_id" field.
-func TenantIDEQ(v uuid.UUID) predicate.Identity {
-	return predicate.Identity(sql.FieldEQ(FieldTenantID, v))
+// TenantIdEQ applies the EQ predicate on the "tenant_id" field.
+func TenantIdEQ(v uuid.UUID) predicate.Identity {
+	return predicate.Identity(sql.FieldEQ(FieldTenantId, v))
 }
 
-// TenantIDNEQ applies the NEQ predicate on the "tenant_id" field.
-func TenantIDNEQ(v uuid.UUID) predicate.Identity {
-	return predicate.Identity(sql.FieldNEQ(FieldTenantID, v))
+// TenantIdNEQ applies the NEQ predicate on the "tenant_id" field.
+func TenantIdNEQ(v uuid.UUID) predicate.Identity {
+	return predicate.Identity(sql.FieldNEQ(FieldTenantId, v))
 }
 
-// TenantIDIn applies the In predicate on the "tenant_id" field.
-func TenantIDIn(vs ...uuid.UUID) predicate.Identity {
-	return predicate.Identity(sql.FieldIn(FieldTenantID, vs...))
+// TenantIdIn applies the In predicate on the "tenant_id" field.
+func TenantIdIn(vs ...uuid.UUID) predicate.Identity {
+	return predicate.Identity(sql.FieldIn(FieldTenantId, vs...))
 }
 
-// TenantIDNotIn applies the NotIn predicate on the "tenant_id" field.
-func TenantIDNotIn(vs ...uuid.UUID) predicate.Identity {
-	return predicate.Identity(sql.FieldNotIn(FieldTenantID, vs...))
+// TenantIdNotIn applies the NotIn predicate on the "tenant_id" field.
+func TenantIdNotIn(vs ...uuid.UUID) predicate.Identity {
+	return predicate.Identity(sql.FieldNotIn(FieldTenantId, vs...))
 }
 
-// TenantIDGT applies the GT predicate on the "tenant_id" field.
-func TenantIDGT(v uuid.UUID) predicate.Identity {
-	return predicate.Identity(sql.FieldGT(FieldTenantID, v))
+// TenantIdGT applies the GT predicate on the "tenant_id" field.
+func TenantIdGT(v uuid.UUID) predicate.Identity {
+	return predicate.Identity(sql.FieldGT(FieldTenantId, v))
 }
 
-// TenantIDGTE applies the GTE predicate on the "tenant_id" field.
-func TenantIDGTE(v uuid.UUID) predicate.Identity {
-	return predicate.Identity(sql.FieldGTE(FieldTenantID, v))
+// TenantIdGTE applies the GTE predicate on the "tenant_id" field.
+func TenantIdGTE(v uuid.UUID) predicate.Identity {
+	return predicate.Identity(sql.FieldGTE(FieldTenantId, v))
 }
 
-// TenantIDLT applies the LT predicate on the "tenant_id" field.
-func TenantIDLT(v uuid.UUID) predicate.Identity {
-	return predicate.Identity(sql.FieldLT(FieldTenantID, v))
+// TenantIdLT applies the LT predicate on the "tenant_id" field.
+func TenantIdLT(v uuid.UUID) predicate.Identity {
+	return predicate.Identity(sql.FieldLT(FieldTenantId, v))
 }
 
-// TenantIDLTE applies the LTE predicate on the "tenant_id" field.
-func TenantIDLTE(v uuid.UUID) predicate.Identity {
-	return predicate.Identity(sql.FieldLTE(FieldTenantID, v))
+// TenantIdLTE applies the LTE predicate on the "tenant_id" field.
+func TenantIdLTE(v uuid.UUID) predicate.Identity {
+	return predicate.Identity(sql.FieldLTE(FieldTenantId, v))
 }
 
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
@@ -401,31 +401,31 @@ func DateCreatedNotNil() predicate.Identity {
 	return predicate.Identity(sql.FieldNotNull(FieldDateCreated))
 }
 
-// HolderIDEQ applies the EQ predicate on the "holder_id" field.
-func HolderIDEQ(v uuid.UUID) predicate.Identity {
-	return predicate.Identity(sql.FieldEQ(FieldHolderID, v))
+// HolderIdEQ applies the EQ predicate on the "holder_id" field.
+func HolderIdEQ(v uuid.UUID) predicate.Identity {
+	return predicate.Identity(sql.FieldEQ(FieldHolderId, v))
 }
 
-// HolderIDNEQ applies the NEQ predicate on the "holder_id" field.
-func HolderIDNEQ(v uuid.UUID) predicate.Identity {
-	return predicate.Identity(sql.FieldNEQ(FieldHolderID, v))
+// HolderIdNEQ applies the NEQ predicate on the "holder_id" field.
+func HolderIdNEQ(v uuid.UUID) predicate.Identity {
+	return predicate.Identity(sql.FieldNEQ(FieldHolderId, v))
 }
 
-// HolderIDIn applies the In predicate on the "holder_id" field.
-func HolderIDIn(vs ...uuid.UUID) predicate.Identity {
-	return predicate.Identity(sql.FieldIn(FieldHolderID, vs...))
+// HolderIdIn applies the In predicate on the "holder_id" field.
+func HolderIdIn(vs ...uuid.UUID) predicate.Identity {
+	return predicate.Identity(sql.FieldIn(FieldHolderId, vs...))
 }
 
-// HolderIDNotIn applies the NotIn predicate on the "holder_id" field.
-func HolderIDNotIn(vs ...uuid.UUID) predicate.Identity {
-	return predicate.Identity(sql.FieldNotIn(FieldHolderID, vs...))
+// HolderIdNotIn applies the NotIn predicate on the "holder_id" field.
+func HolderIdNotIn(vs ...uuid.UUID) predicate.Identity {
+	return predicate.Identity(sql.FieldNotIn(FieldHolderId, vs...))
 }
 
 // HasHolder applies the HasEdge predicate on the "holder" edge.
 func HasHolder() predicate.Identity {
 	return predicate.Identity(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
+			sqlgraph.From(Table, FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, HolderTable, HolderColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)

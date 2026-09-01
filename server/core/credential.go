@@ -299,7 +299,7 @@ func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) 
 // nobody whose permissions are not a subset of yours. The row goes in
 // unconfirmed (`Verify` moves its step), which is `server/vouch`'s to enforce.
 // enrol is the work `Enrol` and `EnrolMine` share: a factor made for `ref`,
-// answered as a seed and URI (both empty for webauthn). The two differ only in
+// answered as a seed and Uri (both empty for webauthn). The two differ only in
 // how they name the holder -- a reference or the frame's own actor -- and the
 // escalation rule is the same either way: `mayReach` passes for the caller
 // writing their own (`EnrolMine`) and refuses one wider than the caller
@@ -330,7 +330,7 @@ func (s coreCredential) enrol(ctx context.Context, ref *app.HolderRef, kind, nam
 			"kind: %q is not something to enrol; a password is Set or Reset", kind)
 	}
 
-	// Read the person before writing, for the alias the URI carries and the id
+	// Read the person before writing, for the alias the Uri carries and the id
 	// the escalation rule compares -- and through `Next()`, so a caller who
 	// cannot see them cannot enrol a way into their account either.
 	who, err := s.Next().Holder().Get(ctx, app.HolderGetRequest_builder{

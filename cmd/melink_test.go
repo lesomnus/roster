@@ -45,7 +45,7 @@ func TestSomebodyAddsAWayIntoTheirOwnAccount(t *testing.T) {
 
 		holder, err := u.QueryHolder().Only(ctx)
 		x.NoError(err)
-		x.Equal(who.Uuid(), holder.ID)
+		x.Equal(who.Uuid(), holder.Id)
 	})
 
 	t.Run("and a second at one provider is refused", func(t *testing.T) {

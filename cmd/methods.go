@@ -11,7 +11,7 @@ import "google.golang.org/protobuf/reflect/protoreflect"
 // # What used to be here
 //
 // A function that walked `protoregistry.GlobalFiles` and answered with every
-// RPC in this package, because the widest role was a boolean and something had
+// Rpc in this package, because the widest role was a boolean and something had
 // to turn it into a list a page could read.
 //
 // A pattern needs neither half. The gate matches it with `frame.Covers`, and

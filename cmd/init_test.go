@@ -87,7 +87,7 @@ func TestInitLeavesADeploymentThatWorks(t *testing.T) {
 	// granted in. A permission nobody reads about is one nobody remembers is
 	// there, and a pattern printed as prose is one nobody can grep for.
 	x.Contains(out, "/roster.*/*")
-	x.Contains(out, "every RPC roster serves")
+	x.Contains(out, "every Rpc roster serves")
 
 	// And the customer that is not there, which is the half that used to read
 	// as its opposite: this printed `sign in as: @contoso/admin`, and a data

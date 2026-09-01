@@ -71,7 +71,7 @@ const (
 //	Alice asks for a magic link at that address.
 //	Alice redeems it and roster answers that she is the administrator.
 //
-// Two RPCs each, from "Alice keeps people's contact details up to date" --
+// Two Rpcs each, from "Alice keeps people's contact details up to date" --
 // which is a smaller sentence than "Alice may reset passwords", and the
 // permission an organisation hands out with less thought than any other.
 //

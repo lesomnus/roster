@@ -74,21 +74,21 @@ func (_c *MailDomainCreate) SetNillableDateCreated(v *time.Time) *MailDomainCrea
 	return _c
 }
 
-// SetTenantID sets the "tenant_id" field.
-func (_c *MailDomainCreate) SetTenantID(v uuid.UUID) *MailDomainCreate {
-	_c.mutation.SetTenantID(v)
+// SetTenantId sets the "tenant_id" field.
+func (_c *MailDomainCreate) SetTenantId(v uuid.UUID) *MailDomainCreate {
+	_c.mutation.SetTenantId(v)
 	return _c
 }
 
-// SetID sets the "id" field.
-func (_c *MailDomainCreate) SetID(v uuid.UUID) *MailDomainCreate {
-	_c.mutation.SetID(v)
+// SetId sets the "id" field.
+func (_c *MailDomainCreate) SetId(v uuid.UUID) *MailDomainCreate {
+	_c.mutation.SetId(v)
 	return _c
 }
 
 // SetTenant sets the "tenant" edge to the Tenant entity.
 func (_c *MailDomainCreate) SetTenant(v *Tenant) *MailDomainCreate {
-	return _c.SetTenantID(v.ID)
+	return _c.SetTenantId(v.Id)
 }
 
 // Mutation returns the MailDomainMutation object of the builder.
@@ -137,10 +137,10 @@ func (_c *MailDomainCreate) check() error {
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "MailDomain.date_updated"`)}
 	}
-	if _, ok := _c.mutation.TenantID(); !ok {
+	if _, ok := _c.mutation.TenantId(); !ok {
 		return &ValidationError{Name: "tenant_id", err: errors.New(`ent: missing required field "MailDomain.tenant_id"`)}
 	}
-	if len(_c.mutation.TenantIDs()) == 0 {
+	if len(_c.mutation.TenantIds()) == 0 {
 		return &ValidationError{Name: "tenant", err: errors.New(`ent: missing required edge "MailDomain.tenant"`)}
 	}
 	return nil
@@ -157,14 +157,14 @@ func (_c *MailDomainCreate) sqlSave(ctx context.Context) (*MailDomain, error) {
 		}
 		return nil, err
 	}
-	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+	if _spec.Id.Value != nil {
+		if id, ok := _spec.Id.Value.(*uuid.UUID); ok {
+			_node.Id = *id
+		} else if err := _node.Id.Scan(_spec.Id.Value); err != nil {
 			return nil, err
 		}
 	}
-	_c.mutation.id = &_node.ID
+	_c.mutation.id = &_node.Id
 	_c.mutation.done = true
 	return _node, nil
 }
@@ -172,11 +172,11 @@ func (_c *MailDomainCreate) sqlSave(ctx context.Context) (*MailDomain, error) {
 func (_c *MailDomainCreate) createSpec() (*MailDomain, *sqlgraph.CreateSpec) {
 	var (
 		_node = &MailDomain{config: _c.config}
-		_spec = sqlgraph.NewCreateSpec(maildomain.Table, sqlgraph.NewFieldSpec(maildomain.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(maildomain.Table, sqlgraph.NewFieldSpec(maildomain.FieldId, field.TypeUuid))
 	)
-	if id, ok := _c.mutation.ID(); ok {
-		_node.ID = id
-		_spec.ID.Value = &id
+	if id, ok := _c.mutation.Id(); ok {
+		_node.Id = id
+		_spec.Id.Value = &id
 	}
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(maildomain.FieldName, field.TypeString, value)
@@ -202,7 +202,7 @@ func (_c *MailDomainCreate) createSpec() (*MailDomain, *sqlgraph.CreateSpec) {
 		_spec.SetField(maildomain.FieldDateCreated, field.TypeTime, value)
 		_node.DateCreated = value
 	}
-	if nodes := _c.mutation.TenantIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.TenantIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -210,13 +210,13 @@ func (_c *MailDomainCreate) createSpec() (*MailDomain, *sqlgraph.CreateSpec) {
 			Columns: []string{maildomain.TenantColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(tenant.FieldID, field.TypeUUID),
+				IdSpec: sqlgraph.NewFieldSpec(tenant.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.TenantID = nodes[0]
+		_node.TenantId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -265,7 +265,7 @@ func (_c *MailDomainCreateBulk) Save(ctx context.Context) ([]*MailDomain, error)
 				if err != nil {
 					return nil, err
 				}
-				mutation.id = &nodes[i].ID
+				mutation.id = &nodes[i].Id
 				mutation.done = true
 				return nodes[i], nil
 			})

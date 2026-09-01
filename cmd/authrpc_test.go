@@ -22,7 +22,7 @@ import (
 //
 // Every call is a generated one — nothing here reads a document to know what
 // signing in looks like, which is why the service is in the schema rather than
-// being an HTTP endpoint beside it.
+// being an Http endpoint beside it.
 func TestTheConsoleSignsInAsAnRpc(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
@@ -68,7 +68,7 @@ func TestTheConsoleSignsInAsAnRpc(t *testing.T) {
 
 		code, _ := post(signIn, `{"alias":"ops","password":"no"}`)
 		x.Equal(http.StatusUnauthorized, code)
-		x.Empty(jar.Cookies(mustURL(t, srv.URL)), "a refusal set a cookie")
+		x.Empty(jar.Cookies(mustUrl(t, srv.URL)), "a refusal set a cookie")
 	})
 
 	t.Run("and the right one sets the cookie", func(t *testing.T) {
@@ -77,7 +77,7 @@ func TestTheConsoleSignsInAsAnRpc(t *testing.T) {
 		code, body := post(signIn, `{"alias":"ops","password":"`+secret+`"}`)
 		x.Equal(http.StatusOK, code, body)
 
-		cs := jar.Cookies(mustURL(t, srv.URL))
+		cs := jar.Cookies(mustUrl(t, srv.URL))
 		x.Len(cs, 1)
 		x.NotEmpty(cs[0].Value)
 
@@ -140,7 +140,7 @@ func TestTheConsoleSignsInAsAnRpc(t *testing.T) {
 	})
 }
 
-func mustURL(t *testing.T, v string) *url.URL {
+func mustUrl(t *testing.T, v string) *url.URL {
 	t.Helper()
 
 	u, err := url.Parse(v)

@@ -268,7 +268,7 @@ func TestEveryOperatorWriteLeavesBothTrails(t *testing.T) {
 			x.True(traces[string(intent.TraceID)],
 				"the two trails carry different traces and cannot be joined")
 
-			who, err := s.Control.Ent.Holder.Get(ctx, intent.ActorID)
+			who, err := s.Control.Ent.Holder.Get(ctx, intent.ActorId)
 			x.NoError(err, "the operator does not resolve in the plane that recorded them")
 			x.Equal("ops", who.Alias)
 		})
@@ -301,7 +301,7 @@ func adminTrail(t *testing.T, c *ent.Client) map[string]bool {
 
 	was := map[string]bool{}
 	for _, v := range vs {
-		was[v.ID.String()] = true
+		was[v.Id.String()] = true
 	}
 
 	return was
@@ -316,7 +316,7 @@ func adminTrailSince(t *testing.T, c *ent.Client, was map[string]bool) []*ent.Au
 
 	news := []*ent.Audit{}
 	for _, v := range vs {
-		if !was[v.ID.String()] {
+		if !was[v.Id.String()] {
 			news = append(news, v)
 		}
 	}

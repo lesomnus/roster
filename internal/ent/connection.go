@@ -18,16 +18,16 @@ import (
 // Connection is the model entity for the Connection schema.
 type Connection struct {
 	config `json:"-"`
-	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	// Id of the ent.
+	Id uuid.UUID `json:"id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Desc holds the value of the "desc" field.
 	Desc string `json:"desc,omitempty"`
 	// Issuer holds the value of the "issuer" field.
 	Issuer string `json:"issuer,omitempty"`
-	// ClientID holds the value of the "client_id" field.
-	ClientID string `json:"client_id,omitempty"`
+	// ClientId holds the value of the "client_id" field.
+	ClientId string `json:"client_id,omitempty"`
 	// Scopes holds the value of the "scopes" field.
 	Scopes []string `json:"scopes,omitempty"`
 	// SecretRef holds the value of the "secret_ref" field.
@@ -38,8 +38,8 @@ type Connection struct {
 	DateErased *time.Time `json:"date_erased,omitempty"`
 	// DateCreated holds the value of the "date_created" field.
 	DateCreated time.Time `json:"date_created,omitempty"`
-	// TenantID holds the value of the "tenant_id" field.
-	TenantID uuid.UUID `json:"tenant_id,omitempty"`
+	// TenantId holds the value of the "tenant_id" field.
+	TenantId uuid.UUID `json:"tenant_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ConnectionQuery when eager-loading is set.
 	Edges        ConnectionEdges `json:"edges"`
@@ -73,11 +73,11 @@ func (*Connection) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case connection.FieldScopes:
 			values[i] = new([]byte)
-		case connection.FieldName, connection.FieldDesc, connection.FieldIssuer, connection.FieldClientID, connection.FieldSecretRef:
+		case connection.FieldName, connection.FieldDesc, connection.FieldIssuer, connection.FieldClientId, connection.FieldSecretRef:
 			values[i] = new(sql.NullString)
 		case connection.FieldDateUpdated, connection.FieldDateErased, connection.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case connection.FieldID, connection.FieldTenantID:
+		case connection.FieldId, connection.FieldTenantId:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -94,11 +94,11 @@ func (_m *Connection) assignValues(columns []string, values []any) error {
 	}
 	for i := range columns {
 		switch columns[i] {
-		case connection.FieldID:
+		case connection.FieldId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				_m.ID = *value
+				_m.Id = *value
 			}
 		case connection.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -118,11 +118,11 @@ func (_m *Connection) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Issuer = value.String
 			}
-		case connection.FieldClientID:
+		case connection.FieldClientId:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field client_id", values[i])
 			} else if value.Valid {
-				_m.ClientID = value.String
+				_m.ClientId = value.String
 			}
 		case connection.FieldScopes:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -157,11 +157,11 @@ func (_m *Connection) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.DateCreated = value.Time
 			}
-		case connection.FieldTenantID:
+		case connection.FieldTenantId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
 			} else if value != nil {
-				_m.TenantID = *value
+				_m.TenantId = *value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -203,7 +203,7 @@ func (_m *Connection) Unwrap() *Connection {
 func (_m *Connection) String() string {
 	var builder strings.Builder
 	builder.WriteString("Connection(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.Id))
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
@@ -214,7 +214,7 @@ func (_m *Connection) String() string {
 	builder.WriteString(_m.Issuer)
 	builder.WriteString(", ")
 	builder.WriteString("client_id=")
-	builder.WriteString(_m.ClientID)
+	builder.WriteString(_m.ClientId)
 	builder.WriteString(", ")
 	builder.WriteString("scopes=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Scopes))
@@ -234,7 +234,7 @@ func (_m *Connection) String() string {
 	builder.WriteString(_m.DateCreated.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("tenant_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.TenantID))
+	builder.WriteString(fmt.Sprintf("%v", _m.TenantId))
 	builder.WriteByte(')')
 	return builder.String()
 }

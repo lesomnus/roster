@@ -256,7 +256,7 @@ func bind(t *testing.T, c *cmd.Config, req string) {
 }
 
 // fieldOf is the string value of a field in a one-level protojson answer,
-// asserted present. Enough JSON for a test that compares two responses.
+// asserted present. Enough Json for a test that compares two responses.
 func fieldOf(t *testing.T, body, name string) string {
 	t.Helper()
 

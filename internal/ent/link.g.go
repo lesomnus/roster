@@ -11,10 +11,10 @@ import (
 
 func (e *Link) Proto() *rstr.Link {
 	x := &rstr.Link{}
-	x.SetId(e.ID[:])
+	x.SetId(e.Id[:])
 	if v := e.Edges.Holder; v != nil {
 		x.SetHolder(v.Proto())
-	} else if v := e.HolderID; v != *new(uuid.UUID) {
+	} else if v := e.HolderId; v != *new(uuid.UUID) {
 		r := &rstr.Holder{}
 		r.SetId(v[:])
 		x.SetHolder(r)

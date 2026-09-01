@@ -97,7 +97,7 @@ func (_u *LinkUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *LinkUpdate) check() error {
-	if _u.mutation.HolderCleared() && len(_u.mutation.HolderIDs()) > 0 {
+	if _u.mutation.HolderCleared() && len(_u.mutation.HolderIds()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Link.holder"`)
 	}
 	return nil
@@ -113,7 +113,7 @@ func (_u *LinkUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(link.Table, link.Columns, sqlgraph.NewFieldSpec(link.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(link.Table, link.Columns, sqlgraph.NewFieldSpec(link.FieldId, field.TypeUuid))
 	if ps := _u.mutation.Predicates(); len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -239,7 +239,7 @@ func (_u *LinkUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *LinkUpdateOne) check() error {
-	if _u.mutation.HolderCleared() && len(_u.mutation.HolderIDs()) > 0 {
+	if _u.mutation.HolderCleared() && len(_u.mutation.HolderIds()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Link.holder"`)
 	}
 	return nil
@@ -255,20 +255,20 @@ func (_u *LinkUpdateOne) sqlSave(ctx context.Context) (_node *Link, err error) {
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(link.Table, link.Columns, sqlgraph.NewFieldSpec(link.FieldID, field.TypeUUID))
-	id, ok := _u.mutation.ID()
+	_spec := sqlgraph.NewUpdateSpec(link.Table, link.Columns, sqlgraph.NewFieldSpec(link.FieldId, field.TypeUuid))
+	id, ok := _u.mutation.Id()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Link.id" for update`)}
 	}
-	_spec.Node.ID.Value = id
+	_spec.Node.Id.Value = id
 	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, link.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, link.FieldId)
 		for _, f := range fields {
 			if !link.ValidColumn(f) {
 				return nil, &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 			}
-			if f != link.FieldID {
+			if f != link.FieldId {
 				_spec.Node.Columns = append(_spec.Node.Columns, f)
 			}
 		}

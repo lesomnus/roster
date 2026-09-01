@@ -58,7 +58,7 @@ func TestTheRecordOfAnEraseBelongsToWhoseRowItWas(t *testing.T) {
 	// asking for both would be asking a question two rows can answer.
 	vs, err := b.Ent.Audit.Query().
 		Where(
-			entaudit.ObjectIDEQ(who.Uuid()),
+			entaudit.ObjectIdEQ(who.Uuid()),
 			entaudit.ActionEQ("/roster.HolderService/Erase"),
 		).
 		All(ctx)
@@ -68,9 +68,9 @@ func TestTheRecordOfAnEraseBelongsToWhoseRowItWas(t *testing.T) {
 	v := vs[0]
 
 	// Under contoso, whose row it was -- not under fabrikam, who did it.
-	x.Equal(b.Contoso.Uuid(), v.TenantID,
+	x.Equal(b.Contoso.Uuid(), v.TenantId,
 		"the record of an erase was filed away from the tenant whose row was erased")
-	x.Equal(operator.Uuid(), v.ActorID)
+	x.Equal(operator.Uuid(), v.ActorId)
 
 	// And with the row in it. The value is the row as the event left it, which
 	// for a soft erase is everything of the moment before plus the stamp -- so
@@ -80,7 +80,7 @@ func TestTheRecordOfAnEraseBelongsToWhoseRowItWas(t *testing.T) {
 
 	// The three columns the trail declares NOT NULL are bytes rather than nil,
 	// whichever database this is running on. On SQLite a nil is stored as an
-	// empty blob and nothing notices; on PostgreSQL it is SQL NULL and the
+	// empty blob and nothing notices; on PostgreSql it is Sql NULL and the
 	// write is refused, which is the shape that has to be asserted here rather
 	// than discovered by an operator.
 	x.NotNil(v.TraceID)
@@ -103,12 +103,12 @@ func TestAnEraseThroughTheWallIsFiledTheSameWay(t *testing.T) {
 
 	vs, err := b.Ent.Audit.Query().
 		Where(
-			entaudit.ObjectIDEQ(who.Uuid()),
+			entaudit.ObjectIdEQ(who.Uuid()),
 			entaudit.ActionEQ("/roster.HolderService/Erase"),
 		).
 		All(ctx)
 	x.NoError(err)
 	x.Len(vs, 1)
-	x.Equal(b.Contoso.Uuid(), vs[0].TenantID)
+	x.Equal(b.Contoso.Uuid(), vs[0].TenantId)
 	x.NotEmpty(vs[0].Value)
 }

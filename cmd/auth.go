@@ -124,7 +124,7 @@ func refOf(id auth.Identity) (*app.HolderRef, error) {
 	}.Build(), nil
 }
 
-// keyed is the frame of a caller that is an **API key** rather than a person,
+// keyed is the frame of a caller that is an **Api key** rather than a person,
 // and false for one that is not.
 //
 // # It reads the row, and it used to not

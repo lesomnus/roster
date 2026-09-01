@@ -167,7 +167,7 @@ func (s *Server) mint(ctx context.Context, res *app.VouchVerifyResponse, who, is
 // # How hard it bites
 //
 // Exactly as hard as the caller's own credential is narrow. `auth.Plain` and
-// mTLS both carry `frame.Whole`, because a header and a certificate have
+// mTls both carry `frame.Whole`, because a header and a certificate have
 // nowhere to put an attenuation -- so in those deployments this refuses
 // nothing, and correctly: there is nothing there to be wider than. It is a
 // rule about keys, and `roster key add --allow` is where a deployment writes

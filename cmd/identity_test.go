@@ -272,7 +272,7 @@ func TestAProfileIsStoredOnTheHolder(t *testing.T) {
 		Profile: app.Profile_builder{
 			DisplayName: "Ada Lovelace",
 			Department:  "Analytical Engines",
-			Locale:      "en-GB",
+			Locale:      "en-Gb",
 		}.Build(),
 	}.Build())
 	x.NoError(err)

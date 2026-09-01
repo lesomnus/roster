@@ -102,12 +102,12 @@ func (s ConnectionServiceServer) Add(ctx context.Context, req *rstr.ConnectionAd
 	if v, err := mint(ctx, s.Mint, "roster.Connection", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
-		q.SetID(v)
+		q.SetId(v)
 	}
 	if k, err := TenantGetKey(ctx, st.Db, req.GetTenant()); err != nil {
 		return nil, err
 	} else {
-		q.SetTenantID(k)
+		q.SetTenantId(k)
 		ds = append(ds, func(v *rstr.Connection) {
 			v.SetTenant(rstr.Tenant_builder{Id: k[:]}.Build())
 		})
@@ -115,7 +115,7 @@ func (s ConnectionServiceServer) Add(ctx context.Context, req *rstr.ConnectionAd
 	q.SetName(req.GetName())
 	q.SetDesc(req.GetDesc())
 	q.SetIssuer(req.GetIssuer())
-	q.SetClientID(req.GetClientId())
+	q.SetClientId(req.GetClientId())
 	if u := req.GetScopes(); len(u) > 0 {
 		q.SetScopes(u)
 	}
@@ -142,7 +142,7 @@ func (s ConnectionServiceServer) Add(ctx context.Context, req *rstr.ConnectionAd
 
 	if err := record(ctx, s.Rec, st.Db, Change{
 		By:  rstr.ConnectionService_Add_FullMethodName,
-		Key: u.ID,
+		Key: u.Id,
 	}); err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func (s ConnectionServiceServer) Get(ctx context.Context, req *rstr.ConnectionGe
 }
 
 func selectConnectionKey(q *ent.ConnectionQuery) {
-	q.Select(connection.FieldID)
+	q.Select(connection.FieldId)
 }
 
 func ConnectionSelectedFields(m *rstr.ConnectionSelect) []string {
@@ -191,7 +191,7 @@ func ConnectionSelectedFields(m *rstr.ConnectionSelect) []string {
 
 	vs := make([]string, 0, len(connection.Columns))
 	{
-		vs = append(vs, connection.FieldID)
+		vs = append(vs, connection.FieldId)
 	}
 	if m.GetName() {
 		vs = append(vs, connection.FieldName)
@@ -203,7 +203,7 @@ func ConnectionSelectedFields(m *rstr.ConnectionSelect) []string {
 		vs = append(vs, connection.FieldIssuer)
 	}
 	if m.GetClientId() {
-		vs = append(vs, connection.FieldClientID)
+		vs = append(vs, connection.FieldClientId)
 	}
 	if m.GetScopes() {
 		vs = append(vs, connection.FieldScopes)
@@ -277,7 +277,7 @@ func ConnectionGetKey(ctx context.Context, db *ent.Client, ref *rstr.ConnectionR
 		return z, err
 	}
 
-	v, err := db.Connection.Query().Where(p).OnlyID(ctx)
+	v, err := db.Connection.Query().Where(p).OnlyId(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return z, status.Error(codes.NotFound, "Connection not found")
@@ -291,7 +291,7 @@ func ConnectionGetKey(ctx context.Context, db *ent.Client, ref *rstr.ConnectionR
 var connectionOrmEntity = ormpatch.MustEntityOf(rstr.File_app_connection_proto, "Connection")
 
 var connectionPatchColumns = entpatch.Columns{
-	1: connection.FieldID, 2: connection.TenantColumn, 5: connection.FieldName, 6: connection.FieldDesc, 8: connection.FieldIssuer, 9: connection.FieldClientID, 10: connection.FieldScopes, 11: connection.FieldSecretRef, 13: connection.FieldDateUpdated, 14: connection.FieldDateErased, 15: connection.FieldDateCreated}
+	1: connection.FieldId, 2: connection.TenantColumn, 5: connection.FieldName, 6: connection.FieldDesc, 8: connection.FieldIssuer, 9: connection.FieldClientId, 10: connection.FieldScopes, 11: connection.FieldSecretRef, 13: connection.FieldDateUpdated, 14: connection.FieldDateErased, 15: connection.FieldDateCreated}
 
 func (s ConnectionServiceServer) Apply(ctx context.Context, req *rstr.ConnectionApplyRequest) (*rstr.Connection, error) {
 	if !req.HasPatch() {
@@ -336,7 +336,7 @@ func (s ConnectionServiceServer) apply(ctx context.Context, ref *rstr.Connection
 	}
 	at := &rstr.ConnectionRef{}
 	at.SetId(k[:])
-	p, err := s.narrow(ctx, connection.IDEQ(k))
+	p, err := s.narrow(ctx, connection.IdEQ(k))
 	if err != nil {
 		return nil, err
 	}
@@ -430,7 +430,7 @@ func (s ConnectionServiceServer) Erase(ctx context.Context, req *rstr.Connection
 
 	var k any
 	if s.Rec != nil {
-		v, err := st.Db.Connection.Query().Where(p).OnlyID(ctx)
+		v, err := st.Db.Connection.Query().Where(p).OnlyId(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.ConnectionEraseResponse{}, nil
@@ -439,7 +439,7 @@ func (s ConnectionServiceServer) Erase(ctx context.Context, req *rstr.Connection
 		}
 
 		k = v
-		p = connection.And(p, connection.IDEQ(v))
+		p = connection.And(p, connection.IdEQ(v))
 	}
 
 	u := st.Db.Connection.Update().Where(p)
@@ -490,7 +490,7 @@ func pickConnection(req *rstr.ConnectionRef) (predicate.Connection, error) {
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
-			return connection.IDEQ(v), nil
+			return connection.IdEQ(v), nil
 		}
 	case rstr.ConnectionRef_At_case:
 		k := req.GetAt()

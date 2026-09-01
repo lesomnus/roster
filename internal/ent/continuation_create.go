@@ -102,21 +102,21 @@ func (_c *ContinuationCreate) SetNillableDateCreated(v *time.Time) *Continuation
 	return _c
 }
 
-// SetHolderID sets the "holder_id" field.
-func (_c *ContinuationCreate) SetHolderID(v uuid.UUID) *ContinuationCreate {
-	_c.mutation.SetHolderID(v)
+// SetHolderId sets the "holder_id" field.
+func (_c *ContinuationCreate) SetHolderId(v uuid.UUID) *ContinuationCreate {
+	_c.mutation.SetHolderId(v)
 	return _c
 }
 
-// SetID sets the "id" field.
-func (_c *ContinuationCreate) SetID(v uuid.UUID) *ContinuationCreate {
-	_c.mutation.SetID(v)
+// SetId sets the "id" field.
+func (_c *ContinuationCreate) SetId(v uuid.UUID) *ContinuationCreate {
+	_c.mutation.SetId(v)
 	return _c
 }
 
 // SetHolder sets the "holder" edge to the Holder entity.
 func (_c *ContinuationCreate) SetHolder(v *Holder) *ContinuationCreate {
-	return _c.SetHolderID(v.ID)
+	return _c.SetHolderId(v.Id)
 }
 
 // Mutation returns the ContinuationMutation object of the builder.
@@ -162,10 +162,10 @@ func (_c *ContinuationCreate) check() error {
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Continuation.date_updated"`)}
 	}
-	if _, ok := _c.mutation.HolderID(); !ok {
+	if _, ok := _c.mutation.HolderId(); !ok {
 		return &ValidationError{Name: "holder_id", err: errors.New(`ent: missing required field "Continuation.holder_id"`)}
 	}
-	if len(_c.mutation.HolderIDs()) == 0 {
+	if len(_c.mutation.HolderIds()) == 0 {
 		return &ValidationError{Name: "holder", err: errors.New(`ent: missing required edge "Continuation.holder"`)}
 	}
 	return nil
@@ -182,14 +182,14 @@ func (_c *ContinuationCreate) sqlSave(ctx context.Context) (*Continuation, error
 		}
 		return nil, err
 	}
-	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+	if _spec.Id.Value != nil {
+		if id, ok := _spec.Id.Value.(*uuid.UUID); ok {
+			_node.Id = *id
+		} else if err := _node.Id.Scan(_spec.Id.Value); err != nil {
 			return nil, err
 		}
 	}
-	_c.mutation.id = &_node.ID
+	_c.mutation.id = &_node.Id
 	_c.mutation.done = true
 	return _node, nil
 }
@@ -197,14 +197,14 @@ func (_c *ContinuationCreate) sqlSave(ctx context.Context) (*Continuation, error
 func (_c *ContinuationCreate) createSpec() (*Continuation, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Continuation{config: _c.config}
-		_spec = sqlgraph.NewCreateSpec(continuation.Table, sqlgraph.NewFieldSpec(continuation.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(continuation.Table, sqlgraph.NewFieldSpec(continuation.FieldId, field.TypeUuid))
 	)
-	if id, ok := _c.mutation.ID(); ok {
-		_node.ID = id
-		_spec.ID.Value = &id
+	if id, ok := _c.mutation.Id(); ok {
+		_node.Id = id
+		_spec.Id.Value = &id
 	}
 	if value, ok := _c.mutation.Satisfied(); ok {
-		_spec.SetField(continuation.FieldSatisfied, field.TypeJSON, value)
+		_spec.SetField(continuation.FieldSatisfied, field.TypeJson, value)
 		_node.Satisfied = value
 	}
 	if value, ok := _c.mutation.Secret(); ok {
@@ -216,7 +216,7 @@ func (_c *ContinuationCreate) createSpec() (*Continuation, *sqlgraph.CreateSpec)
 		_node.Issuer = value
 	}
 	if value, ok := _c.mutation.MeteredBy(); ok {
-		_spec.SetField(continuation.FieldMeteredBy, field.TypeUUID, value)
+		_spec.SetField(continuation.FieldMeteredBy, field.TypeUuid, value)
 		_node.MeteredBy = &value
 	}
 	if value, ok := _c.mutation.DateExpires(); ok {
@@ -235,7 +235,7 @@ func (_c *ContinuationCreate) createSpec() (*Continuation, *sqlgraph.CreateSpec)
 		_spec.SetField(continuation.FieldDateCreated, field.TypeTime, value)
 		_node.DateCreated = value
 	}
-	if nodes := _c.mutation.HolderIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.HolderIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -243,13 +243,13 @@ func (_c *ContinuationCreate) createSpec() (*Continuation, *sqlgraph.CreateSpec)
 			Columns: []string{continuation.HolderColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(holder.FieldID, field.TypeUUID),
+				IdSpec: sqlgraph.NewFieldSpec(holder.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.HolderID = nodes[0]
+		_node.HolderId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -298,7 +298,7 @@ func (_c *ContinuationCreateBulk) Save(ctx context.Context) ([]*Continuation, er
 				if err != nil {
 					return nil, err
 				}
-				mutation.id = &nodes[i].ID
+				mutation.id = &nodes[i].Id
 				mutation.done = true
 				return nodes[i], nil
 			})

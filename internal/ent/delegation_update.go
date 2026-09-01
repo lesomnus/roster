@@ -97,7 +97,7 @@ func (_u *DelegationUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *DelegationUpdate) check() error {
-	if _u.mutation.HolderCleared() && len(_u.mutation.HolderIDs()) > 0 {
+	if _u.mutation.HolderCleared() && len(_u.mutation.HolderIds()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Delegation.holder"`)
 	}
 	return nil
@@ -113,7 +113,7 @@ func (_u *DelegationUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(delegation.Table, delegation.Columns, sqlgraph.NewFieldSpec(delegation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(delegation.Table, delegation.Columns, sqlgraph.NewFieldSpec(delegation.FieldId, field.TypeUuid))
 	if ps := _u.mutation.Predicates(); len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -122,7 +122,7 @@ func (_u *DelegationUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 		}
 	}
 	if _u.mutation.MethodsCleared() {
-		_spec.ClearField(delegation.FieldMethods, field.TypeJSON)
+		_spec.ClearField(delegation.FieldMethods, field.TypeJson)
 	}
 	if _u.mutation.DateExpiresCleared() {
 		_spec.ClearField(delegation.FieldDateExpires, field.TypeTime)
@@ -242,7 +242,7 @@ func (_u *DelegationUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *DelegationUpdateOne) check() error {
-	if _u.mutation.HolderCleared() && len(_u.mutation.HolderIDs()) > 0 {
+	if _u.mutation.HolderCleared() && len(_u.mutation.HolderIds()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Delegation.holder"`)
 	}
 	return nil
@@ -258,20 +258,20 @@ func (_u *DelegationUpdateOne) sqlSave(ctx context.Context) (_node *Delegation, 
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(delegation.Table, delegation.Columns, sqlgraph.NewFieldSpec(delegation.FieldID, field.TypeUUID))
-	id, ok := _u.mutation.ID()
+	_spec := sqlgraph.NewUpdateSpec(delegation.Table, delegation.Columns, sqlgraph.NewFieldSpec(delegation.FieldId, field.TypeUuid))
+	id, ok := _u.mutation.Id()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Delegation.id" for update`)}
 	}
-	_spec.Node.ID.Value = id
+	_spec.Node.Id.Value = id
 	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, delegation.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, delegation.FieldId)
 		for _, f := range fields {
 			if !delegation.ValidColumn(f) {
 				return nil, &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 			}
-			if f != delegation.FieldID {
+			if f != delegation.FieldId {
 				_spec.Node.Columns = append(_spec.Node.Columns, f)
 			}
 		}
@@ -284,7 +284,7 @@ func (_u *DelegationUpdateOne) sqlSave(ctx context.Context) (_node *Delegation, 
 		}
 	}
 	if _u.mutation.MethodsCleared() {
-		_spec.ClearField(delegation.FieldMethods, field.TypeJSON)
+		_spec.ClearField(delegation.FieldMethods, field.TypeJson)
 	}
 	if _u.mutation.DateExpiresCleared() {
 		_spec.ClearField(delegation.FieldDateExpires, field.TypeTime)

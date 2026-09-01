@@ -19,7 +19,7 @@ type SiteMembership struct {
 
 func (SiteMembership) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
+		field.Uuid("id", uuid.UUID{}).
 			Unique().
 			Immutable(),
 		field.Time("date_updated"),
@@ -29,9 +29,9 @@ func (SiteMembership) Fields() []ent.Field {
 		field.Time("date_created").
 			Immutable().
 			Optional(),
-		field.UUID("holder_id", uuid.UUID{}).
+		field.Uuid("holder_id", uuid.UUID{}).
 			Immutable(),
-		field.UUID("site_id", uuid.UUID{}).
+		field.Uuid("site_id", uuid.UUID{}).
 			Immutable(),
 	}
 }
@@ -72,7 +72,7 @@ type TeamMembership struct {
 
 func (TeamMembership) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
+		field.Uuid("id", uuid.UUID{}).
 			Unique().
 			Immutable(),
 		field.Time("date_updated"),
@@ -82,11 +82,11 @@ func (TeamMembership) Fields() []ent.Field {
 		field.Time("date_created").
 			Immutable().
 			Optional(),
-		field.UUID("holder_id", uuid.UUID{}).
+		field.Uuid("holder_id", uuid.UUID{}).
 			Immutable(),
-		field.UUID("team_id", uuid.UUID{}).
+		field.Uuid("team_id", uuid.UUID{}).
 			Immutable(),
-		field.UUID("role_id", uuid.UUID{}).
+		field.Uuid("role_id", uuid.UUID{}).
 			Optional(),
 	}
 }

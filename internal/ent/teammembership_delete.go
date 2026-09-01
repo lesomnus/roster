@@ -40,7 +40,7 @@ func (_d *TeamMembershipDelete) ExecX(ctx context.Context) int {
 }
 
 func (_d *TeamMembershipDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(teammembership.Table, sqlgraph.NewFieldSpec(teammembership.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(teammembership.Table, sqlgraph.NewFieldSpec(teammembership.FieldId, field.TypeUuid))
 	if ps := _d.mutation.Predicates(); len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

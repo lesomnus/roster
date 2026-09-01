@@ -11,49 +11,49 @@ import (
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 )
 
-// ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.Delegation {
-	return predicate.Delegation(sql.FieldEQ(FieldID, id))
+// Id filters vertices based on their Id field.
+func Id(id uuid.UUID) predicate.Delegation {
+	return predicate.Delegation(sql.FieldEQ(FieldId, id))
 }
 
-// IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.Delegation {
-	return predicate.Delegation(sql.FieldEQ(FieldID, id))
+// IdEQ applies the EQ predicate on the Id field.
+func IdEQ(id uuid.UUID) predicate.Delegation {
+	return predicate.Delegation(sql.FieldEQ(FieldId, id))
 }
 
-// IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.Delegation {
-	return predicate.Delegation(sql.FieldNEQ(FieldID, id))
+// IdNEQ applies the NEQ predicate on the Id field.
+func IdNEQ(id uuid.UUID) predicate.Delegation {
+	return predicate.Delegation(sql.FieldNEQ(FieldId, id))
 }
 
-// IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.Delegation {
-	return predicate.Delegation(sql.FieldIn(FieldID, ids...))
+// IdIn applies the In predicate on the Id field.
+func IdIn(ids ...uuid.UUID) predicate.Delegation {
+	return predicate.Delegation(sql.FieldIn(FieldId, ids...))
 }
 
-// IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.Delegation {
-	return predicate.Delegation(sql.FieldNotIn(FieldID, ids...))
+// IdNotIn applies the NotIn predicate on the Id field.
+func IdNotIn(ids ...uuid.UUID) predicate.Delegation {
+	return predicate.Delegation(sql.FieldNotIn(FieldId, ids...))
 }
 
-// IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.Delegation {
-	return predicate.Delegation(sql.FieldGT(FieldID, id))
+// IdGT applies the GT predicate on the Id field.
+func IdGT(id uuid.UUID) predicate.Delegation {
+	return predicate.Delegation(sql.FieldGT(FieldId, id))
 }
 
-// IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.Delegation {
-	return predicate.Delegation(sql.FieldGTE(FieldID, id))
+// IdGTE applies the GTE predicate on the Id field.
+func IdGTE(id uuid.UUID) predicate.Delegation {
+	return predicate.Delegation(sql.FieldGTE(FieldId, id))
 }
 
-// IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.Delegation {
-	return predicate.Delegation(sql.FieldLT(FieldID, id))
+// IdLT applies the LT predicate on the Id field.
+func IdLT(id uuid.UUID) predicate.Delegation {
+	return predicate.Delegation(sql.FieldLT(FieldId, id))
 }
 
-// IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.Delegation {
-	return predicate.Delegation(sql.FieldLTE(FieldID, id))
+// IdLTE applies the LTE predicate on the Id field.
+func IdLTE(id uuid.UUID) predicate.Delegation {
+	return predicate.Delegation(sql.FieldLTE(FieldId, id))
 }
 
 // Secret applies equality check predicate on the "secret" field. It's identical to SecretEQ.
@@ -86,9 +86,9 @@ func DateCreated(v time.Time) predicate.Delegation {
 	return predicate.Delegation(sql.FieldEQ(FieldDateCreated, v))
 }
 
-// HolderID applies equality check predicate on the "holder_id" field. It's identical to HolderIDEQ.
-func HolderID(v uuid.UUID) predicate.Delegation {
-	return predicate.Delegation(sql.FieldEQ(FieldHolderID, v))
+// HolderId applies equality check predicate on the "holder_id" field. It's identical to HolderIdEQ.
+func HolderId(v uuid.UUID) predicate.Delegation {
+	return predicate.Delegation(sql.FieldEQ(FieldHolderId, v))
 }
 
 // MethodsIsNil applies the IsNil predicate on the "methods" field.
@@ -371,31 +371,31 @@ func DateCreatedNotNil() predicate.Delegation {
 	return predicate.Delegation(sql.FieldNotNull(FieldDateCreated))
 }
 
-// HolderIDEQ applies the EQ predicate on the "holder_id" field.
-func HolderIDEQ(v uuid.UUID) predicate.Delegation {
-	return predicate.Delegation(sql.FieldEQ(FieldHolderID, v))
+// HolderIdEQ applies the EQ predicate on the "holder_id" field.
+func HolderIdEQ(v uuid.UUID) predicate.Delegation {
+	return predicate.Delegation(sql.FieldEQ(FieldHolderId, v))
 }
 
-// HolderIDNEQ applies the NEQ predicate on the "holder_id" field.
-func HolderIDNEQ(v uuid.UUID) predicate.Delegation {
-	return predicate.Delegation(sql.FieldNEQ(FieldHolderID, v))
+// HolderIdNEQ applies the NEQ predicate on the "holder_id" field.
+func HolderIdNEQ(v uuid.UUID) predicate.Delegation {
+	return predicate.Delegation(sql.FieldNEQ(FieldHolderId, v))
 }
 
-// HolderIDIn applies the In predicate on the "holder_id" field.
-func HolderIDIn(vs ...uuid.UUID) predicate.Delegation {
-	return predicate.Delegation(sql.FieldIn(FieldHolderID, vs...))
+// HolderIdIn applies the In predicate on the "holder_id" field.
+func HolderIdIn(vs ...uuid.UUID) predicate.Delegation {
+	return predicate.Delegation(sql.FieldIn(FieldHolderId, vs...))
 }
 
-// HolderIDNotIn applies the NotIn predicate on the "holder_id" field.
-func HolderIDNotIn(vs ...uuid.UUID) predicate.Delegation {
-	return predicate.Delegation(sql.FieldNotIn(FieldHolderID, vs...))
+// HolderIdNotIn applies the NotIn predicate on the "holder_id" field.
+func HolderIdNotIn(vs ...uuid.UUID) predicate.Delegation {
+	return predicate.Delegation(sql.FieldNotIn(FieldHolderId, vs...))
 }
 
 // HasHolder applies the HasEdge predicate on the "holder" edge.
 func HasHolder() predicate.Delegation {
 	return predicate.Delegation(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
+			sqlgraph.From(Table, FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, HolderTable, HolderColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)

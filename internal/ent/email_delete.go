@@ -40,7 +40,7 @@ func (_d *EmailDelete) ExecX(ctx context.Context) int {
 }
 
 func (_d *EmailDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(email.Table, sqlgraph.NewFieldSpec(email.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(email.Table, sqlgraph.NewFieldSpec(email.FieldId, field.TypeUuid))
 	if ps := _d.mutation.Predicates(); len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

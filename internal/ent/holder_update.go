@@ -237,7 +237,7 @@ func (_u *HolderUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *HolderUpdate) check() error {
-	if _u.mutation.TenantCleared() && len(_u.mutation.TenantIDs()) > 0 {
+	if _u.mutation.TenantCleared() && len(_u.mutation.TenantIds()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Holder.tenant"`)
 	}
 	return nil
@@ -253,7 +253,7 @@ func (_u *HolderUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(holder.Table, holder.Columns, sqlgraph.NewFieldSpec(holder.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(holder.Table, holder.Columns, sqlgraph.NewFieldSpec(holder.FieldId, field.TypeUuid))
 	if ps := _u.mutation.Predicates(); len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -271,10 +271,10 @@ func (_u *HolderUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		_spec.SetField(holder.FieldDesc, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Labels(); ok {
-		_spec.SetField(holder.FieldLabels, field.TypeJSON, value)
+		_spec.SetField(holder.FieldLabels, field.TypeJson, value)
 	}
 	if _u.mutation.LabelsCleared() {
-		_spec.ClearField(holder.FieldLabels, field.TypeJSON)
+		_spec.ClearField(holder.FieldLabels, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(holder.FieldDateUpdated, field.TypeTime, value)
@@ -299,26 +299,26 @@ func (_u *HolderUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		if err != nil {
 			return 0, err
 		}
-		if vv, err = field.JSONValue(vv); err != nil {
+		if vv, err = field.JsonValue(vv); err != nil {
 			return 0, err
 		}
-		_spec.SetField(holder.FieldProfile, field.TypeJSON, vv)
+		_spec.SetField(holder.FieldProfile, field.TypeJson, vv)
 	}
 	if _u.mutation.ProfileCleared() {
-		_spec.ClearField(holder.FieldProfile, field.TypeJSON)
+		_spec.ClearField(holder.FieldProfile, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Data(); ok {
 		vv, err := holder.ValueScanner.Data.Value(value)
 		if err != nil {
 			return 0, err
 		}
-		if vv, err = field.JSONValue(vv); err != nil {
+		if vv, err = field.JsonValue(vv); err != nil {
 			return 0, err
 		}
-		_spec.SetField(holder.FieldData, field.TypeJSON, vv)
+		_spec.SetField(holder.FieldData, field.TypeJson, vv)
 	}
 	if _u.mutation.DataCleared() {
-		_spec.ClearField(holder.FieldData, field.TypeJSON)
+		_spec.ClearField(holder.FieldData, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateInvalidated(); ok {
 		_spec.SetField(holder.FieldDateInvalidated, field.TypeTime, value)
@@ -573,7 +573,7 @@ func (_u *HolderUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *HolderUpdateOne) check() error {
-	if _u.mutation.TenantCleared() && len(_u.mutation.TenantIDs()) > 0 {
+	if _u.mutation.TenantCleared() && len(_u.mutation.TenantIds()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Holder.tenant"`)
 	}
 	return nil
@@ -589,20 +589,20 @@ func (_u *HolderUpdateOne) sqlSave(ctx context.Context) (_node *Holder, err erro
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(holder.Table, holder.Columns, sqlgraph.NewFieldSpec(holder.FieldID, field.TypeUUID))
-	id, ok := _u.mutation.ID()
+	_spec := sqlgraph.NewUpdateSpec(holder.Table, holder.Columns, sqlgraph.NewFieldSpec(holder.FieldId, field.TypeUuid))
+	id, ok := _u.mutation.Id()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Holder.id" for update`)}
 	}
-	_spec.Node.ID.Value = id
+	_spec.Node.Id.Value = id
 	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, holder.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, holder.FieldId)
 		for _, f := range fields {
 			if !holder.ValidColumn(f) {
 				return nil, &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 			}
-			if f != holder.FieldID {
+			if f != holder.FieldId {
 				_spec.Node.Columns = append(_spec.Node.Columns, f)
 			}
 		}
@@ -624,10 +624,10 @@ func (_u *HolderUpdateOne) sqlSave(ctx context.Context) (_node *Holder, err erro
 		_spec.SetField(holder.FieldDesc, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Labels(); ok {
-		_spec.SetField(holder.FieldLabels, field.TypeJSON, value)
+		_spec.SetField(holder.FieldLabels, field.TypeJson, value)
 	}
 	if _u.mutation.LabelsCleared() {
-		_spec.ClearField(holder.FieldLabels, field.TypeJSON)
+		_spec.ClearField(holder.FieldLabels, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(holder.FieldDateUpdated, field.TypeTime, value)
@@ -652,26 +652,26 @@ func (_u *HolderUpdateOne) sqlSave(ctx context.Context) (_node *Holder, err erro
 		if err != nil {
 			return nil, err
 		}
-		if vv, err = field.JSONValue(vv); err != nil {
+		if vv, err = field.JsonValue(vv); err != nil {
 			return nil, err
 		}
-		_spec.SetField(holder.FieldProfile, field.TypeJSON, vv)
+		_spec.SetField(holder.FieldProfile, field.TypeJson, vv)
 	}
 	if _u.mutation.ProfileCleared() {
-		_spec.ClearField(holder.FieldProfile, field.TypeJSON)
+		_spec.ClearField(holder.FieldProfile, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Data(); ok {
 		vv, err := holder.ValueScanner.Data.Value(value)
 		if err != nil {
 			return nil, err
 		}
-		if vv, err = field.JSONValue(vv); err != nil {
+		if vv, err = field.JsonValue(vv); err != nil {
 			return nil, err
 		}
-		_spec.SetField(holder.FieldData, field.TypeJSON, vv)
+		_spec.SetField(holder.FieldData, field.TypeJson, vv)
 	}
 	if _u.mutation.DataCleared() {
-		_spec.ClearField(holder.FieldData, field.TypeJSON)
+		_spec.ClearField(holder.FieldData, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateInvalidated(); ok {
 		_spec.SetField(holder.FieldDateInvalidated, field.TypeTime, value)

@@ -97,10 +97,10 @@ func (_u *SiteMembershipUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *SiteMembershipUpdate) check() error {
-	if _u.mutation.HolderCleared() && len(_u.mutation.HolderIDs()) > 0 {
+	if _u.mutation.HolderCleared() && len(_u.mutation.HolderIds()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "SiteMembership.holder"`)
 	}
-	if _u.mutation.SiteCleared() && len(_u.mutation.SiteIDs()) > 0 {
+	if _u.mutation.SiteCleared() && len(_u.mutation.SiteIds()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "SiteMembership.site"`)
 	}
 	return nil
@@ -116,7 +116,7 @@ func (_u *SiteMembershipUpdate) sqlSave(ctx context.Context) (_node int, err err
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(sitemembership.Table, sitemembership.Columns, sqlgraph.NewFieldSpec(sitemembership.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(sitemembership.Table, sitemembership.Columns, sqlgraph.NewFieldSpec(sitemembership.FieldId, field.TypeUuid))
 	if ps := _u.mutation.Predicates(); len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -239,10 +239,10 @@ func (_u *SiteMembershipUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *SiteMembershipUpdateOne) check() error {
-	if _u.mutation.HolderCleared() && len(_u.mutation.HolderIDs()) > 0 {
+	if _u.mutation.HolderCleared() && len(_u.mutation.HolderIds()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "SiteMembership.holder"`)
 	}
-	if _u.mutation.SiteCleared() && len(_u.mutation.SiteIDs()) > 0 {
+	if _u.mutation.SiteCleared() && len(_u.mutation.SiteIds()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "SiteMembership.site"`)
 	}
 	return nil
@@ -258,20 +258,20 @@ func (_u *SiteMembershipUpdateOne) sqlSave(ctx context.Context) (_node *SiteMemb
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(sitemembership.Table, sitemembership.Columns, sqlgraph.NewFieldSpec(sitemembership.FieldID, field.TypeUUID))
-	id, ok := _u.mutation.ID()
+	_spec := sqlgraph.NewUpdateSpec(sitemembership.Table, sitemembership.Columns, sqlgraph.NewFieldSpec(sitemembership.FieldId, field.TypeUuid))
+	id, ok := _u.mutation.Id()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "SiteMembership.id" for update`)}
 	}
-	_spec.Node.ID.Value = id
+	_spec.Node.Id.Value = id
 	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, sitemembership.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, sitemembership.FieldId)
 		for _, f := range fields {
 			if !sitemembership.ValidColumn(f) {
 				return nil, &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 			}
-			if f != sitemembership.FieldID {
+			if f != sitemembership.FieldId {
 				_spec.Node.Columns = append(_spec.Node.Columns, f)
 			}
 		}

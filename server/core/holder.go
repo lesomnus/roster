@@ -32,7 +32,7 @@ import (
 // # Why it is implemented with `Patch`
 //
 // Because that is what `Patch` is for. payday closes it at the transport and
-// not in the stack, and says so: *an RPC written by hand goes on being
+// not in the stack, and says so: *an Rpc written by hand goes on being
 // implemented with them.* So this is the whole implementation -- the narrowing
 // is the request shape, and the write underneath is the one that already knows
 // about versions, the trail and the wall.

@@ -114,7 +114,7 @@ func TestErasingAMembershipThatIsNotThereSucceeds(t *testing.T) {
 		// so a bare count is the same number either way and would assert
 		// nothing at all.
 		live, err := b.Ent.TeamMembership.Query().
-			Where(entteammembership.DateErasedIsNil(), entteammembership.IDEQ(mustId(t, theirs.GetId()).Uuid())).
+			Where(entteammembership.DateErasedIsNil(), entteammembership.IdEQ(mustId(t, theirs.GetId()).Uuid())).
 			Count(ctx)
 		x.NoError(err)
 		x.Equal(1, live, "the membership was erased by somebody who was refused")

@@ -24,7 +24,7 @@ import (
 //
 // # A file, and not a service
 //
-// The obvious source is an API, and the deployment this app is most careful
+// The obvious source is an Api, and the deployment this app is most careful
 // about has no network at all. So the corpus is a file a deployment puts on the
 // box, in the format the well-known one is published in -- SHA-1, uppercase
 // hex, one per line, sorted -- and the lookup halves the file until a window is

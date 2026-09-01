@@ -190,7 +190,7 @@ func (_u *ApiKeyUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *ApiKeyUpdate) check() error {
-	if _u.mutation.HolderCleared() && len(_u.mutation.HolderIDs()) > 0 {
+	if _u.mutation.HolderCleared() && len(_u.mutation.HolderIds()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "ApiKey.holder"`)
 	}
 	return nil
@@ -206,7 +206,7 @@ func (_u *ApiKeyUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(apikey.Table, apikey.Columns, sqlgraph.NewFieldSpec(apikey.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(apikey.Table, apikey.Columns, sqlgraph.NewFieldSpec(apikey.FieldId, field.TypeUuid))
 	if ps := _u.mutation.Predicates(); len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -221,7 +221,7 @@ func (_u *ApiKeyUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		_spec.SetField(apikey.FieldDesc, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Methods(); ok {
-		_spec.SetField(apikey.FieldMethods, field.TypeJSON, value)
+		_spec.SetField(apikey.FieldMethods, field.TypeJson, value)
 	}
 	if value, ok := _u.mutation.AppendedMethods(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
@@ -229,7 +229,7 @@ func (_u *ApiKeyUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		})
 	}
 	if _u.mutation.MethodsCleared() {
-		_spec.ClearField(apikey.FieldMethods, field.TypeJSON)
+		_spec.ClearField(apikey.FieldMethods, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Secret(); ok {
 		_spec.SetField(apikey.FieldSecret, field.TypeBytes, value)
@@ -453,7 +453,7 @@ func (_u *ApiKeyUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *ApiKeyUpdateOne) check() error {
-	if _u.mutation.HolderCleared() && len(_u.mutation.HolderIDs()) > 0 {
+	if _u.mutation.HolderCleared() && len(_u.mutation.HolderIds()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "ApiKey.holder"`)
 	}
 	return nil
@@ -469,20 +469,20 @@ func (_u *ApiKeyUpdateOne) sqlSave(ctx context.Context) (_node *ApiKey, err erro
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(apikey.Table, apikey.Columns, sqlgraph.NewFieldSpec(apikey.FieldID, field.TypeUUID))
-	id, ok := _u.mutation.ID()
+	_spec := sqlgraph.NewUpdateSpec(apikey.Table, apikey.Columns, sqlgraph.NewFieldSpec(apikey.FieldId, field.TypeUuid))
+	id, ok := _u.mutation.Id()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "ApiKey.id" for update`)}
 	}
-	_spec.Node.ID.Value = id
+	_spec.Node.Id.Value = id
 	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, apikey.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, apikey.FieldId)
 		for _, f := range fields {
 			if !apikey.ValidColumn(f) {
 				return nil, &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 			}
-			if f != apikey.FieldID {
+			if f != apikey.FieldId {
 				_spec.Node.Columns = append(_spec.Node.Columns, f)
 			}
 		}
@@ -501,7 +501,7 @@ func (_u *ApiKeyUpdateOne) sqlSave(ctx context.Context) (_node *ApiKey, err erro
 		_spec.SetField(apikey.FieldDesc, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Methods(); ok {
-		_spec.SetField(apikey.FieldMethods, field.TypeJSON, value)
+		_spec.SetField(apikey.FieldMethods, field.TypeJson, value)
 	}
 	if value, ok := _u.mutation.AppendedMethods(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
@@ -509,7 +509,7 @@ func (_u *ApiKeyUpdateOne) sqlSave(ctx context.Context) (_node *ApiKey, err erro
 		})
 	}
 	if _u.mutation.MethodsCleared() {
-		_spec.ClearField(apikey.FieldMethods, field.TypeJSON)
+		_spec.ClearField(apikey.FieldMethods, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Secret(); ok {
 		_spec.SetField(apikey.FieldSecret, field.TypeBytes, value)

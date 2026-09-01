@@ -11,17 +11,17 @@ import (
 
 func (e *SiteMembership) Proto() *rstr.SiteMembership {
 	x := &rstr.SiteMembership{}
-	x.SetId(e.ID[:])
+	x.SetId(e.Id[:])
 	if v := e.Edges.Holder; v != nil {
 		x.SetHolder(v.Proto())
-	} else if v := e.HolderID; v != *new(uuid.UUID) {
+	} else if v := e.HolderId; v != *new(uuid.UUID) {
 		r := &rstr.Holder{}
 		r.SetId(v[:])
 		x.SetHolder(r)
 	}
 	if v := e.Edges.Site; v != nil {
 		x.SetSite(v.Proto())
-	} else if v := e.SiteID; v != *new(uuid.UUID) {
+	} else if v := e.SiteId; v != *new(uuid.UUID) {
 		r := &rstr.Site{}
 		r.SetId(v[:])
 		x.SetSite(r)
@@ -35,24 +35,24 @@ func (e *SiteMembership) Proto() *rstr.SiteMembership {
 }
 func (e *TeamMembership) Proto() *rstr.TeamMembership {
 	x := &rstr.TeamMembership{}
-	x.SetId(e.ID[:])
+	x.SetId(e.Id[:])
 	if v := e.Edges.Holder; v != nil {
 		x.SetHolder(v.Proto())
-	} else if v := e.HolderID; v != *new(uuid.UUID) {
+	} else if v := e.HolderId; v != *new(uuid.UUID) {
 		r := &rstr.Holder{}
 		r.SetId(v[:])
 		x.SetHolder(r)
 	}
 	if v := e.Edges.Team; v != nil {
 		x.SetTeam(v.Proto())
-	} else if v := e.TeamID; v != *new(uuid.UUID) {
+	} else if v := e.TeamId; v != *new(uuid.UUID) {
 		r := &rstr.Team{}
 		r.SetId(v[:])
 		x.SetTeam(r)
 	}
 	if v := e.Edges.Role; v != nil {
 		x.SetRole(v.Proto())
-	} else if v := e.RoleID; v != *new(uuid.UUID) {
+	} else if v := e.RoleId; v != *new(uuid.UUID) {
 		r := &rstr.Role{}
 		r.SetId(v[:])
 		x.SetRole(r)

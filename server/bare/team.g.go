@@ -103,12 +103,12 @@ func (s TeamServiceServer) Add(ctx context.Context, req *rstr.TeamAddRequest) (*
 	if v, err := mint(ctx, s.Mint, "roster.Team", k, req.HasId()); err != nil {
 		return nil, err
 	} else {
-		q.SetID(v)
+		q.SetId(v)
 	}
 	if k, err := TenantGetKey(ctx, st.Db, req.GetTenant()); err != nil {
 		return nil, err
 	} else {
-		q.SetTenantID(k)
+		q.SetTenantId(k)
 		ds = append(ds, func(v *rstr.Team) {
 			v.SetTenant(rstr.Tenant_builder{Id: k[:]}.Build())
 		})
@@ -117,7 +117,7 @@ func (s TeamServiceServer) Add(ctx context.Context, req *rstr.TeamAddRequest) (*
 		if k, err := SiteGetKey(ctx, st.Db, req.GetSite()); err != nil {
 			return nil, err
 		} else {
-			q.SetSiteID(k)
+			q.SetSiteId(k)
 			ds = append(ds, func(v *rstr.Team) {
 				v.SetSite(rstr.Site_builder{Id: k[:]}.Build())
 			})
@@ -148,7 +148,7 @@ func (s TeamServiceServer) Add(ctx context.Context, req *rstr.TeamAddRequest) (*
 
 	if err := record(ctx, s.Rec, st.Db, Change{
 		By:  rstr.TeamService_Add_FullMethodName,
-		Key: u.ID,
+		Key: u.Id,
 	}); err != nil {
 		return nil, err
 	}
@@ -187,7 +187,7 @@ func (s TeamServiceServer) Get(ctx context.Context, req *rstr.TeamGetRequest) (*
 }
 
 func selectTeamKey(q *ent.TeamQuery) {
-	q.Select(team.FieldID)
+	q.Select(team.FieldId)
 }
 
 func TeamSelectedFields(m *rstr.TeamSelect) []string {
@@ -197,7 +197,7 @@ func TeamSelectedFields(m *rstr.TeamSelect) []string {
 
 	vs := make([]string, 0, len(team.Columns))
 	{
-		vs = append(vs, team.FieldID)
+		vs = append(vs, team.FieldId)
 	}
 	if m.GetAlias() {
 		vs = append(vs, team.FieldAlias)
@@ -281,7 +281,7 @@ func TeamGetKey(ctx context.Context, db *ent.Client, ref *rstr.TeamRef) (uuid.UU
 		return z, err
 	}
 
-	v, err := db.Team.Query().Where(p).OnlyID(ctx)
+	v, err := db.Team.Query().Where(p).OnlyId(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return z, status.Error(codes.NotFound, "Team not found")
@@ -295,7 +295,7 @@ func TeamGetKey(ctx context.Context, db *ent.Client, ref *rstr.TeamRef) (uuid.UU
 var teamOrmEntity = ormpatch.MustEntityOf(rstr.File_app_team_proto, "Team")
 
 var teamPatchColumns = entpatch.Columns{
-	1: team.FieldID, 2: team.TenantColumn, 3: team.SiteColumn, 4: team.FieldAlias, 5: team.FieldName, 6: team.FieldDesc, 13: team.FieldDateUpdated, 14: team.FieldDateErased, 15: team.FieldDateCreated}
+	1: team.FieldId, 2: team.TenantColumn, 3: team.SiteColumn, 4: team.FieldAlias, 5: team.FieldName, 6: team.FieldDesc, 13: team.FieldDateUpdated, 14: team.FieldDateErased, 15: team.FieldDateCreated}
 
 func (s TeamServiceServer) Apply(ctx context.Context, req *rstr.TeamApplyRequest) (*rstr.Team, error) {
 	if !req.HasPatch() {
@@ -340,7 +340,7 @@ func (s TeamServiceServer) apply(ctx context.Context, ref *rstr.TeamRef, doc *pa
 	}
 	at := &rstr.TeamRef{}
 	at.SetId(k[:])
-	p, err := s.narrow(ctx, team.IDEQ(k))
+	p, err := s.narrow(ctx, team.IdEQ(k))
 	if err != nil {
 		return nil, err
 	}
@@ -434,7 +434,7 @@ func (s TeamServiceServer) Erase(ctx context.Context, req *rstr.TeamRef) (*rstr.
 
 	var k any
 	if s.Rec != nil {
-		v, err := st.Db.Team.Query().Where(p).OnlyID(ctx)
+		v, err := st.Db.Team.Query().Where(p).OnlyId(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.TeamEraseResponse{}, nil
@@ -443,7 +443,7 @@ func (s TeamServiceServer) Erase(ctx context.Context, req *rstr.TeamRef) (*rstr.
 		}
 
 		k = v
-		p = team.And(p, team.IDEQ(v))
+		p = team.And(p, team.IdEQ(v))
 	}
 
 	u := st.Db.Team.Update().Where(p)
@@ -494,7 +494,7 @@ func pickTeam(req *rstr.TeamRef) (predicate.Team, error) {
 		if v, err := uuid.FromBytes(req.GetId()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
-			return team.IDEQ(v), nil
+			return team.IdEQ(v), nil
 		}
 	case rstr.TeamRef_Slug_case:
 		k := req.GetSlug()

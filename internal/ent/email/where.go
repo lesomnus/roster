@@ -11,49 +11,49 @@ import (
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 )
 
-// ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldEQ(FieldID, id))
+// Id filters vertices based on their Id field.
+func Id(id uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldEQ(FieldId, id))
 }
 
-// IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldEQ(FieldID, id))
+// IdEQ applies the EQ predicate on the Id field.
+func IdEQ(id uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldEQ(FieldId, id))
 }
 
-// IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldNEQ(FieldID, id))
+// IdNEQ applies the NEQ predicate on the Id field.
+func IdNEQ(id uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldNEQ(FieldId, id))
 }
 
-// IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldIn(FieldID, ids...))
+// IdIn applies the In predicate on the Id field.
+func IdIn(ids ...uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldIn(FieldId, ids...))
 }
 
-// IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldNotIn(FieldID, ids...))
+// IdNotIn applies the NotIn predicate on the Id field.
+func IdNotIn(ids ...uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldNotIn(FieldId, ids...))
 }
 
-// IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldGT(FieldID, id))
+// IdGT applies the GT predicate on the Id field.
+func IdGT(id uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldGT(FieldId, id))
 }
 
-// IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldGTE(FieldID, id))
+// IdGTE applies the GTE predicate on the Id field.
+func IdGTE(id uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldGTE(FieldId, id))
 }
 
-// IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldLT(FieldID, id))
+// IdLT applies the LT predicate on the Id field.
+func IdLT(id uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldLT(FieldId, id))
 }
 
-// IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldLTE(FieldID, id))
+// IdLTE applies the LTE predicate on the Id field.
+func IdLTE(id uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldLTE(FieldId, id))
 }
 
 // Address applies equality check predicate on the "address" field. It's identical to AddressEQ.
@@ -66,9 +66,9 @@ func DateVerified(v time.Time) predicate.Email {
 	return predicate.Email(sql.FieldEQ(FieldDateVerified, v))
 }
 
-// TenantID applies equality check predicate on the "tenant_id" field. It's identical to TenantIDEQ.
-func TenantID(v uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldEQ(FieldTenantID, v))
+// TenantId applies equality check predicate on the "tenant_id" field. It's identical to TenantIdEQ.
+func TenantId(v uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldEQ(FieldTenantId, v))
 }
 
 // DateUpdated applies equality check predicate on the "date_updated" field. It's identical to DateUpdatedEQ.
@@ -86,14 +86,14 @@ func DateCreated(v time.Time) predicate.Email {
 	return predicate.Email(sql.FieldEQ(FieldDateCreated, v))
 }
 
-// HolderID applies equality check predicate on the "holder_id" field. It's identical to HolderIDEQ.
-func HolderID(v uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldEQ(FieldHolderID, v))
+// HolderId applies equality check predicate on the "holder_id" field. It's identical to HolderIdEQ.
+func HolderId(v uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldEQ(FieldHolderId, v))
 }
 
-// VouchedByID applies equality check predicate on the "vouched_by_id" field. It's identical to VouchedByIDEQ.
-func VouchedByID(v uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldEQ(FieldVouchedByID, v))
+// VouchedById applies equality check predicate on the "vouched_by_id" field. It's identical to VouchedByIdEQ.
+func VouchedById(v uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldEQ(FieldVouchedById, v))
 }
 
 // AddressEQ applies the EQ predicate on the "address" field.
@@ -211,44 +211,44 @@ func DateVerifiedNotNil() predicate.Email {
 	return predicate.Email(sql.FieldNotNull(FieldDateVerified))
 }
 
-// TenantIDEQ applies the EQ predicate on the "tenant_id" field.
-func TenantIDEQ(v uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldEQ(FieldTenantID, v))
+// TenantIdEQ applies the EQ predicate on the "tenant_id" field.
+func TenantIdEQ(v uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldEQ(FieldTenantId, v))
 }
 
-// TenantIDNEQ applies the NEQ predicate on the "tenant_id" field.
-func TenantIDNEQ(v uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldNEQ(FieldTenantID, v))
+// TenantIdNEQ applies the NEQ predicate on the "tenant_id" field.
+func TenantIdNEQ(v uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldNEQ(FieldTenantId, v))
 }
 
-// TenantIDIn applies the In predicate on the "tenant_id" field.
-func TenantIDIn(vs ...uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldIn(FieldTenantID, vs...))
+// TenantIdIn applies the In predicate on the "tenant_id" field.
+func TenantIdIn(vs ...uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldIn(FieldTenantId, vs...))
 }
 
-// TenantIDNotIn applies the NotIn predicate on the "tenant_id" field.
-func TenantIDNotIn(vs ...uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldNotIn(FieldTenantID, vs...))
+// TenantIdNotIn applies the NotIn predicate on the "tenant_id" field.
+func TenantIdNotIn(vs ...uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldNotIn(FieldTenantId, vs...))
 }
 
-// TenantIDGT applies the GT predicate on the "tenant_id" field.
-func TenantIDGT(v uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldGT(FieldTenantID, v))
+// TenantIdGT applies the GT predicate on the "tenant_id" field.
+func TenantIdGT(v uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldGT(FieldTenantId, v))
 }
 
-// TenantIDGTE applies the GTE predicate on the "tenant_id" field.
-func TenantIDGTE(v uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldGTE(FieldTenantID, v))
+// TenantIdGTE applies the GTE predicate on the "tenant_id" field.
+func TenantIdGTE(v uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldGTE(FieldTenantId, v))
 }
 
-// TenantIDLT applies the LT predicate on the "tenant_id" field.
-func TenantIDLT(v uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldLT(FieldTenantID, v))
+// TenantIdLT applies the LT predicate on the "tenant_id" field.
+func TenantIdLT(v uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldLT(FieldTenantId, v))
 }
 
-// TenantIDLTE applies the LTE predicate on the "tenant_id" field.
-func TenantIDLTE(v uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldLTE(FieldTenantID, v))
+// TenantIdLTE applies the LTE predicate on the "tenant_id" field.
+func TenantIdLTE(v uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldLTE(FieldTenantId, v))
 }
 
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
@@ -391,61 +391,61 @@ func DateCreatedNotNil() predicate.Email {
 	return predicate.Email(sql.FieldNotNull(FieldDateCreated))
 }
 
-// HolderIDEQ applies the EQ predicate on the "holder_id" field.
-func HolderIDEQ(v uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldEQ(FieldHolderID, v))
+// HolderIdEQ applies the EQ predicate on the "holder_id" field.
+func HolderIdEQ(v uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldEQ(FieldHolderId, v))
 }
 
-// HolderIDNEQ applies the NEQ predicate on the "holder_id" field.
-func HolderIDNEQ(v uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldNEQ(FieldHolderID, v))
+// HolderIdNEQ applies the NEQ predicate on the "holder_id" field.
+func HolderIdNEQ(v uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldNEQ(FieldHolderId, v))
 }
 
-// HolderIDIn applies the In predicate on the "holder_id" field.
-func HolderIDIn(vs ...uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldIn(FieldHolderID, vs...))
+// HolderIdIn applies the In predicate on the "holder_id" field.
+func HolderIdIn(vs ...uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldIn(FieldHolderId, vs...))
 }
 
-// HolderIDNotIn applies the NotIn predicate on the "holder_id" field.
-func HolderIDNotIn(vs ...uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldNotIn(FieldHolderID, vs...))
+// HolderIdNotIn applies the NotIn predicate on the "holder_id" field.
+func HolderIdNotIn(vs ...uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldNotIn(FieldHolderId, vs...))
 }
 
-// VouchedByIDEQ applies the EQ predicate on the "vouched_by_id" field.
-func VouchedByIDEQ(v uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldEQ(FieldVouchedByID, v))
+// VouchedByIdEQ applies the EQ predicate on the "vouched_by_id" field.
+func VouchedByIdEQ(v uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldEQ(FieldVouchedById, v))
 }
 
-// VouchedByIDNEQ applies the NEQ predicate on the "vouched_by_id" field.
-func VouchedByIDNEQ(v uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldNEQ(FieldVouchedByID, v))
+// VouchedByIdNEQ applies the NEQ predicate on the "vouched_by_id" field.
+func VouchedByIdNEQ(v uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldNEQ(FieldVouchedById, v))
 }
 
-// VouchedByIDIn applies the In predicate on the "vouched_by_id" field.
-func VouchedByIDIn(vs ...uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldIn(FieldVouchedByID, vs...))
+// VouchedByIdIn applies the In predicate on the "vouched_by_id" field.
+func VouchedByIdIn(vs ...uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldIn(FieldVouchedById, vs...))
 }
 
-// VouchedByIDNotIn applies the NotIn predicate on the "vouched_by_id" field.
-func VouchedByIDNotIn(vs ...uuid.UUID) predicate.Email {
-	return predicate.Email(sql.FieldNotIn(FieldVouchedByID, vs...))
+// VouchedByIdNotIn applies the NotIn predicate on the "vouched_by_id" field.
+func VouchedByIdNotIn(vs ...uuid.UUID) predicate.Email {
+	return predicate.Email(sql.FieldNotIn(FieldVouchedById, vs...))
 }
 
-// VouchedByIDIsNil applies the IsNil predicate on the "vouched_by_id" field.
-func VouchedByIDIsNil() predicate.Email {
-	return predicate.Email(sql.FieldIsNull(FieldVouchedByID))
+// VouchedByIdIsNil applies the IsNil predicate on the "vouched_by_id" field.
+func VouchedByIdIsNil() predicate.Email {
+	return predicate.Email(sql.FieldIsNull(FieldVouchedById))
 }
 
-// VouchedByIDNotNil applies the NotNil predicate on the "vouched_by_id" field.
-func VouchedByIDNotNil() predicate.Email {
-	return predicate.Email(sql.FieldNotNull(FieldVouchedByID))
+// VouchedByIdNotNil applies the NotNil predicate on the "vouched_by_id" field.
+func VouchedByIdNotNil() predicate.Email {
+	return predicate.Email(sql.FieldNotNull(FieldVouchedById))
 }
 
 // HasHolder applies the HasEdge predicate on the "holder" edge.
 func HasHolder() predicate.Email {
 	return predicate.Email(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
+			sqlgraph.From(Table, FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, HolderTable, HolderColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
@@ -468,7 +468,7 @@ func HasHolderWith(preds ...predicate.Holder) predicate.Email {
 func HasVouchedBy() predicate.Email {
 	return predicate.Email(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
+			sqlgraph.From(Table, FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, VouchedByTable, VouchedByColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)

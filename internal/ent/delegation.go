@@ -18,8 +18,8 @@ import (
 // Delegation is the model entity for the Delegation schema.
 type Delegation struct {
 	config `json:"-"`
-	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	// Id of the ent.
+	Id uuid.UUID `json:"id,omitempty"`
 	// Methods holds the value of the "methods" field.
 	Methods []string `json:"methods,omitempty"`
 	// Secret holds the value of the "secret" field.
@@ -34,8 +34,8 @@ type Delegation struct {
 	DateErased *time.Time `json:"date_erased,omitempty"`
 	// DateCreated holds the value of the "date_created" field.
 	DateCreated time.Time `json:"date_created,omitempty"`
-	// HolderID holds the value of the "holder_id" field.
-	HolderID uuid.UUID `json:"holder_id,omitempty"`
+	// HolderId holds the value of the "holder_id" field.
+	HolderId uuid.UUID `json:"holder_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DelegationQuery when eager-loading is set.
 	Edges        DelegationEdges `json:"edges"`
@@ -71,7 +71,7 @@ func (*Delegation) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case delegation.FieldDateExpires, delegation.FieldDateUpdated, delegation.FieldDateErased, delegation.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case delegation.FieldID, delegation.FieldHolderID:
+		case delegation.FieldId, delegation.FieldHolderId:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -88,11 +88,11 @@ func (_m *Delegation) assignValues(columns []string, values []any) error {
 	}
 	for i := range columns {
 		switch columns[i] {
-		case delegation.FieldID:
+		case delegation.FieldId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				_m.ID = *value
+				_m.Id = *value
 			}
 		case delegation.FieldMethods:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -140,11 +140,11 @@ func (_m *Delegation) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.DateCreated = value.Time
 			}
-		case delegation.FieldHolderID:
+		case delegation.FieldHolderId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field holder_id", values[i])
 			} else if value != nil {
-				_m.HolderID = *value
+				_m.HolderId = *value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -186,7 +186,7 @@ func (_m *Delegation) Unwrap() *Delegation {
 func (_m *Delegation) String() string {
 	var builder strings.Builder
 	builder.WriteString("Delegation(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.Id))
 	builder.WriteString("methods=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Methods))
 	builder.WriteString(", ")
@@ -213,7 +213,7 @@ func (_m *Delegation) String() string {
 	builder.WriteString(_m.DateCreated.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("holder_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.HolderID))
+	builder.WriteString(fmt.Sprintf("%v", _m.HolderId))
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -43,9 +43,9 @@ func (_c *EmailCreate) SetNillableDateVerified(v *time.Time) *EmailCreate {
 	return _c
 }
 
-// SetTenantID sets the "tenant_id" field.
-func (_c *EmailCreate) SetTenantID(v uuid.UUID) *EmailCreate {
-	_c.mutation.SetTenantID(v)
+// SetTenantId sets the "tenant_id" field.
+func (_c *EmailCreate) SetTenantId(v uuid.UUID) *EmailCreate {
+	_c.mutation.SetTenantId(v)
 	return _c
 }
 
@@ -83,40 +83,40 @@ func (_c *EmailCreate) SetNillableDateCreated(v *time.Time) *EmailCreate {
 	return _c
 }
 
-// SetHolderID sets the "holder_id" field.
-func (_c *EmailCreate) SetHolderID(v uuid.UUID) *EmailCreate {
-	_c.mutation.SetHolderID(v)
+// SetHolderId sets the "holder_id" field.
+func (_c *EmailCreate) SetHolderId(v uuid.UUID) *EmailCreate {
+	_c.mutation.SetHolderId(v)
 	return _c
 }
 
-// SetVouchedByID sets the "vouched_by_id" field.
-func (_c *EmailCreate) SetVouchedByID(v uuid.UUID) *EmailCreate {
-	_c.mutation.SetVouchedByID(v)
+// SetVouchedById sets the "vouched_by_id" field.
+func (_c *EmailCreate) SetVouchedById(v uuid.UUID) *EmailCreate {
+	_c.mutation.SetVouchedById(v)
 	return _c
 }
 
-// SetNillableVouchedByID sets the "vouched_by_id" field if the given value is not nil.
-func (_c *EmailCreate) SetNillableVouchedByID(v *uuid.UUID) *EmailCreate {
+// SetNillableVouchedById sets the "vouched_by_id" field if the given value is not nil.
+func (_c *EmailCreate) SetNillableVouchedById(v *uuid.UUID) *EmailCreate {
 	if v != nil {
-		_c.SetVouchedByID(*v)
+		_c.SetVouchedById(*v)
 	}
 	return _c
 }
 
-// SetID sets the "id" field.
-func (_c *EmailCreate) SetID(v uuid.UUID) *EmailCreate {
-	_c.mutation.SetID(v)
+// SetId sets the "id" field.
+func (_c *EmailCreate) SetId(v uuid.UUID) *EmailCreate {
+	_c.mutation.SetId(v)
 	return _c
 }
 
 // SetHolder sets the "holder" edge to the Holder entity.
 func (_c *EmailCreate) SetHolder(v *Holder) *EmailCreate {
-	return _c.SetHolderID(v.ID)
+	return _c.SetHolderId(v.Id)
 }
 
 // SetVouchedBy sets the "vouched_by" edge to the Identity entity.
 func (_c *EmailCreate) SetVouchedBy(v *Identity) *EmailCreate {
-	return _c.SetVouchedByID(v.ID)
+	return _c.SetVouchedById(v.Id)
 }
 
 // Mutation returns the EmailMutation object of the builder.
@@ -156,16 +156,16 @@ func (_c *EmailCreate) check() error {
 	if _, ok := _c.mutation.Address(); !ok {
 		return &ValidationError{Name: "address", err: errors.New(`ent: missing required field "Email.address"`)}
 	}
-	if _, ok := _c.mutation.TenantID(); !ok {
+	if _, ok := _c.mutation.TenantId(); !ok {
 		return &ValidationError{Name: "tenant_id", err: errors.New(`ent: missing required field "Email.tenant_id"`)}
 	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Email.date_updated"`)}
 	}
-	if _, ok := _c.mutation.HolderID(); !ok {
+	if _, ok := _c.mutation.HolderId(); !ok {
 		return &ValidationError{Name: "holder_id", err: errors.New(`ent: missing required field "Email.holder_id"`)}
 	}
-	if len(_c.mutation.HolderIDs()) == 0 {
+	if len(_c.mutation.HolderIds()) == 0 {
 		return &ValidationError{Name: "holder", err: errors.New(`ent: missing required edge "Email.holder"`)}
 	}
 	return nil
@@ -182,14 +182,14 @@ func (_c *EmailCreate) sqlSave(ctx context.Context) (*Email, error) {
 		}
 		return nil, err
 	}
-	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+	if _spec.Id.Value != nil {
+		if id, ok := _spec.Id.Value.(*uuid.UUID); ok {
+			_node.Id = *id
+		} else if err := _node.Id.Scan(_spec.Id.Value); err != nil {
 			return nil, err
 		}
 	}
-	_c.mutation.id = &_node.ID
+	_c.mutation.id = &_node.Id
 	_c.mutation.done = true
 	return _node, nil
 }
@@ -197,11 +197,11 @@ func (_c *EmailCreate) sqlSave(ctx context.Context) (*Email, error) {
 func (_c *EmailCreate) createSpec() (*Email, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Email{config: _c.config}
-		_spec = sqlgraph.NewCreateSpec(email.Table, sqlgraph.NewFieldSpec(email.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(email.Table, sqlgraph.NewFieldSpec(email.FieldId, field.TypeUuid))
 	)
-	if id, ok := _c.mutation.ID(); ok {
-		_node.ID = id
-		_spec.ID.Value = &id
+	if id, ok := _c.mutation.Id(); ok {
+		_node.Id = id
+		_spec.Id.Value = &id
 	}
 	if value, ok := _c.mutation.Address(); ok {
 		_spec.SetField(email.FieldAddress, field.TypeString, value)
@@ -211,9 +211,9 @@ func (_c *EmailCreate) createSpec() (*Email, *sqlgraph.CreateSpec) {
 		_spec.SetField(email.FieldDateVerified, field.TypeTime, value)
 		_node.DateVerified = &value
 	}
-	if value, ok := _c.mutation.TenantID(); ok {
-		_spec.SetField(email.FieldTenantID, field.TypeUUID, value)
-		_node.TenantID = value
+	if value, ok := _c.mutation.TenantId(); ok {
+		_spec.SetField(email.FieldTenantId, field.TypeUuid, value)
+		_node.TenantId = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(email.FieldDateUpdated, field.TypeTime, value)
@@ -227,7 +227,7 @@ func (_c *EmailCreate) createSpec() (*Email, *sqlgraph.CreateSpec) {
 		_spec.SetField(email.FieldDateCreated, field.TypeTime, value)
 		_node.DateCreated = value
 	}
-	if nodes := _c.mutation.HolderIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.HolderIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -235,16 +235,16 @@ func (_c *EmailCreate) createSpec() (*Email, *sqlgraph.CreateSpec) {
 			Columns: []string{email.HolderColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(holder.FieldID, field.TypeUUID),
+				IdSpec: sqlgraph.NewFieldSpec(holder.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.HolderID = nodes[0]
+		_node.HolderId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := _c.mutation.VouchedByIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.VouchedByIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
@@ -252,13 +252,13 @@ func (_c *EmailCreate) createSpec() (*Email, *sqlgraph.CreateSpec) {
 			Columns: []string{email.VouchedByColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(identity.FieldID, field.TypeUUID),
+				IdSpec: sqlgraph.NewFieldSpec(identity.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.VouchedByID = nodes[0]
+		_node.VouchedById = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -307,7 +307,7 @@ func (_c *EmailCreateBulk) Save(ctx context.Context) ([]*Email, error) {
 				if err != nil {
 					return nil, err
 				}
-				mutation.id = &nodes[i].ID
+				mutation.id = &nodes[i].Id
 				mutation.done = true
 				return nodes[i], nil
 			})
