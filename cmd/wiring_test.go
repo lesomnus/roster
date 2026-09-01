@@ -428,7 +428,7 @@ func TestServeRefusesAControlPlaneItWasNotAllowedToMigrate(t *testing.T) {
 
 // TestShutdownDoesNotWaitOnAStream is the deadline a graceful stop had none of.
 //
-// `GracefulStop` waits for every Rpc in flight, and a Watch is an Rpc that
+// `GracefulStop` waits for every RPC in flight, and a Watch is an RPC that
 // never ends on its own: the stream loops until the **client** hangs up, the
 // deadline the chain installs is unary-only, and nothing ages a connection out
 // unless a deployment configured keepalive. So one client holding a watch --
@@ -604,7 +604,7 @@ func withoutOutbox(t *testing.T) *cmd.Server {
 // where there was a broker to publish into, so `broker: none` with
 // `outbox: true` -- two plain environment variables, accepted by the loader
 // without a word -- wrote a queue row inside every transaction and had nothing
-// anywhere that would ever delete one. `OutboxService` answers no Rpc, so not
+// anywhere that would ever delete one. `OutboxService` answers no RPC, so not
 // even an operator could drain it by hand. The table grows until the database
 // is full, which is the failure `outbox.proto` names in as many words.
 //

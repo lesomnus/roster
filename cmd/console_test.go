@@ -58,7 +58,7 @@ func signIn(t *testing.T, s *cmd.Server, alias, password string) *http.Cookie {
 // `roster init` printed.
 //
 // It is the seam payday left and could not fill: `auth` reads a credential and
-// does not issue one, and issuing is an Http endpoint. A browser has nowhere
+// does not issue one, and issuing is an HTTP endpoint. A browser has nowhere
 // safe to keep a secret, so what it gets is an opaque cookie naming a session
 // this server keeps.
 func TestAnOperatorSignsIn(t *testing.T) {
@@ -401,7 +401,7 @@ func TestNoVerifierReachesTheTrail(t *testing.T) {
 	s, out := inited(t)
 	x.NotEmpty(passwordFrom(t, out))
 
-	// The operator's password, hashed by the Rpc that hashes it.
+	// The operator's password, hashed by the RPC that hashes it.
 	cred, err := s.Control.Ent.Credential.Query().Only(ctx)
 	x.NoError(err)
 	x.NotEmpty(cred.Secret, "nothing was stored, so this proves nothing")
@@ -492,7 +492,7 @@ func TestAConsoleReachesTheAdminPortOverHttp(t *testing.T) {
 		`{"alias":"ops","password":"`+passwordFrom(t, out)+`"}`)
 	x.Equal(http.StatusNoContent, code, body)
 
-	// And now the thing a console is for, over Json, with the cookie the
+	// And now the thing a console is for, over JSON, with the cookie the
 	// browser is carrying.
 	code, body = post("/roster.TenantService/Add", `{"alias":"newco"}`)
 	x.Equal(http.StatusOK, code, body)
@@ -624,7 +624,7 @@ func TestAConsoleReachesTheControlPlaneOverHttp(t *testing.T) {
 
 // TestTheDataPlanesHttpSignsInNobody is `operating.md`'s warning about
 // `server.http`, asserted: `/session` is served on every listener that has
-// Http -- a console reaches one origin and signing in has to be there -- so on
+// HTTP -- a console reaches one origin and signing in has to be there -- so on
 // the data plane's transcoder it **answers**, and the cookie it mints names
 // nobody every walled call can be made as. Signing in there is not an error
 // anybody is told about; it is a success that opens nothing, which is exactly

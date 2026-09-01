@@ -10,7 +10,7 @@ import (
 // `web/frontdoor.js` says what it is and why it is one module instead of the
 // component library D22 guessed at. This is how a Go app gets it to the page
 // without a toolchain: one route, one file, and an ordinary `import` in the
-// Html.
+// HTML.
 //
 // An app with a bundler ignores this and imports the file from the source tree
 // instead; the `.d.ts` beside it is there for exactly that.

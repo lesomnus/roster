@@ -321,7 +321,7 @@ func TestAConsoleIssuesAPasswordForAnOperator(t *testing.T) {
 		x.Equal(codes.Unauthenticated, status.Code(err))
 	})
 
-	// Refused rather than defaulted to the caller, which would be an Rpc whose
+	// Refused rather than defaulted to the caller, which would be an RPC whose
 	// misuse is silently a self-service password reset.
 	t.Run("and it will not guess whose", func(t *testing.T) {
 		x := require.New(t)

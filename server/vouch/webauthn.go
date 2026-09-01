@@ -77,7 +77,7 @@ type presented struct {
 	// browser encodes it.
 	Challenge string `json:"challenge"`
 
-	// Response is the raw Json the browser's credential Api answered with.
+	// Response is the raw JSON the browser's credential API answered with.
 	Response json.RawMessage `json:"response"`
 }
 

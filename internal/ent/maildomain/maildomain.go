@@ -39,7 +39,7 @@ const (
 	TenantColumn = "tenant_id"
 )
 
-// Columns holds all Sql columns for maildomain fields.
+// Columns holds all SQL columns for maildomain fields.
 var Columns = []string{
 	FieldId,
 	FieldName,

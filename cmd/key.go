@@ -29,7 +29,7 @@ import (
 // NewCmdKey is `roster key`: the keys this deployment is called with, on
 // either plane.
 //
-// It is a command rather than an Rpc because of what the first of those writes
+// It is a command rather than an RPC because of what the first of those writes
 // to. The control plane is not served -- `ApiKeyService` is not registered and
 // is closed to the batch, for the reason every verifier is -- so the only way
 // in is a server instance this process holds, and the only thing holding one is

@@ -132,7 +132,7 @@ func TestNobodyAttachesARoleByPatchingAMembership(t *testing.T) {
 // the missing check above look like somebody else's problem -- and it is not
 // the reading the rest of the file was written to: `Role.Patch` and
 // `ApiKey.Patch` both ask `mayGrant`, in the layer, precisely so that the
-// setting is a decision about the Api rather than about who may become the
+// setting is a decision about the API rather than about who may become the
 // administrator.
 //
 // So this is the same two Rpcs against a server built the way that deployment
@@ -427,9 +427,9 @@ func TestARoleHeldThroughATeamIsStillHeld(t *testing.T) {
 // straight into the sink.
 //
 // Nothing about that is visible from a unit test of the layer, from the wiring,
-// or from any single-Rpc call: `core` is asked on every ordinary write and the
+// or from any single-RPC call: `core` is asked on every ordinary write and the
 // suite is green. It comes apart only inside a transaction, which is a batch or
-// a multi-write Rpc -- and what comes apart is not a crash but the escalation
+// a multi-write RPC -- and what comes apart is not a crash but the escalation
 // rule not being asked. Alice writes the role she may not write, binds it to
 // herself, and both operations commit together.
 //

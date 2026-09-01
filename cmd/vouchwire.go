@@ -643,7 +643,7 @@ func newCmdVouchRevoke(c *Config) *xli.Command {
 			// `Revoke` is a `Delegation` write now (`Vouch.Revoke` moved onto the
 			// entity), so this dials the `DelegationService` client. The command
 			// keeps its `vouch revoke` name -- what a person types is not where
-			// the Rpc lives.
+			// the RPC lives.
 			if _, err := app.NewDelegationServiceClient(conn).Revoke(ctx, app.DelegationRevokeRequest_builder{
 				Token: string(token),
 			}.Build()); err != nil {
@@ -665,7 +665,7 @@ func newCmdVouchRevoke(c *Config) *xli.Command {
 // makes the secret and roster is handed the public half -- and a shell has
 // nothing to attest with.
 //
-// What lands on stdout is the `otpauth://` Uri, which carries the seed in its
+// What lands on stdout is the `otpauth://` URI, which carries the seed in its
 // `secret` parameter: one line that a QR encoder takes whole and a person can
 // still read the seed out of.
 //

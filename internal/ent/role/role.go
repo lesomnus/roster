@@ -52,7 +52,7 @@ const (
 	SiteColumn = "site_id"
 )
 
-// Columns holds all Sql columns for role fields.
+// Columns holds all SQL columns for role fields.
 var Columns = []string{
 	FieldId,
 	FieldAlias,

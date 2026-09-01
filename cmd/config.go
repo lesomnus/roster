@@ -259,14 +259,14 @@ type ClientConfig struct {
 //
 // The scheme is a setting because roster serves more than one and which it
 // serves depends on the rest of this file: with a control plane the data plane
-// reads `Bearer` and checks an Api key, and without one it reads `Plain` and
+// reads `Bearer` and checks an API key, and without one it reads `Plain` and
 // believes whatever the caller writes. A command that could only send one of
 // them would work against half the deployments this app supports.
 type ClientAuthConfig struct {
 	// Scheme is `bearer`, `plain`, or `none`, and it is the word that goes
 	// before the credential in `authorization`.
 	//
-	//	bearer  an Api key, checked against the control plane. What a
+	//	bearer  an API key, checked against the control plane. What a
 	//	        deployment serving anybody uses.
 	//	plain   the caller says who it is and is believed, so the credential is
 	//	        a slug: "@contoso/admin". It is what this app serves with **no

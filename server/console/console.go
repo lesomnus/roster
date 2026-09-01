@@ -4,7 +4,7 @@
 // `AuthService` makes a session and ends one; `IssueService` makes a key or a
 // password and answers with it exactly once.
 //
-// Everything else a console does is an ordinary entity Rpc, which is why there
+// Everything else a console does is an ordinary entity RPC, which is why there
 // is so little here. What is here is what the generated servers structurally
 // cannot do -- and in both cases the reason is the same declaration.
 //
@@ -106,7 +106,7 @@ func (a authed) SignIn(ctx context.Context, req *app.AuthSignInRequest) (*app.Au
 		return nil, err
 	}
 
-	// The line the whole arrangement rests on. A cookie is an Http response
+	// The line the whole arrangement rests on. A cookie is an HTTP response
 	// header and this handler has no response writer -- but `set-cookie` as
 	// response metadata reaches the browser through `web.Transcode` as a header
 	// like any other. See payday's `authsession.Mint`.

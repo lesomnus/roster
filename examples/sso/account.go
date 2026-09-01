@@ -7,10 +7,10 @@ import (
 
 // The screen somebody sees about themselves.
 //
-// D24 §4: *self-service: my record, add and remove an Sso method, sign out
+// D24 §4: *self-service: my record, add and remove an SSO method, sign out
 // everywhere.*
 //
-// # Why it is one file of Html and not a build
+// # Why it is one file of HTML and not a build
 //
 // Because the app it belongs to is a Go example, and because D24 §6 puts
 // extracting components **last** for a reason it states: *extracting first

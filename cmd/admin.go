@@ -98,7 +98,7 @@ func Admin(s *Server) (app.Server, error) {
 // # Why before, and why not one transaction
 //
 // Because they are two events and only one of them is about the operator. "This
-// operator called this Rpc" is true whether or not the write then succeeded --
+// operator called this RPC" is true whether or not the write then succeeded --
 // and a failed attempt is a thing an audit wants to keep, not one to roll back.
 // A record written afterwards would be missing exactly the attempts worth
 // looking at.
@@ -171,7 +171,7 @@ func Intent(control *ent.Client) grpc.UnaryServerInterceptor {
 				// this record is neither, because it is made before there is
 				// either one.
 				//
-				// An empty slice and not nil. Nil is Sql NULL, which Postgres
+				// An empty slice and not nil. Nil is SQL NULL, which Postgres
 				// refuses on a non-null column and SQLite accepts -- so nil
 				// here is green on a checkout and broken on a deployment.
 				SetPatch([]byte{}).

@@ -44,7 +44,7 @@ const (
 	SiteColumn = "site_id"
 )
 
-// Columns holds all Sql columns for sitemembership fields.
+// Columns holds all SQL columns for sitemembership fields.
 var Columns = []string{
 	FieldId,
 	FieldDateUpdated,

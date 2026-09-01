@@ -45,7 +45,7 @@ const (
 	HolderColumn = "holder_id"
 )
 
-// Columns holds all Sql columns for apikey fields.
+// Columns holds all SQL columns for apikey fields.
 var Columns = []string{
 	FieldId,
 	FieldAlias,

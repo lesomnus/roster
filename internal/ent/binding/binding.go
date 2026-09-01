@@ -66,7 +66,7 @@ const (
 	GroupColumn = "group_id"
 )
 
-// Columns holds all Sql columns for binding fields.
+// Columns holds all SQL columns for binding fields.
 var Columns = []string{
 	FieldId,
 	FieldDateUpdated,

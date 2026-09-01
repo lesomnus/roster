@@ -49,7 +49,7 @@ func TestOneContinuationMintsOneCredential(t *testing.T) {
 	v := b.keyed(t)
 	seed := enrolled(t, ctx, b.Ungated.Credential(), v, b.Who)
 
-	// Called directly rather than over the connection: a shared Http/2 stream
+	// Called directly rather than over the connection: a shared HTTP/2 stream
 	// serialises enough that the window closes before anybody reaches it, and
 	// what is being asked about is the database and not the transport.
 	as := frame.Into(ctx, frame.New(b.Who, b.Contoso, frame.Whole()).WithScope(frame.Only(b.Contoso)))

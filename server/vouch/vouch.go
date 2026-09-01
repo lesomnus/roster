@@ -92,7 +92,7 @@ func WithKeys(v Keyring) Option { return func(s *Server) { s.keys = v } }
 //
 // `open` is the one the wall was never installed on and `walled` is the one it
 // was; they are separate arguments rather than one server plus a flag, because
-// which of them an Rpc uses is the whole of what distinguishes these two Rpcs
+// which of them an RPC uses is the whole of what distinguishes these two Rpcs
 // and it should not be possible to get it wrong by passing a boolean.
 func New(open, walled app.Server, opts ...Option) *Server {
 	s := &Server{open: open, walled: walled}

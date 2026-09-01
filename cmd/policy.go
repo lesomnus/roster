@@ -102,7 +102,7 @@ func (p policy) May(ctx context.Context, c gate.Call) error {
 // argument is what makes this safe rather than a judgement about the handler.
 //
 // A list of methods and not a prefix, which is the opposite of custody's
-// catalogue. There every Rpc is public and a second one added tomorrow should
+// catalogue. There every RPC is public and a second one added tomorrow should
 // be too. Here they are named one at a time, and a method added to `MeService`
 // tomorrow needs a decision rather than inheriting one.
 //
@@ -360,7 +360,7 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 //
 // # Why the write is here and not there
 //
-// Because there is nothing in the generated Api that makes one. A `Patch`
+// Because there is nothing in the generated API that makes one. A `Patch`
 // carrying only a version precondition compiles to an existence check and no
 // write at all -- which is D34's finding, arriving in a second place a year
 // later -- and a `Patch` naming a real field would be this rule editing

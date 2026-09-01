@@ -39,7 +39,7 @@ const (
 	HolderColumn = "holder_id"
 )
 
-// Columns holds all Sql columns for link fields.
+// Columns holds all SQL columns for link fields.
 var Columns = []string{
 	FieldId,
 	FieldSecret,

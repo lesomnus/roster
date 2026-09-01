@@ -47,7 +47,7 @@ const (
 	HolderColumn = "holder_id"
 )
 
-// Columns holds all Sql columns for credential fields.
+// Columns holds all SQL columns for credential fields.
 var Columns = []string{
 	FieldId,
 	FieldName,

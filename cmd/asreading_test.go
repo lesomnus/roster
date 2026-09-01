@@ -258,7 +258,7 @@ func TestARowOutlivesThePersonItWasAbout(t *testing.T) {
 // change could take away one at a time; **the same answer as the read whose
 // narrowing is generated and reviewed**.
 //
-// Both entity shapes, because the wall reaches them by different Sql and only
+// Both entity shapes, because the wall reaches them by different SQL and only
 // one of them is a column on the row. `Holder` is `tenant_id IN (...)`.
 // `TeamMembership` is `HasHolderWith(TenantIdIn(...))` -- a correlated subquery
 // through a second table, which is the shape somebody optimises away.

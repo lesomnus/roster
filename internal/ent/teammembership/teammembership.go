@@ -55,7 +55,7 @@ const (
 	RoleColumn = "role_id"
 )
 
-// Columns holds all Sql columns for teammembership fields.
+// Columns holds all SQL columns for teammembership fields.
 var Columns = []string{
 	FieldId,
 	FieldDateUpdated,

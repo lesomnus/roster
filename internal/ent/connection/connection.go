@@ -45,7 +45,7 @@ const (
 	TenantColumn = "tenant_id"
 )
 
-// Columns holds all Sql columns for connection fields.
+// Columns holds all SQL columns for connection fields.
 var Columns = []string{
 	FieldId,
 	FieldName,

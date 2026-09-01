@@ -23,12 +23,12 @@
 //
 // # How it knows what changed, without being told
 //
-// It does not read the Rpc, and could not usefully: `watch.Next` answers with
+// It does not read the RPC, and could not usefully: `watch.Next` answers with
 // the method the **call** was dispatched under, so a stamp moved by
 // `HolderService/Disable` and one moved by `MeService/SignOutEverywhere` arrive
 // under different names, and a write made on the way to somewhere else -- the
 // holder that comes with a new tenant -- under a third. A table of those names
-// is a table that is wrong the day somebody adds an Rpc, and wrong silently.
+// is a table that is wrong the day somebody adds an RPC, and wrong silently.
 //
 // So it compares state. The three facts are columns; the stream keeps what it
 // last sent for each person and can then say which of them moved. That is the
@@ -242,7 +242,7 @@ func (s *server) one(
 // why names the movement, when there was one to see.
 //
 // Read in the order somebody would: gone, then shut, then void. Two of them
-// moving in one write is not a thing any Rpc does, and if it ever were, the
+// moving in one write is not a thing any RPC does, and if it ever were, the
 // timestamps on the event are all there either way -- this only decides which
 // word goes on it.
 func why(prior, now stamps, told bool) app.SyncReason {
@@ -268,7 +268,7 @@ func why(prior, now stamps, told bool) app.SyncReason {
 	default:
 		// Something moved -- the caller checked -- and it was none of the
 		// three going forward. A stamp being cleared or wound back is the only
-		// way here, and no Rpc does it; the facts are on the event regardless.
+		// way here, and no RPC does it; the facts are on the event regardless.
 		return app.SyncReason_SYNC_REASON_UNSPECIFIED
 	}
 }

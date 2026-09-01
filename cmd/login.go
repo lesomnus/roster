@@ -30,7 +30,7 @@ import (
 //
 // # It is the seam payday left and could not fill
 //
-// `auth` reads a credential and does not issue one, and issuing is an Http
+// `auth` reads a credential and does not issue one, and issuing is an HTTP
 // endpoint: a browser has nowhere safe to keep a secret, so what it gets is an
 // opaque cookie naming a session this server keeps. `authsession` is both
 // halves of that and takes one thing from the app -- how to check a secret --

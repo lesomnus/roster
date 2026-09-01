@@ -380,7 +380,7 @@ func (s *Server) continuation(ctx context.Context, handle string, by pdid.Id) (*
 // UPDATE narrowed by `date_erased IS NULL`, so the database decides, and it
 // decides once. `false` is a caller that lost, one whose attempt had already
 // expired or been spent, and one that was never there -- which are one answer
-// on purpose, exactly as the Rpc makes them one.
+// on purpose, exactly as the RPC makes them one.
 func (s *Server) spend(ctx context.Context, v *app.Continuation) (bool, error) {
 	res, err := s.open.Continuation().Erase(ctx,
 		app.ContinuationRef_builder{Id: v.GetId()}.Build())

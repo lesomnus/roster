@@ -41,7 +41,7 @@ const (
 	HolderColumn = "holder_id"
 )
 
-// Columns holds all Sql columns for delegation fields.
+// Columns holds all SQL columns for delegation fields.
 var Columns = []string{
 	FieldId,
 	FieldMethods,

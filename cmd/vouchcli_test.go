@@ -65,7 +65,7 @@ func customer(t *testing.T, s *cmd.Server, tenant, holder string) pdid.Id {
 //
 // That is not a difference. An operator at a console is a person at a screen
 // reading a secret out; both reach the same `VouchService`, over the same rows,
-// and `admin.addr` is one of them making an Rpc exactly as this is. What the
+// and `admin.addr` is one of them making an RPC exactly as this is. What the
 // reason described was which of the two had been written.
 func TestTheCliWritesAWayInForAPerson(t *testing.T) {
 	x := require.New(t)

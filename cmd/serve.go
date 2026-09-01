@@ -236,7 +236,7 @@ func build(ctx context.Context, c Config, prefix string) (*Server, error) {
 	//
 	// Two things are said to it rather than to the stack, and for the same
 	// reason -- both are about the statement that runs. The trail is kept by
-	// the servers that do the writing, since every Rpc that changes anything
+	// the servers that do the writing, since every RPC that changes anything
 	// has to report itself from inside the transaction that changes it. The
 	// wall is a predicate and a predicate belongs in the WHERE.
 	b, err := c.Watch.Build(c.Db)
@@ -251,7 +251,7 @@ func build(ctx context.Context, c Config, prefix string) (*Server, error) {
 		// further down spins only where there is a broker to publish into, so
 		// this combination -- two plain environment variables, and the loader
 		// accepts both -- wrote a row inside every transaction that nothing
-		// would ever publish or delete. `OutboxService` answers no Rpc, so not
+		// would ever publish or delete. `OutboxService` answers no RPC, so not
 		// even an operator could drain it by hand; the table grows until the
 		// database is full, which is the failure `outbox.proto` warns about in
 		// as many words.
@@ -730,7 +730,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 		vouch.WithKeys(s.Keyring)))
 
 	// What a front door asks before it knows anything, and therefore through
-	// the server the wall was never installed on. Neither Rpc answers with a
+	// the server the wall was never installed on. Neither RPC answers with a
 	// row -- one identifier or one provider name -- which is what keeps that
 	// from being a hole; `server/front` says it at length.
 	app.RegisterFrontServiceServer(g, front.New(s.Ungated))
@@ -958,7 +958,7 @@ func (s *Server) closed(c Config) func(method string) bool {
 func public(method string) bool {
 	// Signing in, and only on the port that serves it. A caller asking for a
 	// credential does not have one, which is the whole of the argument -- the
-	// same one `/session` made when this was an Http endpoint.
+	// same one `/session` made when this was an HTTP endpoint.
 	//
 	// What it costs is what that cost: anybody who reaches the port may guess
 	// passwords, and `grpcx.Limit` counts per tenant off a frame a public call
@@ -1258,7 +1258,7 @@ func (s *Server) http(ctx context.Context, name string, c config.HttpConfig, g *
 	}
 
 	// The console's sign-in, which is the seam payday left and could not fill:
-	// `auth` reads a credential and does not issue one, and issuing is an Http
+	// `auth` reads a credential and does not issue one, and issuing is an HTTP
 	// endpoint. See `Login`.
 	//
 	// A gRpc path is `/<service>/<method>`, so an ordinary route cannot collide

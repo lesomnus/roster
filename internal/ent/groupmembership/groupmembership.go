@@ -44,7 +44,7 @@ const (
 	GroupColumn = "group_id"
 )
 
-// Columns holds all Sql columns for groupmembership fields.
+// Columns holds all SQL columns for groupmembership fields.
 var Columns = []string{
 	FieldId,
 	FieldDateUpdated,

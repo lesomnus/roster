@@ -41,7 +41,7 @@ const (
 	TenantColumn = "tenant_id"
 )
 
-// Columns holds all Sql columns for site fields.
+// Columns holds all SQL columns for site fields.
 var Columns = []string{
 	FieldId,
 	FieldAlias,

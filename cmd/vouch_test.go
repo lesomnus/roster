@@ -204,7 +204,7 @@ func TestGettingItRightClearsWhatGettingItWrongLeftBehind(t *testing.T) {
 // TestSigningInDoesNotWriteWhenNothingChanged.
 //
 // Every sign-in would otherwise bump a row version, write an audit entry and
-// publish a watch event for a fact that did not change -- on the busiest Rpc
+// publish a watch event for a fact that did not change -- on the busiest RPC
 // this app has.
 func TestSigningInDoesNotWriteWhenNothingChanged(t *testing.T) {
 	x := require.New(t)

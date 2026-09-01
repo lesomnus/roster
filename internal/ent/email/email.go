@@ -50,7 +50,7 @@ const (
 	VouchedByColumn = "vouched_by_id"
 )
 
-// Columns holds all Sql columns for email fields.
+// Columns holds all SQL columns for email fields.
 var Columns = []string{
 	FieldId,
 	FieldAddress,

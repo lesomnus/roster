@@ -39,7 +39,7 @@ const (
 	HolderColumn = "holder_id"
 )
 
-// Columns holds all Sql columns for identity fields.
+// Columns holds all SQL columns for identity fields.
 var Columns = []string{
 	FieldId,
 	FieldProvider,

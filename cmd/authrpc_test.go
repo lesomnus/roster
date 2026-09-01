@@ -22,7 +22,7 @@ import (
 //
 // Every call is a generated one — nothing here reads a document to know what
 // signing in looks like, which is why the service is in the schema rather than
-// being an Http endpoint beside it.
+// being an HTTP endpoint beside it.
 func TestTheConsoleSignsInAsAnRpc(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()

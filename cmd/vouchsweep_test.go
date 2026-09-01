@@ -49,7 +49,7 @@ func TestExpiredAttemptsAndLinksAreCollectedAndLiveOnesAreNot(t *testing.T) {
 	who := app.HolderRef_builder{Id: b.Who.Bytes()}.Build()
 	by := issuerOf(t, ctx, b)
 
-	// Written through `Ungated` rather than minted, because neither Rpc will
+	// Written through `Ungated` rather than minted, because neither RPC will
 	// make an expired one: `Link` refuses an expiry that is not in the future
 	// and a continuation's lifetime is a constant with no field to say
 	// otherwise. What is under test is the collector, so the rows are stated

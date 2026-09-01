@@ -23,7 +23,7 @@ import (
 //
 // It exists because there is nowhere else it could happen. A tenant is not put
 // up from inside one, so the first row of a deployment cannot arrive over the
-// Api. What puts it there is [Server.Ungated], which is not a privilege anybody
+// API. What puts it there is [Server.Ungated], which is not a privilege anybody
 // holds: it is a server instance this process was handed, reachable from this
 // command and from nowhere a request can get to.
 //
@@ -63,7 +63,7 @@ import (
 // unnoticed because this command had no test.
 //
 // So it binds a role, and the role is a pattern rather than a list. A list
-// written here is a snapshot: the next release adds an Rpc the first operator
+// written here is a snapshot: the next release adds an RPC the first operator
 // cannot call, and cannot grant themselves either, because granting is refused
 // for anything the granter does not already hold. That is now about the
 // operator alone, and it is why `allow` is still here.

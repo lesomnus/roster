@@ -24,7 +24,7 @@ import (
 
 // TestAnAccountIsInertUntilAdmitted is the whole of the pattern the user asked
 // about, end to end and over a real browser session: somebody signs in with
-// Sso, may do nothing, an administrator admits them, and now they may -- with
+// SSO, may do nothing, an administrator admits them, and now they may -- with
 // nothing about their sign-in having changed, and roster unmodified.
 func TestAnAccountIsInertUntilAdmitted(t *testing.T) {
 	x := require.New(t)

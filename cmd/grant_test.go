@@ -30,7 +30,7 @@ import (
 // running deployment, and a restore of rows written by an older one. Neither
 // asks ent's permission, so neither can be staged through it.
 //
-// Built with ent's own Sql builder rather than written out, because the two
+// Built with ent's own SQL builder rather than written out, because the two
 // databases this runs on do not spell a statement the same way: the
 // placeholders differ, `?` against `$1`, and the quoting of identifiers with
 // them. A literal here would pass on SQLite and fail on PostgreSql, which is

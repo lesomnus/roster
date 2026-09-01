@@ -20,7 +20,7 @@ import (
 // marshalled into `value`. Nothing does the same to `patch`, which is built
 // from the request and carries whatever the request set.
 //
-// So `Vouch.Set` -- the one Rpc whose whole job is to take a secret in and
+// So `Vouch.Set` -- the one RPC whose whole job is to take a secret in and
 // never give one back -- left the argon2id string in `Audit.patch`, in full,
 // in the one table nothing erases. And `AuditService` is **served**: the wall
 // files a credential's row under the person's tenant, so anybody in that

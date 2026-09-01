@@ -164,7 +164,7 @@ func (s coreTeamMembership) Patch(ctx context.Context, req *app.TeamMembershipPa
 //
 // Asking needs the row: which team a membership is of is not in the reference,
 // so it is read first -- and a read of what is gone answers NotFound. Passing
-// that on put this layer at odds with the Rpc it stands in front of. The
+// that on put this layer at odds with the RPC it stands in front of. The
 // generated `Erase` answers `{erased: false}` for a row that was already gone
 // or was never there, and spend in `server/vouch/step.go` states that as a
 // rule rather than as a detail: `keys.Undelegate` erases what may already be

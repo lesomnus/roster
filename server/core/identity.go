@@ -226,7 +226,7 @@ func (s coreIdentity) Erase(ctx context.Context, req *app.IdentityRef) (*app.Ide
 			// generated `Erase` already states and this must not change.
 			//
 			// And `erased` is false, which is the same answer the generated one
-			// gives for a row that was already gone: the Rpc does not fail, and
+			// gives for a row that was already gone: the RPC does not fail, and
 			// it does not pretend either.
 			return app.IdentityEraseResponse_builder{}.Build(), nil
 		}

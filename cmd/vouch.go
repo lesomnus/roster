@@ -30,7 +30,7 @@ import (
 //
 // That is not a difference. An operator at a console is also a person at a
 // screen reading a secret out; both reach the same `VouchService`, over the
-// same rows, and `admin.addr` is one of them making an Rpc exactly as this is.
+// same rows, and `admin.addr` is one of them making an RPC exactly as this is.
 // What the reason actually described was which of the two the author had
 // written, which is not a rule.
 //

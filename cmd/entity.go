@@ -68,13 +68,13 @@ import (
 //
 // That is not a boundary being crossed: an operator running this already has
 // the database credentials, and everything they could do through the general
-// write they could do with a Sql client. It is written down because *local is
+// write they could do with a SQL client. It is written down because *local is
 // Ungated* was documented and *and general writes are open there* was not, and
 // the two are different sentences.
 //
 // **Remote is not that.** It is a caller like any other, so `tenant ls` over
 // the wire answers with the tenants that credential may see -- which for an
-// Api key is one. The two are not the same view and are not meant to be; see
+// API key is one. The two are not the same view and are not meant to be; see
 // [remote] for which port it reaches and why the operator's is not it yet.
 //
 // # Why the connection is made by a [pdcmd.Connector]
@@ -101,7 +101,7 @@ func NewCmdEntities(c *Config) xli.Commands {
 	// -- which for a connector that hands out an in-process server would be a
 	// second server.
 	//
-	// `me` is the first of them and will not be the last. Every Rpc should have
+	// `me` is the first of them and will not be the last. Every RPC should have
 	// a command, because *what can be done without a console* has one correct
 	// answer; docs/roadmap.md's D58 row is the list and why.
 	// The connection on the **parent**, which is where it belongs: `withConn`
@@ -276,7 +276,7 @@ func (l local) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
 // # Which port it reaches
 //
 // Whichever `client.addr` names, and what that means differs. `server.addr` is
-// the data plane and is **walled**: an Api key belongs to a tenant, so
+// the data plane and is **walled**: an API key belongs to a tenant, so
 // `tenant ls` there answers with that tenant and not with every one. That is
 // correct and it is not the operator's view.
 //
@@ -291,7 +291,7 @@ func (l local) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
 //
 // `client.auth`, which says the scheme as well as the value -- because roster
 // serves more than one and which it serves depends on the rest of the file: a
-// deployment with a control plane reads `Bearer` and checks an Api key, and one
+// deployment with a control plane reads `Bearer` and checks an API key, and one
 // without reads `Plain` and believes what the caller writes.
 //
 // There is no `--credential` flag and there will not be, for the reason

@@ -40,10 +40,10 @@ import (
 
 // The whole flow, run.
 //
-// An example that has never been executed is a guess about an Api, and the two
+// An example that has never been executed is a guess about an API, and the two
 // halves here are exactly the ones that are easy to guess wrong: what a
 // provider hands back, and what roster answers for somebody it has never seen.
-// So the provider below is real enough to be talked to over Http -- discovery,
+// So the provider below is real enough to be talked to over HTTP -- discovery,
 // JWKS, authorize, token -- and roster is a real server on a real connection.
 
 const clientId = "example-app"
@@ -222,7 +222,7 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 	// answer to "which credential does the login app call roster with", and
 	// writing the methods out is the answer to "and what may it do with it".
 	//
-	// A deployment mints an Api key for this holder and the connection carries
+	// A deployment mints an API key for this holder and the connection carries
 	// it, which is what happens below: an `rt_`, because this app is one
 	// operator's front door and therefore somebody inside that tenant.
 	svc, err := s.Ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
@@ -354,7 +354,7 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 //
 // `pdtest.Serve` is the same thing without the credential; this adds
 // `auth.Inject`, which is the whole of how a client of a payday app says who it
-// is. A deployment does exactly this with an Api key instead.
+// is. A deployment does exactly this with an API key instead.
 func serveRoster(t *testing.T, g *grpc.Server, as auth.Provider) *grpc.ClientConn {
 	t.Helper()
 	x := require.New(t)
@@ -542,7 +542,7 @@ func TestTheSameAccountAtTwoOperators(t *testing.T) {
 	// This app is contoso's front door. It is contoso's and only contoso's, because its
 	// credential is a Holder of contoso and the wall narrows what it may read to
 	// that -- see the note on `serve`. A login app that fronts several
-	// operators needs a credential whose scope covers them, which is an Api
+	// operators needs a credential whose scope covers them, which is an API
 	// key rather than a person.
 	d := serve(t, sso.Enrolling, map[string]string{"127.0.0.1": "contoso"})
 

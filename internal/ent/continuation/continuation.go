@@ -43,7 +43,7 @@ const (
 	HolderColumn = "holder_id"
 )
 
-// Columns holds all Sql columns for continuation fields.
+// Columns holds all SQL columns for continuation fields.
 var Columns = []string{
 	FieldId,
 	FieldSatisfied,
