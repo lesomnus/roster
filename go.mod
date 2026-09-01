@@ -32,13 +32,13 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/lesomnus/grpc-dgram v0.0.0-20260808164022-d993065403e1
 	github.com/lesomnus/otx v0.0.0-20260807173743-977a5687d6ba
-	github.com/lesomnus/payday v0.0.0-20260901161111-90542cd53a3e
+	github.com/lesomnus/payday v0.0.0-20260901164048-1321272e59e9
 	github.com/lesomnus/protobuf-patch v0.0.0-20260803175157-e1b7a0c2804f
 	github.com/lesomnus/xli v0.0.0-20260717171524-bf8cac633057
 	github.com/lesomnus/z v0.0.0-20260531102454-3f1853bb4278
-	github.com/protobuf-orm/ent v0.0.0-20260901155027-6f0bc7e0840c
+	github.com/protobuf-orm/ent v0.0.0-20260901163751-c97834a2392d
 	github.com/protobuf-orm/protobuf-orm v0.0.0-20260901155106-6bf45a2a1e67
-	github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20260901160136-550853135f76
+	github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20260901163909-93bebe38bf70
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/otel/trace v1.45.0
 	golang.org/x/crypto v0.55.0
@@ -73,7 +73,6 @@ require (
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-tpm v0.9.8 // indirect
 	github.com/hashicorp/hcl/v2 v2.24.0 // indirect
-	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/pgx/v5 v5.10.0 // indirect
@@ -93,12 +92,10 @@ require (
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/protobuf-orm/protobuf-merge v0.0.0-20260901155249-39cbf4c6c20f // indirect
-	github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20260901160136-550853135f76 // indirect
+	github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20260901163909-93bebe38bf70 // indirect
 	github.com/protobuf-orm/protoc-gen-orm-go v0.0.0-20260901155244-4237381a6615 // indirect
 	github.com/protobuf-orm/protoc-gen-orm-service v0.0.0-20260901155246-12064a5a7fa8 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/spf13/cobra v1.10.2 // indirect
-	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/tidwall/btree v1.8.1 // indirect
 	github.com/tinylib/msgp v1.6.4 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
