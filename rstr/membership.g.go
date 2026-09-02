@@ -4,7 +4,6 @@ package rstr
 
 import (
 	bytes "bytes"
-	protojson "google.golang.org/protobuf/encoding/protojson"
 )
 
 func (x *SiteMembershipRef) Pick() *SiteMembershipGetRequest {
@@ -50,9 +49,6 @@ func (x *SiteMembershipGetRequest) WithSelect(f func(s *SiteMembershipSelect)) *
 	f(x.GetSelect())
 	return x
 }
-
-func (x *SiteMembership) MarshalJSON() ([]byte, error) { return protojson.Marshal(x) }
-func (x *SiteMembership) UnmarshalJSON(b []byte) error { return protojson.Unmarshal(b, x) }
 
 func SiteMembershipById(v []byte) *SiteMembershipRef {
 	x := &SiteMembershipRef{}
@@ -118,9 +114,6 @@ func (x *TeamMembershipGetRequest) WithSelect(f func(s *TeamMembershipSelect)) *
 	f(x.GetSelect())
 	return x
 }
-
-func (x *TeamMembership) MarshalJSON() ([]byte, error) { return protojson.Marshal(x) }
-func (x *TeamMembership) UnmarshalJSON(b []byte) error { return protojson.Unmarshal(b, x) }
 
 func TeamMembershipById(v []byte) *TeamMembershipRef {
 	x := &TeamMembershipRef{}

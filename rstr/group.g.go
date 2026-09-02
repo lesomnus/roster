@@ -4,7 +4,6 @@ package rstr
 
 import (
 	bytes "bytes"
-	protojson "google.golang.org/protobuf/encoding/protojson"
 )
 
 func (x *GroupRef) Pick() *GroupGetRequest {
@@ -50,9 +49,6 @@ func (x *GroupGetRequest) WithSelect(f func(s *GroupSelect)) *GroupGetRequest {
 	f(x.GetSelect())
 	return x
 }
-
-func (x *Group) MarshalJSON() ([]byte, error) { return protojson.Marshal(x) }
-func (x *Group) UnmarshalJSON(b []byte) error { return protojson.Unmarshal(b, x) }
 
 func GroupById(v []byte) *GroupRef {
 	x := &GroupRef{}
@@ -118,9 +114,6 @@ func (x *GroupMembershipGetRequest) WithSelect(f func(s *GroupMembershipSelect))
 	f(x.GetSelect())
 	return x
 }
-
-func (x *GroupMembership) MarshalJSON() ([]byte, error) { return protojson.Marshal(x) }
-func (x *GroupMembership) UnmarshalJSON(b []byte) error { return protojson.Unmarshal(b, x) }
 
 func GroupMembershipById(v []byte) *GroupMembershipRef {
 	x := &GroupMembershipRef{}

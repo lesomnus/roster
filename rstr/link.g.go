@@ -4,7 +4,6 @@ package rstr
 
 import (
 	bytes "bytes"
-	protojson "google.golang.org/protobuf/encoding/protojson"
 )
 
 func (x *LinkRef) Pick() *LinkGetRequest {
@@ -44,9 +43,6 @@ func (x *LinkGetRequest) WithSelect(f func(s *LinkSelect)) *LinkGetRequest {
 	f(x.GetSelect())
 	return x
 }
-
-func (x *Link) MarshalJSON() ([]byte, error) { return protojson.Marshal(x) }
-func (x *Link) UnmarshalJSON(b []byte) error { return protojson.Unmarshal(b, x) }
 
 func LinkById(v []byte) *LinkRef {
 	x := &LinkRef{}

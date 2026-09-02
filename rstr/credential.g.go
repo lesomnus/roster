@@ -4,7 +4,6 @@ package rstr
 
 import (
 	bytes "bytes"
-	protojson "google.golang.org/protobuf/encoding/protojson"
 )
 
 func (x *CredentialRef) Pick() *CredentialGetRequest {
@@ -52,9 +51,6 @@ func (x *CredentialGetRequest) WithSelect(f func(s *CredentialSelect)) *Credenti
 	f(x.GetSelect())
 	return x
 }
-
-func (x *Credential) MarshalJSON() ([]byte, error) { return protojson.Marshal(x) }
-func (x *Credential) UnmarshalJSON(b []byte) error { return protojson.Unmarshal(b, x) }
 
 func CredentialById(v []byte) *CredentialRef {
 	x := &CredentialRef{}

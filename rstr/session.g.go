@@ -4,7 +4,6 @@ package rstr
 
 import (
 	bytes "bytes"
-	protojson "google.golang.org/protobuf/encoding/protojson"
 )
 
 func (x *SessionRef) Pick() *SessionGetRequest {
@@ -44,9 +43,6 @@ func (x *SessionGetRequest) WithSelect(f func(s *SessionSelect)) *SessionGetRequ
 	f(x.GetSelect())
 	return x
 }
-
-func (x *Session) MarshalJSON() ([]byte, error) { return protojson.Marshal(x) }
-func (x *Session) UnmarshalJSON(b []byte) error { return protojson.Unmarshal(b, x) }
 
 func SessionById(v []byte) *SessionRef {
 	x := &SessionRef{}

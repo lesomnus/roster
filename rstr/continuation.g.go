@@ -4,7 +4,6 @@ package rstr
 
 import (
 	bytes "bytes"
-	protojson "google.golang.org/protobuf/encoding/protojson"
 )
 
 func (x *ContinuationRef) Pick() *ContinuationGetRequest {
@@ -44,9 +43,6 @@ func (x *ContinuationGetRequest) WithSelect(f func(s *ContinuationSelect)) *Cont
 	f(x.GetSelect())
 	return x
 }
-
-func (x *Continuation) MarshalJSON() ([]byte, error) { return protojson.Marshal(x) }
-func (x *Continuation) UnmarshalJSON(b []byte) error { return protojson.Unmarshal(b, x) }
 
 func ContinuationById(v []byte) *ContinuationRef {
 	x := &ContinuationRef{}

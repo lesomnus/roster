@@ -4,7 +4,6 @@ package rstr
 
 import (
 	bytes "bytes"
-	protojson "google.golang.org/protobuf/encoding/protojson"
 )
 
 func (x *SiteRef) Pick() *SiteGetRequest {
@@ -50,9 +49,6 @@ func (x *SiteGetRequest) WithSelect(f func(s *SiteSelect)) *SiteGetRequest {
 	f(x.GetSelect())
 	return x
 }
-
-func (x *Site) MarshalJSON() ([]byte, error) { return protojson.Marshal(x) }
-func (x *Site) UnmarshalJSON(b []byte) error { return protojson.Unmarshal(b, x) }
 
 func SiteById(v []byte) *SiteRef {
 	x := &SiteRef{}

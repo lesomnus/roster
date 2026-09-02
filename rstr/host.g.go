@@ -4,7 +4,6 @@ package rstr
 
 import (
 	bytes "bytes"
-	protojson "google.golang.org/protobuf/encoding/protojson"
 )
 
 func (x *HostRef) Pick() *HostGetRequest {
@@ -44,9 +43,6 @@ func (x *HostGetRequest) WithSelect(f func(s *HostSelect)) *HostGetRequest {
 	f(x.GetSelect())
 	return x
 }
-
-func (x *Host) MarshalJSON() ([]byte, error) { return protojson.Marshal(x) }
-func (x *Host) UnmarshalJSON(b []byte) error { return protojson.Unmarshal(b, x) }
 
 func HostById(v []byte) *HostRef {
 	x := &HostRef{}
@@ -111,9 +107,6 @@ func (x *MailDomainGetRequest) WithSelect(f func(s *MailDomainSelect)) *MailDoma
 	f(x.GetSelect())
 	return x
 }
-
-func (x *MailDomain) MarshalJSON() ([]byte, error) { return protojson.Marshal(x) }
-func (x *MailDomain) UnmarshalJSON(b []byte) error { return protojson.Unmarshal(b, x) }
 
 func MailDomainById(v []byte) *MailDomainRef {
 	x := &MailDomainRef{}

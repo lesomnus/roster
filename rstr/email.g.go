@@ -4,7 +4,6 @@ package rstr
 
 import (
 	bytes "bytes"
-	protojson "google.golang.org/protobuf/encoding/protojson"
 )
 
 func (x *EmailRef) Pick() *EmailGetRequest {
@@ -61,9 +60,6 @@ func (x *EmailGetRequest) WithSelect(f func(s *EmailSelect)) *EmailGetRequest {
 	f(x.GetSelect())
 	return x
 }
-
-func (x *Email) MarshalJSON() ([]byte, error) { return protojson.Marshal(x) }
-func (x *Email) UnmarshalJSON(b []byte) error { return protojson.Unmarshal(b, x) }
 
 func EmailById(v []byte) *EmailRef {
 	x := &EmailRef{}

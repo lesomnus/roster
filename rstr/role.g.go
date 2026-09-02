@@ -4,7 +4,6 @@ package rstr
 
 import (
 	bytes "bytes"
-	protojson "google.golang.org/protobuf/encoding/protojson"
 )
 
 func (x *RoleRef) Pick() *RoleGetRequest {
@@ -50,9 +49,6 @@ func (x *RoleGetRequest) WithSelect(f func(s *RoleSelect)) *RoleGetRequest {
 	f(x.GetSelect())
 	return x
 }
-
-func (x *Role) MarshalJSON() ([]byte, error) { return protojson.Marshal(x) }
-func (x *Role) UnmarshalJSON(b []byte) error { return protojson.Unmarshal(b, x) }
 
 func RoleById(v []byte) *RoleRef {
 	x := &RoleRef{}
@@ -107,9 +103,6 @@ func (x *BindingGetRequest) WithSelect(f func(s *BindingSelect)) *BindingGetRequ
 	f(x.GetSelect())
 	return x
 }
-
-func (x *Binding) MarshalJSON() ([]byte, error) { return protojson.Marshal(x) }
-func (x *Binding) UnmarshalJSON(b []byte) error { return protojson.Unmarshal(b, x) }
 
 func BindingById(v []byte) *BindingRef {
 	x := &BindingRef{}

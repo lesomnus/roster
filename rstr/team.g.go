@@ -4,7 +4,6 @@ package rstr
 
 import (
 	bytes "bytes"
-	protojson "google.golang.org/protobuf/encoding/protojson"
 )
 
 func (x *TeamRef) Pick() *TeamGetRequest {
@@ -50,9 +49,6 @@ func (x *TeamGetRequest) WithSelect(f func(s *TeamSelect)) *TeamGetRequest {
 	f(x.GetSelect())
 	return x
 }
-
-func (x *Team) MarshalJSON() ([]byte, error) { return protojson.Marshal(x) }
-func (x *Team) UnmarshalJSON(b []byte) error { return protojson.Unmarshal(b, x) }
 
 func TeamById(v []byte) *TeamRef {
 	x := &TeamRef{}

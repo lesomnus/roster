@@ -4,7 +4,6 @@ package rstr
 
 import (
 	bytes "bytes"
-	protojson "google.golang.org/protobuf/encoding/protojson"
 )
 
 func (x *ApiKeyRef) Pick() *ApiKeyGetRequest {
@@ -55,9 +54,6 @@ func (x *ApiKeyGetRequest) WithSelect(f func(s *ApiKeySelect)) *ApiKeyGetRequest
 	f(x.GetSelect())
 	return x
 }
-
-func (x *ApiKey) MarshalJSON() ([]byte, error) { return protojson.Marshal(x) }
-func (x *ApiKey) UnmarshalJSON(b []byte) error { return protojson.Unmarshal(b, x) }
 
 func ApiKeyById(v []byte) *ApiKeyRef {
 	x := &ApiKeyRef{}

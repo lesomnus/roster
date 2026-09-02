@@ -4,7 +4,6 @@ package rstr
 
 import (
 	bytes "bytes"
-	protojson "google.golang.org/protobuf/encoding/protojson"
 )
 
 func (x *IdentityRef) Pick() *IdentityGetRequest {
@@ -52,9 +51,6 @@ func (x *IdentityGetRequest) WithSelect(f func(s *IdentitySelect)) *IdentityGetR
 	f(x.GetSelect())
 	return x
 }
-
-func (x *Identity) MarshalJSON() ([]byte, error) { return protojson.Marshal(x) }
-func (x *Identity) UnmarshalJSON(b []byte) error { return protojson.Unmarshal(b, x) }
 
 func IdentityById(v []byte) *IdentityRef {
 	x := &IdentityRef{}
