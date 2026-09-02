@@ -202,7 +202,7 @@ func (s coreIdentity) oneAccountPerProvider(ctx context.Context, req *app.Identi
 // person's last two identities each count before either writes, each see the
 // other's still live, and both go through -- so the state this exists to refuse
 // is reached by asking for it twice at the same time. Forty people, each
-// unlinked twice at once, lost 39 on PostgreSql and four on SQLite. It was not
+// unlinked twice at once, lost 39 on PostgreSQL and four on SQLite. It was not
 // a narrow window and it was not one dialect's.
 //
 // The count and the erase share a transaction now, with one write both callers

@@ -33,7 +33,7 @@ import (
 // Built with ent's own SQL builder rather than written out, because the two
 // databases this runs on do not spell a statement the same way: the
 // placeholders differ, `?` against `$1`, and the quoting of identifiers with
-// them. A literal here would pass on SQLite and fail on PostgreSql, which is
+// them. A literal here would pass on SQLite and fail on PostgreSQL, which is
 // the half of the matrix this test most wants to be right about.
 func rewriteGrant(t *testing.T, ctx context.Context, s *cmd.Server, key string, grant []byte) {
 	t.Helper()

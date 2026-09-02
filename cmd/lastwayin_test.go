@@ -19,7 +19,7 @@ import (
 // is left unable to sign in, which is the one state the rule exists to prevent.
 //
 // It is not a narrow window and it is not one dialect's. Forty people, each
-// unlinked twice at once, lost thirty-nine on PostgreSql and four on SQLite --
+// unlinked twice at once, lost thirty-nine on PostgreSQL and four on SQLite --
 // which serialises writers, so all that is left there is the gap between the
 // count and the write.
 //

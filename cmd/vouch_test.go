@@ -412,7 +412,7 @@ func TestNobodyVerifiesAPasswordAnonymously(t *testing.T) {
 // verifier too.
 //
 // **Reached** and not "registered", because from out here the two doors are one
-// answer -- `grpcx.ErrClosed` is `Unimplemented` and so is a method gRpc cannot
+// answer -- `grpcx.ErrClosed` is `Unimplemented` and so is a method gRPC cannot
 // dispatch. Which is right for a caller and worth saying for a reader: this
 // passes with either door shut, and it was checked by opening both.
 func TestTheApiKeyServiceCannotBeReachedEither(t *testing.T) {

@@ -13,72 +13,47 @@ import (
 
 // Id filters vertices based on their Id field.
 func Id(id uuid.UUID) predicate.GroupMembership {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.GroupMembershipOrErr(sql.FieldEQ(FieldId, vc), err)
+	return predicate.GroupMembership(sql.FieldEQ(FieldId, id))
 }
 
 // IdEQ applies the EQ predicate on the Id field.
 func IdEQ(id uuid.UUID) predicate.GroupMembership {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.GroupMembershipOrErr(sql.FieldEQ(FieldId, vc), err)
+	return predicate.GroupMembership(sql.FieldEQ(FieldId, id))
 }
 
 // IdNEQ applies the NEQ predicate on the Id field.
 func IdNEQ(id uuid.UUID) predicate.GroupMembership {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.GroupMembershipOrErr(sql.FieldNEQ(FieldId, vc), err)
+	return predicate.GroupMembership(sql.FieldNEQ(FieldId, id))
 }
 
 // IdIn applies the In predicate on the Id field.
 func IdIn(ids ...uuid.UUID) predicate.GroupMembership {
-	var (
-		err error
-		vcs = make([]any, len(ids))
-	)
-	for i := range vcs {
-		if vcs[i], err = ValueScanner.Id.Value(ids[i]); err != nil {
-			break
-		}
-	}
-	return predicate.GroupMembershipOrErr(sql.FieldIn(FieldId, vcs...), err)
+	return predicate.GroupMembership(sql.FieldIn(FieldId, ids...))
 }
 
 // IdNotIn applies the NotIn predicate on the Id field.
 func IdNotIn(ids ...uuid.UUID) predicate.GroupMembership {
-	var (
-		err error
-		vcs = make([]any, len(ids))
-	)
-	for i := range vcs {
-		if vcs[i], err = ValueScanner.Id.Value(ids[i]); err != nil {
-			break
-		}
-	}
-	return predicate.GroupMembershipOrErr(sql.FieldNotIn(FieldId, vcs...), err)
+	return predicate.GroupMembership(sql.FieldNotIn(FieldId, ids...))
 }
 
 // IdGT applies the GT predicate on the Id field.
 func IdGT(id uuid.UUID) predicate.GroupMembership {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.GroupMembershipOrErr(sql.FieldGT(FieldId, vc), err)
+	return predicate.GroupMembership(sql.FieldGT(FieldId, id))
 }
 
 // IdGTE applies the GTE predicate on the Id field.
 func IdGTE(id uuid.UUID) predicate.GroupMembership {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.GroupMembershipOrErr(sql.FieldGTE(FieldId, vc), err)
+	return predicate.GroupMembership(sql.FieldGTE(FieldId, id))
 }
 
 // IdLT applies the LT predicate on the Id field.
 func IdLT(id uuid.UUID) predicate.GroupMembership {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.GroupMembershipOrErr(sql.FieldLT(FieldId, vc), err)
+	return predicate.GroupMembership(sql.FieldLT(FieldId, id))
 }
 
 // IdLTE applies the LTE predicate on the Id field.
 func IdLTE(id uuid.UUID) predicate.GroupMembership {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.GroupMembershipOrErr(sql.FieldLTE(FieldId, vc), err)
+	return predicate.GroupMembership(sql.FieldLTE(FieldId, id))
 }
 
 // DateUpdated applies equality check predicate on the "date_updated" field. It's identical to DateUpdatedEQ.
@@ -98,14 +73,12 @@ func DateCreated(v time.Time) predicate.GroupMembership {
 
 // HolderId applies equality check predicate on the "holder_id" field. It's identical to HolderIdEQ.
 func HolderId(v uuid.UUID) predicate.GroupMembership {
-	vc, err := ValueScanner.HolderId.Value(v)
-	return predicate.GroupMembershipOrErr(sql.FieldEQ(FieldHolderId, vc), err)
+	return predicate.GroupMembership(sql.FieldEQ(FieldHolderId, v))
 }
 
 // GroupId applies equality check predicate on the "group_id" field. It's identical to GroupIdEQ.
 func GroupId(v uuid.UUID) predicate.GroupMembership {
-	vc, err := ValueScanner.GroupId.Value(v)
-	return predicate.GroupMembershipOrErr(sql.FieldEQ(FieldGroupId, vc), err)
+	return predicate.GroupMembership(sql.FieldEQ(FieldGroupId, v))
 }
 
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
@@ -250,82 +223,42 @@ func DateCreatedNotNil() predicate.GroupMembership {
 
 // HolderIdEQ applies the EQ predicate on the "holder_id" field.
 func HolderIdEQ(v uuid.UUID) predicate.GroupMembership {
-	vc, err := ValueScanner.HolderId.Value(v)
-	return predicate.GroupMembershipOrErr(sql.FieldEQ(FieldHolderId, vc), err)
+	return predicate.GroupMembership(sql.FieldEQ(FieldHolderId, v))
 }
 
 // HolderIdNEQ applies the NEQ predicate on the "holder_id" field.
 func HolderIdNEQ(v uuid.UUID) predicate.GroupMembership {
-	vc, err := ValueScanner.HolderId.Value(v)
-	return predicate.GroupMembershipOrErr(sql.FieldNEQ(FieldHolderId, vc), err)
+	return predicate.GroupMembership(sql.FieldNEQ(FieldHolderId, v))
 }
 
 // HolderIdIn applies the In predicate on the "holder_id" field.
 func HolderIdIn(vs ...uuid.UUID) predicate.GroupMembership {
-	var (
-		err error
-		v   = make([]any, len(vs))
-	)
-	for i := range v {
-		if v[i], err = ValueScanner.HolderId.Value(vs[i]); err != nil {
-			break
-		}
-	}
-	return predicate.GroupMembershipOrErr(sql.FieldIn(FieldHolderId, v...), err)
+	return predicate.GroupMembership(sql.FieldIn(FieldHolderId, vs...))
 }
 
 // HolderIdNotIn applies the NotIn predicate on the "holder_id" field.
 func HolderIdNotIn(vs ...uuid.UUID) predicate.GroupMembership {
-	var (
-		err error
-		v   = make([]any, len(vs))
-	)
-	for i := range v {
-		if v[i], err = ValueScanner.HolderId.Value(vs[i]); err != nil {
-			break
-		}
-	}
-	return predicate.GroupMembershipOrErr(sql.FieldNotIn(FieldHolderId, v...), err)
+	return predicate.GroupMembership(sql.FieldNotIn(FieldHolderId, vs...))
 }
 
 // GroupIdEQ applies the EQ predicate on the "group_id" field.
 func GroupIdEQ(v uuid.UUID) predicate.GroupMembership {
-	vc, err := ValueScanner.GroupId.Value(v)
-	return predicate.GroupMembershipOrErr(sql.FieldEQ(FieldGroupId, vc), err)
+	return predicate.GroupMembership(sql.FieldEQ(FieldGroupId, v))
 }
 
 // GroupIdNEQ applies the NEQ predicate on the "group_id" field.
 func GroupIdNEQ(v uuid.UUID) predicate.GroupMembership {
-	vc, err := ValueScanner.GroupId.Value(v)
-	return predicate.GroupMembershipOrErr(sql.FieldNEQ(FieldGroupId, vc), err)
+	return predicate.GroupMembership(sql.FieldNEQ(FieldGroupId, v))
 }
 
 // GroupIdIn applies the In predicate on the "group_id" field.
 func GroupIdIn(vs ...uuid.UUID) predicate.GroupMembership {
-	var (
-		err error
-		v   = make([]any, len(vs))
-	)
-	for i := range v {
-		if v[i], err = ValueScanner.GroupId.Value(vs[i]); err != nil {
-			break
-		}
-	}
-	return predicate.GroupMembershipOrErr(sql.FieldIn(FieldGroupId, v...), err)
+	return predicate.GroupMembership(sql.FieldIn(FieldGroupId, vs...))
 }
 
 // GroupIdNotIn applies the NotIn predicate on the "group_id" field.
 func GroupIdNotIn(vs ...uuid.UUID) predicate.GroupMembership {
-	var (
-		err error
-		v   = make([]any, len(vs))
-	)
-	for i := range v {
-		if v[i], err = ValueScanner.GroupId.Value(vs[i]); err != nil {
-			break
-		}
-	}
-	return predicate.GroupMembershipOrErr(sql.FieldNotIn(FieldGroupId, v...), err)
+	return predicate.GroupMembership(sql.FieldNotIn(FieldGroupId, vs...))
 }
 
 // HasHolder applies the HasEdge predicate on the "holder" edge.

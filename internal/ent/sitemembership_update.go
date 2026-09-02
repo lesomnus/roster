@@ -263,11 +263,7 @@ func (_u *SiteMembershipUpdateOne) sqlSave(ctx context.Context) (_node *SiteMemb
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "SiteMembership.id" for update`)}
 	}
-	vv, err := sitemembership.ValueScanner.Id.Value(id)
-	if err != nil {
-		return nil, err
-	}
-	_spec.Node.Id.Value = vv
+	_spec.Node.Id.Value = id
 	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, sitemembership.FieldId)

@@ -72,8 +72,6 @@ func (*Credential) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case credential.FieldId:
-			values[i] = credential.ValueScanner.Id.ScanValue()
 		case credential.FieldSecret:
 			values[i] = new([]byte)
 		case credential.FieldFailures, credential.FieldLastStep:
@@ -82,8 +80,8 @@ func (*Credential) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case credential.FieldDateLocked, credential.FieldDateRotated, credential.FieldDateUpdated, credential.FieldDateErased, credential.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case credential.FieldHolderId:
-			values[i] = credential.ValueScanner.HolderId.ScanValue()
+		case credential.FieldId, credential.FieldHolderId:
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -100,10 +98,10 @@ func (_m *Credential) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case credential.FieldId:
-			if value, err := credential.ValueScanner.Id.FromValue(values[i]); err != nil {
-				return err
-			} else {
-				_m.Id = value
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value != nil {
+				_m.Id = *value
 			}
 		case credential.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -122,6 +120,9 @@ func (_m *Credential) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field secret", values[i])
 			} else if value != nil {
 				_m.Secret = *value
+				if _m.Secret == nil {
+					_m.Secret = []byte{}
+				}
 			}
 		case credential.FieldFailures:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -169,10 +170,10 @@ func (_m *Credential) assignValues(columns []string, values []any) error {
 				_m.DateCreated = value.Time
 			}
 		case credential.FieldHolderId:
-			if value, err := credential.ValueScanner.HolderId.FromValue(values[i]); err != nil {
-				return err
-			} else {
-				_m.HolderId = value
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field holder_id", values[i])
+			} else if value != nil {
+				_m.HolderId = *value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])

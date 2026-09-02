@@ -80,7 +80,7 @@ func TestTheRecordOfAnEraseBelongsToWhoseRowItWas(t *testing.T) {
 
 	// The three columns the trail declares NOT NULL are bytes rather than nil,
 	// whichever database this is running on. On SQLite a nil is stored as an
-	// empty blob and nothing notices; on PostgreSql it is SQL NULL and the
+	// empty blob and nothing notices; on PostgreSQL it is SQL NULL and the
 	// write is refused, which is the shape that has to be asserted here rather
 	// than discovered by an operator.
 	x.NotNil(v.TraceId)

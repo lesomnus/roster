@@ -13,72 +13,47 @@ import (
 
 // Id filters vertices based on their Id field.
 func Id(id uuid.UUID) predicate.Connection {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.ConnectionOrErr(sql.FieldEQ(FieldId, vc), err)
+	return predicate.Connection(sql.FieldEQ(FieldId, id))
 }
 
 // IdEQ applies the EQ predicate on the Id field.
 func IdEQ(id uuid.UUID) predicate.Connection {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.ConnectionOrErr(sql.FieldEQ(FieldId, vc), err)
+	return predicate.Connection(sql.FieldEQ(FieldId, id))
 }
 
 // IdNEQ applies the NEQ predicate on the Id field.
 func IdNEQ(id uuid.UUID) predicate.Connection {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.ConnectionOrErr(sql.FieldNEQ(FieldId, vc), err)
+	return predicate.Connection(sql.FieldNEQ(FieldId, id))
 }
 
 // IdIn applies the In predicate on the Id field.
 func IdIn(ids ...uuid.UUID) predicate.Connection {
-	var (
-		err error
-		vcs = make([]any, len(ids))
-	)
-	for i := range vcs {
-		if vcs[i], err = ValueScanner.Id.Value(ids[i]); err != nil {
-			break
-		}
-	}
-	return predicate.ConnectionOrErr(sql.FieldIn(FieldId, vcs...), err)
+	return predicate.Connection(sql.FieldIn(FieldId, ids...))
 }
 
 // IdNotIn applies the NotIn predicate on the Id field.
 func IdNotIn(ids ...uuid.UUID) predicate.Connection {
-	var (
-		err error
-		vcs = make([]any, len(ids))
-	)
-	for i := range vcs {
-		if vcs[i], err = ValueScanner.Id.Value(ids[i]); err != nil {
-			break
-		}
-	}
-	return predicate.ConnectionOrErr(sql.FieldNotIn(FieldId, vcs...), err)
+	return predicate.Connection(sql.FieldNotIn(FieldId, ids...))
 }
 
 // IdGT applies the GT predicate on the Id field.
 func IdGT(id uuid.UUID) predicate.Connection {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.ConnectionOrErr(sql.FieldGT(FieldId, vc), err)
+	return predicate.Connection(sql.FieldGT(FieldId, id))
 }
 
 // IdGTE applies the GTE predicate on the Id field.
 func IdGTE(id uuid.UUID) predicate.Connection {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.ConnectionOrErr(sql.FieldGTE(FieldId, vc), err)
+	return predicate.Connection(sql.FieldGTE(FieldId, id))
 }
 
 // IdLT applies the LT predicate on the Id field.
 func IdLT(id uuid.UUID) predicate.Connection {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.ConnectionOrErr(sql.FieldLT(FieldId, vc), err)
+	return predicate.Connection(sql.FieldLT(FieldId, id))
 }
 
 // IdLTE applies the LTE predicate on the Id field.
 func IdLTE(id uuid.UUID) predicate.Connection {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.ConnectionOrErr(sql.FieldLTE(FieldId, vc), err)
+	return predicate.Connection(sql.FieldLTE(FieldId, id))
 }
 
 // Name applies equality check predicate on the "name" field. It's identical to NameEQ.
@@ -123,8 +98,7 @@ func DateCreated(v time.Time) predicate.Connection {
 
 // TenantId applies equality check predicate on the "tenant_id" field. It's identical to TenantIdEQ.
 func TenantId(v uuid.UUID) predicate.Connection {
-	vc, err := ValueScanner.TenantId.Value(v)
-	return predicate.ConnectionOrErr(sql.FieldEQ(FieldTenantId, vc), err)
+	return predicate.Connection(sql.FieldEQ(FieldTenantId, v))
 }
 
 // NameEQ applies the EQ predicate on the "name" field.
@@ -604,42 +578,22 @@ func DateCreatedNotNil() predicate.Connection {
 
 // TenantIdEQ applies the EQ predicate on the "tenant_id" field.
 func TenantIdEQ(v uuid.UUID) predicate.Connection {
-	vc, err := ValueScanner.TenantId.Value(v)
-	return predicate.ConnectionOrErr(sql.FieldEQ(FieldTenantId, vc), err)
+	return predicate.Connection(sql.FieldEQ(FieldTenantId, v))
 }
 
 // TenantIdNEQ applies the NEQ predicate on the "tenant_id" field.
 func TenantIdNEQ(v uuid.UUID) predicate.Connection {
-	vc, err := ValueScanner.TenantId.Value(v)
-	return predicate.ConnectionOrErr(sql.FieldNEQ(FieldTenantId, vc), err)
+	return predicate.Connection(sql.FieldNEQ(FieldTenantId, v))
 }
 
 // TenantIdIn applies the In predicate on the "tenant_id" field.
 func TenantIdIn(vs ...uuid.UUID) predicate.Connection {
-	var (
-		err error
-		v   = make([]any, len(vs))
-	)
-	for i := range v {
-		if v[i], err = ValueScanner.TenantId.Value(vs[i]); err != nil {
-			break
-		}
-	}
-	return predicate.ConnectionOrErr(sql.FieldIn(FieldTenantId, v...), err)
+	return predicate.Connection(sql.FieldIn(FieldTenantId, vs...))
 }
 
 // TenantIdNotIn applies the NotIn predicate on the "tenant_id" field.
 func TenantIdNotIn(vs ...uuid.UUID) predicate.Connection {
-	var (
-		err error
-		v   = make([]any, len(vs))
-	)
-	for i := range v {
-		if v[i], err = ValueScanner.TenantId.Value(vs[i]); err != nil {
-			break
-		}
-	}
-	return predicate.ConnectionOrErr(sql.FieldNotIn(FieldTenantId, v...), err)
+	return predicate.Connection(sql.FieldNotIn(FieldTenantId, vs...))
 }
 
 // HasTenant applies the HasEdge predicate on the "tenant" edge.

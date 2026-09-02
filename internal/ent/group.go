@@ -80,16 +80,14 @@ func (*Group) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case group.FieldId:
-			values[i] = group.ValueScanner.Id.ScanValue()
 		case group.FieldAlias, group.FieldName, group.FieldDesc:
 			values[i] = new(sql.NullString)
 		case group.FieldDateUpdated, group.FieldDateErased, group.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case group.FieldTenantId:
-			values[i] = group.ValueScanner.TenantId.ScanValue()
 		case group.FieldSiteId:
-			values[i] = group.ValueScanner.SiteId.ScanValue()
+			values[i] = new(sql.Null[uuid.UUID])
+		case group.FieldId, group.FieldTenantId:
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -106,10 +104,10 @@ func (_m *Group) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case group.FieldId:
-			if value, err := group.ValueScanner.Id.FromValue(values[i]); err != nil {
-				return err
-			} else {
-				_m.Id = value
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value != nil {
+				_m.Id = *value
 			}
 		case group.FieldAlias:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -149,16 +147,16 @@ func (_m *Group) assignValues(columns []string, values []any) error {
 				_m.DateCreated = value.Time
 			}
 		case group.FieldTenantId:
-			if value, err := group.ValueScanner.TenantId.FromValue(values[i]); err != nil {
-				return err
-			} else {
-				_m.TenantId = value
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
+			} else if value != nil {
+				_m.TenantId = *value
 			}
 		case group.FieldSiteId:
-			if value, err := group.ValueScanner.SiteId.FromValue(values[i]); err != nil {
-				return err
-			} else {
-				_m.SiteId = value
+			if value, ok := values[i].(*sql.Null[uuid.UUID]); !ok {
+				return fmt.Errorf("unexpected type %T for field site_id", values[i])
+			} else if value.Valid {
+				_m.SiteId = value.V
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])

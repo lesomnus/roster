@@ -233,13 +233,8 @@ func (_q *SiteMembershipQuery) Ids(ctx context.Context) (ids []uuid.UUID, err er
 		_q.Unique(true)
 	}
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIds)
-	var nodes []*SiteMembership
-	if nodes, err = _q.Select(sitemembership.FieldId).All(ctx); err != nil {
+	if err = _q.Select(sitemembership.FieldId).Scan(ctx, &ids); err != nil {
 		return nil, err
-	}
-	ids = make([]uuid.UUID, len(nodes))
-	for i := range nodes {
-		ids[i] = nodes[i].Id
 	}
 	return ids, nil
 }

@@ -28,7 +28,7 @@ import (
 	// The two engines this app runs on, blank-imported here rather than by
 	// payday so that an app does not carry one it never opens.
 	//
-	// Both, because both are used: `compose.yaml` runs it on PostgreSql and a
+	// Both, because both are used: `compose.yaml` runs it on PostgreSQL and a
 	// test runs it on SQLite. Linking only the second made `docker compose up`
 	// -- the quickstart `docs/operating.md` gives -- fail at
 	// `unknown driver "pgx"`, which is a sentence about a name rather than
@@ -41,7 +41,7 @@ import (
 	//
 	// The one thing that stopped roster running more than one replica was that
 	// a client watching against one never heard about a write that landed on
-	// another -- and the answer for a deployment already on PostgreSql needs no
+	// another -- and the answer for a deployment already on PostgreSQL needs no
 	// second piece of infrastructure. See `docs/operating.md`, "Running more
 	// than one".
 	//
@@ -220,7 +220,7 @@ type VouchConfig struct {
 // So a deployment that wants the wire says so, and one that does not gets a
 // line in the log every time saying what it is doing.
 type ClientConfig struct {
-	// Addr is what to dial, and empty is this process. It is a gRpc target:
+	// Addr is what to dial, and empty is this process. It is a gRPC target:
 	// "dns:///roster.internal:8080".
 	//
 	// Which port to name is a decision with an answer that is not obvious; see

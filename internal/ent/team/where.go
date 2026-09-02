@@ -13,72 +13,47 @@ import (
 
 // Id filters vertices based on their Id field.
 func Id(id uuid.UUID) predicate.Team {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.TeamOrErr(sql.FieldEQ(FieldId, vc), err)
+	return predicate.Team(sql.FieldEQ(FieldId, id))
 }
 
 // IdEQ applies the EQ predicate on the Id field.
 func IdEQ(id uuid.UUID) predicate.Team {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.TeamOrErr(sql.FieldEQ(FieldId, vc), err)
+	return predicate.Team(sql.FieldEQ(FieldId, id))
 }
 
 // IdNEQ applies the NEQ predicate on the Id field.
 func IdNEQ(id uuid.UUID) predicate.Team {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.TeamOrErr(sql.FieldNEQ(FieldId, vc), err)
+	return predicate.Team(sql.FieldNEQ(FieldId, id))
 }
 
 // IdIn applies the In predicate on the Id field.
 func IdIn(ids ...uuid.UUID) predicate.Team {
-	var (
-		err error
-		vcs = make([]any, len(ids))
-	)
-	for i := range vcs {
-		if vcs[i], err = ValueScanner.Id.Value(ids[i]); err != nil {
-			break
-		}
-	}
-	return predicate.TeamOrErr(sql.FieldIn(FieldId, vcs...), err)
+	return predicate.Team(sql.FieldIn(FieldId, ids...))
 }
 
 // IdNotIn applies the NotIn predicate on the Id field.
 func IdNotIn(ids ...uuid.UUID) predicate.Team {
-	var (
-		err error
-		vcs = make([]any, len(ids))
-	)
-	for i := range vcs {
-		if vcs[i], err = ValueScanner.Id.Value(ids[i]); err != nil {
-			break
-		}
-	}
-	return predicate.TeamOrErr(sql.FieldNotIn(FieldId, vcs...), err)
+	return predicate.Team(sql.FieldNotIn(FieldId, ids...))
 }
 
 // IdGT applies the GT predicate on the Id field.
 func IdGT(id uuid.UUID) predicate.Team {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.TeamOrErr(sql.FieldGT(FieldId, vc), err)
+	return predicate.Team(sql.FieldGT(FieldId, id))
 }
 
 // IdGTE applies the GTE predicate on the Id field.
 func IdGTE(id uuid.UUID) predicate.Team {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.TeamOrErr(sql.FieldGTE(FieldId, vc), err)
+	return predicate.Team(sql.FieldGTE(FieldId, id))
 }
 
 // IdLT applies the LT predicate on the Id field.
 func IdLT(id uuid.UUID) predicate.Team {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.TeamOrErr(sql.FieldLT(FieldId, vc), err)
+	return predicate.Team(sql.FieldLT(FieldId, id))
 }
 
 // IdLTE applies the LTE predicate on the Id field.
 func IdLTE(id uuid.UUID) predicate.Team {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.TeamOrErr(sql.FieldLTE(FieldId, vc), err)
+	return predicate.Team(sql.FieldLTE(FieldId, id))
 }
 
 // Alias applies equality check predicate on the "alias" field. It's identical to AliasEQ.
@@ -113,14 +88,12 @@ func DateCreated(v time.Time) predicate.Team {
 
 // TenantId applies equality check predicate on the "tenant_id" field. It's identical to TenantIdEQ.
 func TenantId(v uuid.UUID) predicate.Team {
-	vc, err := ValueScanner.TenantId.Value(v)
-	return predicate.TeamOrErr(sql.FieldEQ(FieldTenantId, vc), err)
+	return predicate.Team(sql.FieldEQ(FieldTenantId, v))
 }
 
 // SiteId applies equality check predicate on the "site_id" field. It's identical to SiteIdEQ.
 func SiteId(v uuid.UUID) predicate.Team {
-	vc, err := ValueScanner.SiteId.Value(v)
-	return predicate.TeamOrErr(sql.FieldEQ(FieldSiteId, vc), err)
+	return predicate.Team(sql.FieldEQ(FieldSiteId, v))
 }
 
 // AliasEQ applies the EQ predicate on the "alias" field.
@@ -460,82 +433,42 @@ func DateCreatedNotNil() predicate.Team {
 
 // TenantIdEQ applies the EQ predicate on the "tenant_id" field.
 func TenantIdEQ(v uuid.UUID) predicate.Team {
-	vc, err := ValueScanner.TenantId.Value(v)
-	return predicate.TeamOrErr(sql.FieldEQ(FieldTenantId, vc), err)
+	return predicate.Team(sql.FieldEQ(FieldTenantId, v))
 }
 
 // TenantIdNEQ applies the NEQ predicate on the "tenant_id" field.
 func TenantIdNEQ(v uuid.UUID) predicate.Team {
-	vc, err := ValueScanner.TenantId.Value(v)
-	return predicate.TeamOrErr(sql.FieldNEQ(FieldTenantId, vc), err)
+	return predicate.Team(sql.FieldNEQ(FieldTenantId, v))
 }
 
 // TenantIdIn applies the In predicate on the "tenant_id" field.
 func TenantIdIn(vs ...uuid.UUID) predicate.Team {
-	var (
-		err error
-		v   = make([]any, len(vs))
-	)
-	for i := range v {
-		if v[i], err = ValueScanner.TenantId.Value(vs[i]); err != nil {
-			break
-		}
-	}
-	return predicate.TeamOrErr(sql.FieldIn(FieldTenantId, v...), err)
+	return predicate.Team(sql.FieldIn(FieldTenantId, vs...))
 }
 
 // TenantIdNotIn applies the NotIn predicate on the "tenant_id" field.
 func TenantIdNotIn(vs ...uuid.UUID) predicate.Team {
-	var (
-		err error
-		v   = make([]any, len(vs))
-	)
-	for i := range v {
-		if v[i], err = ValueScanner.TenantId.Value(vs[i]); err != nil {
-			break
-		}
-	}
-	return predicate.TeamOrErr(sql.FieldNotIn(FieldTenantId, v...), err)
+	return predicate.Team(sql.FieldNotIn(FieldTenantId, vs...))
 }
 
 // SiteIdEQ applies the EQ predicate on the "site_id" field.
 func SiteIdEQ(v uuid.UUID) predicate.Team {
-	vc, err := ValueScanner.SiteId.Value(v)
-	return predicate.TeamOrErr(sql.FieldEQ(FieldSiteId, vc), err)
+	return predicate.Team(sql.FieldEQ(FieldSiteId, v))
 }
 
 // SiteIdNEQ applies the NEQ predicate on the "site_id" field.
 func SiteIdNEQ(v uuid.UUID) predicate.Team {
-	vc, err := ValueScanner.SiteId.Value(v)
-	return predicate.TeamOrErr(sql.FieldNEQ(FieldSiteId, vc), err)
+	return predicate.Team(sql.FieldNEQ(FieldSiteId, v))
 }
 
 // SiteIdIn applies the In predicate on the "site_id" field.
 func SiteIdIn(vs ...uuid.UUID) predicate.Team {
-	var (
-		err error
-		v   = make([]any, len(vs))
-	)
-	for i := range v {
-		if v[i], err = ValueScanner.SiteId.Value(vs[i]); err != nil {
-			break
-		}
-	}
-	return predicate.TeamOrErr(sql.FieldIn(FieldSiteId, v...), err)
+	return predicate.Team(sql.FieldIn(FieldSiteId, vs...))
 }
 
 // SiteIdNotIn applies the NotIn predicate on the "site_id" field.
 func SiteIdNotIn(vs ...uuid.UUID) predicate.Team {
-	var (
-		err error
-		v   = make([]any, len(vs))
-	)
-	for i := range v {
-		if v[i], err = ValueScanner.SiteId.Value(vs[i]); err != nil {
-			break
-		}
-	}
-	return predicate.TeamOrErr(sql.FieldNotIn(FieldSiteId, v...), err)
+	return predicate.Team(sql.FieldNotIn(FieldSiteId, vs...))
 }
 
 // SiteIdIsNil applies the IsNil predicate on the "site_id" field.

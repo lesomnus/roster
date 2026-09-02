@@ -67,14 +67,12 @@ func (*Delegation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case delegation.FieldId:
-			values[i] = delegation.ValueScanner.Id.ScanValue()
 		case delegation.FieldMethods, delegation.FieldSecret, delegation.FieldIssuer:
 			values[i] = new([]byte)
 		case delegation.FieldDateExpires, delegation.FieldDateUpdated, delegation.FieldDateErased, delegation.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case delegation.FieldHolderId:
-			values[i] = delegation.ValueScanner.HolderId.ScanValue()
+		case delegation.FieldId, delegation.FieldHolderId:
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -91,10 +89,10 @@ func (_m *Delegation) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case delegation.FieldId:
-			if value, err := delegation.ValueScanner.Id.FromValue(values[i]); err != nil {
-				return err
-			} else {
-				_m.Id = value
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value != nil {
+				_m.Id = *value
 			}
 		case delegation.FieldMethods:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -109,12 +107,18 @@ func (_m *Delegation) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field secret", values[i])
 			} else if value != nil {
 				_m.Secret = *value
+				if _m.Secret == nil {
+					_m.Secret = []byte{}
+				}
 			}
 		case delegation.FieldIssuer:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field issuer", values[i])
 			} else if value != nil {
 				_m.Issuer = *value
+				if _m.Issuer == nil {
+					_m.Issuer = []byte{}
+				}
 			}
 		case delegation.FieldDateExpires:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -143,10 +147,10 @@ func (_m *Delegation) assignValues(columns []string, values []any) error {
 				_m.DateCreated = value.Time
 			}
 		case delegation.FieldHolderId:
-			if value, err := delegation.ValueScanner.HolderId.FromValue(values[i]); err != nil {
-				return err
-			} else {
-				_m.HolderId = value
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field holder_id", values[i])
+			} else if value != nil {
+				_m.HolderId = *value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])

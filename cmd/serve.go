@@ -123,7 +123,7 @@ type Server struct {
 	// **kind** on each -- `rk_` there and `rt_` here. `Grpc` registers the
 	// customer's one unless this flag says otherwise, and `GrpcControl` adds
 	// the deployment's own after; without the flag they would both land on the
-	// control plane's server, and gRpc refuses a service registered twice. It
+	// control plane's server, and gRPC refuses a service registered twice. It
 	// did, loudly, which is the good direction for that mistake to fail in.
 	Keys bool
 
@@ -584,7 +584,7 @@ func build(ctx context.Context, c Config, prefix string) (*Server, error) {
 // A process on its way out does not care, which is why it went unnoticed: the
 // one caller in production calls this once and then exits. A suite is the
 // caller that does care -- every test that needs keys, a console or an operator
-// builds both planes -- and against PostgreSql with the hundred connections its
+// builds both planes -- and against PostgreSQL with the hundred connections its
 // image allows, the package ran out part way through. What came back was
 // `too many clients already` against whichever tests were running when the last
 // connection was taken: a different set every run, which reads exactly like a
@@ -762,7 +762,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 
 	// The batch, with the same rules the chain above enforces -- read off the
 	// same configuration rather than written out again, which is the only way
-	// the two stay in step. What they enforce by looking at the method gRpc
+	// the two stay in step. What they enforce by looking at the method gRPC
 	// dispatched, this enforces per operation.
 	//
 	// `Closed` is replaced with the same function the chain got, and that is not
@@ -856,7 +856,7 @@ func register(g grpc.ServiceRegistrar, s app.Server) {
 // closed is what this server does not answer at all.
 //
 // Whatever the configuration closed, and `CredentialService` on top of it. Not
-// registering it is already enough for gRpc, which dispatches by name and has
+// registering it is already enough for gRPC, which dispatches by name and has
 // nothing to dispatch to -- this is for the batch, which arrives as one method
 // carrying many and would otherwise be a way to ask for exactly the reads that
 // were taken off the wire.
@@ -1205,11 +1205,11 @@ func (s *Server) serveAdmin(ctx context.Context, c Config, g *grpc.Server) (func
 	return func() { stopping(g) }, nil
 }
 
-// serveHttp is the second listener, for whatever cannot speak gRpc -- which is
+// serveHttp is the second listener, for whatever cannot speak gRPC -- which is
 // every browser. Nothing is opened unless the configuration named an address.
 //
-// It is the **same** `g`: a page reaches the handlers a gRpc client reaches,
-// through the interceptors a gRpc client goes through, behind the same wall.
+// It is the **same** `g`: a page reaches the handlers a gRPC client reaches,
+// through the interceptors a gRPC client goes through, behind the same wall.
 // There is no second stack here for a rule to be missing from.
 func (s *Server) serveHttp(ctx context.Context, c Config, g *grpc.Server) (func(), error) {
 	return s.http(ctx, "http", c.Server.Http, g)
@@ -1231,7 +1231,7 @@ func (s *Server) serveControlHttp(ctx context.Context, c Config, g *grpc.Server)
 // serveAdminHttp is the same for the admin listener, and it is what a console
 // actually talks to.
 //
-// A browser cannot speak gRpc, so a port without one of these is a port a
+// A browser cannot speak gRPC, so a port without one of these is a port a
 // console cannot reach -- and until this, the only transcoder was in front of
 // the **data plane**, where an operator's session names nobody. The console
 // could sign in and then had nothing to call.
@@ -1261,7 +1261,7 @@ func (s *Server) http(ctx context.Context, name string, c config.HttpConfig, g *
 	// `auth` reads a credential and does not issue one, and issuing is an HTTP
 	// endpoint. See `Login`.
 	//
-	// A gRpc path is `/<service>/<method>`, so an ordinary route cannot collide
+	// A gRPC path is `/<service>/<method>`, so an ordinary route cannot collide
 	// with one -- and `ServeMux` panics rather than shadowing if one somehow
 	// does.
 	//

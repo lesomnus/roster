@@ -74,14 +74,10 @@ func (*SiteMembership) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case sitemembership.FieldId:
-			values[i] = sitemembership.ValueScanner.Id.ScanValue()
 		case sitemembership.FieldDateUpdated, sitemembership.FieldDateErased, sitemembership.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case sitemembership.FieldHolderId:
-			values[i] = sitemembership.ValueScanner.HolderId.ScanValue()
-		case sitemembership.FieldSiteId:
-			values[i] = sitemembership.ValueScanner.SiteId.ScanValue()
+		case sitemembership.FieldId, sitemembership.FieldHolderId, sitemembership.FieldSiteId:
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -98,10 +94,10 @@ func (_m *SiteMembership) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case sitemembership.FieldId:
-			if value, err := sitemembership.ValueScanner.Id.FromValue(values[i]); err != nil {
-				return err
-			} else {
-				_m.Id = value
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value != nil {
+				_m.Id = *value
 			}
 		case sitemembership.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -123,16 +119,16 @@ func (_m *SiteMembership) assignValues(columns []string, values []any) error {
 				_m.DateCreated = value.Time
 			}
 		case sitemembership.FieldHolderId:
-			if value, err := sitemembership.ValueScanner.HolderId.FromValue(values[i]); err != nil {
-				return err
-			} else {
-				_m.HolderId = value
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field holder_id", values[i])
+			} else if value != nil {
+				_m.HolderId = *value
 			}
 		case sitemembership.FieldSiteId:
-			if value, err := sitemembership.ValueScanner.SiteId.FromValue(values[i]); err != nil {
-				return err
-			} else {
-				_m.SiteId = value
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field site_id", values[i])
+			} else if value != nil {
+				_m.SiteId = *value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])

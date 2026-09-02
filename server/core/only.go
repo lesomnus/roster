@@ -25,7 +25,7 @@ import (
 // removing a person's last two ways in each count before either writes, each see
 // the other's still there, and both go through -- so the state the rule exists
 // to refuse is reached by asking for it twice at once. Forty people, each
-// unlinked twice at the same moment: thirty-nine lost on PostgreSql, four on
+// unlinked twice at the same moment: thirty-nine lost on PostgreSQL, four on
 // SQLite, which serialises writers and so only leaves the gap between the count
 // and the write.
 //
@@ -50,7 +50,7 @@ import (
 // about a continuation, and it is the same sentence here a year later -- so two
 // callers each validated a version, neither wrote anything, and they contended
 // for nothing. It passed on SQLite, which serialises writers anyway, and lost
-// thirty-nine of forty on PostgreSql.
+// thirty-nine of forty on PostgreSQL.
 //
 // Which is the whole lesson: an optimistic lock is a **write**. A precondition
 // with no write beside it is a read with an opinion.

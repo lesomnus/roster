@@ -64,14 +64,12 @@ func (*MailDomain) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case maildomain.FieldId:
-			values[i] = maildomain.ValueScanner.Id.ScanValue()
 		case maildomain.FieldName, maildomain.FieldProvider, maildomain.FieldDesc:
 			values[i] = new(sql.NullString)
 		case maildomain.FieldDateUpdated, maildomain.FieldDateErased, maildomain.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case maildomain.FieldTenantId:
-			values[i] = maildomain.ValueScanner.TenantId.ScanValue()
+		case maildomain.FieldId, maildomain.FieldTenantId:
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -88,10 +86,10 @@ func (_m *MailDomain) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case maildomain.FieldId:
-			if value, err := maildomain.ValueScanner.Id.FromValue(values[i]); err != nil {
-				return err
-			} else {
-				_m.Id = value
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value != nil {
+				_m.Id = *value
 			}
 		case maildomain.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -131,10 +129,10 @@ func (_m *MailDomain) assignValues(columns []string, values []any) error {
 				_m.DateCreated = value.Time
 			}
 		case maildomain.FieldTenantId:
-			if value, err := maildomain.ValueScanner.TenantId.FromValue(values[i]); err != nil {
-				return err
-			} else {
-				_m.TenantId = value
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
+			} else if value != nil {
+				_m.TenantId = *value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])

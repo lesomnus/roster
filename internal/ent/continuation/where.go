@@ -13,72 +13,47 @@ import (
 
 // Id filters vertices based on their Id field.
 func Id(id uuid.UUID) predicate.Continuation {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.ContinuationOrErr(sql.FieldEQ(FieldId, vc), err)
+	return predicate.Continuation(sql.FieldEQ(FieldId, id))
 }
 
 // IdEQ applies the EQ predicate on the Id field.
 func IdEQ(id uuid.UUID) predicate.Continuation {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.ContinuationOrErr(sql.FieldEQ(FieldId, vc), err)
+	return predicate.Continuation(sql.FieldEQ(FieldId, id))
 }
 
 // IdNEQ applies the NEQ predicate on the Id field.
 func IdNEQ(id uuid.UUID) predicate.Continuation {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.ContinuationOrErr(sql.FieldNEQ(FieldId, vc), err)
+	return predicate.Continuation(sql.FieldNEQ(FieldId, id))
 }
 
 // IdIn applies the In predicate on the Id field.
 func IdIn(ids ...uuid.UUID) predicate.Continuation {
-	var (
-		err error
-		vcs = make([]any, len(ids))
-	)
-	for i := range vcs {
-		if vcs[i], err = ValueScanner.Id.Value(ids[i]); err != nil {
-			break
-		}
-	}
-	return predicate.ContinuationOrErr(sql.FieldIn(FieldId, vcs...), err)
+	return predicate.Continuation(sql.FieldIn(FieldId, ids...))
 }
 
 // IdNotIn applies the NotIn predicate on the Id field.
 func IdNotIn(ids ...uuid.UUID) predicate.Continuation {
-	var (
-		err error
-		vcs = make([]any, len(ids))
-	)
-	for i := range vcs {
-		if vcs[i], err = ValueScanner.Id.Value(ids[i]); err != nil {
-			break
-		}
-	}
-	return predicate.ContinuationOrErr(sql.FieldNotIn(FieldId, vcs...), err)
+	return predicate.Continuation(sql.FieldNotIn(FieldId, ids...))
 }
 
 // IdGT applies the GT predicate on the Id field.
 func IdGT(id uuid.UUID) predicate.Continuation {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.ContinuationOrErr(sql.FieldGT(FieldId, vc), err)
+	return predicate.Continuation(sql.FieldGT(FieldId, id))
 }
 
 // IdGTE applies the GTE predicate on the Id field.
 func IdGTE(id uuid.UUID) predicate.Continuation {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.ContinuationOrErr(sql.FieldGTE(FieldId, vc), err)
+	return predicate.Continuation(sql.FieldGTE(FieldId, id))
 }
 
 // IdLT applies the LT predicate on the Id field.
 func IdLT(id uuid.UUID) predicate.Continuation {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.ContinuationOrErr(sql.FieldLT(FieldId, vc), err)
+	return predicate.Continuation(sql.FieldLT(FieldId, id))
 }
 
 // IdLTE applies the LTE predicate on the Id field.
 func IdLTE(id uuid.UUID) predicate.Continuation {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.ContinuationOrErr(sql.FieldLTE(FieldId, vc), err)
+	return predicate.Continuation(sql.FieldLTE(FieldId, id))
 }
 
 // Secret applies equality check predicate on the "secret" field. It's identical to SecretEQ.
@@ -93,8 +68,7 @@ func Issuer(v []byte) predicate.Continuation {
 
 // MeteredBy applies equality check predicate on the "metered_by" field. It's identical to MeteredByEQ.
 func MeteredBy(v uuid.UUID) predicate.Continuation {
-	vc, err := ValueScanner.MeteredBy.Value(v)
-	return predicate.ContinuationOrErr(sql.FieldEQ(FieldMeteredBy, vc), err)
+	return predicate.Continuation(sql.FieldEQ(FieldMeteredBy, v))
 }
 
 // DateExpires applies equality check predicate on the "date_expires" field. It's identical to DateExpiresEQ.
@@ -119,8 +93,7 @@ func DateCreated(v time.Time) predicate.Continuation {
 
 // HolderId applies equality check predicate on the "holder_id" field. It's identical to HolderIdEQ.
 func HolderId(v uuid.UUID) predicate.Continuation {
-	vc, err := ValueScanner.HolderId.Value(v)
-	return predicate.ContinuationOrErr(sql.FieldEQ(FieldHolderId, vc), err)
+	return predicate.Continuation(sql.FieldEQ(FieldHolderId, v))
 }
 
 // SatisfiedIsNil applies the IsNil predicate on the "satisfied" field.
@@ -215,66 +188,42 @@ func IssuerLTE(v []byte) predicate.Continuation {
 
 // MeteredByEQ applies the EQ predicate on the "metered_by" field.
 func MeteredByEQ(v uuid.UUID) predicate.Continuation {
-	vc, err := ValueScanner.MeteredBy.Value(v)
-	return predicate.ContinuationOrErr(sql.FieldEQ(FieldMeteredBy, vc), err)
+	return predicate.Continuation(sql.FieldEQ(FieldMeteredBy, v))
 }
 
 // MeteredByNEQ applies the NEQ predicate on the "metered_by" field.
 func MeteredByNEQ(v uuid.UUID) predicate.Continuation {
-	vc, err := ValueScanner.MeteredBy.Value(v)
-	return predicate.ContinuationOrErr(sql.FieldNEQ(FieldMeteredBy, vc), err)
+	return predicate.Continuation(sql.FieldNEQ(FieldMeteredBy, v))
 }
 
 // MeteredByIn applies the In predicate on the "metered_by" field.
 func MeteredByIn(vs ...uuid.UUID) predicate.Continuation {
-	var (
-		err error
-		v   = make([]any, len(vs))
-	)
-	for i := range v {
-		if v[i], err = ValueScanner.MeteredBy.Value(vs[i]); err != nil {
-			break
-		}
-	}
-	return predicate.ContinuationOrErr(sql.FieldIn(FieldMeteredBy, v...), err)
+	return predicate.Continuation(sql.FieldIn(FieldMeteredBy, vs...))
 }
 
 // MeteredByNotIn applies the NotIn predicate on the "metered_by" field.
 func MeteredByNotIn(vs ...uuid.UUID) predicate.Continuation {
-	var (
-		err error
-		v   = make([]any, len(vs))
-	)
-	for i := range v {
-		if v[i], err = ValueScanner.MeteredBy.Value(vs[i]); err != nil {
-			break
-		}
-	}
-	return predicate.ContinuationOrErr(sql.FieldNotIn(FieldMeteredBy, v...), err)
+	return predicate.Continuation(sql.FieldNotIn(FieldMeteredBy, vs...))
 }
 
 // MeteredByGT applies the GT predicate on the "metered_by" field.
 func MeteredByGT(v uuid.UUID) predicate.Continuation {
-	vc, err := ValueScanner.MeteredBy.Value(v)
-	return predicate.ContinuationOrErr(sql.FieldGT(FieldMeteredBy, vc), err)
+	return predicate.Continuation(sql.FieldGT(FieldMeteredBy, v))
 }
 
 // MeteredByGTE applies the GTE predicate on the "metered_by" field.
 func MeteredByGTE(v uuid.UUID) predicate.Continuation {
-	vc, err := ValueScanner.MeteredBy.Value(v)
-	return predicate.ContinuationOrErr(sql.FieldGTE(FieldMeteredBy, vc), err)
+	return predicate.Continuation(sql.FieldGTE(FieldMeteredBy, v))
 }
 
 // MeteredByLT applies the LT predicate on the "metered_by" field.
 func MeteredByLT(v uuid.UUID) predicate.Continuation {
-	vc, err := ValueScanner.MeteredBy.Value(v)
-	return predicate.ContinuationOrErr(sql.FieldLT(FieldMeteredBy, vc), err)
+	return predicate.Continuation(sql.FieldLT(FieldMeteredBy, v))
 }
 
 // MeteredByLTE applies the LTE predicate on the "metered_by" field.
 func MeteredByLTE(v uuid.UUID) predicate.Continuation {
-	vc, err := ValueScanner.MeteredBy.Value(v)
-	return predicate.ContinuationOrErr(sql.FieldLTE(FieldMeteredBy, vc), err)
+	return predicate.Continuation(sql.FieldLTE(FieldMeteredBy, v))
 }
 
 // MeteredByIsNil applies the IsNil predicate on the "metered_by" field.
@@ -479,42 +428,22 @@ func DateCreatedNotNil() predicate.Continuation {
 
 // HolderIdEQ applies the EQ predicate on the "holder_id" field.
 func HolderIdEQ(v uuid.UUID) predicate.Continuation {
-	vc, err := ValueScanner.HolderId.Value(v)
-	return predicate.ContinuationOrErr(sql.FieldEQ(FieldHolderId, vc), err)
+	return predicate.Continuation(sql.FieldEQ(FieldHolderId, v))
 }
 
 // HolderIdNEQ applies the NEQ predicate on the "holder_id" field.
 func HolderIdNEQ(v uuid.UUID) predicate.Continuation {
-	vc, err := ValueScanner.HolderId.Value(v)
-	return predicate.ContinuationOrErr(sql.FieldNEQ(FieldHolderId, vc), err)
+	return predicate.Continuation(sql.FieldNEQ(FieldHolderId, v))
 }
 
 // HolderIdIn applies the In predicate on the "holder_id" field.
 func HolderIdIn(vs ...uuid.UUID) predicate.Continuation {
-	var (
-		err error
-		v   = make([]any, len(vs))
-	)
-	for i := range v {
-		if v[i], err = ValueScanner.HolderId.Value(vs[i]); err != nil {
-			break
-		}
-	}
-	return predicate.ContinuationOrErr(sql.FieldIn(FieldHolderId, v...), err)
+	return predicate.Continuation(sql.FieldIn(FieldHolderId, vs...))
 }
 
 // HolderIdNotIn applies the NotIn predicate on the "holder_id" field.
 func HolderIdNotIn(vs ...uuid.UUID) predicate.Continuation {
-	var (
-		err error
-		v   = make([]any, len(vs))
-	)
-	for i := range v {
-		if v[i], err = ValueScanner.HolderId.Value(vs[i]); err != nil {
-			break
-		}
-	}
-	return predicate.ContinuationOrErr(sql.FieldNotIn(FieldHolderId, v...), err)
+	return predicate.Continuation(sql.FieldNotIn(FieldHolderId, vs...))
 }
 
 // HasHolder applies the HasEdge predicate on the "holder" edge.

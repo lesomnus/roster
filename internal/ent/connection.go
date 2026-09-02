@@ -71,16 +71,14 @@ func (*Connection) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case connection.FieldId:
-			values[i] = connection.ValueScanner.Id.ScanValue()
 		case connection.FieldScopes:
 			values[i] = new([]byte)
 		case connection.FieldName, connection.FieldDesc, connection.FieldIssuer, connection.FieldClientId, connection.FieldSecretRef:
 			values[i] = new(sql.NullString)
 		case connection.FieldDateUpdated, connection.FieldDateErased, connection.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case connection.FieldTenantId:
-			values[i] = connection.ValueScanner.TenantId.ScanValue()
+		case connection.FieldId, connection.FieldTenantId:
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -97,10 +95,10 @@ func (_m *Connection) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case connection.FieldId:
-			if value, err := connection.ValueScanner.Id.FromValue(values[i]); err != nil {
-				return err
-			} else {
-				_m.Id = value
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value != nil {
+				_m.Id = *value
 			}
 		case connection.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -160,10 +158,10 @@ func (_m *Connection) assignValues(columns []string, values []any) error {
 				_m.DateCreated = value.Time
 			}
 		case connection.FieldTenantId:
-			if value, err := connection.ValueScanner.TenantId.FromValue(values[i]); err != nil {
-				return err
-			} else {
-				_m.TenantId = value
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
+			} else if value != nil {
+				_m.TenantId = *value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])

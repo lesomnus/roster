@@ -13,72 +13,47 @@ import (
 
 // Id filters vertices based on their Id field.
 func Id(id uuid.UUID) predicate.Delegation {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.DelegationOrErr(sql.FieldEQ(FieldId, vc), err)
+	return predicate.Delegation(sql.FieldEQ(FieldId, id))
 }
 
 // IdEQ applies the EQ predicate on the Id field.
 func IdEQ(id uuid.UUID) predicate.Delegation {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.DelegationOrErr(sql.FieldEQ(FieldId, vc), err)
+	return predicate.Delegation(sql.FieldEQ(FieldId, id))
 }
 
 // IdNEQ applies the NEQ predicate on the Id field.
 func IdNEQ(id uuid.UUID) predicate.Delegation {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.DelegationOrErr(sql.FieldNEQ(FieldId, vc), err)
+	return predicate.Delegation(sql.FieldNEQ(FieldId, id))
 }
 
 // IdIn applies the In predicate on the Id field.
 func IdIn(ids ...uuid.UUID) predicate.Delegation {
-	var (
-		err error
-		vcs = make([]any, len(ids))
-	)
-	for i := range vcs {
-		if vcs[i], err = ValueScanner.Id.Value(ids[i]); err != nil {
-			break
-		}
-	}
-	return predicate.DelegationOrErr(sql.FieldIn(FieldId, vcs...), err)
+	return predicate.Delegation(sql.FieldIn(FieldId, ids...))
 }
 
 // IdNotIn applies the NotIn predicate on the Id field.
 func IdNotIn(ids ...uuid.UUID) predicate.Delegation {
-	var (
-		err error
-		vcs = make([]any, len(ids))
-	)
-	for i := range vcs {
-		if vcs[i], err = ValueScanner.Id.Value(ids[i]); err != nil {
-			break
-		}
-	}
-	return predicate.DelegationOrErr(sql.FieldNotIn(FieldId, vcs...), err)
+	return predicate.Delegation(sql.FieldNotIn(FieldId, ids...))
 }
 
 // IdGT applies the GT predicate on the Id field.
 func IdGT(id uuid.UUID) predicate.Delegation {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.DelegationOrErr(sql.FieldGT(FieldId, vc), err)
+	return predicate.Delegation(sql.FieldGT(FieldId, id))
 }
 
 // IdGTE applies the GTE predicate on the Id field.
 func IdGTE(id uuid.UUID) predicate.Delegation {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.DelegationOrErr(sql.FieldGTE(FieldId, vc), err)
+	return predicate.Delegation(sql.FieldGTE(FieldId, id))
 }
 
 // IdLT applies the LT predicate on the Id field.
 func IdLT(id uuid.UUID) predicate.Delegation {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.DelegationOrErr(sql.FieldLT(FieldId, vc), err)
+	return predicate.Delegation(sql.FieldLT(FieldId, id))
 }
 
 // IdLTE applies the LTE predicate on the Id field.
 func IdLTE(id uuid.UUID) predicate.Delegation {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.DelegationOrErr(sql.FieldLTE(FieldId, vc), err)
+	return predicate.Delegation(sql.FieldLTE(FieldId, id))
 }
 
 // Secret applies equality check predicate on the "secret" field. It's identical to SecretEQ.
@@ -113,8 +88,7 @@ func DateCreated(v time.Time) predicate.Delegation {
 
 // HolderId applies equality check predicate on the "holder_id" field. It's identical to HolderIdEQ.
 func HolderId(v uuid.UUID) predicate.Delegation {
-	vc, err := ValueScanner.HolderId.Value(v)
-	return predicate.DelegationOrErr(sql.FieldEQ(FieldHolderId, vc), err)
+	return predicate.Delegation(sql.FieldEQ(FieldHolderId, v))
 }
 
 // MethodsIsNil applies the IsNil predicate on the "methods" field.
@@ -399,42 +373,22 @@ func DateCreatedNotNil() predicate.Delegation {
 
 // HolderIdEQ applies the EQ predicate on the "holder_id" field.
 func HolderIdEQ(v uuid.UUID) predicate.Delegation {
-	vc, err := ValueScanner.HolderId.Value(v)
-	return predicate.DelegationOrErr(sql.FieldEQ(FieldHolderId, vc), err)
+	return predicate.Delegation(sql.FieldEQ(FieldHolderId, v))
 }
 
 // HolderIdNEQ applies the NEQ predicate on the "holder_id" field.
 func HolderIdNEQ(v uuid.UUID) predicate.Delegation {
-	vc, err := ValueScanner.HolderId.Value(v)
-	return predicate.DelegationOrErr(sql.FieldNEQ(FieldHolderId, vc), err)
+	return predicate.Delegation(sql.FieldNEQ(FieldHolderId, v))
 }
 
 // HolderIdIn applies the In predicate on the "holder_id" field.
 func HolderIdIn(vs ...uuid.UUID) predicate.Delegation {
-	var (
-		err error
-		v   = make([]any, len(vs))
-	)
-	for i := range v {
-		if v[i], err = ValueScanner.HolderId.Value(vs[i]); err != nil {
-			break
-		}
-	}
-	return predicate.DelegationOrErr(sql.FieldIn(FieldHolderId, v...), err)
+	return predicate.Delegation(sql.FieldIn(FieldHolderId, vs...))
 }
 
 // HolderIdNotIn applies the NotIn predicate on the "holder_id" field.
 func HolderIdNotIn(vs ...uuid.UUID) predicate.Delegation {
-	var (
-		err error
-		v   = make([]any, len(vs))
-	)
-	for i := range v {
-		if v[i], err = ValueScanner.HolderId.Value(vs[i]); err != nil {
-			break
-		}
-	}
-	return predicate.DelegationOrErr(sql.FieldNotIn(FieldHolderId, v...), err)
+	return predicate.Delegation(sql.FieldNotIn(FieldHolderId, vs...))
 }
 
 // HasHolder applies the HasEdge predicate on the "holder" edge.

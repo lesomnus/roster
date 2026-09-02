@@ -12,6 +12,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/tenant"
 	"github.com/lesomnus/roster/rstr"
+	"github.com/protobuf-orm/ent/dialect/sql"
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	"github.com/protobuf-orm/ent/schema/field"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -223,17 +224,14 @@ func (_c *HolderCreate) sqlSave(ctx context.Context) (*Holder, error) {
 		return nil, err
 	}
 	if _spec.Id.Value != nil {
-		sv, ok := _spec.Id.Value.(field.ValueScanner)
-		if !ok {
-			sv = holder.ValueScanner.Id.ScanValue()
-			if err := sv.Scan(_spec.Id.Value); err != nil {
+		if id, ok := _spec.Id.Value.(*uuid.UUID); ok {
+			_node.Id = *id
+		} else {
+			var v sql.Null[uuid.UUID]
+			if err := v.Scan(_spec.Id.Value); err != nil {
 				return nil, err
 			}
-		}
-		if value, err := holder.ValueScanner.Id.FromValue(sv); err != nil {
-			return nil, err
-		} else {
-			_node.Id = value
+			_node.Id = v.V
 		}
 	}
 	_c.mutation.id = &_node.Id
@@ -248,11 +246,7 @@ func (_c *HolderCreate) createSpec() (*Holder, *sqlgraph.CreateSpec, error) {
 	)
 	if id, ok := _c.mutation.Id(); ok {
 		_node.Id = id
-		vv, err := holder.ValueScanner.Id.Value(id)
-		if err != nil {
-			return nil, nil, err
-		}
-		_spec.Id.Value = vv
+		_spec.Id.Value = &id
 	}
 	if value, ok := _c.mutation.Alias(); ok {
 		_spec.SetField(holder.FieldAlias, field.TypeString, value)
@@ -328,11 +322,7 @@ func (_c *HolderCreate) createSpec() (*Holder, *sqlgraph.CreateSpec, error) {
 			},
 		}
 		for _, k := range nodes {
-			vv, err := tenant.ValueScanner.Id.Value(k)
-			if err != nil {
-				return nil, nil, err
-			}
-			edge.Target.Nodes = append(edge.Target.Nodes, vv)
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.TenantId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
@@ -387,20 +377,6 @@ func (_c *HolderCreateBulk) Save(ctx context.Context) ([]*Holder, error) {
 					return nil, err
 				}
 				mutation.id = &nodes[i].Id
-				if specs[i].Id.Value != nil {
-					sv, ok := specs[i].Id.Value.(field.ValueScanner)
-					if !ok {
-						sv = holder.ValueScanner.Id.ScanValue()
-						if err := sv.Scan(specs[i].Id.Value); err != nil {
-							return nil, err
-						}
-					}
-					if id, err := holder.ValueScanner.Id.FromValue(sv); err != nil {
-						return nil, err
-					} else {
-						nodes[i].Id = id
-					}
-				}
 				mutation.done = true
 				return nodes[i], nil
 			})

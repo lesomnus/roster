@@ -542,12 +542,7 @@ func (c *ApiKeyClient) GetX(ctx context.Context, id uuid.UUID) *ApiKey {
 func (c *ApiKeyClient) QueryHolder(_m *ApiKey) *HolderQuery {
 	query := (&HolderClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := apikey.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(apikey.Table, apikey.FieldId, id),
 			sqlgraph.To(holder.Table, holder.FieldId),
@@ -829,12 +824,7 @@ func (c *BindingClient) GetX(ctx context.Context, id uuid.UUID) *Binding {
 func (c *BindingClient) QueryRole(_m *Binding) *RoleQuery {
 	query := (&RoleClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := binding.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(binding.Table, binding.FieldId, id),
 			sqlgraph.To(role.Table, role.FieldId),
@@ -850,12 +840,7 @@ func (c *BindingClient) QueryRole(_m *Binding) *RoleQuery {
 func (c *BindingClient) QuerySite(_m *Binding) *SiteQuery {
 	query := (&SiteClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := binding.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(binding.Table, binding.FieldId, id),
 			sqlgraph.To(site.Table, site.FieldId),
@@ -871,12 +856,7 @@ func (c *BindingClient) QuerySite(_m *Binding) *SiteQuery {
 func (c *BindingClient) QueryHolder(_m *Binding) *HolderQuery {
 	query := (&HolderClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := binding.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(binding.Table, binding.FieldId, id),
 			sqlgraph.To(holder.Table, holder.FieldId),
@@ -892,12 +872,7 @@ func (c *BindingClient) QueryHolder(_m *Binding) *HolderQuery {
 func (c *BindingClient) QueryGroup(_m *Binding) *GroupQuery {
 	query := (&GroupClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := binding.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(binding.Table, binding.FieldId, id),
 			sqlgraph.To(group.Table, group.FieldId),
@@ -1046,12 +1021,7 @@ func (c *ConnectionClient) GetX(ctx context.Context, id uuid.UUID) *Connection {
 func (c *ConnectionClient) QueryTenant(_m *Connection) *TenantQuery {
 	query := (&TenantClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := connection.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(connection.Table, connection.FieldId, id),
 			sqlgraph.To(tenant.Table, tenant.FieldId),
@@ -1200,12 +1170,7 @@ func (c *ContinuationClient) GetX(ctx context.Context, id uuid.UUID) *Continuati
 func (c *ContinuationClient) QueryHolder(_m *Continuation) *HolderQuery {
 	query := (&HolderClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := continuation.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(continuation.Table, continuation.FieldId, id),
 			sqlgraph.To(holder.Table, holder.FieldId),
@@ -1354,12 +1319,7 @@ func (c *CredentialClient) GetX(ctx context.Context, id uuid.UUID) *Credential {
 func (c *CredentialClient) QueryHolder(_m *Credential) *HolderQuery {
 	query := (&HolderClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := credential.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(credential.Table, credential.FieldId, id),
 			sqlgraph.To(holder.Table, holder.FieldId),
@@ -1508,12 +1468,7 @@ func (c *DelegationClient) GetX(ctx context.Context, id uuid.UUID) *Delegation {
 func (c *DelegationClient) QueryHolder(_m *Delegation) *HolderQuery {
 	query := (&HolderClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := delegation.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(delegation.Table, delegation.FieldId, id),
 			sqlgraph.To(holder.Table, holder.FieldId),
@@ -1662,12 +1617,7 @@ func (c *EmailClient) GetX(ctx context.Context, id uuid.UUID) *Email {
 func (c *EmailClient) QueryHolder(_m *Email) *HolderQuery {
 	query := (&HolderClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := email.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(email.Table, email.FieldId, id),
 			sqlgraph.To(holder.Table, holder.FieldId),
@@ -1683,12 +1633,7 @@ func (c *EmailClient) QueryHolder(_m *Email) *HolderQuery {
 func (c *EmailClient) QueryVouchedBy(_m *Email) *IdentityQuery {
 	query := (&IdentityClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := email.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(email.Table, email.FieldId, id),
 			sqlgraph.To(identity.Table, identity.FieldId),
@@ -1837,12 +1782,7 @@ func (c *GroupClient) GetX(ctx context.Context, id uuid.UUID) *Group {
 func (c *GroupClient) QueryTenant(_m *Group) *TenantQuery {
 	query := (&TenantClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := group.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(group.Table, group.FieldId, id),
 			sqlgraph.To(tenant.Table, tenant.FieldId),
@@ -1858,12 +1798,7 @@ func (c *GroupClient) QueryTenant(_m *Group) *TenantQuery {
 func (c *GroupClient) QuerySite(_m *Group) *SiteQuery {
 	query := (&SiteClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := group.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(group.Table, group.FieldId, id),
 			sqlgraph.To(site.Table, site.FieldId),
@@ -2012,12 +1947,7 @@ func (c *GroupMembershipClient) GetX(ctx context.Context, id uuid.UUID) *GroupMe
 func (c *GroupMembershipClient) QueryHolder(_m *GroupMembership) *HolderQuery {
 	query := (&HolderClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := groupmembership.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(groupmembership.Table, groupmembership.FieldId, id),
 			sqlgraph.To(holder.Table, holder.FieldId),
@@ -2033,12 +1963,7 @@ func (c *GroupMembershipClient) QueryHolder(_m *GroupMembership) *HolderQuery {
 func (c *GroupMembershipClient) QueryGroup(_m *GroupMembership) *GroupQuery {
 	query := (&GroupClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := groupmembership.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(groupmembership.Table, groupmembership.FieldId, id),
 			sqlgraph.To(group.Table, group.FieldId),
@@ -2187,12 +2112,7 @@ func (c *HolderClient) GetX(ctx context.Context, id uuid.UUID) *Holder {
 func (c *HolderClient) QueryTenant(_m *Holder) *TenantQuery {
 	query := (&TenantClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := holder.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(holder.Table, holder.FieldId, id),
 			sqlgraph.To(tenant.Table, tenant.FieldId),
@@ -2341,12 +2261,7 @@ func (c *HostClient) GetX(ctx context.Context, id uuid.UUID) *Host {
 func (c *HostClient) QueryTenant(_m *Host) *TenantQuery {
 	query := (&TenantClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := host.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(host.Table, host.FieldId, id),
 			sqlgraph.To(tenant.Table, tenant.FieldId),
@@ -2495,12 +2410,7 @@ func (c *IdentityClient) GetX(ctx context.Context, id uuid.UUID) *Identity {
 func (c *IdentityClient) QueryHolder(_m *Identity) *HolderQuery {
 	query := (&HolderClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := identity.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(identity.Table, identity.FieldId, id),
 			sqlgraph.To(holder.Table, holder.FieldId),
@@ -2649,12 +2559,7 @@ func (c *LinkClient) GetX(ctx context.Context, id uuid.UUID) *Link {
 func (c *LinkClient) QueryHolder(_m *Link) *HolderQuery {
 	query := (&HolderClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := link.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(link.Table, link.FieldId, id),
 			sqlgraph.To(holder.Table, holder.FieldId),
@@ -2803,12 +2708,7 @@ func (c *MailDomainClient) GetX(ctx context.Context, id uuid.UUID) *MailDomain {
 func (c *MailDomainClient) QueryTenant(_m *MailDomain) *TenantQuery {
 	query := (&TenantClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := maildomain.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(maildomain.Table, maildomain.FieldId, id),
 			sqlgraph.To(tenant.Table, tenant.FieldId),
@@ -3090,12 +2990,7 @@ func (c *RoleClient) GetX(ctx context.Context, id uuid.UUID) *Role {
 func (c *RoleClient) QueryTenant(_m *Role) *TenantQuery {
 	query := (&TenantClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := role.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(role.Table, role.FieldId, id),
 			sqlgraph.To(tenant.Table, tenant.FieldId),
@@ -3111,12 +3006,7 @@ func (c *RoleClient) QueryTenant(_m *Role) *TenantQuery {
 func (c *RoleClient) QuerySite(_m *Role) *SiteQuery {
 	query := (&SiteClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := role.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(role.Table, role.FieldId, id),
 			sqlgraph.To(site.Table, site.FieldId),
@@ -3265,12 +3155,7 @@ func (c *SessionClient) GetX(ctx context.Context, id uuid.UUID) *Session {
 func (c *SessionClient) QueryHolder(_m *Session) *HolderQuery {
 	query := (&HolderClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := session.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(session.Table, session.FieldId, id),
 			sqlgraph.To(holder.Table, holder.FieldId),
@@ -3419,12 +3304,7 @@ func (c *SiteClient) GetX(ctx context.Context, id uuid.UUID) *Site {
 func (c *SiteClient) QueryTenant(_m *Site) *TenantQuery {
 	query := (&TenantClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := site.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(site.Table, site.FieldId, id),
 			sqlgraph.To(tenant.Table, tenant.FieldId),
@@ -3573,12 +3453,7 @@ func (c *SiteMembershipClient) GetX(ctx context.Context, id uuid.UUID) *SiteMemb
 func (c *SiteMembershipClient) QueryHolder(_m *SiteMembership) *HolderQuery {
 	query := (&HolderClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := sitemembership.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(sitemembership.Table, sitemembership.FieldId, id),
 			sqlgraph.To(holder.Table, holder.FieldId),
@@ -3594,12 +3469,7 @@ func (c *SiteMembershipClient) QueryHolder(_m *SiteMembership) *HolderQuery {
 func (c *SiteMembershipClient) QuerySite(_m *SiteMembership) *SiteQuery {
 	query := (&SiteClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := sitemembership.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(sitemembership.Table, sitemembership.FieldId, id),
 			sqlgraph.To(site.Table, site.FieldId),
@@ -3748,12 +3618,7 @@ func (c *TeamClient) GetX(ctx context.Context, id uuid.UUID) *Team {
 func (c *TeamClient) QueryTenant(_m *Team) *TenantQuery {
 	query := (&TenantClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := team.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(team.Table, team.FieldId, id),
 			sqlgraph.To(tenant.Table, tenant.FieldId),
@@ -3769,12 +3634,7 @@ func (c *TeamClient) QueryTenant(_m *Team) *TenantQuery {
 func (c *TeamClient) QuerySite(_m *Team) *SiteQuery {
 	query := (&SiteClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := team.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(team.Table, team.FieldId, id),
 			sqlgraph.To(site.Table, site.FieldId),
@@ -3923,12 +3783,7 @@ func (c *TeamMembershipClient) GetX(ctx context.Context, id uuid.UUID) *TeamMemb
 func (c *TeamMembershipClient) QueryHolder(_m *TeamMembership) *HolderQuery {
 	query := (&HolderClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := teammembership.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(teammembership.Table, teammembership.FieldId, id),
 			sqlgraph.To(holder.Table, holder.FieldId),
@@ -3944,12 +3799,7 @@ func (c *TeamMembershipClient) QueryHolder(_m *TeamMembership) *HolderQuery {
 func (c *TeamMembershipClient) QueryTeam(_m *TeamMembership) *TeamQuery {
 	query := (&TeamClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := teammembership.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(teammembership.Table, teammembership.FieldId, id),
 			sqlgraph.To(team.Table, team.FieldId),
@@ -3965,12 +3815,7 @@ func (c *TeamMembershipClient) QueryTeam(_m *TeamMembership) *TeamQuery {
 func (c *TeamMembershipClient) QueryRole(_m *TeamMembership) *RoleQuery {
 	query := (&RoleClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := any(_m.Id)
-		vv, err := teammembership.ValueScanner.Id.Value(_m.Id)
-		if err != nil {
-			return nil, err
-		}
-		id = vv
+		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(teammembership.Table, teammembership.FieldId, id),
 			sqlgraph.To(role.Table, role.FieldId),

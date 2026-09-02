@@ -3,11 +3,8 @@
 package site
 
 import (
-	"uuid"
-
 	"github.com/protobuf-orm/ent/dialect/sql"
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
-	"github.com/protobuf-orm/ent/schema/field"
 )
 
 const (
@@ -66,14 +63,6 @@ func ValidColumn(column string) bool {
 	}
 	return false
 }
-
-var (
-	// ValueScanner of all Site fields.
-	ValueScanner struct {
-		TenantId field.TypeValueScanner[uuid.UUID]
-		Id       field.TypeValueScanner[uuid.UUID]
-	}
-)
 
 // OrderOption defines the ordering options for the Site queries.
 type OrderOption func(*sql.Selector)

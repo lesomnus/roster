@@ -213,7 +213,7 @@ func Intent(control *ent.Client) grpc.UnaryServerInterceptor {
 func writes(method string) bool {
 	i := strings.LastIndex(method, "/")
 	if i < 0 {
-		// Not something gRpc dispatched, which cannot arrive at this end of an
+		// Not something gRPC dispatched, which cannot arrive at this end of an
 		// interceptor. Recorded rather than skipped, for the reason above.
 		return true
 	}

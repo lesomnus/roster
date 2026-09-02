@@ -562,7 +562,7 @@ func TestNoFilterCarriesARowFromAnotherTenant(t *testing.T) {
 // same column and is checked here beside the hash rather than trusted to be.
 func TestNoVerifierIsAnsweredByThePortThatServesItsRow(t *testing.T) {
 	// Both deployments are stood up **here** rather than in the subtests that
-	// use them, and that is not tidiness. `pdtest.DB` names a PostgreSql schema
+	// use them, and that is not tidiness. `pdtest.DB` names a PostgreSQL schema
 	// after the running test and truncates it to sixty-three characters, and
 	// the counter that gives a second database in one test its own name is a
 	// suffix -- so inside a subtest, where the name is already long, the

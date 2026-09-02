@@ -108,7 +108,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// A server that is not gRpc's, taking the same services.
+	// A server that is not gRPC's, taking the same services.
 	gw := jsport.NewGateway()
 
 	// The same interceptors the process serves with, because the stack behind

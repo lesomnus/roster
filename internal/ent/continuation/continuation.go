@@ -3,11 +3,8 @@
 package continuation
 
 import (
-	"uuid"
-
 	"github.com/protobuf-orm/ent/dialect/sql"
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
-	"github.com/protobuf-orm/ent/schema/field"
 )
 
 const (
@@ -69,15 +66,6 @@ func ValidColumn(column string) bool {
 	}
 	return false
 }
-
-var (
-	// ValueScanner of all Continuation fields.
-	ValueScanner struct {
-		MeteredBy field.TypeValueScanner[uuid.UUID]
-		HolderId  field.TypeValueScanner[uuid.UUID]
-		Id        field.TypeValueScanner[uuid.UUID]
-	}
-)
 
 // OrderOption defines the ordering options for the Continuation queries.
 type OrderOption func(*sql.Selector)

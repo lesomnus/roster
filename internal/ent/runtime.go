@@ -3,32 +3,8 @@
 package ent
 
 import (
-	"uuid"
-
-	"github.com/lesomnus/roster/internal/ent/apikey"
-	"github.com/lesomnus/roster/internal/ent/audit"
-	"github.com/lesomnus/roster/internal/ent/binding"
-	"github.com/lesomnus/roster/internal/ent/connection"
-	"github.com/lesomnus/roster/internal/ent/continuation"
-	"github.com/lesomnus/roster/internal/ent/credential"
-	"github.com/lesomnus/roster/internal/ent/delegation"
-	"github.com/lesomnus/roster/internal/ent/email"
-	"github.com/lesomnus/roster/internal/ent/group"
-	"github.com/lesomnus/roster/internal/ent/groupmembership"
 	"github.com/lesomnus/roster/internal/ent/holder"
-	"github.com/lesomnus/roster/internal/ent/host"
-	"github.com/lesomnus/roster/internal/ent/identity"
-	"github.com/lesomnus/roster/internal/ent/link"
-	"github.com/lesomnus/roster/internal/ent/maildomain"
-	"github.com/lesomnus/roster/internal/ent/outbox"
-	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/lesomnus/roster/internal/ent/schema"
-	"github.com/lesomnus/roster/internal/ent/session"
-	"github.com/lesomnus/roster/internal/ent/site"
-	"github.com/lesomnus/roster/internal/ent/sitemembership"
-	"github.com/lesomnus/roster/internal/ent/team"
-	"github.com/lesomnus/roster/internal/ent/teammembership"
-	"github.com/lesomnus/roster/internal/ent/tenant"
 	"github.com/lesomnus/roster/rstr"
 	"google.golang.org/protobuf/types/known/anypb"
 
@@ -39,58 +15,6 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
-	apikeyFields := schema.ApiKey{}.Fields()
-	_ = apikeyFields
-	apikey.ValueScanner.HolderId = field.TextValueScannerOf[uuid.UUID]()
-	apikey.ValueScanner.Id = field.TextValueScannerOf[uuid.UUID]()
-	auditFields := schema.Audit{}.Fields()
-	_ = auditFields
-	audit.ValueScanner.TenantId = field.TextValueScannerOf[uuid.UUID]()
-	audit.ValueScanner.ActorId = field.TextValueScannerOf[uuid.UUID]()
-	audit.ValueScanner.ObjectId = field.TextValueScannerOf[uuid.UUID]()
-	audit.ValueScanner.ActorTenantId = field.TextValueScannerOf[uuid.UUID]()
-	audit.ValueScanner.CounterpartTenantId = field.TextValueScannerOf[uuid.UUID]()
-	audit.ValueScanner.Id = field.TextValueScannerOf[uuid.UUID]()
-	bindingFields := schema.Binding{}.Fields()
-	_ = bindingFields
-	binding.ValueScanner.RoleId = field.TextValueScannerOf[uuid.UUID]()
-	binding.ValueScanner.SiteId = field.TextValueScannerOf[uuid.UUID]()
-	binding.ValueScanner.HolderId = field.TextValueScannerOf[uuid.UUID]()
-	binding.ValueScanner.GroupId = field.TextValueScannerOf[uuid.UUID]()
-	binding.ValueScanner.Id = field.TextValueScannerOf[uuid.UUID]()
-	connectionFields := schema.Connection{}.Fields()
-	_ = connectionFields
-	connection.ValueScanner.TenantId = field.TextValueScannerOf[uuid.UUID]()
-	connection.ValueScanner.Id = field.TextValueScannerOf[uuid.UUID]()
-	continuationFields := schema.Continuation{}.Fields()
-	_ = continuationFields
-	continuation.ValueScanner.MeteredBy = field.TextValueScannerOf[uuid.UUID]()
-	continuation.ValueScanner.HolderId = field.TextValueScannerOf[uuid.UUID]()
-	continuation.ValueScanner.Id = field.TextValueScannerOf[uuid.UUID]()
-	credentialFields := schema.Credential{}.Fields()
-	_ = credentialFields
-	credential.ValueScanner.HolderId = field.TextValueScannerOf[uuid.UUID]()
-	credential.ValueScanner.Id = field.TextValueScannerOf[uuid.UUID]()
-	delegationFields := schema.Delegation{}.Fields()
-	_ = delegationFields
-	delegation.ValueScanner.HolderId = field.TextValueScannerOf[uuid.UUID]()
-	delegation.ValueScanner.Id = field.TextValueScannerOf[uuid.UUID]()
-	emailFields := schema.Email{}.Fields()
-	_ = emailFields
-	email.ValueScanner.TenantId = field.TextValueScannerOf[uuid.UUID]()
-	email.ValueScanner.HolderId = field.TextValueScannerOf[uuid.UUID]()
-	email.ValueScanner.VouchedById = field.TextValueScannerOf[uuid.UUID]()
-	email.ValueScanner.Id = field.TextValueScannerOf[uuid.UUID]()
-	groupFields := schema.Group{}.Fields()
-	_ = groupFields
-	group.ValueScanner.TenantId = field.TextValueScannerOf[uuid.UUID]()
-	group.ValueScanner.SiteId = field.TextValueScannerOf[uuid.UUID]()
-	group.ValueScanner.Id = field.TextValueScannerOf[uuid.UUID]()
-	groupmembershipFields := schema.GroupMembership{}.Fields()
-	_ = groupmembershipFields
-	groupmembership.ValueScanner.HolderId = field.TextValueScannerOf[uuid.UUID]()
-	groupmembership.ValueScanner.GroupId = field.TextValueScannerOf[uuid.UUID]()
-	groupmembership.ValueScanner.Id = field.TextValueScannerOf[uuid.UUID]()
 	holderFields := schema.Holder{}.Fields()
 	_ = holderFields
 	// holderDescProfile is the schema descriptor for profile field.
@@ -99,61 +23,4 @@ func init() {
 	// holderDescData is the schema descriptor for data field.
 	holderDescData := holderFields[10].Descriptor()
 	holder.ValueScanner.Data = holderDescData.ValueScanner.(field.TypeValueScanner[*anypb.Any])
-	holder.ValueScanner.TenantId = field.TextValueScannerOf[uuid.UUID]()
-	holder.ValueScanner.Id = field.TextValueScannerOf[uuid.UUID]()
-	hostFields := schema.Host{}.Fields()
-	_ = hostFields
-	host.ValueScanner.TenantId = field.TextValueScannerOf[uuid.UUID]()
-	host.ValueScanner.Id = field.TextValueScannerOf[uuid.UUID]()
-	identityFields := schema.Identity{}.Fields()
-	_ = identityFields
-	identity.ValueScanner.TenantId = field.TextValueScannerOf[uuid.UUID]()
-	identity.ValueScanner.HolderId = field.TextValueScannerOf[uuid.UUID]()
-	identity.ValueScanner.Id = field.TextValueScannerOf[uuid.UUID]()
-	linkFields := schema.Link{}.Fields()
-	_ = linkFields
-	link.ValueScanner.HolderId = field.TextValueScannerOf[uuid.UUID]()
-	link.ValueScanner.Id = field.TextValueScannerOf[uuid.UUID]()
-	maildomainFields := schema.MailDomain{}.Fields()
-	_ = maildomainFields
-	maildomain.ValueScanner.TenantId = field.TextValueScannerOf[uuid.UUID]()
-	maildomain.ValueScanner.Id = field.TextValueScannerOf[uuid.UUID]()
-	outboxFields := schema.Outbox{}.Fields()
-	_ = outboxFields
-	outbox.ValueScanner.TenantId = field.TextValueScannerOf[uuid.UUID]()
-	outbox.ValueScanner.ActorId = field.TextValueScannerOf[uuid.UUID]()
-	outbox.ValueScanner.ObjectId = field.TextValueScannerOf[uuid.UUID]()
-	outbox.ValueScanner.Id = field.TextValueScannerOf[uuid.UUID]()
-	roleFields := schema.Role{}.Fields()
-	_ = roleFields
-	role.ValueScanner.TenantId = field.TextValueScannerOf[uuid.UUID]()
-	role.ValueScanner.SiteId = field.TextValueScannerOf[uuid.UUID]()
-	role.ValueScanner.Id = field.TextValueScannerOf[uuid.UUID]()
-	sessionFields := schema.Session{}.Fields()
-	_ = sessionFields
-	session.ValueScanner.HolderId = field.TextValueScannerOf[uuid.UUID]()
-	session.ValueScanner.Id = field.TextValueScannerOf[uuid.UUID]()
-	siteFields := schema.Site{}.Fields()
-	_ = siteFields
-	site.ValueScanner.TenantId = field.TextValueScannerOf[uuid.UUID]()
-	site.ValueScanner.Id = field.TextValueScannerOf[uuid.UUID]()
-	sitemembershipFields := schema.SiteMembership{}.Fields()
-	_ = sitemembershipFields
-	sitemembership.ValueScanner.HolderId = field.TextValueScannerOf[uuid.UUID]()
-	sitemembership.ValueScanner.SiteId = field.TextValueScannerOf[uuid.UUID]()
-	sitemembership.ValueScanner.Id = field.TextValueScannerOf[uuid.UUID]()
-	teamFields := schema.Team{}.Fields()
-	_ = teamFields
-	team.ValueScanner.TenantId = field.TextValueScannerOf[uuid.UUID]()
-	team.ValueScanner.SiteId = field.TextValueScannerOf[uuid.UUID]()
-	team.ValueScanner.Id = field.TextValueScannerOf[uuid.UUID]()
-	teammembershipFields := schema.TeamMembership{}.Fields()
-	_ = teammembershipFields
-	teammembership.ValueScanner.HolderId = field.TextValueScannerOf[uuid.UUID]()
-	teammembership.ValueScanner.TeamId = field.TextValueScannerOf[uuid.UUID]()
-	teammembership.ValueScanner.RoleId = field.TextValueScannerOf[uuid.UUID]()
-	teammembership.ValueScanner.Id = field.TextValueScannerOf[uuid.UUID]()
-	tenantFields := schema.Tenant{}.Fields()
-	_ = tenantFields
-	tenant.ValueScanner.Id = field.TextValueScannerOf[uuid.UUID]()
 }

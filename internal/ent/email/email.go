@@ -3,11 +3,8 @@
 package email
 
 import (
-	"uuid"
-
 	"github.com/protobuf-orm/ent/dialect/sql"
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
-	"github.com/protobuf-orm/ent/schema/field"
 )
 
 const (
@@ -75,16 +72,6 @@ func ValidColumn(column string) bool {
 	}
 	return false
 }
-
-var (
-	// ValueScanner of all Email fields.
-	ValueScanner struct {
-		TenantId    field.TypeValueScanner[uuid.UUID]
-		HolderId    field.TypeValueScanner[uuid.UUID]
-		VouchedById field.TypeValueScanner[uuid.UUID]
-		Id          field.TypeValueScanner[uuid.UUID]
-	}
-)
 
 // OrderOption defines the ordering options for the Email queries.
 type OrderOption func(*sql.Selector)

@@ -67,16 +67,14 @@ func (*Site) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case site.FieldId:
-			values[i] = site.ValueScanner.Id.ScanValue()
 		case site.FieldLabels:
 			values[i] = new([]byte)
 		case site.FieldAlias, site.FieldName, site.FieldDesc:
 			values[i] = new(sql.NullString)
 		case site.FieldDateUpdated, site.FieldDateErased, site.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case site.FieldTenantId:
-			values[i] = site.ValueScanner.TenantId.ScanValue()
+		case site.FieldId, site.FieldTenantId:
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -93,10 +91,10 @@ func (_m *Site) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case site.FieldId:
-			if value, err := site.ValueScanner.Id.FromValue(values[i]); err != nil {
-				return err
-			} else {
-				_m.Id = value
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value != nil {
+				_m.Id = *value
 			}
 		case site.FieldAlias:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -144,10 +142,10 @@ func (_m *Site) assignValues(columns []string, values []any) error {
 				_m.DateCreated = value.Time
 			}
 		case site.FieldTenantId:
-			if value, err := site.ValueScanner.TenantId.FromValue(values[i]); err != nil {
-				return err
-			} else {
-				_m.TenantId = value
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
+			} else if value != nil {
+				_m.TenantId = *value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])

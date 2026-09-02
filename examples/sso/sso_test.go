@@ -170,7 +170,7 @@ type deployment struct {
 	// server is the built deployment, kept so a test that needs a **second**
 	// caller -- an administrator beside the front door -- can open its own
 	// connection to the same roster with its own credential. `server.Grpc`
-	// answers a fresh gRpc server over the same store each time it is called.
+	// answers a fresh gRPC server over the same store each time it is called.
 	server *cmd.Server
 }
 

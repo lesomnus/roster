@@ -441,7 +441,7 @@ func TestNoVerifierReachesTheTrail(t *testing.T) {
 
 // TestAConsoleReachesTheAdminPortOverHttp is what a browser can actually do.
 //
-// A browser cannot speak gRpc, so a port with no transcoder is a port a console
+// A browser cannot speak gRPC, so a port with no transcoder is a port a console
 // cannot reach. Until this, the only one was in front of the **data plane**,
 // where an operator's session names nobody -- so a console could sign in and
 // then had nothing to call.
@@ -601,7 +601,7 @@ func TestAConsoleReachesTheControlPlaneOverHttp(t *testing.T) {
 	})
 
 	// `DELETE /session` is the sign-out the browser actually sends, and until
-	// now nothing sent it: the one sign-out test went through the gRpc
+	// now nothing sent it: the one sign-out test went through the gRPC
 	// `AuthService.SignOut`, which is the transcoded twin and not the route.
 	// The claim is immediacy -- the jar still holds the cookie, and the server
 	// no longer knows it.

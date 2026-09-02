@@ -64,16 +64,12 @@ func (*Identity) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case identity.FieldId:
-			values[i] = identity.ValueScanner.Id.ScanValue()
 		case identity.FieldProvider, identity.FieldSubject:
 			values[i] = new(sql.NullString)
 		case identity.FieldDateUpdated, identity.FieldDateErased, identity.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case identity.FieldTenantId:
-			values[i] = identity.ValueScanner.TenantId.ScanValue()
-		case identity.FieldHolderId:
-			values[i] = identity.ValueScanner.HolderId.ScanValue()
+		case identity.FieldId, identity.FieldTenantId, identity.FieldHolderId:
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -90,10 +86,10 @@ func (_m *Identity) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case identity.FieldId:
-			if value, err := identity.ValueScanner.Id.FromValue(values[i]); err != nil {
-				return err
-			} else {
-				_m.Id = value
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value != nil {
+				_m.Id = *value
 			}
 		case identity.FieldProvider:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -108,10 +104,10 @@ func (_m *Identity) assignValues(columns []string, values []any) error {
 				_m.Subject = value.String
 			}
 		case identity.FieldTenantId:
-			if value, err := identity.ValueScanner.TenantId.FromValue(values[i]); err != nil {
-				return err
-			} else {
-				_m.TenantId = value
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
+			} else if value != nil {
+				_m.TenantId = *value
 			}
 		case identity.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -133,10 +129,10 @@ func (_m *Identity) assignValues(columns []string, values []any) error {
 				_m.DateCreated = value.Time
 			}
 		case identity.FieldHolderId:
-			if value, err := identity.ValueScanner.HolderId.FromValue(values[i]); err != nil {
-				return err
-			} else {
-				_m.HolderId = value
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field holder_id", values[i])
+			} else if value != nil {
+				_m.HolderId = *value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])

@@ -13,72 +13,47 @@ import (
 
 // Id filters vertices based on their Id field.
 func Id(id uuid.UUID) predicate.SiteMembership {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.SiteMembershipOrErr(sql.FieldEQ(FieldId, vc), err)
+	return predicate.SiteMembership(sql.FieldEQ(FieldId, id))
 }
 
 // IdEQ applies the EQ predicate on the Id field.
 func IdEQ(id uuid.UUID) predicate.SiteMembership {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.SiteMembershipOrErr(sql.FieldEQ(FieldId, vc), err)
+	return predicate.SiteMembership(sql.FieldEQ(FieldId, id))
 }
 
 // IdNEQ applies the NEQ predicate on the Id field.
 func IdNEQ(id uuid.UUID) predicate.SiteMembership {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.SiteMembershipOrErr(sql.FieldNEQ(FieldId, vc), err)
+	return predicate.SiteMembership(sql.FieldNEQ(FieldId, id))
 }
 
 // IdIn applies the In predicate on the Id field.
 func IdIn(ids ...uuid.UUID) predicate.SiteMembership {
-	var (
-		err error
-		vcs = make([]any, len(ids))
-	)
-	for i := range vcs {
-		if vcs[i], err = ValueScanner.Id.Value(ids[i]); err != nil {
-			break
-		}
-	}
-	return predicate.SiteMembershipOrErr(sql.FieldIn(FieldId, vcs...), err)
+	return predicate.SiteMembership(sql.FieldIn(FieldId, ids...))
 }
 
 // IdNotIn applies the NotIn predicate on the Id field.
 func IdNotIn(ids ...uuid.UUID) predicate.SiteMembership {
-	var (
-		err error
-		vcs = make([]any, len(ids))
-	)
-	for i := range vcs {
-		if vcs[i], err = ValueScanner.Id.Value(ids[i]); err != nil {
-			break
-		}
-	}
-	return predicate.SiteMembershipOrErr(sql.FieldNotIn(FieldId, vcs...), err)
+	return predicate.SiteMembership(sql.FieldNotIn(FieldId, ids...))
 }
 
 // IdGT applies the GT predicate on the Id field.
 func IdGT(id uuid.UUID) predicate.SiteMembership {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.SiteMembershipOrErr(sql.FieldGT(FieldId, vc), err)
+	return predicate.SiteMembership(sql.FieldGT(FieldId, id))
 }
 
 // IdGTE applies the GTE predicate on the Id field.
 func IdGTE(id uuid.UUID) predicate.SiteMembership {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.SiteMembershipOrErr(sql.FieldGTE(FieldId, vc), err)
+	return predicate.SiteMembership(sql.FieldGTE(FieldId, id))
 }
 
 // IdLT applies the LT predicate on the Id field.
 func IdLT(id uuid.UUID) predicate.SiteMembership {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.SiteMembershipOrErr(sql.FieldLT(FieldId, vc), err)
+	return predicate.SiteMembership(sql.FieldLT(FieldId, id))
 }
 
 // IdLTE applies the LTE predicate on the Id field.
 func IdLTE(id uuid.UUID) predicate.SiteMembership {
-	vc, err := ValueScanner.Id.Value(id)
-	return predicate.SiteMembershipOrErr(sql.FieldLTE(FieldId, vc), err)
+	return predicate.SiteMembership(sql.FieldLTE(FieldId, id))
 }
 
 // DateUpdated applies equality check predicate on the "date_updated" field. It's identical to DateUpdatedEQ.
@@ -98,14 +73,12 @@ func DateCreated(v time.Time) predicate.SiteMembership {
 
 // HolderId applies equality check predicate on the "holder_id" field. It's identical to HolderIdEQ.
 func HolderId(v uuid.UUID) predicate.SiteMembership {
-	vc, err := ValueScanner.HolderId.Value(v)
-	return predicate.SiteMembershipOrErr(sql.FieldEQ(FieldHolderId, vc), err)
+	return predicate.SiteMembership(sql.FieldEQ(FieldHolderId, v))
 }
 
 // SiteId applies equality check predicate on the "site_id" field. It's identical to SiteIdEQ.
 func SiteId(v uuid.UUID) predicate.SiteMembership {
-	vc, err := ValueScanner.SiteId.Value(v)
-	return predicate.SiteMembershipOrErr(sql.FieldEQ(FieldSiteId, vc), err)
+	return predicate.SiteMembership(sql.FieldEQ(FieldSiteId, v))
 }
 
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
@@ -250,82 +223,42 @@ func DateCreatedNotNil() predicate.SiteMembership {
 
 // HolderIdEQ applies the EQ predicate on the "holder_id" field.
 func HolderIdEQ(v uuid.UUID) predicate.SiteMembership {
-	vc, err := ValueScanner.HolderId.Value(v)
-	return predicate.SiteMembershipOrErr(sql.FieldEQ(FieldHolderId, vc), err)
+	return predicate.SiteMembership(sql.FieldEQ(FieldHolderId, v))
 }
 
 // HolderIdNEQ applies the NEQ predicate on the "holder_id" field.
 func HolderIdNEQ(v uuid.UUID) predicate.SiteMembership {
-	vc, err := ValueScanner.HolderId.Value(v)
-	return predicate.SiteMembershipOrErr(sql.FieldNEQ(FieldHolderId, vc), err)
+	return predicate.SiteMembership(sql.FieldNEQ(FieldHolderId, v))
 }
 
 // HolderIdIn applies the In predicate on the "holder_id" field.
 func HolderIdIn(vs ...uuid.UUID) predicate.SiteMembership {
-	var (
-		err error
-		v   = make([]any, len(vs))
-	)
-	for i := range v {
-		if v[i], err = ValueScanner.HolderId.Value(vs[i]); err != nil {
-			break
-		}
-	}
-	return predicate.SiteMembershipOrErr(sql.FieldIn(FieldHolderId, v...), err)
+	return predicate.SiteMembership(sql.FieldIn(FieldHolderId, vs...))
 }
 
 // HolderIdNotIn applies the NotIn predicate on the "holder_id" field.
 func HolderIdNotIn(vs ...uuid.UUID) predicate.SiteMembership {
-	var (
-		err error
-		v   = make([]any, len(vs))
-	)
-	for i := range v {
-		if v[i], err = ValueScanner.HolderId.Value(vs[i]); err != nil {
-			break
-		}
-	}
-	return predicate.SiteMembershipOrErr(sql.FieldNotIn(FieldHolderId, v...), err)
+	return predicate.SiteMembership(sql.FieldNotIn(FieldHolderId, vs...))
 }
 
 // SiteIdEQ applies the EQ predicate on the "site_id" field.
 func SiteIdEQ(v uuid.UUID) predicate.SiteMembership {
-	vc, err := ValueScanner.SiteId.Value(v)
-	return predicate.SiteMembershipOrErr(sql.FieldEQ(FieldSiteId, vc), err)
+	return predicate.SiteMembership(sql.FieldEQ(FieldSiteId, v))
 }
 
 // SiteIdNEQ applies the NEQ predicate on the "site_id" field.
 func SiteIdNEQ(v uuid.UUID) predicate.SiteMembership {
-	vc, err := ValueScanner.SiteId.Value(v)
-	return predicate.SiteMembershipOrErr(sql.FieldNEQ(FieldSiteId, vc), err)
+	return predicate.SiteMembership(sql.FieldNEQ(FieldSiteId, v))
 }
 
 // SiteIdIn applies the In predicate on the "site_id" field.
 func SiteIdIn(vs ...uuid.UUID) predicate.SiteMembership {
-	var (
-		err error
-		v   = make([]any, len(vs))
-	)
-	for i := range v {
-		if v[i], err = ValueScanner.SiteId.Value(vs[i]); err != nil {
-			break
-		}
-	}
-	return predicate.SiteMembershipOrErr(sql.FieldIn(FieldSiteId, v...), err)
+	return predicate.SiteMembership(sql.FieldIn(FieldSiteId, vs...))
 }
 
 // SiteIdNotIn applies the NotIn predicate on the "site_id" field.
 func SiteIdNotIn(vs ...uuid.UUID) predicate.SiteMembership {
-	var (
-		err error
-		v   = make([]any, len(vs))
-	)
-	for i := range v {
-		if v[i], err = ValueScanner.SiteId.Value(vs[i]); err != nil {
-			break
-		}
-	}
-	return predicate.SiteMembershipOrErr(sql.FieldNotIn(FieldSiteId, v...), err)
+	return predicate.SiteMembership(sql.FieldNotIn(FieldSiteId, vs...))
 }
 
 // HasHolder applies the HasEdge predicate on the "holder" edge.
