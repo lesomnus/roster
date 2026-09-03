@@ -190,6 +190,11 @@ go run ./cmd/roster config        # what this deployment is configured with
 go run ./cmd/roster config env    # every variable it can be told through
 ```
 
+Or the whole thing on Postgres with a customer already in it, which is what
+`compose.yaml` is: `docker compose up --build`, the console at
+`http://localhost:8082/console/` and the account app at `:8090`.
+`docs/operating.md` § "Locally, in one command" says what comes up.
+
 `init` writes the **operator** and nothing else, so a fresh deployment has no
 customers. The first one is four local writes and a key, from a terminal:
 

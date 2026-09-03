@@ -254,6 +254,8 @@ go run ./cmd/roster config env    # every variable this can be told through
 cd ts && npm install && npm run dev            # the console, cross-origin
 go run ./cmd/roster account serve --roster … \
   --connect … --key contoso=rt_… --static ts/dist/account   # the front door
+
+docker compose up --build       # Postgres, both planes, a customer, both pages
 ```
 
 Two UIs, two processes: `roster serve` serves the console under `/console/` on

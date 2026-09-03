@@ -6,14 +6,15 @@ import { expect, test } from '@playwright/test'
 // the control listener set -- and see their first person.
 
 const base = process.env['E2E_CONSOLE'] ?? 'http://127.0.0.1:18062/console/'
+const operator = process.env['E2E_OPS_USER'] ?? 'ops'
 const password = process.env['E2E_OPS_PASSWORD'] ?? ''
 
 test('an operator signs in and stands a customer up', async ({ page }) => {
 	await page.goto(base)
-	await page.locator('input[name=alias]').fill('ops')
+	await page.locator('input[name=alias]').fill(operator)
 	await page.locator('input[name=password]').fill(password)
 	await page.locator('button[type=submit]', { hasText: 'sign in' }).click()
-	await expect(page.locator('nav .who')).toHaveText('ops')
+	await expect(page.locator('nav .who')).toHaveText(operator)
 
 	await page.locator('nav button', { hasText: 'customers' }).click()
 	await expect(page.locator('h2', { hasText: 'customers' })).toBeVisible()

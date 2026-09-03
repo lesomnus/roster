@@ -63,7 +63,9 @@ if [ ! -e "${seeded}" ]; then
 	# refuses an empty one rather than falling back to generating, because a
 	# container that meant to set a password and did not is one whose operator
 	# cannot sign in and does not know why.
-	printf '%s' "${ROSTER_ROOT_PASSWORD}" | roster init \
+	# `env -u`, because the binary warns about every ROSTER_* it does not
+	# read, and these two are this script's rather than its.
+	printf '%s' "${ROSTER_ROOT_PASSWORD}" | env -u ROSTER_ROOT_USER -u ROSTER_ROOT_PASSWORD roster init \
 		--operator "${ROSTER_ROOT_USER}" \
 		--password-stdin
 
@@ -72,4 +74,5 @@ if [ ! -e "${seeded}" ]; then
 	touch "${seeded}"
 fi
 
+unset ROSTER_ROOT_USER ROSTER_ROOT_PASSWORD
 exec roster "$@"

@@ -250,14 +250,40 @@ tenant.
 ## Locally, in one command
 
 ```sh
-docker compose up
-# http://localhost:5173 — admin / admin
+docker compose up --build
+# http://localhost:8082/console/   admin / admin
+# http://localhost:8090/           erin / correct horse battery staple
 ```
 
-roster on Postgres, both planes, and the console on a vite dev server with hot
-reload. Not the sandbox: this is the console talking to a roster that is really
-there, which is where the differences from SQLite show up — and they have shown
-up more than once.
+roster on Postgres, both planes, the console served by roster under
+`/console/`, one customer already stood up (`contoso`, with `erin` in it), and
+the account app fronting them on its own port — the way it is deployed, with a
+key the `customer` service minted once. Not the sandbox: this is the pages
+talking to a roster that is really there, which is where the differences from
+SQLite show up — and they have shown up more than once. `ts/e2e/` runs against
+it unchanged:
+
+```sh
+E2E_CONSOLE=http://localhost:8082/console/ E2E_ACCOUNT=http://localhost:8090 \
+E2E_OPS_USER=admin E2E_OPS_PASSWORD=admin npx --prefix ts playwright test console account
+```
+
+For hot reload on a page, point a dev server at it instead: `npm run dev` with
+`VITE_ADMIN_ADDR=http://localhost:8081`, or `npm run dev:account` -- both are
+told where roster is by `ts/vite.*.ts`.
+
+Open it as `localhost`. The console's cookie is `__Host-` and `Secure`, which a
+browser accepts over plain http from `localhost` and from nowhere else -- the
+right answer for a deployment, which has TLS, and the reason `PUBLIC_HOST` in
+`compose.yaml` is for the account app rather than a way to reach the console
+by another name.
+
+| | |
+| --- | --- |
+| `8080` | the data plane over HTTP (`server.http`); `50051` is the same over gRPC |
+| `8081` | the admin listener, which the console reaches from the browser |
+| `8082` | the control plane, and the console under `/console/` |
+| `8090` | the account app |
 
 The first operator comes from the environment, applied **once** by the image's
 entrypoint and not by the CLI:

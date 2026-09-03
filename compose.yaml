@@ -1,137 +1,153 @@
-# roster and its console, locally, against a real server.
+# roster, locally, in one command -- see docs/operating.md, "Locally, in one
+# command". Not production: default passwords, a key written into this file,
+# cookies without Secure. It is what somebody working on the pages runs.
 #
-#	docker compose up
-#	open http://localhost:5173
-#	sign in as admin / admin        # the operator; there are no customers yet
+#     docker compose up --build
+#     http://localhost:8082/console/   admin / admin
+#     http://localhost:8090/           erin / correct horse battery staple
 #
-# Not the sandbox. `npm run dev:sandbox` compiles the server into the page and
-# needs none of this; what this is for is the console talking to a roster that
-# is really there, over the transcoder, with Postgres underneath -- which is
-# where the differences from SQLite show up, and they have shown up more than
-# once.
+# `PUBLIC_HOST` is the name a browser reaches this by, `localhost` unless
+# said otherwise: the account app resolves the customer by that name, and the
+# console is told where the admin listener is by it. The console itself is
+# `localhost` only: its cookie is `__Host-` and `Secure`, which a browser takes
+# over plain http from that name and from nowhere else.
 #
-# Not a production compose either. The passwords are in this file, there is no
-# TLS, and every port is published to the host including the two that should be
-# reachable only by a console. Each of those is a line that would have to change
-# and none of them is hidden.
-
+# One line in `account`'s log says `ROSTER_ACCOUNT_KEY_CONTOSO is set and
+# nothing reads it`. It is read -- by the app, rather than by the configuration
+# loader that prints the line; see the issue on it.
 name: roster
 
 services:
-  db:
-    image: postgres:18-alpine
+  postgres:
+    image: postgres:17
     environment:
       POSTGRES_USER: roster
       POSTGRES_PASSWORD: roster
       POSTGRES_DB: roster
-    volumes:
-      - db:/var/lib/postgresql/data
-      # Both planes are databases, deliberately -- a key must not live in the
-      # tables it protects. One server holds them; there is still no query from
-      # one to the other, because nothing in roster opens a connection that
-      # could make one.
-      - ./docker/planes.sql:/docker-entrypoint-initdb.d/planes.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U roster"]
       interval: 2s
-      timeout: 2s
+      timeout: 5s
       retries: 30
+    volumes:
+      - postgres:/var/lib/postgresql/data
+
+  # The control plane's database, beside the data plane's. Two databases
+  # because a key must not live in the tables it protects: with them separate
+  # there is no query from the data plane to the keys at all, so a fault in the
+  # wall cannot reach one (docs/position.md, "Two planes, one schema"). One
+  # server holds both here, which is a development convenience and not a
+  # weakening of that: nothing in roster opens a connection that could join
+  # across them.
+  planes:
+    image: postgres:17
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: roster
+    entrypoint:
+      - sh
+      - -c
+      - >-
+        psql -h postgres -U roster -d roster -tAc "SELECT 1 FROM pg_database WHERE datname = 'control'" | grep -q 1
+        || psql -h postgres -U roster -d roster -c "CREATE DATABASE control OWNER roster"
 
   roster:
     build: .
     depends_on:
-      db:
-        condition: service_healthy
+      planes:
+        condition: service_completed_successfully
     environment:
-      # Seeded once by the entrypoint, not by the CLI. See `docker/entrypoint.sh`.
-      # `ROSTER_ROOT_*` and not `ROSTER_ADMIN_*`: the second is roster's own
-      # prefix for the admin listener, three variables further down.
       ROSTER_ROOT_USER: ${ROSTER_ROOT_USER:-admin}
       ROSTER_ROOT_PASSWORD: ${ROSTER_ROOT_PASSWORD:-admin}
 
-      # `pgx` and not `postgres`: the driver is named by what is registered,
-      # and `config/dbpgx` registers it under the name of the package that
-      # opens it. An unknown name is refused at startup and says which are
-      # known.
       ROSTER_DB_DRIVER: pgx
-      ROSTER_DB_DSN: postgres://roster:roster@db:5432/roster?sslmode=disable
+      ROSTER_DB_DSN: postgres://roster:roster@postgres:5432/roster?sslmode=disable
       ROSTER_DB_MIGRATE: "true"
-
-      # `pgx` and not `postgres`: the driver is named by what registers it
-      # (`config/dbpgx`), and a name nothing registered is refused at startup
-      # rather than falling back. This said `postgres` and so this control plane
-      # never came up.
+      ROSTER_WATCH_BROKER: memory
       ROSTER_CONTROL_DB_DRIVER: pgx
-      ROSTER_CONTROL_DB_DSN: postgres://roster:roster@db:5432/control?sslmode=disable
+      ROSTER_CONTROL_DB_DSN: postgres://roster:roster@postgres:5432/control?sslmode=disable
       ROSTER_CONTROL_DB_MIGRATE: "true"
+      ROSTER_CONTROL_WATCH_BROKER: memory
 
+      # The data plane: gRPC, and the same server over HTTP for the account
+      # app's calls and anything with an HTTP client.
       ROSTER_SERVER_ADDR: ":50051"
       ROSTER_SERVER_HTTP_ADDR: ":8080"
       ROSTER_SERVER_HTTP_ALLOW_WEB: "true"
 
-      # What the console talks to. `origins` is the vite dev server, which is a
-      # different origin from this one -- without it the browser refuses every
-      # call and says nothing useful about why.
+      # The control plane, with the console mounted on it; the page is told
+      # where the admin listener is, since it has no way to guess.
       ROSTER_CONTROL_ADDR: ":50052"
       ROSTER_CONTROL_HTTP_ADDR: ":8082"
       ROSTER_CONTROL_HTTP_ALLOW_WEB: "true"
-      ROSTER_CONTROL_HTTP_ORIGINS: http://localhost:5173
+      ROSTER_CONTROL_CONSOLE_DIR: /usr/share/roster/console
+      ROSTER_CONTROL_CONSOLE_ADMIN: http://${PUBLIC_HOST:-localhost}:8081
 
-      # Customers, for the screens that come after the first ones.
+      # The admin listener: another origin from the page's, so it is named.
       ROSTER_ADMIN_ADDR: ":50053"
       ROSTER_ADMIN_HTTP_ADDR: ":8081"
       ROSTER_ADMIN_HTTP_ALLOW_WEB: "true"
-      ROSTER_ADMIN_HTTP_ORIGINS: http://localhost:5173
+      ROSTER_ADMIN_HTTP_ORIGINS: '["http://${PUBLIC_HOST:-localhost}:8082"]'
 
-      # Both planes, because they are two brokers and were two decisions -- and
-      # only one of them used to be written down.
-      #
-      # `postgres` rather than `memory`, and it costs nothing here: this file
-      # already runs one, and `LISTEN`/`NOTIFY` needs no storage and no address.
-      # `memory` publishes inside the process, which is right for one replica
-      # and silently wrong for two -- a client watching against one never hears
-      # about a write that landed on another.
-      #
-      # Each plane listens on its own database, which is what keeps a key being
-      # issued from looking like a person changing.
-      ROSTER_WATCH_BROKER: postgres
-      ROSTER_CONTROL_WATCH_BROKER: postgres
+      # Wraps authenticator-app seeds at rest. A key in a compose file is a
+      # development key; a deployment writes its own, see `vouch.keys`.
+      ROSTER_VOUCH_KEYS: '["dev:XfYoVszmos0DoMNUOSy1vJfaOLVOrq7x6QiNlqRr0G8="]'
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+      - "8082:8082"
+      - "50051:50051"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8082/console/config.json >/dev/null || exit 1"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
     volumes:
-      # Where the entrypoint keeps its "already seeded" marker. Without it every
-      # restart tries to seed again and fails on the alias that is already
-      # there.
       - state:/var/lib/roster
-    ports:
-      - "50051:50051" # product apps
-      - "8080:8080"   # their transcoder
-      - "50052:50052" # operators
-      - "8082:8082"   # the console
-      - "50053:50053" # customers
-      - "8081:8081"   # their transcoder
 
-  ui:
-    image: node:24-alpine
-    working_dir: /app
-    depends_on: [roster]
+  # The first customer, once: a tenant, a person with a password, the host the
+  # account app answers on, and the app's key. Reads the databases directly, as
+  # a shell on the box would, so it carries the same connection settings.
+  customer:
+    build: .
+    depends_on:
+      roster:
+        condition: service_healthy
+    entrypoint: ["/usr/local/bin/customer.sh"]
     environment:
-      # The control listener's HTTP, which is what this console is.
-      VITE_ADDR: http://localhost:8082
-      # And the admin listener's, which is where the customers screen reads:
-      # the data plane, with no wall, behind the same session. A second address
-      # rather than a second path because it is a second server -- both would
-      # otherwise register `roster.HolderService` under one name.
-      VITE_ADMIN_ADDR: http://localhost:8081
-    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+      ROSTER_DB_DRIVER: pgx
+      ROSTER_DB_DSN: postgres://roster:roster@postgres:5432/roster?sslmode=disable
+      ROSTER_WATCH_BROKER: memory
+      ROSTER_CONTROL_DB_DRIVER: pgx
+      ROSTER_CONTROL_DB_DSN: postgres://roster:roster@postgres:5432/control?sslmode=disable
+      ROSTER_CONTROL_WATCH_BROKER: memory
+      ROSTER_VOUCH_KEYS: '["dev:XfYoVszmos0DoMNUOSy1vJfaOLVOrq7x6QiNlqRr0G8="]'
+      SEED_CUSTOMER: ${SEED_CUSTOMER:-contoso}
+      SEED_USER: ${SEED_USER:-erin}
+      SEED_PASSWORD: ${SEED_PASSWORD:-correct horse battery staple}
+      PUBLIC_HOST: ${PUBLIC_HOST:-localhost}
     volumes:
-      - ./ts:/app
-      # Kept in the container: `npm install` on a host mount installs the host's
-      # platform binaries, and vite has some. A named volume means the container
-      # has its own and the source is still live.
-      - modules:/app/node_modules
+      - account:/var/lib/roster-account
+
+  # The account app: its own process, fronting roster over the wire with the
+  # key above, the way it is deployed.
+  account:
+    build: .
+    depends_on:
+      customer:
+        condition: service_completed_successfully
+    entrypoint: ["/usr/local/bin/account.sh"]
+    environment:
+      SEED_CUSTOMER: ${SEED_CUSTOMER:-contoso}
+      PUBLIC_HOST: ${PUBLIC_HOST:-localhost}
     ports:
-      - "5173:5173"
+      - "8090:8090"
+    volumes:
+      - account:/var/lib/roster-account:ro
 
 volumes:
-  db:
+  postgres:
   state:
-  modules:
+  account:

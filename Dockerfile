@@ -1,11 +1,24 @@
-# The server, and the entrypoint that seeds it once.
+# The server, the two pages, and the entrypoint that seeds it once.
 #
 # Not a production image: it is what `docker compose up` runs so that somebody
-# working on the console has a roster to point at. What it is missing is a
+# working on the pages has a roster to point at, with a customer in it. What it is missing is a
 # non-root user, a pinned base digest, and any answer about secrets beyond an
 # environment variable -- see `docker/entrypoint.sh`.
 
-FROM golang:1.26 AS build
+# The two pages, built once here so the image serves them: the console under
+# `/console/` on the control listener, and the account page for
+# `roster account serve`.
+FROM node:22 AS page
+
+WORKDIR /src/ts
+
+COPY ts/package.json ts/package-lock.json ./
+RUN npm ci
+
+COPY ts/ ./
+RUN npm run build
+
+FROM golang:1.27 AS build
 
 WORKDIR /src
 
@@ -21,7 +34,9 @@ FROM alpine:3.22
 RUN apk add --no-cache ca-certificates
 
 COPY --from=build /out/roster /usr/local/bin/roster
-COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY --from=page /src/ts/dist/console /usr/share/roster/console
+COPY --from=page /src/ts/dist/account /usr/share/roster/account
+COPY docker/entrypoint.sh docker/customer.sh docker/account.sh /usr/local/bin/
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["serve"]
