@@ -127,7 +127,10 @@ function SignIn(props: { of: Providers; onDone: () => void }): React.ReactNode {
 		e.preventDefault()
 		const f = new FormData(e.currentTarget)
 		setBad(false)
-		void fetch('/session/continue', json({ kind: String(f.get('kind') ?? 'totp'), code: String(f.get('code') ?? '') })).then(
+		// `frontdoor` reads `{kind, name, secret}`: the code is the secret of
+		// the second factor, and `name` picks one of several of a kind (the
+		// only one, when there is one).
+		void fetch('/session/continue', json({ kind: String(f.get('kind') ?? 'totp'), name: '', secret: String(f.get('code') ?? '') })).then(
 			(res) => {
 				if (res.status === 204) return props.onDone()
 				setBad(true)
