@@ -146,6 +146,8 @@ message GroupListResponse {
 
 message GroupFilter {
   GroupRef ref = 1;
+  TenantRef tenant = 2;
+  SiteRef site = 3;
 }
 
 message GroupMembershipAddRequest {
@@ -245,4 +247,6 @@ message GroupMembershipListResponse {
 
 message GroupMembershipFilter {
   GroupMembershipRef ref = 1;
+  HolderRef holder = 2;
+  GroupRef group = 3;
 }

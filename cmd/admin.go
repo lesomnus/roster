@@ -82,7 +82,7 @@ func Admin(s *Server) (app.Server, error) {
 	// otherwise still come through -- the reasoning the vouch registration below
 	// gives at length, arriving here because the write moved onto the entity.
 	return app.Build(s.sink.WithWatch(s.Watch),
-		core.Build(Rules(s.Control.Ent),
+		core.Build(adminRules(s),
 			core.WithBreached(core.Breached(s.Breached)),
 			core.WithKeyring(s.Keyring),
 
@@ -398,4 +398,21 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 	// `Admin` built with `core.WithPrefix(keys.PrefixTenant)`.
 
 	return g, nil
+}
+
+// adminRules is the control plane's rules with one answer taken from the data
+// plane: what a customer's person holds.
+//
+// The four the control plane answers are about the **caller** -- an operator,
+// whose bindings are control-plane rows -- and stay where `Admin` has always
+// read them. `Held` is about the **subject**: `Holder.Reaches` asks it about a
+// customer's person, whose bindings are data-plane rows, and asked of the
+// control plane it would answer that everybody holds nothing. So it is the
+// data plane's, from the same function `MeService` and the data plane's own
+// stack use, which is what keeps three readers of one set from disagreeing.
+func adminRules(s *Server) core.Rules {
+	r := Rules(s.Control.Ent)
+	r.Held = core.Held(Everything(s.Ent))
+
+	return r
 }

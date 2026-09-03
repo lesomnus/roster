@@ -150,6 +150,8 @@ message RoleListResponse {
 
 message RoleFilter {
   RoleRef ref = 1;
+  TenantRef tenant = 2;
+  SiteRef site = 3;
 }
 
 message BindingAddRequest {
@@ -247,4 +249,8 @@ message BindingListResponse {
 
 message BindingFilter {
   BindingRef ref = 1;
+  RoleRef role = 2;
+  HolderRef holder = 3;
+  GroupRef group = 4;
+  SiteRef site = 5;
 }

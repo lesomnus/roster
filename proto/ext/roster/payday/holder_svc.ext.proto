@@ -104,6 +104,31 @@ service HolderService {
   // hand out what it can name -- and *may see how somebody signs in* is a
   // different grant from *may take a way in away*.
   rpc RevokeKey(HolderRevokeKeyRequest) returns (HolderRevokeKeyResponse);
+
+  // Reaches is what somebody may call, as the gate would decide it -- the same
+  // answer `MeService.Get` gives about the caller, about somebody else.
+  //
+  // # Why it is the policy's function and not a read of the parts
+  //
+  // Every part is readable: their bindings, the groups carrying bindings, the
+  // roles held in teams. What is not readable is the **union**, and a console
+  // that added the parts up would be a second implementation of `gate.Policy`,
+  // drifting from the one that enforces it -- `cmd/policy.go` records three
+  // readers of one set disagreeing. So this asks the function the gate asks,
+  // handed to the layer as `core.Rules.Held`, and answers with **patterns**
+  // rather than an expansion, for `MeService.Get`'s reason: an expansion is the
+  // methods that exist in whichever replica answered.
+  //
+  // # What it is not guarded by, and why
+  //
+  // The wall, and nothing else. A role naming this reads anybody's reach in the
+  // tenant, which is RBAC as it is (CLAUDE.md, *no self-only twin of a verb*)
+  // -- and it reveals nothing `BindingService.List`, `GroupMembershipService.
+  // List` and `TeamMembershipService.List` do not already answer to the same
+  // caller, only added up. A rule that narrowed it by the caller's own reach
+  // would be an object rule over a read, which is a shape roster has not taken
+  // and does not need here.
+  rpc Reaches(HolderReachesRequest) returns (HolderReachesResponse);
 }
 
 message HolderRevokeKeyRequest {
@@ -115,6 +140,23 @@ message HolderRevokeKeyRequest {
 }
 
 message HolderRevokeKeyResponse {}
+
+message HolderReachesRequest {
+  HolderRef ref = 1;
+}
+
+message HolderReachesResponse {
+  // The patterns, as the roles wrote them, in the shape `frame.Covers` reads
+  // and `covers()` reads in the browser. Not expanded.
+  repeated string methods = 10;
+
+  // The sites their bindings and teams name; empty with `every_site` false is
+  // somebody narrowed to nothing.
+  repeated bytes sites = 11;
+
+  // A binding with no site is the tenant's whole width.
+  bool every_site = 12;
+}
 
 message HolderSignsInRequest {
   HolderRef ref = 1;

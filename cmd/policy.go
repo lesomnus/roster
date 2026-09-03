@@ -411,6 +411,7 @@ func Rules(db *ent.Client) core.Rules {
 		Granted: Granted(db),
 		Joining: Joining(db),
 		Holding: Holding(db),
+		Held:    core.Held(Everything(db)),
 	}
 }
 

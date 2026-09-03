@@ -1482,10 +1482,11 @@ func (b0 SiteListResponse_builder) Build() *SiteListResponse {
 }
 
 type SiteFilter struct {
-	state          protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref *SiteRef               `protobuf:"bytes,1,opt,name=ref"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref    *SiteRef               `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Tenant *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *SiteFilter) Reset() {
@@ -1520,8 +1521,19 @@ func (x *SiteFilter) GetRef() *SiteRef {
 	return nil
 }
 
+func (x *SiteFilter) GetTenant() *TenantRef {
+	if x != nil {
+		return x.xxx_hidden_Tenant
+	}
+	return nil
+}
+
 func (x *SiteFilter) SetRef(v *SiteRef) {
 	x.xxx_hidden_Ref = v
+}
+
+func (x *SiteFilter) SetTenant(v *TenantRef) {
+	x.xxx_hidden_Tenant = v
 }
 
 func (x *SiteFilter) HasRef() bool {
@@ -1531,14 +1543,26 @@ func (x *SiteFilter) HasRef() bool {
 	return x.xxx_hidden_Ref != nil
 }
 
+func (x *SiteFilter) HasTenant() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Tenant != nil
+}
+
 func (x *SiteFilter) ClearRef() {
 	x.xxx_hidden_Ref = nil
+}
+
+func (x *SiteFilter) ClearTenant() {
+	x.xxx_hidden_Tenant = nil
 }
 
 type SiteFilter_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref *SiteRef
+	Ref    *SiteRef
+	Tenant *TenantRef
 }
 
 func (b0 SiteFilter_builder) Build() *SiteFilter {
@@ -1546,6 +1570,7 @@ func (b0 SiteFilter_builder) Build() *SiteFilter {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Tenant = b.Tenant
 	return m0
 }
 
@@ -1889,10 +1914,11 @@ const file_app_site_svc_g_proto_rawDesc = "" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"Q\n" +
 	"\x10SiteListResponse\x12\"\n" +
 	"\x05items\x18\x01 \x03(\v2\f.roster.SiteR\x05items\x12\x19\n" +
-	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"/\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"Z\n" +
 	"\n" +
 	"SiteFilter\x12!\n" +
-	"\x03ref\x18\x01 \x01(\v2\x0f.roster.SiteRefR\x03ref\"l\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.roster.SiteRefR\x03ref\x12)\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\"l\n" +
 	"\x10SiteWatchRequest\x12,\n" +
 	"\afilters\x18\x01 \x03(\v2\x12.roster.SiteFilterR\afilters\x12*\n" +
 	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"@\n" +
@@ -1952,28 +1978,29 @@ var file_app_site_svc_g_proto_depIdxs = []int32{
 	10, // 13: roster.SiteListRequest.filters:type_name -> roster.SiteFilter
 	20, // 14: roster.SiteListResponse.items:type_name -> roster.Site
 	2,  // 15: roster.SiteFilter.ref:type_name -> roster.SiteRef
-	10, // 16: roster.SiteWatchRequest.filters:type_name -> roster.SiteFilter
-	13, // 17: roster.SiteWatchResponse.items:type_name -> roster.SiteWatchItem
-	20, // 18: roster.SiteWatchItem.value:type_name -> roster.Site
-	0,  // 19: roster.SiteService.Add:input_type -> roster.SiteAddRequest
-	1,  // 20: roster.SiteService.Get:input_type -> roster.SiteGetRequest
-	5,  // 21: roster.SiteService.Patch:input_type -> roster.SitePatchRequest
-	6,  // 22: roster.SiteService.Apply:input_type -> roster.SiteApplyRequest
-	2,  // 23: roster.SiteService.Erase:input_type -> roster.SiteRef
-	8,  // 24: roster.SiteService.List:input_type -> roster.SiteListRequest
-	11, // 25: roster.SiteService.Watch:input_type -> roster.SiteWatchRequest
-	20, // 26: roster.SiteService.Add:output_type -> roster.Site
-	20, // 27: roster.SiteService.Get:output_type -> roster.Site
-	20, // 28: roster.SiteService.Patch:output_type -> roster.Site
-	20, // 29: roster.SiteService.Apply:output_type -> roster.Site
-	7,  // 30: roster.SiteService.Erase:output_type -> roster.SiteEraseResponse
-	9,  // 31: roster.SiteService.List:output_type -> roster.SiteListResponse
-	12, // 32: roster.SiteService.Watch:output_type -> roster.SiteWatchResponse
-	26, // [26:33] is the sub-list for method output_type
-	19, // [19:26] is the sub-list for method input_type
-	19, // [19:19] is the sub-list for extension type_name
-	19, // [19:19] is the sub-list for extension extendee
-	0,  // [0:19] is the sub-list for field type_name
+	16, // 16: roster.SiteFilter.tenant:type_name -> roster.TenantRef
+	10, // 17: roster.SiteWatchRequest.filters:type_name -> roster.SiteFilter
+	13, // 18: roster.SiteWatchResponse.items:type_name -> roster.SiteWatchItem
+	20, // 19: roster.SiteWatchItem.value:type_name -> roster.Site
+	0,  // 20: roster.SiteService.Add:input_type -> roster.SiteAddRequest
+	1,  // 21: roster.SiteService.Get:input_type -> roster.SiteGetRequest
+	5,  // 22: roster.SiteService.Patch:input_type -> roster.SitePatchRequest
+	6,  // 23: roster.SiteService.Apply:input_type -> roster.SiteApplyRequest
+	2,  // 24: roster.SiteService.Erase:input_type -> roster.SiteRef
+	8,  // 25: roster.SiteService.List:input_type -> roster.SiteListRequest
+	11, // 26: roster.SiteService.Watch:input_type -> roster.SiteWatchRequest
+	20, // 27: roster.SiteService.Add:output_type -> roster.Site
+	20, // 28: roster.SiteService.Get:output_type -> roster.Site
+	20, // 29: roster.SiteService.Patch:output_type -> roster.Site
+	20, // 30: roster.SiteService.Apply:output_type -> roster.Site
+	7,  // 31: roster.SiteService.Erase:output_type -> roster.SiteEraseResponse
+	9,  // 32: roster.SiteService.List:output_type -> roster.SiteListResponse
+	12, // 33: roster.SiteService.Watch:output_type -> roster.SiteWatchResponse
+	27, // [27:34] is the sub-list for method output_type
+	20, // [20:27] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_app_site_svc_g_proto_init() }

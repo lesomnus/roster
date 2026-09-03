@@ -431,7 +431,8 @@ is; that table gets the summary row when a phase closes, this one the steps.
 | P0 · spike E: an `rt_` for `account@contoso` on the data plane, fabrikam invisible | **done** — the wall does it: `Identity.Get`/`Holder.Add`/`Vouch.Accept` answer for contoso and refuse for fabrikam, nothing minted | `cmd/accountkey_test.go` |
 | P0 · spike F: `frontdoor` forwards one `Me.Get` over Connect with the delegation swapped in | **done** — `Door.Proxy(roster, bearer)`: allow-list, `Connect-Protocol-Version` as the CSRF token, 401 without a whole session; roster answers about the person | `frontdoor/proxy.go`, `frontdoor/proxy_test.go` |
 | P1 · console: hosts, mail domains, connections per customer | **done** — the *arrives through* panel under a customer: names, providers, mail domains; add and remove through `useCall`, each control behind `covers()`; no new RPC | `ts/src/arrives.tsx`, `cmd/arrives_test.go` |
-| P2 · console: sites, teams, groups, roles, bindings, `Holder.Reaches`, trail | open | |
+| P2a · the reads the panels need: list by tenant/site/holder/team/group/role, and `Holder.Reaches` | **done** — `list.by` grew on Site/Team/Group/Role/Binding and the three memberships; `Holder.Reaches` answers the policy's own union as patterns (`Rules.Held`; on the admin port from the data plane's rows, `cmd/admin.go` `adminRules`). Wall only, no reach guard — see the proto comment for why | `proto/ext/roster/payday/holder_svc.ext.proto`, `server/core/holder.go`, `cmd/reaches_test.go` |
+| P2b · console: organisation, access, trail panels | open | |
 | P3 · console: the rest of a person, the deployment screen, the sandbox's second listener | open | |
 | P4 · the account app, official: `account/`, `ts/account/`, `ts/lib/`, `Front.Connections`, the proxy | open | |
 | P5 · account screens: recovery, profile, emails + verify, WebAuthn, remove a factor, sessions | open | |

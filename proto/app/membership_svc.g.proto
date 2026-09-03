@@ -162,6 +162,8 @@ message SiteMembershipListResponse {
 
 message SiteMembershipFilter {
   SiteMembershipRef ref = 1;
+  HolderRef holder = 2;
+  SiteRef site = 3;
 }
 
 message SiteMembershipWatchRequest {
@@ -317,6 +319,8 @@ message TeamMembershipListResponse {
 
 message TeamMembershipFilter {
   TeamMembershipRef ref = 1;
+  HolderRef holder = 2;
+  TeamRef team = 3;
 }
 
 message TeamMembershipWatchRequest {

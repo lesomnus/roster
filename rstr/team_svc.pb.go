@@ -1474,10 +1474,12 @@ func (b0 TeamListResponse_builder) Build() *TeamListResponse {
 }
 
 type TeamFilter struct {
-	state          protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref *TeamRef               `protobuf:"bytes,1,opt,name=ref"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref    *TeamRef               `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Tenant *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
+	xxx_hidden_Site   *SiteRef               `protobuf:"bytes,3,opt,name=site"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *TeamFilter) Reset() {
@@ -1512,8 +1514,30 @@ func (x *TeamFilter) GetRef() *TeamRef {
 	return nil
 }
 
+func (x *TeamFilter) GetTenant() *TenantRef {
+	if x != nil {
+		return x.xxx_hidden_Tenant
+	}
+	return nil
+}
+
+func (x *TeamFilter) GetSite() *SiteRef {
+	if x != nil {
+		return x.xxx_hidden_Site
+	}
+	return nil
+}
+
 func (x *TeamFilter) SetRef(v *TeamRef) {
 	x.xxx_hidden_Ref = v
+}
+
+func (x *TeamFilter) SetTenant(v *TenantRef) {
+	x.xxx_hidden_Tenant = v
+}
+
+func (x *TeamFilter) SetSite(v *SiteRef) {
+	x.xxx_hidden_Site = v
 }
 
 func (x *TeamFilter) HasRef() bool {
@@ -1523,14 +1547,38 @@ func (x *TeamFilter) HasRef() bool {
 	return x.xxx_hidden_Ref != nil
 }
 
+func (x *TeamFilter) HasTenant() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Tenant != nil
+}
+
+func (x *TeamFilter) HasSite() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Site != nil
+}
+
 func (x *TeamFilter) ClearRef() {
 	x.xxx_hidden_Ref = nil
+}
+
+func (x *TeamFilter) ClearTenant() {
+	x.xxx_hidden_Tenant = nil
+}
+
+func (x *TeamFilter) ClearSite() {
+	x.xxx_hidden_Site = nil
 }
 
 type TeamFilter_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref *TeamRef
+	Ref    *TeamRef
+	Tenant *TenantRef
+	Site   *SiteRef
 }
 
 func (b0 TeamFilter_builder) Build() *TeamFilter {
@@ -1538,6 +1586,8 @@ func (b0 TeamFilter_builder) Build() *TeamFilter {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Tenant = b.Tenant
+	x.xxx_hidden_Site = b.Site
 	return m0
 }
 
@@ -1874,10 +1924,12 @@ const file_app_team_svc_g_proto_rawDesc = "" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"Q\n" +
 	"\x10TeamListResponse\x12\"\n" +
 	"\x05items\x18\x01 \x03(\v2\f.roster.TeamR\x05items\x12\x19\n" +
-	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"/\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\x7f\n" +
 	"\n" +
 	"TeamFilter\x12!\n" +
-	"\x03ref\x18\x01 \x01(\v2\x0f.roster.TeamRefR\x03ref\"l\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.roster.TeamRefR\x03ref\x12)\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12#\n" +
+	"\x04site\x18\x03 \x01(\v2\x0f.roster.SiteRefR\x04site\"l\n" +
 	"\x10TeamWatchRequest\x12,\n" +
 	"\afilters\x18\x01 \x03(\v2\x12.roster.TeamFilterR\afilters\x12*\n" +
 	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"@\n" +
@@ -1937,28 +1989,30 @@ var file_app_team_svc_g_proto_depIdxs = []int32{
 	10, // 13: roster.TeamListRequest.filters:type_name -> roster.TeamFilter
 	20, // 14: roster.TeamListResponse.items:type_name -> roster.Team
 	2,  // 15: roster.TeamFilter.ref:type_name -> roster.TeamRef
-	10, // 16: roster.TeamWatchRequest.filters:type_name -> roster.TeamFilter
-	13, // 17: roster.TeamWatchResponse.items:type_name -> roster.TeamWatchItem
-	20, // 18: roster.TeamWatchItem.value:type_name -> roster.Team
-	0,  // 19: roster.TeamService.Add:input_type -> roster.TeamAddRequest
-	1,  // 20: roster.TeamService.Get:input_type -> roster.TeamGetRequest
-	5,  // 21: roster.TeamService.Patch:input_type -> roster.TeamPatchRequest
-	6,  // 22: roster.TeamService.Apply:input_type -> roster.TeamApplyRequest
-	2,  // 23: roster.TeamService.Erase:input_type -> roster.TeamRef
-	8,  // 24: roster.TeamService.List:input_type -> roster.TeamListRequest
-	11, // 25: roster.TeamService.Watch:input_type -> roster.TeamWatchRequest
-	20, // 26: roster.TeamService.Add:output_type -> roster.Team
-	20, // 27: roster.TeamService.Get:output_type -> roster.Team
-	20, // 28: roster.TeamService.Patch:output_type -> roster.Team
-	20, // 29: roster.TeamService.Apply:output_type -> roster.Team
-	7,  // 30: roster.TeamService.Erase:output_type -> roster.TeamEraseResponse
-	9,  // 31: roster.TeamService.List:output_type -> roster.TeamListResponse
-	12, // 32: roster.TeamService.Watch:output_type -> roster.TeamWatchResponse
-	26, // [26:33] is the sub-list for method output_type
-	19, // [19:26] is the sub-list for method input_type
-	19, // [19:19] is the sub-list for extension type_name
-	19, // [19:19] is the sub-list for extension extendee
-	0,  // [0:19] is the sub-list for field type_name
+	14, // 16: roster.TeamFilter.tenant:type_name -> roster.TenantRef
+	15, // 17: roster.TeamFilter.site:type_name -> roster.SiteRef
+	10, // 18: roster.TeamWatchRequest.filters:type_name -> roster.TeamFilter
+	13, // 19: roster.TeamWatchResponse.items:type_name -> roster.TeamWatchItem
+	20, // 20: roster.TeamWatchItem.value:type_name -> roster.Team
+	0,  // 21: roster.TeamService.Add:input_type -> roster.TeamAddRequest
+	1,  // 22: roster.TeamService.Get:input_type -> roster.TeamGetRequest
+	5,  // 23: roster.TeamService.Patch:input_type -> roster.TeamPatchRequest
+	6,  // 24: roster.TeamService.Apply:input_type -> roster.TeamApplyRequest
+	2,  // 25: roster.TeamService.Erase:input_type -> roster.TeamRef
+	8,  // 26: roster.TeamService.List:input_type -> roster.TeamListRequest
+	11, // 27: roster.TeamService.Watch:input_type -> roster.TeamWatchRequest
+	20, // 28: roster.TeamService.Add:output_type -> roster.Team
+	20, // 29: roster.TeamService.Get:output_type -> roster.Team
+	20, // 30: roster.TeamService.Patch:output_type -> roster.Team
+	20, // 31: roster.TeamService.Apply:output_type -> roster.Team
+	7,  // 32: roster.TeamService.Erase:output_type -> roster.TeamEraseResponse
+	9,  // 33: roster.TeamService.List:output_type -> roster.TeamListResponse
+	12, // 34: roster.TeamService.Watch:output_type -> roster.TeamWatchResponse
+	28, // [28:35] is the sub-list for method output_type
+	21, // [21:28] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_app_team_svc_g_proto_init() }

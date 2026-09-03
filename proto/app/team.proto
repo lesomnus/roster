@@ -93,7 +93,7 @@ message Team {
         {field: {name: "date_created", number: 15}},
         {field: {name: "id", number: 1}}
       ]
-      by: [{name: "ref"}]
+      by: [{name: "ref"}, {name: "tenant"}, {name: "site"}]
       size: 20
       max: 100
     }

@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"github.com/lesomnus/payday/pdid"
 	"time"
 
 	"github.com/lesomnus/z"
@@ -287,6 +288,43 @@ func (s coreHolder) SignsIn(ctx context.Context, req *app.HolderSignsInRequest) 
 // `ApiKey` is soft-erased like everything else, and what stops a revoked key
 // working is that `keys.findKey` reads through a reference that reaches only
 // the rows still there.
+// Reaches is what somebody may call, asked of the function the gate asks.
+//
+// Through the wall first (`Get`), so a caller who cannot see the person cannot
+// ask about them; then `Rules.Held`, which `cmd` hands every stack from the
+// data plane's own rows. See `holder_svc.ext.proto` for why it is not guarded
+// by anything else.
+func (s coreHolder) Reaches(ctx context.Context, req *app.HolderReachesRequest) (*app.HolderReachesResponse, error) {
+	v, err := s.HolderServiceServer.Get(ctx, app.HolderGetRequest_builder{
+		Ref:    req.GetRef(),
+		Select: app.HolderSelect_builder{}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+	if s.rules.Held == nil {
+		return nil, status.Error(codes.Unimplemented,
+			"this server cannot say what anybody holds")
+	}
+
+	who, err := pdid.From(v.GetId())
+	if err != nil {
+		return nil, err
+	}
+
+	ms, sites, every, err := s.rules.Held(ctx, who)
+	if err != nil {
+		return nil, err
+	}
+
+	res := app.HolderReachesResponse_builder{Methods: ms, EverySite: z.Ptr(every)}
+	for _, k := range sites {
+		res.Sites = append(res.Sites, k.Bytes())
+	}
+
+	return res.Build(), nil
+}
+
 func (s coreHolder) RevokeKey(ctx context.Context, req *app.HolderRevokeKeyRequest) (*app.HolderRevokeKeyResponse, error) {
 	v, err := s.HolderServiceServer.Get(ctx, app.HolderGetRequest_builder{
 		Ref:    req.GetRef(),

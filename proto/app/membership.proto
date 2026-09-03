@@ -90,7 +90,7 @@ message SiteMembership {
         {field: {name: "date_created", number: 15}},
         {field: {name: "id", number: 1}}
       ]
-      by: [{name: "ref"}]
+      by: [{name: "ref"}, {name: "holder"}, {name: "site"}]
       size: 20
       max: 100
     }
@@ -172,7 +172,7 @@ message TeamMembership {
         {field: {name: "date_created", number: 15}},
         {field: {name: "id", number: 1}}
       ]
-      by: [{name: "ref"}]
+      by: [{name: "ref"}, {name: "holder"}, {name: "team"}]
       size: 20
       max: 100
     }

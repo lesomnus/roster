@@ -142,6 +142,8 @@ message TeamListResponse {
 
 message TeamFilter {
   TeamRef ref = 1;
+  TenantRef tenant = 2;
+  SiteRef site = 3;
 }
 
 message TeamWatchRequest {

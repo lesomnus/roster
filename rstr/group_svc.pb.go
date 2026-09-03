@@ -1474,10 +1474,12 @@ func (b0 GroupListResponse_builder) Build() *GroupListResponse {
 }
 
 type GroupFilter struct {
-	state          protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref *GroupRef              `protobuf:"bytes,1,opt,name=ref"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref    *GroupRef              `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Tenant *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
+	xxx_hidden_Site   *SiteRef               `protobuf:"bytes,3,opt,name=site"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *GroupFilter) Reset() {
@@ -1512,8 +1514,30 @@ func (x *GroupFilter) GetRef() *GroupRef {
 	return nil
 }
 
+func (x *GroupFilter) GetTenant() *TenantRef {
+	if x != nil {
+		return x.xxx_hidden_Tenant
+	}
+	return nil
+}
+
+func (x *GroupFilter) GetSite() *SiteRef {
+	if x != nil {
+		return x.xxx_hidden_Site
+	}
+	return nil
+}
+
 func (x *GroupFilter) SetRef(v *GroupRef) {
 	x.xxx_hidden_Ref = v
+}
+
+func (x *GroupFilter) SetTenant(v *TenantRef) {
+	x.xxx_hidden_Tenant = v
+}
+
+func (x *GroupFilter) SetSite(v *SiteRef) {
+	x.xxx_hidden_Site = v
 }
 
 func (x *GroupFilter) HasRef() bool {
@@ -1523,14 +1547,38 @@ func (x *GroupFilter) HasRef() bool {
 	return x.xxx_hidden_Ref != nil
 }
 
+func (x *GroupFilter) HasTenant() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Tenant != nil
+}
+
+func (x *GroupFilter) HasSite() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Site != nil
+}
+
 func (x *GroupFilter) ClearRef() {
 	x.xxx_hidden_Ref = nil
+}
+
+func (x *GroupFilter) ClearTenant() {
+	x.xxx_hidden_Tenant = nil
+}
+
+func (x *GroupFilter) ClearSite() {
+	x.xxx_hidden_Site = nil
 }
 
 type GroupFilter_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref *GroupRef
+	Ref    *GroupRef
+	Tenant *TenantRef
+	Site   *SiteRef
 }
 
 func (b0 GroupFilter_builder) Build() *GroupFilter {
@@ -1538,6 +1586,8 @@ func (b0 GroupFilter_builder) Build() *GroupFilter {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Tenant = b.Tenant
+	x.xxx_hidden_Site = b.Site
 	return m0
 }
 
@@ -2752,10 +2802,12 @@ func (b0 GroupMembershipListResponse_builder) Build() *GroupMembershipListRespon
 }
 
 type GroupMembershipFilter struct {
-	state          protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref *GroupMembershipRef    `protobuf:"bytes,1,opt,name=ref"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref    *GroupMembershipRef    `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Holder *HolderRef             `protobuf:"bytes,2,opt,name=holder"`
+	xxx_hidden_Group  *GroupRef              `protobuf:"bytes,3,opt,name=group"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *GroupMembershipFilter) Reset() {
@@ -2790,8 +2842,30 @@ func (x *GroupMembershipFilter) GetRef() *GroupMembershipRef {
 	return nil
 }
 
+func (x *GroupMembershipFilter) GetHolder() *HolderRef {
+	if x != nil {
+		return x.xxx_hidden_Holder
+	}
+	return nil
+}
+
+func (x *GroupMembershipFilter) GetGroup() *GroupRef {
+	if x != nil {
+		return x.xxx_hidden_Group
+	}
+	return nil
+}
+
 func (x *GroupMembershipFilter) SetRef(v *GroupMembershipRef) {
 	x.xxx_hidden_Ref = v
+}
+
+func (x *GroupMembershipFilter) SetHolder(v *HolderRef) {
+	x.xxx_hidden_Holder = v
+}
+
+func (x *GroupMembershipFilter) SetGroup(v *GroupRef) {
+	x.xxx_hidden_Group = v
 }
 
 func (x *GroupMembershipFilter) HasRef() bool {
@@ -2801,14 +2875,38 @@ func (x *GroupMembershipFilter) HasRef() bool {
 	return x.xxx_hidden_Ref != nil
 }
 
+func (x *GroupMembershipFilter) HasHolder() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Holder != nil
+}
+
+func (x *GroupMembershipFilter) HasGroup() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Group != nil
+}
+
 func (x *GroupMembershipFilter) ClearRef() {
 	x.xxx_hidden_Ref = nil
+}
+
+func (x *GroupMembershipFilter) ClearHolder() {
+	x.xxx_hidden_Holder = nil
+}
+
+func (x *GroupMembershipFilter) ClearGroup() {
+	x.xxx_hidden_Group = nil
 }
 
 type GroupMembershipFilter_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref *GroupMembershipRef
+	Ref    *GroupMembershipRef
+	Holder *HolderRef
+	Group  *GroupRef
 }
 
 func (b0 GroupMembershipFilter_builder) Build() *GroupMembershipFilter {
@@ -2816,6 +2914,8 @@ func (b0 GroupMembershipFilter_builder) Build() *GroupMembershipFilter {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Holder = b.Holder
+	x.xxx_hidden_Group = b.Group
 	return m0
 }
 
@@ -2872,9 +2972,11 @@ const file_app_group_svc_g_proto_rawDesc = "" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"S\n" +
 	"\x11GroupListResponse\x12#\n" +
 	"\x05items\x18\x01 \x03(\v2\r.roster.GroupR\x05items\x12\x19\n" +
-	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"1\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\x81\x01\n" +
 	"\vGroupFilter\x12\"\n" +
-	"\x03ref\x18\x01 \x01(\v2\x10.roster.GroupRefR\x03ref\"\xbd\x01\n" +
+	"\x03ref\x18\x01 \x01(\v2\x10.roster.GroupRefR\x03ref\x12)\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12#\n" +
+	"\x04site\x18\x03 \x01(\v2\x0f.roster.SiteRefR\x04site\"\xbd\x01\n" +
 	"\x19GroupMembershipAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12&\n" +
@@ -2913,9 +3015,11 @@ const file_app_group_svc_g_proto_rawDesc = "" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"g\n" +
 	"\x1bGroupMembershipListResponse\x12-\n" +
 	"\x05items\x18\x01 \x03(\v2\x17.roster.GroupMembershipR\x05items\x12\x19\n" +
-	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"E\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\x98\x01\n" +
 	"\x15GroupMembershipFilter\x12,\n" +
-	"\x03ref\x18\x01 \x01(\v2\x1a.roster.GroupMembershipRefR\x03ref2\xc6\x02\n" +
+	"\x03ref\x18\x01 \x01(\v2\x1a.roster.GroupMembershipRefR\x03ref\x12)\n" +
+	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12&\n" +
+	"\x05group\x18\x03 \x01(\v2\x10.roster.GroupRefR\x05group2\xc6\x02\n" +
 	"\fGroupService\x12-\n" +
 	"\x03Add\x12\x17.roster.GroupAddRequest\x1a\r.roster.Group\x12-\n" +
 	"\x03Get\x12\x17.roster.GroupGetRequest\x1a\r.roster.Group\x121\n" +
@@ -2983,52 +3087,56 @@ var file_app_group_svc_g_proto_depIdxs = []int32{
 	10, // 13: roster.GroupListRequest.filters:type_name -> roster.GroupFilter
 	28, // 14: roster.GroupListResponse.items:type_name -> roster.Group
 	2,  // 15: roster.GroupFilter.ref:type_name -> roster.GroupRef
-	29, // 16: roster.GroupMembershipAddRequest.holder:type_name -> roster.HolderRef
-	2,  // 17: roster.GroupMembershipAddRequest.group:type_name -> roster.GroupRef
-	24, // 18: roster.GroupMembershipAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	13, // 19: roster.GroupMembershipGetRequest.ref:type_name -> roster.GroupMembershipRef
-	15, // 20: roster.GroupMembershipGetRequest.select:type_name -> roster.GroupMembershipSelect
-	14, // 21: roster.GroupMembershipRef.member:type_name -> roster.GroupMembershipRefByMember
-	29, // 22: roster.GroupMembershipRefByMember.holder:type_name -> roster.HolderRef
-	2,  // 23: roster.GroupMembershipRefByMember.group:type_name -> roster.GroupRef
-	30, // 24: roster.GroupMembershipSelect.holder:type_name -> roster.HolderSelect
-	4,  // 25: roster.GroupMembershipSelect.group:type_name -> roster.GroupSelect
-	13, // 26: roster.GroupMembershipPatchRequest.ref:type_name -> roster.GroupMembershipRef
-	24, // 27: roster.GroupMembershipPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	13, // 28: roster.GroupMembershipApplyRequest.ref:type_name -> roster.GroupMembershipRef
-	27, // 29: roster.GroupMembershipApplyRequest.patch:type_name -> patch.Patch
-	21, // 30: roster.GroupMembershipListRequest.filters:type_name -> roster.GroupMembershipFilter
-	31, // 31: roster.GroupMembershipListResponse.items:type_name -> roster.GroupMembership
-	13, // 32: roster.GroupMembershipFilter.ref:type_name -> roster.GroupMembershipRef
-	0,  // 33: roster.GroupService.Add:input_type -> roster.GroupAddRequest
-	1,  // 34: roster.GroupService.Get:input_type -> roster.GroupGetRequest
-	5,  // 35: roster.GroupService.Patch:input_type -> roster.GroupPatchRequest
-	6,  // 36: roster.GroupService.Apply:input_type -> roster.GroupApplyRequest
-	2,  // 37: roster.GroupService.Erase:input_type -> roster.GroupRef
-	8,  // 38: roster.GroupService.List:input_type -> roster.GroupListRequest
-	11, // 39: roster.GroupMembershipService.Add:input_type -> roster.GroupMembershipAddRequest
-	12, // 40: roster.GroupMembershipService.Get:input_type -> roster.GroupMembershipGetRequest
-	16, // 41: roster.GroupMembershipService.Patch:input_type -> roster.GroupMembershipPatchRequest
-	17, // 42: roster.GroupMembershipService.Apply:input_type -> roster.GroupMembershipApplyRequest
-	13, // 43: roster.GroupMembershipService.Erase:input_type -> roster.GroupMembershipRef
-	19, // 44: roster.GroupMembershipService.List:input_type -> roster.GroupMembershipListRequest
-	28, // 45: roster.GroupService.Add:output_type -> roster.Group
-	28, // 46: roster.GroupService.Get:output_type -> roster.Group
-	28, // 47: roster.GroupService.Patch:output_type -> roster.Group
-	28, // 48: roster.GroupService.Apply:output_type -> roster.Group
-	7,  // 49: roster.GroupService.Erase:output_type -> roster.GroupEraseResponse
-	9,  // 50: roster.GroupService.List:output_type -> roster.GroupListResponse
-	31, // 51: roster.GroupMembershipService.Add:output_type -> roster.GroupMembership
-	31, // 52: roster.GroupMembershipService.Get:output_type -> roster.GroupMembership
-	31, // 53: roster.GroupMembershipService.Patch:output_type -> roster.GroupMembership
-	31, // 54: roster.GroupMembershipService.Apply:output_type -> roster.GroupMembership
-	18, // 55: roster.GroupMembershipService.Erase:output_type -> roster.GroupMembershipEraseResponse
-	20, // 56: roster.GroupMembershipService.List:output_type -> roster.GroupMembershipListResponse
-	45, // [45:57] is the sub-list for method output_type
-	33, // [33:45] is the sub-list for method input_type
-	33, // [33:33] is the sub-list for extension type_name
-	33, // [33:33] is the sub-list for extension extendee
-	0,  // [0:33] is the sub-list for field type_name
+	22, // 16: roster.GroupFilter.tenant:type_name -> roster.TenantRef
+	23, // 17: roster.GroupFilter.site:type_name -> roster.SiteRef
+	29, // 18: roster.GroupMembershipAddRequest.holder:type_name -> roster.HolderRef
+	2,  // 19: roster.GroupMembershipAddRequest.group:type_name -> roster.GroupRef
+	24, // 20: roster.GroupMembershipAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	13, // 21: roster.GroupMembershipGetRequest.ref:type_name -> roster.GroupMembershipRef
+	15, // 22: roster.GroupMembershipGetRequest.select:type_name -> roster.GroupMembershipSelect
+	14, // 23: roster.GroupMembershipRef.member:type_name -> roster.GroupMembershipRefByMember
+	29, // 24: roster.GroupMembershipRefByMember.holder:type_name -> roster.HolderRef
+	2,  // 25: roster.GroupMembershipRefByMember.group:type_name -> roster.GroupRef
+	30, // 26: roster.GroupMembershipSelect.holder:type_name -> roster.HolderSelect
+	4,  // 27: roster.GroupMembershipSelect.group:type_name -> roster.GroupSelect
+	13, // 28: roster.GroupMembershipPatchRequest.ref:type_name -> roster.GroupMembershipRef
+	24, // 29: roster.GroupMembershipPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	13, // 30: roster.GroupMembershipApplyRequest.ref:type_name -> roster.GroupMembershipRef
+	27, // 31: roster.GroupMembershipApplyRequest.patch:type_name -> patch.Patch
+	21, // 32: roster.GroupMembershipListRequest.filters:type_name -> roster.GroupMembershipFilter
+	31, // 33: roster.GroupMembershipListResponse.items:type_name -> roster.GroupMembership
+	13, // 34: roster.GroupMembershipFilter.ref:type_name -> roster.GroupMembershipRef
+	29, // 35: roster.GroupMembershipFilter.holder:type_name -> roster.HolderRef
+	2,  // 36: roster.GroupMembershipFilter.group:type_name -> roster.GroupRef
+	0,  // 37: roster.GroupService.Add:input_type -> roster.GroupAddRequest
+	1,  // 38: roster.GroupService.Get:input_type -> roster.GroupGetRequest
+	5,  // 39: roster.GroupService.Patch:input_type -> roster.GroupPatchRequest
+	6,  // 40: roster.GroupService.Apply:input_type -> roster.GroupApplyRequest
+	2,  // 41: roster.GroupService.Erase:input_type -> roster.GroupRef
+	8,  // 42: roster.GroupService.List:input_type -> roster.GroupListRequest
+	11, // 43: roster.GroupMembershipService.Add:input_type -> roster.GroupMembershipAddRequest
+	12, // 44: roster.GroupMembershipService.Get:input_type -> roster.GroupMembershipGetRequest
+	16, // 45: roster.GroupMembershipService.Patch:input_type -> roster.GroupMembershipPatchRequest
+	17, // 46: roster.GroupMembershipService.Apply:input_type -> roster.GroupMembershipApplyRequest
+	13, // 47: roster.GroupMembershipService.Erase:input_type -> roster.GroupMembershipRef
+	19, // 48: roster.GroupMembershipService.List:input_type -> roster.GroupMembershipListRequest
+	28, // 49: roster.GroupService.Add:output_type -> roster.Group
+	28, // 50: roster.GroupService.Get:output_type -> roster.Group
+	28, // 51: roster.GroupService.Patch:output_type -> roster.Group
+	28, // 52: roster.GroupService.Apply:output_type -> roster.Group
+	7,  // 53: roster.GroupService.Erase:output_type -> roster.GroupEraseResponse
+	9,  // 54: roster.GroupService.List:output_type -> roster.GroupListResponse
+	31, // 55: roster.GroupMembershipService.Add:output_type -> roster.GroupMembership
+	31, // 56: roster.GroupMembershipService.Get:output_type -> roster.GroupMembership
+	31, // 57: roster.GroupMembershipService.Patch:output_type -> roster.GroupMembership
+	31, // 58: roster.GroupMembershipService.Apply:output_type -> roster.GroupMembership
+	18, // 59: roster.GroupMembershipService.Erase:output_type -> roster.GroupMembershipEraseResponse
+	20, // 60: roster.GroupMembershipService.List:output_type -> roster.GroupMembershipListResponse
+	49, // [49:61] is the sub-list for method output_type
+	37, // [37:49] is the sub-list for method input_type
+	37, // [37:37] is the sub-list for extension type_name
+	37, // [37:37] is the sub-list for extension extendee
+	0,  // [0:37] is the sub-list for field type_name
 }
 
 func init() { file_app_group_svc_g_proto_init() }

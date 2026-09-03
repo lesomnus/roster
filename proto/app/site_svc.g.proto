@@ -142,6 +142,7 @@ message SiteListResponse {
 
 message SiteFilter {
   SiteRef ref = 1;
+  TenantRef tenant = 2;
 }
 
 message SiteWatchRequest {

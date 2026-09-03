@@ -32,6 +32,7 @@ const (
 	HolderService_Invalidate_FullMethodName = "/roster.HolderService/Invalidate"
 	HolderService_SignsIn_FullMethodName    = "/roster.HolderService/SignsIn"
 	HolderService_RevokeKey_FullMethodName  = "/roster.HolderService/RevokeKey"
+	HolderService_Reaches_FullMethodName    = "/roster.HolderService/Reaches"
 )
 
 // HolderServiceClient is the client API for HolderService service.
@@ -141,6 +142,30 @@ type HolderServiceClient interface {
 	// hand out what it can name -- and *may see how somebody signs in* is a
 	// different grant from *may take a way in away*.
 	RevokeKey(ctx context.Context, in *HolderRevokeKeyRequest, opts ...grpc.CallOption) (*HolderRevokeKeyResponse, error)
+	// Reaches is what somebody may call, as the gate would decide it -- the same
+	// answer `MeService.Get` gives about the caller, about somebody else.
+	//
+	// # Why it is the policy's function and not a read of the parts
+	//
+	// Every part is readable: their bindings, the groups carrying bindings, the
+	// roles held in teams. What is not readable is the **union**, and a console
+	// that added the parts up would be a second implementation of `gate.Policy`,
+	// drifting from the one that enforces it -- `cmd/policy.go` records three
+	// readers of one set disagreeing. So this asks the function the gate asks,
+	// handed to the layer as `core.Rules.Held`, and answers with **patterns**
+	// rather than an expansion, for `MeService.Get`'s reason: an expansion is the
+	// methods that exist in whichever replica answered.
+	//
+	// # What it is not guarded by, and why
+	//
+	// The wall, and nothing else. A role naming this reads anybody's reach in the
+	// tenant, which is RBAC as it is (CLAUDE.md, *no self-only twin of a verb*)
+	// -- and it reveals nothing `BindingService.List`, `GroupMembershipService.
+	// List` and `TeamMembershipService.List` do not already answer to the same
+	// caller, only added up. A rule that narrowed it by the caller's own reach
+	// would be an object rule over a read, which is a shape roster has not taken
+	// and does not need here.
+	Reaches(ctx context.Context, in *HolderReachesRequest, opts ...grpc.CallOption) (*HolderReachesResponse, error)
 }
 
 type holderServiceClient struct {
@@ -290,6 +315,16 @@ func (c *holderServiceClient) RevokeKey(ctx context.Context, in *HolderRevokeKey
 	return out, nil
 }
 
+func (c *holderServiceClient) Reaches(ctx context.Context, in *HolderReachesRequest, opts ...grpc.CallOption) (*HolderReachesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HolderReachesResponse)
+	err := c.cc.Invoke(ctx, HolderService_Reaches_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // HolderServiceServer is the server API for HolderService service.
 // All implementations must embed UnimplementedHolderServiceServer
 // for forward compatibility.
@@ -397,6 +432,30 @@ type HolderServiceServer interface {
 	// hand out what it can name -- and *may see how somebody signs in* is a
 	// different grant from *may take a way in away*.
 	RevokeKey(context.Context, *HolderRevokeKeyRequest) (*HolderRevokeKeyResponse, error)
+	// Reaches is what somebody may call, as the gate would decide it -- the same
+	// answer `MeService.Get` gives about the caller, about somebody else.
+	//
+	// # Why it is the policy's function and not a read of the parts
+	//
+	// Every part is readable: their bindings, the groups carrying bindings, the
+	// roles held in teams. What is not readable is the **union**, and a console
+	// that added the parts up would be a second implementation of `gate.Policy`,
+	// drifting from the one that enforces it -- `cmd/policy.go` records three
+	// readers of one set disagreeing. So this asks the function the gate asks,
+	// handed to the layer as `core.Rules.Held`, and answers with **patterns**
+	// rather than an expansion, for `MeService.Get`'s reason: an expansion is the
+	// methods that exist in whichever replica answered.
+	//
+	// # What it is not guarded by, and why
+	//
+	// The wall, and nothing else. A role naming this reads anybody's reach in the
+	// tenant, which is RBAC as it is (CLAUDE.md, *no self-only twin of a verb*)
+	// -- and it reveals nothing `BindingService.List`, `GroupMembershipService.
+	// List` and `TeamMembershipService.List` do not already answer to the same
+	// caller, only added up. A rule that narrowed it by the caller's own reach
+	// would be an object rule over a read, which is a shape roster has not taken
+	// and does not need here.
+	Reaches(context.Context, *HolderReachesRequest) (*HolderReachesResponse, error)
 	mustEmbedUnimplementedHolderServiceServer()
 }
 
@@ -445,6 +504,9 @@ func (UnimplementedHolderServiceServer) SignsIn(context.Context, *HolderSignsInR
 }
 func (UnimplementedHolderServiceServer) RevokeKey(context.Context, *HolderRevokeKeyRequest) (*HolderRevokeKeyResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RevokeKey not implemented")
+}
+func (UnimplementedHolderServiceServer) Reaches(context.Context, *HolderReachesRequest) (*HolderReachesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Reaches not implemented")
 }
 func (UnimplementedHolderServiceServer) mustEmbedUnimplementedHolderServiceServer() {}
 func (UnimplementedHolderServiceServer) testEmbeddedByValue()                       {}
@@ -694,6 +756,24 @@ func _HolderService_RevokeKey_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HolderService_Reaches_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HolderReachesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HolderServiceServer).Reaches(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HolderService_Reaches_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HolderServiceServer).Reaches(ctx, req.(*HolderReachesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // HolderService_ServiceDesc is the grpc.ServiceDesc for HolderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -748,6 +828,10 @@ var HolderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RevokeKey",
 			Handler:    _HolderService_RevokeKey_Handler,
+		},
+		{
+			MethodName: "Reaches",
+			Handler:    _HolderService_Reaches_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

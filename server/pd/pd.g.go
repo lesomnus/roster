@@ -1269,6 +1269,106 @@ func filterBinding(f *rstr.BindingFilter) (predicate.Binding, error) {
 
 		ps = append(ps, p)
 	}
+	if f.HasRole() {
+		w := f.GetRole()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "role: %s", err)
+			}
+
+			ps = append(ps, binding.RoleIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.RolePick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, binding.HasRoleWith(q))
+		}
+	}
+	if f.HasHolder() {
+		w := f.GetHolder()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "holder: %s", err)
+			}
+
+			ps = append(ps, binding.HolderIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.HolderPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, binding.HasHolderWith(q))
+		}
+	}
+	if f.HasGroup() {
+		w := f.GetGroup()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "group: %s", err)
+			}
+
+			ps = append(ps, binding.GroupIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.GroupPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, binding.HasGroupWith(q))
+		}
+	}
+	if f.HasSite() {
+		w := f.GetSite()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "site: %s", err)
+			}
+
+			ps = append(ps, binding.SiteIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.SitePick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, binding.HasSiteWith(q))
+		}
+	}
 	if len(ps) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
 	}
@@ -2669,6 +2769,56 @@ func filterGroup(f *rstr.GroupFilter) (predicate.Group, error) {
 
 		ps = append(ps, p)
 	}
+	if f.HasTenant() {
+		w := f.GetTenant()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "tenant: %s", err)
+			}
+
+			ps = append(ps, group.TenantIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.TenantPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, group.HasTenantWith(q))
+		}
+	}
+	if f.HasSite() {
+		w := f.GetSite()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "site: %s", err)
+			}
+
+			ps = append(ps, group.SiteIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.SitePick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, group.HasSiteWith(q))
+		}
+	}
 	if len(ps) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
 	}
@@ -2811,6 +2961,56 @@ func filterGroupMembership(f *rstr.GroupMembershipFilter) (predicate.GroupMember
 		}
 
 		ps = append(ps, p)
+	}
+	if f.HasHolder() {
+		w := f.GetHolder()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "holder: %s", err)
+			}
+
+			ps = append(ps, groupmembership.HolderIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.HolderPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, groupmembership.HasHolderWith(q))
+		}
+	}
+	if f.HasGroup() {
+		w := f.GetGroup()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "group: %s", err)
+			}
+
+			ps = append(ps, groupmembership.GroupIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.GroupPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, groupmembership.HasGroupWith(q))
+		}
 	}
 	if len(ps) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
@@ -4344,6 +4544,56 @@ func filterRole(f *rstr.RoleFilter) (predicate.Role, error) {
 
 		ps = append(ps, p)
 	}
+	if f.HasTenant() {
+		w := f.GetTenant()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "tenant: %s", err)
+			}
+
+			ps = append(ps, role.TenantIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.TenantPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, role.HasTenantWith(q))
+		}
+	}
+	if f.HasSite() {
+		w := f.GetSite()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "site: %s", err)
+			}
+
+			ps = append(ps, role.SiteIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.SitePick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, role.HasSiteWith(q))
+		}
+	}
 	if len(ps) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
 	}
@@ -4704,6 +4954,31 @@ func filterSite(f *rstr.SiteFilter) (predicate.Site, error) {
 
 		ps = append(ps, p)
 	}
+	if f.HasTenant() {
+		w := f.GetTenant()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "tenant: %s", err)
+			}
+
+			ps = append(ps, site.TenantIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.TenantPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, site.HasTenantWith(q))
+		}
+	}
 	if len(ps) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
 	}
@@ -5028,6 +5303,56 @@ func filterSiteMembership(f *rstr.SiteMembershipFilter) (predicate.SiteMembershi
 		}
 
 		ps = append(ps, p)
+	}
+	if f.HasHolder() {
+		w := f.GetHolder()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "holder: %s", err)
+			}
+
+			ps = append(ps, sitemembership.HolderIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.HolderPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, sitemembership.HasHolderWith(q))
+		}
+	}
+	if f.HasSite() {
+		w := f.GetSite()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "site: %s", err)
+			}
+
+			ps = append(ps, sitemembership.SiteIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.SitePick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, sitemembership.HasSiteWith(q))
+		}
 	}
 	if len(ps) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
@@ -5428,6 +5753,56 @@ func filterTeam(f *rstr.TeamFilter) (predicate.Team, error) {
 
 		ps = append(ps, p)
 	}
+	if f.HasTenant() {
+		w := f.GetTenant()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "tenant: %s", err)
+			}
+
+			ps = append(ps, team.TenantIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.TenantPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, team.HasTenantWith(q))
+		}
+	}
+	if f.HasSite() {
+		w := f.GetSite()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "site: %s", err)
+			}
+
+			ps = append(ps, team.SiteIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.SitePick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, team.HasSiteWith(q))
+		}
+	}
 	if len(ps) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
 	}
@@ -5752,6 +6127,56 @@ func filterTeamMembership(f *rstr.TeamMembershipFilter) (predicate.TeamMembershi
 		}
 
 		ps = append(ps, p)
+	}
+	if f.HasHolder() {
+		w := f.GetHolder()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "holder: %s", err)
+			}
+
+			ps = append(ps, teammembership.HolderIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.HolderPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, teammembership.HasHolderWith(q))
+		}
+	}
+	if f.HasTeam() {
+		w := f.GetTeam()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "team: %s", err)
+			}
+
+			ps = append(ps, teammembership.TeamIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.TeamPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, teammembership.HasTeamWith(q))
+		}
 	}
 	if len(ps) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
@@ -9626,6 +10051,26 @@ func (s interceptHolder) RevokeKey(ctx context.Context, req *rstr.HolderRevokeKe
 	return w, nil
 }
 
+func (s interceptHolder) Reaches(ctx context.Context, req *rstr.HolderReachesRequest) (*rstr.HolderReachesResponse, error) {
+	if s.unary == nil {
+		return s.HolderServiceServer.Reaches(ctx, req)
+	}
+
+	v, err := s.unary(ctx, req, &grpc.UnaryServerInfo{
+		Server:     s.HolderServiceServer,
+		FullMethod: rstr.HolderService_Reaches_FullMethodName,
+	}, func(ctx context.Context, req any) (any, error) {
+		return s.HolderServiceServer.Reaches(ctx, req.(*rstr.HolderReachesRequest))
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	w, _ := v.(*rstr.HolderReachesResponse)
+
+	return w, nil
+}
+
 func (s Intercept) ApiKey() rstr.ApiKeyServiceServer {
 	return interceptApiKey{s, s.Next().ApiKey()}
 }
@@ -13146,6 +13591,19 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 		}
 
 		res, err := s.Holder().RevokeKey(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.HolderService_Reaches_FullMethodName:
+		v := &rstr.HolderReachesRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Holder().Reaches(ctx, v)
 		if err != nil {
 			return nil, err
 		}

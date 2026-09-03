@@ -1233,10 +1233,12 @@ func (b0 SiteMembershipListResponse_builder) Build() *SiteMembershipListResponse
 }
 
 type SiteMembershipFilter struct {
-	state          protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref *SiteMembershipRef     `protobuf:"bytes,1,opt,name=ref"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref    *SiteMembershipRef     `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Holder *HolderRef             `protobuf:"bytes,2,opt,name=holder"`
+	xxx_hidden_Site   *SiteRef               `protobuf:"bytes,3,opt,name=site"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *SiteMembershipFilter) Reset() {
@@ -1271,8 +1273,30 @@ func (x *SiteMembershipFilter) GetRef() *SiteMembershipRef {
 	return nil
 }
 
+func (x *SiteMembershipFilter) GetHolder() *HolderRef {
+	if x != nil {
+		return x.xxx_hidden_Holder
+	}
+	return nil
+}
+
+func (x *SiteMembershipFilter) GetSite() *SiteRef {
+	if x != nil {
+		return x.xxx_hidden_Site
+	}
+	return nil
+}
+
 func (x *SiteMembershipFilter) SetRef(v *SiteMembershipRef) {
 	x.xxx_hidden_Ref = v
+}
+
+func (x *SiteMembershipFilter) SetHolder(v *HolderRef) {
+	x.xxx_hidden_Holder = v
+}
+
+func (x *SiteMembershipFilter) SetSite(v *SiteRef) {
+	x.xxx_hidden_Site = v
 }
 
 func (x *SiteMembershipFilter) HasRef() bool {
@@ -1282,14 +1306,38 @@ func (x *SiteMembershipFilter) HasRef() bool {
 	return x.xxx_hidden_Ref != nil
 }
 
+func (x *SiteMembershipFilter) HasHolder() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Holder != nil
+}
+
+func (x *SiteMembershipFilter) HasSite() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Site != nil
+}
+
 func (x *SiteMembershipFilter) ClearRef() {
 	x.xxx_hidden_Ref = nil
+}
+
+func (x *SiteMembershipFilter) ClearHolder() {
+	x.xxx_hidden_Holder = nil
+}
+
+func (x *SiteMembershipFilter) ClearSite() {
+	x.xxx_hidden_Site = nil
 }
 
 type SiteMembershipFilter_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref *SiteMembershipRef
+	Ref    *SiteMembershipRef
+	Holder *HolderRef
+	Site   *SiteRef
 }
 
 func (b0 SiteMembershipFilter_builder) Build() *SiteMembershipFilter {
@@ -1297,6 +1345,8 @@ func (b0 SiteMembershipFilter_builder) Build() *SiteMembershipFilter {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Holder = b.Holder
+	x.xxx_hidden_Site = b.Site
 	return m0
 }
 
@@ -2899,10 +2949,12 @@ func (b0 TeamMembershipListResponse_builder) Build() *TeamMembershipListResponse
 }
 
 type TeamMembershipFilter struct {
-	state          protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref *TeamMembershipRef     `protobuf:"bytes,1,opt,name=ref"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref    *TeamMembershipRef     `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Holder *HolderRef             `protobuf:"bytes,2,opt,name=holder"`
+	xxx_hidden_Team   *TeamRef               `protobuf:"bytes,3,opt,name=team"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *TeamMembershipFilter) Reset() {
@@ -2937,8 +2989,30 @@ func (x *TeamMembershipFilter) GetRef() *TeamMembershipRef {
 	return nil
 }
 
+func (x *TeamMembershipFilter) GetHolder() *HolderRef {
+	if x != nil {
+		return x.xxx_hidden_Holder
+	}
+	return nil
+}
+
+func (x *TeamMembershipFilter) GetTeam() *TeamRef {
+	if x != nil {
+		return x.xxx_hidden_Team
+	}
+	return nil
+}
+
 func (x *TeamMembershipFilter) SetRef(v *TeamMembershipRef) {
 	x.xxx_hidden_Ref = v
+}
+
+func (x *TeamMembershipFilter) SetHolder(v *HolderRef) {
+	x.xxx_hidden_Holder = v
+}
+
+func (x *TeamMembershipFilter) SetTeam(v *TeamRef) {
+	x.xxx_hidden_Team = v
 }
 
 func (x *TeamMembershipFilter) HasRef() bool {
@@ -2948,14 +3022,38 @@ func (x *TeamMembershipFilter) HasRef() bool {
 	return x.xxx_hidden_Ref != nil
 }
 
+func (x *TeamMembershipFilter) HasHolder() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Holder != nil
+}
+
+func (x *TeamMembershipFilter) HasTeam() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Team != nil
+}
+
 func (x *TeamMembershipFilter) ClearRef() {
 	x.xxx_hidden_Ref = nil
+}
+
+func (x *TeamMembershipFilter) ClearHolder() {
+	x.xxx_hidden_Holder = nil
+}
+
+func (x *TeamMembershipFilter) ClearTeam() {
+	x.xxx_hidden_Team = nil
 }
 
 type TeamMembershipFilter_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref *TeamMembershipRef
+	Ref    *TeamMembershipRef
+	Holder *HolderRef
+	Team   *TeamRef
 }
 
 func (b0 TeamMembershipFilter_builder) Build() *TeamMembershipFilter {
@@ -2963,6 +3061,8 @@ func (b0 TeamMembershipFilter_builder) Build() *TeamMembershipFilter {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Holder = b.Holder
+	x.xxx_hidden_Team = b.Team
 	return m0
 }
 
@@ -3288,9 +3388,11 @@ const file_app_membership_svc_g_proto_rawDesc = "" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"e\n" +
 	"\x1aSiteMembershipListResponse\x12,\n" +
 	"\x05items\x18\x01 \x03(\v2\x16.roster.SiteMembershipR\x05items\x12\x19\n" +
-	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"C\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\x93\x01\n" +
 	"\x14SiteMembershipFilter\x12+\n" +
-	"\x03ref\x18\x01 \x01(\v2\x19.roster.SiteMembershipRefR\x03ref\"\x80\x01\n" +
+	"\x03ref\x18\x01 \x01(\v2\x19.roster.SiteMembershipRefR\x03ref\x12)\n" +
+	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12#\n" +
+	"\x04site\x18\x03 \x01(\v2\x0f.roster.SiteRefR\x04site\"\x80\x01\n" +
 	"\x1aSiteMembershipWatchRequest\x126\n" +
 	"\afilters\x18\x01 \x03(\v2\x1c.roster.SiteMembershipFilterR\afilters\x12*\n" +
 	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"T\n" +
@@ -3342,9 +3444,11 @@ const file_app_membership_svc_g_proto_rawDesc = "" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"e\n" +
 	"\x1aTeamMembershipListResponse\x12,\n" +
 	"\x05items\x18\x01 \x03(\v2\x16.roster.TeamMembershipR\x05items\x12\x19\n" +
-	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"C\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\x93\x01\n" +
 	"\x14TeamMembershipFilter\x12+\n" +
-	"\x03ref\x18\x01 \x01(\v2\x19.roster.TeamMembershipRefR\x03ref\"\x80\x01\n" +
+	"\x03ref\x18\x01 \x01(\v2\x19.roster.TeamMembershipRefR\x03ref\x12)\n" +
+	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12#\n" +
+	"\x04team\x18\x03 \x01(\v2\x0f.roster.TeamRefR\x04team\"\x80\x01\n" +
 	"\x1aTeamMembershipWatchRequest\x126\n" +
 	"\afilters\x18\x01 \x03(\v2\x1c.roster.TeamMembershipFilterR\afilters\x12*\n" +
 	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"T\n" +
@@ -3432,65 +3536,69 @@ var file_app_membership_svc_g_proto_depIdxs = []int32{
 	10, // 14: roster.SiteMembershipListRequest.filters:type_name -> roster.SiteMembershipFilter
 	34, // 15: roster.SiteMembershipListResponse.items:type_name -> roster.SiteMembership
 	2,  // 16: roster.SiteMembershipFilter.ref:type_name -> roster.SiteMembershipRef
-	10, // 17: roster.SiteMembershipWatchRequest.filters:type_name -> roster.SiteMembershipFilter
-	13, // 18: roster.SiteMembershipWatchResponse.items:type_name -> roster.SiteMembershipWatchItem
-	34, // 19: roster.SiteMembershipWatchItem.value:type_name -> roster.SiteMembership
-	28, // 20: roster.TeamMembershipAddRequest.holder:type_name -> roster.HolderRef
-	35, // 21: roster.TeamMembershipAddRequest.team:type_name -> roster.TeamRef
-	36, // 22: roster.TeamMembershipAddRequest.role:type_name -> roster.RoleRef
-	30, // 23: roster.TeamMembershipAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	16, // 24: roster.TeamMembershipGetRequest.ref:type_name -> roster.TeamMembershipRef
-	18, // 25: roster.TeamMembershipGetRequest.select:type_name -> roster.TeamMembershipSelect
-	17, // 26: roster.TeamMembershipRef.member:type_name -> roster.TeamMembershipRefByMember
-	28, // 27: roster.TeamMembershipRefByMember.holder:type_name -> roster.HolderRef
-	35, // 28: roster.TeamMembershipRefByMember.team:type_name -> roster.TeamRef
-	31, // 29: roster.TeamMembershipSelect.holder:type_name -> roster.HolderSelect
-	37, // 30: roster.TeamMembershipSelect.team:type_name -> roster.TeamSelect
-	38, // 31: roster.TeamMembershipSelect.role:type_name -> roster.RoleSelect
-	16, // 32: roster.TeamMembershipPatchRequest.ref:type_name -> roster.TeamMembershipRef
-	36, // 33: roster.TeamMembershipPatchRequest.role:type_name -> roster.RoleRef
-	30, // 34: roster.TeamMembershipPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	16, // 35: roster.TeamMembershipApplyRequest.ref:type_name -> roster.TeamMembershipRef
-	33, // 36: roster.TeamMembershipApplyRequest.patch:type_name -> patch.Patch
-	24, // 37: roster.TeamMembershipListRequest.filters:type_name -> roster.TeamMembershipFilter
-	39, // 38: roster.TeamMembershipListResponse.items:type_name -> roster.TeamMembership
-	16, // 39: roster.TeamMembershipFilter.ref:type_name -> roster.TeamMembershipRef
-	24, // 40: roster.TeamMembershipWatchRequest.filters:type_name -> roster.TeamMembershipFilter
-	27, // 41: roster.TeamMembershipWatchResponse.items:type_name -> roster.TeamMembershipWatchItem
-	39, // 42: roster.TeamMembershipWatchItem.value:type_name -> roster.TeamMembership
-	0,  // 43: roster.SiteMembershipService.Add:input_type -> roster.SiteMembershipAddRequest
-	1,  // 44: roster.SiteMembershipService.Get:input_type -> roster.SiteMembershipGetRequest
-	5,  // 45: roster.SiteMembershipService.Patch:input_type -> roster.SiteMembershipPatchRequest
-	6,  // 46: roster.SiteMembershipService.Apply:input_type -> roster.SiteMembershipApplyRequest
-	2,  // 47: roster.SiteMembershipService.Erase:input_type -> roster.SiteMembershipRef
-	8,  // 48: roster.SiteMembershipService.List:input_type -> roster.SiteMembershipListRequest
-	11, // 49: roster.SiteMembershipService.Watch:input_type -> roster.SiteMembershipWatchRequest
-	14, // 50: roster.TeamMembershipService.Add:input_type -> roster.TeamMembershipAddRequest
-	15, // 51: roster.TeamMembershipService.Get:input_type -> roster.TeamMembershipGetRequest
-	19, // 52: roster.TeamMembershipService.Patch:input_type -> roster.TeamMembershipPatchRequest
-	20, // 53: roster.TeamMembershipService.Apply:input_type -> roster.TeamMembershipApplyRequest
-	16, // 54: roster.TeamMembershipService.Erase:input_type -> roster.TeamMembershipRef
-	22, // 55: roster.TeamMembershipService.List:input_type -> roster.TeamMembershipListRequest
-	25, // 56: roster.TeamMembershipService.Watch:input_type -> roster.TeamMembershipWatchRequest
-	34, // 57: roster.SiteMembershipService.Add:output_type -> roster.SiteMembership
-	34, // 58: roster.SiteMembershipService.Get:output_type -> roster.SiteMembership
-	34, // 59: roster.SiteMembershipService.Patch:output_type -> roster.SiteMembership
-	34, // 60: roster.SiteMembershipService.Apply:output_type -> roster.SiteMembership
-	7,  // 61: roster.SiteMembershipService.Erase:output_type -> roster.SiteMembershipEraseResponse
-	9,  // 62: roster.SiteMembershipService.List:output_type -> roster.SiteMembershipListResponse
-	12, // 63: roster.SiteMembershipService.Watch:output_type -> roster.SiteMembershipWatchResponse
-	39, // 64: roster.TeamMembershipService.Add:output_type -> roster.TeamMembership
-	39, // 65: roster.TeamMembershipService.Get:output_type -> roster.TeamMembership
-	39, // 66: roster.TeamMembershipService.Patch:output_type -> roster.TeamMembership
-	39, // 67: roster.TeamMembershipService.Apply:output_type -> roster.TeamMembership
-	21, // 68: roster.TeamMembershipService.Erase:output_type -> roster.TeamMembershipEraseResponse
-	23, // 69: roster.TeamMembershipService.List:output_type -> roster.TeamMembershipListResponse
-	26, // 70: roster.TeamMembershipService.Watch:output_type -> roster.TeamMembershipWatchResponse
-	57, // [57:71] is the sub-list for method output_type
-	43, // [43:57] is the sub-list for method input_type
-	43, // [43:43] is the sub-list for extension type_name
-	43, // [43:43] is the sub-list for extension extendee
-	0,  // [0:43] is the sub-list for field type_name
+	28, // 17: roster.SiteMembershipFilter.holder:type_name -> roster.HolderRef
+	29, // 18: roster.SiteMembershipFilter.site:type_name -> roster.SiteRef
+	10, // 19: roster.SiteMembershipWatchRequest.filters:type_name -> roster.SiteMembershipFilter
+	13, // 20: roster.SiteMembershipWatchResponse.items:type_name -> roster.SiteMembershipWatchItem
+	34, // 21: roster.SiteMembershipWatchItem.value:type_name -> roster.SiteMembership
+	28, // 22: roster.TeamMembershipAddRequest.holder:type_name -> roster.HolderRef
+	35, // 23: roster.TeamMembershipAddRequest.team:type_name -> roster.TeamRef
+	36, // 24: roster.TeamMembershipAddRequest.role:type_name -> roster.RoleRef
+	30, // 25: roster.TeamMembershipAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	16, // 26: roster.TeamMembershipGetRequest.ref:type_name -> roster.TeamMembershipRef
+	18, // 27: roster.TeamMembershipGetRequest.select:type_name -> roster.TeamMembershipSelect
+	17, // 28: roster.TeamMembershipRef.member:type_name -> roster.TeamMembershipRefByMember
+	28, // 29: roster.TeamMembershipRefByMember.holder:type_name -> roster.HolderRef
+	35, // 30: roster.TeamMembershipRefByMember.team:type_name -> roster.TeamRef
+	31, // 31: roster.TeamMembershipSelect.holder:type_name -> roster.HolderSelect
+	37, // 32: roster.TeamMembershipSelect.team:type_name -> roster.TeamSelect
+	38, // 33: roster.TeamMembershipSelect.role:type_name -> roster.RoleSelect
+	16, // 34: roster.TeamMembershipPatchRequest.ref:type_name -> roster.TeamMembershipRef
+	36, // 35: roster.TeamMembershipPatchRequest.role:type_name -> roster.RoleRef
+	30, // 36: roster.TeamMembershipPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	16, // 37: roster.TeamMembershipApplyRequest.ref:type_name -> roster.TeamMembershipRef
+	33, // 38: roster.TeamMembershipApplyRequest.patch:type_name -> patch.Patch
+	24, // 39: roster.TeamMembershipListRequest.filters:type_name -> roster.TeamMembershipFilter
+	39, // 40: roster.TeamMembershipListResponse.items:type_name -> roster.TeamMembership
+	16, // 41: roster.TeamMembershipFilter.ref:type_name -> roster.TeamMembershipRef
+	28, // 42: roster.TeamMembershipFilter.holder:type_name -> roster.HolderRef
+	35, // 43: roster.TeamMembershipFilter.team:type_name -> roster.TeamRef
+	24, // 44: roster.TeamMembershipWatchRequest.filters:type_name -> roster.TeamMembershipFilter
+	27, // 45: roster.TeamMembershipWatchResponse.items:type_name -> roster.TeamMembershipWatchItem
+	39, // 46: roster.TeamMembershipWatchItem.value:type_name -> roster.TeamMembership
+	0,  // 47: roster.SiteMembershipService.Add:input_type -> roster.SiteMembershipAddRequest
+	1,  // 48: roster.SiteMembershipService.Get:input_type -> roster.SiteMembershipGetRequest
+	5,  // 49: roster.SiteMembershipService.Patch:input_type -> roster.SiteMembershipPatchRequest
+	6,  // 50: roster.SiteMembershipService.Apply:input_type -> roster.SiteMembershipApplyRequest
+	2,  // 51: roster.SiteMembershipService.Erase:input_type -> roster.SiteMembershipRef
+	8,  // 52: roster.SiteMembershipService.List:input_type -> roster.SiteMembershipListRequest
+	11, // 53: roster.SiteMembershipService.Watch:input_type -> roster.SiteMembershipWatchRequest
+	14, // 54: roster.TeamMembershipService.Add:input_type -> roster.TeamMembershipAddRequest
+	15, // 55: roster.TeamMembershipService.Get:input_type -> roster.TeamMembershipGetRequest
+	19, // 56: roster.TeamMembershipService.Patch:input_type -> roster.TeamMembershipPatchRequest
+	20, // 57: roster.TeamMembershipService.Apply:input_type -> roster.TeamMembershipApplyRequest
+	16, // 58: roster.TeamMembershipService.Erase:input_type -> roster.TeamMembershipRef
+	22, // 59: roster.TeamMembershipService.List:input_type -> roster.TeamMembershipListRequest
+	25, // 60: roster.TeamMembershipService.Watch:input_type -> roster.TeamMembershipWatchRequest
+	34, // 61: roster.SiteMembershipService.Add:output_type -> roster.SiteMembership
+	34, // 62: roster.SiteMembershipService.Get:output_type -> roster.SiteMembership
+	34, // 63: roster.SiteMembershipService.Patch:output_type -> roster.SiteMembership
+	34, // 64: roster.SiteMembershipService.Apply:output_type -> roster.SiteMembership
+	7,  // 65: roster.SiteMembershipService.Erase:output_type -> roster.SiteMembershipEraseResponse
+	9,  // 66: roster.SiteMembershipService.List:output_type -> roster.SiteMembershipListResponse
+	12, // 67: roster.SiteMembershipService.Watch:output_type -> roster.SiteMembershipWatchResponse
+	39, // 68: roster.TeamMembershipService.Add:output_type -> roster.TeamMembership
+	39, // 69: roster.TeamMembershipService.Get:output_type -> roster.TeamMembership
+	39, // 70: roster.TeamMembershipService.Patch:output_type -> roster.TeamMembership
+	39, // 71: roster.TeamMembershipService.Apply:output_type -> roster.TeamMembership
+	21, // 72: roster.TeamMembershipService.Erase:output_type -> roster.TeamMembershipEraseResponse
+	23, // 73: roster.TeamMembershipService.List:output_type -> roster.TeamMembershipListResponse
+	26, // 74: roster.TeamMembershipService.Watch:output_type -> roster.TeamMembershipWatchResponse
+	61, // [61:75] is the sub-list for method output_type
+	47, // [47:61] is the sub-list for method input_type
+	47, // [47:47] is the sub-list for extension type_name
+	47, // [47:47] is the sub-list for extension extendee
+	0,  // [0:47] is the sub-list for field type_name
 }
 
 func init() { file_app_membership_svc_g_proto_init() }

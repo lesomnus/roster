@@ -118,7 +118,18 @@ type Rules struct {
 	// Holding is everything somebody holds by any path, which is what
 	// [Core.mayReach] compares. See [Holding].
 	Holding Holding
+
+	// Held is the same union as [Rules.Holding], in the shape a page reads:
+	// the method patterns, the sites, and whether a binding reaches the whole
+	// tenant. It is what `Holder.Reaches` answers with and what `MeService.Get`
+	// answers about the caller -- one function, so the two cannot disagree.
+	// Nil is a stack that cannot say, and `Reaches` says so.
+	Held Held
 }
+
+// Held is what somebody may call and where, as the gate decides it. The
+// signature is `me.Held`'s, so one function serves both.
+type Held func(ctx context.Context, who pdid.Id) (methods []string, sites []pdid.Id, every bool, err error)
 
 // holding is [Rules.Holding], or [Rules.Granted] where a stack was assembled
 // before there were two answers.
