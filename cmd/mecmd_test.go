@@ -73,7 +73,7 @@ func TestTheCliIsAlsoACustomersPerson(t *testing.T) {
 	r, err := s.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
 		Tenant:  app.TenantRef_builder{Id: tn.GetId()}.Build(),
 		Alias:   "support",
-		Methods: []string{listHolders, "/roster.MeService/Get", "/roster.MeService/IssueKey"},
+		Methods: []string{listHolders, "/roster.MeService/Get", "/roster.ApiKeyService/Issue"},
 	}.Build())
 	x.NoError(err)
 

@@ -106,7 +106,7 @@ func NewCmdInit(c *Config) *xli.Command {
 			// A control plane, always, and the reason is not tidiness.
 			//
 			// A deployment that adds one **later** serves `auth.Plain` until it
-			// does: every caller is whoever they type. `MeService.IssueKey`
+			// does: every caller is whoever they type. `ApiKey.Issue`
 			// works perfectly well in that state -- a name is written, a frame
 			// is built, an `ApiKey` row lands on the data plane -- and nothing
 			// reads it, because `auth.Bearer` is not in the chain. An expiry is

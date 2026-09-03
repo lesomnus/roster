@@ -38,7 +38,7 @@ func TestAnAccountIsInertUntilAdmitted(t *testing.T) {
 	// What an ordinary account may do, and the group that carries it. `Admit`
 	// puts somebody in this group; being in it is holding the role.
 	memberMethods := []string{
-		rstr.MeService_IssueKey_FullMethodName,
+		rstr.ApiKeyService_Issue_FullMethodName,
 		rstr.HolderService_List_FullMethodName,
 	}
 	group := d.defineMembers(t, "member", memberMethods)
@@ -128,7 +128,7 @@ func TestNobodyAdmitsIntoMoreThanTheyHold(t *testing.T) {
 
 	d := serve(t, sso.Enrolling, map[string]string{"127.0.0.1": "contoso"})
 	memberMethods := []string{
-		rstr.MeService_IssueKey_FullMethodName,
+		rstr.ApiKeyService_Issue_FullMethodName,
 		rstr.HolderService_List_FullMethodName,
 	}
 	group := d.defineMembers(t, "member", memberMethods)
@@ -285,7 +285,7 @@ func (d *deployment) mayCall(t *testing.T, c *http.Client) []string {
 //
 // The key it asks for allows `HolderService.List`, which the member role holds
 // -- so once admitted the escalation check passes, and before that the gate
-// refuses `MeService.IssueKey` itself. A distinct alias each time, so a second
+// refuses `ApiKey.Issue` itself. A distinct alias each time, so a second
 // mint is refused for want of a role and never for a name already taken.
 func (d *deployment) mint(t *testing.T, c *http.Client, alias string) int {
 	t.Helper()

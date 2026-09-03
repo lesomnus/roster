@@ -165,10 +165,11 @@ func TestTheTerminalOperatesOnSomebody(t *testing.T) {
 		invalidate = "/roster.HolderService/Invalidate"
 		signsIn    = "/roster.HolderService/SignsIn"
 		revokeKey  = "/roster.HolderService/RevokeKey"
-		issueKey   = "/roster.MeService/IssueKey"
+		issueKey   = "/roster.ApiKeyService/Issue"
+		meGet      = "/roster.MeService/Get"
 	)
 
-	b := cliUp(t, holderGet, update, disable, enable, invalidate, signsIn, revokeKey, issueKey)
+	b := cliUp(t, holderGet, update, disable, enable, invalidate, signsIn, revokeKey, issueKey, meGet)
 
 	t.Run("disable is a stop, and enable ends it", func(t *testing.T) {
 		x := require.New(t)

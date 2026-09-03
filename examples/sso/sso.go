@@ -265,11 +265,18 @@ func New(ctx context.Context, c Config, conn *grpc.ClientConn, s *authsession.Se
 		// the package that mints it.
 		Methods: []string{
 			rstr.MeService_Get_FullMethodName,
-			rstr.MeService_Link_FullMethodName,
 			rstr.MeService_Unlink_FullMethodName,
 			rstr.MeService_SignOutEverywhere_FullMethodName,
-			rstr.MeService_IssueKey_FullMethodName,
-			rstr.MeService_RevokeKey_FullMethodName,
+
+			// The entity verbs the account screen calls about the person's
+			// **own** row -- attach a provider account, mint a key that acts as
+			// them, end one -- with a reference this app takes from the session
+			// and never from the request. Roster's part is `mayWriteAWayIn` and
+			// `mayGrant` (your own row passes; what you hand out is what you
+			// hold); the part that says *only your own* is this app's.
+			rstr.IdentityService_Add_FullMethodName,
+			rstr.ApiKeyService_Issue_FullMethodName,
+			rstr.HolderService_RevokeKey_FullMethodName,
 
 			// The two credential writes the account screen makes -- change a
 			// password, add a second factor -- with the person's **own**
@@ -551,10 +558,11 @@ func matches(r *http.Request, name string) bool {
 //
 // # And roster is the one that refuses
 //
-// Not this app. `MeService.Link` hangs the row off the frame's actor, refuses a
+// Not this app. `Identity.Add` -- called with the session's person and no
+// reference from the request, which is this app's whole part -- refuses a
 // second identity of one provider, and refuses an account already attached to
-// somebody -- without saying whose. This handler turns those into pages and
-// adds nothing of its own, which is the shape every other handler here has.
+// somebody, without saying whose. This handler turns those into pages and adds
+// nothing of its own, which is the shape every other handler here has.
 func (a *App) link(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -574,14 +582,21 @@ func (a *App) link(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := a.me_.Link(as, rstr.MeLinkRequest_builder{
+	own, ok := a.door.Who(ctx, r)
+	if !ok {
+		http.Error(w, "no", http.StatusForbidden)
+		return
+	}
+
+	res, err := a.roster.Identity().Add(as, rstr.IdentityAddRequest_builder{
+		Holder:   rstr.HolderRef_builder{Id: own.Bytes()}.Build(),
 		Provider: who.Provider,
 		Subject:  who.Subject,
 	}.Build())
 	if err != nil {
 		if status.Code(err) == codes.AlreadyExists {
 			// That account is already a way in, here or for somebody else.
-			// Told apart from nothing, for the reason `MeService.Link` gives.
+			// Told apart from nothing, for the reason `Identity.Add` gives.
 			http.Error(w, "that account is already a way in", http.StatusConflict)
 			return
 		}
@@ -824,7 +839,7 @@ func Enrolling(c rstr.Client) Enrol {
 		// And **not** what they may do, which is the line this app does not
 		// cross.
 		//
-		// `MeService.Link` is not waived the way the other three are -- adding
+		// `Identity.Add` is not waived the way `MeService`'s three are -- adding
 		// a way in is a feature a deployment offers rather than something
 		// somebody must be able to do with no role -- so somebody enrolled here
 		// cannot add one until a role says they may, and the account page tells

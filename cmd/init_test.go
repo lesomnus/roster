@@ -227,7 +227,7 @@ func TestInitSeedsAnOperator(t *testing.T) {
 // and a bad one to be able to grow out of, because growing out of it is not a
 // migration.
 //
-// `MeService.IssueKey` works under `Plain` -- a name is written, a frame is
+// `ApiKey.Issue` works under `Plain` -- a name is written, a frame is
 // built, an `ApiKey` row lands on the data plane -- and nothing reads it,
 // because `auth.Bearer` is not in the chain. An expiry is optional, so the row
 // stays. Name a control plane afterwards and `auth.Seq` gains

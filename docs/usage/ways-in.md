@@ -148,7 +148,7 @@ Three other ways to get one, all the same row:
 | --- | --- |
 | `ApiKeyService.Issue` on `server.addr` | a customer's own admin, for somebody in their tenant |
 | `ApiKeyService.Issue` on `admin.addr` | an operator, from the console |
-| `MeService.IssueKey` | a person, for themselves — no subject in the request at all |
+| `ApiKeyService.Issue` with your **own** reference | a person, for themselves — the same verb, and the app or shell is what passes only their reference |
 
 As themselves, from their own terminal, that last one is:
 

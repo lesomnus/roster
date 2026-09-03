@@ -15,15 +15,13 @@ import (
 	"github.com/lesomnus/roster/server/me"
 )
 
-// The self-service half of a key, which `docs/operating.md` listed under *what
-// is not here* for as long as the operator's half existed.
-//
-// An operator has had one since D51: the console lists somebody's keys beside
-// their passwords and providers, mints one and revokes one. A person doing it
-// for themselves had `IssueService` on the data plane and no read -- and could
-// not have used `IssueService` anyway without a role that reached everybody in
-// their tenant, which is the objection `MeService.Unlink`'s comment is built
-// from.
+// The self-service half of a key, as the line has it: no verb of its own. A
+// person calls `ApiKey.Issue` and `Holder.RevokeKey` with their **own**
+// reference -- the operator's verbs -- and what keeps the button safe is
+// `server/core`'s rule over every grant (nobody hands out a method they do not
+// hold), not a method shaped so that it cannot be pointed at anybody else.
+// `Me.Get` still lists them, because reading your own record is the one thing
+// that must work with no role.
 
 // TestSomebodyMintsAKeyThatActsAsThem.
 func TestSomebodyMintsAKeyThatActsAsThem(t *testing.T) {
@@ -31,27 +29,27 @@ func TestSomebodyMintsAKeyThatActsAsThem(t *testing.T) {
 	b, ctx := build(t)
 
 	who := b.holder(t, ctx, b.Contoso, "erin")
-	s := me.New(b.Ent, cmd.Everything(b.Ent), me.WithWrites(b.Walled))
+	own := app.HolderRef_builder{Id: who.Bytes()}.Build()
 	as := b.as(ctx, who, b.Contoso)
+	s := me.New(b.Ent, cmd.Everything(b.Ent), me.WithWrites(b.Walled))
 
-	v, err := s.IssueKey(as, app.MeIssueKeyRequest_builder{
+	v, err := b.Walled.ApiKey().Issue(as, app.ApiKeyIssueRequest_builder{
+		Holder:  own,
 		Alias:   "the-nightly-job",
 		Methods: []string{app.MeService_Get_FullMethodName},
 	}.Build())
 	x.NoError(err)
 
 	// An `rt_` and never an `rk_`. Which kind this is is a fact about which
-	// server answered rather than a field, and this server is the data plane --
-	// `issue.proto`'s argument, arriving one service over.
+	// server answered rather than a field, and this server is the data plane.
 	x.True(strings.HasPrefix(v.GetToken(), keys.PrefixTenant),
 		"a customer's port minted a key of the deployment's own kind: %s", v.GetToken())
 	x.Equal("the-nightly-job", v.GetKey().GetAlias())
+	x.Empty(v.GetKey().GetSecret(), "the row came back with its verifier")
 
-	t.Run("and it is theirs, read off the frame", func(t *testing.T) {
+	t.Run("and it is theirs, because that is the row they named", func(t *testing.T) {
 		x := require.New(t)
 
-		// There is no field that could have said otherwise, which is the whole
-		// of what makes this the person's own rather than an operator's.
 		u, err := b.Ent.ApiKey.Get(ctx, mustId(t, v.GetKey().GetId()).Uuid())
 		x.NoError(err)
 
@@ -75,8 +73,7 @@ func TestSomebodyMintsAKeyThatActsAsThem(t *testing.T) {
 
 		// A key is readable exactly once. `SignInKey` has the fields written
 		// out, so there is no `Select` to get wrong and nowhere for a verifier
-		// to appear -- which is the statement D13 makes by not registering
-		// `ApiKeyService`, said again where a page can hear it.
+		// to appear.
 		res, err := s.Get(as, app.MeGetRequest_builder{}.Build())
 		x.NoError(err)
 
@@ -90,8 +87,9 @@ func TestSomebodyMintsAKeyThatActsAsThem(t *testing.T) {
 	t.Run("and they can revoke it", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := s.RevokeKey(as, app.MeRevokeKeyRequest_builder{
-			Id: v.GetKey().GetId(),
+		_, err := b.Walled.Holder().RevokeKey(as, app.HolderRevokeKeyRequest_builder{
+			Ref: own,
+			Id:  v.GetKey().GetId(),
 		}.Build())
 		x.NoError(err)
 
@@ -104,10 +102,9 @@ func TestSomebodyMintsAKeyThatActsAsThem(t *testing.T) {
 // TestNobodyMintsThemselvesAKeyWiderThanTheyAre, which is what makes a
 // self-service button safe rather than a way to hand out permissions.
 //
-// The rule is not in `MeService` and must not be: it is `server/core`'s, over
-// `ApiKey.Add`, and this reaches it by writing through the walled stack. A
-// version of this method that reached for the database would compile, work,
-// and hand every person in the deployment every method in it.
+// The rule is `server/core`'s, over `ApiKey.Add`, and `Issue` reaches it by
+// writing through the layer -- so it holds for a person naming their own row
+// exactly as it holds for an operator naming somebody else's.
 func TestNobodyMintsThemselvesAKeyWiderThanTheyAre(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
@@ -116,11 +113,11 @@ func TestNobodyMintsThemselvesAKeyWiderThanTheyAre(t *testing.T) {
 	const theirs = "/roster.HolderService/Erase"
 
 	who := b.holder(t, ctx, b.Contoso, "erin")
-	as := b.mayCall(t, ctx, who, "modest", mine, app.MeService_IssueKey_FullMethodName)
+	own := app.HolderRef_builder{Id: who.Bytes()}.Build()
+	as := b.mayCall(t, ctx, who, "modest", mine, app.ApiKeyService_Issue_FullMethodName)
 
-	s := me.New(b.Ent, cmd.Everything(b.Ent), me.WithWrites(b.Walled))
-
-	_, err := s.IssueKey(as, app.MeIssueKeyRequest_builder{
+	_, err := b.Walled.ApiKey().Issue(as, app.ApiKeyIssueRequest_builder{
+		Holder:  own,
 		Alias:   "reaching",
 		Methods: []string{mine, theirs},
 	}.Build())
@@ -130,7 +127,8 @@ func TestNobodyMintsThemselvesAKeyWiderThanTheyAre(t *testing.T) {
 	t.Run("and the one they do hold still works", func(t *testing.T) {
 		x := require.New(t)
 
-		v, err := s.IssueKey(as, app.MeIssueKeyRequest_builder{
+		v, err := b.Walled.ApiKey().Issue(as, app.ApiKeyIssueRequest_builder{
+			Holder:  own,
 			Alias:   "modest",
 			Methods: []string{mine},
 		}.Build())
@@ -141,27 +139,27 @@ func TestNobodyMintsThemselvesAKeyWiderThanTheyAre(t *testing.T) {
 
 // TestARevokeIsAWhichAndNeverAWhose.
 //
-// The same care `Unlink` takes, for the same reason: the read that finds the
-// key is narrowed by the caller before it is narrowed by the identifier, so one
-// that is not theirs is `NotFound` -- told apart from nothing. Answered any
-// other way, this is a question about whether somebody else's key exists.
+// `Holder.RevokeKey` is a *which* within a *whose*: the reference says the
+// person, the identifier says the key, and one that is not theirs is
+// `NotFound` -- told apart from nothing, so this cannot be used to ask whether
+// somebody else's key exists.
 func TestARevokeIsAWhichAndNeverAWhose(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	s := me.New(b.Ent, cmd.Everything(b.Ent), me.WithWrites(b.Walled))
-
 	who := b.holder(t, ctx, b.Contoso, "erin")
 	other := b.holder(t, ctx, b.Contoso, "sam")
 
-	v, err := s.IssueKey(b.as(ctx, other, b.Contoso), app.MeIssueKeyRequest_builder{
+	v, err := b.Walled.ApiKey().Issue(b.as(ctx, other, b.Contoso), app.ApiKeyIssueRequest_builder{
+		Holder:  app.HolderRef_builder{Id: other.Bytes()}.Build(),
 		Alias:   "sams",
 		Methods: []string{app.MeService_Get_FullMethodName},
 	}.Build())
 	x.NoError(err)
 
-	_, err = s.RevokeKey(b.as(ctx, who, b.Contoso), app.MeRevokeKeyRequest_builder{
-		Id: v.GetKey().GetId(),
+	_, err = b.Walled.Holder().RevokeKey(b.as(ctx, who, b.Contoso), app.HolderRevokeKeyRequest_builder{
+		Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
+		Id:  v.GetKey().GetId(),
 	}.Build())
 	x.Equal(codes.NotFound, status.Code(err))
 
@@ -173,42 +171,46 @@ func TestARevokeIsAWhichAndNeverAWhose(t *testing.T) {
 
 // TestAKeyThatAllowsNothingIsRefusedRatherThanMinted.
 //
-// `IssueKeyRequest.methods` states this and it matters more here than there: a
-// page that defaulted an empty field to everything the person holds would mint
-// a key as wide as they are every time somebody left it alone, and one that
-// defaulted to nothing would mint keys that silently do not work.
+// A page that defaulted an empty field to everything the person holds would
+// mint a key as wide as they are every time somebody left it alone, and one
+// that defaulted to nothing would mint keys that silently do not work.
 func TestAKeyThatAllowsNothingIsRefusedRatherThanMinted(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
 	who := b.holder(t, ctx, b.Contoso, "erin")
-	s := me.New(b.Ent, cmd.Everything(b.Ent), me.WithWrites(b.Walled))
+	own := app.HolderRef_builder{Id: who.Bytes()}.Build()
 	as := b.as(ctx, who, b.Contoso)
 
-	_, err := s.IssueKey(as, app.MeIssueKeyRequest_builder{
+	_, err := b.Walled.ApiKey().Issue(as, app.ApiKeyIssueRequest_builder{
+		Holder:  own,
 		Methods: []string{app.MeService_Get_FullMethodName},
 	}.Build())
 	x.Equal(codes.InvalidArgument, status.Code(err), "a key nobody named")
 
-	_, err = s.IssueKey(as, app.MeIssueKeyRequest_builder{Alias: "empty"}.Build())
+	_, err = b.Walled.ApiKey().Issue(as, app.ApiKeyIssueRequest_builder{
+		Holder: own,
+		Alias:  "empty",
+	}.Build())
 	x.Equal(codes.InvalidArgument, status.Code(err), "a key that opens no door")
 }
 
-// TestSelfServiceOverTheWireWithHerOwnKey is `MeService` under the credential
+// TestSelfServiceOverTheWireWithHerOwnKey is self-service under the credential
 // a person actually holds, which the layer tests beside this stand in for with
 // a hand-built frame.
 //
 // Three sentences, one caller. Somebody with **no role** still reads their own
-// record -- `Get` is waived, which is only worth anything if the whole served
-// stack agrees -- and it answers `methods` as empty, because nothing is what
-// they may do. Minting themselves more than they are is refused through the
-// same stack. And a key that allows nothing is refused rather than minted.
+// record -- `Me.Get` is waived, which is only worth anything if the whole
+// served stack agrees -- and it answers `methods` as empty, because nothing is
+// what they may do. Minting themselves more than they are is refused through
+// the same stack, on the operator's verb named about their own row. And a key
+// that allows nothing is refused rather than minted.
 func TestSelfServiceOverTheWireWithHerOwnKey(t *testing.T) {
 	ctx := t.Context()
 
 	b := keyFor(t, verify)
 
-	const issue = "/roster.MeService/IssueKey"
+	const issue = "/roster.ApiKeyService/Issue"
 	const listHolders = "/roster.HolderService/List"
 
 	t.Run("somebody with no role still reads themselves", func(t *testing.T) {
@@ -231,22 +233,26 @@ func TestSelfServiceOverTheWireWithHerOwnKey(t *testing.T) {
 		permits(t, ctx, b, b.Contoso, b.Who, "issuer", issue)
 		hers := mintFor(t, ctx, b, b.Who, "her-minter", []string{issue}, time.Time{})
 
-		c := app.NewMeServiceClient(b.Conn)
+		own := app.HolderRef_builder{Id: b.Who.Bytes()}.Build()
+		c := app.NewApiKeyServiceClient(b.Conn)
 
-		_, err := c.IssueKey(bearing(ctx, hers), app.MeIssueKeyRequest_builder{
+		_, err := c.Issue(bearing(ctx, hers), app.ApiKeyIssueRequest_builder{
+			Holder:  own,
 			Alias:   "wider",
 			Methods: []string{issue, listHolders},
 		}.Build())
 		x.Equal(codes.PermissionDenied, status.Code(err),
 			"somebody minted a key naming a method they do not hold")
 
-		_, err = c.IssueKey(bearing(ctx, hers), app.MeIssueKeyRequest_builder{
-			Alias: "for-nothing",
+		_, err = c.Issue(bearing(ctx, hers), app.ApiKeyIssueRequest_builder{
+			Holder: own,
+			Alias:  "for-nothing",
 		}.Build())
 		x.Equal(codes.InvalidArgument, status.Code(err),
 			"a key that allows nothing was minted rather than refused")
 
-		v, err := c.IssueKey(bearing(ctx, hers), app.MeIssueKeyRequest_builder{
+		v, err := c.Issue(bearing(ctx, hers), app.ApiKeyIssueRequest_builder{
+			Holder:  own,
 			Alias:   "exactly-her",
 			Methods: []string{issue},
 		}.Build())

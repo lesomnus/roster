@@ -46,7 +46,7 @@ to serve anywhere else.
 
 `roster init` will not make that deployment at all — it refuses a configuration
 with no `control.db`, and the reason is what happens to the ones that add one
-later. `MeService.IssueKey` works perfectly under `Plain`: a name is written, a
+later. `ApiKey.Issue` works perfectly under `Plain`: a name is written, a
 frame is built, an `ApiKey` row lands on the data plane, and nothing reads it
 because `auth.Bearer` is not in the chain. An expiry is optional, so the row
 stays. Name a control plane afterwards and every key minted while nobody was
@@ -882,7 +882,7 @@ which is a wider set than the writes that mention a role. These are all of them:
 | `TeamMembershipService/Add`, `/Patch` | that role, in that team |
 | `GroupMembershipService/Add` | everything bound to that group |
 | `ApiKeyService/Add`, `/Patch` | the methods on the key |
-| `MeService/IssueKey` | the methods on a key that acts as **you** |
+| `ApiKeyService/Issue` | the methods on the key — including one you mint for yourself, which is the same verb with your own reference |
 
 Each is refused when it names a method you do not hold. The last one is a
 person's own and is refused on the same terms, which is what lets a deployment
@@ -1180,19 +1180,22 @@ the smallest role covering one means exactly what its name says.
 | --- | --- |
 | `MeService/Unlink` | take back one of their own provider accounts. Waived — no role needed |
 | `MeService/SignOutEverywhere` | void everything issued to them before now. Waived |
-| `MeService/Link` | attach a provider account they have just proved they control |
-| `MeService/IssueKey`, `/RevokeKey` | mint an `rt_` that acts as them, and end one |
+| `IdentityService/Add`, with their own reference | attach a provider account they have just proved they control |
+| `ApiKeyService/Issue`, `HolderService/RevokeKey`, with their own reference | mint an `rt_` that acts as them, and end one |
 
 The first two need **no role**, for `Get`'s reason: they are what somebody must
 be able to do with no permissions at all. The last two are features a deployment
 chooses to offer, so they are named on a role like anything else.
 
-Reach for these rather than the operator's equivalents on any screen a person
-draws about themselves. `IdentityService` and `ApiKeyService` narrow by
-**tenant**, so the smallest role covering *remove my own account* through them
-is *remove anybody's*, and `ApiKeyService.Issue` and
-`HolderService.RevokeKey` take a subject for the same reason. That is the leak
-D17 named, arriving on the screen it is most tempting on.
+The last two are the operator's verbs, called about your own row: a role
+naming `ApiKeyService/Issue` means *mint a key for anybody no wider than you*,
+and yourself is one of those. RBAC is not taught anything finer -- CLAUDE.md,
+*no self-only twin of a verb* -- so the screen a person draws about themselves
+is what passes only their own reference, and `mayGrant`/`mayWriteAWayIn` in
+`server/core` are what keep that write no wider than they are. `Unlink` is the
+one that stays a `MeService` method, because taking back your last way in is a
+thing nobody may be refused for want of a role, and only a subject-less method
+can be waived.
 
 `examples/sso` draws all of it: `GET /me`, `POST /me/keys`, `DELETE
 /me/keys/{id}`, `DELETE /me/ways/{id}`, `POST /me/sign-out-everywhere`.

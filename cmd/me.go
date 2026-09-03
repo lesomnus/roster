@@ -32,11 +32,12 @@ import (
 //
 // # It is remote only, and that is not an omission
 //
-// Every method here answers from the **frame**: no request carries a subject,
-// which is `server/me`'s whole design -- a role naming `MeService/IssueKey`
-// means *may mint a key that acts as you* and cannot be pointed at anybody
-// else. A local run has no frame, because there is no caller; it opens the
-// database.
+// Every command here is about the **caller**. `me get` answers from the frame;
+// the writes name the caller's own row, by the identifier `me get` answers
+// with, and call the entity's own verb -- `ApiKey.Issue`, `Holder.RevokeKey`,
+// `Identity.Add` -- which is what "the app is the layer that passes only your
+// reference" means at a shell (CLAUDE.md, *no self-only twin of a verb*). A
+// local run has no frame, because there is no caller; it opens the database.
 //
 // So this reaches the connection the entity commands reach, through
 // `pdcmd.MustConn`, and a deployment with no `client.addr` is told to name one
@@ -74,6 +75,20 @@ func calling(ctx context.Context, c *Config) (pdcmd.Conn, error) {
 	}
 
 	return pdcmd.MustConn(ctx), nil
+}
+
+// myself is the caller's own reference, which is what every write below names.
+//
+// Read off `Me.Get` -- waived, so it needs no role -- rather than parsed from
+// the credential: a key's actor is the key, and the person it hangs off is a
+// fact the server has and a shell does not.
+func myself(ctx context.Context, conn pdcmd.Conn) (*app.HolderRef, error) {
+	v, err := app.NewMeServiceClient(conn).Get(ctx, app.MeGetRequest_builder{}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	return app.HolderRef_builder{Id: v.GetId()}.Build(), nil
 }
 
 func newCmdMeGet(c *Config) *xli.Command {
@@ -130,12 +145,10 @@ func newCmdMeGet(c *Config) *xli.Command {
 	}
 }
 
-// newCmdMeIssueKey mints one for yourself.
-//
-// No subject in the request, which is the whole of what makes this safe to
-// grant: `IssueService.IssueKey` takes a `HolderRef` the wall narrows to the
-// caller's tenant, so the smallest role covering *mint a key for myself* there
-// is *mint one for anybody here*. See `me.proto`'s IssueKey comment.
+// newCmdMeIssueKey mints one for yourself: `ApiKey.Issue` with your own
+// reference, the same verb an operator calls about somebody else. The role it
+// needs is the one that names `ApiKey.Issue`, and what it may hand out is what
+// you hold -- `server/core`'s rule, not this command's.
 func newCmdMeIssueKey(c *Config) *xli.Command {
 	return &xli.Command{
 		Name:  "issue-key",
@@ -164,7 +177,12 @@ func newCmdMeIssueKey(c *Config) *xli.Command {
 				return errors.New("--allow: a key that allows nothing is not a key; name the methods")
 			}
 
-			req := app.MeIssueKeyRequest_builder{Alias: name, Methods: methods}
+			own, err := myself(ctx, conn)
+			if err != nil {
+				return err
+			}
+
+			req := app.ApiKeyIssueRequest_builder{Holder: own, Alias: name, Methods: methods}
 			if v, _ := flg.Find[string](cmd, "expires"); v != "" {
 				d, err := time.ParseDuration(v)
 				if err != nil {
@@ -174,7 +192,7 @@ func newCmdMeIssueKey(c *Config) *xli.Command {
 				req.Expires = timestamppb.New(time.Now().Add(d))
 			}
 
-			v, err := app.NewMeServiceClient(conn).IssueKey(ctx, req.Build())
+			v, err := app.NewApiKeyServiceClient(conn).Issue(ctx, req.Build())
 			if err != nil {
 				return err
 			}
@@ -219,20 +237,27 @@ func newCmdMeRevokeKey(c *Config) *xli.Command {
 				return fmt.Errorf("Id: %w", err)
 			}
 
-			_, err = app.NewMeServiceClient(conn).RevokeKey(ctx,
-				app.MeRevokeKeyRequest_builder{Id: k.Bytes()}.Build())
+			own, err := myself(ctx, conn)
+			if err != nil {
+				return err
+			}
+
+			_, err = app.NewHolderServiceClient(conn).RevokeKey(ctx,
+				app.HolderRevokeKeyRequest_builder{Ref: own, Id: k.Bytes()}.Build())
 
 			return err
 		}),
 	}
 }
 
-// newCmdMeLink attaches a provider account you have already proved is yours.
+// newCmdMeLink attaches a provider account you have already proved is yours:
+// `Identity.Add` with your own reference.
 //
-// It is **not** waived by `aboutYourself` and there is no role that comes with
-// it: attaching a way in is a feature a deployment offers rather than something
-// nobody may be locked out of. So this is refused unless somebody granted it,
-// which is the answer and not a limitation.
+// There is no role that comes with it: attaching a way in is a feature a
+// deployment offers rather than something nobody may be locked out of, so this
+// is refused unless a role names `Identity.Add` -- which is the answer and not
+// a limitation. `server/core` refuses a second account at one provider and an
+// account already somebody else's, without saying whose.
 func newCmdMeLink(c *Config) *xli.Command {
 	return &xli.Command{
 		Name:  "link",
@@ -255,8 +280,13 @@ func newCmdMeLink(c *Config) *xli.Command {
 				return errors.New("PROVIDER and SUBJECT: which account, at which provider")
 			}
 
-			_, err = app.NewMeServiceClient(conn).Link(ctx,
-				app.MeLinkRequest_builder{Provider: provider, Subject: subject}.Build())
+			own, err := myself(ctx, conn)
+			if err != nil {
+				return err
+			}
+
+			_, err = app.NewIdentityServiceClient(conn).Add(ctx,
+				app.IdentityAddRequest_builder{Holder: own, Provider: provider, Subject: subject}.Build())
 
 			return err
 		}),

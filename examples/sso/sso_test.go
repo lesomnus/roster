@@ -259,10 +259,10 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 			"/roster.DelegationService/Revoke",
 			"/roster.MeService/Get",
 			"/roster.MeService/Unlink",
-			"/roster.MeService/Link",
 			"/roster.MeService/SignOutEverywhere",
-			"/roster.MeService/IssueKey",
-			"/roster.MeService/RevokeKey",
+			"/roster.IdentityService/Add",
+			"/roster.ApiKeyService/Issue",
+			"/roster.HolderService/RevokeKey",
 
 			// What the front door asks before it knows anything, which is how
 			// it stops holding a copy of which tenant serves which name.
@@ -1506,7 +1506,7 @@ func TestAddingAWayInIsRoutedNow(t *testing.T) {
 	t.Run("and until a role says so, it is refused", func(t *testing.T) {
 		x := require.New(t)
 
-		// `MeService.Link` is not waived, so somebody the login app enrolled
+		// `Identity.Add` is not waived, so somebody the login app enrolled
 		// holds nothing that allows it -- and the app does not grant it, on
 		// purpose: doing so would mean its key could bind any role to anybody.
 		d.idp.subject = "3002"
@@ -1522,7 +1522,7 @@ func TestAddingAWayInIsRoutedNow(t *testing.T) {
 	role, err := d.ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
 		Tenant:  rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),
 		Alias:   "self-service",
-		Methods: []string{rstr.MeService_Link_FullMethodName},
+		Methods: []string{rstr.IdentityService_Add_FullMethodName},
 	}.Build())
 	x.NoError(err)
 
@@ -1618,8 +1618,8 @@ func TestSomebodyMintsAKeyFromTheirOwnPage(t *testing.T) {
 		Alias:  "hers",
 		Methods: []string{
 			rstr.MeService_Get_FullMethodName,
-			rstr.MeService_IssueKey_FullMethodName,
-			rstr.MeService_RevokeKey_FullMethodName,
+			rstr.ApiKeyService_Issue_FullMethodName,
+			rstr.HolderService_RevokeKey_FullMethodName,
 		},
 	}.Build())
 	x.NoError(err)

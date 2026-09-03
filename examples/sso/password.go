@@ -124,6 +124,22 @@ func record(v *rstr.MeGetResponse) recordOf {
 	return out
 }
 
+// keyIssued is `key` for the row `ApiKey.Issue` answers with, which is the
+// entity and not the `SignInKey` shape `Me.Get` lists -- so a page that has
+// just minted one can put it in the list without asking again.
+func keyIssued(v *rstr.ApiKey) keyOf {
+	k := keyOf{
+		Id:      base64.RawURLEncoding.EncodeToString(v.GetId()),
+		Alias:   v.GetAlias(),
+		Methods: v.GetMethods(),
+	}
+	if u := v.GetDateExpires(); u != nil {
+		k.Expires = u.AsTime().Format("2006-01-02")
+	}
+
+	return k
+}
+
 func key(v *rstr.SignInKey) keyOf {
 	k := keyOf{
 		Id:      base64.RawURLEncoding.EncodeToString(v.GetId()),
@@ -226,7 +242,14 @@ func (a *App) mintKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	v, err := a.me_.IssueKey(ctx, rstr.MeIssueKeyRequest_builder{
+	own, ok := a.door.Who(r.Context(), r)
+	if !ok {
+		http.Error(w, "no", http.StatusForbidden)
+		return
+	}
+
+	v, err := a.roster.ApiKey().Issue(ctx, rstr.ApiKeyIssueRequest_builder{
+		Holder:  rstr.HolderRef_builder{Id: own.Bytes()}.Build(),
 		Alias:   in.Alias,
 		Methods: in.Methods,
 	}.Build())
@@ -251,7 +274,7 @@ func (a *App) mintKey(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(struct {
 		Token string `json:"token"`
 		Key   keyOf  `json:"key"`
-	}{Token: v.GetToken(), Key: key(v.GetKey())})
+	}{Token: v.GetToken(), Key: keyIssued(v.GetKey())})
 }
 
 // revokeKey is `DELETE /me/keys/{id}`: one of the person's own.
@@ -272,7 +295,16 @@ func (a *App) revokeKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := a.me_.RevokeKey(ctx, rstr.MeRevokeKeyRequest_builder{Id: id}.Build()); err != nil {
+	own, ok := a.door.Who(r.Context(), r)
+	if !ok {
+		http.Error(w, "no", http.StatusForbidden)
+		return
+	}
+
+	if _, err := a.roster.Holder().RevokeKey(ctx, rstr.HolderRevokeKeyRequest_builder{
+		Ref: rstr.HolderRef_builder{Id: own.Bytes()}.Build(),
+		Id:  id,
+	}.Build()); err != nil {
 		http.Error(w, "no", http.StatusBadRequest)
 		return
 	}

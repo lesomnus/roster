@@ -124,29 +124,18 @@ func (p policy) May(ctx context.Context, c gate.Call) error {
 // rules in the layer: `server/core` refuses the removal of a last way in, so
 // the button cannot lock somebody out of their own account.
 //
-// # `Link` is not on this list, and it took two answers to be sure
+// # And nothing else, which is now a rule rather than a list
 //
-// The paragraph above looks like it applies -- there is no role that means *may
-// add their own identity*, since `Identity` narrows by tenant -- and it does
-// not. The objection is about granting an **entity** permission to buy a narrow
-// act. `MeService/Link` is already the narrow act: it writes to the frame's
-// actor and there is no field that could redirect it, so a role naming that
-// method grants exactly *may add a way into your own account* and nothing
-// wider. The thing that made a role the wrong shape for `Unlink` is absent.
-//
-// And the other half of the argument is absent too. What is waived here is what
-// somebody **must** be able to do with no role at all: read their own record,
-// sign out of a session they no longer trust, take back a way in. Attaching a
-// provider account is not in that category -- it is a feature a deployment
-// offers, nobody is locked out by its absence, and it creates something that
-// persists after the app that asked for it is gone.
-//
-// So it needs a grant, and `cmd/asself_test.go` is what settled it: that test
-// refuses any waived method whose request carries a field that could name
-// somebody, and `MeLinkRequest.subject` is one by that reading. The field means
-// a provider's account rather than a person, so it is a false positive on the
-// letter -- and the test was right on the substance, which is the more useful
-// thing a mechanical check can be.
+// `Link`, `IssueKey` and `RevokeKey` sat beside these for a while, not waived
+// but subject-less, for the grant that let a role name -- *may add a way into
+// your own account* -- without the entity permission that reaches the tenant.
+// They are gone: CLAUDE.md, *no self-only twin of a verb*. A person calls
+// `Identity.Add`, `ApiKey.Issue` and `Holder.RevokeKey` with their own
+// reference, RBAC grants the method as it grants any other, and *whose row* is
+// `server/core`'s (`mayReach`, `mayWriteAWayIn`: yourself always passes). So
+// what is on this list is exactly what cannot be asked for with a role, and a
+// method that takes a subject can never join it -- `cmd/asself_test.go`
+// refuses one that carries a field that could name somebody.
 func aboutYourself(method string) bool {
 	switch method {
 	case app.MeService_Get_FullMethodName,

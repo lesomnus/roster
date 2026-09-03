@@ -137,7 +137,9 @@ reads or writes**:
   service would be one more name for the same rows.*
 
 A new service is justified only when the operation belongs to **no single
-entity**: it reads the caller from the frame (`MeService`), it answers before
+entity**: it reads the caller from the frame and holds only what a role cannot
+be asked for (`MeService`: `Get`, `Unlink`, `SignOutEverywhere` -- waived, so
+subject-less by necessity), it answers before
 anybody is resolved to a tenant so it reads the unwalled server and hands back
 one identifier and no row (`FrontService`), or it mints/spends secrets across
 several rows in one flow (the sign-in flow, `AuthService`). Each such service

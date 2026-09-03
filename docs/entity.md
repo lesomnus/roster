@@ -363,7 +363,7 @@ deployment's own services and lives in the **control plane** -- a second roster
 in the same process on its own database -- because a key that opens every tenant
 must not sit in the tables it opens. An `rt_` belongs to an ordinary person and
 lives beside them on the data plane; `IssueService` mints one for somebody, and
-`MeService.IssueKey` is how that somebody mints their own.
+`ApiKey.Issue` with their own reference is how that somebody mints their own.
 
 They also resolve differently, which is the part a trail shows: an `rk_` is
 served **as this row**, so the record names which key asked, while an `rt_`

@@ -31,7 +31,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/frame"
-	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
 
 	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
@@ -60,7 +59,10 @@ type Server struct {
 	db   *ent.Client
 	held Held
 
-	// walled is the stack the two writes go through.
+	// walled is the stack the two writes go through: `Unlink` and
+	// `SignOutEverywhere`, the waived ones. What a person does beyond those is
+	// the entity's verb with their own reference, and not this service's.
+	//
 	//
 	// The reads here go to ent because the missing subject has already narrowed
 	// them and there is nothing left for a wall to do. A write is different: the
@@ -353,65 +355,6 @@ func (s *Server) keys(ctx context.Context, who pdid.Id) ([]*app.SignInKey, error
 //
 // # And the prefix is not in the request
 //
-// It is the stack's, stamped by `ApiKey.Issue` from `core.WithPrefix` -- `rt_`
-// here, because this server is the data plane and a key minted for the caller
-// belongs to somebody inside a customer's tenant. `apikey_svc.ext.proto` argues
-// that at length: a caller that could name a prefix could ask the
-// customer-facing port for a key of the deployment's own kind.
-func (s *Server) IssueKey(ctx context.Context, req *app.MeIssueKeyRequest) (*app.MeIssueKeyResponse, error) {
-	f, ok := frame.From(ctx)
-	if !ok {
-		return nil, status.Error(codes.Unauthenticated, "who is asking?")
-	}
-	if s.walled == nil {
-		return nil, status.Error(codes.Unimplemented, "this server cannot write")
-	}
-
-	if req.GetAlias() == "" {
-		return nil, pderr.Invalidf("alias", "a name for the key")
-	}
-	if len(req.GetMethods()) == 0 {
-		// Refused rather than defaulted, which `IssueKeyRequest.methods` states
-		// and which matters more here: a page that defaulted to everything the
-		// person holds would mint a key as wide as they are every time somebody
-		// left the field alone.
-		return nil, pderr.Invalidf("methods", "a key that allows nothing opens no door")
-	}
-
-	// The mint is `ApiKey.Issue`'s now: it makes the secret with the plane's
-	// prefix (a person's key is `rt_`, so the walled stack this runs through is
-	// stamped that way) and runs the two escalation rules on the way in. This
-	// answers about the caller's own account -- the holder is the frame's actor,
-	// which is what keeps `MeService.IssueKey` subject-less.
-	issue := app.ApiKeyIssueRequest_builder{
-		Holder:  app.HolderRef_builder{Id: f.Actor.Bytes()}.Build(),
-		Alias:   req.GetAlias(),
-		Methods: req.GetMethods(),
-	}
-	if v := req.GetExpires(); v != nil {
-		issue.Expires = v
-	}
-
-	res, err := s.walled.ApiKey().Issue(ctx, issue.Build())
-	if err != nil {
-		return nil, err
-	}
-	token, v := res.GetToken(), res.GetKey()
-
-	// Answered in the shape the list is in, so a page that has just minted one
-	// puts it beside the others without asking again -- and so that the secret
-	// has nowhere to appear twice.
-	k := app.SignInKey_builder{
-		Id:      v.GetId(),
-		Alias:   v.GetAlias(),
-		Methods: v.GetMethods(),
-	}
-	if u := v.GetDateExpires(); u != nil {
-		k.DateExpires = u
-	}
-
-	return app.MeIssueKeyResponse_builder{Token: token, Key: k.Build()}.Build(), nil
-}
 
 // RevokeKey ends one of the caller's own keys.
 //
@@ -420,44 +363,6 @@ func (s *Server) IssueKey(ctx context.Context, req *app.MeIssueKeyRequest) (*app
 // somebody else is `NotFound` rather than refused. Told apart, this would
 // answer whether somebody else's key exists.
 //
-// There is no last-one rule, unlike `Unlink`. A key is not a way in -- it is a
-// way to act once you already are one -- so revoking the only one locks nobody
-// out of anything.
-func (s *Server) RevokeKey(ctx context.Context, req *app.MeRevokeKeyRequest) (*app.MeRevokeKeyResponse, error) {
-	f, ok := frame.From(ctx)
-	if !ok {
-		return nil, status.Error(codes.Unauthenticated, "who is asking?")
-	}
-	if s.walled == nil {
-		return nil, status.Error(codes.Unimplemented, "this server cannot write")
-	}
-
-	id, err := entuuid.FromBytes(req.GetId())
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
-	}
-
-	n, err := s.db.ApiKey.Query().
-		Where(
-			apikey.DateErasedIsNil(),
-			apikey.HasHolderWith(holder.IdEQ(f.Actor.Uuid())),
-			apikey.IdEQ(id),
-		).
-		Count(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if n == 0 {
-		return nil, status.Error(codes.NotFound, "no such key")
-	}
-
-	if _, err := s.walled.ApiKey().Erase(ctx,
-		app.ApiKeyRef_builder{Id: req.GetId()}.Build()); err != nil {
-		return nil, err
-	}
-
-	return app.MeRevokeKeyResponse_builder{}.Build(), nil
-}
 
 // Unlink removes one of the caller's own ways in.
 //
@@ -528,49 +433,6 @@ func (s *Server) Unlink(ctx context.Context, req *app.MeUnlinkRequest) (*app.MeU
 //
 // # And what a refusal must not say
 //
-// `(provider, subject)` is unique across the deployment, so a claim already
-// attached to somebody else comes back as a constraint failure. That is
-// answered as `AlreadyExists` with nothing about **whose** it is -- the same
-// care `Unlink` takes about an identifier that is not the caller's. Telling
-// somebody *that account belongs to alice@contoso* would make this a lookup from
-// a provider subject to a person, which is a thing no caller here may do.
-func (s *Server) Link(ctx context.Context, req *app.MeLinkRequest) (*app.MeLinkResponse, error) {
-	f, ok := frame.From(ctx)
-	if !ok {
-		return nil, status.Error(codes.Unauthenticated, "who is asking?")
-	}
-	if s.walled == nil {
-		return nil, status.Error(codes.Unimplemented, "this server cannot write")
-	}
-
-	provider, subject := req.GetProvider(), req.GetSubject()
-	switch {
-	case provider == "":
-		return nil, pderr.Invalidf("provider", "which provider issued this")
-	case subject == "":
-		return nil, pderr.Invalidf("subject", "who the provider said it was")
-	}
-
-	v, err := s.walled.Identity().Add(ctx, app.IdentityAddRequest_builder{
-		Holder:   app.HolderRef_builder{Id: f.Actor.Bytes()}.Build(),
-		Provider: provider,
-		Subject:  subject,
-	}.Build())
-	if err != nil {
-		if status.Code(err) == codes.AlreadyExists {
-			// Either the caller already has one of this provider -- which
-			// `server/core` refuses in those words -- or the account belongs to
-			// somebody else. One answer, because telling them apart is telling
-			// a caller which provider accounts are taken here.
-			return nil, status.Error(codes.AlreadyExists,
-				"that account is already a way in")
-		}
-
-		return nil, err
-	}
-
-	return app.MeLinkResponse_builder{Id: v.GetId()}.Build(), nil
-}
 
 // SignOutEverywhere voids everything issued to the caller before now.
 //
