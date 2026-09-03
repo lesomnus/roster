@@ -428,12 +428,13 @@ func (b0 VouchVerifyRequest_builder) Build() *VouchVerifyRequest {
 // warning about Kratos bites, and the shape is what makes that boundary
 // visible rather than tempting.
 type VouchFactor struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Kind        string                 `protobuf:"bytes,8,opt,name=kind"`
-	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
-	xxx_hidden_LockedUntil *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=locked_until,json=lockedUntil"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Kind         string                 `protobuf:"bytes,8,opt,name=kind"`
+	xxx_hidden_Name         string                 `protobuf:"bytes,5,opt,name=name"`
+	xxx_hidden_LockedUntil  *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=locked_until,json=lockedUntil"`
+	xxx_hidden_CredentialId string                 `protobuf:"bytes,9,opt,name=credential_id,json=credentialId"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *VouchFactor) Reset() {
@@ -482,6 +483,13 @@ func (x *VouchFactor) GetLockedUntil() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *VouchFactor) GetCredentialId() string {
+	if x != nil {
+		return x.xxx_hidden_CredentialId
+	}
+	return ""
+}
+
 func (x *VouchFactor) SetKind(v string) {
 	x.xxx_hidden_Kind = v
 }
@@ -492,6 +500,10 @@ func (x *VouchFactor) SetName(v string) {
 
 func (x *VouchFactor) SetLockedUntil(v *timestamppb.Timestamp) {
 	x.xxx_hidden_LockedUntil = v
+}
+
+func (x *VouchFactor) SetCredentialId(v string) {
+	x.xxx_hidden_CredentialId = v
 }
 
 func (x *VouchFactor) HasLockedUntil() bool {
@@ -515,6 +527,12 @@ type VouchFactor_builder struct {
 	Name string
 	// When they may try this one again, and unset for one that is open.
 	LockedUntil *timestamppb.Timestamp
+	// For `webauthn`: the credential identifier the authenticator chose, as a
+	// browser is told to look for it (`allowCredentials`), base64url. What a
+	// page needs to ask `navigator.credentials.get` for this key and not another,
+	// and nothing a caller could use -- it is the public half of a public key.
+	// Empty for every other kind.
+	CredentialId string
 }
 
 func (b0 VouchFactor_builder) Build() *VouchFactor {
@@ -524,6 +542,7 @@ func (b0 VouchFactor_builder) Build() *VouchFactor {
 	x.xxx_hidden_Kind = b.Kind
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_LockedUntil = b.LockedUntil
+	x.xxx_hidden_CredentialId = b.CredentialId
 	return m0
 }
 
@@ -1792,11 +1811,12 @@ const file_app_vouch_proto_rawDesc = "" +
 	"\x03who\x18\x01 \x01(\v2\x10.roster.VouchWhoR\x03who\x12\x12\n" +
 	"\x04kind\x18\b \x01(\tR\x04kind\x12\x16\n" +
 	"\x06secret\x18\t \x01(\fR\x06secret\x12\x12\n" +
-	"\x04name\x18\x05 \x01(\tR\x04name\"t\n" +
+	"\x04name\x18\x05 \x01(\tR\x04name\"\x99\x01\n" +
 	"\vVouchFactor\x12\x12\n" +
 	"\x04kind\x18\b \x01(\tR\x04kind\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12=\n" +
-	"\flocked_until\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\vlockedUntil\"\x89\x02\n" +
+	"\flocked_until\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\vlockedUntil\x12#\n" +
+	"\rcredential_id\x18\t \x01(\tR\fcredentialId\"\x89\x02\n" +
 	"\x13VouchVerifyResponse\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\x12\x16\n" +
 	"\x06holder\x18\x02 \x01(\fR\x06holder\x12\x16\n" +

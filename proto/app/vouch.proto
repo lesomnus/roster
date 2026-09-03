@@ -334,6 +334,13 @@ message VouchFactor {
 
   // When they may try this one again, and unset for one that is open.
   google.protobuf.Timestamp locked_until = 4;
+
+  // For `webauthn`: the credential identifier the authenticator chose, as a
+  // browser is told to look for it (`allowCredentials`), base64url. What a
+  // page needs to ask `navigator.credentials.get` for this key and not another,
+  // and nothing a caller could use -- it is the public half of a public key.
+  // Empty for every other kind.
+  string credential_id = 9;
 }
 
 message VouchVerifyResponse {

@@ -3,6 +3,7 @@ package account_test
 import (
 	"context"
 	"crypto/rand"
+	"encoding/base32"
 	"encoding/base64"
 	"encoding/json"
 	"io"
@@ -29,6 +30,7 @@ import (
 	"github.com/lesomnus/roster/cmd"
 	rstr "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
+	"github.com/lesomnus/roster/server/vouch"
 )
 
 // deployment is a roster fronting two operators, and the account app in front
@@ -142,7 +144,7 @@ func serve(t *testing.T, enrol account.Enrol) *deployment {
 				"/roster.EmailService/Add", "/roster.EmailService/Erase", "/roster.ApiKeyService/Issue",
 				"/roster.CredentialService/Set", "/roster.CredentialService/Enrol", "/roster.CredentialService/Erase",
 				"/roster.HolderService/Get", "/roster.EmailService/Get", "/roster.EmailService/Verify", "/roster.EmailService/Confirm",
-				"/roster.VouchService/Link", "/roster.VouchService/Redeem", "/roster.VouchService/Reset",
+				"/roster.VouchService/Link", "/roster.VouchService/Redeem", "/roster.VouchService/Reset", "/roster.VouchService/Verify",
 				"/roster.DelegationService/List", "/roster.DelegationService/Erase",
 			},
 		}.Build())
@@ -178,6 +180,7 @@ func serve(t *testing.T, enrol account.Enrol) *deployment {
 		Methods: []string{
 			"/roster.IdentityService/Add", "/roster.EmailService/List", "/roster.EmailService/Get",
 			"/roster.EmailService/Add", "/roster.EmailService/Verify",
+			"/roster.CredentialService/Set", "/roster.CredentialService/Enrol",
 		},
 	}.Build())
 	x.NoError(err)
@@ -559,4 +562,57 @@ func between(s, a, z string) string {
 	}
 
 	return s[:j]
+}
+
+// TestSomebodyEnrolsAnAuthenticatorAppAndSignsInWithIt is the second factor
+// from the page: enrolled through the proxy on their own row, proved at once
+// through `/prove` so it counts, and then the two forms -- password, then a
+// code -- the way the page sends them.
+func TestSomebodyEnrolsAnAuthenticatorAppAndSignsInWithIt(t *testing.T) {
+	x := require.New(t)
+	d := serve(t, account.Invited())
+	d.idp.subject = "3001"
+	d.idp.claims = map[string]any{"email": "erin@contoso.com"}
+
+	b := d.browser(t, "contoso.test")
+	code, _ := b.do(t, http.MethodGet, "/login?connection=example", "", nil)
+	x.Equal(http.StatusOK, code)
+
+	// A password first, on her own row: there is none to prove, and a first
+	// one is set for somebody -- so it goes in the operator way here.
+	_, err := d.ungated.Credential().Set(context.Background(), rstr.CredentialSetRequest_builder{
+		Ref: rstr.HolderRef_builder{Id: d.erin}.Build(), Secret: []byte("correct horse battery staple"),
+	}.Build())
+	x.NoError(err)
+
+	code, body := b.rpc(t, "/roster.CredentialService/Enrol", `{"ref":{"id":"`+std(d.erin)+`"},"kind":"totp","name":"phone"}`)
+	x.Equal(http.StatusOK, code, body)
+	var enrolled struct{ Seed string }
+	x.NoError(json.Unmarshal([]byte(body), &enrolled))
+	seed, err := base32.StdEncoding.WithPadding(base32.NoPadding).DecodeString(enrolled.Seed)
+	x.NoError(err)
+
+	// Not yet proved: the second form does not offer it, so a mis-scanned QR
+	// cannot strand her. Proved from the page, it does.
+	// A spent step is not accepted twice, so the sign-in below uses the next
+	// step's code, which the verifier's window still admits.
+	codeAt := func(d int64) string { return vouch.CodeAt(seed, time.Now().Unix()/30+d) }
+	code, body = b.do(t, http.MethodPost, "/prove", `{"kind":"totp","name":"phone","secret":"`+codeAt(0)+`"}`,
+		func(r *http.Request) { r.Header.Set("Content-Type", "application/json") })
+	x.Equal(http.StatusNoContent, code, body)
+
+	// The two forms, in a fresh browser, as the page sends them.
+	fresh := d.browser(t, "contoso.test")
+	code, body = fresh.do(t, http.MethodPost, "/session", `{"alias":"erin","password":"correct horse battery staple"}`,
+		func(r *http.Request) { r.Header.Set("Content-Type", "application/json") })
+	x.Equal(http.StatusOK, code, "the password alone signed her in, or was refused: %s", body)
+	x.Contains(body, `"factors":[{"kind":"totp","name":"phone"}]`, "the second form was not told what to ask for: %s", body)
+
+	code, body = fresh.do(t, http.MethodPost, "/session/continue", `{"kind":"totp","name":"phone","secret":"`+codeAt(1)+`"}`,
+		func(r *http.Request) { r.Header.Set("Content-Type", "application/json") })
+	x.Equal(http.StatusNoContent, code, body)
+
+	code, body = fresh.rpc(t, "/roster.MeService/Get", `{}`)
+	x.Equal(http.StatusOK, code, body)
+	x.Contains(body, `"erin"`)
 }

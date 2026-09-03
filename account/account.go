@@ -328,6 +328,7 @@ func (a *App) Handler() http.Handler {
 	m.HandleFunc("POST /recover", a.recover)
 	m.HandleFunc("GET /redeem", a.redeem)
 	m.HandleFunc("POST /verify", a.verify)
+	m.HandleFunc("POST /prove", a.prove)
 	m.HandleFunc("GET /confirm", a.confirm)
 	// Every `/roster.<Service>/<Method>` is the page speaking Connect to this
 	// origin, handed on as the person; everything else is the page itself. One
@@ -1117,4 +1118,56 @@ func bytesEqual(a, b []byte) bool {
 	}
 
 	return true
+}
+
+// prove confirms a second factor the signed-in person has just enrolled --
+// one code from the authenticator app they scanned -- so that it counts from
+// now on, rather than at their next sign-in.
+//
+// `Vouch.Verify` is the front door's call, made with the tenant's key about
+// the session's person, and it is what proves a factor; roster leaves an
+// unproved authenticator app off the second form so that a mis-scanned QR is
+// found here and not when somebody is already half in and cannot finish. A
+// security key needs no proving: the ceremony that enrolled it was one.
+func (a *App) prove(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	who, ok := a.door.Who(ctx, r)
+	if !ok {
+		http.Error(w, "no", http.StatusUnauthorized)
+		return
+	}
+	t, ok := tenantFrom(ctx)
+	if !ok {
+		http.Error(w, "no operator here serves this name", http.StatusNotFound)
+		return
+	}
+
+	var body struct {
+		Kind   string `json:"kind"`
+		Name   string `json:"name"`
+		Secret string `json:"secret"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&body); err != nil || body.Kind == "" {
+		http.Error(w, "no", http.StatusBadRequest)
+		return
+	}
+
+	res, err := a.vouch.Verify(withKey(ctx, t.key), rstr.VouchVerifyRequest_builder{
+		Who:    rstr.VouchWho_builder{Id: who.Bytes()}.Build(),
+		Kind:   body.Kind,
+		Name:   body.Name,
+		Secret: []byte(body.Secret),
+	}.Build())
+	if err != nil {
+		http.Error(w, "cannot check", http.StatusBadGateway)
+		return
+	}
+	// A second factor alone does not sign anybody in, so `ok` is false either
+	// way; what says it was proved is the continuation roster minted for it.
+	if !res.GetOk() && res.GetContinuation() == "" {
+		http.Error(w, "no", http.StatusUnauthorized)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

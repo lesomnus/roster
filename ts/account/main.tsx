@@ -100,8 +100,58 @@ const ref = (id: Uint8Array) => ({ key: { case: 'id' as const, value: id } })
  * wrong password, an unknown person and a locked account, which the page must
  * not undo by guessing which.
  */
+/** Factor is one second factor the first form said is left to prove. */
+interface Factor {
+	kind: string
+	name: string
+	id?: string
+}
+
+function b64urlDecode(v: string): Uint8Array<ArrayBuffer> {
+	const s = v.replaceAll('-', '+').replaceAll('_', '/')
+	const bin = atob(s + '='.repeat((4 - (s.length % 4)) % 4))
+	const out = new Uint8Array(bin.length)
+	for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i)
+
+	return out
+}
+
+/**
+ * assert is the browser's half of a security key at sign-in: the challenge is
+ * this page's, `navigator.credentials.get` is asked for exactly the key roster
+ * offered, and what comes back is wrapped in the envelope `server/vouch`
+ * checks -- relying party, origin, challenge, and the authenticator's answer.
+ */
+async function assertKey(f: Factor): Promise<string> {
+	if (f.id === undefined) throw new Error('roster did not say which key')
+	const challenge = crypto.getRandomValues(new Uint8Array(32))
+	const cred = (await navigator.credentials.get({
+		publicKey: {
+			challenge,
+			rpId: location.hostname,
+			allowCredentials: [{ type: 'public-key', id: b64urlDecode(f.id) }],
+			userVerification: 'preferred',
+		},
+	})) as (PublicKeyCredential & { toJSON?: () => unknown }) | null
+	if (cred === null) throw new Error('no key answered')
+	const r = cred.response as AuthenticatorAssertionResponse
+	const response = cred.toJSON?.() ?? {
+		id: cred.id,
+		rawId: b64url(new Uint8Array(cred.rawId)),
+		type: cred.type,
+		response: {
+			authenticatorData: b64url(new Uint8Array(r.authenticatorData)),
+			clientDataJSON: b64url(new Uint8Array(r.clientDataJSON)),
+			signature: b64url(new Uint8Array(r.signature)),
+			userHandle: r.userHandle === null ? null : b64url(new Uint8Array(r.userHandle)),
+		},
+	}
+
+	return JSON.stringify({ rp_id: location.hostname, origins: [location.origin], challenge: b64url(challenge), response })
+}
+
 function SignIn(props: { of: Providers; onDone: () => void }): React.ReactNode {
-	const [step, setStep] = useState<{ kinds: string[] } | null>(null)
+	const [step, setStep] = useState<{ factors: Factor[] } | null>(null)
 	const [mode, setMode] = useState<'in' | 'recover'>('in')
 	const [bad, setBad] = useState(false)
 	const [note, setNote] = useState<string | null>(null)
@@ -115,28 +165,38 @@ function SignIn(props: { of: Providers; onDone: () => void }): React.ReactNode {
 			async (res) => {
 				if (res.status === 204) return props.onDone()
 				if (res.status === 200) {
-					const v = (await res.json()) as { available?: string[] }
-					return setStep({ kinds: v.available ?? [] })
+					const v = (await res.json()) as { factors?: Factor[] }
+					return setStep({ factors: v.factors ?? [] })
 				}
 				setBad(true)
 			},
 		)
 	}
 
+	// `frontdoor` reads `{kind, name, secret}`: the secret is the code for an
+	// authenticator app and the assertion envelope for a security key, and
+	// `name` picks one of several of a kind.
+	const proceed = (f: Factor, secret: string): void => {
+		setBad(false)
+		void fetch('/session/continue', json({ kind: f.kind, name: f.name, secret })).then((res) => {
+			if (res.status === 204) return props.onDone()
+			setBad(true)
+			if (res.status !== 401) setStep(null)
+		})
+	}
+
 	const second = (e: React.FormEvent<HTMLFormElement>): void => {
 		e.preventDefault()
 		const f = new FormData(e.currentTarget)
-		setBad(false)
-		// `frontdoor` reads `{kind, name, secret}`: the code is the secret of
-		// the second factor, and `name` picks one of several of a kind (the
-		// only one, when there is one).
-		void fetch('/session/continue', json({ kind: String(f.get('kind') ?? 'totp'), name: '', secret: String(f.get('code') ?? '') })).then(
-			(res) => {
-				if (res.status === 204) return props.onDone()
-				setBad(true)
-				if (res.status !== 401) setStep(null)
-			},
-		)
+		const totp = step?.factors.find((v) => v.kind === 'totp')
+		if (totp === undefined) return
+		proceed(totp, String(f.get('code') ?? ''))
+	}
+
+	const withKey = (f: Factor): void => {
+		void assertKey(f)
+			.then((secret) => proceed(f, secret))
+			.catch(() => setBad(true))
 	}
 
 	const recover = (e: React.FormEvent<HTMLFormElement>): void => {
@@ -188,15 +248,30 @@ function SignIn(props: { of: Providers; onDone: () => void }): React.ReactNode {
 			)}
 
 			{mode === 'in' && step !== null && (
-				<form onSubmit={second}>
-					<p className="note">one more: a code from your {step.kinds.join(' or ') || 'authenticator'}</p>
-					<input type="hidden" name="kind" value={step.kinds[0] ?? 'totp'} />
-					<label>
-						code
-						<input name="code" inputMode="numeric" autoComplete="one-time-code" autoFocus />
-					</label>
-					<button type="submit">continue</button>
-				</form>
+				<>
+					{step.factors.some((f) => f.kind === 'webauthn') && (
+						<section className="providers">
+							{step.factors
+								.filter((f) => f.kind === 'webauthn')
+								.map((f) => (
+									<button key={`${f.kind}:${f.name}`} type="button" onClick={() => withKey(f)}>
+										use your security key{f.name !== '' ? ` (${f.name})` : ''}
+									</button>
+								))}
+						</section>
+					)}
+					{step.factors.some((f) => f.kind === 'totp') && (
+						<form onSubmit={second}>
+							<p className="note">one more: a code from your authenticator app</p>
+							<label>
+								code
+								<input name="code" inputMode="numeric" autoComplete="one-time-code" autoFocus />
+							</label>
+							<button type="submit">continue</button>
+						</form>
+					)}
+					{step.factors.length === 0 && <p className="bad">a second factor is required and none can be offered here</p>}
+				</>
 			)}
 
 			{mode === 'recover' && (
@@ -546,10 +621,28 @@ function Factors(props: { own: Uint8Array; alias: string; brand: string; may: (m
 	const enrol = useCall(CredentialService.method.enrol)
 	const erase = useCall(CredentialService.method.erase)
 	const [gone, setGone] = useState<string[]>([])
-	const [seed, setSeed] = useState<{ uri: string; seed: string } | null>(null)
+	const [seed, setSeed] = useState<{ uri: string; seed: string; name: string } | null>(null)
 	const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null)
 
 	const factors = (me.data?.credentials ?? []).filter((c) => c.kind !== 'password' && !gone.includes(`${c.kind}:${c.name}`))
+
+	// `/prove` is `Vouch.Verify` about you, made by the app: one code from the
+	// app you just scanned, so the factor counts now rather than at your next
+	// sign-in -- and a mis-scanned QR is found here, not when you are half in.
+	const prove = (e: React.FormEvent<HTMLFormElement>): void => {
+		e.preventDefault()
+		if (seed === null) return
+		const code = String(new FormData(e.currentTarget).get('code') ?? '')
+		setNote(null)
+		void fetch('/prove', json({ kind: 'totp', name: seed.name, secret: code })).then((res) => {
+			if (res.status === 204) {
+				setSeed(null)
+				setNote({ ok: true, text: 'proved; it counts from now on' })
+			} else {
+				setNote({ ok: false, text: 'that code did not match; scan again and try once more' })
+			}
+		})
+	}
 	const byKind = (kind: string, name: string) => ({
 		key: { case: 'kind' as const, value: { holder: ref(props.own), kind, name } },
 	})
@@ -559,7 +652,7 @@ function Factors(props: { own: Uint8Array; alias: string; brand: string; may: (m
 		setSeed(null)
 		void enrol
 			.call({ ref: ref(props.own), kind: 'totp', name, issuer: props.brand })
-			.then((r) => setSeed({ uri: r.uri, seed: r.seed }))
+			.then((r) => setSeed({ uri: r.uri, seed: r.seed, name }))
 			.catch((e: unknown) => setNote({ ok: false, text: said(e) }))
 	}
 
@@ -599,7 +692,7 @@ function Factors(props: { own: Uint8Array; alias: string; brand: string; may: (m
 				name,
 				attestation: new TextEncoder().encode(JSON.stringify(envelope)),
 			})
-			setNote({ ok: true, text: `${name} is enrolled; it counts once you sign in with it` })
+			setNote({ ok: true, text: `${name} is enrolled and counts from now on: the ceremony that enrolled it proved it` })
 		} catch (e) {
 			setNote({ ok: false, text: said(e) })
 		}
@@ -660,13 +753,17 @@ function Factors(props: { own: Uint8Array; alias: string; brand: string; may: (m
 			{seed !== null && (
 				<div className="secret">
 					<p>
-						Scan this, then sign in once with a code: the factor does not count until it is proved.
+						Scan this, then prove it with one code: the factor does not count until it is proved.
 						Shown <strong>once</strong>.
 					</p>
 					<code>{seed.uri}</code>
 					<p className="note">
 						or type the seed: <code>{seed.seed}</code>
 					</p>
+					<form onSubmit={prove}>
+						<input name="code" inputMode="numeric" autoComplete="one-time-code" placeholder="the code it shows" required />
+						<button type="submit">prove</button>
+					</form>
 				</div>
 			)}
 			{note !== null && <p className={note.ok ? 'note' : 'bad'}>{note.text}</p>}

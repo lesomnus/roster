@@ -417,9 +417,11 @@ func (d *Door) answer(w http.ResponseWriter, r *http.Request, res *rstr.VouchDel
 		_ = json.NewEncoder(w).Encode(struct {
 			Satisfied []string `json:"satisfied"`
 			Available []string `json:"available"`
+			Factors   []factor `json:"factors"`
 		}{
 			Satisfied: v.GetSatisfied(),
 			Available: kindsOf(v.GetAvailable()),
+			Factors:   factorsOf(v.GetAvailable()),
 		})
 
 		return
@@ -672,6 +674,25 @@ func ids(holder, tenant []byte) (pdid.Id, pdid.Id, error) {
 	}
 
 	return who, at, nil
+}
+
+// factor is one second factor a page may offer, with what the page needs to
+// offer it: for a security key, the credential identifier the browser has to
+// be told to look for. `available` keeps the kinds alone, for the pages that
+// read only that.
+type factor struct {
+	Kind string `json:"kind"`
+	Name string `json:"name"`
+	Id   string `json:"id,omitempty"`
+}
+
+func factorsOf(vs []*rstr.VouchFactor) []factor {
+	out := make([]factor, 0, len(vs))
+	for _, v := range vs {
+		out = append(out, factor{Kind: v.GetKind(), Name: v.GetName(), Id: v.GetCredentialId()})
+	}
+
+	return out
 }
 
 func kindsOf(vs []*rstr.VouchFactor) []string {

@@ -85,6 +85,28 @@ func TestAKeyIsEnrolledAndThenSignsSomebodyIn(t *testing.T) {
 		x.Contains(kindsOf(got.GetAvailable()), "password")
 	})
 
+	t.Run("and the second form is told which key to ask the browser for", func(t *testing.T) {
+		x := require.New(t)
+
+		// The password first, so the key is what is left to prove: the factor
+		// offered carries the credential identifier, which is what a page
+		// passes to `navigator.credentials.get` -- without it a non-resident
+		// key cannot be used at all.
+		got, err := v.Verify(as, app.VouchVerifyRequest_builder{
+			Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
+			Secret: []byte("correct horse battery staple"),
+		}.Build())
+		x.NoError(err)
+		x.False(got.GetOk())
+		var id string
+		for _, f := range got.GetAvailable() {
+			if f.GetKind() == vouch.KindWebAuthn {
+				id = f.GetCredentialId()
+			}
+		}
+		x.NotEmpty(id, "the key was offered without the identifier a browser needs")
+	})
+
 	t.Run("and the counter it consumed is in the row", func(t *testing.T) {
 		x := require.New(t)
 

@@ -273,6 +273,14 @@ func (s *Server) factors(ctx context.Context, who pdid.Id, satisfied []string) (
 		if u := v.GetDateLocked(); u != nil && u.AsTime().After(time.Now()) {
 			f.LockedUntil = u
 		}
+		if v.GetKind() == KindWebAuthn {
+			// What a browser is told to look for: the identifier the
+			// authenticator chose at enrolment, read off the stored row. Public,
+			// and the one thing a page cannot ask for the key without.
+			if id, err := CredentialID(v.GetSecret()); err == nil {
+				f.CredentialId = id
+			}
+		}
 
 		out = append(out, f.Build())
 	}
