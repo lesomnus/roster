@@ -30,7 +30,7 @@
 import { createConnectTransport } from '@connectrpc/connect-web'
 import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Provider, useCall, useQuery } from '@lesomnus/payday/react'
+import { Provider, useApp, useCall, useQuery } from '@lesomnus/payday/react'
 import type { App } from '@lesomnus/payday/react'
 
 import { ApiKeyService } from '../gen/app/apikey_svc_pb.js'
@@ -176,12 +176,17 @@ function SignIn(props: { of: Providers; onDone: () => void }): React.ReactNode {
 	// `frontdoor` reads `{kind, name, secret}`: the secret is the code for an
 	// authenticator app and the assertion envelope for a security key, and
 	// `name` picks one of several of a kind.
+	// One attempt at the second form per first form: a wrong code ends the
+	// half-session on the app's side and spends the continuation on roster's
+	// (`frontdoor.Door.Second`), so the answer to it is the first form again,
+	// where the lockout counts. Left on the second form, every further code
+	// would be refused with nothing to say why.
 	const proceed = (f: Factor, secret: string): void => {
 		setBad(false)
 		void fetch('/session/continue', json({ kind: f.kind, name: f.name, secret })).then((res) => {
 			if (res.status === 204) return props.onDone()
 			setBad(true)
-			if (res.status !== 401) setStep(null)
+			setStep(null)
 		})
 	}
 
@@ -291,7 +296,7 @@ function SignIn(props: { of: Providers; onDone: () => void }): React.ReactNode {
 				</form>
 			)}
 
-			{bad && <p className="bad">no</p>}
+			{bad && <p className="bad">{step === null ? 'no' : 'no; start again from your password'}</p>}
 			{note !== null && <p className="note">{note}</p>}
 		</main>
 	)
@@ -621,6 +626,15 @@ function Factors(props: { own: Uint8Array; alias: string; brand: string; may: (m
 	const enrol = useCall(CredentialService.method.enrol)
 	const erase = useCall(CredentialService.method.erase)
 	const [gone, setGone] = useState<string[]>([])
+	// The factors are read off `Me.Get`, which no write here answers with: an
+	// enrolment answers a seed, a proof is a fetch to this app, and the store
+	// cannot know either changed the record. So it is told to ask again.
+	const app = useApp()
+	const [, bump] = useState(0)
+	const reread = (): void => {
+		app.queries.forget(MeService.method.get)
+		bump((n) => n + 1)
+	}
 	const [seed, setSeed] = useState<{ uri: string; seed: string; name: string } | null>(null)
 	const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null)
 
@@ -638,6 +652,7 @@ function Factors(props: { own: Uint8Array; alias: string; brand: string; may: (m
 			if (res.status === 204) {
 				setSeed(null)
 				setNote({ ok: true, text: 'proved; it counts from now on' })
+				reread()
 			} else {
 				setNote({ ok: false, text: 'that code did not match; scan again and try once more' })
 			}
@@ -693,6 +708,7 @@ function Factors(props: { own: Uint8Array; alias: string; brand: string; may: (m
 				attestation: new TextEncoder().encode(JSON.stringify(envelope)),
 			})
 			setNote({ ok: true, text: `${name} is enrolled and counts from now on: the ceremony that enrolled it proved it` })
+			reread()
 		} catch (e) {
 			setNote({ ok: false, text: said(e) })
 		}
@@ -716,7 +732,10 @@ function Factors(props: { own: Uint8Array; alias: string; brand: string; may: (m
 											setNote(null)
 											void erase
 												.call(byKind(c.kind, c.name))
-												.then(() => setGone((was) => [...was, `${c.kind}:${c.name}`]))
+												.then(() => {
+													setGone((was) => [...was, `${c.kind}:${c.name}`])
+													reread()
+												})
 												.catch((e: unknown) => setNote({ ok: false, text: said(e) }))
 										}}
 									>

@@ -130,3 +130,25 @@ jobs:
         working-directory: ts
       - run: npm run build
         working-directory: ts
+
+  # The pages, driven: a browser against a deployment stood up the way the
+  # operating guide says to. Its own job because it needs both toolchains and
+  # a browser, and because what it checks -- that the page posts what the
+  # server reads -- is what every job above has no way to see.
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm ci
+        working-directory: ts
+      - run: npx playwright install --with-deps chromium
+        working-directory: ts
+      - run: ./scripts/e2e.sh

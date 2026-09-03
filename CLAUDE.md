@@ -84,6 +84,17 @@ half of CI is the same command with `PDTEST_POSTGRES` set. The one thing it
 leaves to CI is `buf breaking`, which is about the branch rather than about the
 checkout.
 
+```sh
+./scripts/e2e.sh          # the two pages, in a browser, against a real deployment
+```
+
+**Touching `ts/` means running this too.** It stands roster up the way
+`docs/operating.md` says to, seeds a customer, and drives the console and the
+account app with Playwright (`ts/e2e/`). It is not in `test.sh` because it
+needs a browser and a minute; it found three defects on its first run that
+every other gate was green on, so it is a gate. `./scripts/e2e.sh --hold`
+leaves the deployment up to look at.
+
 ## Do not edit — regenerate
 
 | | |

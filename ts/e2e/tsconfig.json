@@ -1,0 +1,18 @@
+{
+	// Its own, because the specs run in node -- they compute a TOTP code and
+	// drive a browser -- and the page's `tsconfig.json` is deliberately not
+	// node: a file that reads the filesystem must not compile into a bundle.
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"lib": ["ES2022"],
+		"types": ["node"],
+		"strict": true,
+		"noUncheckedIndexedAccess": true,
+		"noEmit": true,
+		"skipLibCheck": true,
+		"verbatimModuleSyntax": true
+	},
+	"include": ["."]
+}

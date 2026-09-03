@@ -348,6 +348,14 @@ roster account serve --roster roster:8080 --connect https://roster:8443 \
   --key contoso=rt_… --key fabrikam=rt_…       # or ROSTER_ACCOUNT_KEY_<ALIAS>
 ```
 
+Both pages are driven in a browser by `./scripts/e2e.sh`: it builds the binary
+and the pages, stands a deployment up in a scratch directory the way
+`docs/operating.md` says to, seeds a customer, starts `roster serve` and
+`roster account serve`, and runs the Playwright specs in `ts/e2e/` against
+them. It is the one gate `scripts/test.sh` does not run, because it needs a
+browser and a minute -- and it is a gate, because a page that posts the wrong
+field is green on every other one. `--hold` leaves the deployment up.
+
 `go tool pd gen --ts .` writes the messages and service descriptors into
 `ts/gen`, along with `entities.ts` — one declaration per entity, which is what
 the local store is built from. Nothing there is behaviour, and nothing is

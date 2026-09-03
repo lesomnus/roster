@@ -11,7 +11,8 @@
 		"preview": "vite preview --config vite.console.ts",
 		"check": "tsc -p tsconfig.json",
 		"wasm": "cd .. && GOOS=js GOARCH=wasm go build -o ts/public/app.wasm ./wasm && cp \"$(go env GOROOT)/lib/wasm/wasm_exec.js\" ts/public/",
-		"dev:sandbox": "npm run wasm && VITE_SANDBOX=1 vite --config vite.console.ts"
+		"dev:sandbox": "npm run wasm && VITE_SANDBOX=1 vite --config vite.console.ts",
+		"e2e": "cd .. && ./scripts/e2e.sh"
 	},
 	"dependencies": {
 		"@bufbuild/protobuf": "^2.12.1",
@@ -25,6 +26,7 @@
 	"devDependencies": {
 		"@bufbuild/protoc-gen-es": "^2.12.1",
 		"@playwright/test": "^1.62.1",
+		"@types/node": "^22.20.1",
 		"@types/react": "^19.2.2",
 		"@types/react-dom": "^19.2.2",
 		"@vitejs/plugin-react": "^5.0.4",

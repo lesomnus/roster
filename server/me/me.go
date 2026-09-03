@@ -153,12 +153,7 @@ func (s *Server) Get(ctx context.Context, _ *app.MeGetRequest) (*app.MeGetRespon
 		//
 		// `frame.Whole` allows everything, so somebody signing in the ordinary
 		// way sees no difference.
-		res.Methods = ms[:0]
-		for _, m := range ms {
-			if f.Grant.Allows(m) {
-				res.Methods = append(res.Methods, m)
-			}
-		}
+		res.Methods = meet(ms, f.Grant)
 
 		res.EverySite = every
 		for _, k := range sites {
@@ -461,4 +456,41 @@ func (s *Server) SignOutEverywhere(ctx context.Context, _ *app.MeSignOutEverywhe
 	return app.MeSignOutEverywhereResponse_builder{
 		DateInvalidated: v.GetDateInvalidated(),
 	}.Build(), nil
+}
+
+// meet is what a person holds, narrowed to what the credential in hand allows:
+// the patterns the grants answer, met with the actions the credential names.
+//
+// Both sides are patterns, and neither is the other's subset by name. A person
+// holding `/roster.*/*` reached through a delegation naming twenty methods
+// holds those twenty -- asking whether the credential allows the *pattern*
+// answers no, which was this function's first shape, and it told everybody
+// with a wildcard role that the account page could do nothing. So each pair
+// is asked both ways: the narrower of the two is what is held.
+func meet(held []string, g frame.Grant) []string {
+	if g.AnyAction() {
+		return held
+	}
+
+	out := make([]string, 0, len(held))
+	seen := map[string]struct{}{}
+	add := func(m string) {
+		if _, ok := seen[m]; ok {
+			return
+		}
+		seen[m] = struct{}{}
+		out = append(out, m)
+	}
+	for _, m := range held {
+		for _, a := range g.Actions() {
+			switch {
+			case frame.Covers(m, a):
+				add(a)
+			case frame.Covers(a, m):
+				add(m)
+			}
+		}
+	}
+
+	return out
 }
