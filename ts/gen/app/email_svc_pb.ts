@@ -20,7 +20,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/email_svc.g.proto.
  */
 export const file_app_email_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChVhcHAvZW1haWxfc3ZjLmcucHJvdG8SBnJvc3RlciKAAgoPRW1haWxBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSFgoHYWRkcmVzcxgIIAEoCUIFqgECCAISMQoNZGF0ZV92ZXJpZmllZBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASJwoKdm91Y2hlZF9ieRgKIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIYCgl0ZW5hbnRfaWQYCyABKAxCBaoBAggCEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiVQoPRW1haWxHZXRSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIjCgZzZWxlY3QYAiABKAsyEy5yb3N0ZXIuRW1haWxTZWxlY3QicQoIRW1haWxSZWYSDAoCaWQYASABKAxIABIsCgdhZGRyZXNzGAIgASgLMhkucm9zdGVyLkVtYWlsUmVmQnlBZGRyZXNzSAASIgoCYXQYCyABKAsyFC5yb3N0ZXIuRW1haWxSZWZCeUF0SABCBQoDa2V5IkcKEUVtYWlsUmVmQnlBZGRyZXNzEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSDwoHYWRkcmVzcxgIIAEoCSIyCgxFbWFpbFJlZkJ5QXQSEQoJdGVuYW50X2lkGAsgASgMEg8KB2FkZHJlc3MYCCABKAki6AEKC0VtYWlsU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0Eg8KB2FkZHJlc3MYCCABKAgSFQoNZGF0ZV92ZXJpZmllZBgJIAEoCBIqCgp2b3VjaGVkX2J5GAogASgLMhYucm9zdGVyLklkZW50aXR5U2VsZWN0EhEKCXRlbmFudF9pZBgLIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIqICChFFbWFpbFBhdGNoUmVxdWVzdBIdCgNyZWYYASABKAsyEC5yb3N0ZXIuRW1haWxSZWYSDwoHYWRkcmVzcxgQIAEoCRIxCg1kYXRlX3ZlcmlmaWVkGBIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3ZlcmlmaWVkX251bGwYEyABKAgSJwoKdm91Y2hlZF9ieRgUIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIXCg92b3VjaGVkX2J5X251bGwYFSABKAgSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiTwoRRW1haWxBcHBseVJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLkVtYWlsUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giJAoSRW1haWxFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCJjChBFbWFpbExpc3RSZXF1ZXN0EiQKB2ZpbHRlcnMYASADKAsyEy5yb3N0ZXIuRW1haWxGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIkYKEUVtYWlsTGlzdFJlc3BvbnNlEhwKBWl0ZW1zGAEgAygLMg0ucm9zdGVyLkVtYWlsEhMKBG5leHQYAiABKAlCBaoBAggCIk8KC0VtYWlsRmlsdGVyEh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmIlcKEUVtYWlsV2F0Y2hSZXF1ZXN0EiQKB2ZpbHRlcnMYASADKAsyEy5yb3N0ZXIuRW1haWxGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiOwoSRW1haWxXYXRjaFJlc3BvbnNlEiUKBWl0ZW1zGAEgAygLMhYucm9zdGVyLkVtYWlsV2F0Y2hJdGVtIlEKDkVtYWlsV2F0Y2hJdGVtEgoKAmlkGAEgASgMEhwKBXZhbHVlGAIgASgLMg0ucm9zdGVyLkVtYWlsEhUKBmFjdGlvbhgDIAEoCUIFqgECCAIyiAMKDEVtYWlsU2VydmljZRItCgNBZGQSFy5yb3N0ZXIuRW1haWxBZGRSZXF1ZXN0Gg0ucm9zdGVyLkVtYWlsEi0KA0dldBIXLnJvc3Rlci5FbWFpbEdldFJlcXVlc3QaDS5yb3N0ZXIuRW1haWwSMQoFUGF0Y2gSGS5yb3N0ZXIuRW1haWxQYXRjaFJlcXVlc3QaDS5yb3N0ZXIuRW1haWwSMQoFQXBwbHkSGS5yb3N0ZXIuRW1haWxBcHBseVJlcXVlc3QaDS5yb3N0ZXIuRW1haWwSNQoFRXJhc2USEC5yb3N0ZXIuRW1haWxSZWYaGi5yb3N0ZXIuRW1haWxFcmFzZVJlc3BvbnNlEjsKBExpc3QSGC5yb3N0ZXIuRW1haWxMaXN0UmVxdWVzdBoZLnJvc3Rlci5FbWFpbExpc3RSZXNwb25zZRJACgVXYXRjaBIZLnJvc3Rlci5FbWFpbFdhdGNoUmVxdWVzdBoaLnJvc3Rlci5FbWFpbFdhdGNoUmVzcG9uc2UwAUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_email, file_app_identity_svc_g, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChVhcHAvZW1haWxfc3ZjLmcucHJvdG8SBnJvc3RlciKAAgoPRW1haWxBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSFgoHYWRkcmVzcxgIIAEoCUIFqgECCAISMQoNZGF0ZV92ZXJpZmllZBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASJwoKdm91Y2hlZF9ieRgKIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIYCgl0ZW5hbnRfaWQYCyABKAxCBaoBAggCEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiVQoPRW1haWxHZXRSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIjCgZzZWxlY3QYAiABKAsyEy5yb3N0ZXIuRW1haWxTZWxlY3QicQoIRW1haWxSZWYSDAoCaWQYASABKAxIABIsCgdhZGRyZXNzGAIgASgLMhkucm9zdGVyLkVtYWlsUmVmQnlBZGRyZXNzSAASIgoCYXQYCyABKAsyFC5yb3N0ZXIuRW1haWxSZWZCeUF0SABCBQoDa2V5IkcKEUVtYWlsUmVmQnlBZGRyZXNzEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSDwoHYWRkcmVzcxgIIAEoCSIyCgxFbWFpbFJlZkJ5QXQSEQoJdGVuYW50X2lkGAsgASgMEg8KB2FkZHJlc3MYCCABKAki6AEKC0VtYWlsU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0Eg8KB2FkZHJlc3MYCCABKAgSFQoNZGF0ZV92ZXJpZmllZBgJIAEoCBIqCgp2b3VjaGVkX2J5GAogASgLMhYucm9zdGVyLklkZW50aXR5U2VsZWN0EhEKCXRlbmFudF9pZBgLIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIqICChFFbWFpbFBhdGNoUmVxdWVzdBIdCgNyZWYYASABKAsyEC5yb3N0ZXIuRW1haWxSZWYSDwoHYWRkcmVzcxgQIAEoCRIxCg1kYXRlX3ZlcmlmaWVkGBIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3ZlcmlmaWVkX251bGwYEyABKAgSJwoKdm91Y2hlZF9ieRgUIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIXCg92b3VjaGVkX2J5X251bGwYFSABKAgSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiTwoRRW1haWxBcHBseVJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLkVtYWlsUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giJAoSRW1haWxFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCJjChBFbWFpbExpc3RSZXF1ZXN0EiQKB2ZpbHRlcnMYASADKAsyEy5yb3N0ZXIuRW1haWxGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIkYKEUVtYWlsTGlzdFJlc3BvbnNlEhwKBWl0ZW1zGAEgAygLMg0ucm9zdGVyLkVtYWlsEhMKBG5leHQYAiABKAlCBaoBAggCIk8KC0VtYWlsRmlsdGVyEh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmIlcKEUVtYWlsV2F0Y2hSZXF1ZXN0EiQKB2ZpbHRlcnMYASADKAsyEy5yb3N0ZXIuRW1haWxGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiOwoSRW1haWxXYXRjaFJlc3BvbnNlEiUKBWl0ZW1zGAEgAygLMhYucm9zdGVyLkVtYWlsV2F0Y2hJdGVtIlEKDkVtYWlsV2F0Y2hJdGVtEgoKAmlkGAEgASgMEhwKBXZhbHVlGAIgASgLMg0ucm9zdGVyLkVtYWlsEhUKBmFjdGlvbhgDIAEoCUIFqgECCAIiYAoSRW1haWxWZXJpZnlSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIrCgdleHBpcmVzGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJYChNFbWFpbFZlcmlmeVJlc3BvbnNlEhQKBXRva2VuGAEgASgJQgWqAQIIAhIrCgdleHBpcmVzGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIrChNFbWFpbENvbmZpcm1SZXF1ZXN0EhQKBXRva2VuGAEgASgJQgWqAQIIAiI0ChRFbWFpbENvbmZpcm1SZXNwb25zZRIcCgVlbWFpbBgBIAEoCzINLnJvc3Rlci5FbWFpbDKRBAoMRW1haWxTZXJ2aWNlEi0KA0FkZBIXLnJvc3Rlci5FbWFpbEFkZFJlcXVlc3QaDS5yb3N0ZXIuRW1haWwSLQoDR2V0Ehcucm9zdGVyLkVtYWlsR2V0UmVxdWVzdBoNLnJvc3Rlci5FbWFpbBIxCgVQYXRjaBIZLnJvc3Rlci5FbWFpbFBhdGNoUmVxdWVzdBoNLnJvc3Rlci5FbWFpbBIxCgVBcHBseRIZLnJvc3Rlci5FbWFpbEFwcGx5UmVxdWVzdBoNLnJvc3Rlci5FbWFpbBI1CgVFcmFzZRIQLnJvc3Rlci5FbWFpbFJlZhoaLnJvc3Rlci5FbWFpbEVyYXNlUmVzcG9uc2USOwoETGlzdBIYLnJvc3Rlci5FbWFpbExpc3RSZXF1ZXN0Ghkucm9zdGVyLkVtYWlsTGlzdFJlc3BvbnNlEkAKBVdhdGNoEhkucm9zdGVyLkVtYWlsV2F0Y2hSZXF1ZXN0Ghoucm9zdGVyLkVtYWlsV2F0Y2hSZXNwb25zZTABEkEKBlZlcmlmeRIaLnJvc3Rlci5FbWFpbFZlcmlmeVJlcXVlc3QaGy5yb3N0ZXIuRW1haWxWZXJpZnlSZXNwb25zZRJECgdDb25maXJtEhsucm9zdGVyLkVtYWlsQ29uZmlybVJlcXVlc3QaHC5yb3N0ZXIuRW1haWxDb25maXJtUmVzcG9uc2VCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_email, file_app_identity_svc_g, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.EmailAddRequest
@@ -542,6 +542,93 @@ export const EmailWatchItemSchema: GenMessage<EmailWatchItem> = /*@__PURE__*/
   messageDesc(file_app_email_svc_g, 14);
 
 /**
+ * @generated from message roster.EmailVerifyRequest
+ */
+export type EmailVerifyRequest = Message<"roster.EmailVerifyRequest"> & {
+  /**
+   * Which address, by reference.
+   *
+   * @generated from field: roster.EmailRef ref = 1;
+   */
+  ref?: EmailRef | undefined;
+
+  /**
+   * When the link stops working; unset, or later than the default, is the
+   * default (`vouch.LinkFor`).
+   *
+   * @generated from field: google.protobuf.Timestamp expires = 2;
+   */
+  expires?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.EmailVerifyRequest.
+ * Use `create(EmailVerifyRequestSchema)` to create a new message.
+ */
+export const EmailVerifyRequestSchema: GenMessage<EmailVerifyRequest> = /*@__PURE__*/
+  messageDesc(file_app_email_svc_g, 15);
+
+/**
+ * @generated from message roster.EmailVerifyResponse
+ */
+export type EmailVerifyResponse = Message<"roster.EmailVerifyResponse"> & {
+  /**
+   * The link, and the only time it is readable. What is stored is a hash.
+   *
+   * @generated from field: string token = 1 [features.field_presence = IMPLICIT];
+   */
+  token: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp expires = 2;
+   */
+  expires?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.EmailVerifyResponse.
+ * Use `create(EmailVerifyResponseSchema)` to create a new message.
+ */
+export const EmailVerifyResponseSchema: GenMessage<EmailVerifyResponse> = /*@__PURE__*/
+  messageDesc(file_app_email_svc_g, 16);
+
+/**
+ * @generated from message roster.EmailConfirmRequest
+ */
+export type EmailConfirmRequest = Message<"roster.EmailConfirmRequest"> & {
+  /**
+   * @generated from field: string token = 1 [features.field_presence = IMPLICIT];
+   */
+  token: string;
+};
+
+/**
+ * Describes the message roster.EmailConfirmRequest.
+ * Use `create(EmailConfirmRequestSchema)` to create a new message.
+ */
+export const EmailConfirmRequestSchema: GenMessage<EmailConfirmRequest> = /*@__PURE__*/
+  messageDesc(file_app_email_svc_g, 17);
+
+/**
+ * @generated from message roster.EmailConfirmResponse
+ */
+export type EmailConfirmResponse = Message<"roster.EmailConfirmResponse"> & {
+  /**
+   * The row, stamped.
+   *
+   * @generated from field: roster.Email email = 1;
+   */
+  email?: Email | undefined;
+};
+
+/**
+ * Describes the message roster.EmailConfirmResponse.
+ * Use `create(EmailConfirmResponseSchema)` to create a new message.
+ */
+export const EmailConfirmResponseSchema: GenMessage<EmailConfirmResponse> = /*@__PURE__*/
+  messageDesc(file_app_email_svc_g, 18);
+
+/**
  * @generated from service roster.EmailService
  */
 export const EmailService: GenService<{
@@ -624,6 +711,37 @@ export const EmailService: GenService<{
     methodKind: "server_streaming";
     input: typeof EmailWatchRequestSchema;
     output: typeof EmailWatchResponseSchema;
+  },
+  /**
+   * Verify mints a link that proves this address, and answers with it once.
+   *
+   * roster does not deliver it -- that is the point, as it is for `Vouch.Link`:
+   * a store that mailed would be a store that knows how to reach people, which
+   * is the front door's business. The app that asked puts it in a message to
+   * **that** address; a link that arrives anywhere else proves nothing, which
+   * is why only the address on the row is ever a place it goes.
+   *
+   * @generated from rpc roster.EmailService.Verify
+   */
+  verify: {
+    methodKind: "unary";
+    input: typeof EmailVerifyRequestSchema;
+    output: typeof EmailVerifyResponseSchema;
+  },
+  /**
+   * Confirm spends a link and stamps the row it was minted for.
+   *
+   * Everything wrong answers the same `NotFound`: a token never minted, one
+   * spent, one expired, one minted by somebody else, one that is a recovery
+   * link. What a caller may rely on is that after `OK` the address is
+   * `date_verified` at this moment, and that nothing was signed in.
+   *
+   * @generated from rpc roster.EmailService.Confirm
+   */
+  confirm: {
+    methodKind: "unary";
+    input: typeof EmailConfirmRequestSchema;
+    output: typeof EmailConfirmResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_app_email_svc_g, 0);

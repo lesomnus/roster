@@ -55,6 +55,7 @@ type Link struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
 	xxx_hidden_Holder      *Holder                `protobuf:"bytes,2,opt,name=holder"`
+	xxx_hidden_Email       *Email                 `protobuf:"bytes,12,opt,name=email"`
 	xxx_hidden_Secret      []byte                 `protobuf:"bytes,9,opt,name=secret"`
 	xxx_hidden_Issuer      []byte                 `protobuf:"bytes,10,opt,name=issuer"`
 	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
@@ -100,6 +101,13 @@ func (x *Link) GetId() []byte {
 func (x *Link) GetHolder() *Holder {
 	if x != nil {
 		return x.xxx_hidden_Holder
+	}
+	return nil
+}
+
+func (x *Link) GetEmail() *Email {
+	if x != nil {
+		return x.xxx_hidden_Email
 	}
 	return nil
 }
@@ -157,6 +165,10 @@ func (x *Link) SetHolder(v *Holder) {
 	x.xxx_hidden_Holder = v
 }
 
+func (x *Link) SetEmail(v *Email) {
+	x.xxx_hidden_Email = v
+}
+
 func (x *Link) SetSecret(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -194,6 +206,13 @@ func (x *Link) HasHolder() bool {
 	return x.xxx_hidden_Holder != nil
 }
 
+func (x *Link) HasEmail() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Email != nil
+}
+
 func (x *Link) HasDateExpires() bool {
 	if x == nil {
 		return false
@@ -226,6 +245,10 @@ func (x *Link) ClearHolder() {
 	x.xxx_hidden_Holder = nil
 }
 
+func (x *Link) ClearEmail() {
+	x.xxx_hidden_Email = nil
+}
+
 func (x *Link) ClearDateExpires() {
 	x.xxx_hidden_DateExpires = nil
 }
@@ -248,6 +271,13 @@ type Link_builder struct {
 	Id []byte
 	// Who it lets in.
 	Holder *Holder
+	// The address this link is about, when it is a **verification** and not a
+	// way in: `Email.Verify` mints one for a row, `Email.Confirm` spends it and
+	// stamps that row's `date_verified`, and mints no delegation -- a link that
+	// proves an address is worth strictly less than one that signs somebody in.
+	// Unset for the recovery links `Vouch.Link` mints, which are about the
+	// person and not an address.
+	Email *Email
 	// The verifier, never the link -- the shape `ApiKey` argued and every
 	// short-lived thing here has repeated: 256 bits from `crypto/rand` have no
 	// dictionary, so the hash is fast and unsalted, and it is also how the row is
@@ -281,6 +311,7 @@ func (b0 Link_builder) Build() *Link {
 	_, _ = b, x
 	x.xxx_hidden_Id = b.Id
 	x.xxx_hidden_Holder = b.Holder
+	x.xxx_hidden_Email = b.Email
 	x.xxx_hidden_Secret = b.Secret
 	x.xxx_hidden_Issuer = b.Issuer
 	x.xxx_hidden_DateExpires = b.DateExpires
@@ -294,10 +325,11 @@ var File_app_link_proto protoreflect.FileDescriptor
 
 const file_app_link_proto_rawDesc = "" +
 	"\n" +
-	"\x0eapp/link.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xa6\x04\n" +
+	"\x0eapp/link.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x0fapp/email.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xd5\x04\n" +
 	"\x04Link\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
-	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12&\n" +
+	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12-\n" +
+	"\x05email\x18\f \x01(\v2\r.roster.EmailB\b\xf2\x82\x16\x048\x01@\x01R\x05email\x12&\n" +
 	"\x06secret\x18\t \x01(\fB\x0e\xea\x82\x16\x040\x01@\x01\xaa\xc1\x16\x02\b\x01R\x06secret\x12\x1e\n" +
 	"\x06issuer\x18\n" +
 	" \x01(\fB\x06\xea\x82\x16\x02@\x01R\x06issuer\x12G\n" +
@@ -321,19 +353,21 @@ var file_app_link_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_app_link_proto_goTypes = []any{
 	(*Link)(nil),                  // 0: roster.Link
 	(*Holder)(nil),                // 1: roster.Holder
-	(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
+	(*Email)(nil),                 // 2: roster.Email
+	(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
 }
 var file_app_link_proto_depIdxs = []int32{
 	1, // 0: roster.Link.holder:type_name -> roster.Holder
-	2, // 1: roster.Link.date_expires:type_name -> google.protobuf.Timestamp
-	2, // 2: roster.Link.date_updated:type_name -> google.protobuf.Timestamp
-	2, // 3: roster.Link.date_erased:type_name -> google.protobuf.Timestamp
-	2, // 4: roster.Link.date_created:type_name -> google.protobuf.Timestamp
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	2, // 1: roster.Link.email:type_name -> roster.Email
+	3, // 2: roster.Link.date_expires:type_name -> google.protobuf.Timestamp
+	3, // 3: roster.Link.date_updated:type_name -> google.protobuf.Timestamp
+	3, // 4: roster.Link.date_erased:type_name -> google.protobuf.Timestamp
+	3, // 5: roster.Link.date_created:type_name -> google.protobuf.Timestamp
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_app_link_proto_init() }
@@ -342,6 +376,7 @@ func file_app_link_proto_init() {
 		return
 	}
 	file_roster_payday_holder_proto_init()
+	file_app_email_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

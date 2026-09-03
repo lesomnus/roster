@@ -154,7 +154,7 @@ export const Link = {
 	schema: LinkSchema,
 	domain: 23,
 	version: "dateUpdated",
-	refs: [{ field: "holder", to: "roster.Holder" }],
+	refs: [{ field: "holder", to: "roster.Holder" }, { field: "email", to: "roster.Email" }],
 } as const satisfies EntityDesc
 
 /** roster.MailDomain, as the store holds it. */

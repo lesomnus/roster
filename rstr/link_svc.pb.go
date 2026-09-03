@@ -26,6 +26,7 @@ type LinkAddRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
 	xxx_hidden_Holder      *HolderRef             `protobuf:"bytes,2,opt,name=holder"`
+	xxx_hidden_Email       *EmailRef              `protobuf:"bytes,12,opt,name=email"`
 	xxx_hidden_Secret      []byte                 `protobuf:"bytes,9,opt,name=secret"`
 	xxx_hidden_Issuer      []byte                 `protobuf:"bytes,10,opt,name=issuer"`
 	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
@@ -75,6 +76,13 @@ func (x *LinkAddRequest) GetHolder() *HolderRef {
 	return nil
 }
 
+func (x *LinkAddRequest) GetEmail() *EmailRef {
+	if x != nil {
+		return x.xxx_hidden_Email
+	}
+	return nil
+}
+
 func (x *LinkAddRequest) GetSecret() []byte {
 	if x != nil {
 		return x.xxx_hidden_Secret
@@ -108,11 +116,15 @@ func (x *LinkAddRequest) SetId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 7)
 }
 
 func (x *LinkAddRequest) SetHolder(v *HolderRef) {
 	x.xxx_hidden_Holder = v
+}
+
+func (x *LinkAddRequest) SetEmail(v *EmailRef) {
+	x.xxx_hidden_Email = v
 }
 
 func (x *LinkAddRequest) SetSecret(v []byte) {
@@ -151,6 +163,13 @@ func (x *LinkAddRequest) HasHolder() bool {
 	return x.xxx_hidden_Holder != nil
 }
 
+func (x *LinkAddRequest) HasEmail() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Email != nil
+}
+
 func (x *LinkAddRequest) HasDateExpires() bool {
 	if x == nil {
 		return false
@@ -174,6 +193,10 @@ func (x *LinkAddRequest) ClearHolder() {
 	x.xxx_hidden_Holder = nil
 }
 
+func (x *LinkAddRequest) ClearEmail() {
+	x.xxx_hidden_Email = nil
+}
+
 func (x *LinkAddRequest) ClearDateExpires() {
 	x.xxx_hidden_DateExpires = nil
 }
@@ -187,6 +210,7 @@ type LinkAddRequest_builder struct {
 
 	Id          []byte
 	Holder      *HolderRef
+	Email       *EmailRef
 	Secret      []byte
 	Issuer      []byte
 	DateExpires *timestamppb.Timestamp
@@ -198,10 +222,11 @@ func (b0 LinkAddRequest_builder) Build() *LinkAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 7)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Holder = b.Holder
+	x.xxx_hidden_Email = b.Email
 	x.xxx_hidden_Secret = b.Secret
 	x.xxx_hidden_Issuer = b.Issuer
 	x.xxx_hidden_DateExpires = b.DateExpires
@@ -475,6 +500,7 @@ type LinkSelect struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_All         bool                   `protobuf:"varint,1,opt,name=all"`
 	xxx_hidden_Holder      *HolderSelect          `protobuf:"bytes,2,opt,name=holder"`
+	xxx_hidden_Email       *EmailSelect           `protobuf:"bytes,12,opt,name=email"`
 	xxx_hidden_Secret      bool                   `protobuf:"varint,9,opt,name=secret"`
 	xxx_hidden_Issuer      bool                   `protobuf:"varint,10,opt,name=issuer"`
 	xxx_hidden_DateExpires bool                   `protobuf:"varint,11,opt,name=date_expires,json=dateExpires"`
@@ -526,6 +552,13 @@ func (x *LinkSelect) GetHolder() *HolderSelect {
 	return nil
 }
 
+func (x *LinkSelect) GetEmail() *EmailSelect {
+	if x != nil {
+		return x.xxx_hidden_Email
+	}
+	return nil
+}
+
 func (x *LinkSelect) GetSecret() bool {
 	if x != nil {
 		return x.xxx_hidden_Secret
@@ -570,41 +603,45 @@ func (x *LinkSelect) GetDateCreated() bool {
 
 func (x *LinkSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 9)
 }
 
 func (x *LinkSelect) SetHolder(v *HolderSelect) {
 	x.xxx_hidden_Holder = v
 }
 
+func (x *LinkSelect) SetEmail(v *EmailSelect) {
+	x.xxx_hidden_Email = v
+}
+
 func (x *LinkSelect) SetSecret(v bool) {
 	x.xxx_hidden_Secret = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 9)
 }
 
 func (x *LinkSelect) SetIssuer(v bool) {
 	x.xxx_hidden_Issuer = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 9)
 }
 
 func (x *LinkSelect) SetDateExpires(v bool) {
 	x.xxx_hidden_DateExpires = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 9)
 }
 
 func (x *LinkSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 9)
 }
 
 func (x *LinkSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 9)
 }
 
 func (x *LinkSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 9)
 }
 
 func (x *LinkSelect) HasAll() bool {
@@ -621,46 +658,53 @@ func (x *LinkSelect) HasHolder() bool {
 	return x.xxx_hidden_Holder != nil
 }
 
-func (x *LinkSelect) HasSecret() bool {
+func (x *LinkSelect) HasEmail() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+	return x.xxx_hidden_Email != nil
 }
 
-func (x *LinkSelect) HasIssuer() bool {
+func (x *LinkSelect) HasSecret() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
-func (x *LinkSelect) HasDateExpires() bool {
+func (x *LinkSelect) HasIssuer() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
 }
 
-func (x *LinkSelect) HasDateUpdated() bool {
+func (x *LinkSelect) HasDateExpires() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
-func (x *LinkSelect) HasDateErased() bool {
+func (x *LinkSelect) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
-func (x *LinkSelect) HasDateCreated() bool {
+func (x *LinkSelect) HasDateErased() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
+}
+
+func (x *LinkSelect) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
 }
 
 func (x *LinkSelect) ClearAll() {
@@ -672,33 +716,37 @@ func (x *LinkSelect) ClearHolder() {
 	x.xxx_hidden_Holder = nil
 }
 
+func (x *LinkSelect) ClearEmail() {
+	x.xxx_hidden_Email = nil
+}
+
 func (x *LinkSelect) ClearSecret() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
 	x.xxx_hidden_Secret = false
 }
 
 func (x *LinkSelect) ClearIssuer() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
 	x.xxx_hidden_Issuer = false
 }
 
 func (x *LinkSelect) ClearDateExpires() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
 	x.xxx_hidden_DateExpires = false
 }
 
 func (x *LinkSelect) ClearDateUpdated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
 	x.xxx_hidden_DateUpdated = false
 }
 
 func (x *LinkSelect) ClearDateErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
 	x.xxx_hidden_DateErased = false
 }
 
 func (x *LinkSelect) ClearDateCreated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
 	x.xxx_hidden_DateCreated = false
 }
 
@@ -707,6 +755,7 @@ type LinkSelect_builder struct {
 
 	All         *bool
 	Holder      *HolderSelect
+	Email       *EmailSelect
 	Secret      *bool
 	Issuer      *bool
 	DateExpires *bool
@@ -720,32 +769,33 @@ func (b0 LinkSelect_builder) Build() *LinkSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 9)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Holder = b.Holder
+	x.xxx_hidden_Email = b.Email
 	if b.Secret != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 9)
 		x.xxx_hidden_Secret = *b.Secret
 	}
 	if b.Issuer != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 9)
 		x.xxx_hidden_Issuer = *b.Issuer
 	}
 	if b.DateExpires != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 9)
 		x.xxx_hidden_DateExpires = *b.DateExpires
 	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 9)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 9)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 9)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	return m0
@@ -1309,10 +1359,11 @@ var File_app_link_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_link_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/link_svc.g.proto\x12\x06roster\x1a\x0eapp/link.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\x87\x02\n" +
+	"\x14app/link_svc.g.proto\x12\x06roster\x1a\x15app/email_svc.g.proto\x1a\x0eapp/link.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xaf\x02\n" +
 	"\x0eLinkAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
-	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x1d\n" +
+	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12&\n" +
+	"\x05email\x18\f \x01(\v2\x10.roster.EmailRefR\x05email\x12\x1d\n" +
 	"\x06secret\x18\t \x01(\fB\x05\xaa\x01\x02\b\x02R\x06secret\x12\x1d\n" +
 	"\x06issuer\x18\n" +
 	" \x01(\fB\x05\xaa\x01\x02\b\x02R\x06issuer\x12=\n" +
@@ -1324,11 +1375,12 @@ const file_app_link_svc_g_proto_rawDesc = "" +
 	"\aLinkRef\x12\x10\n" +
 	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x18\n" +
 	"\x06secret\x18\t \x01(\fH\x00R\x06secretB\x05\n" +
-	"\x03key\"\x86\x02\n" +
+	"\x03key\"\xb1\x02\n" +
 	"\n" +
 	"LinkSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
-	"\x06holder\x18\x02 \x01(\v2\x14.roster.HolderSelectR\x06holder\x12\x16\n" +
+	"\x06holder\x18\x02 \x01(\v2\x14.roster.HolderSelectR\x06holder\x12)\n" +
+	"\x05email\x18\f \x01(\v2\x13.roster.EmailSelectR\x05email\x12\x16\n" +
 	"\x06secret\x18\t \x01(\bR\x06secret\x12\x16\n" +
 	"\x06issuer\x18\n" +
 	" \x01(\bR\x06issuer\x12!\n" +
@@ -1377,42 +1429,46 @@ var file_app_link_svc_g_proto_goTypes = []any{
 	(*LinkListResponse)(nil),      // 8: roster.LinkListResponse
 	(*LinkFilter)(nil),            // 9: roster.LinkFilter
 	(*HolderRef)(nil),             // 10: roster.HolderRef
-	(*timestamppb.Timestamp)(nil), // 11: google.protobuf.Timestamp
-	(*HolderSelect)(nil),          // 12: roster.HolderSelect
-	(*patchpb.Patch)(nil),         // 13: patch.Patch
-	(*Link)(nil),                  // 14: roster.Link
+	(*EmailRef)(nil),              // 11: roster.EmailRef
+	(*timestamppb.Timestamp)(nil), // 12: google.protobuf.Timestamp
+	(*HolderSelect)(nil),          // 13: roster.HolderSelect
+	(*EmailSelect)(nil),           // 14: roster.EmailSelect
+	(*patchpb.Patch)(nil),         // 15: patch.Patch
+	(*Link)(nil),                  // 16: roster.Link
 }
 var file_app_link_svc_g_proto_depIdxs = []int32{
 	10, // 0: roster.LinkAddRequest.holder:type_name -> roster.HolderRef
-	11, // 1: roster.LinkAddRequest.date_expires:type_name -> google.protobuf.Timestamp
-	11, // 2: roster.LinkAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	2,  // 3: roster.LinkGetRequest.ref:type_name -> roster.LinkRef
-	3,  // 4: roster.LinkGetRequest.select:type_name -> roster.LinkSelect
-	12, // 5: roster.LinkSelect.holder:type_name -> roster.HolderSelect
-	2,  // 6: roster.LinkPatchRequest.ref:type_name -> roster.LinkRef
-	11, // 7: roster.LinkPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 8: roster.LinkApplyRequest.ref:type_name -> roster.LinkRef
-	13, // 9: roster.LinkApplyRequest.patch:type_name -> patch.Patch
-	9,  // 10: roster.LinkListRequest.filters:type_name -> roster.LinkFilter
-	14, // 11: roster.LinkListResponse.items:type_name -> roster.Link
-	2,  // 12: roster.LinkFilter.ref:type_name -> roster.LinkRef
-	0,  // 13: roster.LinkService.Add:input_type -> roster.LinkAddRequest
-	1,  // 14: roster.LinkService.Get:input_type -> roster.LinkGetRequest
-	4,  // 15: roster.LinkService.Patch:input_type -> roster.LinkPatchRequest
-	5,  // 16: roster.LinkService.Apply:input_type -> roster.LinkApplyRequest
-	2,  // 17: roster.LinkService.Erase:input_type -> roster.LinkRef
-	7,  // 18: roster.LinkService.List:input_type -> roster.LinkListRequest
-	14, // 19: roster.LinkService.Add:output_type -> roster.Link
-	14, // 20: roster.LinkService.Get:output_type -> roster.Link
-	14, // 21: roster.LinkService.Patch:output_type -> roster.Link
-	14, // 22: roster.LinkService.Apply:output_type -> roster.Link
-	6,  // 23: roster.LinkService.Erase:output_type -> roster.LinkEraseResponse
-	8,  // 24: roster.LinkService.List:output_type -> roster.LinkListResponse
-	19, // [19:25] is the sub-list for method output_type
-	13, // [13:19] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	11, // 1: roster.LinkAddRequest.email:type_name -> roster.EmailRef
+	12, // 2: roster.LinkAddRequest.date_expires:type_name -> google.protobuf.Timestamp
+	12, // 3: roster.LinkAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	2,  // 4: roster.LinkGetRequest.ref:type_name -> roster.LinkRef
+	3,  // 5: roster.LinkGetRequest.select:type_name -> roster.LinkSelect
+	13, // 6: roster.LinkSelect.holder:type_name -> roster.HolderSelect
+	14, // 7: roster.LinkSelect.email:type_name -> roster.EmailSelect
+	2,  // 8: roster.LinkPatchRequest.ref:type_name -> roster.LinkRef
+	12, // 9: roster.LinkPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 10: roster.LinkApplyRequest.ref:type_name -> roster.LinkRef
+	15, // 11: roster.LinkApplyRequest.patch:type_name -> patch.Patch
+	9,  // 12: roster.LinkListRequest.filters:type_name -> roster.LinkFilter
+	16, // 13: roster.LinkListResponse.items:type_name -> roster.Link
+	2,  // 14: roster.LinkFilter.ref:type_name -> roster.LinkRef
+	0,  // 15: roster.LinkService.Add:input_type -> roster.LinkAddRequest
+	1,  // 16: roster.LinkService.Get:input_type -> roster.LinkGetRequest
+	4,  // 17: roster.LinkService.Patch:input_type -> roster.LinkPatchRequest
+	5,  // 18: roster.LinkService.Apply:input_type -> roster.LinkApplyRequest
+	2,  // 19: roster.LinkService.Erase:input_type -> roster.LinkRef
+	7,  // 20: roster.LinkService.List:input_type -> roster.LinkListRequest
+	16, // 21: roster.LinkService.Add:output_type -> roster.Link
+	16, // 22: roster.LinkService.Get:output_type -> roster.Link
+	16, // 23: roster.LinkService.Patch:output_type -> roster.Link
+	16, // 24: roster.LinkService.Apply:output_type -> roster.Link
+	6,  // 25: roster.LinkService.Erase:output_type -> roster.LinkEraseResponse
+	8,  // 26: roster.LinkService.List:output_type -> roster.LinkListResponse
+	21, // [21:27] is the sub-list for method output_type
+	15, // [15:21] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_app_link_svc_g_proto_init() }
@@ -1420,6 +1476,7 @@ func file_app_link_svc_g_proto_init() {
 	if File_app_link_svc_g_proto != nil {
 		return
 	}
+	file_app_email_svc_g_proto_init()
 	file_app_link_proto_init()
 	file_roster_payday_holder_svc_g_proto_init()
 	file_app_link_svc_g_proto_msgTypes[2].OneofWrappers = []any{

@@ -3,6 +3,7 @@ edition = "2023";
 package roster;
 
 import "roster/payday/holder.proto";
+import "app/email.proto";
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
 import "payday.proto";
@@ -47,6 +48,14 @@ message Link {
 
   // Who it lets in.
   Holder holder = 2 [(orm.edge) = {immutable: true}];
+
+  // The address this link is about, when it is a **verification** and not a
+  // way in: `Email.Verify` mints one for a row, `Email.Confirm` spends it and
+  // stamps that row's `date_verified`, and mints no delegation -- a link that
+  // proves an address is worth strictly less than one that signs somebody in.
+  // Unset for the recovery links `Vouch.Link` mints, which are about the
+  // person and not an address.
+  Email email = 12 [(orm.edge) = {immutable: true, nullable: true}];
 
   // 4 to 7 are empty, for `Delegation`'s reason: nobody names one of these. It
   // exists for minutes, between a mail being sent and a browser arriving.

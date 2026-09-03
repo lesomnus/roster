@@ -8,6 +8,7 @@ import (
 	"time"
 	"uuid"
 
+	"github.com/lesomnus/roster/internal/ent/email"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/link"
 	"github.com/protobuf-orm/ent"
@@ -33,6 +34,8 @@ type Link struct {
 	DateCreated time.Time `json:"date_created,omitempty"`
 	// HolderId holds the value of the "holder_id" field.
 	HolderId uuid.UUID `json:"holder_id,omitempty"`
+	// EmailId holds the value of the "email_id" field.
+	EmailId uuid.UUID `json:"email_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the LinkQuery when eager-loading is set.
 	Edges        LinkEdges `json:"edges"`
@@ -43,9 +46,11 @@ type Link struct {
 type LinkEdges struct {
 	// Holder holds the value of the holder edge.
 	Holder *Holder `json:"holder,omitempty"`
+	// Email holds the value of the email edge.
+	Email *Email `json:"email,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // HolderOrErr returns the Holder value or an error if the edge
@@ -59,6 +64,17 @@ func (e LinkEdges) HolderOrErr() (*Holder, error) {
 	return nil, &NotLoadedError{edge: "holder"}
 }
 
+// EmailOrErr returns the Email value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e LinkEdges) EmailOrErr() (*Email, error) {
+	if e.Email != nil {
+		return e.Email, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: email.Label}
+	}
+	return nil, &NotLoadedError{edge: "email"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Link) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -68,6 +84,8 @@ func (*Link) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case link.FieldDateExpires, link.FieldDateUpdated, link.FieldDateErased, link.FieldDateCreated:
 			values[i] = new(sql.NullTime)
+		case link.FieldEmailId:
+			values[i] = new(sql.Null[uuid.UUID])
 		case link.FieldId, link.FieldHolderId:
 			values[i] = new(uuid.UUID)
 		default:
@@ -141,6 +159,12 @@ func (_m *Link) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				_m.HolderId = *value
 			}
+		case link.FieldEmailId:
+			if value, ok := values[i].(*sql.Null[uuid.UUID]); !ok {
+				return fmt.Errorf("unexpected type %T for field email_id", values[i])
+			} else if value.Valid {
+				_m.EmailId = value.V
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -157,6 +181,11 @@ func (_m *Link) Value(name string) (ent.Value, error) {
 // QueryHolder queries the "holder" edge of the Link entity.
 func (_m *Link) QueryHolder() *HolderQuery {
 	return NewLinkClient(_m.config).QueryHolder(_m)
+}
+
+// QueryEmail queries the "email" edge of the Link entity.
+func (_m *Link) QueryEmail() *EmailQuery {
+	return NewLinkClient(_m.config).QueryEmail(_m)
 }
 
 // Update returns a builder for updating this Link.
@@ -206,6 +235,9 @@ func (_m *Link) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("holder_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.HolderId))
+	builder.WriteString(", ")
+	builder.WriteString("email_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.EmailId))
 	builder.WriteByte(')')
 	return builder.String()
 }

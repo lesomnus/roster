@@ -1,0 +1,69 @@
+edition = "2023";
+
+package roster;
+
+import "google/protobuf/timestamp.proto";
+
+// What this app adds to the generated contract for `Email`.
+//
+// # Why verifying an address is `Email`'s verb and not `Vouch.Link`'s
+//
+// Recovery stayed on `VouchService` for one reason: it is addressed to an
+// **address**, with no row to reference, and the flow has to answer the same
+// for an address that is here and one that is not. Verification has the row --
+// the `Email` somebody just added -- so the same criterion puts it on the
+// resource (CLAUDE.md, *Overlay before service*): a verb on `Email` rows,
+// gated by `mayReach` on the row's holder like every other write about a way
+// in, with the person passing their own reference.
+//
+// # A verify link is worth strictly less than a recovery link
+//
+// `Vouch.Redeem` mints a delegation: whoever holds the link is signed in.
+// `Email.Confirm` stamps `date_verified` and nothing else. Were it otherwise,
+// adding an address to your account would mint you a sign-in link, and a
+// mailbox an attacker reads once would be an account they hold. The two links
+// share the `Link` table and its sweep; a verification names its `email`, a
+// recovery names none, and `Confirm` refuses one that names none.
+service EmailService {
+  // Verify mints a link that proves this address, and answers with it once.
+  //
+  // roster does not deliver it -- that is the point, as it is for `Vouch.Link`:
+  // a store that mailed would be a store that knows how to reach people, which
+  // is the front door's business. The app that asked puts it in a message to
+  // **that** address; a link that arrives anywhere else proves nothing, which
+  // is why only the address on the row is ever a place it goes.
+  rpc Verify(EmailVerifyRequest) returns (EmailVerifyResponse);
+
+  // Confirm spends a link and stamps the row it was minted for.
+  //
+  // Everything wrong answers the same `NotFound`: a token never minted, one
+  // spent, one expired, one minted by somebody else, one that is a recovery
+  // link. What a caller may rely on is that after `OK` the address is
+  // `date_verified` at this moment, and that nothing was signed in.
+  rpc Confirm(EmailConfirmRequest) returns (EmailConfirmResponse);
+}
+
+message EmailVerifyRequest {
+  // Which address, by reference.
+  EmailRef ref = 1;
+
+  // When the link stops working; unset, or later than the default, is the
+  // default (`vouch.LinkFor`).
+  google.protobuf.Timestamp expires = 2;
+}
+
+message EmailVerifyResponse {
+  // The link, and the only time it is readable. What is stored is a hash.
+  string token = 1 [features.field_presence = IMPLICIT];
+
+  google.protobuf.Timestamp expires = 2;
+}
+
+message EmailConfirmRequest {
+  string token = 1 [features.field_presence = IMPLICIT];
+}
+
+message EmailConfirmResponse {
+  // The row, stamped.
+  Email email = 1;
+}

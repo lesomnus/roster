@@ -19,6 +19,13 @@ func (e *Link) Proto() *rstr.Link {
 		r.SetId(v[:])
 		x.SetHolder(r)
 	}
+	if v := e.Edges.Email; v != nil {
+		x.SetEmail(v.Proto())
+	} else if v := e.EmailId; v != *new(uuid.UUID) {
+		r := &rstr.Email{}
+		r.SetId(v[:])
+		x.SetEmail(r)
+	}
 	x.SetSecret(e.Secret)
 	x.SetIssuer(e.Issuer)
 	if e.DateExpires != nil {

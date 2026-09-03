@@ -617,6 +617,7 @@ var (
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
 		{Name: "holder_id", Type: field.TypeUuid},
+		{Name: "email_id", Type: field.TypeUuid, Nullable: true},
 	}
 	// LinkTable holds the schema information for the "link" table.
 	LinkTable = &schema.Table{
@@ -629,6 +630,12 @@ var (
 				Columns:    []*schema.Column{LinkColumns[7]},
 				RefColumns: []*schema.Column{HolderColumns[0]},
 				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "link_email_email",
+				Columns:    []*schema.Column{LinkColumns[8]},
+				RefColumns: []*schema.Column{EmailColumns[0]},
+				OnDelete:   schema.SetNull,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -1086,6 +1093,7 @@ func init() {
 		Table: "identity",
 	}
 	LinkTable.ForeignKeys[0].RefTable = HolderTable
+	LinkTable.ForeignKeys[1].RefTable = EmailTable
 	LinkTable.Annotation = &entsql.Annotation{
 		Table: "link",
 	}

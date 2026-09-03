@@ -2571,6 +2571,22 @@ func (c *LinkClient) QueryHolder(_m *Link) *HolderQuery {
 	return query
 }
 
+// QueryEmail queries the email edge of a Link.
+func (c *LinkClient) QueryEmail(_m *Link) *EmailQuery {
+	query := (&EmailClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(link.Table, link.FieldId, id),
+			sqlgraph.To(email.Table, email.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, link.EmailTable, link.EmailColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *LinkClient) Hooks() []Hook {
 	return c.hooks.Link

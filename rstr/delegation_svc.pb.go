@@ -1282,10 +1282,11 @@ func (b0 DelegationListResponse_builder) Build() *DelegationListResponse {
 }
 
 type DelegationFilter struct {
-	state          protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref *DelegationRef         `protobuf:"bytes,1,opt,name=ref"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref    *DelegationRef         `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Holder *HolderRef             `protobuf:"bytes,2,opt,name=holder"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *DelegationFilter) Reset() {
@@ -1320,8 +1321,19 @@ func (x *DelegationFilter) GetRef() *DelegationRef {
 	return nil
 }
 
+func (x *DelegationFilter) GetHolder() *HolderRef {
+	if x != nil {
+		return x.xxx_hidden_Holder
+	}
+	return nil
+}
+
 func (x *DelegationFilter) SetRef(v *DelegationRef) {
 	x.xxx_hidden_Ref = v
+}
+
+func (x *DelegationFilter) SetHolder(v *HolderRef) {
+	x.xxx_hidden_Holder = v
 }
 
 func (x *DelegationFilter) HasRef() bool {
@@ -1331,14 +1343,26 @@ func (x *DelegationFilter) HasRef() bool {
 	return x.xxx_hidden_Ref != nil
 }
 
+func (x *DelegationFilter) HasHolder() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Holder != nil
+}
+
 func (x *DelegationFilter) ClearRef() {
 	x.xxx_hidden_Ref = nil
+}
+
+func (x *DelegationFilter) ClearHolder() {
+	x.xxx_hidden_Holder = nil
 }
 
 type DelegationFilter_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref *DelegationRef
+	Ref    *DelegationRef
+	Holder *HolderRef
 }
 
 func (b0 DelegationFilter_builder) Build() *DelegationFilter {
@@ -1346,6 +1370,7 @@ func (b0 DelegationFilter_builder) Build() *DelegationFilter {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Holder = b.Holder
 	return m0
 }
 
@@ -1498,9 +1523,10 @@ const file_app_delegation_svc_g_proto_rawDesc = "" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"]\n" +
 	"\x16DelegationListResponse\x12(\n" +
 	"\x05items\x18\x01 \x03(\v2\x12.roster.DelegationR\x05items\x12\x19\n" +
-	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\";\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"f\n" +
 	"\x10DelegationFilter\x12'\n" +
-	"\x03ref\x18\x01 \x01(\v2\x15.roster.DelegationRefR\x03ref\"6\n" +
+	"\x03ref\x18\x01 \x01(\v2\x15.roster.DelegationRefR\x03ref\x12)\n" +
+	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\"6\n" +
 	"\x17DelegationRevokeRequest\x12\x1b\n" +
 	"\x05token\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05token\"\x1a\n" +
 	"\x18DelegationRevokeResponse2\xd4\x03\n" +
@@ -1547,25 +1573,26 @@ var file_app_delegation_svc_g_proto_depIdxs = []int32{
 	9,  // 10: roster.DelegationListRequest.filters:type_name -> roster.DelegationFilter
 	16, // 11: roster.DelegationListResponse.items:type_name -> roster.Delegation
 	2,  // 12: roster.DelegationFilter.ref:type_name -> roster.DelegationRef
-	0,  // 13: roster.DelegationService.Add:input_type -> roster.DelegationAddRequest
-	1,  // 14: roster.DelegationService.Get:input_type -> roster.DelegationGetRequest
-	4,  // 15: roster.DelegationService.Patch:input_type -> roster.DelegationPatchRequest
-	5,  // 16: roster.DelegationService.Apply:input_type -> roster.DelegationApplyRequest
-	2,  // 17: roster.DelegationService.Erase:input_type -> roster.DelegationRef
-	7,  // 18: roster.DelegationService.List:input_type -> roster.DelegationListRequest
-	10, // 19: roster.DelegationService.Revoke:input_type -> roster.DelegationRevokeRequest
-	16, // 20: roster.DelegationService.Add:output_type -> roster.Delegation
-	16, // 21: roster.DelegationService.Get:output_type -> roster.Delegation
-	16, // 22: roster.DelegationService.Patch:output_type -> roster.Delegation
-	16, // 23: roster.DelegationService.Apply:output_type -> roster.Delegation
-	6,  // 24: roster.DelegationService.Erase:output_type -> roster.DelegationEraseResponse
-	8,  // 25: roster.DelegationService.List:output_type -> roster.DelegationListResponse
-	11, // 26: roster.DelegationService.Revoke:output_type -> roster.DelegationRevokeResponse
-	20, // [20:27] is the sub-list for method output_type
-	13, // [13:20] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	12, // 13: roster.DelegationFilter.holder:type_name -> roster.HolderRef
+	0,  // 14: roster.DelegationService.Add:input_type -> roster.DelegationAddRequest
+	1,  // 15: roster.DelegationService.Get:input_type -> roster.DelegationGetRequest
+	4,  // 16: roster.DelegationService.Patch:input_type -> roster.DelegationPatchRequest
+	5,  // 17: roster.DelegationService.Apply:input_type -> roster.DelegationApplyRequest
+	2,  // 18: roster.DelegationService.Erase:input_type -> roster.DelegationRef
+	7,  // 19: roster.DelegationService.List:input_type -> roster.DelegationListRequest
+	10, // 20: roster.DelegationService.Revoke:input_type -> roster.DelegationRevokeRequest
+	16, // 21: roster.DelegationService.Add:output_type -> roster.Delegation
+	16, // 22: roster.DelegationService.Get:output_type -> roster.Delegation
+	16, // 23: roster.DelegationService.Patch:output_type -> roster.Delegation
+	16, // 24: roster.DelegationService.Apply:output_type -> roster.Delegation
+	6,  // 25: roster.DelegationService.Erase:output_type -> roster.DelegationEraseResponse
+	8,  // 26: roster.DelegationService.List:output_type -> roster.DelegationListResponse
+	11, // 27: roster.DelegationService.Revoke:output_type -> roster.DelegationRevokeResponse
+	21, // [21:28] is the sub-list for method output_type
+	14, // [14:21] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_app_delegation_svc_g_proto_init() }

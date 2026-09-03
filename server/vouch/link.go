@@ -60,7 +60,7 @@ func (s *Server) Link(ctx context.Context, req *app.VouchLinkRequest) (*app.Vouc
 		}
 	}
 
-	token, sum, err := mintLink()
+	token, sum, err := MintLink()
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +273,10 @@ func (s *Server) link(ctx context.Context, token string, by pdid.Id) (*app.Link,
 }
 
 // mintLink is the token and the verifier stored for it.
-func mintLink() (string, []byte, error) {
+// MintLink is a link token and the hash that is stored for it -- `PrefixLink`
+// and thirty-two random bytes. Exported for `Email.Verify`, which mints the
+// same shape for a different purpose and must not mint a different one.
+func MintLink() (string, []byte, error) {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
 		return "", nil, status.Error(codes.Internal, "a link cannot be made just now")

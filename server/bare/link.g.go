@@ -8,6 +8,7 @@ import (
 	errors "errors"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
+	email "github.com/lesomnus/roster/internal/ent/email"
 	holder "github.com/lesomnus/roster/internal/ent/holder"
 	link "github.com/lesomnus/roster/internal/ent/link"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
@@ -91,7 +92,7 @@ func (s LinkServiceServer) Add(ctx context.Context, req *rstr.LinkAddRequest) (*
 	st := s
 	st.Db = tx.Db
 
-	ds := make([]func(v *rstr.Link), 0, 1)
+	ds := make([]func(v *rstr.Link), 0, 2)
 	q := st.Db.Link.Create()
 	var k uuid.UUID
 	if req.HasId() {
@@ -113,6 +114,16 @@ func (s LinkServiceServer) Add(ctx context.Context, req *rstr.LinkAddRequest) (*
 		ds = append(ds, func(v *rstr.Link) {
 			v.SetHolder(rstr.Holder_builder{Id: k[:]}.Build())
 		})
+	}
+	if req.HasEmail() {
+		if k, err := EmailGetKey(ctx, st.Db, req.GetEmail()); err != nil {
+			return nil, err
+		} else {
+			q.SetEmailId(k)
+			ds = append(ds, func(v *rstr.Link) {
+				v.SetEmail(rstr.Email_builder{Id: k[:]}.Build())
+			})
+		}
 	}
 	q.SetSecret(req.GetSecret())
 	q.SetIssuer(req.GetIssuer())
@@ -225,6 +236,12 @@ func LinkSelect(q *ent.LinkQuery, m *rstr.LinkSelect) {
 			HolderSelect(q, m.GetHolder())
 		})
 	}
+	if m.HasEmail() {
+		q.WithEmail(func(q *ent.EmailQuery) {
+			q.Where(email.DateErasedIsNil())
+			EmailSelect(q, m.GetEmail())
+		})
+	}
 }
 
 func LinkSelectInit(q *ent.LinkQuery, m *rstr.LinkSelect) {
@@ -232,6 +249,7 @@ func LinkSelectInit(q *ent.LinkQuery, m *rstr.LinkSelect) {
 		LinkSelect(q, m)
 	} else {
 		q.WithHolder(selectHolderKey)
+		q.WithEmail(selectEmailKey)
 	}
 }
 
@@ -282,7 +300,7 @@ func LinkGetKey(ctx context.Context, db *ent.Client, ref *rstr.LinkRef) (uuid.UU
 var linkOrmEntity = ormpatch.MustEntityOf(rstr.File_app_link_proto, "Link")
 
 var linkPatchColumns = entpatch.Columns{
-	1: link.FieldId, 2: link.HolderColumn, 9: link.FieldSecret, 10: link.FieldIssuer, 11: link.FieldDateExpires, 13: link.FieldDateUpdated, 14: link.FieldDateErased, 15: link.FieldDateCreated}
+	1: link.FieldId, 2: link.HolderColumn, 12: link.EmailColumn, 9: link.FieldSecret, 10: link.FieldIssuer, 11: link.FieldDateExpires, 13: link.FieldDateUpdated, 14: link.FieldDateErased, 15: link.FieldDateCreated}
 
 func (s LinkServiceServer) Apply(ctx context.Context, req *rstr.LinkApplyRequest) (*rstr.Link, error) {
 	if !req.HasPatch() {

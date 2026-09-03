@@ -4009,6 +4009,23 @@ func (m *LinkMutation) OldHolderId(ctx context.Context) (v uuid.UUID, err error)
 	return oldValue.HolderId, nil
 }
 
+// OldEmailId returns the old "email_id" field's value of the Link entity.
+// If the Link object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LinkMutation) OldEmailId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldEmailId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldEmailId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEmailId: %w", err)
+	}
+	return oldValue.EmailId, nil
+}
+
 // OldField returns the old value of the field from the database. An error is
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
@@ -4028,6 +4045,8 @@ func (m *LinkMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldDateCreated(ctx)
 	case link.FieldHolderId:
 		return m.OldHolderId(ctx)
+	case link.FieldEmailId:
+		return m.OldEmailId(ctx)
 	}
 	return nil, fmt.Errorf("unknown Link field %s", name)
 }

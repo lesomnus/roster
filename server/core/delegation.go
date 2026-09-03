@@ -3,6 +3,8 @@ package core
 import (
 	"context"
 
+	"github.com/lesomnus/payday/pdid"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -14,11 +16,12 @@ import (
 
 // coreDelegation is the layer over the generated `DelegationService`.
 //
-// Like `coreCredential`, the service is served now for its overlay while its
-// generated reads and raw writes stay closed by method -- so what reaches the
-// wire is `Revoke` and nothing that answers with a token. `Revoke` is the
-// delete a sign-out has to be able to make; it was `Vouch.Revoke`, a verb on
-// delegation rows that the sign-in flow had no reason to keep. See
+// The service is served: `Revoke`, the delete a sign-out makes with a token in
+// hand, and -- since `ts/plan.md` § C -- `Get`, `List` and `Erase`, so a person
+// sees where they are signed in and ends one by reference. The token in
+// `secret` never travels: the sink strips it on the way out like every other
+// secret, and this layer holds the rows to `mayReach`. `Add` stays closed,
+// because it would take a verifier the caller chose. See
 // `delegation_svc.ext.proto`.
 type coreDelegation struct {
 	Core
@@ -52,4 +55,70 @@ func (s coreDelegation) Revoke(ctx context.Context, req *app.DelegationRevokeReq
 	}
 
 	return &app.DelegationRevokeResponse{}, nil
+}
+
+// Get, List and Erase are served now, which the file comment above said they
+// were not: what closed them was the token in the `secret` column, and the
+// answer to that is the layer roster already has for every secret -- the sink
+// strips `(payday.field).secret` on the way out -- rather than a verb of
+// `MeService`'s that curates the same rows. So a person lists their own
+// delegations to see where they are signed in, and erases one to end it; an
+// operator does the same for somebody they reach. `Revoke` stays for the caller
+// that holds a token and no reference.
+//
+// The reach rule is the one every write about somebody's ways in meets, applied
+// here to a read as well: a delegation is a credential, and listing them is
+// listing where somebody is signed in.
+func (s coreDelegation) Get(ctx context.Context, req *app.DelegationGetRequest) (*app.Delegation, error) {
+	if err := s.reaches(ctx, req.GetRef()); err != nil {
+		return nil, err
+	}
+
+	return s.DelegationServiceServer.Get(ctx, req)
+}
+
+func (s coreDelegation) List(ctx context.Context, req *app.DelegationListRequest) (*app.DelegationListResponse, error) {
+	for _, f := range req.GetFilters() {
+		if f.GetHolder() == nil {
+			continue
+		}
+		holder, err := s.holderOf(ctx, f.GetHolder())
+		if err != nil {
+			return nil, err
+		}
+		if err := s.mayReach(ctx, "holder", holder); err != nil {
+			return nil, err
+		}
+	}
+
+	return s.DelegationServiceServer.List(ctx, req)
+}
+
+func (s coreDelegation) Erase(ctx context.Context, req *app.DelegationRef) (*app.DelegationEraseResponse, error) {
+	if err := s.reaches(ctx, req); err != nil {
+		if status.Code(err) == codes.NotFound {
+			return app.DelegationEraseResponse_builder{}.Build(), nil
+		}
+
+		return nil, err
+	}
+
+	return s.DelegationServiceServer.Erase(ctx, req)
+}
+
+// reaches is `mayReach` on the holder of the delegation a reference names.
+func (s coreDelegation) reaches(ctx context.Context, ref *app.DelegationRef) error {
+	v, err := s.DelegationServiceServer.Get(ctx, app.DelegationGetRequest_builder{
+		Ref:    ref,
+		Select: app.DelegationSelect_builder{Holder: app.HolderSelect_builder{}.Build()}.Build(),
+	}.Build())
+	if err != nil {
+		return err
+	}
+	holder, err := pdid.From(v.GetHolder().GetId())
+	if err != nil {
+		return err
+	}
+
+	return s.mayReach(ctx, "ref", holder)
 }

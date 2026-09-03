@@ -7,6 +7,8 @@ import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Holder } from "../roster/payday/holder_pb.js";
 import { file_roster_payday_holder } from "../roster/payday/holder_pb.js";
+import type { Email } from "./email_pb.js";
+import { file_app_email } from "./email_pb.js";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_orm } from "../orm_pb.js";
@@ -17,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/link.proto.
  */
 export const file_app_link: GenFile = /*@__PURE__*/
-  fileDesc("Cg5hcHAvbGluay5wcm90bxIGcm9zdGVyItcDCgRMaW5rEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESHgoGc2VjcmV0GAkgASgMQg7qghYEMAFAAarBFgIIARIWCgZpc3N1ZXIYCiABKAxCBuqCFgJAARI6CgxkYXRlX2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgjqghYEOAFAARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6aMr8FSYSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQAYq7FjoIFzIlChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmIBQoZCIPCg1ob2xkZXIudGVuYW50QiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg5hcHAvbGluay5wcm90bxIGcm9zdGVyIv8DCgRMaW5rEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESJgoFZW1haWwYDCABKAsyDS5yb3N0ZXIuRW1haWxCCPKCFgQ4AUABEh4KBnNlY3JldBgJIAEoDEIO6oIWBDABQAGqwRYCCAESFgoGaXNzdWVyGAogASgMQgbqghYCQAESOgoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEII6oIWBDgBQAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOmjK/BUmEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxY6CBcyJQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZiAUKGQiDwoNaG9sZGVyLnRlbmFudEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_holder, file_app_email, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Link is a way in that roster mints and somebody else delivers.
@@ -63,6 +65,18 @@ export type Link = Message<"roster.Link"> & {
    * @generated from field: roster.Holder holder = 2;
    */
   holder?: Holder | undefined;
+
+  /**
+   * The address this link is about, when it is a **verification** and not a
+   * way in: `Email.Verify` mints one for a row, `Email.Confirm` spends it and
+   * stamps that row's `date_verified`, and mints no delegation -- a link that
+   * proves an address is worth strictly less than one that signs somebody in.
+   * Unset for the recovery links `Vouch.Link` mints, which are about the
+   * person and not an address.
+   *
+   * @generated from field: roster.Email email = 12;
+   */
+  email?: Email | undefined;
 
   /**
    * The verifier, never the link -- the shape `ApiKey` argued and every

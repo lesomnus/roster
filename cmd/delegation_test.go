@@ -316,17 +316,21 @@ func TestNothingMintsADelegationThatOpensNoDoor(t *testing.T) {
 	}
 }
 
-// TestADelegationIsNotOnTheWire is the pair of doors `CredentialService` is
-// behind, closed over the same kind of column.
+// TestADelegationsTokenIsNotOnTheWire is the door `Delegation`'s reads are
+// behind, and it moved: from *the service is not registered* to *the column
+// never leaves*.
 //
-// The generated `Get` answers with whatever it was asked for and one of those
-// is the verifier, so registration is left out. Streams stopped being a way
-// past that with F10 -- `ClosedUnary` and `ClosedStream` are installed as a
-// pair now -- but registration is still the stronger statement: a service that
-// is not on the wire cannot answer at all. The batch is the second door: it
-// arrives as one method carrying many and dispatches through the app's own
-// table, so "not registered" never reaches it.
-func TestADelegationIsNotOnTheWire(t *testing.T) {
+// The generated `Get` answers with whatever it is asked for, and one of those
+// is the verifier -- which is why the service was once left off the wire whole.
+// `ts/plan.md` § C opened `Get`, `List` and `Erase`, because a person listing
+// where they are signed in is a read of these rows and a curated copy on
+// `MeService.Get` would have been a second name for them. What makes that safe
+// is the layer roster already has for every `(payday.field).secret`: the sink
+// strips it on the way out, on the direct road and through a batch alike, so
+// a caller asking for **everything** gets a row with no token in it. The
+// stronger statement is the one this keeps: the hash is in the store and never
+// in an answer.
+func TestADelegationsTokenIsNotOnTheWire(t *testing.T) {
 	b := keyFor(t, "/roster.DelegationService/Get", "/roster.DelegationService/Add",
 		pdpb.BatchService_Do_FullMethodName)
 	ctx := t.Context()
@@ -338,18 +342,28 @@ func TestADelegationIsNotOnTheWire(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	t.Run("no service answers for it", func(t *testing.T) {
+	// What is stored, to check the answers against: a sha256 and not a token.
+	row, err := b.Ungated.Delegation().Get(ctx, app.DelegationGetRequest_builder{
+		Ref:    app.DelegationRef_builder{Id: v.GetId()}.Build(),
+		Select: app.DelegationSelect_builder{Secret: z.Ptr(true)}.Build(),
+	}.Build())
+	require.NoError(t, err)
+	require.Len(t, row.GetSecret(), 32, "a sha256 and not a token")
+
+	t.Run("the service answers, and the column is not in the answer", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := app.NewDelegationServiceClient(b.Conn).Get(bearing(ctx, b.Token),
+		got, err := app.NewDelegationServiceClient(b.Conn).Get(bearing(ctx, b.Token),
 			app.DelegationGetRequest_builder{
 				Ref:    app.DelegationRef_builder{Id: v.GetId()}.Build(),
 				Select: app.DelegationSelect_builder{All: z.Ptr(true)}.Build(),
 			}.Build())
-		x.Equal(codes.Unimplemented, status.Code(err), "the delegation service answered")
+		x.NoError(err, "the delegation service is not on the wire")
+		x.Empty(got.GetSecret(), "the verifier left the store")
+		x.Equal([]string{verify}, got.GetMethods(), "the rest of the row did not come")
 	})
 
-	t.Run("and a batch cannot carry one either", func(t *testing.T) {
+	t.Run("and a batch strips it the same way", func(t *testing.T) {
 		x := require.New(t)
 
 		req, err := anypb.New(app.DelegationGetRequest_builder{
@@ -358,28 +372,29 @@ func TestADelegationIsNotOnTheWire(t *testing.T) {
 		}.Build())
 		x.NoError(err)
 
-		_, err = pdpb.NewBatchServiceClient(b.Conn).Do(bearing(ctx, b.Token),
+		res, err := pdpb.NewBatchServiceClient(b.Conn).Do(bearing(ctx, b.Token),
 			pdpb.BatchRequest_builder{
 				Ops: []*pdpb.Op{pdpb.Op_builder{
 					Method:  app.DelegationService_Get_FullMethodName,
 					Request: req,
 				}.Build()},
 			}.Build())
-		x.Error(err, "a batch read the delegation the wire will not serve")
-		x.NotEqual(codes.OK, status.Code(err))
+		x.NoError(err, "a batch could not read what the wire serves")
+		x.NotContains(res.String(), string(row.GetSecret()), "the verifier left the store through a batch")
 	})
 
-	// And what was minted is a hash, so even a reader that got past both doors
-	// finds nothing to present.
-	t.Run("and what is stored is not the token", func(t *testing.T) {
+	t.Run("and a caller-chosen token is still refused", func(t *testing.T) {
 		x := require.New(t)
 
-		row, err := b.Ungated.Delegation().Get(ctx, app.DelegationGetRequest_builder{
-			Ref:    app.DelegationRef_builder{Id: v.GetId()}.Build(),
-			Select: app.DelegationSelect_builder{Secret: z.Ptr(true)}.Build(),
-		}.Build())
-		x.NoError(err)
-		x.Len(row.GetSecret(), 32, "a sha256 and not a token")
+		// `Add` stays closed: it would take a verifier the caller chose, which
+		// is a token nobody minted. `Unimplemented` because it is shut by
+		// method, on a service that is otherwise there.
+		_, err := app.NewDelegationServiceClient(b.Conn).Add(bearing(ctx, b.Token),
+			app.DelegationAddRequest_builder{
+				Holder: app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
+				Secret: row.GetSecret(),
+			}.Build())
+		x.Equal(codes.Unimplemented, status.Code(err), "a delegation was written with a caller's own verifier")
 	})
 }
 

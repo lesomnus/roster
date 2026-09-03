@@ -186,7 +186,7 @@ message Delegation {
           field: {name: "id"}
         }
       ]
-      by: [{name: "ref"}]
+      by: [{name: "ref"}, {name: "holder"}]
       size: 20
       max: 100
     }

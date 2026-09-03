@@ -26,6 +26,8 @@ type Mutation struct {
 	clearedFields map[string]struct{}
 	holder        *uuid.UUID
 	clearedholder bool
+	email         *uuid.UUID
+	clearedemail  bool
 	predicates    []predicate.Link
 }
 
@@ -215,6 +217,38 @@ func (m *Mutation) ResetHolderId() {
 	m.holder = nil
 }
 
+// SetEmailId sets the "email_id" field.
+func (m *Mutation) SetEmailId(u uuid.UUID) {
+	m.email = &u
+}
+
+// EmailId returns the value of the "email_id" field in the mutation.
+func (m *Mutation) EmailId() (r uuid.UUID, exists bool) {
+	v := m.email
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearEmailId clears the value of the "email_id" field.
+func (m *Mutation) ClearEmailId() {
+	m.email = nil
+	m.clearedFields[FieldEmailId] = struct{}{}
+}
+
+// EmailIdCleared returns if the "email_id" field was cleared in this mutation.
+func (m *Mutation) EmailIdCleared() bool {
+	_, ok := m.clearedFields[FieldEmailId]
+	return ok
+}
+
+// ResetEmailId resets all changes to the "email_id" field.
+func (m *Mutation) ResetEmailId() {
+	m.email = nil
+	delete(m.clearedFields, FieldEmailId)
+}
+
 // ClearHolder clears the "holder" edge to the Holder entity.
 func (m *Mutation) ClearHolder() {
 	m.clearedholder = true
@@ -240,6 +274,33 @@ func (m *Mutation) HolderIds() (ids []uuid.UUID) {
 func (m *Mutation) ResetHolder() {
 	m.holder = nil
 	m.clearedholder = false
+}
+
+// ClearEmail clears the "email" edge to the Email entity.
+func (m *Mutation) ClearEmail() {
+	m.clearedemail = true
+	m.clearedFields[FieldEmailId] = struct{}{}
+}
+
+// EmailCleared reports if the "email" edge to the Email entity was cleared.
+func (m *Mutation) EmailCleared() bool {
+	return m.EmailIdCleared() || m.clearedemail
+}
+
+// EmailIds returns the "email" edge Ids in the mutation.
+// Note that Ids always returns len(Ids) <= 1 for unique edges, and you should use
+// EmailId instead. It exists only for internal usage by the builders.
+func (m *Mutation) EmailIds() (ids []uuid.UUID) {
+	if id := m.email; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetEmail resets all changes to the "email" edge.
+func (m *Mutation) ResetEmail() {
+	m.email = nil
+	m.clearedemail = false
 }
 
 // Where appends a list predicates to the Mutation builder.
@@ -276,7 +337,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 8)
 	if m.secret != nil {
 		fields = append(fields, FieldSecret)
 	}
@@ -297,6 +358,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.holder != nil {
 		fields = append(fields, FieldHolderId)
+	}
+	if m.email != nil {
+		fields = append(fields, FieldEmailId)
 	}
 	return fields
 }
@@ -320,6 +384,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.DateCreated()
 	case FieldHolderId:
 		return m.HolderId()
+	case FieldEmailId:
+		return m.EmailId()
 	}
 	return nil, false
 }
@@ -385,6 +451,13 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetHolderId(v)
 		return nil
+	case FieldEmailId:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEmailId(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Link field %s", name)
 }
@@ -424,6 +497,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldDateCreated) {
 		fields = append(fields, FieldDateCreated)
 	}
+	if m.FieldCleared(FieldEmailId) {
+		fields = append(fields, FieldEmailId)
+	}
 	return fields
 }
 
@@ -446,6 +522,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldDateCreated:
 		m.ClearDateCreated()
+		return nil
+	case FieldEmailId:
+		m.ClearEmailId()
 		return nil
 	}
 	return fmt.Errorf("unknown Link nullable field %s", name)
@@ -476,15 +555,21 @@ func (m *Mutation) ResetField(name string) error {
 	case FieldHolderId:
 		m.ResetHolderId()
 		return nil
+	case FieldEmailId:
+		m.ResetEmailId()
+		return nil
 	}
 	return fmt.Errorf("unknown Link field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *Mutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.holder != nil {
 		edges = append(edges, EdgeHolder)
+	}
+	if m.email != nil {
+		edges = append(edges, EdgeEmail)
 	}
 	return edges
 }
@@ -497,13 +582,17 @@ func (m *Mutation) AddedIds(name string) []ent.Value {
 		if id := m.holder; id != nil {
 			return []ent.Value{*id}
 		}
+	case EdgeEmail:
+		if id := m.email; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *Mutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	return edges
 }
 
@@ -515,9 +604,12 @@ func (m *Mutation) RemovedIds(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *Mutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedholder {
 		edges = append(edges, EdgeHolder)
+	}
+	if m.clearedemail {
+		edges = append(edges, EdgeEmail)
 	}
 	return edges
 }
@@ -528,6 +620,8 @@ func (m *Mutation) EdgeCleared(name string) bool {
 	switch name {
 	case EdgeHolder:
 		return m.clearedholder
+	case EdgeEmail:
+		return m.clearedemail
 	}
 	return false
 }
@@ -539,6 +633,9 @@ func (m *Mutation) ClearEdge(name string) error {
 	case EdgeHolder:
 		m.ClearHolder()
 		return nil
+	case EdgeEmail:
+		m.ClearEmail()
+		return nil
 	}
 	return fmt.Errorf("unknown Link unique edge %s", name)
 }
@@ -549,6 +646,9 @@ func (m *Mutation) ResetEdge(name string) error {
 	switch name {
 	case EdgeHolder:
 		m.ResetHolder()
+		return nil
+	case EdgeEmail:
+		m.ResetEmail()
 		return nil
 	}
 	return fmt.Errorf("unknown Link edge %s", name)

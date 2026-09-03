@@ -9,6 +9,7 @@ import (
 	"time"
 	"uuid"
 
+	"github.com/lesomnus/roster/internal/ent/email"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/link"
 	"github.com/protobuf-orm/ent/dialect/sql"
@@ -89,6 +90,20 @@ func (_c *LinkCreate) SetHolderId(v uuid.UUID) *LinkCreate {
 	return _c
 }
 
+// SetEmailId sets the "email_id" field.
+func (_c *LinkCreate) SetEmailId(v uuid.UUID) *LinkCreate {
+	_c.mutation.SetEmailId(v)
+	return _c
+}
+
+// SetNillableEmailId sets the "email_id" field if the given value is not nil.
+func (_c *LinkCreate) SetNillableEmailId(v *uuid.UUID) *LinkCreate {
+	if v != nil {
+		_c.SetEmailId(*v)
+	}
+	return _c
+}
+
 // SetId sets the "id" field.
 func (_c *LinkCreate) SetId(v uuid.UUID) *LinkCreate {
 	_c.mutation.SetId(v)
@@ -98,6 +113,11 @@ func (_c *LinkCreate) SetId(v uuid.UUID) *LinkCreate {
 // SetHolder sets the "holder" edge to the Holder entity.
 func (_c *LinkCreate) SetHolder(v *Holder) *LinkCreate {
 	return _c.SetHolderId(v.Id)
+}
+
+// SetEmail sets the "email" edge to the Email entity.
+func (_c *LinkCreate) SetEmail(v *Email) *LinkCreate {
+	return _c.SetEmailId(v.Id)
 }
 
 // Mutation returns the LinkMutation object of the builder.
@@ -227,6 +247,23 @@ func (_c *LinkCreate) createSpec() (*Link, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.HolderId = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.EmailIds(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   link.EmailTable,
+			Columns: []string{link.EmailColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(email.FieldId, field.TypeUuid),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.EmailId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

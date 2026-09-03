@@ -2173,6 +2173,31 @@ func filterDelegation(f *rstr.DelegationFilter) (predicate.Delegation, error) {
 
 		ps = append(ps, p)
 	}
+	if f.HasHolder() {
+		w := f.GetHolder()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "holder: %s", err)
+			}
+
+			ps = append(ps, delegation.HolderIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.HolderPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, delegation.HasHolderWith(q))
+		}
+	}
 	if len(ps) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
 	}
@@ -7246,6 +7271,18 @@ func (s gateLink) Add(ctx context.Context, req *rstr.LinkAddRequest) (*rstr.Link
 		}
 	}
 
+	if ref := req.GetEmail(); ref != nil {
+		if _, err := s.Gate.Next().Email().Get(ctx, rstr.EmailGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Email")
+			}
+
+			return nil, err
+		}
+	}
+
 	return s.LinkServiceServer.Add(ctx, req)
 }
 
@@ -11138,6 +11175,46 @@ func (s interceptEmail) Watch(req *rstr.EmailWatchRequest, out grpc.ServerStream
 	})
 }
 
+func (s interceptEmail) Verify(ctx context.Context, req *rstr.EmailVerifyRequest) (*rstr.EmailVerifyResponse, error) {
+	if s.unary == nil {
+		return s.EmailServiceServer.Verify(ctx, req)
+	}
+
+	v, err := s.unary(ctx, req, &grpc.UnaryServerInfo{
+		Server:     s.EmailServiceServer,
+		FullMethod: rstr.EmailService_Verify_FullMethodName,
+	}, func(ctx context.Context, req any) (any, error) {
+		return s.EmailServiceServer.Verify(ctx, req.(*rstr.EmailVerifyRequest))
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	w, _ := v.(*rstr.EmailVerifyResponse)
+
+	return w, nil
+}
+
+func (s interceptEmail) Confirm(ctx context.Context, req *rstr.EmailConfirmRequest) (*rstr.EmailConfirmResponse, error) {
+	if s.unary == nil {
+		return s.EmailServiceServer.Confirm(ctx, req)
+	}
+
+	v, err := s.unary(ctx, req, &grpc.UnaryServerInfo{
+		Server:     s.EmailServiceServer,
+		FullMethod: rstr.EmailService_Confirm_FullMethodName,
+	}, func(ctx context.Context, req any) (any, error) {
+		return s.EmailServiceServer.Confirm(ctx, req.(*rstr.EmailConfirmRequest))
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	w, _ := v.(*rstr.EmailConfirmResponse)
+
+	return w, nil
+}
+
 func (s Intercept) Site() rstr.SiteServiceServer {
 	return interceptSite{s, s.Next().Site()}
 }
@@ -14240,6 +14317,32 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 		}
 
 		res, err := s.Email().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.EmailService_Verify_FullMethodName:
+		v := &rstr.EmailVerifyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Email().Verify(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.EmailService_Confirm_FullMethodName:
+		v := &rstr.EmailConfirmRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Email().Confirm(ctx, v)
 		if err != nil {
 			return nil, err
 		}

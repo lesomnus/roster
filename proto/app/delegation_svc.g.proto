@@ -131,6 +131,7 @@ message DelegationListResponse {
 
 message DelegationFilter {
   DelegationRef ref = 1;
+  HolderRef holder = 2;
 }
 
 message DelegationRevokeRequest {

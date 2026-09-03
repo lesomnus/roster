@@ -897,11 +897,14 @@ func (s *Server) closed(c Config) func(method string) bool {
 		app.CredentialService_List_FullMethodName,
 		app.CredentialService_Watch_FullMethodName,
 		app.CredentialService_Add_FullMethodName,
-		app.CredentialService_Erase_FullMethodName,
-		app.DelegationService_Get_FullMethodName,
-		app.DelegationService_List_FullMethodName,
+		// `Credential.Erase` is served: it answers with no verifier and takes
+		// none, and `server/core` gives it the rules it needs (a password is
+		// replaced and not removed; not the last way in).
+		// `Delegation.Get`/`List`/`Erase` are served too: the token in `secret`
+		// is stripped on the way out like every other secret, and the layer
+		// holds them to `mayReach` on the row's holder. What stays closed is
+		// `Add` -- a caller-chosen token -- and the general writes.
 		app.DelegationService_Add_FullMethodName,
-		app.DelegationService_Erase_FullMethodName,
 		app.DelegationService_Patch_FullMethodName,
 		app.DelegationService_Apply_FullMethodName,
 	}

@@ -38,6 +38,9 @@ func (Link) Fields() []ent.Field {
 			Optional(),
 		field.Uuid("holder_id").
 			Immutable(),
+		field.Uuid("email_id").
+			Optional().
+			Immutable(),
 	}
 }
 
@@ -47,6 +50,10 @@ func (Link) Edges() []ent.Edge {
 			Unique().
 			Field("holder_id").
 			Required().
+			Immutable(),
+		edge.To("email", Email.Type).
+			Unique().
+			Field("email_id").
 			Immutable(),
 	}
 }

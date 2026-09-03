@@ -91,6 +91,11 @@ func HolderId(v uuid.UUID) predicate.Link {
 	return predicate.Link(sql.FieldEQ(FieldHolderId, v))
 }
 
+// EmailId applies equality check predicate on the "email_id" field. It's identical to EmailIdEQ.
+func EmailId(v uuid.UUID) predicate.Link {
+	return predicate.Link(sql.FieldEQ(FieldEmailId, v))
+}
+
 // SecretEQ applies the EQ predicate on the "secret" field.
 func SecretEQ(v []byte) predicate.Link {
 	return predicate.Link(sql.FieldEQ(FieldSecret, v))
@@ -381,6 +386,36 @@ func HolderIdNotIn(vs ...uuid.UUID) predicate.Link {
 	return predicate.Link(sql.FieldNotIn(FieldHolderId, vs...))
 }
 
+// EmailIdEQ applies the EQ predicate on the "email_id" field.
+func EmailIdEQ(v uuid.UUID) predicate.Link {
+	return predicate.Link(sql.FieldEQ(FieldEmailId, v))
+}
+
+// EmailIdNEQ applies the NEQ predicate on the "email_id" field.
+func EmailIdNEQ(v uuid.UUID) predicate.Link {
+	return predicate.Link(sql.FieldNEQ(FieldEmailId, v))
+}
+
+// EmailIdIn applies the In predicate on the "email_id" field.
+func EmailIdIn(vs ...uuid.UUID) predicate.Link {
+	return predicate.Link(sql.FieldIn(FieldEmailId, vs...))
+}
+
+// EmailIdNotIn applies the NotIn predicate on the "email_id" field.
+func EmailIdNotIn(vs ...uuid.UUID) predicate.Link {
+	return predicate.Link(sql.FieldNotIn(FieldEmailId, vs...))
+}
+
+// EmailIdIsNil applies the IsNil predicate on the "email_id" field.
+func EmailIdIsNil() predicate.Link {
+	return predicate.Link(sql.FieldIsNull(FieldEmailId))
+}
+
+// EmailIdNotNil applies the NotNil predicate on the "email_id" field.
+func EmailIdNotNil() predicate.Link {
+	return predicate.Link(sql.FieldNotNull(FieldEmailId))
+}
+
 // HasHolder applies the HasEdge predicate on the "holder" edge.
 func HasHolder() predicate.Link {
 	return predicate.Link(func(s *sql.Selector) {
@@ -396,6 +431,29 @@ func HasHolder() predicate.Link {
 func HasHolderWith(preds ...predicate.Holder) predicate.Link {
 	return predicate.Link(func(s *sql.Selector) {
 		step := newHolderStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasEmail applies the HasEdge predicate on the "email" edge.
+func HasEmail() predicate.Link {
+	return predicate.Link(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, EmailTable, EmailColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasEmailWith applies the HasEdge predicate on the "email" edge with a given conditions (other predicates).
+func HasEmailWith(preds ...predicate.Email) predicate.Link {
+	return predicate.Link(func(s *sql.Selector) {
+		step := newEmailStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

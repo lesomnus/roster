@@ -34,6 +34,21 @@ service EmailService {
   // once in that first message and once as a change that happened while it was
   // being read -- and that is harmless for the same reason.
   rpc Watch(EmailWatchRequest) returns (stream EmailWatchResponse);
+  // Verify mints a link that proves this address, and answers with it once.
+  //
+  // roster does not deliver it -- that is the point, as it is for `Vouch.Link`:
+  // a store that mailed would be a store that knows how to reach people, which
+  // is the front door's business. The app that asked puts it in a message to
+  // **that** address; a link that arrives anywhere else proves nothing, which
+  // is why only the address on the row is ever a place it goes.
+  rpc Verify(EmailVerifyRequest) returns (EmailVerifyResponse);
+  // Confirm spends a link and stamps the row it was minted for.
+  //
+  // Everything wrong answers the same `NotFound`: a token never minted, one
+  // spent, one expired, one minted by somebody else, one that is a recovery
+  // link. What a caller may rely on is that after `OK` the address is
+  // `date_verified` at this moment, and that nothing was signed in.
+  rpc Confirm(EmailConfirmRequest) returns (EmailConfirmResponse);
 }
 
 message EmailAddRequest {
@@ -207,4 +222,29 @@ message EmailWatchItem {
   // Empty in the first message, which is not something anybody asked for -- it
   // is what is already there.
   string action = 3 [features.field_presence = IMPLICIT];
+}
+
+message EmailVerifyRequest {
+  // Which address, by reference.
+  EmailRef ref = 1;
+
+  // When the link stops working; unset, or later than the default, is the
+  // default (`vouch.LinkFor`).
+  google.protobuf.Timestamp expires = 2;
+}
+
+message EmailVerifyResponse {
+  // The link, and the only time it is readable. What is stored is a hash.
+  string token = 1 [features.field_presence = IMPLICIT];
+
+  google.protobuf.Timestamp expires = 2;
+}
+
+message EmailConfirmRequest {
+  string token = 1 [features.field_presence = IMPLICIT];
+}
+
+message EmailConfirmResponse {
+  // The row, stamped.
+  Email email = 1;
 }

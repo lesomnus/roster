@@ -13,15 +13,19 @@ package roster;
 // overlay here. So it is `Revoke`, on the entity, and `VouchService` is left
 // with the flow that proves somebody and mints for them.
 //
-// # The service is served for this, and its token never travels
+// # The service is served, and its token never travels
 //
 // `DelegationService` was closed whole, for `CredentialService`'s reason one
 // entity over: its generated `Get` answers with the `secret` column, and a
-// delegation's secret is the token itself. Reopening it does not undo that --
-// `cmd/serve` registers the service but shuts `Get`/`List`/`Watch`/`Add`/
-// `Erase`/`Patch`/`Apply` by method, so only `Revoke` reaches the wire, and it
-// answers nothing. A caller proves it holds a token by naming it; it is not
-// handed one back.
+// delegation's secret is the token itself. What is served now is `Revoke` --
+// a caller proves it holds a token by naming it, and is not handed one back
+// -- and `Get`, `List` and `Erase`, because a person seeing where they are
+// signed in and ending one is a read and a delete of these rows, and a curated
+// copy on `MeService.Get` would have been a second name for them. The column
+// stays in the store: the sink strips `(payday.field).secret` on the way out,
+// on the direct road and through a batch, and `server/core` holds the rows to
+// `mayReach`. `Add`, `Patch` and `Apply` stay shut by method -- a token nobody
+// minted is not one.
 service DelegationService {
   // Revoke ends a delegation before its expiry -- the delete D23 said a sign-out
   // has to be able to make.

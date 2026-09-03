@@ -166,7 +166,7 @@ anybody but an operator's own path -- **verify** what `Update` accepts today
 before drawing the form. Neither escalation question fires: a profile is not
 a grant and not a way in.
 
-**B. Removing a second factor -- open `Credential.Erase` behind a layer.**
+**B. Removing a second factor -- open `Credential.Erase` behind a layer. Landed in P5a.**
 `Erase` is closed on the wire today only because the service was shut whole
 and reopened per method; nothing about `Erase` answers with a verifier. So the
 line's answer is the verb that exists, with the layer roster owes it:
@@ -177,7 +177,7 @@ password by `Erase` at all -- a password is replaced by `Set`,
 never removed. The account app passes the person's own row. No `RemoveMine`.
 
 **C. "Where am I signed in" -- serve `Delegation` behind the stripping
-layer.** The rows carry the token, which is why the service was closed -- and
+layer. Landed in P5a.** The rows carry the token, which is why the service was closed -- and
 the layer refactor's own answer to that (2026-08-30: *provide the layer that
 keeps it from leaking, and implement there*) is `pd.Secret` on the way out,
 the machinery that already strips `secret` from every other answer. So
@@ -188,7 +188,7 @@ a token. The account app lists and erases the person's own rows. No
 `Me.Get.sessions`, no `Me.SignOut`: `MeService` is not grown when the entity's
 own verbs, served properly, answer.
 
-**D. Verifying an address I add -- decided: on the resource.** Checked:
+**D. Verifying an address I add -- decided: on the resource. Landed in P5a.** Checked:
 nothing in `server/` touches `date_verified` on `Redeem`, and `VouchLinkRequest`
 carries `who` and `expires` and no purpose, so today a link is a recovery link
 and nothing else. Recovery stayed on `VouchService` for one reason: it is
@@ -443,7 +443,8 @@ is; that table gets the summary row when a phase closes, this one the steps.
 | P3 · console: the rest of a person, the deployment screen | **done** — on a person: addresses (list by holder, add, remove), unlink an identity, profile replaced whole (`Holder.Update`), a factor enrolled for them, erase (soft). On the deployment: issue an operator's password (`IssuePassword` makes them if new), mint and revoke service keys. **Kept as one listener in the sandbox**, said in `main.tsx`: the customers panels need a real deployment. **Tenant edit deferred** — it needs a `Tenant.Update` overlay (a new RPC), listed under P6 | `ts/src/people.tsx`, `page.tsx`, `cmd/person_test.go` |
 | P4a · `account/` and `roster account serve` | **done** — one tenant key per operator picked by host; providers read from `Connection` with that key (no `Front.Connections` needed: after `WhoseHost` the app has the tenant and its key, so `Connection.List` behind the wall answers); OIDC per (tenant, connection) with the secret resolved from `secret_ref` (`env:`); `/providers` for the page; `/login`, `/callback`, `/ways` (link, whose from the session); `/session*`; every `/roster.*` proxied as the person. `Invited`/`Enrolling`. Ends at whatever page `Static` serves | `account/`, `cmd/account.go`, `account/account_test.go` |
 | P4b · `ts/account/` on `ts/gen` + `ts/lib/`, console moved to `ts/console/` | **done** — two Vite roots over one `lib/` (client, store, `covers`) and one `gen/`; `npm run build` builds both into `dist/console` and `dist/account`; the account page speaks Connect to its own origin through the proxy with the same store the console uses. Sign-in (providers + password + second form) and the first account screen (you, ways in, keys, sign out, add a way in) | `ts/console/`, `ts/account/`, `ts/lib/`, `ts/vite.*.ts` |
-| P5 · account screens: recovery, profile, emails + verify, WebAuthn, remove a factor, sessions | open | |
+| P5a · the verbs the account screens need: `Credential.Erase` served with its layer (B), `Delegation.Get/List/Erase` served behind the stripping sink and `mayReach` (C), `Email.Verify`/`Confirm` (D) | **done** — no `*Mine`, no `Me.Get` growth: the entities' own verbs, opened with the rules they owed. `Link` grew an optional `email` edge so a verification and a recovery share one table and one sweep and are told apart by it | `server/core/{credential,delegation,email}.go`, `proto/ext/app/email_svc.ext.proto`, `cmd/{factor,sessions,verify}_test.go` |
+| P5b · account screens: recovery, profile, emails + verify, factors (TOTP/WebAuthn, remove), sessions, keys | open | |
 | P6 · serve same-origin, docs, depguard, retire this file | open | |
 
 ## What this does not change

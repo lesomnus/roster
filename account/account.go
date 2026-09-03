@@ -135,9 +135,13 @@ var Methods = []string{
 	rstr.EmailService_List_FullMethodName,
 	rstr.EmailService_Add_FullMethodName,
 	rstr.EmailService_Erase_FullMethodName,
+	rstr.EmailService_Verify_FullMethodName,
 	rstr.ApiKeyService_Issue_FullMethodName,
 	rstr.CredentialService_Set_FullMethodName,
 	rstr.CredentialService_Enrol_FullMethodName,
+	rstr.CredentialService_Erase_FullMethodName,
+	rstr.DelegationService_List_FullMethodName,
+	rstr.DelegationService_Erase_FullMethodName,
 }
 
 // EnvSecret resolves `env:NAME` and refuses every other scheme. A second scheme

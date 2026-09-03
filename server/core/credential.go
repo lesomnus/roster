@@ -412,3 +412,97 @@ func (s coreCredential) Enrol(ctx context.Context, req *app.CredentialEnrolReque
 
 	return app.CredentialEnrolResponse_builder{Seed: seed, Uri: uri}.Build(), nil
 }
+
+// Erase takes a credential away -- a second factor somebody no longer has, from
+// the person's own account screen or an operator's.
+//
+// Closed on the wire until now, along with the rest of the raw verbs, and the
+// only one of them with nothing wrong with it: it answers with no verifier and
+// takes none. What it needs is the layer every credential write has --
+// `mayReach` on the row's holder, self passing -- and two rules of its own. A
+// **password** is never removed, only replaced (`Set`), because a removed
+// password with no other way in strands somebody, and one with another way in
+// is a downgrade nobody asked for by that name. And a kind that **begins** a
+// sign-in (`vouch.Begins`) meets D42's rule like an identity does: not the last
+// way in, counted and written under one lock.
+func (s coreCredential) Erase(ctx context.Context, req *app.CredentialRef) (*app.CredentialEraseResponse, error) {
+	v, err := s.CredentialServiceServer.Get(ctx, app.CredentialGetRequest_builder{
+		Ref: req,
+		Select: app.CredentialSelect_builder{
+			Kind:   z.Ptr(true),
+			Holder: app.HolderSelect_builder{}.Build(),
+		}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			// Erasing what is not there succeeds, which is `Erase`'s rule.
+			return app.CredentialEraseResponse_builder{}.Build(), nil
+		}
+
+		return nil, err
+	}
+	if v.GetKind() == vouch.KindPassword {
+		return nil, status.Error(codes.FailedPrecondition,
+			"a password is replaced, not removed: Set a new one")
+	}
+	holder, err := pdid.From(v.GetHolder().GetId())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.mayReach(ctx, "ref", holder); err != nil {
+		return nil, err
+	}
+
+	var out *app.CredentialEraseResponse
+	err = s.only(ctx, v.GetHolder().GetId(), func(next app.Server) error {
+		if vouch.Begins(v.GetKind()) {
+			if err := notTheirLastCredential(ctx, next, v.GetHolder().GetId(), v.GetId()); err != nil {
+				return err
+			}
+		}
+
+		w, err := next.Credential().Erase(ctx, req)
+		if err != nil {
+			return err
+		}
+		out = w
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
+// notTheirLastCredential is D42's count for a credential that begins a
+// sign-in: an identity, or another credential that begins one, has to remain.
+func notTheirLastCredential(ctx context.Context, next app.Server, holder, erasing []byte) error {
+	ref := app.HolderRef_builder{Id: holder}.Build()
+
+	ids, err := next.Identity().List(ctx, app.IdentityListRequest_builder{
+		Filters: []*app.IdentityFilter{app.IdentityFilter_builder{Holder: ref}.Build()},
+	}.Build())
+	if err != nil {
+		return err
+	}
+	if len(ids.GetItems()) > 0 {
+		return nil
+	}
+
+	creds, err := next.Credential().List(ctx, app.CredentialListRequest_builder{
+		Filters: []*app.CredentialFilter{app.CredentialFilter_builder{Holder: ref}.Build()},
+	}.Build())
+	if err != nil {
+		return err
+	}
+	for _, c := range creds.GetItems() {
+		if !bytesEq(c.GetId(), erasing) && vouch.Begins(c.GetKind()) {
+			return nil
+		}
+	}
+
+	return status.Error(codes.FailedPrecondition,
+		"this is the only way they can sign in; give them another before taking it away")
+}

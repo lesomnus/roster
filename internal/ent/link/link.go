@@ -26,8 +26,12 @@ const (
 	FieldDateCreated = "date_created"
 	// FieldHolderId holds the string denoting the holder_id field in the database.
 	FieldHolderId = "holder_id"
+	// FieldEmailId holds the string denoting the email_id field in the database.
+	FieldEmailId = "email_id"
 	// EdgeHolder holds the string denoting the holder edge name in mutations.
 	EdgeHolder = "holder"
+	// EdgeEmail holds the string denoting the email edge name in mutations.
+	EdgeEmail = "email"
 	// Table holds the table name of the link in the database.
 	Table = "link"
 	// HolderTable is the table that holds the holder relation/edge.
@@ -37,6 +41,13 @@ const (
 	HolderInverseTable = "holder"
 	// HolderColumn is the table column denoting the holder relation/edge.
 	HolderColumn = "holder_id"
+	// EmailTable is the table that holds the email relation/edge.
+	EmailTable = "link"
+	// EmailInverseTable is the table name for the Email entity.
+	// It exists in this package in order to avoid circular dependency with the "email" package.
+	EmailInverseTable = "email"
+	// EmailColumn is the table column denoting the email relation/edge.
+	EmailColumn = "email_id"
 )
 
 // Columns holds all SQL columns for link fields.
@@ -49,6 +60,7 @@ var Columns = []string{
 	FieldDateErased,
 	FieldDateCreated,
 	FieldHolderId,
+	FieldEmailId,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -94,10 +106,22 @@ func ByHolderId(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldHolderId, opts...).ToFunc()
 }
 
+// ByEmailId orders the results by the email_id field.
+func ByEmailId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEmailId, opts...).ToFunc()
+}
+
 // ByHolderField orders the results by holder field.
 func ByHolderField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newHolderStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByEmailField orders the results by email field.
+func ByEmailField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newEmailStep(), sql.OrderByField(field, opts...))
 	}
 }
 func newHolderStep() *sqlgraph.Step {
@@ -105,5 +129,12 @@ func newHolderStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldId),
 		sqlgraph.To(HolderInverseTable, FieldId),
 		sqlgraph.Edge(sqlgraph.M2O, false, HolderTable, HolderColumn),
+	)
+}
+func newEmailStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldId),
+		sqlgraph.To(EmailInverseTable, FieldId),
+		sqlgraph.Edge(sqlgraph.M2O, false, EmailTable, EmailColumn),
 	)
 }

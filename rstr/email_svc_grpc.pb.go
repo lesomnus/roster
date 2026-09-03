@@ -19,13 +19,15 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	EmailService_Add_FullMethodName   = "/roster.EmailService/Add"
-	EmailService_Get_FullMethodName   = "/roster.EmailService/Get"
-	EmailService_Patch_FullMethodName = "/roster.EmailService/Patch"
-	EmailService_Apply_FullMethodName = "/roster.EmailService/Apply"
-	EmailService_Erase_FullMethodName = "/roster.EmailService/Erase"
-	EmailService_List_FullMethodName  = "/roster.EmailService/List"
-	EmailService_Watch_FullMethodName = "/roster.EmailService/Watch"
+	EmailService_Add_FullMethodName     = "/roster.EmailService/Add"
+	EmailService_Get_FullMethodName     = "/roster.EmailService/Get"
+	EmailService_Patch_FullMethodName   = "/roster.EmailService/Patch"
+	EmailService_Apply_FullMethodName   = "/roster.EmailService/Apply"
+	EmailService_Erase_FullMethodName   = "/roster.EmailService/Erase"
+	EmailService_List_FullMethodName    = "/roster.EmailService/List"
+	EmailService_Watch_FullMethodName   = "/roster.EmailService/Watch"
+	EmailService_Verify_FullMethodName  = "/roster.EmailService/Verify"
+	EmailService_Confirm_FullMethodName = "/roster.EmailService/Confirm"
 )
 
 // EmailServiceClient is the client API for EmailService service.
@@ -56,6 +58,21 @@ type EmailServiceClient interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(ctx context.Context, in *EmailWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[EmailWatchResponse], error)
+	// Verify mints a link that proves this address, and answers with it once.
+	//
+	// roster does not deliver it -- that is the point, as it is for `Vouch.Link`:
+	// a store that mailed would be a store that knows how to reach people, which
+	// is the front door's business. The app that asked puts it in a message to
+	// **that** address; a link that arrives anywhere else proves nothing, which
+	// is why only the address on the row is ever a place it goes.
+	Verify(ctx context.Context, in *EmailVerifyRequest, opts ...grpc.CallOption) (*EmailVerifyResponse, error)
+	// Confirm spends a link and stamps the row it was minted for.
+	//
+	// Everything wrong answers the same `NotFound`: a token never minted, one
+	// spent, one expired, one minted by somebody else, one that is a recovery
+	// link. What a caller may rely on is that after `OK` the address is
+	// `date_verified` at this moment, and that nothing was signed in.
+	Confirm(ctx context.Context, in *EmailConfirmRequest, opts ...grpc.CallOption) (*EmailConfirmResponse, error)
 }
 
 type emailServiceClient struct {
@@ -145,6 +162,26 @@ func (c *emailServiceClient) Watch(ctx context.Context, in *EmailWatchRequest, o
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type EmailService_WatchClient = grpc.ServerStreamingClient[EmailWatchResponse]
 
+func (c *emailServiceClient) Verify(ctx context.Context, in *EmailVerifyRequest, opts ...grpc.CallOption) (*EmailVerifyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EmailVerifyResponse)
+	err := c.cc.Invoke(ctx, EmailService_Verify_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *emailServiceClient) Confirm(ctx context.Context, in *EmailConfirmRequest, opts ...grpc.CallOption) (*EmailConfirmResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EmailConfirmResponse)
+	err := c.cc.Invoke(ctx, EmailService_Confirm_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // EmailServiceServer is the server API for EmailService service.
 // All implementations must embed UnimplementedEmailServiceServer
 // for forward compatibility.
@@ -173,6 +210,21 @@ type EmailServiceServer interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(*EmailWatchRequest, grpc.ServerStreamingServer[EmailWatchResponse]) error
+	// Verify mints a link that proves this address, and answers with it once.
+	//
+	// roster does not deliver it -- that is the point, as it is for `Vouch.Link`:
+	// a store that mailed would be a store that knows how to reach people, which
+	// is the front door's business. The app that asked puts it in a message to
+	// **that** address; a link that arrives anywhere else proves nothing, which
+	// is why only the address on the row is ever a place it goes.
+	Verify(context.Context, *EmailVerifyRequest) (*EmailVerifyResponse, error)
+	// Confirm spends a link and stamps the row it was minted for.
+	//
+	// Everything wrong answers the same `NotFound`: a token never minted, one
+	// spent, one expired, one minted by somebody else, one that is a recovery
+	// link. What a caller may rely on is that after `OK` the address is
+	// `date_verified` at this moment, and that nothing was signed in.
+	Confirm(context.Context, *EmailConfirmRequest) (*EmailConfirmResponse, error)
 	mustEmbedUnimplementedEmailServiceServer()
 }
 
@@ -203,6 +255,12 @@ func (UnimplementedEmailServiceServer) List(context.Context, *EmailListRequest) 
 }
 func (UnimplementedEmailServiceServer) Watch(*EmailWatchRequest, grpc.ServerStreamingServer[EmailWatchResponse]) error {
 	return status.Error(codes.Unimplemented, "method Watch not implemented")
+}
+func (UnimplementedEmailServiceServer) Verify(context.Context, *EmailVerifyRequest) (*EmailVerifyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Verify not implemented")
+}
+func (UnimplementedEmailServiceServer) Confirm(context.Context, *EmailConfirmRequest) (*EmailConfirmResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Confirm not implemented")
 }
 func (UnimplementedEmailServiceServer) mustEmbedUnimplementedEmailServiceServer() {}
 func (UnimplementedEmailServiceServer) testEmbeddedByValue()                      {}
@@ -344,6 +402,42 @@ func _EmailService_Watch_Handler(srv interface{}, stream grpc.ServerStream) erro
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type EmailService_WatchServer = grpc.ServerStreamingServer[EmailWatchResponse]
 
+func _EmailService_Verify_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EmailVerifyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EmailServiceServer).Verify(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: EmailService_Verify_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EmailServiceServer).Verify(ctx, req.(*EmailVerifyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _EmailService_Confirm_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EmailConfirmRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EmailServiceServer).Confirm(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: EmailService_Confirm_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EmailServiceServer).Confirm(ctx, req.(*EmailConfirmRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // EmailService_ServiceDesc is the grpc.ServiceDesc for EmailService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -374,6 +468,14 @@ var EmailService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _EmailService_List_Handler,
+		},
+		{
+			MethodName: "Verify",
+			Handler:    _EmailService_Verify_Handler,
+		},
+		{
+			MethodName: "Confirm",
+			Handler:    _EmailService_Confirm_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

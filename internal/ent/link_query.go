@@ -8,6 +8,7 @@ import (
 	"math"
 	"uuid"
 
+	"github.com/lesomnus/roster/internal/ent/email"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/link"
 	"github.com/lesomnus/roster/internal/ent/predicate"
@@ -25,6 +26,7 @@ type LinkQuery struct {
 	inters     []Interceptor
 	predicates []predicate.Link
 	withHolder *HolderQuery
+	withEmail  *EmailQuery
 	modifiers  []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -77,6 +79,28 @@ func (_q *LinkQuery) QueryHolder() *HolderQuery {
 			sqlgraph.From(link.Table, link.FieldId, selector),
 			sqlgraph.To(holder.Table, holder.FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, link.HolderTable, link.HolderColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryEmail chains the current query on the "email" edge.
+func (_q *LinkQuery) QueryEmail() *EmailQuery {
+	query := (&EmailClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(link.Table, link.FieldId, selector),
+			sqlgraph.To(email.Table, email.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, link.EmailTable, link.EmailColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -277,6 +301,7 @@ func (_q *LinkQuery) Clone() *LinkQuery {
 		inters:     append([]Interceptor{}, _q.inters...),
 		predicates: append([]predicate.Link{}, _q.predicates...),
 		withHolder: _q.withHolder.Clone(),
+		withEmail:  _q.withEmail.Clone(),
 		// clone intermediate query.
 		sql:       _q.sql.Clone(),
 		path:      _q.path,
@@ -292,6 +317,17 @@ func (_q *LinkQuery) WithHolder(opts ...func(*HolderQuery)) *LinkQuery {
 		opt(query)
 	}
 	_q.withHolder = query
+	return _q
+}
+
+// WithEmail tells the query-builder to eager-load the nodes that are connected to
+// the "email" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *LinkQuery) WithEmail(opts ...func(*EmailQuery)) *LinkQuery {
+	query := (&EmailClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withEmail = query
 	return _q
 }
 
@@ -373,8 +409,9 @@ func (_q *LinkQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Link, e
 	var (
 		nodes       = []*Link{}
 		_spec       = _q.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			_q.withHolder != nil,
+			_q.withEmail != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -404,6 +441,12 @@ func (_q *LinkQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Link, e
 			return nil, err
 		}
 	}
+	if query := _q.withEmail; query != nil {
+		if err := _q.loadEmail(ctx, query, nodes, nil,
+			func(n *Link, e *Email) { n.Edges.Email = e }); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
 }
 
@@ -429,6 +472,35 @@ func (_q *LinkQuery) loadHolder(ctx context.Context, query *HolderQuery, nodes [
 		nodes, ok := nodeids[n.Id]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "holder_id" returned %v`, n.Id)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (_q *LinkQuery) loadEmail(ctx context.Context, query *EmailQuery, nodes []*Link, init func(*Link), assign func(*Link, *Email)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Link)
+	for i := range nodes {
+		fk := nodes[i].EmailId
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(email.IdIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.Id]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "email_id" returned %v`, n.Id)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -467,6 +539,9 @@ func (_q *LinkQuery) querySpec() *sqlgraph.QuerySpec {
 		}
 		if _q.withHolder != nil {
 			_spec.Node.AddColumnOnce(link.FieldHolderId)
+		}
+		if _q.withEmail != nil {
+			_spec.Node.AddColumnOnce(link.FieldEmailId)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {
