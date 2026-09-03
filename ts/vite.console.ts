@@ -1,10 +1,16 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// The console: one of the two UIs this package builds, each from its own root
+// over the same `lib/` and `gen/`. `vite.account.ts` is the other.
+//
 // What it takes to serve the sandbox, which is two things and neither is
 // payday's to fix. Both fail confusingly, which is why they are written out
 // rather than left to a README.
 export default defineConfig({
+	root: 'console',
+	publicDir: '../public',
+	build: { outDir: '../dist/console', emptyOutDir: true },
 	plugins: [react()],
 
 	// The worker `@lesomnus/grpc-dgram` starts is

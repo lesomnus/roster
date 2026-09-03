@@ -5,12 +5,13 @@
 	"type": "module",
 	"scripts": {
 		"gen": "cd .. && go tool pd gen --ts .",
-		"dev": "vite",
-		"build": "tsc -p tsconfig.json && vite build",
-		"preview": "vite preview",
+		"dev": "vite --config vite.console.ts",
+		"dev:account": "vite --config vite.account.ts --port 5174",
+		"build": "tsc -p tsconfig.json && vite build --config vite.console.ts && vite build --config vite.account.ts",
+		"preview": "vite preview --config vite.console.ts",
 		"check": "tsc -p tsconfig.json",
 		"wasm": "cd .. && GOOS=js GOARCH=wasm go build -o ts/public/app.wasm ./wasm && cp \"$(go env GOROOT)/lib/wasm/wasm_exec.js\" ts/public/",
-		"dev:sandbox": "npm run wasm && VITE_SANDBOX=1 vite"
+		"dev:sandbox": "npm run wasm && VITE_SANDBOX=1 vite --config vite.console.ts"
 	},
 	"dependencies": {
 		"@bufbuild/protobuf": "^2.12.1",

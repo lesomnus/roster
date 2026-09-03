@@ -271,7 +271,7 @@ change what belongs in one and only the server knows which.
 
 The store is opened for a **credential** and mirrored to IndexedDB under it, so
 a reload draws the page it had rather than a spinner for it, and signing out
-takes the copy with it. `ts/src/store.ts` is the whole of that, and deleting two
+takes the copy with it. `ts/lib/store.ts` is the whole of that, and deleting two
 lines of it turns the mirror off.
 
 React is a **peer** dependency of payday and an optional one. `payday/store` and
@@ -325,7 +325,7 @@ reachable from the same page the RPCs are.
 `go tool pd gen --ts .` writes the messages and service descriptors into
 `ts/gen`, along with `entities.ts` — one declaration per entity, which is what
 the local store is built from. Nothing there is behaviour, and nothing is
-generated per service: `ts/src/client.ts` turns a descriptor into a client in one
+generated per service: `ts/lib/client.ts` turns a descriptor into a client in one
 line, for whatever does not want to go through the store.
 
 ## What is enforced, and why

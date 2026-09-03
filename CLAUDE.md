@@ -95,7 +95,8 @@ checkout.
 | `ts/gen/` | in whole |
 
 **`.g` means a generator wrote it.** Everything else is yours — including
-`proto/app/*.proto`, `proto/ext/**` (overlays), `cmd/`, and `ts/src/`.
+`proto/app/*.proto`, `proto/ext/**` (overlays), `cmd/`, and `ts/console/`, `ts/account/`,
+`ts/lib/` (the two UIs and what they share).
 
 To add a field to one of payday's entities, write an **overlay** in
 `proto/ext/payday/`. Editing `proto/roster/payday/` directly is undone by the next

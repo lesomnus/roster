@@ -42,7 +42,7 @@ import type { Tenant } from '../gen/roster/payday/tenant_pb.js'
 import { TenantService } from '../gen/roster/payday/tenant_svc_pb.js'
 import { HolderService } from '../gen/roster/payday/holder_svc_pb.js'
 
-import type { Admin } from './client.js'
+import type { Admin } from '../lib/client.js'
 import { Person } from './people.js'
 import { Arrives } from './arrives.js'
 import { Organisation } from './organisation.js'

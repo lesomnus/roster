@@ -213,3 +213,21 @@ form.profile {
 	margin: 0;
 	font-size: 0.9rem;
 }
+
+/* The account page's sign-in: the providers as buttons, above the password
+   form, because a person who arrives through Entra should not read a password
+   field first. */
+.providers {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin-bottom: 1rem;
+}
+
+a.button {
+	padding: 0.35rem 0.75rem;
+	border: 1px solid currentColor;
+	border-radius: 0.25rem;
+	text-decoration: none;
+	color: inherit;
+}

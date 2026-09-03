@@ -44,7 +44,7 @@ import type { Holder } from '../gen/roster/payday/holder_pb.js'
 import { HolderService } from '../gen/roster/payday/holder_svc_pb.js'
 import { EmailService } from '../gen/app/email_svc_pb.js'
 import { IdentityService } from '../gen/app/identity_svc_pb.js'
-import type { Admin } from './client.js'
+import type { Admin } from '../lib/client.js'
 
 /** uuid is the bytes an identifier arrives as, written the way a person reads one. */
 function uuid(v: Uint8Array | undefined): string {

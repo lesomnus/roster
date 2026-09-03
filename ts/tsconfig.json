@@ -16,5 +16,5 @@
 		// filesystem compile in a bundle that cannot.
 		"types": ["vite/client"]
 	},
-	"include": ["src", "gen"]
+	"include": ["console", "account", "lib", "gen"]
 }

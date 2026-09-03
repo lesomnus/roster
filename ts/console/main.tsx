@@ -18,10 +18,10 @@ import { Provider } from '@lesomnus/payday/react'
 import type { App } from '@lesomnus/payday/react'
 
 import { AuthService } from '../gen/app/auth_pb.js'
-import { admin, type Admin } from './client.js'
-import { open } from './store.js'
+import { admin, type Admin } from '../lib/client.js'
+import { open } from '../lib/store.js'
 import { Page } from './page.js'
-import './style.css'
+import '../lib/style.css'
 
 /**
  * Where the app answers.
