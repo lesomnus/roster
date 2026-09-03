@@ -6,6 +6,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/lesomnus/z"
+
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/front"
 )
@@ -58,6 +60,19 @@ func (s coreHost) Patch(ctx context.Context, req *app.HostPatchRequest) (*app.Ho
 	return s.HostServiceServer.Patch(ctx, req)
 }
 
+// Update is `Patch` with the name held back; `host_svc.ext.proto` says why.
+func (s coreHost) Update(ctx context.Context, req *app.HostUpdateRequest) (*app.Host, error) {
+	patch := app.HostPatchRequest_builder{
+		Ref:         req.GetRef(),
+		DateUpdated: req.GetDateUpdated(),
+	}
+	if req.HasDesc() {
+		patch.Desc = z.Ptr(req.GetDesc())
+	}
+
+	return s.HostServiceServer.Patch(ctx, patch.Build())
+}
+
 type coreMailDomain struct {
 	Core
 	app.MailDomainServiceServer
@@ -101,4 +116,20 @@ func normalised(field, v string, by func(string) string) error {
 
 	return status.Errorf(codes.InvalidArgument,
 		"%s: stored as it is compared, so %q rather than %q", field, w, v)
+}
+
+// Update is `Patch` with the name held back; `host_svc.ext.proto` says why.
+func (s coreMailDomain) Update(ctx context.Context, req *app.MailDomainUpdateRequest) (*app.MailDomain, error) {
+	patch := app.MailDomainPatchRequest_builder{
+		Ref:         req.GetRef(),
+		DateUpdated: req.GetDateUpdated(),
+	}
+	if req.HasProvider() {
+		patch.Provider = z.Ptr(req.GetProvider())
+	}
+	if req.HasDesc() {
+		patch.Desc = z.Ptr(req.GetDesc())
+	}
+
+	return s.MailDomainServiceServer.Patch(ctx, patch.Build())
 }

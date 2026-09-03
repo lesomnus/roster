@@ -29,4 +29,20 @@ test('an operator signs in and stands a customer up', async ({ page }) => {
 
 	await page.locator('tr', { hasText: 'fabrikam' }).locator('button', { hasText: 'people' }).click()
 	await expect(page.getByRole('cell', { name: 'admin', exact: true }).first()).toBeVisible()
+
+	// How they arrive: a name added, then edited in place -- the note changes
+	// and the name, which the row is, is not offered.
+	await page.locator('tr', { hasText: 'fabrikam' }).locator('button', { hasText: 'arrives through' }).click()
+	const names = page.locator('h4', { hasText: 'names' }).locator('xpath=..')
+	await names.locator('input[name=name]').fill('fabrikam.test')
+	await names.locator('input[name=desc]').fill('staging')
+	await names.locator('button', { hasText: 'add name' }).click()
+	const row = names.locator('tr', { hasText: 'fabrikam.test' })
+	await expect(row.getByRole('cell', { name: 'staging', exact: true })).toBeVisible()
+
+	await row.locator('button', { hasText: 'edit' }).click()
+	await expect(row.locator('input[name=name]')).toHaveCount(0)
+	await row.locator('input[name=desc]').fill('production')
+	await row.locator('button', { hasText: 'save' }).click()
+	await expect(names.locator('tr', { hasText: 'fabrikam.test' }).getByRole('cell', { name: 'production', exact: true })).toBeVisible()
 })

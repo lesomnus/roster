@@ -18,7 +18,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/connection_svc.g.proto.
  */
 export const file_app_connection_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChphcHAvY29ubmVjdGlvbl9zdmMuZy5wcm90bxIGcm9zdGVyIv0BChRDb25uZWN0aW9uQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGRlc2MYBiABKAlCBaoBAggCEhUKBmlzc3VlchgIIAEoCUIFqgECCAISGAoJY2xpZW50X2lkGAkgASgJQgWqAQIIAhIOCgZzY29wZXMYCiADKAkSGQoKc2VjcmV0X3JlZhgLIAEoCUIFqgECCAISMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJkChRDb25uZWN0aW9uR2V0UmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuQ29ubmVjdGlvblJlZhIoCgZzZWxlY3QYAiABKAsyGC5yb3N0ZXIuQ29ubmVjdGlvblNlbGVjdCJNCg1Db25uZWN0aW9uUmVmEgwKAmlkGAEgASgMSAASJwoCYXQYAiABKAsyGS5yb3N0ZXIuQ29ubmVjdGlvblJlZkJ5QXRIAEIFCgNrZXkiRAoRQ29ubmVjdGlvblJlZkJ5QXQSIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZhIMCgRuYW1lGAUgASgJIukBChBDb25uZWN0aW9uU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZ0ZW5hbnQYAiABKAsyFC5yb3N0ZXIuVGVuYW50U2VsZWN0EgwKBG5hbWUYBSABKAgSDAoEZGVzYxgGIAEoCBIOCgZpc3N1ZXIYCCABKAgSEQoJY2xpZW50X2lkGAkgASgIEg4KBnNjb3BlcxgKIAEoCBISCgpzZWNyZXRfcmVmGAsgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgi7QEKFkNvbm5lY3Rpb25QYXRjaFJlcXVlc3QSIgoDcmVmGAEgASgLMhUucm9zdGVyLkNvbm5lY3Rpb25SZWYSDAoEbmFtZRgKIAEoCRIMCgRkZXNjGAwgASgJEg4KBmlzc3VlchgQIAEoCRIRCgljbGllbnRfaWQYEiABKAkSDgoGc2NvcGVzGBQgAygJEhIKCnNlY3JldF9yZWYYFiABKAkSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiWQoWQ29ubmVjdGlvbkFwcGx5UmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuQ29ubmVjdGlvblJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIikKF0Nvbm5lY3Rpb25FcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCJtChVDb25uZWN0aW9uTGlzdFJlcXVlc3QSKQoHZmlsdGVycxgBIAMoCzIYLnJvc3Rlci5Db25uZWN0aW9uRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAiJQChZDb25uZWN0aW9uTGlzdFJlc3BvbnNlEiEKBWl0ZW1zGAEgAygLMhIucm9zdGVyLkNvbm5lY3Rpb24SEwoEbmV4dBgCIAEoCUIFqgECCAIiWQoQQ29ubmVjdGlvbkZpbHRlchIiCgNyZWYYASABKAsyFS5yb3N0ZXIuQ29ubmVjdGlvblJlZhIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmMocDChFDb25uZWN0aW9uU2VydmljZRI3CgNBZGQSHC5yb3N0ZXIuQ29ubmVjdGlvbkFkZFJlcXVlc3QaEi5yb3N0ZXIuQ29ubmVjdGlvbhI3CgNHZXQSHC5yb3N0ZXIuQ29ubmVjdGlvbkdldFJlcXVlc3QaEi5yb3N0ZXIuQ29ubmVjdGlvbhI7CgVQYXRjaBIeLnJvc3Rlci5Db25uZWN0aW9uUGF0Y2hSZXF1ZXN0GhIucm9zdGVyLkNvbm5lY3Rpb24SOwoFQXBwbHkSHi5yb3N0ZXIuQ29ubmVjdGlvbkFwcGx5UmVxdWVzdBoSLnJvc3Rlci5Db25uZWN0aW9uEj8KBUVyYXNlEhUucm9zdGVyLkNvbm5lY3Rpb25SZWYaHy5yb3N0ZXIuQ29ubmVjdGlvbkVyYXNlUmVzcG9uc2USRQoETGlzdBIdLnJvc3Rlci5Db25uZWN0aW9uTGlzdFJlcXVlc3QaHi5yb3N0ZXIuQ29ubmVjdGlvbkxpc3RSZXNwb25zZUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_connection, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_tenant_svc_g]);
+  fileDesc("ChphcHAvY29ubmVjdGlvbl9zdmMuZy5wcm90bxIGcm9zdGVyIv0BChRDb25uZWN0aW9uQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGRlc2MYBiABKAlCBaoBAggCEhUKBmlzc3VlchgIIAEoCUIFqgECCAISGAoJY2xpZW50X2lkGAkgASgJQgWqAQIIAhIOCgZzY29wZXMYCiADKAkSGQoKc2VjcmV0X3JlZhgLIAEoCUIFqgECCAISMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJkChRDb25uZWN0aW9uR2V0UmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuQ29ubmVjdGlvblJlZhIoCgZzZWxlY3QYAiABKAsyGC5yb3N0ZXIuQ29ubmVjdGlvblNlbGVjdCJNCg1Db25uZWN0aW9uUmVmEgwKAmlkGAEgASgMSAASJwoCYXQYAiABKAsyGS5yb3N0ZXIuQ29ubmVjdGlvblJlZkJ5QXRIAEIFCgNrZXkiRAoRQ29ubmVjdGlvblJlZkJ5QXQSIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZhIMCgRuYW1lGAUgASgJIukBChBDb25uZWN0aW9uU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZ0ZW5hbnQYAiABKAsyFC5yb3N0ZXIuVGVuYW50U2VsZWN0EgwKBG5hbWUYBSABKAgSDAoEZGVzYxgGIAEoCBIOCgZpc3N1ZXIYCCABKAgSEQoJY2xpZW50X2lkGAkgASgIEg4KBnNjb3BlcxgKIAEoCBISCgpzZWNyZXRfcmVmGAsgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgi7QEKFkNvbm5lY3Rpb25QYXRjaFJlcXVlc3QSIgoDcmVmGAEgASgLMhUucm9zdGVyLkNvbm5lY3Rpb25SZWYSDAoEbmFtZRgKIAEoCRIMCgRkZXNjGAwgASgJEg4KBmlzc3VlchgQIAEoCRIRCgljbGllbnRfaWQYEiABKAkSDgoGc2NvcGVzGBQgAygJEhIKCnNlY3JldF9yZWYYFiABKAkSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiWQoWQ29ubmVjdGlvbkFwcGx5UmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuQ29ubmVjdGlvblJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIikKF0Nvbm5lY3Rpb25FcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCJtChVDb25uZWN0aW9uTGlzdFJlcXVlc3QSKQoHZmlsdGVycxgBIAMoCzIYLnJvc3Rlci5Db25uZWN0aW9uRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAiJQChZDb25uZWN0aW9uTGlzdFJlc3BvbnNlEiEKBWl0ZW1zGAEgAygLMhIucm9zdGVyLkNvbm5lY3Rpb24SEwoEbmV4dBgCIAEoCUIFqgECCAIiWQoQQ29ubmVjdGlvbkZpbHRlchIiCgNyZWYYASABKAsyFS5yb3N0ZXIuQ29ubmVjdGlvblJlZhIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmIsQBChdDb25uZWN0aW9uVXBkYXRlUmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuQ29ubmVjdGlvblJlZhIwCgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEg4KBmlzc3VlchgIIAEoCRIRCgljbGllbnRfaWQYCSABKAkSDgoGc2NvcGVzGAogAygJEhIKCnNlY3JldF9yZWYYCyABKAkSDAoEZGVzYxgGIAEoCTLGAwoRQ29ubmVjdGlvblNlcnZpY2USNwoDQWRkEhwucm9zdGVyLkNvbm5lY3Rpb25BZGRSZXF1ZXN0GhIucm9zdGVyLkNvbm5lY3Rpb24SNwoDR2V0Ehwucm9zdGVyLkNvbm5lY3Rpb25HZXRSZXF1ZXN0GhIucm9zdGVyLkNvbm5lY3Rpb24SOwoFUGF0Y2gSHi5yb3N0ZXIuQ29ubmVjdGlvblBhdGNoUmVxdWVzdBoSLnJvc3Rlci5Db25uZWN0aW9uEjsKBUFwcGx5Eh4ucm9zdGVyLkNvbm5lY3Rpb25BcHBseVJlcXVlc3QaEi5yb3N0ZXIuQ29ubmVjdGlvbhI/CgVFcmFzZRIVLnJvc3Rlci5Db25uZWN0aW9uUmVmGh8ucm9zdGVyLkNvbm5lY3Rpb25FcmFzZVJlc3BvbnNlEkUKBExpc3QSHS5yb3N0ZXIuQ29ubmVjdGlvbkxpc3RSZXF1ZXN0Gh4ucm9zdGVyLkNvbm5lY3Rpb25MaXN0UmVzcG9uc2USPQoGVXBkYXRlEh8ucm9zdGVyLkNvbm5lY3Rpb25VcGRhdGVSZXF1ZXN0GhIucm9zdGVyLkNvbm5lY3Rpb25CIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_connection, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_tenant_svc_g]);
 
 /**
  * @generated from message roster.ConnectionAddRequest
@@ -425,6 +425,59 @@ export const ConnectionFilterSchema: GenMessage<ConnectionFilter> = /*@__PURE__*
   messageDesc(file_app_connection_svc_g, 10);
 
 /**
+ * @generated from message roster.ConnectionUpdateRequest
+ */
+export type ConnectionUpdateRequest = Message<"roster.ConnectionUpdateRequest"> & {
+  /**
+   * @generated from field: roster.ConnectionRef ref = 1;
+   */
+  ref?: ConnectionRef | undefined;
+
+  /**
+   * Optimistic locking, as `Patch` takes it: the version this caller read.
+   *
+   * @generated from field: google.protobuf.Timestamp date_updated = 13;
+   */
+  dateUpdated?: Timestamp | undefined;
+
+  /**
+   * Each replaced whole when present, and left as it is when absent. Scopes
+   * have no presence: given, they replace; empty, they are left as they are,
+   * the way `Tenant.Update` takes labels.
+   *
+   * @generated from field: string issuer = 8;
+   */
+  issuer: string;
+
+  /**
+   * @generated from field: string client_id = 9;
+   */
+  clientId: string;
+
+  /**
+   * @generated from field: repeated string scopes = 10;
+   */
+  scopes: string[];
+
+  /**
+   * @generated from field: string secret_ref = 11;
+   */
+  secretRef: string;
+
+  /**
+   * @generated from field: string desc = 6;
+   */
+  desc: string;
+};
+
+/**
+ * Describes the message roster.ConnectionUpdateRequest.
+ * Use `create(ConnectionUpdateRequestSchema)` to create a new message.
+ */
+export const ConnectionUpdateRequestSchema: GenMessage<ConnectionUpdateRequest> = /*@__PURE__*/
+  messageDesc(file_app_connection_svc_g, 11);
+
+/**
  * @generated from service roster.ConnectionService
  */
 export const ConnectionService: GenService<{
@@ -487,6 +540,16 @@ export const ConnectionService: GenService<{
     methodKind: "unary";
     input: typeof ConnectionListRequestSchema;
     output: typeof ConnectionListResponseSchema;
+  },
+  /**
+   * Update replaces a provider's configuration, under the version read.
+   *
+   * @generated from rpc roster.ConnectionService.Update
+   */
+  update: {
+    methodKind: "unary";
+    input: typeof ConnectionUpdateRequestSchema;
+    output: typeof ConnectionSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_app_connection_svc_g, 0);

@@ -21,6 +21,8 @@ service ConnectionService {
   rpc Erase(ConnectionRef) returns (ConnectionEraseResponse);
   // List reads Connections a page at a time.
   rpc List(ConnectionListRequest) returns (ConnectionListResponse);
+  // Update replaces a provider's configuration, under the version read.
+  rpc Update(ConnectionUpdateRequest) returns (Connection);
 }
 
 message ConnectionAddRequest {
@@ -137,4 +139,20 @@ message ConnectionListResponse {
 message ConnectionFilter {
   ConnectionRef ref = 1;
   TenantRef tenant = 2;
+}
+
+message ConnectionUpdateRequest {
+  ConnectionRef ref = 1;
+
+  // Optimistic locking, as `Patch` takes it: the version this caller read.
+  google.protobuf.Timestamp date_updated = 13;
+
+  // Each replaced whole when present, and left as it is when absent. Scopes
+  // have no presence: given, they replace; empty, they are left as they are,
+  // the way `Tenant.Update` takes labels.
+  string issuer = 8;
+  string client_id = 9;
+  repeated string scopes = 10;
+  string secret_ref = 11;
+  string desc = 6;
 }

@@ -1,0 +1,51 @@
+edition = "2023";
+
+package roster;
+
+import "google/protobuf/timestamp.proto";
+import "app/host.proto";
+
+// What this app adds to the generated contracts for `Host` and `MailDomain`.
+//
+// # Why an Update and not the Patch
+//
+// `Patch` writes anything the schema holds and is closed at the transport for
+// it (`grpcx.GeneralWrite`). What a console edits about either row is what it
+// says about itself -- a note; for a domain, where it routes -- and never the
+// `name`, which is the row: a host is what a front door resolves a tenant
+// through, a domain is what an address is routed by, and one that changed is
+// a different row that the two calls this console already draws say. The
+// same shape `Tenant.Update` and `Holder.Update` have, on the entity's own
+// service, for the reason CLAUDE.md gives (*overlay before service*).
+service HostService {
+  // Update replaces what a host says about itself, under the version read.
+  rpc Update(HostUpdateRequest) returns (Host);
+}
+
+message HostUpdateRequest {
+  HostRef ref = 1;
+
+  // Optimistic locking, as `Patch` takes it: the version this caller read.
+  google.protobuf.Timestamp date_updated = 13;
+
+  // Replaced whole when present, and left as it is when absent.
+  string desc = 6;
+}
+
+service MailDomainService {
+  // Update replaces where a domain routes and what it says about itself,
+  // under the version read.
+  rpc Update(MailDomainUpdateRequest) returns (MailDomain);
+}
+
+message MailDomainUpdateRequest {
+  MailDomainRef ref = 1;
+
+  google.protobuf.Timestamp date_updated = 13;
+
+  // Each replaced whole when present, and left as it is when absent. An empty
+  // provider, given, is a domain that is known and routed nowhere -- the same
+  // thing it means on `Add`.
+  string provider = 9;
+  string desc = 6;
+}

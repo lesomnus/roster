@@ -10411,6 +10411,26 @@ func (s interceptConnection) List(ctx context.Context, req *rstr.ConnectionListR
 	return w, nil
 }
 
+func (s interceptConnection) Update(ctx context.Context, req *rstr.ConnectionUpdateRequest) (*rstr.Connection, error) {
+	if s.unary == nil {
+		return s.ConnectionServiceServer.Update(ctx, req)
+	}
+
+	v, err := s.unary(ctx, req, &grpc.UnaryServerInfo{
+		Server:     s.ConnectionServiceServer,
+		FullMethod: rstr.ConnectionService_Update_FullMethodName,
+	}, func(ctx context.Context, req any) (any, error) {
+		return s.ConnectionServiceServer.Update(ctx, req.(*rstr.ConnectionUpdateRequest))
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	w, _ := v.(*rstr.Connection)
+
+	return w, nil
+}
+
 func (s Intercept) Continuation() rstr.ContinuationServiceServer {
 	return interceptContinuation{s, s.Next().Continuation()}
 }
@@ -11744,6 +11764,26 @@ func (s interceptHost) List(ctx context.Context, req *rstr.HostListRequest) (*rs
 	return w, nil
 }
 
+func (s interceptHost) Update(ctx context.Context, req *rstr.HostUpdateRequest) (*rstr.Host, error) {
+	if s.unary == nil {
+		return s.HostServiceServer.Update(ctx, req)
+	}
+
+	v, err := s.unary(ctx, req, &grpc.UnaryServerInfo{
+		Server:     s.HostServiceServer,
+		FullMethod: rstr.HostService_Update_FullMethodName,
+	}, func(ctx context.Context, req any) (any, error) {
+		return s.HostServiceServer.Update(ctx, req.(*rstr.HostUpdateRequest))
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	w, _ := v.(*rstr.Host)
+
+	return w, nil
+}
+
 func (s Intercept) MailDomain() rstr.MailDomainServiceServer {
 	return interceptMailDomain{s, s.Next().MailDomain()}
 }
@@ -11869,6 +11909,26 @@ func (s interceptMailDomain) List(ctx context.Context, req *rstr.MailDomainListR
 	}
 
 	w, _ := v.(*rstr.MailDomainListResponse)
+
+	return w, nil
+}
+
+func (s interceptMailDomain) Update(ctx context.Context, req *rstr.MailDomainUpdateRequest) (*rstr.MailDomain, error) {
+	if s.unary == nil {
+		return s.MailDomainServiceServer.Update(ctx, req)
+	}
+
+	v, err := s.unary(ctx, req, &grpc.UnaryServerInfo{
+		Server:     s.MailDomainServiceServer,
+		FullMethod: rstr.MailDomainService_Update_FullMethodName,
+	}, func(ctx context.Context, req any) (any, error) {
+		return s.MailDomainServiceServer.Update(ctx, req.(*rstr.MailDomainUpdateRequest))
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	w, _ := v.(*rstr.MailDomain)
 
 	return w, nil
 }
@@ -13881,6 +13941,19 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 
 		return anypb.New(res)
 
+	case rstr.ConnectionService_Update_FullMethodName:
+		v := &rstr.ConnectionUpdateRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Connection().Update(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
 	case rstr.ContinuationService_Add_FullMethodName:
 		v := &rstr.ContinuationAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
@@ -14661,6 +14734,19 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 
 		return anypb.New(res)
 
+	case rstr.HostService_Update_FullMethodName:
+		v := &rstr.HostUpdateRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Host().Update(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
 	case rstr.MailDomainService_Add_FullMethodName:
 		v := &rstr.MailDomainAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
@@ -14733,6 +14819,19 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 		}
 
 		res, err := s.MailDomain().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.MailDomainService_Update_FullMethodName:
+		v := &rstr.MailDomainUpdateRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.MailDomain().Update(ctx, v)
 		if err != nil {
 			return nil, err
 		}

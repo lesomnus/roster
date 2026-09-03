@@ -19,12 +19,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	HostService_Add_FullMethodName   = "/roster.HostService/Add"
-	HostService_Get_FullMethodName   = "/roster.HostService/Get"
-	HostService_Patch_FullMethodName = "/roster.HostService/Patch"
-	HostService_Apply_FullMethodName = "/roster.HostService/Apply"
-	HostService_Erase_FullMethodName = "/roster.HostService/Erase"
-	HostService_List_FullMethodName  = "/roster.HostService/List"
+	HostService_Add_FullMethodName    = "/roster.HostService/Add"
+	HostService_Get_FullMethodName    = "/roster.HostService/Get"
+	HostService_Patch_FullMethodName  = "/roster.HostService/Patch"
+	HostService_Apply_FullMethodName  = "/roster.HostService/Apply"
+	HostService_Erase_FullMethodName  = "/roster.HostService/Erase"
+	HostService_List_FullMethodName   = "/roster.HostService/List"
+	HostService_Update_FullMethodName = "/roster.HostService/Update"
 )
 
 // HostServiceClient is the client API for HostService service.
@@ -43,6 +44,8 @@ type HostServiceClient interface {
 	Erase(ctx context.Context, in *HostRef, opts ...grpc.CallOption) (*HostEraseResponse, error)
 	// List reads Hosts a page at a time.
 	List(ctx context.Context, in *HostListRequest, opts ...grpc.CallOption) (*HostListResponse, error)
+	// Update replaces what a host says about itself, under the version read.
+	Update(ctx context.Context, in *HostUpdateRequest, opts ...grpc.CallOption) (*Host, error)
 }
 
 type hostServiceClient struct {
@@ -113,6 +116,16 @@ func (c *hostServiceClient) List(ctx context.Context, in *HostListRequest, opts 
 	return out, nil
 }
 
+func (c *hostServiceClient) Update(ctx context.Context, in *HostUpdateRequest, opts ...grpc.CallOption) (*Host, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Host)
+	err := c.cc.Invoke(ctx, HostService_Update_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // HostServiceServer is the server API for HostService service.
 // All implementations must embed UnimplementedHostServiceServer
 // for forward compatibility.
@@ -129,6 +142,8 @@ type HostServiceServer interface {
 	Erase(context.Context, *HostRef) (*HostEraseResponse, error)
 	// List reads Hosts a page at a time.
 	List(context.Context, *HostListRequest) (*HostListResponse, error)
+	// Update replaces what a host says about itself, under the version read.
+	Update(context.Context, *HostUpdateRequest) (*Host, error)
 	mustEmbedUnimplementedHostServiceServer()
 }
 
@@ -156,6 +171,9 @@ func (UnimplementedHostServiceServer) Erase(context.Context, *HostRef) (*HostEra
 }
 func (UnimplementedHostServiceServer) List(context.Context, *HostListRequest) (*HostListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
+}
+func (UnimplementedHostServiceServer) Update(context.Context, *HostUpdateRequest) (*Host, error) {
+	return nil, status.Error(codes.Unimplemented, "method Update not implemented")
 }
 func (UnimplementedHostServiceServer) mustEmbedUnimplementedHostServiceServer() {}
 func (UnimplementedHostServiceServer) testEmbeddedByValue()                     {}
@@ -286,6 +304,24 @@ func _HostService_List_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HostService_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HostUpdateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HostServiceServer).Update(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HostService_Update_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HostServiceServer).Update(ctx, req.(*HostUpdateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // HostService_ServiceDesc is the grpc.ServiceDesc for HostService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -317,18 +353,23 @@ var HostService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "List",
 			Handler:    _HostService_List_Handler,
 		},
+		{
+			MethodName: "Update",
+			Handler:    _HostService_Update_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "app/host_svc.g.proto",
 }
 
 const (
-	MailDomainService_Add_FullMethodName   = "/roster.MailDomainService/Add"
-	MailDomainService_Get_FullMethodName   = "/roster.MailDomainService/Get"
-	MailDomainService_Patch_FullMethodName = "/roster.MailDomainService/Patch"
-	MailDomainService_Apply_FullMethodName = "/roster.MailDomainService/Apply"
-	MailDomainService_Erase_FullMethodName = "/roster.MailDomainService/Erase"
-	MailDomainService_List_FullMethodName  = "/roster.MailDomainService/List"
+	MailDomainService_Add_FullMethodName    = "/roster.MailDomainService/Add"
+	MailDomainService_Get_FullMethodName    = "/roster.MailDomainService/Get"
+	MailDomainService_Patch_FullMethodName  = "/roster.MailDomainService/Patch"
+	MailDomainService_Apply_FullMethodName  = "/roster.MailDomainService/Apply"
+	MailDomainService_Erase_FullMethodName  = "/roster.MailDomainService/Erase"
+	MailDomainService_List_FullMethodName   = "/roster.MailDomainService/List"
+	MailDomainService_Update_FullMethodName = "/roster.MailDomainService/Update"
 )
 
 // MailDomainServiceClient is the client API for MailDomainService service.
@@ -347,6 +388,9 @@ type MailDomainServiceClient interface {
 	Erase(ctx context.Context, in *MailDomainRef, opts ...grpc.CallOption) (*MailDomainEraseResponse, error)
 	// List reads MailDomains a page at a time.
 	List(ctx context.Context, in *MailDomainListRequest, opts ...grpc.CallOption) (*MailDomainListResponse, error)
+	// Update replaces where a domain routes and what it says about itself,
+	// under the version read.
+	Update(ctx context.Context, in *MailDomainUpdateRequest, opts ...grpc.CallOption) (*MailDomain, error)
 }
 
 type mailDomainServiceClient struct {
@@ -417,6 +461,16 @@ func (c *mailDomainServiceClient) List(ctx context.Context, in *MailDomainListRe
 	return out, nil
 }
 
+func (c *mailDomainServiceClient) Update(ctx context.Context, in *MailDomainUpdateRequest, opts ...grpc.CallOption) (*MailDomain, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MailDomain)
+	err := c.cc.Invoke(ctx, MailDomainService_Update_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MailDomainServiceServer is the server API for MailDomainService service.
 // All implementations must embed UnimplementedMailDomainServiceServer
 // for forward compatibility.
@@ -433,6 +487,9 @@ type MailDomainServiceServer interface {
 	Erase(context.Context, *MailDomainRef) (*MailDomainEraseResponse, error)
 	// List reads MailDomains a page at a time.
 	List(context.Context, *MailDomainListRequest) (*MailDomainListResponse, error)
+	// Update replaces where a domain routes and what it says about itself,
+	// under the version read.
+	Update(context.Context, *MailDomainUpdateRequest) (*MailDomain, error)
 	mustEmbedUnimplementedMailDomainServiceServer()
 }
 
@@ -460,6 +517,9 @@ func (UnimplementedMailDomainServiceServer) Erase(context.Context, *MailDomainRe
 }
 func (UnimplementedMailDomainServiceServer) List(context.Context, *MailDomainListRequest) (*MailDomainListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
+}
+func (UnimplementedMailDomainServiceServer) Update(context.Context, *MailDomainUpdateRequest) (*MailDomain, error) {
+	return nil, status.Error(codes.Unimplemented, "method Update not implemented")
 }
 func (UnimplementedMailDomainServiceServer) mustEmbedUnimplementedMailDomainServiceServer() {}
 func (UnimplementedMailDomainServiceServer) testEmbeddedByValue()                           {}
@@ -590,6 +650,24 @@ func _MailDomainService_List_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MailDomainService_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MailDomainUpdateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MailDomainServiceServer).Update(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MailDomainService_Update_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MailDomainServiceServer).Update(ctx, req.(*MailDomainUpdateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MailDomainService_ServiceDesc is the grpc.ServiceDesc for MailDomainService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -620,6 +698,10 @@ var MailDomainService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _MailDomainService_List_Handler,
+		},
+		{
+			MethodName: "Update",
+			Handler:    _MailDomainService_Update_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

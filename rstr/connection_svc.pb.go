@@ -1728,6 +1728,251 @@ func (b0 ConnectionFilter_builder) Build() *ConnectionFilter {
 	return m0
 }
 
+type ConnectionUpdateRequest struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref         *ConnectionRef         `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_Issuer      *string                `protobuf:"bytes,8,opt,name=issuer"`
+	xxx_hidden_ClientId    *string                `protobuf:"bytes,9,opt,name=client_id,json=clientId"`
+	xxx_hidden_Scopes      []string               `protobuf:"bytes,10,rep,name=scopes"`
+	xxx_hidden_SecretRef   *string                `protobuf:"bytes,11,opt,name=secret_ref,json=secretRef"`
+	xxx_hidden_Desc        *string                `protobuf:"bytes,6,opt,name=desc"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *ConnectionUpdateRequest) Reset() {
+	*x = ConnectionUpdateRequest{}
+	mi := &file_app_connection_svc_g_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConnectionUpdateRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConnectionUpdateRequest) ProtoMessage() {}
+
+func (x *ConnectionUpdateRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_app_connection_svc_g_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *ConnectionUpdateRequest) GetRef() *ConnectionRef {
+	if x != nil {
+		return x.xxx_hidden_Ref
+	}
+	return nil
+}
+
+func (x *ConnectionUpdateRequest) GetDateUpdated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateUpdated
+	}
+	return nil
+}
+
+func (x *ConnectionUpdateRequest) GetIssuer() string {
+	if x != nil {
+		if x.xxx_hidden_Issuer != nil {
+			return *x.xxx_hidden_Issuer
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *ConnectionUpdateRequest) GetClientId() string {
+	if x != nil {
+		if x.xxx_hidden_ClientId != nil {
+			return *x.xxx_hidden_ClientId
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *ConnectionUpdateRequest) GetScopes() []string {
+	if x != nil {
+		return x.xxx_hidden_Scopes
+	}
+	return nil
+}
+
+func (x *ConnectionUpdateRequest) GetSecretRef() string {
+	if x != nil {
+		if x.xxx_hidden_SecretRef != nil {
+			return *x.xxx_hidden_SecretRef
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *ConnectionUpdateRequest) GetDesc() string {
+	if x != nil {
+		if x.xxx_hidden_Desc != nil {
+			return *x.xxx_hidden_Desc
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *ConnectionUpdateRequest) SetRef(v *ConnectionRef) {
+	x.xxx_hidden_Ref = v
+}
+
+func (x *ConnectionUpdateRequest) SetDateUpdated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateUpdated = v
+}
+
+func (x *ConnectionUpdateRequest) SetIssuer(v string) {
+	x.xxx_hidden_Issuer = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 7)
+}
+
+func (x *ConnectionUpdateRequest) SetClientId(v string) {
+	x.xxx_hidden_ClientId = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 7)
+}
+
+func (x *ConnectionUpdateRequest) SetScopes(v []string) {
+	x.xxx_hidden_Scopes = v
+}
+
+func (x *ConnectionUpdateRequest) SetSecretRef(v string) {
+	x.xxx_hidden_SecretRef = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 7)
+}
+
+func (x *ConnectionUpdateRequest) SetDesc(v string) {
+	x.xxx_hidden_Desc = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 7)
+}
+
+func (x *ConnectionUpdateRequest) HasRef() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Ref != nil
+}
+
+func (x *ConnectionUpdateRequest) HasDateUpdated() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateUpdated != nil
+}
+
+func (x *ConnectionUpdateRequest) HasIssuer() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *ConnectionUpdateRequest) HasClientId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *ConnectionUpdateRequest) HasSecretRef() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+}
+
+func (x *ConnectionUpdateRequest) HasDesc() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+}
+
+func (x *ConnectionUpdateRequest) ClearRef() {
+	x.xxx_hidden_Ref = nil
+}
+
+func (x *ConnectionUpdateRequest) ClearDateUpdated() {
+	x.xxx_hidden_DateUpdated = nil
+}
+
+func (x *ConnectionUpdateRequest) ClearIssuer() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_Issuer = nil
+}
+
+func (x *ConnectionUpdateRequest) ClearClientId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_ClientId = nil
+}
+
+func (x *ConnectionUpdateRequest) ClearSecretRef() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_SecretRef = nil
+}
+
+func (x *ConnectionUpdateRequest) ClearDesc() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	x.xxx_hidden_Desc = nil
+}
+
+type ConnectionUpdateRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Ref *ConnectionRef
+	// Optimistic locking, as `Patch` takes it: the version this caller read.
+	DateUpdated *timestamppb.Timestamp
+	// Each replaced whole when present, and left as it is when absent. Scopes
+	// have no presence: given, they replace; empty, they are left as they are,
+	// the way `Tenant.Update` takes labels.
+	Issuer    *string
+	ClientId  *string
+	Scopes    []string
+	SecretRef *string
+	Desc      *string
+}
+
+func (b0 ConnectionUpdateRequest_builder) Build() *ConnectionUpdateRequest {
+	m0 := &ConnectionUpdateRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_DateUpdated = b.DateUpdated
+	if b.Issuer != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 7)
+		x.xxx_hidden_Issuer = b.Issuer
+	}
+	if b.ClientId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 7)
+		x.xxx_hidden_ClientId = b.ClientId
+	}
+	x.xxx_hidden_Scopes = b.Scopes
+	if b.SecretRef != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 7)
+		x.xxx_hidden_SecretRef = b.SecretRef
+	}
+	if b.Desc != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 7)
+		x.xxx_hidden_Desc = b.Desc
+	}
+	return m0
+}
+
 var File_app_connection_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_connection_svc_g_proto_rawDesc = "" +
@@ -1796,16 +2041,27 @@ const file_app_connection_svc_g_proto_rawDesc = "" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"f\n" +
 	"\x10ConnectionFilter\x12'\n" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.ConnectionRefR\x03ref\x12)\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant2\x87\x03\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\"\x81\x02\n" +
+	"\x17ConnectionUpdateRequest\x12'\n" +
+	"\x03ref\x18\x01 \x01(\v2\x15.roster.ConnectionRefR\x03ref\x12=\n" +
+	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12\x16\n" +
+	"\x06issuer\x18\b \x01(\tR\x06issuer\x12\x1b\n" +
+	"\tclient_id\x18\t \x01(\tR\bclientId\x12\x16\n" +
+	"\x06scopes\x18\n" +
+	" \x03(\tR\x06scopes\x12\x1d\n" +
+	"\n" +
+	"secret_ref\x18\v \x01(\tR\tsecretRef\x12\x12\n" +
+	"\x04desc\x18\x06 \x01(\tR\x04desc2\xc6\x03\n" +
 	"\x11ConnectionService\x127\n" +
 	"\x03Add\x12\x1c.roster.ConnectionAddRequest\x1a\x12.roster.Connection\x127\n" +
 	"\x03Get\x12\x1c.roster.ConnectionGetRequest\x1a\x12.roster.Connection\x12;\n" +
 	"\x05Patch\x12\x1e.roster.ConnectionPatchRequest\x1a\x12.roster.Connection\x12;\n" +
 	"\x05Apply\x12\x1e.roster.ConnectionApplyRequest\x1a\x12.roster.Connection\x12?\n" +
 	"\x05Erase\x12\x15.roster.ConnectionRef\x1a\x1f.roster.ConnectionEraseResponse\x12E\n" +
-	"\x04List\x12\x1d.roster.ConnectionListRequest\x1a\x1e.roster.ConnectionListResponseB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
+	"\x04List\x12\x1d.roster.ConnectionListRequest\x1a\x1e.roster.ConnectionListResponse\x12=\n" +
+	"\x06Update\x12\x1f.roster.ConnectionUpdateRequest\x1a\x12.roster.ConnectionB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_connection_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_app_connection_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_app_connection_svc_g_proto_goTypes = []any{
 	(*ConnectionAddRequest)(nil),    // 0: roster.ConnectionAddRequest
 	(*ConnectionGetRequest)(nil),    // 1: roster.ConnectionGetRequest
@@ -1818,45 +2074,50 @@ var file_app_connection_svc_g_proto_goTypes = []any{
 	(*ConnectionListRequest)(nil),   // 8: roster.ConnectionListRequest
 	(*ConnectionListResponse)(nil),  // 9: roster.ConnectionListResponse
 	(*ConnectionFilter)(nil),        // 10: roster.ConnectionFilter
-	(*TenantRef)(nil),               // 11: roster.TenantRef
-	(*timestamppb.Timestamp)(nil),   // 12: google.protobuf.Timestamp
-	(*TenantSelect)(nil),            // 13: roster.TenantSelect
-	(*patchpb.Patch)(nil),           // 14: patch.Patch
-	(*Connection)(nil),              // 15: roster.Connection
+	(*ConnectionUpdateRequest)(nil), // 11: roster.ConnectionUpdateRequest
+	(*TenantRef)(nil),               // 12: roster.TenantRef
+	(*timestamppb.Timestamp)(nil),   // 13: google.protobuf.Timestamp
+	(*TenantSelect)(nil),            // 14: roster.TenantSelect
+	(*patchpb.Patch)(nil),           // 15: patch.Patch
+	(*Connection)(nil),              // 16: roster.Connection
 }
 var file_app_connection_svc_g_proto_depIdxs = []int32{
-	11, // 0: roster.ConnectionAddRequest.tenant:type_name -> roster.TenantRef
-	12, // 1: roster.ConnectionAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	12, // 0: roster.ConnectionAddRequest.tenant:type_name -> roster.TenantRef
+	13, // 1: roster.ConnectionAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 2: roster.ConnectionGetRequest.ref:type_name -> roster.ConnectionRef
 	4,  // 3: roster.ConnectionGetRequest.select:type_name -> roster.ConnectionSelect
 	3,  // 4: roster.ConnectionRef.at:type_name -> roster.ConnectionRefByAt
-	11, // 5: roster.ConnectionRefByAt.tenant:type_name -> roster.TenantRef
-	13, // 6: roster.ConnectionSelect.tenant:type_name -> roster.TenantSelect
+	12, // 5: roster.ConnectionRefByAt.tenant:type_name -> roster.TenantRef
+	14, // 6: roster.ConnectionSelect.tenant:type_name -> roster.TenantSelect
 	2,  // 7: roster.ConnectionPatchRequest.ref:type_name -> roster.ConnectionRef
-	12, // 8: roster.ConnectionPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	13, // 8: roster.ConnectionPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
 	2,  // 9: roster.ConnectionApplyRequest.ref:type_name -> roster.ConnectionRef
-	14, // 10: roster.ConnectionApplyRequest.patch:type_name -> patch.Patch
+	15, // 10: roster.ConnectionApplyRequest.patch:type_name -> patch.Patch
 	10, // 11: roster.ConnectionListRequest.filters:type_name -> roster.ConnectionFilter
-	15, // 12: roster.ConnectionListResponse.items:type_name -> roster.Connection
+	16, // 12: roster.ConnectionListResponse.items:type_name -> roster.Connection
 	2,  // 13: roster.ConnectionFilter.ref:type_name -> roster.ConnectionRef
-	11, // 14: roster.ConnectionFilter.tenant:type_name -> roster.TenantRef
-	0,  // 15: roster.ConnectionService.Add:input_type -> roster.ConnectionAddRequest
-	1,  // 16: roster.ConnectionService.Get:input_type -> roster.ConnectionGetRequest
-	5,  // 17: roster.ConnectionService.Patch:input_type -> roster.ConnectionPatchRequest
-	6,  // 18: roster.ConnectionService.Apply:input_type -> roster.ConnectionApplyRequest
-	2,  // 19: roster.ConnectionService.Erase:input_type -> roster.ConnectionRef
-	8,  // 20: roster.ConnectionService.List:input_type -> roster.ConnectionListRequest
-	15, // 21: roster.ConnectionService.Add:output_type -> roster.Connection
-	15, // 22: roster.ConnectionService.Get:output_type -> roster.Connection
-	15, // 23: roster.ConnectionService.Patch:output_type -> roster.Connection
-	15, // 24: roster.ConnectionService.Apply:output_type -> roster.Connection
-	7,  // 25: roster.ConnectionService.Erase:output_type -> roster.ConnectionEraseResponse
-	9,  // 26: roster.ConnectionService.List:output_type -> roster.ConnectionListResponse
-	21, // [21:27] is the sub-list for method output_type
-	15, // [15:21] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	12, // 14: roster.ConnectionFilter.tenant:type_name -> roster.TenantRef
+	2,  // 15: roster.ConnectionUpdateRequest.ref:type_name -> roster.ConnectionRef
+	13, // 16: roster.ConnectionUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
+	0,  // 17: roster.ConnectionService.Add:input_type -> roster.ConnectionAddRequest
+	1,  // 18: roster.ConnectionService.Get:input_type -> roster.ConnectionGetRequest
+	5,  // 19: roster.ConnectionService.Patch:input_type -> roster.ConnectionPatchRequest
+	6,  // 20: roster.ConnectionService.Apply:input_type -> roster.ConnectionApplyRequest
+	2,  // 21: roster.ConnectionService.Erase:input_type -> roster.ConnectionRef
+	8,  // 22: roster.ConnectionService.List:input_type -> roster.ConnectionListRequest
+	11, // 23: roster.ConnectionService.Update:input_type -> roster.ConnectionUpdateRequest
+	16, // 24: roster.ConnectionService.Add:output_type -> roster.Connection
+	16, // 25: roster.ConnectionService.Get:output_type -> roster.Connection
+	16, // 26: roster.ConnectionService.Patch:output_type -> roster.Connection
+	16, // 27: roster.ConnectionService.Apply:output_type -> roster.Connection
+	7,  // 28: roster.ConnectionService.Erase:output_type -> roster.ConnectionEraseResponse
+	9,  // 29: roster.ConnectionService.List:output_type -> roster.ConnectionListResponse
+	16, // 30: roster.ConnectionService.Update:output_type -> roster.Connection
+	24, // [24:31] is the sub-list for method output_type
+	17, // [17:24] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_app_connection_svc_g_proto_init() }
@@ -1876,7 +2137,7 @@ func file_app_connection_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_connection_svc_g_proto_rawDesc), len(file_app_connection_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

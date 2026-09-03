@@ -22,14 +22,17 @@
  * the relying party, which roster is not (`connection.proto`). So this screen
  * cannot test a connection either; the account app can, by signing in.
  *
- * # Add and remove, not edit
+ * # Add, edit and remove -- and what edit never touches
  *
  * `Patch` is closed on the wire (`grpcx.GeneralWrite`), as it is for every
- * entity, and none of these three has grown an `Update` overlay the way
- * `Holder` did -- because nothing needed one: a host name or a client id that
- * changed is a different row, and the two calls it takes to say so are the two
- * this screen already draws. An `Update` is a new RPC, and `ts/plan.md` P1 said
- * no new RPC.
+ * entity, so each of the three has an `Update` overlay the way `Tenant` and
+ * `Holder` do (`proto/ext/app/host_svc.ext.proto`, `connection_svc.ext.proto`):
+ * what a row says about itself, under the version read. The **name** is not
+ * in any of them. A host name is what a tenant is resolved through, a domain
+ * what an address is routed by, and a provider's name what `Identity.provider`
+ * points at -- erased and re-added under another name, every person who
+ * arrived through it is a stranger, silently. A name that must change is a
+ * new row, and the two calls it takes to say so are the two this screen draws.
  *
  * # Reads go through the store, writes through `useCall`
  *
@@ -92,8 +95,10 @@ const at = (tenant: Uint8Array) => ({ key: { case: 'id' as const, value: tenant 
 function Hosts(props: { tenant: Uint8Array; may: (m: string) => boolean }): React.ReactNode {
 	const vs = useQuery(HostService.method.list, by(props.tenant))
 	const add = useCall(HostService.method.add)
+	const update = useCall(HostService.method.update)
 	const erase = useCall(HostService.method.erase)
 	const [gone, setGone] = useState<string[]>([])
+	const [editing, setEditing] = useState<string | null>(null)
 	const [bad, setBad] = useState<string | null>(null)
 
 	if (vs.state === 'pending') return <p className="loading">…</p>
@@ -114,11 +119,45 @@ function Hosts(props: { tenant: Uint8Array; may: (m: string) => boolean }): Reac
 			{items.length > 0 && (
 				<table>
 					<tbody>
-						{items.map((v) => (
+						{items.map((v) =>
+							editing === uuid(v.id) ? (
+								<tr key={uuid(v.id)} className="editing">
+									<td className="mono">{v.name}</td>
+									<td colSpan={2}>
+										<form
+											className="edit"
+											onSubmit={(e) => {
+												e.preventDefault()
+												const f = new FormData(e.currentTarget)
+												setBad(null)
+												void update
+													.call({
+														ref: { key: { case: 'id', value: v.id } },
+														dateUpdated: v.dateUpdated,
+														desc: String(f.get('desc') ?? '').trim(),
+													})
+													.then(() => setEditing(null))
+													.catch((e: unknown) => setBad(said(e)))
+											}}
+										>
+											<input name="desc" placeholder="note" defaultValue={v.desc} autoFocus />
+											<button type="submit" disabled={update.state === 'pending'}>
+												save
+											</button>
+											<button type="button" onClick={() => setEditing(null)}>
+												cancel
+											</button>
+										</form>
+									</td>
+								</tr>
+							) : (
 							<tr key={uuid(v.id)}>
 								<td className="mono">{v.name}</td>
 								<td>{v.desc}</td>
 								<td>
+									<button disabled={!props.may('/roster.HostService/Update')} onClick={() => setEditing(uuid(v.id))}>
+										edit
+									</button>
 									<button
 										disabled={!props.may('/roster.HostService/Erase')}
 										onClick={() => {
@@ -133,7 +172,8 @@ function Hosts(props: { tenant: Uint8Array; may: (m: string) => boolean }): Reac
 									</button>
 								</td>
 							</tr>
-						))}
+							),
+						)}
 					</tbody>
 				</table>
 			)}
@@ -171,8 +211,10 @@ function Hosts(props: { tenant: Uint8Array; may: (m: string) => boolean }): Reac
 function Connections(props: { tenant: Uint8Array; may: (m: string) => boolean }): React.ReactNode {
 	const vs = useQuery(ConnectionService.method.list, by(props.tenant))
 	const add = useCall(ConnectionService.method.add)
+	const update = useCall(ConnectionService.method.update)
 	const erase = useCall(ConnectionService.method.erase)
 	const [gone, setGone] = useState<string[]>([])
+	const [editing, setEditing] = useState<string | null>(null)
 	const [bad, setBad] = useState<string | null>(null)
 
 	if (vs.state === 'pending') return <p className="loading">…</p>
@@ -205,7 +247,50 @@ function Connections(props: { tenant: Uint8Array; may: (m: string) => boolean })
 						</tr>
 					</thead>
 					<tbody>
-						{items.map((v) => (
+						{items.map((v) =>
+							editing === uuid(v.id) ? (
+								<tr key={uuid(v.id)} className="editing">
+									<td className="mono">{v.name}</td>
+									<td colSpan={5}>
+										<form
+											className="edit connection"
+											onSubmit={(e) => {
+												e.preventDefault()
+												const f = new FormData(e.currentTarget)
+												const scopes = String(f.get('scopes') ?? '')
+													.split(/[\s,]+/)
+													.map((s) => s.trim())
+													.filter((s) => s !== '')
+												setBad(null)
+												void update
+													.call({
+														ref: { key: { case: 'id', value: v.id } },
+														dateUpdated: v.dateUpdated,
+														issuer: String(f.get('issuer') ?? '').trim(),
+														clientId: String(f.get('client_id') ?? '').trim(),
+														scopes,
+														secretRef: String(f.get('secret_ref') ?? '').trim(),
+														desc: String(f.get('desc') ?? '').trim(),
+													})
+													.then(() => setEditing(null))
+													.catch((e: unknown) => setBad(said(e)))
+											}}
+										>
+											<input name="issuer" placeholder="issuer" defaultValue={v.issuer} required autoFocus />
+											<input name="client_id" placeholder="client id" defaultValue={v.clientId} required />
+											<input name="scopes" placeholder="scopes beyond openid" defaultValue={v.scopes.join(' ')} />
+											<input name="secret_ref" placeholder="env:CONTOSO_ENTRA_SECRET" defaultValue={v.secretRef} />
+											<input name="desc" placeholder="note" defaultValue={v.desc} />
+											<button type="submit" disabled={update.state === 'pending'}>
+												save
+											</button>
+											<button type="button" onClick={() => setEditing(null)}>
+												cancel
+											</button>
+										</form>
+									</td>
+								</tr>
+							) : (
 							<tr key={uuid(v.id)}>
 								<td className="mono">{v.name}</td>
 								<td className="mono">{v.issuer}</td>
@@ -213,6 +298,9 @@ function Connections(props: { tenant: Uint8Array; may: (m: string) => boolean })
 								<td className="mono">{v.scopes.join(' ')}</td>
 								<td className="mono">{v.secretRef}</td>
 								<td>
+									<button disabled={!props.may('/roster.ConnectionService/Update')} onClick={() => setEditing(uuid(v.id))}>
+										edit
+									</button>
 									<button
 										disabled={!props.may('/roster.ConnectionService/Erase')}
 										onClick={() => {
@@ -227,7 +315,8 @@ function Connections(props: { tenant: Uint8Array; may: (m: string) => boolean })
 									</button>
 								</td>
 							</tr>
-						))}
+							),
+						)}
 					</tbody>
 				</table>
 			)}
@@ -288,8 +377,10 @@ function MailDomains(props: { tenant: Uint8Array; may: (m: string) => boolean })
 	const vs = useQuery(MailDomainService.method.list, by(props.tenant))
 	const providers = useQuery(ConnectionService.method.list, by(props.tenant))
 	const add = useCall(MailDomainService.method.add)
+	const update = useCall(MailDomainService.method.update)
 	const erase = useCall(MailDomainService.method.erase)
 	const [gone, setGone] = useState<string[]>([])
+	const [editing, setEditing] = useState<string | null>(null)
 	const [bad, setBad] = useState<string | null>(null)
 
 	if (vs.state === 'pending') return <p className="loading">…</p>
@@ -320,7 +411,47 @@ function MailDomains(props: { tenant: Uint8Array; may: (m: string) => boolean })
 						</tr>
 					</thead>
 					<tbody>
-						{items.map((v) => (
+						{items.map((v) =>
+							editing === uuid(v.id) ? (
+								<tr key={uuid(v.id)} className="editing">
+									<td className="mono">@{v.name}</td>
+									<td colSpan={3}>
+										<form
+											className="edit"
+											onSubmit={(e) => {
+												e.preventDefault()
+												const f = new FormData(e.currentTarget)
+												setBad(null)
+												void update
+													.call({
+														ref: { key: { case: 'id', value: v.id } },
+														dateUpdated: v.dateUpdated,
+														provider: String(f.get('provider') ?? ''),
+														desc: String(f.get('desc') ?? '').trim(),
+													})
+													.then(() => setEditing(null))
+													.catch((e: unknown) => setBad(said(e)))
+											}}
+										>
+											<select name="provider" defaultValue={v.provider} autoFocus>
+												<option value="">nowhere (known, not routed)</option>
+												{names.map((n) => (
+													<option key={n} value={n}>
+														{n}
+													</option>
+												))}
+											</select>
+											<input name="desc" placeholder="note" defaultValue={v.desc} />
+											<button type="submit" disabled={update.state === 'pending'}>
+												save
+											</button>
+											<button type="button" onClick={() => setEditing(null)}>
+												cancel
+											</button>
+										</form>
+									</td>
+								</tr>
+							) : (
 							<tr key={uuid(v.id)}>
 								<td className="mono">@{v.name}</td>
 								<td className="mono">
@@ -328,6 +459,9 @@ function MailDomains(props: { tenant: Uint8Array; may: (m: string) => boolean })
 								</td>
 								<td>{v.desc}</td>
 								<td>
+									<button disabled={!props.may('/roster.MailDomainService/Update')} onClick={() => setEditing(uuid(v.id))}>
+										edit
+									</button>
 									<button
 										disabled={!props.may('/roster.MailDomainService/Erase')}
 										onClick={() => {
@@ -342,7 +476,8 @@ function MailDomains(props: { tenant: Uint8Array; may: (m: string) => boolean })
 									</button>
 								</td>
 							</tr>
-						))}
+							),
+						)}
 					</tbody>
 				</table>
 			)}

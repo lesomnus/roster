@@ -19,12 +19,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ConnectionService_Add_FullMethodName   = "/roster.ConnectionService/Add"
-	ConnectionService_Get_FullMethodName   = "/roster.ConnectionService/Get"
-	ConnectionService_Patch_FullMethodName = "/roster.ConnectionService/Patch"
-	ConnectionService_Apply_FullMethodName = "/roster.ConnectionService/Apply"
-	ConnectionService_Erase_FullMethodName = "/roster.ConnectionService/Erase"
-	ConnectionService_List_FullMethodName  = "/roster.ConnectionService/List"
+	ConnectionService_Add_FullMethodName    = "/roster.ConnectionService/Add"
+	ConnectionService_Get_FullMethodName    = "/roster.ConnectionService/Get"
+	ConnectionService_Patch_FullMethodName  = "/roster.ConnectionService/Patch"
+	ConnectionService_Apply_FullMethodName  = "/roster.ConnectionService/Apply"
+	ConnectionService_Erase_FullMethodName  = "/roster.ConnectionService/Erase"
+	ConnectionService_List_FullMethodName   = "/roster.ConnectionService/List"
+	ConnectionService_Update_FullMethodName = "/roster.ConnectionService/Update"
 )
 
 // ConnectionServiceClient is the client API for ConnectionService service.
@@ -43,6 +44,8 @@ type ConnectionServiceClient interface {
 	Erase(ctx context.Context, in *ConnectionRef, opts ...grpc.CallOption) (*ConnectionEraseResponse, error)
 	// List reads Connections a page at a time.
 	List(ctx context.Context, in *ConnectionListRequest, opts ...grpc.CallOption) (*ConnectionListResponse, error)
+	// Update replaces a provider's configuration, under the version read.
+	Update(ctx context.Context, in *ConnectionUpdateRequest, opts ...grpc.CallOption) (*Connection, error)
 }
 
 type connectionServiceClient struct {
@@ -113,6 +116,16 @@ func (c *connectionServiceClient) List(ctx context.Context, in *ConnectionListRe
 	return out, nil
 }
 
+func (c *connectionServiceClient) Update(ctx context.Context, in *ConnectionUpdateRequest, opts ...grpc.CallOption) (*Connection, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Connection)
+	err := c.cc.Invoke(ctx, ConnectionService_Update_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConnectionServiceServer is the server API for ConnectionService service.
 // All implementations must embed UnimplementedConnectionServiceServer
 // for forward compatibility.
@@ -129,6 +142,8 @@ type ConnectionServiceServer interface {
 	Erase(context.Context, *ConnectionRef) (*ConnectionEraseResponse, error)
 	// List reads Connections a page at a time.
 	List(context.Context, *ConnectionListRequest) (*ConnectionListResponse, error)
+	// Update replaces a provider's configuration, under the version read.
+	Update(context.Context, *ConnectionUpdateRequest) (*Connection, error)
 	mustEmbedUnimplementedConnectionServiceServer()
 }
 
@@ -156,6 +171,9 @@ func (UnimplementedConnectionServiceServer) Erase(context.Context, *ConnectionRe
 }
 func (UnimplementedConnectionServiceServer) List(context.Context, *ConnectionListRequest) (*ConnectionListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
+}
+func (UnimplementedConnectionServiceServer) Update(context.Context, *ConnectionUpdateRequest) (*Connection, error) {
+	return nil, status.Error(codes.Unimplemented, "method Update not implemented")
 }
 func (UnimplementedConnectionServiceServer) mustEmbedUnimplementedConnectionServiceServer() {}
 func (UnimplementedConnectionServiceServer) testEmbeddedByValue()                           {}
@@ -286,6 +304,24 @@ func _ConnectionService_List_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ConnectionService_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConnectionUpdateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConnectionServiceServer).Update(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConnectionService_Update_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConnectionServiceServer).Update(ctx, req.(*ConnectionUpdateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ConnectionService_ServiceDesc is the grpc.ServiceDesc for ConnectionService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -316,6 +352,10 @@ var ConnectionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _ConnectionService_List_Handler,
+		},
+		{
+			MethodName: "Update",
+			Handler:    _ConnectionService_Update_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

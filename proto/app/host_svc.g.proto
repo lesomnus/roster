@@ -21,6 +21,8 @@ service HostService {
   rpc Erase(HostRef) returns (HostEraseResponse);
   // List reads Hosts a page at a time.
   rpc List(HostListRequest) returns (HostListResponse);
+  // Update replaces what a host says about itself, under the version read.
+  rpc Update(HostUpdateRequest) returns (Host);
 }
 
 service MailDomainService {
@@ -36,6 +38,9 @@ service MailDomainService {
   rpc Erase(MailDomainRef) returns (MailDomainEraseResponse);
   // List reads MailDomains a page at a time.
   rpc List(MailDomainListRequest) returns (MailDomainListResponse);
+  // Update replaces where a domain routes and what it says about itself,
+  // under the version read.
+  rpc Update(MailDomainUpdateRequest) returns (MailDomain);
 }
 
 message HostAddRequest {
@@ -135,6 +140,16 @@ message HostListResponse {
 message HostFilter {
   HostRef ref = 1;
   TenantRef tenant = 2;
+}
+
+message HostUpdateRequest {
+  HostRef ref = 1;
+
+  // Optimistic locking, as `Patch` takes it: the version this caller read.
+  google.protobuf.Timestamp date_updated = 13;
+
+  // Replaced whole when present, and left as it is when absent.
+  string desc = 6;
 }
 
 message MailDomainAddRequest {
@@ -242,4 +257,16 @@ message MailDomainListResponse {
 message MailDomainFilter {
   MailDomainRef ref = 1;
   TenantRef tenant = 2;
+}
+
+message MailDomainUpdateRequest {
+  MailDomainRef ref = 1;
+
+  google.protobuf.Timestamp date_updated = 13;
+
+  // Each replaced whole when present, and left as it is when absent. An empty
+  // provider, given, is a domain that is known and routed nowhere -- the same
+  // thing it means on `Add`.
+  string provider = 9;
+  string desc = 6;
 }
