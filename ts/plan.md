@@ -428,8 +428,8 @@ is; that table gets the summary row when a phase closes, this one the steps.
 | step | state | where |
 | --- | --- | --- |
 | the API settled: no self-only verbs, `MeService` = the waived three | **done** | `c22b0e2`, `1b76f89` |
-| P0 · spike E: an `rt_` for `account@contoso` on the data plane, fabrikam invisible | open | |
-| P0 · spike F: `frontdoor` forwards one `Me.Get` over Connect with the delegation swapped in | open | |
+| P0 · spike E: an `rt_` for `account@contoso` on the data plane, fabrikam invisible | **done** — the wall does it: `Identity.Get`/`Holder.Add`/`Vouch.Accept` answer for contoso and refuse for fabrikam, nothing minted | `cmd/accountkey_test.go` |
+| P0 · spike F: `frontdoor` forwards one `Me.Get` over Connect with the delegation swapped in | **done** — `Door.Proxy(roster, bearer)`: allow-list, `Connect-Protocol-Version` as the CSRF token, 401 without a whole session; roster answers about the person | `frontdoor/proxy.go`, `frontdoor/proxy_test.go` |
 | P1 · console: hosts, mail domains, connections per customer | open | |
 | P2 · console: sites, teams, groups, roles, bindings, `Holder.Reaches`, trail | open | |
 | P3 · console: the rest of a person, the deployment screen, the sandbox's second listener | open | |
