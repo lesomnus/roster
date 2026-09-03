@@ -138,7 +138,7 @@ func serve(t *testing.T, enrol account.Enrol) *deployment {
 				"/roster.VouchService/Delegate", "/roster.VouchService/Accept", "/roster.DelegationService/Revoke",
 				"/roster.FrontService/WhoseHost", "/roster.FrontService/WhereFrom",
 				"/roster.MeService/Get", "/roster.MeService/Unlink", "/roster.MeService/SignOutEverywhere",
-				"/roster.HolderService/Update", "/roster.HolderService/RevokeKey", "/roster.EmailService/List",
+				"/roster.HolderService/Update", "/roster.ApiKeyService/Erase", "/roster.ApiKeyService/List", "/roster.EmailService/List",
 				"/roster.EmailService/Add", "/roster.EmailService/Erase", "/roster.ApiKeyService/Issue",
 				"/roster.CredentialService/Set", "/roster.CredentialService/Enrol", "/roster.CredentialService/Erase",
 				"/roster.HolderService/Get", "/roster.EmailService/Get", "/roster.EmailService/Verify", "/roster.EmailService/Confirm",

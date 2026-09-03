@@ -10113,26 +10113,6 @@ func (s interceptHolder) SignsIn(ctx context.Context, req *rstr.HolderSignsInReq
 	return w, nil
 }
 
-func (s interceptHolder) RevokeKey(ctx context.Context, req *rstr.HolderRevokeKeyRequest) (*rstr.HolderRevokeKeyResponse, error) {
-	if s.unary == nil {
-		return s.HolderServiceServer.RevokeKey(ctx, req)
-	}
-
-	v, err := s.unary(ctx, req, &grpc.UnaryServerInfo{
-		Server:     s.HolderServiceServer,
-		FullMethod: rstr.HolderService_RevokeKey_FullMethodName,
-	}, func(ctx context.Context, req any) (any, error) {
-		return s.HolderServiceServer.RevokeKey(ctx, req.(*rstr.HolderRevokeKeyRequest))
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	w, _ := v.(*rstr.HolderRevokeKeyResponse)
-
-	return w, nil
-}
-
 func (s interceptHolder) Reaches(ctx context.Context, req *rstr.HolderReachesRequest) (*rstr.HolderReachesResponse, error) {
 	if s.unary == nil {
 		return s.HolderServiceServer.Reaches(ctx, req)
@@ -13713,19 +13693,6 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 		}
 
 		res, err := s.Holder().SignsIn(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case rstr.HolderService_RevokeKey_FullMethodName:
-		v := &rstr.HolderRevokeKeyRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Holder().RevokeKey(ctx, v)
 		if err != nil {
 			return nil, err
 		}

@@ -20,7 +20,7 @@
  *
  * There is no self-only verb in roster (CLAUDE.md, *no self-only twin of a
  * verb*): the page calls `Holder.Update`, `Email.Add`, `Credential.Set`,
- * `Credential.Enrol`, `Credential.Erase`, `Delegation.Erase` and `ApiKey.Issue`
+ * `Credential.Enrol`, `Credential.Erase`, `Delegation.Erase`, `ApiKey.Issue` and `ApiKey.Erase`
  * with the reference `Me.Get` answered, and roster's layer lets a person write
  * their own row. The role the deployment gave them has to name each method --
  * a delegation narrows to the intersection -- so a section whose call the role
@@ -745,7 +745,7 @@ function Keys(props: {
 	may: (m: string) => boolean
 }): React.ReactNode {
 	const issue = useCall(ApiKeyService.method.issue)
-	const revoke = useCall(HolderService.method.revokeKey)
+	const revoke = useCall(ApiKeyService.method.erase)
 	const [gone, setGone] = useState<string[]>([])
 	const [made, setMade] = useState<{ id: Uint8Array; alias: string; methods: string[] }[]>([])
 	const [token, setToken] = useState<string | null>(null)
@@ -766,11 +766,11 @@ function Keys(props: {
 								<td className="mono">{k.methods.join(', ')}</td>
 								<td>
 									<button
-										disabled={!props.may('/roster.HolderService/RevokeKey')}
+										disabled={!props.may('/roster.ApiKeyService/Erase')}
 										onClick={() => {
 											setNote(null)
 											void revoke
-												.call({ ref: ref(props.own), id: k.id })
+												.call(ref(k.id))
 												.then(() => setGone((was) => [...was, uuid(k.id)]))
 												.catch((e: unknown) => setNote({ ok: false, text: said(e) }))
 										}}

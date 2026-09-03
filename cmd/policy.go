@@ -130,7 +130,7 @@ func (p policy) May(ctx context.Context, c gate.Call) error {
 // but subject-less, for the grant that let a role name -- *may add a way into
 // your own account* -- without the entity permission that reaches the tenant.
 // They are gone: CLAUDE.md, *no self-only twin of a verb*. A person calls
-// `Identity.Add`, `ApiKey.Issue` and `Holder.RevokeKey` with their own
+// `Identity.Add`, `ApiKey.Issue` and `ApiKey.Erase` with their own
 // reference, RBAC grants the method as it grants any other, and *whose row* is
 // `server/core`'s (`mayReach`, `mayWriteAWayIn`: yourself always passes). So
 // what is on this list is exactly what cannot be asked for with a role, and a

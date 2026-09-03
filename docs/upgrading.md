@@ -162,7 +162,7 @@ alone; nothing reads them.
   person minting and revoking their own `rt_`. Both need a role naming them,
   so nobody gains anything until you grant it, and `MeService/IssueKey` is
   refused for methods its caller does not hold like every other grant.
-  *(Since folded back: the two are `ApiKey.Issue` and `Holder.RevokeKey` with
+  *(Since folded back: the two are `ApiKey.Issue` and `ApiKey.Erase` with
   the person's own reference — CLAUDE.md, "no self-only twin of a verb".)*
 
 `audit:` and `holder:` are the two new **configuration** blocks, and each is
@@ -184,7 +184,7 @@ that sits there until something calls it.
   roster's to change.
 - If you copied `examples/sso`'s **delegation method list**, it grew by two
   (`MeService/IssueKey`, `/RevokeKey`; today `ApiKeyService/Issue` and
-  `HolderService/RevokeKey`). A delegation narrows to the
+  `ApiKeyService/Erase`). A delegation narrows to the
   intersection of what the app asks for and what the person holds, so asking
   for less than you draw is what makes a button refuse when pressed — and
   asking for more than you draw costs nothing.

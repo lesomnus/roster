@@ -56,7 +56,7 @@ func TestOneScreenShowsEveryWayIntoOneAccount(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	res, err := b.Walled.Holder().SignsIn(b.as(ctx, who, b.Contoso),
+	res, err := b.Walled.Holder().SignsIn(b.asNobody(ctx, who, b.Contoso),
 		app.HolderSignsInRequest_builder{
 			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		}.Build())
@@ -81,14 +81,13 @@ func TestOneScreenShowsEveryWayIntoOneAccount(t *testing.T) {
 	t.Run("and one of them can be ended", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := b.Walled.Holder().RevokeKey(b.as(ctx, who, b.Contoso),
-			app.HolderRevokeKeyRequest_builder{
-				Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
-				Id:  res.GetKeys()[0].GetId(),
-			}.Build())
+		// `ApiKey.Erase`, by identifier: the layer reads the row through the
+		// wall and holds its holder to `mayReach`, self passing.
+		_, err := b.Walled.ApiKey().Erase(b.asNobody(ctx, who, b.Contoso),
+			app.ApiKeyRef_builder{Id: res.GetKeys()[0].GetId()}.Build())
 		x.NoError(err)
 
-		now, err := b.Walled.Holder().SignsIn(b.as(ctx, who, b.Contoso),
+		now, err := b.Walled.Holder().SignsIn(b.asNobody(ctx, who, b.Contoso),
 			app.HolderSignsInRequest_builder{
 				Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 			}.Build())
@@ -96,12 +95,15 @@ func TestOneScreenShowsEveryWayIntoOneAccount(t *testing.T) {
 		x.Empty(now.GetKeys())
 	})
 
-	t.Run("and never somebody else's", func(t *testing.T) {
+	t.Run("and never somebody wider's", func(t *testing.T) {
 		x := require.New(t)
 
-		// A *which* within a *whose*: the reference says the person and the
-		// identifier says the key, so pointing one at the other's is NotFound
-		// rather than a revocation.
+		// The line: a role naming `ApiKey.Erase` reaches anybody no wider than
+		// the caller, and `mayReach` refuses anybody wider. So the other's key
+		// is refused once the other holds more than erin does -- which is the
+		// case that matters, a plain person ending an administrator's key.
+		b.mayCall(t, ctx, other, "admin", "/roster.HolderService/Erase")
+
 		vs, err := b.Walled.Holder().SignsIn(b.as(ctx, other, b.Contoso),
 			app.HolderSignsInRequest_builder{
 				Ref: app.HolderRef_builder{Id: other.Bytes()}.Build(),
@@ -109,12 +111,9 @@ func TestOneScreenShowsEveryWayIntoOneAccount(t *testing.T) {
 		x.NoError(err)
 		x.Len(vs.GetKeys(), 1)
 
-		_, err = b.Walled.Holder().RevokeKey(b.as(ctx, who, b.Contoso),
-			app.HolderRevokeKeyRequest_builder{
-				Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
-				Id:  vs.GetKeys()[0].GetId(),
-			}.Build())
-		x.Equal(codes.NotFound, status.Code(err),
-			"a key was revoked through a person it does not belong to")
+		_, err = b.Walled.ApiKey().Erase(b.asNobody(ctx, who, b.Contoso),
+			app.ApiKeyRef_builder{Id: vs.GetKeys()[0].GetId()}.Build())
+		x.Equal(codes.PermissionDenied, status.Code(err),
+			"a plain person ended an administrator's key")
 	})
 }

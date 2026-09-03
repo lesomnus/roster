@@ -17,18 +17,19 @@
 		"@bufbuild/protobuf": "^2.12.1",
 		"@connectrpc/connect": "^2.1.2",
 		"@connectrpc/connect-web": "^2.1.2",
+		"@lesomnus/grpc-dgram": "^0.0.1",
 		"@lesomnus/payday": "^0.0.3",
 		"react": "^19.2.0",
-		"react-dom": "^19.2.0",
-		"@lesomnus/grpc-dgram": "^0.0.1"
+		"react-dom": "^19.2.0"
 	},
 	"devDependencies": {
 		"@bufbuild/protoc-gen-es": "^2.12.1",
+		"@playwright/test": "^1.62.1",
 		"@types/react": "^19.2.2",
 		"@types/react-dom": "^19.2.2",
 		"@vitejs/plugin-react": "^5.0.4",
+		"sqlite3-wasm-go": "^0.0.1",
 		"typescript": "~5.9.3",
-		"vite": "^7.1.14",
-		"sqlite3-wasm-go": "^0.0.1"
+		"vite": "^7.1.14"
 	}
 }

@@ -132,7 +132,6 @@ func NewCmdEntities(c *Config) xli.Commands {
 		{"holder/enable", "roster.HolderService.Enable", "let a disabled somebody back in"},
 		{"holder/invalidate", "roster.HolderService.Invalidate", "void everything issued to somebody before now"},
 		{"holder/signs-in", "roster.HolderService.SignsIn", "how somebody signs in: identities, credentials, keys"},
-		{"holder/revoke-key", "roster.HolderService.RevokeKey", "take one of somebody's keys away"},
 	} {
 		u, err := t.Unary(v.method)
 		if err != nil {

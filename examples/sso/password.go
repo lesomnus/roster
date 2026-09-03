@@ -295,16 +295,7 @@ func (a *App) revokeKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	own, ok := a.door.Who(r.Context(), r)
-	if !ok {
-		http.Error(w, "no", http.StatusForbidden)
-		return
-	}
-
-	if _, err := a.roster.Holder().RevokeKey(ctx, rstr.HolderRevokeKeyRequest_builder{
-		Ref: rstr.HolderRef_builder{Id: own.Bytes()}.Build(),
-		Id:  id,
-	}.Build()); err != nil {
+	if _, err := a.roster.ApiKey().Erase(ctx, rstr.ApiKeyRef_builder{Id: id}.Build()); err != nil {
 		http.Error(w, "no", http.StatusBadRequest)
 		return
 	}

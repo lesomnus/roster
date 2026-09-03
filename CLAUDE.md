@@ -134,7 +134,7 @@ reads or writes**:
 - **It is a new verb on those same rows** — `Verify` a secret, `Unlock` a
   lockout, `Disable` somebody. That is an **overlay** in `proto/ext/`: a method
   added to the entity's own service. `HolderService`'s `Disable`/`Enable`/
-  `Invalidate`/`Update`/`SignsIn`/`RevokeKey` are the pattern — *a second
+  `Invalidate`/`Update`/`SignsIn`/`Reaches` are the pattern — *a second
   service would be one more name for the same rows.*
 
 A new service is justified only when the operation belongs to **no single

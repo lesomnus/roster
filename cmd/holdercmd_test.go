@@ -164,7 +164,7 @@ func TestTheTerminalOperatesOnSomebody(t *testing.T) {
 		enable     = "/roster.HolderService/Enable"
 		invalidate = "/roster.HolderService/Invalidate"
 		signsIn    = "/roster.HolderService/SignsIn"
-		revokeKey  = "/roster.HolderService/RevokeKey"
+		revokeKey  = "/roster.ApiKeyService/Erase"
 		issueKey   = "/roster.ApiKeyService/Issue"
 		meGet      = "/roster.MeService/Get"
 	)
@@ -244,8 +244,9 @@ func TestTheTerminalOperatesOnSomebody(t *testing.T) {
 		}
 		x.False(id.IsZero(), "the minted key has no row")
 
-		_, err = cliRun(t, &b.Hers, "holder", "revoke-key", "@newco/alice",
-			fmt.Sprintf(`{"id":"%s"}`, id))
+		// `roster me revoke-key`, which is `ApiKey.Erase` by identifier from
+		// the person's own shell; the layer compares the row's holder with her.
+		_, err = cliRun(t, &b.Hers, "me", "revoke-key", id.String())
 		x.NoError(err)
 
 		// And the token it reached is over, which is what the command is for.

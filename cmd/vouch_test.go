@@ -17,6 +17,7 @@ import (
 	"github.com/lesomnus/payday/pdpb"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/pd"
 	"github.com/lesomnus/roster/server/vouch"
 )
@@ -408,27 +409,53 @@ func TestNobodyVerifiesAPasswordAnonymously(t *testing.T) {
 	x.True(v.GetOk())
 }
 
-// TestTheApiKeyServiceCannotBeReachedEither, for the same reason: it holds a
-// verifier too.
+// TestTheApiKeyServicesVerifierIsNotOnTheWire, for the same reason it was
+// once not reached at all: the row holds a verifier.
 //
-// **Reached** and not "registered", because from out here the two doors are one
-// answer -- `grpcx.ErrClosed` is `Unimplemented` and so is a method gRPC cannot
-// dispatch. Which is right for a caller and worth saying for a reader: this
-// passes with either door shut, and it was checked by opening both.
-func TestTheApiKeyServiceCannotBeReachedEither(t *testing.T) {
+// The door moved, as `Delegation`'s did: `Get`, `List` and `Erase` are served
+// on every port now (a person lists and ends their own keys), and what keeps
+// the verifier home is the sink stripping `(payday.field).secret` on the way
+// out, with `server/core` holding the rows to `mayReach`. `Add` stays shut --
+// a caller-chosen verifier is a key nobody minted -- and is `Unimplemented`
+// from out here, which is the same answer either door gives.
+func TestTheApiKeyServicesVerifierIsNotOnTheWire(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
 	conn := served(t, b.Server)
 
-	// Holding every method, so what refuses `List` is the closed door and not a
-	// missing role -- `ApiKeyService` is registered now for its `Issue` overlay,
-	// so the gate would answer first for a caller who holds nothing.
+	// Holding every method, so what answers is the layer and not a missing role.
 	b.mayAnything(b.ContosoUser, b.Contoso)
 	ctx = auth.PlainProvider(b.ContosoUser.String()).Provide(ctx)
 
-	_, err := app.NewApiKeyServiceClient(conn).List(ctx, app.ApiKeyListRequest_builder{}.Build())
-	x.Equal(codes.Unimplemented, status.Code(err), "the key service answered")
+	_, sum, err := keys.Mint(keys.PrefixTenant)
+	x.NoError(err)
+	_, err = b.Ungated.ApiKey().Add(ctx, app.ApiKeyAddRequest_builder{
+		Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Alias:   "hers",
+		Secret:  sum,
+		Methods: []string{"/roster.MeService/Get"},
+	}.Build())
+	x.NoError(err)
+
+	vs, err := app.NewApiKeyServiceClient(conn).List(ctx, app.ApiKeyListRequest_builder{
+		Filters: []*app.ApiKeyFilter{app.ApiKeyFilter_builder{
+			Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		}.Build()},
+	}.Build())
+	x.NoError(err, "the key service is not on the wire")
+	x.NotEmpty(vs.GetItems())
+	for _, k := range vs.GetItems() {
+		x.Empty(k.GetSecret(), "the verifier left the store")
+	}
+	x.NotContains(vs.String(), string(sum))
+
+	_, err = app.NewApiKeyServiceClient(conn).Add(ctx, app.ApiKeyAddRequest_builder{
+		Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Alias:  "chosen",
+		Secret: sum,
+	}.Build())
+	x.Equal(codes.Unimplemented, status.Code(err), "a key was written with a caller's own verifier")
 }
 
 // TestABatchCannotCarryACredentialRead is the other door.

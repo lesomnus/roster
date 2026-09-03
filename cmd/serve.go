@@ -913,13 +913,12 @@ func (s *Server) closed(c Config) func(method string) bool {
 	}
 	if !s.Keys {
 		// Everywhere but the one port whose reason for existing is managing
-		// them (see [Server.Keys]), the reads and the management writes are shut
-		// -- but not the whole service: `Issue` is the mint, and it is served on
-		// every port that a caller reaches, stamping the stack's own prefix.
+		// the deployment's own keys (see [Server.Keys]), the general writes stay
+		// shut. `Get`, `List` and `Erase` are served: the verifier is stripped on
+		// the way out like every other secret, `server/core` holds the rows to
+		// `mayReach`, and a person listing and ending their own keys is what the
+		// account screen is -- which is why `Holder.RevokeKey` is gone.
 		byMethod = append(byMethod,
-			app.ApiKeyService_Get_FullMethodName,
-			app.ApiKeyService_List_FullMethodName,
-			app.ApiKeyService_Erase_FullMethodName,
 			app.ApiKeyService_Patch_FullMethodName,
 			app.ApiKeyService_Apply_FullMethodName,
 		)

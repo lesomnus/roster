@@ -276,7 +276,7 @@ func New(ctx context.Context, c Config, conn *grpc.ClientConn, s *authsession.Se
 			// hold); the part that says *only your own* is this app's.
 			rstr.IdentityService_Add_FullMethodName,
 			rstr.ApiKeyService_Issue_FullMethodName,
-			rstr.HolderService_RevokeKey_FullMethodName,
+			rstr.ApiKeyService_Erase_FullMethodName,
 
 			// The two credential writes the account screen makes -- change a
 			// password, add a second factor -- with the person's **own**

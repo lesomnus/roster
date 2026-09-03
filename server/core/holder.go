@@ -10,8 +10,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/lesomnus/payday/pderr"
-
 	app "github.com/lesomnus/roster/rstr"
 )
 
@@ -275,25 +273,6 @@ func (s coreHolder) SignsIn(ctx context.Context, req *app.HolderSignsInRequest) 
 	return res.Build(), nil
 }
 
-// RevokeKey ends one key of one person's, and refuses one that is not theirs.
-//
-// The read is the whole of the rule. `ApiKey` narrows by its holder's tenant,
-// so an identifier alone would be an argument that reaches every key in it --
-// and the reference is what makes this a *which* within a *whose*: the holder
-// is resolved through the wall first, exactly as `SignsIn` resolves it, so
-// somebody outside the caller's tenant is `NotFound` before any key is named.
-//
-// The erase goes through `Next()` and not a client, so it is recorded and
-// narrowed like every other write. There is no soft/hard question here: an
-// `ApiKey` is soft-erased like everything else, and what stops a revoked key
-// working is that `keys.findKey` reads through a reference that reaches only
-// the rows still there.
-// Reaches is what somebody may call, asked of the function the gate asks.
-//
-// Through the wall first (`Get`), so a caller who cannot see the person cannot
-// ask about them; then `Rules.Held`, which `cmd` hands every stack from the
-// data plane's own rows. See `holder_svc.ext.proto` for why it is not guarded
-// by anything else.
 func (s coreHolder) Reaches(ctx context.Context, req *app.HolderReachesRequest) (*app.HolderReachesResponse, error) {
 	v, err := s.HolderServiceServer.Get(ctx, app.HolderGetRequest_builder{
 		Ref:    req.GetRef(),
@@ -323,46 +302,4 @@ func (s coreHolder) Reaches(ctx context.Context, req *app.HolderReachesRequest) 
 	}
 
 	return res.Build(), nil
-}
-
-func (s coreHolder) RevokeKey(ctx context.Context, req *app.HolderRevokeKeyRequest) (*app.HolderRevokeKeyResponse, error) {
-	v, err := s.HolderServiceServer.Get(ctx, app.HolderGetRequest_builder{
-		Ref:    req.GetRef(),
-		Select: app.HolderSelect_builder{}.Build(),
-	}.Build())
-	if err != nil {
-		return nil, err
-	}
-	if len(req.GetId()) == 0 {
-		return nil, pderr.Invalidf("id", "which key")
-	}
-
-	// Theirs, or nothing. The holder is the first predicate and the identifier
-	// the second, which is the order that makes the answer about the person --
-	// the same order `MeService.Unlink` reads in, for the same reason.
-	vs, err := s.Next().ApiKey().List(ctx, app.ApiKeyListRequest_builder{
-		Filters: []*app.ApiKeyFilter{
-			app.ApiKeyFilter_builder{
-				Holder: app.HolderRef_builder{Id: v.GetId()}.Build(),
-			}.Build(),
-		},
-	}.Build())
-	if err != nil {
-		return nil, err
-	}
-
-	for _, k := range vs.GetItems() {
-		if !bytesEq(k.GetId(), req.GetId()) {
-			continue
-		}
-
-		if _, err := s.Next().ApiKey().Erase(ctx,
-			app.ApiKeyRef_builder{Id: k.GetId()}.Build()); err != nil {
-			return nil, err
-		}
-
-		return app.HolderRevokeKeyResponse_builder{}.Build(), nil
-	}
-
-	return nil, status.Error(codes.NotFound, "no such key")
 }

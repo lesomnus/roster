@@ -407,10 +407,10 @@ function Keys(props: {
 								</td>
 								<td>
 									<button
-										disabled={!props.may('/roster.HolderService/RevokeKey')}
+										disabled={!props.may('/roster.ApiKeyService/Erase')}
 										onClick={() => {
-											void props.admin.holder
-												.revokeKey({ ref: who, id: v.id })
+											void props.admin.apiKey
+												.erase({ key: { case: 'id', value: v.id } })
 												.then(() => {
 													props.say({ kind: 'done', text: 'revoked' })
 													setGone((was) => [...was, uuid(v.id)])

@@ -236,3 +236,73 @@ func (s coreApiKey) serviceHolder(ctx context.Context, alias string) (*app.Holde
 
 	return app.HolderRef_builder{Id: made.GetId()}.Build(), nil
 }
+
+// Get, List and Erase are served on every port now, not only the one that
+// manages the deployment's own keys. What closed them on the others was the
+// verifier in `secret`, and the answer to that is the layer roster has for
+// every secret -- the sink strips it on the way out -- so a person lists their
+// own keys and ends one by reference, and `Holder.RevokeKey`, which existed
+// because there was no served road to a key row, is gone: a second name for
+// the same rows (CLAUDE.md, *Overlay before service*). The rule that stays is
+// the one every credential read and write meets: `mayReach` on the row's
+// holder, self passing, nobody wider than the caller.
+func (s coreApiKey) Get(ctx context.Context, req *app.ApiKeyGetRequest) (*app.ApiKey, error) {
+	if err := s.reaches(ctx, req.GetRef()); err != nil {
+		return nil, err
+	}
+
+	return s.ApiKeyServiceServer.Get(ctx, req)
+}
+
+func (s coreApiKey) List(ctx context.Context, req *app.ApiKeyListRequest) (*app.ApiKeyListResponse, error) {
+	for _, f := range req.GetFilters() {
+		if f.GetHolder() == nil {
+			continue
+		}
+		holder, err := s.holderOf(ctx, f.GetHolder())
+		if err != nil {
+			return nil, err
+		}
+		if err := s.mayReach(ctx, "holder", holder); err != nil {
+			return nil, err
+		}
+	}
+
+	return s.ApiKeyServiceServer.List(ctx, req)
+}
+
+func (s coreApiKey) Erase(ctx context.Context, req *app.ApiKeyRef) (*app.ApiKeyEraseResponse, error) {
+	if err := s.reaches(ctx, req); err != nil {
+		if status.Code(err) == codes.NotFound {
+			return app.ApiKeyEraseResponse_builder{}.Build(), nil
+		}
+
+		return nil, err
+	}
+
+	return s.ApiKeyServiceServer.Erase(ctx, req)
+}
+
+// reaches is `mayReach` on the holder of the key a reference names, read
+// through the wall first so a key outside the caller's tenant is `NotFound`
+// before anybody is compared.
+func (s coreApiKey) reaches(ctx context.Context, ref *app.ApiKeyRef) error {
+	v, err := s.ApiKeyServiceServer.Get(ctx, app.ApiKeyGetRequest_builder{
+		Ref:    ref,
+		Select: app.ApiKeySelect_builder{Holder: app.HolderSelect_builder{}.Build()}.Build(),
+	}.Build())
+	if err != nil {
+		return err
+	}
+	if len(v.GetHolder().GetId()) == 0 {
+		// The deployment's own key hangs off a service, and a service is not
+		// somebody whose reach is compared: the control port's own rules stand.
+		return nil
+	}
+	holder, err := pdid.From(v.GetHolder().GetId())
+	if err != nil {
+		return err
+	}
+
+	return s.mayReach(ctx, "ref", holder)
+}

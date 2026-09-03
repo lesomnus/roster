@@ -34,7 +34,7 @@ import (
 //
 // Every command here is about the **caller**. `me get` answers from the frame;
 // the writes name the caller's own row, by the identifier `me get` answers
-// with, and call the entity's own verb -- `ApiKey.Issue`, `Holder.RevokeKey`,
+// with, and call the entity's own verb -- `ApiKey.Issue`, `ApiKey.Erase`,
 // `Identity.Add` -- which is what "the app is the layer that passes only your
 // reference" means at a shell (CLAUDE.md, *no self-only twin of a verb*). A
 // local run has no frame, because there is no caller; it opens the database.
@@ -237,13 +237,11 @@ func newCmdMeRevokeKey(c *Config) *xli.Command {
 				return fmt.Errorf("Id: %w", err)
 			}
 
-			own, err := myself(ctx, conn)
-			if err != nil {
-				return err
-			}
-
-			_, err = app.NewHolderServiceClient(conn).RevokeKey(ctx,
-				app.HolderRevokeKeyRequest_builder{Ref: own, Id: k.Bytes()}.Build())
+			// `ApiKey.Erase` by identifier: the layer reads the row through the
+			// wall and compares its holder with the caller, so a key that is
+			// not yours -- or is somebody wider's -- is refused there.
+			_, err = app.NewApiKeyServiceClient(conn).Erase(ctx,
+				app.ApiKeyRef_builder{Id: k.Bytes()}.Build())
 
 			return err
 		}),

@@ -86,25 +86,6 @@ service HolderService {
   // name for the same rows.
   rpc SignsIn(HolderSignsInRequest) returns (HolderSignsInResponse);
 
-  // RevokeKey ends one key of one person's.
-  //
-  // Beside `SignsIn` for the same reason it is: `ApiKeyService` is unregistered
-  // everywhere, so there is no served road to a key row at all -- and a screen
-  // that lists somebody's keys and cannot end one is a screen that sends an
-  // operator to a shell, which is what `roster key revoke` is and which reaches
-  // only the **deployment's** own `rk_` keys.
-  //
-  // A *which* within a *whose*: the reference says the person, the identifier
-  // says the key, and one that is not theirs is `NotFound`. So this cannot be
-  // used to ask whether a key exists, and cannot be pointed past the wall the
-  // reference is narrowed by.
-  //
-  // Its own method rather than a field on `Update`, for the reason `Disable`
-  // and `Enable` are two: a role is a list of methods, so a deployment can only
-  // hand out what it can name -- and *may see how somebody signs in* is a
-  // different grant from *may take a way in away*.
-  rpc RevokeKey(HolderRevokeKeyRequest) returns (HolderRevokeKeyResponse);
-
   // Reaches is what somebody may call, as the gate would decide it -- the same
   // answer `MeService.Get` gives about the caller, about somebody else.
   //
@@ -130,16 +111,6 @@ service HolderService {
   // and does not need here.
   rpc Reaches(HolderReachesRequest) returns (HolderReachesResponse);
 }
-
-message HolderRevokeKeyRequest {
-  // Whose.
-  HolderRef ref = 1;
-
-  // Which, by the identifier `SignsIn` answers with.
-  bytes id = 2;
-}
-
-message HolderRevokeKeyResponse {}
 
 message HolderReachesRequest {
   HolderRef ref = 1;

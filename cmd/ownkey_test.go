@@ -16,7 +16,7 @@ import (
 )
 
 // The self-service half of a key, as the line has it: no verb of its own. A
-// person calls `ApiKey.Issue` and `Holder.RevokeKey` with their **own**
+// person calls `ApiKey.Issue` and `ApiKey.Erase` about their **own**
 // reference -- the operator's verbs -- and what keeps the button safe is
 // `server/core`'s rule over every grant (nobody hands out a method they do not
 // hold), not a method shaped so that it cannot be pointed at anybody else.
@@ -87,10 +87,7 @@ func TestSomebodyMintsAKeyThatActsAsThem(t *testing.T) {
 	t.Run("and they can revoke it", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := b.Walled.Holder().RevokeKey(as, app.HolderRevokeKeyRequest_builder{
-			Ref: own,
-			Id:  v.GetKey().GetId(),
-		}.Build())
+		_, err := b.Walled.ApiKey().Erase(as, app.ApiKeyRef_builder{Id: v.GetKey().GetId()}.Build())
 		x.NoError(err)
 
 		res, err := s.Get(as, app.MeGetRequest_builder{}.Build())
@@ -137,18 +134,18 @@ func TestNobodyMintsThemselvesAKeyWiderThanTheyAre(t *testing.T) {
 	})
 }
 
-// TestARevokeIsAWhichAndNeverAWhose.
+// TestARevokeReachesNobodyWider.
 //
-// `Holder.RevokeKey` is a *which* within a *whose*: the reference says the
-// person, the identifier says the key, and one that is not theirs is
-// `NotFound` -- told apart from nothing, so this cannot be used to ask whether
-// somebody else's key exists.
-func TestARevokeIsAWhichAndNeverAWhose(t *testing.T) {
+// `ApiKey.Erase` is held to `mayReach` on the key's holder: a plain person
+// ends their own and a peer's -- RBAC as it is, a role naming the method
+// reaches anybody no wider -- and not an administrator's.
+func TestARevokeReachesNobodyWider(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
 	who := b.holder(t, ctx, b.Contoso, "erin")
 	other := b.holder(t, ctx, b.Contoso, "sam")
+	b.mayCall(t, ctx, other, "admin", "/roster.HolderService/Erase")
 
 	v, err := b.Walled.ApiKey().Issue(b.as(ctx, other, b.Contoso), app.ApiKeyIssueRequest_builder{
 		Holder:  app.HolderRef_builder{Id: other.Bytes()}.Build(),
@@ -157,11 +154,8 @@ func TestARevokeIsAWhichAndNeverAWhose(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	_, err = b.Walled.Holder().RevokeKey(b.as(ctx, who, b.Contoso), app.HolderRevokeKeyRequest_builder{
-		Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
-		Id:  v.GetKey().GetId(),
-	}.Build())
-	x.Equal(codes.NotFound, status.Code(err))
+	_, err = b.Walled.ApiKey().Erase(b.asNobody(ctx, who, b.Contoso), app.ApiKeyRef_builder{Id: v.GetKey().GetId()}.Build())
+	x.Equal(codes.PermissionDenied, status.Code(err))
 
 	// And it is still there, which is the half a status code does not say.
 	row, err := b.Ent.ApiKey.Get(ctx, mustId(t, v.GetKey().GetId()).Uuid())

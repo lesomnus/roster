@@ -1101,9 +1101,10 @@ Three things to know before handing these out:
 - **`Invalidate` does not touch an API key.** A key is named, listed and revoked
   one at a time; killing somebody's scripts silently under "sign out everywhere"
   is an outage with nothing saying why. Erase the `ApiKey` row, which is a
-  shell: `roster key revoke` reaches the deployment's own `rk_` keys, and a
-  tenant's `rt_` ones go through `HolderService.RevokeKey` -- which the console
-  draws beside the list, since `ApiKeyService` is unregistered everywhere.
+  shell: `roster key revoke` reaches either plane's keys, and over the wire
+  `ApiKeyService.Erase` is served on every port -- the verifier stripped on the
+  way out, the row held to `mayReach` -- which the console and the account page
+  draw beside the list.
 - **They do not require a version.** Every other write here is a
   compare-and-swap; these take one if you have read the row and proceed without
   one if you have not, because a suspension that fails when somebody edits a
@@ -1181,7 +1182,7 @@ the smallest role covering one means exactly what its name says.
 | `MeService/Unlink` | take back one of their own provider accounts. Waived — no role needed |
 | `MeService/SignOutEverywhere` | void everything issued to them before now. Waived |
 | `IdentityService/Add`, with their own reference | attach a provider account they have just proved they control |
-| `ApiKeyService/Issue`, `HolderService/RevokeKey`, with their own reference | mint an `rt_` that acts as them, and end one |
+| `ApiKeyService/Issue`, `ApiKeyService/Erase`, with their own reference | mint an `rt_` that acts as them, and end one |
 
 The first two need **no role**, for `Get`'s reason: they are what somebody must
 be able to do with no permissions at all. The last two are features a deployment

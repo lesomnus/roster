@@ -262,7 +262,7 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 			"/roster.MeService/SignOutEverywhere",
 			"/roster.IdentityService/Add",
 			"/roster.ApiKeyService/Issue",
-			"/roster.HolderService/RevokeKey",
+			"/roster.ApiKeyService/Erase",
 
 			// What the front door asks before it knows anything, which is how
 			// it stops holding a copy of which tenant serves which name.
@@ -1619,7 +1619,7 @@ func TestSomebodyMintsAKeyFromTheirOwnPage(t *testing.T) {
 		Methods: []string{
 			rstr.MeService_Get_FullMethodName,
 			rstr.ApiKeyService_Issue_FullMethodName,
-			rstr.HolderService_RevokeKey_FullMethodName,
+			rstr.ApiKeyService_Erase_FullMethodName,
 		},
 	}.Build())
 	x.NoError(err)

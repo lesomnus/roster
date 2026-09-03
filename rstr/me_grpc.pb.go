@@ -61,7 +61,7 @@ const (
 //
 // Everything else a person does to their own account is the entity's own verb
 // with their own reference: `Identity.Add` to attach a provider account,
-// `ApiKey.Issue` to mint a key that acts as them, `Holder.RevokeKey` to end
+// `ApiKey.Issue` to mint a key that acts as them, `ApiKey.Erase` to end
 // one, `Credential.Set`/`Enrol` for a password and a factor. Those were once
 // `Link`, `IssueKey` and `RevokeKey` here -- a self-only twin of each verb, for
 // the grant it let a role name -- and were folded back by the rule in CLAUDE.md,
@@ -184,7 +184,7 @@ func (c *meServiceClient) SignOutEverywhere(ctx context.Context, in *MeSignOutEv
 //
 // Everything else a person does to their own account is the entity's own verb
 // with their own reference: `Identity.Add` to attach a provider account,
-// `ApiKey.Issue` to mint a key that acts as them, `Holder.RevokeKey` to end
+// `ApiKey.Issue` to mint a key that acts as them, `ApiKey.Erase` to end
 // one, `Credential.Set`/`Enrol` for a password and a factor. Those were once
 // `Link`, `IssueKey` and `RevokeKey` here -- a self-only twin of each verb, for
 // the grant it let a role name -- and were folded back by the rule in CLAUDE.md,
