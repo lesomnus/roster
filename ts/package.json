@@ -10,7 +10,7 @@
 		"build": "tsc -p tsconfig.json && vite build --config vite.console.ts && vite build --config vite.account.ts",
 		"preview": "vite preview --config vite.console.ts",
 		"check": "tsc -p tsconfig.json",
-		"wasm": "cd .. && GOOS=js GOARCH=wasm go build -o ts/public/app.wasm ./wasm && cp \"$(go env GOROOT)/lib/wasm/wasm_exec.js\" ts/public/",
+		"wasm": "cd .. && GOOS=js GOARCH=wasm go build -o ts/public/app.wasm ./wasm && GOOS=js GOARCH=wasm go build -o ts/public/admin.wasm ./wasm/admin && cp \"$(go env GOROOT)/lib/wasm/wasm_exec.js\" ts/public/",
 		"dev:sandbox": "npm run wasm && VITE_SANDBOX=1 vite --config vite.console.ts",
 		"e2e": "cd .. && ./scripts/e2e.sh"
 	},

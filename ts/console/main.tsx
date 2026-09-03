@@ -56,8 +56,8 @@ const ADDR: string =
  * deployment has to add is `origins:` under `admin.http`, for the reason
  * `control.http` needs it.
  *
- * The sandbox has one server and no third listener, so this is undefined there
- * and the screen is not offered.
+ * The sandbox has no third listener but a second instance -- `admin.wasm`,
+ * opened by `customers()` below -- so this is not asked there.
  */
 // The admin listener is another origin whatever serves this page, and one the
 // page cannot guess: told by `VITE_ADMIN_ADDR` under `npm run dev`, and by
@@ -138,7 +138,12 @@ function SignIn(props: { onDone: () => void }): React.ReactNode {
 						password: String(f.get('password') ?? ''),
 					})
 					.then(() => props.onDone())
-					.catch(() => setBad(true))
+					.catch((e: unknown) => {
+						// The form says "no" and nothing else, on purpose; the
+						// reason goes where somebody developing this looks.
+						console.error('sign-in refused:', e)
+						setBad(true)
+					})
 			}}
 		>
 			<h1>roster</h1>
@@ -170,18 +175,28 @@ function SignIn(props: { onDone: () => void }): React.ReactNode {
  *
  * Second because a `Store` holds rows by entity and `roster.Holder` is two
  * different tables across these two ports; one store would have them overwrite
- * each other by identifier. Null in the sandbox, where there is no such
- * listener and the screen is not offered.
+ * each other by identifier.
+ *
+ * In the sandbox it is a second wasm instance, `wasm/admin`, opened beside
+ * the first the way `admin.http` is dialed beside `control.http`: one instance
+ * answers one message port. Two instances are two deployments, each with its
+ * own databases, and `wasm/admin/main.go` says why the page cannot tell.
  */
 async function customers(): Promise<{ app: App; admin: Admin } | null> {
-	if (import.meta.env['VITE_SANDBOX'] !== undefined) return null
-	const at = await adminAddr()
-	if (at === null) return null
+	const transport = await (async (): Promise<Transport | null> => {
+		if (import.meta.env['VITE_SANDBOX'] !== undefined) {
+			const { start } = await import('./sandbox.js')
+			return (await start('admin.wasm')).transport
+		}
+		const at = await adminAddr()
+		if (at === null) return null
 
-	const transport = createConnectTransport({
-		baseUrl: at,
-		fetch: (input, init) => fetch(input, { ...init, credentials: 'include' }),
-	})
+		return createConnectTransport({
+			baseUrl: at,
+			fetch: (input, init) => fetch(input, { ...init, credentials: 'include' }),
+		})
+	})()
+	if (transport === null) return null
 
 	// Keyed apart from the console's own store for the same reason there are two
 	// of them: what they hold is not the same rows.

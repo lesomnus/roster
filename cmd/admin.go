@@ -289,8 +289,8 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 	rate := c.Admin.Limiter()
 
 	chain := grpcx.Serving(ctx, grpcx.WithDeadline(c.Admin.CallTimeout())).
-		WithUnary(auth.InterceptorUnary(s.Sessions.Handler(), Resolver(s.Control.Ungated, nil), public)).
-		WithStream(auth.InterceptorStream(s.Sessions.Handler(), Resolver(s.Control.Ungated, nil), public)).
+		WithUnary(auth.InterceptorUnary(s.Sessions.Handler(), Resolver(s.Control.Ungated, nil), Public)).
+		WithStream(auth.InterceptorStream(s.Sessions.Handler(), Resolver(s.Control.Ungated, nil), Public)).
 
 		// `admin:` is a whole `config.ServerConfig`, and this was the one knob
 		// of it nothing here read: the deadline is taken from it on the line
@@ -329,7 +329,7 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 	os = append(os, vs...)
 
 	g := grpc.NewServer(os...)
-	register(g, admin)
+	Register(g, admin)
 
 	// And the credential writes, which is what an operator with no mail has
 	// instead of one: reset a password, open an account ten wrong answers

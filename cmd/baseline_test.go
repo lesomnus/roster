@@ -32,7 +32,7 @@ func TestBaselineNamesRealTests(t *testing.T) {
 
 	have := map[string]bool{}
 	var files []string
-	for _, dir := range []string{".", filepath.Join("..", "account"), filepath.Join("..", "frontdoor")} {
+	for _, dir := range []string{".", filepath.Join("..", "account"), filepath.Join("..", "frontdoor"), filepath.Join("..", "wasm", "sandbox")} {
 		vs, err := filepath.Glob(filepath.Join(dir, "*_test.go"))
 		x.NoError(err)
 		files = append(files, vs...)

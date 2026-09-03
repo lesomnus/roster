@@ -672,8 +672,8 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	rate := c.Server.Limiter()
 
 	chain := grpcx.Serving(ctx, grpcx.WithDeadline(c.Server.CallTimeout())).
-		WithUnary(auth.InterceptorUnary(h, r, public)).
-		WithStream(auth.InterceptorStream(h, r, public)).
+		WithUnary(auth.InterceptorUnary(h, r, Public)).
+		WithStream(auth.InterceptorStream(h, r, Public)).
 		WithUnary(grpcx.LimitUnary(rate, gate.ByTenant())).
 		WithStream(grpcx.LimitStream(rate, gate.ByTenant())).
 		With(gate.Interceptor(Policy(s.Ent))).
@@ -693,7 +693,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	os = append(os, vs...)
 
 	g := grpc.NewServer(os...)
-	register(g, s.Walled)
+	Register(g, s.Walled)
 
 	// The one stream an app that trusts roster holds open: *a decision you made
 	// has stopped being good.*
@@ -823,7 +823,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 // is not served until somebody adds a line here. That is the direction to fail
 // in. The other arrangement -- serve everything, then take one away -- fails by
 // publishing something nobody meant to, and it fails silently.
-func register(g grpc.ServiceRegistrar, s app.Server) {
+func Register(g grpc.ServiceRegistrar, s app.Server) {
 	// `CredentialService` is served for its overlays (`Set`, `Unlock`, `Enrol`), and
 	// its generated reads and raw `Add`/`Erase` are shut by method in
 	// `closed` -- so nothing on the wire answers with the `secret` column.
@@ -960,7 +960,7 @@ func (s *Server) closed(c Config) func(method string) bool {
 //
 // The lockout in `server/vouch` is unaffected and was never meant to be the
 // first line.
-func public(method string) bool {
+func Public(method string) bool {
 	// Signing in, and only on the port that serves it. A caller asking for a
 	// credential does not have one, which is the whole of the argument -- the
 	// same one `/session` made when this was an HTTP endpoint.

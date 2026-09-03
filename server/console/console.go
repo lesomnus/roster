@@ -110,9 +110,13 @@ func (a authed) SignIn(ctx context.Context, req *app.AuthSignInRequest) (*app.Au
 	// header and this handler has no response writer -- but `set-cookie` as
 	// response metadata reaches the browser through `web.Transcode` as a header
 	// like any other. See payday's `authsession.Mint`.
-	if err := grpc.SetHeader(ctx, metadata.Pairs("set-cookie", c.String())); err != nil {
-		return nil, err
-	}
+	// Best effort, deliberately. The cookie is how a browser holds the
+	// session, and over HTTP this never fails. What can fail is the transport
+	// having nowhere to put a header at all -- a message port, which is what
+	// the sandbox calls over (`wasm/main.go`), where there is no cookie jar
+	// for it to reach anyway and `auth.Plain` stands behind it. A sign-in
+	// refused for that reason read as a wrong password on the sandbox's form.
+	_ = grpc.SetHeader(ctx, metadata.Pairs("set-cookie", c.String()))
 
 	return &app.AuthSignInResponse{}, nil
 }
@@ -123,8 +127,11 @@ func (a authed) SignOut(ctx context.Context, req *app.AuthSignOutRequest) (*app.
 		was = a.sessions.KeyOf(md.Get("cookie"))
 	}
 
-	return &app.AuthSignOutResponse{}, grpc.SetHeader(ctx,
-		metadata.Pairs("set-cookie", a.sessions.End(ctx, was).String()))
+	// Best effort, as above; the row is ended either way, which is the half
+	// that matters.
+	_ = grpc.SetHeader(ctx, metadata.Pairs("set-cookie", a.sessions.End(ctx, was).String()))
+
+	return &app.AuthSignOutResponse{}, nil
 }
 
 // Issue is `IssueService` over this plane's rows.

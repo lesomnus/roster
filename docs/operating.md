@@ -294,13 +294,25 @@ npm --prefix ts run dev            # against a running roster
 
 `dev:sandbox` compiles the whole server into the page — `GOOS=js GOARCH=wasm`,
 SQLite in a Worker, a message port instead of HTTP/2. A reload is a fresh
-deployment: two new databases, seeded again by `cmd.Seed`, nothing left over. It
-signs in as `ops` with the password `sandbox`.
+deployment: new databases, seeded again by `cmd.Seed`, nothing left over. It
+signs in as `ops` with the password `sandbox`, and has one customer, `contoso`.
+
+It is **two instances**, because one instance answers one message port and the
+console reaches two listeners: `app.wasm` is `control.http` — the deployment
+screen, the sign-in — and `admin.wasm` is `admin.http`, which the customers
+screen opens beside it. Each has databases of its own, and `wasm/admin/main.go`
+says why the page cannot tell.
 
 The password is checked there by the same `vouch`, so a wrong one is refused —
-but the **cookie** cannot work over a message port, and the server behind it is
-`auth.Plain`, so nothing after the sign-in is checking a session. That is a
-sandbox being a sandbox; see `wasm/main.go`.
+but the **cookie** cannot work over a message port. So the instance remembers
+who signed in and takes every later call to be them until a sign-out
+(`wasm/sandbox`); the admin instance, which saw no sign-in, is `ops` from the
+start. That is a sandbox being a sandbox; see `wasm/main.go`.
+
+`ts/e2e/sandbox.spec.ts` opens it in a browser and `wasm/sandbox` has the same
+sign-in without one, because it stopped working once with every other gate
+green -- five things had drifted, from the page's base path to the name of an
+in-memory database -- and nothing noticed until somebody ran it.
 
 ### Where the console's sessions live
 

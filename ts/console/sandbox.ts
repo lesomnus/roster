@@ -63,9 +63,11 @@ export interface Sandbox {
 /**
  * start compiles the app into the page and answers with a transport for it.
  *
- * `url` is where the build landed:
+ * `name` is the build's file under `public/`, which `npm run wasm` writes
+ * two of:
  *
  *     GOOS=js GOARCH=wasm go build -o ts/public/app.wasm ./wasm
+ *     GOOS=js GOARCH=wasm go build -o ts/public/admin.wasm ./wasm/admin
  *
  * # The worker is yours, and it has to be
  *
@@ -81,10 +83,18 @@ export interface Sandbox {
  * in a file of your own — `sandbox-worker.ts`, beside this one.
  */
 export async function start(
-	url = '/app.wasm',
+	name = 'app.wasm',
 	workerUrl: URL | string = new URL('./sandbox-worker.ts', import.meta.url),
 ): Promise<Sandbox> {
-	const sock = await open(url, { workerUrl: new URL(workerUrl, location.href) })
+	// Under the page's base rather than at the root: `vite.console.ts` serves
+	// this page at `/console/`, and `public/` with it, so `/app.wasm` is a
+	// 404 that reads as "the sandbox never comes up". The package's default
+	// for `wasm_exec.js` is the root too, so it is said here as well.
+	const base = import.meta.env.BASE_URL
+	const sock = await open(base + name, {
+		workerUrl: new URL(workerUrl, location.href),
+		wasmExec: base + 'wasm_exec.js',
+	})
 
 	return {
 		transport: createDrpcTransport(sock.dial()),

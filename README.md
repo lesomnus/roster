@@ -348,6 +348,11 @@ roster account serve --roster roster:8080 --connect https://roster:8443 \
   --key contoso=rt_… --key fabrikam=rt_…       # or ROSTER_ACCOUNT_KEY_<ALIAS>
 ```
 
+The sandbox (`npm run dev:sandbox`) is the console with the server compiled
+into the page, twice: `wasm/` is the control listener and `wasm/admin/` the
+admin one, since one instance answers one message port. `wasm/sandbox` is what
+they share.
+
 Both pages are driven in a browser by `./scripts/e2e.sh`: it builds the binary
 and the pages, stands a deployment up in a scratch directory the way
 `docs/operating.md` says to, seeds a customer, starts `roster serve` and

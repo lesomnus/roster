@@ -35,6 +35,11 @@ trap 'kill "${pids[@]}" 2>/dev/null; wait 2>/dev/null; rm -rf "${work}"' EXIT
 echo "== build"
 go build -o "${work}/roster" ./cmd/roster
 npm --prefix ts run build >/dev/null
+# The sandbox too, unless told not to: two wasm builds, which is most of what
+# this step costs. `E2E_SANDBOX=0` skips it and its spec.
+if [ "${E2E_SANDBOX:-1}" != "0" ]; then
+	npm --prefix ts run wasm >/dev/null
+fi
 
 # Ports nothing else on a desk is likely to be on. `localhost` rather than
 # `127.0.0.1` for the account app because a security key's relying party is a
@@ -123,6 +128,15 @@ pids+=($!)
 
 up "${E2E_ACCOUNT}/providers"
 
+if [ "${E2E_SANDBOX:-1}" != "0" ]; then
+	export E2E_SANDBOX="http://localhost:18100/console/"
+	(cd ts && VITE_SANDBOX=1 npx vite --config vite.console.ts --port 18100 --strictPort >"${work}/sandbox.log" 2>&1) &
+	pids+=($!)
+	up "${E2E_SANDBOX}"
+else
+	unset E2E_SANDBOX
+fi
+
 # `--hold` leaves the deployment up for a browser or a curl, which is how a
 # failure the specs report is looked at.
 if [ "${1:-}" = "--hold" ]; then
@@ -132,7 +146,11 @@ if [ "${1:-}" = "--hold" ]; then
 fi
 
 echo "== playwright"
-(cd ts && npx tsc -p e2e/tsconfig.json && npx playwright test "$@") || {
+specs=()
+if [ -z "${E2E_SANDBOX:-}" ]; then
+	specs+=(--grep-invert sandbox)
+fi
+(cd ts && npx tsc -p e2e/tsconfig.json && npx playwright test "${specs[@]}" "$@") || {
 	echo >&2; echo "-- serve.log" >&2; tail -40 "${work}/serve.log" >&2
 	echo "-- account.log" >&2; tail -40 "${work}/account.log" >&2
 	exit 1
