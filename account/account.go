@@ -117,6 +117,13 @@ type Config struct {
 
 	// Static is the page, or nil for a placeholder that says where the API is.
 	Static http.Handler
+
+	// Mail delivers what roster mints and does not deliver: a recovery link, a
+	// verification link. `to` is the address on the row and never anything a
+	// request said; `link` is the URL that finishes the flow at this app. Nil
+	// is a deployment that cannot, and the two flows say so with 501 rather
+	// than minting a link nobody will ever read.
+	Mail func(ctx context.Context, to, subject, link string) error
 }
 
 // Methods is what the delegation this app mints for a person allows: exactly
@@ -129,10 +136,12 @@ var Methods = []string{
 	rstr.MeService_Get_FullMethodName,
 	rstr.MeService_Unlink_FullMethodName,
 	rstr.MeService_SignOutEverywhere_FullMethodName,
+	rstr.HolderService_Get_FullMethodName,
 	rstr.HolderService_Update_FullMethodName,
 	rstr.HolderService_RevokeKey_FullMethodName,
 	rstr.IdentityService_Add_FullMethodName,
 	rstr.EmailService_List_FullMethodName,
+	rstr.EmailService_Get_FullMethodName,
 	rstr.EmailService_Add_FullMethodName,
 	rstr.EmailService_Erase_FullMethodName,
 	rstr.EmailService_Verify_FullMethodName,
@@ -176,6 +185,7 @@ type App struct {
 	conn   *grpc.ClientConn
 	roster rstr.Client
 	front  rstr.FrontServiceClient
+	vouch  rstr.VouchServiceClient
 	door   *frontdoor.Door
 
 	byId    map[pdid.Id]*tenant
@@ -245,6 +255,7 @@ func New(ctx context.Context, c Config) (*App, error) {
 		conn:    conn,
 		roster:  rstr.NewClient(conn),
 		front:   rstr.NewFrontServiceClient(conn),
+		vouch:   rstr.NewVouchServiceClient(conn),
 		byId:    map[pdid.Id]*tenant{},
 		byAlias: map[string]*tenant{},
 		flows:   &flows{by: map[string]flow{}},
@@ -313,6 +324,10 @@ func (a *App) Handler() http.Handler {
 	m.HandleFunc("GET /login", a.login)
 	m.HandleFunc("POST /ways", a.addWay)
 	m.HandleFunc("GET /callback", a.callback)
+	m.HandleFunc("POST /recover", a.recover)
+	m.HandleFunc("GET /redeem", a.redeem)
+	m.HandleFunc("POST /verify", a.verify)
+	m.HandleFunc("GET /confirm", a.confirm)
 	// Every `/roster.<Service>/<Method>` is the page speaking Connect to this
 	// origin, handed on as the person; everything else is the page itself. One
 	// handler for both because `ServeMux` matches a prefix only up to a slash,
@@ -833,4 +848,272 @@ func keyOf(ctx context.Context) (string, bool) {
 	k, ok := ctx.Value(keyKey{}).(string)
 
 	return k, ok && k != ""
+}
+
+// recover starts a recovery: a link mailed to the address a person names.
+//
+// roster answers the same for an address that is here and one that is not --
+// a token either way -- and so does this: 202 whatever was typed, because a
+// form a stranger can fill in must not be an oracle for who is here. What
+// differs is whether a message goes out, and only the mailbox learns that.
+//
+// The link proves the mailbox and nothing more, and what it buys is decided in
+// `redeem`: a new password, shown once, rather than a session -- so a mailbox
+// read once is a password the person changes, not an account somebody holds.
+func (a *App) recover(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	t, ok := tenantFrom(ctx)
+	if !ok {
+		http.Error(w, "no operator here serves this name", http.StatusNotFound)
+		return
+	}
+	if a.c.Mail == nil {
+		http.Error(w, "this deployment cannot send mail, so it cannot recover an account this way", http.StatusNotImplemented)
+		return
+	}
+
+	var body struct {
+		Address string `json:"address"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&body); err != nil || body.Address == "" {
+		http.Error(w, "address: where to send the link", http.StatusBadRequest)
+		return
+	}
+	address := front.Address(body.Address)
+
+	res, err := a.vouch.Link(withKey(ctx, t.key), rstr.VouchLinkRequest_builder{
+		Who: rstr.VouchWho_builder{Tenant: t.alias, Address: address}.Build(),
+	}.Build())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "account: recover at %s: %v\n", t.alias, err)
+		http.Error(w, "cannot start", http.StatusInternalServerError)
+		return
+	}
+
+	// roster answers a token whether or not the address is here, so that the
+	// answer says nothing; this app, holding the tenant's key, may ask -- and
+	// mails only an address that is somebody's, so that a form a stranger can
+	// fill in is not a way to have this deployment send mail anywhere. The
+	// browser is answered the same either way, and in the background, so the
+	// timing says nothing either.
+	link := a.finish(r, "/redeem", res.GetToken())
+	go func() {
+		ctx := context.WithoutCancel(ctx)
+		_, err := a.roster.Email().Get(withKey(ctx, t.key), rstr.EmailGetRequest_builder{
+			Ref: rstr.EmailRef_builder{
+				At: rstr.EmailRefByAt_builder{TenantId: t.id.Bytes(), Address: proto.String(address)}.Build(),
+			}.Build(),
+		}.Build())
+		if err != nil {
+			return
+		}
+		if err := a.c.Mail(ctx, address, "Recover your account", link); err != nil {
+			fmt.Fprintf(os.Stderr, "account: mail to %s: %v\n", address, err)
+		}
+	}()
+
+	w.WriteHeader(http.StatusAccepted)
+}
+
+// redeem finishes a recovery: the link proves the mailbox, and the person is
+// handed a new password, once.
+//
+// Not a session. `Vouch.Redeem` would mint one, and this app asks it to, then
+// uses it for nothing but the proof: what somebody who has lost their password
+// needs is a password, and `Vouch.Reset` makes one -- and voids everything
+// issued before it, which is what recovering from a takeover requires. Their
+// own row asks for the current password on `Set` and there is none to give,
+// which is exactly why this road exists.
+func (a *App) redeem(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		http.Error(w, "no", http.StatusBadRequest)
+		return
+	}
+
+	// The link names the tenant through the person it was minted for, and the
+	// key that minted it is the one that redeems it -- so try each tenant's
+	// key; a link minted under one answers under no other.
+	for _, t := range a.byAlias {
+		as := withKey(ctx, t.key)
+		res, err := a.vouch.Redeem(as, rstr.VouchRedeemRequest_builder{
+			Token:   token,
+			Methods: []string{rstr.MeService_Get_FullMethodName},
+		}.Build())
+		if err != nil || !res.GetVerified().GetOk() {
+			continue
+		}
+
+		reset, err := a.vouch.Reset(as, rstr.VouchResetRequest_builder{
+			Who: rstr.VouchWho_builder{Id: res.GetVerified().GetHolder()}.Build(),
+		}.Build())
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "account: reset after redeem at %s: %v\n", t.alias, err)
+			http.Error(w, "the link is good and the password could not be made; ask an operator", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("content-type", "text/html; charset=utf-8")
+		w.Header().Set("cache-control", "no-store")
+		fmt.Fprintf(w, recovered, htmlEscape(reset.GetSecret()))
+		return
+	}
+
+	http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
+}
+
+// verify mails a link that proves one of the signed-in person's addresses.
+//
+// `Email.Verify` is called as the person, through their delegation -- the same
+// call the page could make itself -- and the reason it is a route here is
+// delivery: the app mails, roster does not. The address is read off the row,
+// never from the request.
+func (a *App) verify(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	if a.c.Mail == nil {
+		http.Error(w, "this deployment cannot send mail, so it cannot verify an address this way", http.StatusNotImplemented)
+		return
+	}
+	as, err := a.door.Acting(ctx, r)
+	if err != nil {
+		http.Error(w, "no", http.StatusUnauthorized)
+		return
+	}
+	t, ok := tenantFrom(ctx)
+	if !ok {
+		http.Error(w, "no operator here serves this name", http.StatusNotFound)
+		return
+	}
+	as = withKey(as, t.key)
+
+	var body struct {
+		Id string `json:"id"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&body); err != nil {
+		http.Error(w, "no", http.StatusBadRequest)
+		return
+	}
+	id, err := base64.RawURLEncoding.DecodeString(body.Id)
+	if err != nil || len(id) != 16 {
+		http.Error(w, "id: which address", http.StatusBadRequest)
+		return
+	}
+	ref := rstr.EmailRef_builder{Id: id}.Build()
+
+	// Read as the person, so that what they cannot see they cannot verify;
+	// and the row's holder compared with the session's, because a role that
+	// reads addresses reads the tenant's addresses and this button is about
+	// their own. The link is then minted as this app -- the key that mints a
+	// link is the key that confirms it, and the click comes from a mail
+	// client with no session.
+	who, _ := a.door.Who(ctx, r)
+	row, err := a.roster.Email().Get(as, rstr.EmailGetRequest_builder{
+		Ref:    ref,
+		Select: rstr.EmailSelect_builder{Address: proto.Bool(true), Holder: rstr.HolderSelect_builder{}.Build()}.Build(),
+	}.Build())
+	if err != nil || !bytesEqual(row.GetHolder().GetId(), who.Bytes()) {
+		http.Error(w, "no", http.StatusNotFound)
+		return
+	}
+	res, err := a.roster.Email().Verify(withKey(ctx, t.key), rstr.EmailVerifyRequest_builder{Ref: ref}.Build())
+	if err != nil {
+		if status.Code(err) == codes.PermissionDenied {
+			http.Error(w, "no", http.StatusForbidden)
+			return
+		}
+		fmt.Fprintf(os.Stderr, "account: verify %s: %v\n", row.GetAddress(), err)
+		http.Error(w, "cannot start", http.StatusInternalServerError)
+		return
+	}
+
+	link := a.finish(r, "/confirm", res.GetToken())
+	if err := a.c.Mail(ctx, row.GetAddress(), "Confirm your address", link); err != nil {
+		fmt.Fprintf(os.Stderr, "account: mail to %s: %v\n", row.GetAddress(), err)
+		http.Error(w, "cannot send", http.StatusBadGateway)
+		return
+	}
+
+	w.WriteHeader(http.StatusAccepted)
+}
+
+// confirm spends a verification link. Nobody is signed in by it, and nobody
+// need be signed in to click it: the key that minted it confirms it.
+func (a *App) confirm(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		http.Error(w, "no", http.StatusBadRequest)
+		return
+	}
+
+	for _, t := range a.byAlias {
+		res, err := a.roster.Email().Confirm(withKey(ctx, t.key), rstr.EmailConfirmRequest_builder{Token: token}.Build())
+		if err != nil {
+			continue
+		}
+
+		w.Header().Set("content-type", "text/html; charset=utf-8")
+		w.Header().Set("cache-control", "no-store")
+		fmt.Fprintf(w, confirmed, htmlEscape(res.GetEmail().GetAddress()))
+		return
+	}
+
+	http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
+}
+
+// finish is the URL a mailed link finishes at: `Base` if the deployment named
+// one, else this request's own origin.
+func (a *App) finish(r *http.Request, path, token string) string {
+	u := a.redirectBase(r)
+	u.Path = path
+	u.RawQuery = url.Values{"token": {token}}.Encode()
+
+	return u.String()
+}
+
+func (a *App) redirectBase(r *http.Request) *url.URL {
+	if a.c.Base != nil {
+		u := *a.c.Base
+
+		return &u
+	}
+	scheme := "http"
+	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
+		scheme = "https"
+	}
+
+	return &url.URL{Scheme: scheme, Host: r.Host}
+}
+
+func htmlEscape(v string) string {
+	return strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", "\"", "&quot;").Replace(v)
+}
+
+// The two pages a mailed link ends at. Plain HTML, because a person arriving
+// from a mail client has no session and the page has one thing to say.
+const recovered = `<!doctype html><meta charset="utf-8"><title>recovered</title>
+<main style="font-family:system-ui;max-width:32rem;margin:3rem auto;padding:0 1rem">
+<h1>Your new password</h1>
+<p>Sign in with it now, then change it. It is shown <strong>once</strong>; everything you were signed in to before has been signed out.</p>
+<p><code style="font-size:1.2rem;user-select:all">%s</code></p>
+<p><a href="/">Sign in</a></p></main>`
+
+const confirmed = `<!doctype html><meta charset="utf-8"><title>confirmed</title>
+<main style="font-family:system-ui;max-width:32rem;margin:3rem auto;padding:0 1rem">
+<h1>Address confirmed</h1>
+<p><code>%s</code> is yours, as of now. Nothing was signed in by this link.</p>
+<p><a href="/">Back to your account</a></p></main>`
+
+func bytesEqual(a, b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+
+	return true
 }

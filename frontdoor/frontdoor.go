@@ -682,3 +682,50 @@ func kindsOf(vs []*rstr.VouchFactor) []string {
 
 	return out
 }
+
+// Redeem spends a recovery link and signs the browser in as the person it was
+// minted for, the way [Door.Accept] signs a browser in on a provider's word.
+//
+// The same shape and the same reason: roster proves the person (`Vouch.Redeem`
+// checks the link and mints the delegation) and this package does the one
+// thing that has to be done right once -- the session that must not outlive
+// the delegation, and the pair of headers a later call carries. An app that
+// did it itself gets the *must not outlive* wrong once.
+//
+// What the app owns is what the link was for: `Redeem` proves a mailbox, and
+// whether that is enough to sign in, or only enough to hand the person a new
+// password (`Vouch.Reset`), is the app's policy and not this package's.
+func (d *Door) Redeem(ctx context.Context, w http.ResponseWriter, token string) error {
+	if token == "" {
+		return ErrNotSignedIn
+	}
+	res, err := d.c.Vouch.Redeem(ctx, rstr.VouchRedeemRequest_builder{
+		Token:   token,
+		Methods: d.c.Methods,
+	}.Build())
+	if err != nil {
+		return err
+	}
+	v := res.GetVerified()
+	if !v.GetOk() || res.GetToken() == "" {
+		return ErrNotSignedIn
+	}
+	who, tenant, err := ids(v.GetHolder(), v.GetTenant())
+	if err != nil {
+		return err
+	}
+
+	s, cookie, err := d.c.Sessions.Mint(ctx, authsession.Session{
+		Id:       who.String(),
+		TenantId: tenant.String(),
+		Grant:    frame.Whole(),
+		Expires:  res.GetExpires().AsTime(),
+	})
+	if err != nil {
+		return err
+	}
+	d.held.put(s.Key, one{who: who, token: res.GetToken(), expires: res.GetExpires().AsTime()})
+	http.SetCookie(w, cookie)
+
+	return nil
+}

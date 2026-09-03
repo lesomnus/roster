@@ -12,7 +12,9 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
@@ -40,6 +42,22 @@ type deployment struct {
 	contoso  pdid.Id
 	fabrikam pdid.Id
 	erin     []byte
+
+	// mail is what the app asked to have delivered: the mailbox, and the link.
+	mu   sync.Mutex
+	mail []struct{ to, link string }
+}
+
+func (d *deployment) sent(to string) string {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	for i := len(d.mail) - 1; i >= 0; i-- {
+		if d.mail[i].to == to {
+			return d.mail[i].link
+		}
+	}
+
+	return ""
 }
 
 func serve(t *testing.T, enrol account.Enrol) *deployment {
@@ -122,7 +140,10 @@ func serve(t *testing.T, enrol account.Enrol) *deployment {
 				"/roster.MeService/Get", "/roster.MeService/Unlink", "/roster.MeService/SignOutEverywhere",
 				"/roster.HolderService/Update", "/roster.HolderService/RevokeKey", "/roster.EmailService/List",
 				"/roster.EmailService/Add", "/roster.EmailService/Erase", "/roster.ApiKeyService/Issue",
-				"/roster.CredentialService/Set", "/roster.CredentialService/Enrol",
+				"/roster.CredentialService/Set", "/roster.CredentialService/Enrol", "/roster.CredentialService/Erase",
+				"/roster.HolderService/Get", "/roster.EmailService/Get", "/roster.EmailService/Verify", "/roster.EmailService/Confirm",
+				"/roster.VouchService/Link", "/roster.VouchService/Redeem", "/roster.VouchService/Reset",
+				"/roster.DelegationService/List", "/roster.DelegationService/Erase",
 			},
 		}.Build())
 		x.NoError(err)
@@ -154,7 +175,10 @@ func serve(t *testing.T, enrol account.Enrol) *deployment {
 	x.NoError(err)
 	self, err := s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
 		Tenant: rstr.TenantRef_builder{Id: d.contoso.Bytes()}.Build(), Alias: "self",
-		Methods: []string{"/roster.IdentityService/Add", "/roster.EmailService/List"},
+		Methods: []string{
+			"/roster.IdentityService/Add", "/roster.EmailService/List", "/roster.EmailService/Get",
+			"/roster.EmailService/Add", "/roster.EmailService/Verify",
+		},
 	}.Build())
 	x.NoError(err)
 	_, err = s.Ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
@@ -169,6 +193,11 @@ func serve(t *testing.T, enrol account.Enrol) *deployment {
 	x.NoError(err)
 	_, err = s.Ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
 		Ref: rstr.HolderRef_builder{Id: bob.GetId()}.Build(), Secret: []byte("correct horse battery staple"),
+	}.Build())
+	x.NoError(err)
+	// And an address, which is where a recovery link goes.
+	_, err = s.Ungated.Email().Add(ctx, rstr.EmailAddRequest_builder{
+		Holder: rstr.HolderRef_builder{Id: bob.GetId()}.Build(), Address: "bob@fabrikam.com",
 	}.Build())
 	x.NoError(err)
 
@@ -201,6 +230,14 @@ func serve(t *testing.T, enrol account.Enrol) *deployment {
 		Sessions: authsession.New(authsession.NewMemStore(), authsession.Insecure()),
 		// The page, standing in for the built UI: the round trips end here.
 		Static: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte("home")) }),
+		// The mailer, standing in for one: it keeps what it was asked to send.
+		Mail: func(ctx context.Context, to, subject, link string) error {
+			d.mu.Lock()
+			defer d.mu.Unlock()
+			d.mail = append(d.mail, struct{ to, link string }{to, link})
+
+			return nil
+		},
 	})
 	x.NoError(err)
 	t.Cleanup(func() { a.Close() })
@@ -407,4 +444,119 @@ func TestAStrangerIsEnrolledWhereTheDeploymentSaysSo(t *testing.T) {
 	for _, h := range vs.GetItems() {
 		x.NotEqual("newcomer", h.GetAlias())
 	}
+}
+
+// TestSomebodyRecoversTheirAccountByMail is the recovery flow: a link mailed to
+// the address on the row, a mailbox proved, and a **password** handed over --
+// not a session -- shown once, with everything issued before it void.
+func TestSomebodyRecoversTheirAccountByMail(t *testing.T) {
+	x := require.New(t)
+	d := serve(t, account.Invited())
+	b := d.browser(t, "fabrikam.test")
+
+	// Whatever is typed is accepted, and only the mailbox learns whether a
+	// message went out -- so a stranger's address answers the same.
+	code, _ := b.do(t, http.MethodPost, "/recover", `{"address":"nobody@fabrikam.com"}`,
+		func(r *http.Request) { r.Header.Set("Content-Type", "application/json") })
+	x.Equal(http.StatusAccepted, code)
+	x.Empty(d.sent("nobody@fabrikam.com"), "a link was mailed to nobody")
+
+	code, _ = b.do(t, http.MethodPost, "/recover", `{"address":"bob@fabrikam.com"}`,
+		func(r *http.Request) { r.Header.Set("Content-Type", "application/json") })
+	x.Equal(http.StatusAccepted, code)
+
+	var link string
+	x.Eventually(func() bool { link = d.sent("bob@fabrikam.com"); return link != "" }, 2*time.Second, 20*time.Millisecond,
+		"no link was mailed to bob")
+	x.Contains(link, "/redeem?token=rl_")
+
+	// The link, clicked: a page with a new password on it and no session.
+	res, err := b.Get(link)
+	x.NoError(err)
+	page, _ := io.ReadAll(res.Body)
+	res.Body.Close()
+	x.Equal(http.StatusOK, res.StatusCode, string(page))
+	x.Contains(string(page), "Your new password")
+	password := between(string(page), `user-select:all">`, `</code>`)
+	x.NotEmpty(password, "the page shows no password: %s", page)
+
+	code, _ = b.rpc(t, "/roster.MeService/Get", `{}`)
+	x.Equal(http.StatusUnauthorized, code, "a recovery link signed somebody in")
+
+	// Twice is nothing: the link was spent.
+	res, err = b.Get(link)
+	x.NoError(err)
+	res.Body.Close()
+	x.Equal(http.StatusNotFound, res.StatusCode, "a recovery link was redeemed twice")
+
+	// The new password signs bob in; the old one does not.
+	code, _ = b.do(t, http.MethodPost, "/session", `{"alias":"bob","password":"`+password+`"}`,
+		func(r *http.Request) { r.Header.Set("Content-Type", "application/json") })
+	x.Equal(http.StatusNoContent, code, "the recovered password does not sign in")
+	code, _ = d.browser(t, "fabrikam.test").do(t, http.MethodPost, "/session", `{"alias":"bob","password":"correct horse battery staple"}`,
+		func(r *http.Request) { r.Header.Set("Content-Type", "application/json") })
+	x.Equal(http.StatusUnauthorized, code, "the old password still signs in")
+}
+
+// TestSomebodyVerifiesAnAddressOfTheirOwn is the verification flow: an address
+// added from the page, a link mailed to **that** address, and a click that
+// stamps the row and signs nobody in.
+func TestSomebodyVerifiesAnAddressOfTheirOwn(t *testing.T) {
+	x := require.New(t)
+	d := serve(t, account.Invited())
+	d.idp.subject = "3001"
+	d.idp.claims = map[string]any{"email": "erin@contoso.com"}
+
+	b := d.browser(t, "contoso.test")
+	code, _ := b.do(t, http.MethodGet, "/login?connection=example", "", nil)
+	x.Equal(http.StatusOK, code)
+
+	// Added through the proxy, as the person, with her own reference -- which
+	// the page has from `Me.Get` and this test has from the seed.
+	code, body := b.rpc(t, "/roster.EmailService/Add", `{"holder":{"id":"`+std(d.erin)+`"},"address":"erin@contoso.com"}`)
+	x.Equal(http.StatusOK, code, body)
+	var added struct {
+		Id           string `json:"id"`
+		DateVerified any    `json:"dateVerified"`
+	}
+	x.NoError(json.Unmarshal([]byte(body), &added))
+	x.Nil(added.DateVerified)
+	id, err := base64.StdEncoding.DecodeString(added.Id)
+	x.NoError(err)
+
+	code, body = b.do(t, http.MethodPost, "/verify", `{"id":"`+base64.RawURLEncoding.EncodeToString(id)+`"}`,
+		func(r *http.Request) { r.Header.Set("Content-Type", "application/json") })
+	x.Equal(http.StatusAccepted, code, body)
+
+	link := d.sent("erin@contoso.com")
+	x.Contains(link, "/confirm?token=rl_", "no link was mailed to the address on the row")
+
+	// Clicked from a browser with no session at all: the mailbox is the proof.
+	res, err := d.browser(t, "contoso.test").Get(link)
+	x.NoError(err)
+	page, _ := io.ReadAll(res.Body)
+	res.Body.Close()
+	x.Equal(http.StatusOK, res.StatusCode, string(page))
+	x.Contains(string(page), "Address confirmed")
+
+	code, body = b.rpc(t, "/roster.EmailService/List", `{"filters":[{"holder":{"id":"`+std(d.erin)+`"}}]}`)
+	x.Equal(http.StatusOK, code, body)
+	x.Contains(body, `"dateVerified"`, "the address was confirmed and not stamped: %s", body)
+}
+
+// std is bytes as Connect's JSON carries them.
+func std(b []byte) string { return base64.StdEncoding.EncodeToString(b) }
+
+func between(s, a, z string) string {
+	i := strings.Index(s, a)
+	if i < 0 {
+		return ""
+	}
+	s = s[i+len(a):]
+	j := strings.Index(s, z)
+	if j < 0 {
+		return ""
+	}
+
+	return s[:j]
 }
