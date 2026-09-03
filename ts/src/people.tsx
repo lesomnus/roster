@@ -125,6 +125,8 @@ export function Person(props: {
 
 			<Ways ids={ids} creds={creds} />
 
+			<Reaches holder={key} may={props.may} />
+
 			<Keys
 				keys={vs.data?.keys ?? []}
 				holder={key}
@@ -230,6 +232,60 @@ export function Person(props: {
 			)}
 			{said?.kind === 'done' && <p className="note">{said.text}</p>}
 			{said?.kind === 'bad' && <p className="bad">{said.text}</p>}
+		</section>
+	)
+}
+
+/**
+ * Reaches is what this person may call, as the gate decides it.
+ *
+ * `Holder.Reaches` answers the same union `MeService.Get` answers about the
+ * caller -- bindings, groups, teams, added up by the policy's own function --
+ * as patterns. Drawn beside the ways in because an operator asking "who is
+ * this" wants both halves: how they get in, and what they may do once in.
+ */
+function Reaches(props: { holder: Uint8Array; may: (method: string) => boolean }): React.ReactNode {
+	const allowed = props.may('/roster.HolderService/Reaches')
+	const vs = useQuery(HolderService.method.reaches, {
+		ref: allowed ? { key: { case: 'id', value: props.holder } } : undefined,
+	})
+
+	if (!allowed) {
+		return (
+			<section className="reaches">
+				<h5>may call</h5>
+				<p className="none">this needs /roster.HolderService/Reaches</p>
+			</section>
+		)
+	}
+	if (vs.state === 'pending') return <p className="loading">…</p>
+	if (vs.state === 'error') return <Failed at={vs.error} />
+
+	const ms = vs.data?.methods ?? []
+
+	return (
+		<section className="reaches">
+			<h5>may call</h5>
+			{ms.length === 0 ? (
+				<p className="none">nothing — no role reaches them, by any path</p>
+			) : (
+				<ul className="methods">
+					{ms.map((m) => (
+						<li key={m}>
+							<code>{m}</code>
+						</li>
+					))}
+				</ul>
+			)}
+			<p className="note">
+				{vs.data?.everySite === true
+					? 'across the whole tenant'
+					: (vs.data?.sites.length ?? 0) > 0
+						? `in ${vs.data?.sites.length} site(s)`
+						: 'nowhere in particular'}
+				{' — '}patterns, as the roles wrote them, added up over bindings, groups
+				and teams the way the gate adds them up.
+			</p>
 		</section>
 	)
 }

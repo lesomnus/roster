@@ -142,10 +142,18 @@ func TestAnOperatorSeesWhatSomebodyReaches(t *testing.T) {
 		x.NoError(err)
 		x.Len(bs.GetItems(), 1, "a binding written to the group was listed as hers, or hers was not")
 
+		// A listed row names its edges by identifier, which is what a panel
+		// draws them from (and looks the alias up in the store); a list that
+		// dropped them would be a table of blanks.
+		x.Equal(reader.GetId(), bs.GetItems()[0].GetRole().GetId(), "the binding does not say which role")
+		x.Equal(alice.GetId(), bs.GetItems()[0].GetHolder().GetId(), "the binding does not say whose")
+
 		ts, err := teamMemberships.List(as, app.TeamMembershipListRequest_builder{
 			Filters: []*app.TeamMembershipFilter{app.TeamMembershipFilter_builder{Holder: her}.Build()},
 		}.Build())
 		x.NoError(err)
 		x.Len(ts.GetItems(), 1)
+		x.Equal(lead.GetId(), ts.GetItems()[0].GetRole().GetId(), "the membership does not say which role")
+		x.Equal(team.GetId(), ts.GetItems()[0].GetTeam().GetId(), "the membership does not say which team")
 	})
 }

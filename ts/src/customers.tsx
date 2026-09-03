@@ -45,6 +45,12 @@ import { HolderService } from '../gen/roster/payday/holder_svc_pb.js'
 import type { Admin } from './client.js'
 import { Person } from './people.js'
 import { Arrives } from './arrives.js'
+import { Organisation } from './organisation.js'
+import { Access } from './access.js'
+import { Trail } from './trail.js'
+
+/** Panel is what opens under a customer's row: one at a time, because they nest. */
+type Panel = 'people' | 'arrives' | 'organisation' | 'access' | 'trail'
 
 /** uuid is the bytes an identifier arrives as, written the way a person reads one. */
 function uuid(v: Uint8Array | undefined): string {
@@ -103,10 +109,11 @@ export function Customers(props: {
 function Tenants(props: { admin: Admin; may: (method: string) => boolean }): React.ReactNode {
 	const vs = useQuery(TenantService.method.list, {})
 
-	// Which customer is open, and on which of its two panels: who is in it,
-	// or how they arrive (names, providers, mail domains). One at a time,
-	// because the panels nest under the row and two open at once read as one.
-	const [at, go] = useState<{ id: string; on: 'people' | 'arrives' } | null>(null)
+	// Which customer is open, and on which panel: who is in it, how they
+	// arrive, how they are organised, what they may do, what was done. One at
+	// a time, because the panels nest under the row and two open at once read
+	// as one.
+	const [at, go] = useState<{ id: string; on: Panel } | null>(null)
 
 	// What this screen made since it read, which is the shape `Keys` already
 	// uses one file over: a list query is not revalidated by a write this page
@@ -146,8 +153,8 @@ function Tenants(props: { admin: Admin; may: (method: string) => boolean }): Rea
 					{items.map((v) => {
 						const id = uuid(v.id)
 						const open = at?.id === id
-						const toggle = (on: 'people' | 'arrives') => () =>
-							go(open && at?.on === on ? null : { id, on })
+						const toggle = (on: Panel) => () => go(open && at?.on === on ? null : { id, on })
+						const label = (on: Panel, name: string) => (open && at?.on === on ? 'hide' : name)
 
 						return (
 							<tr key={id} className={open ? 'at' : ''}>
@@ -155,12 +162,11 @@ function Tenants(props: { admin: Admin; may: (method: string) => boolean }): Rea
 								<td>{v.name}</td>
 								<td>{when(v.dateCreated)}</td>
 								<td className="acts">
-									<button onClick={toggle('people')}>
-										{open && at?.on === 'people' ? 'hide' : 'people'}
-									</button>
-									<button onClick={toggle('arrives')}>
-										{open && at?.on === 'arrives' ? 'hide' : 'arrives through'}
-									</button>
+									<button onClick={toggle('people')}>{label('people', 'people')}</button>
+									<button onClick={toggle('arrives')}>{label('arrives', 'arrives through')}</button>
+									<button onClick={toggle('organisation')}>{label('organisation', 'organisation')}</button>
+									<button onClick={toggle('access')}>{label('access', 'access')}</button>
+									<button onClick={toggle('trail')}>{label('trail', 'trail')}</button>
 								</td>
 							</tr>
 						)
@@ -178,6 +184,13 @@ function Tenants(props: { admin: Admin; may: (method: string) => boolean }): Rea
 			{at?.on === 'arrives' && (
 				<Arrives tenant={items.find((v) => uuid(v.id) === at.id)} may={props.may} />
 			)}
+			{at?.on === 'organisation' && (
+				<Organisation tenant={items.find((v) => uuid(v.id) === at.id)} may={props.may} />
+			)}
+			{at?.on === 'access' && (
+				<Access tenant={items.find((v) => uuid(v.id) === at.id)} may={props.may} />
+			)}
+			{at?.on === 'trail' && <Trail tenant={items.find((v) => uuid(v.id) === at.id)} />}
 		</section>
 	)
 }
