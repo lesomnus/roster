@@ -231,3 +231,21 @@ a.button {
 	text-decoration: none;
 	color: inherit;
 }
+
+/* The account page: one column of sections, a text-shaped button for the
+   choices beside a form ("forgot?", "back"), and a form that wraps. */
+.account main section {
+	margin-bottom: 2rem;
+}
+
+button.link {
+	background: none;
+	border: none;
+	padding: 0.35rem 0.25rem;
+	text-decoration: underline;
+	opacity: 0.8;
+}
+
+.account form {
+	flex-wrap: wrap;
+}
