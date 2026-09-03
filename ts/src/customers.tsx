@@ -214,10 +214,14 @@ function People(props: {
 	})
 	const [at, go] = useState<string | null>(null)
 
+	// Whom this screen erased since it read: a soft erase hides the row from
+	// every read, and a list still showing them would say the erase did not take.
+	const [gone, setGone] = useState<string[]>([])
+
 	if (vs.state === 'pending') return <p className="loading">…</p>
 	if (vs.state === 'error') return <Failed at={vs.error} />
 
-	const items = vs.data?.items ?? []
+	const items = (vs.data?.items ?? []).filter((v) => !gone.includes(uuid(v.id)))
 
 	return (
 		<section className="within">
@@ -259,6 +263,10 @@ function People(props: {
 					holder={items.find((v) => uuid(v.id) === at)}
 					admin={props.admin}
 					may={props.may}
+					onErased={() => {
+						setGone((was) => [...was, at])
+						go(null)
+					}}
 				/>
 			)}
 		</section>

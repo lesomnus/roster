@@ -158,6 +158,7 @@ message EmailListResponse {
 
 message EmailFilter {
   EmailRef ref = 1;
+  HolderRef holder = 2;
 }
 
 message EmailWatchRequest {

@@ -256,7 +256,11 @@ from three sets and no RPC exposes it for another holder. Recommend
 for the rolling-deploy reason `covers()` gives). Escalation: a read, but it
 reveals grants -- gate it on the caller reaching the target (`mayReach`).
 
-**I. Operator-side identity unlink and email removal -- decided: draw them.** Both are reachable
+**I. Operator-side identity unlink and email removal -- decided: draw them; verified in P3.**
+Both pass with no escalation rule (removing a way in is not adding one), and
+`Identity.Erase` meets D42's last-way-in refusal from an operator as from the
+person -- stranding somebody is not a button anybody has; `Disable` is the
+operator's lock-out. `cmd/person_test.go`. Both are reachable
 today (`Identity.Erase`, `Email.Erase` through the wall) and neither is drawn.
 Recommend drawing them in P3 with no new RPC. Not a decision so much as a check
 that both already pass `mayWriteAWayIn` for the operator (they should: removing
@@ -401,6 +405,8 @@ Progress row: *P5 · self-service, complete*.
 
 ### P6 · Serve, document, and retire this file
 
+- `Tenant.Update` overlay (name, desc, labels) and the console's edit of a
+  customer; deferred from P3 because it is a new RPC.
 - `roster serve` serves the console build same-origin (`ts/console/dist`
   embedded), so a deployment needs no `origins:` for it; `roster account serve`
   serves the account UI the same way. `npm run dev` keeps the cross-origin path.
@@ -433,7 +439,7 @@ is; that table gets the summary row when a phase closes, this one the steps.
 | P1 · console: hosts, mail domains, connections per customer | **done** — the *arrives through* panel under a customer: names, providers, mail domains; add and remove through `useCall`, each control behind `covers()`; no new RPC | `ts/src/arrives.tsx`, `cmd/arrives_test.go` |
 | P2a · the reads the panels need: list by tenant/site/holder/team/group/role, and `Holder.Reaches` | **done** — `list.by` grew on Site/Team/Group/Role/Binding and the three memberships; `Holder.Reaches` answers the policy's own union as patterns (`Rules.Held`; on the admin port from the data plane's rows, `cmd/admin.go` `adminRules`). Wall only, no reach guard — see the proto comment for why | `proto/ext/roster/payday/holder_svc.ext.proto`, `server/core/holder.go`, `cmd/reaches_test.go` |
 | P2b · console: organisation, access, trail panels | **done** — three more panels under a customer: *organisation* (sites → members and teams → members with a role; groups → members), *access* (roles with patterns, bindings under each role to a person or a group, in a site or tenant-wide), *trail* (`Audit` by tenant); and *may call* on the person, from `Holder.Reaches`. Every membership and binding form says it is a grant | `ts/src/organisation.tsx`, `access.tsx`, `trail.tsx`, `people.tsx` |
-| P3 · console: the rest of a person, the deployment screen, the sandbox's second listener | open | |
+| P3 · console: the rest of a person, the deployment screen | **done** — on a person: addresses (list by holder, add, remove), unlink an identity, profile replaced whole (`Holder.Update`), a factor enrolled for them, erase (soft). On the deployment: issue an operator's password (`IssuePassword` makes them if new), mint and revoke service keys. **Kept as one listener in the sandbox**, said in `main.tsx`: the customers panels need a real deployment. **Tenant edit deferred** — it needs a `Tenant.Update` overlay (a new RPC), listed under P6 | `ts/src/people.tsx`, `page.tsx`, `cmd/person_test.go` |
 | P4 · the account app, official: `account/`, `ts/account/`, `ts/lib/`, `Front.Connections`, the proxy | open | |
 | P5 · account screens: recovery, profile, emails + verify, WebAuthn, remove a factor, sessions | open | |
 | P6 · serve same-origin, docs, depguard, retire this file | open | |

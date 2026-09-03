@@ -1695,10 +1695,11 @@ func (b0 EmailListResponse_builder) Build() *EmailListResponse {
 }
 
 type EmailFilter struct {
-	state          protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref *EmailRef              `protobuf:"bytes,1,opt,name=ref"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref    *EmailRef              `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Holder *HolderRef             `protobuf:"bytes,2,opt,name=holder"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *EmailFilter) Reset() {
@@ -1733,8 +1734,19 @@ func (x *EmailFilter) GetRef() *EmailRef {
 	return nil
 }
 
+func (x *EmailFilter) GetHolder() *HolderRef {
+	if x != nil {
+		return x.xxx_hidden_Holder
+	}
+	return nil
+}
+
 func (x *EmailFilter) SetRef(v *EmailRef) {
 	x.xxx_hidden_Ref = v
+}
+
+func (x *EmailFilter) SetHolder(v *HolderRef) {
+	x.xxx_hidden_Holder = v
 }
 
 func (x *EmailFilter) HasRef() bool {
@@ -1744,14 +1756,26 @@ func (x *EmailFilter) HasRef() bool {
 	return x.xxx_hidden_Ref != nil
 }
 
+func (x *EmailFilter) HasHolder() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Holder != nil
+}
+
 func (x *EmailFilter) ClearRef() {
 	x.xxx_hidden_Ref = nil
+}
+
+func (x *EmailFilter) ClearHolder() {
+	x.xxx_hidden_Holder = nil
 }
 
 type EmailFilter_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref *EmailRef
+	Ref    *EmailRef
+	Holder *HolderRef
 }
 
 func (b0 EmailFilter_builder) Build() *EmailFilter {
@@ -1759,6 +1783,7 @@ func (b0 EmailFilter_builder) Build() *EmailFilter {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Holder = b.Holder
 	return m0
 }
 
@@ -2104,9 +2129,10 @@ const file_app_email_svc_g_proto_rawDesc = "" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"S\n" +
 	"\x11EmailListResponse\x12#\n" +
 	"\x05items\x18\x01 \x03(\v2\r.roster.EmailR\x05items\x12\x19\n" +
-	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"1\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\\\n" +
 	"\vEmailFilter\x12\"\n" +
-	"\x03ref\x18\x01 \x01(\v2\x10.roster.EmailRefR\x03ref\"n\n" +
+	"\x03ref\x18\x01 \x01(\v2\x10.roster.EmailRefR\x03ref\x12)\n" +
+	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\"n\n" +
 	"\x11EmailWatchRequest\x12-\n" +
 	"\afilters\x18\x01 \x03(\v2\x13.roster.EmailFilterR\afilters\x12*\n" +
 	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"B\n" +
@@ -2171,28 +2197,29 @@ var file_app_email_svc_g_proto_depIdxs = []int32{
 	11, // 17: roster.EmailListRequest.filters:type_name -> roster.EmailFilter
 	21, // 18: roster.EmailListResponse.items:type_name -> roster.Email
 	2,  // 19: roster.EmailFilter.ref:type_name -> roster.EmailRef
-	11, // 20: roster.EmailWatchRequest.filters:type_name -> roster.EmailFilter
-	14, // 21: roster.EmailWatchResponse.items:type_name -> roster.EmailWatchItem
-	21, // 22: roster.EmailWatchItem.value:type_name -> roster.Email
-	0,  // 23: roster.EmailService.Add:input_type -> roster.EmailAddRequest
-	1,  // 24: roster.EmailService.Get:input_type -> roster.EmailGetRequest
-	6,  // 25: roster.EmailService.Patch:input_type -> roster.EmailPatchRequest
-	7,  // 26: roster.EmailService.Apply:input_type -> roster.EmailApplyRequest
-	2,  // 27: roster.EmailService.Erase:input_type -> roster.EmailRef
-	9,  // 28: roster.EmailService.List:input_type -> roster.EmailListRequest
-	12, // 29: roster.EmailService.Watch:input_type -> roster.EmailWatchRequest
-	21, // 30: roster.EmailService.Add:output_type -> roster.Email
-	21, // 31: roster.EmailService.Get:output_type -> roster.Email
-	21, // 32: roster.EmailService.Patch:output_type -> roster.Email
-	21, // 33: roster.EmailService.Apply:output_type -> roster.Email
-	8,  // 34: roster.EmailService.Erase:output_type -> roster.EmailEraseResponse
-	10, // 35: roster.EmailService.List:output_type -> roster.EmailListResponse
-	13, // 36: roster.EmailService.Watch:output_type -> roster.EmailWatchResponse
-	30, // [30:37] is the sub-list for method output_type
-	23, // [23:30] is the sub-list for method input_type
-	23, // [23:23] is the sub-list for extension type_name
-	23, // [23:23] is the sub-list for extension extendee
-	0,  // [0:23] is the sub-list for field type_name
+	15, // 20: roster.EmailFilter.holder:type_name -> roster.HolderRef
+	11, // 21: roster.EmailWatchRequest.filters:type_name -> roster.EmailFilter
+	14, // 22: roster.EmailWatchResponse.items:type_name -> roster.EmailWatchItem
+	21, // 23: roster.EmailWatchItem.value:type_name -> roster.Email
+	0,  // 24: roster.EmailService.Add:input_type -> roster.EmailAddRequest
+	1,  // 25: roster.EmailService.Get:input_type -> roster.EmailGetRequest
+	6,  // 26: roster.EmailService.Patch:input_type -> roster.EmailPatchRequest
+	7,  // 27: roster.EmailService.Apply:input_type -> roster.EmailApplyRequest
+	2,  // 28: roster.EmailService.Erase:input_type -> roster.EmailRef
+	9,  // 29: roster.EmailService.List:input_type -> roster.EmailListRequest
+	12, // 30: roster.EmailService.Watch:input_type -> roster.EmailWatchRequest
+	21, // 31: roster.EmailService.Add:output_type -> roster.Email
+	21, // 32: roster.EmailService.Get:output_type -> roster.Email
+	21, // 33: roster.EmailService.Patch:output_type -> roster.Email
+	21, // 34: roster.EmailService.Apply:output_type -> roster.Email
+	8,  // 35: roster.EmailService.Erase:output_type -> roster.EmailEraseResponse
+	10, // 36: roster.EmailService.List:output_type -> roster.EmailListResponse
+	13, // 37: roster.EmailService.Watch:output_type -> roster.EmailWatchResponse
+	31, // [31:38] is the sub-list for method output_type
+	24, // [24:31] is the sub-list for method input_type
+	24, // [24:24] is the sub-list for extension type_name
+	24, // [24:24] is the sub-list for extension extendee
+	0,  // [0:24] is the sub-list for field type_name
 }
 
 func init() { file_app_email_svc_g_proto_init() }

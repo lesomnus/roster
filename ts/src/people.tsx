@@ -33,7 +33,7 @@
 
 import { useState } from 'react'
 
-import { useQuery } from '@lesomnus/payday/react'
+import { useCall, useQuery } from '@lesomnus/payday/react'
 
 import { create } from '@bufbuild/protobuf'
 
@@ -42,6 +42,8 @@ import { SignInKeySchema } from '../gen/app/me_pb.js'
 import type { SignInCredential, SignInIdentity, SignInKey } from '../gen/app/me_pb.js'
 import type { Holder } from '../gen/roster/payday/holder_pb.js'
 import { HolderService } from '../gen/roster/payday/holder_svc_pb.js'
+import { EmailService } from '../gen/app/email_svc_pb.js'
+import { IdentityService } from '../gen/app/identity_svc_pb.js'
 import type { Admin } from './client.js'
 
 /** uuid is the bytes an identifier arrives as, written the way a person reads one. */
@@ -90,6 +92,11 @@ export function Person(props: {
 	holder: Holder | undefined
 	admin: Admin
 	may: (method: string) => boolean
+
+	// Said when this person was erased here, so the list above can stop
+	// drawing them: a soft erase leaves the row and hides it from every read,
+	// and a table still showing them would read as an erase that did not take.
+	onErased?: () => void
 }): React.ReactNode {
 	const id = props.holder?.id
 	const vs = useQuery(HolderService.method.signsIn, {
@@ -123,9 +130,13 @@ export function Person(props: {
 		<section className="within person">
 			<h4>{props.holder.alias}</h4>
 
-			<Ways ids={ids} creds={creds} />
+			<Ways ids={ids} creds={creds} may={props.may} />
+
+			<Emails holder={key} may={props.may} />
 
 			<Reaches holder={key} may={props.may} />
+
+			<Profile holder={props.holder} may={props.may} />
 
 			<Keys
 				keys={vs.data?.keys ?? []}
@@ -213,6 +224,30 @@ export function Person(props: {
 					}
 				>
 					unlock
+				</button>
+
+				{/* A second factor made **for** somebody: the operator's half of
+				    `Credential.Enrol`, for a hardware key issued in an air gap or
+				    a phone set up at a desk. The seed is answered once, like a
+				    password, and the factor does not count until one code proves
+				    it. Held to `mayReach`, like every credential write. */}
+				<EnrolFor holder={key} admin={props.admin} may={props.may} say={say} />
+
+				{/* Soft: the row stays for the trail and vanishes from every
+				    read. There is no undo drawn, because there is no undo. */}
+				<button
+					className="danger"
+					disabled={!props.may('/roster.HolderService/Erase')}
+					onClick={() => {
+						if (!window.confirm(`erase ${props.holder?.alias ?? 'them'}? they vanish from every read; the trail keeps what they did`)) return
+						say(null)
+						void props.admin.holder
+							.erase(who)
+							.then(() => props.onErased?.())
+							.catch((e: unknown) => say({ kind: 'bad', text: e instanceof Error ? e.message : 'no' }))
+					}}
+				>
+					erase
 				</button>
 			</div>
 
@@ -441,8 +476,22 @@ function Keys(props: {
 	)
 }
 
-function Ways(props: { ids: SignInIdentity[]; creds: SignInCredential[] }): React.ReactNode {
-	if (props.ids.length === 0 && props.creds.length === 0) {
+function Ways(props: {
+	ids: SignInIdentity[]
+	creds: SignInCredential[]
+	may: (method: string) => boolean
+}): React.ReactNode {
+	// Unlinking is `Identity.Erase`, the operator's side of what a person does
+	// to themselves through `MeService.Unlink`. Taking a way in away is not
+	// adding one, so no escalation rule stands in front of it -- only the wall,
+	// and the role naming it.
+	const unlink = useCall(IdentityService.method.erase)
+	const [gone, setGone] = useState<string[]>([])
+	const [bad, setBad] = useState<string | null>(null)
+
+	const ids = props.ids.filter((v) => !gone.includes(uuid(v.id)))
+
+	if (ids.length === 0 && props.creds.length === 0) {
 		return <p className="none">no way in at all — nothing to sign in with</p>
 	}
 
@@ -469,7 +518,7 @@ function Ways(props: { ids: SignInIdentity[]; creds: SignInCredential[] }): Reac
 						</td>
 					</tr>
 				))}
-				{props.ids.map((v) => (
+				{ids.map((v) => (
 					<tr key={`i:${uuid(v.id)}`}>
 						<td>{v.provider}</td>
 						{/* The subject as the provider gave it, and it is not a
@@ -478,11 +527,208 @@ function Ways(props: { ids: SignInIdentity[]; creds: SignInCredential[] }): Reac
 						    provider would answer with. */}
 						<td className="mono">{v.subject}</td>
 						<td>{when(v.dateCreated)}</td>
-						<td />
+						<td>
+							<button
+								disabled={!props.may('/roster.IdentityService/Erase')}
+								onClick={() => {
+									setBad(null)
+									void unlink
+										.call({ key: { case: 'id', value: v.id } })
+										.then(() => setGone((was) => [...was, uuid(v.id)]))
+										.catch((e: unknown) => setBad(e instanceof Error ? e.message : 'no'))
+								}}
+							>
+								unlink
+							</button>
+						</td>
 					</tr>
 				))}
 			</tbody>
+			{bad !== null && (
+				<tfoot>
+					<tr>
+						<td colSpan={4} className="bad">
+							{bad}
+						</td>
+					</tr>
+				</tfoot>
+			)}
 		</table>
+	)
+}
+
+/**
+ * Emails is the addresses roster holds for somebody, and whether anybody
+ * checked each.
+ *
+ * `date_verified` is drawn and never written from here: no request may assert
+ * it (`server/core` refuses an `Add` that tries), because an address is where a
+ * recovery link goes and "verified" is what a link that came back proves. An
+ * operator adding one is adding a **way in** -- the mailbox a reset goes to --
+ * so `Email.Add` runs `mayWriteAWayIn` and refuses it for somebody wider than
+ * the operator.
+ */
+function Emails(props: { holder: Uint8Array; may: (method: string) => boolean }): React.ReactNode {
+	const who = { key: { case: 'id' as const, value: props.holder } }
+	const vs = useQuery(EmailService.method.list, { filters: [{ holder: who }] })
+	const add = useCall(EmailService.method.add)
+	const erase = useCall(EmailService.method.erase)
+	const [gone, setGone] = useState<string[]>([])
+	const [bad, setBad] = useState<string | null>(null)
+
+	if (vs.state === 'pending') return <p className="loading">…</p>
+	if (vs.state === 'error') return <Failed at={vs.error} />
+
+	const items = (vs.data?.items ?? []).filter((v) => !gone.includes(uuid(v.id)))
+
+	return (
+		<section className="emails">
+			<h5>addresses</h5>
+			{items.length === 0 ? (
+				<p className="none">none — a recovery link has nowhere to go</p>
+			) : (
+				<table>
+					<tbody>
+						{items.map((v) => (
+							<tr key={uuid(v.id)}>
+								<td className="mono">{v.address}</td>
+								<td>
+									{v.dateVerified === undefined ? (
+										<span className="none">never checked</span>
+									) : (
+										`checked ${when(v.dateVerified)}`
+									)}
+								</td>
+								<td>
+									<button
+										disabled={!props.may('/roster.EmailService/Erase')}
+										onClick={() => {
+											setBad(null)
+											void erase
+												.call({ key: { case: 'id', value: v.id } })
+												.then(() => setGone((was) => [...was, uuid(v.id)]))
+												.catch((e: unknown) => setBad(e instanceof Error ? e.message : 'no'))
+										}}
+									>
+										remove
+									</button>
+								</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+			)}
+			<form
+				onSubmit={(e) => {
+					e.preventDefault()
+					const form = e.currentTarget
+					const address = String(new FormData(form).get('address') ?? '').trim()
+					if (address === '') return
+
+					setBad(null)
+					void add
+						.call({ holder: who, address })
+						.then(() => form.reset())
+						.catch((e: unknown) => setBad(e instanceof Error ? e.message : 'no'))
+				}}
+			>
+				<input name="address" type="email" placeholder="somebody@contoso.com" required />
+				<button type="submit" disabled={add.state === 'pending' || !props.may('/roster.EmailService/Add')}>
+					add address
+				</button>
+			</form>
+			{bad !== null && <p className="bad">{bad}</p>}
+		</section>
+	)
+}
+
+/**
+ * Profile is what a holder carries about themselves, replaced whole.
+ *
+ * `Holder.Update` is the narrow write: the profile and the app's own data, and
+ * nothing that moves somebody between tenants, renames them into another alias,
+ * or changes what they may do. It takes the version this page read, so a form
+ * left open while somebody else edited is refused rather than applied to
+ * whatever the row became.
+ */
+function Profile(props: { holder: Holder; may: (method: string) => boolean }): React.ReactNode {
+	const update = useCall(HolderService.method.update)
+	const [said, say] = useState<{ kind: 'done' | 'bad'; text: string } | null>(null)
+	const p = props.holder.profile
+
+	return (
+		<section className="profile">
+			<h5>profile</h5>
+			<form
+				className="profile"
+				onSubmit={(e) => {
+					e.preventDefault()
+					const f = new FormData(e.currentTarget)
+					const s = (k: string) => String(f.get(k) ?? '').trim()
+
+					say(null)
+					void update
+						.call({
+							ref: { key: { case: 'id', value: props.holder.id } },
+							dateUpdated: props.holder.dateUpdated,
+							profile: {
+								displayName: s('display_name'),
+								picture: s('picture'),
+								department: s('department'),
+								employeeNo: s('employee_no'),
+								locale: s('locale'),
+							},
+						})
+						.then(() => say({ kind: 'done', text: 'saved' }))
+						.catch((e: unknown) => say({ kind: 'bad', text: e instanceof Error ? e.message : 'no' }))
+				}}
+			>
+				<input name="display_name" placeholder="display name" defaultValue={p?.displayName ?? ''} />
+				<input name="department" placeholder="department" defaultValue={p?.department ?? ''} />
+				<input name="employee_no" placeholder="employee no" defaultValue={p?.employeeNo ?? ''} />
+				<input name="locale" placeholder="locale, e.g. ko-KR" defaultValue={p?.locale ?? ''} />
+				<input name="picture" placeholder="picture url" defaultValue={p?.picture ?? ''} />
+				<button type="submit" disabled={update.state === 'pending' || !props.may('/roster.HolderService/Update')}>
+					save profile
+				</button>
+			</form>
+			{said?.kind === 'done' && <p className="note">{said.text}</p>}
+			{said?.kind === 'bad' && <p className="bad">{said.text}</p>}
+		</section>
+	)
+}
+
+/**
+ * EnrolFor is the operator's half of a second factor: made for somebody, and
+ * answered with once.
+ */
+function EnrolFor(props: {
+	holder: Uint8Array
+	admin: Admin
+	may: (method: string) => boolean
+	say: (v: { kind: 'secret' | 'done' | 'bad'; text: string } | null) => void
+}): React.ReactNode {
+	const [name, setName] = useState('')
+
+	return (
+		<span className="enrol">
+			<input placeholder="factor name, e.g. phone" value={name} onChange={(e) => setName(e.target.value)} />
+			<button
+				disabled={!props.may('/roster.CredentialService/Enrol')}
+				onClick={() => {
+					props.say(null)
+					void props.admin.credential
+						.enrol({ ref: { key: { case: 'id', value: props.holder } }, kind: 'totp', name })
+						.then((r) => {
+							setName('')
+							props.say({ kind: 'secret', text: r.uri })
+						})
+						.catch((e: unknown) => props.say({ kind: 'bad', text: e instanceof Error ? e.message : 'no' }))
+				}}
+			>
+				enrol a factor
+			</button>
+		</span>
 	)
 }
 

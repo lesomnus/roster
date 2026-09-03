@@ -140,6 +140,20 @@ h6 {
 	margin: 0.75rem 0 0.25rem;
 }
 
+/* The person panel's irreversible act, told apart by colour and nothing else. */
+button.danger {
+	color: #c0392b;
+}
+
+.enrol {
+	display: inline-flex;
+	gap: 0.25rem;
+}
+
+form.profile {
+	flex-wrap: wrap;
+}
+
 /* A provider's subject is an opaque identifier somebody compares by eye. */
 .mono {
 	font-family: ui-monospace, monospace;

@@ -21,10 +21,11 @@
 
 import { useState } from 'react'
 
-import { useQuery } from '@lesomnus/payday/react'
+import { useCall, useQuery } from '@lesomnus/payday/react'
 import type { App } from '@lesomnus/payday/react'
 
 import { MeService } from '../gen/app/me_pb.js'
+import { IssueService } from '../gen/app/issue_pb.js'
 import { HolderService } from '../gen/roster/payday/holder_svc_pb.js'
 import { ApiKeyService } from '../gen/app/apikey_svc_pb.js'
 
@@ -137,8 +138,8 @@ export function Page(props: {
 			</nav>
 
 			<main>
-				{at === 'operators' && <Operators />}
-				{at === 'services' && <Services />}
+				{at === 'operators' && <Operators may={may} />}
+				{at === 'services' && <Services may={may} />}
 				{at === 'customers' && (
 					<Customers app={props.customers} admin={props.admin} may={may} />
 				)}
@@ -155,8 +156,10 @@ export function Page(props: {
  * does not say what they are and neither should this. `Services` below is the
  * same rows read from the other end: a holder with keys.
  */
-function Operators(): React.ReactNode {
+function Operators(props: { may: (method: string) => boolean }): React.ReactNode {
 	const vs = useQuery(HolderService.method.list, {})
+	const issue = useCall(IssueService.method.issuePassword)
+	const [said, say] = useState<{ kind: 'secret' | 'bad'; text: string } | null>(null)
 
 	if (vs.state === 'pending') return <p className="loading">…</p>
 	if (vs.state === 'error') return <Failed at={vs.error} />
@@ -164,6 +167,43 @@ function Operators(): React.ReactNode {
 	return (
 		<section>
 			<h2>signs in</h2>
+
+			{/* A new operator is one call: `IssueService.IssuePassword` makes
+			    the person in the control plane's one tenant if they are not
+			    there, and answers with a generated password, once. There is no
+			    field to type one into, for the reason `roster init` has none. */}
+			<form
+				onSubmit={(e) => {
+					e.preventDefault()
+					const form = e.currentTarget
+					const alias = String(new FormData(form).get('alias') ?? '').trim()
+					if (alias === '') return
+
+					say(null)
+					void issue
+						.call({ alias })
+						.then((r) => {
+							form.reset()
+							say({ kind: 'secret', text: `${alias}: ${r.password}` })
+						})
+						.catch((e: unknown) => say({ kind: 'bad', text: e instanceof Error ? e.message : 'no' }))
+				}}
+			>
+				<input name="alias" placeholder="new operator, or one to reset" required />
+				<button type="submit" disabled={issue.state === 'pending' || !props.may('/roster.IssueService/IssuePassword')}>
+					issue a password
+				</button>
+			</form>
+			{said?.kind === 'secret' && (
+				<div className="secret">
+					<p>
+						Read this out. It is shown <strong>once</strong> — what is stored is a hash.
+					</p>
+					<code>{said.text}</code>
+				</div>
+			)}
+			{said?.kind === 'bad' && <p className="bad">{said.text}</p>}
+
 			<table>
 				<thead>
 					<tr>
@@ -201,11 +241,17 @@ function Operators(): React.ReactNode {
  * `(payday.field).secret`, so it is cleared on the way out and never reaches a
  * page — and never reaches the trail either.
  */
-function Services(): React.ReactNode {
+function Services(props: { may: (method: string) => boolean }): React.ReactNode {
 	const vs = useQuery(ApiKeyService.method.list, {})
+	const issue = useCall(ApiKeyService.method.issue)
+	const erase = useCall(ApiKeyService.method.erase)
+	const [gone, setGone] = useState<string[]>([])
+	const [said, say] = useState<{ kind: 'secret' | 'bad'; text: string } | null>(null)
 
 	if (vs.state === 'pending') return <p className="loading">…</p>
 	if (vs.state === 'error') return <Failed at={vs.error} />
+
+	const items = (vs.data?.items ?? []).filter((v) => !gone.includes(v.alias))
 
 	return (
 		<section>
@@ -216,10 +262,11 @@ function Services(): React.ReactNode {
 						<th>key</th>
 						<th>may call</th>
 						<th>last used</th>
+						<th />
 					</tr>
 				</thead>
 				<tbody>
-					{(vs.data?.items ?? []).map((v) => (
+					{items.map((v) => (
 						<tr key={v.alias}>
 							<td>
 								<code>{v.alias}</code>
@@ -234,6 +281,25 @@ function Services(): React.ReactNode {
 								</ul>
 							</td>
 							<td>{v.dateUsed === undefined ? 'never' : when(v.dateUsed.seconds)}</td>
+							<td>
+								{/* Revoking is a delete, and it is immediate: the
+								    next call with this key finds no row. There is
+								    no edit -- a key's methods are what it was
+								    minted with, and a different list is a
+								    different key. */}
+								<button
+									disabled={!props.may('/roster.ApiKeyService/Erase')}
+									onClick={() => {
+										say(null)
+										void erase
+											.call({ key: { case: 'id', value: v.id } })
+											.then(() => setGone((was) => [...was, v.alias]))
+											.catch((e: unknown) => say({ kind: 'bad', text: e instanceof Error ? e.message : 'no' }))
+									}}
+								>
+									revoke
+								</button>
+							</td>
 						</tr>
 					))}
 				</tbody>
@@ -242,6 +308,50 @@ function Services(): React.ReactNode {
 				An empty list allows <strong>nothing</strong>. A key somebody forgot to
 				fill in opens no door.
 			</p>
+
+			{/* `roster key add --service custody --allow …`, from a page: the
+			    service is made if it is not there, because a service is not
+			    something set up on purpose before it is needed. The token is
+			    shown once. */}
+			<form
+				onSubmit={(e) => {
+					e.preventDefault()
+					const form = e.currentTarget
+					const f = new FormData(form)
+					const service = String(f.get('service') ?? '').trim()
+					const alias = String(f.get('alias') ?? '').trim() || 'default'
+					const methods = String(f.get('methods') ?? '')
+						.split(/[\s,]+/)
+						.map((s) => s.trim())
+						.filter((s) => s !== '')
+					if (service === '' || methods.length === 0) return
+
+					say(null)
+					void issue
+						.call({ service, alias, methods })
+						.then((r) => {
+							form.reset()
+							say({ kind: 'secret', text: r.token })
+						})
+						.catch((e: unknown) => say({ kind: 'bad', text: e instanceof Error ? e.message : 'no' }))
+				}}
+			>
+				<input name="service" placeholder="service, e.g. custody" required />
+				<input name="alias" placeholder="key name (default)" />
+				<input name="methods" placeholder="/roster.VouchService/Verify, …" className="wide" required />
+				<button type="submit" disabled={issue.state === 'pending' || !props.may('/roster.ApiKeyService/Issue')}>
+					mint a service key
+				</button>
+			</form>
+			{said?.kind === 'secret' && (
+				<div className="secret">
+					<p>
+						The key, shown <strong>once</strong>. What is stored is a hash.
+					</p>
+					<code>{said.text}</code>
+				</div>
+			)}
+			{said?.kind === 'bad' && <p className="bad">{said.text}</p>}
 		</section>
 	)
 }

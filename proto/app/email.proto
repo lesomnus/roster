@@ -184,7 +184,7 @@ message Email {
         {field: {name: "date_created", number: 15}},
         {field: {name: "id", number: 1}}
       ]
-      by: [{name: "ref"}]
+      by: [{name: "ref"}, {name: "holder"}]
       size: 20
       max: 100
     }
