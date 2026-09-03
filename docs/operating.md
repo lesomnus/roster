@@ -268,9 +268,13 @@ E2E_CONSOLE=http://localhost:8082/console/ E2E_ACCOUNT=http://localhost:8090 \
 E2E_OPS_USER=admin E2E_OPS_PASSWORD=admin npx --prefix ts playwright test console account
 ```
 
-For hot reload on a page, point a dev server at it instead: `npm run dev` with
-`VITE_ADMIN_ADDR=http://localhost:8081`, or `npm run dev:account` -- both are
-told where roster is by `ts/vite.*.ts`.
+For hot reload on a page, point a dev server at it instead -- the stack
+already names `http://localhost:5173` as an origin both listeners accept:
+
+```sh
+VITE_ADDR=http://localhost:8082 VITE_ADMIN_ADDR=http://localhost:8081 npm --prefix ts run dev
+npm --prefix ts run dev:account       # proxies to the account app on :8090
+```
 
 Open it as `localhost`. The console's cookie is `__Host-` and `Secure`, which a
 browser accepts over plain http from `localhost` and from nowhere else -- the

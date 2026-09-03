@@ -62,14 +62,26 @@ services:
       ROSTER_ROOT_USER: ${ROSTER_ROOT_USER:-admin}
       ROSTER_ROOT_PASSWORD: ${ROSTER_ROOT_PASSWORD:-admin}
 
+      # `pgx` and not `postgres`: the driver is named by what registers it
+      # (`config/dbpgx`), and a name nothing registered is refused at startup
+      # rather than falling back. This once said `postgres`, and the control
+      # plane never came up.
       ROSTER_DB_DRIVER: pgx
       ROSTER_DB_DSN: postgres://roster:roster@postgres:5432/roster?sslmode=disable
       ROSTER_DB_MIGRATE: "true"
-      ROSTER_WATCH_BROKER: memory
       ROSTER_CONTROL_DB_DRIVER: pgx
       ROSTER_CONTROL_DB_DSN: postgres://roster:roster@postgres:5432/control?sslmode=disable
       ROSTER_CONTROL_DB_MIGRATE: "true"
-      ROSTER_CONTROL_WATCH_BROKER: memory
+
+      # Both planes, because they are two brokers and were two decisions.
+      # `postgres` rather than `memory`, and it costs nothing here: this file
+      # already runs one, and `LISTEN`/`NOTIFY` needs no storage and no
+      # address. `memory` publishes inside the process, which is right for one
+      # replica and silently wrong for two. Each plane listens on its own
+      # database, which is what keeps a key being issued from looking like a
+      # person changing.
+      ROSTER_WATCH_BROKER: postgres
+      ROSTER_CONTROL_WATCH_BROKER: postgres
 
       # The data plane: gRPC, and the same server over HTTP for the account
       # app's calls and anything with an HTTP client.
@@ -84,21 +96,29 @@ services:
       ROSTER_CONTROL_HTTP_ALLOW_WEB: "true"
       ROSTER_CONTROL_CONSOLE_DIR: /usr/share/roster/console
       ROSTER_CONTROL_CONSOLE_ADMIN: http://${PUBLIC_HOST:-localhost}:8081
+      # A console on a dev server (`npm run dev`, :5173) is another origin and
+      # is refused without this, with nothing useful said about why.
+      ROSTER_CONTROL_HTTP_ORIGINS: '["http://localhost:5173"]'
 
-      # The admin listener: another origin from the page's, so it is named.
+      # The admin listener: another origin from the page's, so it is named --
+      # the served console's, and the dev server's.
       ROSTER_ADMIN_ADDR: ":50053"
       ROSTER_ADMIN_HTTP_ADDR: ":8081"
       ROSTER_ADMIN_HTTP_ALLOW_WEB: "true"
-      ROSTER_ADMIN_HTTP_ORIGINS: '["http://${PUBLIC_HOST:-localhost}:8082"]'
+      ROSTER_ADMIN_HTTP_ORIGINS: '["http://${PUBLIC_HOST:-localhost}:8082", "http://localhost:5173"]'
 
       # Wraps authenticator-app seeds at rest. A key in a compose file is a
       # development key; a deployment writes its own, see `vouch.keys`.
       ROSTER_VOUCH_KEYS: '["dev:XfYoVszmos0DoMNUOSy1vJfaOLVOrq7x6QiNlqRr0G8="]'
+    # Every port, including the two only a console should reach; each is a
+    # line that would have to change for a deployment, and none is hidden.
     ports:
-      - "8080:8080"
-      - "8081:8081"
-      - "8082:8082"
-      - "50051:50051"
+      - "50051:50051" # product apps
+      - "8080:8080"   # the same over HTTP: the account app's calls, curl
+      - "50052:50052" # operators
+      - "8082:8082"   # the console
+      - "50053:50053" # customers
+      - "8081:8081"   # the same over HTTP: the console's customers screen
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8082/console/config.json >/dev/null || exit 1"]
       interval: 2s
