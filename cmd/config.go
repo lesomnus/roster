@@ -512,6 +512,7 @@ func Cmd(c *Config) *xli.Command {
 			NewCmdForget(c),
 			NewCmdRestore(c),
 			NewCmdServe(c),
+			NewCmdAccount(c),
 		}, NewCmdEntities(c)...),
 
 		Handler: xli.Chain(pdcmd.Load(Loader, c), hal(c), xli.RequireSubcommand()),

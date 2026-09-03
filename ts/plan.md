@@ -357,9 +357,10 @@ The structural phase; no new screens yet.
    pointing here for the shippable one.
 2. **E**: the app holds one `rt_` per tenant it fronts, picked by host; the
    wall does the narrowing. The console's sign-in tab (P1) mints it.
-3. **Providers from roster, not config.** `Front.Connections(host)` (new, on
-   `FrontService`, unwalled, public fields only) is the set of buttons on the
-   sign-in page, so the page needs no credential; `MailDomain` +
+3. **Providers from roster, not config.** After `WhoseHost` the app has the
+   tenant and its key, so `Connection.List` behind the wall is the set of
+   buttons on the sign-in page and no `Front.Connections` is needed (P4a found
+   this; the plan had guessed a new RPC); `MailDomain` +
    `FrontService.WhereFrom` is identifier-first (*type your address, go to your
    provider*). The client secret is resolved from `secret_ref` by the app
    (`env:` first; a second scheme is a later decision). Discovery per `issuer`,
@@ -440,7 +441,8 @@ is; that table gets the summary row when a phase closes, this one the steps.
 | P2a · the reads the panels need: list by tenant/site/holder/team/group/role, and `Holder.Reaches` | **done** — `list.by` grew on Site/Team/Group/Role/Binding and the three memberships; `Holder.Reaches` answers the policy's own union as patterns (`Rules.Held`; on the admin port from the data plane's rows, `cmd/admin.go` `adminRules`). Wall only, no reach guard — see the proto comment for why | `proto/ext/roster/payday/holder_svc.ext.proto`, `server/core/holder.go`, `cmd/reaches_test.go` |
 | P2b · console: organisation, access, trail panels | **done** — three more panels under a customer: *organisation* (sites → members and teams → members with a role; groups → members), *access* (roles with patterns, bindings under each role to a person or a group, in a site or tenant-wide), *trail* (`Audit` by tenant); and *may call* on the person, from `Holder.Reaches`. Every membership and binding form says it is a grant | `ts/src/organisation.tsx`, `access.tsx`, `trail.tsx`, `people.tsx` |
 | P3 · console: the rest of a person, the deployment screen | **done** — on a person: addresses (list by holder, add, remove), unlink an identity, profile replaced whole (`Holder.Update`), a factor enrolled for them, erase (soft). On the deployment: issue an operator's password (`IssuePassword` makes them if new), mint and revoke service keys. **Kept as one listener in the sandbox**, said in `main.tsx`: the customers panels need a real deployment. **Tenant edit deferred** — it needs a `Tenant.Update` overlay (a new RPC), listed under P6 | `ts/src/people.tsx`, `page.tsx`, `cmd/person_test.go` |
-| P4 · the account app, official: `account/`, `ts/account/`, `ts/lib/`, `Front.Connections`, the proxy | open | |
+| P4a · `account/` and `roster account serve` | **done** — one tenant key per operator picked by host; providers read from `Connection` with that key (no `Front.Connections` needed: after `WhoseHost` the app has the tenant and its key, so `Connection.List` behind the wall answers); OIDC per (tenant, connection) with the secret resolved from `secret_ref` (`env:`); `/providers` for the page; `/login`, `/callback`, `/ways` (link, whose from the session); `/session*`; every `/roster.*` proxied as the person. `Invited`/`Enrolling`. Ends at whatever page `Static` serves | `account/`, `cmd/account.go`, `account/account_test.go` |
+| P4b · `ts/account/` on `ts/gen` + `ts/lib/`, console moved to `ts/console/` | open | |
 | P5 · account screens: recovery, profile, emails + verify, WebAuthn, remove a factor, sessions | open | |
 | P6 · serve same-origin, docs, depguard, retire this file | open | |
 

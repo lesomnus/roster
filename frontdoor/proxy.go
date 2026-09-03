@@ -44,17 +44,18 @@ import (
 // session has no delegation and is refused like no session, for
 // [Door.Acting]'s reason.
 //
-// What goes out is the app's own credential (`bearer`, the same one the gRPC
-// connection carries) and the person's delegation in `roster-as`; what came in
-// as `Cookie` and `Authorization` is dropped. What comes back is roster's
-// answer, untouched.
-func (d *Door) Proxy(roster *url.URL, bearer string) http.Handler {
+// What goes out is the app's own credential -- `bearer`, asked per request,
+// because an app fronting several operators holds one tenant key per operator
+// and which one is a fact about the host the browser arrived at -- and the
+// person's delegation in `roster-as`; what came in as `Cookie` and
+// `Authorization` is dropped. What comes back is roster's answer, untouched.
+func (d *Door) Proxy(roster *url.URL, bearer func(ctx context.Context, host string) (string, error)) http.Handler {
 	rp := &httputil.ReverseProxy{
 		Rewrite: func(pr *httputil.ProxyRequest) {
 			pr.SetURL(roster)
 			pr.Out.Header.Del("Cookie")
-			pr.Out.Header.Set("Authorization", "Bearer "+bearer)
-			pr.Out.Header.Set(keys.HeaderActing, actingToken(pr.In.Context()))
+			pr.Out.Header.Set("Authorization", "Bearer "+actingOf(pr.In.Context()).bearer)
+			pr.Out.Header.Set(keys.HeaderActing, actingOf(pr.In.Context()).token)
 		},
 	}
 
@@ -83,18 +84,33 @@ func (d *Door) Proxy(roster *url.URL, bearer string) http.Handler {
 			return
 		}
 
-		rp.ServeHTTP(w, r.WithContext(withActing(r.Context(), v.token)))
+		b, err := bearer(r.Context(), r.Host)
+		if err != nil {
+			// The app serves nobody under this name, or cannot say whose key
+			// to use: either way there is no roster to hand this to.
+			http.Error(w, "no", http.StatusNotFound)
+			return
+		}
+
+		rp.ServeHTTP(w, r.WithContext(withActing(r.Context(), acting{bearer: b, token: v.token})))
 	})
+}
+
+// acting is what one proxied call goes out with: the app's credential for this
+// tenant, and the person's delegation.
+type acting struct {
+	bearer string
+	token  string
 }
 
 type actingKey struct{}
 
-func withActing(ctx context.Context, token string) context.Context {
-	return context.WithValue(ctx, actingKey{}, token)
+func withActing(ctx context.Context, v acting) context.Context {
+	return context.WithValue(ctx, actingKey{}, v)
 }
 
-func actingToken(ctx context.Context) string {
-	v, _ := ctx.Value(actingKey{}).(string)
+func actingOf(ctx context.Context) acting {
+	v, _ := ctx.Value(actingKey{}).(acting)
 
 	return v
 }

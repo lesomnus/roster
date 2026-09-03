@@ -1,4 +1,4 @@
-package frontdoor
+package frontdoor_test
 
 import (
 	"context"
@@ -24,6 +24,7 @@ import (
 	"github.com/lesomnus/payday/web"
 
 	"github.com/lesomnus/roster/cmd"
+	"github.com/lesomnus/roster/frontdoor"
 	rstr "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
 )
@@ -133,7 +134,7 @@ func TestABrowserSpeaksConnectToTheAppAndRosterAnswersAsThePerson(t *testing.T) 
 
 	// The door, and the app's mux: the two forms at `/session`, and everything
 	// else the page says to roster through the proxy.
-	d, err := New(Config{
+	d, err := frontdoor.New(frontdoor.Config{
 		Sessions:   authsession.New(authsession.NewMemStore(), authsession.Insecure()),
 		Vouch:      rstr.NewVouchServiceClient(conn),
 		Delegation: rstr.NewDelegationServiceClient(conn),
@@ -145,7 +146,7 @@ func TestABrowserSpeaksConnectToTheAppAndRosterAnswersAsThePerson(t *testing.T) 
 	m := http.NewServeMux()
 	m.Handle("/session", d.Handler())
 	m.Handle("/session/", d.Handler())
-	m.Handle("/", d.Proxy(target, token))
+	m.Handle("/", d.Proxy(target, func(context.Context, string) (string, error) { return token, nil }))
 	app := httptest.NewServer(m)
 	t.Cleanup(app.Close)
 
