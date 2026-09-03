@@ -21,6 +21,8 @@ done
 alias="$(printf '%s' "${SEED_CUSTOMER}" | tr '[:lower:]-' '[:upper:]_')"
 export "ROSTER_ACCOUNT_KEY_${alias}=$(cat "${key}")"
 
+# One replica, so no `--seal`: the key is made at start. A second replica
+# needs `--seal env:NAME` here with the same 32 bytes, base64, in both.
 exec roster account serve \
 	--listen ":${ACCOUNT_PORT}" \
 	--roster roster:50051 --connect http://roster:8080 --insecure \

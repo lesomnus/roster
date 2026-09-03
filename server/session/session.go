@@ -54,6 +54,14 @@ var _ authsession.Store = (*Store)(nil)
 // point. So a row that is already there is updated rather than refused, and the
 // update touches the one column that can have changed.
 func (s *Store) Put(ctx context.Context, v authsession.Session) error {
+	// Nowhere to put it, and said so rather than dropped: the console holds
+	// nothing beside a session, and an app that did would find its sign-in
+	// refused here instead of finding its every call answered as a session
+	// that cannot act.
+	if len(v.Held) > 0 {
+		return authsession.ErrCannotHold
+	}
+
 	sum := Sum(v.Key)
 
 	was, err := s.db.Session.Query().

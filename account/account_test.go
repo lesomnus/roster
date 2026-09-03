@@ -41,6 +41,7 @@ type deployment struct {
 	ungated  rstr.Server
 	idp      *idp
 	app      *httptest.Server
+	replica  *httptest.Server
 	contoso  pdid.Id
 	fabrikam pdid.Id
 	erin     []byte
@@ -223,14 +224,26 @@ func serve(t *testing.T, enrol account.Enrol) *deployment {
 	base, err := url.Parse("http://" + front.Listener.Addr().String())
 	x.NoError(err)
 
-	a, err := account.New(ctx, account.Config{
+	// Sessions sealed into the cookie, the way `roster account serve` runs
+	// -- and under one key for two apps, which is what a second replica is.
+	seal := make([]byte, authsession.KeySize)
+	_, err = rand.Read(seal)
+	x.NoError(err)
+	sessions := func() *authsession.Sessions {
+		sealed, err := authsession.NewSealed(seal)
+		x.NoError(err)
+
+		return authsession.New(sealed, authsession.Insecure())
+	}
+
+	cfg := account.Config{
 		Roster:   l.Addr().String(),
 		Connect:  connect,
 		Insecure: true,
 		Keys:     tokens,
 		Base:     base,
 		Enrol:    enrol,
-		Sessions: authsession.New(authsession.NewMemStore(), authsession.Insecure()),
+		Sessions: sessions(),
 		// The page, standing in for the built UI: the round trips end here.
 		Static: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte("home")) }),
 		// The mailer, standing in for one: it keeps what it was asked to send.
@@ -241,7 +254,8 @@ func serve(t *testing.T, enrol account.Enrol) *deployment {
 
 			return nil
 		},
-	})
+	}
+	a, err := account.New(ctx, cfg)
 	x.NoError(err)
 	t.Cleanup(func() { a.Close() })
 
@@ -249,6 +263,15 @@ func serve(t *testing.T, enrol account.Enrol) *deployment {
 	front.Start()
 	t.Cleanup(front.Close)
 	d.app = front
+
+	// The second replica: the same configuration, its own process's worth of
+	// state -- which, with the session in the cookie, is none.
+	cfg.Sessions = sessions()
+	r, err := account.New(ctx, cfg)
+	x.NoError(err)
+	t.Cleanup(func() { r.Close() })
+	d.replica = httptest.NewServer(r.Handler())
+	t.Cleanup(d.replica.Close)
 
 	return d
 }
@@ -615,4 +638,33 @@ func TestSomebodyEnrolsAnAuthenticatorAppAndSignsInWithIt(t *testing.T) {
 	code, body = fresh.rpc(t, "/roster.MeService/Get", `{}`)
 	x.Equal(http.StatusOK, code, body)
 	x.Contains(body, `"erin"`)
+}
+
+// TestASecondReplicaOpensTheCookie is what sealing the session buys: a
+// browser signed in on one replica is that person on the next, with nothing
+// shared between them but the key. And a sign-out on either ends the
+// delegation for both, because what the cookie held was roster's to end.
+func TestASecondReplicaOpensTheCookie(t *testing.T) {
+	x := require.New(t)
+	d := serve(t, account.Invited())
+
+	b := d.browser(t, "fabrikam.test")
+	code, body := b.do(t, http.MethodPost, "/session", `{"alias":"bob","password":"correct horse battery staple"}`,
+		func(r *http.Request) { r.Header.Set("Content-Type", "application/json") })
+	x.Equal(http.StatusNoContent, code, body)
+
+	// The same jar, the other replica. Cookies are per host and a port is not
+	// part of one, which is also what a load balancer looks like from here.
+	first := b.base
+	b.base = d.replica.URL
+	code, body = b.rpc(t, "/roster.MeService/Get", `{}`)
+	x.Equal(http.StatusOK, code, "a cookie minted on one replica was anonymous on the other: %s", body)
+	x.Contains(body, `"bob"`)
+
+	code, _ = b.do(t, http.MethodDelete, "/session", "", nil)
+	x.Equal(http.StatusNoContent, code)
+
+	b.base = first
+	code, body = b.rpc(t, "/roster.MeService/Get", `{}`)
+	x.Equal(http.StatusUnauthorized, code, "a sign-out on one replica left the delegation acting on the other: %s", body)
 }

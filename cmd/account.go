@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -62,6 +64,7 @@ func newCmdAccountServe() *xli.Command {
 			&flg.String{Name: "enrol", Brief: "what happens to a stranger a provider vouches for: invited (nobody) or enrolling"},
 			&flg.Strings{Name: "key", Brief: "a tenant key, as alias=rt_…; repeat per operator fronted. Or ROSTER_ACCOUNT_KEY_<ALIAS> in the environment"},
 			&flg.Switch{Name: "insecure-cookie", Brief: "a cookie without Secure, for a page served over plain http in development"},
+			&flg.Strings{Name: "seal", Brief: "the key sessions are sealed into the cookie under, as env:NAME holding 32 bytes base64; repeat to rotate, the first seals. Empty is a key made at start, which is one replica"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
@@ -105,16 +108,27 @@ func newCmdAccountServe() *xli.Command {
 				cfg.Static = http.FileServer(http.Dir(dir))
 			}
 
-			// The cookie is this app's: in memory, since a delegation is
-			// short-lived and a restart signing everybody out is the safe
-			// direction. A deployment with several replicas wants a shared
-			// store, which `authsession` takes and this flag set does not
-			// yet expose.
+			// The cookie is this app's, and the session is **in** it:
+			// sealed under a key every replica holds, so there is no store
+			// and no replica a browser is anonymous on. What the session
+			// carries is roster's delegation for that person, which roster
+			// ends -- a sign-out, "sign out everywhere", an operator -- so
+			// nothing here has to be able to. See `authsession.Sealed` for
+			// what a sealed session gives up, and `frontdoor` for how the
+			// two forms and the sign-out are written for it.
+			//
+			// Without `--seal` the key is made here, at start: right for one
+			// replica, and a restart signs everybody out, which is the safe
+			// direction.
+			sealed, err := sealFrom(cmd)
+			if err != nil {
+				return err
+			}
 			opts := []authsession.Option{}
 			if v, _ := flg.Find[bool](cmd, "insecure-cookie"); v {
 				opts = append(opts, authsession.Insecure())
 			}
-			cfg.Sessions = authsession.New(authsession.NewMemStore(), opts...)
+			cfg.Sessions = authsession.New(sealed, opts...)
 
 			a, err := account.New(ctx, cfg)
 			if err != nil {
@@ -145,6 +159,40 @@ func newCmdAccountServe() *xli.Command {
 			return nil
 		}),
 	}
+}
+
+// sealFrom is the key sessions are sealed under, from `--seal env:NAME`, or
+// one made now.
+//
+// `env:NAME` rather than the key itself, for the reason `--key` has an
+// environment form: a key is a secret and a flag is in the process list. And
+// through [account.EnvSecret], which is the one scheme this binary knows.
+func sealFrom(cmd *xli.Command) (*authsession.Sealed, error) {
+	vs, _ := flg.Find[[]string](cmd, "seal")
+	if len(vs) == 0 {
+		k := make([]byte, authsession.KeySize)
+		if _, err := rand.Read(k); err != nil {
+			return nil, err
+		}
+		log.From(context.Background()).Warn("account: sessions sealed under a key made at start; a second replica cannot open them, and a restart signs everybody out. --seal env:NAME names one to share")
+
+		return authsession.NewSealed(k)
+	}
+
+	keys := make([][]byte, 0, len(vs))
+	for _, ref := range vs {
+		v, err := account.EnvSecret(ref)
+		if err != nil {
+			return nil, fmt.Errorf("--seal: %w", err)
+		}
+		k, err := base64.StdEncoding.DecodeString(strings.TrimSpace(v))
+		if err != nil {
+			return nil, fmt.Errorf("--seal %s: not base64: %w", ref, err)
+		}
+		keys = append(keys, k)
+	}
+
+	return authsession.NewSealed(keys...)
 }
 
 // keysFrom is one tenant key per operator, from `--key alias=token` and from

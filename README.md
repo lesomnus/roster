@@ -351,7 +351,14 @@ the client secret from wherever `secret_ref` says (`env:NAME`).
 roster account serve --roster roster:8080 --connect https://roster:8443 \
   --base https://login.example.com --static ts/dist/account \
   --key contoso=rt_… --key fabrikam=rt_…       # or ROSTER_ACCOUNT_KEY_<ALIAS>
+  --seal env:ACCOUNT_SEAL                       # 32 bytes, base64; every replica the same
 ```
+
+It keeps no sessions. The cookie **is** the session, sealed under `--seal`'s
+key (`authsession.Sealed`), and what it holds is roster's delegation for that
+person -- which roster ends, so nothing here has to be able to. Two replicas
+under one key are one app; without `--seal` a key is made at start, which is
+one replica and a restart that signs everybody out.
 
 The sandbox (`npm run dev:sandbox`) is the console with the server compiled
 into the page, twice: `wasm/` is the control listener and `wasm/admin/` the

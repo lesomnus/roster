@@ -78,8 +78,8 @@ func (d *Door) Proxy(roster *url.URL, bearer func(ctx context.Context, host stri
 			return
 		}
 
-		v, ok := d.held.get(d.keyOf(r))
-		if !ok || v.token == "" {
+		_, token, ok := d.whole(r.Context(), r)
+		if !ok {
 			http.Error(w, "no", http.StatusUnauthorized)
 			return
 		}
@@ -92,7 +92,7 @@ func (d *Door) Proxy(roster *url.URL, bearer func(ctx context.Context, host stri
 			return
 		}
 
-		rp.ServeHTTP(w, r.WithContext(withActing(r.Context(), acting{bearer: b, token: v.token})))
+		rp.ServeHTTP(w, r.WithContext(withActing(r.Context(), acting{bearer: b, token: token})))
 	})
 }
 

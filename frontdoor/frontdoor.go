@@ -45,7 +45,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"sync"
 	"time"
 
 	"google.golang.org/grpc/metadata"
@@ -126,9 +125,14 @@ type Config struct {
 const HalfLife = 4 * time.Minute
 
 // Door is the two forms and the credential they end in.
+//
+// It holds nothing of its own: what this app keeps for a browser -- the
+// delegation it acts with, or the continuation it is half way through -- rides
+// in the session, under [authsession.Session.Held], so that where the session
+// lives is the one answer to how many replicas this app runs. A map beside the
+// store was the earlier shape, and a sealed cookie has no map to be beside.
 type Door struct {
-	c    Config
-	held held
+	c Config
 }
 
 // New checks what an app said and answers with the door.
@@ -175,12 +179,12 @@ func (d *Door) Handler() http.Handler {
 // quiet fall back to the app's own credential. That fall back is the mistake
 // D23 exists to prevent, and it is the one an app makes by accident.
 func (d *Door) Acting(ctx context.Context, r *http.Request) (context.Context, error) {
-	v, ok := d.held.get(d.keyOf(r))
-	if !ok || v.token == "" {
+	_, token, ok := d.whole(ctx, r)
+	if !ok {
 		return nil, ErrNotSignedIn
 	}
 
-	return metadata.AppendToOutgoingContext(ctx, keys.HeaderActing, v.token), nil
+	return metadata.AppendToOutgoingContext(ctx, keys.HeaderActing, token), nil
 }
 
 // Who is the person this browser is, or nothing.
@@ -189,12 +193,29 @@ func (d *Door) Acting(ctx context.Context, r *http.Request) (context.Context, er
 // not the delegation, so a browser half way through gets nothing -- which is
 // the same answer [Door.Acting] gives and for the same reason.
 func (d *Door) Who(ctx context.Context, r *http.Request) (pdid.Id, bool) {
-	v, ok := d.held.get(d.keyOf(r))
-	if !ok || v.token == "" {
-		return pdid.Nil, false
+	who, _, ok := d.whole(ctx, r)
+
+	return who, ok
+}
+
+// whole is the signed-in session this request carries -- who, and the
+// delegation this app acts with for them -- or nothing: no cookie, a dead
+// session, or one that is only half way.
+func (d *Door) whole(ctx context.Context, r *http.Request) (pdid.Id, string, bool) {
+	v, err := d.c.Sessions.Read(ctx, d.keyOf(r))
+	if err != nil {
+		return pdid.Nil, "", false
+	}
+	token := v.Held[heldToken]
+	if token == "" {
+		return pdid.Nil, "", false
+	}
+	who, err := pdid.Parse(v.Id)
+	if err != nil {
+		return pdid.Nil, "", false
 	}
 
-	return v.who, true
+	return who, token, true
 }
 
 // keyOf is the session key this request carries.
@@ -294,27 +315,30 @@ func (d *Door) finish(w http.ResponseWriter, r *http.Request) {
 
 	key := d.keyOf(r)
 
-	// Taken rather than read: this browser gets one attempt at the second form
-	// per first form, which is the app's half of a rule roster keeps too -- a
-	// continuation is single-use there.
+	// Read, and only a half-session will do. A signed-in browser's delegation
+	// rides in a session under the same cookie -- a browser has one or the
+	// other -- so a second form that ended whatever it found would end a
+	// delegation without revoking it: one stray POST, a retry, a page that
+	// fires twice, and somebody's cookie still resolves while every call
+	// answers that this session cannot act. Found once; a delegation is never
+	// this call's to spend.
 	//
-	// Taken **only if it is a continuation**, and that qualifier is the whole of
-	// a defect worth stating. A signed-in browser's delegation lives in the same
-	// map under the same key, so an unconditional take removed it here: one
-	// stray POST -- a retry, a page that fires twice, anybody who can make that
-	// browser send one -- and the delegation was gone without being revoked,
-	// leaving somebody whose cookie still resolves and whose every call answers
-	// that this session cannot act. The alternative was to put it back after
-	// looking, which is the same race written twice; deciding under the one lock
-	// is what makes single-use and leave-alone the same statement.
-	v, ok := d.held.takeHalf(key)
-	if !ok {
+	// `Read` is what enforces [Config.Half]: a half-session is minted to
+	// expire that soon, and a dead session is no session.
+	//
+	// Ended before roster is asked, so this browser gets one attempt at the
+	// second form per first form where the store keeps sessions. Where the
+	// cookie is the store there is nothing to end, and roster's own rule --
+	// a continuation is single-use -- is the whole of it.
+	v, err := d.c.Sessions.Read(ctx, key)
+	if err != nil || v.Held[heldContinuation] == "" {
 		http.Error(w, "no", http.StatusUnauthorized)
 		return
 	}
+	_ = d.c.Sessions.End(ctx, key)
 
 	res, err := d.c.Vouch.Delegate(ctx, rstr.VouchDelegateRequest_builder{
-		Continuation: v.continuation,
+		Continuation: v.Held[heldContinuation],
 		Kind:         body.Kind,
 		Name:         body.Name,
 		Secret:       []byte(body.Secret),
@@ -327,18 +351,16 @@ func (d *Door) finish(w http.ResponseWriter, r *http.Request) {
 
 	if !res.GetVerified().GetOk() && res.GetVerified().GetContinuation() == "" {
 		// A wrong code, an attempt that expired, one somebody else spent: one
-		// answer, and the half-session is gone with it -- so a wrong code costs
-		// the first form again, which is where the lockout counts.
-		_ = d.c.Sessions.End(ctx, key)
+		// answer, and the half-session is already gone -- so a wrong code
+		// costs the first form again, which is where the lockout counts.
+		http.SetCookie(w, d.c.Sessions.End(ctx, key))
 		http.Error(w, "no", http.StatusUnauthorized)
 		return
 	}
 
-	// The old one is ended whatever comes next: a session's grant is written
+	// The old one is gone whatever comes next: a session's grant is written
 	// when it is minted and nothing widens one, which is the right direction
 	// for the one thing a session carries.
-	_ = d.c.Sessions.End(ctx, key)
-
 	d.answer(w, r, res)
 }
 
@@ -356,11 +378,15 @@ func (d *Door) SignOut(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	key := d.keyOf(r)
 
-	if v, ok := d.held.take(key); ok && v.token != "" {
+	// `Take` and not `Read`: dead or alive. A session that expired here first
+	// is exactly the one whose delegation is otherwise left live in roster's
+	// table until its own clock runs out, and the sign-out is the last thing
+	// that will ever hold a reference to it.
+	if v, err := d.c.Sessions.Take(ctx, key); err == nil && v.Held[heldToken] != "" {
 		// Best effort, and after the local drop. A roster that cannot be
 		// reached must not stop somebody signing out of this app; what is lost
 		// is a row that expires on its own.
-		_, _ = d.c.Delegation.Revoke(ctx, rstr.DelegationRevokeRequest_builder{Token: v.token}.Build())
+		_, _ = d.c.Delegation.Revoke(ctx, rstr.DelegationRevokeRequest_builder{Token: v.Held[heldToken]}.Build())
 	}
 
 	http.SetCookie(w, d.c.Sessions.End(ctx, key))
@@ -392,18 +418,17 @@ func (d *Door) answer(w http.ResponseWriter, r *http.Request, res *rstr.VouchDel
 		// anticipated the shape -- `Session.Expires` may be set by a `Verify`,
 		// *which is how an app gives a short session to somebody who has not
 		// finished a second factor.*
-		s, cookie, err := d.c.Sessions.Mint(ctx, authsession.Session{
+		_, cookie, err := d.c.Sessions.Mint(ctx, authsession.Session{
 			Id:       who.String(),
 			TenantId: tenant.String(),
 			Grant:    frame.Grant{},
 			Expires:  time.Now().Add(d.c.Half),
+			Held:     map[string]string{heldContinuation: c},
 		})
 		if err != nil {
 			http.Error(w, "cannot sign in", http.StatusInternalServerError)
 			return
 		}
-
-		d.held.put(s.Key, one{who: who, continuation: c, expires: time.Now().Add(d.c.Half)})
 
 		http.SetCookie(w, cookie)
 		w.Header().Set("content-type", "application/json")
@@ -432,7 +457,7 @@ func (d *Door) answer(w http.ResponseWriter, r *http.Request, res *rstr.VouchDel
 		return
 	}
 
-	s, cookie, err := d.c.Sessions.Mint(ctx, authsession.Session{
+	_, cookie, err := d.c.Sessions.Mint(ctx, authsession.Session{
 		Id:       who.String(),
 		TenantId: tenant.String(),
 
@@ -446,13 +471,12 @@ func (d *Door) answer(w http.ResponseWriter, r *http.Request, res *rstr.VouchDel
 		// outlived its delegation would be somebody signed in to a page that
 		// cannot be drawn.
 		Expires: res.GetExpires().AsTime(),
+		Held:    map[string]string{heldToken: res.GetToken()},
 	})
 	if err != nil {
 		http.Error(w, "cannot sign in", http.StatusInternalServerError)
 		return
 	}
-
-	d.held.put(s.Key, one{who: who, token: res.GetToken(), expires: res.GetExpires().AsTime()})
 
 	http.SetCookie(w, cookie)
 	w.WriteHeader(http.StatusNoContent)
@@ -511,7 +535,7 @@ func (d *Door) Accept(ctx context.Context, w http.ResponseWriter, tenant, provid
 		return err
 	}
 
-	s, cookie, err := d.c.Sessions.Mint(ctx, authsession.Session{
+	_, cookie, err := d.c.Sessions.Mint(ctx, authsession.Session{
 		Id:       who.String(),
 		TenantId: id.String(),
 
@@ -520,147 +544,35 @@ func (d *Door) Accept(ctx context.Context, w http.ResponseWriter, tenant, provid
 		// delegation this app was given to act with.
 		Grant:   frame.Whole(),
 		Expires: res.GetExpires().AsTime(),
+		Held:    map[string]string{heldToken: res.GetToken()},
 	})
 	if err != nil {
 		return err
 	}
-
-	d.held.put(s.Key, one{who: who, token: res.GetToken(), expires: res.GetExpires().AsTime()})
 
 	http.SetCookie(w, cookie)
 
 	return nil
 }
 
-// one is what this app holds for one browser, and it is one of two things.
+// What this app holds for one browser, under the session: one of two things.
 //
 // A **delegation** for somebody who has finished, and a **continuation** for
-// somebody half way. They live in one map because they are the same lifecycle
-// from the app's side -- one string, held for one browser, dropped when its own
-// clock runs out -- and because a browser has exactly one at a time: finishing
-// swaps the second for the first.
-type one struct {
-	who          pdid.Id
-	token        string
-	continuation string
-	expires      time.Time
-}
-
-// held is the side of a session that is not payday's.
+// somebody half way. A browser has exactly one at a time -- finishing swaps
+// the second for the first -- and each is one string that means nothing
+// outside roster: a delegation is a live row there until revoked, and a
+// continuation is spent there, once. Neither is a copy of anything about the
+// person, which is what [authsession.Session.Held] is for and what it is not.
 //
-// `authsession.Session` has an actor, a tenant, a grant and two clocks, and
-// nowhere to put an opaque string an app holds on somebody's behalf. That is
-// not an omission to route around: a session is deliberately not a place to
-// keep a copy of anything, so that it cannot become a stale one.
-//
-// A map and a mutex, matching the store beside it. An app that put this in
-// Redis and left its sessions in memory would have two answers to how many
-// replicas it runs -- so a deployment that moves one moves both, and this is
-// the seam where it would.
-//
-// **The leak worth knowing about**: nothing in `authsession` tells anybody a
-// session has died, so a map keyed by session would grow one entry per expired
-// session forever. What keeps this one bounded is that the thing it holds
-// carries its own expiry, and a pass on each write is enough.
-type held struct {
-	mu sync.Mutex
-	by map[string]one
-}
-
-func (d *held) put(key string, v one) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	if d.by == nil {
-		d.by = map[string]one{}
-	}
-
-	now := time.Now()
-	for k, v := range d.by {
-		if !now.Before(v.expires) {
-			delete(d.by, k)
-		}
-	}
-
-	d.by[key] = v
-}
-
-func (d *held) get(key string) (one, bool) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	v, ok := d.by[key]
-	if !ok || !time.Now().Before(v.expires) {
-		return one{}, false
-	}
-
-	return v, true
-}
-
-// take is [held.get] and a delete in one, and it does **not** read the clock.
-//
-// Its one caller is [Door.SignOut], which wants the entry in order to revoke
-// what is in it -- and an expired entry is exactly the one that most needs
-// revoking. `expires` is this app's hold on the browser, not roster's on the
-// credential: a delegation whose entry timed out here is still a live
-// credential in roster's table until somebody says otherwise, so answering
-// "absent" for it would drop the reference and leave that credential to run out
-// on its own. See [Door.SignOut], which says the same thing from the other end.
-//
-// Which is why the second form does not use this. See [held.takeHalf].
-func (d *held) take(key string) (one, bool) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	v, ok := d.by[key]
-	delete(d.by, key)
-
-	return v, ok
-}
-
-// takeHalf is take, of a continuation and never of a delegation.
-//
-// Two things at once, and they are one decision because they are decided under
-// one lock.
-//
-// **Never of a delegation.** A signed-in browser's delegation lives in the same
-// map under the same key -- a browser has one or the other, see [one] -- so an
-// unconditional take removed it here: one stray POST to the second form, a
-// retry, a page that fires twice, anybody who can make that browser send one,
-// and the delegation was gone without being revoked. What is left behind is
-// somebody whose cookie still resolves and whose every call answers that this
-// session cannot act, and a credential still live in roster with nothing
-// holding the reference. Putting it back after looking is the same race written
-// twice; deciding here is what makes it one statement.
-//
-// **And only while it is live**, which is how [Config.Half] became a number
-// something enforces. `finish` authenticates a second form from this and
-// nothing else, so before this the only thing ending a half-session was the
-// cookie's own `Expires` -- the browser's good manners. Anything that is not a
-// browser had roster's hold on the attempt instead: five minutes, whatever the
-// app asked for.
-//
-// An expired continuation is deleted on the way past, because there is nothing
-// in one to revoke: roster spends it or lets it expire, and this end of it is a
-// string. That is the whole reason the clock lives here and not in [held.take].
-func (d *held) takeHalf(key string) (one, bool) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	v, ok := d.by[key]
-	if !ok || v.continuation == "" {
-		// Absent, or somebody's delegation -- which is not this call's to
-		// spend, whether or not this app's hold on it has run out.
-		return one{}, false
-	}
-
-	delete(d.by, key)
-	if !time.Now().Before(v.expires) {
-		return one{}, false
-	}
-
-	return v, true
-}
+// Under the session rather than in a map beside it, so that the answer to
+// "how many replicas" is the store's alone -- and so that there is an answer
+// at all when the store is the cookie (`authsession.Sealed`), which is how the
+// account app runs. What that changes is said where it is paid: the second
+// form and the sign-out.
+const (
+	heldToken        = "token"
+	heldContinuation = "continuation"
+)
 
 func ids(holder, tenant []byte) (pdid.Id, pdid.Id, error) {
 	who, err := pdid.From(holder)
@@ -736,16 +648,16 @@ func (d *Door) Redeem(ctx context.Context, w http.ResponseWriter, token string) 
 		return err
 	}
 
-	s, cookie, err := d.c.Sessions.Mint(ctx, authsession.Session{
+	_, cookie, err := d.c.Sessions.Mint(ctx, authsession.Session{
 		Id:       who.String(),
 		TenantId: tenant.String(),
 		Grant:    frame.Whole(),
 		Expires:  res.GetExpires().AsTime(),
+		Held:     map[string]string{heldToken: res.GetToken()},
 	})
 	if err != nil {
 		return err
 	}
-	d.held.put(s.Key, one{who: who, token: res.GetToken(), expires: res.GetExpires().AsTime()})
 	http.SetCookie(w, cookie)
 
 	return nil

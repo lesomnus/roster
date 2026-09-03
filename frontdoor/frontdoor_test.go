@@ -3,7 +3,6 @@ package frontdoor
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -59,31 +58,4 @@ func TestAnAppHasToSayWhatItAsksFor(t *testing.T) {
 	d, err := New(ok)
 	require.NoError(t, err)
 	require.Equal(t, HalfLife, d.c.Half, "zero takes the default rather than expiring immediately")
-}
-
-func TestWhatIsHeldDoesNotOutliveItself(t *testing.T) {
-	var h held
-
-	now := time.Now()
-	h.put("alive", one{token: "rd_x", expires: now.Add(time.Minute)})
-	h.put("dead", one{token: "rd_y", expires: now.Add(-time.Second)})
-
-	_, ok := h.get("dead")
-	require.False(t, ok, "expired is gone whether or not anything swept it")
-
-	v, ok := h.get("alive")
-	require.True(t, ok)
-	require.Equal(t, "rd_x", v.token)
-
-	// The sweep, which is the whole of what keeps this bounded: nothing in
-	// `authsession` says a session has died, so without this the map grows one
-	// entry per expired session forever.
-	h.put("another", one{token: "rd_z", expires: now.Add(time.Minute)})
-	require.NotContains(t, h.by, "dead")
-
-	// And taken is taken: one attempt at a second form per first form.
-	_, ok = h.take("alive")
-	require.True(t, ok)
-	_, ok = h.take("alive")
-	require.False(t, ok)
 }

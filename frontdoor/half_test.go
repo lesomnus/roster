@@ -238,36 +238,34 @@ func TestARosterThatIsDownIsNotAWrongPassword(t *testing.T) {
 
 // TestSigningOutRevokesEvenAWindowThatHasPassed.
 //
-// `expires` on an entry is **this app's** hold on the browser, not roster's on
-// the credential -- and only one of the two is a credential. A delegation whose
-// entry timed out here is still a live row in roster's table, so an entry
-// dropped for being old is a reference thrown away with the thing it referred
-// to still working.
-//
-// Which is why [held.take] does not read the clock and [held.takeHalf] does.
-// The clock belongs to the second form, where what is being spent is a string
-// roster is holding anyway; it does not belong on the path that exists to tell
-// roster to stop holding something.
+// The session's clock is **this app's** hold on the browser; the delegation is
+// roster's, and only one of the two is a credential. A session that died here
+// -- by the delegation's own expiry as this app was told it, by an idle
+// timeout the app's store keeps, by clock skew -- may still name a live row in
+// roster's table, and the sign-out is the last thing that will ever hold a
+// reference to it. So the sign-out reads the session dead or alive
+// (`authsession.Take`) and revokes what it held, where a call would have been
+// refused.
 func TestSigningOutRevokesEvenAWindowThatHasPassed(t *testing.T) {
 	x := require.New(t)
 
+	// A delegation this app is told has already expired: the session is dead
+	// on arrival, and the row is roster's to say otherwise about.
 	f := &vouch{delegate: func(*rstr.VouchDelegateRequest) (*rstr.VouchDelegateResponse, error) {
-		return whole(), nil
+		v := whole()
+		v.SetExpires(timestamppb.New(time.Now().Add(-time.Hour)))
+		return v, nil
 	}}
 	d := doorFor(t, f, nil)
 
 	c := firstForm(t, d, http.StatusNoContent)
 
-	// Age the entry past whatever this app's window was, the way sitting on a
-	// tab overnight does.
-	key := c.Value
-	d.held.mu.Lock()
-	v := d.held.by[key]
-	v.expires = time.Now().Add(-time.Hour)
-	d.held.by[key] = v
-	d.held.mu.Unlock()
+	r := httptest.NewRequest(http.MethodGet, "http://contoso.example.com/", nil)
+	r.Header.Set("Cookie", c.Name+"="+c.Value)
+	_, err := d.Acting(context.Background(), r)
+	x.ErrorIs(err, ErrNotSignedIn, "a dead session still acted")
 
-	r := httptest.NewRequest(http.MethodDelete, "http://contoso.example.com/session", nil)
+	r = httptest.NewRequest(http.MethodDelete, "http://contoso.example.com/session", nil)
 	r.Header.Set("Cookie", c.Name+"="+c.Value)
 	w := httptest.NewRecorder()
 	d.Handler().ServeHTTP(w, r)
