@@ -20,6 +20,8 @@ service TenantService {
   rpc Erase(TenantRef) returns (TenantEraseResponse);
   // List reads Tenants a page at a time.
   rpc List(TenantListRequest) returns (TenantListResponse);
+  // Update replaces what a tenant says about itself, under the version read.
+  rpc Update(TenantUpdateRequest) returns (Tenant);
 }
 
 message TenantAddRequest {
@@ -121,4 +123,16 @@ message TenantListResponse {
 
 message TenantFilter {
   TenantRef ref = 1;
+}
+
+message TenantUpdateRequest {
+  TenantRef ref = 1;
+
+  // Optimistic locking, as `Patch` takes it: the version this caller read.
+  google.protobuf.Timestamp date_updated = 13;
+
+  // Each replaced whole when present, and left as it is when absent.
+  string name = 5;
+  string desc = 6;
+  map<string, string> labels = 7;
 }

@@ -322,6 +322,32 @@ who signs in — the operators who run this deployment, not a customer's people.
 The cross-origin answer is over the whole mux, so a route added here is
 reachable from the same page the RPCs are.
 
+## Two UIs, one library
+
+`ts/` builds two pages over one `ts/lib/` and one `ts/gen/`: the **console**
+(`ts/console/`), which an operator opens, and the **account** page
+(`ts/account/`), which a customer's people sign in at. Same store, same
+generated clients, same `covers()` deciding what is worth drawing; what differs
+is the transport. The console speaks Connect to `control.http` and `admin.http`;
+the account page speaks Connect to its own origin and `roster account serve`
+hands each call on to roster **as the person** (`frontdoor.Door.Proxy`), so a
+browser never holds a roster token.
+
+They are served by two processes on purpose. `roster serve` serves the console
+under `/console/` on `control.http` when `control.console.dir` names the build
+(`control.console.admin` tells the page where `admin.http` is). `roster account
+serve` is its own process: it holds one tenant key per operator it fronts, faces
+the internet, and reaches roster only over the wire -- `account/` imports the
+generated clients and nothing of the server, which `scripts/test.sh` checks.
+Providers come from the `Connection` rows an operator wrote in the console, and
+the client secret from wherever `secret_ref` says (`env:NAME`).
+
+```sh
+roster account serve --roster roster:8080 --connect https://roster:8443 \
+  --base https://login.example.com --static ts/dist/account \
+  --key contoso=rt_… --key fabrikam=rt_…       # or ROSTER_ACCOUNT_KEY_<ALIAS>
+```
+
 `go tool pd gen --ts .` writes the messages and service descriptors into
 `ts/gen`, along with `entities.ts` — one declaration per entity, which is what
 the local store is built from. Nothing there is behaviour, and nothing is

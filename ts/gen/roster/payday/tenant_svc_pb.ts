@@ -16,7 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/tenant_svc.g.proto.
  */
 export const file_roster_payday_tenant_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("CiByb3N0ZXIvcGF5ZGF5L3RlbmFudF9zdmMuZy5wcm90bxIGcm9zdGVyIvUBChBUZW5hbnRBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEhQKBWFsaWFzGAQgASgJQgWqAQIIAhITCgRuYW1lGAUgASgJQgWqAQIIAhITCgRkZXNjGAYgASgJQgWqAQIIAhI0CgZsYWJlbHMYByADKAsyJC5yb3N0ZXIuVGVuYW50QWRkUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiWAoQVGVuYW50R2V0UmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuVGVuYW50UmVmEiQKBnNlbGVjdBgCIAEoCzIULnJvc3Rlci5UZW5hbnRTZWxlY3QiMQoJVGVuYW50UmVmEgwKAmlkGAEgASgMSAASDwoFYWxpYXMYBCABKAlIAEIFCgNrZXkiggEKDFRlbmFudFNlbGVjdBILCgNhbGwYASABKAgSDQoFYWxpYXMYBCABKAgSDAoEbmFtZRgFIAEoCBIMCgRkZXNjGAYgASgIEg4KBmxhYmVscxgHIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIpQCChJUZW5hbnRQYXRjaFJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLlRlbmFudFJlZhINCgVhbGlhcxgIIAEoCRIMCgRuYW1lGAogASgJEgwKBGRlc2MYDCABKAkSNgoGbGFiZWxzGA4gAygLMiYucm9zdGVyLlRlbmFudFBhdGNoUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIlEKElRlbmFudEFwcGx5UmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuVGVuYW50UmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giJQoTVGVuYW50RXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiZQoRVGVuYW50TGlzdFJlcXVlc3QSJQoHZmlsdGVycxgBIAMoCzIULnJvc3Rlci5UZW5hbnRGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIkgKElRlbmFudExpc3RSZXNwb25zZRIdCgVpdGVtcxgBIAMoCzIOLnJvc3Rlci5UZW5hbnQSEwoEbmV4dBgCIAEoCUIFqgECCAIiLgoMVGVuYW50RmlsdGVyEh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYy0wIKDVRlbmFudFNlcnZpY2USLwoDQWRkEhgucm9zdGVyLlRlbmFudEFkZFJlcXVlc3QaDi5yb3N0ZXIuVGVuYW50Ei8KA0dldBIYLnJvc3Rlci5UZW5hbnRHZXRSZXF1ZXN0Gg4ucm9zdGVyLlRlbmFudBIzCgVQYXRjaBIaLnJvc3Rlci5UZW5hbnRQYXRjaFJlcXVlc3QaDi5yb3N0ZXIuVGVuYW50EjMKBUFwcGx5Ehoucm9zdGVyLlRlbmFudEFwcGx5UmVxdWVzdBoOLnJvc3Rlci5UZW5hbnQSNwoFRXJhc2USES5yb3N0ZXIuVGVuYW50UmVmGhsucm9zdGVyLlRlbmFudEVyYXNlUmVzcG9uc2USPQoETGlzdBIZLnJvc3Rlci5UZW5hbnRMaXN0UmVxdWVzdBoaLnJvc3Rlci5UZW5hbnRMaXN0UmVzcG9uc2VCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_tenant]);
+  fileDesc("CiByb3N0ZXIvcGF5ZGF5L3RlbmFudF9zdmMuZy5wcm90bxIGcm9zdGVyIvUBChBUZW5hbnRBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEhQKBWFsaWFzGAQgASgJQgWqAQIIAhITCgRuYW1lGAUgASgJQgWqAQIIAhITCgRkZXNjGAYgASgJQgWqAQIIAhI0CgZsYWJlbHMYByADKAsyJC5yb3N0ZXIuVGVuYW50QWRkUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiWAoQVGVuYW50R2V0UmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuVGVuYW50UmVmEiQKBnNlbGVjdBgCIAEoCzIULnJvc3Rlci5UZW5hbnRTZWxlY3QiMQoJVGVuYW50UmVmEgwKAmlkGAEgASgMSAASDwoFYWxpYXMYBCABKAlIAEIFCgNrZXkiggEKDFRlbmFudFNlbGVjdBILCgNhbGwYASABKAgSDQoFYWxpYXMYBCABKAgSDAoEbmFtZRgFIAEoCBIMCgRkZXNjGAYgASgIEg4KBmxhYmVscxgHIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIpQCChJUZW5hbnRQYXRjaFJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLlRlbmFudFJlZhINCgVhbGlhcxgIIAEoCRIMCgRuYW1lGAogASgJEgwKBGRlc2MYDCABKAkSNgoGbGFiZWxzGA4gAygLMiYucm9zdGVyLlRlbmFudFBhdGNoUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIlEKElRlbmFudEFwcGx5UmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuVGVuYW50UmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giJQoTVGVuYW50RXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiZQoRVGVuYW50TGlzdFJlcXVlc3QSJQoHZmlsdGVycxgBIAMoCzIULnJvc3Rlci5UZW5hbnRGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIkgKElRlbmFudExpc3RSZXNwb25zZRIdCgVpdGVtcxgBIAMoCzIOLnJvc3Rlci5UZW5hbnQSEwoEbmV4dBgCIAEoCUIFqgECCAIiLgoMVGVuYW50RmlsdGVyEh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYi6wEKE1RlbmFudFVwZGF0ZVJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLlRlbmFudFJlZhIwCgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEgwKBG5hbWUYBSABKAkSDAoEZGVzYxgGIAEoCRI3CgZsYWJlbHMYByADKAsyJy5yb3N0ZXIuVGVuYW50VXBkYXRlUmVxdWVzdC5MYWJlbHNFbnRyeRotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBMooDCg1UZW5hbnRTZXJ2aWNlEi8KA0FkZBIYLnJvc3Rlci5UZW5hbnRBZGRSZXF1ZXN0Gg4ucm9zdGVyLlRlbmFudBIvCgNHZXQSGC5yb3N0ZXIuVGVuYW50R2V0UmVxdWVzdBoOLnJvc3Rlci5UZW5hbnQSMwoFUGF0Y2gSGi5yb3N0ZXIuVGVuYW50UGF0Y2hSZXF1ZXN0Gg4ucm9zdGVyLlRlbmFudBIzCgVBcHBseRIaLnJvc3Rlci5UZW5hbnRBcHBseVJlcXVlc3QaDi5yb3N0ZXIuVGVuYW50EjcKBUVyYXNlEhEucm9zdGVyLlRlbmFudFJlZhobLnJvc3Rlci5UZW5hbnRFcmFzZVJlc3BvbnNlEj0KBExpc3QSGS5yb3N0ZXIuVGVuYW50TGlzdFJlcXVlc3QaGi5yb3N0ZXIuVGVuYW50TGlzdFJlc3BvbnNlEjUKBlVwZGF0ZRIbLnJvc3Rlci5UZW5hbnRVcGRhdGVSZXF1ZXN0Gg4ucm9zdGVyLlRlbmFudEIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_tenant]);
 
 /**
  * @generated from message roster.TenantAddRequest
@@ -351,6 +351,47 @@ export const TenantFilterSchema: GenMessage<TenantFilter> = /*@__PURE__*/
   messageDesc(file_roster_payday_tenant_svc_g, 9);
 
 /**
+ * @generated from message roster.TenantUpdateRequest
+ */
+export type TenantUpdateRequest = Message<"roster.TenantUpdateRequest"> & {
+  /**
+   * @generated from field: roster.TenantRef ref = 1;
+   */
+  ref?: TenantRef | undefined;
+
+  /**
+   * Optimistic locking, as `Patch` takes it: the version this caller read.
+   *
+   * @generated from field: google.protobuf.Timestamp date_updated = 13;
+   */
+  dateUpdated?: Timestamp | undefined;
+
+  /**
+   * Each replaced whole when present, and left as it is when absent.
+   *
+   * @generated from field: string name = 5;
+   */
+  name: string;
+
+  /**
+   * @generated from field: string desc = 6;
+   */
+  desc: string;
+
+  /**
+   * @generated from field: map<string, string> labels = 7;
+   */
+  labels: { [key: string]: string };
+};
+
+/**
+ * Describes the message roster.TenantUpdateRequest.
+ * Use `create(TenantUpdateRequestSchema)` to create a new message.
+ */
+export const TenantUpdateRequestSchema: GenMessage<TenantUpdateRequest> = /*@__PURE__*/
+  messageDesc(file_roster_payday_tenant_svc_g, 10);
+
+/**
  * @generated from service roster.TenantService
  */
 export const TenantService: GenService<{
@@ -413,6 +454,16 @@ export const TenantService: GenService<{
     methodKind: "unary";
     input: typeof TenantListRequestSchema;
     output: typeof TenantListResponseSchema;
+  },
+  /**
+   * Update replaces what a tenant says about itself, under the version read.
+   *
+   * @generated from rpc roster.TenantService.Update
+   */
+  update: {
+    methodKind: "unary";
+    input: typeof TenantUpdateRequestSchema;
+    output: typeof TenantSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_roster_payday_tenant_svc_g, 0);

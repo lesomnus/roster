@@ -35,7 +35,7 @@
 
 import { useState } from 'react'
 
-import { Provider, useQuery } from '@lesomnus/payday/react'
+import { Provider, useCall, useQuery } from '@lesomnus/payday/react'
 import type { App } from '@lesomnus/payday/react'
 
 import type { Tenant } from '../gen/roster/payday/tenant_pb.js'
@@ -50,7 +50,7 @@ import { Access } from './access.js'
 import { Trail } from './trail.js'
 
 /** Panel is what opens under a customer's row: one at a time, because they nest. */
-type Panel = 'people' | 'arrives' | 'organisation' | 'access' | 'trail'
+type Panel = 'people' | 'arrives' | 'organisation' | 'access' | 'trail' | 'edit'
 
 /** uuid is the bytes an identifier arrives as, written the way a person reads one. */
 function uuid(v: Uint8Array | undefined): string {
@@ -167,6 +167,7 @@ function Tenants(props: { admin: Admin; may: (method: string) => boolean }): Rea
 									<button onClick={toggle('organisation')}>{label('organisation', 'organisation')}</button>
 									<button onClick={toggle('access')}>{label('access', 'access')}</button>
 									<button onClick={toggle('trail')}>{label('trail', 'trail')}</button>
+									<button onClick={toggle('edit')}>{label('edit', 'edit')}</button>
 								</td>
 							</tr>
 						)
@@ -191,6 +192,68 @@ function Tenants(props: { admin: Admin; may: (method: string) => boolean }): Rea
 				<Access tenant={items.find((v) => uuid(v.id) === at.id)} may={props.may} />
 			)}
 			{at?.on === 'trail' && <Trail tenant={items.find((v) => uuid(v.id) === at.id)} />}
+			{at?.on === 'edit' && <EditTenant tenant={items.find((v) => uuid(v.id) === at.id)} may={props.may} />}
+		</section>
+	)
+}
+
+/**
+ * EditTenant is what a customer says about itself: name, a note, labels --
+ * through `Tenant.Update`, under the version read, and never the alias every
+ * reference resolves through nor the identifier an app has written down.
+ * Labels are the one thing a page reads per tenant that the schema does not
+ * name -- branding, a support address -- so they are drawn as lines of
+ * `key=value` rather than as fields somebody would have to invent.
+ */
+function EditTenant(props: { tenant: Tenant | undefined; may: (method: string) => boolean }): React.ReactNode {
+	const update = useCall(TenantService.method.update)
+	const [said, say] = useState<{ kind: 'done' | 'bad'; text: string } | null>(null)
+
+	const t = props.tenant
+	if (t === undefined) return null
+
+	const labels = Object.entries(t.labels ?? {})
+		.map(([k, v]) => `${k}=${v}`)
+		.join('\n')
+
+	return (
+		<section className="within">
+			<h3>{t.alias} — edit</h3>
+			{!props.may('/roster.TenantService/Update') && (
+				<p className="none">this needs /roster.TenantService/Update</p>
+			)}
+			<form
+				className="profile"
+				onSubmit={(e) => {
+					e.preventDefault()
+					const f = new FormData(e.currentTarget)
+					const parsed: Record<string, string> = {}
+					for (const line of String(f.get('labels') ?? '').split('\n')) {
+						const i = line.indexOf('=')
+						if (i > 0) parsed[line.slice(0, i).trim()] = line.slice(i + 1).trim()
+					}
+					say(null)
+					void update
+						.call({
+							ref: { key: { case: 'id', value: t.id } },
+							dateUpdated: t.dateUpdated,
+							name: String(f.get('name') ?? '').trim(),
+							desc: String(f.get('desc') ?? '').trim(),
+							labels: parsed,
+						})
+						.then(() => say({ kind: 'done', text: 'saved' }))
+						.catch((e: unknown) => say({ kind: 'bad', text: e instanceof Error ? e.message : 'no' }))
+				}}
+			>
+				<input name="name" placeholder="name" defaultValue={t.name} />
+				<input name="desc" placeholder="note" defaultValue={t.desc} />
+				<textarea name="labels" placeholder={'labels, one per line: brand=Contoso'} defaultValue={labels} rows={3} />
+				<button type="submit" disabled={update.state === 'pending' || !props.may('/roster.TenantService/Update')}>
+					save
+				</button>
+			</form>
+			{said?.kind === 'done' && <p className="note">{said.text}</p>}
+			{said?.kind === 'bad' && <p className="bad">{said.text}</p>}
 		</section>
 	)
 }

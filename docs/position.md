@@ -132,6 +132,15 @@ anything. And the caller list is unchanged by any of it — the Login App and
 admin consoles; a browser never sees roster — which is the sign it is the right
 shape.
 
+roster ships both of those callers, and neither moves the line. The console
+(`ts/console/`) is the admin console, on roster's own cookie. The account app
+(`account/`, `roster account serve`) is a Login App: a separate process holding
+one tenant key per operator, doing the OIDC exchange with the providers an
+operator wrote down as `Connection` rows, minting the delegation through
+`Vouch.Accept`/`Delegate`, and handing the page's calls on to roster as the
+person. It is a consumer -- it reaches roster only over the wire -- and
+`examples/sso` stays beside it as the thirty-line one.
+
 Worth knowing: this does not remove each app's own session. A browser has
 nowhere safe to keep a token, so a product app exchanges what Hydra gave it for
 an opaque cookie of its own. `payday/auth/authsession` is that, and the only

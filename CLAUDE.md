@@ -240,7 +240,18 @@ go run ./cmd/roster init          # the first tenant, and somebody in it
 go run ./cmd/roster serve
 go run ./cmd/roster config env    # every variable this can be told through
 
-cd ts && npm install && npm run dev
+cd ts && npm install && npm run dev            # the console, cross-origin
+go run ./cmd/roster account serve --roster … \
+  --connect … --key contoso=rt_… --static ts/dist/account   # the front door
+```
+
+Two UIs, two processes: `roster serve` serves the console under `/console/` on
+`control.http` when `control.console.dir` names the build, and `roster account
+serve` is a separate process holding tenant keys and facing the internet -- a
+consumer that reaches roster only over the wire (`account/`, checked by
+`scripts/test.sh`).
+
+```sh
 ```
 
 ## `auth.Plain` is not for production

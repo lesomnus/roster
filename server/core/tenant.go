@@ -176,3 +176,33 @@ func (s Core) tenantOfRef(ctx context.Context, ref *app.TenantRef) (pdid.Id, err
 
 	return pdid.From(v.GetId())
 }
+
+// coreTenant is the layer over the generated `TenantService`, for its one
+// overlay.
+type coreTenant struct {
+	Core
+	app.TenantServiceServer
+}
+
+func (s Core) Tenant() app.TenantServiceServer { return coreTenant{s, s.Next().Tenant()} }
+
+// Update is the narrow write over a tenant: name, note and labels, and never
+// the alias or the identifier. See `tenant_svc.ext.proto`.
+func (s coreTenant) Update(ctx context.Context, req *app.TenantUpdateRequest) (*app.Tenant, error) {
+	patch := app.TenantPatchRequest_builder{
+		Ref:         req.GetRef(),
+		DateUpdated: req.GetDateUpdated(),
+	}
+	if req.HasName() {
+		patch.Name = z.Ptr(req.GetName())
+	}
+	if req.HasDesc() {
+		patch.Desc = z.Ptr(req.GetDesc())
+	}
+	// A map has no presence: given, it replaces; empty, it is left as it is.
+	if len(req.GetLabels()) > 0 {
+		patch.Labels = req.GetLabels()
+	}
+
+	return s.TenantServiceServer.Patch(ctx, patch.Build())
+}

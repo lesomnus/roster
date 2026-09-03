@@ -3,11 +3,14 @@ package cmd
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
@@ -1228,7 +1231,39 @@ func (s *Server) serveControlHttp(ctx context.Context, c Config, g *grpc.Server)
 		return func() {}, nil
 	}
 
-	return s.http(ctx, "control.http", c.Control.Http, g)
+	return s.http(ctx, "control.http", c.Control.Http, g, ConsoleMount(c.Control.Console))
+}
+
+// ConsoleMount mounts the built page under `/console/`, beside the RPCs it calls.
+//
+// Under a prefix and not at `/`, because `web.New` puts the transcoder at `/`
+// and a page and an RPC cannot share a root -- and because the account app has
+// the same shape (`account/`), where the page is at `/` and the RPCs are what
+// the prefix `/roster.` leaves. A path that is not a file is the index, which
+// is what a page that routes in the browser needs on reload; `config.json` is
+// the one thing the page has to be told that its own origin does not say.
+func ConsoleMount(c ConsoleConfig) func(*web.Mux) {
+	return func(m *web.Mux) {
+		if c.Dir == "" {
+			return
+		}
+		files := http.FileServer(http.Dir(c.Dir))
+		m.HandleFunc("GET /console/config.json", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("content-type", "application/json")
+			w.Header().Set("cache-control", "no-store")
+			_ = json.NewEncoder(w).Encode(struct {
+				Admin string `json:"admin"`
+			}{Admin: c.Admin})
+		})
+		m.Handle("/console/", http.StripPrefix("/console/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			at := filepath.Join(c.Dir, filepath.FromSlash(strings.TrimPrefix(r.URL.Path, "/")))
+			if st, err := os.Stat(at); err != nil || st.IsDir() {
+				http.ServeFile(w, r, filepath.Join(c.Dir, "index.html"))
+				return
+			}
+			files.ServeHTTP(w, r)
+		})))
+	}
 }
 
 // serveAdminHttp is the same for the admin listener, and it is what a console
@@ -1250,7 +1285,7 @@ func (s *Server) serveAdminHttp(ctx context.Context, c Config, g *grpc.Server) (
 	return s.http(ctx, "admin.http", c.Admin.Http, g)
 }
 
-func (s *Server) http(ctx context.Context, name string, c config.HttpConfig, g *grpc.Server) (func(), error) {
+func (s *Server) http(ctx context.Context, name string, c config.HttpConfig, g *grpc.Server, mounts ...func(*web.Mux)) (func(), error) {
 	if !c.Serves() {
 		return func() {}, nil
 	}
@@ -1280,6 +1315,10 @@ func (s *Server) http(ctx context.Context, name string, c config.HttpConfig, g *
 		v := Login(s.Control)
 		h.Handle("POST /session", s.Sessions.Serve(v))
 		h.Handle("DELETE /session", s.Sessions.Serve(v))
+	}
+
+	for _, mount := range mounts {
+		mount(h)
 	}
 
 	l, err := net.Listen("tcp", c.Addr)

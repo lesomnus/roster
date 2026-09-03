@@ -1,0 +1,35 @@
+edition = "2023";
+
+package roster;
+
+import "google/protobuf/timestamp.proto";
+import "roster/payday/tenant.proto";
+
+// What this app adds to the generated contract for `Tenant`.
+//
+// # Why an Update and not the Patch
+//
+// `Patch` writes anything the schema holds and is closed at the transport for
+// it (`grpcx.GeneralWrite`). What a console edits about a customer is three
+// things a tenant carries about itself -- what it is called, a note, and its
+// labels -- and none of them is the `alias` that every reference and every host
+// resolves through, or the identifier an app has written down. So this can be
+// told, the way `Holder.Update` can, and it is on `TenantService` because it is
+// a write on a tenant and a second service would be one more name for the
+// same rows.
+service TenantService {
+  // Update replaces what a tenant says about itself, under the version read.
+  rpc Update(TenantUpdateRequest) returns (Tenant);
+}
+
+message TenantUpdateRequest {
+  TenantRef ref = 1;
+
+  // Optimistic locking, as `Patch` takes it: the version this caller read.
+  google.protobuf.Timestamp date_updated = 13;
+
+  // Each replaced whole when present, and left as it is when absent.
+  string name = 5;
+  string desc = 6;
+  map<string, string> labels = 7;
+}

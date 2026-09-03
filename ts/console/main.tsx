@@ -35,7 +35,12 @@ import '../lib/style.css'
  * which fronts the walled data plane where an operator's session names nobody;
  * and not `admin.http`, which reaches customers and is a later screen.
  */
-const ADDR = import.meta.env['VITE_ADDR'] ?? 'http://localhost:8082'
+// Served by roster itself under `/console/`, the RPCs are on this page's own
+// origin; under `npm run dev` they are wherever `VITE_ADDR` says, or the
+// control listener's usual port.
+const ADDR: string =
+	import.meta.env['VITE_ADDR'] ??
+	(location.pathname.startsWith('/console/') ? location.origin : 'http://localhost:8082')
 
 /**
  * Where the **customers** are.
@@ -54,7 +59,25 @@ const ADDR = import.meta.env['VITE_ADDR'] ?? 'http://localhost:8082'
  * The sandbox has one server and no third listener, so this is undefined there
  * and the screen is not offered.
  */
-const ADMIN = import.meta.env['VITE_ADMIN_ADDR'] ?? 'http://localhost:8081'
+// The admin listener is another origin whatever serves this page, and one the
+// page cannot guess: told by `VITE_ADMIN_ADDR` under `npm run dev`, and by
+// `/console/config.json` -- `control.console.admin` in `roster.yaml` -- when
+// roster serves the page. Empty is a deployment that has not said, and the
+// customers screen is not offered.
+async function adminAddr(): Promise<string | null> {
+	const env = import.meta.env['VITE_ADMIN_ADDR'] as string | undefined
+	if (env !== undefined) return env
+	if (!location.pathname.startsWith('/console/')) return 'http://localhost:8081'
+	try {
+		const res = await fetch('/console/config.json')
+		if (!res.ok) return null
+		const v = (await res.json()) as { admin?: string }
+
+		return v.admin !== undefined && v.admin !== '' ? v.admin : null
+	} catch {
+		return null
+	}
+}
 
 const root = createRoot(document.getElementById('root') as HTMLElement)
 
@@ -152,9 +175,11 @@ function SignIn(props: { onDone: () => void }): React.ReactNode {
  */
 async function customers(): Promise<{ app: App; admin: Admin } | null> {
 	if (import.meta.env['VITE_SANDBOX'] !== undefined) return null
+	const at = await adminAddr()
+	if (at === null) return null
 
 	const transport = createConnectTransport({
-		baseUrl: ADMIN,
+		baseUrl: at,
 		fetch: (input, init) => fetch(input, { ...init, credentials: 'include' }),
 	})
 

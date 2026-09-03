@@ -19,12 +19,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	TenantService_Add_FullMethodName   = "/roster.TenantService/Add"
-	TenantService_Get_FullMethodName   = "/roster.TenantService/Get"
-	TenantService_Patch_FullMethodName = "/roster.TenantService/Patch"
-	TenantService_Apply_FullMethodName = "/roster.TenantService/Apply"
-	TenantService_Erase_FullMethodName = "/roster.TenantService/Erase"
-	TenantService_List_FullMethodName  = "/roster.TenantService/List"
+	TenantService_Add_FullMethodName    = "/roster.TenantService/Add"
+	TenantService_Get_FullMethodName    = "/roster.TenantService/Get"
+	TenantService_Patch_FullMethodName  = "/roster.TenantService/Patch"
+	TenantService_Apply_FullMethodName  = "/roster.TenantService/Apply"
+	TenantService_Erase_FullMethodName  = "/roster.TenantService/Erase"
+	TenantService_List_FullMethodName   = "/roster.TenantService/List"
+	TenantService_Update_FullMethodName = "/roster.TenantService/Update"
 )
 
 // TenantServiceClient is the client API for TenantService service.
@@ -43,6 +44,8 @@ type TenantServiceClient interface {
 	Erase(ctx context.Context, in *TenantRef, opts ...grpc.CallOption) (*TenantEraseResponse, error)
 	// List reads Tenants a page at a time.
 	List(ctx context.Context, in *TenantListRequest, opts ...grpc.CallOption) (*TenantListResponse, error)
+	// Update replaces what a tenant says about itself, under the version read.
+	Update(ctx context.Context, in *TenantUpdateRequest, opts ...grpc.CallOption) (*Tenant, error)
 }
 
 type tenantServiceClient struct {
@@ -113,6 +116,16 @@ func (c *tenantServiceClient) List(ctx context.Context, in *TenantListRequest, o
 	return out, nil
 }
 
+func (c *tenantServiceClient) Update(ctx context.Context, in *TenantUpdateRequest, opts ...grpc.CallOption) (*Tenant, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Tenant)
+	err := c.cc.Invoke(ctx, TenantService_Update_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TenantServiceServer is the server API for TenantService service.
 // All implementations must embed UnimplementedTenantServiceServer
 // for forward compatibility.
@@ -129,6 +142,8 @@ type TenantServiceServer interface {
 	Erase(context.Context, *TenantRef) (*TenantEraseResponse, error)
 	// List reads Tenants a page at a time.
 	List(context.Context, *TenantListRequest) (*TenantListResponse, error)
+	// Update replaces what a tenant says about itself, under the version read.
+	Update(context.Context, *TenantUpdateRequest) (*Tenant, error)
 	mustEmbedUnimplementedTenantServiceServer()
 }
 
@@ -156,6 +171,9 @@ func (UnimplementedTenantServiceServer) Erase(context.Context, *TenantRef) (*Ten
 }
 func (UnimplementedTenantServiceServer) List(context.Context, *TenantListRequest) (*TenantListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
+}
+func (UnimplementedTenantServiceServer) Update(context.Context, *TenantUpdateRequest) (*Tenant, error) {
+	return nil, status.Error(codes.Unimplemented, "method Update not implemented")
 }
 func (UnimplementedTenantServiceServer) mustEmbedUnimplementedTenantServiceServer() {}
 func (UnimplementedTenantServiceServer) testEmbeddedByValue()                       {}
@@ -286,6 +304,24 @@ func _TenantService_List_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TenantService_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TenantUpdateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantServiceServer).Update(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TenantService_Update_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantServiceServer).Update(ctx, req.(*TenantUpdateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TenantService_ServiceDesc is the grpc.ServiceDesc for TenantService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -316,6 +352,10 @@ var TenantService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _TenantService_List_Handler,
+		},
+		{
+			MethodName: "Update",
+			Handler:    _TenantService_Update_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

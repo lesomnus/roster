@@ -114,3 +114,13 @@ the page, one of the two is wrong and both are load-bearing.
 | the sync stream carries state, wall-narrowed by the credential alone: an `rk_` hears every tenant, an `rt_` hears its own, nobody is woken for a rename | `TestAnAppHearsThatADecisionStoppedBeingGood` · `TestTheSyncStreamAnswersToRealKeys` · `TestOneCustomerIsNotToldAboutAnother` · `TestNobodyIsWokenForARename` |
 | `Me` answers the caller about themselves with no role needed for it, and no more than themselves | `TestMeAnswersAboutTheCaller` · `TestSomebodyWithNothingCanStillAskWhatTheyHave` · `TestMeAnswersWithNothingOfAnybodyElseS` |
 | no verifier column leaves the building: not in an answer, not in the trail, not in the queue | `TestNoVerifierIsAnsweredByThePortThatServesItsRow` · `TestNoVerifierReachesTheTrailInEitherColumn` · `TestNoVerifierReachesTheQueueEither` |
+
+## The account app
+
+| the promise | pinned by |
+| --- | --- |
+| the app holds one tenant key per operator and every call about a host goes out with that tenant's; a contoso key reads, enrols into and accepts claims about contoso and nothing of fabrikam's | `TestAnAccountAppHoldsOneTenantsKeyAndReachesOnlyThatTenant` · `TestTheAccountAppFrontsTwoOperators` |
+| the browser speaks Connect to the app's origin and is answered by roster as the person; a method the app did not ask for stops at the app, a request no Connect client would make is refused, and no delegation is ever in a cookie | `TestABrowserSpeaksConnectToTheAppAndRosterAnswersAsThePerson` |
+| a stranger a provider vouches for is refused or enrolled as the deployment said, and never anywhere but the tenant the host resolved to | `TestTheAccountAppFrontsTwoOperators` · `TestAStrangerIsEnrolledWhereTheDeploymentSaysSo` |
+| a recovery link is mailed only to an address that is somebody's, answers the same whatever was typed, and hands over a password shown once rather than a session; a verification link stamps the address and signs nobody in | `TestSomebodyRecoversTheirAccountByMail` · `TestSomebodyVerifiesAnAddressOfTheirOwn` · `TestAnAddressIsVerifiedByALinkThatSignsNobodyIn` |
+| `account/` reaches roster only over the wire — it imports no server package but `front.Hostname` | `scripts/test.sh`, *the account app reaches roster only over the wire* |

@@ -18,10 +18,12 @@ import (
 // data, and this is the check, the same move as `pd gen --check`: what cannot
 // be kept in step by discipline is kept in step by a diff.
 //
-// Only this package's tests may be named, deliberately. The baseline is about
+// Only tests at the wire may be named, deliberately. The baseline is about
 // what a caller experiences, and `cmd` is where the served stack is stood up
-// whole; a promise that seems to need a deeper test's name is a promise that
-// should be re-stated at the wire.
+// whole -- and `account/` and `frontdoor/` are where it is stood up whole and
+// then reached from outside, as the front door a customer's people arrive at,
+// which is a caller's experience too. A promise that seems to need a deeper
+// test's name is a promise that should be re-stated at the wire.
 func TestBaselineNamesRealTests(t *testing.T) {
 	x := require.New(t)
 
@@ -29,8 +31,12 @@ func TestBaselineNamesRealTests(t *testing.T) {
 	x.NoError(err)
 
 	have := map[string]bool{}
-	files, err := filepath.Glob("*_test.go")
-	x.NoError(err)
+	var files []string
+	for _, dir := range []string{".", filepath.Join("..", "account"), filepath.Join("..", "frontdoor")} {
+		vs, err := filepath.Glob(filepath.Join(dir, "*_test.go"))
+		x.NoError(err)
+		files = append(files, vs...)
+	}
 
 	decl := regexp.MustCompile(`(?m)^func (Test\w+)`)
 	for _, f := range files {

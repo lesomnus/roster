@@ -428,6 +428,25 @@ type ControlConfig struct {
 	// traffic is not one for a console, and one `http` block cannot open two
 	// ports.
 	config.ServerConfig `yaml:",inline"`
+
+	// Console is the built console, served by this listener under `/console/`
+	// so that a deployment needs no `origins:` for its own page. Empty serves
+	// none, which is what `npm run dev` wants -- it serves the page itself and
+	// is told `origins:` instead.
+	Console ConsoleConfig `yaml:"console"`
+}
+
+// ConsoleConfig is the page an operator opens, as this listener serves it.
+type ConsoleConfig struct {
+	// Dir is `ts/dist/console`, or wherever the build was put.
+	Dir string `yaml:"dir"`
+
+	// Admin is where the page reaches the admin listener from a browser --
+	// `admin.http`'s public origin, `https://roster-admin.internal` -- since a
+	// page served by one listener has no way to know the other's address. Empty
+	// leaves the customers panels unoffered, which is also what a deployment
+	// with no admin listener means.
+	Admin string `yaml:"admin"`
 }
 
 // Serves reports whether this deployment checks who is calling.

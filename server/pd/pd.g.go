@@ -9851,6 +9851,26 @@ func (s interceptTenant) List(ctx context.Context, req *rstr.TenantListRequest) 
 	return w, nil
 }
 
+func (s interceptTenant) Update(ctx context.Context, req *rstr.TenantUpdateRequest) (*rstr.Tenant, error) {
+	if s.unary == nil {
+		return s.TenantServiceServer.Update(ctx, req)
+	}
+
+	v, err := s.unary(ctx, req, &grpc.UnaryServerInfo{
+		Server:     s.TenantServiceServer,
+		FullMethod: rstr.TenantService_Update_FullMethodName,
+	}, func(ctx context.Context, req any) (any, error) {
+		return s.TenantServiceServer.Update(ctx, req.(*rstr.TenantUpdateRequest))
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	w, _ := v.(*rstr.Tenant)
+
+	return w, nil
+}
+
 func (s Intercept) Holder() rstr.HolderServiceServer {
 	return interceptHolder{s, s.Next().Holder()}
 }
@@ -13537,6 +13557,19 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 		}
 
 		res, err := s.Tenant().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.TenantService_Update_FullMethodName:
+		v := &rstr.TenantUpdateRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Tenant().Update(ctx, v)
 		if err != nil {
 			return nil, err
 		}

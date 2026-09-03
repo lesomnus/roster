@@ -73,6 +73,17 @@ fi
 go tool pd doctor .
 go tool pd gen --check --ts .
 
+# That the account app is a consumer and only a consumer (`account/`, and
+# `ts/plan.md`'s first invariant): it reaches roster over the wire with a key
+# an operator minted, and if it could reach past that it would be the second
+# thing in this repository that can. `server/front` is the one exception --
+# `Hostname`, a pure function both sides have to agree on.
+echo "== the account app reaches roster only over the wire"
+if go list -f '{{join .Imports "\n"}}' ./account/ | grep -E '^github.com/lesomnus/roster/(internal|cmd|server/)' | grep -v '^github.com/lesomnus/roster/server/front$'; then
+	echo "account/ imports a server package; it is a consumer and reaches roster over the wire" >&2
+	exit 1
+fi
+
 # That roster still builds for the browser, which is a promise `ts/` already
 # makes -- there is a `wasm` script and a sandbox that loads what it produces --
 # and one that is kept only by being checked.
