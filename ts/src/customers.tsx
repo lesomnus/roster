@@ -44,6 +44,7 @@ import { HolderService } from '../gen/roster/payday/holder_svc_pb.js'
 
 import type { Admin } from './client.js'
 import { Person } from './people.js'
+import { Arrives } from './arrives.js'
 
 /** uuid is the bytes an identifier arrives as, written the way a person reads one. */
 function uuid(v: Uint8Array | undefined): string {
@@ -101,7 +102,11 @@ export function Customers(props: {
 
 function Tenants(props: { admin: Admin; may: (method: string) => boolean }): React.ReactNode {
 	const vs = useQuery(TenantService.method.list, {})
-	const [at, go] = useState<string | null>(null)
+
+	// Which customer is open, and on which of its two panels: who is in it,
+	// or how they arrive (names, providers, mail domains). One at a time,
+	// because the panels nest under the row and two open at once read as one.
+	const [at, go] = useState<{ id: string; on: 'people' | 'arrives' } | null>(null)
 
 	// What this screen made since it read, which is the shape `Keys` already
 	// uses one file over: a list query is not revalidated by a write this page
@@ -140,15 +145,21 @@ function Tenants(props: { admin: Admin; may: (method: string) => boolean }): Rea
 				<tbody>
 					{items.map((v) => {
 						const id = uuid(v.id)
+						const open = at?.id === id
+						const toggle = (on: 'people' | 'arrives') => () =>
+							go(open && at?.on === on ? null : { id, on })
 
 						return (
-							<tr key={id} className={id === at ? 'at' : ''}>
+							<tr key={id} className={open ? 'at' : ''}>
 								<td>{v.alias}</td>
 								<td>{v.name}</td>
 								<td>{when(v.dateCreated)}</td>
-								<td>
-									<button onClick={() => go(id === at ? null : id)}>
-										{id === at ? 'hide' : 'people'}
+								<td className="acts">
+									<button onClick={toggle('people')}>
+										{open && at?.on === 'people' ? 'hide' : 'people'}
+									</button>
+									<button onClick={toggle('arrives')}>
+										{open && at?.on === 'arrives' ? 'hide' : 'arrives through'}
 									</button>
 								</td>
 							</tr>
@@ -157,12 +168,15 @@ function Tenants(props: { admin: Admin; may: (method: string) => boolean }): Rea
 				</tbody>
 			</table>
 
-			{at !== null && (
+			{at?.on === 'people' && (
 				<People
-					tenant={items.find((v) => uuid(v.id) === at)}
+					tenant={items.find((v) => uuid(v.id) === at.id)}
 					admin={props.admin}
 					may={props.may}
 				/>
+			)}
+			{at?.on === 'arrives' && (
+				<Arrives tenant={items.find((v) => uuid(v.id) === at.id)} may={props.may} />
 			)}
 		</section>
 	)

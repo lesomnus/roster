@@ -109,6 +109,21 @@ td:last-child {
 	cursor: not-allowed;
 }
 
+/* The arrives-through panel has a form with six fields; one row of them does
+   not fit, and a form that wraps is the whole of what this says. Two buttons
+   in one cell sit side by side. */
+.arrives form {
+	flex-wrap: wrap;
+}
+
+td.acts {
+	white-space: nowrap;
+}
+
+td.acts button + button {
+	margin-left: 0.25rem;
+}
+
 /* A provider's subject is an opaque identifier somebody compares by eye. */
 .mono {
 	font-family: ui-monospace, monospace;
