@@ -121,12 +121,29 @@ func TestNobodyWritesTheCredentialOfSomebodyWiderThanThey(t *testing.T) {
 
 	// Changing your own is not becoming somebody else, and without this nobody
 	// could change their own password unless they held everything they held --
-	// which is true and is a strange way to write it.
-	t.Run("and anybody may write their own", func(t *testing.T) {
+	// which is true and is a strange way to write it. What your own row asks
+	// instead is the password you hold: the same verb, one rule more, so that a
+	// credential merely acting as you cannot replace what you sign in with.
+	t.Run("and anybody may write their own, by proving the one they hold", func(t *testing.T) {
 		x := require.New(t)
 
+		// A first password is set *for* somebody -- here the operator way, with
+		// no frame -- never by them with nothing to prove.
 		asBossOwn := frame.Into(ctx, frame.New(boss, b.Contoso, frame.Whole()).WithScope(frame.Only(b.Contoso)))
-		x.NoError(set(asBossOwn, boss))
+		x.Equal(codes.PermissionDenied, status.Code(set(asBossOwn, boss)),
+			"somebody set their own first password with nothing to prove")
+		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+			Ref:    app.HolderRef_builder{Id: boss.Bytes()}.Build(),
+			Secret: []byte("a new one"),
+		}.Build())
+		x.NoError(err)
+
+		_, err = b.Walled.Credential().Set(asBossOwn, app.CredentialSetRequest_builder{
+			Ref:     app.HolderRef_builder{Id: boss.Bytes()}.Build(),
+			Current: []byte("a new one"),
+			Secret:  []byte("a newer one"),
+		}.Build())
+		x.NoError(err, "the administrator could not change their own password knowing the current one")
 	})
 
 	// The deployment's own work through an unwalled server -- `init`, the

@@ -1725,12 +1725,12 @@ func TestSomebodyMintsAKeyFromTheirOwnPage(t *testing.T) {
 }
 
 // TestSomebodyChangesTheirPasswordAndAddsAFactor is the two self-service writes
-// the account screen grew: the password half through `Credential.ChangeMine`,
-// the second-factor half through `Credential.EnrolMine`. Both are subject-less,
-// so the delegation this app holds carries them the same way it carries the
-// `MeService` ones, and both need a role -- the account screen is where a person
-// enhances their own way in, which the server makes a grant rather than a
-// waiver.
+// the account screen grew: the password half through `Credential.Set`, the
+// second-factor half through `Credential.Enrol`, each with the person's own
+// reference taken from the session. Both need a role -- the account screen is
+// where a person enhances their own way in, which the server makes a grant
+// rather than a waiver -- and the delegation this app holds carries them the
+// same way it carries the `MeService` ones.
 func TestSomebodyChangesTheirPasswordAndAddsAFactor(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
@@ -1757,8 +1757,8 @@ func TestSomebodyChangesTheirPasswordAndAddsAFactor(t *testing.T) {
 		Alias:  "self",
 		Methods: []string{
 			"/roster.MeService/Get",
-			"/roster.CredentialService/ChangeMine",
-			"/roster.CredentialService/EnrolMine",
+			"/roster.CredentialService/Set",
+			"/roster.CredentialService/Enrol",
 		},
 	}.Build())
 	x.NoError(err)
@@ -1832,9 +1832,10 @@ func TestSomebodyChangesTheirPasswordAndAddsAFactor(t *testing.T) {
 		x.NoError(json.NewDecoder(res.Body).Decode(&v))
 		x.Contains(v.Uri, "otpauth://totp/", "no seed came back to scan")
 
-		// That it landed on Erin's own account and nobody she might have named
-		// is `EnrolMine`'s to guarantee -- it takes no subject -- and
-		// `cmd.TestAPersonEnrolsTheirOwnSecondFactor` is where that is proved.
+		// That it landed on Erin's own account and nobody else's is this app's
+		// to guarantee -- `enrolFactor` passes the session's person and takes
+		// no reference from the request -- and
+		// `cmd.TestAPersonEnrolsTheirOwnSecondFactor` proves the verb itself.
 		// Here it is enough that the delegation carried the write and the seed
 		// came back.
 	})

@@ -281,15 +281,35 @@ func TestASecretIsResetForTheAddressThatNamesSomebody(t *testing.T) {
 	t.Run("and through the stack a deployment serves", func(t *testing.T) {
 		x := require.New(t)
 
+		// By an operator, since a reset is somebody **else** giving them a new
+		// one (the D26 sentence above); the person themselves is the case below.
 		v := b.operated()
-		as := b.as(ctx, b.ContosoUser, b.Contoso)
+		ops := b.holder(t, ctx, b.Contoso, "ops")
+		asOps := b.mayCall(t, ctx, ops, "operator", "/roster.HolderService/List")
 
-		res, err := v.Reset(as, app.VouchResetRequest_builder{
+		res, err := v.Reset(asOps, app.VouchResetRequest_builder{
 			Who: who("someone@contoso.example"),
 		}.Build())
 		x.NoError(err)
 		x.NotEmpty(res.GetSecret())
 		x.True(b.verifies(t, ctx, b.ContosoUser, res.GetSecret()).GetOk())
+	})
+
+	// A reset is not a thing somebody does to themselves: the write underneath
+	// is `Credential.Set`, and for your own row that asks for the password you
+	// hold, which a reset by definition does not have. So a delegation lifted
+	// from an app cannot hand itself a fresh password by "recovering" its own
+	// account -- it changes it knowing the current one, or somebody else resets it.
+	t.Run("and not by the person about themselves", func(t *testing.T) {
+		x := require.New(t)
+
+		v := b.operated()
+		as := b.as(ctx, b.ContosoUser, b.Contoso)
+
+		_, err := v.Reset(as, app.VouchResetRequest_builder{
+			Who: who("someone@contoso.example"),
+		}.Build())
+		x.Equal(codes.PermissionDenied, status.Code(err), "somebody reset their own password")
 	})
 
 	// An address nobody has is `NotFound`, which is what every other call that

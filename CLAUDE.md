@@ -146,6 +146,16 @@ that paragraph is **required**: a service that cannot write it is the smell this
 section exists to catch. `Vouch.Set` was `Credential.Add` with a hash, invisible
 once written; the writes that hid there belong on `CredentialService`.
 
+**And no self-only twin of a verb.** RBAC stays what it is: a role grants a
+method, tenant-wide, and the gate is not taught about rows. *Whose row* is a
+layer -- `mayReach` in `server/core`: yourself always, anybody no wider than
+you, nobody wider -- and anything finer is the deployment's own layer or app,
+never a `ChangeMine` beside `Set`. A person's self-service is the operator's
+verb with the person's own reference, and the app that serves them is the
+layer that passes only that reference. What such a twin was reaching for
+belongs on the verb as a rule about your own row (`Credential.Set` asks for
+`current` when `ref` is you), not as a second name for the same rows.
+
 ## Writing a layer
 
 A layer embeds `Overlay` — and must also write `WithDriver`, which nothing

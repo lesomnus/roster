@@ -271,13 +271,14 @@ func New(ctx context.Context, c Config, conn *grpc.ClientConn, s *authsession.Se
 			rstr.MeService_IssueKey_FullMethodName,
 			rstr.MeService_RevokeKey_FullMethodName,
 
-			// The two self-service credential writes, which are subject-less
-			// like the `MeService` ones above and grant, when named in a role,
-			// exactly *do this to your own account*: change your password, add a
-			// second factor. Whoever holds this app's screens holds these, and a
-			// delegation narrows them to what the person themselves may do.
-			rstr.CredentialService_ChangeMine_FullMethodName,
-			rstr.CredentialService_EnrolMine_FullMethodName,
+			// The two credential writes the account screen makes -- change a
+			// password, add a second factor -- with the person's **own**
+			// reference, which `password.go` takes from the session and never
+			// from the request. Roster's part is `mayReach` (your own row always
+			// passes) and, for `Set`, the current password; the part that says
+			// *only your own* is this app's, by construction.
+			rstr.CredentialService_Set_FullMethodName,
+			rstr.CredentialService_Enrol_FullMethodName,
 		},
 
 		Tenant: func(ctx context.Context, host string) (string, error) {

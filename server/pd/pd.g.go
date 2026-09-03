@@ -10175,46 +10175,6 @@ func (s interceptCredential) Watch(req *rstr.CredentialWatchRequest, out grpc.Se
 	})
 }
 
-func (s interceptCredential) ChangeMine(ctx context.Context, req *rstr.CredentialChangeMineRequest) (*rstr.CredentialChangeMineResponse, error) {
-	if s.unary == nil {
-		return s.CredentialServiceServer.ChangeMine(ctx, req)
-	}
-
-	v, err := s.unary(ctx, req, &grpc.UnaryServerInfo{
-		Server:     s.CredentialServiceServer,
-		FullMethod: rstr.CredentialService_ChangeMine_FullMethodName,
-	}, func(ctx context.Context, req any) (any, error) {
-		return s.CredentialServiceServer.ChangeMine(ctx, req.(*rstr.CredentialChangeMineRequest))
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	w, _ := v.(*rstr.CredentialChangeMineResponse)
-
-	return w, nil
-}
-
-func (s interceptCredential) EnrolMine(ctx context.Context, req *rstr.CredentialEnrolMineRequest) (*rstr.CredentialEnrolMineResponse, error) {
-	if s.unary == nil {
-		return s.CredentialServiceServer.EnrolMine(ctx, req)
-	}
-
-	v, err := s.unary(ctx, req, &grpc.UnaryServerInfo{
-		Server:     s.CredentialServiceServer,
-		FullMethod: rstr.CredentialService_EnrolMine_FullMethodName,
-	}, func(ctx context.Context, req any) (any, error) {
-		return s.CredentialServiceServer.EnrolMine(ctx, req.(*rstr.CredentialEnrolMineRequest))
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	w, _ := v.(*rstr.CredentialEnrolMineResponse)
-
-	return w, nil
-}
-
 func (s interceptCredential) Unlock(ctx context.Context, req *rstr.CredentialUnlockRequest) (*rstr.CredentialUnlockResponse, error) {
 	if s.unary == nil {
 		return s.CredentialServiceServer.Unlock(ctx, req)
@@ -13511,32 +13471,6 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 		}
 
 		res, err := s.Credential().List(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case rstr.CredentialService_ChangeMine_FullMethodName:
-		v := &rstr.CredentialChangeMineRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Credential().ChangeMine(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case rstr.CredentialService_EnrolMine_FullMethodName:
-		v := &rstr.CredentialEnrolMineRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Credential().EnrolMine(ctx, v)
 		if err != nil {
 			return nil, err
 		}

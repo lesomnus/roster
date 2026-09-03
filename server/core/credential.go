@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"encoding/base32"
+	"time"
 
 	"github.com/lesomnus/z"
 	"google.golang.org/grpc/codes"
@@ -33,91 +34,6 @@ type coreCredential struct {
 
 func (s Core) Credential() app.CredentialServiceServer {
 	return coreCredential{s, s.Next().Credential()}
-}
-
-// ChangeMine changes the caller's own password, verifying the current one.
-//
-// It takes no subject -- the row is the frame's actor -- so a role naming it
-// grants exactly *change your own password* and nothing wider. The `current`
-// secret is the reauth: the new one is written only after it is verified, which
-// is what keeps a credential that merely acts as somebody from changing their
-// password without knowing it. See `credential_svc.ext.proto` for the whole of
-// the argument.
-//
-// The stored verifier is read here, in process, and never travels -- the wire
-// method that would answer it (`Get`) is closed. Hashing and the timing-safe
-// compare are `server/vouch`'s (`Hash`/`Compare`), because roster is the one
-// that compares and so is the one that hashes (D14).
-func (s coreCredential) ChangeMine(ctx context.Context, req *app.CredentialChangeMineRequest) (*app.CredentialChangeMineResponse, error) {
-	f, ok := frame.From(ctx)
-	if !ok || f.Actor.IsZero() {
-		return nil, status.Error(codes.Unauthenticated, "changing your own password is a thing only a caller can do, and nothing here says who that is")
-	}
-	if len(req.GetSecret()) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "secret: must not be empty")
-	}
-
-	ref := app.HolderRef_builder{Id: f.Actor.Bytes()}.Build()
-	named := func() *app.CredentialRef {
-		return app.CredentialRef_builder{
-			Kind: app.CredentialRefByKind_builder{
-				Holder: ref,
-				Kind:   z.Ptr(vouch.KindPassword),
-				Name:   z.Ptr(""),
-			}.Build(),
-		}.Build()
-	}
-
-	// The current password, read through the layer's own stack. `Next()` is the
-	// generated server, and its `Get` answers with the secret column -- which
-	// is exactly why it is closed on the wire and read only here.
-	v, err := s.Next().Credential().Get(ctx, app.CredentialGetRequest_builder{
-		Ref: named(),
-		Select: app.CredentialSelect_builder{
-			Secret:      z.Ptr(true),
-			DateUpdated: z.Ptr(true),
-		}.Build(),
-	}.Build())
-	if err != nil {
-		if status.Code(err) == codes.NotFound {
-			// Nothing to reauth against. A first password is set for somebody
-			// (the operator/recovery path), not by them here -- a bearer that
-			// could set a first password with no current one to prove is the
-			// takeover the reauth exists to close.
-			return nil, status.Error(codes.FailedPrecondition,
-				"you have no password to change; a first one is set for you, not changed by you")
-		}
-
-		return nil, err
-	}
-
-	same, err := vouch.Compare(v.GetSecret(), req.GetCurrent())
-	if err != nil {
-		return nil, status.Error(codes.Internal, "the stored password cannot be read")
-	}
-	if !same {
-		return nil, status.Error(codes.PermissionDenied, "the current password is not the one held")
-	}
-
-	sum, err := vouch.Hash(req.GetSecret())
-	if err != nil {
-		return nil, status.Error(codes.Internal, "the new password cannot be stored just now")
-	}
-
-	// The new one, with the lockout cleared -- a fresh secret starts fresh --
-	// under the version just read, so a concurrent write is refused rather than
-	// lost.
-	if _, err := s.Next().Credential().Patch(ctx, app.CredentialPatchRequest_builder{
-		Ref:            named(),
-		Secret:         sum,
-		Failures:       z.Ptr(int32(0)),
-		DateLockedNull: z.Ptr(true),
-		DateUpdated:    v.GetDateUpdated(),
-	}.Build()); err != nil {
-		return nil, err
-	}
-
-	return &app.CredentialChangeMineResponse{}, nil
 }
 
 // Unlock opens an account too many wrong answers closed, without touching the
@@ -186,6 +102,14 @@ func (s coreCredential) Unlock(ctx context.Context, req *app.CredentialUnlockReq
 // it is replaced and the lockout cleared. The three rules `Vouch.Set` carried
 // travel with it -- the settable-kind check, the leaked-corpus refusal, and
 // `mayReach` -- the last two now `server/core`'s own.
+//
+// Your own row is the one case with a rule of its own, and it is a rule and
+// not a verb: `current` is required and verified first, a wrong one is counted
+// like a wrong sign-in (`vouch.MaxFailures`, `vouch.LockFor`), and a locked row
+// is not compared at all. That is what `ChangeMine` was for, folded back in
+// here so that a person and an operator call one method about one row and
+// only the layer knows the difference. Naming somebody else with `current` set
+// is refused: an operator does not know it and must not be asked for it.
 func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) (*app.CredentialSetResponse, error) {
 	if len(req.GetSecret()) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "secret: must not be empty")
@@ -239,18 +163,46 @@ func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) 
 		return nil, err
 	}
 
+	// Whose row this is decides one thing: your own asks for the password you
+	// hold, anybody else's must not be asked for it.
+	f, framed := frame.From(ctx)
+	own := framed && !f.Actor.IsZero() && f.Actor == holder
+	switch {
+	case own && len(req.GetCurrent()) == 0:
+		return nil, status.Error(codes.PermissionDenied,
+			"current: your own password is changed by proving the one you hold; a reset is somebody else's to make")
+	case !own && len(req.GetCurrent()) != 0:
+		return nil, status.Error(codes.InvalidArgument,
+			"current: is for your own password; naming somebody else, leave it out")
+	}
+
 	ref := app.HolderRef_builder{Id: who.GetId()}.Build()
 	byKind := app.CredentialRef_builder{
 		Kind: app.CredentialRefByKind_builder{Holder: ref, Kind: z.Ptr(kind)}.Build(),
 	}.Build()
 
+	// The stored verifier is read here, in process, and only for the caller's
+	// own row -- the wire method that would answer it (`Get`) is closed.
 	v, err := s.Next().Credential().Get(ctx, app.CredentialGetRequest_builder{
-		Ref:    byKind,
-		Select: app.CredentialSelect_builder{DateUpdated: z.Ptr(true)}.Build(),
+		Ref: byKind,
+		Select: app.CredentialSelect_builder{
+			DateUpdated: z.Ptr(true),
+			Secret:      z.Ptr(own),
+			Failures:    z.Ptr(own),
+			DateLocked:  z.Ptr(own),
+		}.Build(),
 	}.Build())
 	if err != nil {
 		if status.Code(err) != codes.NotFound {
 			return nil, err
+		}
+		if own {
+			// Nothing to reauth against. A first password is set for somebody
+			// by an operator or the recovery flow, not by them here: a bearer
+			// that could set a first password with no current one to prove is
+			// the takeover the reauth exists to close.
+			return nil, status.Error(codes.FailedPrecondition,
+				"you have no password to change; a first one is set for you, not changed by you")
 		}
 
 		// None yet: add it.
@@ -263,6 +215,12 @@ func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) 
 		}
 
 		return &app.CredentialSetResponse{}, nil
+	}
+
+	if own {
+		if err := s.reauth(ctx, v, req.GetCurrent()); err != nil {
+			return nil, err
+		}
 	}
 
 	// Replace it, clearing the lockout -- somebody who set it is not who the
@@ -282,6 +240,46 @@ func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) 
 	return &app.CredentialSetResponse{}, nil
 }
 
+// reauth is the proof a caller gives before their own password is replaced:
+// the one they hold, compared timing-safe against the stored verifier.
+//
+// A wrong answer is a wrong sign-in and is counted as one -- the same
+// `MaxFailures` and `LockFor` as `Verify`, on the same columns -- so a stolen
+// delegation cannot guess its way past this any faster than past the sign-in
+// form. `ChangeMine` compared without counting, which was a hole this closes.
+// A locked row is refused before it is compared, for the reason the sign-in
+// refuses one: the lock is what the comparison's cost was buying.
+func (s coreCredential) reauth(ctx context.Context, v *app.Credential, current []byte) error {
+	if until := v.GetDateLocked(); until != nil && until.AsTime().After(time.Now()) {
+		return status.Errorf(codes.PermissionDenied,
+			"locked until %s after too many wrong answers", until.AsTime().Format(time.RFC3339))
+	}
+
+	same, err := vouch.Compare(v.GetSecret(), current)
+	if err != nil {
+		return status.Error(codes.Internal, "the stored password cannot be read")
+	}
+	if same {
+		return nil
+	}
+
+	n := v.GetFailures() + 1
+	patch := app.CredentialPatchRequest_builder{
+		Ref:         app.CredentialRef_builder{Id: v.GetId()}.Build(),
+		Failures:    z.Ptr(n),
+		DateUpdated: v.GetDateUpdated(),
+	}
+	if n >= vouch.MaxFailures {
+		patch.DateLocked = timestamppb.New(time.Now().Add(vouch.LockFor))
+		patch.Failures = z.Ptr(int32(0))
+	}
+	// Best effort, like `Verify`'s: a count lost to a concurrent write is a
+	// worse thing to fail the call over than to under-count.
+	_, _ = s.Next().Credential().Patch(ctx, patch.Build())
+
+	return status.Error(codes.PermissionDenied, "the current password is not the one held")
+}
+
 // Enrol makes a second factor and answers with it once -- the write `Vouch.Enrol`
 // was, on the entity it writes a row to. A `totp` seed is generated, wrapped
 // with the deployment's key and answered once (the row itself is the secret, so
@@ -298,12 +296,11 @@ func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) 
 // is one of the two things they sign in with, so you may enrol a factor for
 // nobody whose permissions are not a subset of yours. The row goes in
 // unconfirmed (`Verify` moves its step), which is `server/vouch`'s to enforce.
-// enrol is the work `Enrol` and `EnrolMine` share: a factor made for `ref`,
-// answered as a seed and URI (both empty for webauthn). The two differ only in
-// how they name the holder -- a reference or the frame's own actor -- and the
-// escalation rule is the same either way: `mayReach` passes for the caller
-// writing their own (`EnrolMine`) and refuses one wider than the caller
-// (`Enrol`).
+// enrol is `Enrol`'s work: a factor made for `ref`, answered as a seed and URI
+// (both empty for webauthn). One path whoever `ref` is -- `mayReach` passes for
+// a caller writing their own and refuses one wider than the caller -- which is
+// why there is no self-only twin of it; see the service comment in
+// `credential_svc.ext.proto`.
 func (s coreCredential) enrol(ctx context.Context, ref *app.HolderRef, kind, name, issuer string, attestation []byte) (string, string, error) {
 	switch kind {
 	case vouch.KindTotp:
@@ -414,27 +411,4 @@ func (s coreCredential) Enrol(ctx context.Context, req *app.CredentialEnrolReque
 	}
 
 	return app.CredentialEnrolResponse_builder{Seed: seed, Uri: uri}.Build(), nil
-}
-
-// EnrolMine adds a second factor to the caller's own account, and only theirs.
-//
-// It takes no subject -- the row is the frame's actor -- so a role naming it
-// grants exactly *add a factor to your own account* and nothing wider, the way
-// `ChangeMine` is the password half of the same self-service screen. The
-// escalation rule it runs is inert by construction (the target is the caller,
-// which `mayReach` passes), and it is there rather than skipped so that the one
-// path is the one every credential write takes.
-func (s coreCredential) EnrolMine(ctx context.Context, req *app.CredentialEnrolMineRequest) (*app.CredentialEnrolMineResponse, error) {
-	f, ok := frame.From(ctx)
-	if !ok || f.Actor.IsZero() {
-		return nil, status.Error(codes.Unauthenticated, "adding a factor to your own account is a thing only a caller can do, and nothing here says who that is")
-	}
-
-	ref := app.HolderRef_builder{Id: f.Actor.Bytes()}.Build()
-	seed, uri, err := s.enrol(ctx, ref, req.GetKind(), req.GetName(), req.GetIssuer(), req.GetAttestation())
-	if err != nil {
-		return nil, err
-	}
-
-	return app.CredentialEnrolMineResponse_builder{Seed: seed, Uri: uri}.Build(), nil
 }

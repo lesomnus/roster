@@ -18,7 +18,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/credential_svc.g.proto.
  */
 export const file_app_credential_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChphcHAvY3JlZGVudGlhbF9zdmMuZy5wcm90bxIGcm9zdGVyIs4CChRDcmVkZW50aWFsQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGtpbmQYCCABKAlCBaoBAggCEhUKBnNlY3JldBgJIAEoDEIFqgECCAISFwoIZmFpbHVyZXMYCiABKAVCBaoBAggCEi8KC2RhdGVfbG9ja2VkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX3JvdGF0ZWQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhgKCWxhc3Rfc3RlcBgQIAEoA0IFqgECCAISMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJkChRDcmVkZW50aWFsR2V0UmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuQ3JlZGVudGlhbFJlZhIoCgZzZWxlY3QYAiABKAsyGC5yb3N0ZXIuQ3JlZGVudGlhbFNlbGVjdCJRCg1DcmVkZW50aWFsUmVmEgwKAmlkGAEgASgMSAASKwoEa2luZBgCIAEoCzIbLnJvc3Rlci5DcmVkZW50aWFsUmVmQnlLaW5kSABCBQoDa2V5IlQKE0NyZWRlbnRpYWxSZWZCeUtpbmQSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkiggIKEENyZWRlbnRpYWxTZWxlY3QSCwoDYWxsGAEgASgIEiQKBmhvbGRlchgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSDAoEbmFtZRgFIAEoCBIMCgRraW5kGAggASgIEg4KBnNlY3JldBgJIAEoCBIQCghmYWlsdXJlcxgKIAEoCBITCgtkYXRlX2xvY2tlZBgLIAEoCBIUCgxkYXRlX3JvdGF0ZWQYDCABKAgSEQoJbGFzdF9zdGVwGBAgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgi8wIKFkNyZWRlbnRpYWxQYXRjaFJlcXVlc3QSIgoDcmVmGAEgASgLMhUucm9zdGVyLkNyZWRlbnRpYWxSZWYSDAoEbmFtZRgKIAEoCRIMCgRraW5kGBAgASgJEg4KBnNlY3JldBgSIAEoDBIQCghmYWlsdXJlcxgUIAEoBRIvCgtkYXRlX2xvY2tlZBgWIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGAoQZGF0ZV9sb2NrZWRfbnVsbBgXIAEoCBIwCgxkYXRlX3JvdGF0ZWQYGCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhkKEWRhdGVfcm90YXRlZF9udWxsGBkgASgIEhEKCWxhc3Rfc3RlcBggIAEoAxIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCCJZChZDcmVkZW50aWFsQXBwbHlSZXF1ZXN0EiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5DcmVkZW50aWFsUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giKQoXQ3JlZGVudGlhbEVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIm0KFUNyZWRlbnRpYWxMaXN0UmVxdWVzdBIpCgdmaWx0ZXJzGAEgAygLMhgucm9zdGVyLkNyZWRlbnRpYWxGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIlAKFkNyZWRlbnRpYWxMaXN0UmVzcG9uc2USIQoFaXRlbXMYASADKAsyEi5yb3N0ZXIuQ3JlZGVudGlhbBITCgRuZXh0GAIgASgJQgWqAQIIAiJZChBDcmVkZW50aWFsRmlsdGVyEiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5DcmVkZW50aWFsUmVmEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYiYQoWQ3JlZGVudGlhbFdhdGNoUmVxdWVzdBIpCgdmaWx0ZXJzGAEgAygLMhgucm9zdGVyLkNyZWRlbnRpYWxGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiRQoXQ3JlZGVudGlhbFdhdGNoUmVzcG9uc2USKgoFaXRlbXMYASADKAsyGy5yb3N0ZXIuQ3JlZGVudGlhbFdhdGNoSXRlbSJbChNDcmVkZW50aWFsV2F0Y2hJdGVtEgoKAmlkGAEgASgMEiEKBXZhbHVlGAIgASgLMhIucm9zdGVyLkNyZWRlbnRpYWwSFQoGYWN0aW9uGAMgASgJQgWqAQIIAiI+ChtDcmVkZW50aWFsQ2hhbmdlTWluZVJlcXVlc3QSDwoHY3VycmVudBgBIAEoDBIOCgZzZWNyZXQYAiABKAwiHgocQ3JlZGVudGlhbENoYW5nZU1pbmVSZXNwb25zZSJyChpDcmVkZW50aWFsRW5yb2xNaW5lUmVxdWVzdBITCgRraW5kGAEgASgJQgWqAQIIAhITCgRuYW1lGAIgASgJQgWqAQIIAhIVCgZpc3N1ZXIYAyABKAlCBaoBAggCEhMKC2F0dGVzdGF0aW9uGAQgASgMIkYKG0NyZWRlbnRpYWxFbnJvbE1pbmVSZXNwb25zZRITCgRzZWVkGAEgASgJQgWqAQIIAhISCgN1cmkYAiABKAlCBaoBAggCIk4KF0NyZWRlbnRpYWxVbmxvY2tSZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSEwoEa2luZBgCIAEoCUIFqgECCAIiUAoYQ3JlZGVudGlhbFVubG9ja1Jlc3BvbnNlEjQKEHdhc19sb2NrZWRfdW50aWwYASABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlsKFENyZWRlbnRpYWxTZXRSZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSEwoEa2luZBgCIAEoCUIFqgECCAISDgoGc2VjcmV0GAMgASgMIhcKFUNyZWRlbnRpYWxTZXRSZXNwb25zZSKOAQoWQ3JlZGVudGlhbEVucm9sUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhMKBGtpbmQYAiABKAlCBaoBAggCEhMKBG5hbWUYAyABKAlCBaoBAggCEhUKBmlzc3VlchgEIAEoCUIFqgECCAISEwoLYXR0ZXN0YXRpb24YBSABKAwiQgoXQ3JlZGVudGlhbEVucm9sUmVzcG9uc2USEwoEc2VlZBgBIAEoCUIFqgECCAISEgoDdXJpGAIgASgJQgWqAQIIAjLdBgoRQ3JlZGVudGlhbFNlcnZpY2USNwoDQWRkEhwucm9zdGVyLkNyZWRlbnRpYWxBZGRSZXF1ZXN0GhIucm9zdGVyLkNyZWRlbnRpYWwSNwoDR2V0Ehwucm9zdGVyLkNyZWRlbnRpYWxHZXRSZXF1ZXN0GhIucm9zdGVyLkNyZWRlbnRpYWwSOwoFUGF0Y2gSHi5yb3N0ZXIuQ3JlZGVudGlhbFBhdGNoUmVxdWVzdBoSLnJvc3Rlci5DcmVkZW50aWFsEjsKBUFwcGx5Eh4ucm9zdGVyLkNyZWRlbnRpYWxBcHBseVJlcXVlc3QaEi5yb3N0ZXIuQ3JlZGVudGlhbBI/CgVFcmFzZRIVLnJvc3Rlci5DcmVkZW50aWFsUmVmGh8ucm9zdGVyLkNyZWRlbnRpYWxFcmFzZVJlc3BvbnNlEkUKBExpc3QSHS5yb3N0ZXIuQ3JlZGVudGlhbExpc3RSZXF1ZXN0Gh4ucm9zdGVyLkNyZWRlbnRpYWxMaXN0UmVzcG9uc2USSgoFV2F0Y2gSHi5yb3N0ZXIuQ3JlZGVudGlhbFdhdGNoUmVxdWVzdBofLnJvc3Rlci5DcmVkZW50aWFsV2F0Y2hSZXNwb25zZTABElcKCkNoYW5nZU1pbmUSIy5yb3N0ZXIuQ3JlZGVudGlhbENoYW5nZU1pbmVSZXF1ZXN0GiQucm9zdGVyLkNyZWRlbnRpYWxDaGFuZ2VNaW5lUmVzcG9uc2USVAoJRW5yb2xNaW5lEiIucm9zdGVyLkNyZWRlbnRpYWxFbnJvbE1pbmVSZXF1ZXN0GiMucm9zdGVyLkNyZWRlbnRpYWxFbnJvbE1pbmVSZXNwb25zZRJLCgZVbmxvY2sSHy5yb3N0ZXIuQ3JlZGVudGlhbFVubG9ja1JlcXVlc3QaIC5yb3N0ZXIuQ3JlZGVudGlhbFVubG9ja1Jlc3BvbnNlEkIKA1NldBIcLnJvc3Rlci5DcmVkZW50aWFsU2V0UmVxdWVzdBodLnJvc3Rlci5DcmVkZW50aWFsU2V0UmVzcG9uc2USSAoFRW5yb2wSHi5yb3N0ZXIuQ3JlZGVudGlhbEVucm9sUmVxdWVzdBofLnJvc3Rlci5DcmVkZW50aWFsRW5yb2xSZXNwb25zZUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_credential, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChphcHAvY3JlZGVudGlhbF9zdmMuZy5wcm90bxIGcm9zdGVyIs4CChRDcmVkZW50aWFsQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGtpbmQYCCABKAlCBaoBAggCEhUKBnNlY3JldBgJIAEoDEIFqgECCAISFwoIZmFpbHVyZXMYCiABKAVCBaoBAggCEi8KC2RhdGVfbG9ja2VkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX3JvdGF0ZWQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhgKCWxhc3Rfc3RlcBgQIAEoA0IFqgECCAISMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJkChRDcmVkZW50aWFsR2V0UmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuQ3JlZGVudGlhbFJlZhIoCgZzZWxlY3QYAiABKAsyGC5yb3N0ZXIuQ3JlZGVudGlhbFNlbGVjdCJRCg1DcmVkZW50aWFsUmVmEgwKAmlkGAEgASgMSAASKwoEa2luZBgCIAEoCzIbLnJvc3Rlci5DcmVkZW50aWFsUmVmQnlLaW5kSABCBQoDa2V5IlQKE0NyZWRlbnRpYWxSZWZCeUtpbmQSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkiggIKEENyZWRlbnRpYWxTZWxlY3QSCwoDYWxsGAEgASgIEiQKBmhvbGRlchgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSDAoEbmFtZRgFIAEoCBIMCgRraW5kGAggASgIEg4KBnNlY3JldBgJIAEoCBIQCghmYWlsdXJlcxgKIAEoCBITCgtkYXRlX2xvY2tlZBgLIAEoCBIUCgxkYXRlX3JvdGF0ZWQYDCABKAgSEQoJbGFzdF9zdGVwGBAgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgi8wIKFkNyZWRlbnRpYWxQYXRjaFJlcXVlc3QSIgoDcmVmGAEgASgLMhUucm9zdGVyLkNyZWRlbnRpYWxSZWYSDAoEbmFtZRgKIAEoCRIMCgRraW5kGBAgASgJEg4KBnNlY3JldBgSIAEoDBIQCghmYWlsdXJlcxgUIAEoBRIvCgtkYXRlX2xvY2tlZBgWIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGAoQZGF0ZV9sb2NrZWRfbnVsbBgXIAEoCBIwCgxkYXRlX3JvdGF0ZWQYGCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhkKEWRhdGVfcm90YXRlZF9udWxsGBkgASgIEhEKCWxhc3Rfc3RlcBggIAEoAxIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCCJZChZDcmVkZW50aWFsQXBwbHlSZXF1ZXN0EiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5DcmVkZW50aWFsUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giKQoXQ3JlZGVudGlhbEVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIm0KFUNyZWRlbnRpYWxMaXN0UmVxdWVzdBIpCgdmaWx0ZXJzGAEgAygLMhgucm9zdGVyLkNyZWRlbnRpYWxGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIlAKFkNyZWRlbnRpYWxMaXN0UmVzcG9uc2USIQoFaXRlbXMYASADKAsyEi5yb3N0ZXIuQ3JlZGVudGlhbBITCgRuZXh0GAIgASgJQgWqAQIIAiJZChBDcmVkZW50aWFsRmlsdGVyEiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5DcmVkZW50aWFsUmVmEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYiYQoWQ3JlZGVudGlhbFdhdGNoUmVxdWVzdBIpCgdmaWx0ZXJzGAEgAygLMhgucm9zdGVyLkNyZWRlbnRpYWxGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiRQoXQ3JlZGVudGlhbFdhdGNoUmVzcG9uc2USKgoFaXRlbXMYASADKAsyGy5yb3N0ZXIuQ3JlZGVudGlhbFdhdGNoSXRlbSJbChNDcmVkZW50aWFsV2F0Y2hJdGVtEgoKAmlkGAEgASgMEiEKBXZhbHVlGAIgASgLMhIucm9zdGVyLkNyZWRlbnRpYWwSFQoGYWN0aW9uGAMgASgJQgWqAQIIAiJOChdDcmVkZW50aWFsVW5sb2NrUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhMKBGtpbmQYAiABKAlCBaoBAggCIlAKGENyZWRlbnRpYWxVbmxvY2tSZXNwb25zZRI0ChB3YXNfbG9ja2VkX3VudGlsGAEgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJsChRDcmVkZW50aWFsU2V0UmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhMKBGtpbmQYAiABKAlCBaoBAggCEg4KBnNlY3JldBgDIAEoDBIPCgdjdXJyZW50GAQgASgMIhcKFUNyZWRlbnRpYWxTZXRSZXNwb25zZSKOAQoWQ3JlZGVudGlhbEVucm9sUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhMKBGtpbmQYAiABKAlCBaoBAggCEhMKBG5hbWUYAyABKAlCBaoBAggCEhUKBmlzc3VlchgEIAEoCUIFqgECCAISEwoLYXR0ZXN0YXRpb24YBSABKAwiQgoXQ3JlZGVudGlhbEVucm9sUmVzcG9uc2USEwoEc2VlZBgBIAEoCUIFqgECCAISEgoDdXJpGAIgASgJQgWqAQIIAjKuBQoRQ3JlZGVudGlhbFNlcnZpY2USNwoDQWRkEhwucm9zdGVyLkNyZWRlbnRpYWxBZGRSZXF1ZXN0GhIucm9zdGVyLkNyZWRlbnRpYWwSNwoDR2V0Ehwucm9zdGVyLkNyZWRlbnRpYWxHZXRSZXF1ZXN0GhIucm9zdGVyLkNyZWRlbnRpYWwSOwoFUGF0Y2gSHi5yb3N0ZXIuQ3JlZGVudGlhbFBhdGNoUmVxdWVzdBoSLnJvc3Rlci5DcmVkZW50aWFsEjsKBUFwcGx5Eh4ucm9zdGVyLkNyZWRlbnRpYWxBcHBseVJlcXVlc3QaEi5yb3N0ZXIuQ3JlZGVudGlhbBI/CgVFcmFzZRIVLnJvc3Rlci5DcmVkZW50aWFsUmVmGh8ucm9zdGVyLkNyZWRlbnRpYWxFcmFzZVJlc3BvbnNlEkUKBExpc3QSHS5yb3N0ZXIuQ3JlZGVudGlhbExpc3RSZXF1ZXN0Gh4ucm9zdGVyLkNyZWRlbnRpYWxMaXN0UmVzcG9uc2USSgoFV2F0Y2gSHi5yb3N0ZXIuQ3JlZGVudGlhbFdhdGNoUmVxdWVzdBofLnJvc3Rlci5DcmVkZW50aWFsV2F0Y2hSZXNwb25zZTABEksKBlVubG9jaxIfLnJvc3Rlci5DcmVkZW50aWFsVW5sb2NrUmVxdWVzdBogLnJvc3Rlci5DcmVkZW50aWFsVW5sb2NrUmVzcG9uc2USQgoDU2V0Ehwucm9zdGVyLkNyZWRlbnRpYWxTZXRSZXF1ZXN0Gh0ucm9zdGVyLkNyZWRlbnRpYWxTZXRSZXNwb25zZRJICgVFbnJvbBIeLnJvc3Rlci5DcmVkZW50aWFsRW5yb2xSZXF1ZXN0Gh8ucm9zdGVyLkNyZWRlbnRpYWxFbnJvbFJlc3BvbnNlQiFaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHJiCGVkaXRpb25zcOgH", [file_app_credential, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.CredentialAddRequest
@@ -567,114 +567,6 @@ export const CredentialWatchItemSchema: GenMessage<CredentialWatchItem> = /*@__P
   messageDesc(file_app_credential_svc_g, 13);
 
 /**
- * @generated from message roster.CredentialChangeMineRequest
- */
-export type CredentialChangeMineRequest = Message<"roster.CredentialChangeMineRequest"> & {
-  /**
-   * The password they have now, verified before the new one is written.
-   *
-   * @generated from field: bytes current = 1;
-   */
-  current: Uint8Array;
-
-  /**
-   * The new one. Hashed by `server/core` -- the caller sends plaintext, the
-   * layer chooses the argon2 parameters, because roster is the one that
-   * compares (D14). Breach-checked the same way `Set` is.
-   *
-   * @generated from field: bytes secret = 2;
-   */
-  secret: Uint8Array;
-};
-
-/**
- * Describes the message roster.CredentialChangeMineRequest.
- * Use `create(CredentialChangeMineRequestSchema)` to create a new message.
- */
-export const CredentialChangeMineRequestSchema: GenMessage<CredentialChangeMineRequest> = /*@__PURE__*/
-  messageDesc(file_app_credential_svc_g, 14);
-
-/**
- * @generated from message roster.CredentialChangeMineResponse
- */
-export type CredentialChangeMineResponse = Message<"roster.CredentialChangeMineResponse"> & {
-};
-
-/**
- * Describes the message roster.CredentialChangeMineResponse.
- * Use `create(CredentialChangeMineResponseSchema)` to create a new message.
- */
-export const CredentialChangeMineResponseSchema: GenMessage<CredentialChangeMineResponse> = /*@__PURE__*/
-  messageDesc(file_app_credential_svc_g, 15);
-
-/**
- * @generated from message roster.CredentialEnrolMineRequest
- */
-export type CredentialEnrolMineRequest = Message<"roster.CredentialEnrolMineRequest"> & {
-  /**
-   * "totp" or "webauthn". No holder: the row is the frame's actor.
-   *
-   * @generated from field: string kind = 1 [features.field_presence = IMPLICIT];
-   */
-  kind: string;
-
-  /**
-   * What they call it, when there is more than one to tell apart.
-   *
-   * @generated from field: string name = 2 [features.field_presence = IMPLICIT];
-   */
-  name: string;
-
-  /**
-   * What the authenticator app lists it under; empty is the deployment's name.
-   *
-   * @generated from field: string issuer = 3 [features.field_presence = IMPLICIT];
-   */
-  issuer: string;
-
-  /**
-   * The browser's answer for `webauthn`, an envelope carrying the relying-party
-   * id, the origins and the challenge. Nothing for `totp`.
-   *
-   * @generated from field: bytes attestation = 4;
-   */
-  attestation: Uint8Array;
-};
-
-/**
- * Describes the message roster.CredentialEnrolMineRequest.
- * Use `create(CredentialEnrolMineRequestSchema)` to create a new message.
- */
-export const CredentialEnrolMineRequestSchema: GenMessage<CredentialEnrolMineRequest> = /*@__PURE__*/
-  messageDesc(file_app_credential_svc_g, 16);
-
-/**
- * @generated from message roster.CredentialEnrolMineResponse
- */
-export type CredentialEnrolMineResponse = Message<"roster.CredentialEnrolMineResponse"> & {
-  /**
-   * The `totp` seed, base32, the only time it is readable. Empty for `webauthn`.
-   *
-   * @generated from field: string seed = 1 [features.field_presence = IMPLICIT];
-   */
-  seed: string;
-
-  /**
-   * The same seed as an `otpauth://` URI. Empty for `webauthn`.
-   *
-   * @generated from field: string uri = 2 [features.field_presence = IMPLICIT];
-   */
-  uri: string;
-};
-
-/**
- * Describes the message roster.CredentialEnrolMineResponse.
- * Use `create(CredentialEnrolMineResponseSchema)` to create a new message.
- */
-export const CredentialEnrolMineResponseSchema: GenMessage<CredentialEnrolMineResponse> = /*@__PURE__*/
-  messageDesc(file_app_credential_svc_g, 17);
-
-/**
  * @generated from message roster.CredentialUnlockRequest
  */
 export type CredentialUnlockRequest = Message<"roster.CredentialUnlockRequest"> & {
@@ -699,7 +591,7 @@ export type CredentialUnlockRequest = Message<"roster.CredentialUnlockRequest"> 
  * Use `create(CredentialUnlockRequestSchema)` to create a new message.
  */
 export const CredentialUnlockRequestSchema: GenMessage<CredentialUnlockRequest> = /*@__PURE__*/
-  messageDesc(file_app_credential_svc_g, 18);
+  messageDesc(file_app_credential_svc_g, 14);
 
 /**
  * @generated from message roster.CredentialUnlockResponse
@@ -719,7 +611,7 @@ export type CredentialUnlockResponse = Message<"roster.CredentialUnlockResponse"
  * Use `create(CredentialUnlockResponseSchema)` to create a new message.
  */
 export const CredentialUnlockResponseSchema: GenMessage<CredentialUnlockResponse> = /*@__PURE__*/
-  messageDesc(file_app_credential_svc_g, 19);
+  messageDesc(file_app_credential_svc_g, 15);
 
 /**
  * @generated from message roster.CredentialSetRequest
@@ -746,6 +638,15 @@ export type CredentialSetRequest = Message<"roster.CredentialSetRequest"> & {
    * @generated from field: bytes secret = 3;
    */
   secret: Uint8Array;
+
+  /**
+   * The password held now -- **required when `ref` is yourself**, verified
+   * before `secret` is written, and refused when `ref` is somebody else. See
+   * the method.
+   *
+   * @generated from field: bytes current = 4;
+   */
+  current: Uint8Array;
 };
 
 /**
@@ -753,7 +654,7 @@ export type CredentialSetRequest = Message<"roster.CredentialSetRequest"> & {
  * Use `create(CredentialSetRequestSchema)` to create a new message.
  */
 export const CredentialSetRequestSchema: GenMessage<CredentialSetRequest> = /*@__PURE__*/
-  messageDesc(file_app_credential_svc_g, 20);
+  messageDesc(file_app_credential_svc_g, 16);
 
 /**
  * @generated from message roster.CredentialSetResponse
@@ -766,7 +667,7 @@ export type CredentialSetResponse = Message<"roster.CredentialSetResponse"> & {
  * Use `create(CredentialSetResponseSchema)` to create a new message.
  */
 export const CredentialSetResponseSchema: GenMessage<CredentialSetResponse> = /*@__PURE__*/
-  messageDesc(file_app_credential_svc_g, 21);
+  messageDesc(file_app_credential_svc_g, 17);
 
 /**
  * @generated from message roster.CredentialEnrolRequest
@@ -819,7 +720,7 @@ export type CredentialEnrolRequest = Message<"roster.CredentialEnrolRequest"> & 
  * Use `create(CredentialEnrolRequestSchema)` to create a new message.
  */
 export const CredentialEnrolRequestSchema: GenMessage<CredentialEnrolRequest> = /*@__PURE__*/
-  messageDesc(file_app_credential_svc_g, 22);
+  messageDesc(file_app_credential_svc_g, 18);
 
 /**
  * @generated from message roster.CredentialEnrolResponse
@@ -847,7 +748,7 @@ export type CredentialEnrolResponse = Message<"roster.CredentialEnrolResponse"> 
  * Use `create(CredentialEnrolResponseSchema)` to create a new message.
  */
 export const CredentialEnrolResponseSchema: GenMessage<CredentialEnrolResponse> = /*@__PURE__*/
-  messageDesc(file_app_credential_svc_g, 23);
+  messageDesc(file_app_credential_svc_g, 19);
 
 /**
  * @generated from service roster.CredentialService
@@ -934,55 +835,6 @@ export const CredentialService: GenService<{
     output: typeof CredentialWatchResponseSchema;
   },
   /**
-   * ChangeMine changes the **caller's own** password, and only the caller's.
-   *
-   * No `holder`/`who` field, deliberately: the row is the frame's actor and no
-   * field can redirect it, the same "a which with no whose" that makes
-   * `MeService.IssueKey` safe to grant. So a role naming this method means
-   * exactly *may change your own password*, where the smallest role over the
-   * operator write (`Set`, which takes a subject) would mean *reset anybody no
-   * wider than you*.
-   *
-   * # `current` is the reauth, and it is what makes this safe to hold
-   *
-   * The new secret is written only after the current one is verified. That is
-   * what keeps a credential which merely *acts as* somebody -- a key pasted
-   * into a build log -- from changing their password: it can act as them and
-   * still not know the password it would be replacing. The guarantee does not
-   * depend on **how** the caller authenticated, which is deliberate -- payday
-   * keeps the auth method for the log and refuses to let a rule turn on it, so
-   * the proof lives in the request rather than in a check on the credential's
-   * kind.
-   *
-   * A first password (there is none to verify against) is not this: it is the
-   * operator/recovery path, because a bearer setting a first password with
-   * nothing to reauth against is the account takeover this closes.
-   *
-   * @generated from rpc roster.CredentialService.ChangeMine
-   */
-  changeMine: {
-    methodKind: "unary";
-    input: typeof CredentialChangeMineRequestSchema;
-    output: typeof CredentialChangeMineResponseSchema;
-  },
-  /**
-   * EnrolMine adds a second factor to the **caller's own** account, and only
-   * the caller's. It is `Enrol` with no subject: the row is the frame's actor,
-   * and no field can redirect it -- the same "a which with no whose" that makes
-   * `ChangeMine` and `MeService.IssueKey` safe to grant. A role naming it means
-   * *may add a factor to your own account*, where the smallest role over `Enrol`
-   * (which takes a reference) would mean *enrol one on anybody no wider than
-   * you*. It is what a self-service screen calls, the way `ChangeMine` is the
-   * password half of the same page.
-   *
-   * @generated from rpc roster.CredentialService.EnrolMine
-   */
-  enrolMine: {
-    methodKind: "unary";
-    input: typeof CredentialEnrolMineRequestSchema;
-    output: typeof CredentialEnrolMineResponseSchema;
-  },
-  /**
    * Unlock opens an account too many wrong answers closed, without touching the
    * secret. Whose credential it is, by reference -- an operator naming somebody
    * they already know, so no sign-in form and no email lookup (that stays with
@@ -1015,6 +867,24 @@ export const CredentialService: GenService<{
    * A first password and a rotation are one call: absent, it is added; present,
    * it is replaced and the lockout cleared, because somebody who set it is not
    * who the lockout was protecting against.
+   *
+   * # Your own row asks for `current`
+   *
+   * When `ref` is the caller, the password held now must come with the new one
+   * and is verified first. That is what keeps a credential which merely *acts
+   * as* somebody -- a key pasted into a build log, a delegation lifted from an
+   * app -- from changing their password: it can act as them and still not know
+   * the one it would be replacing. The guarantee does not depend on **how** the
+   * caller authenticated, which is deliberate: payday keeps the auth method
+   * for the log and refuses to let a rule turn on it, so the proof lives in the
+   * request. A wrong `current` counts as a failed sign-in, with the same
+   * lockout, so it cannot be guessed at any faster than a password can.
+   *
+   * A first password of your own (nothing to verify against) is refused: it is
+   * set *for* somebody by an operator or the recovery flow, because a bearer
+   * setting a first password with nothing to prove is the takeover this
+   * closes. Naming somebody else with `current` set is refused too -- an
+   * operator does not know it and must not be asked for it.
    *
    * @generated from rpc roster.CredentialService.Set
    */

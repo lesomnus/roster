@@ -821,7 +821,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 // in. The other arrangement -- serve everything, then take one away -- fails by
 // publishing something nobody meant to, and it fails silently.
 func register(g grpc.ServiceRegistrar, s app.Server) {
-	// `CredentialService` is served for its overlays (e.g. `ChangeMine`), and
+	// `CredentialService` is served for its overlays (`Set`, `Unlock`, `Enrol`), and
 	// its generated reads and raw `Add`/`Erase` are shut by method in
 	// `closed` -- so nothing on the wire answers with the `secret` column.
 	app.RegisterCredentialServiceServer(g, s.Credential())
@@ -889,7 +889,7 @@ func (s *Server) closed(c Config) func(method string) bool {
 	// `CredentialService` is registered now, so its verbs are shut one at a
 	// time rather than the whole name: the reads answer the `secret` column and
 	// the raw writes take a caller-chosen verifier, and only the overlays
-	// (`ChangeMine`, and the writes moving here) are meant to be reachable.
+	// (`Set`, `Unlock`, `Enrol`) are meant to be reachable.
 	// `Patch`/`Apply` are already off by `GeneralWrite`.
 	byMethod := []string{
 		app.ApiKeyService_Add_FullMethodName,

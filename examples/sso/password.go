@@ -280,18 +280,19 @@ func (a *App) revokeKey(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// changePassword is the person changing their own, through `CredentialService.
-// ChangeMine`.
+// changePassword is the person changing their own, through `Credential.Set`
+// with their **own** reference -- the same verb an operator calls about somebody
+// else, and this app is the layer that passes only the session's person. That
+// is the line: RBAC grants the method, *whose row* is roster's `mayReach` (your
+// own always passes), and anything narrower is the app's to keep, which it does
+// by never taking a reference from the request.
 //
-// Subject-less, like everything else this page calls: the row is the frame's
-// actor, so the delegation carrying `/roster.CredentialService/ChangeMine`
-// grants *change your own password* and not one over the tenant. The current
-// password is the reauth -- roster verifies it before writing the new one, so a
-// stolen delegation that could act as this person still cannot change what they
-// sign in with without knowing it.
+// The current password is the reauth: roster requires it for your own row and
+// verifies it before writing the new one, so a stolen delegation that could act
+// as this person still cannot change what they sign in with without knowing it.
 //
-// Nothing is answered with. A `CredentialChangeMineResponse` is empty, because
-// what would go in it is the password the caller just chose.
+// Nothing is answered with. A `CredentialSetResponse` is empty, because what
+// would go in it is the password the caller just chose.
 func (a *App) changePassword(w http.ResponseWriter, r *http.Request) {
 	ctx, err := a.acting(r.Context(), r)
 	if err != nil {
@@ -308,7 +309,14 @@ func (a *App) changePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := a.roster.Credential().ChangeMine(ctx, rstr.CredentialChangeMineRequest_builder{
+	who, ok := a.door.Who(r.Context(), r)
+	if !ok {
+		http.Error(w, "no", http.StatusForbidden)
+		return
+	}
+
+	if _, err := a.roster.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
+		Ref:     rstr.HolderRef_builder{Id: who.Bytes()}.Build(),
 		Current: []byte(in.Current),
 		Secret:  []byte(in.Secret),
 	}.Build()); err != nil {
@@ -329,7 +337,8 @@ func (a *App) changePassword(w http.ResponseWriter, r *http.Request) {
 }
 
 // enrolFactor is the person adding a second factor of their own, through
-// `CredentialService.EnrolMine`.
+// `Credential.Enrol` with their own reference -- `changePassword`'s shape, one
+// verb over.
 //
 // TOTP only from this page: a `webauthn` enrolment is a browser ceremony that
 // needs `navigator.credentials.create()` and the attestation it answers, which
@@ -351,7 +360,14 @@ func (a *App) enrolFactor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	v, err := a.roster.Credential().EnrolMine(ctx, rstr.CredentialEnrolMineRequest_builder{
+	who, ok := a.door.Who(r.Context(), r)
+	if !ok {
+		http.Error(w, "no", http.StatusForbidden)
+		return
+	}
+
+	v, err := a.roster.Credential().Enrol(ctx, rstr.CredentialEnrolRequest_builder{
+		Ref:  rstr.HolderRef_builder{Id: who.Bytes()}.Build(),
 		Kind: "totp",
 		Name: in.Name,
 	}.Build())

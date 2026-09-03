@@ -19,18 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	CredentialService_Add_FullMethodName        = "/roster.CredentialService/Add"
-	CredentialService_Get_FullMethodName        = "/roster.CredentialService/Get"
-	CredentialService_Patch_FullMethodName      = "/roster.CredentialService/Patch"
-	CredentialService_Apply_FullMethodName      = "/roster.CredentialService/Apply"
-	CredentialService_Erase_FullMethodName      = "/roster.CredentialService/Erase"
-	CredentialService_List_FullMethodName       = "/roster.CredentialService/List"
-	CredentialService_Watch_FullMethodName      = "/roster.CredentialService/Watch"
-	CredentialService_ChangeMine_FullMethodName = "/roster.CredentialService/ChangeMine"
-	CredentialService_EnrolMine_FullMethodName  = "/roster.CredentialService/EnrolMine"
-	CredentialService_Unlock_FullMethodName     = "/roster.CredentialService/Unlock"
-	CredentialService_Set_FullMethodName        = "/roster.CredentialService/Set"
-	CredentialService_Enrol_FullMethodName      = "/roster.CredentialService/Enrol"
+	CredentialService_Add_FullMethodName    = "/roster.CredentialService/Add"
+	CredentialService_Get_FullMethodName    = "/roster.CredentialService/Get"
+	CredentialService_Patch_FullMethodName  = "/roster.CredentialService/Patch"
+	CredentialService_Apply_FullMethodName  = "/roster.CredentialService/Apply"
+	CredentialService_Erase_FullMethodName  = "/roster.CredentialService/Erase"
+	CredentialService_List_FullMethodName   = "/roster.CredentialService/List"
+	CredentialService_Watch_FullMethodName  = "/roster.CredentialService/Watch"
+	CredentialService_Unlock_FullMethodName = "/roster.CredentialService/Unlock"
+	CredentialService_Set_FullMethodName    = "/roster.CredentialService/Set"
+	CredentialService_Enrol_FullMethodName  = "/roster.CredentialService/Enrol"
 )
 
 // CredentialServiceClient is the client API for CredentialService service.
@@ -61,39 +59,6 @@ type CredentialServiceClient interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(ctx context.Context, in *CredentialWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CredentialWatchResponse], error)
-	// ChangeMine changes the **caller's own** password, and only the caller's.
-	//
-	// No `holder`/`who` field, deliberately: the row is the frame's actor and no
-	// field can redirect it, the same "a which with no whose" that makes
-	// `MeService.IssueKey` safe to grant. So a role naming this method means
-	// exactly *may change your own password*, where the smallest role over the
-	// operator write (`Set`, which takes a subject) would mean *reset anybody no
-	// wider than you*.
-	//
-	// # `current` is the reauth, and it is what makes this safe to hold
-	//
-	// The new secret is written only after the current one is verified. That is
-	// what keeps a credential which merely *acts as* somebody -- a key pasted
-	// into a build log -- from changing their password: it can act as them and
-	// still not know the password it would be replacing. The guarantee does not
-	// depend on **how** the caller authenticated, which is deliberate -- payday
-	// keeps the auth method for the log and refuses to let a rule turn on it, so
-	// the proof lives in the request rather than in a check on the credential's
-	// kind.
-	//
-	// A first password (there is none to verify against) is not this: it is the
-	// operator/recovery path, because a bearer setting a first password with
-	// nothing to reauth against is the account takeover this closes.
-	ChangeMine(ctx context.Context, in *CredentialChangeMineRequest, opts ...grpc.CallOption) (*CredentialChangeMineResponse, error)
-	// EnrolMine adds a second factor to the **caller's own** account, and only
-	// the caller's. It is `Enrol` with no subject: the row is the frame's actor,
-	// and no field can redirect it -- the same "a which with no whose" that makes
-	// `ChangeMine` and `MeService.IssueKey` safe to grant. A role naming it means
-	// *may add a factor to your own account*, where the smallest role over `Enrol`
-	// (which takes a reference) would mean *enrol one on anybody no wider than
-	// you*. It is what a self-service screen calls, the way `ChangeMine` is the
-	// password half of the same page.
-	EnrolMine(ctx context.Context, in *CredentialEnrolMineRequest, opts ...grpc.CallOption) (*CredentialEnrolMineResponse, error)
 	// Unlock opens an account too many wrong answers closed, without touching the
 	// secret. Whose credential it is, by reference -- an operator naming somebody
 	// they already know, so no sign-in form and no email lookup (that stays with
@@ -118,6 +83,24 @@ type CredentialServiceClient interface {
 	// A first password and a rotation are one call: absent, it is added; present,
 	// it is replaced and the lockout cleared, because somebody who set it is not
 	// who the lockout was protecting against.
+	//
+	// # Your own row asks for `current`
+	//
+	// When `ref` is the caller, the password held now must come with the new one
+	// and is verified first. That is what keeps a credential which merely *acts
+	// as* somebody -- a key pasted into a build log, a delegation lifted from an
+	// app -- from changing their password: it can act as them and still not know
+	// the one it would be replacing. The guarantee does not depend on **how** the
+	// caller authenticated, which is deliberate: payday keeps the auth method
+	// for the log and refuses to let a rule turn on it, so the proof lives in the
+	// request. A wrong `current` counts as a failed sign-in, with the same
+	// lockout, so it cannot be guessed at any faster than a password can.
+	//
+	// A first password of your own (nothing to verify against) is refused: it is
+	// set *for* somebody by an operator or the recovery flow, because a bearer
+	// setting a first password with nothing to prove is the takeover this
+	// closes. Naming somebody else with `current` set is refused too -- an
+	// operator does not know it and must not be asked for it.
 	Set(ctx context.Context, in *CredentialSetRequest, opts ...grpc.CallOption) (*CredentialSetResponse, error)
 	// Enrol makes a second factor and answers with it once. The write `Vouch.Enrol`
 	// was, on the entity: a `totp` seed roster generates, wraps and answers with
@@ -224,26 +207,6 @@ func (c *credentialServiceClient) Watch(ctx context.Context, in *CredentialWatch
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type CredentialService_WatchClient = grpc.ServerStreamingClient[CredentialWatchResponse]
 
-func (c *credentialServiceClient) ChangeMine(ctx context.Context, in *CredentialChangeMineRequest, opts ...grpc.CallOption) (*CredentialChangeMineResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CredentialChangeMineResponse)
-	err := c.cc.Invoke(ctx, CredentialService_ChangeMine_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *credentialServiceClient) EnrolMine(ctx context.Context, in *CredentialEnrolMineRequest, opts ...grpc.CallOption) (*CredentialEnrolMineResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CredentialEnrolMineResponse)
-	err := c.cc.Invoke(ctx, CredentialService_EnrolMine_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *credentialServiceClient) Unlock(ctx context.Context, in *CredentialUnlockRequest, opts ...grpc.CallOption) (*CredentialUnlockResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CredentialUnlockResponse)
@@ -302,39 +265,6 @@ type CredentialServiceServer interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(*CredentialWatchRequest, grpc.ServerStreamingServer[CredentialWatchResponse]) error
-	// ChangeMine changes the **caller's own** password, and only the caller's.
-	//
-	// No `holder`/`who` field, deliberately: the row is the frame's actor and no
-	// field can redirect it, the same "a which with no whose" that makes
-	// `MeService.IssueKey` safe to grant. So a role naming this method means
-	// exactly *may change your own password*, where the smallest role over the
-	// operator write (`Set`, which takes a subject) would mean *reset anybody no
-	// wider than you*.
-	//
-	// # `current` is the reauth, and it is what makes this safe to hold
-	//
-	// The new secret is written only after the current one is verified. That is
-	// what keeps a credential which merely *acts as* somebody -- a key pasted
-	// into a build log -- from changing their password: it can act as them and
-	// still not know the password it would be replacing. The guarantee does not
-	// depend on **how** the caller authenticated, which is deliberate -- payday
-	// keeps the auth method for the log and refuses to let a rule turn on it, so
-	// the proof lives in the request rather than in a check on the credential's
-	// kind.
-	//
-	// A first password (there is none to verify against) is not this: it is the
-	// operator/recovery path, because a bearer setting a first password with
-	// nothing to reauth against is the account takeover this closes.
-	ChangeMine(context.Context, *CredentialChangeMineRequest) (*CredentialChangeMineResponse, error)
-	// EnrolMine adds a second factor to the **caller's own** account, and only
-	// the caller's. It is `Enrol` with no subject: the row is the frame's actor,
-	// and no field can redirect it -- the same "a which with no whose" that makes
-	// `ChangeMine` and `MeService.IssueKey` safe to grant. A role naming it means
-	// *may add a factor to your own account*, where the smallest role over `Enrol`
-	// (which takes a reference) would mean *enrol one on anybody no wider than
-	// you*. It is what a self-service screen calls, the way `ChangeMine` is the
-	// password half of the same page.
-	EnrolMine(context.Context, *CredentialEnrolMineRequest) (*CredentialEnrolMineResponse, error)
 	// Unlock opens an account too many wrong answers closed, without touching the
 	// secret. Whose credential it is, by reference -- an operator naming somebody
 	// they already know, so no sign-in form and no email lookup (that stays with
@@ -359,6 +289,24 @@ type CredentialServiceServer interface {
 	// A first password and a rotation are one call: absent, it is added; present,
 	// it is replaced and the lockout cleared, because somebody who set it is not
 	// who the lockout was protecting against.
+	//
+	// # Your own row asks for `current`
+	//
+	// When `ref` is the caller, the password held now must come with the new one
+	// and is verified first. That is what keeps a credential which merely *acts
+	// as* somebody -- a key pasted into a build log, a delegation lifted from an
+	// app -- from changing their password: it can act as them and still not know
+	// the one it would be replacing. The guarantee does not depend on **how** the
+	// caller authenticated, which is deliberate: payday keeps the auth method
+	// for the log and refuses to let a rule turn on it, so the proof lives in the
+	// request. A wrong `current` counts as a failed sign-in, with the same
+	// lockout, so it cannot be guessed at any faster than a password can.
+	//
+	// A first password of your own (nothing to verify against) is refused: it is
+	// set *for* somebody by an operator or the recovery flow, because a bearer
+	// setting a first password with nothing to prove is the takeover this
+	// closes. Naming somebody else with `current` set is refused too -- an
+	// operator does not know it and must not be asked for it.
 	Set(context.Context, *CredentialSetRequest) (*CredentialSetResponse, error)
 	// Enrol makes a second factor and answers with it once. The write `Vouch.Enrol`
 	// was, on the entity: a `totp` seed roster generates, wraps and answers with
@@ -406,12 +354,6 @@ func (UnimplementedCredentialServiceServer) List(context.Context, *CredentialLis
 }
 func (UnimplementedCredentialServiceServer) Watch(*CredentialWatchRequest, grpc.ServerStreamingServer[CredentialWatchResponse]) error {
 	return status.Error(codes.Unimplemented, "method Watch not implemented")
-}
-func (UnimplementedCredentialServiceServer) ChangeMine(context.Context, *CredentialChangeMineRequest) (*CredentialChangeMineResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method ChangeMine not implemented")
-}
-func (UnimplementedCredentialServiceServer) EnrolMine(context.Context, *CredentialEnrolMineRequest) (*CredentialEnrolMineResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method EnrolMine not implemented")
 }
 func (UnimplementedCredentialServiceServer) Unlock(context.Context, *CredentialUnlockRequest) (*CredentialUnlockResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Unlock not implemented")
@@ -562,42 +504,6 @@ func _CredentialService_Watch_Handler(srv interface{}, stream grpc.ServerStream)
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type CredentialService_WatchServer = grpc.ServerStreamingServer[CredentialWatchResponse]
 
-func _CredentialService_ChangeMine_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CredentialChangeMineRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CredentialServiceServer).ChangeMine(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CredentialService_ChangeMine_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CredentialServiceServer).ChangeMine(ctx, req.(*CredentialChangeMineRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CredentialService_EnrolMine_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CredentialEnrolMineRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CredentialServiceServer).EnrolMine(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CredentialService_EnrolMine_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CredentialServiceServer).EnrolMine(ctx, req.(*CredentialEnrolMineRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _CredentialService_Unlock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CredentialUnlockRequest)
 	if err := dec(in); err != nil {
@@ -682,14 +588,6 @@ var CredentialService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _CredentialService_List_Handler,
-		},
-		{
-			MethodName: "ChangeMine",
-			Handler:    _CredentialService_ChangeMine_Handler,
-		},
-		{
-			MethodName: "EnrolMine",
-			Handler:    _CredentialService_EnrolMine_Handler,
 		},
 		{
 			MethodName: "Unlock",
