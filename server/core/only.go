@@ -80,7 +80,7 @@ func (s Core) only(ctx context.Context, holder []byte, fn func(next app.Server) 
 		return s.locked(ctx, nil, s.Next(), holder, fn)
 	}
 
-	drv, tx, err := enttx.Begin(ctx, s.drv)
+	drv, tx, err := dialect.BeginTx(ctx, s.drv)
 	if err != nil {
 		return err
 	}
