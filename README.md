@@ -175,10 +175,10 @@ things that are cheap to get wrong here and expensive to find later.
 
 ## Upgrading a deployment
 
-`docs/upgrading.md` — what moved in the database, what changed in behaviour, and
-what is only new surface. There is no `migrations/` directory: `db.migrate:
-true` lets ent bring the database to the shape the schema says, and without it
-`serve` refuses to start until somebody has.
+There is no `migrations/` directory: `db.migrate: true` lets ent bring the
+database to the shape the schema says, and without it `serve` refuses to start
+until somebody has. What a change means for a running deployment is written
+beside the change -- the proto comment, the roadmap row -- and not in a log.
 
 ## Running
 

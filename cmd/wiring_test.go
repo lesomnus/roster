@@ -78,8 +78,8 @@ func TestBothPlanesAreChecked(t *testing.T) {
 
 // TestTheDataPlaneIsCheckedToo is the same refusal the other way round, and it
 // is the **default**: `db.migrate` unset is a deployment whose data plane is
-// migrated by a step and not by `serve`, which is every deployment
-// `docs/upgrading.md` describes. A new binary over an old data plane must
+// migrated by a step and not by `serve`, which is every deployment that
+// is not a desk. A new binary over an old data plane must
 // refuse to start naming the right database, rather than serve wrong answers
 // about the rows every caller resolves through.
 func TestTheDataPlaneIsCheckedToo(t *testing.T) {

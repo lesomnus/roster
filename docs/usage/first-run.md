@@ -111,8 +111,7 @@ Five listeners at most, and which ones open is what the configuration named:
 
 `db.migrate` is off by default, and `serve` refuses a database that is not the
 shape the schema describes rather than starting and failing per request. `init`
-creates that shape, so a fresh deployment needs nothing else; an upgrade is
-[`../upgrading.md`](../upgrading.md).
+creates that shape, so a fresh deployment needs nothing else.
 
 ## Checking it
 
