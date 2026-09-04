@@ -232,7 +232,7 @@ the trail keeps what it was. It works on either plane, and an identifier on
 neither is a refusal rather than a shrug.
 
 ```sh
-roster vouch unlock @newco/alice     # ten wrong answers closed it
+roster vouch unlock @newco/alice     # too many wrong answers closed it (ten, unless vouch.lockout says)
 ```
 
 ## What you have
