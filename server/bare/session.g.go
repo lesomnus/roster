@@ -12,10 +12,10 @@ import (
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	session "github.com/lesomnus/roster/internal/ent/session"
 	rstr "github.com/lesomnus/roster/rstr"
+	ent1 "github.com/protobuf-orm/ent"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
-	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -82,7 +82,7 @@ func (s SessionServiceServer) narrow(ctx context.Context, p predicate.Session) (
 }
 
 func (s SessionServiceServer) Add(ctx context.Context, req *rstr.SessionAddRequest) (*rstr.Session, error) {
-	tx, err := enttx.Join[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -318,7 +318,7 @@ func (s SessionServiceServer) apply(ctx context.Context, ref *rstr.SessionRef, d
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := enttx.Join[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
 	if err != nil {
 		return nil, err
 	}
@@ -416,7 +416,7 @@ func (s SessionServiceServer) Erase(ctx context.Context, req *rstr.SessionRef) (
 		return nil, err
 	}
 
-	tx, err := enttx.Join[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
 		return nil, err
 	}

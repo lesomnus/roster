@@ -16,11 +16,11 @@ import (
 	team "github.com/lesomnus/roster/internal/ent/team"
 	teammembership "github.com/lesomnus/roster/internal/ent/teammembership"
 	rstr "github.com/lesomnus/roster/rstr"
+	ent1 "github.com/protobuf-orm/ent"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	graph "github.com/protobuf-orm/protobuf-orm/graph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
-	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -88,7 +88,7 @@ func (s SiteMembershipServiceServer) narrow(ctx context.Context, p predicate.Sit
 }
 
 func (s SiteMembershipServiceServer) Add(ctx context.Context, req *rstr.SiteMembershipAddRequest) (*rstr.SiteMembership, error) {
-	tx, err := enttx.Join[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -319,7 +319,7 @@ func (s SiteMembershipServiceServer) apply(ctx context.Context, ref *rstr.SiteMe
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := enttx.Join[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
 	if err != nil {
 		return nil, err
 	}
@@ -417,7 +417,7 @@ func (s SiteMembershipServiceServer) Erase(ctx context.Context, req *rstr.SiteMe
 		return nil, err
 	}
 
-	tx, err := enttx.Join[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -571,7 +571,7 @@ func (s TeamMembershipServiceServer) narrow(ctx context.Context, p predicate.Tea
 }
 
 func (s TeamMembershipServiceServer) Add(ctx context.Context, req *rstr.TeamMembershipAddRequest) (*rstr.TeamMembership, error) {
-	tx, err := enttx.Join[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -829,7 +829,7 @@ func (s TeamMembershipServiceServer) apply(ctx context.Context, ref *rstr.TeamMe
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := enttx.Join[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
 	if err != nil {
 		return nil, err
 	}
@@ -927,7 +927,7 @@ func (s TeamMembershipServiceServer) Erase(ctx context.Context, req *rstr.TeamMe
 		return nil, err
 	}
 
-	tx, err := enttx.Join[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
 		return nil, err
 	}

@@ -15,10 +15,10 @@ import (
 	role "github.com/lesomnus/roster/internal/ent/role"
 	site "github.com/lesomnus/roster/internal/ent/site"
 	rstr "github.com/lesomnus/roster/rstr"
+	ent1 "github.com/protobuf-orm/ent"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
-	enttx "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -85,7 +85,7 @@ func (s RoleServiceServer) narrow(ctx context.Context, p predicate.Role) (predic
 }
 
 func (s RoleServiceServer) Add(ctx context.Context, req *rstr.RoleAddRequest) (*rstr.Role, error) {
-	tx, err := enttx.Join[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -335,7 +335,7 @@ func (s RoleServiceServer) apply(ctx context.Context, ref *rstr.RoleRef, doc *pa
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := enttx.Join[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
 	if err != nil {
 		return nil, err
 	}
@@ -433,7 +433,7 @@ func (s RoleServiceServer) Erase(ctx context.Context, req *rstr.RoleRef) (*rstr.
 		return nil, err
 	}
 
-	tx, err := enttx.Join[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -583,7 +583,7 @@ func (s BindingServiceServer) narrow(ctx context.Context, p predicate.Binding) (
 }
 
 func (s BindingServiceServer) Add(ctx context.Context, req *rstr.BindingAddRequest) (*rstr.Binding, error) {
-	tx, err := enttx.Join[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -850,7 +850,7 @@ func (s BindingServiceServer) apply(ctx context.Context, ref *rstr.BindingRef, d
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := enttx.Join[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
 	if err != nil {
 		return nil, err
 	}
@@ -948,7 +948,7 @@ func (s BindingServiceServer) Erase(ctx context.Context, req *rstr.BindingRef) (
 		return nil, err
 	}
 
-	tx, err := enttx.Join[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
 		return nil, err
 	}
