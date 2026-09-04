@@ -53,6 +53,15 @@ import { open, type WasmSock } from '@lesomnus/grpc-dgram/wasm'
 export interface Sandbox {
 	readonly transport: Transport
 
+	/**
+	 * dial is a transport to another server the same instance publishes, by
+	 * the name it was published under -- `drpcAdmin` for the admin server,
+	 * which the customers screen reaches beside the control one the way
+	 * `admin.http` is dialed beside `control.http`. One instance, one pair of
+	 * databases; see `wasm/main.go`.
+	 */
+	dial(entryPoint: string): Transport
+
 	/** The wasm instance, for a page that wants to take it down. */
 	readonly sock: WasmSock
 
@@ -63,11 +72,9 @@ export interface Sandbox {
 /**
  * start compiles the app into the page and answers with a transport for it.
  *
- * `name` is the build's file under `public/`, which `npm run wasm` writes
- * two of:
+ * The build is `public/app.wasm`, which `npm run wasm` writes:
  *
  *     GOOS=js GOARCH=wasm go build -o ts/public/app.wasm ./wasm
- *     GOOS=js GOARCH=wasm go build -o ts/public/admin.wasm ./wasm/admin
  *
  * # The worker is yours, and it has to be
  *
@@ -82,10 +89,8 @@ export interface Sandbox {
  * which names the problem exactly and does not say that the answer is two lines
  * in a file of your own — `sandbox-worker.ts`, beside this one.
  */
-export async function start(
-	name = 'app.wasm',
-	workerUrl: URL | string = new URL('./sandbox-worker.ts', import.meta.url),
-): Promise<Sandbox> {
+export async function start(workerUrl: URL | string = new URL('./sandbox-worker.ts', import.meta.url)): Promise<Sandbox> {
+	const name = 'app.wasm'
 	// Under the page's base rather than at the root: `vite.console.ts` serves
 	// this page at `/console/`, and `public/` with it, so `/app.wasm` is a
 	// 404 that reads as "the sandbox never comes up". The package's default
@@ -98,6 +103,7 @@ export async function start(
 
 	return {
 		transport: createDrpcTransport(sock.dial()),
+		dial: (entryPoint) => createDrpcTransport(sock.dial({ entryPoint })),
 		sock,
 		close: () => sock.close(),
 	}

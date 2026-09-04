@@ -94,18 +94,4 @@ func TestTheSandboxSignsIn(t *testing.T) {
 		_, err = who.Handle(ctx)
 		x.ErrorIs(err, pdauth.ErrNoCredential)
 	})
-
-	t.Run("the admin instance knows its own", func(t *testing.T) {
-		x := require.New(t)
-
-		name, err := sandbox.Own(ctx, s.Control.Ent, "ops")
-		x.NoError(err)
-		x.Contains(name, "/ops")
-
-		op := &sandbox.Operator{}
-		op.Set(name)
-		id, err := sandbox.Believe(op).Handle(ctx)
-		x.NoError(err)
-		x.Equal("ops", id.Alias)
-	})
 }

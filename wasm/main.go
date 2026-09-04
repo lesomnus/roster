@@ -31,13 +31,17 @@
 // There is one caller in the page and this is a note of who they said they
 // were; it is a sandbox being a sandbox, and the reason `Plain` is here at all.
 //
-// # Two instances
+// # Two servers, one instance
 //
 // The customers screen reaches a third listener against a real deployment,
-// `admin.http`, and one instance answers one message port -- so the sandbox is
-// two of them, this and `wasm/admin`, and the page opens the second beside the
-// first. `wasm/admin/main.go` says what two instances cost and why the page
-// cannot tell.
+// `admin.http`: the data plane with no wall, behind the operator's session,
+// with its own interceptor chain (`cmd.GrpcAdmin`). Here it is a second
+// `drpc.Server` under a second entry point (`drpcAdmin`), which the page
+// dials by name on the same socket -- one download, one compile, one pair of
+// databases, and the operator who signed in on the first server is the caller
+// on the second, because the memory of who signed in is one value they share.
+// It was two instances for a while, each with databases of its own, until
+// `jsport` could serve two names from one worker.
 package main
 
 import (
@@ -62,6 +66,7 @@ import (
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/console"
 	"github.com/lesomnus/roster/server/me"
+	"github.com/lesomnus/roster/server/vouch"
 	"github.com/lesomnus/roster/wasm/sandbox"
 )
 
@@ -74,6 +79,10 @@ import (
 const (
 	operator = "ops"
 	password = "sandbox"
+
+	// AdminEntryPoint is the name the admin server is published under, and
+	// what `ts/console/main.tsx` dials for the customers screen.
+	AdminEntryPoint = "drpcAdmin"
 )
 
 func main() {
@@ -156,10 +165,44 @@ func main() {
 	app.RegisterAuthServiceServer(srv, sandbox.Auth(console.Auth(s.Control.Ungated, s.Control.Ent, s.Sessions), s.Control.Ent, op))
 	app.RegisterIssueServiceServer(srv, console.Issue(s.Control.Walled, s.Control.Ent))
 
-	// Publishing the entry point is the readiness signal, so nothing may be
-	// published before the registration above is done -- and it blocks, because
-	// a main that returns takes the instance down and the page sees its calls
-	// start failing.
+	// The admin server: `cmd.GrpcAdmin`'s chain, less what a message port has
+	// no use for -- the deadline, the limiter, the closed-off methods -- with
+	// the same remembered operator where the session cookie would be read.
+	// `Intent` stays: it is what makes a write here leave a row in the control
+	// plane first, and a sandbox that skipped it would be exercising a
+	// different stack -- and here that row lands in the control plane the
+	// deployment screen reads, as it does in a real deployment.
+	admin, err := cmd.Admin(s)
+	if err != nil {
+		log.Fatal(err)
+	}
+	agw := jsport.NewGateway(jsport.WithEntryPoint(AdminEntryPoint))
+	asrv := drpc.NewServer(agw,
+		drpc.ChainUnaryInterceptors(
+			pdauth.InterceptorUnary(who, sandbox.Resolver(cmd.Resolver(s.Control.Ungated, nil)), cmd.Public),
+			gate.Unary(cmd.Policy(s.Control.Ent)),
+			cmd.Intent(s.Control.Ent),
+		),
+		drpc.ChainStreamInterceptors(
+			pdauth.InterceptorStream(who, sandbox.Resolver(cmd.Resolver(s.Control.Ungated, nil)), cmd.Public),
+			gate.Stream(cmd.Policy(s.Control.Ent)),
+		),
+	)
+	cmd.Register(asrv, admin)
+	app.RegisterVouchServiceServer(asrv, vouch.New(admin, admin, vouch.WithKeys(s.Keyring)))
+
+	// Publishing the first entry point is the readiness signal, so nothing may
+	// be published before the registration above is done. The second may come
+	// up after the page is ready: a dial to a name not yet published waits for
+	// it. Exactly one Serve blocks main -- a main that returns takes the
+	// instance down -- and the other's error is reported rather than dropped,
+	// since a name collision is refused without publishing and would otherwise
+	// reach the page only as a dial that times out.
+	go func() {
+		if err := agw.Serve(ctx, asrv); err != nil {
+			log.Fatal(err)
+		}
+	}()
 	log.Fatal(gw.Serve(ctx, srv))
 }
 

@@ -12,7 +12,10 @@ FROM node:22 AS page
 
 WORKDIR /src/ts
 
+# `vendor/` beside the manifests: `@lesomnus/grpc-dgram` is a tarball built
+# from a commit until it is released, and `npm ci` reads it.
 COPY ts/package.json ts/package-lock.json ./
+COPY ts/vendor ./vendor
 RUN npm ci
 
 COPY ts/ ./

@@ -21,6 +21,7 @@ import { AuthService } from '../gen/app/auth_pb.js'
 import { admin, type Admin } from '../lib/client.js'
 import { open } from '../lib/store.js'
 import { Page } from './page.js'
+import type { Sandbox } from './sandbox.js'
 import '../lib/style.css'
 
 /**
@@ -56,8 +57,8 @@ const ADDR: string =
  * deployment has to add is `origins:` under `admin.http`, for the reason
  * `control.http` needs it.
  *
- * The sandbox has no third listener but a second instance -- `admin.wasm`,
- * opened by `customers()` below -- so this is not asked there.
+ * The sandbox has no third listener but a second server in the same instance,
+ * dialed by name in `customers()` below -- so this is not asked there.
  */
 // The admin listener is another origin whatever serves this page, and one the
 // page cannot guess: told by `VITE_ADMIN_ADDR` under `npm run dev`, and by
@@ -105,9 +106,13 @@ async function connect(): Promise<Transport> {
 	}
 
 	const { start } = await import('./sandbox.js')
+	sandbox = await start()
 
-	return (await start()).transport
+	return sandbox.transport
 }
+
+// The sandbox, once started, for `customers()` to dial its second server on.
+let sandbox: Sandbox | null = null
 
 /**
  * Signing in is an **RPC**, like everything else this app offers.
@@ -177,16 +182,14 @@ function SignIn(props: { onDone: () => void }): React.ReactNode {
  * different tables across these two ports; one store would have them overwrite
  * each other by identifier.
  *
- * In the sandbox it is a second wasm instance, `wasm/admin`, opened beside
- * the first the way `admin.http` is dialed beside `control.http`: one instance
- * answers one message port. Two instances are two deployments, each with its
- * own databases, and `wasm/admin/main.go` says why the page cannot tell.
+ * In the sandbox it is the second server the one instance publishes, dialed
+ * by name the way `admin.http` is dialed beside `control.http` -- the same
+ * databases, the same signed-in operator (`wasm/main.go`).
  */
 async function customers(): Promise<{ app: App; admin: Admin } | null> {
 	const transport = await (async (): Promise<Transport | null> => {
 		if (import.meta.env['VITE_SANDBOX'] !== undefined) {
-			const { start } = await import('./sandbox.js')
-			return (await start('admin.wasm')).transport
+			return sandbox?.dial('drpcAdmin') ?? null
 		}
 		const at = await adminAddr()
 		if (at === null) return null

@@ -29,7 +29,7 @@ require (
 	github.com/fxamacker/cbor/v2 v2.9.2
 	github.com/go-jose/go-jose/v4 v4.1.4
 	github.com/go-webauthn/webauthn v0.17.4
-	github.com/lesomnus/grpc-dgram v0.0.0-20260808164022-d993065403e1
+	github.com/lesomnus/grpc-dgram v0.0.0-20260904095310-00e6a6a5b345
 	github.com/lesomnus/otx v0.0.0-20260807173743-977a5687d6ba
 	github.com/lesomnus/payday v0.0.0-20260904080856-63411433882d
 	github.com/lesomnus/protobuf-patch v0.0.0-20260803175157-e1b7a0c2804f

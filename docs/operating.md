@@ -338,17 +338,17 @@ SQLite in a Worker, a message port instead of HTTP/2. A reload is a fresh
 deployment: new databases, seeded again by `cmd.Seed`, nothing left over. It
 signs in as `ops` with the password `sandbox`, and has one customer, `contoso`.
 
-It is **two instances**, because one instance answers one message port and the
-console reaches two listeners: `app.wasm` is `control.http` — the deployment
-screen, the sign-in — and `admin.wasm` is `admin.http`, which the customers
-screen opens beside it. Each has databases of its own, and `wasm/admin/main.go`
-says why the page cannot tell.
+It is one instance serving **two servers**, because the console reaches two
+listeners: `control.http` — the deployment screen, the sign-in — and
+`admin.http`, which the customers screen opens beside it. The second is a
+second `drpc.Server` published under its own entry point (`drpcAdmin`), which
+the page dials by name on the same socket: one download, one pair of
+databases, and the operator who signed in on one is the caller on the other.
 
 The password is checked there by the same `vouch`, so a wrong one is refused —
 but the **cookie** cannot work over a message port. So the instance remembers
 who signed in and takes every later call to be them until a sign-out
-(`wasm/sandbox`); the admin instance, which saw no sign-in, is `ops` from the
-start. That is a sandbox being a sandbox; see `wasm/main.go`.
+(`wasm/sandbox`). That is a sandbox being a sandbox; see `wasm/main.go`.
 
 `ts/e2e/sandbox.spec.ts` opens it in a browser and `wasm/sandbox` has the same
 sign-in without one, because it stopped working once with every other gate

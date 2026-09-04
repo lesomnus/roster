@@ -1,10 +1,10 @@
-// Package sandbox is what the two instances in the page share: who the caller
+// Package sandbox is what the two servers in the page share: who the caller
 // is, when a message port cannot say.
 //
 // The real console signs in and holds a cookie; every call after carries it,
 // and `authsession` reads it back into a caller. A message port has no cookie
 // jar, so over it every call after the sign-in arrives naming nobody -- and
-// `auth.Plain`, which the instances serve with, believes what a caller writes
+// `auth.Plain`, which both servers serve with, believes what a caller writes
 // and refuses one that writes nothing. The page writes nothing on purpose: it
 // is transport-blind, and a header it added only in the sandbox would be code
 // that runs nowhere else.
@@ -124,13 +124,6 @@ func (a remembering) name(ctx context.Context, alias string) (string, error) {
 	}
 
 	return "@" + t.Alias + "/" + alias, nil
-}
-
-// Own is the name of the operator `roster init` wrote, for an instance that
-// has no sign-in of its own to remember -- the admin instance, which the page
-// reaches after signing in on the other one.
-func Own(ctx context.Context, db *ent.Client, alias string) (string, error) {
-	return remembering{db: db}.name(ctx, alias)
 }
 
 // Resolver is `inner`, saying on the instance's own log why a caller could not

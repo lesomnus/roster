@@ -1,13 +1,13 @@
 import { expect, test } from '@playwright/test'
 
-// The sandbox: the console with the whole server compiled into the page, two
-// instances of it -- `app.wasm` for the control plane and `admin.wasm` for the
-// customers screen. Nothing else in the repository opens it, so this is what
+// The sandbox: the console with the whole server compiled into the page, one
+// instance serving two servers -- the control plane, and the admin one the
+// customers screen dials by name. Nothing else in the repository opens it, so this is what
 // keeps `npm run dev:sandbox` from quietly stopping being a thing that works.
 
 const base = process.env['E2E_SANDBOX'] ?? 'http://localhost:18100/console/'
 
-test('the sandbox signs in, and its second instance stands a customer up', async ({ page }) => {
+test('the sandbox signs in, and its second server stands a customer up', async ({ page }) => {
 	test.setTimeout(120_000)
 	await page.goto(base)
 	await page.locator('input[name=alias]').fill('ops')

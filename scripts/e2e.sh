@@ -41,6 +41,18 @@ if [ "${E2E_SANDBOX:-1}" != "0" ]; then
 	npm --prefix ts run wasm >/dev/null
 fi
 
+# Ports nothing else on a desk is likely to be on -- and nothing may be on
+# them now, or `up` below answers from whatever that is. It happened: a dev
+# server left over from a `--hold` the day before answered for the sandbox,
+# serving the modules it had cached, and a change to the library it served
+# was invisible for an afternoon.
+for port in 18051 18052 18061 18062 18071 18072 18090 18100; do
+	if (exec 3<>"/dev/tcp/127.0.0.1/${port}") 2>/dev/null; then
+		echo "something is already listening on 127.0.0.1:${port}; stop it first (a --hold left running?)" >&2
+		exit 1
+	fi
+done
+
 # Ports nothing else on a desk is likely to be on. `localhost` rather than
 # `127.0.0.1` for the account app because a security key's relying party is a
 # domain, and an address is not one.
