@@ -217,10 +217,10 @@ func (a *App) everywhere(w http.ResponseWriter, r *http.Request) {
 
 // mintKey is `POST /me/keys`: an `rt_` that acts as the person, made by them.
 //
-// The self-service half of what an operator's console has had since D51, and
-// through `MeService` for the reason `unlink` is: `IssueService.IssueKey` takes
-// a `HolderRef`, so the smallest role covering *mint a key for myself* would be
-// *mint one for anybody in this tenant*.
+// The operator's verb, `ApiKey.Issue`, with the person's own reference -- the
+// one this app passes and never takes from the request. There is no self-only
+// twin of it (CLAUDE.md): a role grants the method, and *whose row* is
+// `server/core`'s rule, where your own always passes.
 //
 // The **secret comes back once and is not stored here.** This app writes it
 // into the response and keeps no copy: what roster holds is a hash, and a

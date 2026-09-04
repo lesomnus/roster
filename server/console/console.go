@@ -194,9 +194,9 @@ type issuer struct {
 // could set -- and create -- a password on somebody in a tenant they never
 // named, through the generated `Credential` verbs, which `server/core` leaves
 // unguarded for the deployment's own work: the escalation rule that guards
-// every other credential write is not in this path. `IssueKey` is safe there
-// because `whose` refuses a bare name and reads the reference back through the
-// wall; this took neither guard.
+// every other credential write is not in this path. `ApiKey.Issue` is safe there
+// because it takes a reference and reads it back through the wall; this took
+// neither guard.
 //
 // A customer's person gets a password the guarded way -- `VouchService.Reset`
 // or `Set`, served on the data plane with `WithReach` -- so nothing is lost by

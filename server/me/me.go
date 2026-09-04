@@ -334,31 +334,6 @@ func (s *Server) keys(ctx context.Context, who pdid.Id) ([]*app.SignInKey, error
 	return out, nil
 }
 
-// IssueKey mints an `rt_` that acts as the caller.
-//
-// The self-service half of `IssueService.IssueKey`. That one takes a
-// `HolderRef` and is an operator's; this takes no subject at all, which is what
-// makes the smallest role covering it *may mint a key that acts as you* rather
-// than *may mint one for anybody in this tenant*.
-//
-// # The rule that makes the button safe is not here
-//
-// It is in `server/core`, and this reaches it by writing through the walled
-// stack: `ApiKey.Add` refuses a list of methods the caller does not hold, so a
-// person cannot mint themselves something wider than they are. Reaching for the
-// database would be a self-service page that hands out permissions.
-//
-// # And the prefix is not in the request
-//
-
-// RevokeKey ends one of the caller's own keys.
-//
-// The same shape as [Server.Unlink]: the read that finds it is narrowed by the
-// caller **before** it is narrowed by the identifier, so one that belongs to
-// somebody else is `NotFound` rather than refused. Told apart, this would
-// answer whether somebody else's key exists.
-//
-
 // Unlink removes one of the caller's own ways in.
 //
 // # A which, never a whose

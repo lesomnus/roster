@@ -117,21 +117,29 @@ func NewCmdEntities(c *Config) xli.Commands {
 		panic(err)
 	}
 
-	// The rest of `HolderService`: the methods the overlay declared, which the
-	// six generated verbs cannot know about. `Tree.Unary` is the other half of
-	// the same seam -- everything around the call is payday's, and what a
-	// method *means* is this app's, which is why the briefs are written out
-	// here: "Disable" as its own description is a command somebody has to
-	// guess at.
+	// The rest of the entity services: the methods the overlays declared,
+	// which the six generated verbs cannot know about. `Tree.Unary` is the
+	// other half of the same seam -- everything around the call is payday's,
+	// and what a method *means* is this app's, which is why the briefs are
+	// written out here: "Disable" as its own description is a command somebody
+	// has to guess at.
 	//
-	// A method added to the overlay tomorrow is one line here, not a command
-	// to write.
+	// A method added to an overlay tomorrow is one line here, not a command
+	// to write -- and it is a line that has to be written, or the method is
+	// one a console can reach and a terminal cannot (D58).
 	for _, v := range []struct{ path, method, brief string }{
 		{"holder/update", "roster.HolderService.Update", "replace somebody's profile, whole"},
 		{"holder/disable", "roster.HolderService.Disable", "refuse somebody everywhere, now"},
 		{"holder/enable", "roster.HolderService.Enable", "let a disabled somebody back in"},
 		{"holder/invalidate", "roster.HolderService.Invalidate", "void everything issued to somebody before now"},
 		{"holder/signs-in", "roster.HolderService.SignsIn", "how somebody signs in: identities, credentials, keys"},
+		{"holder/reaches", "roster.HolderService.Reaches", "what somebody may call, from every role they hold"},
+		{"tenant/update", "roster.TenantService.Update", "what a customer says about itself: name, note, labels; never the alias"},
+		{"host/update", "roster.HostService.Update", "a host's note; never its name"},
+		{"mail-domain/update", "roster.MailDomainService.Update", "where a domain routes, and its note; never its name"},
+		{"connection/update", "roster.ConnectionService.Update", "a provider's issuer, client id, scopes, secret ref, note; never its name"},
+		{"email/verify", "roster.EmailService.Verify", "mint a link that proves an address, printed once; delivering it is yours"},
+		{"email/confirm", "roster.EmailService.Confirm", "spend a verify link, and stamp the address it was minted for"},
 	} {
 		u, err := t.Unary(v.method)
 		if err != nil {

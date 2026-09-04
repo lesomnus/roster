@@ -298,6 +298,12 @@ somebody signs in, keys included, with no verifier anywhere in the answer. And
 `roster sync watch` is where a stop can be seen landing — one line per event,
 the same stream every app holds.
 
+The same shape holds for every other overlay verb, so there is nothing a
+console can do that a terminal cannot: `roster holder reaches`, `tenant update`,
+`host update`, `mail-domain update`, `connection update`, `email verify` and
+`email confirm` are one line each in `cmd/entity.go`, taking the request as
+JSON the way the generated verbs do.
+
 ## Next
 
 [permissions.md](permissions.md) — what somebody may do once they are in.
