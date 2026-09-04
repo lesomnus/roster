@@ -134,6 +134,7 @@ func NewCmdEntities(c *Config) xli.Commands {
 		{"holder/invalidate", "roster.HolderService.Invalidate", "void everything issued to somebody before now"},
 		{"holder/signs-in", "roster.HolderService.SignsIn", "how somebody signs in: identities, credentials, keys"},
 		{"holder/reaches", "roster.HolderService.Reaches", "what somebody may call, from every role they hold"},
+		{"holder/search", "roster.HolderService.Search", "find people by a fragment of a name or alias, a department, an employee number"},
 		{"tenant/update", "roster.TenantService.Update", "what a customer says about itself: name, note, labels; never the alias"},
 		{"host/update", "roster.HostService.Update", "a host's note; never its name"},
 		{"mail-domain/update", "roster.MailDomainService.Update", "where a domain routes, and its note; never its name"},

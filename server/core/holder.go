@@ -2,13 +2,16 @@ package core
 
 import (
 	"context"
-	"github.com/lesomnus/payday/pdid"
+	"strings"
 	"time"
 
 	"github.com/lesomnus/z"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/lesomnus/payday/pdid"
+	sqlpage "github.com/protobuf-orm/ent/dialect/sql/sqlpage"
 
 	app "github.com/lesomnus/roster/rstr"
 )
@@ -302,4 +305,98 @@ func (s coreHolder) Reaches(ctx context.Context, req *app.HolderReachesRequest) 
 	}
 
 	return res.Build(), nil
+}
+
+// SearchPageSize is what a search answers with when it was not told, and
+// SearchPageLimit the most it will.
+const (
+	SearchPageSize  = 20
+	SearchPageLimit = 100
+)
+
+// Search reads through `List` -- the walled one, page by page -- and keeps the
+// rows that match. In memory rather than in SQL, on purpose for now: a
+// customer is an organisation and not the internet, the wall has already cut
+// the rows to one, and a predicate over three columns of a few thousand rows
+// costs less than the round trip. `holder_svc.ext.proto` says what is matched
+// and why an address is not.
+//
+// The cursor is `List`'s: the row this stopped at, encoded the way `List`
+// encodes the last row of a page, so the next call carries on after it and no
+// row is answered twice or skipped.
+func (s coreHolder) Search(ctx context.Context, req *app.HolderSearchRequest) (*app.HolderSearchResponse, error) {
+	q := strings.ToLower(strings.TrimSpace(req.GetQ()))
+	department := strings.TrimSpace(req.GetDepartment())
+	employeeNo := strings.TrimSpace(req.GetEmployeeNo())
+	if q == "" && department == "" && employeeNo == "" {
+		return nil, status.Error(codes.InvalidArgument, "q, department or employee_no: what to look for; nothing is a List")
+	}
+
+	matches := func(v *app.Holder) bool {
+		p := v.GetProfile()
+		if department != "" && !strings.EqualFold(p.GetDepartment(), department) {
+			return false
+		}
+		if employeeNo != "" && p.GetEmployeeNo() != employeeNo {
+			return false
+		}
+		if q == "" {
+			return true
+		}
+		for _, field := range []string{v.GetAlias(), v.GetName(), p.GetDisplayName()} {
+			if strings.Contains(strings.ToLower(field), q) {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	size := int(req.GetSize())
+	switch {
+	case size <= 0:
+		size = SearchPageSize
+	case size > SearchPageLimit:
+		size = SearchPageLimit
+	}
+
+	res := app.HolderSearchResponse_builder{Items: make([]*app.Holder, 0, size)}
+	after := req.GetAfter()
+	for {
+		page, err := s.Next().Holder().List(ctx, app.HolderListRequest_builder{
+			Filters: req.GetFilters(),
+			Size:    SearchPageLimit,
+			After:   after,
+		}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page.GetItems() {
+			if !matches(v) {
+				continue
+			}
+			res.Items = append(res.Items, v)
+			if len(res.Items) < size {
+				continue
+			}
+
+			id, err := pdid.From(v.GetId())
+			if err != nil {
+				return nil, err
+			}
+			next, err := sqlpage.Encode(v.GetDateCreated().AsTime(), id.Uuid())
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "next: %s", err)
+			}
+			res.Next = next
+
+			return res.Build(), nil
+		}
+
+		if page.GetNext() == "" {
+			return res.Build(), nil
+		}
+		after = page.GetNext()
+	}
 }

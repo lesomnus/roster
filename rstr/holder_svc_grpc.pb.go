@@ -32,6 +32,7 @@ const (
 	HolderService_Invalidate_FullMethodName = "/roster.HolderService/Invalidate"
 	HolderService_SignsIn_FullMethodName    = "/roster.HolderService/SignsIn"
 	HolderService_Reaches_FullMethodName    = "/roster.HolderService/Reaches"
+	HolderService_Search_FullMethodName     = "/roster.HolderService/Search"
 )
 
 // HolderServiceClient is the client API for HolderService service.
@@ -147,6 +148,19 @@ type HolderServiceClient interface {
 	// would be an object rule over a read, which is a shape roster has not taken
 	// and does not need here.
 	Reaches(ctx context.Context, in *HolderReachesRequest, opts ...grpc.CallOption) (*HolderReachesResponse, error)
+	// Search finds people by what is known about them -- a fragment of a name
+	// or an alias, a department, an employee number -- which is the question a
+	// directory answers and `List` cannot: a list filters by **where** somebody
+	// is (a tenant, a site, a team) and never by who they are.
+	//
+	// Walled and paged like `List`, and built on it: the rows a caller may see
+	// are the rows searched, so a customer's key finds nobody in another
+	// customer, and the cursor is `List`'s own, naming the last row answered.
+	// What it reads is the row -- alias, name, the profile -- and not an
+	// address: an address is looked up exactly, through `Email.Get`, because
+	// "who has this mailbox" has one answer and a fragment of one is a way to
+	// enumerate them.
+	Search(ctx context.Context, in *HolderSearchRequest, opts ...grpc.CallOption) (*HolderSearchResponse, error)
 }
 
 type holderServiceClient struct {
@@ -296,6 +310,16 @@ func (c *holderServiceClient) Reaches(ctx context.Context, in *HolderReachesRequ
 	return out, nil
 }
 
+func (c *holderServiceClient) Search(ctx context.Context, in *HolderSearchRequest, opts ...grpc.CallOption) (*HolderSearchResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HolderSearchResponse)
+	err := c.cc.Invoke(ctx, HolderService_Search_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // HolderServiceServer is the server API for HolderService service.
 // All implementations must embed UnimplementedHolderServiceServer
 // for forward compatibility.
@@ -409,6 +433,19 @@ type HolderServiceServer interface {
 	// would be an object rule over a read, which is a shape roster has not taken
 	// and does not need here.
 	Reaches(context.Context, *HolderReachesRequest) (*HolderReachesResponse, error)
+	// Search finds people by what is known about them -- a fragment of a name
+	// or an alias, a department, an employee number -- which is the question a
+	// directory answers and `List` cannot: a list filters by **where** somebody
+	// is (a tenant, a site, a team) and never by who they are.
+	//
+	// Walled and paged like `List`, and built on it: the rows a caller may see
+	// are the rows searched, so a customer's key finds nobody in another
+	// customer, and the cursor is `List`'s own, naming the last row answered.
+	// What it reads is the row -- alias, name, the profile -- and not an
+	// address: an address is looked up exactly, through `Email.Get`, because
+	// "who has this mailbox" has one answer and a fragment of one is a way to
+	// enumerate them.
+	Search(context.Context, *HolderSearchRequest) (*HolderSearchResponse, error)
 	mustEmbedUnimplementedHolderServiceServer()
 }
 
@@ -457,6 +494,9 @@ func (UnimplementedHolderServiceServer) SignsIn(context.Context, *HolderSignsInR
 }
 func (UnimplementedHolderServiceServer) Reaches(context.Context, *HolderReachesRequest) (*HolderReachesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Reaches not implemented")
+}
+func (UnimplementedHolderServiceServer) Search(context.Context, *HolderSearchRequest) (*HolderSearchResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Search not implemented")
 }
 func (UnimplementedHolderServiceServer) mustEmbedUnimplementedHolderServiceServer() {}
 func (UnimplementedHolderServiceServer) testEmbeddedByValue()                       {}
@@ -706,6 +746,24 @@ func _HolderService_Reaches_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HolderService_Search_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HolderSearchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HolderServiceServer).Search(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HolderService_Search_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HolderServiceServer).Search(ctx, req.(*HolderSearchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // HolderService_ServiceDesc is the grpc.ServiceDesc for HolderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -760,6 +818,10 @@ var HolderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Reaches",
 			Handler:    _HolderService_Reaches_Handler,
+		},
+		{
+			MethodName: "Search",
+			Handler:    _HolderService_Search_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

@@ -120,6 +120,19 @@ service HolderService {
   // would be an object rule over a read, which is a shape roster has not taken
   // and does not need here.
   rpc Reaches(HolderReachesRequest) returns (HolderReachesResponse);
+  // Search finds people by what is known about them -- a fragment of a name
+  // or an alias, a department, an employee number -- which is the question a
+  // directory answers and `List` cannot: a list filters by **where** somebody
+  // is (a tenant, a site, a team) and never by who they are.
+  //
+  // Walled and paged like `List`, and built on it: the rows a caller may see
+  // are the rows searched, so a customer's key finds nobody in another
+  // customer, and the cursor is `List`'s own, naming the last row answered.
+  // What it reads is the row -- alias, name, the profile -- and not an
+  // address: an address is looked up exactly, through `Email.Get`, because
+  // "who has this mailbox" has one answer and a fragment of one is a way to
+  // enumerate them.
+  rpc Search(HolderSearchRequest) returns (HolderSearchResponse);
 }
 
 message HolderAddRequest {
@@ -392,4 +405,30 @@ message HolderReachesResponse {
 
   // A binding with no site is the tenant's whole width.
   bool every_site = 12;
+}
+
+message HolderSearchRequest {
+  // Where to look, the way `List` is told: none is everywhere the caller may
+  // see, and a site or a team narrows to who is in it.
+  repeated HolderFilter filters = 1;
+
+  // A fragment, matched without regard to case against the alias, the name
+  // and the profile's display name. At least one of the three below must be
+  // given: a search for nothing is a `List`.
+  string q = 8;
+
+  // Exact, when given.
+  string department = 9;
+  string employee_no = 10;
+
+  // As `List` takes them: how many, and where to carry on from.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+  string after = 3 [features.field_presence = IMPLICIT];
+}
+
+message HolderSearchResponse {
+  repeated Holder items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  string next = 2 [features.field_presence = IMPLICIT];
 }
