@@ -534,7 +534,9 @@ func Cmd(c *Config) *xli.Command {
 			NewCmdAccount(c),
 		}, NewCmdEntities(c)...),
 
-		Handler: xli.Chain(pdcmd.Load(Loader, c), hal(c), xli.RequireSubcommand()),
+		// `ROSTER_ACCOUNT_KEY_<ALIAS>` is read by `roster account serve` itself
+		// (`keysFrom`), not by the loader, and is not a typo.
+		Handler: xli.Chain(pdcmd.Load(Loader, c, pdcmd.Reads("ACCOUNT_KEY_")), hal(c), xli.RequireSubcommand()),
 	}
 }
 

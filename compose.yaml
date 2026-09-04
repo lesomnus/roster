@@ -11,10 +11,6 @@
 # console is told where the admin listener is by it. The console itself is
 # `localhost` only: its cookie is `__Host-` and `Secure`, which a browser takes
 # over plain http from that name and from nowhere else.
-#
-# One line in `account`'s log says `ROSTER_ACCOUNT_KEY_CONTOSO is set and
-# nothing reads it`. It is read -- by the app, rather than by the configuration
-# loader that prints the line; see the issue on it.
 name: roster
 
 services:
