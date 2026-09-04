@@ -12,7 +12,7 @@ Four blocks matter on a first run:
 ```yaml
 db:                       # the data plane: customers, and their people
   driver: sqlite3
-  dsn: "file:roster.db?_pragma=foreign_keys(1)"
+  dsn: "file:roster.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)"
 
 server:                   # where product apps call
   addr: ":50051"
@@ -21,7 +21,7 @@ server:                   # where product apps call
 control:                  # who may call this deployment, and who runs it
   db:
     driver: sqlite3
-    dsn: "file:roster-control.db?_pragma=foreign_keys(1)"
+    dsn: "file:roster-control.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)"
   addr: "127.0.0.1:50052"
   http: { addr: "127.0.0.1:8082", allow_web: true }
 

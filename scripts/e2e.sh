@@ -53,7 +53,7 @@ admin_http="http://127.0.0.1:18072"
 cat > "${work}/roster.yaml" <<YAML
 db:
   driver: sqlite3
-  dsn: "file:${work}/roster.db?_pragma=foreign_keys(1)"
+  dsn: "file:${work}/roster.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)"
   migrate: true
 watch:
   broker: memory
@@ -65,7 +65,7 @@ server:
 control:
   db:
     driver: sqlite3
-    dsn: "file:${work}/control.db?_pragma=foreign_keys(1)"
+    dsn: "file:${work}/control.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)"
     migrate: true
   watch:
     broker: memory

@@ -16,15 +16,26 @@ roster runs twice in one process, on two databases.
 ```yaml
 db:
   driver: sqlite3
-  dsn: "file:roster.db?_pragma=foreign_keys(1)"
+  dsn: "file:roster.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)"
 
 # Who may call this deployment. Roster again: one tenant for you, a holder per
 # service, and the keys under those.
 control:
   db:
     driver: sqlite3
-    dsn: "file:roster-control.db?_pragma=foreign_keys(1)"
+    dsn: "file:roster-control.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)"
 ```
+
+Three pragmas, and each is there because leaving it out fails quietly.
+`foreign_keys` is off in SQLite unless asked, and the schema relies on it.
+`busy_timeout` is how long a connection waits for a lock before failing the
+statement; the driver's own default is a **minute**, so a lock held by another
+connection -- a shell command run against the same files while `serve` is up
+-- reads as a request that hangs rather than an error naming the statement.
+Five seconds is longer than any contention this app creates and short enough
+to see. `journal_mode(WAL)` lets readers and writers proceed together; under
+the default rollback journal a long read blocks every write. It is a property
+of the file, set once and kept.
 
 ```yaml
 control:
