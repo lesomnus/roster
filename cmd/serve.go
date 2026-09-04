@@ -28,7 +28,6 @@ import (
 	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/gate"
 	"github.com/lesomnus/payday/grpcx"
-	"github.com/lesomnus/payday/migrate"
 	"github.com/lesomnus/payday/pdpb"
 	"github.com/lesomnus/payday/spin"
 	"github.com/lesomnus/payday/trail"
@@ -49,6 +48,7 @@ import (
 	"github.com/lesomnus/roster/server/session"
 	rostersync "github.com/lesomnus/roster/server/sync"
 	"github.com/lesomnus/roster/server/vouch"
+	entschema "github.com/protobuf-orm/ent/dialect/sql/schema"
 )
 
 // Server is a built app: the database it runs on and the two stacks it answers
@@ -1397,7 +1397,7 @@ func (s *Server) ready(ctx context.Context, c config.DbConfig) error {
 		return s.Ent.Schema.Create(ctx)
 	}
 
-	return migrate.Check(ctx, s.Db, s.Dialect, entmigrate.Tables)
+	return entschema.Check(ctx, s.Db, s.Dialect, entmigrate.Tables)
 }
 
 // NewCmdServe is `<app> serve`.

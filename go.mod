@@ -31,13 +31,13 @@ require (
 	github.com/go-webauthn/webauthn v0.17.4
 	github.com/lesomnus/grpc-dgram v0.0.0-20260808164022-d993065403e1
 	github.com/lesomnus/otx v0.0.0-20260807173743-977a5687d6ba
-	github.com/lesomnus/payday v0.0.0-20260904001309-ccef54b14252
+	github.com/lesomnus/payday v0.0.0-20260904022728-e53241807d91
 	github.com/lesomnus/protobuf-patch v0.0.0-20260803175157-e1b7a0c2804f
 	github.com/lesomnus/xli v0.0.0-20260717171524-bf8cac633057
 	github.com/lesomnus/z v0.0.0-20260531102454-3f1853bb4278
-	github.com/protobuf-orm/ent v0.0.0-20260904000821-85579932411a
+	github.com/protobuf-orm/ent v0.0.0-20260904022402-7714d7267878
 	github.com/protobuf-orm/protobuf-orm v0.0.0-20260901231226-61630a70f09e
-	github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20260904001054-2dd449cab3ac
+	github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20260904022510-9ae3928a6ee4
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/otel/trace v1.45.0
 	golang.org/x/crypto v0.55.0
@@ -92,7 +92,7 @@ require (
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/protobuf-orm/protobuf-merge v0.0.0-20260901155249-39cbf4c6c20f // indirect
-	github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20260904001054-2dd449cab3ac // indirect
+	github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20260904022510-9ae3928a6ee4 // indirect
 	github.com/protobuf-orm/protoc-gen-orm-go v0.0.0-20260902050928-f009a17817c6 // indirect
 	github.com/protobuf-orm/protoc-gen-orm-service v0.0.0-20260901155246-12064a5a7fa8 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
