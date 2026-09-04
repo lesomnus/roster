@@ -141,6 +141,12 @@ type Server struct {
 	// where this deployment has no way to know.
 	Breached vouch.Breached
 
+	// Lockout and Password are `vouch:`'s numbers with the defaults filled
+	// in, for every server built beside this one -- the admin port, the
+	// sandbox -- to serve with the same rules.
+	Lockout  vouch.Lockout
+	Password core.Password
+
 	// Sessions is the console's cookie: the endpoint that mints one and the
 	// handler that reads it back. Nil where there is no control plane, since
 	// the people who sign in are its holders and there would be nobody to be.
@@ -332,6 +338,9 @@ func build(ctx context.Context, c Config, prefix string) (*Server, error) {
 
 	// Read here rather than where it is used, so that a deployment whose keys
 	// are malformed finds out when it starts rather than when somebody enrols.
+	lockout := vouch.Lockout{Failures: c.Vouch.Lockout.Failures, For: c.Vouch.Lockout.For}.Or(vouch.DefaultLockout)
+	password := core.Password{MinLength: c.Vouch.Password.MinLength, NoReuse: c.Vouch.Password.NoReuse}.Or()
+
 	keyring, err := vouch.NewKeyring(c.Vouch.Keys)
 	if err != nil {
 		db.Close()
@@ -351,7 +360,7 @@ func build(ctx context.Context, c Config, prefix string) (*Server, error) {
 	// What keeps it out of the **trail** is not this layer -- the recorder is
 	// behind every layer -- but the declaration on the field, which the recorder
 	// reads for itself. See `Credential.secret`.
-	stacked, err := app.Build(walled.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix)), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
+	stacked, err := app.Build(walled.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password)), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -366,7 +375,7 @@ func build(ctx context.Context, c Config, prefix string) (*Server, error) {
 	// what this app means -- an identity linked by `init` or by an admin console
 	// is still an identity, and a subject that is an email address is still
 	// wrong.
-	ungated, err := app.Build(sink.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix)), pd.AuditBuild())
+	ungated, err := app.Build(sink.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password)), pd.AuditBuild())
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -374,7 +383,7 @@ func build(ctx context.Context, c Config, prefix string) (*Server, error) {
 
 	s := &Server{
 		Db: db, Ent: client, Drv: drv, Dialect: dialect, Watch: w, sink: sink,
-		Walled: stacked, Ungated: ungated, Keyring: keyring, Breached: leaked,
+		Walled: stacked, Ungated: ungated, Keyring: keyring, Breached: leaked, Lockout: lockout, Password: password,
 	}
 
 	// The control plane: roster again, on its own database, holding keys rather
@@ -729,7 +738,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// The rule about who may write whose credential travels with the service,
 	// because `VouchService` is hand-written and no layer wraps it. Same rules
 	// the gate reads, handed over rather than asked for a second time.
-	app.RegisterVouchServiceServer(g, vouch.New(s.Ungated, s.Walled,
+	app.RegisterVouchServiceServer(g, vouch.New(s.Ungated, s.Walled, vouch.WithLockout(s.Lockout),
 		vouch.WithKeys(s.Keyring)))
 
 	// What a front door asks before it knows anything, and therefore through

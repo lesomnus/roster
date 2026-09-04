@@ -303,7 +303,7 @@ func TestADelegationThatDoesNotCheckOutIsNotTheAppInstead(t *testing.T) {
 
 	for _, tc := range []struct{ desc, as string }{
 		{"a delegation nobody minted", "rd_nothing-anybody-ever-wrote-down"},
-		{"a string that is not one at all", "hunter2"},
+		{"a string that is not one at all", "hunter2hunter2"},
 		{"one another app was issued", signed.GetToken()},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {

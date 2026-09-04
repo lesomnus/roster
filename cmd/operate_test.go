@@ -303,7 +303,7 @@ func TestASecretSomebodyHasLostIsRefused(t *testing.T) {
 	// beside it: `Credential.Set` reads it through the same layer every write
 	// goes through. So it is named in the config and written before the build
 	// that loads and sorts it.
-	sum := sha1.Sum([]byte("hunter2"))
+	sum := sha1.Sum([]byte("hunter2hunter2"))
 	at := filepath.Join(t.TempDir(), "leaked.txt")
 	x.NoError(os.WriteFile(at,
 		[]byte(strings.ToUpper(hex.EncodeToString(sum[:]))+":12\n"), 0o600))
@@ -321,7 +321,7 @@ func TestASecretSomebodyHasLostIsRefused(t *testing.T) {
 
 	// `FailedPrecondition` rather than `InvalidArgument`: there is nothing
 	// wrong with the request, the world changed under the value in it.
-	x.Equal(codes.FailedPrecondition, status.Code(set("hunter2")))
+	x.Equal(codes.FailedPrecondition, status.Code(set("hunter2hunter2")))
 	x.NoError(set("correct horse battery staple"))
 
 	// And a generated one is checked too, because nothing about being generated
@@ -348,7 +348,7 @@ func TestASecretSomebodyHasLostIsRefused(t *testing.T) {
 		nb, nctx := build(t)
 		_, err := nb.Ungated.Credential().Set(nctx, app.CredentialSetRequest_builder{
 			Ref:    app.HolderRef_builder{Id: nb.ContosoUser.Bytes()}.Build(),
-			Secret: []byte("hunter2"),
+			Secret: []byte("hunter2hunter2"),
 		}.Build())
 		x.NoError(err)
 	})

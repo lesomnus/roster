@@ -262,7 +262,7 @@ tenant.
 
 ```sh
 docker compose up --build
-# http://localhost:8082/console/   admin / admin
+# http://localhost:8082/console/   admin / admin-admin
 # http://localhost:8090/           erin / correct horse battery staple
 ```
 
@@ -276,7 +276,7 @@ it unchanged:
 
 ```sh
 E2E_CONSOLE=http://localhost:8082/console/ E2E_ACCOUNT=http://localhost:8090 \
-E2E_OPS_USER=admin E2E_OPS_PASSWORD=admin npx --prefix ts playwright test console account
+E2E_OPS_USER=admin E2E_OPS_PASSWORD=admin-admin npx --prefix ts playwright test console account
 ```
 
 For hot reload on a page, point a dev server at it instead -- the stack
@@ -306,7 +306,7 @@ entrypoint and not by the CLI:
 | | |
 | --- | --- |
 | `ROSTER_ROOT_USER` | `admin` |
-| `ROSTER_ROOT_PASSWORD` | `admin` |
+| `ROSTER_ROOT_PASSWORD` | `admin-admin` — eight characters is the floor a password has |
 
 `roster init` takes no `--password` flag and will not grow one — an argument is
 in the shell history and in the process list, which is why `roster key add` will
@@ -336,7 +336,7 @@ npm --prefix ts run dev            # against a running roster
 `dev:sandbox` compiles the whole server into the page — `GOOS=js GOARCH=wasm`,
 SQLite in a Worker, a message port instead of HTTP/2. A reload is a fresh
 deployment: new databases, seeded again by `cmd.Seed`, nothing left over. It
-signs in as `ops` with the password `sandbox`, and has one customer, `contoso`.
+signs in as `ops` with the password `sandboxed` (eight characters is the floor a password has, and this is one), and has one customer, `contoso`.
 
 It is one instance serving **two servers**, because the console reaches two
 listeners: `control.http` — the deployment screen, the sign-in — and
@@ -1106,9 +1106,41 @@ Named and it is a **refusal**: `Credential.Set` and `Vouch.Reset` answer
 `FailedPrecondition` and the person picks again. Unnamed and nothing is checked,
 which is every deployment that has not said otherwise.
 
-Two things it is not. It is not a length or complexity rule — those are policy
-and stay with whoever collects the password. And it is not advisory: a check
-whose result is advice is a check nobody acts on.
+It is not advisory: a check whose result is advice is a check nobody acts on.
+
+### What a password has to be, and how many wrong ones close the door
+
+```yaml
+vouch:
+  lockout:
+    failures: 10        # wrong answers in a row that close an account
+    for: 15m            # and for how long
+  password:
+    min_length: 8       # the fewest characters taken
+    no_reuse: 0         # former passwords refused; 0 keeps none
+```
+
+Those are the defaults, so a file that says nothing gets them. All three are
+checked by roster and nowhere else, because only roster sees a password:
+`Credential.Set` refuses a short one whoever calls it — the console, the
+account app, `roster vouch set` — and the lockout counts on the credential row,
+so a wrong sign-in and a wrong *current* password on a change count together.
+A second factor's wrong answers count against the first, since passing the
+first is what an attacker does once.
+
+There is no composition rule — an uppercase, a digit, a symbol — on purpose: the
+guidance that once asked for those (NIST 800-63B) now asks not to, since they
+make a password harder to remember and not harder to guess. The corpus above
+and a length are what it recommends. And there is no "never lock": an account
+that cannot be locked can be guessed at forever, and a deployment that wants
+that writes a number large enough to say so.
+
+`no_reuse` is off by default for the same reason: the same guidance does not
+recommend it, and enough regulation requires it to make it a setting. On, the
+last *n* verifiers are kept beside the current one — verifiers, off the wire and
+out of the trail as `secret` is — and a new password is compared against each
+the way a sign-in compares, which is what it costs: one slow hash per
+remembered password, on a change and nowhere else.
 
 The order is verified once at startup rather than trusted. A file that is not
 sorted answers *no* to things that are in it, which is the quiet direction in

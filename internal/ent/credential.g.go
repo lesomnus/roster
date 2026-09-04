@@ -30,6 +30,7 @@ func (e *Credential) Proto() *rstr.Credential {
 		x.SetDateRotated(timestamppb.New(*e.DateRotated))
 	}
 	x.SetLastStep(e.LastStep)
+	x.SetPrevious(e.Previous)
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))

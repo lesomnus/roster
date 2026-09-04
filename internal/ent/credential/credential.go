@@ -26,6 +26,8 @@ const (
 	FieldDateRotated = "date_rotated"
 	// FieldLastStep holds the string denoting the last_step field in the database.
 	FieldLastStep = "last_step"
+	// FieldPrevious holds the string denoting the previous field in the database.
+	FieldPrevious = "previous"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
@@ -57,6 +59,7 @@ var Columns = []string{
 	FieldDateLocked,
 	FieldDateRotated,
 	FieldLastStep,
+	FieldPrevious,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,

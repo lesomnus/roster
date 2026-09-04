@@ -15,24 +15,26 @@ import (
 
 // Mutation represents an operation that mutates the Credential nodes in the graph.
 type Mutation struct {
-	op            ent.Op
-	typ           string
-	name          *string
-	kind          *string
-	secret        *[]byte
-	failures      *int32
-	addfailures   *int32
-	date_locked   *time.Time
-	date_rotated  *time.Time
-	last_step     *int64
-	addlast_step  *int64
-	date_updated  *time.Time
-	date_erased   *time.Time
-	date_created  *time.Time
-	clearedFields map[string]struct{}
-	holder        *uuid.UUID
-	clearedholder bool
-	predicates    []predicate.Credential
+	op             ent.Op
+	typ            string
+	name           *string
+	kind           *string
+	secret         *[]byte
+	failures       *int32
+	addfailures    *int32
+	date_locked    *time.Time
+	date_rotated   *time.Time
+	last_step      *int64
+	addlast_step   *int64
+	previous       *[][]uint8
+	appendprevious [][]uint8
+	date_updated   *time.Time
+	date_erased    *time.Time
+	date_created   *time.Time
+	clearedFields  map[string]struct{}
+	holder         *uuid.UUID
+	clearedholder  bool
+	predicates     []predicate.Credential
 }
 
 // NewMutation creates a new Mutation for the Credential entity.
@@ -248,6 +250,54 @@ func (m *Mutation) ResetLastStep() {
 	m.addlast_step = nil
 }
 
+// SetPrevious sets the "previous" field.
+func (m *Mutation) SetPrevious(u [][]uint8) {
+	m.previous = &u
+	m.appendprevious = nil
+}
+
+// Previous returns the value of the "previous" field in the mutation.
+func (m *Mutation) Previous() (r [][]uint8, exists bool) {
+	v := m.previous
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// AppendPrevious adds u to the "previous" field.
+func (m *Mutation) AppendPrevious(u [][]uint8) {
+	m.appendprevious = append(m.appendprevious, u...)
+}
+
+// AppendedPrevious returns the list of values that were appended to the "previous" field in this mutation.
+func (m *Mutation) AppendedPrevious() ([][]uint8, bool) {
+	if len(m.appendprevious) == 0 {
+		return nil, false
+	}
+	return m.appendprevious, true
+}
+
+// ClearPrevious clears the value of the "previous" field.
+func (m *Mutation) ClearPrevious() {
+	m.previous = nil
+	m.appendprevious = nil
+	m.clearedFields[FieldPrevious] = struct{}{}
+}
+
+// PreviousCleared returns if the "previous" field was cleared in this mutation.
+func (m *Mutation) PreviousCleared() bool {
+	_, ok := m.clearedFields[FieldPrevious]
+	return ok
+}
+
+// ResetPrevious resets all changes to the "previous" field.
+func (m *Mutation) ResetPrevious() {
+	m.previous = nil
+	m.appendprevious = nil
+	delete(m.clearedFields, FieldPrevious)
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (m *Mutation) SetDateUpdated(t time.Time) {
 	m.date_updated = &t
@@ -411,7 +461,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 12)
 	if m.name != nil {
 		fields = append(fields, FieldName)
 	}
@@ -432,6 +482,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.last_step != nil {
 		fields = append(fields, FieldLastStep)
+	}
+	if m.previous != nil {
+		fields = append(fields, FieldPrevious)
 	}
 	if m.date_updated != nil {
 		fields = append(fields, FieldDateUpdated)
@@ -467,6 +520,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.DateRotated()
 	case FieldLastStep:
 		return m.LastStep()
+	case FieldPrevious:
+		return m.Previous()
 	case FieldDateUpdated:
 		return m.DateUpdated()
 	case FieldDateErased:
@@ -539,6 +594,13 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetLastStep(v)
+		return nil
+	case FieldPrevious:
+		v, ok := value.([][]uint8)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPrevious(v)
 		return nil
 	case FieldDateUpdated:
 		v, ok := value.(time.Time)
@@ -631,6 +693,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldDateRotated) {
 		fields = append(fields, FieldDateRotated)
 	}
+	if m.FieldCleared(FieldPrevious) {
+		fields = append(fields, FieldPrevious)
+	}
 	if m.FieldCleared(FieldDateErased) {
 		fields = append(fields, FieldDateErased)
 	}
@@ -656,6 +721,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldDateRotated:
 		m.ClearDateRotated()
+		return nil
+	case FieldPrevious:
+		m.ClearPrevious()
 		return nil
 	case FieldDateErased:
 		m.ClearDateErased()
@@ -691,6 +759,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldLastStep:
 		m.ResetLastStep()
+		return nil
+	case FieldPrevious:
+		m.ResetPrevious()
 		return nil
 	case FieldDateUpdated:
 		m.ResetDateUpdated()

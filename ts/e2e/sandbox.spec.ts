@@ -11,7 +11,7 @@ test('the sandbox signs in, and its second server stands a customer up', async (
 	test.setTimeout(120_000)
 	await page.goto(base)
 	await page.locator('input[name=alias]').fill('ops')
-	await page.locator('input[name=password]').fill('sandbox')
+	await page.locator('input[name=password]').fill('sandboxed')
 	// The instance compiles and seeds on first paint; the form is up before it
 	// is, and a click before the entry point is published is queued rather
 	// than lost. Give the compile the time it takes.

@@ -81,6 +81,12 @@ func (_c *CredentialCreate) SetLastStep(v int64) *CredentialCreate {
 	return _c
 }
 
+// SetPrevious sets the "previous" field.
+func (_c *CredentialCreate) SetPrevious(v [][]uint8) *CredentialCreate {
+	_c.mutation.SetPrevious(v)
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *CredentialCreate) SetDateUpdated(v time.Time) *CredentialCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -256,6 +262,10 @@ func (_c *CredentialCreate) createSpec() (*Credential, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.LastStep(); ok {
 		_spec.SetField(credential.FieldLastStep, field.TypeInt64, value)
 		_node.LastStep = value
+	}
+	if value, ok := _c.mutation.Previous(); ok {
+		_spec.SetField(credential.FieldPrevious, field.TypeJson, value)
+		_node.Previous = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(credential.FieldDateUpdated, field.TypeTime, value)

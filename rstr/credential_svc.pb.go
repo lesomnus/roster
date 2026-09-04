@@ -33,6 +33,7 @@ type CredentialAddRequest struct {
 	xxx_hidden_DateLocked  *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_locked,json=dateLocked"`
 	xxx_hidden_DateRotated *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_rotated,json=dateRotated"`
 	xxx_hidden_LastStep    int64                  `protobuf:"varint,16,opt,name=last_step,json=lastStep"`
+	xxx_hidden_Previous    [][]byte               `protobuf:"bytes,17,rep,name=previous"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
@@ -128,6 +129,13 @@ func (x *CredentialAddRequest) GetLastStep() int64 {
 	return 0
 }
 
+func (x *CredentialAddRequest) GetPrevious() [][]byte {
+	if x != nil {
+		return x.xxx_hidden_Previous
+	}
+	return nil
+}
+
 func (x *CredentialAddRequest) GetDateCreated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateCreated
@@ -140,7 +148,7 @@ func (x *CredentialAddRequest) SetId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 11)
 }
 
 func (x *CredentialAddRequest) SetHolder(v *HolderRef) {
@@ -176,6 +184,10 @@ func (x *CredentialAddRequest) SetDateRotated(v *timestamppb.Timestamp) {
 
 func (x *CredentialAddRequest) SetLastStep(v int64) {
 	x.xxx_hidden_LastStep = v
+}
+
+func (x *CredentialAddRequest) SetPrevious(v [][]byte) {
+	x.xxx_hidden_Previous = v
 }
 
 func (x *CredentialAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
@@ -250,6 +262,7 @@ type CredentialAddRequest_builder struct {
 	DateLocked  *timestamppb.Timestamp
 	DateRotated *timestamppb.Timestamp
 	LastStep    int64
+	Previous    [][]byte
 	DateCreated *timestamppb.Timestamp
 }
 
@@ -258,7 +271,7 @@ func (b0 CredentialAddRequest_builder) Build() *CredentialAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 11)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Holder = b.Holder
@@ -269,6 +282,7 @@ func (b0 CredentialAddRequest_builder) Build() *CredentialAddRequest {
 	x.xxx_hidden_DateLocked = b.DateLocked
 	x.xxx_hidden_DateRotated = b.DateRotated
 	x.xxx_hidden_LastStep = b.LastStep
+	x.xxx_hidden_Previous = b.Previous
 	x.xxx_hidden_DateCreated = b.DateCreated
 	return m0
 }
@@ -683,6 +697,7 @@ type CredentialSelect struct {
 	xxx_hidden_DateLocked  bool                   `protobuf:"varint,11,opt,name=date_locked,json=dateLocked"`
 	xxx_hidden_DateRotated bool                   `protobuf:"varint,12,opt,name=date_rotated,json=dateRotated"`
 	xxx_hidden_LastStep    bool                   `protobuf:"varint,16,opt,name=last_step,json=lastStep"`
+	xxx_hidden_Previous    bool                   `protobuf:"varint,17,opt,name=previous"`
 	xxx_hidden_DateUpdated bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
@@ -780,6 +795,13 @@ func (x *CredentialSelect) GetLastStep() bool {
 	return false
 }
 
+func (x *CredentialSelect) GetPrevious() bool {
+	if x != nil {
+		return x.xxx_hidden_Previous
+	}
+	return false
+}
+
 func (x *CredentialSelect) GetDateUpdated() bool {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -803,7 +825,7 @@ func (x *CredentialSelect) GetDateCreated() bool {
 
 func (x *CredentialSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 13)
 }
 
 func (x *CredentialSelect) SetHolder(v *HolderSelect) {
@@ -812,52 +834,57 @@ func (x *CredentialSelect) SetHolder(v *HolderSelect) {
 
 func (x *CredentialSelect) SetName(v bool) {
 	x.xxx_hidden_Name = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 13)
 }
 
 func (x *CredentialSelect) SetKind(v bool) {
 	x.xxx_hidden_Kind = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 13)
 }
 
 func (x *CredentialSelect) SetSecret(v bool) {
 	x.xxx_hidden_Secret = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 13)
 }
 
 func (x *CredentialSelect) SetFailures(v bool) {
 	x.xxx_hidden_Failures = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 13)
 }
 
 func (x *CredentialSelect) SetDateLocked(v bool) {
 	x.xxx_hidden_DateLocked = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 13)
 }
 
 func (x *CredentialSelect) SetDateRotated(v bool) {
 	x.xxx_hidden_DateRotated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 13)
 }
 
 func (x *CredentialSelect) SetLastStep(v bool) {
 	x.xxx_hidden_LastStep = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 13)
+}
+
+func (x *CredentialSelect) SetPrevious(v bool) {
+	x.xxx_hidden_Previous = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 13)
 }
 
 func (x *CredentialSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 13)
 }
 
 func (x *CredentialSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 13)
 }
 
 func (x *CredentialSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 13)
 }
 
 func (x *CredentialSelect) HasAll() bool {
@@ -923,25 +950,32 @@ func (x *CredentialSelect) HasLastStep() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
 }
 
-func (x *CredentialSelect) HasDateUpdated() bool {
+func (x *CredentialSelect) HasPrevious() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
 }
 
-func (x *CredentialSelect) HasDateErased() bool {
+func (x *CredentialSelect) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
 }
 
-func (x *CredentialSelect) HasDateCreated() bool {
+func (x *CredentialSelect) HasDateErased() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
+}
+
+func (x *CredentialSelect) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 12)
 }
 
 func (x *CredentialSelect) ClearAll() {
@@ -988,18 +1022,23 @@ func (x *CredentialSelect) ClearLastStep() {
 	x.xxx_hidden_LastStep = false
 }
 
-func (x *CredentialSelect) ClearDateUpdated() {
+func (x *CredentialSelect) ClearPrevious() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
+	x.xxx_hidden_Previous = false
+}
+
+func (x *CredentialSelect) ClearDateUpdated() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
 	x.xxx_hidden_DateUpdated = false
 }
 
 func (x *CredentialSelect) ClearDateErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
 	x.xxx_hidden_DateErased = false
 }
 
 func (x *CredentialSelect) ClearDateCreated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 12)
 	x.xxx_hidden_DateCreated = false
 }
 
@@ -1015,6 +1054,7 @@ type CredentialSelect_builder struct {
 	DateLocked  *bool
 	DateRotated *bool
 	LastStep    *bool
+	Previous    *bool
 	DateUpdated *bool
 	DateErased  *bool
 	DateCreated *bool
@@ -1025,48 +1065,52 @@ func (b0 CredentialSelect_builder) Build() *CredentialSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 13)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Holder = b.Holder
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 13)
 		x.xxx_hidden_Name = *b.Name
 	}
 	if b.Kind != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 13)
 		x.xxx_hidden_Kind = *b.Kind
 	}
 	if b.Secret != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 13)
 		x.xxx_hidden_Secret = *b.Secret
 	}
 	if b.Failures != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 13)
 		x.xxx_hidden_Failures = *b.Failures
 	}
 	if b.DateLocked != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 13)
 		x.xxx_hidden_DateLocked = *b.DateLocked
 	}
 	if b.DateRotated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 13)
 		x.xxx_hidden_DateRotated = *b.DateRotated
 	}
 	if b.LastStep != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 13)
 		x.xxx_hidden_LastStep = *b.LastStep
 	}
+	if b.Previous != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 13)
+		x.xxx_hidden_Previous = *b.Previous
+	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 13)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 13)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 13)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	return m0
@@ -1084,6 +1128,7 @@ type CredentialPatchRequest struct {
 	xxx_hidden_DateRotated      *timestamppb.Timestamp `protobuf:"bytes,24,opt,name=date_rotated,json=dateRotated"`
 	xxx_hidden_DateRotatedNull  bool                   `protobuf:"varint,25,opt,name=date_rotated_null,json=dateRotatedNull"`
 	xxx_hidden_LastStep         int64                  `protobuf:"varint,32,opt,name=last_step,json=lastStep"`
+	xxx_hidden_Previous         [][]byte               `protobuf:"bytes,34,rep,name=previous"`
 	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateUpdatedForce bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
 	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
@@ -1193,6 +1238,13 @@ func (x *CredentialPatchRequest) GetLastStep() int64 {
 	return 0
 }
 
+func (x *CredentialPatchRequest) GetPrevious() [][]byte {
+	if x != nil {
+		return x.xxx_hidden_Previous
+	}
+	return nil
+}
+
 func (x *CredentialPatchRequest) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -1213,12 +1265,12 @@ func (x *CredentialPatchRequest) SetRef(v *CredentialRef) {
 
 func (x *CredentialPatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 13)
 }
 
 func (x *CredentialPatchRequest) SetKind(v string) {
 	x.xxx_hidden_Kind = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 13)
 }
 
 func (x *CredentialPatchRequest) SetSecret(v []byte) {
@@ -1226,12 +1278,12 @@ func (x *CredentialPatchRequest) SetSecret(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Secret = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 13)
 }
 
 func (x *CredentialPatchRequest) SetFailures(v int32) {
 	x.xxx_hidden_Failures = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 13)
 }
 
 func (x *CredentialPatchRequest) SetDateLocked(v *timestamppb.Timestamp) {
@@ -1240,7 +1292,7 @@ func (x *CredentialPatchRequest) SetDateLocked(v *timestamppb.Timestamp) {
 
 func (x *CredentialPatchRequest) SetDateLockedNull(v bool) {
 	x.xxx_hidden_DateLockedNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 13)
 }
 
 func (x *CredentialPatchRequest) SetDateRotated(v *timestamppb.Timestamp) {
@@ -1249,12 +1301,16 @@ func (x *CredentialPatchRequest) SetDateRotated(v *timestamppb.Timestamp) {
 
 func (x *CredentialPatchRequest) SetDateRotatedNull(v bool) {
 	x.xxx_hidden_DateRotatedNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 13)
 }
 
 func (x *CredentialPatchRequest) SetLastStep(v int64) {
 	x.xxx_hidden_LastStep = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 13)
+}
+
+func (x *CredentialPatchRequest) SetPrevious(v [][]byte) {
+	x.xxx_hidden_Previous = v
 }
 
 func (x *CredentialPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -1263,7 +1319,7 @@ func (x *CredentialPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *CredentialPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 13)
 }
 
 func (x *CredentialPatchRequest) HasRef() bool {
@@ -1347,7 +1403,7 @@ func (x *CredentialPatchRequest) HasDateUpdatedForce() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 12)
 }
 
 func (x *CredentialPatchRequest) ClearRef() {
@@ -1402,7 +1458,7 @@ func (x *CredentialPatchRequest) ClearDateUpdated() {
 }
 
 func (x *CredentialPatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 12)
 	x.xxx_hidden_DateUpdatedForce = false
 }
 
@@ -1427,6 +1483,7 @@ type CredentialPatchRequest_builder struct {
 	// outright: setting both this and date_rotated clears.
 	DateRotatedNull *bool
 	LastStep        *int64
+	Previous        [][]byte
 	// The version this update requires the stored date_updated to be.
 	// It is a precondition, not a write: the update applies only if the row
 	// still holds this value, and the server stamps the new version itself.
@@ -1449,38 +1506,39 @@ func (b0 CredentialPatchRequest_builder) Build() *CredentialPatchRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 13)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Kind != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 13)
 		x.xxx_hidden_Kind = b.Kind
 	}
 	if b.Secret != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 13)
 		x.xxx_hidden_Secret = b.Secret
 	}
 	if b.Failures != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 13)
 		x.xxx_hidden_Failures = *b.Failures
 	}
 	x.xxx_hidden_DateLocked = b.DateLocked
 	if b.DateLockedNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 13)
 		x.xxx_hidden_DateLockedNull = *b.DateLockedNull
 	}
 	x.xxx_hidden_DateRotated = b.DateRotated
 	if b.DateRotatedNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 13)
 		x.xxx_hidden_DateRotatedNull = *b.DateRotatedNull
 	}
 	if b.LastStep != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 13)
 		x.xxx_hidden_LastStep = *b.LastStep
 	}
+	x.xxx_hidden_Previous = b.Previous
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 13)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	return m0
@@ -2797,7 +2855,7 @@ var File_app_credential_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_credential_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1aapp/credential_svc.g.proto\x12\x06roster\x1a\x14app/credential.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xa8\x03\n" +
+	"\x1aapp/credential_svc.g.proto\x12\x06roster\x1a\x14app/credential.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xc4\x03\n" +
 	"\x14CredentialAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x19\n" +
@@ -2809,7 +2867,8 @@ const file_app_credential_svc_g_proto_rawDesc = "" +
 	"\vdate_locked\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"dateLocked\x12=\n" +
 	"\fdate_rotated\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\vdateRotated\x12\"\n" +
-	"\tlast_step\x18\x10 \x01(\x03B\x05\xaa\x01\x02\b\x02R\blastStep\x12=\n" +
+	"\tlast_step\x18\x10 \x01(\x03B\x05\xaa\x01\x02\b\x02R\blastStep\x12\x1a\n" +
+	"\bprevious\x18\x11 \x03(\fR\bprevious\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"q\n" +
 	"\x14CredentialGetRequest\x12'\n" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.CredentialRefR\x03ref\x120\n" +
@@ -2821,7 +2880,7 @@ const file_app_credential_svc_g_proto_rawDesc = "" +
 	"\x13CredentialRefByKind\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x12\n" +
 	"\x04kind\x18\b \x01(\tR\x04kind\x12\x12\n" +
-	"\x04name\x18\x05 \x01(\tR\x04name\"\xf6\x02\n" +
+	"\x04name\x18\x05 \x01(\tR\x04name\"\x92\x03\n" +
 	"\x10CredentialSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
 	"\x06holder\x18\x02 \x01(\v2\x14.roster.HolderSelectR\x06holder\x12\x12\n" +
@@ -2833,11 +2892,12 @@ const file_app_credential_svc_g_proto_rawDesc = "" +
 	"\vdate_locked\x18\v \x01(\bR\n" +
 	"dateLocked\x12!\n" +
 	"\fdate_rotated\x18\f \x01(\bR\vdateRotated\x12\x1b\n" +
-	"\tlast_step\x18\x10 \x01(\bR\blastStep\x12!\n" +
+	"\tlast_step\x18\x10 \x01(\bR\blastStep\x12\x1a\n" +
+	"\bprevious\x18\x11 \x01(\bR\bprevious\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xf9\x03\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\x95\x04\n" +
 	"\x16CredentialPatchRequest\x12'\n" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.CredentialRefR\x03ref\x12\x12\n" +
 	"\x04name\x18\n" +
@@ -2850,7 +2910,8 @@ const file_app_credential_svc_g_proto_rawDesc = "" +
 	"\x10date_locked_null\x18\x17 \x01(\bR\x0edateLockedNull\x12=\n" +
 	"\fdate_rotated\x18\x18 \x01(\v2\x1a.google.protobuf.TimestampR\vdateRotated\x12*\n" +
 	"\x11date_rotated_null\x18\x19 \x01(\bR\x0fdateRotatedNull\x12\x1b\n" +
-	"\tlast_step\x18  \x01(\x03R\blastStep\x12=\n" +
+	"\tlast_step\x18  \x01(\x03R\blastStep\x12\x1a\n" +
+	"\bprevious\x18\" \x03(\fR\bprevious\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"e\n" +
 	"\x16CredentialApplyRequest\x12'\n" +

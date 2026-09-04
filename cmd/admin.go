@@ -85,6 +85,8 @@ func Admin(s *Server) (app.Server, error) {
 		core.Build(adminRules(s),
 			core.WithBreached(core.Breached(s.Breached)),
 			core.WithKeyring(s.Keyring),
+			core.WithLockout(s.Lockout),
+			core.WithPassword(s.Password),
 
 			// The data plane's kind: the admin port mints `rt_` for a customer's
 			// person, the same key that plane serves through `MeService`.
@@ -390,7 +392,7 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 	// the vouch server below carries only the keyring, and the corpus is
 	// `core`'s on both planes -- one wire rather than three.
 	app.RegisterVouchServiceServer(g, vouch.New(admin, admin,
-		vouch.WithKeys(s.Keyring)))
+		vouch.WithKeys(s.Keyring), vouch.WithLockout(s.Lockout)))
 
 	// Minting a key for one of a customer's people is `ApiKey.Issue` now, and
 	// `register` above already served it on this port -- the same `rt_`, on the

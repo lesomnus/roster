@@ -78,7 +78,7 @@ import (
 // servers, it is inside the page, and it is gone on reload.
 const (
 	operator = "ops"
-	password = "sandbox"
+	password = "sandboxed"
 
 	// AdminEntryPoint is the name the admin server is published under, and
 	// what `ts/console/main.tsx` dials for the customers screen.
@@ -189,7 +189,7 @@ func main() {
 		),
 	)
 	cmd.Register(asrv, admin)
-	app.RegisterVouchServiceServer(asrv, vouch.New(admin, admin, vouch.WithKeys(s.Keyring)))
+	app.RegisterVouchServiceServer(asrv, vouch.New(admin, admin, vouch.WithKeys(s.Keyring), vouch.WithLockout(s.Lockout)))
 
 	// Publishing the first entry point is the readiness signal, so nothing may
 	// be published before the registration above is done. The second may come

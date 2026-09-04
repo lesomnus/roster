@@ -147,7 +147,7 @@ func TestTheCliIsNotADoorPastTheCorpus(t *testing.T) {
 	ctx := t.Context()
 
 	c := seedbed(t)
-	c.Vouch.Breached = leakedCorpus(t, "hunter2")
+	c.Vouch.Breached = leakedCorpus(t, "hunter2hunter2")
 
 	out, err := initRun(t, c)
 	x.NoError(err, "init: %s", out)
@@ -159,7 +159,7 @@ func TestTheCliIsNotADoorPastTheCorpus(t *testing.T) {
 	customer(t, s, "newco", "admin")
 	x.NoError(s.Close())
 
-	err = piped(t, "hunter2", cmd.NewCmdVouch(&c), "set", "--password-stdin", "@newco/admin")
+	err = piped(t, "hunter2hunter2", cmd.NewCmdVouch(&c), "set", "--password-stdin", "@newco/admin")
 	x.Error(err, "a shell stored a password this deployment refuses everywhere else")
 
 	// `FailedPrecondition` rather than `InvalidArgument`, as everywhere else:

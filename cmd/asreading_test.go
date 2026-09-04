@@ -723,7 +723,7 @@ func TestNoRefusalSaysWhoIsHere(t *testing.T) {
 
 	const (
 		right = "correct horse battery staple"
-		wrong = "hunter2"
+		wrong = "hunter2hunter2"
 	)
 
 	_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{

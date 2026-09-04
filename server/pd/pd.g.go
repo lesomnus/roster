@@ -7798,7 +7798,7 @@ func hidden(key pdid.Id, p *patchpb.Patch) *patchpb.Patch {
 	case ContinuationDomain:
 		secret = []uint32{9}
 	case CredentialDomain:
-		secret = []uint32{9}
+		secret = []uint32{9, 17}
 	case DelegationDomain:
 		secret = []uint32{9}
 	case LinkDomain:
@@ -9417,6 +9417,7 @@ func hideCredential(v *rstr.Credential) *rstr.Credential {
 	}
 
 	v.SetSecret(nil)
+	v.SetPrevious(nil)
 
 	return v
 }

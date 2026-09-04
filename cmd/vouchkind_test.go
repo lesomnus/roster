@@ -53,7 +53,7 @@ func TestAKindNothingChecksIsRefusedBeforeAnybodyIsLookedFor(t *testing.T) {
 		_, err := v.Verify(ctx, app.VouchVerifyRequest_builder{
 			Who:    app.VouchWho_builder{Tenant: "contoso", Address: address}.Build(),
 			Kind:   kind,
-			Secret: []byte("hunter2"),
+			Secret: []byte("hunter2hunter2"),
 		}.Build())
 
 		return err

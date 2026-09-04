@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/credential.proto.
  */
 export const file_app_credential: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcHAvY3JlZGVudGlhbC5wcm90bxIGcm9zdGVyIvAECgpDcmVkZW50aWFsEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESDAoEbmFtZRgFIAEoCRIMCgRraW5kGAggASgJEhYKBnNlY3JldBgJIAEoDEIGqsEWAggBEhAKCGZhaWx1cmVzGAogASgFEjcKC2RhdGVfbG9ja2VkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBEjgKDGRhdGVfcm90YXRlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARIRCglsYXN0X3N0ZXAYECABKAMSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOqIByvwVUBICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGigSBGtpbmQaCgoGaG9sZGVyEAIaCAoEa2luZBAIGggKBG5hbWUQBTABirsWSggNMjMKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmGggKBmhvbGRlciAUKGQ6ACIPCg1ob2xkZXIudGVuYW50QiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChRhcHAvY3JlZGVudGlhbC5wcm90bxIGcm9zdGVyIooFCgpDcmVkZW50aWFsEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESDAoEbmFtZRgFIAEoCRIMCgRraW5kGAggASgJEhYKBnNlY3JldBgJIAEoDEIGqsEWAggBEhAKCGZhaWx1cmVzGAogASgFEjcKC2RhdGVfbG9ja2VkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBEjgKDGRhdGVfcm90YXRlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARIRCglsYXN0X3N0ZXAYECABKAMSGAoIcHJldmlvdXMYESADKAxCBqrBFgIIARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6ogHK/BVQEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaKBIEa2luZBoKCgZob2xkZXIQAhoICgRraW5kEAgaCAoEbmFtZRAFMAGKuxZKCA0yMwoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaCAoGaG9sZGVyIBQoZDoAIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Credential is a secret somebody proves themselves with here, rather than at a
@@ -163,6 +163,18 @@ export type Credential = Message<"roster.Credential"> & {
    * @generated from field: int64 last_step = 16;
    */
   lastStep: bigint;
+
+  /**
+   * Previous holds the verifiers a password was, most recent first, when the
+   * deployment refuses a password that was used before (`vouch.password.
+   * no_reuse`); empty otherwise. Verifiers and never secrets, kept off the
+   * wire and out of the trail the way `secret` is, and compared the way a
+   * sign-in compares -- so what is stored buys nothing a stolen copy of
+   * `secret` did not already.
+   *
+   * @generated from field: repeated bytes previous = 17;
+   */
+  previous: Uint8Array[];
 
   /**
    * @generated from field: google.protobuf.Timestamp date_updated = 13;

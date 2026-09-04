@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -33,6 +34,8 @@ type Credential struct {
 	DateRotated *time.Time `json:"date_rotated,omitempty"`
 	// LastStep holds the value of the "last_step" field.
 	LastStep int64 `json:"last_step,omitempty"`
+	// Previous holds the value of the "previous" field.
+	Previous [][]uint8 `json:"previous,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -72,7 +75,7 @@ func (*Credential) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case credential.FieldSecret:
+		case credential.FieldSecret, credential.FieldPrevious:
 			values[i] = new([]byte)
 		case credential.FieldFailures, credential.FieldLastStep:
 			values[i] = new(sql.NullInt64)
@@ -149,6 +152,14 @@ func (_m *Credential) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field last_step", values[i])
 			} else if value.Valid {
 				_m.LastStep = value.Int64
+			}
+		case credential.FieldPrevious:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field previous", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.Previous); err != nil {
+					return fmt.Errorf("unmarshal field previous: %w", err)
+				}
 			}
 		case credential.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -240,6 +251,9 @@ func (_m *Credential) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("last_step=")
 	builder.WriteString(fmt.Sprintf("%v", _m.LastStep))
+	builder.WriteString(", ")
+	builder.WriteString("previous=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Previous))
 	builder.WriteString(", ")
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))

@@ -461,6 +461,16 @@ func LastStepLTE(v int64) predicate.Credential {
 	return predicate.Credential(sql.FieldLTE(FieldLastStep, v))
 }
 
+// PreviousIsNil applies the IsNil predicate on the "previous" field.
+func PreviousIsNil() predicate.Credential {
+	return predicate.Credential(sql.FieldIsNull(FieldPrevious))
+}
+
+// PreviousNotNil applies the NotNil predicate on the "previous" field.
+func PreviousNotNil() predicate.Credential {
+	return predicate.Credential(sql.FieldNotNull(FieldPrevious))
+}
+
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
 func DateUpdatedEQ(v time.Time) predicate.Credential {
 	return predicate.Credential(sql.FieldEQ(FieldDateUpdated, v))

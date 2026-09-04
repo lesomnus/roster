@@ -74,6 +74,59 @@ type Core struct {
 	// other's kind. The zero value is `keys.PrefixTenant`'s empty sibling, which
 	// `Mint` refuses rather than mint an unprefixed key.
 	prefix string
+
+	// lockout is the deployment's numbers for `Credential.Set`'s own-row
+	// re-authentication, which counts a wrong current password the way a
+	// wrong sign-in counts -- on the same columns, so the same numbers.
+	lockout vouch.Lockout
+
+	// password is what a new password has to be, beyond not being leaked.
+	password Password
+}
+
+// Password is the deployment's rules for a password somebody chooses, applied
+// where every password arrives: `Credential.Set`, whoever calls it.
+//
+// # What is here and what is not
+//
+// A minimum length, because a short password is guessable offline whatever
+// else it is, and the leaked-corpus check beside it (`WithBreached`) is what
+// catches the long ones that are known. No composition rule -- an uppercase, a
+// digit, a symbol -- because the guidance that once asked for those (NIST
+// 800-63B) now asks not to: they make passwords harder to remember and not
+// harder to guess. A ceiling, because hashing is deliberately slow and a
+// megabyte of password is a request that costs a second.
+//
+// And, off unless asked for, a memory of what a password was: NoReuse is how
+// many former verifiers are kept and refused. Not recommended by the same
+// guidance, and asked for by enough regulation to be a setting rather than
+// an absence.
+type Password struct {
+	// MinLength is the fewest bytes accepted; zero is [DefaultMinLength].
+	MinLength int
+
+	// NoReuse is how many of a person's former passwords are refused, most
+	// recent first; zero keeps none and refuses none.
+	NoReuse int
+}
+
+// DefaultMinLength is eight, which is where the guidance draws the line for a
+// password a person chooses.
+const DefaultMinLength = 8
+
+// MaxSecretLength is the ceiling on what is hashed at all.
+const MaxSecretLength = 1024
+
+// Or is this with the default filled in where it says nothing.
+func (p Password) Or() Password {
+	if p.MinLength <= 0 {
+		p.MinLength = DefaultMinLength
+	}
+	if p.NoReuse < 0 {
+		p.NoReuse = 0
+	}
+
+	return p
 }
 
 // Breached is whether a secret is in a corpus of leaked ones. Nil refuses none.
@@ -92,6 +145,13 @@ func WithKeyring(v vouch.Keyring) Option { return func(s *Core) { s.keyring = v 
 // so `ApiKey.Mint` can make the secret without a service choosing which port's
 // kind it is. One per stack; see `server/keys`.
 func WithPrefix(v string) Option { return func(s *Core) { s.prefix = v } }
+
+// WithLockout gives the layer the deployment's lockout numbers, for the
+// re-authentication a person's own `Credential.Set` asks for.
+func WithLockout(v vouch.Lockout) Option { return func(s *Core) { s.lockout = v } }
+
+// WithPassword gives the layer what a new password has to be.
+func WithPassword(v Password) Option { return func(s *Core) { s.password = v } }
 
 // Rules is what this layer has to know about a caller and cannot work out.
 //
@@ -154,6 +214,8 @@ func New(next app.Server, rules Rules, opts ...Option) Core {
 	for _, opt := range opts {
 		opt(&s)
 	}
+	s.lockout = s.lockout.Or(vouch.DefaultLockout)
+	s.password = s.password.Or()
 
 	return s
 }
@@ -216,5 +278,6 @@ func (s Core) WithDriver(drv dialect.Driver) (app.Server, error) {
 	// refuse a leaked secret and must wrap a seed with the deployment's key.
 	// Dropped, a rebuilt stack would accept a breached password and refuse every
 	// second factor the moment two writes shared a transaction.
-	return New(next, s.rules, WithBreached(s.breached), WithKeyring(s.keyring), WithPrefix(s.prefix)), nil
+	return New(next, s.rules, WithBreached(s.breached), WithKeyring(s.keyring), WithPrefix(s.prefix),
+		WithLockout(s.lockout), WithPassword(s.password)), nil
 }

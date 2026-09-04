@@ -220,9 +220,9 @@ func TestSigningInByAddressIsF7Closed(t *testing.T) {
 		x := require.New(t)
 
 		for _, tc := range []struct{ desc, tenant, address, secret string }{
-			{"a wrong password", "contoso", "someone@contoso.example", "hunter2"},
-			{"an address nobody has", "contoso", "nobody@contoso.example", "hunter2"},
-			{"a tenant nobody serves", "nowhere", "someone@contoso.example", "hunter2"},
+			{"a wrong password", "contoso", "someone@contoso.example", "hunter2hunter2"},
+			{"an address nobody has", "contoso", "nobody@contoso.example", "hunter2hunter2"},
+			{"a tenant nobody serves", "nowhere", "someone@contoso.example", "hunter2hunter2"},
 			{"the right password at the wrong tenant", "fabrikam", "someone@contoso.example", "correct horse battery staple"},
 		} {
 			res := verify(tc.tenant, tc.address, tc.secret)

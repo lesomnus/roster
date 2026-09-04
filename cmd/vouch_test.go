@@ -88,7 +88,7 @@ func TestAWrongSecretIsRefusedAndSaysNothingElse(t *testing.T) {
 
 	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
-	v := b.verifies(t, ctx, b.ContosoUser, "hunter2")
+	v := b.verifies(t, ctx, b.ContosoUser, "hunter2hunter2")
 	x.False(v.GetOk())
 
 	// Nothing about who it would have been. A refusal that carried the tenant
@@ -117,7 +117,7 @@ func TestSomebodyWhoIsNotHereIsRefusedTheSameWay(t *testing.T) {
 	unset := b.verifies(t, ctx, other, "correct horse battery staple")
 
 	// And somebody real with the wrong one.
-	wrong := b.verifies(t, ctx, b.ContosoUser, "hunter2")
+	wrong := b.verifies(t, ctx, b.ContosoUser, "hunter2hunter2")
 
 	for _, v := range []*app.VouchVerifyResponse{nobody, unset, wrong} {
 		x.False(v.GetOk())
@@ -136,7 +136,7 @@ func TestEnoughWrongAnswersCloseTheAccount(t *testing.T) {
 
 	var last *app.VouchVerifyResponse
 	for range vouch.MaxFailures {
-		last = b.verifies(t, ctx, b.ContosoUser, "hunter2")
+		last = b.verifies(t, ctx, b.ContosoUser, "hunter2hunter2")
 	}
 
 	x.False(last.GetOk())
@@ -167,14 +167,14 @@ func TestTypingAtALockedAccountDoesNotPushTheLockOut(t *testing.T) {
 
 	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 	for range vouch.MaxFailures {
-		b.verifies(t, ctx, b.ContosoUser, "hunter2")
+		b.verifies(t, ctx, b.ContosoUser, "hunter2hunter2")
 	}
 
 	before, err := b.Ent.Credential.Query().Only(ctx)
 	x.NoError(err)
 
 	for range 5 {
-		b.verifies(t, ctx, b.ContosoUser, "hunter2")
+		b.verifies(t, ctx, b.ContosoUser, "hunter2hunter2")
 	}
 
 	after, err := b.Ent.Credential.Query().Only(ctx)
@@ -191,7 +191,7 @@ func TestGettingItRightClearsWhatGettingItWrongLeftBehind(t *testing.T) {
 	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
 	for range vouch.MaxFailures - 1 {
-		b.verifies(t, ctx, b.ContosoUser, "hunter2")
+		b.verifies(t, ctx, b.ContosoUser, "hunter2hunter2")
 	}
 
 	v := b.verifies(t, ctx, b.ContosoUser, "correct horse battery staple")
@@ -250,7 +250,7 @@ func TestSettingASecretUnlocksTheAccount(t *testing.T) {
 
 	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 	for range vouch.MaxFailures {
-		b.verifies(t, ctx, b.ContosoUser, "hunter2")
+		b.verifies(t, ctx, b.ContosoUser, "hunter2hunter2")
 	}
 
 	b.sets(t, ctx, b.ContosoUser, "a different one entirely")
@@ -311,7 +311,7 @@ func TestARequestThatNamesNobodyOrTwoBodiesIsRefused(t *testing.T) {
 	} {
 		t.Run(tt.what, func(t *testing.T) {
 			_, err := b.vouched().Verify(ctx, app.VouchVerifyRequest_builder{
-				Who: tt.who, Secret: []byte("hunter2"),
+				Who: tt.who, Secret: []byte("hunter2hunter2"),
 			}.Build())
 			require.Equal(t, codes.InvalidArgument, status.Code(err))
 		})

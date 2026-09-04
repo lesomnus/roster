@@ -3,7 +3,7 @@
 # cookies without Secure. It is what somebody working on the pages runs.
 #
 #     docker compose up --build
-#     http://localhost:8082/console/   admin / admin
+#     http://localhost:8082/console/   admin / admin-admin
 #     http://localhost:8090/           erin / correct horse battery staple
 #
 # `PUBLIC_HOST` is the name a browser reaches this by, `localhost` unless
@@ -56,7 +56,7 @@ services:
         condition: service_completed_successfully
     environment:
       ROSTER_ROOT_USER: ${ROSTER_ROOT_USER:-admin}
-      ROSTER_ROOT_PASSWORD: ${ROSTER_ROOT_PASSWORD:-admin}
+      ROSTER_ROOT_PASSWORD: ${ROSTER_ROOT_PASSWORD:-admin-admin}
 
       # `pgx` and not `postgres`: the driver is named by what registers it
       # (`config/dbpgx`), and a name nothing registered is refused at startup

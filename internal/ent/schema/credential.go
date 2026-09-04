@@ -32,6 +32,8 @@ func (Credential) Fields() []ent.Field {
 			Nillable().
 			Optional(),
 		field.Int64("last_step"),
+		field.Json("previous", [][]byte{}).
+			Optional(),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().

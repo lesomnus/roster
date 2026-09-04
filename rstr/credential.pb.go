@@ -57,6 +57,7 @@ type Credential struct {
 	xxx_hidden_DateLocked  *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_locked,json=dateLocked"`
 	xxx_hidden_DateRotated *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_rotated,json=dateRotated"`
 	xxx_hidden_LastStep    int64                  `protobuf:"varint,16,opt,name=last_step,json=lastStep"`
+	xxx_hidden_Previous    [][]byte               `protobuf:"bytes,17,rep,name=previous"`
 	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
@@ -152,6 +153,13 @@ func (x *Credential) GetLastStep() int64 {
 	return 0
 }
 
+func (x *Credential) GetPrevious() [][]byte {
+	if x != nil {
+		return x.xxx_hidden_Previous
+	}
+	return nil
+}
+
 func (x *Credential) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -213,6 +221,10 @@ func (x *Credential) SetDateRotated(v *timestamppb.Timestamp) {
 
 func (x *Credential) SetLastStep(v int64) {
 	x.xxx_hidden_LastStep = v
+}
+
+func (x *Credential) SetPrevious(v [][]byte) {
+	x.xxx_hidden_Previous = v
 }
 
 func (x *Credential) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -370,7 +382,14 @@ type Credential_builder struct {
 	// person is asked for, because a QR somebody may have mis-scanned is a form
 	// that cannot be filled. One code moves it, which is what `Verify` taking a
 	// name is for; `VouchVerifyRequest.name` in `vouch.proto` says why at length.
-	LastStep    int64
+	LastStep int64
+	// Previous holds the verifiers a password was, most recent first, when the
+	// deployment refuses a password that was used before (`vouch.password.
+	// no_reuse`); empty otherwise. Verifiers and never secrets, kept off the
+	// wire and out of the trail the way `secret` is, and compared the way a
+	// sign-in compares -- so what is stored buys nothing a stolen copy of
+	// `secret` did not already.
+	Previous    [][]byte
 	DateUpdated *timestamppb.Timestamp
 	DateErased  *timestamppb.Timestamp
 	DateCreated *timestamppb.Timestamp
@@ -389,6 +408,7 @@ func (b0 Credential_builder) Build() *Credential {
 	x.xxx_hidden_DateLocked = b.DateLocked
 	x.xxx_hidden_DateRotated = b.DateRotated
 	x.xxx_hidden_LastStep = b.LastStep
+	x.xxx_hidden_Previous = b.Previous
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
@@ -399,7 +419,7 @@ var File_app_credential_proto protoreflect.FileDescriptor
 
 const file_app_credential_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/credential.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xe3\x05\n" +
+	"\x14app/credential.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x87\x06\n" +
 	"\n" +
 	"Credential\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
@@ -412,7 +432,8 @@ const file_app_credential_proto_rawDesc = "" +
 	"\vdate_locked\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\n" +
 	"dateLocked\x12E\n" +
 	"\fdate_rotated\x18\f \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\vdateRotated\x12\x1b\n" +
-	"\tlast_step\x18\x10 \x01(\x03R\blastStep\x12F\n" +
+	"\tlast_step\x18\x10 \x01(\x03R\blastStep\x12\"\n" +
+	"\bprevious\x18\x11 \x03(\fB\x06\xaa\xc1\x16\x02\b\x01R\bprevious\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +

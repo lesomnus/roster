@@ -144,7 +144,7 @@ func adminCustomer(t *testing.T, conn *grpc.ClientConn, as context.Context, alia
 func TestTheCorpusIsTheDeploymentsAndNotThePorts(t *testing.T) {
 	x := require.New(t)
 
-	at := leakedCorpus(t, "hunter2")
+	at := leakedCorpus(t, "hunter2hunter2")
 	s, c, out := adminDeployment(t, func(c *cmd.Config) { c.Vouch.Breached = at })
 
 	conn, as := adminPort(t, s, c, out)
@@ -163,7 +163,7 @@ func TestTheCorpusIsTheDeploymentsAndNotThePorts(t *testing.T) {
 	// `FailedPrecondition` rather than `InvalidArgument`, as everywhere else:
 	// there is nothing wrong with the request, the world changed under the
 	// value in it.
-	x.Equal(codes.FailedPrecondition, status.Code(set("hunter2")),
+	x.Equal(codes.FailedPrecondition, status.Code(set("hunter2hunter2")),
 		"the admin port stored a password this deployment refuses on the data plane")
 
 	// And the check is a check and not a refusal of everything.

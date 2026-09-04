@@ -68,13 +68,41 @@ const (
 	LockFor     = 15 * time.Minute
 )
 
+// Lockout is how many wrong answers in a row close an account and for how
+// long: a deployment's numbers, where [MaxFailures] and [LockFor] are the ones
+// it gets by saying nothing.
+//
+// A number rather than a switch. There is no "never lock", because an account
+// that cannot be locked is one that can be guessed at forever, and a
+// deployment that wants that has to write a number large enough to say so.
+type Lockout struct {
+	Failures int32
+	For      time.Duration
+}
+
+// DefaultLockout is [MaxFailures] per [LockFor].
+var DefaultLockout = Lockout{Failures: MaxFailures, For: LockFor}
+
+// Or is this with the default filled in wherever this says nothing.
+func (l Lockout) Or(d Lockout) Lockout {
+	if l.Failures <= 0 {
+		l.Failures = d.Failures
+	}
+	if l.For <= 0 {
+		l.For = d.For
+	}
+
+	return l
+}
+
 // Server answers whether a secret is somebody's.
 type Server struct {
 	app.UnimplementedVouchServiceServer
 
-	open   app.Server
-	walled app.Server
-	keys   Keyring
+	open    app.Server
+	walled  app.Server
+	keys    Keyring
+	lockout Lockout
 }
 
 // Option is how a deployment says what this service is allowed to assume.
@@ -88,6 +116,10 @@ type Option func(*Server)
 // see `server/vouch/seed.go` for what the key buys and what it does not.
 func WithKeys(v Keyring) Option { return func(s *Server) { s.keys = v } }
 
+// WithLockout gives the server the deployment's numbers; unset is
+// [DefaultLockout].
+func WithLockout(v Lockout) Option { return func(s *Server) { s.lockout = v } }
+
 // New makes the service from the two stacks it needs.
 //
 // `open` is the one the wall was never installed on and `walled` is the one it
@@ -99,6 +131,7 @@ func New(open, walled app.Server, opts ...Option) *Server {
 	for _, opt := range opts {
 		opt(s)
 	}
+	s.lockout = s.lockout.Or(DefaultLockout)
 
 	return s
 }
@@ -339,8 +372,8 @@ func (s *Server) failed(ctx context.Context, v *app.Credential) (*app.VouchVerif
 	}
 
 	res := no()
-	if n >= MaxFailures {
-		until := timestamppb.New(time.Now().Add(LockFor))
+	if n >= s.lockout.Failures {
+		until := timestamppb.New(time.Now().Add(s.lockout.For))
 		patch.DateLocked = until
 
 		// The count starts again, so that the lock expiring gives a full set of

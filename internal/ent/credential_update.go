@@ -12,6 +12,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/predicate"
 	"github.com/protobuf-orm/ent/dialect/sql"
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
+	"github.com/protobuf-orm/ent/dialect/sql/sqljson"
 	"github.com/protobuf-orm/ent/schema/field"
 )
 
@@ -145,6 +146,24 @@ func (_u *CredentialUpdate) AddLastStep(v int64) *CredentialUpdate {
 	return _u
 }
 
+// SetPrevious sets the "previous" field.
+func (_u *CredentialUpdate) SetPrevious(v [][]uint8) *CredentialUpdate {
+	_u.mutation.SetPrevious(v)
+	return _u
+}
+
+// AppendPrevious appends value to the "previous" field.
+func (_u *CredentialUpdate) AppendPrevious(v [][]uint8) *CredentialUpdate {
+	_u.mutation.AppendPrevious(v)
+	return _u
+}
+
+// ClearPrevious clears the value of the "previous" field.
+func (_u *CredentialUpdate) ClearPrevious() *CredentialUpdate {
+	_u.mutation.ClearPrevious()
+	return _u
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_u *CredentialUpdate) SetDateUpdated(v time.Time) *CredentialUpdate {
 	_u.mutation.SetDateUpdated(v)
@@ -269,6 +288,17 @@ func (_u *CredentialUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	}
 	if value, ok := _u.mutation.AddedLastStep(); ok {
 		_spec.AddField(credential.FieldLastStep, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.Previous(); ok {
+		_spec.SetField(credential.FieldPrevious, field.TypeJson, value)
+	}
+	if value, ok := _u.mutation.AppendedPrevious(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, credential.FieldPrevious, value)
+		})
+	}
+	if _u.mutation.PreviousCleared() {
+		_spec.ClearField(credential.FieldPrevious, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(credential.FieldDateUpdated, field.TypeTime, value)
@@ -417,6 +447,24 @@ func (_u *CredentialUpdateOne) SetNillableLastStep(v *int64) *CredentialUpdateOn
 // AddLastStep adds value to the "last_step" field.
 func (_u *CredentialUpdateOne) AddLastStep(v int64) *CredentialUpdateOne {
 	_u.mutation.AddLastStep(v)
+	return _u
+}
+
+// SetPrevious sets the "previous" field.
+func (_u *CredentialUpdateOne) SetPrevious(v [][]uint8) *CredentialUpdateOne {
+	_u.mutation.SetPrevious(v)
+	return _u
+}
+
+// AppendPrevious appends value to the "previous" field.
+func (_u *CredentialUpdateOne) AppendPrevious(v [][]uint8) *CredentialUpdateOne {
+	_u.mutation.AppendPrevious(v)
+	return _u
+}
+
+// ClearPrevious clears the value of the "previous" field.
+func (_u *CredentialUpdateOne) ClearPrevious() *CredentialUpdateOne {
+	_u.mutation.ClearPrevious()
 	return _u
 }
 
@@ -574,6 +622,17 @@ func (_u *CredentialUpdateOne) sqlSave(ctx context.Context) (_node *Credential, 
 	}
 	if value, ok := _u.mutation.AddedLastStep(); ok {
 		_spec.AddField(credential.FieldLastStep, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.Previous(); ok {
+		_spec.SetField(credential.FieldPrevious, field.TypeJson, value)
+	}
+	if value, ok := _u.mutation.AppendedPrevious(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, credential.FieldPrevious, value)
+		})
+	}
+	if _u.mutation.PreviousCleared() {
+		_spec.ClearField(credential.FieldPrevious, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(credential.FieldDateUpdated, field.TypeTime, value)

@@ -331,7 +331,7 @@ func TestMeAnswersWithNothingOfAnybodyElseS(t *testing.T) {
 	them := b.holder(t, ctx, b.Contoso, "them")
 	b.addressOf(t, ctx, them, "them@contoso.example")
 	b.identity(t, ctx, them, "entra", "8bf1e0a2")
-	b.sets(t, ctx, them, "hunter2")
+	b.sets(t, ctx, them, "hunter2hunter2")
 	b.inTeam(t, ctx, them, yours, b.role(t, ctx, "eraser", eraseHold))
 
 	conn := served(t, b.Server)

@@ -205,6 +205,29 @@ type VouchConfig struct {
 	// buys -- protection against a copy of the rows, and not against a
 	// compromised process -- and what a lost one costs.
 	Keys []string `yaml:"keys"`
+
+	// Lockout is how many wrong answers in a row close an account and for how
+	// long: ten and fifteen minutes unless said. See `vouch.Lockout` for why
+	// there is no off.
+	Lockout LockoutConfig `yaml:"lockout"`
+
+	// Password is what a password somebody chooses has to be: a minimum
+	// length (eight unless said), and, off unless said, how many of their
+	// former passwords are refused. See `core.Password` for what is
+	// deliberately not here.
+	Password PasswordConfig `yaml:"password"`
+}
+
+// LockoutConfig is `vouch.Lockout` as a file says it.
+type LockoutConfig struct {
+	Failures int32         `yaml:"failures"`
+	For      time.Duration `yaml:"for"`
+}
+
+// PasswordConfig is `core.Password` as a file says it.
+type PasswordConfig struct {
+	MinLength int `yaml:"min_length"`
+	NoReuse   int `yaml:"no_reuse"`
 }
 
 // ClientConfig is how a command reaches this deployment, when it is not this

@@ -129,6 +129,18 @@ func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) 
 	// A leaked secret is refused before anything is read or hashed -- a fact
 	// about the secret, not about the person, so the refusal cannot depend on
 	// whether they exist.
+	// Length before the corpus and before the hash: the cheapest refusal
+	// first, and the ceiling is what keeps the hash from being made to cost
+	// whatever a caller likes.
+	if kind == vouch.KindPassword {
+		switch n := len(req.GetSecret()); {
+		case n < s.password.MinLength:
+			return nil, status.Errorf(codes.InvalidArgument, "secret: at least %d characters", s.password.MinLength)
+		case n > MaxSecretLength:
+			return nil, status.Errorf(codes.InvalidArgument, "secret: at most %d characters", MaxSecretLength)
+		}
+	}
+
 	if s.breached != nil {
 		bad, err := s.breached(ctx, req.GetSecret())
 		if err != nil {
@@ -187,7 +199,8 @@ func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) 
 		Ref: byKind,
 		Select: app.CredentialSelect_builder{
 			DateUpdated: z.Ptr(true),
-			Secret:      z.Ptr(own),
+			Secret:      z.Ptr(own || s.password.NoReuse > 0),
+			Previous:    z.Ptr(s.password.NoReuse > 0),
 			Failures:    z.Ptr(own),
 			DateLocked:  z.Ptr(own),
 		}.Build(),
@@ -226,14 +239,28 @@ func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) 
 	// Replace it, clearing the lockout -- somebody who set it is not who the
 	// lockout was protecting against -- under the version read, so a concurrent
 	// write is reported rather than lost.
-	if _, err := s.Next().Credential().Patch(ctx, app.CredentialPatchRequest_builder{
+	patch := app.CredentialPatchRequest_builder{
 		Ref:            app.CredentialRef_builder{Id: v.GetId()}.Build(),
 		Secret:         sum,
 		Failures:       z.Ptr(int32(0)),
 		DateLockedNull: z.Ptr(true),
 		DateRotated:    timestamppb.Now(),
 		DateUpdated:    v.GetDateUpdated(),
-	}.Build()); err != nil {
+	}
+	if kind == vouch.KindPassword && s.password.NoReuse > 0 {
+		// Against the one held and the ones before it, compared the way a
+		// sign-in compares -- which is what makes this cost a hash per
+		// remembered password and is the price of the setting. After the
+		// re-authentication above, so a wrong current password is counted
+		// before anything is said about the new one.
+		previous, err := s.unused(v, req.GetSecret())
+		if err != nil {
+			return nil, err
+		}
+		patch.Previous = previous
+	}
+
+	if _, err := s.Next().Credential().Patch(ctx, patch.Build()); err != nil {
 		return nil, err
 	}
 
@@ -269,8 +296,8 @@ func (s coreCredential) reauth(ctx context.Context, v *app.Credential, current [
 		Failures:    z.Ptr(n),
 		DateUpdated: v.GetDateUpdated(),
 	}
-	if n >= vouch.MaxFailures {
-		patch.DateLocked = timestamppb.New(time.Now().Add(vouch.LockFor))
+	if n >= s.lockout.Failures {
+		patch.DateLocked = timestamppb.New(time.Now().Add(s.lockout.For))
 		patch.Failures = z.Ptr(int32(0))
 	}
 	// Best effort, like `Verify`'s: a count lost to a concurrent write is a
@@ -505,4 +532,29 @@ func notTheirLastCredential(ctx context.Context, next app.Server, holder, erasin
 
 	return status.Error(codes.FailedPrecondition,
 		"this is the only way they can sign in; give them another before taking it away")
+}
+
+// unused refuses a new password that is the one held or one of the last
+// `NoReuse` before it, and answers with what `previous` becomes: the one held
+// in front, the rest behind it, cut to the number kept.
+func (s coreCredential) unused(v *app.Credential, secret []byte) ([][]byte, error) {
+	was := append([][]byte{v.GetSecret()}, v.GetPrevious()...)
+	for _, sum := range was {
+		if len(sum) == 0 {
+			continue
+		}
+		same, err := vouch.Compare(sum, secret)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "a stored password cannot be read")
+		}
+		if same {
+			return nil, status.Errorf(codes.FailedPrecondition,
+				"this one was used before; the last %d are refused", s.password.NoReuse)
+		}
+	}
+	if len(was) > s.password.NoReuse {
+		was = was[:s.password.NoReuse]
+	}
+
+	return was, nil
 }

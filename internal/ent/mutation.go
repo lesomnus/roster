@@ -1795,6 +1795,23 @@ func (m *CredentialMutation) OldLastStep(ctx context.Context) (v int64, err erro
 	return oldValue.LastStep, nil
 }
 
+// OldPrevious returns the old "previous" field's value of the Credential entity.
+// If the Credential object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CredentialMutation) OldPrevious(ctx context.Context) (v [][]uint8, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldPrevious is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldPrevious requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPrevious: %w", err)
+	}
+	return oldValue.Previous, nil
+}
+
 // OldDateUpdated returns the old "date_updated" field's value of the Credential entity.
 // If the Credential object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -1882,6 +1899,8 @@ func (m *CredentialMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldDateRotated(ctx)
 	case credential.FieldLastStep:
 		return m.OldLastStep(ctx)
+	case credential.FieldPrevious:
+		return m.OldPrevious(ctx)
 	case credential.FieldDateUpdated:
 		return m.OldDateUpdated(ctx)
 	case credential.FieldDateErased:

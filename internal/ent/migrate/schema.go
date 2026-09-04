@@ -258,6 +258,7 @@ var (
 		{Name: "date_locked", Type: field.TypeTime, Nullable: true},
 		{Name: "date_rotated", Type: field.TypeTime, Nullable: true},
 		{Name: "last_step", Type: field.TypeInt64},
+		{Name: "previous", Type: field.TypeJson, Nullable: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
@@ -271,7 +272,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "credential_holder_holder",
-				Columns:    []*schema.Column{CredentialColumns[11]},
+				Columns:    []*schema.Column{CredentialColumns[12]},
 				RefColumns: []*schema.Column{HolderColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -280,12 +281,12 @@ var (
 			{
 				Name:    "credential_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{CredentialColumns[10], CredentialColumns[0]},
+				Columns: []*schema.Column{CredentialColumns[11], CredentialColumns[0]},
 			},
 			{
 				Name:    "credential_kind_name_holder_id",
 				Unique:  true,
-				Columns: []*schema.Column{CredentialColumns[2], CredentialColumns[1], CredentialColumns[11]},
+				Columns: []*schema.Column{CredentialColumns[2], CredentialColumns[1], CredentialColumns[12]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},

@@ -43,7 +43,7 @@ func TestTheSandboxSignsIn(t *testing.T) {
 
 	x.NoError(s.Ent.Schema.Create(ctx))
 	x.NoError(s.Control.Ent.Schema.Create(ctx))
-	_, err = cmd.Seed(ctx, s, cmd.Seeding{Tenant: "contoso", Holder: "admin", Operator: "ops", Password: "sandbox"})
+	_, err = cmd.Seed(ctx, s, cmd.Seeding{Tenant: "contoso", Holder: "admin", Operator: "ops", Password: "sandboxed"})
 	x.NoError(err)
 
 	op := &sandbox.Operator{}
@@ -70,7 +70,7 @@ func TestTheSandboxSignsIn(t *testing.T) {
 	t.Run("the right one is the caller from then on", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := a.SignIn(ctx, app.AuthSignInRequest_builder{Alias: "ops", Password: "sandbox"}.Build())
+		_, err := a.SignIn(ctx, app.AuthSignInRequest_builder{Alias: "ops", Password: "sandboxed"}.Build())
 		x.NoError(err)
 
 		id, err := who.Handle(ctx)

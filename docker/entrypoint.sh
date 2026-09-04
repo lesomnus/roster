@@ -25,7 +25,7 @@
 # equivalent because it is a development image, and a development image that
 # pretended otherwise would be worse than one that says so.
 #
-# `admin`/`admin` is the default for the same reason and with the same warning.
+# `admin`/`admin-admin` is the default for the same reason and with the same warning.
 # Keycloak stopped having a default at all, because a default ships.
 #
 # # Not `ROSTER_ADMIN_*`
@@ -45,7 +45,7 @@
 set -eu
 
 : "${ROSTER_ROOT_USER:=admin}"
-: "${ROSTER_ROOT_PASSWORD:=admin}"
+: "${ROSTER_ROOT_PASSWORD:=admin-admin}"
 : "${ROSTER_STATE:=/var/lib/roster}"
 
 seeded="${ROSTER_STATE}/seeded"
@@ -55,7 +55,7 @@ if [ ! -e "${seeded}" ]; then
 
 	echo "roster: seeding, once" >&2
 
-	if [ "${ROSTER_ROOT_PASSWORD}" = "admin" ]; then
+	if [ "${ROSTER_ROOT_PASSWORD}" = "admin-admin" ]; then
 		echo "roster: the operator's password is the default. this is a development image." >&2
 	fi
 

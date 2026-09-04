@@ -211,7 +211,7 @@ func TestAKeyThatAllowsNothingOpensNoDoor(t *testing.T) {
 	_, err := app.NewVouchServiceClient(b.Conn).Verify(bearing(t.Context(), b.Token),
 		app.VouchVerifyRequest_builder{
 			Who:    app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
-			Secret: []byte("hunter2"),
+			Secret: []byte("hunter2hunter2"),
 		}.Build())
 	x.Equal(codes.PermissionDenied, status.Code(err))
 }
@@ -225,7 +225,7 @@ func TestNoKeyIsNoAnswer(t *testing.T) {
 	_, err := app.NewVouchServiceClient(b.Conn).Verify(t.Context(),
 		app.VouchVerifyRequest_builder{
 			Who:    app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
-			Secret: []byte("hunter2"),
+			Secret: []byte("hunter2hunter2"),
 		}.Build())
 	x.Equal(codes.Unauthenticated, status.Code(err))
 }
@@ -238,7 +238,7 @@ func TestAKeyNobodyMintedIsRefused(t *testing.T) {
 		what  string
 		token string
 	}{
-		{"not ours", "hunter2"},
+		{"not ours", "hunter2hunter2"},
 		{"right shape, never minted", keys.PrefixDeployment + "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"},
 		{"one byte off", b.Token[:len(b.Token)-1] + "x"},
 	} {
@@ -246,7 +246,7 @@ func TestAKeyNobodyMintedIsRefused(t *testing.T) {
 			_, err := app.NewVouchServiceClient(b.Conn).Verify(bearing(t.Context(), tt.token),
 				app.VouchVerifyRequest_builder{
 					Who:    app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
-					Secret: []byte("hunter2"),
+					Secret: []byte("hunter2hunter2"),
 				}.Build())
 			require.Equal(t, codes.Unauthenticated, status.Code(err))
 		})
@@ -269,7 +269,7 @@ func TestRevokingAKeyStopsItAtOnce(t *testing.T) {
 	_, err = app.NewVouchServiceClient(b.Conn).Verify(bearing(ctx, b.Token),
 		app.VouchVerifyRequest_builder{
 			Who:    app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
-			Secret: []byte("hunter2"),
+			Secret: []byte("hunter2hunter2"),
 		}.Build())
 	x.Equal(codes.Unauthenticated, status.Code(err))
 }
@@ -293,7 +293,7 @@ func TestAnExpiredKeyIsRefused(t *testing.T) {
 	_, err = app.NewVouchServiceClient(b.Conn).Verify(bearing(ctx, b.Token),
 		app.VouchVerifyRequest_builder{
 			Who:    app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
-			Secret: []byte("hunter2"),
+			Secret: []byte("hunter2hunter2"),
 		}.Build())
 	x.Equal(codes.Unauthenticated, status.Code(err))
 }
