@@ -253,7 +253,7 @@ func (d *Directory) Bind(ctx context.Context, c *wire.Conn, req wire.BindRequest
 	// needs a bind -- and never by trying names.
 	refused := wire.Refuse(wire.InvalidCredentials, "")
 
-	t, alias, ok := d.personDN(req.DN)
+	t, alias, ok := d.bindDN(req.DN)
 	if !ok || len(req.Password) == 0 {
 		return refused
 	}
@@ -304,8 +304,8 @@ func (d *Directory) Bind(ctx context.Context, c *wire.Conn, req wire.BindRequest
 	}
 }
 
-// personDN reads `uid=<alias>,ou=people,<suffix>`.
-func (d *Directory) personDN(s string) (*tenant, string, bool) {
+// bindDN reads `uid=<alias>,ou=people,<suffix>`: the one shape a bind names.
+func (d *Directory) bindDN(s string) (*tenant, string, bool) {
 	name, err := parseDN(s)
 	if err != nil {
 		return nil, "", false
@@ -316,140 +316,6 @@ func (d *Directory) personDN(s string) (*tenant, string, bool) {
 	}
 
 	return t, rel[0].value, true
-}
-
-// Search is the wire's.
-func (d *Directory) Search(ctx context.Context, c *wire.Conn, req wire.SearchRequest, w *wire.Search) wire.Result {
-	name, err := parseDN(req.BaseDN)
-	if err != nil {
-		return wire.Refuse(wire.ProtocolError, "base: "+err.Error())
-	}
-
-	// The root DSE is the one thing read before a bind: it says what this
-	// server is, and nothing about anybody.
-	if len(name) == 0 && req.Scope == wire.ScopeBase {
-		e := d.rootDSE()
-		if e.matches(req.Filter) {
-			if err := w.Entry(e.project(req.Attributes, req.TypesOnly)); err != nil {
-				return wire.Refuse(wire.OperationsError, err.Error())
-			}
-		}
-
-		return wire.Ok
-	}
-	if _, ok := c.Bound(); !ok {
-		return wire.Refuse(wire.InsufficientAccessRights, "bind first")
-	}
-
-	// From the empty name downwards is every suffix: a client that searches
-	// the whole server gets every tenant this process fronts, each under its
-	// own suffix and read with its own key.
-	if len(name) == 0 {
-		for _, t := range d.tenants {
-			if res := d.searchIn(ctx, t, nil, req, w); res.Code != wire.Success {
-				return res
-			}
-		}
-
-		return wire.Ok
-	}
-
-	t, rel, ok := d.tenantOf(name)
-	if !ok {
-		return wire.Refuse(wire.NoSuchObject, "")
-	}
-
-	return d.searchIn(ctx, t, rel, req, w)
-}
-
-// searchIn answers a search whose base is `rel` above a tenant's suffix.
-//
-// The tree is fixed -- `docs/ldap.md` § The tree -- so this is a walk of it:
-// which node the base names, and from there which nodes the scope reaches.
-func (d *Directory) searchIn(ctx context.Context, t *tenant, rel dn, req wire.SearchRequest, w *wire.Search) wire.Result {
-	send := func(e *entry) wire.Result {
-		if !e.matches(req.Filter) {
-			return wire.Ok
-		}
-		if req.SizeLimit > 0 && w.Sent() >= req.SizeLimit {
-			return wire.Refuse(wire.SizeLimitExceeded, "")
-		}
-		if err := w.Entry(e.project(req.Attributes, req.TypesOnly)); err != nil {
-			return wire.Refuse(wire.OperationsError, err.Error())
-		}
-
-		return wire.Ok
-	}
-	// A search from the empty base with one-level scope is the suffixes.
-	if req.Scope == wire.ScopeOne && rel == nil && req.BaseDN == "" {
-		return send(d.organisation(t))
-	}
-
-	switch {
-	case len(rel) == 0:
-		// The suffix itself.
-		if req.Scope == wire.ScopeBase || req.Scope == wire.ScopeSubtree || req.BaseDN == "" {
-			if res := send(d.organisation(t)); res.Code != wire.Success {
-				return res
-			}
-		}
-		if req.Scope == wire.ScopeBase {
-			return wire.Ok
-		}
-		for _, ou := range units {
-			if res := send(d.unit(t, ou)); res.Code != wire.Success {
-				return res
-			}
-		}
-		if req.Scope == wire.ScopeOne {
-			return wire.Ok
-		}
-
-		return d.people(ctx, t, req, w, send)
-
-	case len(rel) == 1 && rel[0].attr == "ou" && strings.EqualFold(rel[0].value, ouPeople):
-		if req.Scope == wire.ScopeBase {
-			return send(d.unit(t, ouPeople))
-		}
-
-		return d.people(ctx, t, req, w, send)
-
-	case len(rel) == 1 && rel[0].attr == "ou":
-		for _, ou := range units {
-			if strings.EqualFold(rel[0].value, ou) {
-				if req.Scope == wire.ScopeBase {
-					return send(d.unit(t, ou))
-				}
-
-				// Groups and sites are the next increment; until then these
-				// units are empty rather than absent.
-				return wire.Ok
-			}
-		}
-
-		return wire.Refuse(wire.NoSuchObject, "")
-
-	case len(rel) == 2 && rel[0].attr == "uid" && rel[1].attr == "ou" && strings.EqualFold(rel[1].value, ouPeople):
-		if req.Scope == wire.ScopeOne {
-			// A person has nothing under them; the base itself exists or does
-			// not, which one-level scope does not say.
-			_, res := d.person(ctx, t, rel[0].value, req)
-			if res.Code != wire.Success {
-				return res
-			}
-
-			return wire.Ok
-		}
-		e, res := d.person(ctx, t, rel[0].value, req)
-		if res.Code != wire.Success {
-			return res
-		}
-
-		return send(e)
-
-	default:
-		return wire.Refuse(wire.NoSuchObject, "")
-	}
 }
 
 // The units under a suffix.

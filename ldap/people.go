@@ -39,7 +39,9 @@ const (
 // the client asked for, and those its filter mentions -- a filter on `mail`
 // has to see the addresses to be evaluated, whether or not they are sent.
 type wants struct {
-	mail bool
+	mail     bool
+	memberOf bool
+	member   bool
 }
 
 func wanted(req wire.SearchRequest) wants {
@@ -51,25 +53,32 @@ func wanted(req wire.SearchRequest) wants {
 			all = true
 		case strings.EqualFold(a, attrMail):
 			w.mail = true
+		case strings.EqualFold(a, attrMemberOf):
+			w.memberOf = true
+		case strings.EqualFold(a, attrMember):
+			w.member = true
 		}
 	}
-	if all || req.Filter.Mentions(attrMail) {
-		w.mail = true
+	if all {
+		w = wants{mail: true, memberOf: true, member: true}
 	}
+	w.mail = w.mail || req.Filter.Mentions(attrMail)
+	w.memberOf = w.memberOf || req.Filter.Mentions(attrMemberOf)
+	w.member = w.member || req.Filter.Mentions(attrMember)
 
 	return w
 }
 
 // person is one entry by alias, or nothing.
-func (d *Directory) person(ctx context.Context, t *tenant, alias string, req wire.SearchRequest) (*entry, wire.Result) {
-	v, err := d.byAlias(ctx, t, alias)
+func (s *search) person(ctx context.Context, t *tenant, alias string) (*entry, wire.Result) {
+	v, err := s.d.byAlias(ctx, t, alias)
 	if err != nil {
 		return nil, refusal(err)
 	}
 	if v == nil {
 		return nil, wire.Refuse(wire.NoSuchObject, "")
 	}
-	e, err := d.personEntry(ctx, t, v, wanted(req))
+	e, err := s.personEntry(ctx, t, v)
 	if err != nil {
 		return nil, refusal(err)
 	}
@@ -119,7 +128,7 @@ func (d *Directory) byAlias(ctx context.Context, t *tenant, alias string) (*rstr
 
 // personEntry shapes a holder. Nil for somebody who is not in the tree:
 // disabled, which a directory says by absence rather than by a flag.
-func (d *Directory) personEntry(ctx context.Context, t *tenant, v *rstr.Holder, w wants) (*entry, error) {
+func (s *search) personEntry(ctx context.Context, t *tenant, v *rstr.Holder) (*entry, error) {
 	if v.GetDateDisabled() != nil || v.GetDateErased() != nil {
 		return nil, nil
 	}
@@ -127,8 +136,9 @@ func (d *Directory) personEntry(ctx context.Context, t *tenant, v *rstr.Holder, 
 	if err != nil {
 		return nil, err
 	}
+	d := s.d
 
-	e := newEntry(t.base.child("ou", ouPeople).child("uid", v.GetAlias()))
+	e := newEntry(d.personDN(t, v))
 	e.add(attrObjectClass, "top", classPersonPlain, classOrgPerson, classPerson)
 	e.add(attrUid, v.GetAlias())
 	e.add(attrCn, v.GetName())
@@ -143,12 +153,19 @@ func (d *Directory) personEntry(ctx context.Context, t *tenant, v *rstr.Holder, 
 	e.add(attrLabeledURI, p.GetPicture())
 	e.add(attrEntryUUID, id.Uuid().String())
 
-	if w.mail {
+	if s.want.mail {
 		addrs, err := d.verifiedAddresses(ctx, t, v.GetId())
 		if err != nil {
 			return nil, err
 		}
 		e.add(attrMail, addrs...)
+	}
+	if s.want.memberOf {
+		names, err := d.memberOf(ctx, t, s.reads, v.GetId())
+		if err != nil {
+			return nil, err
+		}
+		e.add(attrMemberOf, names...)
 	}
 
 	return e, nil
@@ -183,9 +200,10 @@ func (d *Directory) verifiedAddresses(ctx context.Context, t *tenant, holder []b
 // § Search. The filter is still evaluated over every entry read; the plan
 // only decides how few entries that is.
 type plan struct {
-	alias   string                    // `(uid=…)`: Holder.Get
-	address string                    // `(mail=…)`: Email.Get, then the holder
-	search  *rstr.HolderSearchRequest // a fragment, a department, an employee number: Holder.Search
+	alias    string                    // `(uid=…)`: Holder.Get
+	address  string                    // `(mail=…)`: Email.Get, then the holder
+	memberOf string                    // `(memberOf=…)`: one membership list
+	search   *rstr.HolderSearchRequest // a fragment, a department, an employee number: Holder.Search
 	// none of the above: Holder.List
 }
 
@@ -210,7 +228,8 @@ func planPeople(f *wire.Filter) plan {
 }
 
 // candidate ranks one node by how few rows it reads: a name is one row, a
-// mailbox is one, an exact profile field is a few, a fragment is some.
+// mailbox is one, a group's members are a list, an exact profile field is a
+// few, a fragment is some.
 func candidate(f *wire.Filter) (int, plan) {
 	if f == nil {
 		return 0, plan{}
@@ -219,9 +238,11 @@ func candidate(f *wire.Filter) (int, plan) {
 	case wire.FilterEqual:
 		switch {
 		case strings.EqualFold(f.Attr, attrUid):
-			return 5, plan{alias: f.Value}
+			return 6, plan{alias: f.Value}
 		case strings.EqualFold(f.Attr, attrMail):
-			return 4, plan{address: f.Value}
+			return 5, plan{address: f.Value}
+		case strings.EqualFold(f.Attr, attrMemberOf):
+			return 4, plan{memberOf: f.Value}
 		case strings.EqualFold(f.Attr, attrEmployeeNo):
 			return 3, plan{search: rstr.HolderSearchRequest_builder{EmployeeNo: proto.String(f.Value)}.Build()}
 		case strings.EqualFold(f.Attr, attrDepartment):
@@ -248,65 +269,85 @@ func candidate(f *wire.Filter) (int, plan) {
 	return 0, plan{}
 }
 
-// people is every person under a suffix the filter keeps, read the way the
-// plan says and sent as found. `send` evaluates the filter and the size
-// limit; this paces the reads and carries the paging cookie.
-func (d *Directory) people(ctx context.Context, t *tenant, req wire.SearchRequest, w *wire.Search, send func(*entry) wire.Result) wire.Result {
-	want := wanted(req)
+// people sends every person under a suffix the filter keeps, read the way
+// the plan says, from roster's cursor `after`. It answers where it stopped:
+// empty when there is no more, and otherwise the cursor the next page of a
+// paged search carries on from -- and a search that is not paged never
+// stops early.
+//
+// A page of roster is a page of the client: the reads are the client's page
+// size, and a page ends where a roster page ends, so that a cookie is always
+// a roster cursor and no row is skipped or repeated. Fewer entries than the
+// page size means the filter dropped some, which RFC 2696 allows; a page
+// that would be empty reads on, so a selective filter over a big tenant does
+// not answer with a run of empty pages.
+func (s *search) people(ctx context.Context, t *tenant, after string) (string, wire.Result) {
+	d, req := s.d, s.req
 	p := planPeople(req.Filter)
+
+	one := func(v *rstr.Holder) wire.Result {
+		e, err := s.personEntry(ctx, t, v)
+		if err != nil {
+			return refusal(err)
+		}
+
+		return s.send(e)
+	}
 
 	switch {
 	case p.alias != "":
-		e, res := d.person(ctx, t, p.alias, req)
-		if res.Code == wire.NoSuchObject {
-			return wire.Ok
+		v, err := d.byAlias(ctx, t, p.alias)
+		if err != nil {
+			return "", refusal(err)
 		}
-		if res.Code != wire.Success {
-			return res
+		if v == nil {
+			return "", wire.Ok
 		}
 
-		return send(e)
+		return "", one(v)
 
 	case p.address != "":
+		// As roster stores it: the same normalisation `Email.Add` holds the
+		// address to, so a client's `Kim@` finds the row `kim@` is.
 		v, err := d.roster.Email().Get(withKey(ctx, t.key), rstr.EmailGetRequest_builder{
-			// As roster stores it: the same normalisation `Email.Add` holds
-			// the address to, so a client's `Kim@` finds the row `kim@` is.
 			Ref: rstr.EmailRef_builder{At: rstr.EmailRefByAt_builder{TenantId: t.id.Bytes(), Address: proto.String(front.Address(p.address))}.Build()}.Build(),
 		}.Build())
 		if err != nil {
-			return refusal(err)
+			return "", refusal(err)
 		}
-		h, err := d.roster.Holder().Get(withKey(ctx, t.key), rstr.HolderGetRequest_builder{
-			Ref: rstr.HolderRef_builder{Id: v.GetHolder().GetId()}.Build(),
-		}.Build())
+		h, err := d.holder(ctx, t, s.reads, v.GetHolder().GetId())
 		if err != nil {
-			return refusal(err)
-		}
-		e, err := d.personEntry(ctx, t, h, want)
-		if err != nil {
-			return refusal(err)
-		}
-		if e == nil {
-			return wire.Ok
+			return "", refusal(err)
 		}
 
-		return send(e)
+		return "", one(h)
+
+	case p.memberOf != "":
+		ids, res := d.membersOf(ctx, t, s.reads, p.memberOf)
+		if res.Code != wire.Success {
+			return "", res
+		}
+		for _, id := range ids {
+			h, err := d.holder(ctx, t, s.reads, id)
+			if err != nil {
+				if status.Code(err) == codes.NotFound {
+					continue
+				}
+
+				return "", refusal(err)
+			}
+			if res := one(h); res.Code != wire.Success {
+				return "", res
+			}
+		}
+
+		return "", wire.Ok
 	}
 
-	// A page of roster is a page of the client: the reads are the client's
-	// page size, and a page ends where a roster page ends, so that a
-	// cookie is always a roster cursor and no row is skipped or repeated.
-	// Fewer entries than the page size means the filter dropped some, which
-	// RFC 2696 allows; a page that would be empty reads on, so a selective
-	// filter over a big tenant does not answer with a run of empty pages.
 	size := d.c.PageSize
 	paged := req.Paging != nil
 	if paged && req.Paging.Size > 0 && req.Paging.Size < size {
 		size = req.Paging.Size
-	}
-	after := ""
-	if paged {
-		after = string(req.Paging.Cookie)
 	}
 
 	for {
@@ -318,7 +359,7 @@ func (d *Directory) people(ctx context.Context, t *tenant, req wire.SearchReques
 			q.SetAfter(after)
 			vs, err := d.roster.Holder().Search(withKey(ctx, t.key), q)
 			if err != nil {
-				return refusal(err)
+				return "", refusal(err)
 			}
 			items, next = vs.GetItems(), vs.GetNext()
 		} else {
@@ -327,37 +368,32 @@ func (d *Directory) people(ctx context.Context, t *tenant, req wire.SearchReques
 				After: after,
 			}.Build())
 			if err != nil {
-				return refusal(err)
+				return "", refusal(err)
 			}
 			items, next = vs.GetItems(), vs.GetNext()
 		}
 
 		sent := 0
 		for _, v := range items {
-			e, err := d.personEntry(ctx, t, v, want)
-			if err != nil {
-				return refusal(err)
+			before := s.sent
+			if res := one(v); res.Code != wire.Success {
+				return "", res
 			}
-			if e == nil {
-				continue
-			}
-			before := w.Sent()
-			if res := send(e); res.Code != wire.Success {
-				return res
-			}
-			if w.Sent() > before {
+			if s.sent > before {
 				sent++
 			}
 		}
 
 		if next == "" {
-			return wire.Ok
+			return "", wire.Ok
 		}
 		after = next
 		if paged && sent > 0 {
-			w.Cookie([]byte(next))
-
-			return wire.Ok
+			return next, wire.Ok
 		}
 	}
+}
+
+func siteRef(s *rstr.Site) *rstr.SiteRef {
+	return rstr.SiteRef_builder{Id: s.GetId()}.Build()
 }

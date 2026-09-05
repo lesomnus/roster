@@ -143,6 +143,19 @@ func stand(t *testing.T) *deployment {
 	_, err = s.Ungated.Holder().Disable(ctx, rstr.HolderDisableRequest_builder{Ref: rstr.HolderRef_builder{Id: d.park}.Build()}.Build())
 	x.NoError(err)
 
+	// Where people are: a site with a team kim is on, a team with no site lee
+	// is on, and a group with lee and park -- park disabled, so a member the
+	// tree must not name.
+	seoul := d.site(t, d.contoso, "seoul", "Seoul office")
+	d.member(t, d.kim, seoul)
+	platform := d.team(t, d.contoso, seoul, "platform", "Platform engineering")
+	d.onTeam(t, d.kim, platform)
+	nomads := d.team(t, d.contoso, nil, "nomads", "No fixed desk")
+	d.onTeam(t, d.lee, nomads)
+	payroll := d.group(t, d.contoso, "payroll", "Payroll readers")
+	d.inGroup(t, d.lee, payroll)
+	d.inGroup(t, d.park, payroll)
+
 	// App passwords: a key on the person's own row, `Me.Get` and nothing else.
 	d.kimKey = d.key(t, d.kim, "nas", []string{"/roster.MeService/Get"})
 	d.leeKey = d.key(t, d.lee, "jenkins", []string{"/roster.MeService/Get"})
@@ -214,6 +227,62 @@ func (d *deployment) person(t *testing.T, in pdid.Id, alias, name string, p *rst
 	require.NoError(t, err)
 
 	return v.GetId()
+}
+
+func (d *deployment) site(t *testing.T, in pdid.Id, alias, name string) []byte {
+	t.Helper()
+	v, err := d.s.Ungated.Site().Add(t.Context(), rstr.SiteAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Id: in.Bytes()}.Build(), Alias: alias, Name: name,
+	}.Build())
+	require.NoError(t, err)
+
+	return v.GetId()
+}
+
+func (d *deployment) member(t *testing.T, holder, site []byte) {
+	t.Helper()
+	_, err := d.s.Ungated.SiteMembership().Add(t.Context(), rstr.SiteMembershipAddRequest_builder{
+		Holder: rstr.HolderRef_builder{Id: holder}.Build(), Site: rstr.SiteRef_builder{Id: site}.Build(),
+	}.Build())
+	require.NoError(t, err)
+}
+
+func (d *deployment) team(t *testing.T, in pdid.Id, site []byte, alias, name string) []byte {
+	t.Helper()
+	req := rstr.TeamAddRequest_builder{Tenant: rstr.TenantRef_builder{Id: in.Bytes()}.Build(), Alias: alias, Name: name}
+	if site != nil {
+		req.Site = rstr.SiteRef_builder{Id: site}.Build()
+	}
+	v, err := d.s.Ungated.Team().Add(t.Context(), req.Build())
+	require.NoError(t, err)
+
+	return v.GetId()
+}
+
+func (d *deployment) onTeam(t *testing.T, holder, team []byte) {
+	t.Helper()
+	_, err := d.s.Ungated.TeamMembership().Add(t.Context(), rstr.TeamMembershipAddRequest_builder{
+		Holder: rstr.HolderRef_builder{Id: holder}.Build(), Team: rstr.TeamRef_builder{Id: team}.Build(),
+	}.Build())
+	require.NoError(t, err)
+}
+
+func (d *deployment) group(t *testing.T, in pdid.Id, alias, name string) []byte {
+	t.Helper()
+	v, err := d.s.Ungated.Group().Add(t.Context(), rstr.GroupAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Id: in.Bytes()}.Build(), Alias: alias, Name: name,
+	}.Build())
+	require.NoError(t, err)
+
+	return v.GetId()
+}
+
+func (d *deployment) inGroup(t *testing.T, holder, group []byte) {
+	t.Helper()
+	_, err := d.s.Ungated.GroupMembership().Add(t.Context(), rstr.GroupMembershipAddRequest_builder{
+		Holder: rstr.HolderRef_builder{Id: holder}.Build(), Group: rstr.GroupRef_builder{Id: group}.Build(),
+	}.Build())
+	require.NoError(t, err)
 }
 
 func (d *deployment) email(t *testing.T, holder []byte, address string, verified bool) {
@@ -415,6 +484,13 @@ func TestAFilterIsARosterRead(t *testing.T) {
 		"(&(objectClass=person)(|(uid=kim)(uid=lee)))": {kimDN, leeDN},
 		"(sn=Kim Minji)":                               {kimDN},
 		"(preferredLanguage=ko)":                       {kimDN},
+		"(memberOf=cn=payroll,ou=groups,o=contoso)":    {leeDN},
+		"(memberOf=CN=Payroll,OU=Groups,O=Contoso)":    {leeDN},
+		"(memberOf=cn=platform,ou=teams,ou=seoul,ou=sites,o=contoso)":      {kimDN},
+		"(memberOf=cn=nomads,ou=teams,o=contoso)":                          {leeDN},
+		"(memberOf=cn=nobody,ou=groups,o=contoso)":                         {},
+		"(memberOf=cn=payroll,ou=groups,o=fabrikam)":                       {},
+		"(&(memberOf=cn=payroll,ou=groups,o=contoso)(departmentNumber=x))": {},
 	} {
 		t.Run(filter, func(t *testing.T) {
 			got := search(t, c, peopleDN, goldap.ScopeSingleLevel, filter, "1.1")
@@ -568,4 +644,92 @@ func dialRoster(t *testing.T, addr string) *grpc.ClientConn {
 
 func bearing(ctx context.Context, token string) context.Context {
 	return metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+token)
+}
+
+func TestGroupsTeamsAndSitesAreTheTree(t *testing.T) {
+	x := require.New(t)
+	d := stand(t)
+	c := d.serve(t, ldap.BindKey, nil)
+	x.NoError(c.Bind(kimDN, d.kimKey))
+
+	const (
+		payroll  = "cn=payroll,ou=groups,o=contoso"
+		seoul    = "ou=seoul,ou=sites,o=contoso"
+		platform = "cn=platform,ou=teams,ou=seoul,ou=sites,o=contoso"
+		nomads   = "cn=nomads,ou=teams,o=contoso"
+	)
+
+	t.Run("a group names its members, and not somebody disabled", func(t *testing.T) {
+		x := require.New(t)
+		got := search(t, c, "ou=groups,o=contoso", goldap.ScopeSingleLevel, "(objectClass=groupOfNames)")
+		x.Equal([]string{payroll}, dns(got))
+		x.Equal([]string{leeDN}, got[0].GetAttributeValues("member"), "park is disabled and was named")
+		x.Equal("Payroll readers", got[0].GetAttributeValue("description"))
+
+		one := search(t, c, payroll, goldap.ScopeBaseObject, "(member="+leeDN+")", "cn")
+		x.Equal([]string{payroll}, dns(one))
+		none := search(t, c, payroll, goldap.ScopeBaseObject, "(member="+kimDN+")", "cn")
+		x.Empty(none)
+	})
+
+	t.Run("a site holds its teams, and a team with no site is under the suffix", func(t *testing.T) {
+		x := require.New(t)
+		sites := search(t, c, "ou=sites,o=contoso", goldap.ScopeSingleLevel, "(objectClass=*)", "ou")
+		x.Equal([]string{seoul}, dns(sites))
+
+		under := search(t, c, seoul, goldap.ScopeWholeSubtree, "(objectClass=*)", "cn", "ou", "member")
+		x.ElementsMatch([]string{seoul, "ou=teams," + seoul, platform}, dns(under))
+		for _, e := range under {
+			if e.DN == platform {
+				x.Equal([]string{kimDN}, e.GetAttributeValues("member"))
+			}
+		}
+
+		got := search(t, c, nomads, goldap.ScopeBaseObject, "(objectClass=groupOfNames)", "member")
+		x.Equal([]string{nomads}, dns(got))
+		x.Equal([]string{leeDN}, got[0].GetAttributeValues("member"))
+
+		teams := search(t, c, "ou=teams,o=contoso", goldap.ScopeSingleLevel, "(objectClass=*)", "cn")
+		x.Equal([]string{nomads}, dns(teams), "a team with a site was listed under the suffix's own ou=teams")
+	})
+
+	t.Run("memberOf is the same truth from the person's end", func(t *testing.T) {
+		x := require.New(t)
+		kim := search(t, c, kimDN, goldap.ScopeBaseObject, "(objectClass=*)", "memberOf")
+		x.Equal([]string{platform}, kim[0].GetAttributeValues("memberOf"))
+		lee := search(t, c, leeDN, goldap.ScopeBaseObject, "(objectClass=*)", "memberOf")
+		x.ElementsMatch([]string{payroll, nomads}, lee[0].GetAttributeValues("memberOf"))
+	})
+
+	t.Run("the whole suffix, in one search and in pages, is the same tree", func(t *testing.T) {
+		x := require.New(t)
+		want := []string{
+			contosoDN, peopleDN, "ou=groups,o=contoso", "ou=sites,o=contoso",
+			kimDN, leeDN, adminDN, directoryDN,
+			payroll, nomads, seoul, "ou=teams," + seoul, platform,
+		}
+		whole := search(t, c, contosoDN, goldap.ScopeWholeSubtree, "(objectClass=*)", "1.1")
+		x.ElementsMatch(want, dns(whole))
+
+		res, err := c.SearchWithPaging(goldap.NewSearchRequest(contosoDN, goldap.ScopeWholeSubtree, goldap.NeverDerefAliases, 0, 0, false, "(objectClass=*)", []string{"1.1"}, nil), 3)
+		x.NoError(err)
+		x.ElementsMatch(want, dns(res.Entries))
+
+		// And from the root, both tenants, each once.
+		res, err = c.SearchWithPaging(goldap.NewSearchRequest("", goldap.ScopeWholeSubtree, goldap.NeverDerefAliases, 0, 0, false, "(objectClass=*)", []string{"1.1"}, nil), 4)
+		x.NoError(err)
+		all := dns(res.Entries)
+		x.Subset(all, want)
+		x.Contains(all, "uid=kim,ou=people,o=fabrikam")
+		seen := map[string]bool{}
+		for _, dn := range all {
+			x.False(seen[dn], "%s twice", dn)
+			seen[dn] = true
+		}
+	})
+
+	t.Run("a name below a site that is not there is no such object", func(t *testing.T) {
+		_, err := c.Search(goldap.NewSearchRequest("cn=x,ou=teams,ou=busan,ou=sites,o=contoso", goldap.ScopeBaseObject, goldap.NeverDerefAliases, 0, 0, false, "(objectClass=*)", nil, nil))
+		require.True(t, goldap.IsErrorWithCode(err, goldap.LDAPResultNoSuchObject), "%v", err)
+	})
 }
