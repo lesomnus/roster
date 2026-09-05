@@ -78,7 +78,7 @@ func newCmdAccountServe() *xli.Command {
 				return fmt.Errorf("--connect: %w", err)
 			}
 
-			keys, err := keysFrom(cmd)
+			keys, err := keysFrom(cmd, "ROSTER_ACCOUNT_KEY_")
 			if err != nil {
 				return err
 			}
@@ -196,19 +196,22 @@ func sealFrom(cmd *xli.Command) (*authsession.Sealed, error) {
 }
 
 // keysFrom is one tenant key per operator, from `--key alias=token` and from
-// `ROSTER_ACCOUNT_KEY_<ALIAS>`, the flag winning where both name one.
+// `<prefix><ALIAS>` in the environment, the flag winning where both name one.
+// `roster account serve` reads `ROSTER_ACCOUNT_KEY_`, `roster ldap serve`
+// `ROSTER_LDAP_KEY_`: two processes, two sets of keys, and a shell that starts
+// both from one environment does not hand either the other's.
 //
 // The environment form is there because a key is a secret and a process list
 // is not where one belongs; the flag form is there because a shell that starts
 // this for one tenant should not have to export anything.
-func keysFrom(cmd *xli.Command) (map[string]string, error) {
+func keysFrom(cmd *xli.Command, prefix string) (map[string]string, error) {
 	out := map[string]string{}
 	for _, kv := range os.Environ() {
 		name, value, ok := strings.Cut(kv, "=")
 		if !ok {
 			continue
 		}
-		alias, ok := strings.CutPrefix(name, "ROSTER_ACCOUNT_KEY_")
+		alias, ok := strings.CutPrefix(name, prefix)
 		if !ok || alias == "" || value == "" {
 			continue
 		}
@@ -224,7 +227,7 @@ func keysFrom(cmd *xli.Command) (map[string]string, error) {
 		out[alias] = token
 	}
 	if len(out) == 0 {
-		return nil, errors.New("--key alias=rt_… (or ROSTER_ACCOUNT_KEY_<ALIAS>): one tenant key per operator this fronts")
+		return nil, fmt.Errorf("--key alias=rt_… (or %s<ALIAS>): one tenant key per operator this fronts", prefix)
 	}
 
 	return out, nil

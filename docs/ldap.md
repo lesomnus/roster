@@ -332,6 +332,6 @@ needs them. Each becomes a comment beside what it decides when it lands.
 | | | |
 | --- | --- | --- |
 | L0 | the wire | **done** — `ldap/wire`: the loop, simple bind, search, unbind, abandon, StartTLS (and LDAPS as the listener's), WhoAmI, paging, the refusal table. Proved against `go-ldap` as the client and by hand for what it has no call for (abandon); under the race detector |
-| L1 | people | not started |
+| L1 | people | **done** — `ldap/`: the tree above the people, `ou=people` with every attribute in the table (`mail` verified only, disabled absent), bind in all three modes with roster's `ok` as the second-factor rule, search planned into `Holder.Get`/`Holder.Search`/`Email.Get`/`Holder.List` and evaluated off the BER tree, paging on roster's own cursor, `uid` and `mail` found without regard to case. `roster ldap serve` with `--key`/`ROSTER_LDAP_KEY_`, `--base`, `--bind`, `--tls`, `--listen-tls`, `--require-tls`. The import check learned `ldap/`. Eight tests in `ldap/`, one in `cmd/` |
 | L2 | groups, teams, sites | not started |
 | L3 | shipped | not started |

@@ -555,11 +555,13 @@ func Cmd(c *Config) *xli.Command {
 			NewCmdRestore(c),
 			NewCmdServe(c),
 			NewCmdAccount(c),
+			NewCmdLdap(c),
 		}, NewCmdEntities(c)...),
 
-		// `ROSTER_ACCOUNT_KEY_<ALIAS>` is read by `roster account serve` itself
-		// (`keysFrom`), not by the loader, and is not a typo.
-		Handler: xli.Chain(pdcmd.Load(Loader, c, pdcmd.Reads("ACCOUNT_KEY_")), hal(c), xli.RequireSubcommand()),
+		// `ROSTER_ACCOUNT_KEY_<ALIAS>` and `ROSTER_LDAP_KEY_<ALIAS>` are read by
+		// `roster account serve` and `roster ldap serve` themselves
+		// (`keysFrom`), not by the loader, and are not typos.
+		Handler: xli.Chain(pdcmd.Load(Loader, c, pdcmd.Reads("ACCOUNT_KEY_", "LDAP_KEY_")), hal(c), xli.RequireSubcommand()),
 	}
 }
 

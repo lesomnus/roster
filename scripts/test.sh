@@ -78,11 +78,15 @@ go tool pd gen --check --ts .
 # an operator minted, and if it could reach past that it would be the second
 # thing in this repository that can. `server/front` is the one exception --
 # `Hostname`, a pure function both sides have to agree on.
-echo "== the account app reaches roster only over the wire"
-if go list -f '{{join .Imports "\n"}}' ./account/ | grep -E '^github.com/lesomnus/roster/(internal|cmd|server/)' | grep -v '^github.com/lesomnus/roster/server/front$'; then
-	echo "account/ imports a server package; it is a consumer and reaches roster over the wire" >&2
-	exit 1
-fi
+# The directory (`ldap/`) is held to the same: a second consumer, the same
+# one exception (`front.Address`, so an address is looked up as it is stored).
+echo "== the account app and the directory reach roster only over the wire"
+for pkg in ./account/ ./ldap/; do
+	if go list -f '{{join .Imports "\n"}}' "${pkg}" | grep -E '^github.com/lesomnus/roster/(internal|cmd|server/)' | grep -v '^github.com/lesomnus/roster/server/front$'; then
+		echo "${pkg} imports a server package; it is a consumer and reaches roster over the wire" >&2
+		exit 1
+	fi
+done
 
 # That roster still builds for the browser, which is a promise `ts/` already
 # makes -- there is a `wasm` script and a sandbox that loads what it produces --
