@@ -153,8 +153,9 @@ not have).
 ## Search
 
 Base, one-level and subtree; filters with `&`, `|`, `!`, equality, presence
-and substrings over the attributes above, parsed with `go-ldap`'s compiler
-and evaluated here. What decides the cost is which roster read a filter
+and substrings over the attributes above, evaluated straight off the BER
+tree the request arrived as -- a filter on the wire is already a tree, and
+there is no string to parse. What decides the cost is which roster read a filter
 becomes:
 
 | the filter says | this process calls |
@@ -227,18 +228,43 @@ spec grows one path for it.
 | | |
 | --- | --- |
 | `ldap/` | the package: the tree, the bind, the search, the filter walker. A consumer, held to it by `scripts/test.sh`'s import check, which learns the second directory |
+| `ldap/wire/` | the protocol: one connection's loop, and the handful of messages this process speaks, decoded from and encoded to BER. Nothing in it knows what a holder is |
 | `cmd/ldap.go` | `roster ldap serve`: `--listen :389`, `--roster`, `--insecure`, `--key`, `--base`, `--bind`, `--tls`, `--starttls-required` |
 | `docker/ldap.sh`, `compose.yaml` | an `ldap` service beside `account`, its key from the same `customer` one-shot |
 | `docs/operating.md` | § A directory, over LDAP -- the operator's page |
 | `docs/usage/ways-in.md` | a paragraph under the tenant key: an app password is a key |
 | `docs/baseline.md` | the rows below, pinned |
 
-**Library**: `github.com/jimlambrt/gldap` for the server (a `Mux` of bind,
-search, unbind and extended handlers, StartTLS, paging controls) and
-`github.com/go-ldap/ldap/v3` for the filter compiler and for the tests, which
-are a real client against the process. Neither is a framework: gldap decodes
-the messages and encodes the answers, and everything that decides anything
-is in `ldap/`.
+### The wire is ours
+
+There is no server library in this. `ldap/wire` reads and writes the messages
+on `github.com/go-asn1-ber/asn1-ber`, which is the BER codec `go-ldap`
+already brings in, so the dependency graph grows by nothing.
+
+Why not `jimlambrt/gldap`, which does this for you and was the first draft's
+answer: the subset spoken here is five requests -- simple bind, search,
+unbind, the StartTLS extended operation, abandon -- their answers, a paging
+control, and one table of *which response tag refuses which operation*. That
+is a few hundred lines, and it is the whole of what this process says on the
+wire, which is the kind of thing this repository keeps rather than borrows:
+gldap is one person's library whose last release was 2024-08, and the rule
+about fixing upstream when it is in the way becomes a fork when upstream has
+stopped. It also hands the filter over as a string, to be compiled back into
+the tree it was decoded from; reading the tree directly is both less code and
+the natural shape.
+
+What the loop has to get right, and what a library would have got right for
+it, is written out so it is tested rather than assumed: **message IDs** (every
+answer carries its request's, and a connection may have several searches in
+flight), **abandon** (stops a search that is still paging), **the StartTLS
+turn** (the response is written in the clear and the very next byte is the
+TLS handshake), **controls** (paging is the one read; unknown critical
+controls refuse the operation with `unavailableCriticalExtension` (12)), and
+**size and time limits** as the client set them.
+
+`github.com/go-ldap/ldap/v3` is in the tests only: a real client against the
+process is what proves the wire is right, and a second implementation of the
+same encoding is a better witness than the first one reading itself.
 
 ## What is pinned
 
@@ -261,7 +287,8 @@ The promises, in `baseline.md`'s shape, each to be written with the code:
 
 | | | |
 | --- | --- | --- |
-| L1 | **people** | `ldap/`: root DSE, StartTLS/LDAPS, bind in both modes, `ou=people` with the attributes above, search with every filter shape in the table, paging. `roster ldap serve`. The import check. The first six tests |
+| L0 | **the wire** | `ldap/wire`: the connection loop, the five requests and their answers, StartTLS, the paging control, the refusal table. Tested against `go-ldap` as a client, with the root DSE as the one entry it serves |
+| L1 | **people** | `ldap/`: bind in both modes, `ou=people` with the attributes above, search with every filter shape in the table evaluated off the BER tree, paging. `roster ldap serve`. The import check. The first six tests |
 | L2 | **groups, teams, sites** | `ou=groups`, `ou=sites/…/ou=teams`, `member` and `memberOf`. The remaining tests |
 | L3 | **shipped** | compose service, `operating.md`, `ways-in.md`, the account app's *App password* preset and its spec, this file rewritten as a description |
 
@@ -304,6 +331,7 @@ needs them. Each becomes a comment beside what it decides when it lands.
 
 | | | |
 | --- | --- | --- |
+| L0 | the wire | not started |
 | L1 | people | not started |
 | L2 | groups, teams, sites | not started |
 | L3 | shipped | not started |
