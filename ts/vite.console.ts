@@ -22,6 +22,12 @@ export default defineConfig({
 	optimizeDeps: { exclude: ['@lesomnus/grpc-dgram'] },
 
 	server: {
+		// Every interface, not the loopback: this is developed in a container,
+		// and a dev server bound to 127.0.0.1 there is one the host's browser
+		// cannot reach. `scripts/e2e.sh` still checks and dials 127.0.0.1, which
+		// a listener on 0.0.0.0 answers.
+		host: true,
+
 		// SQLite in a Worker cancels work with a `SharedArrayBuffer`, which does
 		// not exist without cross-origin isolation. The symptom is "it works on
 		// the other dev server".

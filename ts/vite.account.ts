@@ -11,6 +11,8 @@ export default defineConfig({
 	build: { outDir: '../dist/account', emptyOutDir: true },
 	plugins: [react()],
 	server: {
+		// Every interface, for `vite.console.ts`'s reason: a container.
+		host: true,
 		proxy: {
 			'/session': 'http://localhost:8090',
 			'/providers': 'http://localhost:8090',
