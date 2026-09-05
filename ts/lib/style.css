@@ -1,119 +1,337 @@
-/* Enough to read the page and no more; the design is yours. */
+/* One stylesheet for both pages: the console an operator opens and the
+   account page a customer's people sign in at.
+
+   What it is: a small system rather than a look -- a palette in variables
+   (light and dark from the same names), a spacing scale, one shape for a
+   section, a table, a form and a button, and the handful of notices the
+   pages already had (`.note`, `.bad`, `.none`, `.secret`). Nothing here is a
+   component library, and nothing here is a decision about what the pages
+   do; the markup was left as it was and this only gives it a shape. */
 
 :root {
 	color-scheme: light dark;
-	font-family: system-ui, sans-serif;
+
+	--bg: #f6f7f9;
+	--surface: #ffffff;
+	--surface-2: #f0f2f5;
+	--border: #dde1e6;
+	--text: #1f2328;
+	--muted: #6b7280;
+	--accent: #3b5bdb;
+	--accent-text: #ffffff;
+	--accent-soft: #e8ecfb;
+	--danger: #c0392b;
+	--danger-soft: #fdecea;
+	--warn: #b58900;
+	--warn-soft: #fff8e1;
+	--ok: #2f855a;
+
+	--radius: 6px;
+	--shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+
+	--s-1: 0.25rem;
+	--s-2: 0.5rem;
+	--s-3: 0.75rem;
+	--s-4: 1rem;
+	--s-5: 1.5rem;
+	--s-6: 2rem;
+
+	font-family:
+		system-ui,
+		-apple-system,
+		'Segoe UI',
+		Roboto,
+		sans-serif;
+	font-size: 15px;
 	line-height: 1.5;
+	color: var(--text);
+	background: var(--bg);
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--bg: #0f1216;
+		--surface: #171b21;
+		--surface-2: #1f242c;
+		--border: #2b323c;
+		--text: #e6e8eb;
+		--muted: #9aa3ad;
+		--accent: #7b93ff;
+		--accent-text: #0f1216;
+		--accent-soft: #232a45;
+		--danger: #f07167;
+		--danger-soft: #3a1f1d;
+		--warn: #e0b341;
+		--warn-soft: #33290f;
+		--ok: #5cb885;
+		--shadow: none;
+	}
+}
+
+* {
+	box-sizing: border-box;
 }
 
 body {
 	margin: 0;
+	background: var(--bg);
+	color: var(--text);
 }
 
-main,
-.sign-in {
-	max-width: 42rem;
-	margin: 0 auto;
-	padding: 2rem 1rem;
+code,
+.mono {
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 0.9em;
 }
 
-header {
-	display: flex;
-	align-items: baseline;
-	gap: 0.75rem;
-	margin-bottom: 1.5rem;
+a {
+	color: var(--accent);
+}
+
+/* ---------------------------------------------------------------- text */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	margin: 0;
+	font-weight: 600;
+	line-height: 1.3;
 }
 
 h1 {
-	font-size: 1.25rem;
-	margin: 0;
+	font-size: 1.15rem;
+	letter-spacing: 0.01em;
+}
+
+h2 {
+	font-size: 1.2rem;
+	margin-bottom: var(--s-4);
+}
+
+h3 {
+	font-size: 1.05rem;
+	margin-bottom: var(--s-3);
+}
+
+h4 {
+	font-size: 0.95rem;
+	margin: var(--s-4) 0 var(--s-2);
+}
+
+/* The two smallest are labels over a table inside a panel: quiet, so the
+   table reads first. */
+h5,
+h6 {
+	font-size: 0.75rem;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--muted);
+	margin: var(--s-4) 0 var(--s-2);
+}
+
+p {
+	margin: 0 0 var(--s-3);
+}
+
+/* ------------------------------------------------------------- layout */
+
+/* The console: a sidebar of screens and the screen. */
+.console {
+	display: grid;
+	grid-template-columns: 13rem minmax(0, 1fr);
+	min-height: 100vh;
+}
+
+.console > nav {
+	display: flex;
+	flex-direction: column;
+	gap: var(--s-1);
+	padding: var(--s-5) var(--s-4);
+	border-right: 1px solid var(--border);
+	background: var(--surface);
+	position: sticky;
+	top: 0;
+	height: 100vh;
+}
+
+.console > nav h1 {
+	padding: 0 var(--s-2);
+	margin-bottom: var(--s-4);
+}
+
+.console > nav button {
+	text-align: left;
+	background: none;
+	border: none;
+	padding: var(--s-2) var(--s-3);
+	border-radius: var(--radius);
+	color: var(--text);
+	font-weight: 500;
+}
+
+.console > nav button:hover:not([disabled]) {
+	background: var(--surface-2);
+}
+
+.console > nav button.at {
+	background: var(--accent-soft);
+	color: var(--accent);
+}
+
+.console > nav button[disabled] {
+	color: var(--muted);
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+/* Who is signed in, and the way out, pinned to the bottom of the sidebar. */
+.console > nav .who {
+	margin-top: auto;
+	padding: var(--s-2) var(--s-3) 0;
+	font-size: 0.85rem;
+	color: var(--muted);
+}
+
+.console > main {
+	padding: var(--s-6);
+	max-width: 68rem;
+	width: 100%;
+}
+
+@media (max-width: 48rem) {
+	.console {
+		grid-template-columns: 1fr;
+	}
+
+	.console > nav {
+		position: static;
+		height: auto;
+		flex-direction: row;
+		flex-wrap: wrap;
+		align-items: center;
+		border-right: none;
+		border-bottom: 1px solid var(--border);
+		padding: var(--s-3) var(--s-4);
+	}
+
+	.console > nav h1 {
+		margin: 0 var(--s-3) 0 0;
+	}
+
+	.console > nav .who {
+		margin-top: 0;
+		margin-left: auto;
+		padding: 0 var(--s-2);
+	}
+
+	.console > main {
+		padding: var(--s-4);
+	}
+}
+
+/* The account page: a bar with the operator's name, and one column. */
+.account > nav {
+	display: flex;
+	align-items: center;
+	gap: var(--s-3);
+	padding: var(--s-3) var(--s-5);
+	background: var(--surface);
+	border-bottom: 1px solid var(--border);
+}
+
+.account > nav h1 {
 	flex: 1;
 }
 
-form {
-	display: flex;
-	align-items: center;
-	gap: 0.5rem;
-	margin-bottom: 1rem;
+.account > nav .who {
+	font-size: 0.85rem;
+	color: var(--muted);
 }
 
-input {
-	padding: 0.35rem 0.5rem;
-	font: inherit;
+.account > main,
+main.loading,
+main.error {
+	max-width: 44rem;
+	margin: 0 auto;
+	padding: var(--s-6) var(--s-4);
 }
 
-button {
-	padding: 0.35rem 0.75rem;
-	font: inherit;
-	cursor: pointer;
+/* ------------------------------------------------------------ sections */
+
+/* A screen is one or more sections, each a card. */
+main > section,
+.account > main > section {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	box-shadow: var(--shadow);
+	padding: var(--s-5);
+	margin-bottom: var(--s-5);
 }
+
+/* Inside a card, a section is a part of it and not a card of its own. The
+   customers screen nests three deep -- tenant, person, what they sign in
+   with -- and `.within` is the panel that opened under a row: set off by a
+   rule down the left, so the nesting reads as nesting. */
+.within {
+	margin: var(--s-4) 0 0;
+	padding: var(--s-3) 0 0 var(--s-4);
+	border-left: 3px solid var(--accent-soft);
+}
+
+.within > h3,
+.within > h4,
+.within > h5,
+.within > h6 {
+	margin-top: 0;
+}
+
+section > section {
+	margin-top: var(--s-4);
+}
+
+/* ------------------------------------------------------------- tables */
 
 table {
 	width: 100%;
 	border-collapse: collapse;
+	margin-bottom: var(--s-4);
+	font-size: 0.95rem;
+}
+
+th {
+	text-align: left;
+	font-size: 0.72rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--muted);
+	padding: 0 var(--s-2) var(--s-2);
+	border-bottom: 1px solid var(--border);
 }
 
 td {
-	padding: 0.4rem 0.5rem;
-	border-bottom: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+	padding: var(--s-2);
+	border-bottom: 1px solid var(--border);
+	vertical-align: middle;
+}
+
+tbody tr:hover {
+	background: var(--surface-2);
+}
+
+/* The row whose panel is open. */
+tr.at > td {
+	background: var(--accent-soft);
 }
 
 td:last-child {
 	text-align: right;
 	width: 1%;
-}
-
-.dim {
-	opacity: 0.6;
-}
-
-.bad {
-	color: #c0392b;
-}
-
-.sign-in label {
-	display: flex;
-	gap: 0.5rem;
-	align-items: center;
-}
-
-.sign-in p {
-	opacity: 0.7;
-	font-size: 0.9rem;
-}
-
-/* The customers screen nests three deep -- tenant, person, what they sign in
-   with -- and without the indent the three tables read as one. This is the
-   least that makes the nesting visible, not a style for the console. */
-.within {
-	margin-left: 1.5rem;
-	border-left: 2px solid #ddd;
-	padding-left: 1rem;
-}
-
-/* The form that stands a customer up, which is what `roster init` used to do.
-
-   It sits above the list rather than behind a button, because on a fresh
-   deployment the list is empty and the thing to do next is the only thing on
-   the screen. */
-.new-customer {
-	margin-bottom: 1rem;
-}
-
-.new-customer form {
-	margin-bottom: 0.25rem;
-}
-
-.new-customer button[disabled] {
-	opacity: 0.4;
-	cursor: not-allowed;
-}
-
-/* The arrives-through panel has a form with six fields; one row of them does
-   not fit, and a form that wraps is the whole of what this says. Two buttons
-   in one cell sit side by side. */
-.arrives form {
-	flex-wrap: wrap;
+	white-space: nowrap;
 }
 
 td.acts {
@@ -121,102 +339,211 @@ td.acts {
 }
 
 td.acts button + button {
-	margin-left: 0.25rem;
+	margin-left: var(--s-1);
 }
 
-/* The organisation and access panels have forms that wrap, and a methods
-   field that wants the room. */
-.organisation form,
-.access form {
+/* An edit row: the form takes the row and wraps. */
+td form {
+	margin: 0;
 	flex-wrap: wrap;
+}
+
+/* -------------------------------------------------------------- forms */
+
+form {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--s-2);
+	margin-bottom: var(--s-3);
+}
+
+input,
+select,
+textarea {
+	font: inherit;
+	color: var(--text);
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	padding: var(--s-2) var(--s-3);
+	min-width: 0;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 1px;
+}
+
+input::placeholder {
+	color: var(--muted);
 }
 
 input.wide {
 	flex: 1 1 100%;
 }
 
-h5,
-h6 {
-	margin: 0.75rem 0 0.25rem;
+label {
+	display: flex;
+	align-items: center;
+	gap: var(--s-2);
+	font-size: 0.9rem;
+	color: var(--muted);
 }
 
-/* The person panel's irreversible act, told apart by colour and nothing else. */
+label input {
+	color: var(--text);
+}
+
+/* -------------------------------------------------------------- buttons */
+
+button {
+	font: inherit;
+	font-size: 0.9rem;
+	padding: var(--s-2) var(--s-3);
+	border-radius: var(--radius);
+	border: 1px solid var(--border);
+	background: var(--surface);
+	color: var(--text);
+	cursor: pointer;
+	line-height: 1.2;
+}
+
+button:hover:not([disabled]) {
+	background: var(--surface-2);
+}
+
+/* The act a form is for. */
+form button[type='submit'] {
+	background: var(--accent);
+	border-color: var(--accent);
+	color: var(--accent-text);
+}
+
+form button[type='submit']:hover:not([disabled]) {
+	filter: brightness(1.08);
+	background: var(--accent);
+}
+
+/* A disabled button is a permission this operator does not hold, and it
+   stays on the page rather than disappearing: a screen that hid what
+   somebody may not do would leave them wondering whether the feature exists. */
+button[disabled] {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+
+/* The irreversible act, told apart by colour. */
 button.danger {
-	color: #c0392b;
+	color: var(--danger);
+	border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
+}
+
+button.danger:hover:not([disabled]) {
+	background: var(--danger-soft);
+}
+
+/* A text-shaped button for the choices beside a form ("forgot?", "back"). */
+button.link {
+	background: none;
+	border: none;
+	padding: var(--s-2) var(--s-1);
+	color: var(--accent);
+	text-decoration: underline;
+}
+
+a.button {
+	display: inline-block;
+	padding: var(--s-2) var(--s-3);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--surface);
+	color: var(--text);
+	text-decoration: none;
+	font-size: 0.9rem;
+}
+
+a.button:hover {
+	background: var(--surface-2);
+}
+
+/* A row of acts under a panel. A cell of acts (`td.acts`) stays a cell: in a
+   table the buttons sit in one line on the row they are about. */
+div.acts,
+p.acts {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--s-2);
+	align-items: center;
+	margin-bottom: var(--s-3);
 }
 
 .enrol {
 	display: inline-flex;
-	gap: 0.25rem;
+	gap: var(--s-1);
 }
 
-form.profile {
-	flex-wrap: wrap;
+/* ------------------------------------------------------------- notices */
+
+.note {
+	color: var(--muted);
+	font-size: 0.9rem;
 }
 
-/* A provider's subject is an opaque identifier somebody compares by eye. */
-.mono {
-	font-family: ui-monospace, monospace;
+.hint {
+	flex-basis: 100%;
+	color: var(--muted);
+	font-size: 0.85rem;
+	margin: 0 0 var(--s-2);
 }
 
 .none {
-	color: #888;
+	color: var(--muted);
+	font-style: italic;
 }
 
-/* The sentence under a form that mints something on a person's behalf -- what
-   an app password is for -- small and grey, because the button already says
-   what it does and this only says when to press it. */
-.hint {
-	color: #666;
-	font-size: 0.85rem;
-	margin: 0.25rem 0 0.75rem;
-	flex-basis: 100%;
+.dim {
+	color: var(--muted);
 }
 
-/* The person panel: what somebody signs in with, and the four acts an operator
-   has when they cannot.
-
-   They sit together because they are one decision -- you look at the ways in,
-   and then you do something about them -- and separating them into a menu
-   somewhere would make the state and the act two screens apart. */
-.person .state {
-	margin: 0.75rem 0;
+.bad {
+	color: var(--danger);
+	font-size: 0.9rem;
 }
 
-.person .acts {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.5rem;
-	margin-bottom: 0.75rem;
+p.bad {
+	background: var(--danger-soft);
+	border-radius: var(--radius);
+	padding: var(--s-2) var(--s-3);
 }
 
-/* A disabled button is a permission this operator does not hold, and it stays
-   on the page rather than disappearing: a screen that hid what somebody may not
-   do would leave them wondering whether the feature exists. */
-.person .acts button[disabled] {
-	opacity: 0.4;
-	cursor: not-allowed;
+.loading,
+.error {
+	color: var(--muted);
 }
 
-/* The one place this app puts a secret on a screen.
+/* The one place either app puts a secret on a screen.
 
    Loud on purpose. It is shown once, it is not stored, and the operator is
-   about to read it out to somebody -- so it has to be selectable, legible at a
-   glance, and obviously not part of the page around it. */
+   about to read it out to somebody -- so it has to be selectable, legible at
+   a glance, and obviously not part of the page around it. */
 .secret {
-	border: 2px solid #b58900;
-	background: #fffbeb;
-	padding: 0.75rem 1rem;
-	margin: 0.5rem 0;
+	border: 1px solid var(--warn);
+	background: var(--warn-soft);
+	border-radius: var(--radius);
+	padding: var(--s-3) var(--s-4);
+	margin: var(--s-3) 0;
 }
 
 .secret code {
 	display: block;
-	font-family: ui-monospace, monospace;
-	font-size: 1.25rem;
+	font-size: 1.1rem;
 	word-break: break-all;
 	user-select: all;
-	margin: 0.5rem 0;
+	margin: var(--s-2) 0;
 }
 
 .secret p {
@@ -224,38 +551,83 @@ form.profile {
 	font-size: 0.9rem;
 }
 
-/* The account page's sign-in: the providers as buttons, above the password
-   form, because a person who arrives through Entra should not read a password
-   field first. */
+/* ------------------------------------------------------------- sign-in */
+
+/* Both sign-in forms: one card in the middle of the page. */
+.sign-in {
+	max-width: 24rem;
+	margin: 12vh auto 0;
+	padding: var(--s-6);
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	box-shadow: var(--shadow);
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: var(--s-3);
+}
+
+.sign-in h1 {
+	font-size: 1.35rem;
+	margin-bottom: var(--s-2);
+}
+
+.sign-in label {
+	flex-direction: column;
+	align-items: stretch;
+	gap: var(--s-1);
+}
+
+.sign-in label input {
+	width: 100%;
+}
+
+.sign-in form {
+	flex-direction: column;
+	align-items: stretch;
+	margin: 0;
+}
+
+.sign-in form button[type='submit'] {
+	margin-top: var(--s-2);
+}
+
+.sign-in p {
+	margin: 0;
+}
+
+.sign-in > p:last-child {
+	color: var(--muted);
+	font-size: 0.85rem;
+}
+
+/* The providers as buttons above the password form, because a person who
+   arrives through Entra should not read a password field first. */
 .providers {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 0.5rem;
-	margin-bottom: 1rem;
+	gap: var(--s-2);
 }
 
-a.button {
-	padding: 0.35rem 0.75rem;
-	border: 1px solid currentColor;
-	border-radius: 0.25rem;
-	text-decoration: none;
-	color: inherit;
+/* ------------------------------------------------- screen particulars */
+
+/* The form that stands a customer up sits above the list, because on a fresh
+   deployment the list is empty and the thing to do next is the only thing on
+   the screen. */
+.new-customer {
+	padding: var(--s-3) var(--s-4);
+	background: var(--surface-2);
+	border-radius: var(--radius);
+	margin-bottom: var(--s-4);
 }
 
-/* The account page: one column of sections, a text-shaped button for the
-   choices beside a form ("forgot?", "back"), and a form that wraps. */
-.account main section {
-	margin-bottom: 2rem;
+.new-customer form {
+	margin-bottom: var(--s-1);
 }
 
-button.link {
-	background: none;
-	border: none;
-	padding: 0.35rem 0.25rem;
-	text-decoration: underline;
-	opacity: 0.8;
-}
-
-.account form {
-	flex-wrap: wrap;
+/* The person panel: what somebody signs in with, and the acts an operator
+   has when they cannot. Together because they are one decision. */
+.person .state {
+	margin: var(--s-3) 0;
 }
