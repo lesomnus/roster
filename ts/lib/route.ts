@@ -11,7 +11,8 @@ import { useSyncExternalStore } from 'react'
  * it through `history.pushState` so the back button walks it back.
  *
  * No library, because there is nothing to match: the tree is fixed
- * (`/console/<screen>/<tenant>/<panel>/<person>`) and each screen reads the
+ * (`/console/<screen>/@<tenant>/<panel>/<person>`, aliases rather than
+ * identifiers because somebody reads the address) and each screen reads the
  * segment that is its own. The server already answers `index.html` for every
  * path under `/console/` (`cmd/serve.go`), as vite does, so a deep link opens.
  */
@@ -57,12 +58,18 @@ function onPop(): void {
  * a sign-out -- which should not be a step back either.
  */
 export function go(to: readonly string[], replace = false): void {
-	const path = base + '/' + to.map(encodeURIComponent).join('/')
+	const path = base + '/' + to.map(segment).join('/')
 	if (path === location.pathname) return
 	if (replace) history.replaceState(null, '', path)
 	else history.pushState(null, '', path)
 	current = to.join('/')
 	notify()
+}
+
+// segment escapes what a path segment cannot carry and keeps `@`, which it
+// can, so `/customers/@contoso` reads as the CLI writes it.
+function segment(s: string): string {
+	return encodeURIComponent(s).replace(/%40/g, '@')
 }
 
 /** useRoute is the path as segments, redrawn when it changes. */

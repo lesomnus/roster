@@ -121,10 +121,12 @@ function Tenants(props: { admin: Admin; may: (method: string) => boolean }): Rea
 	// Which customer is open, and on which panel: who is in it, how they
 	// arrive, how they are organised, what they may do, what was done. One at
 	// a time, because the panels nest under the row and two open at once read
-	// as one. It is the address bar's to say -- `/customers/<id>/<panel>` --
-	// so the back button closes a panel and a reload keeps it open.
+	// as one. It is the address bar's to say -- `/customers/@<alias>/<panel>`,
+	// the alias the CLI names a tenant by, because somebody reads the address
+	// -- so the back button closes a panel and a reload keeps it open.
 	const route = useRoute()
 	const at = panelOf(route[1], route[2])
+	const same = (v: Tenant): boolean => at !== null && '@' + v.alias === at.id
 
 	// What this screen made since it read, which is the shape `Keys` already
 	// uses one file over: a list query is not revalidated by a write this page
@@ -163,8 +165,9 @@ function Tenants(props: { admin: Admin; may: (method: string) => boolean }): Rea
 				<tbody>
 					{items.map((v) => {
 						const id = uuid(v.id)
-						const open = at?.id === id
-						const toggle = (on: Panel) => () => go(open && at?.on === on ? ['customers'] : ['customers', id, on])
+						const open = same(v)
+						const toggle = (on: Panel) => () =>
+							go(open && at?.on === on ? ['customers'] : ['customers', '@' + v.alias, on])
 						const label = (on: Panel, name: string) => (open && at?.on === on ? 'hide' : name)
 
 						return (
@@ -188,22 +191,22 @@ function Tenants(props: { admin: Admin; may: (method: string) => boolean }): Rea
 
 			{at?.on === 'people' && (
 				<People
-					tenant={items.find((v) => uuid(v.id) === at.id)}
+					tenant={items.find(same)}
 					admin={props.admin}
 					may={props.may}
 				/>
 			)}
 			{at?.on === 'arrives' && (
-				<Arrives tenant={items.find((v) => uuid(v.id) === at.id)} may={props.may} />
+				<Arrives tenant={items.find(same)} may={props.may} />
 			)}
 			{at?.on === 'organisation' && (
-				<Organisation tenant={items.find((v) => uuid(v.id) === at.id)} may={props.may} />
+				<Organisation tenant={items.find(same)} may={props.may} />
 			)}
 			{at?.on === 'access' && (
-				<Access tenant={items.find((v) => uuid(v.id) === at.id)} may={props.may} />
+				<Access tenant={items.find(same)} may={props.may} />
 			)}
-			{at?.on === 'trail' && <Trail tenant={items.find((v) => uuid(v.id) === at.id)} />}
-			{at?.on === 'edit' && <EditTenant tenant={items.find((v) => uuid(v.id) === at.id)} may={props.may} />}
+			{at?.on === 'trail' && <Trail tenant={items.find(same)} />}
+			{at?.on === 'edit' && <EditTenant tenant={items.find(same)} may={props.may} />}
 		</section>
 	)
 }
@@ -287,11 +290,12 @@ function People(props: {
 		filters: id === undefined ? [] : [{ tenant: { key: { case: 'id', value: id } } }],
 	})
 
-	// Which person is open: the fourth segment, `/customers/<id>/people/<who>`.
+	// Which person is open: the fourth segment, `/customers/@<tenant>/people/<alias>`.
 	const route = useRoute()
 	const at = route[3] ?? null
+	const under = '@' + (props.tenant?.alias ?? '')
 	const open = (who: string | null): void =>
-		go(who === null ? ['customers', uuid(id), 'people'] : ['customers', uuid(id), 'people', who])
+		go(who === null ? ['customers', under, 'people'] : ['customers', under, 'people', who])
 
 	// Whom this screen erased since it read: a soft erase hides the row from
 	// every read, and a list still showing them would say the erase did not take.
@@ -319,10 +323,10 @@ function People(props: {
 				</thead>
 				<tbody>
 					{items.map((v) => {
-						const who = uuid(v.id)
+						const who = v.alias
 
 						return (
-							<tr key={who} className={who === at ? 'at' : ''}>
+							<tr key={uuid(v.id)} className={who === at ? 'at' : ''}>
 								<td>{v.alias}</td>
 								<td>{v.name}</td>
 								<td>{when(v.dateCreated)}</td>
@@ -339,7 +343,7 @@ function People(props: {
 
 			{at !== null && (
 				<Person
-					holder={items.find((v) => uuid(v.id) === at)}
+					holder={items.find((v) => v.alias === at)}
 					admin={props.admin}
 					may={props.may}
 					onErased={() => {

@@ -30,7 +30,7 @@ test('an operator signs in and stands a customer up', async ({ page }) => {
 	await page.locator('tr', { hasText: 'fabrikam' }).locator('button', { hasText: 'people' }).click()
 	// The place is in the address bar: back closes the panel and stays in the
 	// app, forward reopens it, and a reload keeps it.
-	await expect(page).toHaveURL(/\/console\/customers\/[0-9a-f-]{36}\/people$/)
+	await expect(page).toHaveURL(/\/console\/customers\/@fabrikam\/people$/)
 	await page.goBack()
 	await expect(page).toHaveURL(/\/console\/customers$/)
 	await expect(page.getByRole('heading', { name: 'fabrikam' })).toHaveCount(0)

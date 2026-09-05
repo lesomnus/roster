@@ -48,6 +48,7 @@ import (
 	"context"
 	"log"
 	"log/slog"
+	"os"
 
 	drpc "github.com/lesomnus/grpc-dgram"
 	"github.com/lesomnus/grpc-dgram/transport/jsport"
@@ -88,7 +89,11 @@ const (
 func main() {
 	// With a logger in it, or what the stack has to say -- a resolver that
 	// failed, and why -- goes nowhere, and the page shows a status code.
-	ctx := otlog.Into(context.Background(), slog.Default())
+	// Debug, because the one reader is the browser's console and every call
+	// the page makes is worth a line there (`sandbox.LogUnary`).
+	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	slog.SetDefault(logger)
+	ctx := otlog.Into(context.Background(), logger)
 
 	// Both planes, held in memory rather than in OPFS -- which is the decision
 	// that makes a reload a fresh deployment. A sandbox that remembered would
@@ -155,10 +160,12 @@ func main() {
 	who := sandbox.Believe(op)
 	srv := drpc.NewServer(gw,
 		drpc.ChainUnaryInterceptors(
+			sandbox.LogUnary(logger.With("server", "control")),
 			pdauth.InterceptorUnary(who, sandbox.Resolver(cmd.Resolver(s.Control.Ungated, nil)), cmd.Public),
 			gate.Unary(cmd.Policy(s.Control.Ent)),
 		),
 		drpc.ChainStreamInterceptors(
+			sandbox.LogStream(logger.With("server", "control")),
 			pdauth.InterceptorStream(who, sandbox.Resolver(cmd.Resolver(s.Control.Ungated, nil)), cmd.Public),
 			gate.Stream(cmd.Policy(s.Control.Ent)),
 		),
@@ -185,11 +192,13 @@ func main() {
 	agw := jsport.NewGateway(jsport.WithEntryPoint(AdminEntryPoint))
 	asrv := drpc.NewServer(agw,
 		drpc.ChainUnaryInterceptors(
+			sandbox.LogUnary(logger.With("server", "admin")),
 			pdauth.InterceptorUnary(who, sandbox.Resolver(cmd.Resolver(s.Control.Ungated, nil)), cmd.Public),
 			gate.Unary(cmd.Policy(s.Control.Ent)),
 			cmd.Intent(s.Control.Ent),
 		),
 		drpc.ChainStreamInterceptors(
+			sandbox.LogStream(logger.With("server", "admin")),
 			pdauth.InterceptorStream(who, sandbox.Resolver(cmd.Resolver(s.Control.Ungated, nil)), cmd.Public),
 			gate.Stream(cmd.Policy(s.Control.Ent)),
 		),
