@@ -23,6 +23,7 @@ import { useState } from 'react'
 
 import { useCall, useQuery } from '@lesomnus/payday/react'
 import { covers } from '../lib/covers.js'
+import { go, useRoute } from '../lib/route.js'
 import type { App } from '@lesomnus/payday/react'
 
 import { MeService } from '../gen/app/me_pb.js'
@@ -35,6 +36,11 @@ import { Customers } from './customers.js'
 
 
 type Screen = 'operators' | 'services' | 'customers' | 'you'
+const screenNames: readonly Screen[] = ['operators', 'services', 'customers', 'you']
+
+function screenOf(v: string | undefined): Screen {
+	return (screenNames as readonly string[]).includes(v ?? '') ? (v as Screen) : 'operators'
+}
 
 export function Page(props: {
 	onSignOut: () => void
@@ -48,7 +54,12 @@ export function Page(props: {
 	admin: Admin | null
 }): React.ReactNode {
 	const me = useQuery(MeService.method.get, {})
-	const [at, go] = useState<Screen>('operators')
+
+	// Which screen is the address bar's to say (`lib/route.ts`): the first
+	// segment under the base, and the first screen when there is none or it
+	// names nothing.
+	const route = useRoute()
+	const at = screenOf(route[0])
 
 	if (me.state === 'pending') return <main className="loading">…</main>
 	if (me.state === 'error') {
@@ -90,7 +101,7 @@ export function Page(props: {
 						key={s.at}
 						disabled={!s.ok}
 						className={s.at === at ? 'at' : ''}
-						onClick={() => go(s.at)}
+						onClick={() => go([s.at])}
 					>
 						{s.name}
 					</button>

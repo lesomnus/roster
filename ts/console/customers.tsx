@@ -43,6 +43,7 @@ import { TenantService } from '../gen/roster/payday/tenant_svc_pb.js'
 import { HolderService } from '../gen/roster/payday/holder_svc_pb.js'
 
 import type { Admin } from '../lib/client.js'
+import { go, useRoute } from '../lib/route.js'
 import { Person } from './people.js'
 import { Arrives } from './arrives.js'
 import { Organisation } from './organisation.js'
@@ -51,6 +52,14 @@ import { Trail } from './trail.js'
 
 /** Panel is what opens under a customer's row: one at a time, because they nest. */
 type Panel = 'people' | 'arrives' | 'organisation' | 'access' | 'trail' | 'edit'
+const panels: readonly Panel[] = ['people', 'arrives', 'organisation', 'access', 'trail', 'edit']
+
+/** panelOf reads a customer and a panel off the path, or nothing open. */
+function panelOf(id: string | undefined, on: string | undefined): { id: string; on: Panel } | null {
+	if (id === undefined || id === '' || !(panels as readonly string[]).includes(on ?? '')) return null
+
+	return { id, on: on as Panel }
+}
 
 /** uuid is the bytes an identifier arrives as, written the way a person reads one. */
 function uuid(v: Uint8Array | undefined): string {
@@ -112,8 +121,10 @@ function Tenants(props: { admin: Admin; may: (method: string) => boolean }): Rea
 	// Which customer is open, and on which panel: who is in it, how they
 	// arrive, how they are organised, what they may do, what was done. One at
 	// a time, because the panels nest under the row and two open at once read
-	// as one.
-	const [at, go] = useState<{ id: string; on: Panel } | null>(null)
+	// as one. It is the address bar's to say -- `/customers/<id>/<panel>` --
+	// so the back button closes a panel and a reload keeps it open.
+	const route = useRoute()
+	const at = panelOf(route[1], route[2])
 
 	// What this screen made since it read, which is the shape `Keys` already
 	// uses one file over: a list query is not revalidated by a write this page
@@ -153,7 +164,7 @@ function Tenants(props: { admin: Admin; may: (method: string) => boolean }): Rea
 					{items.map((v) => {
 						const id = uuid(v.id)
 						const open = at?.id === id
-						const toggle = (on: Panel) => () => go(open && at?.on === on ? null : { id, on })
+						const toggle = (on: Panel) => () => go(open && at?.on === on ? ['customers'] : ['customers', id, on])
 						const label = (on: Panel, name: string) => (open && at?.on === on ? 'hide' : name)
 
 						return (
@@ -275,7 +286,12 @@ function People(props: {
 	const vs = useQuery(HolderService.method.list, {
 		filters: id === undefined ? [] : [{ tenant: { key: { case: 'id', value: id } } }],
 	})
-	const [at, go] = useState<string | null>(null)
+
+	// Which person is open: the fourth segment, `/customers/<id>/people/<who>`.
+	const route = useRoute()
+	const at = route[3] ?? null
+	const open = (who: string | null): void =>
+		go(who === null ? ['customers', uuid(id), 'people'] : ['customers', uuid(id), 'people', who])
 
 	// Whom this screen erased since it read: a soft erase hides the row from
 	// every read, and a list still showing them would say the erase did not take.
@@ -311,7 +327,7 @@ function People(props: {
 								<td>{v.name}</td>
 								<td>{when(v.dateCreated)}</td>
 								<td>
-									<button onClick={() => go(who === at ? null : who)}>
+									<button onClick={() => open(who === at ? null : who)}>
 										{who === at ? 'hide' : 'signs in with'}
 									</button>
 								</td>
@@ -328,7 +344,7 @@ function People(props: {
 					may={props.may}
 					onErased={() => {
 						setGone((was) => [...was, at])
-						go(null)
+						open(null)
 					}}
 				/>
 			)}

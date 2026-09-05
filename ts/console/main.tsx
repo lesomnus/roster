@@ -18,10 +18,12 @@ import { Provider } from '@lesomnus/payday/react'
 import type { App } from '@lesomnus/payday/react'
 
 import { AuthService } from '../gen/app/auth_pb.js'
+import { MeService } from '../gen/app/me_pb.js'
 import { admin, type Admin } from '../lib/client.js'
 import { open } from '../lib/store.js'
 import { Page } from './page.js'
 import type { Sandbox } from './sandbox.js'
+import { go } from '../lib/route.js'
 import '../lib/style.css'
 
 /**
@@ -234,6 +236,10 @@ async function boot(transport: Transport): Promise<void> {
 		void auth.signOut({}).finally(() => {
 			app.store.forget()
 			app.store.close()
+			// Back to the first screen, replacing rather than pushing: the
+			// screens this session was on are not somewhere the next sign-in
+			// should be able to step back into.
+			go([], true)
 			start(transport)
 		})
 	}
@@ -251,12 +257,25 @@ async function boot(transport: Transport): Promise<void> {
 	)
 }
 
+/**
+ * start asks whether there is a session before drawing the form: `Me.Get`
+ * answers who, or is refused, and the cookie is the browser's to send. So a
+ * reload keeps the place the address bar names rather than asking an
+ * operator who is still signed in to sign in again -- which is what a page
+ * that always drew the form did, and what made the routing above pointless
+ * on a reload.
+ */
 function start(transport: Transport): void {
-	root.render(
-		<StrictMode>
-			<SignIn onDone={() => void boot(transport)} />
-		</StrictMode>,
-	)
+	void createClient(MeService, transport)
+		.get({})
+		.then(() => boot(transport))
+		.catch(() => {
+			root.render(
+				<StrictMode>
+					<SignIn onDone={() => void boot(transport)} />
+				</StrictMode>,
+			)
+		})
 }
 
 void connect().then((transport) => {
