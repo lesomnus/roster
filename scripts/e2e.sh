@@ -142,7 +142,10 @@ up "${E2E_ACCOUNT}/providers"
 
 if [ "${E2E_SANDBOX:-1}" != "0" ]; then
 	export E2E_SANDBOX="http://localhost:18100/console/"
-	(cd ts && VITE_SANDBOX=1 npx vite --config vite.console.ts --port 18100 --strictPort >"${work}/sandbox.log" 2>&1) &
+	# `exec`, so the pid recorded is vite's own and not a subshell's: killing a
+	# subshell orphans `npx`'s child, which is how a dev server on 18100 was
+	# left behind by every run and refused the next one as a `--hold` would.
+	(cd ts && exec env VITE_SANDBOX=1 ./node_modules/.bin/vite --config vite.console.ts --port 18100 --strictPort >"${work}/sandbox.log" 2>&1) &
 	pids+=($!)
 	up "${E2E_SANDBOX}"
 else
