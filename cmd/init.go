@@ -100,7 +100,7 @@ func NewCmdInit(c *Config) *xli.Command {
 		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
 			operator, ok := flg.Find[string](cmd, "operator")
 			if !ok || operator == "" {
-				operator = "ops"
+				operator = "admin"
 			}
 
 			// A control plane, always, and the reason is not tidiness.

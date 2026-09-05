@@ -91,7 +91,7 @@ func TestInitRefusesToRunTwice(t *testing.T) {
 	// The **operator**, which is what `init` writes now: it seeds the control
 	// plane and nothing else, so the first thing already there is the role
 	// bound to the person who runs this deployment.
-	x.ErrorContains(err, "ops")
+	x.ErrorContains(err, "admin")
 
 	s, err := cmd.Build(ctx, c)
 	x.NoError(err)
@@ -144,7 +144,7 @@ func TestInitRefusesToRunTwice(t *testing.T) {
 		x.NoError(err)
 		x.Equal(1, n)
 
-		x.NotNil(signIn(t, s, "ops", secret),
+		x.NotNil(signIn(t, s, "admin", secret),
 			"the second init changed the password the first one printed")
 	})
 }
@@ -192,7 +192,7 @@ func TestASecondSeedStopsBeforeTheOperator(t *testing.T) {
 	t.Cleanup(func() { s.Close() })
 
 	_, err = cmd.Seed(ctx, s, cmd.Seeding{
-		Tenant: "fabrikam", Holder: "admin", Operator: "ops",
+		Tenant: "fabrikam", Holder: "admin", Operator: "admin",
 	})
 	x.Error(err, "a second seed reseeded the control plane of a live deployment")
 	x.ErrorContains(err, "operator", "it failed somewhere other than the operator")
@@ -216,7 +216,7 @@ func TestASecondSeedStopsBeforeTheOperator(t *testing.T) {
 		x.NoError(err)
 		x.Equal(1, n, "a second credential was written for the one operator")
 
-		x.NotNil(signIn(t, s, "ops", secret),
+		x.NotNil(signIn(t, s, "admin", secret),
 			"the failed run rotated the password its own output did not print")
 	})
 }
@@ -245,7 +245,7 @@ func TestAConsoleIssuesAPasswordForAnOperator(t *testing.T) {
 
 	s, out := inited(t)
 
-	c := signIn(t, s, "ops", passwordFrom(t, out))
+	c := signIn(t, s, "admin", passwordFrom(t, out))
 	x.NotNil(c)
 
 	conn := servedControl(t, s)

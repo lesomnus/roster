@@ -42,8 +42,8 @@ func TestInvalidateEndsTheConsolesOwnSessions(t *testing.T) {
 
 	// Two browsers, because "everywhere" is a claim about the sessions the
 	// caller is *not* holding.
-	one := signIn(t, s, "ops", pw)
-	two := signIn(t, s, "ops", pw)
+	one := signIn(t, s, "admin", pw)
+	two := signIn(t, s, "admin", pw)
 	x.NotNil(one)
 	x.NotNil(two)
 
@@ -94,7 +94,7 @@ func TestInvalidateEndsTheConsolesOwnSessions(t *testing.T) {
 	t.Run("and signing back in works", func(t *testing.T) {
 		x := require.New(t)
 
-		again := signIn(t, s, "ops", pw)
+		again := signIn(t, s, "admin", pw)
 		x.NotNil(again, "an invalidation that cannot be recovered from is an erasure")
 
 		_, err := me.Get(metadata.NewOutgoingContext(ctx, with(again.Name, again.Value)),

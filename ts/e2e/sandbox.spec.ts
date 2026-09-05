@@ -10,13 +10,13 @@ const base = process.env['E2E_SANDBOX'] ?? 'http://localhost:18100/console/'
 test('the sandbox signs in, and its second server stands a customer up', async ({ page }) => {
 	test.setTimeout(120_000)
 	await page.goto(base)
-	await page.locator('input[name=alias]').fill('ops')
+	await page.locator('input[name=alias]').fill('admin')
 	await page.locator('input[name=password]').fill('sandboxed')
 	// The instance compiles and seeds on first paint; the form is up before it
 	// is, and a click before the entry point is published is queued rather
 	// than lost. Give the compile the time it takes.
 	await page.locator('button[type=submit]', { hasText: 'sign in' }).click()
-	await expect(page.locator('nav .who')).toHaveText('ops', { timeout: 90_000 })
+	await expect(page.locator('nav .who')).toHaveText('admin', { timeout: 90_000 })
 
 	await page.locator('nav button', { hasText: 'customers' }).click()
 	await expect(page.locator('h2', { hasText: 'customers' })).toBeVisible()

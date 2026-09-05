@@ -66,7 +66,7 @@ func TestTheConsoleSignsInAsAnRpc(t *testing.T) {
 	t.Run("a wrong password is one answer", func(t *testing.T) {
 		x := require.New(t)
 
-		code, _ := post(signIn, `{"alias":"ops","password":"no"}`)
+		code, _ := post(signIn, `{"alias":"admin","password":"no"}`)
 		x.Equal(http.StatusUnauthorized, code)
 		x.Empty(jar.Cookies(mustUrl(t, srv.URL)), "a refusal set a cookie")
 	})
@@ -74,7 +74,7 @@ func TestTheConsoleSignsInAsAnRpc(t *testing.T) {
 	t.Run("and the right one sets the cookie", func(t *testing.T) {
 		x := require.New(t)
 
-		code, body := post(signIn, `{"alias":"ops","password":"`+secret+`"}`)
+		code, body := post(signIn, `{"alias":"admin","password":"`+secret+`"}`)
 		x.Equal(http.StatusOK, code, body)
 
 		cs := jar.Cookies(mustUrl(t, srv.URL))
@@ -91,7 +91,7 @@ func TestTheConsoleSignsInAsAnRpc(t *testing.T) {
 
 		code, body := post("/roster.MeService/Get", `{}`)
 		x.Equal(http.StatusOK, code, body)
-		x.Contains(body, `"ops"`)
+		x.Contains(body, `"admin"`)
 	})
 
 	// The thing the generated `Add` structurally cannot do: answer with the

@@ -553,7 +553,7 @@ func TestSigningOutReachesThePortWithNoWall(t *testing.T) {
 	ctx := t.Context()
 
 	s, out := inited(t)
-	c := signIn(t, s, "ops", passwordFrom(t, out))
+	c := signIn(t, s, "admin", passwordFrom(t, out))
 	x.NotNil(c, "the control: init printed a password that signs in")
 
 	g, err := s.GrpcAdmin(ctx, cmd.Config{})

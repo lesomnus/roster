@@ -77,7 +77,7 @@ import (
 // generated one on. It is not a credential for anything: there is one of these
 // servers, it is inside the page, and it is gone on reload.
 const (
-	operator = "ops"
+	operator = "admin"
 	password = "sandboxed"
 
 	// AdminEntryPoint is the name the admin server is published under, and

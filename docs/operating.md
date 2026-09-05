@@ -94,11 +94,11 @@ control plane — and the role that lets them. Nothing in the data plane at all:
 
 ```
 control plane
-  holder ops is 019ff2...
+  holder admin is 019ff2...
   bound to role "everything" = /roster.*/* -- every RPC roster serves, now and after an upgrade
   password  kQ9x...
 
-sign in to the console as ops. that password is shown once and is not stored -- write it down now.
+sign in to the console as admin. that password is shown once and is not stored -- write it down now.
 
 there are no customers yet, which is the right state to start in.
 ```
@@ -336,7 +336,7 @@ npm --prefix ts run dev            # against a running roster
 `dev:sandbox` compiles the whole server into the page — `GOOS=js GOARCH=wasm`,
 SQLite in a Worker, a message port instead of HTTP/2. A reload is a fresh
 deployment: new databases, seeded again by `cmd.Seed`, nothing left over. It
-signs in as `ops` with the password `sandboxed` (eight characters is the floor a password has, and this is one), and has one customer, `contoso`.
+signs in as `admin` with the password `sandboxed` (eight characters is the floor a password has, and this is one), and has one customer, `contoso`.
 
 It is one instance serving **two servers**, because the console reaches two
 listeners: `control.http` — the deployment screen, the sign-in — and
@@ -390,7 +390,7 @@ people who run this deployment live. `roster init` makes the first one and
 prints their password once.
 
 ```
-POST /session      {"alias": "ops", "password": "..."}   -> 204, __Host-pd_session
+POST /session      {"alias": "admin", "password": "..."}   -> 204, __Host-pd_session
 DELETE /session                                          -> 204
 ```
 
@@ -479,8 +479,8 @@ unregistered precisely so that could not happen.
 Two rows, in two databases, joined by the trace.
 
 ```
-control plane   ops called /roster.TenantService/Add        trace=a1b2…
-data plane      TenantService/Add on 019ff4…  actor=<ops>   trace=a1b2…
+control plane   admin called /roster.TenantService/Add        trace=a1b2…
+data plane      TenantService/Add on 019ff4…  actor=<admin>   trace=a1b2…
 ```
 
 The control plane's is written **first** and is about the decision, so an

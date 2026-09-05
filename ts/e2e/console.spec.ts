@@ -6,7 +6,7 @@ import { expect, test } from '@playwright/test'
 // the control listener set -- and see their first person.
 
 const base = process.env['E2E_CONSOLE'] ?? 'http://127.0.0.1:18062/console/'
-const operator = process.env['E2E_OPS_USER'] ?? 'ops'
+const operator = process.env['E2E_OPS_USER'] ?? 'admin'
 const password = process.env['E2E_OPS_PASSWORD'] ?? ''
 
 test('an operator signs in and stands a customer up', async ({ page }) => {

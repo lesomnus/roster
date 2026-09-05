@@ -72,7 +72,7 @@ func TestAnOperatorSignsIn(t *testing.T) {
 	t.Run("with what init printed", func(t *testing.T) {
 		x := require.New(t)
 
-		c := signIn(t, s, "ops", secret)
+		c := signIn(t, s, "admin", secret)
 		x.NotNil(c, "the password init printed does not sign in")
 		x.True(c.HttpOnly, "a cookie script can read is one script can send elsewhere")
 		x.Equal(http.SameSiteLaxMode, c.SameSite)
@@ -81,7 +81,7 @@ func TestAnOperatorSignsIn(t *testing.T) {
 
 	t.Run("and not with a wrong password", func(t *testing.T) {
 		x := require.New(t)
-		x.Nil(signIn(t, s, "ops", secret+"x"))
+		x.Nil(signIn(t, s, "admin", secret+"x"))
 	})
 
 	t.Run("nor as somebody who is not there", func(t *testing.T) {
@@ -89,12 +89,27 @@ func TestAnOperatorSignsIn(t *testing.T) {
 		x.Nil(signIn(t, s, "nobody", secret))
 	})
 
-	// The data plane's admin is not an operator. `init` prints them as somebody
-	// to sign in as, and what they sign in to is a product app -- roster's own
-	// console is the deployment's, and a customer's people are the customer's.
+	// A customer's person is not an operator, whatever their password is:
+	// what they sign in to is a product app -- roster's own console is the
+	// deployment's, and a customer's people are the customer's. Written out,
+	// because `init` no longer seeds one (D56) and the operator is `admin` too
+	// now, so a name alone would prove nothing.
 	t.Run("nor as a data plane holder", func(t *testing.T) {
 		x := require.New(t)
-		x.Nil(signIn(t, s, "admin", secret))
+		ctx := t.Context()
+
+		tn, err := s.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: "contoso"}.Build())
+		x.NoError(err)
+		alice, err := s.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{
+			Tenant: app.TenantRef_builder{Id: tn.GetId()}.Build(), Alias: "alice",
+		}.Build())
+		x.NoError(err)
+		_, err = s.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+			Ref: app.HolderRef_builder{Id: alice.GetId()}.Build(), Secret: []byte(secret),
+		}.Build())
+		x.NoError(err)
+
+		x.Nil(signIn(t, s, "alice", secret))
 	})
 }
 
@@ -131,7 +146,7 @@ func TestTheCookieOpensTheControlPlane(t *testing.T) {
 	ctx := t.Context()
 
 	s, out := inited(t)
-	c := signIn(t, s, "ops", passwordFrom(t, out))
+	c := signIn(t, s, "admin", passwordFrom(t, out))
 	x.NotNil(c)
 
 	// The control plane on a port, which is what a console reaches.
@@ -147,7 +162,7 @@ func TestTheCookieOpensTheControlPlane(t *testing.T) {
 
 		v, err := app.NewMeServiceClient(conn).Get(as, app.MeGetRequest_builder{}.Build())
 		x.NoError(err)
-		x.Equal("ops", v.GetAlias())
+		x.Equal("admin", v.GetAlias())
 
 		// And what init bound them, which is what a console draws its menu from.
 		x.Equal([]string{"/roster.*/*"}, v.GetMethods())
@@ -196,7 +211,7 @@ func TestAConsoleManagesKeys(t *testing.T) {
 	ctx := t.Context()
 
 	s, out := inited(t)
-	c := signIn(t, s, "ops", passwordFrom(t, out))
+	c := signIn(t, s, "admin", passwordFrom(t, out))
 	x.NotNil(c)
 
 	conn := servedControl(t, s)
@@ -254,7 +269,7 @@ func TestAnOperatorAdministersCustomers(t *testing.T) {
 	ctx := t.Context()
 
 	s, out := inited(t)
-	c := signIn(t, s, "ops", passwordFrom(t, out))
+	c := signIn(t, s, "admin", passwordFrom(t, out))
 	x.NotNil(c)
 
 	g, err := s.GrpcAdmin(ctx, cmd.Config{})
@@ -328,7 +343,7 @@ func TestTheTwoTrailsAreJoined(t *testing.T) {
 	ctx := t.Context()
 
 	s, out := inited(t)
-	c := signIn(t, s, "ops", passwordFrom(t, out))
+	c := signIn(t, s, "admin", passwordFrom(t, out))
 	x.NotNil(c)
 
 	g, err := s.GrpcAdmin(ctx, cmd.Config{})
@@ -378,7 +393,7 @@ func TestTheTwoTrailsAreJoined(t *testing.T) {
 
 	who, err := s.Control.Ent.Holder.Get(ctx, intent.ActorId)
 	x.NoError(err, "the operator does not resolve in the plane that recorded them")
-	x.Equal("ops", who.Alias)
+	x.Equal("admin", who.Alias)
 }
 
 // TestNoVerifierReachesTheTrail is where `(payday.field).secret` was found to
@@ -489,7 +504,7 @@ func TestAConsoleReachesTheAdminPortOverHttp(t *testing.T) {
 	x.Equal(http.StatusUnauthorized, code)
 
 	code, body := post("/session",
-		`{"alias":"ops","password":"`+passwordFrom(t, out)+`"}`)
+		`{"alias":"admin","password":"`+passwordFrom(t, out)+`"}`)
 	x.Equal(http.StatusNoContent, code, body)
 
 	// And now the thing a console is for, over JSON, with the cookie the
@@ -553,7 +568,7 @@ func TestAConsoleReachesTheControlPlaneOverHttp(t *testing.T) {
 	code, _ := post("/roster.MeService/Get", `{}`)
 	x.Equal(http.StatusUnauthorized, code, "anonymous reached the control plane")
 
-	code, body := post("/session", `{"alias":"ops","password":"`+passwordFrom(t, out)+`"}`)
+	code, body := post("/session", `{"alias":"admin","password":"`+passwordFrom(t, out)+`"}`)
 	x.Equal(http.StatusNoContent, code, body)
 
 	// The three screens the first console is, in the order it would draw them.
@@ -562,7 +577,7 @@ func TestAConsoleReachesTheControlPlaneOverHttp(t *testing.T) {
 
 		code, body := post("/roster.MeService/Get", `{}`)
 		x.Equal(http.StatusOK, code, body)
-		x.Contains(body, `"ops"`)
+		x.Contains(body, `"admin"`)
 	})
 
 	t.Run("who else runs this deployment", func(t *testing.T) {
@@ -570,7 +585,7 @@ func TestAConsoleReachesTheControlPlaneOverHttp(t *testing.T) {
 
 		code, body := post("/roster.HolderService/List", `{}`)
 		x.Equal(http.StatusOK, code, body)
-		x.Contains(body, `"ops"`)
+		x.Contains(body, `"admin"`)
 	})
 
 	t.Run("and what may call it", func(t *testing.T) {
@@ -669,7 +684,7 @@ func TestTheDataPlanesHttpSignsInNobody(t *testing.T) {
 		return res.StatusCode, string(b)
 	}
 
-	code, _ := post("/session", `{"alias":"ops","password":"`+passwordFrom(t, out)+`"}`)
+	code, _ := post("/session", `{"alias":"admin","password":"`+passwordFrom(t, out)+`"}`)
 	x.Equal(http.StatusNoContent, code, "signing in answers -- that is the trap")
 
 	code, body := post("/roster.MeService/Get", `{}`)

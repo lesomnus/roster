@@ -25,7 +25,7 @@ The cast is the one the tests use:
 | **seoul**, **frankfurt** | the two places contoso runs the product |
 | **alice** | somebody at contoso, who signs in with a password |
 | **erin** | an contoso engineer, who arrives from contoso's Entra |
-| **ops** | not at contoso at all — whoever runs this deployment, and the only one of the four who uses the console |
+| **admin** | not at contoso at all — whoever runs this deployment, and the only one of the four who uses the console |
 
 Nothing contoso writes is visible to fabrikam, and that is the first fact rather
 than a feature: the wall is the only thing here that is never negotiable.
@@ -452,7 +452,7 @@ saying why. payday ships the seam and roster ships the table. What is stored is
 a **digest** of the cookie value and not the value: a backup of the map it
 replaces would be a set of signed-in browsers.
 
-> This is the one row in the file that is not a customer's. **ops** signs in to
+> This is the one row in the file that is not a customer's. **admin** signs in to
 > the console, and the digest of that cookie is a row here on the **control
 > plane** -- alice never gets one, because the console is the deployment's and
 > she is a customer's. A second replica can read it, which is the whole reason
@@ -550,7 +550,7 @@ for, and what `roster forget` destroys per person.
 
 > Every write contoso made above wrote a row here, inside the same transaction:
 > whoever made it as the actor, the row they touched as the object, and what it
-> looked like afterwards. **ops** signing in to the console wrote one too, in
+> looked like afterwards. **admin** signing in to the console wrote one too, in
 > the control plane's own trail, which contoso cannot read. When contoso has to
 > answer *who put erin in on-call*, this is the only table that can.
 

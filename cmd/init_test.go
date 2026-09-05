@@ -103,7 +103,7 @@ func TestInitLeavesADeploymentThatWorks(t *testing.T) {
 
 	// What the operator can do with what they were given, over the port they
 	// were given it for.
-	c := signIn(t, s, "ops", passwordFrom(t, out))
+	c := signIn(t, s, "admin", passwordFrom(t, out))
 	x.NotNil(c, "the password init printed does not sign in")
 
 	g, err := s.GrpcAdmin(ctx, cmd.Config{})
@@ -158,7 +158,7 @@ func TestInitLeavesADeploymentThatWorks(t *testing.T) {
 			metadata.NewOutgoingContext(ctx, metadata.Pairs("cookie", c.Name+"="+c.Value)),
 			app.MeGetRequest_builder{}.Build())
 		x.NoError(err)
-		x.Equal("ops", v.GetAlias())
+		x.Equal("admin", v.GetAlias())
 		x.Equal([]string{"/roster.*/*"}, v.GetMethods())
 	})
 }
@@ -186,7 +186,7 @@ func TestInitSeedsAnOperator(t *testing.T) {
 	v, err := s.Control.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
 		Ref: app.HolderRef_builder{
 			Slug: app.HolderRefBySlug_builder{
-				Alias:  strPtr("ops"),
+				Alias:  strPtr("admin"),
 				Tenant: app.TenantRef_builder{Alias: strPtr("owner")}.Build(),
 			}.Build(),
 		}.Build(),
@@ -463,13 +463,13 @@ func TestAGivenPasswordIsTheOneThatSignsIn(t *testing.T) {
 
 	const given = "correct horse battery staple"
 
-	v, err := cmd.Seed(ctx, s, cmd.Seeding{Tenant: "contoso", Holder: "admin", Operator: "ops", Password: given})
+	v, err := cmd.Seed(ctx, s, cmd.Seeding{Tenant: "contoso", Holder: "admin", Operator: "admin", Password: given})
 	x.NoError(err)
 	x.Equal(given, v.Password, "what was handed over is not what came back")
 
 	// And it is what signs in, which is the only claim that matters.
-	x.NotNil(signIn(t, s, "ops", given))
-	x.Nil(signIn(t, s, "ops", "admin"), "the default signed in over a given one")
+	x.NotNil(signIn(t, s, "admin", given))
+	x.Nil(signIn(t, s, "admin", "admin"), "the default signed in over a given one")
 }
 
 // TestTheFirstTenantCanBeGivenItsIdentifier.
@@ -509,7 +509,7 @@ func TestTheFirstTenantCanBeGivenItsIdentifier(t *testing.T) {
 	s := fresh(t)
 
 	v, err := cmd.Seed(ctx, s, cmd.Seeding{
-		Tenant: "hday", Holder: "admin", Operator: "ops",
+		Tenant: "hday", Holder: "admin", Operator: "admin",
 		TenantId: at,
 	})
 	x.NoError(err)
@@ -525,7 +525,7 @@ func TestTheFirstTenantCanBeGivenItsIdentifier(t *testing.T) {
 	t.Run("and nothing said still mints one", func(t *testing.T) {
 		x := require.New(t)
 
-		v, err := cmd.Seed(ctx, fresh(t), cmd.Seeding{Tenant: "contoso", Holder: "admin", Operator: "ops"})
+		v, err := cmd.Seed(ctx, fresh(t), cmd.Seeding{Tenant: "contoso", Holder: "admin", Operator: "admin"})
 		x.NoError(err)
 		x.NotEqual(pdid.Nil, v.Tenant)
 		x.NotEqual(at, v.Tenant)
@@ -537,7 +537,7 @@ func TestTheFirstTenantCanBeGivenItsIdentifier(t *testing.T) {
 		x := require.New(t)
 
 		_, err := cmd.Seed(ctx, fresh(t), cmd.Seeding{
-			Tenant: "contoso", Holder: "admin", Operator: "ops",
+			Tenant: "contoso", Holder: "admin", Operator: "admin",
 			TenantId: pdid.New(2),
 		})
 		x.Error(err)
@@ -585,8 +585,8 @@ func TestInitLeavesTheTwoFilesTheTutorialNames(t *testing.T) {
 		x.NoError(err, "%s did not appear", name)
 	}
 
-	// "holder ops is <id>" -- parsed the way an operator's eye does.
-	m := regexp.MustCompile(`holder ops is (\S+)`).FindStringSubmatch(out)
+	// "holder admin is <id>" -- parsed the way an operator's eye does.
+	m := regexp.MustCompile(`holder admin is (\S+)`).FindStringSubmatch(out)
 	x.NotNil(m, "init did not print the operator's identifier:\n%s", out)
 
 	id, err := pdid.Parse(m[1])
@@ -600,7 +600,7 @@ func TestInitLeavesTheTwoFilesTheTutorialNames(t *testing.T) {
 		Ref: app.HolderRef_builder{Id: id.Bytes()}.Build(),
 	}.Build())
 	x.NoError(err, "the identifier init printed names nobody")
-	x.Equal("ops", v.GetAlias())
+	x.Equal("admin", v.GetAlias())
 }
 
 // TestTheShippedConfigurationIsAFirstRun is `roster.yaml` as it ships, run the

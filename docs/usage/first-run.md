@@ -58,11 +58,11 @@ roster init
 
 ```
 control plane
-  holder ops is 019ff2...
+  holder admin is 019ff2...
   bound to role "everything" = /roster.*/* -- every RPC roster serves, now and after an upgrade
   password  kQ9x...
 
-sign in to the console as ops. that password is shown once and is not stored -- write it down now.
+sign in to the console as admin. that password is shown once and is not stored -- write it down now.
 
 there are no customers yet, which is the right state to start in.
 ```
@@ -75,7 +75,7 @@ The password is shown once and stored as an argon2id hash. There is no
 and in the process list — but `--password-stdin` reads one from a pipe, which is
 what a container's entrypoint uses.
 
-`--operator <alias>` names them something other than `ops`.
+`--operator <alias>` names them something other than `admin`.
 
 **Running it twice is an error**, not a no-op. An `init` that quietly did
 nothing is one somebody runs against the wrong deployment and believes.

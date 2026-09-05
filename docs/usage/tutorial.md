@@ -10,7 +10,7 @@ Identifiers and secrets will differ; nothing else should.
 
 A deployment that serves one customer, **newco**:
 
-- `ops` — you, the operator. Runs the deployment. Lives in the control plane.
+- `admin` — you, the operator. Runs the deployment. Lives in the control plane.
 - `newco/admin` — newco's administrator. Everything, inside newco.
 - `newco/alice` — somebody who works there. A password and a laptop key.
 - `portal` — your login app. A service of yours, not of newco's.
@@ -25,11 +25,11 @@ roster init
 
 ```
 control plane
-  holder ops is 01a0332f-d4d6-8334-a802-98a7402c0dd8
+  holder admin is 01a0332f-d4d6-8334-a802-98a7402c0dd8
   bound to role "everything" = /roster.*/* -- every RPC roster serves, now and after an upgrade
   password  EQwFb5X74bcKhtm9LbQ1erW23bOXNxxmP672FfKGvkY
 
-sign in to the console as ops. that password is shown once and is not stored -- write it down now.
+sign in to the console as admin. that password is shown once and is not stored -- write it down now.
 
 there are no customers yet, which is the right state to start in.
 ```
@@ -239,7 +239,7 @@ roster vouch unlock @newco/alice     # too many wrong answers closed it (ten, un
 
 ```
 control plane          data plane
-  owner/ops              newco
+  owner/admin            newco
   owner/portal             admin   → everything
   owner/frontdoor          alice   → support, a password, a laptop key
 ```

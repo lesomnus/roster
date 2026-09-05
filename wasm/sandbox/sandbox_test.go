@@ -43,7 +43,7 @@ func TestTheSandboxSignsIn(t *testing.T) {
 
 	x.NoError(s.Ent.Schema.Create(ctx))
 	x.NoError(s.Control.Ent.Schema.Create(ctx))
-	_, err = cmd.Seed(ctx, s, cmd.Seeding{Tenant: "contoso", Holder: "admin", Operator: "ops", Password: "sandboxed"})
+	_, err = cmd.Seed(ctx, s, cmd.Seeding{Tenant: "contoso", Holder: "admin", Operator: "admin", Password: "sandboxed"})
 	x.NoError(err)
 
 	op := &sandbox.Operator{}
@@ -60,7 +60,7 @@ func TestTheSandboxSignsIn(t *testing.T) {
 	t.Run("a wrong password is refused and remembers nobody", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := a.SignIn(ctx, app.AuthSignInRequest_builder{Alias: "ops", Password: "not it"}.Build())
+		_, err := a.SignIn(ctx, app.AuthSignInRequest_builder{Alias: "admin", Password: "not it"}.Build())
 		x.Equal(codes.Unauthenticated, status.Code(err))
 
 		_, err = who.Handle(ctx)
@@ -70,12 +70,12 @@ func TestTheSandboxSignsIn(t *testing.T) {
 	t.Run("the right one is the caller from then on", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := a.SignIn(ctx, app.AuthSignInRequest_builder{Alias: "ops", Password: "sandboxed"}.Build())
+		_, err := a.SignIn(ctx, app.AuthSignInRequest_builder{Alias: "admin", Password: "sandboxed"}.Build())
 		x.NoError(err)
 
 		id, err := who.Handle(ctx)
 		x.NoError(err)
-		x.Equal("ops", id.Alias)
+		x.Equal("admin", id.Alias)
 		x.False(id.NamesNobody())
 
 		// And the name resolves, through the same resolver the instance

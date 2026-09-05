@@ -39,7 +39,7 @@ func TestAnOperatorStandsUpACustomerThatCanBeUsed(t *testing.T) {
 	ctx := t.Context()
 
 	s, out := inited(t)
-	c := signIn(t, s, "ops", passwordFrom(t, out))
+	c := signIn(t, s, "admin", passwordFrom(t, out))
 	x.NotNil(c)
 
 	g, err := s.GrpcAdmin(ctx, cmd.Config{})

@@ -154,7 +154,7 @@ function SignIn(props: { onDone: () => void }): React.ReactNode {
 			<h1>roster</h1>
 			<label>
 				operator
-				<input name="alias" defaultValue="ops" autoFocus />
+				<input name="alias" defaultValue="admin" autoFocus />
 			</label>
 			<label>
 				password

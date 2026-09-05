@@ -73,7 +73,7 @@ func TestAGrantNothingCanReadAllowsNothing(t *testing.T) {
 	ctx := t.Context()
 
 	s, out := inited(t)
-	c := signIn(t, s, "ops", passwordFrom(t, out))
+	c := signIn(t, s, "admin", passwordFrom(t, out))
 	x.NotNil(c)
 
 	// The test's own premise, asserted rather than assumed: these bytes have to
@@ -163,7 +163,7 @@ func TestAnEmptyGrantColumnIsNotAWholeGrant(t *testing.T) {
 	ctx := t.Context()
 
 	s, out := inited(t)
-	c := signIn(t, s, "ops", passwordFrom(t, out))
+	c := signIn(t, s, "admin", passwordFrom(t, out))
 	x.NotNil(c)
 
 	x.NoError(proto.Unmarshal(nil, &pdpb.Grant{}),

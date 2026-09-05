@@ -101,7 +101,7 @@ func adminPort(t *testing.T, s *cmd.Server, c cmd.Config, out string) (*grpc.Cli
 	x := require.New(t)
 	ctx := t.Context()
 
-	k := signIn(t, s, "ops", passwordFrom(t, out))
+	k := signIn(t, s, "admin", passwordFrom(t, out))
 	x.NotNil(k, "the operator init printed cannot sign in")
 
 	g, err := s.GrpcAdmin(ctx, c)
@@ -270,7 +270,7 @@ func TestEveryOperatorWriteLeavesBothTrails(t *testing.T) {
 
 			who, err := s.Control.Ent.Holder.Get(ctx, intent.ActorId)
 			x.NoError(err, "the operator does not resolve in the plane that recorded them")
-			x.Equal("ops", who.Alias)
+			x.Equal("admin", who.Alias)
 		})
 	}
 

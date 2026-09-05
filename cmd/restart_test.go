@@ -37,7 +37,7 @@ func TestARestartKeepsEveryCredential(t *testing.T) {
 	s1, c, out := adminDeployment(t, nil)
 
 	// A console signed in, in the first process.
-	cookie := signIn(t, s1, "ops", passwordFrom(t, out))
+	cookie := signIn(t, s1, "admin", passwordFrom(t, out))
 	x.NotNil(cookie)
 
 	// A customer with two people: alice, who stays; bob, who is suspended
@@ -141,7 +141,7 @@ func TestARestartKeepsEveryCredential(t *testing.T) {
 			metadata.Pairs("cookie", cookie.Name+"="+cookie.Value))
 		v, err := app.NewMeServiceClient(cconn).Get(as, app.MeGetRequest_builder{}.Build())
 		x.NoError(err, "a deploy signed every operator out")
-		x.Equal("ops", v.GetAlias())
+		x.Equal("admin", v.GetAlias())
 	})
 
 	t.Run("a suspension written before it", func(t *testing.T) {

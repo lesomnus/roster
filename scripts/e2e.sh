@@ -101,7 +101,7 @@ YAML
 r() { "${work}/roster" --config "${work}/roster.yaml" "$@"; }
 
 echo "== init and seed"
-echo "${E2E_OPS_PASSWORD}" | r init --operator ops --password-stdin >/dev/null
+echo "${E2E_OPS_PASSWORD}" | r init --operator admin --password-stdin >/dev/null
 r tenant add @contoso '{"name":"Contoso"}' >/dev/null
 r holder add @contoso/erin >/dev/null
 r role add @contoso/everything '{"methods":["/roster.*/*"]}' >/dev/null
@@ -152,7 +152,7 @@ fi
 # `--hold` leaves the deployment up for a browser or a curl, which is how a
 # failure the specs report is looked at.
 if [ "${1:-}" = "--hold" ]; then
-	echo "up: console ${E2E_CONSOLE}, account ${E2E_ACCOUNT} (erin / ${E2E_ERIN_PASSWORD}); ops / ${E2E_OPS_PASSWORD}; ^C stops"
+	echo "up: console ${E2E_CONSOLE}, account ${E2E_ACCOUNT} (erin / ${E2E_ERIN_PASSWORD}); admin / ${E2E_OPS_PASSWORD}; ^C stops"
 	wait
 	exit 0
 fi
