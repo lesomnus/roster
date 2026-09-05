@@ -100,9 +100,14 @@ func main() {
 	// would otherwise notice there is no terminal and write plain text, and a
 	// console reads the colours once they are `%c`.
 	color.NoColor = false
+	// Named as an output rather than appended as one: the exporter writes to
+	// `stderr` unless told where else, and `stderr` here is `wasm_exec.js`
+	// printing the escape codes as text -- so with both, every line came
+	// twice, once legible.
+	mkot.Outputs["console"] = sandbox.NewConsole
 	otc := config.OtelConfig{}
 	otc.Exporters = map[mkot.Id]mkot.ExporterConfig{
-		"pretty": pretty.ExporterConfig{Outputs: []mkot.WriterOpenFunc{sandbox.NewConsole}},
+		"pretty": pretty.ExporterConfig{OutputPaths: []string{"console"}},
 	}
 	ctx, o, err := otc.Build(context.Background(), config.Service{Name: "roster-sandbox", Scope: "github.com/lesomnus/roster"})
 	if err != nil {

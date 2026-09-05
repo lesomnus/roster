@@ -9,7 +9,7 @@ directory in before `npm ci`.
 | tarball | from | why |
 | --- | --- | --- |
 | `lesomnus-grpc-dgram-0.0.1-00e6a6a.tgz` | `00e6a6a` of <https://github.com/lesomnus/grpc-dgram> | one wasm instance serving two entry points (`sock.dial({ entryPoint })`), which the sandbox needs and `0.0.1` does not have |
-| `lesomnus-payday-0.0.3-332ed12.tgz` | `332ed12` of <https://github.com/lesomnus/payday> | `EntityDesc.service`, which `pd gen --ts` writes into `entities.ts` now, and `@lesomnus/payday/react/devtools`, which reads it |
+| `lesomnus-payday-0.0.3-6cbd01c.tgz` | `6cbd01c` of <https://github.com/lesomnus/payday> | `EntityDesc.service`, which `pd gen --ts` writes into `entities.ts` now, and `@lesomnus/payday/react/devtools`, which reads it -- a bottom sheet with its own look, inline, so it needs nothing from the page |
 
 ```sh
 cd <grpc-dgram checkout>/ts && npm ci && npm run build && npm pack

@@ -113,7 +113,8 @@ export function Customers(props: {
 	return (
 		<Provider app={props.app}>
 			<Tenants admin={props.admin} may={props.may} />
-			{/* The same window, on the data plane's store. */}
+			{/* The same window, on the data plane's store -- the one this screen
+			    reads, and the only one mounted while it is showing. */}
 			{import.meta.env.DEV && <Devtools entities={entities} />}
 		</Provider>
 	)

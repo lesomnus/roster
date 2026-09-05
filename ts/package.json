@@ -19,7 +19,7 @@
 		"@connectrpc/connect": "^2.1.2",
 		"@connectrpc/connect-web": "^2.1.2",
 		"@lesomnus/grpc-dgram": "file:vendor/lesomnus-grpc-dgram-0.0.1-00e6a6a.tgz",
-		"@lesomnus/payday": "file:vendor/lesomnus-payday-0.0.3-332ed12.tgz",
+		"@lesomnus/payday": "file:vendor/lesomnus-payday-0.0.3-6cbd01c.tgz",
 		"react": "^19.2.0",
 		"react-dom": "^19.2.0"
 	},

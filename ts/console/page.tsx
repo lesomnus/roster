@@ -123,8 +123,10 @@ export function Page(props: {
 				{/* payday's window on the control plane's rows and on what this
 				    store holds of them, in a development build only: the raw
 				    answer to "what does the server say, and what does this side
-				    believe", which every stale screen comes down to. */}
-				{import.meta.env.DEV && <Devtools entities={entities} />}
+				    believe", which every stale screen comes down to. It is a
+				    sheet along the bottom with one handle, so one at a time:
+				    the customers screen mounts its own over its own store. */}
+				{import.meta.env.DEV && at !== 'customers' && <Devtools entities={entities} />}
 			</main>
 		</div>
 	)
