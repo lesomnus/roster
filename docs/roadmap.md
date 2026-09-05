@@ -562,8 +562,14 @@ is not a request* -- which survives because the generated check sits in the
 
 ## Open, for whoever picks this up next
 
-Nothing, at the moment. The two that stood here longest both closed in 2026-08,
-and one of them closed by *looking*:
+**A directory over LDAP** -- [ldap.md](ldap.md) is the plan: `roster ldap
+serve` as a consumer beside the account app, an app password that is an API
+key, `Vouch.Verify` for the password bind and the reason it cannot walk around
+a second factor, and the tree. Nothing of it exists yet; its progress table is
+its own.
+
+Before that, nothing had stood here for a while. The two that stood here
+longest both closed in 2026-08, and one of them closed by *looking*:
 
 - **A product app should not have to write a login endpoint.** It does not,
   and it had not since the day after the question was written: `frontdoor` is
