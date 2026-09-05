@@ -1345,6 +1345,20 @@ See [login.md](login.md) for the whole path. In short: a product app calls
 `Vouch.Verify` with its key, gets yes and two identifiers, and sets its own
 session cookie. roster never talks to a browser.
 
+## What it prints
+
+One line per call, on stderr, pretty-printed: the method, the status code,
+how long it took, with the trace and span ids beside it when a caller sent
+some. `roster serve`, `roster account serve` and `roster ldap serve` all do,
+and health checks are left out. That is `otel:` with nothing written in it;
+write a `logger` provider there and the same records go wherever it says --
+an OTLP collector, a file -- with traces and metrics beside them
+(`mkot`'s configuration, `roster config env` for the variables). The trail is
+not this: the trail is what was written and by whom, kept; this is what was
+asked, as it happens.
+
+The sandbox prints the same lines to the browser's console, colours included.
+
 ## Running more than one
 
 Everything durable is in the database and nothing in `cmd/` or `server/` writes

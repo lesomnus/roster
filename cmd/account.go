@@ -45,11 +45,11 @@ func NewCmdAccount(c *Config) *xli.Command {
 		Name:  "account",
 		Brief: "the front door a customer's people sign in at",
 
-		Commands: xli.Commands{newCmdAccountServe()},
+		Commands: xli.Commands{newCmdAccountServe(c)},
 	}
 }
 
-func newCmdAccountServe() *xli.Command {
+func newCmdAccountServe(c *Config) *xli.Command {
 	return &xli.Command{
 		Name:  "serve",
 		Brief: "serve the sign-in page and the account screens, fronting roster",
@@ -68,6 +68,12 @@ func newCmdAccountServe() *xli.Command {
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
+			ctx, stop, err := telemetry(ctx, c, "roster-account")
+			if err != nil {
+				return err
+			}
+			defer stop()
+
 			roster, _ := flg.Find[string](cmd, "roster")
 			connect, _ := flg.Find[string](cmd, "connect")
 			if roster == "" || connect == "" {

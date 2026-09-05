@@ -101,7 +101,7 @@ test('an authenticator app counts once it is proved, and is asked for at the nex
 	// because a step that was spent is not accepted twice.
 	await page.locator('input[placeholder="the code it shows"]').fill(totp(uri ?? ''))
 	await page.locator('button', { hasText: 'prove' }).click()
-	await expect(page.locator('.note', { hasText: /proved|counts/ })).toBeVisible()
+	await expect(page.locator('.note', { hasText: 'proved; it counts from now on' })).toBeVisible()
 	await expect(page.locator('td', { hasText: 'authenticator app' })).toBeVisible()
 
 	await signOut(page)

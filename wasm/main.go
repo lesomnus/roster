@@ -48,12 +48,16 @@ import (
 	"context"
 	"log"
 	"log/slog"
-	"os"
 
 	drpc "github.com/lesomnus/grpc-dgram"
 	"github.com/lesomnus/grpc-dgram/transport/jsport"
 
+	"github.com/fatih/color"
+	"github.com/lesomnus/mkot"
+	"github.com/lesomnus/mkot/pretty"
+	"github.com/lesomnus/otx"
 	otlog "github.com/lesomnus/otx/log"
+	"github.com/lesomnus/otx/otxgrpc"
 	pdauth "github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/gate"
@@ -89,11 +93,27 @@ const (
 func main() {
 	// With a logger in it, or what the stack has to say -- a resolver that
 	// failed, and why -- goes nowhere, and the page shows a status code.
-	// Debug, because the one reader is the browser's console and every call
-	// the page makes is worth a line there (`sandbox.LogUnary`).
-	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	// The same telemetry a deployment gets from `otel:` left unsaid -- the
+	// pretty exporter, one line per call from `otxgrpc`'s logger -- pointed
+	// at the browser's console rather than a terminal, with the colours kept
+	// (`sandbox.Console`). `color.NoColor` is forced off because the exporter
+	// would otherwise notice there is no terminal and write plain text, and a
+	// console reads the colours once they are `%c`.
+	color.NoColor = false
+	otc := config.OtelConfig{}
+	otc.Exporters = map[mkot.Id]mkot.ExporterConfig{
+		"pretty": pretty.ExporterConfig{Outputs: []mkot.WriterOpenFunc{sandbox.NewConsole}},
+	}
+	ctx, o, err := otc.Build(context.Background(), config.Service{Name: "roster-sandbox", Scope: "github.com/lesomnus/roster"})
+	if err != nil {
+		log.Fatal(err)
+	}
+	logger := slog.New(o.SlogHandler())
 	slog.SetDefault(logger)
-	ctx := otlog.Into(context.Background(), logger)
+	ctx = otlog.Into(ctx, logger)
+	if err := otx.Start(ctx); err != nil {
+		log.Fatal(err)
+	}
 
 	// Both planes, held in memory rather than in OPFS -- which is the decision
 	// that makes a reload a fresh deployment. A sandbox that remembered would
@@ -159,13 +179,12 @@ func main() {
 	op := &sandbox.Operator{}
 	who := sandbox.Believe(op)
 	srv := drpc.NewServer(gw,
+		drpc.WithStatsHandler(otxgrpc.NewServerLogger(o)),
 		drpc.ChainUnaryInterceptors(
-			sandbox.LogUnary(logger.With("server", "control")),
 			pdauth.InterceptorUnary(who, sandbox.Resolver(cmd.Resolver(s.Control.Ungated, nil)), cmd.Public),
 			gate.Unary(cmd.Policy(s.Control.Ent)),
 		),
 		drpc.ChainStreamInterceptors(
-			sandbox.LogStream(logger.With("server", "control")),
 			pdauth.InterceptorStream(who, sandbox.Resolver(cmd.Resolver(s.Control.Ungated, nil)), cmd.Public),
 			gate.Stream(cmd.Policy(s.Control.Ent)),
 		),
@@ -191,14 +210,13 @@ func main() {
 	}
 	agw := jsport.NewGateway(jsport.WithEntryPoint(AdminEntryPoint))
 	asrv := drpc.NewServer(agw,
+		drpc.WithStatsHandler(otxgrpc.NewServerLogger(o)),
 		drpc.ChainUnaryInterceptors(
-			sandbox.LogUnary(logger.With("server", "admin")),
 			pdauth.InterceptorUnary(who, sandbox.Resolver(cmd.Resolver(s.Control.Ungated, nil)), cmd.Public),
 			gate.Unary(cmd.Policy(s.Control.Ent)),
 			cmd.Intent(s.Control.Ent),
 		),
 		drpc.ChainStreamInterceptors(
-			sandbox.LogStream(logger.With("server", "admin")),
 			pdauth.InterceptorStream(who, sandbox.Resolver(cmd.Resolver(s.Control.Ungated, nil)), cmd.Public),
 			gate.Stream(cmd.Policy(s.Control.Ent)),
 		),

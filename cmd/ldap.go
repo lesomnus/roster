@@ -32,14 +32,14 @@ func NewCmdLdap(c *Config) *xli.Command {
 		Name:  "ldap",
 		Brief: "roster as a directory, over LDAP",
 
-		Commands: xli.Commands{newCmdLdapServe()},
+		Commands: xli.Commands{newCmdLdapServe(c)},
 	}
 }
 
 // LdapKeyPrefix is the environment form of `--key`: `ROSTER_LDAP_KEY_<ALIAS>`.
 const LdapKeyPrefix = "ROSTER_LDAP_KEY_"
 
-func newCmdLdapServe() *xli.Command {
+func newCmdLdapServe(c *Config) *xli.Command {
 	return &xli.Command{
 		Name:  "serve",
 		Brief: "answer LDAP binds and searches from roster's rows",
@@ -57,6 +57,12 @@ func newCmdLdapServe() *xli.Command {
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
+			ctx, stop, err := telemetry(ctx, c, "roster-ldap")
+			if err != nil {
+				return err
+			}
+			defer stop()
+
 			roster, _ := flg.Find[string](cmd, "roster")
 			if roster == "" {
 				return errors.New("--roster: where roster speaks gRPC")

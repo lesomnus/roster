@@ -1428,6 +1428,12 @@ func NewCmdServe(c *Config) *xli.Command {
 		Brief: "answer requests",
 
 		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
+			ctx, stop, err := telemetry(ctx, c, "roster")
+			if err != nil {
+				return err
+			}
+			defer stop()
+
 			s, err := Build(ctx, *c)
 			if err != nil {
 				return err
