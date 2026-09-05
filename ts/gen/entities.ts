@@ -32,6 +32,25 @@ import { SiteSchema } from './app/site_pb.js'
 import { SiteMembershipSchema, TeamMembershipSchema } from './app/membership_pb.js'
 import { TeamSchema } from './app/team_pb.js'
 import { TenantSchema } from './roster/payday/tenant_pb.js'
+import { ApiKeyService } from './app/apikey_svc_pb.js'
+import { AuditService } from './roster/payday/audit_svc_pb.js'
+import { BindingService, RoleService } from './app/role_svc_pb.js'
+import { ConnectionService } from './app/connection_svc_pb.js'
+import { ContinuationService } from './app/continuation_svc_pb.js'
+import { CredentialService } from './app/credential_svc_pb.js'
+import { DelegationService } from './app/delegation_svc_pb.js'
+import { EmailService } from './app/email_svc_pb.js'
+import { GroupService, GroupMembershipService } from './app/group_svc_pb.js'
+import { HolderService } from './roster/payday/holder_svc_pb.js'
+import { HostService, MailDomainService } from './app/host_svc_pb.js'
+import { IdentityService } from './app/identity_svc_pb.js'
+import { LinkService } from './app/link_svc_pb.js'
+import { OutboxService } from './roster/payday/outbox_svc_pb.js'
+import { SessionService } from './app/session_svc_pb.js'
+import { SiteService } from './app/site_svc_pb.js'
+import { SiteMembershipService, TeamMembershipService } from './app/membership_svc_pb.js'
+import { TeamService } from './app/team_svc_pb.js'
+import { TenantService } from './roster/payday/tenant_svc_pb.js'
 
 /** roster.ApiKey, as the store holds it. */
 export const ApiKey = {
@@ -40,6 +59,7 @@ export const ApiKey = {
 	domain: 14,
 	version: "dateUpdated",
 	refs: [{ field: "holder", to: "roster.Holder" }],
+	service: ApiKeyService,
 } as const satisfies EntityDesc
 
 /** roster.Audit, as the store holds it. */
@@ -47,6 +67,7 @@ export const Audit = {
 	typeName: "roster.Audit",
 	schema: AuditSchema,
 	domain: 3,
+	service: AuditService,
 } as const satisfies EntityDesc
 
 /** roster.Binding, as the store holds it. */
@@ -56,6 +77,7 @@ export const Binding = {
 	domain: 18,
 	version: "dateUpdated",
 	refs: [{ field: "role", to: "roster.Role" }, { field: "site", to: "roster.Site" }, { field: "holder", to: "roster.Holder" }, { field: "group", to: "roster.Group" }],
+	service: BindingService,
 } as const satisfies EntityDesc
 
 /** roster.Connection, as the store holds it. */
@@ -65,6 +87,7 @@ export const Connection = {
 	domain: 25,
 	version: "dateUpdated",
 	refs: [{ field: "tenant", to: "roster.Tenant" }],
+	service: ConnectionService,
 } as const satisfies EntityDesc
 
 /** roster.Continuation, as the store holds it. */
@@ -74,6 +97,7 @@ export const Continuation = {
 	domain: 22,
 	version: "dateUpdated",
 	refs: [{ field: "holder", to: "roster.Holder" }],
+	service: ContinuationService,
 } as const satisfies EntityDesc
 
 /** roster.Credential, as the store holds it. */
@@ -83,6 +107,7 @@ export const Credential = {
 	domain: 13,
 	version: "dateUpdated",
 	refs: [{ field: "holder", to: "roster.Holder" }],
+	service: CredentialService,
 } as const satisfies EntityDesc
 
 /** roster.Delegation, as the store holds it. */
@@ -92,6 +117,7 @@ export const Delegation = {
 	domain: 19,
 	version: "dateUpdated",
 	refs: [{ field: "holder", to: "roster.Holder" }],
+	service: DelegationService,
 } as const satisfies EntityDesc
 
 /** roster.Email, as the store holds it. */
@@ -101,6 +127,7 @@ export const Email = {
 	domain: 9,
 	version: "dateUpdated",
 	refs: [{ field: "holder", to: "roster.Holder" }, { field: "vouchedBy", to: "roster.Identity" }],
+	service: EmailService,
 } as const satisfies EntityDesc
 
 /** roster.Group, as the store holds it. */
@@ -110,6 +137,7 @@ export const Group = {
 	domain: 16,
 	version: "dateUpdated",
 	refs: [{ field: "tenant", to: "roster.Tenant" }, { field: "site", to: "roster.Site" }],
+	service: GroupService,
 } as const satisfies EntityDesc
 
 /** roster.GroupMembership, as the store holds it. */
@@ -119,6 +147,7 @@ export const GroupMembership = {
 	domain: 17,
 	version: "dateUpdated",
 	refs: [{ field: "holder", to: "roster.Holder" }, { field: "group", to: "roster.Group" }],
+	service: GroupMembershipService,
 } as const satisfies EntityDesc
 
 /** roster.Holder, as the store holds it. */
@@ -128,6 +157,7 @@ export const Holder = {
 	domain: 2,
 	version: "dateUpdated",
 	refs: [{ field: "tenant", to: "roster.Tenant" }],
+	service: HolderService,
 } as const satisfies EntityDesc
 
 /** roster.Host, as the store holds it. */
@@ -137,6 +167,7 @@ export const Host = {
 	domain: 20,
 	version: "dateUpdated",
 	refs: [{ field: "tenant", to: "roster.Tenant" }],
+	service: HostService,
 } as const satisfies EntityDesc
 
 /** roster.Identity, as the store holds it. */
@@ -146,6 +177,7 @@ export const Identity = {
 	domain: 8,
 	version: "dateUpdated",
 	refs: [{ field: "holder", to: "roster.Holder" }],
+	service: IdentityService,
 } as const satisfies EntityDesc
 
 /** roster.Link, as the store holds it. */
@@ -155,6 +187,7 @@ export const Link = {
 	domain: 23,
 	version: "dateUpdated",
 	refs: [{ field: "holder", to: "roster.Holder" }, { field: "email", to: "roster.Email" }],
+	service: LinkService,
 } as const satisfies EntityDesc
 
 /** roster.MailDomain, as the store holds it. */
@@ -164,6 +197,7 @@ export const MailDomain = {
 	domain: 21,
 	version: "dateUpdated",
 	refs: [{ field: "tenant", to: "roster.Tenant" }],
+	service: MailDomainService,
 } as const satisfies EntityDesc
 
 /** roster.Outbox, as the store holds it. */
@@ -171,6 +205,7 @@ export const Outbox = {
 	typeName: "roster.Outbox",
 	schema: OutboxSchema,
 	domain: 4,
+	service: OutboxService,
 } as const satisfies EntityDesc
 
 /** roster.Role, as the store holds it. */
@@ -180,6 +215,7 @@ export const Role = {
 	domain: 15,
 	version: "dateUpdated",
 	refs: [{ field: "tenant", to: "roster.Tenant" }, { field: "site", to: "roster.Site" }],
+	service: RoleService,
 } as const satisfies EntityDesc
 
 /** roster.Session, as the store holds it. */
@@ -189,6 +225,7 @@ export const Session = {
 	domain: 24,
 	version: "dateUpdated",
 	refs: [{ field: "holder", to: "roster.Holder" }],
+	service: SessionService,
 } as const satisfies EntityDesc
 
 /** roster.Site, as the store holds it. */
@@ -198,6 +235,7 @@ export const Site = {
 	domain: 7,
 	version: "dateUpdated",
 	refs: [{ field: "tenant", to: "roster.Tenant" }],
+	service: SiteService,
 } as const satisfies EntityDesc
 
 /** roster.SiteMembership, as the store holds it. */
@@ -207,6 +245,7 @@ export const SiteMembership = {
 	domain: 11,
 	version: "dateUpdated",
 	refs: [{ field: "holder", to: "roster.Holder" }, { field: "site", to: "roster.Site" }],
+	service: SiteMembershipService,
 } as const satisfies EntityDesc
 
 /** roster.Team, as the store holds it. */
@@ -216,6 +255,7 @@ export const Team = {
 	domain: 10,
 	version: "dateUpdated",
 	refs: [{ field: "tenant", to: "roster.Tenant" }, { field: "site", to: "roster.Site" }],
+	service: TeamService,
 } as const satisfies EntityDesc
 
 /** roster.TeamMembership, as the store holds it. */
@@ -225,6 +265,7 @@ export const TeamMembership = {
 	domain: 12,
 	version: "dateUpdated",
 	refs: [{ field: "holder", to: "roster.Holder" }, { field: "team", to: "roster.Team" }, { field: "role", to: "roster.Role" }],
+	service: TeamMembershipService,
 } as const satisfies EntityDesc
 
 /** roster.Tenant, as the store holds it. */
@@ -233,6 +274,7 @@ export const Tenant = {
 	schema: TenantSchema,
 	domain: 1,
 	version: "dateUpdated",
+	service: TenantService,
 } as const satisfies EntityDesc
 
 /** Every entity of this app, which is what a store is opened over. */

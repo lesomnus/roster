@@ -374,8 +374,10 @@ The sandbox (`npm run dev:sandbox`) is the console with the server compiled
 into the page: `wasm/` serves the control listener and the admin one from one
 instance, under two entry points the page dials by name. `wasm/sandbox` is the
 memory of who signed in, standing in for the cookie a message port cannot
-carry. `ts/vendor/` holds the library that makes the second entry point
-possible until it is released; its README says how it was built.
+carry. `ts/vendor/` holds the two libraries this depends on ahead of their
+releases -- grpc-dgram for the second entry point, payday for the entity
+declarations and the devtools panel -- as tarballs; its README says how they
+were built and when to remove them.
 
 Both pages are driven in a browser by `./scripts/e2e.sh`: it builds the binary
 and the pages, stands a deployment up in a scratch directory the way
