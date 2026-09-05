@@ -40,6 +40,7 @@ import { EmailService } from '../gen/app/email_svc_pb.js'
 import { MeService } from '../gen/app/me_pb.js'
 import { HolderService } from '../gen/roster/payday/holder_svc_pb.js'
 import { covers } from '../lib/covers.js'
+import { expiries, expiresAt, until } from '../lib/expiry.js'
 import { open } from '../lib/store.js'
 import '../lib/style.css'
 
@@ -868,13 +869,19 @@ const appPasswordMethods = ['/roster.MeService/Get']
 
 function Keys(props: {
 	own: Uint8Array
-	keys: { id: Uint8Array; alias: string; methods: string[]; dateUsed?: { seconds: bigint } | undefined }[]
+	keys: {
+		id: Uint8Array
+		alias: string
+		methods: string[]
+		dateExpires?: { seconds: bigint } | undefined
+		dateUsed?: { seconds: bigint } | undefined
+	}[]
 	may: (m: string) => boolean
 }): React.ReactNode {
 	const issue = useCall(ApiKeyService.method.issue)
 	const revoke = useCall(ApiKeyService.method.erase)
 	const [gone, setGone] = useState<string[]>([])
-	const [made, setMade] = useState<{ id: Uint8Array; alias: string; methods: string[] }[]>([])
+	const [made, setMade] = useState<{ id: Uint8Array; alias: string; methods: string[]; dateExpires?: { seconds: bigint } | undefined }[]>([])
 	const [token, setToken] = useState<string | null>(null)
 	const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null)
 
@@ -882,16 +889,21 @@ function Keys(props: {
 	// the moment after is gone too, which the browser found it was not.
 	const keys = [...props.keys, ...made].filter((k) => !gone.includes(uuid(k.id)))
 
-	const mint = (form: HTMLFormElement, alias: string, methods: string[]): void => {
+	const mint = (form: HTMLFormElement, alias: string, methods: string[], expires: string): void => {
 		if (alias === '' || methods.length === 0) return
 		setNote(null)
 		setToken(null)
 		void issue
-			.call({ holder: ref(props.own), alias, methods })
+			.call({ holder: ref(props.own), alias, methods, expires: expiresAt(expires) })
 			.then((r) => {
 				form.reset()
 				setToken(r.token)
-				if (r.key !== undefined) setMade((was) => [...was, { id: r.key!.id, alias: r.key!.alias, methods: r.key!.methods }])
+				if (r.key !== undefined) {
+					setMade((was) => [
+						...was,
+						{ id: r.key!.id, alias: r.key!.alias, methods: r.key!.methods, dateExpires: r.key!.dateExpires },
+					])
+				}
 			})
 			.catch((e: unknown) => setNote({ ok: false, text: said(e) }))
 	}
@@ -907,6 +919,7 @@ function Keys(props: {
 							<tr key={uuid(k.id)}>
 								<td>{k.alias}</td>
 								<td className="mono">{k.methods.join(', ')}</td>
+								<td className={k.dateExpires === undefined ? 'none' : ''}>{until(k.dateExpires)}</td>
 								<td>
 									<button
 										disabled={!props.may('/roster.ApiKeyService/Erase')}
@@ -934,10 +947,11 @@ function Keys(props: {
 						onSubmit={(e) => {
 							e.preventDefault()
 							const f = new FormData(e.currentTarget)
-							mint(e.currentTarget, String(f.get('app') ?? '').trim(), appPasswordMethods)
+							mint(e.currentTarget, String(f.get('app') ?? '').trim(), appPasswordMethods, String(f.get('expires') ?? 'never'))
 						}}
 					>
 						<input name="app" placeholder="the app's name: nas, jenkins, …" required />
+						<Expires />
 						<button type="submit" disabled={issue.state === 'pending'}>
 							mint an app password
 						</button>
@@ -957,11 +971,13 @@ function Keys(props: {
 									.split(/[\s,]+/)
 									.map((s) => s.trim())
 									.filter((s) => s !== ''),
+								String(f.get('expires') ?? 'never'),
 							)
 						}}
 					>
 						<input name="alias" placeholder="what to call it" required />
 						<input name="methods" placeholder="/roster.MeService/Get, …" className="wide" required />
+						<Expires />
 						<button type="submit" disabled={issue.state === 'pending'}>
 							mint a key
 						</button>
@@ -979,6 +995,19 @@ function Keys(props: {
 			)}
 			{note !== null && <p className={note.ok ? 'note' : 'bad'}>{note.text}</p>}
 		</section>
+	)
+}
+
+/** Expires is the one choice both key forms share. */
+function Expires(): React.ReactNode {
+	return (
+		<select name="expires" defaultValue="never">
+			{expiries.map((v) => (
+				<option key={v.value} value={v.value}>
+					{v.name}
+				</option>
+			))}
+		</select>
 	)
 }
 

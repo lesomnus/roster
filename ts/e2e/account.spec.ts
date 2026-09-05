@@ -67,13 +67,16 @@ test('an app password is a key minted by the app\'s name, shown once', async ({ 
 
 	const form = page.locator('form.app-password')
 	await form.locator('input[name=app]').fill('nas')
+	await form.locator('select[name=expires]').selectOption('30d')
 	await form.locator('button[type=submit]').click()
 
-	// The token, once, with the one method an app password has beside it.
+	// The token, once, with the one method an app password has beside it, and
+	// the day it stops.
 	await expect(page.locator('.secret code')).toHaveText(/^rt_/)
 	const row = page.locator('tr', { has: page.locator('td', { hasText: 'nas' }) })
 	await expect(row).toBeVisible()
 	await expect(row.locator('td.mono')).toHaveText('/roster.MeService/Get')
+	await expect(row.locator('td').nth(2)).toHaveText(/^\d{4}-\d{2}-\d{2}$/)
 
 	// And revoked from the same list.
 	await row.locator('button', { hasText: 'revoke' }).click()

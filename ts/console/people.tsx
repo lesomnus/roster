@@ -45,6 +45,7 @@ import { HolderService } from '../gen/roster/payday/holder_svc_pb.js'
 import { EmailService } from '../gen/app/email_svc_pb.js'
 import { IdentityService } from '../gen/app/identity_svc_pb.js'
 import type { Admin } from '../lib/client.js'
+import { expiries, expiresAt, until } from '../lib/expiry.js'
 
 /** uuid is the bytes an identifier arrives as, written the way a person reads one. */
 function uuid(v: Uint8Array | undefined): string {
@@ -358,6 +359,7 @@ function Keys(props: {
 }): React.ReactNode {
 	const [alias, setAlias] = useState('')
 	const [methods, setMethods] = useState('')
+	const [expires, setExpires] = useState<string>('never')
 
 	// What this screen has done since it read, which is the ordinary shape for
 	// a page that changes a list it is showing. `useQuery` has no refetch and
@@ -385,6 +387,7 @@ function Keys(props: {
 						<tr>
 							<th>name</th>
 							<th>may call</th>
+							<th>until</th>
 							<th>last used</th>
 							<th />
 						</tr>
@@ -398,6 +401,7 @@ function Keys(props: {
 								    much narrower it was made -- which is the only
 								    thing worth reading before revoking one. */}
 								<td className="mono">{v.methods.join(', ')}</td>
+								<td className={v.dateExpires === undefined ? 'none' : ''}>{until(v.dateExpires)}</td>
 								<td>
 									{v.dateUsed === undefined ? (
 										<span className="none">never</span>
@@ -443,6 +447,13 @@ function Keys(props: {
 					value={methods}
 					onChange={(e) => setMethods(e.target.value)}
 				/>
+				<select value={expires} onChange={(e) => setExpires(e.target.value)}>
+					{expiries.map((v) => (
+						<option key={v.value} value={v.value}>
+							{v.name}
+						</option>
+					))}
+				</select>
 				<button
 					disabled={
 						!props.may('/roster.ApiKeyService/Issue') ||
@@ -458,6 +469,7 @@ function Keys(props: {
 									.split(',')
 									.map((v) => v.trim())
 									.filter((v) => v !== ''),
+								expires: expiresAt(expires),
 							})
 							.then((r) => {
 								props.say({ kind: 'secret', text: r.token })
