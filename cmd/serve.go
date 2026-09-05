@@ -404,6 +404,13 @@ func build(ctx context.Context, c Config, prefix string) (*Server, error) {
 			// was written down: this said `memory` in the code, which made the
 			// console the one screen a second replica broke without saying so.
 			Watch: c.Control.watch(c.Watch),
+
+			// The same numbers for an operator's password as for anybody's:
+			// `vouch.lockout` and `vouch.password` are one block in the file,
+			// and a floor that held for a customer's people and not for the
+			// person who runs the deployment would be backwards. The keyring
+			// is not carried over -- the control plane holds no second factors.
+			Vouch: VouchConfig{Lockout: c.Vouch.Lockout, Password: c.Vouch.Password},
 		}, keys.PrefixDeployment)
 		if err != nil {
 			db.Close()

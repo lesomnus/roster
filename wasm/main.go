@@ -78,7 +78,7 @@ import (
 // servers, it is inside the page, and it is gone on reload.
 const (
 	operator = "admin"
-	password = "sandboxed"
+	password = "admin"
 
 	// AdminEntryPoint is the name the admin server is published under, and
 	// what `ts/console/main.tsx` dials for the customers screen.
@@ -112,6 +112,12 @@ func main() {
 		// construction: there is exactly one of this server and it is inside
 		// the page.
 		Watch: config.WatchConfig{Broker: config.BrokerMemory},
+
+		// The floor is eight and the password above is five, so the sandbox
+		// says so rather than carrying a password nobody remembers. A
+		// deployment's own setting, set the way a deployment would set it, and
+		// nothing the page could change.
+		Vouch: cmd.VouchConfig{Password: cmd.PasswordConfig{MinLength: len(password)}},
 
 		Control: cmd.ControlConfig{
 			Db: config.DbConfig{Driver: "sqlite3-wasm", Dsn: "file:/control?vfs=memdb"},

@@ -37,13 +37,14 @@ func TestTheSandboxSignsIn(t *testing.T) {
 		Db:      config.DbConfig{Driver: drv, Dsn: dsn},
 		Watch:   config.WatchConfig{Broker: config.BrokerMemory},
 		Control: cmd.ControlConfig{Db: config.DbConfig{Driver: cdrv, Dsn: cdsn}},
+		Vouch:   cmd.VouchConfig{Password: cmd.PasswordConfig{MinLength: 5}},
 	})
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })
 
 	x.NoError(s.Ent.Schema.Create(ctx))
 	x.NoError(s.Control.Ent.Schema.Create(ctx))
-	_, err = cmd.Seed(ctx, s, cmd.Seeding{Tenant: "contoso", Holder: "admin", Operator: "admin", Password: "sandboxed"})
+	_, err = cmd.Seed(ctx, s, cmd.Seeding{Tenant: "contoso", Holder: "admin", Operator: "admin", Password: "admin"})
 	x.NoError(err)
 
 	op := &sandbox.Operator{}
@@ -70,7 +71,7 @@ func TestTheSandboxSignsIn(t *testing.T) {
 	t.Run("the right one is the caller from then on", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := a.SignIn(ctx, app.AuthSignInRequest_builder{Alias: "admin", Password: "sandboxed"}.Build())
+		_, err := a.SignIn(ctx, app.AuthSignInRequest_builder{Alias: "admin", Password: "admin"}.Build())
 		x.NoError(err)
 
 		id, err := who.Handle(ctx)

@@ -262,7 +262,7 @@ tenant.
 
 ```sh
 docker compose up --build
-# http://localhost:8082/console/   admin / admin-admin
+# http://localhost:8082/console/   admin / admin
 # http://localhost:8090/           erin / correct horse battery staple
 ```
 
@@ -276,7 +276,7 @@ it unchanged:
 
 ```sh
 E2E_CONSOLE=http://localhost:8082/console/ E2E_ACCOUNT=http://localhost:8090 \
-E2E_OPS_USER=admin E2E_OPS_PASSWORD=admin-admin npx --prefix ts playwright test console account
+E2E_OPS_USER=admin E2E_OPS_PASSWORD=admin npx --prefix ts playwright test console account
 ```
 
 For hot reload on a page, point a dev server at it instead -- the stack
@@ -306,7 +306,7 @@ entrypoint and not by the CLI:
 | | |
 | --- | --- |
 | `ROSTER_ROOT_USER` | `admin` |
-| `ROSTER_ROOT_PASSWORD` | `admin-admin` — eight characters is the floor a password has |
+| `ROSTER_ROOT_PASSWORD` | `admin` — five characters, so the stack sets `ROSTER_VOUCH_PASSWORD_MIN_LENGTH` to five too; unset both for a real one and the floor is eight again |
 
 `roster init` takes no `--password` flag and will not grow one — an argument is
 in the shell history and in the process list, which is why `roster key add` will
@@ -336,7 +336,7 @@ npm --prefix ts run dev            # against a running roster
 `dev:sandbox` compiles the whole server into the page — `GOOS=js GOARCH=wasm`,
 SQLite in a Worker, a message port instead of HTTP/2. A reload is a fresh
 deployment: new databases, seeded again by `cmd.Seed`, nothing left over. It
-signs in as `admin` with the password `sandboxed` (eight characters is the floor a password has, and this is one), and has one customer, `contoso`.
+signs in as `admin` with the password `admin` -- the sandbox sets the length floor to five for it, the one setting it changes -- and has one customer, `contoso`.
 
 It is one instance serving **two servers**, because the console reaches two
 listeners: `control.http` — the deployment screen, the sign-in — and
