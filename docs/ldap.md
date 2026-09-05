@@ -331,7 +331,7 @@ needs them. Each becomes a comment beside what it decides when it lands.
 
 | | | |
 | --- | --- | --- |
-| L0 | the wire | not started |
+| L0 | the wire | **done** — `ldap/wire`: the loop, simple bind, search, unbind, abandon, StartTLS (and LDAPS as the listener's), WhoAmI, paging, the refusal table. Proved against `go-ldap` as the client and by hand for what it has no call for (abandon); under the race detector |
 | L1 | people | not started |
 | L2 | groups, teams, sites | not started |
 | L3 | shipped | not started |
