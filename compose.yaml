@@ -163,6 +163,26 @@ services:
     volumes:
       - account:/var/lib/roster-account:ro
 
+  # The directory: roster over LDAP, its own process with its own key, for
+  # anything on the network that speaks nothing else. Bind with an app
+  # password minted on the account page (`LDAP_BIND=either` lets a password
+  # in too, for somebody with no second factor):
+  #
+  #     ldapsearch -H ldap://localhost:1389 -x   #       -D uid=erin,ou=people,o=contoso -w rt_… -b o=contoso '(objectClass=inetOrgPerson)'
+  ldap:
+    build: .
+    depends_on:
+      customer:
+        condition: service_completed_successfully
+    entrypoint: ["/usr/local/bin/ldap.sh"]
+    environment:
+      SEED_CUSTOMER: ${SEED_CUSTOMER:-contoso}
+      LDAP_BIND: ${LDAP_BIND:-key}
+    ports:
+      - "1389:1389"
+    volumes:
+      - account:/var/lib/roster-account:ro
+
 volumes:
   postgres:
   state:

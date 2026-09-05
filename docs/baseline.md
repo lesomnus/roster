@@ -130,3 +130,22 @@ the page, one of the two is wrong and both are load-bearing.
 | a password is at least eight characters unless the deployment says more, at most a kilobyte, and — when `no_reuse` says how many — not one of the last *n*; the lockout is the deployment's numbers on both paths that count | `TestAPasswordHasToBeLongEnough` · `TestAPasswordUsedBeforeIsRefusedWhenAsked` · `TestTheLockoutIsTheDeploymentsNumbers` |
 | `Holder.Search` finds people by a fragment of alias, name or display name, or a department or employee number exactly — walled, so a customer's key finds nobody in another customer, and paged on `List`'s cursor so reading through answers everybody once; a search for nothing is refused | `TestSearchFindsPeopleByWhoTheyAre` · `TestTheTerminalReachesEveryOverlayVerb` |
 | the pages do what the tests above walk through by hand — an operator signs in and stands a customer up from the customers screen; a person signs in, changes their password against the one they hold, enrols an authenticator app that counts once proved and is asked for next time, and enrols a security key the browser is then told to look for; a wrong second code costs the first form again | `scripts/e2e.sh` — `ts/e2e/console.spec.ts` · `ts/e2e/account.spec.ts`, in a browser against a deployment stood up as `docs/operating.md` says |
+
+## A directory over LDAP
+
+[ldap.md](ldap.md) is the whole of it; these are the promises.
+
+| the promise | pinned by |
+| --- | --- |
+| an app password — a key with `Me.Get` alone — binds its owner's name and nobody else's; a wrong key, somebody else's, the directory's own, an empty password and a name that is not a person's are the same `invalidCredentials` | `TestAnAppPasswordBindsItsOwnerAndNobodyElse` |
+| under `--bind key` a password does not bind; under `password` it does for somebody with no second factor and does **not** for somebody with one, because `Vouch.Verify` answers `ok` only for a finished sign-in; `either` takes both | `TestAPasswordBindStopsAtASecondFactor` |
+| a suffix is a tenant: a search under one answers none of another's, a renamed suffix is the same tenant, the root DSE lists them all, and nothing below the root is read unbound | `TestASuffixIsATenant` |
+| every filter shape is the roster read that covers it, evaluated without regard to case; a person's attributes are the table in ldap.md, `mail` the verified addresses only, nothing operational unasked | `TestAFilterIsARosterRead` |
+| groups and teams name their members and nobody disabled, a site holds its teams, `memberOf` agrees with `member`, and the whole suffix in one search and in pages is the same tree | `TestGroupsTeamsAndSitesAreTheTree` |
+| paging reads everybody once, with a filter that drops rows and with one roster has no index for; the client's size limit is a bound | `TestPagingReadsEverybodyOnce` |
+| no entry carries `userPassword`, a key, a password or a credential | `TestNothingSecretIsInTheTree` |
+| somebody disabled is not in the tree, from the next search on | `TestTheDisabledAreNotListed` |
+| the wire refuses every write and compare, SASL, an unknown critical control, and a bind in the clear when TLS is required; two searches share a connection, an abandoned one answers nothing, StartTLS turns the connection and LDAPS is the listener's | `TestTheDirectoryIsReadOnlyOnTheWire` · `TestASaslBindIsNotSupported` · `TestAnUnknownCriticalControlRefusesTheOperation` · `TestTwoSearchesShareAConnection` · `TestAnAbandonedSearchAnswersNothing` · `TestStartTlsTurnsTheConnection` · `TestLdapsIsTheListenersBusiness` |
+| `roster ldap serve` is told everything from the shell and refuses with a sentence for each thing it was not; told everything, a client binds with an app password and searches | `TestLdapServeIsToldEverything` · `TestLdapIsToldEverything` |
+| `ldap/` reaches roster only over the wire — it imports no server package but `front.Address` | `scripts/test.sh`, *the account app and the directory reach roster only over the wire* |
+| the account page mints an app password by the app's name, shows it once beside its one method, and revokes it from the same list | `scripts/e2e.sh` — `ts/e2e/account.spec.ts`, *an app password is a key minted by the app's name* |

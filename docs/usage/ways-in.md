@@ -161,6 +161,14 @@ roster me revoke-key 01a03382-5adb-8788-bf0e-c99210575d01
 `roster me` is remote only. Every method answers from the caller and a local run
 has none — it opens the database instead of calling a server.
 
+**An app password is one of these.** A client that has a password field and
+nothing else -- an LDAP client, a mail client -- cannot pass a second factor,
+so what goes in that field is a key minted for that app alone, with `Me.Get`
+as its only method: enough for `roster ldap serve` to read whose it is, and
+nothing else if it leaks. The account page mints one from the app's name
+(*mint an app password*); revoking it from the same list ends that one app.
+[../ldap.md](../ldap.md) § The bind.
+
 Two rules hold whichever door was used, and they are why this is safe to offer
 at all:
 

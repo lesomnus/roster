@@ -854,7 +854,18 @@ function Sessions(props: { own: Uint8Array; may: (m: string) => boolean }): Reac
 	)
 }
 
-/** Keys is what a machine of yours may call as you, minted here and revoked here. */
+/**
+ * Keys is what a machine of yours may call as you, minted here and revoked here.
+ *
+ * An **app password** is one of them: a key whose only method is `Me.Get`, for
+ * a client that speaks a protocol with a password field and nothing else --
+ * LDAP, IMAP. `roster ldap serve` binds with it by reading who it belongs to
+ * (`docs/ldap.md` § The bind). Nothing new in roster: the same `ApiKey.Issue`,
+ * with the methods filled in, so the person types the app's name and nothing
+ * they would have to look up.
+ */
+const appPasswordMethods = ['/roster.MeService/Get']
+
 function Keys(props: {
 	own: Uint8Array
 	keys: { id: Uint8Array; alias: string; methods: string[]; dateUsed?: { seconds: bigint } | undefined }[]
@@ -867,7 +878,23 @@ function Keys(props: {
 	const [token, setToken] = useState<string | null>(null)
 	const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null)
 
-	const keys = [...props.keys.filter((k) => !gone.includes(uuid(k.id))), ...made]
+	// One list, both halves filtered: a key minted a moment ago and revoked
+	// the moment after is gone too, which the browser found it was not.
+	const keys = [...props.keys, ...made].filter((k) => !gone.includes(uuid(k.id)))
+
+	const mint = (form: HTMLFormElement, alias: string, methods: string[]): void => {
+		if (alias === '' || methods.length === 0) return
+		setNote(null)
+		setToken(null)
+		void issue
+			.call({ holder: ref(props.own), alias, methods })
+			.then((r) => {
+				form.reset()
+				setToken(r.token)
+				if (r.key !== undefined) setMade((was) => [...was, { id: r.key!.id, alias: r.key!.alias, methods: r.key!.methods }])
+			})
+			.catch((e: unknown) => setNote({ ok: false, text: said(e) }))
+	}
 
 	return (
 		<section>
@@ -901,40 +928,51 @@ function Keys(props: {
 			)}
 			{!props.may('/roster.ApiKeyService/Issue') && <Needs method="/roster.ApiKeyService/Issue" />}
 			{props.may('/roster.ApiKeyService/Issue') && (
-				<form
-					onSubmit={(e) => {
-						e.preventDefault()
-						const form = e.currentTarget
-						const f = new FormData(form)
-						const alias = String(f.get('alias') ?? '').trim()
-						const methods = String(f.get('methods') ?? '')
-							.split(/[\s,]+/)
-							.map((s) => s.trim())
-							.filter((s) => s !== '')
-						if (alias === '' || methods.length === 0) return
-						setNote(null)
-						setToken(null)
-						void issue
-							.call({ holder: ref(props.own), alias, methods })
-							.then((r) => {
-								form.reset()
-								setToken(r.token)
-								if (r.key !== undefined) setMade((was) => [...was, { id: r.key!.id, alias: r.key!.alias, methods: r.key!.methods }])
-							})
-							.catch((e: unknown) => setNote({ ok: false, text: said(e) }))
-					}}
-				>
-					<input name="alias" placeholder="what to call it" required />
-					<input name="methods" placeholder="/roster.MeService/Get, …" className="wide" required />
-					<button type="submit" disabled={issue.state === 'pending'}>
-						mint a key
-					</button>
-				</form>
+				<>
+					<form
+						className="app-password"
+						onSubmit={(e) => {
+							e.preventDefault()
+							const f = new FormData(e.currentTarget)
+							mint(e.currentTarget, String(f.get('app') ?? '').trim(), appPasswordMethods)
+						}}
+					>
+						<input name="app" placeholder="the app's name: nas, jenkins, …" required />
+						<button type="submit" disabled={issue.state === 'pending'}>
+							mint an app password
+						</button>
+						<p className="hint">
+							for a client with a password field and nothing else (LDAP, IMAP): a key that can only say who it is,
+							revoked here when that app goes
+						</p>
+					</form>
+					<form
+						onSubmit={(e) => {
+							e.preventDefault()
+							const f = new FormData(e.currentTarget)
+							mint(
+								e.currentTarget,
+								String(f.get('alias') ?? '').trim(),
+								String(f.get('methods') ?? '')
+									.split(/[\s,]+/)
+									.map((s) => s.trim())
+									.filter((s) => s !== ''),
+							)
+						}}
+					>
+						<input name="alias" placeholder="what to call it" required />
+						<input name="methods" placeholder="/roster.MeService/Get, …" className="wide" required />
+						<button type="submit" disabled={issue.state === 'pending'}>
+							mint a key
+						</button>
+					</form>
+				</>
 			)}
 			{token !== null && (
 				<div className="secret">
 					<p>
-						The key, shown <strong>once</strong>. It acts as you, and never wider than you.
+						The key, shown <strong>once</strong>. It acts as you, and never wider than you. Where a client asks for
+						a password, this is what to paste.
 					</p>
 					<code>{token}</code>
 				</div>

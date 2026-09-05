@@ -360,6 +360,16 @@ person -- which roster ends, so nothing here has to be able to. Two replicas
 under one key are one app; without `--seal` a key is made at start, which is
 one replica and a restart that signs everybody out.
 
+`roster ldap serve` is a third process of the same kind: roster as a
+directory, for the clients on a network that speak LDAP and nothing else. It
+holds one tenant key per operator, reads roster over the wire (`ldap/`, held
+to it by the same check), and translates -- a bind into `Me.Get` bearing the
+app password the client presented or `Vouch.Verify` with the person's own, a
+search into `Holder.Search`, `Holder.List` and the membership lists. The
+protocol itself is `ldap/wire`, five messages on BER and nothing borrowed.
+`docs/ldap.md` is the design and its reasons; `docs/operating.md` § A
+directory, over LDAP is how to run it.
+
 The sandbox (`npm run dev:sandbox`) is the console with the server compiled
 into the page: `wasm/` serves the control listener and the admin one from one
 instance, under two entry points the page dials by name. `wasm/sandbox` is the

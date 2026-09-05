@@ -59,6 +59,29 @@ test('she changes her password, which asks for the current one', async ({ page }
 	await signedIn(page)
 })
 
+// Before the factors below, because after them a password alone does not sign
+// her in.
+test('an app password is a key minted by the app\'s name, shown once', async ({ page }) => {
+	await signIn(page)
+	await signedIn(page)
+
+	const form = page.locator('form.app-password')
+	await form.locator('input[name=app]').fill('nas')
+	await form.locator('button[type=submit]').click()
+
+	// The token, once, with the one method an app password has beside it.
+	await expect(page.locator('.secret code')).toHaveText(/^rt_/)
+	const row = page.locator('tr', { has: page.locator('td', { hasText: 'nas' }) })
+	await expect(row).toBeVisible()
+	await expect(row.locator('td.mono')).toHaveText('/roster.MeService/Get')
+
+	// And revoked from the same list.
+	await row.locator('button', { hasText: 'revoke' }).click()
+	await expect(row).toHaveCount(0)
+
+	await signOut(page)
+})
+
 test('an authenticator app counts once it is proved, and is asked for at the next sign-in', async ({ page }) => {
 	await signIn(page)
 	await signedIn(page)

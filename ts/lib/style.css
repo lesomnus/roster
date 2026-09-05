@@ -163,6 +163,16 @@ form.profile {
 	color: #888;
 }
 
+/* The sentence under a form that mints something on a person's behalf -- what
+   an app password is for -- small and grey, because the button already says
+   what it does and this only says when to press it. */
+.hint {
+	color: #666;
+	font-size: 0.85rem;
+	margin: 0.25rem 0 0.75rem;
+	flex-basis: 100%;
+}
+
 /* The person panel: what somebody signs in with, and the four acts an operator
    has when they cannot.
 

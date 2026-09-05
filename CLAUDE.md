@@ -254,18 +254,19 @@ go run ./cmd/roster config env    # every variable this can be told through
 cd ts && npm install && npm run dev            # the console, cross-origin
 go run ./cmd/roster account serve --roster … \
   --connect … --key contoso=rt_… --static ts/dist/account   # the front door
+go run ./cmd/roster ldap serve --roster … --key contoso=rt_…  # the directory
 
-docker compose up --build       # Postgres, both planes, a customer, both pages
+docker compose up --build       # Postgres, both planes, a customer, both pages, LDAP
 ```
 
-Two UIs, two processes: `roster serve` serves the console under `/console/` on
-`control.http` when `control.console.dir` names the build, and `roster account
-serve` is a separate process holding tenant keys and facing the internet -- a
-consumer that reaches roster only over the wire (`account/`, checked by
-`scripts/test.sh`).
-
-```sh
-```
+Two UIs, three processes: `roster serve` serves the console under `/console/`
+on `control.http` when `control.console.dir` names the build; `roster account
+serve` is a separate process holding tenant keys and facing the internet; and
+`roster ldap serve` is roster as a directory for clients that speak nothing
+else. The last two are consumers that reach roster only over the wire
+(`account/`, `ldap/`, checked by `scripts/test.sh`). `docs/ldap.md` is the
+directory's design -- a bind is an app password (a key with `Me.Get` alone),
+and a password bind cannot pass a second factor because `Vouch.Verify` says so.
 
 ## `auth.Plain` is not for production
 

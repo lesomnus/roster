@@ -39,7 +39,7 @@ RUN apk add --no-cache ca-certificates
 COPY --from=build /out/roster /usr/local/bin/roster
 COPY --from=page /src/ts/dist/console /usr/share/roster/console
 COPY --from=page /src/ts/dist/account /usr/share/roster/account
-COPY docker/entrypoint.sh docker/customer.sh docker/account.sh /usr/local/bin/
+COPY docker/entrypoint.sh docker/customer.sh docker/account.sh docker/ldap.sh /usr/local/bin/
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["serve"]

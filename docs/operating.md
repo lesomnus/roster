@@ -1286,6 +1286,59 @@ can be waived.
 `examples/sso` draws all of it: `GET /me`, `POST /me/keys`, `DELETE
 /me/keys/{id}`, `DELETE /me/ways/{id}`, `POST /me/sign-out-everywhere`.
 
+## A directory, over LDAP
+
+For the things on the network that speak LDAP and nothing else -- a NAS, a
+VPN, Jenkins, a printer's address book -- roster is a directory:
+
+```sh
+roster ldap serve --roster roster:8080 \
+  --key contoso=rt_… --key fabrikam=rt_…      # or ROSTER_LDAP_KEY_<ALIAS>
+  --tls cert.pem,key.pem --require-tls \
+  --listen :389 --listen-tls :636
+```
+
+Its own process, like the account app: it holds one tenant key per operator,
+reaches roster over the wire and never past it, and translates. Each tenant is
+a suffix (`o=contoso`; `--base contoso=dc=contoso,dc=example` renames one),
+with `ou=people` as `inetOrgPerson`, `ou=groups` and the teams under
+`ou=sites` as `groupOfNames`, and `memberOf` on every person. It is read-only,
+keeps no cache -- somebody you disable is gone from the next search -- and
+every search is made with **your key**, so what the key's role names is what
+every client sees. Mint it for a holder of its own with the role in
+[ldap.md](ldap.md) § The key this process holds; `docker/customer.sh` is that,
+as a script.
+
+**A bind is an app password.** A person mints one on the account page --
+*mint an app password*, the app's name, done -- and pastes it where the client
+asks for a password. It is an `rt_` whose only method is `Me.Get`, so a leaked
+one gets into the apps behind LDAP as that person and into nothing of
+roster's, and revoking it from the same page ends that one app. This is the
+default (`--bind key`), and it is the one that survives a second factor:
+
+**A person's own password is a setting**, `--bind password` or `--bind
+either`, and it needs `Vouch.Verify` on the directory's key. Turn it on for a
+LAN of low-stakes clients and nobody with a second factor. Somebody who has
+enrolled one **cannot bind with their password in any mode** -- `Verify`
+answers a continuation rather than `ok`, and there is no second form here to
+spend it on -- so the second factor a person set up is not walked around by a
+protocol that cannot ask for it. Wrong passwords count toward the lockout, as
+they do everywhere.
+
+`--require-tls` refuses a bind in the clear, which is what a simple bind over
+plain TCP is. Offer StartTLS with `--tls` and LDAPS with `--listen-tls`, or
+terminate TLS in front and pass the plain port on a private network.
+
+```sh
+ldapsearch -H ldap://localhost:1389 -x \
+  -D uid=erin,ou=people,o=contoso -w rt_… \
+  -b o=contoso '(&(objectClass=inetOrgPerson)(memberOf=cn=payroll,ou=groups,o=contoso))' mail
+```
+
+The compose stack runs one on `1389` (`LDAP_BIND=either` turns passwords on).
+What it refuses and why, the tree, the filters and which roster read each
+becomes: [ldap.md](ldap.md).
+
 ## Signing somebody in
 
 See [login.md](login.md) for the whole path. In short: a product app calls

@@ -1,5 +1,6 @@
 #!/bin/sh
-# The first customer, once, and the key the account app fronts them with.
+# The first customer, once, and the keys the account app and the directory
+# front them with.
 #
 # `roster init` seeds no customer on purpose -- the console makes the first one
 # the same way it makes the hundredth -- and a stack somebody brings up to work
@@ -41,7 +42,19 @@ roster holder add "@${t}/account" >/dev/null
 printf '{"role":{"slug":{"alias":"everything","tenant":{"alias":"%s"}}},"holder":{"slug":{"alias":"account","tenant":{"alias":"%s"}}}}' "${t}" "${t}" \
 	| roster binding add - >/dev/null
 
+# The directory's own person and key: what a directory reads, and `Verify`
+# so that `LDAP_BIND=password` works when somebody sets it (`docs/ldap.md`
+# § The key this process holds).
+roster holder add "@${t}/directory" >/dev/null
+roster role add "@${t}/directory" '{"methods":["/roster.TenantService/Get","/roster.HolderService/Get","/roster.HolderService/List","/roster.HolderService/Search","/roster.EmailService/Get","/roster.EmailService/List","/roster.GroupService/Get","/roster.GroupService/List","/roster.GroupMembershipService/List","/roster.SiteService/Get","/roster.SiteService/List","/roster.TeamService/Get","/roster.TeamService/List","/roster.TeamMembershipService/List","/roster.VouchService/Verify"]}' >/dev/null
+printf '{"role":{"slug":{"alias":"directory","tenant":{"alias":"%s"}}},"holder":{"slug":{"alias":"directory","tenant":{"alias":"%s"}}}}' "${t}" "${t}" \
+	| roster binding add - >/dev/null
+
 # To a file first and moved into place, so a half-written key is never read.
+# The directory's key first and the account app's last, because the account
+# app's is the marker this script's "once" is decided by.
 umask 077
+roster key add --tenant "${t}" --holder directory --name directory --allow '/roster.TenantService/Get,/roster.HolderService/Get,/roster.HolderService/List,/roster.HolderService/Search,/roster.EmailService/Get,/roster.EmailService/List,/roster.GroupService/Get,/roster.GroupService/List,/roster.GroupMembershipService/List,/roster.SiteService/Get,/roster.SiteService/List,/roster.TeamService/Get,/roster.TeamService/List,/roster.TeamMembershipService/List,/roster.VouchService/Verify' 2>/dev/null >"${ACCOUNT_STATE}/${SEED_CUSTOMER}.ldap.key.tmp"
+mv "${ACCOUNT_STATE}/${SEED_CUSTOMER}.ldap.key.tmp" "${ACCOUNT_STATE}/${SEED_CUSTOMER}.ldap.key"
 roster key add --tenant "${t}" --holder account --name account --allow '/roster.*/*' 2>/dev/null >"${key}.tmp"
 mv "${key}.tmp" "${key}"
