@@ -228,6 +228,7 @@ function Shell(props: {
 	onSignOut: () => void
 	customers: App | null
 	admin: Admin | null
+	ungated: { control?: Transport; admin?: Transport }
 }): React.ReactNode {
 	const route = useRoute()
 	const here = !(props.signedIn && route[0] === 'customers')
@@ -235,13 +236,33 @@ function Shell(props: {
 	return (
 		<>
 			{props.signedIn ? (
-				<Page onSignOut={props.onSignOut} customers={props.customers} admin={props.admin} />
+				<Page
+					onSignOut={props.onSignOut}
+					customers={props.customers}
+					admin={props.admin}
+					ungated={props.ungated.admin}
+				/>
 			) : (
 				<SignIn onDone={props.onSignIn} />
 			)}
-			{import.meta.env.DEV && here && <Devtools entities={entities} />}
+			{import.meta.env.DEV && here && (
+				<Devtools entities={entities} {...(props.ungated.control !== undefined ? { ungated: props.ungated.control } : {})} />
+			)}
 		</>
 	)
+}
+
+/**
+ * ungated is the two stacks with no wall, which only the sandbox has: the
+ * server is inside the page there, so "past the wall" is the page looking at
+ * its own memory (`wasm/main.go`). Against a served deployment there is no
+ * such transport to dial, the panel is never handed one, and the switch is
+ * not offered -- which is the guard, and the whole of it.
+ */
+function ungatedTransports(): { control?: Transport; admin?: Transport } {
+	if (import.meta.env['VITE_SANDBOX'] === undefined || sandbox === null) return {}
+
+	return { control: sandbox.dial('drpcUngated'), admin: sandbox.dial('drpcAdminUngated') }
 }
 
 async function run(transport: Transport): Promise<void> {
@@ -255,6 +276,7 @@ async function run(transport: Transport): Promise<void> {
 	// never opens the customers tab still pays for it once and a page that does
 	// draws immediately. It is a store, not a call.
 	const theirs = await customers()
+	const ungated = ungatedTransports()
 
 	const render = (signedIn: boolean): void => {
 		root.render(
@@ -266,6 +288,7 @@ async function run(transport: Transport): Promise<void> {
 						onSignOut={out}
 						customers={theirs?.app ?? null}
 						admin={theirs?.admin ?? null}
+						ungated={ungated}
 					/>
 				</Provider>
 			</StrictMode>,

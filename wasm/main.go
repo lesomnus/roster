@@ -88,6 +88,21 @@ const (
 	// AdminEntryPoint is the name the admin server is published under, and
 	// what `ts/console/main.tsx` dials for the customers screen.
 	AdminEntryPoint = "drpcAdmin"
+
+	// UngatedEntryPoint and AdminUngatedEntryPoint are the two stacks with no
+	// wall -- the control plane's and the data plane's -- for the devtools
+	// panel's "past the wall" switch and nothing else.
+	//
+	// `Ungated` is never handed to anything a caller can reach (CLAUDE.md), and
+	// this is not that: the server is inside the page, the page's caller is the
+	// page, and what the wall would protect here is the page from itself. What
+	// it buys is the question the walled path cannot answer -- a row that is
+	// not there and a row that is not visible look the same through the wall
+	// -- and a served deployment registers no such thing, so a page that was
+	// never handed the transport cannot offer the switch (payday's
+	// `react/devtools`).
+	UngatedEntryPoint      = "drpcUngated"
+	AdminUngatedEntryPoint = "drpcAdminUngated"
 )
 
 func main() {
@@ -229,6 +244,15 @@ func main() {
 	cmd.Register(asrv, admin)
 	app.RegisterVouchServiceServer(asrv, vouch.New(admin, admin, vouch.WithKeys(s.Keyring), vouch.WithLockout(s.Lockout)))
 
+	// The two unwalled stacks, for the panel: the same call log, no auth and
+	// no gate, because there is nobody to be and nothing to refuse.
+	ugw := jsport.NewGateway(jsport.WithEntryPoint(UngatedEntryPoint))
+	usrv := drpc.NewServer(ugw, drpc.WithStatsHandler(otxgrpc.NewServerLogger(o)))
+	cmd.Register(usrv, s.Control.Ungated)
+	augw := jsport.NewGateway(jsport.WithEntryPoint(AdminUngatedEntryPoint))
+	ausrv := drpc.NewServer(augw, drpc.WithStatsHandler(otxgrpc.NewServerLogger(o)))
+	cmd.Register(ausrv, s.Ungated)
+
 	// Publishing the first entry point is the readiness signal, so nothing may
 	// be published before the registration above is done. The second may come
 	// up after the page is ready: a dial to a name not yet published waits for
@@ -236,11 +260,16 @@ func main() {
 	// instance down -- and the other's error is reported rather than dropped,
 	// since a name collision is refused without publishing and would otherwise
 	// reach the page only as a dial that times out.
-	go func() {
-		if err := agw.Serve(ctx, asrv); err != nil {
-			log.Fatal(err)
-		}
-	}()
+	for _, v := range []struct {
+		gw  *jsport.Gateway
+		srv *drpc.Server
+	}{{agw, asrv}, {ugw, usrv}, {augw, ausrv}} {
+		go func() {
+			if err := v.gw.Serve(ctx, v.srv); err != nil {
+				log.Fatal(err)
+			}
+		}()
+	}
 	log.Fatal(gw.Serve(ctx, srv))
 }
 

@@ -374,7 +374,9 @@ The sandbox (`npm run dev:sandbox`) is the console with the server compiled
 into the page: `wasm/` serves the control listener and the admin one from one
 instance, under two entry points the page dials by name. `wasm/sandbox` is the
 memory of who signed in, standing in for the cookie a message port cannot
-carry. `ts/vendor/` holds the two libraries this depends on ahead of their
+carry. Two more entry points serve the stacks with no wall, for payday's
+devtools panel and its *past the wall* switch -- possible there because the
+server is inside the page, and nowhere else. `ts/vendor/` holds the two libraries this depends on ahead of their
 releases -- grpc-dgram for the second entry point, payday for the entity
 declarations and the devtools panel -- as tarballs; its README says how they
 were built and when to remove them.

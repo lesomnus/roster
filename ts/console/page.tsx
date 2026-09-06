@@ -20,6 +20,7 @@
  */
 
 import { useState } from 'react'
+import type { Transport } from '@connectrpc/connect'
 
 import { useCall, useQuery } from '@lesomnus/payday/react'
 import { covers } from '../lib/covers.js'
@@ -52,6 +53,10 @@ export function Page(props: {
 	// And the clients for the writes that screen makes, which do not go through
 	// the store: a reset answers with a secret rather than with a row.
 	admin: Admin | null
+
+	// The data plane with no wall, for that screen's devtools panel; only the
+	// sandbox has one to hand (`main.tsx`, `ungatedTransports`).
+	ungated?: Transport | undefined
 }): React.ReactNode {
 	const me = useQuery(MeService.method.get, {})
 
@@ -114,7 +119,7 @@ export function Page(props: {
 				{at === 'operators' && <Operators may={may} />}
 				{at === 'services' && <Services may={may} />}
 				{at === 'customers' && (
-					<Customers app={props.customers} admin={props.admin} may={may} />
+					<Customers app={props.customers} admin={props.admin} may={may} ungated={props.ungated} />
 				)}
 				{at === 'you' && <You methods={held} />}
 			</main>

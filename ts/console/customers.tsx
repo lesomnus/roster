@@ -34,6 +34,7 @@
  */
 
 import { useState } from 'react'
+import type { Transport } from '@connectrpc/connect'
 
 import { Provider, useCall, useQuery } from '@lesomnus/payday/react'
 import type { App } from '@lesomnus/payday/react'
@@ -107,6 +108,8 @@ export function Customers(props: {
 	app: App | null
 	admin: Admin | null
 	may: (method: string) => boolean
+	// The data plane with no wall, for the panel; the sandbox's alone.
+	ungated?: Transport | undefined
 }): React.ReactNode {
 	if (props.app === null || props.admin === null) return <p className="loading">…</p>
 
@@ -115,7 +118,9 @@ export function Customers(props: {
 			<Tenants admin={props.admin} may={props.may} />
 			{/* The same window, on the data plane's store -- the one this screen
 			    reads, and the only one mounted while it is showing. */}
-			{import.meta.env.DEV && <Devtools entities={entities} />}
+			{import.meta.env.DEV && (
+				<Devtools entities={entities} {...(props.ungated !== undefined ? { ungated: props.ungated } : {})} />
+			)}
 		</Provider>
 	)
 }
