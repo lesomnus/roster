@@ -24,8 +24,6 @@ import { useState } from 'react'
 import { useCall, useQuery } from '@lesomnus/payday/react'
 import { covers } from '../lib/covers.js'
 import { go, useRoute } from '../lib/route.js'
-import { Devtools } from '@lesomnus/payday/react/devtools'
-import { entities } from '../gen/entities.js'
 import type { App } from '@lesomnus/payday/react'
 
 import { MeService } from '../gen/app/me_pb.js'
@@ -119,14 +117,6 @@ export function Page(props: {
 					<Customers app={props.customers} admin={props.admin} may={may} />
 				)}
 				{at === 'you' && <You methods={held} />}
-
-				{/* payday's window on the control plane's rows and on what this
-				    store holds of them, in a development build only: the raw
-				    answer to "what does the server say, and what does this side
-				    believe", which every stale screen comes down to. It is a
-				    sheet along the bottom with one handle, so one at a time:
-				    the customers screen mounts its own over its own store. */}
-				{import.meta.env.DEV && at !== 'customers' && <Devtools entities={entities} />}
 			</main>
 		</div>
 	)

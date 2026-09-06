@@ -23,7 +23,9 @@ import { admin, type Admin } from '../lib/client.js'
 import { open } from '../lib/store.js'
 import { Page } from './page.js'
 import type { Sandbox } from './sandbox.js'
-import { go } from '../lib/route.js'
+import { go, useRoute } from '../lib/route.js'
+import { Devtools } from '@lesomnus/payday/react/devtools'
+import { entities } from '../gen/entities.js'
 import '../lib/style.css'
 
 /**
@@ -212,16 +214,63 @@ async function customers(): Promise<{ app: App; admin: Admin } | null> {
 	return { app: await open(transport, 'console:admin'), admin: admin(transport) }
 }
 
-async function boot(transport: Transport): Promise<void> {
-	// Opened per **session** rather than per credential, because this page holds
-	// none: what it would key on is who the server says the caller is, and that
-	// is a call away.
+/**
+ * Shell is what is on the screen either way -- the sign-in form or the page --
+ * and, in a development build, payday's window over this store beneath both.
+ * Beneath both on purpose: the window is for looking at what the page is
+ * doing, and a page that is refusing a sign-in is doing something worth
+ * looking at. The customers screen mounts its own over its own store, so
+ * this one steps aside there.
+ */
+function Shell(props: {
+	signedIn: boolean
+	onSignIn: () => void
+	onSignOut: () => void
+	customers: App | null
+	admin: Admin | null
+}): React.ReactNode {
+	const route = useRoute()
+	const here = !(props.signedIn && route[0] === 'customers')
+
+	return (
+		<>
+			{props.signedIn ? (
+				<Page onSignOut={props.onSignOut} customers={props.customers} admin={props.admin} />
+			) : (
+				<SignIn onDone={props.onSignIn} />
+			)}
+			{import.meta.env.DEV && here && <Devtools entities={entities} />}
+		</>
+	)
+}
+
+async function run(transport: Transport): Promise<void> {
+	// Opened once, for the page's lifetime, and before anybody has signed in.
+	// A store is a local thing: what it would key on is who the server says
+	// the caller is, and that is answered call by call. Opening it early is
+	// what lets the window above be there before the form is filled in.
 	const app = await open(transport, 'console')
 
 	// Opened beside it rather than inside the screen, so that a page which
 	// never opens the customers tab still pays for it once and a page that does
 	// draws immediately. It is a store, not a call.
 	const theirs = await customers()
+
+	const render = (signedIn: boolean): void => {
+		root.render(
+			<StrictMode>
+				<Provider app={app}>
+					<Shell
+						signedIn={signedIn}
+						onSignIn={() => render(true)}
+						onSignOut={out}
+						customers={theirs?.app ?? null}
+						admin={theirs?.admin ?? null}
+					/>
+				</Provider>
+			</StrictMode>,
+		)
+	}
 
 	/**
 	 * Signing out deletes the row, which is the part that matters: the key is
@@ -230,55 +279,32 @@ async function boot(transport: Transport): Promise<void> {
 	 *
 	 * And it drops this caller's copy — the rows, the answers, the mirror.
 	 * Nothing there is a secret, since the server only ever sent what that
-	 * caller could see, but it is *that caller's*.
+	 * caller could see, but it is *that caller's*. The store itself stays
+	 * open, emptied: the page outlives the session, and so does the window.
 	 */
 	const out = (): void => {
 		void auth.signOut({}).finally(() => {
 			app.store.forget()
-			app.store.close()
 			// Back to the first screen, replacing rather than pushing: the
 			// screens this session was on are not somewhere the next sign-in
 			// should be able to step back into.
 			go([], true)
-			start(transport)
+			render(false)
 		})
 	}
 
-	root.render(
-		<StrictMode>
-			<Provider app={app}>
-				<Page
-					onSignOut={out}
-					customers={theirs?.app ?? null}
-					admin={theirs?.admin ?? null}
-				/>
-			</Provider>
-		</StrictMode>,
-	)
-}
-
-/**
- * start asks whether there is a session before drawing the form: `Me.Get`
- * answers who, or is refused, and the cookie is the browser's to send. So a
- * reload keeps the place the address bar names rather than asking an
- * operator who is still signed in to sign in again -- which is what a page
- * that always drew the form did, and what made the routing above pointless
- * on a reload.
- */
-function start(transport: Transport): void {
+	// Whether there is a session is `Me.Get`'s to say: it answers who, or is
+	// refused, and the cookie is the browser's to send. So a reload keeps the
+	// place the address bar names rather than asking an operator who is still
+	// signed in to sign in again -- which is what a page that always drew the
+	// form did, and what made the routing pointless on a reload.
 	void createClient(MeService, transport)
 		.get({})
-		.then(() => boot(transport))
-		.catch(() => {
-			root.render(
-				<StrictMode>
-					<SignIn onDone={() => void boot(transport)} />
-				</StrictMode>,
-			)
-		})
+		.then(() => render(true))
+		.catch(() => render(false))
 }
 
 void connect().then((transport) => {
 	auth = createClient(AuthService, transport)
-	start(transport)
+	void run(transport)
 })
