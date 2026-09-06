@@ -71,39 +71,85 @@ export interface Sandbox {
 
 /** Progress is where starting the sandbox has got to, for a page to draw. */
 export interface Progress {
-	stage: 'downloading' | 'compiling' | 'starting' | 'ready'
+	stage: 'downloading' | 'cached' | 'compiling' | 'starting' | 'ready'
 	/** Bytes so far and in all, while downloading; `total` is 0 when the server did not say. */
 	loaded: number
 	total: number
 }
 
+/** Where the module is kept between visits; one entry, keyed by its URL. */
+const cacheName = 'roster-sandbox'
+
 /**
  * load fetches the module and compiles it as it arrives, saying how far the
- * download has got.
+ * download has got -- and keeps it, so the next visit does not download it.
  *
  * The build is a hundred megabytes -- a whole server, its ORM and SQLite --
  * and `open(url)` would fetch it in silence, which on the first visit reads
  * as a page that does not work. So the page fetches it itself: the body is
- * split in two, one half counted, the other handed to the compiler while it
- * is still arriving, and what `open` is given is the compiled module rather
+ * split, one half counted, the other handed to the compiler while it is
+ * still arriving, and what `open` is given is the compiled module rather
  * than the address. A module crosses to the worker by structured clone, so
  * nothing is downloaded twice.
+ *
+ * # Why the browser's own cache is not enough
+ *
+ * The dev server answers a revalidation with 304 and the browser never asks:
+ * Chrome will not keep an entry this large in its HTTP cache (a single entry
+ * is capped at a fraction of the cache), so every reload was the whole
+ * download again. The Cache API has the origin's quota instead of that cap,
+ * so the module goes there, and the next visit sends what it holds as
+ * `If-None-Match` (or `If-Modified-Since`, for a server that gives no ETag)
+ * and takes the 304 as "use what you have". A rebuilt module changes both,
+ * and is fetched. Where there is no Cache API -- a page opened over plain
+ * http by IP rather than `localhost` is not a secure context -- it is the
+ * download every time, as before.
  */
 async function load(url: string, onProgress: (p: Progress) => void): Promise<WebAssembly.Module> {
-	const res = await fetch(url)
-	if (!res.ok || res.body === null) throw new Error(`${url}: ${res.status} ${res.statusText}`)
-	const total = Number(res.headers.get('content-length') ?? 0)
-	const [counted, compiled] = res.body.tee()
+	const store = await opened()
+	const had = store !== undefined ? await store.match(url) : undefined
+
+	const ask = new Headers()
+	const etag = had?.headers.get('etag')
+	const since = had?.headers.get('last-modified')
+	if (etag !== null && etag !== undefined) ask.set('if-none-match', etag)
+	else if (since !== null && since !== undefined) ask.set('if-modified-since', since)
+
+	// `no-store`: the browser's cache is not asked to hold this, since it
+	// would not, and the revalidation is this code's rather than its.
+	let res = await fetch(url, { headers: ask, cache: 'no-store' })
+	let counted: ReadableStream<Uint8Array>
+	let compiled: ReadableStream<Uint8Array>
+	let total: number
+
+	if (res.status === 304 && had !== undefined) {
+		if (had.body === null) throw new Error(`${url}: the kept copy has no body`)
+		total = Number(had.headers.get('content-length') ?? 0)
+		onProgress({ stage: 'cached', loaded: 0, total })
+		;[counted, compiled] = had.body.tee()
+	} else {
+		if (!res.ok || res.body === null) throw new Error(`${url}: ${res.status} ${res.statusText}`)
+		total = Number(res.headers.get('content-length') ?? 0)
+		if (store !== undefined) {
+			// A third reader, for the copy kept: written as it arrives, and
+			// not awaited -- a visit is not slower for keeping it.
+			const [keep, rest] = res.body.tee()
+			void store.put(url, new Response(keep, { status: 200, headers: res.headers })).catch(() => {})
+			res = new Response(rest, { status: 200, headers: res.headers })
+		}
+		onProgress({ stage: 'downloading', loaded: 0, total })
+		;[counted, compiled] = res.body!.tee()
+	}
 
 	let loaded = 0
-	onProgress({ stage: 'downloading', loaded, total })
+	const stage = res.status === 304 ? 'cached' : 'downloading'
 	const counting = (async (): Promise<void> => {
 		const reader = counted.getReader()
 		for (;;) {
 			const { done, value } = await reader.read()
 			if (done) return
 			loaded += value.byteLength
-			onProgress({ stage: 'downloading', loaded, total })
+			onProgress({ stage, loaded, total })
 		}
 	})()
 
@@ -116,6 +162,16 @@ async function load(url: string, onProgress: (p: Progress) => void): Promise<Web
 	onProgress({ stage: 'compiling', loaded, total })
 
 	return mod
+}
+
+// opened is the Cache API's store for this, or nothing where there is none.
+async function opened(): Promise<Cache | undefined> {
+	if (!('caches' in globalThis)) return undefined
+	try {
+		return await caches.open(cacheName)
+	} catch {
+		return undefined
+	}
 }
 
 /**

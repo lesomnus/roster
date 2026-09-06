@@ -133,6 +133,7 @@ function Booting(props: { at: Progress }): React.ReactNode {
 	const mb = (n: number): string => (n / 1_000_000).toFixed(0)
 	const line = {
 		downloading: total > 0 ? `downloading the server, ${mb(loaded)} of ${mb(total)} MB` : `downloading the server, ${mb(loaded)} MB`,
+		cached: 'the server, from the last visit',
 		compiling: 'compiling',
 		starting: 'starting the server in the page',
 		ready: 'ready',
@@ -142,7 +143,7 @@ function Booting(props: { at: Progress }): React.ReactNode {
 		<main className="booting" aria-live="polite">
 			<h1>roster</h1>
 			<p>{line}</p>
-			{stage === 'downloading' && total > 0 ? <progress max={total} value={loaded} /> : <progress />}
+			{(stage === 'downloading' || stage === 'cached') && total > 0 ? <progress max={total} value={loaded} /> : <progress />}
 			<p className="note">
 				the sandbox: the whole server, compiled into this page. Nothing here leaves the browser, and a reload
 				starts it over.
