@@ -22,7 +22,7 @@ import { MeService } from '../gen/app/me_pb.js'
 import { admin, type Admin } from '../lib/client.js'
 import { open } from '../lib/store.js'
 import { Page } from './page.js'
-import type { Sandbox } from './sandbox.js'
+import type { Progress, Sandbox } from './sandbox.js'
 import { go, useRoute } from '../lib/route.js'
 import { Devtools } from '@lesomnus/payday/react/devtools'
 import { entities } from '../gen/entities.js'
@@ -110,9 +110,45 @@ async function connect(): Promise<Transport> {
 	}
 
 	const { start } = await import('./sandbox.js')
-	sandbox = await start()
+	sandbox = await start(booting)
 
 	return sandbox.transport
+}
+
+/**
+ * booting draws where the sandbox has got to, because a hundred megabytes
+ * take a while and a blank page for that while reads as a broken one. Drawn
+ * straight into the root, since there is no app to provide yet.
+ */
+function booting(p: Progress): void {
+	root.render(
+		<StrictMode>
+			<Booting at={p} />
+		</StrictMode>,
+	)
+}
+
+function Booting(props: { at: Progress }): React.ReactNode {
+	const { stage, loaded, total } = props.at
+	const mb = (n: number): string => (n / 1_000_000).toFixed(0)
+	const line = {
+		downloading: total > 0 ? `downloading the server, ${mb(loaded)} of ${mb(total)} MB` : `downloading the server, ${mb(loaded)} MB`,
+		compiling: 'compiling',
+		starting: 'starting the server in the page',
+		ready: 'ready',
+	}[stage]
+
+	return (
+		<main className="booting" aria-live="polite">
+			<h1>roster</h1>
+			<p>{line}</p>
+			{stage === 'downloading' && total > 0 ? <progress max={total} value={loaded} /> : <progress />}
+			<p className="note">
+				the sandbox: the whole server, compiled into this page. Nothing here leaves the browser, and a reload
+				starts it over.
+			</p>
+		</main>
+	)
 }
 
 // The sandbox, once started, for `customers()` to dial its second server on.

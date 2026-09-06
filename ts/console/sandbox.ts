@@ -69,6 +69,55 @@ export interface Sandbox {
 	close(): void
 }
 
+/** Progress is where starting the sandbox has got to, for a page to draw. */
+export interface Progress {
+	stage: 'downloading' | 'compiling' | 'starting' | 'ready'
+	/** Bytes so far and in all, while downloading; `total` is 0 when the server did not say. */
+	loaded: number
+	total: number
+}
+
+/**
+ * load fetches the module and compiles it as it arrives, saying how far the
+ * download has got.
+ *
+ * The build is a hundred megabytes -- a whole server, its ORM and SQLite --
+ * and `open(url)` would fetch it in silence, which on the first visit reads
+ * as a page that does not work. So the page fetches it itself: the body is
+ * split in two, one half counted, the other handed to the compiler while it
+ * is still arriving, and what `open` is given is the compiled module rather
+ * than the address. A module crosses to the worker by structured clone, so
+ * nothing is downloaded twice.
+ */
+async function load(url: string, onProgress: (p: Progress) => void): Promise<WebAssembly.Module> {
+	const res = await fetch(url)
+	if (!res.ok || res.body === null) throw new Error(`${url}: ${res.status} ${res.statusText}`)
+	const total = Number(res.headers.get('content-length') ?? 0)
+	const [counted, compiled] = res.body.tee()
+
+	let loaded = 0
+	onProgress({ stage: 'downloading', loaded, total })
+	const counting = (async (): Promise<void> => {
+		const reader = counted.getReader()
+		for (;;) {
+			const { done, value } = await reader.read()
+			if (done) return
+			loaded += value.byteLength
+			onProgress({ stage: 'downloading', loaded, total })
+		}
+	})()
+
+	// `compileStreaming` insists on the content type, and a Response built
+	// from a stream has none until told.
+	const mod = await WebAssembly.compileStreaming(
+		new Response(compiled, { headers: { 'content-type': 'application/wasm' } }),
+	)
+	await counting
+	onProgress({ stage: 'compiling', loaded, total })
+
+	return mod
+}
+
 /**
  * start compiles the app into the page and answers with a transport for it.
  *
@@ -89,17 +138,23 @@ export interface Sandbox {
  * which names the problem exactly and does not say that the answer is two lines
  * in a file of your own — `sandbox-worker.ts`, beside this one.
  */
-export async function start(workerUrl: URL | string = new URL('./sandbox-worker.ts', import.meta.url)): Promise<Sandbox> {
+export async function start(
+	onProgress: (p: Progress) => void = () => {},
+	workerUrl: URL | string = new URL('./sandbox-worker.ts', import.meta.url),
+): Promise<Sandbox> {
 	const name = 'app.wasm'
 	// Under the page's base rather than at the root: `vite.console.ts` serves
 	// this page at `/console/`, and `public/` with it, so `/app.wasm` is a
 	// 404 that reads as "the sandbox never comes up". The package's default
 	// for `wasm_exec.js` is the root too, so it is said here as well.
 	const base = import.meta.env.BASE_URL
-	const sock = await open(base + name, {
+	const app = await load(base + name, onProgress)
+	onProgress({ stage: 'starting', loaded: 0, total: 0 })
+	const sock = await open(app, {
 		workerUrl: new URL(workerUrl, location.href),
 		wasmExec: base + 'wasm_exec.js',
 	})
+	onProgress({ stage: 'ready', loaded: 0, total: 0 })
 
 	return {
 		transport: createDrpcTransport(sock.dial()),
