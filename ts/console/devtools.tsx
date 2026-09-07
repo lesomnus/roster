@@ -9,8 +9,20 @@
  * So the import is inside the branch. `import.meta.env.DEV` is a constant the
  * bundler substitutes, which makes this `null` in a production build and the
  * `import()` beside it unreachable -- and unreachable is the only thing that
- * actually removes a chunk. `npm run build` is where to check that: a `monaco`
- * chunk in `ts/dist/console/` means this stopped working.
+ * actually removes a chunk.
+ *
+ * What it is worth, measured on `npm run build` with the branch taken out --
+ * `ts/dist/console/`, the module the sandbox serves excluded:
+ *
+ *	gated      551,331
+ *	ungated 14,808,690
+ *
+ * The **entry** is 478.5 kB either way, which is the part worth being clear
+ * about: the import is already dynamic, so the first paint was never at risk.
+ * What the branch removes is fourteen megabytes of lazy chunks -- Monaco, its
+ * language workers, `ts.worker` alone seven of them -- that ship in the image
+ * and that nothing ever fetches. `npm run build` is where to check it: a
+ * `monaco` chunk in `ts/dist/console/` means this stopped working.
  *
  * @module
  */
