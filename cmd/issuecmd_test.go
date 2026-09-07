@@ -1,6 +1,7 @@
 package cmd_test
 
 import (
+	"github.com/lesomnus/roster/cli"
 	"net"
 	"strings"
 	"testing"
@@ -35,7 +36,7 @@ func TestIssueMintsOverTheWire(t *testing.T) {
 	t.Run("a key for a customer's person, from the data port", func(t *testing.T) {
 		x := require.New(t)
 
-		v := stdoutOf(t, cmd.Cmd(&b.Hers), "issue", "key",
+		v := stdoutOf(t, cli.Cmd(&b.Hers), "issue", "key",
 			"--name", "bots", "--allow", holderGet, "@newco/bob")
 		x.True(strings.HasPrefix(v, keys.PrefixTenant), "%q", v)
 
@@ -52,7 +53,7 @@ func TestIssueMintsOverTheWire(t *testing.T) {
 	t.Run("a name with no tenant is refused before the wire, naming the mistake", func(t *testing.T) {
 		x := require.New(t)
 
-		err := cmd.Cmd(&b.Hers).Run(ctx, []string{"issue", "key",
+		err := cli.Cmd(&b.Hers).Run(ctx, []string{"issue", "key",
 			"--name", "x", "--allow", holderGet, "@bob"})
 		x.Error(err)
 		x.NotContains(err.Error(), "rpc error", "the refusal is the CLI's, before the wire")
@@ -65,7 +66,7 @@ func TestIssueMintsOverTheWire(t *testing.T) {
 		// The hole the review found: IssuePassword took a bare alias, resolved
 		// it against an arbitrary tenant and wrote a password with no reach
 		// check. The server refuses it off the control plane now.
-		err := cmd.Cmd(&b.Hers).Run(ctx, []string{"issue", "password", "bob"})
+		err := cli.Cmd(&b.Hers).Run(ctx, []string{"issue", "password", "bob"})
 		x.Equal(codes.Unimplemented, status.Code(err),
 			"a first password on the data plane is an escalation, and is refused")
 	})
@@ -113,14 +114,14 @@ func TestIssueMintsOverTheWire(t *testing.T) {
 	}
 
 	// There is no `issue key --service`: minting is granting, the grant rule
-	// reads bindings, and a key holds none -- `cmd/issue.go` carries the why.
+	// reads bindings, and a key holds none -- `cli/issue.go` carries the why.
 	// What a key CAN do here is write a first password, since that asks the
 	// reach rule and a deployment key covers everything; which is exactly why
 	// `roster key add` now warns about it.
 	t.Run("a first password for an operator, printed once", func(t *testing.T) {
 		x := require.New(t)
 
-		pw := stdoutOf(t, cmd.Cmd(&console), "issue", "password", "ops")
+		pw := stdoutOf(t, cli.Cmd(&console), "issue", "password", "ops")
 		x.NotEmpty(pw)
 
 		// And it is theirs: the control plane's own vouch says yes to it.

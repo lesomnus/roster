@@ -1,9 +1,10 @@
-package cmd
+package cli
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/lesomnus/roster/cmd"
 	"os"
 
 	"github.com/lesomnus/xli"
@@ -39,7 +40,7 @@ import (
 // bindings are people, and a person at a terminal is a shell (`roster key
 // add --service`) or a console. A flag here would be a command that
 // structurally never works, which is the thing D58 refuses to mint.
-func NewCmdIssue(c *Config) *xli.Command {
+func NewCmdIssue(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "issue",
 		Brief: "mint over the wire: a key, or somebody's first password",
@@ -52,7 +53,7 @@ func NewCmdIssue(c *Config) *xli.Command {
 }
 
 // issuing is the connection, or the sentence somebody needs when there is none.
-func issuing(ctx context.Context, c *Config) (pdcmd.Conn, func(), error) {
+func issuing(ctx context.Context, c *cmd.Config) (pdcmd.Conn, func(), error) {
 	if c.Client.Local || c.Client.Addr == "" {
 		return nil, nil, errors.New(
 			"`issue` mints over the wire, as a caller; the shell-on-the-box form is " +
@@ -62,7 +63,7 @@ func issuing(ctx context.Context, c *Config) (pdcmd.Conn, func(), error) {
 	return remote{c}.Connect(ctx)
 }
 
-func newCmdIssueKey(c *Config) *xli.Command {
+func newCmdIssueKey(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "key",
 		Brief: "mint a key for a customer's person, printed once",
@@ -77,7 +78,7 @@ func newCmdIssueKey(c *Config) *xli.Command {
 			&flg.String{Name: "expires", Brief: "how long it lasts, e.g. 720h; empty is forever"},
 		},
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			conn, done, err := issuing(ctx, c)
 			if err != nil {
 				return err
@@ -88,7 +89,7 @@ func newCmdIssueKey(c *Config) *xli.Command {
 			// onto the entity); the command keeps its `issue key` name.
 			req := app.ApiKeyIssueRequest_builder{}
 
-			ref, named := arg.Get[pdcmd.Ref](cmd, "WHO")
+			ref, named := arg.Get[pdcmd.Ref](cl, "WHO")
 			if !named {
 				return errors.New("WHO: whose key this is, as @tenant/alias or an identifier")
 			}
@@ -116,19 +117,19 @@ func newCmdIssueKey(c *Config) *xli.Command {
 				}.Build()
 			}
 
-			methods, err := allowed(cmd)
+			methods, err := allowed(cl)
 			if err != nil {
 				return err
 			}
 			req.Methods = methods
 
-			expires, err := expiresOf(cmd)
+			expires, err := expiresOf(cl)
 			if err != nil {
 				return err
 			}
 			req.Expires = expires
 
-			name, _ := flg.Find[string](cmd, "name")
+			name, _ := flg.Find[string](cl, "name")
 			req.Alias = name
 
 			v, err := app.NewApiKeyServiceClient(conn).Issue(ctx, req.Build())
@@ -141,7 +142,7 @@ func newCmdIssueKey(c *Config) *xli.Command {
 			fmt.Fprintf(os.Stderr,
 				"key %q, allowing %d method(s). This is the only time it is shown.\n",
 				v.GetKey().GetAlias(), len(methods))
-			if w := Widest(methods); w != "" {
+			if w := cmd.Widest(methods); w != "" {
 				fmt.Fprintf(os.Stderr, "\n%s\n", w)
 			}
 
@@ -159,7 +160,7 @@ func newCmdIssueKey(c *Config) *xli.Command {
 // person only where there is one tenant, and writing a customer's password
 // with no tenant and no escalation check was a way in wider than the caller's.
 // A customer's person gets a password the guarded way, `roster vouch reset`.
-func newCmdIssuePassword(c *Config) *xli.Command {
+func newCmdIssuePassword(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "password",
 		Brief: "set somebody's password to a generated one, printed once",
@@ -168,14 +169,14 @@ func newCmdIssuePassword(c *Config) *xli.Command {
 			&arg.String{Name: "ALIAS", Brief: "whose, within this plane's one tenant; control plane only"},
 		},
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			conn, done, err := issuing(ctx, c)
 			if err != nil {
 				return err
 			}
 			defer done()
 
-			alias, _ := arg.Get[string](cmd, "ALIAS")
+			alias, _ := arg.Get[string](cl, "ALIAS")
 			if alias == "" {
 				return errors.New("ALIAS: whose")
 			}

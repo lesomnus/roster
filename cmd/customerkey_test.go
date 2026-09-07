@@ -1,6 +1,7 @@
 package cmd_test
 
 import (
+	"github.com/lesomnus/roster/cli"
 	"io"
 	"os"
 	"strings"
@@ -94,7 +95,7 @@ func TestTheCliMintsACustomersKey(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	token := stdoutOf(t, cmd.NewCmdKey(&c), "add",
+	token := stdoutOf(t, cli.NewCmdKey(&c), "add",
 		"--tenant", "newco", "--holder", "admin", "--allow", "/roster.*/*")
 
 	// The prefix is a fact about which plane answered and never something a
@@ -158,7 +159,7 @@ func TestNamingACustomersPersonDoesNotCreateThem(t *testing.T) {
 	x.NoError(err)
 	x.NoError(s.Close())
 
-	err = cmd.NewCmdKey(&c).Run(ctx, []string{"add",
+	err = cli.NewCmdKey(&c).Run(ctx, []string{"add",
 		"--tenant", "newco", "--holder", "nobody", "--allow", "/roster.HolderService/Get"})
 	x.Error(err, "a key was minted for somebody who is not there")
 	x.Equal(codes.NotFound, status.Code(err))
@@ -191,7 +192,7 @@ func TestAKeyIsForOnePlaneOrTheOther(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			x := require.New(t)
 
-			err := cmd.NewCmdKey(&c).Run(t.Context(),
+			err := cli.NewCmdKey(&c).Run(t.Context(),
 				append([]string{"add", "--allow", "/roster.HolderService/Get"}, tc.args...))
 			x.Error(err)
 			x.ErrorContains(err, tc.says)
@@ -251,14 +252,14 @@ func TestRevokingReachesTheKeyItNames(t *testing.T) {
 	x.NoError(err)
 	x.NoError(s.Close())
 
-	theirs := stdoutOf(t, cmd.NewCmdKey(&c), "add",
+	theirs := stdoutOf(t, cli.NewCmdKey(&c), "add",
 		"--tenant", "newco", "--holder", "alice", "--allow", "/roster.MeService/Get")
-	ours := stdoutOf(t, cmd.NewCmdKey(&c), "add",
+	ours := stdoutOf(t, cli.NewCmdKey(&c), "add",
 		"--service", "custody", "--allow", "/roster.HolderService/Get")
 
 	// Both, which is the other half: this listed the control plane's alone, so
 	// the key the command beside it had just minted appeared nowhere.
-	vs := stdoutOf(t, cmd.NewCmdKey(&c), "list")
+	vs := stdoutOf(t, cli.NewCmdKey(&c), "list")
 	t.Logf("LIST:\n%s", vs)
 	x.Contains(vs, "@newco/alice/default", "a customer's key is not listed")
 	x.Contains(vs, "@owner/custody/default")
@@ -323,7 +324,7 @@ func TestRevokingReachesTheKeyItNames(t *testing.T) {
 	x.True(oursWorks())
 	x.NoError(s2.Close())
 
-	x.NoError(cmd.NewCmdKey(&c).Run(ctx, []string{"revoke", "--id", id("@newco/alice")}))
+	x.NoError(cli.NewCmdKey(&c).Run(ctx, []string{"revoke", "--id", id("@newco/alice")}))
 
 	s3, err := cmd.Build(ctx, c)
 	x.NoError(err)
@@ -338,13 +339,13 @@ func TestRevokingReachesTheKeyItNames(t *testing.T) {
 
 		// Erased rows filtered, which reading ent directly does not do: erasure
 		// is applied by the servers and this is under them.
-		x.NotContains(stdoutOf(t, cmd.NewCmdKey(&c), "list"), "@newco/alice/default")
+		x.NotContains(stdoutOf(t, cli.NewCmdKey(&c), "list"), "@newco/alice/default")
 	})
 
 	t.Run("and a key on neither plane is a refusal", func(t *testing.T) {
 		x := require.New(t)
 
-		err := cmd.NewCmdKey(&c).Run(ctx, []string{"revoke", "--id", id("@newco/alice")})
+		err := cli.NewCmdKey(&c).Run(ctx, []string{"revoke", "--id", id("@newco/alice")})
 		x.Error(err, "revoking a key that is not there reported success")
 		x.ErrorContains(err, "either plane")
 	})
@@ -392,7 +393,7 @@ func TestAllowIsAListHoweverItIsWritten(t *testing.T) {
 			x.NoError(err, "init: %s", out)
 
 			args := append([]string{"add", "--service", "custody"}, tc.args...)
-			x.NotEmpty(stdoutOf(t, cmd.NewCmdKey(&c), args...))
+			x.NotEmpty(stdoutOf(t, cli.NewCmdKey(&c), args...))
 
 			s, err := cmd.Build(ctx, c)
 			x.NoError(err)
@@ -413,7 +414,7 @@ func TestAllowIsAListHoweverItIsWritten(t *testing.T) {
 		out, err := initRun(t, c)
 		x.NoError(err, "init: %s", out)
 
-		err = cmd.NewCmdKey(&c).Run(t.Context(), []string{"add", "--service", "custody"})
+		err = cli.NewCmdKey(&c).Run(t.Context(), []string{"add", "--service", "custody"})
 		x.Error(err, "a key that allows nothing is not a key")
 		x.ErrorContains(err, "--allow")
 	})

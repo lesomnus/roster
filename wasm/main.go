@@ -65,12 +65,12 @@ import (
 	_ "github.com/lesomnus/payday/config/dbsqlite3wasm"
 
 	"github.com/lesomnus/roster/cmd"
-	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/console"
 	"github.com/lesomnus/roster/server/me"
 	"github.com/lesomnus/roster/server/vouch"
 	"github.com/lesomnus/roster/wasm/sandbox"
+	"github.com/lesomnus/roster/wasm/schema"
 )
 
 // Who the page signs in as, and the password it does it with.
@@ -171,14 +171,20 @@ func main() {
 	}
 	defer s.Close()
 
-	// The schema is created rather than migrated. In a process that would be
-	// the wrong way round -- versioned migrations are what a deployment runs --
-	// but there is no database here that outlives the page, so there is nothing
-	// for a migration to move.
-	if err := entmigrate.NewSchema(s.Drv).Create(ctx); err != nil {
+	// The schema, as a script rather than as a migration. In a process that
+	// would be the wrong way round -- versioned migrations are what a
+	// deployment runs -- but there is no database here that outlives the page,
+	// so there is nothing for a migration to move, and ent's migration engine
+	// is Atlas: a diff planner, three SQL dialects and an HCL parser, ten
+	// megabytes of what a browser downloads to decide what to do to a database
+	// that does not exist yet. `wasm/schema` is the same tables as SQL, and a
+	// test keeps it the same tables.
+	//
+	// Both planes take it, because they are the same entities in two databases.
+	if err := schema.Load(ctx, s.Db); err != nil {
 		log.Fatal(err)
 	}
-	if err := entmigrate.NewSchema(s.Control.Drv).Create(ctx); err != nil {
+	if err := schema.Load(ctx, s.Control.Db); err != nil {
 		log.Fatal(err)
 	}
 

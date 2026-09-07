@@ -264,7 +264,7 @@ minted by the app's name*).
 | --- | --- |
 | `ldap/` | the package: the tree, the bind, the search, the filter walker. A consumer, held to it by `scripts/test.sh`'s import check, which learns the second directory |
 | `ldap/wire/` | the protocol: one connection's loop, and the handful of messages this process speaks, decoded from and encoded to BER. Nothing in it knows what a holder is |
-| `cmd/ldap.go` | `roster ldap serve`: `--listen` (`:389`), `--listen-tls`, `--roster`, `--insecure`, `--key`/`ROSTER_LDAP_KEY_<ALIAS>`, `--base`, `--bind`, `--tls`, `--require-tls` |
+| `cli/ldap.go` | `roster ldap serve`: `--listen` (`:389`), `--listen-tls`, `--roster`, `--insecure`, `--key`/`ROSTER_LDAP_KEY_<ALIAS>`, `--base`, `--bind`, `--tls`, `--require-tls` |
 | `docker/ldap.sh`, `compose.yaml` | the `ldap` service beside `account`, on `1389`, its key from the same `customer` one-shot; `LDAP_BIND=either` turns password binds on |
 | `docs/operating.md` | § A directory, over LDAP -- the operator's page |
 | `docs/usage/ways-in.md` | a paragraph under the tenant key: an app password is a key |

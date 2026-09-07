@@ -3,6 +3,7 @@ package cmd_test
 import (
 	"bytes"
 	"context"
+	"github.com/lesomnus/roster/cli"
 	"io"
 	"os"
 	"path/filepath"
@@ -50,7 +51,7 @@ func inited(t *testing.T, args ...string) (*cmd.Server, string) {
 	}
 
 	out := &bytes.Buffer{}
-	k := cmd.NewCmdInit(&c)
+	k := cli.NewCmdInit(&c)
 	k.Writer = out
 
 	x.NoError(k.Run(ctx, args), "init: %s", out)
@@ -248,7 +249,7 @@ func TestInitNeedsAControlPlane(t *testing.T) {
 	}
 
 	out := &bytes.Buffer{}
-	k := cmd.NewCmdInit(&c)
+	k := cli.NewCmdInit(&c)
 	k.Writer = out
 
 	err := k.Run(t.Context(), nil)
@@ -460,7 +461,7 @@ func TestAGivenPasswordIsTheOneThatSignsIn(t *testing.T) {
 	s, err := cmd.Build(ctx, c)
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })
-	x.NoError(entmigrate.NewSchema(s.Control.Drv).Create(ctx))
+	x.NoError(cli.Migrate(ctx, s))
 
 	const given = "correct horse battery staple"
 
@@ -499,6 +500,7 @@ func TestTheFirstTenantCanBeGivenItsIdentifier(t *testing.T) {
 		})
 		require.NoError(t, err)
 		t.Cleanup(func() { s.Close() })
+		require.NoError(t, cli.Migrate(ctx, s))
 
 		return s
 	}
@@ -628,7 +630,7 @@ func TestTheShippedConfigurationIsAFirstRun(t *testing.T) {
 	t.Chdir(dir) // the DSNs are relative, exactly as shipped
 
 	var c cmd.Config
-	root := cmd.Cmd(&c)
+	root := cli.Cmd(&c)
 	root.Writer = io.Discard
 
 	x.NoError(root.Run(ctx, []string{"--config", "roster.yaml", "init"}),
@@ -643,6 +645,6 @@ func TestTheShippedConfigurationIsAFirstRun(t *testing.T) {
 	x.NoError(err, "the shipped configuration does not build")
 	t.Cleanup(func() { s.Close() })
 
-	x.NoError(s.Ready(ctx, c), "what init wrote is not what serve expects")
+	x.NoError(cli.Ready(ctx, s, c), "what init wrote is not what serve expects")
 	x.NotNil(s.Control, "the shipped file must name a control plane; init would refuse one that does not")
 }

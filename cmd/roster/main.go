@@ -2,7 +2,8 @@
 //
 // What to read first is `cmd/serve.go`: it is the stack, written out, and it is
 // the whole of what this app says to stand up a served, migrated, walled
-// server.
+// server. `cli/` is the other half -- the commands, the database engines and
+// the migration engine, in a package the Wasm sandbox does not import.
 package main
 
 import (
@@ -12,6 +13,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/lesomnus/roster/cli"
 	"github.com/lesomnus/roster/cmd"
 )
 
@@ -37,7 +39,7 @@ func main() {
 	defer stop()
 
 	var c cmd.Config
-	if err := cmd.Cmd(&c).Run(ctx, os.Args[1:]); err != nil {
+	if err := cli.Cmd(&c).Run(ctx, os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, "roster:", err)
 		os.Exit(1)
 	}

@@ -1,9 +1,10 @@
-package cmd
+package cli
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/lesomnus/roster/cmd"
 	"io"
 	"os"
 	"strings"
@@ -48,7 +49,7 @@ import (
 //
 // # The keyring travels with it; the corpus is core's
 //
-// Built the way `cmd/admin.go` builds the same service. The keyring is handed
+// Built the way `cl/admin.go` builds the same service. The keyring is handed
 // to the vouch server, for the seed `enrol` wraps. The leaked-password corpus
 // is not: it moved to `core` with the credential write, so `reset` and `set`
 // run it through the layer -- this command reaches the same `Ungated` stack
@@ -60,7 +61,7 @@ import (
 // **caller** holds -- and a shell is not a caller. There is no frame at all, so
 // the rule has nothing to compare and would refuse everything or nothing; the
 // same waiver `mayGrant` takes for a call with no frame, said out loud.
-func NewCmdVouch(c *Config) *xli.Command {
+func NewCmdVouch(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "vouch",
 		Brief: "a person's way in: check it, mint it, hand it out, end it",
@@ -86,10 +87,10 @@ func NewCmdVouch(c *Config) *xli.Command {
 
 // vouching is the service these three call, and the deployment that answers it.
 //
-// `Ungated` on both arguments, which is what `cmd/admin.go` passes as well:
+// `Ungated` on both arguments, which is what `cl/admin.go` passes as well:
 // the wall narrows by a tenant the caller belongs to, and there is no caller.
-func vouching(ctx context.Context, c *Config) (*Server, *vouch.Server, error) {
-	s, err := Build(ctx, *c)
+func vouching(ctx context.Context, c *cmd.Config) (*cmd.Server, *vouch.Server, error) {
+	s, err := cmd.Build(ctx, *c)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -103,8 +104,8 @@ func vouching(ctx context.Context, c *Config) (*Server, *vouch.Server, error) {
 // `pdcmd.ArgRef` and `whoIs` rather than a parser of this file's own, so that
 // `@tenant/alias` means here what it means to `roster forget` and to every
 // entity command.
-func whom(ctx context.Context, s *Server, cmd *xli.Command) (*app.VouchWho, error) {
-	ref, named := arg.Get[pdcmd.Ref](cmd, "REF")
+func whom(ctx context.Context, s *cmd.Server, cl *xli.Command) (*app.VouchWho, error) {
+	ref, named := arg.Get[pdcmd.Ref](cl, "REF")
 	if !named {
 		return nil, errors.New("REF: who, as @tenant/alias or an identifier")
 	}
@@ -133,7 +134,7 @@ func refArg() arg.Args {
 // chose is a secret the caller knows, and thirty-two bytes of `crypto/rand` is
 // not a word anybody will recognise. What makes it safe is that it is shown
 // once and the person is expected to change it.
-func newCmdVouchReset(c *Config) *xli.Command {
+func newCmdVouchReset(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "reset",
 		Brief: "give somebody a new password, generated here and printed once",
@@ -144,19 +145,19 @@ func newCmdVouchReset(c *Config) *xli.Command {
 			&flg.String{Name: "kind", Brief: "which credential; empty is the password"},
 		},
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			s, v, err := vouching(ctx, c)
 			if err != nil {
 				return err
 			}
 			defer s.Close()
 
-			who, err := whom(ctx, s, cmd)
+			who, err := whom(ctx, s, cl)
 			if err != nil {
 				return err
 			}
 
-			kind, _ := flg.Find[string](cmd, "kind")
+			kind, _ := flg.Find[string](cl, "kind")
 
 			res, err := v.Reset(ctx, app.VouchResetRequest_builder{Who: who, Kind: kind}.Build())
 			if err != nil {
@@ -181,7 +182,7 @@ func newCmdVouchReset(c *Config) *xli.Command {
 // On a pipe and never as an argument, which is `roster init --password-stdin`'s
 // rule and `roster key add`'s reason for refusing to take a key: an argument is
 // in the shell history and in the process list.
-func newCmdVouchSet(c *Config) *xli.Command {
+func newCmdVouchSet(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "set",
 		Brief: "write a password somebody chose, read from stdin",
@@ -193,8 +194,8 @@ func newCmdVouchSet(c *Config) *xli.Command {
 			&flg.String{Name: "kind", Brief: "which credential; empty is the password"},
 		},
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
-			if v, _ := flg.Find[bool](cmd, "password-stdin"); !v {
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			if v, _ := flg.Find[bool](cl, "password-stdin"); !v {
 				return errors.New(
 					"--password-stdin: there is no flag to pass a password on, " +
 						"because an argument is in the shell history and in the process list")
@@ -216,12 +217,12 @@ func newCmdVouchSet(c *Config) *xli.Command {
 			}
 			defer s.Close()
 
-			who, err := whom(ctx, s, cmd)
+			who, err := whom(ctx, s, cl)
 			if err != nil {
 				return err
 			}
 
-			kind, _ := flg.Find[string](cmd, "kind")
+			kind, _ := flg.Find[string](cl, "kind")
 
 			// Set is a `Credential` write now, named by reference. Locally,
 			// through `Ungated`, where a frameless caller waives the reach rule.
@@ -246,7 +247,7 @@ func newCmdVouchSet(c *Config) *xli.Command {
 // answer to what locking by name costs: an account can be held closed by
 // somebody else, and a person on site can simply open it. The secret is
 // untouched, which is what makes it different from a reset.
-func newCmdVouchUnlock(c *Config) *xli.Command {
+func newCmdVouchUnlock(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "unlock",
 		Brief: "open an account that wrong answers closed, without changing the secret",
@@ -257,19 +258,19 @@ func newCmdVouchUnlock(c *Config) *xli.Command {
 			&flg.String{Name: "kind", Brief: "which credential; empty is the password"},
 		},
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			s, _, err := vouching(ctx, c)
 			if err != nil {
 				return err
 			}
 			defer s.Close()
 
-			who, err := whom(ctx, s, cmd)
+			who, err := whom(ctx, s, cl)
 			if err != nil {
 				return err
 			}
 
-			kind, _ := flg.Find[string](cmd, "kind")
+			kind, _ := flg.Find[string](cl, "kind")
 
 			// Unlock is a `Credential` write now (`Vouch.Unlock` moved onto the
 			// entity), named by reference. Locally, through `Ungated`, so the

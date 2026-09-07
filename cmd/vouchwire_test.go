@@ -2,6 +2,7 @@ package cmd_test
 
 import (
 	"encoding/base32"
+	"github.com/lesomnus/roster/cli"
 	"io"
 	"net/url"
 	"os"
@@ -19,7 +20,6 @@ import (
 
 	"github.com/lesomnus/payday/pdid"
 
-	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/vouch"
@@ -145,7 +145,7 @@ func TestTheTerminalIsACallerThatSignsPeopleIn(t *testing.T) {
 	t.Run("verify answers ok, and prints no secret anywhere", func(t *testing.T) {
 		x := require.New(t)
 
-		out, err := pipedOut(t, pw+"\n", cmd.Cmd(&b.Hers),
+		out, err := pipedOut(t, pw+"\n", cli.Cmd(&b.Hers),
 			"vouch", "verify", "--secret-stdin", "@newco/alice")
 		x.NoError(err)
 		x.Empty(out, "verify has nothing for stdout; ok is an exit code")
@@ -154,11 +154,11 @@ func TestTheTerminalIsACallerThatSignsPeopleIn(t *testing.T) {
 	t.Run("a wrong secret and a stranger are one identical no", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err1 := pipedOut(t, "not the password\n", cmd.Cmd(&b.Hers),
+		_, err1 := pipedOut(t, "not the password\n", cli.Cmd(&b.Hers),
 			"vouch", "verify", "--secret-stdin", "@newco/alice")
 		x.Error(err1)
 
-		_, err2 := pipedOut(t, pw+"\n", cmd.Cmd(&b.Hers),
+		_, err2 := pipedOut(t, pw+"\n", cli.Cmd(&b.Hers),
 			"vouch", "verify", "--secret-stdin", "@newco/ghost")
 		x.Error(err2)
 
@@ -169,7 +169,7 @@ func TestTheTerminalIsACallerThatSignsPeopleIn(t *testing.T) {
 	t.Run("delegate mints, and the token acts as her beside her key", func(t *testing.T) {
 		x := require.New(t)
 
-		rd, err := pipedOut(t, pw+"\n", cmd.Cmd(&b.Hers),
+		rd, err := pipedOut(t, pw+"\n", cli.Cmd(&b.Hers),
 			"vouch", "delegate", "--secret-stdin", "--allow", holderGet, "@newco/alice")
 		x.NoError(err)
 		x.True(strings.HasPrefix(rd, "rd_"), "%q", rd)
@@ -179,7 +179,7 @@ func TestTheTerminalIsACallerThatSignsPeopleIn(t *testing.T) {
 		t.Run("and revoke ends it, now", func(t *testing.T) {
 			x := require.New(t)
 
-			_, err := pipedOut(t, rd+"\n", cmd.Cmd(&b.Hers),
+			_, err := pipedOut(t, rd+"\n", cli.Cmd(&b.Hers),
 				"vouch", "revoke", "--token-stdin")
 			x.NoError(err)
 
@@ -191,8 +191,8 @@ func TestTheTerminalIsACallerThatSignsPeopleIn(t *testing.T) {
 	t.Run("a link answers the same for a name that is nobody's", func(t *testing.T) {
 		x := require.New(t)
 
-		hers := stdoutOf(t, cmd.Cmd(&b.Hers), "vouch", "link", "@newco/alice")
-		dud := stdoutOf(t, cmd.Cmd(&b.Hers), "vouch", "link", "@newco/ghost")
+		hers := stdoutOf(t, cli.Cmd(&b.Hers), "vouch", "link", "@newco/alice")
+		dud := stdoutOf(t, cli.Cmd(&b.Hers), "vouch", "link", "@newco/ghost")
 
 		x.NotEmpty(hers)
 		x.NotEmpty(dud)
@@ -201,17 +201,17 @@ func TestTheTerminalIsACallerThatSignsPeopleIn(t *testing.T) {
 		t.Run("redeem spends hers, once", func(t *testing.T) {
 			x := require.New(t)
 
-			rd, err := pipedOut(t, hers+"\n", cmd.Cmd(&b.Hers),
+			rd, err := pipedOut(t, hers+"\n", cli.Cmd(&b.Hers),
 				"vouch", "redeem", "--token-stdin", "--allow", holderGet)
 			x.NoError(err)
 			x.True(strings.HasPrefix(rd, "rd_"), "%q", rd)
 			x.NoError(actingAs(t, b, rd, b.Alice.GetId()))
 
-			_, again := pipedOut(t, hers+"\n", cmd.Cmd(&b.Hers),
+			_, again := pipedOut(t, hers+"\n", cli.Cmd(&b.Hers),
 				"vouch", "redeem", "--token-stdin", "--allow", holderGet)
 			x.Error(again, "a link is single use")
 
-			_, ghost := pipedOut(t, dud+"\n", cmd.Cmd(&b.Hers),
+			_, ghost := pipedOut(t, dud+"\n", cli.Cmd(&b.Hers),
 				"vouch", "redeem", "--token-stdin", "--allow", holderGet)
 			x.Error(ghost)
 			x.Equal(again.Error(), ghost.Error(),
@@ -225,13 +225,13 @@ func TestTheTerminalIsACallerThatSignsPeopleIn(t *testing.T) {
 		mustIdentity(t, t.Context(), b.Server, mustId(t, b.Alice.GetId()), "entra", "entra-subject-9")
 		tn, _ := pdid.From(b.Tenant.GetId())
 
-		rd := stdoutOf(t, cmd.Cmd(&b.Hers), "vouch", "accept",
+		rd := stdoutOf(t, cli.Cmd(&b.Hers), "vouch", "accept",
 			"--tenant", tn.String(), "--provider", "entra", "--subject", "entra-subject-9",
 			"--allow", holderGet)
 		x.True(strings.HasPrefix(rd, "rd_"), "%q", rd)
 		x.NoError(actingAs(t, b, rd, b.Alice.GetId()))
 
-		err := cmd.Cmd(&b.Hers).Run(t.Context(), []string{"vouch", "accept",
+		err := cli.Cmd(&b.Hers).Run(t.Context(), []string{"vouch", "accept",
 			"--tenant", tn.String(), "--provider", "entra", "--subject", "nobody-ever",
 			"--allow", holderGet})
 		x.Equal(codes.NotFound, status.Code(err),
@@ -241,7 +241,7 @@ func TestTheTerminalIsACallerThatSignsPeopleIn(t *testing.T) {
 	t.Run("and locally every one of these is a refusal that names the split", func(t *testing.T) {
 		x := require.New(t)
 
-		err := cmd.Cmd(&b.Local).Run(t.Context(), []string{"vouch", "verify",
+		err := cli.Cmd(&b.Local).Run(t.Context(), []string{"vouch", "verify",
 			"--secret-stdin", "@newco/alice"})
 		x.Error(err)
 		x.ErrorContains(err, "client.addr")
@@ -266,7 +266,7 @@ func TestASecondFactorEndToEndAtAShell(t *testing.T) {
 	const pw = "correct horse battery staple"
 	sets(t, b, b.Alice.GetId(), pw)
 
-	uri := stdoutOf(t, cmd.Cmd(&b.Hers), "vouch", "enrol", "--name", "phone", "@newco/alice")
+	uri := stdoutOf(t, cli.Cmd(&b.Hers), "vouch", "enrol", "--name", "phone", "@newco/alice")
 	x.True(strings.HasPrefix(uri, "otpauth://"), "%q", uri)
 
 	u, err := url.Parse(uri)
@@ -277,7 +277,7 @@ func TestASecondFactorEndToEndAtAShell(t *testing.T) {
 	// Confirmed with the previous step's code, so the current one stays
 	// unspent for the sign-in below -- a code verifies once, ever.
 	step := time.Now().Unix() / 30
-	out, err := pipedOut(t, vouch.CodeAt(seed, step-1)+"\n", cmd.Cmd(&b.Hers),
+	out, err := pipedOut(t, vouch.CodeAt(seed, step-1)+"\n", cli.Cmd(&b.Hers),
 		"vouch", "verify", "--kind", "totp", "--name", "phone", "--secret-stdin", "@newco/alice")
 	// A continuation, not a finished sign-in -- the password is still open --
 	// so the exit is non-zero, which is what keeps a token capture from
@@ -286,14 +286,14 @@ func TestASecondFactorEndToEndAtAShell(t *testing.T) {
 	x.True(strings.HasPrefix(out, "vc_"), "confirming over the wire answers a continuation: %q", out)
 
 	// The password alone is not a sign-in any more.
-	cont, err := pipedOut(t, pw+"\n", cmd.Cmd(&b.Hers),
+	cont, err := pipedOut(t, pw+"\n", cli.Cmd(&b.Hers),
 		"vouch", "delegate", "--secret-stdin", "--allow", holderGet, "@newco/alice")
 	x.Error(err, "a half-done sign-in exits non-zero so a script does not capture the wrong token")
 	x.True(strings.HasPrefix(cont, "vc_"), "a second factor is enrolled, so this is half way: %q", cont)
 
 	// And the continuation plus one code is. The name travels too: an unset
 	// name means the unnamed row, never "any" -- D36's rule, felt at a shell.
-	rd, err := pipedOut(t, vouch.CodeAt(seed, step)+"\n", cmd.Cmd(&b.Hers),
+	rd, err := pipedOut(t, vouch.CodeAt(seed, step)+"\n", cli.Cmd(&b.Hers),
 		"vouch", "delegate", "--secret-stdin", "--continuation", cont,
 		"--kind", "totp", "--name", "phone", "--allow", holderGet)
 	x.NoError(err)
@@ -318,23 +318,23 @@ func TestContinueProvesAndDelegateMints(t *testing.T) {
 	const pw = "correct horse battery staple"
 	sets(t, b, b.Alice.GetId(), pw)
 
-	uri := stdoutOf(t, cmd.Cmd(&b.Hers), "vouch", "enrol", "@newco/alice")
+	uri := stdoutOf(t, cli.Cmd(&b.Hers), "vouch", "enrol", "@newco/alice")
 	u, err := url.Parse(uri)
 	x.NoError(err)
 	seed, err := base32.StdEncoding.WithPadding(base32.NoPadding).DecodeString(u.Query().Get("secret"))
 	x.NoError(err)
 
 	step := time.Now().Unix() / 30
-	_, err = pipedOut(t, vouch.CodeAt(seed, step-1)+"\n", cmd.Cmd(&b.Hers),
+	_, err = pipedOut(t, vouch.CodeAt(seed, step-1)+"\n", cli.Cmd(&b.Hers),
 		"vouch", "verify", "--kind", "totp", "--secret-stdin", "@newco/alice")
 	x.Error(err, "confirming leaves the password open, which is a continuation and a non-zero exit")
 
-	half, err := pipedOut(t, pw+"\n", cmd.Cmd(&b.Hers),
+	half, err := pipedOut(t, pw+"\n", cli.Cmd(&b.Hers),
 		"vouch", "delegate", "--secret-stdin", "--allow", holderGet, "@newco/alice")
 	x.Error(err)
 	x.True(strings.HasPrefix(half, "vc_"), "%q", half)
 
-	out, err := pipedOut(t, vouch.CodeAt(seed, step)+"\n", cmd.Cmd(&b.Hers),
+	out, err := pipedOut(t, vouch.CodeAt(seed, step)+"\n", cli.Cmd(&b.Hers),
 		"vouch", "continue", "--continuation", half, "--kind", "totp", "--secret-stdin")
 	x.NoError(err)
 	x.Empty(out, "Continue never mints, so there is nothing for stdout")
@@ -348,7 +348,7 @@ func TestDelegateRefusesTwoWaysOfNamingSomebody(t *testing.T) {
 	x := require.New(t)
 	b := cliUp(t, "/roster.VouchService/Delegate")
 
-	err := cmd.Cmd(&b.Hers).Run(t.Context(), []string{
+	err := cli.Cmd(&b.Hers).Run(t.Context(), []string{
 		"vouch", "delegate", "--secret-stdin", "--continuation", "vc_whatever",
 		"--allow", "/roster.HolderService/Get", "@newco/alice"})
 	x.Error(err)
@@ -365,7 +365,7 @@ func TestTheEnrolHintNamesWhom(t *testing.T) {
 	b := cliUp(t, "/roster.CredentialService/Enrol", "/roster.VouchService/Verify")
 	sets(t, b, b.Alice.GetId(), "correct horse battery staple")
 
-	_, hint, err := pipedErr(t, "", cmd.Cmd(&b.Hers),
+	_, hint, err := pipedErr(t, "", cli.Cmd(&b.Hers),
 		"vouch", "enrol", "--name", "phone", "@newco/alice")
 	x.NoError(err)
 
@@ -395,7 +395,7 @@ func TestTheEnrolHintNamesWhom(t *testing.T) {
 	// A wrong code, on purpose: what is asserted is that it reaches the secret
 	// comparison at all -- i.e. WHO resolved -- not that the code is right. A
 	// missing WHO would have failed in the CLI, before the wire, naming nobody.
-	err = cmd.Cmd(&b.Hers).Run(t.Context(), argsWithStdin(t, args, "000000"))
+	err = cli.Cmd(&b.Hers).Run(t.Context(), argsWithStdin(t, args, "000000"))
 	x.Error(err)
 	x.NotContains(err.Error(), "names nobody")
 	x.NotContains(err.Error(), "WHO:")

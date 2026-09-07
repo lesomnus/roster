@@ -88,6 +88,20 @@ for pkg in ./account/ ./ldap/; do
 	fi
 done
 
+# That the sandbox still does not carry what only a process can use.
+#
+# `cli/` exists so that the database engines and ent's migration engine are
+# linked into `roster` and not into the module a browser downloads (`cli/cli.go`
+# says why, with the megabytes). Nothing fails when that slips: the page works,
+# and it works thirty-five megabytes heavier. So it is checked here, over the
+# **Wasm** build, which is the graph that matters -- `go list -deps` under
+# `GOOS=js` is exactly what the linker will follow.
+echo "== the sandbox carries no engine it cannot use"
+if GOOS=js GOARCH=wasm go list -deps ./wasm | grep -E '^(ariga\.io/atlas|github.com/jackc/pgx|github.com/hashicorp/hcl|github.com/zclconf/go-cty|github.com/lesomnus/roster/internal/ent/migrate$)'; then
+	echo "the wasm module links a migration engine or a driver it cannot open; see cli/cli.go" >&2
+	exit 1
+fi
+
 # That roster still builds for the browser, which is a promise `ts/` already
 # makes -- there is a `wasm` script and a sandbox that loads what it produces --
 # and one that is kept only by being checked.

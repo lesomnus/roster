@@ -3,6 +3,7 @@ package cmd_test
 import (
 	"context"
 	"fmt"
+	"github.com/lesomnus/roster/cli"
 	"net"
 	"strings"
 	"testing"
@@ -37,7 +38,7 @@ func TestLdapServeIsToldEverything(t *testing.T) {
 	ctx := t.Context()
 
 	serve := func(args ...string) error {
-		return cmd.NewCmdLdap(&cmd.Config{}).Run(ctx, append([]string{"serve"}, args...))
+		return cli.NewCmdLdap(&cmd.Config{}).Run(ctx, append([]string{"serve"}, args...))
 	}
 	roster := b.Hers.Client.Addr
 	key := "newco=" + b.Hers.Client.Auth.Credential
@@ -64,12 +65,12 @@ func TestLdapServeIsToldEverything(t *testing.T) {
 
 	// Told everything, from the environment for the key the way a service
 	// file would, on a port this test picked.
-	t.Setenv(cmd.LdapKeyPrefix+"NEWCO", b.Hers.Client.Auth.Credential)
+	t.Setenv(cli.LdapKeyPrefix+"NEWCO", b.Hers.Client.Auth.Credential)
 	addr := freePort(t)
 	run, cancel := context.WithCancel(ctx)
 	done := make(chan error, 1)
 	go func() {
-		done <- cmd.NewCmdLdap(&cmd.Config{}).Run(run, []string{"serve", "--roster", roster, "--insecure", "--listen", addr, "--base", "newco=dc=newco,dc=example"})
+		done <- cli.NewCmdLdap(&cmd.Config{}).Run(run, []string{"serve", "--roster", roster, "--insecure", "--listen", addr, "--base", "newco=dc=newco,dc=example"})
 	}()
 	t.Cleanup(cancel)
 

@@ -106,8 +106,8 @@ leaves the deployment up to look at.
 | `ts/gen/` | in whole |
 
 **`.g` means a generator wrote it.** Everything else is yours — including
-`proto/app/*.proto`, `proto/ext/**` (overlays), `cmd/`, and `ts/console/`, `ts/account/`,
-`ts/lib/` (the two UIs and what they share).
+`proto/app/*.proto`, `proto/ext/**` (overlays), `cmd/` and `cli/`, and `ts/console/`,
+`ts/account/`, `ts/lib/` (the two UIs and what they share).
 
 To add a field to one of payday's entities, write an **overlay** in
 `proto/ext/payday/`. Editing `proto/roster/payday/` directly is undone by the next
@@ -213,6 +213,23 @@ from inside a tenant (`init`, resolving who is calling).
 
 **Never hand `Ungated` to anything a caller can reach.** There is no superuser
 flag to check; the wiring is the whole of the control.
+
+## `cmd` is wiring, `cli` is a process
+
+`cmd` is what both entry points share — `Build`, `Server`, `Config`, `Seed` —
+and the Wasm sandbox imports it. `cli` is everything only a process does: the
+commands, the blank-imported database drivers, and ent's migration engine.
+
+> **Nothing in `cmd` may name a driver, `entmigrate` or `entschema`.**
+
+The linker follows imports, so one of those in `cmd` is thirty-five megabytes
+added to the module a browser downloads — and nothing fails, the page just gets
+slower. `scripts/test.sh` checks the Wasm dependency graph for it. A new command
+goes in `cli/`; a helper both a command and the sandbox need goes in `cmd/`
+(`cmd/service.go` is the one that had to move back).
+
+The sandbox does not migrate: `wasm/schema` is the same tables as one SQL
+script, kept true by `TestTheScriptIsThisSchema`.
 
 ## The wall is a predicate, so it only applies to reads
 

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"github.com/lesomnus/roster/cli"
 	"net"
 	"strings"
 	"testing"
@@ -90,7 +91,7 @@ func cliUp(t *testing.T, methods ...string) *cliServed {
 	x.NoError(err)
 	x.NoError(s.Close())
 
-	token := stdoutOf(t, cmd.NewCmdKey(&c), "add",
+	token := stdoutOf(t, cli.NewCmdKey(&c), "add",
 		"--tenant", "newco", "--holder", "alice", "--name", "terminal",
 		"--allow", strings.Join(methods, ","))
 
@@ -154,7 +155,7 @@ func holderOf(t *testing.T, b *cliServed, id []byte) *app.Holder {
 // two buckets.
 //
 // The commands are built by `pdcmd.Tree.Unary` from the descriptors, so what
-// is being asserted is the wiring in `cmd/entity.go` and nothing about the
+// is being asserted is the wiring in `cli/entity.go` and nothing about the
 // methods themselves; `cmd/disable_test.go` and its neighbours hold those.
 func TestTheTerminalOperatesOnSomebody(t *testing.T) {
 	const (

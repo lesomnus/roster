@@ -1,10 +1,11 @@
-package cmd
+package cli
 
 import (
 	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/lesomnus/roster/cmd"
 	"io"
 	"os"
 	"strings"
@@ -59,7 +60,7 @@ import (
 // somebody who is not here as for somebody who is.
 
 // wired is the connection, or the sentence somebody needs when there is none.
-func wired(ctx context.Context, c *Config) (app.VouchServiceClient, func(), error) {
+func wired(ctx context.Context, c *cmd.Config) (app.VouchServiceClient, func(), error) {
 	conn, done, err := dialed(ctx, c)
 	if err != nil {
 		return nil, nil, err
@@ -73,7 +74,7 @@ func wired(ctx context.Context, c *Config) (app.VouchServiceClient, func(), erro
 // needs `client.addr`. `enrol` reaches for the connection rather than a
 // `VouchService` client on it, because the write it makes is `CredentialService`'s
 // now.
-func dialed(ctx context.Context, c *Config) (pdcmd.Conn, func(), error) {
+func dialed(ctx context.Context, c *cmd.Config) (pdcmd.Conn, func(), error) {
 	if c.Client.Local || c.Client.Addr == "" {
 		return nil, nil, errors.New(
 			"this half of `vouch` calls a served deployment as a caller -- a delegation, a link " +
@@ -115,10 +116,10 @@ func refFrom(who *app.VouchWho) (*app.HolderRef, error) {
 // look a slug up in, and `VouchWho` already carries the name for the server to
 // resolve -- which is also what keeps `@tenant/ghost` and a wrong password one
 // indistinguishable no.
-func whoSaid(cmd *xli.Command) (*app.VouchWho, error) {
-	tenant, _ := flg.Find[string](cmd, "tenant")
-	address, _ := flg.Find[string](cmd, "address")
-	ref, named := arg.Get[pdcmd.Ref](cmd, "WHO")
+func whoSaid(cl *xli.Command) (*app.VouchWho, error) {
+	tenant, _ := flg.Find[string](cl, "tenant")
+	address, _ := flg.Find[string](cl, "address")
+	ref, named := arg.Get[pdcmd.Ref](cl, "WHO")
 
 	if address != "" {
 		if named {
@@ -149,13 +150,13 @@ func whoSaid(cmd *xli.Command) (*app.VouchWho, error) {
 
 // whoTyped is the WHO a command was given, back in the words it was given in,
 // so a hint that echoes it names the same person the command just did.
-func whoTyped(cmd *xli.Command) string {
-	if tenant, _ := flg.Find[string](cmd, "tenant"); tenant != "" {
-		if address, _ := flg.Find[string](cmd, "address"); address != "" {
+func whoTyped(cl *xli.Command) string {
+	if tenant, _ := flg.Find[string](cl, "tenant"); tenant != "" {
+		if address, _ := flg.Find[string](cl, "address"); address != "" {
 			return fmt.Sprintf("--tenant %s --address %s", tenant, address)
 		}
 	}
-	if ref, named := arg.Get[pdcmd.Ref](cmd, "WHO"); named {
+	if ref, named := arg.Get[pdcmd.Ref](cl, "WHO"); named {
 		return pdcmd.RefParser{}.ToString(ref)
 	}
 
@@ -188,8 +189,8 @@ func whoFlags() flg.Flags {
 // secretFrom is [--password-stdin]'s rule under a wider name: what is proved
 // here may be a password or a six-digit code, and neither belongs in the shell
 // history or the process list.
-func secretFrom(cmd *xli.Command, name string) ([]byte, error) {
-	if on, _ := flg.Find[bool](cmd, name); !on {
+func secretFrom(cl *xli.Command, name string) ([]byte, error) {
+	if on, _ := flg.Find[bool](cl, name); !on {
 		return nil, fmt.Errorf(
 			"--%s: there is no flag to pass a secret on, because an argument is in the "+
 				"shell history and in the process list", name)
@@ -208,9 +209,9 @@ func secretFrom(cmd *xli.Command, name string) ([]byte, error) {
 
 // allowed is `--allow` exactly as `roster key add` takes it, refused when it
 // is empty in the server's own words.
-func allowed(cmd *xli.Command) ([]string, error) {
-	vs, _ := flg.Find[[]string](cmd, "allow")
-	methods := splitMethods(vs)
+func allowed(cl *xli.Command) ([]string, error) {
+	vs, _ := flg.Find[[]string](cl, "allow")
+	methods := cmd.SplitMethods(vs)
 	if len(methods) == 0 {
 		return nil, errors.New("--allow: a delegation that allows nothing opens no door; name the methods")
 	}
@@ -219,8 +220,8 @@ func allowed(cmd *xli.Command) ([]string, error) {
 }
 
 // expiresOf turns `--expires 20m` into the absolute instant the schema takes.
-func expiresOf(cmd *xli.Command) (*timestamppb.Timestamp, error) {
-	v, _ := flg.Find[string](cmd, "expires")
+func expiresOf(cl *xli.Command) (*timestamppb.Timestamp, error) {
+	v, _ := flg.Find[string](cl, "expires")
 	if v == "" {
 		return nil, nil
 	}
@@ -304,7 +305,7 @@ func answered(v *app.VouchVerifyResponse, token string, expires *timestamppb.Tim
 // It is also the confirm step of an enrolment: a freshly enrolled factor does
 // not count until one code has verified against it, and the confirming call
 // names the row -- `--kind totp --name <what they called it>`.
-func newCmdVouchVerify(c *Config) *xli.Command {
+func newCmdVouchVerify(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "verify",
 		Brief: "answer whether a secret is somebody's; mints nothing",
@@ -316,26 +317,26 @@ func newCmdVouchVerify(c *Config) *xli.Command {
 			&flg.String{Name: "name", Brief: "which one, when they have two of a kind; confirming an enrolment names it"},
 		),
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
-			cl, done, err := wired(ctx, c)
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			client, done, err := wired(ctx, c)
 			if err != nil {
 				return err
 			}
 			defer done()
 
-			who, err := whoSaid(cmd)
+			who, err := whoSaid(cl)
 			if err != nil {
 				return err
 			}
-			secret, err := secretFrom(cmd, "secret-stdin")
+			secret, err := secretFrom(cl, "secret-stdin")
 			if err != nil {
 				return err
 			}
 
-			kind, _ := flg.Find[string](cmd, "kind")
-			name, _ := flg.Find[string](cmd, "name")
+			kind, _ := flg.Find[string](cl, "kind")
+			name, _ := flg.Find[string](cl, "name")
 
-			v, err := cl.Verify(ctx, app.VouchVerifyRequest_builder{
+			v, err := client.Verify(ctx, app.VouchVerifyRequest_builder{
 				Who:    who,
 				Kind:   kind,
 				Name:   name,
@@ -360,7 +361,7 @@ func newCmdVouchVerify(c *Config) *xli.Command {
 // and prints a continuation, the second takes `--continuation` and the next
 // factor's code and prints the token. `vouch continue` is the middle for
 // flows with more than two steps, and it never mints.
-func newCmdVouchDelegate(c *Config) *xli.Command {
+func newCmdVouchDelegate(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "delegate",
 		Brief: "sign somebody in and mint the credential that acts as them",
@@ -375,18 +376,18 @@ func newCmdVouchDelegate(c *Config) *xli.Command {
 			&flg.String{Name: "expires", Brief: "how long it lasts, e.g. 20m; empty is the deployment's default"},
 		),
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
-			cl, done, err := wired(ctx, c)
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			client, done, err := wired(ctx, c)
 			if err != nil {
 				return err
 			}
 			defer done()
 
 			req := app.VouchDelegateRequest_builder{}
-			cont, _ := flg.Find[string](cmd, "continuation")
-			_, named := arg.Get[pdcmd.Ref](cmd, "WHO")
-			tenant, _ := flg.Find[string](cmd, "tenant")
-			address, _ := flg.Find[string](cmd, "address")
+			cont, _ := flg.Find[string](cl, "continuation")
+			_, named := arg.Get[pdcmd.Ref](cl, "WHO")
+			tenant, _ := flg.Find[string](cl, "tenant")
+			address, _ := flg.Find[string](cl, "address")
 
 			switch {
 			case cont != "" && (named || tenant != "" || address != ""):
@@ -402,7 +403,7 @@ func newCmdVouchDelegate(c *Config) *xli.Command {
 				req.Continuation = cont
 
 			default:
-				who, err := whoSaid(cmd)
+				who, err := whoSaid(cl)
 				if err != nil {
 					return err
 				}
@@ -410,37 +411,37 @@ func newCmdVouchDelegate(c *Config) *xli.Command {
 				req.Who = who
 			}
 
-			secret, err := secretFrom(cmd, "secret-stdin")
+			secret, err := secretFrom(cl, "secret-stdin")
 			if err != nil {
 				return err
 			}
 			req.Secret = secret
 
-			methods, err := allowed(cmd)
+			methods, err := allowed(cl)
 			if err != nil {
 				return err
 			}
 			req.Methods = methods
 
-			expires, err := expiresOf(cmd)
+			expires, err := expiresOf(cl)
 			if err != nil {
 				return err
 			}
 			req.Expires = expires
 
-			kind, _ := flg.Find[string](cmd, "kind")
-			name, _ := flg.Find[string](cmd, "name")
+			kind, _ := flg.Find[string](cl, "kind")
+			name, _ := flg.Find[string](cl, "name")
 			req.Kind = kind
 			req.Name = name
 
-			v, err := cl.Delegate(ctx, req.Build())
+			v, err := client.Delegate(ctx, req.Build())
 			if err != nil {
 				return err
 			}
 			if err := answered(v.GetVerified(), v.GetToken(), v.GetExpires()); err != nil {
 				return err
 			}
-			if w := Widest(methods); w != "" && v.GetToken() != "" {
+			if w := cmd.Widest(methods); w != "" && v.GetToken() != "" {
 				fmt.Fprintf(os.Stderr, "\n%s\n", w)
 			}
 
@@ -454,7 +455,7 @@ func newCmdVouchDelegate(c *Config) *xli.Command {
 // There is exactly one method in the service that mints, and it is Delegate.
 // A sign-in ended here is proven with nothing to show for it, and the command
 // says so rather than leaving an empty success on the screen.
-func newCmdVouchContinue(c *Config) *xli.Command {
+func newCmdVouchContinue(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "continue",
 		Brief: "prove the next factor; Continue proves and Delegate mints",
@@ -466,26 +467,26 @@ func newCmdVouchContinue(c *Config) *xli.Command {
 			&flg.String{Name: "name", Brief: "which one, when they have two of a kind"},
 		},
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
-			cl, done, err := wired(ctx, c)
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			client, done, err := wired(ctx, c)
 			if err != nil {
 				return err
 			}
 			defer done()
 
-			cont, _ := flg.Find[string](cmd, "continuation")
+			cont, _ := flg.Find[string](cl, "continuation")
 			if cont == "" {
 				return errors.New("--continuation: what the last call printed; there is nothing to carry on from")
 			}
-			secret, err := secretFrom(cmd, "secret-stdin")
+			secret, err := secretFrom(cl, "secret-stdin")
 			if err != nil {
 				return err
 			}
 
-			kind, _ := flg.Find[string](cmd, "kind")
-			name, _ := flg.Find[string](cmd, "name")
+			kind, _ := flg.Find[string](cl, "kind")
+			name, _ := flg.Find[string](cl, "name")
 
-			v, err := cl.Continue(ctx, app.VouchContinueRequest_builder{
+			v, err := client.Continue(ctx, app.VouchContinueRequest_builder{
 				Continuation: cont,
 				Kind:         kind,
 				Name:         name,
@@ -517,7 +518,7 @@ func newCmdVouchContinue(c *Config) *xli.Command {
 // expiry -- because a recovery form is filled in by strangers, and a form
 // that answered differently would answer *is this address here*. The dud
 // fails at redeem the way every bad token does.
-func newCmdVouchLink(c *Config) *xli.Command {
+func newCmdVouchLink(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "link",
 		Brief: "mint a way in for somebody, printed once; delivering it is yours",
@@ -527,23 +528,23 @@ func newCmdVouchLink(c *Config) *xli.Command {
 			&flg.String{Name: "expires", Brief: "how long it lasts, e.g. 10m; less than the default, never more"},
 		),
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
-			cl, done, err := wired(ctx, c)
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			client, done, err := wired(ctx, c)
 			if err != nil {
 				return err
 			}
 			defer done()
 
-			who, err := whoSaid(cmd)
+			who, err := whoSaid(cl)
 			if err != nil {
 				return err
 			}
-			expires, err := expiresOf(cmd)
+			expires, err := expiresOf(cl)
 			if err != nil {
 				return err
 			}
 
-			v, err := cl.Link(ctx, app.VouchLinkRequest_builder{
+			v, err := client.Link(ctx, app.VouchLinkRequest_builder{
 				Who:     who,
 				Expires: expires,
 			}.Build())
@@ -566,7 +567,7 @@ func newCmdVouchLink(c *Config) *xli.Command {
 // newCmdVouchRedeem spends a link: a first factor, exactly as a password
 // would have been -- a second factor is still asked for, because a link that
 // skipped one would turn a mailbox into an account.
-func newCmdVouchRedeem(c *Config) *xli.Command {
+func newCmdVouchRedeem(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "redeem",
 		Brief: "spend a link: a first factor, exactly as a password would be",
@@ -577,27 +578,27 @@ func newCmdVouchRedeem(c *Config) *xli.Command {
 			&flg.String{Name: "expires", Brief: "how long the delegation lasts, e.g. 20m; empty is the default"},
 		},
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
-			cl, done, err := wired(ctx, c)
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			client, done, err := wired(ctx, c)
 			if err != nil {
 				return err
 			}
 			defer done()
 
-			token, err := secretFrom(cmd, "token-stdin")
+			token, err := secretFrom(cl, "token-stdin")
 			if err != nil {
 				return err
 			}
-			methods, err := allowed(cmd)
+			methods, err := allowed(cl)
 			if err != nil {
 				return err
 			}
-			expires, err := expiresOf(cmd)
+			expires, err := expiresOf(cl)
 			if err != nil {
 				return err
 			}
 
-			v, err := cl.Redeem(ctx, app.VouchRedeemRequest_builder{
+			v, err := client.Redeem(ctx, app.VouchRedeemRequest_builder{
 				Token:   string(token),
 				Methods: methods,
 				Expires: expires,
@@ -619,7 +620,7 @@ func newCmdVouchRedeem(c *Config) *xli.Command {
 // Possession is the authorization: it takes the token itself, and a token
 // that was never here, already gone, or somebody else's succeeds identically
 // -- Revoke answers nothing a caller could learn from.
-func newCmdVouchRevoke(c *Config) *xli.Command {
+func newCmdVouchRevoke(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "revoke",
 		Brief: "end a delegation now, before its expiry",
@@ -628,14 +629,14 @@ func newCmdVouchRevoke(c *Config) *xli.Command {
 			&flg.Switch{Name: "token-stdin", Brief: "read the delegation from stdin; required"},
 		},
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			conn, done, err := dialed(ctx, c)
 			if err != nil {
 				return err
 			}
 			defer done()
 
-			token, err := secretFrom(cmd, "token-stdin")
+			token, err := secretFrom(cl, "token-stdin")
 			if err != nil {
 				return err
 			}
@@ -675,7 +676,7 @@ func newCmdVouchRevoke(c *Config) *xli.Command {
 // holder by reference now -- `refFrom` turns the sign-in form the shell collects
 // into one, and refuses an address, which is recovery's way of naming somebody
 // and not this.
-func newCmdVouchEnrol(c *Config) *xli.Command {
+func newCmdVouchEnrol(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "enrol",
 		Brief: "make a second factor for somebody, printed once as an otpauth:// Uri",
@@ -687,8 +688,8 @@ func newCmdVouchEnrol(c *Config) *xli.Command {
 			&flg.String{Name: "issuer", Brief: "what their authenticator app lists it under; empty is \"roster\""},
 		),
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
-			kind, _ := flg.Find[string](cmd, "kind")
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			kind, _ := flg.Find[string](cl, "kind")
 			if kind == "" {
 				kind = "totp"
 			}
@@ -704,7 +705,7 @@ func newCmdVouchEnrol(c *Config) *xli.Command {
 			}
 			defer done()
 
-			who, err := whoSaid(cmd)
+			who, err := whoSaid(cl)
 			if err != nil {
 				return err
 			}
@@ -713,8 +714,8 @@ func newCmdVouchEnrol(c *Config) *xli.Command {
 				return err
 			}
 
-			name, _ := flg.Find[string](cmd, "name")
-			issuer, _ := flg.Find[string](cmd, "issuer")
+			name, _ := flg.Find[string](cl, "name")
+			issuer, _ := flg.Find[string](cl, "issuer")
 
 			v, err := app.NewCredentialServiceClient(conn).Enrol(ctx, app.CredentialEnrolRequest_builder{
 				Ref:    ref,
@@ -731,7 +732,7 @@ func newCmdVouchEnrol(c *Config) *xli.Command {
 				"the seed is the `secret` parameter of the Uri, and this is the only time it is "+
 					"shown. It does not count until it is proved: one code, via\n  roster vouch "+
 					"verify --kind %s%s --secret-stdin %s\n",
-				kind, nameFlag(name), whoTyped(cmd))
+				kind, nameFlag(name), whoTyped(cl))
 
 			return next(ctx)
 		}),
@@ -745,7 +746,7 @@ func newCmdVouchEnrol(c *Config) *xli.Command {
 // holds it -- and unlike everything else on this surface the answers here are
 // real status codes: the caller holds a grant and is guessing nothing, so an
 // unknown identity is NotFound rather than a uniform no.
-func newCmdVouchAccept(c *Config) *xli.Command {
+func newCmdVouchAccept(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "accept",
 		Brief: "mint for somebody a front door already checked; roster verifies nothing",
@@ -758,32 +759,32 @@ func newCmdVouchAccept(c *Config) *xli.Command {
 			&flg.String{Name: "expires", Brief: "how long it lasts, e.g. 20m; empty is minutes"},
 		},
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
-			cl, done, err := wired(ctx, c)
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			client, done, err := wired(ctx, c)
 			if err != nil {
 				return err
 			}
 			defer done()
 
-			tenant, _ := flg.Find[string](cmd, "tenant")
-			provider, _ := flg.Find[string](cmd, "provider")
-			subject, _ := flg.Find[string](cmd, "subject")
+			tenant, _ := flg.Find[string](cl, "tenant")
+			provider, _ := flg.Find[string](cl, "provider")
+			subject, _ := flg.Find[string](cl, "subject")
 
 			k, err := pdid.Parse(tenant)
 			if err != nil {
 				return fmt.Errorf("--tenant: an identifier, which is what `front whose-host` answers: %w", err)
 			}
 
-			methods, err := allowed(cmd)
+			methods, err := allowed(cl)
 			if err != nil {
 				return err
 			}
-			expires, err := expiresOf(cmd)
+			expires, err := expiresOf(cl)
 			if err != nil {
 				return err
 			}
 
-			v, err := cl.Accept(ctx, app.VouchAcceptRequest_builder{
+			v, err := client.Accept(ctx, app.VouchAcceptRequest_builder{
 				Claim: app.VouchClaim_builder{
 					Tenant:   k.Bytes(),
 					Provider: provider,

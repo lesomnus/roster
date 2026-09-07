@@ -1,6 +1,7 @@
 package cmd_test
 
 import (
+	"github.com/lesomnus/roster/cli"
 	"os"
 	"testing"
 
@@ -85,7 +86,7 @@ func TestTheCliWritesAWayInForAPerson(t *testing.T) {
 
 	// Generated here and answered with once, which is `IssueService`'s argument
 	// about a key unchanged: a secret the caller chose is one the caller knows.
-	secret := stdoutOf(t, cmd.NewCmdVouch(&c), "reset", "@newco/admin")
+	secret := stdoutOf(t, cli.NewCmdVouch(&c), "reset", "@newco/admin")
 	x.NotEmpty(secret)
 
 	s2, err := cmd.Build(ctx, c)
@@ -113,7 +114,7 @@ func TestTheCliWritesAWayInForAPerson(t *testing.T) {
 		x.NoError(s2.Close())
 
 		x.NoError(piped(t, "correct horse battery staple\n",
-			cmd.NewCmdVouch(&c), "set", "--password-stdin", "@newco/admin"))
+			cli.NewCmdVouch(&c), "set", "--password-stdin", "@newco/admin"))
 
 		s3, err := cmd.Build(ctx, c)
 		x.NoError(err)
@@ -127,7 +128,7 @@ func TestTheCliWritesAWayInForAPerson(t *testing.T) {
 	t.Run("and never as an argument", func(t *testing.T) {
 		x := require.New(t)
 
-		err := cmd.NewCmdVouch(&c).Run(ctx, []string{"set", "@newco/admin"})
+		err := cli.NewCmdVouch(&c).Run(ctx, []string{"set", "@newco/admin"})
 		x.Error(err)
 		x.ErrorContains(err, "--password-stdin",
 			"a password could be given somewhere it would be in the shell history")
@@ -159,7 +160,7 @@ func TestTheCliIsNotADoorPastTheCorpus(t *testing.T) {
 	customer(t, s, "newco", "admin")
 	x.NoError(s.Close())
 
-	err = piped(t, "hunter2hunter2", cmd.NewCmdVouch(&c), "set", "--password-stdin", "@newco/admin")
+	err = piped(t, "hunter2hunter2", cli.NewCmdVouch(&c), "set", "--password-stdin", "@newco/admin")
 	x.Error(err, "a shell stored a password this deployment refuses everywhere else")
 
 	// `FailedPrecondition` rather than `InvalidArgument`, as everywhere else:
@@ -171,13 +172,13 @@ func TestTheCliIsNotADoorPastTheCorpus(t *testing.T) {
 		x := require.New(t)
 
 		x.NoError(piped(t, "correct horse battery staple",
-			cmd.NewCmdVouch(&c), "set", "--password-stdin", "@newco/admin"))
+			cli.NewCmdVouch(&c), "set", "--password-stdin", "@newco/admin"))
 	})
 
 	t.Run("and a generated one goes through the same door", func(t *testing.T) {
 		x := require.New(t)
 
-		v := stdoutOf(t, cmd.NewCmdVouch(&c), "reset", "@newco/admin")
+		v := stdoutOf(t, cli.NewCmdVouch(&c), "reset", "@newco/admin")
 		x.NotEmpty(v, "thirty-two random bytes were in a corpus of one")
 	})
 }
@@ -204,18 +205,18 @@ func TestUnlockSaysWhetherItDidAnything(t *testing.T) {
 	// somebody who has no password is `NotFound` rather than a no-op, which is
 	// the right answer and worth knowing before an operator meets it at three
 	// in the morning.
-	err = cmd.NewCmdVouch(&c).Run(ctx, []string{"unlock", "@newco/admin"})
+	err = cli.NewCmdVouch(&c).Run(ctx, []string{"unlock", "@newco/admin"})
 	x.Error(err, "there was nothing to unlock and it said otherwise")
 	x.Equal(codes.NotFound, status.Code(err))
 
-	_ = stdoutOf(t, cmd.NewCmdVouch(&c), "reset", "@newco/admin")
+	_ = stdoutOf(t, cli.NewCmdVouch(&c), "reset", "@newco/admin")
 
-	x.NoError(cmd.NewCmdVouch(&c).Run(ctx, []string{"unlock", "@newco/admin"}))
+	x.NoError(cli.NewCmdVouch(&c).Run(ctx, []string{"unlock", "@newco/admin"}))
 
 	t.Run("and nobody is not somebody", func(t *testing.T) {
 		x := require.New(t)
 
-		err := cmd.NewCmdVouch(&c).Run(ctx, []string{"unlock", "@newco/nobody"})
+		err := cli.NewCmdVouch(&c).Run(ctx, []string{"unlock", "@newco/nobody"})
 		x.Error(err)
 		x.ErrorContains(err, "nobody")
 	})
@@ -223,7 +224,7 @@ func TestUnlockSaysWhetherItDidAnything(t *testing.T) {
 	t.Run("and an alias in no tenant at all", func(t *testing.T) {
 		x := require.New(t)
 
-		err := cmd.NewCmdVouch(&c).Run(ctx, []string{"reset", "@nowhere/admin"})
+		err := cli.NewCmdVouch(&c).Run(ctx, []string{"reset", "@nowhere/admin"})
 		x.Error(err)
 	})
 }

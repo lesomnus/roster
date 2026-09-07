@@ -1,9 +1,10 @@
-package cmd
+package cli
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/lesomnus/roster/cmd"
 	"os"
 	"sort"
 	"strings"
@@ -43,7 +44,7 @@ import (
 //
 // It is not `roster audit`, which is the generated entity command and reads
 // rows through a server. These are the acts no server offers.
-func NewCmdTrail(c *Config) *xli.Command {
+func NewCmdTrail(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "trail",
 		Brief: "what happens to the record of what happened, after long enough",
@@ -59,7 +60,7 @@ func NewCmdTrail(c *Config) *xli.Command {
 
 // newCmdTrailPrune moves rows out of the database, and is the one act here
 // that cannot be undone by running it again.
-func newCmdTrailPrune(c *Config) *xli.Command {
+func newCmdTrailPrune(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "prune",
 		Brief: "apply the retention policy now, or a window of your own",
@@ -73,8 +74,8 @@ func newCmdTrailPrune(c *Config) *xli.Command {
 			&flg.Switch{Name: "dry-run", Brief: "say how many there are and change nothing"},
 		},
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
-			before, given, err := cutoff(cmd)
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			before, given, err := cutoff(cl)
 			if err != nil {
 				return err
 			}
@@ -90,19 +91,19 @@ func newCmdTrailPrune(c *Config) *xli.Command {
 				return prune(ctx, *c)
 			}
 
-			of, err := kindOf(cmd)
+			of, err := kindOf(cl)
 			if err != nil {
 				return err
 			}
 
-			dry, _ := flg.Find[bool](cmd, "dry-run")
+			dry, _ := flg.Find[bool](cl, "dry-run")
 
-			dir, _ := flg.Find[string](cmd, "to")
+			dir, _ := flg.Find[string](cl, "to")
 			if dir == "" {
 				dir = c.Audit.Archive
 			}
 
-			discard, _ := flg.Find[bool](cmd, "discard")
+			discard, _ := flg.Find[bool](cl, "discard")
 
 			// Where the rows go is a question about **destroying** them, so it
 			// is asked of a run that will. A dry run that insisted on a
@@ -124,7 +125,7 @@ func newCmdTrailPrune(c *Config) *xli.Command {
 				}
 			}
 
-			s, err := Build(ctx, *c)
+			s, err := cmd.Build(ctx, *c)
 			if err != nil {
 				return err
 			}
@@ -174,7 +175,7 @@ func newCmdTrailPrune(c *Config) *xli.Command {
 // Deliberately: the reason to keep the file is that it outlives the deployment
 // that wrote it, so a reader that needed the deployment would be answering a
 // question nobody has at the moment they have it.
-func newCmdTrailRead(c *Config) *xli.Command {
+func newCmdTrailRead(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "read",
 		Brief: "read an archive back, without a database",
@@ -194,18 +195,18 @@ func newCmdTrailRead(c *Config) *xli.Command {
 			&flg.Switch{Name: "json", Brief: "the rows as they are stored, one per line"},
 		},
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
-			paths, err := archives(cmd, c)
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			paths, err := archives(cl, c)
 			if err != nil {
 				return err
 			}
 
-			keep, err := filterOf(cmd)
+			keep, err := filterOf(cl)
 			if err != nil {
 				return err
 			}
 
-			asJson, _ := flg.Find[bool](cmd, "json")
+			asJson, _ := flg.Find[bool](cl, "json")
 
 			// One call over every file rather than one per file, because the
 			// duplicate two writers leave behind is only visible to a reader
@@ -243,7 +244,7 @@ func newCmdTrailRead(c *Config) *xli.Command {
 // named for the month it holds, so one is destroyable when the month after it
 // has also passed. Rewriting a file to drop some of its rows would be editing
 // an archive, which is the thing this whole package refuses to offer.
-func newCmdTrailPurge(c *Config) *xli.Command {
+func newCmdTrailPurge(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "purge",
 		Brief: "destroy the archives that are old enough, and there is nothing after this",
@@ -256,8 +257,8 @@ func newCmdTrailPurge(c *Config) *xli.Command {
 			&flg.Switch{Name: "dry-run", Brief: "say which files and remove nothing"},
 		},
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
-			before, given, err := cutoff(cmd)
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			before, given, err := cutoff(cl)
 			if err != nil {
 				return err
 			}
@@ -270,12 +271,12 @@ func newCmdTrailPurge(c *Config) *xli.Command {
 					"`trail prune` applies the deployment's own policy, this destroys archives by hand")
 			}
 
-			of, err := kindOf(cmd)
+			of, err := kindOf(cl)
 			if err != nil {
 				return err
 			}
 
-			dir, _ := flg.Find[string](cmd, "in")
+			dir, _ := flg.Find[string](cl, "in")
 			if dir == "" {
 				dir = c.Audit.Archive
 			}
@@ -285,7 +286,7 @@ func newCmdTrailPurge(c *Config) *xli.Command {
 
 			cut := of.CutFor(before)
 
-			if dry, _ := flg.Find[bool](cmd, "dry-run"); dry {
+			if dry, _ := flg.Find[bool](cl, "dry-run"); dry {
 				vs, err := trail.Doomed(dir, cut)
 				if err != nil {
 					return err
@@ -316,8 +317,8 @@ func newCmdTrailPurge(c *Config) *xli.Command {
 // operator running one of these by hand is answering for one of them. A list
 // would be a second way to write a policy, in a place that is not the
 // configuration.
-func kindOf(cmd *xli.Command) (trail.Kinds, error) {
-	v, _ := flg.Find[string](cmd, "kind")
+func kindOf(cl *xli.Command) (trail.Kinds, error) {
+	v, _ := flg.Find[string](cl, "kind")
 	if v == "" {
 		return trail.Kinds{}, nil
 	}
@@ -337,7 +338,7 @@ func newCmdTrailProfiles() *xli.Command {
 		Name:  "profiles",
 		Brief: "the named retention regimes, and where each number comes from",
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			names := make([]string, 0, len(trail.Profiles))
 			for k := range trail.Profiles {
 				names = append(names, k)
@@ -369,7 +370,7 @@ func dur(v time.Duration) string {
 
 // prune is one pass of the deployment's own policy, which is what this command
 // does when it was given no window.
-func prune(ctx context.Context, c Config) error {
+func prune(ctx context.Context, c cmd.Config) error {
 	p, err := c.Audit.Policy()
 	if err != nil {
 		return err
@@ -379,7 +380,7 @@ func prune(ctx context.Context, c Config) error {
 			"see `audit:` in the configuration, or name a window with --older-than")
 	}
 
-	s, err := Build(ctx, c)
+	s, err := cmd.Build(ctx, c)
 	if err != nil {
 		return err
 	}
@@ -406,9 +407,9 @@ func prune(ctx context.Context, c Config) error {
 // they mean the policy, and the version that insisted on a cutoff made
 // `--older-than 1ns` the obvious thing to type -- which destroys the kind the
 // configuration says to keep forever.
-func cutoff(cmd *xli.Command) (time.Time, bool, error) {
-	older, _ := flg.Find[string](cmd, "older-than")
-	before, _ := flg.Find[string](cmd, "before")
+func cutoff(cl *xli.Command) (time.Time, bool, error) {
+	older, _ := flg.Find[string](cl, "older-than")
+	before, _ := flg.Find[string](cl, "before")
 
 	switch {
 	case older != "" && before != "":
@@ -439,12 +440,12 @@ func cutoff(cmd *xli.Command) (time.Time, bool, error) {
 }
 
 // archives is which files to read.
-func archives(cmd *xli.Command, c *Config) ([]string, error) {
-	if vs, ok := arg.Get[[]string](cmd, "FILE"); ok && len(vs) > 0 {
+func archives(cl *xli.Command, c *cmd.Config) ([]string, error) {
+	if vs, ok := arg.Get[[]string](cl, "FILE"); ok && len(vs) > 0 {
 		return vs, nil
 	}
 
-	dir, _ := flg.Find[string](cmd, "in")
+	dir, _ := flg.Find[string](cl, "in")
 	if dir == "" {
 		dir = c.Audit.Archive
 	}
@@ -456,27 +457,27 @@ func archives(cmd *xli.Command, c *Config) ([]string, error) {
 }
 
 // filterOf is the flags as one question asked of each row.
-func filterOf(cmd *xli.Command) (func(*app.Audit) bool, error) {
-	object, err := identifier(cmd, "object")
+func filterOf(cl *xli.Command) (func(*app.Audit) bool, error) {
+	object, err := identifier(cl, "object")
 	if err != nil {
 		return nil, err
 	}
-	actor, err := identifier(cmd, "actor")
+	actor, err := identifier(cl, "actor")
 	if err != nil {
 		return nil, err
 	}
-	tenant, err := identifier(cmd, "tenant")
+	tenant, err := identifier(cl, "tenant")
 	if err != nil {
 		return nil, err
 	}
 
-	action, _ := flg.Find[string](cmd, "action")
+	action, _ := flg.Find[string](cl, "action")
 
-	since, err := instant(cmd, "since")
+	since, err := instant(cl, "since")
 	if err != nil {
 		return nil, err
 	}
-	until, err := instant(cmd, "until")
+	until, err := instant(cl, "until")
 	if err != nil {
 		return nil, err
 	}
@@ -524,8 +525,8 @@ func is(k pdid.Id, b []byte) bool {
 	return v == k
 }
 
-func identifier(cmd *xli.Command, name string) (pdid.Id, error) {
-	v, _ := flg.Find[string](cmd, name)
+func identifier(cl *xli.Command, name string) (pdid.Id, error) {
+	v, _ := flg.Find[string](cl, name)
 	if v == "" {
 		return pdid.Nil, nil
 	}
@@ -538,8 +539,8 @@ func identifier(cmd *xli.Command, name string) (pdid.Id, error) {
 	return k, nil
 }
 
-func instant(cmd *xli.Command, name string) (time.Time, error) {
-	v, _ := flg.Find[string](cmd, name)
+func instant(cl *xli.Command, name string) (time.Time, error) {
+	v, _ := flg.Find[string](cl, name)
 	if v == "" {
 		return time.Time{}, nil
 	}

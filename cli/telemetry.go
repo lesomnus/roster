@@ -1,7 +1,8 @@
-package cmd
+package cli
 
 import (
 	"context"
+	"github.com/lesomnus/roster/cmd"
 	"log/slog"
 	"runtime/debug"
 
@@ -13,7 +14,7 @@ import (
 // telemetry builds what `otel:` describes and hands it to everything under
 // `ctx`: the providers, and a logger that writes through them.
 //
-// It was declared and never built. `Config.Otel` had been in the file since
+// It was declared and never built. `cmd.Config.Otel` had been in the file since
 // the template, `grpcx.Serving` had installed the request logger and the
 // tracer on every server from the start -- and both read the `otx` off the
 // context, which nothing had put there, so `otx.From` fell back to the
@@ -25,7 +26,7 @@ import (
 //
 // The version is the build's, read the way `roster version` reads it, so a
 // record says which binary wrote it.
-func telemetry(ctx context.Context, c *Config, name string) (context.Context, func(), error) {
+func telemetry(ctx context.Context, c *cmd.Config, name string) (context.Context, func(), error) {
 	svc := config.Service{Name: name, Scope: "github.com/lesomnus/roster"}
 	if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
 		svc.Version = info.Main.Version

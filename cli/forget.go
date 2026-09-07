@@ -1,9 +1,10 @@
-package cmd
+package cli
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/lesomnus/roster/cmd"
 	"os"
 	"time"
 
@@ -42,7 +43,7 @@ import (
 // would **record** it -- and a record of what was destroyed is the thing being
 // destroyed. What guards it is a shell on the box, which is a credential
 // nothing can steal over the wire.
-func NewCmdForget(c *Config) *xli.Command {
+func NewCmdForget(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "forget",
 		Brief: "destroy what is held about somebody, or everybody whose grace has run out",
@@ -55,16 +56,16 @@ func NewCmdForget(c *Config) *xli.Command {
 			&flg.Switch{Name: "dry-run", Brief: "say who, and destroy nothing"},
 		},
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
-			s, err := Build(ctx, *c)
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			s, err := cmd.Build(ctx, *c)
 			if err != nil {
 				return err
 			}
 			defer s.Close()
 
-			dry, _ := flg.Find[bool](cmd, "dry-run")
+			dry, _ := flg.Find[bool](cl, "dry-run")
 
-			ref, named := arg.Get[pdcmd.Ref](cmd, "REF")
+			ref, named := arg.Get[pdcmd.Ref](cl, "REF")
 			if named {
 				if err := ref.Expect(pd.HolderDomain); err != nil {
 					return err
@@ -128,7 +129,7 @@ func NewCmdForget(c *Config) *xli.Command {
 // window exists for a mistaken deletion, a compromised account and a billing
 // dispute, and every one of those is a reason that needs the mistake to be
 // reversible.
-func NewCmdRestore(c *Config) *xli.Command {
+func NewCmdRestore(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "restore",
 		Brief: "bring back somebody who was erased and has not been forgotten",
@@ -137,8 +138,8 @@ func NewCmdRestore(c *Config) *xli.Command {
 			&pdcmd.ArgRef{Name: "REF", Brief: "who, as @tenant/alias or an identifier"},
 		},
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
-			ref, ok := arg.Get[pdcmd.Ref](cmd, "REF")
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			ref, ok := arg.Get[pdcmd.Ref](cl, "REF")
 			if !ok {
 				return errors.New("REF: who to bring back")
 			}
@@ -146,7 +147,7 @@ func NewCmdRestore(c *Config) *xli.Command {
 				return err
 			}
 
-			s, err := Build(ctx, *c)
+			s, err := cmd.Build(ctx, *c)
 			if err != nil {
 				return err
 			}

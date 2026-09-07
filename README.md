@@ -107,6 +107,13 @@ true of everything in sight and says nothing.
 which server the wall is on -- and it is deliberately not hidden behind a
 `payday.Serve(cfg)`. Everything else in `cmd/` is small.
 
+`cli/` is the other half of the same program: the commands, the database engines
+a process opens, and ent's migration engine. It is a package rather than a build
+tag because the linker follows imports and `cmd` is what the Wasm sandbox
+imports -- what is in `cli` is thirty-five megabytes the browser would otherwise
+download to run a database that is already in the page. `cli/cli.go` says it at
+length.
+
 `proto/app/identity.proto` is the other half. The `(payday.entity)` option at the
 bottom of it is where the domain byte, the tenant wall, the `List` and the
 `Watch` all come from.

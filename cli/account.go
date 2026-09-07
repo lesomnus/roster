@@ -1,4 +1,4 @@
-package cmd
+package cli
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/lesomnus/roster/cmd"
 	"log/slog"
 	"net"
 	"net/http"
@@ -40,7 +41,7 @@ import (
 // configuration file would be the first thing a consumer knows about the server
 // that it should not. Flags and environment, the way any other app deployed
 // beside roster is told about it.
-func NewCmdAccount(c *Config) *xli.Command {
+func NewCmdAccount(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "account",
 		Brief: "the front door a customer's people sign in at",
@@ -49,7 +50,7 @@ func NewCmdAccount(c *Config) *xli.Command {
 	}
 }
 
-func newCmdAccountServe(c *Config) *xli.Command {
+func newCmdAccountServe(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "serve",
 		Brief: "serve the sign-in page and the account screens, fronting roster",
@@ -67,15 +68,15 @@ func newCmdAccountServe(c *Config) *xli.Command {
 			&flg.Strings{Name: "seal", Brief: "the key sessions are sealed into the cookie under, as env:NAME holding 32 bytes base64; repeat to rotate, the first seals. Empty is a key made at start, which is one replica"},
 		},
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			ctx, stop, err := telemetry(ctx, c, "roster-account")
 			if err != nil {
 				return err
 			}
 			defer stop()
 
-			roster, _ := flg.Find[string](cmd, "roster")
-			connect, _ := flg.Find[string](cmd, "connect")
+			roster, _ := flg.Find[string](cl, "roster")
+			connect, _ := flg.Find[string](cl, "connect")
 			if roster == "" || connect == "" {
 				return errors.New("--roster and --connect: where roster speaks gRPC, and where the same server speaks HTTP")
 			}
@@ -84,7 +85,7 @@ func newCmdAccountServe(c *Config) *xli.Command {
 				return fmt.Errorf("--connect: %w", err)
 			}
 
-			keys, err := keysFrom(cmd, "ROSTER_ACCOUNT_KEY_")
+			keys, err := keysFrom(cl, "ROSTER_ACCOUNT_KEY_")
 			if err != nil {
 				return err
 			}
@@ -93,16 +94,16 @@ func newCmdAccountServe(c *Config) *xli.Command {
 				Roster:  roster,
 				Connect: target,
 			}
-			cfg.Insecure, _ = flg.Find[bool](cmd, "insecure")
+			cfg.Insecure, _ = flg.Find[bool](cl, "insecure")
 			cfg.Keys = keys
 
-			if v, _ := flg.Find[string](cmd, "base"); v != "" {
+			if v, _ := flg.Find[string](cl, "base"); v != "" {
 				cfg.Base, err = url.Parse(v)
 				if err != nil {
 					return fmt.Errorf("--base: %w", err)
 				}
 			}
-			switch v, _ := flg.Find[string](cmd, "enrol"); v {
+			switch v, _ := flg.Find[string](cl, "enrol"); v {
 			case "", "invited":
 				cfg.Enrol = account.Invited()
 			case "enrolling":
@@ -110,7 +111,7 @@ func newCmdAccountServe(c *Config) *xli.Command {
 			default:
 				return fmt.Errorf("--enrol: %q is not one of invited, enrolling", v)
 			}
-			if dir, _ := flg.Find[string](cmd, "static"); dir != "" {
+			if dir, _ := flg.Find[string](cl, "static"); dir != "" {
 				cfg.Static = http.FileServer(http.Dir(dir))
 			}
 
@@ -126,12 +127,12 @@ func newCmdAccountServe(c *Config) *xli.Command {
 			// Without `--seal` the key is made here, at start: right for one
 			// replica, and a restart signs everybody out, which is the safe
 			// direction.
-			sealed, err := sealFrom(cmd)
+			sealed, err := sealFrom(cl)
 			if err != nil {
 				return err
 			}
 			opts := []authsession.Option{}
-			if v, _ := flg.Find[bool](cmd, "insecure-cookie"); v {
+			if v, _ := flg.Find[bool](cl, "insecure-cookie"); v {
 				opts = append(opts, authsession.Insecure())
 			}
 			cfg.Sessions = authsession.New(sealed, opts...)
@@ -142,7 +143,7 @@ func newCmdAccountServe(c *Config) *xli.Command {
 			}
 			defer a.Close()
 
-			addr, _ := flg.Find[string](cmd, "listen")
+			addr, _ := flg.Find[string](cl, "listen")
 			if addr == "" {
 				addr = ":8090"
 			}
@@ -173,8 +174,8 @@ func newCmdAccountServe(c *Config) *xli.Command {
 // `env:NAME` rather than the key itself, for the reason `--key` has an
 // environment form: a key is a secret and a flag is in the process list. And
 // through [account.EnvSecret], which is the one scheme this binary knows.
-func sealFrom(cmd *xli.Command) (*authsession.Sealed, error) {
-	vs, _ := flg.Find[[]string](cmd, "seal")
+func sealFrom(cl *xli.Command) (*authsession.Sealed, error) {
+	vs, _ := flg.Find[[]string](cl, "seal")
 	if len(vs) == 0 {
 		k := make([]byte, authsession.KeySize)
 		if _, err := rand.Read(k); err != nil {
@@ -210,7 +211,7 @@ func sealFrom(cmd *xli.Command) (*authsession.Sealed, error) {
 // The environment form is there because a key is a secret and a process list
 // is not where one belongs; the flag form is there because a shell that starts
 // this for one tenant should not have to export anything.
-func keysFrom(cmd *xli.Command, prefix string) (map[string]string, error) {
+func keysFrom(cl *xli.Command, prefix string) (map[string]string, error) {
 	out := map[string]string{}
 	for _, kv := range os.Environ() {
 		name, value, ok := strings.Cut(kv, "=")
@@ -224,7 +225,7 @@ func keysFrom(cmd *xli.Command, prefix string) (map[string]string, error) {
 		out[strings.ToLower(alias)] = value
 	}
 
-	vs, _ := flg.Find[[]string](cmd, "key")
+	vs, _ := flg.Find[[]string](cl, "key")
 	for _, v := range vs {
 		alias, token, ok := strings.Cut(v, "=")
 		if !ok || alias == "" || token == "" {

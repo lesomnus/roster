@@ -2,6 +2,7 @@ package cmd_test
 
 import (
 	"bytes"
+	"github.com/lesomnus/roster/cli"
 	"net"
 	"os"
 	"path/filepath"
@@ -23,14 +24,14 @@ import (
 // entities runs one of the built entity commands the way somebody at a shell
 // does, and answers with what it printed.
 //
-// Through `cmd.Cmd` and not through the command in isolation, because the whole
+// Through `cli.Cmd` and not through the command in isolation, because the whole
 // question is whether the configuration is there by the time the connection is
 // opened -- and what puts it there is a handler on the root.
 func entities(t *testing.T, c *cmd.Config, args ...string) (string, error) {
 	t.Helper()
 
 	out := &bytes.Buffer{}
-	root := cmd.Cmd(c)
+	root := cli.Cmd(c)
 	root.Writer = out
 
 	err := root.Run(t.Context(), args)
@@ -131,7 +132,7 @@ func TestAnEntityCommandWritesThroughTheWholeStack(t *testing.T) {
 func TestTheCommandsAreWhatTheSchemaDeclared(t *testing.T) {
 	x := require.New(t)
 
-	root := cmd.Cmd(&cmd.Config{})
+	root := cli.Cmd(&cmd.Config{})
 
 	at := func(name string) *xli.Command {
 		for _, v := range root.Commands {
@@ -184,7 +185,7 @@ func TestAConfigurationThatCannotBeOpenedIsTheCommandsAnswer(t *testing.T) {
 	c := &cmd.Config{Db: config.DbConfig{Driver: "nothing-of-the-sort", Dsn: "no"}}
 
 	// Building the root touches nothing.
-	root := cmd.Cmd(c)
+	root := cli.Cmd(c)
 	x.NotNil(root)
 
 	_, err := entities(t, c, "tenant", "ls")

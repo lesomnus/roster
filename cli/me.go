@@ -1,9 +1,10 @@
-package cmd
+package cli
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/lesomnus/roster/cmd"
 	"os"
 	"strings"
 	"time"
@@ -44,7 +45,7 @@ import (
 // rather than answered from the rows. `roster holder get @you/you` is the local
 // question and it is a different question: it says what is written down, not
 // what you may do.
-func newCmdMe(c *Config) *xli.Command {
+func newCmdMe(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "me",
 		Brief: "what this credential is, and what it may do about itself",
@@ -67,7 +68,7 @@ func newCmdMe(c *Config) *xli.Command {
 // invocation, which has a connection to an in-process server that does not
 // serve this service at all. Answering "unimplemented" would be true and
 // useless.
-func calling(ctx context.Context, c *Config) (pdcmd.Conn, error) {
+func calling(ctx context.Context, c *cmd.Config) (pdcmd.Conn, error) {
 	if c.Client.Local || c.Client.Addr == "" {
 		return nil, errors.New(
 			"`me` is about the caller, and a local run has none: it opens the database " +
@@ -91,12 +92,12 @@ func myself(ctx context.Context, conn pdcmd.Conn) (*app.HolderRef, error) {
 	return app.HolderRef_builder{Id: v.GetId()}.Build(), nil
 }
 
-func newCmdMeGet(c *Config) *xli.Command {
+func newCmdMeGet(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "get",
 		Brief: "who this credential is, and what it may call",
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			conn, err := calling(ctx, c)
 			if err != nil {
 				return err
@@ -110,34 +111,34 @@ func newCmdMeGet(c *Config) *xli.Command {
 			k, _ := pdid.From(v.GetId())
 			t, _ := pdid.From(v.GetTenant())
 
-			cmd.Printf("%s\t%s\n", "alias", v.GetAlias())
+			cl.Printf("%s\t%s\n", "alias", v.GetAlias())
 			if n := v.GetName(); n != "" {
-				cmd.Printf("%s\t%s\n", "name", n)
+				cl.Printf("%s\t%s\n", "name", n)
 			}
-			cmd.Printf("%s\t%s\n", "id", k)
-			cmd.Printf("%s\t%s\n", "tenant", t)
+			cl.Printf("%s\t%s\n", "id", k)
+			cl.Printf("%s\t%s\n", "tenant", t)
 
 			// The pattern and not what it expands to. A client that expanded it
 			// would be showing the methods that exist in **this** binary, and
 			// during a rolling deploy two of them would say different things
 			// about one person.
-			cmd.Printf("%s\t%s\n", "may call", strings.Join(v.GetMethods(), ", "))
+			cl.Printf("%s\t%s\n", "may call", strings.Join(v.GetMethods(), ", "))
 
 			if v.GetEverySite() {
-				cmd.Printf("%s\t%s\n", "sites", "every site")
+				cl.Printf("%s\t%s\n", "sites", "every site")
 			} else if n := len(v.GetSites()); n > 0 {
-				cmd.Printf("%s\t%d\n", "sites", n)
+				cl.Printf("%s\t%d\n", "sites", n)
 			}
 
 			for _, w := range v.GetIdentities() {
-				cmd.Printf("%s\t%s:%s\n", "signs in with", w.GetProvider(), w.GetSubject())
+				cl.Printf("%s\t%s:%s\n", "signs in with", w.GetProvider(), w.GetSubject())
 			}
 			for _, w := range v.GetCredentials() {
-				cmd.Printf("%s\t%s\n", "signs in with", w.GetKind())
+				cl.Printf("%s\t%s\n", "signs in with", w.GetKind())
 			}
 			for _, w := range v.GetKeys() {
 				j, _ := pdid.From(w.GetId())
-				cmd.Printf("%s\t%s\t%s\t%s\n", "key", w.GetAlias(), j, strings.Join(w.GetMethods(), ","))
+				cl.Printf("%s\t%s\t%s\t%s\n", "key", w.GetAlias(), j, strings.Join(w.GetMethods(), ","))
 			}
 
 			return nil
@@ -149,7 +150,7 @@ func newCmdMeGet(c *Config) *xli.Command {
 // reference, the same verb an operator calls about somebody else. The role it
 // needs is the one that names `ApiKey.Issue`, and what it may hand out is what
 // you hold -- `server/core`'s rule, not this command's.
-func newCmdMeIssueKey(c *Config) *xli.Command {
+func newCmdMeIssueKey(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "issue-key",
 		Brief: "mint a key that acts as you, and print it once",
@@ -160,19 +161,19 @@ func newCmdMeIssueKey(c *Config) *xli.Command {
 			&flg.String{Name: "expires", Brief: "how long it lasts, e.g. 720h; empty is forever"},
 		},
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			conn, err := calling(ctx, c)
 			if err != nil {
 				return err
 			}
 
-			name, _ := flg.Find[string](cmd, "name")
+			name, _ := flg.Find[string](cl, "name")
 			if name == "" {
 				name = "default"
 			}
 
-			allow, _ := flg.Find[[]string](cmd, "allow")
-			methods := splitMethods(allow)
+			allow, _ := flg.Find[[]string](cl, "allow")
+			methods := cmd.SplitMethods(allow)
 			if len(methods) == 0 {
 				return errors.New("--allow: a key that allows nothing is not a key; name the methods")
 			}
@@ -183,7 +184,7 @@ func newCmdMeIssueKey(c *Config) *xli.Command {
 			}
 
 			req := app.ApiKeyIssueRequest_builder{Holder: own, Alias: name, Methods: methods}
-			if v, _ := flg.Find[string](cmd, "expires"); v != "" {
+			if v, _ := flg.Find[string](cl, "expires"); v != "" {
 				d, err := time.ParseDuration(v)
 				if err != nil {
 					return fmt.Errorf("--expires: %w", err)
@@ -203,7 +204,7 @@ func newCmdMeIssueKey(c *Config) *xli.Command {
 				"key %q, allowing %d method(s). This is the only time it is shown.\n",
 				name, len(methods))
 
-			if w := Widest(methods); w != "" {
+			if w := cmd.Widest(methods); w != "" {
 				fmt.Fprintf(os.Stderr, "\n%s\n", w)
 			}
 
@@ -212,7 +213,7 @@ func newCmdMeIssueKey(c *Config) *xli.Command {
 	}
 }
 
-func newCmdMeRevokeKey(c *Config) *xli.Command {
+func newCmdMeRevokeKey(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "revoke-key",
 		Brief: "stop one of your keys, now",
@@ -221,13 +222,13 @@ func newCmdMeRevokeKey(c *Config) *xli.Command {
 			&arg.String{Name: "Id", Brief: "the key, as `me get` prints it"},
 		},
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			conn, err := calling(ctx, c)
 			if err != nil {
 				return err
 			}
 
-			v, ok := arg.Get[string](cmd, "Id")
+			v, ok := arg.Get[string](cl, "Id")
 			if !ok || v == "" {
 				return errors.New("Id: which key")
 			}
@@ -256,7 +257,7 @@ func newCmdMeRevokeKey(c *Config) *xli.Command {
 // is refused unless a role names `Identity.Add` -- which is the answer and not
 // a limitation. `server/core` refuses a second account at one provider and an
 // account already somebody else's, without saying whose.
-func newCmdMeLink(c *Config) *xli.Command {
+func newCmdMeLink(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "link",
 		Brief: "attach a provider account of yours",
@@ -266,14 +267,14 @@ func newCmdMeLink(c *Config) *xli.Command {
 			&arg.String{Name: "SUBJECT", Brief: "who that provider says you are"},
 		},
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			conn, err := calling(ctx, c)
 			if err != nil {
 				return err
 			}
 
-			provider, _ := arg.Get[string](cmd, "PROVIDER")
-			subject, _ := arg.Get[string](cmd, "SUBJECT")
+			provider, _ := arg.Get[string](cl, "PROVIDER")
+			subject, _ := arg.Get[string](cl, "SUBJECT")
 			if provider == "" || subject == "" {
 				return errors.New("PROVIDER and SUBJECT: which account, at which provider")
 			}
@@ -296,7 +297,7 @@ func newCmdMeLink(c *Config) *xli.Command {
 // It refuses your **only** way in, which is the one rule here that is not about
 // permissions: somebody who unlinks their last provider and holds no password
 // is locked out of an account nobody can let them back into.
-func newCmdMeUnlink(c *Config) *xli.Command {
+func newCmdMeUnlink(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "unlink",
 		Brief: "take back a provider account of yours",
@@ -305,13 +306,13 @@ func newCmdMeUnlink(c *Config) *xli.Command {
 			&arg.String{Name: "Id", Brief: "the identity, as `me get` prints it"},
 		},
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			conn, err := calling(ctx, c)
 			if err != nil {
 				return err
 			}
 
-			v, ok := arg.Get[string](cmd, "Id")
+			v, ok := arg.Get[string](cl, "Id")
 			if !ok || v == "" {
 				return errors.New("Id: which identity")
 			}
@@ -340,12 +341,12 @@ func newCmdMeUnlink(c *Config) *xli.Command {
 //
 // So this says what it does and no more. There is no undo and no time to give,
 // because the server stamps the moment.
-func newCmdMeSignOut(c *Config) *xli.Command {
+func newCmdMeSignOut(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "sign-out-everywhere",
 		Brief: "void the sessions and delegations issued before now",
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			conn, err := calling(ctx, c)
 			if err != nil {
 				return err
@@ -359,9 +360,9 @@ func newCmdMeSignOut(c *Config) *xli.Command {
 
 			// Said exactly, because the difference is the one somebody would
 			// otherwise find out about from a script that went on working.
-			cmd.Printf("sessions and delegations issued before %s are void.\n",
+			cl.Printf("sessions and delegations issued before %s are void.\n",
 				v.GetDateInvalidated().AsTime().Format(time.RFC3339))
-			cmd.Printf("your keys are not: `me get` lists them, `me revoke-key` stops one.\n")
+			cl.Printf("your keys are not: `me get` lists them, `me revoke-key` stops one.\n")
 
 			return nil
 		}),

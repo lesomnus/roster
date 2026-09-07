@@ -1,10 +1,11 @@
-package cmd
+package cli
 
 import (
 	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/lesomnus/roster/cmd"
 	"log/slog"
 	"net"
 	"strings"
@@ -27,7 +28,7 @@ import (
 // roster's own listeners must not be in the process that does. It dials roster
 // over the wire like any other consumer, and is told everything from the shell
 // (`docs/ldap.md`).
-func NewCmdLdap(c *Config) *xli.Command {
+func NewCmdLdap(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "ldap",
 		Brief: "roster as a directory, over LDAP",
@@ -39,7 +40,7 @@ func NewCmdLdap(c *Config) *xli.Command {
 // LdapKeyPrefix is the environment form of `--key`: `ROSTER_LDAP_KEY_<ALIAS>`.
 const LdapKeyPrefix = "ROSTER_LDAP_KEY_"
 
-func newCmdLdapServe(c *Config) *xli.Command {
+func newCmdLdapServe(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "serve",
 		Brief: "answer LDAP binds and searches from roster's rows",
@@ -56,30 +57,30 @@ func newCmdLdapServe(c *Config) *xli.Command {
 			&flg.Switch{Name: "require-tls", Brief: "refuse a bind in the clear; a client must StartTLS or use LDAPS first"},
 		},
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			ctx, stop, err := telemetry(ctx, c, "roster-ldap")
 			if err != nil {
 				return err
 			}
 			defer stop()
 
-			roster, _ := flg.Find[string](cmd, "roster")
+			roster, _ := flg.Find[string](cl, "roster")
 			if roster == "" {
 				return errors.New("--roster: where roster speaks gRPC")
 			}
-			keys, err := keysFrom(cmd, LdapKeyPrefix)
+			keys, err := keysFrom(cl, LdapKeyPrefix)
 			if err != nil {
 				return err
 			}
-			bind, _ := flg.Find[string](cmd, "bind")
+			bind, _ := flg.Find[string](cl, "bind")
 			mode, err := ldap.ParseMode(bind)
 			if err != nil {
 				return fmt.Errorf("--bind: %w", err)
 			}
 
 			cfg := ldap.Config{Roster: roster, Keys: keys, Bind: mode, Log: log.From(ctx)}
-			cfg.Insecure, _ = flg.Find[bool](cmd, "insecure")
-			bases, _ := flg.Find[[]string](cmd, "base")
+			cfg.Insecure, _ = flg.Find[bool](cl, "insecure")
+			bases, _ := flg.Find[[]string](cl, "base")
 			for _, v := range bases {
 				alias, suffix, ok := strings.Cut(v, "=")
 				if !ok || alias == "" || suffix == "" {
@@ -92,7 +93,7 @@ func newCmdLdapServe(c *Config) *xli.Command {
 			}
 
 			var tlsConfig *tls.Config
-			if v, _ := flg.Find[string](cmd, "tls"); v != "" {
+			if v, _ := flg.Find[string](cl, "tls"); v != "" {
 				certFile, keyFile, ok := strings.Cut(v, ",")
 				if !ok {
 					return fmt.Errorf("--tls %q: cert.pem,key.pem", v)
@@ -104,15 +105,15 @@ func newCmdLdapServe(c *Config) *xli.Command {
 				tlsConfig = &tls.Config{Certificates: []tls.Certificate{cert}}
 			}
 
-			plain, _ := flg.Find[string](cmd, "listen")
-			secure, _ := flg.Find[string](cmd, "listen-tls")
+			plain, _ := flg.Find[string](cl, "listen")
+			secure, _ := flg.Find[string](cl, "listen-tls")
 			if secure != "" && tlsConfig == nil {
 				return errors.New("--listen-tls needs --tls")
 			}
 			if plain == "" && secure == "" {
 				plain = ":389"
 			}
-			require, _ := flg.Find[bool](cmd, "require-tls")
+			require, _ := flg.Find[bool](cl, "require-tls")
 			if require && tlsConfig == nil && secure == "" {
 				return errors.New("--require-tls with nothing to offer: give --tls")
 			}

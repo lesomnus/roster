@@ -1,7 +1,7 @@
 #!/bin/sh
 # The account app, once the key `customer.sh` minted is there to front with.
 #
-# The app is told everything from the shell (`cmd/account.go`) and takes the
+# The app is told everything from the shell (`cli/account.go`) and takes the
 # key from the environment rather than a file, so the file is read here and
 # handed over that way -- which keeps it out of the compose file and the
 # process list both.

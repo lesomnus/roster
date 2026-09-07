@@ -1,6 +1,7 @@
 package cmd_test
 
 import (
+	"github.com/lesomnus/roster/cli"
 	"net"
 	"strings"
 	"testing"
@@ -84,7 +85,7 @@ func TestTheCliIsAlsoACustomersPerson(t *testing.T) {
 	x.NoError(err)
 	x.NoError(s.Close())
 
-	token := stdoutOf(t, cmd.NewCmdKey(&c), "add",
+	token := stdoutOf(t, cli.NewCmdKey(&c), "add",
 		"--tenant", "newco", "--holder", "alice", "--allow", "/roster.*/*")
 
 	s2, err := cmd.Build(ctx, c)
@@ -176,5 +177,5 @@ func TestTheCliIsAlsoACustomersPerson(t *testing.T) {
 func root(t *testing.T, c *cmd.Config) *xli.Command {
 	t.Helper()
 
-	return &xli.Command{Name: "roster", Commands: cmd.NewCmdEntities(c)}
+	return &xli.Command{Name: "roster", Commands: cli.NewCmdEntities(c)}
 }

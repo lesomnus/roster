@@ -9,22 +9,14 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"reflect"
 	"strings"
 	"time"
 
-	"github.com/lesomnus/xli"
-	"github.com/lesomnus/xli/flg"
-	"github.com/lesomnus/xli/mode"
-
-	"github.com/lesomnus/payday/pdcmd"
-
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/config"
-
 	// The two engines this app runs on, blank-imported here rather than by
 	// payday so that an app does not carry one it never opens.
 	//
@@ -33,9 +25,6 @@ import (
 	// -- the quickstart `docs/operating.md` gives -- fail at
 	// `unknown driver "pgx"`, which is a sentence about a name rather than
 	// about a missing import and reads as a typo in the configuration.
-	_ "github.com/lesomnus/payday/config/dbpgx"
-	_ "github.com/lesomnus/payday/config/dbsqlite3"
-
 	// And the broker that rides the first of them, so that
 	// `watch.broker: postgres` is a name this binary has.
 	//
@@ -48,7 +37,6 @@ import (
 	// Linked whatever this deployment runs on, like the drivers above: what it
 	// costs is a `LISTEN` client in the binary, and what the other arrangement
 	// costs is `watch.broker: postgres` reading as a typo.
-	_ "github.com/lesomnus/payday/config/brokerpg"
 )
 
 // Name is what this app is called, and it is the only place it is written.
@@ -247,7 +235,7 @@ type ClientConfig struct {
 	// "dns:///roster.internal:8080".
 	//
 	// Which port to name is a decision with an answer that is not obvious; see
-	// the note on `cmd/entity.go`'s `remote`. In short: `server.addr` is the
+	// the note on `cli/entity.go`'s `remote`. In short: `server.addr` is the
 	// data plane and is walled, so what comes back is what the credential's
 	// tenant holds -- not every tenant.
 	Addr string `yaml:"addr"`
@@ -320,7 +308,7 @@ type ClientAuthConfig struct {
 // IsSet reports whether this says anything at all.
 //
 // It is what makes `client.auth` with no `client.addr` a refusal rather than a
-// credential that is quietly never sent; see `cmd/entity.go`.
+// credential that is quietly never sent; see `cli/entity.go`.
 func (c ClientAuthConfig) IsSet() bool {
 	return c.Scheme != "" || c.Credential != "" || c.CredentialFile != ""
 }
@@ -506,83 +494,6 @@ func (c ControlConfig) Said() bool {
 // or not by something else entirely. See [Build].
 func said(c config.ServerConfig) bool {
 	return !reflect.DeepEqual(c, config.ServerConfig{})
-}
-
-// Cmd is this app's own command line: what payday supplies, plus whatever the
-// app has of its own.
-//
-// `config`, `config env` and `version` are payday's -- they are the commands
-// that run against a **deployment** rather than against a checkout, and every
-// one of them needs something only the app can hand over. `config env` is the
-// clearest: listing the variables a deployment can set means walking this
-// struct, and the struct is the app's.
-//
-// `serve` is not among them and will not be. It is the one command whose body
-// is the stack -- which layers, in which order, with the wall on which server
-// -- and that is the most important thing a reader of an app can see.
-//
-// The configuration is read on the **root**, so it has happened whichever
-// subcommand runs -- `config` prints what came out, `serve` listens on what it
-// says. A command that loaded it for itself would be one more place for the
-// order to be wrong.
-func Cmd(c *Config) *xli.Command {
-	return &xli.Command{
-		Name:  Name,
-		Brief: "roster",
-
-		Flags: flg.Flags{
-			pdcmd.ConfigFlag(),
-
-			// Named after the one `oas` has, which is named after the computer
-			// that would not open the pod bay doors. What it does is skip the
-			// wire: whatever `client.addr` says, the entity commands open the
-			// database in `db` and read it directly.
-			//
-			// A switch on the root rather than on each command, because it is
-			// about where this invocation runs and not about what it asks for.
-			&flg.Switch{Name: "HAL", Brief: "read the database directly, whatever client.addr says"},
-		},
-
-		Commands: append([]*xli.Command{
-			pdcmd.NewCmdVersion(),
-			pdcmd.NewCmdConfig(Loader, c),
-			NewCmdInit(c),
-			NewCmdKey(c),
-			NewCmdIssue(c),
-			NewCmdVouch(c),
-			NewCmdTrail(c),
-			NewCmdForget(c),
-			NewCmdRestore(c),
-			NewCmdServe(c),
-			NewCmdAccount(c),
-			NewCmdLdap(c),
-		}, NewCmdEntities(c)...),
-
-		// `ROSTER_ACCOUNT_KEY_<ALIAS>` and `ROSTER_LDAP_KEY_<ALIAS>` are read by
-		// `roster account serve` and `roster ldap serve` themselves
-		// (`keysFrom`), not by the loader, and are not typos.
-		Handler: xli.Chain(pdcmd.Load(Loader, c, pdcmd.Reads("ACCOUNT_KEY_", "LDAP_KEY_")), hal(c), xli.RequireSubcommand()),
-	}
-}
-
-// hal is `--HAL`, read on the way down.
-//
-// A handler and not something the connector asks for itself, because a
-// connector is handed a context and not the command -- and the flag is on the
-// root, several commands above whichever one is running. This is the same seam
-// `pdcmd.Load` uses to put the configuration where a leaf can find it.
-func hal(c *Config) xli.Handler {
-	// `xli.On(mode.Run)` and not `OnRun`, which is exact: a root with a
-	// subcommand under it runs as `Run|Pass`, so the exact form never fires
-	// there -- and this is only ever on a root. `pdcmd.Load` is gated the same
-	// way, for the same reason.
-	return xli.On(mode.Run, func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
-		if v, ok := flg.Find[bool](cmd, "HAL"); ok && v {
-			c.Client.Local = true
-		}
-
-		return next(ctx)
-	})
 }
 
 // watch is which broker this plane publishes to, falling back to the kind the

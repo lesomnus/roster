@@ -1,8 +1,9 @@
-package cmd
+package cli
 
 import (
 	"context"
 	"errors"
+	"github.com/lesomnus/roster/cmd"
 	"strings"
 	"time"
 
@@ -21,7 +22,7 @@ import (
 // one shell and this in another, saying that every app on the stream has been
 // told. The request takes nothing because the wall is the whole narrowing --
 // `sync.proto` argues that at length -- so there are no flags here either.
-func newCmdSync(c *Config) *xli.Command {
+func newCmdSync(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "sync",
 		Brief: "the stream that says somebody's standing stopped being good",
@@ -41,12 +42,12 @@ func newCmdSync(c *Config) *xli.Command {
 // backlog, so a stream that stopped and a stream where nothing is happening
 // look exactly alike, and a command that returned quietly would be somebody
 // reading an empty screen and believing it.
-func newCmdSyncWatch(c *Config) *xli.Command {
+func newCmdSyncWatch(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "watch",
 		Brief: "hear it, one line per event, until interrupted",
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			if c.Client.Local || c.Client.Addr == "" {
 				return errors.New(
 					"`sync watch` hears a served deployment's stream, and a local run has none: " +
@@ -74,21 +75,21 @@ func newCmdSyncWatch(c *Config) *xli.Command {
 
 				h, _ := pdid.From(v.GetHolder())
 				t, _ := pdid.From(v.GetTenant())
-				cmd.Printf("%s\t%s\t%s", h, t,
+				cl.Printf("%s\t%s\t%s", h, t,
 					strings.ToLower(strings.TrimPrefix(v.GetReason().String(), "SYNC_REASON_")))
 
 				// Only the stamps that are set, so the line reads as the fact
 				// it is: nothing after the reason is somebody in good standing.
 				if w := v.GetDateInvalidated(); w != nil {
-					cmd.Printf("\tinvalidated=%s", w.AsTime().Format(time.RFC3339))
+					cl.Printf("\tinvalidated=%s", w.AsTime().Format(time.RFC3339))
 				}
 				if w := v.GetDateDisabled(); w != nil {
-					cmd.Printf("\tdisabled=%s", w.AsTime().Format(time.RFC3339))
+					cl.Printf("\tdisabled=%s", w.AsTime().Format(time.RFC3339))
 				}
 				if w := v.GetDateErased(); w != nil {
-					cmd.Printf("\terased=%s", w.AsTime().Format(time.RFC3339))
+					cl.Printf("\terased=%s", w.AsTime().Format(time.RFC3339))
 				}
-				cmd.Printf("\n")
+				cl.Printf("\n")
 			}
 		}),
 	}

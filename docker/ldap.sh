@@ -1,7 +1,7 @@
 #!/bin/sh
 # The directory, once the key `customer.sh` minted for it is there.
 #
-# Told everything from the shell like the account app (`cmd/ldap.go`), and
+# Told everything from the shell like the account app (`cli/ldap.go`), and
 # handed its key the same way: read from the file and put in the environment
 # under the name `roster ldap serve` reads, so it is in neither the compose
 # file nor the process list.

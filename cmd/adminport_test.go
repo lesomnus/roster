@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
+	"github.com/lesomnus/roster/cli"
 	"os"
 	"path/filepath"
 	"slices"
@@ -57,7 +58,7 @@ func adminDeployment(t *testing.T, with func(c *cmd.Config)) (*cmd.Server, cmd.C
 	}
 
 	out := &strings.Builder{}
-	k := cmd.NewCmdInit(&c)
+	k := cli.NewCmdInit(&c)
 	k.Writer = out
 
 	x.NoError(k.Run(ctx, nil), "init: %s", out)

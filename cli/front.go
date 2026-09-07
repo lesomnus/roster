@@ -1,8 +1,9 @@
-package cmd
+package cli
 
 import (
 	"context"
 	"errors"
+	"github.com/lesomnus/roster/cmd"
 
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/arg"
@@ -28,7 +29,7 @@ import (
 // the entity services alone. A shell on the box reading the rows is
 // `roster host ls` and `roster maildomain ls`, which is a different question:
 // what is written down, not what a front door is told.
-func newCmdFront(c *Config) *xli.Command {
+func newCmdFront(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "front",
 		Brief: "what a front door is told, before anybody is signed in",
@@ -42,7 +43,7 @@ func newCmdFront(c *Config) *xli.Command {
 
 // fronting is the connection, or the sentence somebody needs when there is
 // none. See [calling], whose shape this is.
-func fronting(ctx context.Context, c *Config) (pdcmd.Conn, error) {
+func fronting(ctx context.Context, c *cmd.Config) (pdcmd.Conn, error) {
 	if c.Client.Local || c.Client.Addr == "" {
 		return nil, errors.New(
 			"`front` asks a served deployment what a front door would be told, and a local run " +
@@ -53,7 +54,7 @@ func fronting(ctx context.Context, c *Config) (pdcmd.Conn, error) {
 	return pdcmd.MustConn(ctx), nil
 }
 
-func newCmdFrontWhoseHost(c *Config) *xli.Command {
+func newCmdFrontWhoseHost(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "whose-host",
 		Brief: "the tenant a name belongs to",
@@ -62,13 +63,13 @@ func newCmdFrontWhoseHost(c *Config) *xli.Command {
 			&arg.String{Name: "HOST", Brief: "the name a browser arrived at; a port is fine"},
 		},
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			conn, err := fronting(ctx, c)
 			if err != nil {
 				return err
 			}
 
-			host, _ := arg.Get[string](cmd, "HOST")
+			host, _ := arg.Get[string](cl, "HOST")
 			if host == "" {
 				return errors.New("HOST: which name")
 			}
@@ -83,14 +84,14 @@ func newCmdFrontWhoseHost(c *Config) *xli.Command {
 			// so `$(roster front whose-host …)` is a tenant for the next
 			// command, the same way a front door uses it.
 			k, _ := pdid.From(v.GetTenant())
-			cmd.Printf("%s\n", k)
+			cl.Printf("%s\n", k)
 
 			return next(ctx)
 		}),
 	}
 }
 
-func newCmdFrontWhereFrom(c *Config) *xli.Command {
+func newCmdFrontWhereFrom(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "where-from",
 		Brief: "which provider the people at an address authenticate with",
@@ -100,14 +101,14 @@ func newCmdFrontWhereFrom(c *Config) *xli.Command {
 			&arg.String{Name: "ADDRESS", Brief: "an address, or the domain alone"},
 		},
 
-		Handler: xli.OnRun(func(ctx context.Context, cmd *xli.Command, next xli.Next) error {
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			conn, err := fronting(ctx, c)
 			if err != nil {
 				return err
 			}
 
-			t, _ := arg.Get[string](cmd, "TENANT")
-			addr, _ := arg.Get[string](cmd, "ADDRESS")
+			t, _ := arg.Get[string](cl, "TENANT")
+			addr, _ := arg.Get[string](cl, "ADDRESS")
 			if t == "" || addr == "" {
 				return errors.New("both a tenant and an address")
 			}
@@ -127,7 +128,7 @@ func newCmdFrontWhereFrom(c *Config) *xli.Command {
 			// Empty is an answer -- a domain this deployment says nothing
 			// about -- and it prints as one, because a front door that learns
 			// nothing offers whatever it offers everybody.
-			cmd.Printf("%s\n", v.GetProvider())
+			cl.Printf("%s\n", v.GetProvider())
 
 			return next(ctx)
 		}),

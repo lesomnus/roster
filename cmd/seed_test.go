@@ -2,6 +2,7 @@ package cmd_test
 
 import (
 	"bytes"
+	"github.com/lesomnus/roster/cli"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -44,7 +45,7 @@ func initRun(t *testing.T, c cmd.Config, args ...string) (string, error) {
 	t.Helper()
 
 	out := &bytes.Buffer{}
-	k := cmd.NewCmdInit(&c)
+	k := cli.NewCmdInit(&c)
 	k.Writer = out
 
 	err := k.Run(t.Context(), args)

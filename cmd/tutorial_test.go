@@ -2,6 +2,7 @@ package cmd_test
 
 import (
 	"encoding/base64"
+	"github.com/lesomnus/roster/cli"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -86,11 +87,11 @@ func TestTheTutorialRunsAsWritten(t *testing.T) {
 	// §4 -- ways in. The secret is on stdout and the sentence on stderr, so
 	// `$(roster vouch reset …)` is the password and nothing else -- which is
 	// what `stdoutOf` captures and this test then signs in with.
-	pw := stdoutOf(t, cmd.Cmd(&c), "vouch", "reset", "@newco/alice")
+	pw := stdoutOf(t, cli.Cmd(&c), "vouch", "reset", "@newco/alice")
 
-	app := stdoutOf(t, cmd.NewCmdKey(&c), "add", "--service", "portal",
+	app := stdoutOf(t, cli.NewCmdKey(&c), "add", "--service", "portal",
 		"--allow", "/roster.VouchService/Verify,/roster.MeService/Get")
-	key := stdoutOf(t, cmd.NewCmdKey(&c), "add", "--tenant", "newco", "--holder", "alice",
+	key := stdoutOf(t, cli.NewCmdKey(&c), "add", "--tenant", "newco", "--holder", "alice",
 		"--name", "laptop", "--allow", "/roster.MeService/Get")
 
 	// "the prefix follows from which it is rather than from anything you
@@ -99,7 +100,7 @@ func TestTheTutorialRunsAsWritten(t *testing.T) {
 	x.True(strings.HasPrefix(key, keys.PrefixTenant), "a person's key: %.3q", key)
 
 	// "Two planes in one listing."
-	listing := stdoutOf(t, cmd.NewCmdKey(&c), "list")
+	listing := stdoutOf(t, cli.NewCmdKey(&c), "list")
 	x.Contains(listing, "/portal/")
 	x.Contains(listing, "@newco/alice/laptop")
 
@@ -195,7 +196,7 @@ func TestTheTutorialRunsAsWritten(t *testing.T) {
 	_, err = entities(t, &c, "host", "add", `{"tenant":{"alias":"newco"},"name":"newco.example.com"}`)
 	x.NoError(err)
 
-	fd := stdoutOf(t, cmd.NewCmdKey(&c), "add", "--service", "frontdoor",
+	fd := stdoutOf(t, cli.NewCmdKey(&c), "add", "--service", "frontdoor",
 		"--allow", "/roster.FrontService/WhoseHost,/roster.VouchService/Verify")
 
 	t.Run("a hostname resolves to a tenant and nothing else", func(t *testing.T) {
@@ -226,7 +227,7 @@ func TestTheTutorialRunsAsWritten(t *testing.T) {
 	t.Run("a revoked key finds nothing on the very next call", func(t *testing.T) {
 		x := require.New(t)
 
-		k := cmd.NewCmdKey(&c)
+		k := cli.NewCmdKey(&c)
 		k.Writer = io.Discard
 		x.NoError(k.Run(ctx, []string{"revoke", "--id", laptop}))
 
@@ -237,7 +238,7 @@ func TestTheTutorialRunsAsWritten(t *testing.T) {
 	t.Run("and unlock answers for an account that was not locked", func(t *testing.T) {
 		x := require.New(t)
 
-		r := cmd.Cmd(&c)
+		r := cli.Cmd(&c)
 		r.Writer = io.Discard
 		x.NoError(r.Run(ctx, []string{"vouch", "unlock", "@newco/alice"}))
 	})
@@ -248,7 +249,7 @@ func TestTheTutorialRunsAsWritten(t *testing.T) {
 func bind(t *testing.T, c *cmd.Config, req string) {
 	t.Helper()
 
-	root := cmd.Cmd(c)
+	root := cli.Cmd(c)
 	root.ReadCloser = io.NopCloser(strings.NewReader(req))
 	root.Writer = io.Discard
 

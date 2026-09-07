@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"github.com/lesomnus/roster/cli"
 	"net"
 	"os"
 	"os/exec"
@@ -72,7 +73,7 @@ func TestBothPlanesAreChecked(t *testing.T) {
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })
 
-	err = s.Ready(ctx, c)
+	err = cli.Ready(ctx, s, c)
 	x.Error(err, "an empty control plane was served without a word")
 	x.ErrorContains(err, "control", "the error does not say which of the two databases is wrong")
 }
@@ -102,7 +103,7 @@ func TestTheDataPlaneIsCheckedToo(t *testing.T) {
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })
 
-	err = s.Ready(ctx, c)
+	err = cli.Ready(ctx, s, c)
 	x.Error(err, "an empty data plane was served without a word")
 	x.NotContains(err.Error(), "control",
 		"the mismatch is the data plane's, and the error points at the other one")
@@ -129,7 +130,7 @@ func TestTheControlPlaneMigratesWhenItSaysSo(t *testing.T) {
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })
 
-	x.NoError(s.Ready(ctx, c))
+	x.NoError(cli.Ready(ctx, s, c))
 
 	// The table the console signs in through, which is the one a deployment
 	// upgraded past P9 would have been missing. Queried rather than listed,
@@ -141,7 +142,7 @@ func TestTheControlPlaneMigratesWhenItSaysSo(t *testing.T) {
 	// agrees -- which is the whole of what the check is for.
 	c.Db.Migrate = false
 	c.Control.Db.Migrate = false
-	x.NoError(s.Ready(ctx, c), "a plane that was just migrated does not match itself")
+	x.NoError(cli.Ready(ctx, s, c), "a plane that was just migrated does not match itself")
 }
 
 // TestAControlPlaneThatIsNotOneIsRefused is a block written down that does

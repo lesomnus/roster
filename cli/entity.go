@@ -1,8 +1,9 @@
-package cmd
+package cli
 
 import (
 	"context"
 	"fmt"
+	"github.com/lesomnus/roster/cmd"
 	"net"
 	"os"
 
@@ -81,12 +82,12 @@ import (
 //
 // Because the tree is built here, while the command set is being assembled, and
 // the configuration has not been read yet -- `pdcmd.Load` runs on the root and
-// this is a child of it. So the `*Config` [local] holds is still empty at this
+// this is a child of it. So the `*cmd.Config` [local] holds is still empty at this
 // moment and filled in by the time `Connect` is called, which is when somebody
 // actually runs one of these.
 //
 // It also means `roster tenant ls --help` opens no database.
-func NewCmdEntities(c *Config) xli.Commands {
+func NewCmdEntities(c *cmd.Config) xli.Commands {
 	// Named rather than found. `pdcmd.New` refuses a process holding more than
 	// one payday app, and roster links exactly one -- but saying it here means
 	// a second one arriving is a compile-time fact rather than an error at
@@ -178,7 +179,7 @@ func NewCmdEntities(c *Config) xli.Commands {
 // Decided then and not here, because "here" is before the configuration file
 // has been read -- see the note on [NewCmdEntities]. So this holds the pointer
 // and asks it at the last moment.
-type connector struct{ c *Config }
+type connector struct{ c *cmd.Config }
 
 func (v connector) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
 	// `--HAL` first, so it means what it says: the wire is skipped whatever the
@@ -221,7 +222,7 @@ func (v connector) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
 // `pdcmd` refuses to make for an app are written down: no address, no
 // credential, and the ungated stack. A reader looking for "what do these
 // commands connect to" finds them here.
-type local struct{ c *Config }
+type local struct{ c *cmd.Config }
 
 func (l local) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
 	// Said out loud, every time, the way `oas` says it. Reading the database
@@ -245,7 +246,7 @@ func (l local) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
 	fmt.Fprintln(os.Stderr,
 		"roster: reading this deployment's database directly; "+why)
 
-	s, err := Build(ctx, *l.c)
+	s, err := cmd.Build(ctx, *l.c)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -305,7 +306,7 @@ func (l local) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
 // There is no `--credential` flag and there will not be, for the reason
 // `roster key add` takes no key: an argument is in the shell history and in the
 // process list. `client.auth.credential_file` is what a mounted secret uses.
-type remote struct{ c *Config }
+type remote struct{ c *cmd.Config }
 
 func (r remote) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
 	// Before anything is dialed, so a configuration this cannot be built from
