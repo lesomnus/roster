@@ -45,6 +45,7 @@ import { HolderService } from '../gen/roster/payday/holder_svc_pb.js'
 
 import type { Admin } from '../lib/client.js'
 import { go, useRoute } from '../lib/route.js'
+// payday's panel, where this build has one; see `devtools.tsx`.
 import { Devtools } from './devtools.js'
 import { entities } from '../gen/entities.js'
 import { Person } from './people.js'

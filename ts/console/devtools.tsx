@@ -1,6 +1,14 @@
 /**
  * Whether this build has a devtools panel at all.
  *
+ * **The panel itself is payday's** -- `@lesomnus/payday/react/devtools`, a
+ * bottom sheet that reads any entity's rows beside what the store holds. It is
+ * reached through `panel.tsx`, which is the forty lines that hand it this app's
+ * entities, the unwalled transport where there is one, and an editor. Nothing
+ * about the panel is written here, and the name of this file is the one thing
+ * that suggests otherwise: what a call site imports as `Devtools` is this
+ * decision, not that component.
+ *
  * The panel is a development tool and Monaco behind it is four megabytes, so
  * neither belongs in what a deployment serves. Gating the **element** is not
  * enough for that: an element that is never rendered is still a module that was

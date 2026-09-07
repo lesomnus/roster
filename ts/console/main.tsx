@@ -24,6 +24,7 @@ import { open } from '../lib/store.js'
 import { Page } from './page.js'
 import type { Progress, Sandbox } from './sandbox.js'
 import { go, useRoute } from '../lib/route.js'
+// payday's panel, where this build has one; see `devtools.tsx`.
 import { Devtools } from './devtools.js'
 import { entities } from '../gen/entities.js'
 import '../lib/style.css'
