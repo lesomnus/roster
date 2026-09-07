@@ -12,6 +12,7 @@ import (
 	"github.com/lesomnus/payday/pdtest"
 
 	"github.com/lesomnus/roster/cmd"
+	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/session"
 )
@@ -167,8 +168,8 @@ func TestEveryPlaneWritesToTheSameQueue(t *testing.T) {
 	})
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })
-	x.NoError(s.Ent.Schema.Create(ctx))
-	x.NoError(s.Control.Ent.Schema.Create(ctx))
+	x.NoError(entmigrate.NewSchema(s.Drv).Create(ctx))
+	x.NoError(entmigrate.NewSchema(s.Control.Drv).Create(ctx))
 
 	tenant, err := s.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: "contoso"}.Build())
 	x.NoError(err)

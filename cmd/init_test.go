@@ -21,6 +21,7 @@ import (
 	"github.com/lesomnus/payday/pdtest"
 
 	"github.com/lesomnus/roster/cmd"
+	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/vouch"
 )
@@ -264,7 +265,7 @@ func TestInitNeedsAControlPlane(t *testing.T) {
 		s, err := cmd.Build(t.Context(), c)
 		x.NoError(err)
 		t.Cleanup(func() { s.Close() })
-		x.NoError(s.Ent.Schema.Create(t.Context()))
+		x.NoError(entmigrate.NewSchema(s.Drv).Create(t.Context()))
 
 		n, err := s.Ent.Tenant.Query().Count(t.Context())
 		x.NoError(err)
@@ -459,7 +460,7 @@ func TestAGivenPasswordIsTheOneThatSignsIn(t *testing.T) {
 	s, err := cmd.Build(ctx, c)
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })
-	x.NoError(s.Control.Ent.Schema.Create(ctx))
+	x.NoError(entmigrate.NewSchema(s.Control.Drv).Create(ctx))
 
 	const given = "correct horse battery staple"
 

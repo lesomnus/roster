@@ -24,6 +24,7 @@ import (
 	"github.com/lesomnus/payday/pdtest"
 
 	"github.com/lesomnus/roster/cmd"
+	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 	"github.com/lesomnus/roster/ldap"
 	"github.com/lesomnus/roster/ldap/wire"
 	rstr "github.com/lesomnus/roster/rstr"
@@ -89,8 +90,8 @@ func stand(t *testing.T) *deployment {
 	})
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })
-	x.NoError(s.Ent.Schema.Create(ctx))
-	x.NoError(s.Control.Ent.Schema.Create(ctx))
+	x.NoError(entmigrate.NewSchema(s.Drv).Create(ctx))
+	x.NoError(entmigrate.NewSchema(s.Control.Drv).Create(ctx))
 	_, err = cmd.Seed(ctx, s, cmd.Seeding{Tenant: "contoso", Holder: "admin", Operator: "ops"})
 	x.NoError(err)
 

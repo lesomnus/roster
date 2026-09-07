@@ -10,8 +10,6 @@ import (
 	"reflect"
 	uuid "uuid"
 
-	"github.com/lesomnus/roster/internal/ent/migrate"
-
 	"github.com/lesomnus/roster/internal/ent/apikey"
 	"github.com/lesomnus/roster/internal/ent/audit"
 	"github.com/lesomnus/roster/internal/ent/binding"
@@ -44,8 +42,6 @@ import (
 // Client is the client that holds all ent builders.
 type Client struct {
 	config
-	// Schema is the client for creating, migrating and dropping schema.
-	Schema *migrate.Schema
 	// ApiKey is the client for interacting with the ApiKey builders.
 	ApiKey *ApiKeyClient
 	// Audit is the client for interacting with the Audit builders.
@@ -102,7 +98,6 @@ func NewClient(opts ...Option) *Client {
 }
 
 func (c *Client) init() {
-	c.Schema = migrate.NewSchema(c.driver)
 	c.ApiKey = NewApiKeyClient(c.config)
 	c.Audit = NewAuditClient(c.config)
 	c.Binding = NewBindingClient(c.config)

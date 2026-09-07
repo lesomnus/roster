@@ -9,6 +9,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	entaudit "github.com/lesomnus/roster/internal/ent/audit"
+	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 	"github.com/lesomnus/roster/internal/ent/predicate"
 	app "github.com/lesomnus/roster/rstr"
 )
@@ -59,7 +60,7 @@ func TestADatabaseFromBeforeTheDomainColumnUpgrades(t *testing.T) {
 
 	// The upgrade: what `roster serve` does with `db.migrate: true`, and what
 	// `migrate.Check` refuses to start without.
-	x.NoError(b.Ent.Schema.Create(ctx))
+	x.NoError(entmigrate.NewSchema(b.Drv).Create(ctx))
 
 	t.Run("every row that was already there reads as no kind at all", func(t *testing.T) {
 		x := require.New(t)

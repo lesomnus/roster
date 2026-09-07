@@ -59,6 +59,9 @@ export const ApiKey = {
 	domain: 14,
 	version: "dateUpdated",
 	refs: [{ field: "holder", to: "roster.Holder" }],
+	alias: "alias",
+	key: "id",
+	ids: ["id"],
 	service: ApiKeyService,
 } as const satisfies EntityDesc
 
@@ -67,6 +70,8 @@ export const Audit = {
 	typeName: "roster.Audit",
 	schema: AuditSchema,
 	domain: 3,
+	key: "id",
+	ids: ["id", "tenantId", "actorId", "objectId", "actorTenantId", "counterpartTenantId"],
 	service: AuditService,
 } as const satisfies EntityDesc
 
@@ -77,6 +82,8 @@ export const Binding = {
 	domain: 18,
 	version: "dateUpdated",
 	refs: [{ field: "role", to: "roster.Role" }, { field: "site", to: "roster.Site" }, { field: "holder", to: "roster.Holder" }, { field: "group", to: "roster.Group" }],
+	key: "id",
+	ids: ["id"],
 	service: BindingService,
 } as const satisfies EntityDesc
 
@@ -87,6 +94,8 @@ export const Connection = {
 	domain: 25,
 	version: "dateUpdated",
 	refs: [{ field: "tenant", to: "roster.Tenant" }],
+	key: "id",
+	ids: ["id"],
 	service: ConnectionService,
 } as const satisfies EntityDesc
 
@@ -97,6 +106,8 @@ export const Continuation = {
 	domain: 22,
 	version: "dateUpdated",
 	refs: [{ field: "holder", to: "roster.Holder" }],
+	key: "id",
+	ids: ["id", "meteredBy"],
 	service: ContinuationService,
 } as const satisfies EntityDesc
 
@@ -107,6 +118,8 @@ export const Credential = {
 	domain: 13,
 	version: "dateUpdated",
 	refs: [{ field: "holder", to: "roster.Holder" }],
+	key: "id",
+	ids: ["id"],
 	service: CredentialService,
 } as const satisfies EntityDesc
 
@@ -117,6 +130,8 @@ export const Delegation = {
 	domain: 19,
 	version: "dateUpdated",
 	refs: [{ field: "holder", to: "roster.Holder" }],
+	key: "id",
+	ids: ["id"],
 	service: DelegationService,
 } as const satisfies EntityDesc
 
@@ -127,6 +142,8 @@ export const Email = {
 	domain: 9,
 	version: "dateUpdated",
 	refs: [{ field: "holder", to: "roster.Holder" }, { field: "vouchedBy", to: "roster.Identity" }],
+	key: "id",
+	ids: ["id", "tenantId"],
 	service: EmailService,
 } as const satisfies EntityDesc
 
@@ -137,6 +154,9 @@ export const Group = {
 	domain: 16,
 	version: "dateUpdated",
 	refs: [{ field: "tenant", to: "roster.Tenant" }, { field: "site", to: "roster.Site" }],
+	alias: "alias",
+	key: "id",
+	ids: ["id"],
 	service: GroupService,
 } as const satisfies EntityDesc
 
@@ -147,6 +167,8 @@ export const GroupMembership = {
 	domain: 17,
 	version: "dateUpdated",
 	refs: [{ field: "holder", to: "roster.Holder" }, { field: "group", to: "roster.Group" }],
+	key: "id",
+	ids: ["id"],
 	service: GroupMembershipService,
 } as const satisfies EntityDesc
 
@@ -157,6 +179,9 @@ export const Holder = {
 	domain: 2,
 	version: "dateUpdated",
 	refs: [{ field: "tenant", to: "roster.Tenant" }],
+	alias: "alias",
+	key: "id",
+	ids: ["id"],
 	service: HolderService,
 } as const satisfies EntityDesc
 
@@ -167,6 +192,8 @@ export const Host = {
 	domain: 20,
 	version: "dateUpdated",
 	refs: [{ field: "tenant", to: "roster.Tenant" }],
+	key: "id",
+	ids: ["id"],
 	service: HostService,
 } as const satisfies EntityDesc
 
@@ -177,6 +204,8 @@ export const Identity = {
 	domain: 8,
 	version: "dateUpdated",
 	refs: [{ field: "holder", to: "roster.Holder" }],
+	key: "id",
+	ids: ["id", "tenantId"],
 	service: IdentityService,
 } as const satisfies EntityDesc
 
@@ -187,6 +216,8 @@ export const Link = {
 	domain: 23,
 	version: "dateUpdated",
 	refs: [{ field: "holder", to: "roster.Holder" }, { field: "email", to: "roster.Email" }],
+	key: "id",
+	ids: ["id"],
 	service: LinkService,
 } as const satisfies EntityDesc
 
@@ -197,6 +228,8 @@ export const MailDomain = {
 	domain: 21,
 	version: "dateUpdated",
 	refs: [{ field: "tenant", to: "roster.Tenant" }],
+	key: "id",
+	ids: ["id"],
 	service: MailDomainService,
 } as const satisfies EntityDesc
 
@@ -205,6 +238,8 @@ export const Outbox = {
 	typeName: "roster.Outbox",
 	schema: OutboxSchema,
 	domain: 4,
+	key: "id",
+	ids: ["id", "tenantId", "actorId", "objectId"],
 	service: OutboxService,
 } as const satisfies EntityDesc
 
@@ -215,6 +250,9 @@ export const Role = {
 	domain: 15,
 	version: "dateUpdated",
 	refs: [{ field: "tenant", to: "roster.Tenant" }, { field: "site", to: "roster.Site" }],
+	alias: "alias",
+	key: "id",
+	ids: ["id"],
 	service: RoleService,
 } as const satisfies EntityDesc
 
@@ -225,6 +263,8 @@ export const Session = {
 	domain: 24,
 	version: "dateUpdated",
 	refs: [{ field: "holder", to: "roster.Holder" }],
+	key: "id",
+	ids: ["id"],
 	service: SessionService,
 } as const satisfies EntityDesc
 
@@ -235,6 +275,9 @@ export const Site = {
 	domain: 7,
 	version: "dateUpdated",
 	refs: [{ field: "tenant", to: "roster.Tenant" }],
+	alias: "alias",
+	key: "id",
+	ids: ["id"],
 	service: SiteService,
 } as const satisfies EntityDesc
 
@@ -245,6 +288,8 @@ export const SiteMembership = {
 	domain: 11,
 	version: "dateUpdated",
 	refs: [{ field: "holder", to: "roster.Holder" }, { field: "site", to: "roster.Site" }],
+	key: "id",
+	ids: ["id"],
 	service: SiteMembershipService,
 } as const satisfies EntityDesc
 
@@ -255,6 +300,9 @@ export const Team = {
 	domain: 10,
 	version: "dateUpdated",
 	refs: [{ field: "tenant", to: "roster.Tenant" }, { field: "site", to: "roster.Site" }],
+	alias: "alias",
+	key: "id",
+	ids: ["id"],
 	service: TeamService,
 } as const satisfies EntityDesc
 
@@ -265,6 +313,8 @@ export const TeamMembership = {
 	domain: 12,
 	version: "dateUpdated",
 	refs: [{ field: "holder", to: "roster.Holder" }, { field: "team", to: "roster.Team" }, { field: "role", to: "roster.Role" }],
+	key: "id",
+	ids: ["id"],
 	service: TeamMembershipService,
 } as const satisfies EntityDesc
 
@@ -274,6 +324,9 @@ export const Tenant = {
 	schema: TenantSchema,
 	domain: 1,
 	version: "dateUpdated",
+	alias: "alias",
+	key: "id",
+	ids: ["id"],
 	service: TenantService,
 } as const satisfies EntityDesc
 

@@ -1410,7 +1410,7 @@ func (s *Server) Ready(ctx context.Context, c Config) error {
 // configuration would be a second answer to a question already answered.
 func (s *Server) ready(ctx context.Context, c config.DbConfig) error {
 	if c.Migrate {
-		return s.Ent.Schema.Create(ctx)
+		return entmigrate.NewSchema(s.Drv).Create(ctx)
 	}
 
 	return entschema.Check(ctx, s.Db, s.Dialect, entmigrate.Tables)

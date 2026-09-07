@@ -22,6 +22,7 @@ import (
 	"github.com/lesomnus/payday/pdtest"
 
 	"github.com/lesomnus/roster/cmd"
+	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
 )
@@ -538,8 +539,8 @@ func TestTheControlPlaneKeepsItsOwnOutbox(t *testing.T) {
 	})
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })
-	x.NoError(s.Ent.Schema.Create(ctx))
-	x.NoError(s.Control.Ent.Schema.Create(ctx))
+	x.NoError(entmigrate.NewSchema(s.Drv).Create(ctx))
+	x.NoError(entmigrate.NewSchema(s.Control.Drv).Create(ctx))
 
 	// Inherited, still: the half that always worked.
 	x.NotNil(s.Control.Watch.Broker())
@@ -743,8 +744,8 @@ func TestADeploymentWithEveryPortOpenStops(t *testing.T) {
 	s, err := cmd.Build(ctx, c)
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })
-	x.NoError(s.Ent.Schema.Create(ctx))
-	x.NoError(s.Control.Ent.Schema.Create(ctx))
+	x.NoError(entmigrate.NewSchema(s.Drv).Create(ctx))
+	x.NoError(entmigrate.NewSchema(s.Control.Drv).Create(ctx))
 
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	x.NoError(err)

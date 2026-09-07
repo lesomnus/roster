@@ -12,6 +12,7 @@ import (
 	"github.com/lesomnus/payday/pdtest"
 
 	"github.com/lesomnus/roster/cmd"
+	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 	app "github.com/lesomnus/roster/rstr"
 )
 
@@ -49,7 +50,7 @@ func TestAConsoleWatchingOneReplicaHearsTheOther(t *testing.T) {
 	one, err := cmd.Build(ctx, cmd.Config{Db: db, Watch: w})
 	x.NoError(err)
 	t.Cleanup(func() { one.Close() })
-	x.NoError(one.Ent.Schema.Create(ctx))
+	x.NoError(entmigrate.NewSchema(one.Drv).Create(ctx))
 
 	two, err := cmd.Build(ctx, cmd.Config{Db: db, Watch: w})
 	x.NoError(err)

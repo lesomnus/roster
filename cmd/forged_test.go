@@ -15,6 +15,7 @@ import (
 	"github.com/lesomnus/payday/pdtest"
 
 	"github.com/lesomnus/roster/cmd"
+	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/pd"
@@ -61,7 +62,7 @@ func TestPlainDoesNotHandOutEveryTenant(t *testing.T) {
 	})
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })
-	x.NoError(s.Ent.Schema.Create(ctx))
+	x.NoError(entmigrate.NewSchema(s.Drv).Create(ctx))
 	x.Nil(s.Control, "this deployment names no control plane")
 
 	// Two customers who must never see each other.

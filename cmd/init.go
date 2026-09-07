@@ -15,6 +15,7 @@ import (
 
 	"github.com/lesomnus/payday/pdid"
 
+	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 	app "github.com/lesomnus/roster/rstr"
 )
 
@@ -272,7 +273,7 @@ func Seed(ctx context.Context, s *Server, in Seeding) (Seeded, error) {
 	// The schema, so that a fresh database is one this can run against. A
 	// deployment with migrations of its own does that instead; see payday's
 	// `migrate`.
-	if err := s.Ent.Schema.Create(ctx); err != nil {
+	if err := entmigrate.NewSchema(s.Drv).Create(ctx); err != nil {
 		return Seeded{}, err
 	}
 
@@ -412,7 +413,7 @@ func allow(ctx context.Context, s *Server, in pdid.Id, to pdid.Id) error {
 // stored as an argon2id hash, so the deployment cannot tell anybody what it was
 // any more than it can tell them their key.
 func seedOperator(ctx context.Context, s *Server, alias, given string) (pdid.Id, string, error) {
-	if err := s.Ent.Schema.Create(ctx); err != nil {
+	if err := entmigrate.NewSchema(s.Drv).Create(ctx); err != nil {
 		return pdid.Nil, "", err
 	}
 

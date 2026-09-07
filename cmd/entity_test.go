@@ -16,6 +16,7 @@ import (
 	"github.com/lesomnus/payday/pdtest"
 
 	"github.com/lesomnus/roster/cmd"
+	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 	app "github.com/lesomnus/roster/rstr"
 )
 
@@ -52,7 +53,7 @@ func seeded(t *testing.T) *cmd.Config {
 
 	s, err := cmd.Build(ctx, *c)
 	x.NoError(err)
-	x.NoError(s.Ent.Schema.Create(ctx))
+	x.NoError(entmigrate.NewSchema(s.Drv).Create(ctx))
 
 	b := &built{Server: s}
 	b.Contoso = b.tenant(t, ctx, "contoso")

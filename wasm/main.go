@@ -52,9 +52,6 @@ import (
 	drpc "github.com/lesomnus/grpc-dgram"
 	"github.com/lesomnus/grpc-dgram/transport/jsport"
 
-	"github.com/fatih/color"
-	"github.com/lesomnus/mkot"
-	"github.com/lesomnus/mkot/pretty"
 	"github.com/lesomnus/otx"
 	otlog "github.com/lesomnus/otx/log"
 	"github.com/lesomnus/otx/otxgrpc"
@@ -68,6 +65,7 @@ import (
 	_ "github.com/lesomnus/payday/config/dbsqlite3wasm"
 
 	"github.com/lesomnus/roster/cmd"
+	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/console"
 	"github.com/lesomnus/roster/server/me"
@@ -107,24 +105,17 @@ const (
 
 func main() {
 	// With a logger in it, or what the stack has to say -- a resolver that
-	// failed, and why -- goes nowhere, and the page shows a status code.
-	// The same telemetry a deployment gets from `otel:` left unsaid -- the
-	// pretty exporter, one line per call from `otxgrpc`'s logger -- pointed
-	// at the browser's console rather than a terminal, with the colours kept
-	// (`sandbox.Console`). `color.NoColor` is forced off because the exporter
-	// would otherwise notice there is no terminal and write plain text, and a
-	// console reads the colours once they are `%c`.
-	color.NoColor = false
-	// Named as an output rather than appended as one: the exporter writes to
-	// `stderr` unless told where else, and `stderr` here is `wasm_exec.js`
-	// printing the escape codes as text -- so with both, every line came
-	// twice, once legible.
-	mkot.Outputs["console"] = sandbox.NewConsole
-	otc := config.OtelConfig{}
-	otc.Exporters = map[mkot.Id]mkot.ExporterConfig{
-		"pretty": pretty.ExporterConfig{OutputPaths: []string{"console"}},
-	}
-	ctx, o, err := otc.Build(context.Background(), config.Service{Name: "roster-sandbox", Scope: "github.com/lesomnus/roster"})
+	// failed, and why -- goes nowhere, and the page shows a status code. This
+	// is the same telemetry a deployment gets from `otel:` left unsaid: the
+	// pretty exporter, one line per call from `otxgrpc`'s logger.
+	//
+	// Nothing here says where those lines go. On Wasm `pretty` writes to
+	// `console` rather than to `stderr` and leaves `fatih/color` on, and
+	// `mkot` registers the writer that turns the escape codes into the `%c`
+	// and CSS a browser console paints with. roster wrote both of those and
+	// they are payday's now, which is where they belong -- there is one right
+	// answer and every sandbox wanted it.
+	ctx, o, err := (&config.OtelConfig{}).Build(context.Background(), config.Service{Name: "roster-sandbox", Scope: "github.com/lesomnus/roster"})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -149,7 +140,14 @@ func main() {
 	// was created on one, the seed written on it, and the first query that
 	// happened to be answered on another said `no such table: holder`.
 	s, err := cmd.Build(ctx, cmd.Config{
-		Db: config.DbConfig{Driver: "sqlite3-wasm", Dsn: "file:/data?vfs=memdb"},
+		// One connection, because there is one of it. The engine is a single
+		// JS thread in a worker, so a second connection buys no parallelism
+		// and costs the lock: this build has no WAL, a writer excludes
+		// everybody, and the loser is told SQLITE_BUSY rather than made to
+		// wait -- a busy handler would sleep on the very thread that has to
+		// deliver the other connection's COMMIT. payday measured eight
+		// concurrent adds and three landed.
+		Db: config.DbConfig{Driver: "sqlite3-wasm", Dsn: "file:/data?vfs=memdb", MaxOpenConns: 1},
 
 		// Named, because payday refuses a deployment that leaves it unsaid --
 		// `memory` is right for one replica and silently wrong for two, so the
@@ -165,7 +163,7 @@ func main() {
 		Vouch: cmd.VouchConfig{Password: cmd.PasswordConfig{MinLength: len(password)}},
 
 		Control: cmd.ControlConfig{
-			Db: config.DbConfig{Driver: "sqlite3-wasm", Dsn: "file:/control?vfs=memdb"},
+			Db: config.DbConfig{Driver: "sqlite3-wasm", Dsn: "file:/control?vfs=memdb", MaxOpenConns: 1},
 		},
 	})
 	if err != nil {
@@ -177,10 +175,10 @@ func main() {
 	// the wrong way round -- versioned migrations are what a deployment runs --
 	// but there is no database here that outlives the page, so there is nothing
 	// for a migration to move.
-	if err := s.Ent.Schema.Create(ctx); err != nil {
+	if err := entmigrate.NewSchema(s.Drv).Create(ctx); err != nil {
 		log.Fatal(err)
 	}
-	if err := s.Control.Ent.Schema.Create(ctx); err != nil {
+	if err := entmigrate.NewSchema(s.Control.Drv).Create(ctx); err != nil {
 		log.Fatal(err)
 	}
 

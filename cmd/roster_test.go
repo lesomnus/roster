@@ -14,6 +14,7 @@ import (
 	"github.com/lesomnus/payday/pdtest"
 
 	"github.com/lesomnus/roster/cmd"
+	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 	app "github.com/lesomnus/roster/rstr"
 )
 
@@ -58,7 +59,7 @@ func build(t *testing.T, with ...func(*cmd.Config)) (*built, context.Context) {
 	s, err := cmd.Build(ctx, cfg)
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })
-	x.NoError(s.Ent.Schema.Create(ctx))
+	x.NoError(entmigrate.NewSchema(s.Drv).Create(ctx))
 
 	b := &built{Server: s}
 

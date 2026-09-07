@@ -9,6 +9,7 @@ import (
 	"github.com/lesomnus/payday/pdtest"
 
 	"github.com/lesomnus/roster/cmd"
+	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 )
 
 // TestClosingADeploymentClosesBothOfIts.
@@ -44,8 +45,8 @@ func TestClosingADeploymentClosesBothOfIts(t *testing.T) {
 	x.NoError(err)
 	x.NotNil(s.Control, "no control plane was built, so this proves nothing")
 
-	x.NoError(s.Ent.Schema.Create(ctx))
-	x.NoError(s.Control.Ent.Schema.Create(ctx))
+	x.NoError(entmigrate.NewSchema(s.Drv).Create(ctx))
+	x.NoError(entmigrate.NewSchema(s.Control.Drv).Create(ctx))
 
 	x.NoError(s.Close())
 

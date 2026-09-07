@@ -21,6 +21,7 @@ import (
 
 	"github.com/lesomnus/roster/internal/ent"
 	entapikey "github.com/lesomnus/roster/internal/ent/apikey"
+	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
@@ -142,7 +143,7 @@ func newCmdKeyAdd(c *Config) *xli.Command {
 				if s.Control == nil {
 					return errors.New("this deployment has no control plane; see `control` in the configuration")
 				}
-				if err := s.Control.Ent.Schema.Create(ctx); err != nil {
+				if err := entmigrate.NewSchema(s.Control.Drv).Create(ctx); err != nil {
 					return err
 				}
 

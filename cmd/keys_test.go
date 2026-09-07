@@ -24,6 +24,7 @@ import (
 	"github.com/lesomnus/payday/pdtest"
 
 	"github.com/lesomnus/roster/cmd"
+	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
 )
@@ -73,8 +74,8 @@ func keyFor(t *testing.T, methods ...string) *keyedBuilt {
 	t.Cleanup(func() { s.Close() })
 
 	x.NotNil(s.Control, "no control plane was built")
-	x.NoError(s.Ent.Schema.Create(ctx))
-	x.NoError(s.Control.Ent.Schema.Create(ctx))
+	x.NoError(entmigrate.NewSchema(s.Drv).Create(ctx))
+	x.NoError(entmigrate.NewSchema(s.Control.Drv).Create(ctx))
 
 	// The data plane: a customer and somebody in it.
 	contoso := add(t, ctx, s, "contoso")
@@ -396,7 +397,7 @@ func TestTheFirstKeyMakesWhatItNeeds(t *testing.T) {
 	s, err := cmd.Build(ctx, c)
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })
-	x.NoError(s.Control.Ent.Schema.Create(ctx))
+	x.NoError(entmigrate.NewSchema(s.Control.Drv).Create(ctx))
 
 	// Nothing at all yet.
 	n, err := s.Control.Ent.Tenant.Query().Count(ctx)

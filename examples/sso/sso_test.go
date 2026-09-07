@@ -32,6 +32,7 @@ import (
 
 	"github.com/lesomnus/roster/cmd"
 	"github.com/lesomnus/roster/examples/sso"
+	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 	rstr "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/front"
 	"github.com/lesomnus/roster/server/keys"
@@ -207,8 +208,8 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 	})
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })
-	x.NoError(s.Ent.Schema.Create(ctx))
-	x.NoError(s.Control.Ent.Schema.Create(ctx))
+	x.NoError(entmigrate.NewSchema(s.Drv).Create(ctx))
+	x.NoError(entmigrate.NewSchema(s.Control.Drv).Create(ctx))
 
 	seeded, err := cmd.Seed(ctx, s, cmd.Seeding{
 		Tenant:   "contoso",
