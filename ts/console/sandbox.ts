@@ -27,6 +27,18 @@
  * a wrong password refuses the sign-in and does not lock the rest of the page.
  * That is a sandbox being a sandbox; see `wasm/main.go`.
  *
+ * # What used to be here
+ *
+ * The download, counted; the module compiled from one half of the split body
+ * while the other half was counted; and the Cache API entry with its
+ * `If-None-Match` revalidation, because a browser will not keep a
+ * seventy-megabyte entry in its own HTTP cache whatever the server answers.
+ * All of it is `@lesomnus/payday/sandbox` now, which is where it belonged —
+ * every payday app's page has the same problem and would solve it the same
+ * way. What is left here is the three things that are roster's: where the
+ * build is served from under this page's base, the second entry point the
+ * customers screen dials, and the name of the cache.
+ *
  * # Two things will bite whoever serves this
  *
  * Neither is payday's to fix and both fail confusingly.
@@ -47,7 +59,10 @@
 
 import type { Transport } from '@connectrpc/connect'
 import { createDrpcTransport } from '@lesomnus/grpc-dgram/transport/connect'
-import { open, type WasmSock } from '@lesomnus/grpc-dgram/wasm'
+import type { WasmSock } from '@lesomnus/grpc-dgram/wasm'
+import { start as opened, type Load } from '@lesomnus/payday/sandbox'
+
+export type { Load }
 
 /** Sandbox is a transport, and the instance answering it. */
 export interface Sandbox {
@@ -69,109 +84,18 @@ export interface Sandbox {
 	close(): void
 }
 
-/** Progress is where starting the sandbox has got to, for a page to draw. */
-export interface Progress {
-	stage: 'downloading' | 'cached' | 'compiling' | 'starting' | 'ready'
-	/** Bytes so far and in all, while downloading; `total` is 0 when the server did not say. */
-	loaded: number
-	total: number
-}
-
-/** Where the module is kept between visits; one entry, keyed by its URL. */
-const cacheName = 'roster-sandbox'
-
 /**
- * load fetches the module and compiles it as it arrives, saying how far the
- * download has got -- and keeps it, so the next visit does not download it.
+ * Progress is where starting the sandbox has got to, for a page to draw.
  *
- * The build is a hundred megabytes -- a whole server, its ORM and SQLite --
- * and `open(url)` would fetch it in silence, which on the first visit reads
- * as a page that does not work. So the page fetches it itself: the body is
- * split, one half counted, the other handed to the compiler while it is
- * still arriving, and what `open` is given is the compiled module rather
- * than the address. A module crosses to the worker by structured clone, so
- * nothing is downloaded twice.
- *
- * # Why the browser's own cache is not enough
- *
- * The dev server answers a revalidation with 304 and the browser never asks:
- * Chrome will not keep an entry this large in its HTTP cache (a single entry
- * is capped at a fraction of the cache), so every reload was the whole
- * download again. The Cache API has the origin's quota instead of that cap,
- * so the module goes there, and the next visit sends what it holds as
- * `If-None-Match` (or `If-Modified-Since`, for a server that gives no ETag)
- * and takes the 304 as "use what you have". A rebuilt module changes both,
- * and is fetched. Where there is no Cache API -- a page opened over plain
- * http by IP rather than `localhost` is not a secure context -- it is the
- * download every time, as before.
+ * `fetching` carries payday's own [Load], which is more than a fraction: where
+ * the bytes are coming from, how fast, and whether they are being kept for the
+ * next visit. `starting` is the tail payday cannot report -- the compile and
+ * the instance coming up are one awaited call from out here -- and it begins
+ * where the bar fills, which is what a full bar actually means.
  */
-async function load(url: string, onProgress: (p: Progress) => void): Promise<WebAssembly.Module> {
-	const store = await opened()
-	const had = store !== undefined ? await store.match(url) : undefined
-
-	const ask = new Headers()
-	const etag = had?.headers.get('etag')
-	const since = had?.headers.get('last-modified')
-	if (etag !== null && etag !== undefined) ask.set('if-none-match', etag)
-	else if (since !== null && since !== undefined) ask.set('if-modified-since', since)
-
-	// `no-store`: the browser's cache is not asked to hold this, since it
-	// would not, and the revalidation is this code's rather than its.
-	let res = await fetch(url, { headers: ask, cache: 'no-store' })
-	let counted: ReadableStream<Uint8Array>
-	let compiled: ReadableStream<Uint8Array>
-	let total: number
-
-	if (res.status === 304 && had !== undefined) {
-		if (had.body === null) throw new Error(`${url}: the kept copy has no body`)
-		total = Number(had.headers.get('content-length') ?? 0)
-		onProgress({ stage: 'cached', loaded: 0, total })
-		;[counted, compiled] = had.body.tee()
-	} else {
-		if (!res.ok || res.body === null) throw new Error(`${url}: ${res.status} ${res.statusText}`)
-		total = Number(res.headers.get('content-length') ?? 0)
-		if (store !== undefined) {
-			// A third reader, for the copy kept: written as it arrives, and
-			// not awaited -- a visit is not slower for keeping it.
-			const [keep, rest] = res.body.tee()
-			void store.put(url, new Response(keep, { status: 200, headers: res.headers })).catch(() => {})
-			res = new Response(rest, { status: 200, headers: res.headers })
-		}
-		onProgress({ stage: 'downloading', loaded: 0, total })
-		;[counted, compiled] = res.body!.tee()
-	}
-
-	let loaded = 0
-	const stage = res.status === 304 ? 'cached' : 'downloading'
-	const counting = (async (): Promise<void> => {
-		const reader = counted.getReader()
-		for (;;) {
-			const { done, value } = await reader.read()
-			if (done) return
-			loaded += value.byteLength
-			onProgress({ stage, loaded, total })
-		}
-	})()
-
-	// `compileStreaming` insists on the content type, and a Response built
-	// from a stream has none until told.
-	const mod = await WebAssembly.compileStreaming(
-		new Response(compiled, { headers: { 'content-type': 'application/wasm' } }),
-	)
-	await counting
-	onProgress({ stage: 'compiling', loaded, total })
-
-	return mod
-}
-
-// opened is the Cache API's store for this, or nothing where there is none.
-async function opened(): Promise<Cache | undefined> {
-	if (!('caches' in globalThis)) return undefined
-	try {
-		return await caches.open(cacheName)
-	} catch {
-		return undefined
-	}
+export interface Progress {
+	stage: 'fetching' | 'starting' | 'ready'
+	at?: Load
 }
 
 /**
@@ -179,7 +103,12 @@ async function opened(): Promise<Cache | undefined> {
  *
  * The build is `public/app.wasm`, which `npm run wasm` writes:
  *
- *     GOOS=js GOARCH=wasm go build -o ts/public/app.wasm ./wasm
+ *     GOOS=js GOARCH=wasm go build -tags grpcnotrace -o ts/public/app.wasm ./wasm
+ *
+ * Everything is said under the page's **base**, because `vite.console.ts`
+ * serves this page at `/console/` and `public/` with it: the package's defaults
+ * are the origin's root, where both files are a 404 that reads as "the sandbox
+ * never comes up".
  *
  * # The worker is yours, and it has to be
  *
@@ -198,24 +127,24 @@ export async function start(
 	onProgress: (p: Progress) => void = () => {},
 	workerUrl: URL | string = new URL('./sandbox-worker.ts', import.meta.url),
 ): Promise<Sandbox> {
-	const name = 'app.wasm'
-	// Under the page's base rather than at the root: `vite.console.ts` serves
-	// this page at `/console/`, and `public/` with it, so `/app.wasm` is a
-	// 404 that reads as "the sandbox never comes up". The package's default
-	// for `wasm_exec.js` is the root too, so it is said here as well.
 	const base = import.meta.env.BASE_URL
-	const app = await load(base + name, onProgress)
-	onProgress({ stage: 'starting', loaded: 0, total: 0 })
-	const sock = await open(app, {
-		workerUrl: new URL(workerUrl, location.href),
+	const box = await opened({
+		url: base + 'app.wasm',
+		worker: workerUrl,
 		wasmExec: base + 'wasm_exec.js',
+
+		// Named rather than defaulted, so the entry is this app's and reads as
+		// this app's to somebody looking at storage.
+		cache: 'roster-sandbox',
+
+		onProgress: (at) => onProgress({ stage: at.total > 0 && at.loaded >= at.total ? 'starting' : 'fetching', at }),
 	})
-	onProgress({ stage: 'ready', loaded: 0, total: 0 })
+	onProgress({ stage: 'ready' })
 
 	return {
-		transport: createDrpcTransport(sock.dial()),
-		dial: (entryPoint) => createDrpcTransport(sock.dial({ entryPoint })),
-		sock,
-		close: () => sock.close(),
+		transport: box.transport,
+		dial: (entryPoint) => createDrpcTransport(box.sock.dial({ entryPoint })),
+		sock: box.sock,
+		close: () => box.close(),
 	}
 }

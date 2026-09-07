@@ -129,13 +129,18 @@ function booting(p: Progress): void {
 }
 
 function Booting(props: { at: Progress }): React.ReactNode {
-	const { stage, loaded, total } = props.at
+	const { stage, at } = props.at
 	const mb = (n: number): string => (n / 1_000_000).toFixed(0)
+
+	// Where the bytes are coming from, said out loud. Reading seventy megabytes
+	// off a disk fills a bar exactly as downloading it does, and somebody
+	// watching that a second time concludes the caching is broken.
+	const from = at?.from === 'cache' ? 'the server, from the last visit' : 'downloading the server'
+	const some = at === undefined ? '' : at.total > 0 ? `, ${mb(at.loaded)} of ${mb(at.total)} MB` : `, ${mb(at.loaded)} MB`
+	const rate = at !== undefined && at.rate > 0 ? ` at ${mb(at.rate)} MB/s` : ''
 	const line = {
-		downloading: total > 0 ? `downloading the server, ${mb(loaded)} of ${mb(total)} MB` : `downloading the server, ${mb(loaded)} MB`,
-		cached: 'the server, from the last visit',
-		compiling: 'compiling',
-		starting: 'starting the server in the page',
+		fetching: from + some + rate,
+		starting: 'compiling, and starting the server in the page',
 		ready: 'ready',
 	}[stage]
 
@@ -143,11 +148,17 @@ function Booting(props: { at: Progress }): React.ReactNode {
 		<main className="booting" aria-live="polite">
 			<h1>roster</h1>
 			<p>{line}</p>
-			{(stage === 'downloading' || stage === 'cached') && total > 0 ? <progress max={total} value={loaded} /> : <progress />}
+			{stage === 'fetching' && at !== undefined && at.total > 0 ? <progress max={at.total} value={at.loaded} /> : <progress />}
 			<p className="note">
 				the sandbox: the whole server, compiled into this page. Nothing here leaves the browser, and a reload
 				starts it over.
 			</p>
+			{at?.keeping === false && (
+				<p className="note">
+					this module is not being kept for the next visit, so every reload fetches it again. The Cache API
+					needs a secure context — open this page at <code>localhost</code> rather than by address.
+				</p>
+			)}
 		</main>
 	)
 }
