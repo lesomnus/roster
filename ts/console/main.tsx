@@ -24,7 +24,7 @@ import { open } from '../lib/store.js'
 import { Page } from './page.js'
 import type { Progress, Sandbox } from './sandbox.js'
 import { go, useRoute } from '../lib/route.js'
-import { Devtools } from '@lesomnus/payday/react/devtools'
+import { Devtools } from './devtools.js'
 import { entities } from '../gen/entities.js'
 import '../lib/style.css'
 
@@ -293,9 +293,7 @@ function Shell(props: {
 			) : (
 				<SignIn onDone={props.onSignIn} />
 			)}
-			{import.meta.env.DEV && here && (
-				<Devtools entities={entities} {...(props.ungated.control !== undefined ? { ungated: props.ungated.control } : {})} />
-			)}
+			{here && <Devtools {...(props.ungated.control !== undefined ? { ungated: props.ungated.control } : {})} />}
 		</>
 	)
 }

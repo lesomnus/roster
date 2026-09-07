@@ -45,7 +45,7 @@ import { HolderService } from '../gen/roster/payday/holder_svc_pb.js'
 
 import type { Admin } from '../lib/client.js'
 import { go, useRoute } from '../lib/route.js'
-import { Devtools } from '@lesomnus/payday/react/devtools'
+import { Devtools } from './devtools.js'
 import { entities } from '../gen/entities.js'
 import { Person } from './people.js'
 import { Arrives } from './arrives.js'
@@ -118,9 +118,7 @@ export function Customers(props: {
 			<Tenants admin={props.admin} may={props.may} />
 			{/* The same window, on the data plane's store -- the one this screen
 			    reads, and the only one mounted while it is showing. */}
-			{import.meta.env.DEV && (
-				<Devtools entities={entities} {...(props.ungated !== undefined ? { ungated: props.ungated } : {})} />
-			)}
+			<Devtools {...(props.ungated !== undefined ? { ungated: props.ungated } : {})} />
 		</Provider>
 	)
 }
