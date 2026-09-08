@@ -237,6 +237,7 @@ func (s *Server) link(ctx context.Context, token string, by pdid.Id) (*app.Link,
 			Secret:      z.Ptr(true),
 			Issuer:      z.Ptr(true),
 			DateExpires: z.Ptr(true),
+			Email:       app.EmailSelect_builder{}.Build(),
 
 			Holder: app.HolderSelect_builder{
 				Tenant:       app.TenantSelect_builder{}.Build(),
@@ -266,6 +267,22 @@ func (s *Server) link(ctx context.Context, token string, by pdid.Id) (*app.Link,
 
 	if len(v.GetIssuer()) == 0 || by == pdid.Nil ||
 		subtle.ConstantTimeCompare(v.GetIssuer(), by.Bytes()) != 1 {
+		return nil, status.Error(codes.NotFound, "no such link")
+	}
+
+	// A verification link names its `email`, and this is the door it must not
+	// open. `Email.Verify` mints into this table with this shape on purpose --
+	// one table, one sweep -- and the `email` edge is what tells the two apart;
+	// `Email.Confirm` refuses a link that names none, and until this the other
+	// direction was not refused at all. So a token mailed to prove an address
+	// was redeemable for a delegation naming its holder, which is a mailbox
+	// read once being an account held: the one thing a verify link is worth
+	// less than a recovery link *for*. See `email_svc.ext.proto`, § "A verify
+	// link is worth strictly less than a recovery link".
+	//
+	// A discriminator written on one side is not one, and the pair is now read
+	// the same way in both places.
+	if len(v.GetEmail().GetId()) != 0 {
 		return nil, status.Error(codes.NotFound, "no such link")
 	}
 

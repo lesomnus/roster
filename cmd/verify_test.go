@@ -22,14 +22,21 @@ import (
 // stamped at confirmation and not before; the link is spent by it; a link that
 // is not one, and a link somebody else minted, answer the same nothing; and
 // nothing about the response is a credential.
+//
+// And both directions of the discriminator, because for a while only one of
+// them was written. The key here holds recovery's two methods as well as this
+// pair -- which is the account app's key, where one issuer mints both kinds --
+// so the `email` edge is the only thing that can tell them apart.
 func TestAnAddressIsVerifiedByALinkThatSignsNobodyIn(t *testing.T) {
 	const (
-		verify  = "/roster.EmailService/Verify"
-		confirm = "/roster.EmailService/Confirm"
+		verify      = "/roster.EmailService/Verify"
+		confirm     = "/roster.EmailService/Confirm"
+		redeem      = "/roster.VouchService/Redeem"
+		listHolders = "/roster.HolderService/List"
 	)
 
 	x := require.New(t)
-	b := keyFor(t, verify, confirm)
+	b := keyFor(t, verify, confirm, redeem, listHolders)
 	ctx := t.Context()
 
 	own := app.HolderRef_builder{Id: b.Who.Bytes()}.Build()
@@ -77,6 +84,29 @@ func TestAnAddressIsVerifiedByALinkThatSignsNobodyIn(t *testing.T) {
 		// Spent: a second confirmation of the same link is nothing.
 		_, err = cl.Confirm(as, app.EmailConfirmRequest_builder{Token: v.GetToken()}.Build())
 		x.Equal(codes.NotFound, status.Code(err), "a link was confirmed twice")
+	})
+
+	t.Run("and a verification link is not a way in", func(t *testing.T) {
+		x := require.New(t)
+
+		// A fresh one, since the link above was spent. Handed to the door that
+		// mints, by the caller that minted it -- so the issuer check passes and
+		// the `email` edge is what has to refuse.
+		w, err := cl.Verify(as, app.EmailVerifyRequest_builder{Ref: ref}.Build())
+		x.NoError(err)
+
+		res, err := app.NewVouchServiceClient(b.Conn).Redeem(as, app.VouchRedeemRequest_builder{
+			Token:   w.GetToken(),
+			Methods: []string{listHolders},
+		}.Build())
+		x.NoError(err)
+		x.False(res.GetVerified().GetOk(), "a verification link signed somebody in")
+		x.Empty(res.GetToken(), "a verification link minted a delegation")
+
+		// Still there to be confirmed: refusing to spend it is not spending it.
+		done, err := cl.Confirm(as, app.EmailConfirmRequest_builder{Token: w.GetToken()}.Build())
+		x.NoError(err)
+		x.NotNil(done.GetEmail().GetDateVerified())
 	})
 
 	t.Run("and a recovery link is not a verification", func(t *testing.T) {

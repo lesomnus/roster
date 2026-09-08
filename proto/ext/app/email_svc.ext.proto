@@ -22,8 +22,14 @@ import "google/protobuf/timestamp.proto";
 // `Email.Confirm` stamps `date_verified` and nothing else. Were it otherwise,
 // adding an address to your account would mint you a sign-in link, and a
 // mailbox an attacker reads once would be an account they hold. The two links
-// share the `Link` table and its sweep; a verification names its `email`, a
-// recovery names none, and `Confirm` refuses one that names none.
+// share the `Link` table and its sweep; a verification names its `email` and a
+// recovery names none, and **both** doors read that -- `Confirm` refuses a link
+// naming none, `Vouch.Redeem` refuses one naming an address.
+//
+// For a while only the first was written, and a discriminator read on one side
+// is not one: a token mailed to prove an address was spendable at the door that
+// mints, so the paragraph above was false of the code under it. Whichever door
+// is added next reads the edge too, or this is untrue again.
 service EmailService {
   // Verify mints a link that proves this address, and answers with it once.
   //
