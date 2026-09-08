@@ -154,8 +154,25 @@ fi
 
 # `--hold` leaves the deployment up for a browser or a curl, which is how a
 # failure the specs report is looked at.
+#
+# A line per page rather than one line for both. There are two sign-ins here and
+# they are not interchangeable -- the console is an operator on the control
+# plane, the account app is a customer's person on the data plane -- and run
+# together on one line the second password read as a second thing to try at the
+# first form.
 if [ "${1:-}" = "--hold" ]; then
-	echo "up: console ${E2E_CONSOLE}, account ${E2E_ACCOUNT} (erin / ${E2E_ERIN_PASSWORD}); admin / ${E2E_OPS_PASSWORD}; ^C stops"
+	cat <<-EOF
+	up. ^C stops.
+
+	  console  ${E2E_CONSOLE}
+	           admin / ${E2E_OPS_PASSWORD}
+	           the operator who runs this deployment; the control plane.
+
+	  account  ${E2E_ACCOUNT}
+	           erin / ${E2E_ERIN_PASSWORD}
+	           somebody in contoso; the data plane. The tenant comes from the
+	           host, so the form asks for the alias alone.
+	EOF
 	wait
 	exit 0
 fi
