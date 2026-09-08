@@ -167,3 +167,74 @@ func TestAPersonChangesTheirOwnPassword(t *testing.T) {
 		x.Contains(status.Convert(err).Message(), "locked")
 	})
 }
+
+// TestNobodySetsTheirOwnFirstPassword is the refusal the test above assumes and
+// does not ask for: a person with **no** password cannot give themselves one.
+//
+// It reads like a gap in the account screens and it is a rule. The change above
+// is gated by proving the password you hold, and somebody who holds none has
+// nothing to prove -- so a bearer that merely acts as them, a session or a key
+// lifted from a build log, could add a password to that account and sign in as
+// them from then on with something they never chose. That is the takeover the
+// reauth exists to close, and it is widest exactly where there is no password
+// yet.
+//
+// A first password is set **for** somebody, by an operator (`roster vouch set`)
+// or by the recovery flow, where proving a mailbox is what stands in for the
+// password there is not. `server/core/credential.go` says so; nothing asked it
+// until now.
+func TestNobodySetsTheirOwnFirstPassword(t *testing.T) {
+	const set = "/roster.CredentialService/Set"
+
+	x := require.New(t)
+	b := keyFor(t, set)
+	ctx := t.Context()
+
+	own := app.HolderRef_builder{Id: b.Who.Bytes()}.Build()
+
+	// No `Credential.Set` by an operator first: this is somebody who arrived
+	// through a provider and has never had a password. Everything else is the
+	// test above -- a role that names Set, and her own key holding it -- so
+	// what differs is the row not being there.
+	permits(t, ctx, b, b.Contoso, b.Who, "self", set)
+	hers := mintFor(t, ctx, b, b.Who, "laptop", []string{set}, time.Time{})
+	cl := app.NewCredentialServiceClient(b.Conn)
+
+	// Two refusals and not one, because they are two rules and a page can hit
+	// either. Naming nothing is refused before the row is looked for at all --
+	// your own row asks for the password you hold, full stop -- and naming
+	// something is refused when there is nothing to have held.
+	t.Run("with nothing to prove, because there is nothing", func(t *testing.T) {
+		x := require.New(t)
+
+		_, err := cl.Set(bearing(ctx, hers), app.CredentialSetRequest_builder{
+			Ref:    own,
+			Secret: []byte("a whole new set of words entirely"),
+		}.Build())
+
+		x.Equal(codes.PermissionDenied, status.Code(err),
+			"somebody with no password gave themselves one")
+		x.Contains(status.Convert(err).Message(), "proving the one you hold")
+	})
+
+	t.Run("and with something, which there is nothing to check against", func(t *testing.T) {
+		x := require.New(t)
+
+		_, err := cl.Set(bearing(ctx, hers), app.CredentialSetRequest_builder{
+			Ref:     own,
+			Current: []byte("anything at all"),
+			Secret:  []byte("a whole new set of words entirely"),
+		}.Build())
+
+		x.Equal(codes.FailedPrecondition, status.Code(err))
+		x.Contains(status.Convert(err).Message(), "a first one is set for you",
+			"the refusal did not say which rule it was")
+	})
+
+	// And the operator's path, which is the answer both refusals point at.
+	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+		Ref:    own,
+		Secret: []byte("correct horse battery staple"),
+	}.Build())
+	x.NoError(err, "an operator could not set the first password either")
+}
