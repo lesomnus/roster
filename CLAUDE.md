@@ -131,54 +131,36 @@ Field numbers are read by name across every entity:
 - **8–12 and 16+** are yours. An entity that does not want 4–7 **leaves those
   numbers empty** rather than spending them on something else.
 
-## Layers, and the four "cannot"s that are not
+## Before answering "roster cannot do that"
 
-Read this before answering *roster cannot do that*. Four things get mistaken for
-walls, and each has cost a session.
+**The general half of this is payday's**, in its guide: `docs/guide/server.md`,
+§ *Writing a layer* -> *More than one layer, and which one a caller enters at*.
+A layer takes the request it was given and calls `Next()` with a different one,
+so a field means one thing where a caller reaches it and another by the time the
+row is written. And `app.Build` takes a list, so a rule that must hold for one
+caller and not another is a link of its own that the other one does not enter.
+Read that before writing that something is impossible; two of this repository's
+"cannot"s were that shape.
 
-**1. A message means what the layer above it says it means.** A layer takes the
-request a caller sent and calls `Next()` with a different one. `Credential.Set`
-carries a **password as typed** where the caller reaches it, and **the hash** by
-the time the row is written. Nothing generated changed and no Rpc was added. So
-*the generated verb takes the wrong thing* is not a wall: it takes what the
-layer hands it, and the conversion is the work.
+What is roster's own, and is not a wall either:
 
-**2. `core` is a name this repository chose, not a thing payday has.** payday
-takes a **chain**, and an app inserts as many links as it has reasons for. A
-rule that should hold for one caller and not another is a rule that belongs in a
-layer the other one does not pass through. So *this rule cannot move, X depends
-on it* is usually *X enters at the wrong layer* -- the fix is to split the layer
-or to have X enter lower, not to keep the rule where it hurts.
+- **"That method is closed on the wire."** `closed()` in `cmd/serve.go` is a
+  deployment's gate list. `Credential.Add` is shut because a caller sending a
+  hash would walk past the corpus check and the length rule, not because it
+  could not be given other rules.
+- **"There is no field for it."** `proto/ext/**` is roster's and the overlay
+  redefines the message. A field number and `pd gen`.
+- **"The two planes need different rules."** They are two stacks built from two
+  lists in `cmd/serve.go` (`Walled`, `Ungated`, and `Operable` beside them), and
+  `cmd/admin.go` builds a third. Nothing says a plane's list must match.
 
-**3. Which layer a caller enters at is wiring, and wiring is a choice.**
-`cmd/serve.go` builds `Walled` and `Ungated` out of the same parts, and the two
-planes do not run the same stack. A server that holds a reference to another --
-`server/vouch` holds `walled` -- is choosing an entry point, and it may be
-handed a different one. When a rule has to hold for the caller and not for an
-internal call, that is the seam.
-
-**4. "Closed on the wire" is a gate list, not a fact about what is possible.**
-`closed()` in `cmd/serve.go` is a deployment's decision. `Credential.Add` is
-shut because a caller sending a hash would walk past the corpus check and the
-length rule -- not because it could not be given other rules. Likewise
-`proto/ext/**` is roster's: a message with no field for something is a field
-number and `pd gen`.
-
-### The worked example, because it caught three of the four
-
-`Credential.Set` did two jobs -- a person changing their own password, and an
-operator giving somebody one -- held apart by `mayReach`. Moving the second out
-looked impossible twice over: `Vouch.Reset` calls `Set`, and eleven tests write
-somebody else's password through it.
-
-Neither was a wall. `Reset` was borrowing the rules of the layer it called, so
-it enters lower and carries `mayReach` itself, which is where an operator verb
-should have had it. The rest of the rules -- hashing, the leaked corpus, the
-kind check -- are below both and neither door skips them.
+`server/core/self.go` is the worked example and says so: one rule in a link of
+its own, so that `Vouch.Reset` -- which writes *through* `Credential.Set` --
+enters below it and keeps the behaviour a caller loses.
 
 The refusals that are **real** have a reason written beside them: the wall is
-payday's and not configurable; a grant is any write that changes what the gate
-answers; nobody writes a way into an account wider than their own. Those live
+payday's and not configurable, a grant is any write that changes what the gate
+answers, nobody writes a way into an account wider than their own. Those live
 next to what they decide. Everything else is a thing to write.
 
 ## Overlay before service, layer before overlay
