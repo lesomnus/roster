@@ -27,7 +27,7 @@ import (
 // service no longer carries the rule itself; it is a fact about the stack it
 // writes through.
 func (b *built) operated() *vouch.Server {
-	return vouch.New(b.Ungated, b.Walled)
+	return vouch.New(b.Ungated, b.Operable)
 }
 
 // mayCall gives somebody a binding across their tenant and answers with a
@@ -77,10 +77,14 @@ func TestNobodyWritesTheCredentialOfSomebodyWiderThanThey(t *testing.T) {
 	// And somebody ordinary, with nothing.
 	joe := b.holder(t, ctx, b.Contoso, "joe")
 
+	// Through `Reset`, which is the verb a caller reaches this rule by: a
+	// password for somebody who did not choose it. `Credential.Set` writes the
+	// caller's own row and nothing else -- `server/core/self.go` -- so it is
+	// not the door this rule is behind any more, and the rule itself did not
+	// move.
 	set := func(c context.Context, who pdid.Id) error {
-		_, err := b.Walled.Credential().Set(c, app.CredentialSetRequest_builder{
-			Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
-			Secret: []byte("a new one"),
+		_, err := b.operated().Reset(c, app.VouchResetRequest_builder{
+			Who: app.VouchWho_builder{Id: who.Bytes()}.Build(),
 		}.Build())
 
 		return err
@@ -127,16 +131,16 @@ func TestNobodyWritesTheCredentialOfSomebodyWiderThanThey(t *testing.T) {
 	t.Run("and anybody may write their own, by proving the one they hold", func(t *testing.T) {
 		x := require.New(t)
 
-		// A first password is set *for* somebody -- here the operator way, with
-		// no frame -- never by them with nothing to prove.
+		// Their own row, through `Set`, which is the only row `Set` writes.
+		// The first one goes in with nothing proved -- there is nothing to
+		// prove -- and `cmd/ownpassword_test.go` is where that trade is
+		// argued.
 		asBossOwn := frame.Into(ctx, frame.New(boss, b.Contoso, frame.Whole()).WithScope(frame.Only(b.Contoso)))
-		x.Equal(codes.PermissionDenied, status.Code(set(asBossOwn, boss)),
-			"somebody set their own first password with nothing to prove")
-		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+		_, err := b.Walled.Credential().Set(asBossOwn, app.CredentialSetRequest_builder{
 			Ref:    app.HolderRef_builder{Id: boss.Bytes()}.Build(),
 			Secret: []byte("a new one"),
 		}.Build())
-		x.NoError(err)
+		x.NoError(err, "the administrator could not give themselves a first password")
 
 		_, err = b.Walled.Credential().Set(asBossOwn, app.CredentialSetRequest_builder{
 			Ref:     app.HolderRef_builder{Id: boss.Bytes()}.Build(),

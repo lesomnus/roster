@@ -98,12 +98,19 @@ func TestAPersonChangesTheirOwnPassword(t *testing.T) {
 		x.False(res.GetOk(), "the old password still works")
 	})
 
-	t.Run("somebody else's row is the operator write, and asks for no current", func(t *testing.T) {
+	t.Run("somebody else's row is not this method at all", func(t *testing.T) {
 		x := require.New(t)
 
-		// RBAC as it is: a role naming `Set` reaches anybody no wider than the
-		// caller, and mate holds nothing. What changes for another's row is
-		// only that `current` is not hers to give and is refused if she does.
+		// It was: a role naming `Set` reached anybody no wider than the caller,
+		// held there by `mayReach`. That rule is the wrong shape for this one
+		// write -- it protects an administrator from a junior and does nothing
+		// for an ordinary person, who is narrower than almost everybody -- and
+		// a password is the most persistent thing there is to write on a row.
+		//
+		// So there is one door for it now, and the refusal says which. That
+		// `Vouch.Reset` works is `TestASecretIsResetForTheAddressThatNamesSomebody`
+		// and `TestAResetVoidsWhatCameBeforeIt`; a refusal is only right if the
+		// thing it points at is open.
 		mate, err := b.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{
 			Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 			Alias:  "mate",
@@ -112,17 +119,21 @@ func TestAPersonChangesTheirOwnPassword(t *testing.T) {
 		theirs := app.HolderRef_builder{Id: mate.GetId()}.Build()
 
 		_, err = cl.Set(bearing(ctx, hers), app.CredentialSetRequest_builder{
-			Ref:     theirs,
-			Current: []byte(next),
-			Secret:  []byte("for mate"),
-		}.Build())
-		x.Equal(codes.InvalidArgument, status.Code(err), "current was accepted for somebody else's row")
-
-		_, err = cl.Set(bearing(ctx, hers), app.CredentialSetRequest_builder{
 			Ref:    theirs,
 			Secret: []byte("for mate"),
 		}.Build())
-		x.NoError(err, "an operator write to somebody no wider than the caller was refused")
+		x.Equal(codes.PermissionDenied, status.Code(err),
+			"a walled caller set somebody else's password")
+		x.Contains(status.Convert(err).Message(), "Vouch.Reset",
+			"the refusal did not say where that write went")
+
+		// And the deployment's own work is untouched: no frame, nobody to
+		// refuse. `roster init` and `roster vouch set` are this.
+		_, err = b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+			Ref:    theirs,
+			Secret: []byte("for mate"),
+		}.Build())
+		x.NoError(err, "the unwalled server refused the deployment's own write")
 	})
 
 	t.Run("the reopened service still never answers a verifier", func(t *testing.T) {
@@ -168,73 +179,79 @@ func TestAPersonChangesTheirOwnPassword(t *testing.T) {
 	})
 }
 
-// TestNobodySetsTheirOwnFirstPassword is the refusal the test above assumes and
-// does not ask for: a person with **no** password cannot give themselves one.
+// TestAFirstPasswordOfYourOwnAsksForNothing is the case with nothing to prove,
+// and the trade it is.
 //
-// It reads like a gap in the account screens and it is a rule. The change above
-// is gated by proving the password you hold, and somebody who holds none has
-// nothing to prove -- so a bearer that merely acts as them, a session or a key
-// lifted from a build log, could add a password to that account and sign in as
-// them from then on with something they never chose. That is the takeover the
-// reauth exists to close, and it is widest exactly where there is no password
-// yet.
+// Somebody who arrived through a provider has no password, so the reauth the
+// change above rests on has nothing to compare. That was refused, and the
+// refusal was right on its own terms: a bearer that merely acts as them can now
+// set a password they never chose, and unlike the bearer it does not expire and
+// they are not told.
 //
-// A first password is set **for** somebody, by an operator (`roster vouch set`)
-// or by the recovery flow, where proving a mailbox is what stands in for the
-// password there is not. `server/core/credential.go` says so; nothing asked it
-// until now.
-func TestNobodySetsTheirOwnFirstPassword(t *testing.T) {
+// What changed is the alternative. The refusal pointed at an operator or the
+// recovery flow, and recovery needs mail, which most deployments never
+// configure -- so in the common case it pointed at nothing. `server/core` has
+// the argument at length; this asks that both halves are true: the first one
+// goes in with nothing, and the second still cannot be replaced without the
+// first.
+func TestAFirstPasswordOfYourOwnAsksForNothing(t *testing.T) {
 	const set = "/roster.CredentialService/Set"
 
 	x := require.New(t)
 	b := keyFor(t, set)
 	ctx := t.Context()
 
+	const first, next = "correct horse battery staple", "a whole new set of words entirely"
+
 	own := app.HolderRef_builder{Id: b.Who.Bytes()}.Build()
 
-	// No `Credential.Set` by an operator first: this is somebody who arrived
-	// through a provider and has never had a password. Everything else is the
-	// test above -- a role that names Set, and her own key holding it -- so
-	// what differs is the row not being there.
+	// No operator write first: this is somebody a provider vouched for and who
+	// has never had a password.
 	permits(t, ctx, b, b.Contoso, b.Who, "self", set)
 	hers := mintFor(t, ctx, b, b.Who, "laptop", []string{set}, time.Time{})
 	cl := app.NewCredentialServiceClient(b.Conn)
 
-	// Two refusals and not one, because they are two rules and a page can hit
-	// either. Naming nothing is refused before the row is looked for at all --
-	// your own row asks for the password you hold, full stop -- and naming
-	// something is refused when there is nothing to have held.
-	t.Run("with nothing to prove, because there is nothing", func(t *testing.T) {
-		x := require.New(t)
-
-		_, err := cl.Set(bearing(ctx, hers), app.CredentialSetRequest_builder{
-			Ref:    own,
-			Secret: []byte("a whole new set of words entirely"),
-		}.Build())
-
-		x.Equal(codes.PermissionDenied, status.Code(err),
-			"somebody with no password gave themselves one")
-		x.Contains(status.Convert(err).Message(), "proving the one you hold")
-	})
-
-	t.Run("and with something, which there is nothing to check against", func(t *testing.T) {
-		x := require.New(t)
-
-		_, err := cl.Set(bearing(ctx, hers), app.CredentialSetRequest_builder{
-			Ref:     own,
-			Current: []byte("anything at all"),
-			Secret:  []byte("a whole new set of words entirely"),
-		}.Build())
-
-		x.Equal(codes.FailedPrecondition, status.Code(err))
-		x.Contains(status.Convert(err).Message(), "a first one is set for you",
-			"the refusal did not say which rule it was")
-	})
-
-	// And the operator's path, which is the answer both refusals point at.
-	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+	_, err := cl.Set(bearing(ctx, hers), app.CredentialSetRequest_builder{
 		Ref:    own,
-		Secret: []byte("correct horse battery staple"),
+		Secret: []byte(first),
 	}.Build())
-	x.NoError(err, "an operator could not set the first password either")
+	x.NoError(err, "somebody with no password could not give themselves one")
+
+	// It is the password now, which is the half that says the write landed
+	// rather than being accepted and dropped.
+	v := vouch.New(b.Ungated, b.Ungated)
+	res, err := v.Verify(ctx, app.VouchVerifyRequest_builder{
+		Who: app.VouchWho_builder{Id: b.Who.Bytes()}.Build(), Secret: []byte(first),
+	}.Build())
+	x.NoError(err)
+	x.True(res.GetOk(), "the first password does not sign in")
+
+	// And the door closes behind it: there is something to prove now, so the
+	// next change asks for it.
+	_, err = cl.Set(bearing(ctx, hers), app.CredentialSetRequest_builder{
+		Ref:    own,
+		Secret: []byte(next),
+	}.Build())
+	x.Equal(codes.PermissionDenied, status.Code(err),
+		"the second password was replaced with nothing proved")
+
+	// A `current` sent when there is none is ignored rather than refused: a
+	// page that sent one has guessed about a row it cannot read, which is not
+	// a thing to fail a call over.
+	t.Run("a current nobody holds is ignored, not refused", func(t *testing.T) {
+		x := require.New(t)
+
+		cx := t.Context()
+		c := keyFor(t, set)
+		permits(t, cx, c, c.Contoso, c.Who, "self", set)
+		theirs := mintFor(t, cx, c, c.Who, "laptop", []string{set}, time.Time{})
+
+		_, err := app.NewCredentialServiceClient(c.Conn).Set(bearing(cx, theirs),
+			app.CredentialSetRequest_builder{
+				Ref:     app.HolderRef_builder{Id: c.Who.Bytes()}.Build(),
+				Current: []byte("nothing is stored under this"),
+				Secret:  []byte(first),
+			}.Build())
+		x.NoError(err)
+	})
 }

@@ -2554,9 +2554,9 @@ type CredentialSetRequest_builder struct {
 	Kind string
 	// The secret as typed. Hashed here, never stored as given.
 	Secret []byte
-	// The password held now -- **required when `ref` is yourself**, verified
-	// before `secret` is written, and refused when `ref` is somebody else. See
-	// the method.
+	// The password held now -- **required when you have one**, verified before
+	// `secret` is written. Ignored where there is none, which is the first
+	// password of somebody a provider vouched for; see the method.
 	Current []byte
 }
 

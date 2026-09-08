@@ -103,13 +103,48 @@ func (s coreCredential) Unlock(ctx context.Context, req *app.CredentialUnlockReq
 // travel with it -- the settable-kind check, the leaked-corpus refusal, and
 // `mayReach` -- the last two now `server/core`'s own.
 //
-// Your own row is the one case with a rule of its own, and it is a rule and
-// not a verb: `current` is required and verified first, a wrong one is counted
-// like a wrong sign-in (`vouch.MaxFailures`, `vouch.LockFor`), and a locked row
-// is not compared at all. That is what `ChangeMine` was for, folded back in
-// here so that a person and an operator call one method about one row and
-// only the layer knows the difference. Naming somebody else with `current` set
-// is refused: an operator does not know it and must not be asked for it.
+// **It is your own row or nothing.** Naming somebody else is refused here and
+// pointed at `Vouch.Reset`, which is the verb for giving somebody a password
+// they did not choose: it generates one, answers with it once, and voids what
+// came before. Both used to be this method, held apart by `mayReach` -- and
+// `mayReach` is the wrong shape for this one write. It asks whether the target
+// is no wider than the caller, which protects an administrator from a junior
+// and does nothing for an ordinary person, who is narrower than almost
+// everybody. A password is the most persistent thing there is to write on
+// somebody's row and it now has one door, which an operator walks through on
+// purpose.
+//
+// Unframed callers are unaffected: `roster init`, `roster vouch set` and the
+// Wasm sandbox reach the unwalled server, where there is nobody to refuse and
+// the wiring is the control (`mayReach` reads the same way).
+//
+// `current` is required and verified first, a wrong one is counted like a
+// wrong sign-in (`vouch.MaxFailures`, `vouch.LockFor`), and a locked row is not
+// compared at all. That is what `ChangeMine` was for, folded back in here so
+// that a person and an operator call one method about one row and only the
+// layer knows the difference.
+//
+// # A first password of your own, and what it costs
+//
+// It is allowed, with no `current`, because there is nothing to hold. That was
+// refused until now and the refusal was right on its own terms: a bearer that
+// merely acts as somebody -- their session, a delegation -- can then set a
+// password they never chose, and unlike the bearer it does not expire and they
+// are not told. Temporary access becomes permanent access, quietly.
+//
+// What changed is the alternative. The refusal pointed at an operator or the
+// recovery flow, and **recovery needs mail**, which most deployments never
+// configure -- so in the common case it pointed at nothing, and somebody who
+// signed in with a provider could not give themselves a password at all. That
+// is a real cost against a modest risk: the bearer in question is the account
+// app's own session cookie, and lifting one means XSS on that app or the
+// person's device, at which point their live provider session is there too.
+//
+// The one thing that would close it without mail is a **fresh** credential --
+// roster minted the delegation and knows when -- and `frame.Frame` does not
+// carry which credential a call arrived on, only who it makes the caller. That
+// is a payday change, and the note is here so the next reader knows the door
+// exists rather than rediscovering the argument.
 func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) (*app.CredentialSetResponse, error) {
 	if len(req.GetSecret()) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "secret: must not be empty")
@@ -177,13 +212,16 @@ func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) 
 
 	// Whose row this is decides one thing: your own asks for the password you
 	// hold, anybody else's must not be asked for it.
+	// Whose row this is decides what has to be proved. Your own asks for the
+	// password you hold; anybody else's is an operator write and must not be
+	// asked for it, and `mayReach` below is what holds that to somebody no
+	// wider than the caller.
+	//
+	// Whether a **caller** may name anybody else at all is not decided here:
+	// that is [Self], a layer above this one, which `Vouch.Reset` enters below.
 	f, framed := frame.From(ctx)
 	own := framed && !f.Actor.IsZero() && f.Actor == holder
-	switch {
-	case own && len(req.GetCurrent()) == 0:
-		return nil, status.Error(codes.PermissionDenied,
-			"current: your own password is changed by proving the one you hold; a reset is somebody else's to make")
-	case !own && len(req.GetCurrent()) != 0:
+	if !own && len(req.GetCurrent()) != 0 {
 		return nil, status.Error(codes.InvalidArgument,
 			"current: is for your own password; naming somebody else, leave it out")
 	}
@@ -209,16 +247,11 @@ func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) 
 		if status.Code(err) != codes.NotFound {
 			return nil, err
 		}
-		if own {
-			// Nothing to reauth against. A first password is set for somebody
-			// by an operator or the recovery flow, not by them here: a bearer
-			// that could set a first password with no current one to prove is
-			// the takeover the reauth exists to close.
-			return nil, status.Error(codes.FailedPrecondition,
-				"you have no password to change; a first one is set for you, not changed by you")
-		}
-
-		// None yet: add it.
+		// None yet: add it, and for your own row that means with nothing
+		// proved. There is nothing to prove -- see the method comment for what
+		// is being accepted and why the alternative was worse. `current` is
+		// ignored rather than refused: a page that sent one has not done
+		// anything wrong, it has guessed about a row it cannot read.
 		if _, err := s.Next().Credential().Add(ctx, app.CredentialAddRequest_builder{
 			Holder: ref,
 			Kind:   kind,
@@ -231,6 +264,15 @@ func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) 
 	}
 
 	if own {
+		// Refused here rather than by the comparison below, which would count
+		// it as a wrong answer: a page that sends nothing has not guessed, and
+		// somebody holding the session could otherwise lock the account out by
+		// sending nothing repeatedly. There **is** a password now -- the branch
+		// above is the case where there is not.
+		if len(req.GetCurrent()) == 0 {
+			return nil, status.Error(codes.PermissionDenied,
+				"current: your own password is changed by proving the one you hold")
+		}
 		if err := s.reauth(ctx, v, req.GetCurrent()); err != nil {
 			return nil, err
 		}

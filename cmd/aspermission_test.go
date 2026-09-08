@@ -377,10 +377,13 @@ func TestARoleHeldThroughATeamIsStillHeld(t *testing.T) {
 	ops := b.holder(t, ctx, b.Contoso, "ops")
 	asOps := b.mayCall(t, ctx, ops, "operator", getHolder)
 
+	// Through `Reset`, which is how a caller reaches the rule about writing
+	// somebody else's credential: `Credential.Set` writes the caller's own row
+	// and nothing else (`server/core/self.go`). The rule did not move -- it is
+	// in the layer below both -- only the door did.
 	set := func(who pdid.Id) error {
-		_, err := b.Walled.Credential().Set(asOps, app.CredentialSetRequest_builder{
-			Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
-			Secret: []byte("a new one"),
+		_, err := b.operated().Reset(asOps, app.VouchResetRequest_builder{
+			Who: app.VouchWho_builder{Id: who.Bytes()}.Build(),
 		}.Build())
 
 		return err

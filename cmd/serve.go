@@ -62,6 +62,12 @@ type Server struct {
 	// answered.
 	Dialect string
 
+	// Operable is `Walled` with the one rule that says a caller writes only
+	// their own password taken out, for the one verb whose job is the opposite.
+	// Never handed to anything a caller reaches; see `server/core/self.go` and
+	// the note beside its construction.
+	Operable app.Server
+
 	// Watch is what a change is published to once the call that made it has
 	// answered. The broker is named rather than defaulted: the one that
 	// publishes in this process is right for one replica and **silently wrong**
@@ -354,7 +360,22 @@ func build(ctx context.Context, c Config, prefix string) (*Server, error) {
 	// What keeps it out of the **trail** is not this layer -- the recorder is
 	// behind every layer -- but the declaration on the field, which the recorder
 	// reads for itself. See `Credential.secret`.
-	stacked, err := app.Build(walled.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password)), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
+	// `core.SelfBuild()` is one rule -- a caller writes their own password and
+	// nobody else's -- and it is a link of its own so that one caller can be
+	// below it. `Vouch.Reset` is that caller: giving somebody a password they
+	// did not choose is its verb, and it is handed `operable` below, which is
+	// this same stack without this one link. See `server/core/self.go`.
+	stacked, err := app.Build(walled.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password)), core.SelfBuild(), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+
+	// The same stack, minus that one link, and nothing a caller can reach is
+	// built on it: it is handed to `vouch` for `Reset` and to nothing else.
+	// Every other rule is still here -- the wall, the gate, the hashing, the
+	// leaked corpus, `mayReach` -- because they are in the layers below.
+	operable, err := app.Build(walled.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password)), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -377,7 +398,7 @@ func build(ctx context.Context, c Config, prefix string) (*Server, error) {
 
 	s := &Server{
 		Db: db, Ent: client, Drv: drv, Dialect: dialect, Watch: w, sink: sink,
-		Walled: stacked, Ungated: ungated, Keyring: keyring, Breached: leaked, Lockout: lockout, Password: password,
+		Walled: stacked, Operable: operable, Ungated: ungated, Keyring: keyring, Breached: leaked, Lockout: lockout, Password: password,
 	}
 
 	// The control plane: roster again, on its own database, holding keys rather
@@ -739,7 +760,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// The rule about who may write whose credential travels with the service,
 	// because `VouchService` is hand-written and no layer wraps it. Same rules
 	// the gate reads, handed over rather than asked for a second time.
-	app.RegisterVouchServiceServer(g, vouch.New(s.Ungated, s.Walled, vouch.WithLockout(s.Lockout),
+	app.RegisterVouchServiceServer(g, vouch.New(s.Ungated, s.Operable, vouch.WithLockout(s.Lockout),
 		vouch.WithKeys(s.Keyring)))
 
 	// What a front door asks before it knows anything, and therefore through
