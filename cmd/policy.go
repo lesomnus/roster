@@ -124,6 +124,26 @@ func (p policy) May(ctx context.Context, c gate.Call) error {
 // rules in the layer: `server/core` refuses the removal of a last way in, so
 // the button cannot lock somebody out of their own account.
 //
+// # And `AuthService.SignOut`, which is the same call one door over
+//
+// It takes an empty request and reads which session to end from the cookie in
+// the caller's own metadata, so it is subject-less in the strongest sense:
+// there is not a field it could be pointed with. That is `SignOutEverywhere`'s
+// property exactly, and the two do the same thing at different scopes -- one
+// session, or every credential the person holds.
+//
+// It was not on this list and the effect was quiet, which is why it is worth
+// writing down. An operator whose role did not happen to name it was refused,
+// and the console calls it in a `.finally`, so the page reset, the button
+// looked like it worked, and the cookie went on opening the control plane. The
+// only operator role most deployments have is `/roster.*/*`, so it was a hole
+// waiting for the first narrow role somebody wrote.
+//
+// Signing out is the one act that must never need a permission. Somebody who
+// has just been given an account, somebody whose role was taken away a moment
+// ago, somebody who no longer trusts the machine they are on: each of them is
+// exactly who wants this, and each of them is who a binding check refuses.
+//
 // # And nothing else, which is now a rule rather than a list
 //
 // `Link`, `IssueKey` and `RevokeKey` sat beside these for a while, not waived
@@ -140,7 +160,8 @@ func aboutYourself(method string) bool {
 	switch method {
 	case app.MeService_Get_FullMethodName,
 		app.MeService_Unlink_FullMethodName,
-		app.MeService_SignOutEverywhere_FullMethodName:
+		app.MeService_SignOutEverywhere_FullMethodName,
+		app.AuthService_SignOut_FullMethodName:
 		return true
 	}
 

@@ -21,6 +21,35 @@ option go_package = "github.com/lesomnus/roster/rstr";
 // `authsession.Mint` is the half that does it. See payday's
 // `docs/guide/signing-in.md`.
 //
+// # Why it is not SessionService, and why SignOut is MeService's clause
+//
+// CLAUDE.md asks this of every hand-written service and this file did not
+// answer it for a long time -- the headings argued service-versus-HTTP, which
+// is a different question. Written out, it turns out the two methods fall under
+// two different clauses, which is worth knowing rather than averaging.
+//
+// **SignIn is the sign-in flow.** It reads a `Tenant`, reads a `Holder`, reads
+// and writes a `Credential` through `Vouch.Verify` -- the lockout counter moves
+// on a wrong answer -- and writes a `Session`. Four entities in one flow, with
+// the deciding writes on rows other than the one a `Session.Mint` overlay would
+// hang off. And what it hands back is not in the response at all: it is a
+// `set-cookie` header, carried as response metadata, which no generated verb
+// answers with.
+//
+// **SignOut is the other clause**: it reads the caller from the frame and holds
+// what a role cannot be asked for. The request is empty and which session to
+// end comes out of the cookie in the caller's own metadata, so it is
+// subject-less in the strongest sense -- there is not a field it could be
+// pointed with -- which is `MeService.SignOutEverywhere`'s property exactly,
+// one scope down. `cmd.Policy` waives a binding for it on that ground, and the
+// paragraph in `aboutYourself` says what it cost not to.
+//
+// It stays here rather than moving to `MeService` for one reason: `MeService`
+// is served on both planes and knows nothing about the console's session store,
+// while this is served where the sessions are. A `me.WithSessions` option would
+// undo the sentence `me.proto` makes about roster not knowing the caller's
+// session, to move a method whose neighbour is `SignIn`.
+//
 // # What it does not do
 //
 // Answer who you are. `MeService` does, it is already what a page asks first,

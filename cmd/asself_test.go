@@ -151,6 +151,32 @@ func TestNothingTheWallIsWaivedForCanNameAnybody(t *testing.T) {
 	// could not pass the loop above by having nothing to say.
 	x.NotEmpty(waived, "nothing is waived, so the loop above proved nothing")
 	x.Contains(waived, getMe, "the one call a person with no role has was not waived")
+
+	// Signing out is the other one that must never need a permission: somebody
+	// whose role was taken away a moment ago, or who no longer trusts the
+	// machine they are on, is exactly who wants it and exactly who a binding
+	// check refuses. Both scopes -- one session, and every credential.
+	x.Contains(waived, app.MeService_SignOutEverywhere_FullMethodName)
+
+	// `AuthService` is asked directly rather than through the loop, because the
+	// loop reads the **data plane's** descriptors and this service is
+	// registered on the control listener alone. Which is also how it went
+	// unnoticed: it was not waived, and the console calls it in a `.finally`,
+	// so a refused sign-out reset the page, looked like it worked, and left the
+	// cookie opening the control plane. The only operator role most deployments
+	// have is `/roster.*/*`, so it was waiting for the first narrow one.
+	x.NoError(p.May(ctx, gate.Call{
+		Actor: nobody, Tenant: b.Contoso, Action: app.AuthService_SignOut_FullMethodName,
+	}), "an operator whose role does not name it cannot sign out")
+
+	// And it is waivable at all only because it takes nothing -- the same
+	// property the loop above enforces for everything it found.
+	out, err := protoregistry.GlobalFiles.FindDescriptorByName("roster.AuthService")
+	x.NoError(err)
+	md := out.(protoreflect.ServiceDescriptor).Methods().ByName("SignOut")
+	x.NotNil(md)
+	where, named := subjectIn(md.Input(), map[protoreflect.FullName]bool{})
+	x.False(named, "AuthService.SignOut is waived and names a subject at %s", where)
 }
 
 // subjectIn is the first field of this message that names a person, looked for

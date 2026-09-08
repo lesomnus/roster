@@ -682,18 +682,32 @@ export const VouchRedeemRequestSchema: GenMessage<VouchRedeemRequest> = /*@__PUR
  *
  * # Why it is not `CredentialService`
  *
- * The generated CRUD for `Credential` has a `Get` that returns every field it
- * was asked for, and one of those fields is the hash. That is the right shape
- * for a row this app reads itself and the wrong shape for anything on a wire,
- * so those verbs are shut **a method at a time** -- `Get`, `List`, `Watch` and
- * the raw `Add`, in `closed()`, `cmd/serve.go`. What this service is beside
- * them is RPCs that take a secret in and never hand back one this store was
- * already holding.
+ * **Not** because that service is closed. It said so here for a long time after
+ * it had stopped being true -- the service is registered for its overlays and
+ * only its generated reads and raw `Add` are shut, a method at a time, in
+ * `closed()` -- and that sentence was the reason given for two things on this
+ * service that were verbs on the entity they wrote. Both have moved
+ * (`Credential.Issue`), so what is left needs the real reason written out.
  *
- * It said "`CredentialService` is **not registered**" here for a long time
- * after that stopped being true. Worth knowing rather than quietly correcting,
- * because that sentence is the reason given for more than one thing on this
- * service not being a verb on the entity it writes.
+ * The real reason is that no single entity owns what is left. `Verify` reads a
+ * `Tenant` and an `Email` to work out who is being asked about, compares a
+ * `Credential`, counts a failure onto it, and mints a `Continuation` when a
+ * second factor is owed. `Delegate` is that call plus a `Delegation`.
+ * `Redeem` spends a `Link` and does the same. `Accept` reads an `Identity` and
+ * mints. Each of them mints or spends a secret across several rows in one flow,
+ * which is the third case in CLAUDE.md, *Overlay before service*, and it is the
+ * case this service is.
+ *
+ * There is a second reason and it is about the file rather than the design:
+ * `VouchDelegateResponse` and `VouchContinueResponse` **nest**
+ * `VouchVerifyResponse`, so the three cannot drift, and a hand-written proto is
+ * compiled before the overlays generate anything -- so a `Verify` living on
+ * `CredentialService` could not be nested by the two that must carry it. The
+ * same ordering that makes `VouchWho` exist rather than a `HolderRef`.
+ *
+ * What is true and was being said badly: nothing here answers with a verifier
+ * this store was already holding. The generated `Get` would, which is why it is
+ * shut, and this service takes secrets in instead.
  *
  * [VouchService.Delegate] answers with a string and is not an exception to
  * that. What it hands back is a secret roster **made**, whose verifier goes

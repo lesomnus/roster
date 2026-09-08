@@ -581,6 +581,8 @@ is not a request* -- which survives because the generated check sits in the
 
 | — | one verb issues a password, and `IssueService` is gone | **done** — the audit's two moves, and they turned out to be one. `Vouch.Reset` (a customer's person, by reference or by an address) and `IssueService.IssuePassword` (an operator, by a bare alias, created if absent) were the same act — generate a password nobody chose, store the verifier, answer once — separated by which plane and by whether a name matching nobody is a creation, which is exactly the pair `ApiKey.Issue` already tells apart in one method with `service` beside `holder`. So `CredentialService.Issue`, beside `Set`/`Unlock`/`Enrol`, with `ref`, `email` (an overlay may name a generated `EmailRef`, which `proto/app/vouch.proto` could not and is why `VouchWho` exists) and `service`, told apart by `WithPrefix` rather than a flag. Three things fall out. **`IssuePassword` wrote through the generated `Credential` verbs**, so it ran none of `server/core`'s rules — no `mayReach`, no `date_rotated`, no `NoReuse`, no corpus — and a key naming it could hand out any operator's password, mitigated by a printed NOTE (`BecomesAnOperator`, retired: a key holds no bindings, so it now reaches somebody who holds nothing, which is what the mint is *for*, and nobody who holds a role). **The `Operable` stack is gone**: it was a second build of `Walled` minus `core.SelfBuild()`, existing so `Vouch.Reset` could write *through* `Credential.Set` from outside the layers; `Issue` calls its own `Set` from inside `server/core`, where `Self` — which overrides `Set` and nothing else — never sees it. **And a reset of your own row was already refused, in the wrong words**: it inherited *current: your own password is changed by proving the one you hold* from a request with no `current` in it. The refusal is right — a delegation lifted from an app must not hand itself a password it chose — and is one line now that names the verb to use. Both writes go in one transaction where the stack was built on a driver, so the invalidate is no longer best-effort-after-the-fact. `cmd/issuecmd_test.go`, `cmd/seed_test.go`, `cmd/operate_test.go`, `cmd/vouchkind_test.go` |
 
+| — | the paragraphs that reached the right answer by the wrong road | **done** — the audit's third finding, which is not about where a method lives. `Vouch.Verify` said it was not on `CredentialService` because that service is not registered and because `Get` answers with the hash; both false, and the real reasons were never written -- it reads a `Tenant` and an `Email` to work out who is being asked about, mints a `Continuation` when a factor is owed, and `VouchDelegateResponse` nests `VouchVerifyResponse` so the two cannot drift, which a hand-written proto compiled before the overlays exist could not do the other way round. `server/sync` said no layer could do its projection, which payday's own generated `secretCredentialStream` refutes; the real reason is that a payday watch subscribes to **rows** -- filters resolved to a fixed set of ids before the stream opens -- and what an app wants here is *everybody who signs in, including whoever signs in next*, which is not a set of rows. A wrong reason produces a wrong conclusion later even when today's conclusion is right, which is what twenty `is not registered` sentences cost one row up. And `proto/app/auth.proto` had no `// Why it is not XService` paragraph at all, which CLAUDE.md calls required; writing it surfaced a live defect -- `SignOut` takes an empty request and reads the session from the caller's own cookie, which is `MeService`'s clause exactly, but it was not in `aboutYourself`, so an operator whose role did not name it was refused, and `ts/console/main.tsx` calls it in a `.finally`, so the page reset, the button looked like it worked, and the cookie went on opening the control plane. Waived, and pinned in `cmd/asself_test.go` beside the rule that a waived method can never take a subject |
+
 ## Open, for whoever picks this up next
 
 **`Vouch.Link` and `Vouch.Accept`, and the case for leaving them.** The audit
@@ -600,27 +602,6 @@ the same shape and should find the answer beside it.
 - **`Accept` is the OIDC arm of the sign-in flow**, sibling of `Delegate` and
   `Redeem` in `frontdoor.Door`. Moving it to `DelegationService` splits one flow
   across two names and buys nothing.
-
-**Two justification paragraphs that reach the right conclusion for the wrong
-reason.** `Vouch.Verify` says it is not on `CredentialService` because that
-service is not registered and because `Get` answers with the hash; both are
-false. The real reasons are good -- it mints a `Continuation`, it resolves
-through `Tenant` and `Email`, and `VouchDelegateResponse` nests
-`VouchVerifyResponse` so the two cannot drift -- and are not what is written.
-`SyncService` is the same: "no layer could do this projection" is refuted by
-payday's own generated `secretCredentialStream`, while the true reason (a payday
-watch subscribes to **rows**, not to a predicate, so a scope whose membership
-grows cannot be expressed) is sound and is stated one paragraph away. A wrong
-reason produces a wrong conclusion later even when today's conclusion is right,
-which is what the twenty `is not registered` sentences cost.
-
-**`AuthService` has no `// Why it is not XService` paragraph**, which CLAUDE.md
-calls required, and writing it would have surfaced that `SignOut` falls under
-`MeService`'s clause: it takes an empty request and reads the caller's cookie
-from the frame, but is not in `aboutYourself` (`cmd/policy.go`), so an operator
-whose role does not name it cannot sign out -- and `ts/console/main.tsx`
-swallows the error in a `.finally`, so the page resets and the cookie lives.
-Today's only operator role is `/roster.*/*`, so nothing is broken yet.
 
 Before that, the last thing that stood here was the directory over
 LDAP, planned and built in 2026-09 ([ldap.md](ldap.md)); what it leaves for a

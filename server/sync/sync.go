@@ -10,16 +10,35 @@
 // # Why it is not HolderService
 //
 // It reads `Holder` rows, so *Overlay before service* asks whether it is a
-// `Holder.Sync` overlay rather than a service of its own -- and the answer is
-// the sentence above. The generated `Watch` carries the whole row and every
-// change to it, because that is what a watch is; this carries three columns and
-// only when one of them moved, with a rename or a re-label swallowed. That is
-// not a narrowing an overlay in front of the watch could add: the machinery
-// keeps state *per person* to say which of the three facts changed, and sends
-// nothing to somebody nothing has happened to. It is a projection with its own
-// memory, not a verb on the row -- which is the one case *Overlay before
-// service* leaves to a service, and the paragraph it requires so that a service
-// which could not write it is the smell caught instead of shipped.
+// `Holder.Sync` overlay rather than a service of its own.
+//
+// The answer is **not** that a layer could not do the projection. It could:
+// payday generates exactly that shape -- `secretCredential.Watch` hands the
+// sink a stream whose `Send` rewrites every item -- and a layer holding a map
+// per subscriber is no different in kind from the one this package keeps. That
+// argument stood here for a while and it is the *the generated verb answers the
+// wrong thing* tell, which is never a wall.
+//
+// The answer is what an app has to be able to **ask for**. A payday watch
+// subscribes to rows: every filter must carry a reference, they are resolved to
+// a fixed set of ids before the stream opens, and a row that comes to match
+// afterwards is one nothing ever tells the stream about. That is deliberate --
+// an equality on a field names a set that moves, and the alternative is a
+// walled read per subscriber for every write to the entity. What an app wants
+// here is *everybody who signs in, including whoever signs in next*, which is
+// not a set of rows and cannot be made into one.
+//
+// So this is not a projection of a subscription an app could have made. It is a
+// subscription an app could not make, whose cost is bounded by how many people
+// change rather than by how many people there are -- which is the one case
+// *Overlay before service* leaves to a service, and the paragraph it requires
+// so that a service which could not write it is the smell caught instead of
+// shipped.
+//
+// Beside that, and smaller: the generated `Watch` carries the whole row and
+// every change to it, because that is what a watch is; this carries three
+// columns and only when one of them moved, with a rename or a re-label
+// swallowed.
 //
 // # How it knows what changed, without being told
 //
