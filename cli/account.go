@@ -117,7 +117,7 @@ func newCmdAccountServe(c *cmd.Config) *xli.Command {
 				ac.Base = v
 			}
 			if v, _ := flg.Find[string](cl, "static"); v != "" {
-				ac.Static = v
+				ac.Page.Dir = v
 			}
 			if v, _ := flg.Find[string](cl, "enrol"); v != "" {
 				ac.Enrol = v
@@ -188,8 +188,8 @@ func serveAccount(ctx context.Context, ac cmd.AccountConfig) error {
 	default:
 		return fmt.Errorf("account.enrol (--enrol): %q is not one of invited, enrolling", ac.Enrol)
 	}
-	if ac.Static != "" {
-		cfg.Static = http.FileServer(http.Dir(ac.Static))
+	if ac.Page.Dir != "" {
+		cfg.Static = http.FileServer(http.Dir(ac.Page.Dir))
 	}
 
 	// The cookie is this app's, and the session is **in** it: sealed under a

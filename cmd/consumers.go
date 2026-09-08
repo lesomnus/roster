@@ -58,9 +58,15 @@ type AccountConfig struct {
 	// the redirect.
 	Base string `yaml:"base"`
 
-	// Static is a directory served as the page. Empty serves none, which is an
-	// API and no front end.
-	Static string `yaml:"static"`
+	// Page is the built account page, served by this app. Empty serves none,
+	// which is an API and no front end -- right for a deployment that puts the
+	// page somewhere else.
+	//
+	// A block of one field rather than `static:` beside the rest, because
+	// `control.console.dir` is already the name for "the built UI directory
+	// for this listener" and a reader who has seen one should be able to guess
+	// the other. The flag is still `--static`, which is what it was.
+	Page PageConfig `yaml:"page"`
 
 	// Enrol is what happens to a stranger a provider vouches for: `invited`,
 	// which is nobody, or `enrolling`.
@@ -87,6 +93,12 @@ type AccountConfig struct {
 
 // Serves is whether this deployment answers a front door.
 func (c AccountConfig) Serves() bool { return c.Addr != "" }
+
+// PageConfig is a built page, as a directory.
+type PageConfig struct {
+	// Dir is `ts/dist/account`, or wherever the build was put.
+	Dir string `yaml:"dir"`
+}
 
 // LdapConfig is roster as a directory, for clients that speak nothing else.
 type LdapConfig struct {

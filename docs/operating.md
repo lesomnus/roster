@@ -1355,7 +1355,8 @@ server:
 account:
   addr: :8090
   base: https://account.contoso.example
-  static: /usr/share/roster/account
+  page:
+    dir: /usr/share/roster/account
   keys:
     contoso: env:ROSTER_ACCOUNT_KEY_CONTOSO
 
