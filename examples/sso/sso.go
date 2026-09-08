@@ -23,8 +23,14 @@
 //	provider         issues the token                        Google, Entra, Hydra
 //	resource server  verifies a token it was handed          payday's authoidc
 //
-// This package is the first. It is thirty lines of `golang.org/x/oauth2` and
-// `go-oidc` and there is nothing framework-shaped about it, which is why payday
+// This package is the first, and the **exchange** is thirty lines of
+// `golang.org/x/oauth2` and `go-oidc`. The package is not: the sign-in is small
+// and the app around it -- its pages, its enrolment policy, its account screens
+// -- is most of what is here. Worth being exact about, because "the thirty-line
+// consumer" is a name this repository used for it and it undersells what
+// keeping it costs.
+//
+// There is nothing framework-shaped about that exchange, which is why payday
 // does not have a package for it: what varies between providers -- the claim
 // that holds an email, whether there is a hosted domain, Entra's per-tenant
 // endpoints -- survives being wrapped and would just be configuration for a

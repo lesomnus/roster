@@ -6,8 +6,15 @@
 // JSON routes; this is many operators, their providers read from roster, and a
 // browser that speaks Connect to this origin and is handed on to roster as the
 // person. Nothing below the app changes between the two -- roster still answers
-// *who is this subject* and nothing else -- and the example stays, because a
-// thirty-line consumer is what keeps the interface honest.
+// *who is this subject* and nothing else.
+//
+// The example stays, and not because it is small: it is fifteen hundred lines
+// and two thousand of tests, and this session's own migration touched it. It
+// stays because **this** package is multi-tenant, so it never walks the path a
+// single-tenant app walks -- one organisation, one provider, and a policy about
+// a stranger a provider vouches for. `examples/sso/approval.go` is that policy
+// and there is nothing like it here, because an operator has already made the
+// people this app serves.
 //
 // # It is a consumer, and only a consumer
 //

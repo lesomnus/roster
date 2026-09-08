@@ -1,0 +1,92 @@
+# The image, built on every change to it and pushed from `main`.
+#
+# One image, because roster is one binary: `serve`, `account serve` and `ldap
+# serve` are three commands of it and a deployment runs it three times with
+# three arguments. `docker-bake.hcl` says the rest.
+#
+# `ci.yml` is the gate and this is not a second one. What is here is the
+# **build**, on both platforms, so a change that breaks it fails on the branch
+# rather than on the day somebody deploys.
+name: images
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: &paths
+      - .github/workflows/images.yaml
+      - docker-bake.hcl
+      - Dockerfile
+      - .dockerignore
+      - docker/**
+      - go.mod
+      - go.sum
+      - "**/*.go"
+      - ts/**
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths: *paths
+
+jobs:
+  images:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write # to push to ghcr.io/lesomnus/roster
+
+    env:
+      TAG: edge
+      BUILD_HASH: ${{ github.sha }}
+      BUILD_ID: r${{ github.run_id }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      # No QEMU. Both stages that do work build on the runner's architecture and
+      # cross-compile, so `linux/arm64` is a second link rather than a second run
+      # under emulation -- see `Dockerfile`. Setting it up anyway would be
+      # minutes a build, spent on nothing.
+
+      # Only from main. What is in the registry is what is deployable, and a
+      # branch that has not been merged is not that. A pull request still builds
+      # -- both platforms -- so a change that breaks the image fails here rather
+      # than after it lands.
+      - uses: docker/login-action@v3
+        if: github.event_name == 'push'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build
+        id: build
+        uses: docker/bake-action@v6
+        with:
+          files: docker-bake.hcl
+          targets: app
+          push: ${{ github.event_name == 'push' }}
+          set: |
+            app.cache-from=type=gha,scope=app
+            app.cache-to=type=gha,scope=app,mode=max
+
+      # What was pushed, said once, rather than left for somebody to ask the
+      # registry what a moving tag points at now. `:edge` moves; the digest is
+      # what a deployment can be told about.
+      - name: Summarise
+        if: github.event_name == 'push'
+        env:
+          METADATA: ${{ steps.build.outputs.metadata }}
+        run: |
+          set -eu
+          {
+            echo "| image | digest |"
+            echo "| ----- | ------ |"
+            printf '%s' "$METADATA" | jq -r '
+              to_entries[]
+              | select(.value["image.name"])
+              | "| \(.value["image.name"] | split(",")[0]) | `\(.value["containerimage.digest"])` |"
+            '
+          } >> "$GITHUB_STEP_SUMMARY"

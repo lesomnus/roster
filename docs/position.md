@@ -139,7 +139,11 @@ one tenant key per operator, doing the OIDC exchange with the providers an
 operator wrote down as `Connection` rows, minting the delegation through
 `Vouch.Accept`/`Delegate`, and handing the page's calls on to roster as the
 person. It is a consumer -- it reaches roster only over the wire -- and
-`examples/sso` stays beside it as the thirty-line one.
+`examples/sso` stays beside it, for a reason that is not its size: the account
+app fronts **many** operators, resolved by host, so a single-tenant consumer is
+a path nothing else in this repository walks. That is the ordinary shape -- one
+app, one organisation, its own provider, its own answer about a stranger -- and
+`examples/sso` is the only thing that keeps it honest.
 
 Worth knowing: this does not remove each app's own session. A browser has
 nowhere safe to keep a token, so a product app exchanges what Hydra gave it for
