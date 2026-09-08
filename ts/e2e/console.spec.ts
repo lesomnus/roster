@@ -5,7 +5,7 @@ import { expect, test } from '@playwright/test'
 // reaching the admin listener from another origin, with the session cookie
 // the control listener set -- and see their first person.
 
-const base = process.env['E2E_CONSOLE'] ?? 'http://127.0.0.1:18062/console/'
+const base = process.env['E2E_CONSOLE'] ?? 'http://127.0.0.1:18062/'
 const operator = process.env['E2E_OPS_USER'] ?? 'admin'
 const password = process.env['E2E_OPS_PASSWORD'] ?? ''
 
@@ -30,9 +30,9 @@ test('an operator signs in and stands a customer up', async ({ page }) => {
 	await page.locator('tr', { hasText: 'fabrikam' }).locator('button', { hasText: 'people' }).click()
 	// The place is in the address bar: back closes the panel and stays in the
 	// app, forward reopens it, and a reload keeps it.
-	await expect(page).toHaveURL(/\/console\/customers\/@fabrikam\/people$/)
+	await expect(page).toHaveURL(/\/customers\/@fabrikam\/people$/)
 	await page.goBack()
-	await expect(page).toHaveURL(/\/console\/customers$/)
+	await expect(page).toHaveURL(/\/customers$/)
 	await expect(page.getByRole('heading', { name: 'fabrikam' })).toHaveCount(0)
 	await page.goForward()
 	await expect(page.getByRole('heading', { name: 'fabrikam' })).toBeVisible()

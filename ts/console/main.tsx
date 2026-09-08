@@ -41,12 +41,17 @@ import '../lib/style.css'
  * which fronts the walled data plane where an operator's session names nobody;
  * and not `admin.http`, which reaches customers and is a later screen.
  */
-// Served by roster itself under `/console/`, the RPCs are on this page's own
-// origin; under `npm run dev` they are wherever `VITE_ADDR` says, or the
-// control listener's usual port.
+// Served by roster itself, the RPCs are on this page's own origin; under `npm
+// run dev` they are wherever `VITE_ADDR` says, or the control listener's usual
+// port.
+//
+// `import.meta.env.DEV` and not the path. It used to ask whether the path began
+// with `/console/`, which answered the question by accident: the console is at
+// `/` now and there is nothing in an address to read. What was ever being asked
+// is whether this was built for a deployment, and that is a constant the
+// bundler substitutes rather than a guess about a URL.
 const ADDR: string =
-	import.meta.env['VITE_ADDR'] ??
-	(location.pathname.startsWith('/console/') ? location.origin : 'http://localhost:8082')
+	import.meta.env['VITE_ADDR'] ?? (import.meta.env.DEV ? 'http://localhost:8082' : location.origin)
 
 /**
  * Where the **customers** are.
@@ -67,15 +72,18 @@ const ADDR: string =
  */
 // The admin listener is another origin whatever serves this page, and one the
 // page cannot guess: told by `VITE_ADMIN_ADDR` under `npm run dev`, and by
-// `/console/config.json` -- `control.console.admin` in `roster.yaml` -- when
-// roster serves the page. Empty is a deployment that has not said, and the
-// customers screen is not offered.
+// `config.json` -- `control.console.admin` in `roster.yaml` -- when roster
+// serves the page. Empty is a deployment that has not said, and the customers
+// screen is not offered.
+//
+// Under the page's base rather than at the root, so that a deployment which
+// mounts the console somewhere else still finds it beside the page.
 async function adminAddr(): Promise<string | null> {
 	const env = import.meta.env['VITE_ADMIN_ADDR'] as string | undefined
 	if (env !== undefined) return env
-	if (!location.pathname.startsWith('/console/')) return 'http://localhost:8081'
+	if (import.meta.env.DEV) return 'http://localhost:8081'
 	try {
-		const res = await fetch('/console/config.json')
+		const res = await fetch(import.meta.env.BASE_URL + 'config.json')
 		if (!res.ok) return null
 		const v = (await res.json()) as { admin?: string }
 

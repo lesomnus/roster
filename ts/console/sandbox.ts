@@ -106,9 +106,9 @@ export interface Progress {
  *     GOOS=js GOARCH=wasm go build -tags grpcnotrace -o ts/public/app.wasm ./wasm
  *
  * Everything is said under the page's **base**, because `vite.console.ts`
- * serves this page at `/console/` and `public/` with it: the package's defaults
- * are the origin's root, where both files are a 404 that reads as "the sandbox
- * never comes up".
+ * serves this page and `public/` with it: the package's defaults are the
+ * origin's root, which is right while the base is `/` and is a 404 that reads
+ * as "the sandbox never comes up" the moment a deployment moves it.
  *
  * # The worker is yours, and it has to be
  *

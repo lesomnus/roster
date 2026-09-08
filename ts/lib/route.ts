@@ -11,10 +11,10 @@ import { useSyncExternalStore } from 'react'
  * it through `history.pushState` so the back button walks it back.
  *
  * No library, because there is nothing to match: the tree is fixed
- * (`/console/<screen>/@<tenant>/<panel>/<person>`, aliases rather than
+ * (`/<screen>/@<tenant>/<panel>/<person>` under the page's base, aliases rather than
  * identifiers because somebody reads the address) and each screen reads the
  * segment that is its own. The server already answers `index.html` for every
- * path under `/console/` (`cmd/serve.go`), as vite does, so a deep link opens.
+ * path that is not a file (`cmd/serve.go`), as vite does, so a deep link opens.
  */
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '')

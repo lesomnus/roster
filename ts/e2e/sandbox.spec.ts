@@ -5,7 +5,7 @@ import { expect, test } from '@playwright/test'
 // customers screen dials by name. Nothing else in the repository opens it, so this is what
 // keeps `npm run dev:sandbox` from quietly stopping being a thing that works.
 
-const base = process.env['E2E_SANDBOX'] ?? 'http://localhost:18100/console/'
+const base = process.env['E2E_SANDBOX'] ?? 'http://localhost:18100/'
 
 test('the sandbox signs in, and its second server stands a customer up', async ({ page }) => {
 	test.setTimeout(120_000)

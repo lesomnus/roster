@@ -56,7 +56,7 @@ done
 # Ports nothing else on a desk is likely to be on. `localhost` rather than
 # `127.0.0.1` for the account app because a security key's relying party is a
 # domain, and an address is not one.
-export E2E_CONSOLE="http://127.0.0.1:18062/console/"
+export E2E_CONSOLE="http://127.0.0.1:18062/"
 export E2E_ACCOUNT="http://localhost:18090"
 export E2E_OPS_PASSWORD="ops-$(head -c 12 /dev/urandom | base64 | tr -d '/+=')"
 export E2E_ERIN_PASSWORD="correct horse battery staple"
@@ -141,7 +141,7 @@ pids+=($!)
 up "${E2E_ACCOUNT}/providers"
 
 if [ "${E2E_SANDBOX:-1}" != "0" ]; then
-	export E2E_SANDBOX="http://localhost:18100/console/"
+	export E2E_SANDBOX="http://localhost:18100/"
 	# `exec`, so the pid recorded is vite's own and not a subshell's: killing a
 	# subshell orphans `npx`'s child, which is how a dev server on 18100 was
 	# left behind by every run and refused the next one as a `--hold` would.

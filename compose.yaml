@@ -3,7 +3,7 @@
 # cookies without Secure. It is what somebody working on the pages runs.
 #
 #     docker compose up --build
-#     http://localhost:8082/console/   admin / admin
+#     http://localhost:8082/            admin / admin
 #     http://localhost:8090/           erin / correct horse battery staple
 #
 # `PUBLIC_HOST` is the name a browser reaches this by, `localhost` unless
@@ -126,7 +126,7 @@ services:
       - "50053:50053" # customers
       - "8081:8081"   # the same over HTTP: the console's customers screen
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8082/console/config.json >/dev/null || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8082/config.json >/dev/null || exit 1"]
       interval: 2s
       timeout: 5s
       retries: 30

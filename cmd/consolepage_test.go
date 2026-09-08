@@ -18,7 +18,7 @@ import (
 )
 
 // TestTheConsoleIsServedByRosterItself is `control.console`: the built page
-// under `/console/` on the control listener, so a deployment needs no
+// at `/` on the control listener, so a deployment needs no
 // `origins:` for its own page. A path that is not a file is the index -- the
 // page routes in the browser and must survive a reload -- and `config.json`
 // tells it the one thing its own origin does not say: where the admin listener
@@ -47,20 +47,20 @@ func TestTheConsoleIsServedByRosterItself(t *testing.T) {
 		return res.StatusCode, string(b)
 	}
 
-	code, body := get("/console/")
+	code, body := get("/")
 	x.Equal(http.StatusOK, code)
 	x.Contains(body, "<title>roster</title>")
 
-	code, body = get("/console/assets/index.js")
+	code, body = get("/assets/index.js")
 	x.Equal(http.StatusOK, code)
 	x.Contains(body, "console.log")
 
 	// A route the page owns, reloaded: the index, not a 404.
-	code, body = get("/console/customers/contoso")
+	code, body = get("/customers/contoso")
 	x.Equal(http.StatusOK, code)
 	x.Contains(body, "<title>roster</title>")
 
-	code, body = get("/console/config.json")
+	code, body = get("/config.json")
 	x.Equal(http.StatusOK, code)
 	x.Contains(body, `"admin":"https://roster-admin.internal"`)
 }

@@ -451,7 +451,7 @@ type ControlConfig struct {
 	// ports.
 	config.ServerConfig `yaml:",inline"`
 
-	// Console is the built console, served by this listener under `/console/`
+	// Console is the built console, served by this listener at `/`
 	// so that a deployment needs no `origins:` for its own page. Empty serves
 	// none, which is what `npm run dev` wants -- it serves the page itself and
 	// is told `origins:` instead.

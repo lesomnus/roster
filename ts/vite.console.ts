@@ -9,7 +9,7 @@ import react from '@vitejs/plugin-react'
 // rather than left to a README.
 export default defineConfig({
 	root: 'console',
-	base: '/console/',
+	base: '/',
 	publicDir: '../public',
 	build: { outDir: '../dist/console', emptyOutDir: true },
 	plugins: [react()],

@@ -199,7 +199,7 @@ go run ./cmd/roster config env    # every variable it can be told through
 
 Or the whole thing on Postgres with a customer already in it, which is what
 `compose.yaml` is: `docker compose up --build`, the console at
-`http://localhost:8082/console/` and the account app at `:8090`.
+`http://localhost:8082/` and the account app at `:8090`.
 `docs/operating.md` § "Locally, in one command" says what comes up.
 
 `init` writes the **operator** and nothing else, so a fresh deployment has no
@@ -346,7 +346,7 @@ hands each call on to roster **as the person** (`frontdoor.Door.Proxy`), so a
 browser never holds a roster token.
 
 They are served by two processes on purpose. `roster serve` serves the console
-under `/console/` on `control.http` when `control.console.dir` names the build
+at `/` on `control.http` when `control.console.dir` names the build
 (`control.console.admin` tells the page where `admin.http` is). `roster account
 serve` is its own process: it holds one tenant key per operator it fronts, faces
 the internet, and reaches roster only over the wire -- `account/` imports the

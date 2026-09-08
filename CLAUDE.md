@@ -277,7 +277,7 @@ docker compose up --build       # Postgres, both planes, a customer, both pages,
 ```
 
 Two UIs, and one to three processes. `roster serve` serves the console under
-`/console/` on `control.http` when `control.console.dir` names the build.
+`/` on `control.http` when `control.console.dir` names the build.
 `roster account serve` holds tenant keys and faces the internet; `roster ldap
 serve` is roster as a directory for clients that speak nothing else.
 

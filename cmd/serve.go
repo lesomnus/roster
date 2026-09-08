@@ -1243,35 +1243,48 @@ func (s *Server) serveControlHttp(ctx context.Context, c Config, g *grpc.Server)
 	return s.http(ctx, "control.http", c.Control.Http, g, ConsoleMount(c.Control.Console))
 }
 
-// ConsoleMount mounts the built page under `/console/`, beside the RPCs it calls.
+// ConsoleMount mounts the built page at `/`, beside the RPCs it calls.
 //
-// Under a prefix and not at `/`, because `web.New` puts the transcoder at `/`
-// and a page and an RPC cannot share a root -- and because the account app has
-// the same shape (`account/`), where the page is at `/` and the RPCs are what
-// the prefix `/roster.` leaves. A path that is not a file is the index, which
-// is what a page that routes in the browser needs on reload; `config.json` is
-// the one thing the page has to be told that its own origin does not say.
+// It was `/console/`, and the reason given here was that "a page and an RPC
+// cannot share a root". That was never true and this file said so three lines
+// later: the account app shares one, with the page at `/` and the RPCs being
+// what the prefix `/roster.` leaves. A gRPC path is `/<service>/<method>` and
+// nothing else is one.
+//
+// What was actually in the way is that payday's `web.New` mounted the
+// transcoder at `/`, which in a `ServeMux` is the catch-all -- so it held every
+// path on this listener, including every path it could never answer, and a
+// second registration of `/` panics. It mounts under each service's own prefix
+// now (lesomnus/payday#13), and the root is the app's.
+//
+// Which is where a page belongs. Somebody who types the host and no path gets
+// the front door of whatever is there, and on this listener that is the
+// console; `/console/` was a thing to know rather than a thing to find.
+//
+// A path that is not a file is the index, which is what a page that routes in
+// the browser needs on reload. `config.json` is the one thing the page has to
+// be told that its own origin does not say.
 func ConsoleMount(c ConsoleConfig) func(*web.Mux) {
 	return func(m *web.Mux) {
 		if c.Dir == "" {
 			return
 		}
 		files := http.FileServer(http.Dir(c.Dir))
-		m.HandleFunc("GET /console/config.json", func(w http.ResponseWriter, r *http.Request) {
+		m.HandleFunc("GET /config.json", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("content-type", "application/json")
 			w.Header().Set("cache-control", "no-store")
 			_ = json.NewEncoder(w).Encode(struct {
 				Admin string `json:"admin"`
 			}{Admin: c.Admin})
 		})
-		m.Handle("/console/", http.StripPrefix("/console/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		m.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			at := filepath.Join(c.Dir, filepath.FromSlash(strings.TrimPrefix(r.URL.Path, "/")))
 			if st, err := os.Stat(at); err != nil || st.IsDir() {
 				http.ServeFile(w, r, filepath.Join(c.Dir, "index.html"))
 				return
 			}
 			files.ServeHTTP(w, r)
-		})))
+		}))
 	}
 }
 
