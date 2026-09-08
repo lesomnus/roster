@@ -1,27 +1,39 @@
-# The server, the two pages, and the entrypoint that seeds it once.
+# roster, as an image: the binary, the two pages, and nothing else.
 #
-# Not a production image: it is what `docker compose up` runs so that somebody
-# working on the pages has a roster to point at, with a customer in it. What it is missing is a
-# non-root user, a pinned base digest, and any answer about secrets beyond an
-# environment variable -- see `docker/entrypoint.sh`.
+# One image and not three. `serve`, `account serve` and `ldap serve` are three
+# commands of one binary -- a deployment runs the same image three times with
+# three arguments, which is also why the entrypoint is the binary rather than a
+# script that picks one.
+#
+# Two final stages, and which one is built is the caller's:
+#
+#   app   what a deployment runs. distroless, nonroot, no shell.
+#   dev   what `docker compose up` runs. alpine, and the seeding scripts in
+#         `docker/`, so the quickstart in `docs/operating.md` is one command.
+#
+# `docker buildx bake` builds `app`; `compose.yaml` names `target: dev`.
 
-# The two pages, built once here so the image serves them: the console under
-# `/console/` on the control listener, and the account page for
-# `roster account serve`.
-FROM node:22 AS page
+# The two pages, on the **builder's** architecture, because a page has none.
+# Under `platforms` a naive stage would run node twice, the second time under
+# emulation, to produce the same bytes.
+FROM --platform=$BUILDPLATFORM node:22 AS page
 
 WORKDIR /src/ts
 
-# `vendor/` beside the manifests: `@lesomnus/grpc-dgram` is a tarball built
-# from a commit until it is released, and `npm ci` reads it.
+# `vendor/` beside the manifests: `@lesomnus/grpc-dgram` is a tarball built from
+# a commit until it is released, and `npm ci` reads it. See `ts/vendor/README.md`.
 COPY ts/package.json ts/package-lock.json ./
 COPY ts/vendor ./vendor
-RUN npm ci
+RUN npm ci --no-audit --no-fund
 
 COPY ts/ ./
+# `tsc` and both vite builds. The sandbox module is not here -- `ts/public/` is
+# in `.dockerignore` -- and nothing in a served console asks for it.
 RUN npm run build
 
-FROM golang:1.27 AS build
+# Also on the builder's, cross-compiling to the target: a Go toolchain does that
+# natively, and emulating one to avoid it is the slow way to the same binary.
+FROM --platform=$BUILDPLATFORM golang:1.27 AS base
 
 WORKDIR /src
 
@@ -30,9 +42,66 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 go build -o /out/roster ./cmd/roster
 
-FROM alpine:3.22
+# Not part of any image, and not in `bake`'s default group either: the gate is
+# `./scripts/test.sh`, which is gofmt, the build, the vet, the tests, `pd
+# doctor`, `pd gen --check --ts`, the wasm build and the console -- and half of
+# that needs node, which is not in this stage. This is the Go half, for
+# `docker buildx bake test` on a machine that has neither toolchain.
+FROM base AS test
+RUN --mount=type=cache,target=/root/.cache/go-build \
+	go vet ./... && go test ./...
+
+FROM base AS build
+
+ARG TARGETOS
+ARG TARGETARCH
+
+# What `roster version` prints.
+#
+# The toolchain would stamp `vcs.revision` from the checkout, and cannot here:
+# `.git/` is in `.dockerignore`, deliberately, because the build does not need
+# it and it is the largest thing in the context. So the version is handed in and
+# the revision goes on the image as a label instead (`docker-bake.hcl`), which
+# is where something reading a registry can find it anyway.
+ARG APP_VERSION="0.0.0-dev"
+
+RUN --mount=type=cache,target=/root/.cache/go-build \
+	CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+	go build -trimpath \
+	-ldflags="-s -w -X github.com/lesomnus/payday/version.version=${APP_VERSION}" \
+	-o /out/roster ./cmd/roster
+
+# Static rather than scratch: `roster account serve` makes outbound TLS calls to
+# whatever providers a tenant wrote down as `Connection` rows, so it needs root
+# certificates, and this is the smallest base that has them and a nonroot uid.
+FROM gcr.io/distroless/static-debian12:nonroot AS app
+
+COPY --from=build /out/roster /usr/local/bin/roster
+
+# Where the pages land. A deployment points at them:
+#
+#   control.console.dir            the console, served under `/console/`
+#   roster account serve --static  the account page
+COPY --from=page /src/ts/dist/console /usr/share/roster/console
+COPY --from=page /src/ts/dist/account /usr/share/roster/account
+
+USER nonroot:nonroot
+
+# No EXPOSE and no default port. Every listener is named in the configuration
+# and there are three of them with three answers about who may reach them --
+# `docs/operating.md`, "The two planes". A port declared here would be a fourth
+# answer that is not the deployment's.
+ENTRYPOINT ["/usr/local/bin/roster"]
+CMD ["serve"]
+
+# The compose image: the same binary and pages, plus a shell and the scripts
+# that seed a deployment once so `docker compose up` has a customer in it.
+#
+# Not a production image, and the difference is the point: it runs as root, the
+# base is not pinned by digest, and its answer about secrets is an environment
+# variable. See `docker/entrypoint.sh`.
+FROM alpine:3.22 AS dev
 
 RUN apk add --no-cache ca-certificates
 

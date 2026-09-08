@@ -50,7 +50,13 @@ services:
         || psql -h postgres -U roster -d roster -c "CREATE DATABASE control OWNER roster"
 
   roster:
-    build: .
+    # `dev` and not the default stage. The image has two: `app` is what a
+    # deployment runs -- distroless, nonroot, no shell -- and `dev` is this one,
+    # which adds a shell and the scripts in `docker/` so that `up` leaves a
+    # deployment with a customer in it. See the head of `Dockerfile`.
+    build:
+      context: .
+      target: dev
     depends_on:
       planes:
         condition: service_completed_successfully
@@ -131,7 +137,9 @@ services:
   # account app answers on, and the app's key. Reads the databases directly, as
   # a shell on the box would, so it carries the same connection settings.
   customer:
-    build: .
+    build:
+      context: .
+      target: dev
     depends_on:
       roster:
         condition: service_healthy
@@ -154,7 +162,9 @@ services:
   # The account app: its own process, fronting roster over the wire with the
   # key above, the way it is deployed.
   account:
-    build: .
+    build:
+      context: .
+      target: dev
     depends_on:
       customer:
         condition: service_completed_successfully
@@ -174,7 +184,9 @@ services:
   #
   #     ldapsearch -H ldap://localhost:1389 -x   #       -D uid=erin,ou=people,o=contoso -w rt_… -b o=contoso '(objectClass=inetOrgPerson)'
   ldap:
-    build: .
+    build:
+      context: .
+      target: dev
     depends_on:
       customer:
         condition: service_completed_successfully
