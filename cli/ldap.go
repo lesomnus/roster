@@ -64,103 +64,149 @@ func newCmdLdapServe(c *cmd.Config) *xli.Command {
 			}
 			defer stop()
 
-			roster, _ := flg.Find[string](cl, "roster")
-			if roster == "" {
-				return errors.New("--roster: where roster speaks gRPC")
+			// The block first, then the flags over it. See `cli/account.go`.
+			lc := c.Ldap
+			if v, _ := flg.Find[string](cl, "listen"); v != "" {
+				lc.Addr = v
 			}
-			keys, err := keysFrom(cl, LdapKeyPrefix)
-			if err != nil {
-				return err
+			if v, _ := flg.Find[string](cl, "listen-tls"); v != "" {
+				lc.AddrTls = v
 			}
-			bind, _ := flg.Find[string](cl, "bind")
-			mode, err := ldap.ParseMode(bind)
-			if err != nil {
-				return fmt.Errorf("--bind: %w", err)
+			if v, _ := flg.Find[string](cl, "roster"); v != "" {
+				lc.Roster = v
 			}
-
-			cfg := ldap.Config{Roster: roster, Keys: keys, Bind: mode, Log: log.From(ctx)}
-			cfg.Insecure, _ = flg.Find[bool](cl, "insecure")
-			bases, _ := flg.Find[[]string](cl, "base")
-			for _, v := range bases {
-				alias, suffix, ok := strings.Cut(v, "=")
-				if !ok || alias == "" || suffix == "" {
-					return fmt.Errorf("--base %q: alias=dc=…", v)
-				}
-				if cfg.Bases == nil {
-					cfg.Bases = map[string]string{}
-				}
-				cfg.Bases[alias] = suffix
+			if v, _ := flg.Find[bool](cl, "insecure"); v {
+				lc.Insecure = true
 			}
-
-			var tlsConfig *tls.Config
+			if v, _ := flg.Find[string](cl, "bind"); v != "" {
+				lc.Bind = v
+			}
+			if v, _ := flg.Find[bool](cl, "require-tls"); v {
+				lc.RequireTls = true
+			}
 			if v, _ := flg.Find[string](cl, "tls"); v != "" {
 				certFile, keyFile, ok := strings.Cut(v, ",")
 				if !ok {
 					return fmt.Errorf("--tls %q: cert.pem,key.pem", v)
 				}
-				cert, err := tls.LoadX509KeyPair(certFile, keyFile)
-				if err != nil {
-					return fmt.Errorf("--tls: %w", err)
+				lc.Tls = cmd.TlsConfig{Cert: certFile, Key: keyFile}
+			}
+			if vs, _ := flg.Find[[]string](cl, "base"); len(vs) > 0 {
+				if lc.Bases == nil {
+					lc.Bases = map[string]string{}
 				}
-				tlsConfig = &tls.Config{Certificates: []tls.Certificate{cert}}
+				for _, v := range vs {
+					alias, suffix, ok := strings.Cut(v, "=")
+					if !ok || alias == "" || suffix == "" {
+						return fmt.Errorf("--base %q: alias=dc=…", v)
+					}
+					lc.Bases[alias] = suffix
+				}
 			}
 
-			plain, _ := flg.Find[string](cl, "listen")
-			secure, _ := flg.Find[string](cl, "listen-tls")
-			if secure != "" && tlsConfig == nil {
-				return errors.New("--listen-tls needs --tls")
-			}
-			if plain == "" && secure == "" {
-				plain = ":389"
-			}
-			require, _ := flg.Find[bool](cl, "require-tls")
-			if require && tlsConfig == nil && secure == "" {
-				return errors.New("--require-tls with nothing to offer: give --tls")
-			}
-
-			d, err := ldap.New(ctx, cfg)
+			given, _ := flg.Find[[]string](cl, "key")
+			keys, err := keysOf(lc.Keys, LdapKeyPrefix, given)
 			if err != nil {
 				return err
 			}
-			defer d.Close()
+			lc.Keys = keys
 
-			s := &wire.Server{Handler: d.Handler(), TLS: tlsConfig, RequireTLS: require, Log: log.From(ctx)}
-			defer s.Close()
-
-			errs := make(chan error, 2)
-			serve := func(l net.Listener, how string) {
-				log.From(ctx).InfoContext(ctx, "ldap", slog.String("addr", l.Addr().String()), slog.String("how", how),
-					slog.Int("tenants", len(keys)), slog.Any("suffixes", d.NamingContexts()))
-				go func() {
-					<-ctx.Done()
-					_ = l.Close()
-				}()
-				errs <- s.Serve(l)
+			if lc.Roster == "" {
+				return errors.New("--roster (or ldap.roster): where roster speaks gRPC")
 			}
-			n := 0
-			if plain != "" {
-				l, err := net.Listen("tcp", plain)
-				if err != nil {
-					return err
-				}
-				n++
-				go serve(l, "ldap")
-			}
-			if secure != "" {
-				l, err := tls.Listen("tcp", secure, tlsConfig)
-				if err != nil {
-					return err
-				}
-				n++
-				go serve(l, "ldaps")
-			}
-			for range n {
-				if err := <-errs; err != nil {
-					return err
-				}
+			if lc.Addr == "" && lc.AddrTls == "" {
+				lc.Addr = ":389"
 			}
 
-			return nil
+			return serveLdap(ctx, lc)
 		}),
 	}
+}
+
+// serveLdap answers LDAP until ctx is done.
+//
+// Told a [cmd.LdapConfig] and nothing else, for the reason `serveAccount` is:
+// it is called from the command above and from `roster serve` when `ldap:`
+// names an address, and both have to build the same thing. It builds no
+// telemetry; both callers already have.
+func serveLdap(ctx context.Context, lc cmd.LdapConfig) error {
+	// Both names, in every refusal below. The value reached here from a block
+	// or from a flag and this cannot tell which, so naming one would be right
+	// half the time -- and a reader who has only ever used the other would be
+	// told about a setting they do not have.
+	mode, err := ldap.ParseMode(lc.Bind)
+	if err != nil {
+		return fmt.Errorf("ldap.bind (--bind): %w", err)
+	}
+
+	var tlsConfig *tls.Config
+	if lc.Tls.IsSet() {
+		if lc.Tls.Cert == "" || lc.Tls.Key == "" {
+			return errors.New("ldap.tls (--tls): both a cert and a key")
+		}
+		cert, err := tls.LoadX509KeyPair(lc.Tls.Cert, lc.Tls.Key)
+		if err != nil {
+			return fmt.Errorf("ldap.tls (--tls): %w", err)
+		}
+		tlsConfig = &tls.Config{Certificates: []tls.Certificate{cert}}
+	}
+	if lc.AddrTls != "" && tlsConfig == nil {
+		return errors.New("ldap.addr_tls (--listen-tls) needs ldap.tls (--tls)")
+	}
+	if lc.RequireTls && tlsConfig == nil && lc.AddrTls == "" {
+		return errors.New("ldap.require_tls (--require-tls) with nothing to offer: give ldap.tls (--tls)")
+	}
+
+	cfg := ldap.Config{
+		Roster:   lc.Roster,
+		Keys:     lc.Keys,
+		Bases:    lc.Bases,
+		Bind:     mode,
+		Insecure: lc.Insecure,
+		Log:      log.From(ctx),
+	}
+
+	d, err := ldap.New(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+
+	s := &wire.Server{Handler: d.Handler(), TLS: tlsConfig, RequireTLS: lc.RequireTls, Log: log.From(ctx)}
+	defer s.Close()
+
+	errs := make(chan error, 2)
+	serve := func(l net.Listener, how string) {
+		log.From(ctx).InfoContext(ctx, "ldap", slog.String("addr", l.Addr().String()), slog.String("how", how),
+			slog.Int("tenants", len(lc.Keys)), slog.Any("suffixes", d.NamingContexts()))
+		go func() {
+			<-ctx.Done()
+			_ = l.Close()
+		}()
+		errs <- s.Serve(l)
+	}
+	n := 0
+	if lc.Addr != "" {
+		l, err := net.Listen("tcp", lc.Addr)
+		if err != nil {
+			return err
+		}
+		n++
+		go serve(l, "ldap")
+	}
+	if lc.AddrTls != "" {
+		l, err := tls.Listen("tcp", lc.AddrTls, tlsConfig)
+		if err != nil {
+			return err
+		}
+		n++
+		go serve(l, "ldaps")
+	}
+	for range n {
+		if err := <-errs; err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

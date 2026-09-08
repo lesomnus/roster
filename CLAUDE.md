@@ -276,14 +276,25 @@ go run ./cmd/roster ldap serve --roster … --key contoso=rt_…  # the director
 docker compose up --build       # Postgres, both planes, a customer, both pages, LDAP
 ```
 
-Two UIs, three processes: `roster serve` serves the console under `/console/`
-on `control.http` when `control.console.dir` names the build; `roster account
-serve` is a separate process holding tenant keys and facing the internet; and
-`roster ldap serve` is roster as a directory for clients that speak nothing
-else. The last two are consumers that reach roster only over the wire
-(`account/`, `ldap/`, checked by `scripts/test.sh`). `docs/ldap.md` is the
-directory's design -- a bind is an app password (a key with `Me.Get` alone),
-and a password bind cannot pass a second factor because `Vouch.Verify` says so.
+Two UIs, and one to three processes. `roster serve` serves the console under
+`/console/` on `control.http` when `control.console.dir` names the build.
+`roster account serve` holds tenant keys and faces the internet; `roster ldap
+serve` is roster as a directory for clients that speak nothing else.
+
+Those two are also **blocks** — `account:` and `ldap:`, named is a listener and
+empty is nowhere — so `roster serve` opens them and a deployment need not be
+three containers to run one binary. Which to want is a question about blast
+radius and it is the deployment's: `docs/operating.md`, "One process, or three",
+and `cmd/consumers.go` for why it is not this repository's answer.
+
+**Either way they are consumers that reach roster only over the wire**
+(`account/`, `ldap/`, checked by `scripts/test.sh` — neither may import
+`internal`, `cmd` or `server`). In one process the account app dials roster's
+own listener, so nothing about that is relaxed.
+
+`docs/ldap.md` is the directory's design -- a bind is an app password (a key
+with `Me.Get` alone), and a password bind cannot pass a second factor because
+`Vouch.Verify` says so.
 
 ## `auth.Plain` is not for production
 

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -126,6 +127,29 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 			g.Go(func() error { return spin.Run(ctx, slices.Values(s.Spin)) })
 			g.Go(func() error { return s.Serve(ctx, *c, l) })
 
+			// The two consumers, when this deployment runs them itself rather
+			// than in processes of their own. Named is a listener and empty is
+			// nowhere; `cmd/consumers.go` says which a deployment should want.
+			//
+			// In the same errgroup as the server, which is the whole of what
+			// "one process" costs and buys: whichever stops first stops the
+			// others, so a front door that cannot come up is a start-up failure
+			// rather than a deployment that is half there.
+			if c.Account.Serves() {
+				ac, err := frontDoor(c, l)
+				if err != nil {
+					return err
+				}
+				g.Go(func() error { return serveAccount(ctx, ac) })
+			}
+			if c.Ldap.Serves() {
+				lc, err := directory(c, l)
+				if err != nil {
+					return err
+				}
+				g.Go(func() error { return serveLdap(ctx, lc) })
+			}
+
 			return g.Wait()
 		}),
 	}
@@ -155,4 +179,55 @@ func Migrate(ctx context.Context, s *cmd.Server) error {
 	}
 
 	return nil
+}
+
+// frontDoor is `account:` with what only this process knows filled in.
+//
+// `roster` and `connect` default to the deployment's own listeners, because
+// writing them again in the file that already says `server.addr` is one more
+// place for two answers to drift. It is a default and not a shortcut: the call
+// goes out on a socket, with a key, and comes back through the wall, exactly as
+// it does from a process of its own.
+//
+// `l` rather than `c.Server.ListenAddr()` because a configuration may name port
+// 0 and a listener knows what it got.
+func frontDoor(c *cmd.Config, l net.Listener) (cmd.AccountConfig, error) {
+	ac := c.Account
+	if ac.Roster == "" {
+		ac.Roster = l.Addr().String()
+	}
+	if ac.Connect == "" {
+		if c.Server.Http.Addr == "" {
+			return ac, errors.New("account.connect: the page's calls go out over HTTP and this deployment serves none; name server.http.addr, or account.connect")
+		}
+
+		// http rather than https: this is a dial to a listener of this same
+		// process, and a deployment that terminates TLS in front of itself is
+		// not terminating it here.
+		ac.Connect = "http://" + c.Server.Http.Addr
+	}
+
+	keys, err := keysOf(c.Account.Keys, AccountKeyPrefix, nil)
+	if err != nil {
+		return ac, err
+	}
+	ac.Keys = keys
+
+	return ac, nil
+}
+
+// directory is `ldap:` with the same default, for the same reason.
+func directory(c *cmd.Config, l net.Listener) (cmd.LdapConfig, error) {
+	lc := c.Ldap
+	if lc.Roster == "" {
+		lc.Roster = l.Addr().String()
+	}
+
+	keys, err := keysOf(c.Ldap.Keys, LdapKeyPrefix, nil)
+	if err != nil {
+		return lc, err
+	}
+	lc.Keys = keys
+
+	return lc, nil
 }

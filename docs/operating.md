@@ -1298,8 +1298,8 @@ roster ldap serve --roster roster:8080 \
   --listen :389 --listen-tls :636
 ```
 
-Its own process, like the account app: it holds one tenant key per operator,
-reaches roster over the wire and never past it, and translates. Each tenant is
+Its own process, or not: see below. Either way it holds one tenant key per
+operator, reaches roster over the wire and never past it, and translates. Each tenant is
 a suffix (`o=contoso`; `--base contoso=dc=contoso,dc=example` renames one),
 with `ou=people` as `inetOrgPerson`, `ou=groups` and the teams under
 `ou=sites` as `groupOfNames`, and `memberOf` on every person. It is read-only,
@@ -1338,6 +1338,68 @@ ldapsearch -H ldap://localhost:1389 -x \
 The compose stack runs one on `1389` (`LDAP_BIND=either` turns passwords on).
 What it refuses and why, the tree, the filters and which roster read each
 becomes: [ldap.md](ldap.md).
+
+## One process, or three
+
+`roster serve`, `roster account serve` and `roster ldap serve` are three
+commands of one binary, and a deployment that wants all three has been three
+containers. It can be one:
+
+```yaml
+# roster.yaml
+server:
+  addr: 127.0.0.1:8080
+  http:
+    addr: 127.0.0.1:8081
+
+account:
+  addr: :8090
+  base: https://account.contoso.example
+  static: /usr/share/roster/account
+  keys:
+    contoso: env:ROSTER_ACCOUNT_KEY_CONTOSO
+
+ldap:
+  addr: :389
+  bind: key
+  keys:
+    contoso: env:ROSTER_LDAP_KEY_CONTOSO
+```
+
+Named is a listener and empty is nowhere, which is what `control` and `admin`
+already do. `roster serve` opens whichever are named, in the same errgroup as
+the server, so a front door that cannot come up is a start-up failure rather
+than a deployment that is half there.
+
+**The keys in a file are references and not tokens.** `env:NAME`, the one scheme
+this binary knows, because a configuration file is committed and a key is a
+secret. `ROSTER_ACCOUNT_KEY_<ALIAS>` still works and is merged with them, and
+`--key alias=rt_…` still takes a literal, which is in the process list and says
+so. All three are read, most specific last.
+
+`account.roster` and `account.connect` are left out above on purpose: in one
+process they default to this deployment's own listeners. Writing them again in
+the file that already says `server.addr` is one more place for two answers to
+drift. It is a default and not a shortcut -- the call still goes out on a
+socket, with a key, and comes back through the wall.
+
+### Which to run
+
+Three processes, when the blast radius is worth the pods. The account app faces
+the internet and holds one tenant key per operator; the control plane holds
+every key and the database. In one process a bug in the first reaches the
+second, and in three that is a kernel boundary rather than a code one.
+
+One process, when it is not. A deployment that is three containers to run one
+binary against one database pays for that in configuration, upgrades and
+things to watch, and gets a boundary it may never have needed.
+
+Nothing else changes with the answer. In one process the account app still
+dials roster's own listener, so it is still a caller with a key, still walled,
+and still unable to reach past the wire -- which `scripts/test.sh` checks by
+refusing to let `account/` or `ldap/` import the server at all. `compose.yaml`
+runs the three-process shape, and this file's own quickstart is the one-process
+one.
 
 ## Signing somebody in
 
