@@ -129,8 +129,10 @@ sequenceDiagram
 the per-request path.** No session check and no token check reaches it, which is
 the property the request was actually after, had without roster signing
 anything. And the caller list is unchanged by any of it — the Login App and
-admin consoles; a browser never sees roster — which is the sign it is the right
-shape.
+admin consoles; no customer's browser reaches roster — which is the sign it is
+the right shape. (An operator's does, two paragraphs down: the console is a
+browser and roster's own cookie is what it holds. Different plane, and it is a
+caller on this list rather than an exception to it.)
 
 roster ships both of those callers, and neither moves the line. The console
 (`ts/console/`) is the admin console, on roster's own cookie. The account app

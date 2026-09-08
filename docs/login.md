@@ -23,8 +23,14 @@ sequenceDiagram
   C-->>B: 200 {items:[…]}
 ```
 
-**roster never sees the browser.** It is called by machines, has no cookie
-domain and no CSRF story, and that is why the session is custody's.
+**roster never sees *this* browser.** The data plane is called by machines, and
+the session is custody's because a cookie belongs to the origin the browser is
+actually talking to.
+
+roster does serve one browser of its own -- the admin console, on the control
+plane, on a cookie roster mints and checks (`AuthService.SignIn`, the one method
+`cmd.Public` answers without a caller). Different plane, different people, and
+nothing about a customer's sign-in passes through it.
 
 ## What each side answers
 

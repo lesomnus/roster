@@ -968,10 +968,19 @@ func (s *Server) closed(c Config) func(method string) bool {
 // the **caller**.
 //
 // The person signing in has no credential yet -- that is the thing they are
-// asking for. But they are not who is calling. The caller is custody, or a
-// Login App, or an admin console, and every one of those is a machine holding a
-// certificate long before any of this. roster is called by machines and never
-// by a browser, decided before any of it was written -- docs/position.md.
+// asking for. But on the data plane they are not who is **calling**: the caller
+// is custody, or a Login App, and each is a machine holding a credential long
+// before any of this.
+//
+// This used to end *roster is called by machines and never by a browser*, which
+// is not true of the deployment and was never true of the line below it. The
+// console **is** a browser and reaches `control.http` directly, cookie and all
+// (`ts/console/main.tsx`, `credentials: 'include'`; `HttpOnly` and `SameSite`
+// pinned in `cmd/console_test.go`). What is true is per plane, which is why
+// this is a function and not a sentence: the control plane serves exactly one
+// browser-facing method, below, and the data plane serves none. A person a
+// customer signs in is reached through an app that holds a key, and that key is
+// what the tenant the app names is held against -- `server/vouch/vouch.go`.
 //
 // Public gave up two things for nothing. Anybody who could reach the port could
 // guess passwords at the whole organisation -- and not slowly, since
