@@ -25,7 +25,6 @@ import { SiteService } from '../gen/app/site_svc_pb.js'
 import { MeService } from '../gen/app/me_pb.js'
 import { TenantService } from '../gen/roster/payday/tenant_svc_pb.js'
 import { HolderService } from '../gen/roster/payday/holder_svc_pb.js'
-import { VouchService } from '../gen/app/vouch_pb.js'
 import { CredentialService } from '../gen/app/credential_svc_pb.js'
 import { BatchService } from '@lesomnus/payday/pdpb'
 
@@ -67,10 +66,12 @@ export function app(transport: Transport): App {
  * is the writes an operator makes -- about one person, and about standing a
  * customer up -- and a page reads through the store for everything else.
  *
- * `VouchService` is on that port for the reason roadmap.md's item 10 gives --
- * an air
- * gap has an operator instead of a mail server -- and `cmd/admin.go` says what
- * it costs and what bounds it.
+ * `CredentialService` is on that port for the reason roadmap.md's item 10
+ * gives -- an air gap has an operator instead of a mail server, so `Issue`
+ * hands them a password to read out -- and `cmd/admin.go` says what it costs
+ * and what bounds it. It was `VouchService` until `Vouch.Reset` became
+ * `Credential.Issue`; the page called nothing else there, so the client went
+ * with the method.
  *
  * `tenant`, `role` and `binding` are the four writes that make a customer, and
  * they are here because `roster init` stopped making one. What creates a
@@ -81,7 +82,6 @@ export function app(transport: Transport): App {
  */
 export interface Admin {
 	readonly holder: Client<typeof HolderService>
-	readonly vouch: Client<typeof VouchService>
 	readonly credential: Client<typeof CredentialService>
 
 	/** The four writes that stand a customer up; see `customers.tsx`. */
@@ -103,7 +103,6 @@ export interface Admin {
 export function admin(transport: Transport): Admin {
 	return {
 		holder: createClient(HolderService, transport),
-		vouch: createClient(VouchService, transport),
 		credential: createClient(CredentialService, transport),
 		tenant: createClient(TenantService, transport),
 		role: createClient(RoleService, transport),

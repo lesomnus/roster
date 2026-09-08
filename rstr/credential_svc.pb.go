@@ -2851,11 +2851,205 @@ func (b0 CredentialEnrolResponse_builder) Build() *CredentialEnrolResponse {
 	return m0
 }
 
+type CredentialIssueRequest struct {
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref     *HolderRef             `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Kind    string                 `protobuf:"bytes,2,opt,name=kind"`
+	xxx_hidden_Email   *EmailRef              `protobuf:"bytes,3,opt,name=email"`
+	xxx_hidden_Service string                 `protobuf:"bytes,4,opt,name=service"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *CredentialIssueRequest) Reset() {
+	*x = CredentialIssueRequest{}
+	mi := &file_app_credential_svc_g_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CredentialIssueRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CredentialIssueRequest) ProtoMessage() {}
+
+func (x *CredentialIssueRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_app_credential_svc_g_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *CredentialIssueRequest) GetRef() *HolderRef {
+	if x != nil {
+		return x.xxx_hidden_Ref
+	}
+	return nil
+}
+
+func (x *CredentialIssueRequest) GetKind() string {
+	if x != nil {
+		return x.xxx_hidden_Kind
+	}
+	return ""
+}
+
+func (x *CredentialIssueRequest) GetEmail() *EmailRef {
+	if x != nil {
+		return x.xxx_hidden_Email
+	}
+	return nil
+}
+
+func (x *CredentialIssueRequest) GetService() string {
+	if x != nil {
+		return x.xxx_hidden_Service
+	}
+	return ""
+}
+
+func (x *CredentialIssueRequest) SetRef(v *HolderRef) {
+	x.xxx_hidden_Ref = v
+}
+
+func (x *CredentialIssueRequest) SetKind(v string) {
+	x.xxx_hidden_Kind = v
+}
+
+func (x *CredentialIssueRequest) SetEmail(v *EmailRef) {
+	x.xxx_hidden_Email = v
+}
+
+func (x *CredentialIssueRequest) SetService(v string) {
+	x.xxx_hidden_Service = v
+}
+
+func (x *CredentialIssueRequest) HasRef() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Ref != nil
+}
+
+func (x *CredentialIssueRequest) HasEmail() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Email != nil
+}
+
+func (x *CredentialIssueRequest) ClearRef() {
+	x.xxx_hidden_Ref = nil
+}
+
+func (x *CredentialIssueRequest) ClearEmail() {
+	x.xxx_hidden_Email = nil
+}
+
+type CredentialIssueRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Whose, in full. **Data plane only**, and a reference rather than an alias
+	// because the wall has many tenants and a name alone is a question with more
+	// than one answer. Naming somebody who is not there is a refusal, not a
+	// creation: a customer's people are the customer's.
+	Ref *HolderRef
+	// Which credential; empty is the password. There is nothing sensible to
+	// generate for a second factor that somebody could then read out -- that is
+	// `Enrol`, which answers with a seed to scan -- so anything else is refused.
+	Kind string
+	// Whose, by an address of theirs. **Data plane only.** The form an operator
+	// has when somebody writes in about an account they cannot reach, and the one
+	// `Vouch.Reset` took as `who.address`.
+	Email *EmailRef
+	// Whose, by alias within this plane's one tenant, created if they are not
+	// there. **Control plane only.** Giving this with either of the two above is
+	// refused.
+	Service string
+}
+
+func (b0 CredentialIssueRequest_builder) Build() *CredentialIssueRequest {
+	m0 := &CredentialIssueRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Kind = b.Kind
+	x.xxx_hidden_Email = b.Email
+	x.xxx_hidden_Service = b.Service
+	return m0
+}
+
+type CredentialIssueResponse struct {
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Secret string                 `protobuf:"bytes,1,opt,name=secret"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *CredentialIssueResponse) Reset() {
+	*x = CredentialIssueResponse{}
+	mi := &file_app_credential_svc_g_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CredentialIssueResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CredentialIssueResponse) ProtoMessage() {}
+
+func (x *CredentialIssueResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_app_credential_svc_g_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *CredentialIssueResponse) GetSecret() string {
+	if x != nil {
+		return x.xxx_hidden_Secret
+	}
+	return ""
+}
+
+func (x *CredentialIssueResponse) SetSecret(v string) {
+	x.xxx_hidden_Secret = v
+}
+
+type CredentialIssueResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Shown once and not stored. What is stored is an argon2id hash, so this
+	// deployment cannot tell anybody what theirs was any more than it can tell
+	// them their key.
+	Secret string
+}
+
+func (b0 CredentialIssueResponse_builder) Build() *CredentialIssueResponse {
+	m0 := &CredentialIssueResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Secret = b.Secret
+	return m0
+}
+
 var File_app_credential_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_credential_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1aapp/credential_svc.g.proto\x12\x06roster\x1a\x14app/credential.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xc4\x03\n" +
+	"\x1aapp/credential_svc.g.proto\x12\x06roster\x1a\x14app/credential.proto\x1a\x15app/email_svc.g.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xc4\x03\n" +
 	"\x14CredentialAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x19\n" +
@@ -2957,7 +3151,14 @@ const file_app_credential_svc_g_proto_rawDesc = "" +
 	"\vattestation\x18\x05 \x01(\fR\vattestation\"M\n" +
 	"\x17CredentialEnrolResponse\x12\x19\n" +
 	"\x04seed\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04seed\x12\x17\n" +
-	"\x03uri\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x03uri2\xae\x05\n" +
+	"\x03uri\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x03uri\"\xa1\x01\n" +
+	"\x16CredentialIssueRequest\x12#\n" +
+	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\x12\x19\n" +
+	"\x04kind\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04kind\x12&\n" +
+	"\x05email\x18\x03 \x01(\v2\x10.roster.EmailRefR\x05email\x12\x1f\n" +
+	"\aservice\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\aservice\"8\n" +
+	"\x17CredentialIssueResponse\x12\x1d\n" +
+	"\x06secret\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06secret2\xf8\x05\n" +
 	"\x11CredentialService\x127\n" +
 	"\x03Add\x12\x1c.roster.CredentialAddRequest\x1a\x12.roster.Credential\x127\n" +
 	"\x03Get\x12\x1c.roster.CredentialGetRequest\x1a\x12.roster.Credential\x12;\n" +
@@ -2968,9 +3169,10 @@ const file_app_credential_svc_g_proto_rawDesc = "" +
 	"\x05Watch\x12\x1e.roster.CredentialWatchRequest\x1a\x1f.roster.CredentialWatchResponse0\x01\x12K\n" +
 	"\x06Unlock\x12\x1f.roster.CredentialUnlockRequest\x1a .roster.CredentialUnlockResponse\x12B\n" +
 	"\x03Set\x12\x1c.roster.CredentialSetRequest\x1a\x1d.roster.CredentialSetResponse\x12H\n" +
-	"\x05Enrol\x12\x1e.roster.CredentialEnrolRequest\x1a\x1f.roster.CredentialEnrolResponseB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
+	"\x05Enrol\x12\x1e.roster.CredentialEnrolRequest\x1a\x1f.roster.CredentialEnrolResponse\x12H\n" +
+	"\x05Issue\x12\x1e.roster.CredentialIssueRequest\x1a\x1f.roster.CredentialIssueResponseB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_credential_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_app_credential_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_app_credential_svc_g_proto_goTypes = []any{
 	(*CredentialAddRequest)(nil),     // 0: roster.CredentialAddRequest
 	(*CredentialGetRequest)(nil),     // 1: roster.CredentialGetRequest
@@ -2992,64 +3194,71 @@ var file_app_credential_svc_g_proto_goTypes = []any{
 	(*CredentialSetResponse)(nil),    // 17: roster.CredentialSetResponse
 	(*CredentialEnrolRequest)(nil),   // 18: roster.CredentialEnrolRequest
 	(*CredentialEnrolResponse)(nil),  // 19: roster.CredentialEnrolResponse
-	(*HolderRef)(nil),                // 20: roster.HolderRef
-	(*timestamppb.Timestamp)(nil),    // 21: google.protobuf.Timestamp
-	(*HolderSelect)(nil),             // 22: roster.HolderSelect
-	(*patchpb.Patch)(nil),            // 23: patch.Patch
-	(*Credential)(nil),               // 24: roster.Credential
+	(*CredentialIssueRequest)(nil),   // 20: roster.CredentialIssueRequest
+	(*CredentialIssueResponse)(nil),  // 21: roster.CredentialIssueResponse
+	(*HolderRef)(nil),                // 22: roster.HolderRef
+	(*timestamppb.Timestamp)(nil),    // 23: google.protobuf.Timestamp
+	(*HolderSelect)(nil),             // 24: roster.HolderSelect
+	(*patchpb.Patch)(nil),            // 25: patch.Patch
+	(*Credential)(nil),               // 26: roster.Credential
+	(*EmailRef)(nil),                 // 27: roster.EmailRef
 }
 var file_app_credential_svc_g_proto_depIdxs = []int32{
-	20, // 0: roster.CredentialAddRequest.holder:type_name -> roster.HolderRef
-	21, // 1: roster.CredentialAddRequest.date_locked:type_name -> google.protobuf.Timestamp
-	21, // 2: roster.CredentialAddRequest.date_rotated:type_name -> google.protobuf.Timestamp
-	21, // 3: roster.CredentialAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	22, // 0: roster.CredentialAddRequest.holder:type_name -> roster.HolderRef
+	23, // 1: roster.CredentialAddRequest.date_locked:type_name -> google.protobuf.Timestamp
+	23, // 2: roster.CredentialAddRequest.date_rotated:type_name -> google.protobuf.Timestamp
+	23, // 3: roster.CredentialAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 4: roster.CredentialGetRequest.ref:type_name -> roster.CredentialRef
 	4,  // 5: roster.CredentialGetRequest.select:type_name -> roster.CredentialSelect
 	3,  // 6: roster.CredentialRef.kind:type_name -> roster.CredentialRefByKind
-	20, // 7: roster.CredentialRefByKind.holder:type_name -> roster.HolderRef
-	22, // 8: roster.CredentialSelect.holder:type_name -> roster.HolderSelect
+	22, // 7: roster.CredentialRefByKind.holder:type_name -> roster.HolderRef
+	24, // 8: roster.CredentialSelect.holder:type_name -> roster.HolderSelect
 	2,  // 9: roster.CredentialPatchRequest.ref:type_name -> roster.CredentialRef
-	21, // 10: roster.CredentialPatchRequest.date_locked:type_name -> google.protobuf.Timestamp
-	21, // 11: roster.CredentialPatchRequest.date_rotated:type_name -> google.protobuf.Timestamp
-	21, // 12: roster.CredentialPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	23, // 10: roster.CredentialPatchRequest.date_locked:type_name -> google.protobuf.Timestamp
+	23, // 11: roster.CredentialPatchRequest.date_rotated:type_name -> google.protobuf.Timestamp
+	23, // 12: roster.CredentialPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
 	2,  // 13: roster.CredentialApplyRequest.ref:type_name -> roster.CredentialRef
-	23, // 14: roster.CredentialApplyRequest.patch:type_name -> patch.Patch
+	25, // 14: roster.CredentialApplyRequest.patch:type_name -> patch.Patch
 	10, // 15: roster.CredentialListRequest.filters:type_name -> roster.CredentialFilter
-	24, // 16: roster.CredentialListResponse.items:type_name -> roster.Credential
+	26, // 16: roster.CredentialListResponse.items:type_name -> roster.Credential
 	2,  // 17: roster.CredentialFilter.ref:type_name -> roster.CredentialRef
-	20, // 18: roster.CredentialFilter.holder:type_name -> roster.HolderRef
+	22, // 18: roster.CredentialFilter.holder:type_name -> roster.HolderRef
 	10, // 19: roster.CredentialWatchRequest.filters:type_name -> roster.CredentialFilter
 	13, // 20: roster.CredentialWatchResponse.items:type_name -> roster.CredentialWatchItem
-	24, // 21: roster.CredentialWatchItem.value:type_name -> roster.Credential
-	20, // 22: roster.CredentialUnlockRequest.ref:type_name -> roster.HolderRef
-	21, // 23: roster.CredentialUnlockResponse.was_locked_until:type_name -> google.protobuf.Timestamp
-	20, // 24: roster.CredentialSetRequest.ref:type_name -> roster.HolderRef
-	20, // 25: roster.CredentialEnrolRequest.ref:type_name -> roster.HolderRef
-	0,  // 26: roster.CredentialService.Add:input_type -> roster.CredentialAddRequest
-	1,  // 27: roster.CredentialService.Get:input_type -> roster.CredentialGetRequest
-	5,  // 28: roster.CredentialService.Patch:input_type -> roster.CredentialPatchRequest
-	6,  // 29: roster.CredentialService.Apply:input_type -> roster.CredentialApplyRequest
-	2,  // 30: roster.CredentialService.Erase:input_type -> roster.CredentialRef
-	8,  // 31: roster.CredentialService.List:input_type -> roster.CredentialListRequest
-	11, // 32: roster.CredentialService.Watch:input_type -> roster.CredentialWatchRequest
-	14, // 33: roster.CredentialService.Unlock:input_type -> roster.CredentialUnlockRequest
-	16, // 34: roster.CredentialService.Set:input_type -> roster.CredentialSetRequest
-	18, // 35: roster.CredentialService.Enrol:input_type -> roster.CredentialEnrolRequest
-	24, // 36: roster.CredentialService.Add:output_type -> roster.Credential
-	24, // 37: roster.CredentialService.Get:output_type -> roster.Credential
-	24, // 38: roster.CredentialService.Patch:output_type -> roster.Credential
-	24, // 39: roster.CredentialService.Apply:output_type -> roster.Credential
-	7,  // 40: roster.CredentialService.Erase:output_type -> roster.CredentialEraseResponse
-	9,  // 41: roster.CredentialService.List:output_type -> roster.CredentialListResponse
-	12, // 42: roster.CredentialService.Watch:output_type -> roster.CredentialWatchResponse
-	15, // 43: roster.CredentialService.Unlock:output_type -> roster.CredentialUnlockResponse
-	17, // 44: roster.CredentialService.Set:output_type -> roster.CredentialSetResponse
-	19, // 45: roster.CredentialService.Enrol:output_type -> roster.CredentialEnrolResponse
-	36, // [36:46] is the sub-list for method output_type
-	26, // [26:36] is the sub-list for method input_type
-	26, // [26:26] is the sub-list for extension type_name
-	26, // [26:26] is the sub-list for extension extendee
-	0,  // [0:26] is the sub-list for field type_name
+	26, // 21: roster.CredentialWatchItem.value:type_name -> roster.Credential
+	22, // 22: roster.CredentialUnlockRequest.ref:type_name -> roster.HolderRef
+	23, // 23: roster.CredentialUnlockResponse.was_locked_until:type_name -> google.protobuf.Timestamp
+	22, // 24: roster.CredentialSetRequest.ref:type_name -> roster.HolderRef
+	22, // 25: roster.CredentialEnrolRequest.ref:type_name -> roster.HolderRef
+	22, // 26: roster.CredentialIssueRequest.ref:type_name -> roster.HolderRef
+	27, // 27: roster.CredentialIssueRequest.email:type_name -> roster.EmailRef
+	0,  // 28: roster.CredentialService.Add:input_type -> roster.CredentialAddRequest
+	1,  // 29: roster.CredentialService.Get:input_type -> roster.CredentialGetRequest
+	5,  // 30: roster.CredentialService.Patch:input_type -> roster.CredentialPatchRequest
+	6,  // 31: roster.CredentialService.Apply:input_type -> roster.CredentialApplyRequest
+	2,  // 32: roster.CredentialService.Erase:input_type -> roster.CredentialRef
+	8,  // 33: roster.CredentialService.List:input_type -> roster.CredentialListRequest
+	11, // 34: roster.CredentialService.Watch:input_type -> roster.CredentialWatchRequest
+	14, // 35: roster.CredentialService.Unlock:input_type -> roster.CredentialUnlockRequest
+	16, // 36: roster.CredentialService.Set:input_type -> roster.CredentialSetRequest
+	18, // 37: roster.CredentialService.Enrol:input_type -> roster.CredentialEnrolRequest
+	20, // 38: roster.CredentialService.Issue:input_type -> roster.CredentialIssueRequest
+	26, // 39: roster.CredentialService.Add:output_type -> roster.Credential
+	26, // 40: roster.CredentialService.Get:output_type -> roster.Credential
+	26, // 41: roster.CredentialService.Patch:output_type -> roster.Credential
+	26, // 42: roster.CredentialService.Apply:output_type -> roster.Credential
+	7,  // 43: roster.CredentialService.Erase:output_type -> roster.CredentialEraseResponse
+	9,  // 44: roster.CredentialService.List:output_type -> roster.CredentialListResponse
+	12, // 45: roster.CredentialService.Watch:output_type -> roster.CredentialWatchResponse
+	15, // 46: roster.CredentialService.Unlock:output_type -> roster.CredentialUnlockResponse
+	17, // 47: roster.CredentialService.Set:output_type -> roster.CredentialSetResponse
+	19, // 48: roster.CredentialService.Enrol:output_type -> roster.CredentialEnrolResponse
+	21, // 49: roster.CredentialService.Issue:output_type -> roster.CredentialIssueResponse
+	39, // [39:50] is the sub-list for method output_type
+	28, // [28:39] is the sub-list for method input_type
+	28, // [28:28] is the sub-list for extension type_name
+	28, // [28:28] is the sub-list for extension extendee
+	0,  // [0:28] is the sub-list for field type_name
 }
 
 func init() { file_app_credential_svc_g_proto_init() }
@@ -3058,6 +3267,7 @@ func file_app_credential_svc_g_proto_init() {
 		return
 	}
 	file_app_credential_proto_init()
+	file_app_email_svc_g_proto_init()
 	file_roster_payday_holder_svc_g_proto_init()
 	file_app_credential_svc_g_proto_msgTypes[2].OneofWrappers = []any{
 		(*credentialRef_Id)(nil),
@@ -3069,7 +3279,7 @@ func file_app_credential_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_credential_svc_g_proto_rawDesc), len(file_app_credential_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   20,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

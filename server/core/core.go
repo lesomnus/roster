@@ -278,6 +278,16 @@ func (s Core) WithDriver(drv dialect.Driver) (app.Server, error) {
 	// refuse a leaked secret and must wrap a seed with the deployment's key.
 	// Dropped, a rebuilt stack would accept a breached password and refuse every
 	// second factor the moment two writes shared a transaction.
+	return s.over(next), nil
+}
+
+// over is this layer again, over a server somebody else has already rebound.
+//
+// The list of what carries over is [Core.WithDriver]'s and was written out
+// twice for a while, which is one option added in one place away from a stack
+// that quietly stops refusing leaked passwords inside a transaction. A rule
+// that has to be remembered in two places is a rule with a half-life.
+func (s Core) over(next app.Server) Core {
 	return New(next, s.rules, WithBreached(s.breached), WithKeyring(s.keyring), WithPrefix(s.prefix),
-		WithLockout(s.lockout), WithPassword(s.password)), nil
+		WithLockout(s.lockout), WithPassword(s.password))
 }

@@ -48,9 +48,13 @@ option go_package = "github.com/lesomnus/roster/rstr";
 // installed on -- exactly as `cmd.Resolver` does and for the same reason:
 // working out who somebody is cannot require knowing who they are.
 //
-// `Set` is a caller changing somebody's password, which is an ordinary
-// authorised write. It goes behind the wall, so an administrator of one tenant
-// cannot reach into another, and that narrowing costs this service nothing.
+// Everything else here is an ordinary authorised write and goes behind the
+// wall, so an administrator of one tenant cannot reach into another, and that
+// narrowing costs this service nothing. It was two stacks for a while: the
+// second existed so `Reset` could enter below the rule that makes
+// `Credential.Set` your own row. `Reset` is `Credential.Issue` now, which calls
+// its own `Set` from inside the layer instead of reaching into the stack from
+// outside, and there is one stack again.
 service VouchService {
   // Verify answers whether a secret is the one held for somebody.
   rpc Verify(VouchVerifyRequest) returns (VouchVerifyResponse);
@@ -78,35 +82,12 @@ service VouchService {
   // verbatim.
   rpc Delegate(VouchDelegateRequest) returns (VouchDelegateResponse);
 
-  // Reset gives somebody a new password and answers with it **once**.
-  //
-  // For a local operator in a deployment with no mail. Roadmap.md's item 10:
-  // D13 closed `CredentialService` entirely, so nothing on the wire could set
-  // a password and `init` plus a shell was the only way -- which is right for
-  // the read and wrong for the write.
-  //
-  // # Why the operator does not choose it
-  //
-  // The same argument `IssueService` already makes about a key: a secret the
-  // caller chose is a secret the caller knows, and one generated in a console
-  // is only as good as that page's `crypto`. Here it is `crypto/rand` on the
-  // server, and what the operator does is read it out.
-  //
-  // # Who may
-  //
-  // Somebody whose permissions cover the permissions of the person they are
-  // resetting. Resetting a password is a way to **become** somebody, so an
-  // operator who could reset anybody in their tenant would hold every
-  // permission in it -- `server/core/escalate.go` is the rule and it went in
-  // before this did.
-  rpc Reset(VouchResetRequest) returns (VouchResetResponse);
-
   // Link mints a way in for somebody and answers with it **once**.
   //
   // What roster does not do is send it. D19 puts the delivery outside, and
   // separating the two is what makes the air-gapped case work at all: with no
   // mail the somebody else is a person, and what they hand over is a password
-  // from [VouchService.Reset] rather than a link.
+  // from `Credential.Issue` rather than a link.
   //
   // # It says nothing about whether they are here
   //
@@ -509,22 +490,6 @@ message VouchDelegateResponse {
 
   // When it stops working, which is always set when a token is.
   google.protobuf.Timestamp expires = 11;
-}
-
-message VouchResetRequest {
-  VouchWho who = 1;
-
-  // Which secret, and empty means "password" as everywhere else. A kind that
-  // is not a password is refused: there is nothing sensible to generate for a
-  // TOTP seed that the person could then read out.
-  string kind = 8;
-}
-
-message VouchResetResponse {
-  // Shown once and not stored. What is stored is an argon2id hash, so this
-  // deployment cannot tell anybody what theirs was any more than it can tell
-  // them their key.
-  string secret = 1;
 }
 
 message VouchLinkRequest {

@@ -146,7 +146,7 @@ func serve(t *testing.T, enrol account.Enrol) *deployment {
 				"/roster.EmailService/Add", "/roster.EmailService/Erase", "/roster.ApiKeyService/Issue",
 				"/roster.CredentialService/Set", "/roster.CredentialService/Enrol", "/roster.CredentialService/Erase",
 				"/roster.HolderService/Get", "/roster.EmailService/Get", "/roster.EmailService/Verify", "/roster.EmailService/Confirm",
-				"/roster.VouchService/Link", "/roster.VouchService/Redeem", "/roster.VouchService/Reset", "/roster.VouchService/Verify",
+				"/roster.VouchService/Link", "/roster.VouchService/Redeem", "/roster.CredentialService/Issue", "/roster.VouchService/Verify",
 				"/roster.DelegationService/List", "/roster.DelegationService/Erase",
 			},
 		}.Build())

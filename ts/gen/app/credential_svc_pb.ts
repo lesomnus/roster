@@ -6,6 +6,8 @@ import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegen
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Credential, CredentialSchema } from "./credential_pb.js";
 import { file_app_credential } from "./credential_pb.js";
+import type { EmailRef } from "./email_svc_pb.js";
+import { file_app_email_svc_g } from "./email_svc_pb.js";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Patch } from "../patch/patch_pb.js";
@@ -18,7 +20,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/credential_svc.g.proto.
  */
 export const file_app_credential_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChphcHAvY3JlZGVudGlhbF9zdmMuZy5wcm90bxIGcm9zdGVyIuACChRDcmVkZW50aWFsQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGtpbmQYCCABKAlCBaoBAggCEhUKBnNlY3JldBgJIAEoDEIFqgECCAISFwoIZmFpbHVyZXMYCiABKAVCBaoBAggCEi8KC2RhdGVfbG9ja2VkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX3JvdGF0ZWQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhgKCWxhc3Rfc3RlcBgQIAEoA0IFqgECCAISEAoIcHJldmlvdXMYESADKAwSMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJkChRDcmVkZW50aWFsR2V0UmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuQ3JlZGVudGlhbFJlZhIoCgZzZWxlY3QYAiABKAsyGC5yb3N0ZXIuQ3JlZGVudGlhbFNlbGVjdCJRCg1DcmVkZW50aWFsUmVmEgwKAmlkGAEgASgMSAASKwoEa2luZBgCIAEoCzIbLnJvc3Rlci5DcmVkZW50aWFsUmVmQnlLaW5kSABCBQoDa2V5IlQKE0NyZWRlbnRpYWxSZWZCeUtpbmQSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkilAIKEENyZWRlbnRpYWxTZWxlY3QSCwoDYWxsGAEgASgIEiQKBmhvbGRlchgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSDAoEbmFtZRgFIAEoCBIMCgRraW5kGAggASgIEg4KBnNlY3JldBgJIAEoCBIQCghmYWlsdXJlcxgKIAEoCBITCgtkYXRlX2xvY2tlZBgLIAEoCBIUCgxkYXRlX3JvdGF0ZWQYDCABKAgSEQoJbGFzdF9zdGVwGBAgASgIEhAKCHByZXZpb3VzGBEgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgihQMKFkNyZWRlbnRpYWxQYXRjaFJlcXVlc3QSIgoDcmVmGAEgASgLMhUucm9zdGVyLkNyZWRlbnRpYWxSZWYSDAoEbmFtZRgKIAEoCRIMCgRraW5kGBAgASgJEg4KBnNlY3JldBgSIAEoDBIQCghmYWlsdXJlcxgUIAEoBRIvCgtkYXRlX2xvY2tlZBgWIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGAoQZGF0ZV9sb2NrZWRfbnVsbBgXIAEoCBIwCgxkYXRlX3JvdGF0ZWQYGCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhkKEWRhdGVfcm90YXRlZF9udWxsGBkgASgIEhEKCWxhc3Rfc3RlcBggIAEoAxIQCghwcmV2aW91cxgiIAMoDBIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCCJZChZDcmVkZW50aWFsQXBwbHlSZXF1ZXN0EiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5DcmVkZW50aWFsUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giKQoXQ3JlZGVudGlhbEVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIm0KFUNyZWRlbnRpYWxMaXN0UmVxdWVzdBIpCgdmaWx0ZXJzGAEgAygLMhgucm9zdGVyLkNyZWRlbnRpYWxGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIlAKFkNyZWRlbnRpYWxMaXN0UmVzcG9uc2USIQoFaXRlbXMYASADKAsyEi5yb3N0ZXIuQ3JlZGVudGlhbBITCgRuZXh0GAIgASgJQgWqAQIIAiJZChBDcmVkZW50aWFsRmlsdGVyEiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5DcmVkZW50aWFsUmVmEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYiYQoWQ3JlZGVudGlhbFdhdGNoUmVxdWVzdBIpCgdmaWx0ZXJzGAEgAygLMhgucm9zdGVyLkNyZWRlbnRpYWxGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiRQoXQ3JlZGVudGlhbFdhdGNoUmVzcG9uc2USKgoFaXRlbXMYASADKAsyGy5yb3N0ZXIuQ3JlZGVudGlhbFdhdGNoSXRlbSJbChNDcmVkZW50aWFsV2F0Y2hJdGVtEgoKAmlkGAEgASgMEiEKBXZhbHVlGAIgASgLMhIucm9zdGVyLkNyZWRlbnRpYWwSFQoGYWN0aW9uGAMgASgJQgWqAQIIAiJOChdDcmVkZW50aWFsVW5sb2NrUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhMKBGtpbmQYAiABKAlCBaoBAggCIlAKGENyZWRlbnRpYWxVbmxvY2tSZXNwb25zZRI0ChB3YXNfbG9ja2VkX3VudGlsGAEgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJsChRDcmVkZW50aWFsU2V0UmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhMKBGtpbmQYAiABKAlCBaoBAggCEg4KBnNlY3JldBgDIAEoDBIPCgdjdXJyZW50GAQgASgMIhcKFUNyZWRlbnRpYWxTZXRSZXNwb25zZSKOAQoWQ3JlZGVudGlhbEVucm9sUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhMKBGtpbmQYAiABKAlCBaoBAggCEhMKBG5hbWUYAyABKAlCBaoBAggCEhUKBmlzc3VlchgEIAEoCUIFqgECCAISEwoLYXR0ZXN0YXRpb24YBSABKAwiQgoXQ3JlZGVudGlhbEVucm9sUmVzcG9uc2USEwoEc2VlZBgBIAEoCUIFqgECCAISEgoDdXJpGAIgASgJQgWqAQIIAjKuBQoRQ3JlZGVudGlhbFNlcnZpY2USNwoDQWRkEhwucm9zdGVyLkNyZWRlbnRpYWxBZGRSZXF1ZXN0GhIucm9zdGVyLkNyZWRlbnRpYWwSNwoDR2V0Ehwucm9zdGVyLkNyZWRlbnRpYWxHZXRSZXF1ZXN0GhIucm9zdGVyLkNyZWRlbnRpYWwSOwoFUGF0Y2gSHi5yb3N0ZXIuQ3JlZGVudGlhbFBhdGNoUmVxdWVzdBoSLnJvc3Rlci5DcmVkZW50aWFsEjsKBUFwcGx5Eh4ucm9zdGVyLkNyZWRlbnRpYWxBcHBseVJlcXVlc3QaEi5yb3N0ZXIuQ3JlZGVudGlhbBI/CgVFcmFzZRIVLnJvc3Rlci5DcmVkZW50aWFsUmVmGh8ucm9zdGVyLkNyZWRlbnRpYWxFcmFzZVJlc3BvbnNlEkUKBExpc3QSHS5yb3N0ZXIuQ3JlZGVudGlhbExpc3RSZXF1ZXN0Gh4ucm9zdGVyLkNyZWRlbnRpYWxMaXN0UmVzcG9uc2USSgoFV2F0Y2gSHi5yb3N0ZXIuQ3JlZGVudGlhbFdhdGNoUmVxdWVzdBofLnJvc3Rlci5DcmVkZW50aWFsV2F0Y2hSZXNwb25zZTABEksKBlVubG9jaxIfLnJvc3Rlci5DcmVkZW50aWFsVW5sb2NrUmVxdWVzdBogLnJvc3Rlci5DcmVkZW50aWFsVW5sb2NrUmVzcG9uc2USQgoDU2V0Ehwucm9zdGVyLkNyZWRlbnRpYWxTZXRSZXF1ZXN0Gh0ucm9zdGVyLkNyZWRlbnRpYWxTZXRSZXNwb25zZRJICgVFbnJvbBIeLnJvc3Rlci5DcmVkZW50aWFsRW5yb2xSZXF1ZXN0Gh8ucm9zdGVyLkNyZWRlbnRpYWxFbnJvbFJlc3BvbnNlQiFaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHJiCGVkaXRpb25zcOgH", [file_app_credential, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChphcHAvY3JlZGVudGlhbF9zdmMuZy5wcm90bxIGcm9zdGVyIuACChRDcmVkZW50aWFsQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGtpbmQYCCABKAlCBaoBAggCEhUKBnNlY3JldBgJIAEoDEIFqgECCAISFwoIZmFpbHVyZXMYCiABKAVCBaoBAggCEi8KC2RhdGVfbG9ja2VkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX3JvdGF0ZWQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhgKCWxhc3Rfc3RlcBgQIAEoA0IFqgECCAISEAoIcHJldmlvdXMYESADKAwSMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJkChRDcmVkZW50aWFsR2V0UmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuQ3JlZGVudGlhbFJlZhIoCgZzZWxlY3QYAiABKAsyGC5yb3N0ZXIuQ3JlZGVudGlhbFNlbGVjdCJRCg1DcmVkZW50aWFsUmVmEgwKAmlkGAEgASgMSAASKwoEa2luZBgCIAEoCzIbLnJvc3Rlci5DcmVkZW50aWFsUmVmQnlLaW5kSABCBQoDa2V5IlQKE0NyZWRlbnRpYWxSZWZCeUtpbmQSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkilAIKEENyZWRlbnRpYWxTZWxlY3QSCwoDYWxsGAEgASgIEiQKBmhvbGRlchgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSDAoEbmFtZRgFIAEoCBIMCgRraW5kGAggASgIEg4KBnNlY3JldBgJIAEoCBIQCghmYWlsdXJlcxgKIAEoCBITCgtkYXRlX2xvY2tlZBgLIAEoCBIUCgxkYXRlX3JvdGF0ZWQYDCABKAgSEQoJbGFzdF9zdGVwGBAgASgIEhAKCHByZXZpb3VzGBEgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgihQMKFkNyZWRlbnRpYWxQYXRjaFJlcXVlc3QSIgoDcmVmGAEgASgLMhUucm9zdGVyLkNyZWRlbnRpYWxSZWYSDAoEbmFtZRgKIAEoCRIMCgRraW5kGBAgASgJEg4KBnNlY3JldBgSIAEoDBIQCghmYWlsdXJlcxgUIAEoBRIvCgtkYXRlX2xvY2tlZBgWIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGAoQZGF0ZV9sb2NrZWRfbnVsbBgXIAEoCBIwCgxkYXRlX3JvdGF0ZWQYGCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhkKEWRhdGVfcm90YXRlZF9udWxsGBkgASgIEhEKCWxhc3Rfc3RlcBggIAEoAxIQCghwcmV2aW91cxgiIAMoDBIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCCJZChZDcmVkZW50aWFsQXBwbHlSZXF1ZXN0EiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5DcmVkZW50aWFsUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giKQoXQ3JlZGVudGlhbEVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIm0KFUNyZWRlbnRpYWxMaXN0UmVxdWVzdBIpCgdmaWx0ZXJzGAEgAygLMhgucm9zdGVyLkNyZWRlbnRpYWxGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIlAKFkNyZWRlbnRpYWxMaXN0UmVzcG9uc2USIQoFaXRlbXMYASADKAsyEi5yb3N0ZXIuQ3JlZGVudGlhbBITCgRuZXh0GAIgASgJQgWqAQIIAiJZChBDcmVkZW50aWFsRmlsdGVyEiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5DcmVkZW50aWFsUmVmEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYiYQoWQ3JlZGVudGlhbFdhdGNoUmVxdWVzdBIpCgdmaWx0ZXJzGAEgAygLMhgucm9zdGVyLkNyZWRlbnRpYWxGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiRQoXQ3JlZGVudGlhbFdhdGNoUmVzcG9uc2USKgoFaXRlbXMYASADKAsyGy5yb3N0ZXIuQ3JlZGVudGlhbFdhdGNoSXRlbSJbChNDcmVkZW50aWFsV2F0Y2hJdGVtEgoKAmlkGAEgASgMEiEKBXZhbHVlGAIgASgLMhIucm9zdGVyLkNyZWRlbnRpYWwSFQoGYWN0aW9uGAMgASgJQgWqAQIIAiJOChdDcmVkZW50aWFsVW5sb2NrUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhMKBGtpbmQYAiABKAlCBaoBAggCIlAKGENyZWRlbnRpYWxVbmxvY2tSZXNwb25zZRI0ChB3YXNfbG9ja2VkX3VudGlsGAEgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJsChRDcmVkZW50aWFsU2V0UmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhMKBGtpbmQYAiABKAlCBaoBAggCEg4KBnNlY3JldBgDIAEoDBIPCgdjdXJyZW50GAQgASgMIhcKFUNyZWRlbnRpYWxTZXRSZXNwb25zZSKOAQoWQ3JlZGVudGlhbEVucm9sUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhMKBGtpbmQYAiABKAlCBaoBAggCEhMKBG5hbWUYAyABKAlCBaoBAggCEhUKBmlzc3VlchgEIAEoCUIFqgECCAISEwoLYXR0ZXN0YXRpb24YBSABKAwiQgoXQ3JlZGVudGlhbEVucm9sUmVzcG9uc2USEwoEc2VlZBgBIAEoCUIFqgECCAISEgoDdXJpGAIgASgJQgWqAQIIAiKGAQoWQ3JlZGVudGlhbElzc3VlUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhMKBGtpbmQYAiABKAlCBaoBAggCEh8KBWVtYWlsGAMgASgLMhAucm9zdGVyLkVtYWlsUmVmEhYKB3NlcnZpY2UYBCABKAlCBaoBAggCIjAKF0NyZWRlbnRpYWxJc3N1ZVJlc3BvbnNlEhUKBnNlY3JldBgBIAEoCUIFqgECCAIy+AUKEUNyZWRlbnRpYWxTZXJ2aWNlEjcKA0FkZBIcLnJvc3Rlci5DcmVkZW50aWFsQWRkUmVxdWVzdBoSLnJvc3Rlci5DcmVkZW50aWFsEjcKA0dldBIcLnJvc3Rlci5DcmVkZW50aWFsR2V0UmVxdWVzdBoSLnJvc3Rlci5DcmVkZW50aWFsEjsKBVBhdGNoEh4ucm9zdGVyLkNyZWRlbnRpYWxQYXRjaFJlcXVlc3QaEi5yb3N0ZXIuQ3JlZGVudGlhbBI7CgVBcHBseRIeLnJvc3Rlci5DcmVkZW50aWFsQXBwbHlSZXF1ZXN0GhIucm9zdGVyLkNyZWRlbnRpYWwSPwoFRXJhc2USFS5yb3N0ZXIuQ3JlZGVudGlhbFJlZhofLnJvc3Rlci5DcmVkZW50aWFsRXJhc2VSZXNwb25zZRJFCgRMaXN0Eh0ucm9zdGVyLkNyZWRlbnRpYWxMaXN0UmVxdWVzdBoeLnJvc3Rlci5DcmVkZW50aWFsTGlzdFJlc3BvbnNlEkoKBVdhdGNoEh4ucm9zdGVyLkNyZWRlbnRpYWxXYXRjaFJlcXVlc3QaHy5yb3N0ZXIuQ3JlZGVudGlhbFdhdGNoUmVzcG9uc2UwARJLCgZVbmxvY2sSHy5yb3N0ZXIuQ3JlZGVudGlhbFVubG9ja1JlcXVlc3QaIC5yb3N0ZXIuQ3JlZGVudGlhbFVubG9ja1Jlc3BvbnNlEkIKA1NldBIcLnJvc3Rlci5DcmVkZW50aWFsU2V0UmVxdWVzdBodLnJvc3Rlci5DcmVkZW50aWFsU2V0UmVzcG9uc2USSAoFRW5yb2wSHi5yb3N0ZXIuQ3JlZGVudGlhbEVucm9sUmVxdWVzdBofLnJvc3Rlci5DcmVkZW50aWFsRW5yb2xSZXNwb25zZRJICgVJc3N1ZRIeLnJvc3Rlci5DcmVkZW50aWFsSXNzdWVSZXF1ZXN0Gh8ucm9zdGVyLkNyZWRlbnRpYWxJc3N1ZVJlc3BvbnNlQiFaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHJiCGVkaXRpb25zcOgH", [file_app_credential, file_app_email_svc_g, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.CredentialAddRequest
@@ -766,6 +768,76 @@ export const CredentialEnrolResponseSchema: GenMessage<CredentialEnrolResponse> 
   messageDesc(file_app_credential_svc_g, 19);
 
 /**
+ * @generated from message roster.CredentialIssueRequest
+ */
+export type CredentialIssueRequest = Message<"roster.CredentialIssueRequest"> & {
+  /**
+   * Whose, in full. **Data plane only**, and a reference rather than an alias
+   * because the wall has many tenants and a name alone is a question with more
+   * than one answer. Naming somebody who is not there is a refusal, not a
+   * creation: a customer's people are the customer's.
+   *
+   * @generated from field: roster.HolderRef ref = 1;
+   */
+  ref?: HolderRef | undefined;
+
+  /**
+   * Which credential; empty is the password. There is nothing sensible to
+   * generate for a second factor that somebody could then read out -- that is
+   * `Enrol`, which answers with a seed to scan -- so anything else is refused.
+   *
+   * @generated from field: string kind = 2 [features.field_presence = IMPLICIT];
+   */
+  kind: string;
+
+  /**
+   * Whose, by an address of theirs. **Data plane only.** The form an operator
+   * has when somebody writes in about an account they cannot reach, and the one
+   * `Vouch.Reset` took as `who.address`.
+   *
+   * @generated from field: roster.EmailRef email = 3;
+   */
+  email?: EmailRef | undefined;
+
+  /**
+   * Whose, by alias within this plane's one tenant, created if they are not
+   * there. **Control plane only.** Giving this with either of the two above is
+   * refused.
+   *
+   * @generated from field: string service = 4 [features.field_presence = IMPLICIT];
+   */
+  service: string;
+};
+
+/**
+ * Describes the message roster.CredentialIssueRequest.
+ * Use `create(CredentialIssueRequestSchema)` to create a new message.
+ */
+export const CredentialIssueRequestSchema: GenMessage<CredentialIssueRequest> = /*@__PURE__*/
+  messageDesc(file_app_credential_svc_g, 20);
+
+/**
+ * @generated from message roster.CredentialIssueResponse
+ */
+export type CredentialIssueResponse = Message<"roster.CredentialIssueResponse"> & {
+  /**
+   * Shown once and not stored. What is stored is an argon2id hash, so this
+   * deployment cannot tell anybody what theirs was any more than it can tell
+   * them their key.
+   *
+   * @generated from field: string secret = 1 [features.field_presence = IMPLICIT];
+   */
+  secret: string;
+};
+
+/**
+ * Describes the message roster.CredentialIssueResponse.
+ * Use `create(CredentialIssueResponseSchema)` to create a new message.
+ */
+export const CredentialIssueResponseSchema: GenMessage<CredentialIssueResponse> = /*@__PURE__*/
+  messageDesc(file_app_credential_svc_g, 21);
+
+/**
  * @generated from service roster.CredentialService
  */
 export const CredentialService: GenService<{
@@ -884,7 +956,7 @@ export const CredentialService: GenService<{
    * # It is your own row, or it is not this method
    *
    * A caller with a frame writes their own password and nobody else's. Giving
-   * somebody a password they did not choose is `Vouch.Reset`, which generates
+   * somebody a password they did not choose is `Issue` below, which generates
    * one and answers with it once.
    *
    * Both used to be here, held apart by `mayReach`, and that rule is the wrong
@@ -933,7 +1005,7 @@ export const CredentialService: GenService<{
    * adding a factor to their own account, or an operator to somebody they may
    * reach.
    *
-   * A password is not this: that is `Set` or `Reset`, and neither is a thing a
+   * A password is not this: that is `Set` or `Issue`, and neither is a thing a
    * phone or a key holds. The kind check refuses one the same way `Set` refuses
    * a second factor, from opposite ends of the one line `vouch.Settable` draws.
    *
@@ -948,6 +1020,56 @@ export const CredentialService: GenService<{
     methodKind: "unary";
     input: typeof CredentialEnrolRequestSchema;
     output: typeof CredentialEnrolResponseSchema;
+  },
+  /**
+   * Issue makes a password nobody chose and answers with it once.
+   *
+   * The other half of `Set`: `Set` writes the secret a caller sends and asks
+   * your own row to prove the one it holds; this one **generates**, hands the
+   * operator a string to read out, and ends every session the person had --
+   * because the case it is for is a takeover, and a reset that leaves the old
+   * sessions alive is not a reset.
+   *
+   * # It was two RPCs on two services
+   *
+   * `Vouch.Reset` (a customer's person, by reference or by an address of
+   * theirs) and `IssueService.IssuePassword` (an operator of the deployment, by
+   * a bare alias, created if they were not there). Same act, same answer, and
+   * the difference between them was which plane and whether a name that matches
+   * nobody is a creation -- which `ApiKey.Issue` already tells apart in one
+   * method with `service` beside `holder`. This is that shape a second time.
+   *
+   * The reasons written for keeping them apart were both wrong, and are worth
+   * knowing because each was the *same* wrong. `Vouch.Reset`'s was that
+   * `CredentialService` is not registered, which stopped being true when the
+   * overlays above were written onto it. `IssuePassword`'s was that `mayReach`
+   * "would refuse the very act this exists for" -- and `mayReach` reads what the
+   * **target** holds and passes when that is empty, which is exactly the fresh
+   * operator it was said to refuse. What it does now refuse is a caller holding
+   * nothing re-issuing for somebody who already holds a role, which is the
+   * escalation `roster key add` prints a warning about rather than a use.
+   *
+   * # Whose, three ways, and never two at once
+   *
+   * `ref` is a customer's person, in full, on a plane with many tenants where a
+   * name alone answers to more than one. `email` is one of their addresses,
+   * which is the form an operator's console has when somebody writes in.
+   * `service` is a bare alias on the control plane's one tenant, **created if
+   * it is not there**, because an operator a console has just named is not
+   * somebody set up on purpose beforehand. Giving more than one is refused
+   * rather than resolved in an order this comment would then have to define.
+   *
+   * Which plane a caller is on is not a field: it is `WithPrefix`, one per
+   * stack, the same fact `ApiKey.Issue` reads. So `service` off the control
+   * plane and `ref`/`email` on it are each refused by the wiring rather than by
+   * a flag somebody could send.
+   *
+   * @generated from rpc roster.CredentialService.Issue
+   */
+  issue: {
+    methodKind: "unary";
+    input: typeof CredentialIssueRequestSchema;
+    output: typeof CredentialIssueResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_app_credential_svc_g, 0);

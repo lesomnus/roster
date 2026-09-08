@@ -162,7 +162,7 @@ func TestNobodyWritesAWayInForSomebodyWiderThanThey(t *testing.T) {
 	t.Run("and a link at the desk's own address is nobody's", func(t *testing.T) {
 		x := require.New(t)
 
-		v := b.operated()
+		v := b.vouchedWalled()
 
 		made, err := v.Link(asDesk, app.VouchLinkRequest_builder{
 			Who: app.VouchWho_builder{Tenant: "contoso", Address: mailbox}.Build(),

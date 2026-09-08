@@ -222,24 +222,25 @@ func TestASecondSeedStopsBeforeTheOperator(t *testing.T) {
 	})
 }
 
-// TestAConsoleIssuesAPasswordForAnOperator is `IssueService.IssuePassword`
-// travelled end to end, which nothing did.
+// TestAConsoleIssuesAPasswordForAnOperator is `Credential.Issue` with a
+// `service` -- the control plane's half -- travelled end to end.
 //
-// It is registered on the control plane's port by both `cmd/serve.go` and
-// `wasm/main.go` and has no caller in this repository, which is a reasonable
-// thing to be suspicious of. It is not dead: it is the **only** way a second
-// operator ever gets a password. `roster init` makes the first one and refuses
-// to run again -- the two tests above are that refusal -- `roster key add`
-// mints keys and not passwords, `console.SetPassword` is exported for the
-// sandbox and takes a secret somebody chose, and `VouchService.Set` behind the
-// wall is how a person changes their own. Somebody has to be able to hand a way
-// in to a colleague, and to whoever lost theirs, without a shell on the box.
+// It is the **only** way a second operator ever gets a password. `roster init`
+// makes the first one and refuses to run again -- the two tests above are that
+// refusal -- `roster key add` mints keys and not passwords, and `Credential.Set`
+// behind the wall is how a person changes their own. Somebody has to be able to
+// hand a way in to a colleague, and to whoever lost theirs, without a shell on
+// the box.
 //
-// So it stays, and what it promises is the part worth pinning: the string it
-// answers with is a string that signs in. That is one call between a generator
-// and a hasher and it is easy to get subtly wrong in a way no unit test of
-// either half would see -- the wrong holder, the wrong plane, a password
-// trimmed on the way out.
+// What it promises is the part worth pinning: the string it answers with is a
+// string that signs in. That is one call between a generator and a hasher and
+// it is easy to get subtly wrong in a way no unit test of either half would see
+// -- the wrong holder, the wrong plane, a password trimmed on the way out.
+//
+// It was `IssueService.IssuePassword` on a service of its own, which wrote the
+// column through the generated `Credential` verbs and so ran none of the rules
+// `server/core` puts on it. Those run now, which is the one thing this test
+// cannot see and `TestNobodyWritesTheCredentialOfSomebodyWiderThanThey` can.
 func TestAConsoleIssuesAPasswordForAnOperator(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
@@ -252,19 +253,19 @@ func TestAConsoleIssuesAPasswordForAnOperator(t *testing.T) {
 	conn := servedControl(t, s)
 	as := metadata.NewOutgoingContext(ctx, metadata.Pairs("cookie", c.Name+"="+c.Value))
 
-	issue := app.NewIssueServiceClient(conn)
+	issue := app.NewCredentialServiceClient(conn)
 
 	// Naming somebody who is not there creates them, which is the flow: an
 	// operator is added by being given a way in, the same decision `roster key
 	// add --service` already made about a caller.
-	v, err := issue.IssuePassword(as, app.IssuePasswordRequest_builder{Alias: "second"}.Build())
+	v, err := issue.Issue(as, app.CredentialIssueRequest_builder{Service: "second"}.Build())
 	x.NoError(err)
-	x.NotEmpty(v.GetPassword())
-	x.GreaterOrEqual(len(v.GetPassword()), 32)
+	x.NotEmpty(v.GetSecret())
+	x.GreaterOrEqual(len(v.GetSecret()), 32)
 
 	t.Run("and it is a password that signs in", func(t *testing.T) {
 		x := require.New(t)
-		x.NotNil(signIn(t, s, "second", v.GetPassword()),
+		x.NotNil(signIn(t, s, "second", v.GetSecret()),
 			"the console handed out a password the console door does not take")
 	})
 
@@ -273,12 +274,12 @@ func TestAConsoleIssuesAPasswordForAnOperator(t *testing.T) {
 	t.Run("and issuing again replaces what was there", func(t *testing.T) {
 		x := require.New(t)
 
-		w, err := issue.IssuePassword(as, app.IssuePasswordRequest_builder{Alias: "second"}.Build())
+		w, err := issue.Issue(as, app.CredentialIssueRequest_builder{Service: "second"}.Build())
 		x.NoError(err)
-		x.NotEqual(v.GetPassword(), w.GetPassword())
+		x.NotEqual(v.GetSecret(), w.GetSecret())
 
-		x.NotNil(signIn(t, s, "second", w.GetPassword()))
-		x.Nil(signIn(t, s, "second", v.GetPassword()),
+		x.NotNil(signIn(t, s, "second", w.GetSecret()))
+		x.Nil(signIn(t, s, "second", v.GetSecret()),
 			"the password it replaced still opens the door")
 	})
 
@@ -296,28 +297,28 @@ func TestAConsoleIssuesAPasswordForAnOperator(t *testing.T) {
 		// password, so the plaintext it looked for was one no row was holding
 		// any more and the loop was guaranteed to pass. What has to be absent
 		// is the secret that was just handed out.
-		u, err := issue.IssuePassword(as, app.IssuePasswordRequest_builder{Alias: "kept"}.Build())
+		u, err := issue.Issue(as, app.CredentialIssueRequest_builder{Service: "kept"}.Build())
 		x.NoError(err)
-		x.NotEmpty(u.GetPassword())
+		x.NotEmpty(u.GetSecret())
 
 		vs, err := s.Control.Ent.Credential.Query().All(ctx)
 		x.NoError(err)
 		x.NotEmpty(vs)
 
 		for _, cred := range vs {
-			x.NotContains(string(cred.Secret), u.GetPassword())
+			x.NotContains(string(cred.Secret), u.GetSecret())
 		}
 
 		// And it is a verifier rather than nothing at all: a column that came
 		// back empty would satisfy the loop above and mean the password was
 		// never stored.
-		x.NotNil(signIn(t, s, "kept", u.GetPassword()))
+		x.NotNil(signIn(t, s, "kept", u.GetSecret()))
 	})
 
 	t.Run("and nobody without a session asks for one", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := issue.IssuePassword(ctx, app.IssuePasswordRequest_builder{Alias: "third"}.Build())
+		_, err := issue.Issue(ctx, app.CredentialIssueRequest_builder{Service: "third"}.Build())
 		x.Error(err)
 		x.Equal(codes.Unauthenticated, status.Code(err))
 	})
@@ -327,7 +328,7 @@ func TestAConsoleIssuesAPasswordForAnOperator(t *testing.T) {
 	t.Run("and it will not guess whose", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := issue.IssuePassword(as, app.IssuePasswordRequest_builder{}.Build())
+		_, err := issue.Issue(as, app.CredentialIssueRequest_builder{}.Build())
 		x.Error(err)
 		x.Equal(codes.InvalidArgument, status.Code(err))
 	})

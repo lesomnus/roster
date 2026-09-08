@@ -172,8 +172,8 @@ func TestAnOperatorStandsUpACustomerThatCanBeUsed(t *testing.T) {
 	t.Run("or a password, which is the same act for a person at a browser", func(t *testing.T) {
 		x := require.New(t)
 
-		v, err := app.NewVouchServiceClient(admin).Reset(as, app.VouchResetRequest_builder{
-			Who: app.VouchWho_builder{Id: h.GetId()}.Build(),
+		v, err := app.NewCredentialServiceClient(admin).Issue(as, app.CredentialIssueRequest_builder{
+			Ref: app.HolderRef_builder{Id: h.GetId()}.Build(),
 		}.Build())
 		x.NoError(err)
 		x.NotEmpty(v.GetSecret())

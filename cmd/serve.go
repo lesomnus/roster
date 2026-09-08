@@ -62,12 +62,6 @@ type Server struct {
 	// answered.
 	Dialect string
 
-	// Operable is `Walled` with the one rule that says a caller writes only
-	// their own password taken out, for the one verb whose job is the opposite.
-	// Never handed to anything a caller reaches; see `server/core/self.go` and
-	// the note beside its construction.
-	Operable app.Server
-
 	// Watch is what a change is published to once the call that made it has
 	// answered. The broker is named rather than defaulted: the one that
 	// publishes in this process is right for one replica and **silently wrong**
@@ -361,21 +355,16 @@ func build(ctx context.Context, c Config, prefix string) (*Server, error) {
 	// behind every layer -- but the declaration on the field, which the recorder
 	// reads for itself. See `Credential.secret`.
 	// `core.SelfBuild()` is one rule -- a caller writes their own password and
-	// nobody else's -- and it is a link of its own so that one caller can be
-	// below it. `Vouch.Reset` is that caller: giving somebody a password they
-	// did not choose is its verb, and it is handed `operable` below, which is
-	// this same stack without this one link. See `server/core/self.go`.
+	// nobody else's -- and it is a link of its own. It was a link so that one
+	// caller could be built below it: `Vouch.Reset` wrote *through*
+	// `Credential.Set` from outside the stack, so it was handed a second build
+	// of this same list with this link left out.
+	//
+	// That verb is `Credential.Issue` now and calls its own `Set` from inside
+	// the layer, where `Self` -- which overrides `Set` and nothing else -- never
+	// sees it. So the second stack is gone and this rule stays a link of its
+	// own, which is where a reader finds it. See `server/core/self.go`.
 	stacked, err := app.Build(walled.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password)), core.SelfBuild(), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
-	if err != nil {
-		db.Close()
-		return nil, err
-	}
-
-	// The same stack, minus that one link, and nothing a caller can reach is
-	// built on it: it is handed to `vouch` for `Reset` and to nothing else.
-	// Every other rule is still here -- the wall, the gate, the hashing, the
-	// leaked corpus, `mayReach` -- because they are in the layers below.
-	operable, err := app.Build(walled.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password)), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -398,7 +387,7 @@ func build(ctx context.Context, c Config, prefix string) (*Server, error) {
 
 	s := &Server{
 		Db: db, Ent: client, Drv: drv, Dialect: dialect, Watch: w, sink: sink,
-		Walled: stacked, Operable: operable, Ungated: ungated, Keyring: keyring, Breached: leaked, Lockout: lockout, Password: password,
+		Walled: stacked, Ungated: ungated, Keyring: keyring, Breached: leaked, Lockout: lockout, Password: password,
 	}
 
 	// The control plane: roster again, on its own database, holding keys rather
@@ -760,7 +749,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// The rule about who may write whose credential travels with the service,
 	// because `VouchService` is hand-written and no layer wraps it. Same rules
 	// the gate reads, handed over rather than asked for a second time.
-	app.RegisterVouchServiceServer(g, vouch.New(s.Ungated, s.Operable, vouch.WithLockout(s.Lockout),
+	app.RegisterVouchServiceServer(g, vouch.New(s.Ungated, s.Walled, vouch.WithLockout(s.Lockout),
 		vouch.WithKeys(s.Keyring)))
 
 	// What a front door asks before it knows anything, and therefore through
@@ -1180,15 +1169,17 @@ func (s *Server) GrpcControl(ctx context.Context, c Config, opts ...grpc.ServerO
 	// be reachable by anybody who is not administering the deployment. Nothing
 	// in this process can enforce that; the address is what enforces it.
 
-	// What a console asks that no entity answers: a session, and a secret that
-	// is readable exactly once. See `server/console`.
+	// What a console asks that no entity answers: a session. It reads the
+	// **ungated** server, because a sign-in runs before there is anybody to be
+	// walled by. See `server/console`.
 	//
-	// `Auth` reads the **ungated** server, because a sign-in runs before there
-	// is anybody to be walled by. `Issue` reads the walled one, so that minting
-	// a key is held to the rule every other grant is -- nobody hands out a
-	// method they do not hold.
+	// `IssueService` was registered here beside it and is gone: minting a key is
+	// `ApiKey.Issue` and issuing a password is `Credential.Issue`, both verbs on
+	// the rows they write, both served by the `Register` above through the
+	// control plane's own walled stack -- so both are held to the rules every
+	// other grant is rather than going around them, which is what the pair here
+	// did.
 	app.RegisterAuthServiceServer(g, console.Auth(s.Control.Ungated, s.Control.Ent, s.Sessions))
-	app.RegisterIssueServiceServer(g, console.Issue(s.Control.Walled, s.Control.Ent))
 
 	return g, nil
 }

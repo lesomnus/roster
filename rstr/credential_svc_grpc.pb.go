@@ -29,6 +29,7 @@ const (
 	CredentialService_Unlock_FullMethodName = "/roster.CredentialService/Unlock"
 	CredentialService_Set_FullMethodName    = "/roster.CredentialService/Set"
 	CredentialService_Enrol_FullMethodName  = "/roster.CredentialService/Enrol"
+	CredentialService_Issue_FullMethodName  = "/roster.CredentialService/Issue"
 )
 
 // CredentialServiceClient is the client API for CredentialService service.
@@ -85,7 +86,7 @@ type CredentialServiceClient interface {
 	// # It is your own row, or it is not this method
 	//
 	// A caller with a frame writes their own password and nobody else's. Giving
-	// somebody a password they did not choose is `Vouch.Reset`, which generates
+	// somebody a password they did not choose is `Issue` below, which generates
 	// one and answers with it once.
 	//
 	// Both used to be here, held apart by `mayReach`, and that rule is the wrong
@@ -126,7 +127,7 @@ type CredentialServiceClient interface {
 	// adding a factor to their own account, or an operator to somebody they may
 	// reach.
 	//
-	// A password is not this: that is `Set` or `Reset`, and neither is a thing a
+	// A password is not this: that is `Set` or `Issue`, and neither is a thing a
 	// phone or a key holds. The kind check refuses one the same way `Set` refuses
 	// a second factor, from opposite ends of the one line `vouch.Settable` draws.
 	//
@@ -135,6 +136,48 @@ type CredentialServiceClient interface {
 	// mis-scanned QR is a thing somebody discovers now rather than when they are
 	// already half in and cannot finish.
 	Enrol(ctx context.Context, in *CredentialEnrolRequest, opts ...grpc.CallOption) (*CredentialEnrolResponse, error)
+	// Issue makes a password nobody chose and answers with it once.
+	//
+	// The other half of `Set`: `Set` writes the secret a caller sends and asks
+	// your own row to prove the one it holds; this one **generates**, hands the
+	// operator a string to read out, and ends every session the person had --
+	// because the case it is for is a takeover, and a reset that leaves the old
+	// sessions alive is not a reset.
+	//
+	// # It was two RPCs on two services
+	//
+	// `Vouch.Reset` (a customer's person, by reference or by an address of
+	// theirs) and `IssueService.IssuePassword` (an operator of the deployment, by
+	// a bare alias, created if they were not there). Same act, same answer, and
+	// the difference between them was which plane and whether a name that matches
+	// nobody is a creation -- which `ApiKey.Issue` already tells apart in one
+	// method with `service` beside `holder`. This is that shape a second time.
+	//
+	// The reasons written for keeping them apart were both wrong, and are worth
+	// knowing because each was the *same* wrong. `Vouch.Reset`'s was that
+	// `CredentialService` is not registered, which stopped being true when the
+	// overlays above were written onto it. `IssuePassword`'s was that `mayReach`
+	// "would refuse the very act this exists for" -- and `mayReach` reads what the
+	// **target** holds and passes when that is empty, which is exactly the fresh
+	// operator it was said to refuse. What it does now refuse is a caller holding
+	// nothing re-issuing for somebody who already holds a role, which is the
+	// escalation `roster key add` prints a warning about rather than a use.
+	//
+	// # Whose, three ways, and never two at once
+	//
+	// `ref` is a customer's person, in full, on a plane with many tenants where a
+	// name alone answers to more than one. `email` is one of their addresses,
+	// which is the form an operator's console has when somebody writes in.
+	// `service` is a bare alias on the control plane's one tenant, **created if
+	// it is not there**, because an operator a console has just named is not
+	// somebody set up on purpose beforehand. Giving more than one is refused
+	// rather than resolved in an order this comment would then have to define.
+	//
+	// Which plane a caller is on is not a field: it is `WithPrefix`, one per
+	// stack, the same fact `ApiKey.Issue` reads. So `service` off the control
+	// plane and `ref`/`email` on it are each refused by the wiring rather than by
+	// a flag somebody could send.
+	Issue(ctx context.Context, in *CredentialIssueRequest, opts ...grpc.CallOption) (*CredentialIssueResponse, error)
 }
 
 type credentialServiceClient struct {
@@ -254,6 +297,16 @@ func (c *credentialServiceClient) Enrol(ctx context.Context, in *CredentialEnrol
 	return out, nil
 }
 
+func (c *credentialServiceClient) Issue(ctx context.Context, in *CredentialIssueRequest, opts ...grpc.CallOption) (*CredentialIssueResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CredentialIssueResponse)
+	err := c.cc.Invoke(ctx, CredentialService_Issue_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CredentialServiceServer is the server API for CredentialService service.
 // All implementations must embed UnimplementedCredentialServiceServer
 // for forward compatibility.
@@ -308,7 +361,7 @@ type CredentialServiceServer interface {
 	// # It is your own row, or it is not this method
 	//
 	// A caller with a frame writes their own password and nobody else's. Giving
-	// somebody a password they did not choose is `Vouch.Reset`, which generates
+	// somebody a password they did not choose is `Issue` below, which generates
 	// one and answers with it once.
 	//
 	// Both used to be here, held apart by `mayReach`, and that rule is the wrong
@@ -349,7 +402,7 @@ type CredentialServiceServer interface {
 	// adding a factor to their own account, or an operator to somebody they may
 	// reach.
 	//
-	// A password is not this: that is `Set` or `Reset`, and neither is a thing a
+	// A password is not this: that is `Set` or `Issue`, and neither is a thing a
 	// phone or a key holds. The kind check refuses one the same way `Set` refuses
 	// a second factor, from opposite ends of the one line `vouch.Settable` draws.
 	//
@@ -358,6 +411,48 @@ type CredentialServiceServer interface {
 	// mis-scanned QR is a thing somebody discovers now rather than when they are
 	// already half in and cannot finish.
 	Enrol(context.Context, *CredentialEnrolRequest) (*CredentialEnrolResponse, error)
+	// Issue makes a password nobody chose and answers with it once.
+	//
+	// The other half of `Set`: `Set` writes the secret a caller sends and asks
+	// your own row to prove the one it holds; this one **generates**, hands the
+	// operator a string to read out, and ends every session the person had --
+	// because the case it is for is a takeover, and a reset that leaves the old
+	// sessions alive is not a reset.
+	//
+	// # It was two RPCs on two services
+	//
+	// `Vouch.Reset` (a customer's person, by reference or by an address of
+	// theirs) and `IssueService.IssuePassword` (an operator of the deployment, by
+	// a bare alias, created if they were not there). Same act, same answer, and
+	// the difference between them was which plane and whether a name that matches
+	// nobody is a creation -- which `ApiKey.Issue` already tells apart in one
+	// method with `service` beside `holder`. This is that shape a second time.
+	//
+	// The reasons written for keeping them apart were both wrong, and are worth
+	// knowing because each was the *same* wrong. `Vouch.Reset`'s was that
+	// `CredentialService` is not registered, which stopped being true when the
+	// overlays above were written onto it. `IssuePassword`'s was that `mayReach`
+	// "would refuse the very act this exists for" -- and `mayReach` reads what the
+	// **target** holds and passes when that is empty, which is exactly the fresh
+	// operator it was said to refuse. What it does now refuse is a caller holding
+	// nothing re-issuing for somebody who already holds a role, which is the
+	// escalation `roster key add` prints a warning about rather than a use.
+	//
+	// # Whose, three ways, and never two at once
+	//
+	// `ref` is a customer's person, in full, on a plane with many tenants where a
+	// name alone answers to more than one. `email` is one of their addresses,
+	// which is the form an operator's console has when somebody writes in.
+	// `service` is a bare alias on the control plane's one tenant, **created if
+	// it is not there**, because an operator a console has just named is not
+	// somebody set up on purpose beforehand. Giving more than one is refused
+	// rather than resolved in an order this comment would then have to define.
+	//
+	// Which plane a caller is on is not a field: it is `WithPrefix`, one per
+	// stack, the same fact `ApiKey.Issue` reads. So `service` off the control
+	// plane and `ref`/`email` on it are each refused by the wiring rather than by
+	// a flag somebody could send.
+	Issue(context.Context, *CredentialIssueRequest) (*CredentialIssueResponse, error)
 	mustEmbedUnimplementedCredentialServiceServer()
 }
 
@@ -397,6 +492,9 @@ func (UnimplementedCredentialServiceServer) Set(context.Context, *CredentialSetR
 }
 func (UnimplementedCredentialServiceServer) Enrol(context.Context, *CredentialEnrolRequest) (*CredentialEnrolResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Enrol not implemented")
+}
+func (UnimplementedCredentialServiceServer) Issue(context.Context, *CredentialIssueRequest) (*CredentialIssueResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Issue not implemented")
 }
 func (UnimplementedCredentialServiceServer) mustEmbedUnimplementedCredentialServiceServer() {}
 func (UnimplementedCredentialServiceServer) testEmbeddedByValue()                           {}
@@ -592,6 +690,24 @@ func _CredentialService_Enrol_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CredentialService_Issue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CredentialIssueRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CredentialServiceServer).Issue(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CredentialService_Issue_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CredentialServiceServer).Issue(ctx, req.(*CredentialIssueRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CredentialService_ServiceDesc is the grpc.ServiceDesc for CredentialService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -634,6 +750,10 @@ var CredentialService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Enrol",
 			Handler:    _CredentialService_Enrol_Handler,
+		},
+		{
+			MethodName: "Issue",
+			Handler:    _CredentialService_Issue_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

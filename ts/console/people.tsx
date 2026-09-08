@@ -23,10 +23,10 @@
  *
  * # And what it deliberately does not offer
  *
- * A field to type a password into. `Vouch.Reset` generates one and answers with
- * it once, which is `IssueService`'s argument about a key unchanged: a secret
- * the caller chose is a secret the caller knows, and one generated in a browser
- * is only as good as that page's `crypto`.
+ * A field to type a password into. `Credential.Issue` generates one and answers
+ * with it once, which is `ApiKey.Issue`'s argument about a key unchanged: a
+ * secret the caller chose is a secret the caller knows, and one generated in a
+ * browser is only as good as that page's `crypto`.
  *
  * @module
  */
@@ -57,7 +57,7 @@ function uuid(v: Uint8Array | undefined): string {
 }
 
 /**
- * keyOf is the row `IssueService` answers beside a token, as the table shows
+ * keyOf is the row `ApiKey.Issue` answers beside a token, as the table shows
  * one.
  *
  * Two shapes for one thing, and this is the seam between them: `ApiKey` is the
@@ -198,13 +198,17 @@ export function Person(props: {
 				</button>
 
 				{/* Generated here and answered with once. There is no field to
-				    type one into, and that is the point. */}
+				    type one into, and that is the point.
+
+				    `Credential.Issue` -- it was `Vouch.Reset`, and it is the
+				    same call an operator of the deployment makes about a new
+				    operator, which is `service` instead of `ref`. */}
 				<button
-					disabled={!props.may('/roster.VouchService/Reset')}
+					disabled={!props.may('/roster.CredentialService/Issue')}
 					onClick={() => {
 						say(null)
-						void props.admin.vouch
-							.reset({ who: { id: key } })
+						void props.admin.credential
+							.issue({ ref: who })
 							.then((r) => say({ kind: 'secret', text: r.secret }))
 							.catch((e: unknown) =>
 								say({ kind: 'bad', text: e instanceof Error ? e.message : 'no' }),
@@ -440,7 +444,7 @@ function Keys(props: {
 				{/* Written out and never defaulted, in either direction.
 				    Everything hands out more than anybody asked for; nothing
 				    mints a key that silently does not work -- which is the
-				    refusal `IssueService` makes, said here so somebody meets it
+				    refusal `ApiKey.Issue` makes, said here so somebody meets it
 				    before they have typed a name. */}
 				<input
 					placeholder="/roster.HolderService/List, …"

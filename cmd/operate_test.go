@@ -21,13 +21,26 @@ import (
 	"github.com/lesomnus/roster/server/vouch"
 )
 
-// operated is the service as `cmd.Grpc` wires it: over the **walled** stack, so
-// the rule about who may write whose credential runs where it lives now -- in
-// `server/core`, which `Reset` reaches through `Credential.Set`. The vouch
-// service no longer carries the rule itself; it is a fact about the stack it
-// writes through.
-func (b *built) operated() *vouch.Server {
-	return vouch.New(b.Ungated, b.Operable)
+// operated is the verb an operator gives somebody a password with, over the
+// **walled** stack, which is how `cmd.Grpc` wires it.
+//
+// It was `vouch.New(b.Ungated, b.Operable)`: a second build of that stack with
+// `core.SelfBuild()` left out, because `Vouch.Reset` wrote *through*
+// `Credential.Set` from outside the layers and would otherwise have met the
+// rule that a caller writes their own row. `Credential.Issue` calls its own
+// `Set` from inside `server/core`, where `Self` -- which overrides `Set` and
+// nothing else -- never sees it. So this is the one stack, and the rule about
+// who may write whose credential still runs, in `server/core`, where it lives.
+func (b *built) operated() app.CredentialServiceServer {
+	return b.Walled.Credential()
+}
+
+// vouchedWalled is `VouchService` as `cmd.Grpc` wires it: the unwalled server
+// for `Verify`, which runs before anybody is resolved, and the walled one for
+// everything else. It was `b.Ungated, b.Operable` and the second argument is
+// the one stack now.
+func (b *built) vouchedWalled() *vouch.Server {
+	return vouch.New(b.Ungated, b.Walled)
 }
 
 // mayCall gives somebody a binding across their tenant and answers with a
@@ -83,8 +96,8 @@ func TestNobodyWritesTheCredentialOfSomebodyWiderThanThey(t *testing.T) {
 	// not the door this rule is behind any more, and the rule itself did not
 	// move.
 	set := func(c context.Context, who pdid.Id) error {
-		_, err := b.operated().Reset(c, app.VouchResetRequest_builder{
-			Who: app.VouchWho_builder{Id: who.Bytes()}.Build(),
+		_, err := b.operated().Issue(c, app.CredentialIssueRequest_builder{
+			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		}.Build())
 
 		return err
@@ -183,8 +196,8 @@ func TestALocalOperatorHandsSomebodyAPassword(t *testing.T) {
 
 	v := b.operated()
 
-	res, err := v.Reset(asOps, app.VouchResetRequest_builder{
-		Who: app.VouchWho_builder{Id: joe.Bytes()}.Build(),
+	res, err := v.Issue(asOps, app.CredentialIssueRequest_builder{
+		Ref: app.HolderRef_builder{Id: joe.Bytes()}.Build(),
 	}.Build())
 	x.NoError(err)
 	x.NotEmpty(res.GetSecret())
@@ -192,7 +205,7 @@ func TestALocalOperatorHandsSomebodyAPassword(t *testing.T) {
 	t.Run("and it is the password now", func(t *testing.T) {
 		x := require.New(t)
 
-		got, err := v.Verify(ctx, app.VouchVerifyRequest_builder{
+		got, err := b.vouched().Verify(ctx, app.VouchVerifyRequest_builder{
 			Who:    app.VouchWho_builder{Id: joe.Bytes()}.Build(),
 			Secret: []byte(res.GetSecret()),
 		}.Build())
@@ -213,8 +226,8 @@ func TestALocalOperatorHandsSomebodyAPassword(t *testing.T) {
 	t.Run("and the operator did not choose it", func(t *testing.T) {
 		x := require.New(t)
 
-		again, err := v.Reset(asOps, app.VouchResetRequest_builder{
-			Who: app.VouchWho_builder{Id: joe.Bytes()}.Build(),
+		again, err := v.Issue(asOps, app.CredentialIssueRequest_builder{
+			Ref: app.HolderRef_builder{Id: joe.Bytes()}.Build(),
 		}.Build())
 		x.NoError(err)
 		x.NotEqual(res.GetSecret(), again.GetSecret())
@@ -223,8 +236,8 @@ func TestALocalOperatorHandsSomebodyAPassword(t *testing.T) {
 	t.Run("and there is nothing to hand somebody for a second factor", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := v.Reset(asOps, app.VouchResetRequest_builder{
-			Who:  app.VouchWho_builder{Id: joe.Bytes()}.Build(),
+		_, err := v.Issue(asOps, app.CredentialIssueRequest_builder{
+			Ref:  app.HolderRef_builder{Id: joe.Bytes()}.Build(),
 			Kind: "totp",
 		}.Build())
 		x.Equal(codes.InvalidArgument, status.Code(err))
@@ -248,18 +261,16 @@ func TestALocalOperatorOpensAnAccountSomebodyElseClosed(t *testing.T) {
 	ops := b.holder(t, ctx, b.Contoso, "ops")
 	asOps := b.mayCall(t, ctx, ops, "operator", "/roster.MeService/Get")
 
-	v := b.operated()
-
 	// Somebody else, holding it closed.
 	for range vouch.MaxFailures {
-		_, err := v.Verify(ctx, app.VouchVerifyRequest_builder{
+		_, err := b.vouched().Verify(ctx, app.VouchVerifyRequest_builder{
 			Who:    app.VouchWho_builder{Id: joe.Bytes()}.Build(),
 			Secret: []byte("wrong"),
 		}.Build())
 		x.NoError(err)
 	}
 
-	shut, err := v.Verify(ctx, app.VouchVerifyRequest_builder{
+	shut, err := b.vouched().Verify(ctx, app.VouchVerifyRequest_builder{
 		Who:    app.VouchWho_builder{Id: joe.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
@@ -273,7 +284,7 @@ func TestALocalOperatorOpensAnAccountSomebodyElseClosed(t *testing.T) {
 	x.NoError(err)
 	x.NotNil(out.GetWasLockedUntil(), "an operator cannot tell 'I opened it' from 'it was not closed'")
 
-	open, err := v.Verify(ctx, app.VouchVerifyRequest_builder{
+	open, err := b.vouched().Verify(ctx, app.VouchVerifyRequest_builder{
 		Who:    app.VouchWho_builder{Id: joe.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
@@ -336,10 +347,9 @@ func TestASecretSomebodyHasLostIsRefused(t *testing.T) {
 	t.Run("and a reset goes through the same check", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := vouch.New(b.Ungated, b.Ungated).Reset(ctx,
-			app.VouchResetRequest_builder{
-				Who: app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
-			}.Build())
+		_, err := b.Ungated.Credential().Issue(ctx, app.CredentialIssueRequest_builder{
+			Ref: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		}.Build())
 		x.NoError(err, "thirty-two random bytes were in a corpus of leaks")
 	})
 

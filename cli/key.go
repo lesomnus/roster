@@ -29,9 +29,9 @@ import (
 // at a time for the reason every verifier is -- so the only way in is a server
 // instance this process holds, and the only thing holding one is this.
 //
-// (`IssueService` mints one over the wire for a console, and `ApiKey.Issue` is
-// the overlay a customer's person reaches. Neither is what a shell has before
-// the first key exists.)
+// (`ApiKey.Issue` mints one over the wire for a console and is what a
+// customer's person reaches; neither is what a shell has before the first key
+// exists.)
 //
 // # And a customer's, which it refused to mint
 //

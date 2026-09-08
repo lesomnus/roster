@@ -362,8 +362,8 @@ own check.
 deployment's own services and lives in the **control plane** -- a second roster
 in the same process on its own database -- because a key that opens every tenant
 must not sit in the tables it opens. An `rt_` belongs to an ordinary person and
-lives beside them on the data plane; `IssueService` mints one for somebody, and
-`ApiKey.Issue` with their own reference is how that somebody mints their own.
+lives beside them on the data plane; `ApiKey.Issue` mints one for somebody, and
+the same verb with their own reference is how that somebody mints their own.
 
 They also resolve differently, which is the part a trail shows: an `rk_` is
 served **as this row**, so the record names which key asked, while an `rt_`
@@ -434,7 +434,7 @@ A magic link, and the machine behind a recovery. Ask *who checks this?* and only
 roster can -- it resolves nowhere else and revoking it is a delete. Delivery is
 deliberately outside roster, and that separation is what makes the air-gapped
 case work: with no mail the somebody else is a person, and what they hand over
-is a password from `Vouch.Reset`. Redeeming one proves the person and nothing
+is a password from `Credential.Issue`. Redeeming one proves the person and nothing
 more; any second factor is still asked for.
 
 > alice forgets her password, and the form she asks for a reset on is one

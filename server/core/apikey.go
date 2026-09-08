@@ -198,10 +198,14 @@ func (s coreApiKey) whoseKey(ctx context.Context, req *app.ApiKeyIssueRequest) (
 	return s.serviceHolder(ctx, service)
 }
 
-// serviceHolder is a control-plane service by alias, made if it is not there --
+// serviceHolder is a control-plane holder by alias, made if it is not there --
 // because a service is not something set up on purpose before it is needed,
 // which is what `roster key add` already decided.
-func (s coreApiKey) serviceHolder(ctx context.Context, alias string) (*app.HolderRef, error) {
+//
+// On `Core` rather than on this file's layer, because `Credential.Issue` names
+// a new operator the same way and for the same reason: a console that has just
+// typed somebody's name has thereby created them.
+func (s Core) serviceHolder(ctx context.Context, alias string) (*app.HolderRef, error) {
 	ts, err := s.Next().Tenant().List(ctx, app.TenantListRequest_builder{Size: 1}.Build())
 	if err != nil {
 		return nil, err

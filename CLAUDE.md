@@ -151,12 +151,24 @@ What is roster's own, and is not a wall either:
 - **"There is no field for it."** `proto/ext/**` is roster's and the overlay
   redefines the message. A field number and `pd gen`.
 - **"The two planes need different rules."** They are two stacks built from two
-  lists in `cmd/serve.go` (`Walled`, `Ungated`, and `Operable` beside them), and
-  `cmd/admin.go` builds a third. Nothing says a plane's list must match.
+  lists in `cmd/serve.go` (`Walled` and `Ungated`), and `cmd/admin.go` builds a
+  third. Nothing says a plane's list must match.
 
-`server/core/self.go` is the worked example and says so: one rule in a link of
-its own, so that `Vouch.Reset` -- which writes *through* `Credential.Set` --
-enters below it and keeps the behaviour a caller loses.
+`server/core/self.go` is the worked example: one rule -- a caller writes their
+own password and nobody else's -- in a link of its own, so a plane that does not
+want it leaves that link out of its list rather than the rule growing a
+condition.
+
+It is also the example of the **cheaper** answer, which is worth reading before
+building a stack. That rule had to be got past by exactly one verb, and for a
+while the way past was a whole second build of the same list with the link
+missing (`Operable`). It did not need one: the verb was `Vouch.Reset`, a
+hand-written service reaching *through* `Credential.Set` from **outside** the
+layers, and the moment it became `Credential.Issue` -- a method on the entity,
+calling its own `Set` from inside `server/core` -- it was already below the
+link, because `Self` overrides `Set` and nothing else. A second stack is for a
+caller that genuinely enters somewhere else; a verb that belongs to the layer
+should be *in* the layer.
 
 The refusals that are **real** have a reason written beside them: the wall is
 payday's and not configurable, a grant is any write that changes what the gate
@@ -337,7 +349,7 @@ nowhere to keep keys has nothing else it could check.
 Name a control plane and the same wiring reads API keys instead
 (`auth.Seq(keys.Acting(…), auth.Bearer(keys.Store(…)))`), which needs no
 certificate authority and no HTTP endpoint: `roster key add` mints one from a
-shell, and the control plane's `IssueService` mints one over the wire. mTLS is
+shell, and `ApiKey.Issue` mints one over the wire. mTLS is
 the other answer and is a deployment's to configure.
 
 What is HTTP is the console's **session cookie**, because that is a credential

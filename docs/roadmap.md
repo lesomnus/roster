@@ -579,35 +579,48 @@ is not a request* -- which survives because the generated check sits in the
 | — | a verification link is not a way in | **done** — `Email.Verify` and `Vouch.Link` mint into one `Link` table on purpose, and the `email` edge is what tells a verification from a recovery. `Email.Confirm` refuses a link naming none; `Vouch.Redeem` never read the edge at all — so the token mailed to *prove* an address was spendable at the door that *mints*, answering with a delegation for its holder, which the account app then spends on `Vouch.Reset` and prints a password with. A mailbox read once was an account held, which is the one thing `email_svc.ext.proto` says a verify link is worth strictly less than a recovery link **for**, and `baseline.md` promised in as many words; the pinned test checked only the harmless direction, *and a recovery link is not a verification*. The fix is one guard in `server/vouch/link.go` mirroring `server/core/email.go` verbatim — a discriminator read on one side is not one — and the missing half of the pair, `TestAnAddressIsVerifiedByALinkThatSignsNobodyIn` / *and a verification link is not a way in*, which fails without it |
 | — | one sign-in, and the sentences that outlived their mechanism | **done** — an audit of every hand-written service and overlay, asking of each whether it exists because one layer looked like a wall (the row above's shape, and CLAUDE.md's *Overlay before service*). Two of what it found were not about layers at all. **`cmd.Login`** was a hand-written HTTP twin of `AuthService.SignIn` — same body, same single-tenant lookup, same `vouch.Verify`, same `Grant: frame.Whole()`, down to copied comment paragraphs — added when `POST /session` was the sign-in and left in place when the service replaced it, on a premise `auth.proto` itself refutes three lines in (*it read as "issuing is HTTP". It is not: a cookie is a response header*). It cost more than duplication, because a service is registered per listener and a route is not: `AuthService` is on `control.http` alone while `/session` ran wherever there was HTTP, so the customer-facing port answered an operator's password with 204 and a cookie that opened nothing — a trap `operating.md` warned about and a test pinned as working-as-intended. Deleted, with the route; `TestTheDataPlanesHttpSignsInNobody` is `TestTheDataPlanesHttpHasNoSignIn` and asserts the absence, and `signIn` in the tests goes through the RPC like the console does. Beside it, **twenty comments** saying `CredentialService` or `ApiKeyService` *is not registered* — true until each was registered for its overlays with the generated verbs shut a method at a time in `closed()`, and false since: `vouch.proto`, `me.proto`, `apikey.proto`, `credential.proto`, `holder_svc.ext.proto`, `cmd/admin.go`, `cmd/serve.go`, `server/vouch` ×4, `server/me` ×2, `server/keys`, `cli/key.go`, and nine tests. Not tidying — that sentence is the stated reason two things on `VouchService` are not verbs on the entity they write, so leaving it standing leaves the next reader the same wrong conclusion |
 
+| — | one verb issues a password, and `IssueService` is gone | **done** — the audit's two moves, and they turned out to be one. `Vouch.Reset` (a customer's person, by reference or by an address) and `IssueService.IssuePassword` (an operator, by a bare alias, created if absent) were the same act — generate a password nobody chose, store the verifier, answer once — separated by which plane and by whether a name matching nobody is a creation, which is exactly the pair `ApiKey.Issue` already tells apart in one method with `service` beside `holder`. So `CredentialService.Issue`, beside `Set`/`Unlock`/`Enrol`, with `ref`, `email` (an overlay may name a generated `EmailRef`, which `proto/app/vouch.proto` could not and is why `VouchWho` exists) and `service`, told apart by `WithPrefix` rather than a flag. Three things fall out. **`IssuePassword` wrote through the generated `Credential` verbs**, so it ran none of `server/core`'s rules — no `mayReach`, no `date_rotated`, no `NoReuse`, no corpus — and a key naming it could hand out any operator's password, mitigated by a printed NOTE (`BecomesAnOperator`, retired: a key holds no bindings, so it now reaches somebody who holds nothing, which is what the mint is *for*, and nobody who holds a role). **The `Operable` stack is gone**: it was a second build of `Walled` minus `core.SelfBuild()`, existing so `Vouch.Reset` could write *through* `Credential.Set` from outside the layers; `Issue` calls its own `Set` from inside `server/core`, where `Self` — which overrides `Set` and nothing else — never sees it. **And a reset of your own row was already refused, in the wrong words**: it inherited *current: your own password is changed by proving the one you hold* from a request with no `current` in it. The refusal is right — a delegation lifted from an app must not hand itself a password it chose — and is one line now that names the verb to use. Both writes go in one transaction where the stack was built on a driver, so the invalidate is no longer best-effort-after-the-fact. `cmd/issuecmd_test.go`, `cmd/seed_test.go`, `cmd/operate_test.go`, `cmd/vouchkind_test.go` |
+
 ## Open, for whoever picks this up next
 
-**Two verbs that should be on the entity they write.** The audit two rows above
-found four RPCs whose reason for being on a service of their own was the
-`CredentialService is not registered` sentence, and that sentence is gone. Two
-of the four are worth moving and neither is free, because both are a wire
-rename -- `buf breaking` on the branch, and every deployment's `Role.methods`
-and `ApiKey.methods` rows rewritten by hand, for which there is no migration:
+**`Vouch.Link` and `Vouch.Accept`, and the case for leaving them.** The audit
+that moved `Reset` and `IssuePassword` proposed these two as well, and they were
+declined rather than deferred -- written here because a later reader will find
+the same shape and should find the answer beside it.
 
-- **`Vouch.Reset` -> `Credential.Reset`.** It writes one entity's rows through
-  `Credential.Set` and answers with a secret it made, which is `Credential.Enrol`
-  verbatim; every rule it wants is `server/core`'s `Set` already. As an overlay
-  it would call its own `Set` below the `Self` link rather than entering a stack
-  from outside -- so `Operable` (`cmd/serve.go`), built for this one caller,
-  collapses back into `Walled`, and the `Holder.Invalidate` that is *best effort
-  after the fact* today joins it in one `s.only(...)` transaction.
-- **`IssueService.IssuePassword` -> `Credential.Issue`.** The other half of this
-  service is already `ApiKey.Issue`. What kept this half is written in
-  `issue.proto`: *a reach-guarded `Credential` overlay cannot be that ... `mayReach`
-  would refuse the very act this exists for* -- and `mayReach` reads what the
-  **target** holds and returns nil when that is empty, so for the act named it
-  passes. `ApiKey.Issue` proves it one file over, on the same control-plane
-  stack. What it would newly refuse is a holder-less key re-issuing for an
-  operator who already holds a role, which is the escalation `BecomesAnOperator`
-  warns about rather than a use to keep.
+- **`Link` is not `Link.Mint`.** Its defining property is that it references no
+  row: a request for an address that is here and one for an address that is not
+  answer identically, deliberately (`server/vouch/link.go`), because the
+  alternative makes asking for a link a way to ask *is this address here*. An
+  entity verb whose point is not referencing its entity is a poor fit. And
+  `Link` and `Redeem` are two doors of one mechanism, with `Redeem` staying
+  because it genuinely crosses Credential, Continuation and Delegation --
+  splitting the pair across two service names is the shape the verification-link
+  bug two rows above was made of.
+- **`Accept` is the OIDC arm of the sign-in flow**, sibling of `Delegate` and
+  `Redeem` in `frontdoor.Door`. Moving it to `DelegationService` splits one flow
+  across two names and buys nothing.
 
-`Vouch.Link` (`Link.Mint`) and `Vouch.Accept` are the same argument and thinner:
-`Link` is one row on one entity, and `Accept` mints across two, which is close
-enough to the sign-in flow that it is arguable either way.
+**Two justification paragraphs that reach the right conclusion for the wrong
+reason.** `Vouch.Verify` says it is not on `CredentialService` because that
+service is not registered and because `Get` answers with the hash; both are
+false. The real reasons are good -- it mints a `Continuation`, it resolves
+through `Tenant` and `Email`, and `VouchDelegateResponse` nests
+`VouchVerifyResponse` so the two cannot drift -- and are not what is written.
+`SyncService` is the same: "no layer could do this projection" is refuted by
+payday's own generated `secretCredentialStream`, while the true reason (a payday
+watch subscribes to **rows**, not to a predicate, so a scope whose membership
+grows cannot be expressed) is sound and is stated one paragraph away. A wrong
+reason produces a wrong conclusion later even when today's conclusion is right,
+which is what the twenty `is not registered` sentences cost.
+
+**`AuthService` has no `// Why it is not XService` paragraph**, which CLAUDE.md
+calls required, and writing it would have surfaced that `SignOut` falls under
+`MeService`'s clause: it takes an empty request and reads the caller's cookie
+from the frame, but is not in `aboutYourself` (`cmd/policy.go`), so an operator
+whose role does not name it cannot sign out -- and `ts/console/main.tsx`
+swallows the error in a `.finally`, so the page resets and the cookie lives.
+Today's only operator role is `/roster.*/*`, so nothing is broken yet.
 
 Before that, the last thing that stood here was the directory over
 LDAP, planned and built in 2026-09 ([ldap.md](ldap.md)); what it leaves for a

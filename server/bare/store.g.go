@@ -336,9 +336,9 @@ type Scope interface {
 	ConnectionScope(ctx context.Context) (predicate.Connection, error)
 	ContinuationScope(ctx context.Context) (predicate.Continuation, error)
 	CredentialScope(ctx context.Context) (predicate.Credential, error)
-	DelegationScope(ctx context.Context) (predicate.Delegation, error)
 	IdentityScope(ctx context.Context) (predicate.Identity, error)
 	EmailScope(ctx context.Context) (predicate.Email, error)
+	DelegationScope(ctx context.Context) (predicate.Delegation, error)
 	SiteScope(ctx context.Context) (predicate.Site, error)
 	GroupScope(ctx context.Context) (predicate.Group, error)
 	GroupMembershipScope(ctx context.Context) (predicate.GroupMembership, error)
@@ -385,13 +385,13 @@ func (Unscoped) ContinuationScope(_ context.Context) (predicate.Continuation, er
 func (Unscoped) CredentialScope(_ context.Context) (predicate.Credential, error) {
 	return nil, nil
 }
-func (Unscoped) DelegationScope(_ context.Context) (predicate.Delegation, error) {
-	return nil, nil
-}
 func (Unscoped) IdentityScope(_ context.Context) (predicate.Identity, error) {
 	return nil, nil
 }
 func (Unscoped) EmailScope(_ context.Context) (predicate.Email, error) {
+	return nil, nil
+}
+func (Unscoped) DelegationScope(_ context.Context) (predicate.Delegation, error) {
 	return nil, nil
 }
 func (Unscoped) SiteScope(_ context.Context) (predicate.Site, error) {
@@ -576,26 +576,6 @@ func (ss Scopes) CredentialScope(ctx context.Context) (predicate.Credential, err
 	return credential.And(ps...), nil
 }
 
-func (ss Scopes) DelegationScope(ctx context.Context) (predicate.Delegation, error) {
-	ps := make([]predicate.Delegation, 0, len(ss))
-	for _, s := range ss {
-		p, err := s.DelegationScope(ctx)
-		if err != nil {
-			return nil, err
-		}
-		if p == nil {
-			continue
-		}
-
-		ps = append(ps, p)
-	}
-	if len(ps) == 0 {
-		return nil, nil
-	}
-
-	return delegation.And(ps...), nil
-}
-
 func (ss Scopes) IdentityScope(ctx context.Context) (predicate.Identity, error) {
 	ps := make([]predicate.Identity, 0, len(ss))
 	for _, s := range ss {
@@ -634,6 +614,26 @@ func (ss Scopes) EmailScope(ctx context.Context) (predicate.Email, error) {
 	}
 
 	return email.And(ps...), nil
+}
+
+func (ss Scopes) DelegationScope(ctx context.Context) (predicate.Delegation, error) {
+	ps := make([]predicate.Delegation, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.DelegationScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return delegation.And(ps...), nil
 }
 
 func (ss Scopes) SiteScope(ctx context.Context) (predicate.Site, error) {
@@ -1046,13 +1046,13 @@ func (s Server) Continuation() rstr.ContinuationServiceServer {
 func (s Server) Credential() rstr.CredentialServiceServer {
 	return CredentialServiceServer{Store: s.Store}
 }
+func (s Server) Identity() rstr.IdentityServiceServer { return IdentityServiceServer{Store: s.Store} }
+func (s Server) Email() rstr.EmailServiceServer       { return EmailServiceServer{Store: s.Store} }
 func (s Server) Delegation() rstr.DelegationServiceServer {
 	return DelegationServiceServer{Store: s.Store}
 }
-func (s Server) Identity() rstr.IdentityServiceServer { return IdentityServiceServer{Store: s.Store} }
-func (s Server) Email() rstr.EmailServiceServer       { return EmailServiceServer{Store: s.Store} }
-func (s Server) Site() rstr.SiteServiceServer         { return SiteServiceServer{Store: s.Store} }
-func (s Server) Group() rstr.GroupServiceServer       { return GroupServiceServer{Store: s.Store} }
+func (s Server) Site() rstr.SiteServiceServer   { return SiteServiceServer{Store: s.Store} }
+func (s Server) Group() rstr.GroupServiceServer { return GroupServiceServer{Store: s.Store} }
 func (s Server) GroupMembership() rstr.GroupMembershipServiceServer {
 	return GroupMembershipServiceServer{Store: s.Store}
 }

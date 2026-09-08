@@ -130,10 +130,15 @@ func refArg() arg.Args {
 // newCmdVouchReset generates a password and prints it once.
 //
 // Generated and not typed, which is the same decision `roster init` makes about
-// the operator's own and `IssueService` makes about a key: a secret the caller
+// the operator's own and `ApiKey.Issue` makes about a key: a secret the caller
 // chose is a secret the caller knows, and thirty-two bytes of `crypto/rand` is
 // not a word anybody will recognise. What makes it safe is that it is shown
 // once and the person is expected to change it.
+//
+// The RPC is `Credential.Issue` -- it was `Vouch.Reset` -- and the command kept
+// its name, the way `vouch set`, `unlock` and `enrol` kept theirs when those
+// moved onto the entity. What an operator types is not a thing to churn because
+// a method found its own rows.
 func newCmdVouchReset(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "reset",
@@ -146,7 +151,7 @@ func newCmdVouchReset(c *cmd.Config) *xli.Command {
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
-			s, v, err := vouching(ctx, c)
+			s, _, err := vouching(ctx, c)
 			if err != nil {
 				return err
 			}
@@ -159,7 +164,10 @@ func newCmdVouchReset(c *cmd.Config) *xli.Command {
 
 			kind, _ := flg.Find[string](cl, "kind")
 
-			res, err := v.Reset(ctx, app.VouchResetRequest_builder{Who: who, Kind: kind}.Build())
+			res, err := s.Ungated.Credential().Issue(ctx, app.CredentialIssueRequest_builder{
+				Ref:  app.HolderRef_builder{Id: who.GetId()}.Build(),
+				Kind: kind,
+			}.Build())
 			if err != nil {
 				return err
 			}

@@ -253,8 +253,8 @@ func TestAResetVoidsWhatCameBeforeIt(t *testing.T) {
 
 	time.Sleep(2 * time.Millisecond)
 
-	_, err := b.vouchedLocal().Reset(ctx, app.VouchResetRequest_builder{
-		Who: app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
+	_, err := b.Ungated.Credential().Issue(ctx, app.CredentialIssueRequest_builder{
+		Ref: app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 	}.Build())
 	x.NoError(err)
 

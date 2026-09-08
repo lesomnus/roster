@@ -382,8 +382,8 @@ func TestARoleHeldThroughATeamIsStillHeld(t *testing.T) {
 	// and nothing else (`server/core/self.go`). The rule did not move -- it is
 	// in the layer below both -- only the door did.
 	set := func(who pdid.Id) error {
-		_, err := b.operated().Reset(asOps, app.VouchResetRequest_builder{
-			Who: app.VouchWho_builder{Id: who.Bytes()}.Build(),
+		_, err := b.operated().Issue(asOps, app.CredentialIssueRequest_builder{
+			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		}.Build())
 
 		return err

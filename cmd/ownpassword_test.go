@@ -108,8 +108,9 @@ func TestAPersonChangesTheirOwnPassword(t *testing.T) {
 		// a password is the most persistent thing there is to write on a row.
 		//
 		// So there is one door for it now, and the refusal says which. That
-		// `Vouch.Reset` works is `TestASecretIsResetForTheAddressThatNamesSomebody`
-		// and `TestAResetVoidsWhatCameBeforeIt`; a refusal is only right if the
+		// `Credential.Issue` works is
+		// `TestASecretIsResetForTheAddressThatNamesSomebody` and
+		// `TestAResetVoidsWhatCameBeforeIt`; a refusal is only right if the
 		// thing it points at is open.
 		mate, err := b.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{
 			Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
@@ -124,7 +125,7 @@ func TestAPersonChangesTheirOwnPassword(t *testing.T) {
 		}.Build())
 		x.Equal(codes.PermissionDenied, status.Code(err),
 			"a walled caller set somebody else's password")
-		x.Contains(status.Convert(err).Message(), "Vouch.Reset",
+		x.Contains(status.Convert(err).Message(), "Issue",
 			"the refusal did not say where that write went")
 
 		// And the deployment's own work is untouched: no frame, nobody to

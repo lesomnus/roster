@@ -28,9 +28,9 @@ import { go, useRoute } from '../lib/route.js'
 import type { App } from '@lesomnus/payday/react'
 
 import { MeService } from '../gen/app/me_pb.js'
-import { IssueService } from '../gen/app/issue_pb.js'
 import { HolderService } from '../gen/roster/payday/holder_svc_pb.js'
 import { ApiKeyService } from '../gen/app/apikey_svc_pb.js'
+import { CredentialService } from '../gen/app/credential_svc_pb.js'
 
 import type { Admin } from '../lib/client.js'
 import { Customers } from './customers.js'
@@ -136,7 +136,7 @@ export function Page(props: {
  */
 function Operators(props: { may: (method: string) => boolean }): React.ReactNode {
 	const vs = useQuery(HolderService.method.list, {})
-	const issue = useCall(IssueService.method.issuePassword)
+	const issue = useCall(CredentialService.method.issue)
 	const [said, say] = useState<{ kind: 'secret' | 'bad'; text: string } | null>(null)
 
 	if (vs.state === 'pending') return <p className="loading">…</p>
@@ -146,10 +146,12 @@ function Operators(props: { may: (method: string) => boolean }): React.ReactNode
 		<section>
 			<h2>signs in</h2>
 
-			{/* A new operator is one call: `IssueService.IssuePassword` makes
-			    the person in the control plane's one tenant if they are not
-			    there, and answers with a generated password, once. There is no
-			    field to type one into, for the reason `roster init` has none. */}
+			{/* A new operator is one call: `Credential.Issue` with `service`
+			    makes the person in the control plane's one tenant if they are
+			    not there, and answers with a generated password, once. There is
+			    no field to type one into, for the reason `roster init` has
+			    none. It was `IssueService.IssuePassword`, which wrote the same
+			    column with none of the rules `server/core` puts on it. */}
 			<form
 				onSubmit={(e) => {
 					e.preventDefault()
@@ -159,16 +161,16 @@ function Operators(props: { may: (method: string) => boolean }): React.ReactNode
 
 					say(null)
 					void issue
-						.call({ alias })
+						.call({ service: alias })
 						.then((r) => {
 							form.reset()
-							say({ kind: 'secret', text: `${alias}: ${r.password}` })
+							say({ kind: 'secret', text: `${alias}: ${r.secret}` })
 						})
 						.catch((e: unknown) => say({ kind: 'bad', text: e instanceof Error ? e.message : 'no' }))
 				}}
 			>
 				<input name="alias" placeholder="new operator, or one to reset" required />
-				<button type="submit" disabled={issue.state === 'pending' || !props.may('/roster.IssueService/IssuePassword')}>
+				<button type="submit" disabled={issue.state === 'pending' || !props.may('/roster.CredentialService/Issue')}>
 					issue a password
 				</button>
 			</form>

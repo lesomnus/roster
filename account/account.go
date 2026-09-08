@@ -929,7 +929,7 @@ func (a *App) recover(w http.ResponseWriter, r *http.Request) {
 //
 // Not a session. `Vouch.Redeem` would mint one, and this app asks it to, then
 // uses it for nothing but the proof: what somebody who has lost their password
-// needs is a password, and `Vouch.Reset` makes one -- and voids everything
+// needs is a password, and `Credential.Issue` makes one -- and voids everything
 // issued before it, which is what recovering from a takeover requires. Their
 // own row asks for the current password on `Set` and there is none to give,
 // which is exactly why this road exists.
@@ -954,8 +954,8 @@ func (a *App) redeem(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		reset, err := a.vouch.Reset(as, rstr.VouchResetRequest_builder{
-			Who: rstr.VouchWho_builder{Id: res.GetVerified().GetHolder()}.Build(),
+		reset, err := a.roster.Credential().Issue(as, rstr.CredentialIssueRequest_builder{
+			Ref: rstr.HolderRef_builder{Id: res.GetVerified().GetHolder()}.Build(),
 		}.Build())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "account: reset after redeem at %s: %v\n", t.alias, err)

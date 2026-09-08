@@ -627,7 +627,7 @@ func kindsOf(vs []*rstr.VouchFactor) []string {
 //
 // What the app owns is what the link was for: `Redeem` proves a mailbox, and
 // whether that is enough to sign in, or only enough to hand the person a new
-// password (`Vouch.Reset`), is the app's policy and not this package's.
+// password (`Credential.Issue`), is the app's policy and not this package's.
 func (d *Door) Redeem(ctx context.Context, w http.ResponseWriter, token string) error {
 	if token == "" {
 		return ErrNotSignedIn

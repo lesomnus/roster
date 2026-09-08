@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/vouch.proto.
  */
 export const file_app_vouch: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJGCghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCSI/CgpWb3VjaENsYWltEg4KBnRlbmFudBgBIAEoDBIQCghwcm92aWRlchgCIAEoCRIPCgdzdWJqZWN0GAMgASgJIl8KElZvdWNoVmVyaWZ5UmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSDAoEbmFtZRgFIAEoCSJyCgtWb3VjaEZhY3RvchIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSMAoMbG9ja2VkX3VudGlsGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIVCg1jcmVkZW50aWFsX2lkGAkgASgJIsQBChNWb3VjaFZlcmlmeVJlc3BvbnNlEgoKAm9rGAEgASgIEg4KBmhvbGRlchgCIAEoDBIOCgZ0ZW5hbnQYAyABKAwSMAoMbG9ja2VkX3VudGlsGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIRCglzYXRpc2ZpZWQYCiADKAkSJgoJYXZhaWxhYmxlGAsgAygLMhMucm9zdGVyLlZvdWNoRmFjdG9yEhQKDGNvbnRpbnVhdGlvbhgMIAEoCSJYChRWb3VjaENvbnRpbnVlUmVxdWVzdBIUCgxjb250aW51YXRpb24YASABKAkSDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSDAoEbmFtZRgFIAEoCSJGChVWb3VjaENvbnRpbnVlUmVzcG9uc2USLQoIdmVyaWZpZWQYASABKAsyGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZSK1AQoUVm91Y2hEZWxlZ2F0ZVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMEhQKDGNvbnRpbnVhdGlvbhgMIAEoCRIMCgRuYW1lGAUgASgJEg8KB21ldGhvZHMYCiADKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAidQoSVm91Y2hBY2NlcHRSZXF1ZXN0EiEKBWNsYWltGAEgASgLMhIucm9zdGVyLlZvdWNoQ2xhaW0SDwoHbWV0aG9kcxgCIAMoCRIrCgdleHBpcmVzGAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKCAQoVVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlEi0KCHZlcmlmaWVkGAEgASgLMhsucm9zdGVyLlZvdWNoVmVyaWZ5UmVzcG9uc2USDQoFdG9rZW4YCiABKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiQAoRVm91Y2hSZXNldFJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkiJAoSVm91Y2hSZXNldFJlc3BvbnNlEg4KBnNlY3JldBgBIAEoCSJeChBWb3VjaExpbmtSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIrCgdleHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJPChFWb3VjaExpbmtSZXNwb25zZRINCgV0b2tlbhgBIAEoCRIrCgdleHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJhChJWb3VjaFJlZGVlbVJlcXVlc3QSDQoFdG9rZW4YASABKAkSDwoHbWV0aG9kcxgKIAMoCRIrCgdleHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcDLqAwoMVm91Y2hTZXJ2aWNlEkEKBlZlcmlmeRIaLnJvc3Rlci5Wb3VjaFZlcmlmeVJlcXVlc3QaGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZRJHCghEZWxlZ2F0ZRIcLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVxdWVzdBodLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVzcG9uc2USPgoFUmVzZXQSGS5yb3N0ZXIuVm91Y2hSZXNldFJlcXVlc3QaGi5yb3N0ZXIuVm91Y2hSZXNldFJlc3BvbnNlEjsKBExpbmsSGC5yb3N0ZXIuVm91Y2hMaW5rUmVxdWVzdBoZLnJvc3Rlci5Wb3VjaExpbmtSZXNwb25zZRJDCgZSZWRlZW0SGi5yb3N0ZXIuVm91Y2hSZWRlZW1SZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoRGVsZWdhdGVSZXNwb25zZRJHCghDb250aW51ZRIcLnJvc3Rlci5Wb3VjaENvbnRpbnVlUmVxdWVzdBodLnJvc3Rlci5Wb3VjaENvbnRpbnVlUmVzcG9uc2USQwoGQWNjZXB0Ehoucm9zdGVyLlZvdWNoQWNjZXB0UmVxdWVzdBodLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVzcG9uc2VCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp]);
+  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJGCghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCSI/CgpWb3VjaENsYWltEg4KBnRlbmFudBgBIAEoDBIQCghwcm92aWRlchgCIAEoCRIPCgdzdWJqZWN0GAMgASgJIl8KElZvdWNoVmVyaWZ5UmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSDAoEbmFtZRgFIAEoCSJyCgtWb3VjaEZhY3RvchIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSMAoMbG9ja2VkX3VudGlsGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIVCg1jcmVkZW50aWFsX2lkGAkgASgJIsQBChNWb3VjaFZlcmlmeVJlc3BvbnNlEgoKAm9rGAEgASgIEg4KBmhvbGRlchgCIAEoDBIOCgZ0ZW5hbnQYAyABKAwSMAoMbG9ja2VkX3VudGlsGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIRCglzYXRpc2ZpZWQYCiADKAkSJgoJYXZhaWxhYmxlGAsgAygLMhMucm9zdGVyLlZvdWNoRmFjdG9yEhQKDGNvbnRpbnVhdGlvbhgMIAEoCSJYChRWb3VjaENvbnRpbnVlUmVxdWVzdBIUCgxjb250aW51YXRpb24YASABKAkSDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSDAoEbmFtZRgFIAEoCSJGChVWb3VjaENvbnRpbnVlUmVzcG9uc2USLQoIdmVyaWZpZWQYASABKAsyGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZSK1AQoUVm91Y2hEZWxlZ2F0ZVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMEhQKDGNvbnRpbnVhdGlvbhgMIAEoCRIMCgRuYW1lGAUgASgJEg8KB21ldGhvZHMYCiADKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAidQoSVm91Y2hBY2NlcHRSZXF1ZXN0EiEKBWNsYWltGAEgASgLMhIucm9zdGVyLlZvdWNoQ2xhaW0SDwoHbWV0aG9kcxgCIAMoCRIrCgdleHBpcmVzGAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKCAQoVVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlEi0KCHZlcmlmaWVkGAEgASgLMhsucm9zdGVyLlZvdWNoVmVyaWZ5UmVzcG9uc2USDQoFdG9rZW4YCiABKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiXgoQVm91Y2hMaW5rUmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiTwoRVm91Y2hMaW5rUmVzcG9uc2USDQoFdG9rZW4YASABKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiYQoSVm91Y2hSZWRlZW1SZXF1ZXN0Eg0KBXRva2VuGAEgASgJEg8KB21ldGhvZHMYCiADKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAyqgMKDFZvdWNoU2VydmljZRJBCgZWZXJpZnkSGi5yb3N0ZXIuVm91Y2hWZXJpZnlSZXF1ZXN0Ghsucm9zdGVyLlZvdWNoVmVyaWZ5UmVzcG9uc2USRwoIRGVsZWdhdGUSHC5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlEjsKBExpbmsSGC5yb3N0ZXIuVm91Y2hMaW5rUmVxdWVzdBoZLnJvc3Rlci5Wb3VjaExpbmtSZXNwb25zZRJDCgZSZWRlZW0SGi5yb3N0ZXIuVm91Y2hSZWRlZW1SZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoRGVsZWdhdGVSZXNwb25zZRJHCghDb250aW51ZRIcLnJvc3Rlci5Wb3VjaENvbnRpbnVlUmVxdWVzdBodLnJvc3Rlci5Wb3VjaENvbnRpbnVlUmVzcG9uc2USQwoGQWNjZXB0Ehoucm9zdGVyLlZvdWNoQWNjZXB0UmVxdWVzdBodLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVzcG9uc2VCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp]);
 
 /**
  * VouchWho names somebody in the words a sign-in form collects.
@@ -586,53 +586,6 @@ export const VouchDelegateResponseSchema: GenMessage<VouchDelegateResponse> = /*
   messageDesc(file_app_vouch, 9);
 
 /**
- * @generated from message roster.VouchResetRequest
- */
-export type VouchResetRequest = Message<"roster.VouchResetRequest"> & {
-  /**
-   * @generated from field: roster.VouchWho who = 1;
-   */
-  who?: VouchWho | undefined;
-
-  /**
-   * Which secret, and empty means "password" as everywhere else. A kind that
-   * is not a password is refused: there is nothing sensible to generate for a
-   * TOTP seed that the person could then read out.
-   *
-   * @generated from field: string kind = 8;
-   */
-  kind: string;
-};
-
-/**
- * Describes the message roster.VouchResetRequest.
- * Use `create(VouchResetRequestSchema)` to create a new message.
- */
-export const VouchResetRequestSchema: GenMessage<VouchResetRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 10);
-
-/**
- * @generated from message roster.VouchResetResponse
- */
-export type VouchResetResponse = Message<"roster.VouchResetResponse"> & {
-  /**
-   * Shown once and not stored. What is stored is an argon2id hash, so this
-   * deployment cannot tell anybody what theirs was any more than it can tell
-   * them their key.
-   *
-   * @generated from field: string secret = 1;
-   */
-  secret: string;
-};
-
-/**
- * Describes the message roster.VouchResetResponse.
- * Use `create(VouchResetResponseSchema)` to create a new message.
- */
-export const VouchResetResponseSchema: GenMessage<VouchResetResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 11);
-
-/**
  * @generated from message roster.VouchLinkRequest
  */
 export type VouchLinkRequest = Message<"roster.VouchLinkRequest"> & {
@@ -659,7 +612,7 @@ export type VouchLinkRequest = Message<"roster.VouchLinkRequest"> & {
  * Use `create(VouchLinkRequestSchema)` to create a new message.
  */
 export const VouchLinkRequestSchema: GenMessage<VouchLinkRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 12);
+  messageDesc(file_app_vouch, 10);
 
 /**
  * @generated from message roster.VouchLinkResponse
@@ -687,7 +640,7 @@ export type VouchLinkResponse = Message<"roster.VouchLinkResponse"> & {
  * Use `create(VouchLinkResponseSchema)` to create a new message.
  */
 export const VouchLinkResponseSchema: GenMessage<VouchLinkResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 13);
+  messageDesc(file_app_vouch, 11);
 
 /**
  * @generated from message roster.VouchRedeemRequest
@@ -722,7 +675,7 @@ export type VouchRedeemRequest = Message<"roster.VouchRedeemRequest"> & {
  * Use `create(VouchRedeemRequestSchema)` to create a new message.
  */
 export const VouchRedeemRequestSchema: GenMessage<VouchRedeemRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 14);
+  messageDesc(file_app_vouch, 12);
 
 /**
  * VouchService is how a secret is used without ever leaving the store.
@@ -766,9 +719,13 @@ export const VouchRedeemRequestSchema: GenMessage<VouchRedeemRequest> = /*@__PUR
  * installed on -- exactly as `cmd.Resolver` does and for the same reason:
  * working out who somebody is cannot require knowing who they are.
  *
- * `Set` is a caller changing somebody's password, which is an ordinary
- * authorised write. It goes behind the wall, so an administrator of one tenant
- * cannot reach into another, and that narrowing costs this service nothing.
+ * Everything else here is an ordinary authorised write and goes behind the
+ * wall, so an administrator of one tenant cannot reach into another, and that
+ * narrowing costs this service nothing. It was two stacks for a while: the
+ * second existed so `Reset` could enter below the rule that makes
+ * `Credential.Set` your own row. `Reset` is `Credential.Issue` now, which calls
+ * its own `Set` from inside the layer instead of reaching into the stack from
+ * outside, and there is one stack again.
  *
  * @generated from service roster.VouchService
  */
@@ -814,42 +771,12 @@ export const VouchService: GenService<{
     output: typeof VouchDelegateResponseSchema;
   },
   /**
-   * Reset gives somebody a new password and answers with it **once**.
-   *
-   * For a local operator in a deployment with no mail. Roadmap.md's item 10:
-   * D13 closed `CredentialService` entirely, so nothing on the wire could set
-   * a password and `init` plus a shell was the only way -- which is right for
-   * the read and wrong for the write.
-   *
-   * # Why the operator does not choose it
-   *
-   * The same argument `IssueService` already makes about a key: a secret the
-   * caller chose is a secret the caller knows, and one generated in a console
-   * is only as good as that page's `crypto`. Here it is `crypto/rand` on the
-   * server, and what the operator does is read it out.
-   *
-   * # Who may
-   *
-   * Somebody whose permissions cover the permissions of the person they are
-   * resetting. Resetting a password is a way to **become** somebody, so an
-   * operator who could reset anybody in their tenant would hold every
-   * permission in it -- `server/core/escalate.go` is the rule and it went in
-   * before this did.
-   *
-   * @generated from rpc roster.VouchService.Reset
-   */
-  reset: {
-    methodKind: "unary";
-    input: typeof VouchResetRequestSchema;
-    output: typeof VouchResetResponseSchema;
-  },
-  /**
    * Link mints a way in for somebody and answers with it **once**.
    *
    * What roster does not do is send it. D19 puts the delivery outside, and
    * separating the two is what makes the air-gapped case work at all: with no
    * mail the somebody else is a person, and what they hand over is a password
-   * from [VouchService.Reset] rather than a link.
+   * from `Credential.Issue` rather than a link.
    *
    * # It says nothing about whether they are here
    *

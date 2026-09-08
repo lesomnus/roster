@@ -9947,109 +9947,6 @@ func (s interceptContinuation) List(ctx context.Context, req *rstr.ContinuationL
 		rstr.ContinuationService_List_FullMethodName, req, s.ContinuationServiceServer.List)
 }
 
-func (s Intercept) Credential() rstr.CredentialServiceServer {
-	return interceptCredential{s, s.Next().Credential()}
-}
-
-type interceptCredential struct {
-	Intercept
-	rstr.CredentialServiceServer
-}
-
-func (s interceptCredential) Add(ctx context.Context, req *rstr.CredentialAddRequest) (*rstr.Credential, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CredentialServiceServer,
-		rstr.CredentialService_Add_FullMethodName, req, s.CredentialServiceServer.Add)
-}
-
-func (s interceptCredential) Get(ctx context.Context, req *rstr.CredentialGetRequest) (*rstr.Credential, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CredentialServiceServer,
-		rstr.CredentialService_Get_FullMethodName, req, s.CredentialServiceServer.Get)
-}
-
-func (s interceptCredential) Patch(ctx context.Context, req *rstr.CredentialPatchRequest) (*rstr.Credential, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CredentialServiceServer,
-		rstr.CredentialService_Patch_FullMethodName, req, s.CredentialServiceServer.Patch)
-}
-
-func (s interceptCredential) Apply(ctx context.Context, req *rstr.CredentialApplyRequest) (*rstr.Credential, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CredentialServiceServer,
-		rstr.CredentialService_Apply_FullMethodName, req, s.CredentialServiceServer.Apply)
-}
-
-func (s interceptCredential) Erase(ctx context.Context, req *rstr.CredentialRef) (*rstr.CredentialEraseResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CredentialServiceServer,
-		rstr.CredentialService_Erase_FullMethodName, req, s.CredentialServiceServer.Erase)
-}
-
-func (s interceptCredential) List(ctx context.Context, req *rstr.CredentialListRequest) (*rstr.CredentialListResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CredentialServiceServer,
-		rstr.CredentialService_List_FullMethodName, req, s.CredentialServiceServer.List)
-}
-
-func (s interceptCredential) Watch(req *rstr.CredentialWatchRequest, out grpc.ServerStreamingServer[rstr.CredentialWatchResponse]) error {
-	return grpcx.RunStream(s.stream, s.CredentialServiceServer,
-		rstr.CredentialService_Watch_FullMethodName, req, out, s.CredentialServiceServer.Watch)
-}
-
-func (s interceptCredential) Unlock(ctx context.Context, req *rstr.CredentialUnlockRequest) (*rstr.CredentialUnlockResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CredentialServiceServer,
-		rstr.CredentialService_Unlock_FullMethodName, req, s.CredentialServiceServer.Unlock)
-}
-
-func (s interceptCredential) Set(ctx context.Context, req *rstr.CredentialSetRequest) (*rstr.CredentialSetResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CredentialServiceServer,
-		rstr.CredentialService_Set_FullMethodName, req, s.CredentialServiceServer.Set)
-}
-
-func (s interceptCredential) Enrol(ctx context.Context, req *rstr.CredentialEnrolRequest) (*rstr.CredentialEnrolResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CredentialServiceServer,
-		rstr.CredentialService_Enrol_FullMethodName, req, s.CredentialServiceServer.Enrol)
-}
-
-func (s Intercept) Delegation() rstr.DelegationServiceServer {
-	return interceptDelegation{s, s.Next().Delegation()}
-}
-
-type interceptDelegation struct {
-	Intercept
-	rstr.DelegationServiceServer
-}
-
-func (s interceptDelegation) Add(ctx context.Context, req *rstr.DelegationAddRequest) (*rstr.Delegation, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
-		rstr.DelegationService_Add_FullMethodName, req, s.DelegationServiceServer.Add)
-}
-
-func (s interceptDelegation) Get(ctx context.Context, req *rstr.DelegationGetRequest) (*rstr.Delegation, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
-		rstr.DelegationService_Get_FullMethodName, req, s.DelegationServiceServer.Get)
-}
-
-func (s interceptDelegation) Patch(ctx context.Context, req *rstr.DelegationPatchRequest) (*rstr.Delegation, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
-		rstr.DelegationService_Patch_FullMethodName, req, s.DelegationServiceServer.Patch)
-}
-
-func (s interceptDelegation) Apply(ctx context.Context, req *rstr.DelegationApplyRequest) (*rstr.Delegation, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
-		rstr.DelegationService_Apply_FullMethodName, req, s.DelegationServiceServer.Apply)
-}
-
-func (s interceptDelegation) Erase(ctx context.Context, req *rstr.DelegationRef) (*rstr.DelegationEraseResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
-		rstr.DelegationService_Erase_FullMethodName, req, s.DelegationServiceServer.Erase)
-}
-
-func (s interceptDelegation) List(ctx context.Context, req *rstr.DelegationListRequest) (*rstr.DelegationListResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
-		rstr.DelegationService_List_FullMethodName, req, s.DelegationServiceServer.List)
-}
-
-func (s interceptDelegation) Revoke(ctx context.Context, req *rstr.DelegationRevokeRequest) (*rstr.DelegationRevokeResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
-		rstr.DelegationService_Revoke_FullMethodName, req, s.DelegationServiceServer.Revoke)
-}
-
 func (s Intercept) Identity() rstr.IdentityServiceServer {
 	return interceptIdentity{s, s.Next().Identity()}
 }
@@ -10146,6 +10043,114 @@ func (s interceptEmail) Verify(ctx context.Context, req *rstr.EmailVerifyRequest
 func (s interceptEmail) Confirm(ctx context.Context, req *rstr.EmailConfirmRequest) (*rstr.EmailConfirmResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.EmailServiceServer,
 		rstr.EmailService_Confirm_FullMethodName, req, s.EmailServiceServer.Confirm)
+}
+
+func (s Intercept) Credential() rstr.CredentialServiceServer {
+	return interceptCredential{s, s.Next().Credential()}
+}
+
+type interceptCredential struct {
+	Intercept
+	rstr.CredentialServiceServer
+}
+
+func (s interceptCredential) Add(ctx context.Context, req *rstr.CredentialAddRequest) (*rstr.Credential, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CredentialServiceServer,
+		rstr.CredentialService_Add_FullMethodName, req, s.CredentialServiceServer.Add)
+}
+
+func (s interceptCredential) Get(ctx context.Context, req *rstr.CredentialGetRequest) (*rstr.Credential, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CredentialServiceServer,
+		rstr.CredentialService_Get_FullMethodName, req, s.CredentialServiceServer.Get)
+}
+
+func (s interceptCredential) Patch(ctx context.Context, req *rstr.CredentialPatchRequest) (*rstr.Credential, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CredentialServiceServer,
+		rstr.CredentialService_Patch_FullMethodName, req, s.CredentialServiceServer.Patch)
+}
+
+func (s interceptCredential) Apply(ctx context.Context, req *rstr.CredentialApplyRequest) (*rstr.Credential, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CredentialServiceServer,
+		rstr.CredentialService_Apply_FullMethodName, req, s.CredentialServiceServer.Apply)
+}
+
+func (s interceptCredential) Erase(ctx context.Context, req *rstr.CredentialRef) (*rstr.CredentialEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CredentialServiceServer,
+		rstr.CredentialService_Erase_FullMethodName, req, s.CredentialServiceServer.Erase)
+}
+
+func (s interceptCredential) List(ctx context.Context, req *rstr.CredentialListRequest) (*rstr.CredentialListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CredentialServiceServer,
+		rstr.CredentialService_List_FullMethodName, req, s.CredentialServiceServer.List)
+}
+
+func (s interceptCredential) Watch(req *rstr.CredentialWatchRequest, out grpc.ServerStreamingServer[rstr.CredentialWatchResponse]) error {
+	return grpcx.RunStream(s.stream, s.CredentialServiceServer,
+		rstr.CredentialService_Watch_FullMethodName, req, out, s.CredentialServiceServer.Watch)
+}
+
+func (s interceptCredential) Unlock(ctx context.Context, req *rstr.CredentialUnlockRequest) (*rstr.CredentialUnlockResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CredentialServiceServer,
+		rstr.CredentialService_Unlock_FullMethodName, req, s.CredentialServiceServer.Unlock)
+}
+
+func (s interceptCredential) Set(ctx context.Context, req *rstr.CredentialSetRequest) (*rstr.CredentialSetResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CredentialServiceServer,
+		rstr.CredentialService_Set_FullMethodName, req, s.CredentialServiceServer.Set)
+}
+
+func (s interceptCredential) Enrol(ctx context.Context, req *rstr.CredentialEnrolRequest) (*rstr.CredentialEnrolResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CredentialServiceServer,
+		rstr.CredentialService_Enrol_FullMethodName, req, s.CredentialServiceServer.Enrol)
+}
+
+func (s interceptCredential) Issue(ctx context.Context, req *rstr.CredentialIssueRequest) (*rstr.CredentialIssueResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CredentialServiceServer,
+		rstr.CredentialService_Issue_FullMethodName, req, s.CredentialServiceServer.Issue)
+}
+
+func (s Intercept) Delegation() rstr.DelegationServiceServer {
+	return interceptDelegation{s, s.Next().Delegation()}
+}
+
+type interceptDelegation struct {
+	Intercept
+	rstr.DelegationServiceServer
+}
+
+func (s interceptDelegation) Add(ctx context.Context, req *rstr.DelegationAddRequest) (*rstr.Delegation, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
+		rstr.DelegationService_Add_FullMethodName, req, s.DelegationServiceServer.Add)
+}
+
+func (s interceptDelegation) Get(ctx context.Context, req *rstr.DelegationGetRequest) (*rstr.Delegation, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
+		rstr.DelegationService_Get_FullMethodName, req, s.DelegationServiceServer.Get)
+}
+
+func (s interceptDelegation) Patch(ctx context.Context, req *rstr.DelegationPatchRequest) (*rstr.Delegation, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
+		rstr.DelegationService_Patch_FullMethodName, req, s.DelegationServiceServer.Patch)
+}
+
+func (s interceptDelegation) Apply(ctx context.Context, req *rstr.DelegationApplyRequest) (*rstr.Delegation, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
+		rstr.DelegationService_Apply_FullMethodName, req, s.DelegationServiceServer.Apply)
+}
+
+func (s interceptDelegation) Erase(ctx context.Context, req *rstr.DelegationRef) (*rstr.DelegationEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
+		rstr.DelegationService_Erase_FullMethodName, req, s.DelegationServiceServer.Erase)
+}
+
+func (s interceptDelegation) List(ctx context.Context, req *rstr.DelegationListRequest) (*rstr.DelegationListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
+		rstr.DelegationService_List_FullMethodName, req, s.DelegationServiceServer.List)
+}
+
+func (s interceptDelegation) Revoke(ctx context.Context, req *rstr.DelegationRevokeRequest) (*rstr.DelegationRevokeResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
+		rstr.DelegationService_Revoke_FullMethodName, req, s.DelegationServiceServer.Revoke)
 }
 
 func (s Intercept) Site() rstr.SiteServiceServer {
@@ -11726,214 +11731,6 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 
 		return anypb.New(res)
 
-	case rstr.CredentialService_Add_FullMethodName:
-		v := &rstr.CredentialAddRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Credential().Add(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case rstr.CredentialService_Get_FullMethodName:
-		v := &rstr.CredentialGetRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Credential().Get(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case rstr.CredentialService_Patch_FullMethodName:
-		v := &rstr.CredentialPatchRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Credential().Patch(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case rstr.CredentialService_Apply_FullMethodName:
-		v := &rstr.CredentialApplyRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Credential().Apply(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case rstr.CredentialService_Erase_FullMethodName:
-		v := &rstr.CredentialRef{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Credential().Erase(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case rstr.CredentialService_List_FullMethodName:
-		v := &rstr.CredentialListRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Credential().List(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case rstr.CredentialService_Unlock_FullMethodName:
-		v := &rstr.CredentialUnlockRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Credential().Unlock(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case rstr.CredentialService_Set_FullMethodName:
-		v := &rstr.CredentialSetRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Credential().Set(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case rstr.CredentialService_Enrol_FullMethodName:
-		v := &rstr.CredentialEnrolRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Credential().Enrol(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case rstr.DelegationService_Add_FullMethodName:
-		v := &rstr.DelegationAddRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Delegation().Add(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case rstr.DelegationService_Get_FullMethodName:
-		v := &rstr.DelegationGetRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Delegation().Get(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case rstr.DelegationService_Patch_FullMethodName:
-		v := &rstr.DelegationPatchRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Delegation().Patch(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case rstr.DelegationService_Apply_FullMethodName:
-		v := &rstr.DelegationApplyRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Delegation().Apply(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case rstr.DelegationService_Erase_FullMethodName:
-		v := &rstr.DelegationRef{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Delegation().Erase(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case rstr.DelegationService_List_FullMethodName:
-		v := &rstr.DelegationListRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Delegation().List(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case rstr.DelegationService_Revoke_FullMethodName:
-		v := &rstr.DelegationRevokeRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Delegation().Revoke(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
 	case rstr.IdentityService_Add_FullMethodName:
 		v := &rstr.IdentityAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
@@ -12110,6 +11907,227 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 		}
 
 		res, err := s.Email().Confirm(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.CredentialService_Add_FullMethodName:
+		v := &rstr.CredentialAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Credential().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.CredentialService_Get_FullMethodName:
+		v := &rstr.CredentialGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Credential().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.CredentialService_Patch_FullMethodName:
+		v := &rstr.CredentialPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Credential().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.CredentialService_Apply_FullMethodName:
+		v := &rstr.CredentialApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Credential().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.CredentialService_Erase_FullMethodName:
+		v := &rstr.CredentialRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Credential().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.CredentialService_List_FullMethodName:
+		v := &rstr.CredentialListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Credential().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.CredentialService_Unlock_FullMethodName:
+		v := &rstr.CredentialUnlockRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Credential().Unlock(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.CredentialService_Set_FullMethodName:
+		v := &rstr.CredentialSetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Credential().Set(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.CredentialService_Enrol_FullMethodName:
+		v := &rstr.CredentialEnrolRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Credential().Enrol(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.CredentialService_Issue_FullMethodName:
+		v := &rstr.CredentialIssueRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Credential().Issue(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.DelegationService_Add_FullMethodName:
+		v := &rstr.DelegationAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Delegation().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.DelegationService_Get_FullMethodName:
+		v := &rstr.DelegationGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Delegation().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.DelegationService_Patch_FullMethodName:
+		v := &rstr.DelegationPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Delegation().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.DelegationService_Apply_FullMethodName:
+		v := &rstr.DelegationApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Delegation().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.DelegationService_Erase_FullMethodName:
+		v := &rstr.DelegationRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Delegation().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.DelegationService_List_FullMethodName:
+		v := &rstr.DelegationListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Delegation().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.DelegationService_Revoke_FullMethodName:
+		v := &rstr.DelegationRevokeRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Delegation().Revoke(ctx, v)
 		if err != nil {
 			return nil, err
 		}

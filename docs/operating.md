@@ -971,7 +971,7 @@ same act:
 
 | | |
 | --- | --- |
-| `CredentialService/Set`, `/Unlock`, `VouchService/Reset` | their secret |
+| `CredentialService/Set`, `/Issue`, `/Unlock` | their secret |
 | `CredentialService/Enrol` | their second factor |
 | `IdentityService/Add` | an account at a provider that signs in as them |
 | `EmailService/Add` | a mailbox a recovery link is sent to |
@@ -1090,7 +1090,7 @@ standing there comes from the port rather than from a role.
 `IdentityService/Add` and `EmailService/Add` are served here too and do carry
 it, but it reads the control plane — where a customer's person holds nothing —
 so it refuses nothing. Granting either of them on this port is granting the
-account, exactly as granting `Vouch.Reset` is. That is the same waiver and it is
+account, exactly as granting `Credential.Issue` is. That is the same waiver and it is
 the silent one: on the data plane those two are guarded, and nothing about the
 call says which port it arrived at.
 
@@ -1110,8 +1110,9 @@ a service because the deployment this is most careful about has no network at
 all; the lookup halves the file rather than loading it, so the size of the
 corpus costs nothing but disk.
 
-Named and it is a **refusal**: `Credential.Set` and `Vouch.Reset` answer
-`FailedPrecondition` and the person picks again. Unnamed and nothing is checked,
+Named and it is a **refusal**: `Credential.Set` answers `FailedPrecondition` and
+the person picks again -- and so does `Credential.Issue`, which generates rather
+than takes one and so meets it only where a corpus is absurdly wide. Unnamed and nothing is checked,
 which is every deployment that has not said otherwise.
 
 It is not advisory: a check whose result is advice is a check nobody acts on.
@@ -1162,7 +1163,7 @@ in the console; the same three RPCs either way.
 
 | | |
 | --- | --- |
-| `/roster.VouchService/Reset` | a new password, generated here and answered with **once**. The operator reads it out |
+| `/roster.CredentialService/Issue` | a new password, generated here and answered with **once**. The operator reads it out, and everything the person had signed in with stops working (moved from `VouchService.Reset`, which was this and `IssueService.IssuePassword` at the same time) |
 | `/roster.CredentialService/Unlock` | opens an account too many wrong answers closed (`vouch.lockout`), without changing the secret (moved from `VouchService`) |
 | `/roster.CredentialService/Set` | writes a password somebody chose — an account portal's, not an operator's |
 
@@ -1584,7 +1585,7 @@ Nothing written down is plaintext, and it warns once.
   asked for it, because a link that skipped one would turn a mailbox into an
   account. What is outside roster is the **delivery** — D19 — and that is what
   makes the air-gapped case work at all: with no mail the somebody else is a
-  person, and what they hand over is a password from `Vouch.Reset`.
+  person, and what they hand over is a password from `Credential.Issue`.
 - **Nothing here signs a token.** If several products need one sign-in, that is
   Hydra in front and roster answering it — login.md, "What changes when Hydra is
   in front". Do not reach for a JWT minted here; [position.md](position.md),

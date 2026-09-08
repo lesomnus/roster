@@ -186,7 +186,6 @@ func Widest(methods []string) string {
 		{app.AuditService_List_FullMethodName, ReadsTheTrail},
 		{app.AuditService_Get_FullMethodName, ReadsTheTrail},
 		{app.VouchService_Accept_FullMethodName, MintsForAnybody},
-		{app.IssueService_IssuePassword_FullMethodName, BecomesAnOperator},
 	}
 
 	for _, held := range methods {
@@ -218,16 +217,20 @@ const MintsForAnybody = "mints a credential for anybody, on the caller's word.\n
 	"and it verifies nothing itself. An app that checks passwords through `Verify`\n" +
 	"does not need it, and should not have it."
 
-// And the third, found by pointing `roster issue` at the control port: the
-// grant rule reads bindings and a key holds none, so a key can never mint a
-// key -- but writing a credential asks the *reach* rule, which everything a
-// deployment key carries covers. So a key whose methods reach `IssuePassword`
-// hands out first passwords, and a first password for an operator is a way to
-// become them.
-const BecomesAnOperator = "hands out first passwords, on the caller's word.\n" +
-	"Against the control plane that is every operator of this deployment: a key is\n" +
-	"not a person, so no binding narrows whose credential it may write. Grant it\n" +
-	"only to a console."
+// There was a third, `BecomesAnOperator`, and it is gone because the hole it
+// warned about closed.
+//
+// It was found by pointing `roster issue` at the control port:
+// `IssueService.IssuePassword` wrote through the **generated** `Credential`
+// verbs, so the reach rule never ran and a key whose methods named it handed
+// out any operator's password. A printed NOTE was the whole mitigation.
+//
+// That verb is `Credential.Issue` now and goes through `server/core`'s own
+// write, so `mayReach` runs: a caller may write the credential of somebody who
+// holds nothing -- a new operator, which is what the act is for -- and of
+// somebody whose grants their own bindings cover, and of nobody else. A key
+// holds no bindings, so it reaches exactly the first case, where there is
+// nothing to become. The wiring says it now instead of the warning.
 
 // listKeys writes one plane's keys, in the shape `roster key list` prints them.
 //

@@ -17,16 +17,23 @@ import (
 // Self is the rule that a **caller** writes their own password and nobody
 // else's.
 //
-// One method, and a layer of its own rather than a branch in [Core], because
-// what makes it work is where it sits. `Vouch.Reset` -- the verb for giving
-// somebody a password they did not choose -- is handed the stack from [Core]
-// down and never passes through here, so it keeps naming anybody `mayReach`
-// allows while a caller cannot. Written as a branch inside `Core` it would have
-// closed `Reset` too, which is the door it points at.
+// One method, and a layer of its own rather than a branch in [Core]. It has to
+// be one method: `Credential.Issue` -- the verb for giving somebody a password
+// they did not choose -- names anybody `mayReach` allows, and a branch inside
+// `Core` would have closed the door this one points at.
 //
-// That is the general shape and it is worth naming: a rule that must hold for
-// one caller and not another is a rule in a layer the other does not enter.
-// `CLAUDE.md`, "Layers, and the four cannot's that are not".
+// It was a **layer** for a second reason that has since gone. `Vouch.Reset` was
+// that verb and it wrote *through* `Set` from outside the stack, so the only
+// way to let it past this rule was to build the whole stack again without this
+// link and hand it that. `Issue` is a method on the entity now and calls its
+// own `Set` from inside [Core], below here, so there is one stack.
+//
+// A link of its own is still the right shape and is why this file did not
+// collapse back into `Core` with the second stack: one rule, findable, and
+// removable from a plane's list without touching anything else. The general
+// version -- *a rule that must hold for one caller and not another is a rule in
+// a layer the other does not enter* -- is payday's guide, `docs/guide/server.md`
+// § "Writing a layer".
 //
 // # Why a password and not every credential write
 //
@@ -34,8 +41,9 @@ import (
 // `Enrol`, and enrolling one for somebody is what a help desk does; an erase is
 // held by the last-way-in count. A password given to somebody by a caller who
 // is merely wider than them is a way into that account which does not expire
-// and which they are not told about, and the one door for it is `Vouch.Reset`,
-// where it is generated rather than chosen.
+// and which they are not told about, and the one door for it is
+// `Credential.Issue`, where it is generated rather than chosen -- and answered
+// with once, so the person is handed it rather than left not knowing.
 type Self struct {
 	app.Overlay
 }
@@ -92,7 +100,7 @@ func (s selfCredential) Set(ctx context.Context, req *app.CredentialSetRequest) 
 	}
 	if holder != f.Actor {
 		return nil, status.Error(codes.PermissionDenied,
-			"ref: Set writes your own password; somebody else's is Vouch.Reset, which generates one and answers with it once")
+			"ref: Set writes your own password; somebody else's is Issue, which generates one and answers with it once")
 	}
 
 	return s.CredentialServiceServer.Set(ctx, req)

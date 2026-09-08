@@ -237,11 +237,16 @@ func TestASecretIsResetForTheAddressThatNamesSomebody(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	who := func(address string) *app.VouchWho {
-		return app.VouchWho_builder{Tenant: "contoso", Address: address}.Build()
+	// An `EmailRef` where `VouchWho{tenant, address}` was: an overlay may name
+	// a generated ref, which is exactly what `proto/app/vouch.proto` could not
+	// do and why it defined a vocabulary of its own.
+	who := func(address string) *app.EmailRef {
+		return app.EmailRef_builder{
+			At: app.EmailRefByAt_builder{TenantId: b.Contoso.Bytes(), Address: &address}.Build(),
+		}.Build()
 	}
 
-	v := b.vouched()
+	v := b.Ungated.Credential()
 
 	// A reset by address is a **whole** reset, which is the half that was nearly
 	// lost making the other half work.
@@ -258,7 +263,7 @@ func TestASecretIsResetForTheAddressThatNamesSomebody(t *testing.T) {
 	x.NoError(err)
 	x.Nil(before.GetDateInvalidated())
 
-	res, err := v.Reset(ctx, app.VouchResetRequest_builder{Who: who("someone@contoso.example")}.Build())
+	res, err := v.Issue(ctx, app.CredentialIssueRequest_builder{Email: who("someone@contoso.example")}.Build())
 	x.NoError(err)
 	x.NotEmpty(res.GetSecret())
 
@@ -287,29 +292,32 @@ func TestASecretIsResetForTheAddressThatNamesSomebody(t *testing.T) {
 		ops := b.holder(t, ctx, b.Contoso, "ops")
 		asOps := b.mayCall(t, ctx, ops, "operator", "/roster.HolderService/List")
 
-		res, err := v.Reset(asOps, app.VouchResetRequest_builder{
-			Who: who("someone@contoso.example"),
-		}.Build())
+		res, err := v.Issue(asOps, app.CredentialIssueRequest_builder{Email: who("someone@contoso.example")}.Build())
 		x.NoError(err)
 		x.NotEmpty(res.GetSecret())
 		x.True(b.verifies(t, ctx, b.ContosoUser, res.GetSecret()).GetOk())
 	})
 
-	// A reset is not a thing somebody does to themselves: the write underneath
-	// is `Credential.Set`, and for your own row that asks for the password you
-	// hold, which a reset by definition does not have. So a delegation lifted
-	// from an app cannot hand itself a fresh password by "recovering" its own
-	// account -- it changes it knowing the current one, or somebody else resets it.
+	// A reset is not a thing somebody does to themselves: a delegation lifted
+	// from an app must not hand itself a fresh password by "recovering" its own
+	// account. It changes one knowing the current one -- `Set` -- or somebody
+	// else issues it.
+	//
+	// It was refused by accident and in the wrong words: `Vouch.Reset` wrote
+	// through `Set`, so the answer was *current: your own password is changed
+	// by proving the one you hold*, about a request that has no `current` in it
+	// and never could. `Credential.Issue` refuses it in one line and names the
+	// verb to use, which is what the message assertion below is for.
 	t.Run("and not by the person about themselves", func(t *testing.T) {
 		x := require.New(t)
 
 		v := b.operated()
 		as := b.as(ctx, b.ContosoUser, b.Contoso)
 
-		_, err := v.Reset(as, app.VouchResetRequest_builder{
-			Who: who("someone@contoso.example"),
-		}.Build())
+		_, err := v.Issue(as, app.CredentialIssueRequest_builder{Email: who("someone@contoso.example")}.Build())
 		x.Equal(codes.PermissionDenied, status.Code(err), "somebody reset their own password")
+		x.Contains(status.Convert(err).Message(), "Set",
+			"the refusal does not say which verb this is")
 	})
 
 	// An address nobody has is `NotFound`, which is what every other call that
@@ -319,9 +327,7 @@ func TestASecretIsResetForTheAddressThatNamesSomebody(t *testing.T) {
 	t.Run("and an address nobody has is not found", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := v.Reset(ctx, app.VouchResetRequest_builder{
-			Who: who("nobody@contoso.example"),
-		}.Build())
+		_, err := v.Issue(ctx, app.CredentialIssueRequest_builder{Email: who("nobody@contoso.example")}.Build())
 		x.Equal(codes.NotFound, status.Code(err))
 	})
 }

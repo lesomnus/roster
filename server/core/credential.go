@@ -15,6 +15,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/vouch"
 )
 
@@ -307,6 +308,179 @@ func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) 
 	}
 
 	return &app.CredentialSetResponse{}, nil
+}
+
+// Issue makes a password nobody chose, answers with it once, and ends every
+// session the person had.
+//
+// It is `Vouch.Reset` and `IssueService.IssuePassword`, which were one verb on
+// two services -- see `credential_svc.ext.proto` for why each was somewhere
+// else and why neither reason survived. What is here that was in neither: the
+// write is this layer's own [coreCredential.Set], so the length rule, the
+// leaked corpus, `NoReuse`, `date_rotated` and `mayReach` all run.
+// `IssuePassword` wrote through the generated verbs and had none of them.
+//
+// # It is somebody else's row, and that is a rule rather than a habit
+//
+// Refused for your own, and pointed at `Set`. The two are the halves of one
+// column and the line between them is *what did you have to know*: `Set` asks
+// for the password you hold, and that is what stops a credential which merely
+// **acts as** somebody -- a session, a delegation lifted from an app -- from
+// turning temporary access into a password of its own choosing that does not
+// expire and that they are never told about. `Issue` asks for nothing, so
+// letting it name the caller would be that same door with no lock on it.
+//
+// `Vouch.Reset` refused it too, but by accident and in the wrong words: it
+// wrote through `Set`, so an operator asking for a fresh password of their own
+// was answered *current: your own password is changed by proving the one you
+// hold* -- about a request that has no `current` in it and never could. The
+// refusal was right and unreadable. It is one line here now, and it says which
+// verb to use.
+//
+// # Both writes, or neither
+//
+// D26 left the invalidation out of `Set` deliberately -- somebody changing
+// their own password should not be signed out of everything with nothing having
+// said so -- and it belongs to this act, which is the one recovery from a
+// takeover goes through. `Vouch.Reset` did it after the fact and best effort,
+// because failing the whole call would have left the caller unsure which half
+// happened. Inside [Core.only] there is no such half: a stack built on a driver
+// runs both in one transaction, and one that was rebound onto somebody else's
+// runs inside theirs. A stack with neither -- the admin port, which is built
+// with no `On` -- is where the old best-effort shape remains, and it is written
+// here rather than discovered.
+func (s coreCredential) Issue(ctx context.Context, req *app.CredentialIssueRequest) (*app.CredentialIssueResponse, error) {
+	kind := req.GetKind()
+	if kind == "" {
+		kind = vouch.KindPassword
+	}
+	if kind != vouch.KindPassword {
+		// A second factor is `Enrol`, which generates a seed and answers with it
+		// once -- the same shape as this and a different act, because what
+		// somebody does with a seed is scan it rather than read it out.
+		return nil, status.Errorf(codes.InvalidArgument,
+			"kind: %q is not a password; a second factor is Enrol", kind)
+	}
+
+	// Whoever this is about, resolved **here** and once, before the passphrase
+	// is made -- so a call about nobody costs nothing, and so both writes below
+	// are about the same person by construction rather than by agreement.
+	// `Vouch.Reset` resolved twice and the second one forgot the address form,
+	// which left a reset by email changing the password and no sessions.
+	ref, err := s.whosePassword(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	if f, ok := frame.From(ctx); ok && !f.Actor.IsZero() {
+		who, err := pdid.From(ref.GetId())
+		if err != nil {
+			return nil, err
+		}
+		if who == f.Actor {
+			return nil, status.Error(codes.PermissionDenied,
+				"a password of your own is Set, which asks for the one you hold; this one asks for nothing")
+		}
+	}
+
+	secret, err := vouch.Passphrase()
+	if err != nil {
+		return nil, status.Error(codes.Internal, "a secret cannot be made just now")
+	}
+
+	if err := s.only(ctx, ref.GetId(), func(next app.Server) error {
+		// This layer again over the transaction's server, so `Set`'s rules run
+		// inside it rather than beside it. `Next()` alone would be the bare
+		// server, where a credential write has no rules at all.
+		in := s.over(next)
+		if _, err := (coreCredential{in, next.Credential()}).Set(ctx, app.CredentialSetRequest_builder{
+			Ref:    ref,
+			Kind:   kind,
+			Secret: []byte(secret),
+		}.Build()); err != nil {
+			return err
+		}
+
+		// And everything issued before now is void: a password reset that
+		// leaves the old sessions alive is not a reset, and this is where
+		// recovery from a takeover happens.
+		_, err := in.Holder().Invalidate(ctx, app.HolderInvalidateRequest_builder{Ref: ref}.Build())
+
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	return app.CredentialIssueResponse_builder{Secret: secret}.Build(), nil
+}
+
+// whosePassword resolves whom a password is issued for -- the three ways
+// `Vouch.Reset` and `IssuePassword` took between them, told apart by the plane.
+//
+// `ApiKey.Issue`'s `whoseKey` is the same function one file over and the same
+// reasoning: which plane a caller is on is `WithPrefix`, a fact about the stack
+// that answered, so `service` off the control plane and `ref`/`email` on it are
+// refused by the wiring rather than by a flag.
+func (s coreCredential) whosePassword(ctx context.Context, req *app.CredentialIssueRequest) (*app.HolderRef, error) {
+	service, ref, email := req.GetService(), req.GetRef(), req.GetEmail()
+	byName, byRef, byMail := service != "", ref != nil, email != nil
+
+	switch {
+	case (byName && byRef) || (byName && byMail) || (byRef && byMail):
+		return nil, status.Error(codes.InvalidArgument,
+			"whose password this is is given more than one way; give one")
+
+	case s.prefix == "":
+		// A stack assembled without `WithPrefix` cannot say which plane it is,
+		// and the two differ in whether a name matching nobody is a new
+		// operator or a typo. It issues nothing rather than guess.
+		return nil, status.Error(codes.Unimplemented,
+			"this server was not told which plane it answers for")
+
+	case s.prefix == keys.PrefixTenant:
+		switch {
+		case byName:
+			return nil, status.Error(codes.InvalidArgument,
+				"service: a bare alias is one person only where there is one tenant, which is the "+
+					"control plane; here somebody is a `ref` or an `email` of theirs")
+
+		case byMail:
+			// Through the wall like every other read here, so an address in a
+			// tenant this caller cannot see is a NotFound rather than a
+			// password issued into it.
+			v, err := s.Next().Email().Get(ctx, app.EmailGetRequest_builder{
+				Ref:    email,
+				Select: app.EmailSelect_builder{Holder: app.HolderSelect_builder{}.Build()}.Build(),
+			}.Build())
+			if err != nil {
+				return nil, err
+			}
+
+			return app.HolderRef_builder{Id: v.GetHolder().GetId()}.Build(), nil
+
+		case !byRef:
+			return nil, status.Error(codes.InvalidArgument, "ref: whose password this is")
+		}
+
+		// Read back through the wall, so a reference this caller cannot see is
+		// a NotFound. `put` would narrow it too; this is so the refusal names
+		// the field.
+		w, err := s.Next().Holder().Get(ctx, app.HolderGetRequest_builder{Ref: ref}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		return app.HolderRef_builder{Id: w.GetId()}.Build(), nil
+
+	case byRef || byMail:
+		return nil, status.Error(codes.InvalidArgument,
+			"this plane has one tenant, so somebody is a `service` by name")
+
+	case !byName:
+		return nil, status.Error(codes.InvalidArgument, "service: whose password this is")
+	}
+
+	return s.serviceHolder(ctx, service)
 }
 
 // reauth is the proof a caller gives before their own password is replaced:

@@ -32,9 +32,9 @@ type Server interface {
 	Connection() ConnectionServiceServer
 	Continuation() ContinuationServiceServer
 	Credential() CredentialServiceServer
-	Delegation() DelegationServiceServer
 	Identity() IdentityServiceServer
 	Email() EmailServiceServer
+	Delegation() DelegationServiceServer
 	Site() SiteServiceServer
 	Group() GroupServiceServer
 	GroupMembership() GroupMembershipServiceServer
@@ -62,9 +62,9 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterConnectionServiceServer(g, s.Connection())
 	RegisterContinuationServiceServer(g, s.Continuation())
 	RegisterCredentialServiceServer(g, s.Credential())
-	RegisterDelegationServiceServer(g, s.Delegation())
 	RegisterIdentityServiceServer(g, s.Identity())
 	RegisterEmailServiceServer(g, s.Email())
+	RegisterDelegationServiceServer(g, s.Delegation())
 	RegisterSiteServiceServer(g, s.Site())
 	RegisterGroupServiceServer(g, s.Group())
 	RegisterGroupMembershipServiceServer(g, s.GroupMembership())
@@ -88,9 +88,9 @@ type UnimplementedServer struct {
 	ConnectionServer      ConnectionServiceServer
 	ContinuationServer    ContinuationServiceServer
 	CredentialServer      CredentialServiceServer
-	DelegationServer      DelegationServiceServer
 	IdentityServer        IdentityServiceServer
 	EmailServer           EmailServiceServer
+	DelegationServer      DelegationServiceServer
 	SiteServer            SiteServiceServer
 	GroupServer           GroupServiceServer
 	GroupMembershipServer GroupMembershipServiceServer
@@ -119,13 +119,13 @@ func (UnimplementedServer) Continuation() ContinuationServiceServer {
 func (UnimplementedServer) Credential() CredentialServiceServer {
 	return UnimplementedCredentialServiceServer{}
 }
-func (UnimplementedServer) Delegation() DelegationServiceServer {
-	return UnimplementedDelegationServiceServer{}
-}
 func (UnimplementedServer) Identity() IdentityServiceServer {
 	return UnimplementedIdentityServiceServer{}
 }
 func (UnimplementedServer) Email() EmailServiceServer { return UnimplementedEmailServiceServer{} }
+func (UnimplementedServer) Delegation() DelegationServiceServer {
+	return UnimplementedDelegationServiceServer{}
+}
 func (UnimplementedServer) Site() SiteServiceServer   { return UnimplementedSiteServiceServer{} }
 func (UnimplementedServer) Group() GroupServiceServer { return UnimplementedGroupServiceServer{} }
 func (UnimplementedServer) GroupMembership() GroupMembershipServiceServer {
@@ -156,9 +156,9 @@ type StaticServer struct {
 	ConnectionServer      ConnectionServiceServer
 	ContinuationServer    ContinuationServiceServer
 	CredentialServer      CredentialServiceServer
-	DelegationServer      DelegationServiceServer
 	IdentityServer        IdentityServiceServer
 	EmailServer           EmailServiceServer
+	DelegationServer      DelegationServiceServer
 	SiteServer            SiteServiceServer
 	GroupServer           GroupServiceServer
 	GroupMembershipServer GroupMembershipServiceServer
@@ -181,9 +181,9 @@ func (s StaticServer) ApiKey() ApiKeyServiceServer                   { return s.
 func (s StaticServer) Connection() ConnectionServiceServer           { return s.ConnectionServer }
 func (s StaticServer) Continuation() ContinuationServiceServer       { return s.ContinuationServer }
 func (s StaticServer) Credential() CredentialServiceServer           { return s.CredentialServer }
-func (s StaticServer) Delegation() DelegationServiceServer           { return s.DelegationServer }
 func (s StaticServer) Identity() IdentityServiceServer               { return s.IdentityServer }
 func (s StaticServer) Email() EmailServiceServer                     { return s.EmailServer }
+func (s StaticServer) Delegation() DelegationServiceServer           { return s.DelegationServer }
 func (s StaticServer) Site() SiteServiceServer                       { return s.SiteServer }
 func (s StaticServer) Group() GroupServiceServer                     { return s.GroupServer }
 func (s StaticServer) GroupMembership() GroupMembershipServiceServer { return s.GroupMembershipServer }
@@ -206,9 +206,9 @@ type Client interface {
 	Connection() ConnectionServiceClient
 	Continuation() ContinuationServiceClient
 	Credential() CredentialServiceClient
-	Delegation() DelegationServiceClient
 	Identity() IdentityServiceClient
 	Email() EmailServiceClient
+	Delegation() DelegationServiceClient
 	Site() SiteServiceClient
 	Group() GroupServiceClient
 	GroupMembership() GroupMembershipServiceClient
@@ -233,9 +233,9 @@ func NewClient(c *grpc.ClientConn) Client {
 		_Connection:      NewConnectionServiceClient(c),
 		_Continuation:    NewContinuationServiceClient(c),
 		_Credential:      NewCredentialServiceClient(c),
-		_Delegation:      NewDelegationServiceClient(c),
 		_Identity:        NewIdentityServiceClient(c),
 		_Email:           NewEmailServiceClient(c),
+		_Delegation:      NewDelegationServiceClient(c),
 		_Site:            NewSiteServiceClient(c),
 		_Group:           NewGroupServiceClient(c),
 		_GroupMembership: NewGroupMembershipServiceClient(c),
@@ -260,9 +260,9 @@ type client struct {
 	_Connection      ConnectionServiceClient
 	_Continuation    ContinuationServiceClient
 	_Credential      CredentialServiceClient
-	_Delegation      DelegationServiceClient
 	_Identity        IdentityServiceClient
 	_Email           EmailServiceClient
+	_Delegation      DelegationServiceClient
 	_Site            SiteServiceClient
 	_Group           GroupServiceClient
 	_GroupMembership GroupMembershipServiceClient
@@ -285,9 +285,9 @@ func (c *client) ApiKey() ApiKeyServiceClient                   { return c._ApiK
 func (c *client) Connection() ConnectionServiceClient           { return c._Connection }
 func (c *client) Continuation() ContinuationServiceClient       { return c._Continuation }
 func (c *client) Credential() CredentialServiceClient           { return c._Credential }
-func (c *client) Delegation() DelegationServiceClient           { return c._Delegation }
 func (c *client) Identity() IdentityServiceClient               { return c._Identity }
 func (c *client) Email() EmailServiceClient                     { return c._Email }
+func (c *client) Delegation() DelegationServiceClient           { return c._Delegation }
 func (c *client) Site() SiteServiceClient                       { return c._Site }
 func (c *client) Group() GroupServiceClient                     { return c._Group }
 func (c *client) GroupMembership() GroupMembershipServiceClient { return c._GroupMembership }

@@ -17,10 +17,13 @@ import "google/protobuf/timestamp.proto";
 // exception `Issue` existed to be -- the one moment `secret` may leave, because
 // it was just made -- is exactly what an overlay is for.
 //
-// `IssuePassword` did not come with it: that generates a **password** for a new
-// operator, control-plane only and the deployment's own bootstrap, which no
-// reach-guarded overlay can be. It stays on `IssueService`, which is now that
-// one method and says why beside it.
+// `IssuePassword` did not come with it at the time, on the grounds that a
+// reach-guarded overlay could not be the deployment's own bootstrap -- and that
+// was wrong in the way `mayReach` is easy to be wrong about: it reads what the
+// **target** holds and passes when that is empty, which is precisely the new
+// operator it was said to refuse. It is `Credential.Issue` now, this file's
+// shape a second time, and `IssueService` is gone. See
+// `credential_svc.ext.proto`.
 //
 // # The prefix is not in the request, and cannot be
 //

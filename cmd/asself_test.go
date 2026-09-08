@@ -575,8 +575,8 @@ func TestAResetIsMadeByWhoeverIsAskingAndNotByTheDeployment(t *testing.T) {
 
 	v := b.operated()
 	reset := func(c context.Context, who pdid.Id) (string, error) {
-		res, err := v.Reset(c, app.VouchResetRequest_builder{
-			Who: app.VouchWho_builder{Id: who.Bytes()}.Build(),
+		res, err := v.Issue(c, app.CredentialIssueRequest_builder{
+			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		}.Build())
 
 		return res.GetSecret(), err

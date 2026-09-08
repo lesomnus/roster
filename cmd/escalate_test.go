@@ -343,8 +343,8 @@ func TestAPermissionHeldThroughAGroupIsStillHeld(t *testing.T) {
 		// Through `Reset`: `Credential.Set` writes the caller's own row and
 		// nothing else now (`server/core/self.go`), and the rule about writing
 		// somebody else's is in the layer below both, unmoved.
-		_, err := b.operated().Reset(asOps, app.VouchResetRequest_builder{
-			Who: app.VouchWho_builder{Id: who.Bytes()}.Build(),
+		_, err := b.operated().Issue(asOps, app.CredentialIssueRequest_builder{
+			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		}.Build())
 
 		return err

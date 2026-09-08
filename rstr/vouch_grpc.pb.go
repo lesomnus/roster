@@ -21,7 +21,6 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	VouchService_Verify_FullMethodName   = "/roster.VouchService/Verify"
 	VouchService_Delegate_FullMethodName = "/roster.VouchService/Delegate"
-	VouchService_Reset_FullMethodName    = "/roster.VouchService/Reset"
 	VouchService_Link_FullMethodName     = "/roster.VouchService/Link"
 	VouchService_Redeem_FullMethodName   = "/roster.VouchService/Redeem"
 	VouchService_Continue_FullMethodName = "/roster.VouchService/Continue"
@@ -73,9 +72,13 @@ const (
 // installed on -- exactly as `cmd.Resolver` does and for the same reason:
 // working out who somebody is cannot require knowing who they are.
 //
-// `Set` is a caller changing somebody's password, which is an ordinary
-// authorised write. It goes behind the wall, so an administrator of one tenant
-// cannot reach into another, and that narrowing costs this service nothing.
+// Everything else here is an ordinary authorised write and goes behind the
+// wall, so an administrator of one tenant cannot reach into another, and that
+// narrowing costs this service nothing. It was two stacks for a while: the
+// second existed so `Reset` could enter below the rule that makes
+// `Credential.Set` your own row. `Reset` is `Credential.Issue` now, which calls
+// its own `Set` from inside the layer instead of reaching into the stack from
+// outside, and there is one stack again.
 type VouchServiceClient interface {
 	// Verify answers whether a secret is the one held for somebody.
 	Verify(ctx context.Context, in *VouchVerifyRequest, opts ...grpc.CallOption) (*VouchVerifyResponse, error)
@@ -101,34 +104,12 @@ type VouchServiceClient interface {
 	// as many words. This is one call, one hash, one count, sharing Verify's path
 	// verbatim.
 	Delegate(ctx context.Context, in *VouchDelegateRequest, opts ...grpc.CallOption) (*VouchDelegateResponse, error)
-	// Reset gives somebody a new password and answers with it **once**.
-	//
-	// For a local operator in a deployment with no mail. Roadmap.md's item 10:
-	// D13 closed `CredentialService` entirely, so nothing on the wire could set
-	// a password and `init` plus a shell was the only way -- which is right for
-	// the read and wrong for the write.
-	//
-	// # Why the operator does not choose it
-	//
-	// The same argument `IssueService` already makes about a key: a secret the
-	// caller chose is a secret the caller knows, and one generated in a console
-	// is only as good as that page's `crypto`. Here it is `crypto/rand` on the
-	// server, and what the operator does is read it out.
-	//
-	// # Who may
-	//
-	// Somebody whose permissions cover the permissions of the person they are
-	// resetting. Resetting a password is a way to **become** somebody, so an
-	// operator who could reset anybody in their tenant would hold every
-	// permission in it -- `server/core/escalate.go` is the rule and it went in
-	// before this did.
-	Reset(ctx context.Context, in *VouchResetRequest, opts ...grpc.CallOption) (*VouchResetResponse, error)
 	// Link mints a way in for somebody and answers with it **once**.
 	//
 	// What roster does not do is send it. D19 puts the delivery outside, and
 	// separating the two is what makes the air-gapped case work at all: with no
 	// mail the somebody else is a person, and what they hand over is a password
-	// from [VouchService.Reset] rather than a link.
+	// from `Credential.Issue` rather than a link.
 	//
 	// # It says nothing about whether they are here
 	//
@@ -247,16 +228,6 @@ func (c *vouchServiceClient) Delegate(ctx context.Context, in *VouchDelegateRequ
 	return out, nil
 }
 
-func (c *vouchServiceClient) Reset(ctx context.Context, in *VouchResetRequest, opts ...grpc.CallOption) (*VouchResetResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(VouchResetResponse)
-	err := c.cc.Invoke(ctx, VouchService_Reset_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *vouchServiceClient) Link(ctx context.Context, in *VouchLinkRequest, opts ...grpc.CallOption) (*VouchLinkResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(VouchLinkResponse)
@@ -342,9 +313,13 @@ func (c *vouchServiceClient) Accept(ctx context.Context, in *VouchAcceptRequest,
 // installed on -- exactly as `cmd.Resolver` does and for the same reason:
 // working out who somebody is cannot require knowing who they are.
 //
-// `Set` is a caller changing somebody's password, which is an ordinary
-// authorised write. It goes behind the wall, so an administrator of one tenant
-// cannot reach into another, and that narrowing costs this service nothing.
+// Everything else here is an ordinary authorised write and goes behind the
+// wall, so an administrator of one tenant cannot reach into another, and that
+// narrowing costs this service nothing. It was two stacks for a while: the
+// second existed so `Reset` could enter below the rule that makes
+// `Credential.Set` your own row. `Reset` is `Credential.Issue` now, which calls
+// its own `Set` from inside the layer instead of reaching into the stack from
+// outside, and there is one stack again.
 type VouchServiceServer interface {
 	// Verify answers whether a secret is the one held for somebody.
 	Verify(context.Context, *VouchVerifyRequest) (*VouchVerifyResponse, error)
@@ -370,34 +345,12 @@ type VouchServiceServer interface {
 	// as many words. This is one call, one hash, one count, sharing Verify's path
 	// verbatim.
 	Delegate(context.Context, *VouchDelegateRequest) (*VouchDelegateResponse, error)
-	// Reset gives somebody a new password and answers with it **once**.
-	//
-	// For a local operator in a deployment with no mail. Roadmap.md's item 10:
-	// D13 closed `CredentialService` entirely, so nothing on the wire could set
-	// a password and `init` plus a shell was the only way -- which is right for
-	// the read and wrong for the write.
-	//
-	// # Why the operator does not choose it
-	//
-	// The same argument `IssueService` already makes about a key: a secret the
-	// caller chose is a secret the caller knows, and one generated in a console
-	// is only as good as that page's `crypto`. Here it is `crypto/rand` on the
-	// server, and what the operator does is read it out.
-	//
-	// # Who may
-	//
-	// Somebody whose permissions cover the permissions of the person they are
-	// resetting. Resetting a password is a way to **become** somebody, so an
-	// operator who could reset anybody in their tenant would hold every
-	// permission in it -- `server/core/escalate.go` is the rule and it went in
-	// before this did.
-	Reset(context.Context, *VouchResetRequest) (*VouchResetResponse, error)
 	// Link mints a way in for somebody and answers with it **once**.
 	//
 	// What roster does not do is send it. D19 puts the delivery outside, and
 	// separating the two is what makes the air-gapped case work at all: with no
 	// mail the somebody else is a person, and what they hand over is a password
-	// from [VouchService.Reset] rather than a link.
+	// from `Credential.Issue` rather than a link.
 	//
 	// # It says nothing about whether they are here
 	//
@@ -502,9 +455,6 @@ func (UnimplementedVouchServiceServer) Verify(context.Context, *VouchVerifyReque
 func (UnimplementedVouchServiceServer) Delegate(context.Context, *VouchDelegateRequest) (*VouchDelegateResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Delegate not implemented")
 }
-func (UnimplementedVouchServiceServer) Reset(context.Context, *VouchResetRequest) (*VouchResetResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Reset not implemented")
-}
 func (UnimplementedVouchServiceServer) Link(context.Context, *VouchLinkRequest) (*VouchLinkResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Link not implemented")
 }
@@ -570,24 +520,6 @@ func _VouchService_Delegate_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(VouchServiceServer).Delegate(ctx, req.(*VouchDelegateRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _VouchService_Reset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(VouchResetRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(VouchServiceServer).Reset(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: VouchService_Reset_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(VouchServiceServer).Reset(ctx, req.(*VouchResetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -678,10 +610,6 @@ var VouchService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Delegate",
 			Handler:    _VouchService_Delegate_Handler,
-		},
-		{
-			MethodName: "Reset",
-			Handler:    _VouchService_Reset_Handler,
 		},
 		{
 			MethodName: "Link",

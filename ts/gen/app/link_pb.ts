@@ -33,7 +33,7 @@ export const file_app_link: GenFile = /*@__PURE__*/
  *
  * D19 puts the delivery outside in as many words, and separating the two is
  * what makes the air-gapped case work at all: with no mail, the somebody else
- * is a **person**, and what they hand over is a password from `Vouch.Reset`
+ * is a **person**, and what they hand over is a password from `Credential.Issue`
  * rather than a link. Same category, two channels, and roster does not know
  * about either.
  *
@@ -88,7 +88,7 @@ export type Link = Message<"roster.Link"> & {
    * says the kind selects the cost, and a code a **person transcribes** would
    * be short and would need the slow hash and a counter. This is not that: a
    * link is machine-made, machine-carried and machine-read. The transcribed
-   * case is `Vouch.Reset`, which hands over a password and meters it on the
+   * case is `Credential.Issue`, which hands over a password and meters it on the
    * `Credential` row like any other.
    *
    * @generated from field: bytes secret = 9;

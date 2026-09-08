@@ -219,7 +219,6 @@ func main() {
 	cmd.Register(srv, s.Control.Walled)
 	app.RegisterMeServiceServer(srv, me.New(s.Control.Ent, cmd.Everything(s.Control.Ent), me.WithWrites(s.Control.Walled)))
 	app.RegisterAuthServiceServer(srv, sandbox.Auth(console.Auth(s.Control.Ungated, s.Control.Ent, s.Sessions), s.Control.Ent, op))
-	app.RegisterIssueServiceServer(srv, console.Issue(s.Control.Walled, s.Control.Ent))
 
 	// The admin server: `cmd.GrpcAdmin`'s chain, less what a message port has
 	// no use for -- the deadline, the limiter, the closed-off methods -- with

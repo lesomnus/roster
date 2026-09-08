@@ -27,13 +27,16 @@ import (
 // The local pair write through `Ungated` because a shell that holds the
 // configuration file and the database may. An operator whose terminal is not
 // on the box has neither -- what they have is an address and a credential, the
-// same as a console -- and `IssueService` is the service a console mints
-// through. These are that service's two calls, so a remote terminal can finish
-// what it starts exactly as D57 made the local one able to.
+// same as a console -- so these two go over the wire, to `ApiKey.Issue` and
+// `Credential.Issue`, which are the calls a console makes. A remote terminal
+// can finish what it starts exactly as D57 made the local one able to.
+//
+// They were one service, `IssueService`, and the command tree kept its shape
+// when the two methods found the rows they write.
 //
 // # What is deliberately not here: minting a service's key
 //
-// `IssueKeyRequest.service` exists and no flag reaches it, because no
+// `ApiKeyIssueRequest.service` exists and no flag reaches it, because no
 // credential a terminal holds can succeed at it: minting is granting, the
 // grant rule reads what the caller holds *through a binding*, and a key holds
 // none -- by design, or a key could replicate itself wider. The callers with
@@ -152,14 +155,17 @@ func newCmdIssueKey(c *cmd.Config) *xli.Command {
 }
 
 // newCmdIssuePassword is for the operator somebody has just created, who has
-// no way in yet. What they do with it is change it -- `VouchService.Set`,
-// which needs the old one and is therefore not this.
+// no way in yet. What they do with it is change it -- `Credential.Set`, which
+// needs the old one and is therefore not this.
 //
 // It is the control plane's alone, and the server is what says so: pointed at
-// the data port it answers `Unimplemented`, because a bare alias names one
-// person only where there is one tenant, and writing a customer's password
-// with no tenant and no escalation check was a way in wider than the caller's.
-// A customer's person gets a password the guarded way, `roster vouch reset`.
+// the data port `service` is refused, because a bare alias names one person
+// only where there is one tenant. A customer's person is named in full and is
+// `roster vouch reset`, which is the same RPC -- `Credential.Issue` -- reached
+// with a reference instead of an alias.
+//
+// The command kept its name and its place under `roster issue`, beside `issue
+// key`, which is `ApiKey.Issue` and made the same move first.
 func newCmdIssuePassword(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "password",
@@ -181,8 +187,8 @@ func newCmdIssuePassword(c *cmd.Config) *xli.Command {
 				return errors.New("ALIAS: whose")
 			}
 
-			v, err := app.NewIssueServiceClient(conn).IssuePassword(ctx, app.IssuePasswordRequest_builder{
-				Alias: alias,
+			v, err := app.NewCredentialServiceClient(conn).Issue(ctx, app.CredentialIssueRequest_builder{
+				Service: alias,
 			}.Build())
 			if err != nil {
 				return err
@@ -190,9 +196,9 @@ func newCmdIssuePassword(c *cmd.Config) *xli.Command {
 
 			// To stdout and nowhere else, the way `roster vouch reset` prints
 			// one: `$(roster issue password …)` is the secret and nothing else.
-			fmt.Fprintf(os.Stdout, "%s\n", v.GetPassword())
+			fmt.Fprintf(os.Stdout, "%s\n", v.GetSecret())
 			fmt.Fprintf(os.Stderr,
-				"shown once. They are expected to change it, which is `VouchService.Set` and needs this one.\n")
+				"shown once. They are expected to change it, which is `Credential.Set` and needs this one.\n")
 
 			return next(ctx)
 		}),

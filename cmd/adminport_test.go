@@ -151,7 +151,7 @@ func TestTheCorpusIsTheDeploymentsAndNotThePorts(t *testing.T) {
 	conn, as := adminPort(t, s, c, out)
 	who := adminCustomer(t, conn, as, "newco")
 
-	v := app.NewVouchServiceClient(conn)
+	v := app.NewCredentialServiceClient(conn)
 	set := func(secret string) error {
 		_, err := app.NewCredentialServiceClient(conn).Set(as, app.CredentialSetRequest_builder{
 			Ref:    app.HolderRef_builder{Id: who}.Build(),
@@ -175,8 +175,8 @@ func TestTheCorpusIsTheDeploymentsAndNotThePorts(t *testing.T) {
 	t.Run("and a reset is checked by the same corpus", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := v.Reset(as, app.VouchResetRequest_builder{
-			Who: app.VouchWho_builder{Id: who}.Build(),
+		_, err := v.Issue(as, app.CredentialIssueRequest_builder{
+			Ref: app.HolderRef_builder{Id: who}.Build(),
 		}.Build())
 		x.NoError(err, "thirty-two random bytes were in a corpus of one")
 	})
@@ -217,9 +217,9 @@ func TestEveryOperatorWriteLeavesBothTrails(t *testing.T) {
 
 			return err
 		}},
-		{"/roster.VouchService/Reset", func(as context.Context) error {
-			_, err := app.NewVouchServiceClient(conn).Reset(as, app.VouchResetRequest_builder{
-				Who: app.VouchWho_builder{Id: who}.Build(),
+		{"/roster.CredentialService/Issue", func(as context.Context) error {
+			_, err := app.NewCredentialServiceClient(conn).Issue(as, app.CredentialIssueRequest_builder{
+				Ref: app.HolderRef_builder{Id: who}.Build(),
 			}.Build())
 
 			return err
