@@ -24,10 +24,14 @@ import (
 // either plane.
 //
 // It is a command rather than an RPC because of what the first of those writes
-// to. The control plane is not served -- `ApiKeyService` is not registered and
-// is closed to the batch, for the reason every verifier is -- so the only way
-// in is a server instance this process holds, and the only thing holding one is
-// this.
+// to. A deployment's own key is minted before there is anything to mint it with
+// -- and `ApiKey.Add`, which takes a caller-chosen verifier, is shut a method
+// at a time for the reason every verifier is -- so the only way in is a server
+// instance this process holds, and the only thing holding one is this.
+//
+// (`IssueService` mints one over the wire for a console, and `ApiKey.Issue` is
+// the overlay a customer's person reaches. Neither is what a shell has before
+// the first key exists.)
 //
 // # And a customer's, which it refused to mint
 //

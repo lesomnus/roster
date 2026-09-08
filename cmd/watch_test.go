@@ -147,12 +147,12 @@ func TestBeingGoneTravels(t *testing.T) {
 
 // TestACredentialHashIsNotStreamed is F10, closed and kept closed here.
 //
-// `CredentialService` is not registered, so there is no route to this on the
-// wire and this reaches the layer directly. That is the point: the reason it is
-// unregistered is `Get` answering with whatever columns it was asked for, and
-// **a stream had no such column to ask for** -- it carried the whole message,
-// with no `select` to narrow it and no wrapper to blank it. So the one control
-// covering it was a registration nobody had a reason to keep off.
+// `CredentialService.Watch` is shut by method, so there is no route to this on
+// the wire and this reaches the layer directly. That is the point: the reason
+// the reads are shut is `Get` answering with whatever columns it was asked for,
+// and **a stream had no such column to ask for** -- it carried the whole
+// message, with no `select` to narrow it and no wrapper to blank it. So the one
+// control covering it was a line in a list nobody had a reason to keep.
 //
 // Fixed in payday, where the generator writes the wrapper, and pinned here
 // because this app is the one with a password hash in the column. If the pin

@@ -134,8 +134,8 @@ func TestSomebodyWithNothingCanStillAskWhatTheyHave(t *testing.T) {
 // **tenant**, so a person reading their own identities through it reads their
 // whole tenant's and filters -- which is the leak D17 named and D23 exists to
 // remove, and it is the first thing a self-service screen reaches for.
-// `CredentialService` is not registered at all, because its generated `Get`
-// answers with the verifier.
+// `CredentialService`'s generated reads are shut a method at a time, because
+// its `Get` answers with the verifier.
 //
 // This message takes no subject, so there is nothing to point at anybody else,
 // which is the same property that lets `cmd.Policy` waive a binding for it.

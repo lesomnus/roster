@@ -23,8 +23,8 @@ import (
 // holding the seed itself, so the row **is** the secret, and a copy of the
 // database is a copy of every second factor in the deployment. `Credential`
 // already keeps it off the wire and out of the trail -- `(payday.field).secret`
-// plus an unregistered service -- and neither of those helps against a backup
-// somebody walked off with.
+// plus every method that could answer with the column shut -- and neither of
+// those helps against a backup somebody walked off with.
 //
 // So it is wrapped, with a key this deployment holds somewhere the database is
 // not. That is the whole of what the key buys and it is worth being exact about

@@ -522,8 +522,9 @@ type MeGetResponse_builder struct {
 	// person asking for their own identities through it is asking for their whole
 	// tenant's and filtering -- which is the leak D17 named and D23 exists to
 	// remove, and it is exactly the shape a self-service screen would reach for.
-	// `CredentialService` is not registered at all, because its generated `Get`
-	// answers with the verifier (D13).
+	// `CredentialService`'s generated reads are shut a method at a time, because
+	// its `Get` answers with the verifier (D13) -- so there is no read there to
+	// narrow either.
 	//
 	// This message is the one shape narrowed to the person **by construction**:
 	// it takes no subject, so there is nothing to point at somebody else. That is
@@ -535,9 +536,9 @@ type MeGetResponse_builder struct {
 	// question a person asks about it is *is this still being used* rather than
 	// *what is it*.
 	//
-	// Here for the same reason as the two above and one more. `ApiKeyService` is
-	// unregistered everywhere -- its generated `Get` answers with the verifier --
-	// so there is no read to narrow, and the read an operator uses,
+	// Here for the same reason as the two above and one more. `ApiKeyService`'s
+	// generated reads are shut a method at a time -- its `Get` answers with the
+	// verifier -- so there is no read to narrow, and the read an operator uses,
 	// `HolderService.SignsIn`, takes a subject and reaches their whole tenant.
 	//
 	// The secret is not here and there is nowhere it could come from: what is
@@ -568,14 +569,14 @@ func (b0 MeGetResponse_builder) Build() *MeGetResponse {
 // SignInKey is one API key that acts as somebody.
 //
 // A key is a way in like the other two, and it is the one a screen most needs
-// help to show: `ApiKeyService` is unregistered everywhere -- its generated
-// `Get` answers with the verifier -- so a page listing one person's keys by
-// reading and sifting would be reading every customer's to draw one. The same
-// sentence `HolderService.SignsIn` already carries about identities.
+// help to show: `ApiKeyService`'s generated reads are shut a method at a time
+// -- its `Get` answers with the verifier -- so a page listing one person's keys
+// by reading and sifting would be reading every customer's to draw one. The
+// same sentence `HolderService.SignsIn` already carries about identities.
 //
 // What is **not** here is the secret, and there is nowhere it could come from:
 // what is stored is a hash. A key is readable exactly once, at the moment
-// `IssueService` mints it.
+// `ApiKey.Issue` mints it.
 type SignInKey struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`

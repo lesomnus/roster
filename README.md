@@ -318,21 +318,28 @@ Under TLS it carries **native gRPC** as well — HTTP/2 arrives by ALPN and a
 `grpcurl` reaches it. The two listeners are a decision about the transport gRPC
 brings, not about what is reachable where.
 
-Whatever else this app serves over HTTP goes on the same mux, in `serve.go`:
+Whatever else this app serves over HTTP goes on the same mux, in `serve.go` —
+the built console page at `/`, and nothing else. **The sign-in is not a route.**
 
-```go
-h, err := web.New(c, g)
-v := Login(s.Control)
-h.Handle("POST /session", s.Sessions.Serve(v))
-h.Handle("DELETE /session", s.Sessions.Serve(v))
+It was one: `POST /session` and `DELETE /session`, mounted on every listener
+that had HTTP, on the reasoning that issuing a credential is HTTP because `auth`
+reads one and never makes one. That is half true. Making a session is indeed
+not something `auth` does, but a cookie is a **response header**, `set-cookie`
+is response metadata, and `web.Transcode` hands one to the browser as the other
+— so the console's sign-in is `AuthService.SignIn`, an RPC like every other call
+the page makes, generated for whatever speaks to it next.
+
+```sh
+curl -sX POST https://console.example/roster.AuthService/SignIn \
+  -H 'Content-Type: application/json' -H 'Connect-Protocol-Version: 1' \
+  -d '{"alias":"admin","password":"…"}' -i    # -> 200, set-cookie
 ```
 
-That is the console's sign-in, and it is HTTP because it **issues**: `auth`
-reads a credential and never makes one, and a cookie is the one credential a
-browser can hold. Only where a `control:` plane is configured, since that is
-who signs in — the operators who run this deployment, not a customer's people.
-The cross-origin answer is over the whole mux, so a route added here is
-reachable from the same page the RPCs are.
+Which also removed what the route cost. A service is registered per listener and
+`AuthService` is on the control plane's alone, while the route ran wherever there
+was HTTP — so the customer-facing port answered an operator's password with a
+204 and a cookie that opened nothing, a trap that had to be documented rather
+than closed.
 
 ## Two UIs, one library
 

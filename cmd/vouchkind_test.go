@@ -145,8 +145,8 @@ func TestAKindNothingChecksIsRefusedBeforeAnybodyIsLookedFor(t *testing.T) {
 // from then on; `answer` sets `ok` only when there is nothing left to prove, so
 // it never does; and `Continue` refuses the very kind it was just offered. The
 // person cannot finish a sign-in again -- and nothing can take the row back,
-// because `CredentialService` is unregistered and closed to the batch, `Reset`
-// refuses the kind and `Enrol` refuses it too. One typo in an admin console is
+// because `CredentialService`'s generated writes are shut a method at a time
+// and closed to the batch, `Reset` refuses the kind and `Enrol` refuses it too. One typo in an admin console is
 // an account that needs a shell on the database.
 func TestSetWritesOnlyAKindThisCanCheck(t *testing.T) {
 	b, ctx := build(t)

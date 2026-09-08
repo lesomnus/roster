@@ -14,9 +14,15 @@ option go_package = "github.com/lesomnus/roster/rstr";
 // The generated CRUD for `Credential` has a `Get` that returns every field it
 // was asked for, and one of those fields is the hash. That is the right shape
 // for a row this app reads itself and the wrong shape for anything on a wire,
-// so `CredentialService` is **not registered** -- see `cmd/serve.go`. What is
-// registered is this: RPCs that take a secret in and never hand back one this
-// store was already holding.
+// so those verbs are shut **a method at a time** -- `Get`, `List`, `Watch` and
+// the raw `Add`, in `closed()`, `cmd/serve.go`. What this service is beside
+// them is RPCs that take a secret in and never hand back one this store was
+// already holding.
+//
+// It said "`CredentialService` is **not registered**" here for a long time
+// after that stopped being true. Worth knowing rather than quietly correcting,
+// because that sentence is the reason given for more than one thing on this
+// service not being a verb on the entity it writes.
 //
 // [VouchService.Delegate] answers with a string and is not an exception to
 // that. What it hands back is a secret roster **made**, whose verifier goes

@@ -577,10 +577,39 @@ is not a request* -- which survives because the generated check sits in the
 | — | `Credential.Set` is your own row, and a first password asks for nothing | **done** — two changes and one of them is a layer. `Set` did two jobs held apart by `mayReach` — a person changing their password, and an operator giving somebody one — and `mayReach` is the wrong shape for the second: it asks whether the target is no wider than the caller, which protects an administrator from a junior and does nothing for an ordinary person, who is narrower than almost everybody. `server/core/self.go` is one rule in a link of its own, so `Vouch.Reset` is handed the stack **below** it and keeps naming anybody `mayReach` allows while a caller cannot. Nothing else moved: the hashing, the leaked corpus, the kind check and `mayReach` are in the layers under both doors. Getting there took two wrong answers — that this would delete `roster vouch set` (it is local, and unaffected) and that it was blocked because `Reset` calls `Set` (it enters lower now) — and the second is the shape `CLAUDE.md` § *Layers, and the four "cannot"s that are not* now exists to stop. And a **first** password of your own is written with nothing proved. That was refused and the refusal was right on its own terms — a bearer can now set a password its holder never chose, and it does not expire — but the alternative it pointed at was an operator or a recovery flow, and recovery needs mail, which most deployments never configure. An empty `current` where a password exists is still refused, and refused **without counting**, so holding somebody's session is not a way to lock them out |
 
 | — | a verification link is not a way in | **done** — `Email.Verify` and `Vouch.Link` mint into one `Link` table on purpose, and the `email` edge is what tells a verification from a recovery. `Email.Confirm` refuses a link naming none; `Vouch.Redeem` never read the edge at all — so the token mailed to *prove* an address was spendable at the door that *mints*, answering with a delegation for its holder, which the account app then spends on `Vouch.Reset` and prints a password with. A mailbox read once was an account held, which is the one thing `email_svc.ext.proto` says a verify link is worth strictly less than a recovery link **for**, and `baseline.md` promised in as many words; the pinned test checked only the harmless direction, *and a recovery link is not a verification*. The fix is one guard in `server/vouch/link.go` mirroring `server/core/email.go` verbatim — a discriminator read on one side is not one — and the missing half of the pair, `TestAnAddressIsVerifiedByALinkThatSignsNobodyIn` / *and a verification link is not a way in*, which fails without it |
+| — | one sign-in, and the sentences that outlived their mechanism | **done** — an audit of every hand-written service and overlay, asking of each whether it exists because one layer looked like a wall (the row above's shape, and CLAUDE.md's *Overlay before service*). Two of what it found were not about layers at all. **`cmd.Login`** was a hand-written HTTP twin of `AuthService.SignIn` — same body, same single-tenant lookup, same `vouch.Verify`, same `Grant: frame.Whole()`, down to copied comment paragraphs — added when `POST /session` was the sign-in and left in place when the service replaced it, on a premise `auth.proto` itself refutes three lines in (*it read as "issuing is HTTP". It is not: a cookie is a response header*). It cost more than duplication, because a service is registered per listener and a route is not: `AuthService` is on `control.http` alone while `/session` ran wherever there was HTTP, so the customer-facing port answered an operator's password with 204 and a cookie that opened nothing — a trap `operating.md` warned about and a test pinned as working-as-intended. Deleted, with the route; `TestTheDataPlanesHttpSignsInNobody` is `TestTheDataPlanesHttpHasNoSignIn` and asserts the absence, and `signIn` in the tests goes through the RPC like the console does. Beside it, **twenty comments** saying `CredentialService` or `ApiKeyService` *is not registered* — true until each was registered for its overlays with the generated verbs shut a method at a time in `closed()`, and false since: `vouch.proto`, `me.proto`, `apikey.proto`, `credential.proto`, `holder_svc.ext.proto`, `cmd/admin.go`, `cmd/serve.go`, `server/vouch` ×4, `server/me` ×2, `server/keys`, `cli/key.go`, and nine tests. Not tidying — that sentence is the stated reason two things on `VouchService` are not verbs on the entity they write, so leaving it standing leaves the next reader the same wrong conclusion |
 
 ## Open, for whoever picks this up next
 
-Nothing, at the moment. The last thing that stood here was the directory over
+**Two verbs that should be on the entity they write.** The audit two rows above
+found four RPCs whose reason for being on a service of their own was the
+`CredentialService is not registered` sentence, and that sentence is gone. Two
+of the four are worth moving and neither is free, because both are a wire
+rename -- `buf breaking` on the branch, and every deployment's `Role.methods`
+and `ApiKey.methods` rows rewritten by hand, for which there is no migration:
+
+- **`Vouch.Reset` -> `Credential.Reset`.** It writes one entity's rows through
+  `Credential.Set` and answers with a secret it made, which is `Credential.Enrol`
+  verbatim; every rule it wants is `server/core`'s `Set` already. As an overlay
+  it would call its own `Set` below the `Self` link rather than entering a stack
+  from outside -- so `Operable` (`cmd/serve.go`), built for this one caller,
+  collapses back into `Walled`, and the `Holder.Invalidate` that is *best effort
+  after the fact* today joins it in one `s.only(...)` transaction.
+- **`IssueService.IssuePassword` -> `Credential.Issue`.** The other half of this
+  service is already `ApiKey.Issue`. What kept this half is written in
+  `issue.proto`: *a reach-guarded `Credential` overlay cannot be that ... `mayReach`
+  would refuse the very act this exists for* -- and `mayReach` reads what the
+  **target** holds and returns nil when that is empty, so for the act named it
+  passes. `ApiKey.Issue` proves it one file over, on the same control-plane
+  stack. What it would newly refuse is a holder-less key re-issuing for an
+  operator who already holds a role, which is the escalation `BecomesAnOperator`
+  warns about rather than a use to keep.
+
+`Vouch.Link` (`Link.Mint`) and `Vouch.Accept` are the same argument and thinner:
+`Link` is one row on one entity, and `Accept` mints across two, which is close
+enough to the sign-in flow that it is arguable either way.
+
+Before that, the last thing that stood here was the directory over
 LDAP, planned and built in 2026-09 ([ldap.md](ldap.md)); what it leaves for a
 use to name -- Password Modify, a `manager` attribute, SCIM for the write side
 -- is written there. Before that, the two that stood here longest both closed

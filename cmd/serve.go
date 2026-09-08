@@ -790,8 +790,9 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	//
 	// `Ungated` for the reason `vouch.Verify` uses one: this is asked before
 	// anybody has been resolved, so there is no frame to narrow by, and the row
-	// is unreadable through the wall anyway -- `ApiKeyService` is unregistered
-	// and closed because its generated `Get` answers with the verifier.
+	// is unreadable through the wall anyway -- `ApiKeyService`'s generated reads
+	// are shut a method at a time, and closed to the batch, because its `Get`
+	// answers with the verifier.
 	pdpb.RegisterTokenServiceServer(g, keys.Service(s.Ungated))
 
 	// The batch, with the same rules the chain above enforces -- read off the
@@ -1172,11 +1173,12 @@ func (s *Server) GrpcControl(ctx context.Context, c Config, opts ...grpc.ServerO
 	}
 
 	// The keys themselves, which the data plane refuses to serve and this port
-	// exists to serve. `Get` still answers with the verifier column if it is
-	// asked for -- that is why it is unregistered everywhere else -- so this
-	// port must not be reachable by anybody who is not administering the
-	// deployment. Nothing in this process can enforce that; the address is what
-	// enforces it.
+	// exists to serve. It takes no registration: `Register` puts
+	// `ApiKeyService` on every server for its `Issue` overlay, and what differs
+	// here is `closed()` -- the general writes that manage a key stay open when
+	// [Server.Keys] is set, and are shut everywhere else. So this port must not
+	// be reachable by anybody who is not administering the deployment. Nothing
+	// in this process can enforce that; the address is what enforces it.
 
 	// What a console asks that no entity answers: a session, and a secret that
 	// is readable exactly once. See `server/console`.
@@ -1338,27 +1340,24 @@ func (s *Server) http(ctx context.Context, name string, c config.HttpConfig, g *
 		return nil, err
 	}
 
-	// The console's sign-in, which is the seam payday left and could not fill:
-	// `auth` reads a credential and does not issue one, and issuing is an HTTP
-	// endpoint. See `Login`.
+	// No sign-in route here, and the absence is the point.
 	//
-	// A gRPC path is `/<service>/<method>`, so an ordinary route cannot collide
-	// with one -- and `ServeMux` panics rather than shadowing if one somehow
-	// does.
+	// `POST /session` was mounted on every listener that had HTTP, because
+	// "issuing is an HTTP endpoint" -- and it is not. A cookie is a response
+	// header, `set-cookie` is response metadata, and `web.Transcode` hands one
+	// to the browser as the other, which is what `AuthService.SignIn` does
+	// (`server/console`, `proto/app/auth.proto`). That service was added and
+	// the route was left, so the app carried two implementations of one act,
+	// down to copied comment paragraphs.
 	//
-	// On every listener that has one, because a console reaches exactly one
-	// origin and signing in has to be there. What it is a session **for**
-	// differs -- the data plane's port serves it and then answers nobody with
-	// it, which is worth knowing rather than discovering.
+	// Deleting it also closed what the route cost: `AuthService` is registered
+	// on the control listener alone, while this ran wherever there was HTTP --
+	// so the data plane's customer-facing port answered an operator's password
+	// with 204 and a cookie that opens nothing, a trap that had to be
+	// documented and pinned rather than removed.
 	//
-	// Only where there is a control plane, because that is where the people who
-	// sign in live. A deployment without one has no console and nobody to be;
-	// serving this there would be an endpoint that can only ever answer no.
-	if s.Sessions != nil && s.Control != nil {
-		v := Login(s.Control)
-		h.Handle("POST /session", s.Sessions.Serve(v))
-		h.Handle("DELETE /session", s.Sessions.Serve(v))
-	}
+	// Whatever a listener serves over HTTP now is a service registered on its
+	// own `g`, and there is nowhere for a second answer to hide.
 
 	for _, mount := range mounts {
 		mount(h)

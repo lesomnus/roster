@@ -27,7 +27,7 @@ import (
 // tenant whose role names `/roster.AuditService/*` reads the password hash of
 // everybody in it.
 //
-// Which is the thing `CredentialService` is unregistered to prevent, reached
+// Which is the thing shutting `CredentialService`'s reads prevents, reached
 // by the other road. D13 shut the door on the read; this was the window.
 func TestNoVerifierReachesTheTrailInEitherColumn(t *testing.T) {
 	x := require.New(t)

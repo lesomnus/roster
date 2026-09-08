@@ -266,8 +266,9 @@ func (s *Server) identities(ctx context.Context, who pdid.Id) ([]*app.SignInIden
 //
 // The fields are written out, so `secret` is absent rather than deselected --
 // there is no `Select` here to get wrong, and nothing downstream that could ask
-// for one. `CredentialService` is unregistered for the same fact and this is
-// the read that replaces it for the one case that is safe: somebody's own.
+// for one. `CredentialService`'s generated reads are shut for the same fact,
+// and this is the read that replaces them for the one case that is safe:
+// somebody's own.
 func (s *Server) credentials(ctx context.Context, who pdid.Id) ([]*app.SignInCredential, error) {
 	vs, err := s.db.Credential.Query().
 		Where(credential.DateErasedIsNil(), credential.HasHolderWith(holder.IdEQ(who.Uuid()))).
@@ -299,8 +300,8 @@ func (s *Server) credentials(ctx context.Context, who pdid.Id) ([]*app.SignInCre
 //
 // Written out like `credentials` above and for the identical reason: `secret`
 // is absent rather than deselected, and there is no `Select` here that could
-// ask for it. `ApiKeyService` is unregistered everywhere for that fact, and
-// this is the read that replaces it for the one case that is safe.
+// ask for it. `ApiKeyService`'s generated reads are shut for that fact, and
+// this is the read that replaces them for the one case that is safe.
 //
 // The operator's version of this answer is `HolderService.SignsIn`, which is
 // the same message filled in the same order -- two shapes saying one thing is

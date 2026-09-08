@@ -163,9 +163,9 @@ var errAlone = status.Error(codes.FailedPrecondition,
 // offers every confirmed credential somebody has, so from then on every framed
 // sign-in offers a kind nothing can check; `answer` sets `ok` only when there
 // is nothing left to prove, so it never does; and `Continue` refuses the very
-// kind it was just offered. Meanwhile `CredentialService` is unregistered and
-// closed to the batch, `Reset` refuses the kind and so does `Enrol` -- so no
-// call on any plane can delete it. One mistyped kind in an admin console is a
+// kind it was just offered. Meanwhile `CredentialService`'s generated writes
+// are shut a method at a time and closed to the batch, `Reset` refuses the kind
+// and so does `Enrol` -- so no call on any plane can delete it. One mistyped kind in an admin console is a
 // person who needs a shell on the database to sign in again.
 //
 // # Why it asks verifierOf rather than holding a list

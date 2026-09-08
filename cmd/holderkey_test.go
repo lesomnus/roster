@@ -14,9 +14,9 @@ import (
 
 // TestOneScreenShowsEveryWayIntoOneAccount.
 //
-// `SignsIn` exists because `ApiKeyService` and `CredentialService` are
-// unregistered everywhere -- each has a generated `Get` that answers with a
-// verifier -- and `IdentityService` narrows by the **tenant**, so a page that
+// `SignsIn` exists because `ApiKeyService`'s and `CredentialService`'s
+// generated reads are shut a method at a time -- each has a `Get` that answers
+// with a verifier -- and `IdentityService` narrows by the **tenant**, so a page that
 // listed one person's ways in by reading and sifting would be reading every
 // customer's to draw one.
 //

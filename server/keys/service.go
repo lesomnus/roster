@@ -50,8 +50,8 @@ import (
 // `s` has no wall on it, for the reason `cmd.Resolver` and `vouch.Verify` do:
 // this is asked before anybody has been resolved to a person, so there is no
 // frame to narrow by. It is also the only way to read the row at all --
-// `ApiKeyService` is unregistered and closed precisely because its generated
-// `Get` answers with the verifier.
+// `ApiKeyService`'s generated reads are shut a method at a time, and closed to
+// the batch, precisely because its `Get` answers with the verifier.
 func Service(s app.Server) pdpb.TokenServiceServer { return service{s: s} }
 
 type service struct {

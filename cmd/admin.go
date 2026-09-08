@@ -51,11 +51,14 @@ import (
 // a tenant and a holder and is then refused the role, because `Granted` looks
 // for their bindings in the wrong database.
 //
-// # What is not registered
+// # What is not answered
 //
-// `CredentialService` and `ApiKeyService`, for the reason they are not
-// registered anywhere: their generated `Get` answers with the verifier column.
-// A port being private is not a reason to serve a password hash over it.
+// `Register` puts `CredentialService` and `ApiKeyService` on this server as it
+// does on every other -- for their overlays, which is the only reason either
+// name is on the wire at all. What is shut is their generated reads and raw
+// writes, a method at a time, in the same `closed()` the data plane uses: their
+// `Get` answers with the verifier column, and a port being private is not a
+// reason to serve a password hash over it.
 
 // Admin is the stack this port answers through.
 func Admin(s *Server) (app.Server, error) {

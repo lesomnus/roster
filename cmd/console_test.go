@@ -1,16 +1,16 @@
 package cmd_test
 
 import (
-	"bytes"
-	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -27,24 +27,30 @@ import (
 	"github.com/lesomnus/roster/server/keys"
 )
 
-// signIn posts a password the way a console does, and answers with the cookie.
+// signIn asks for a session the way a console does, and answers with the
+// cookie.
+//
+// Through `AuthService` on the control plane's own server, which is where it is
+// registered and the only place a sign-in is served at all. The cookie arrives
+// as `set-cookie` **response metadata**, which is what reaches a browser as a
+// header through `web.Transcode` -- so reading it here is reading what a page
+// gets, one transcoding earlier.
 func signIn(t *testing.T, s *cmd.Server, alias, password string) *http.Cookie {
 	t.Helper()
 	x := require.New(t)
 
-	body, err := json.Marshal(map[string]string{"alias": alias, "password": password})
+	g, err := s.GrpcControl(t.Context(), cmd.Config{})
 	x.NoError(err)
 
-	r := httptest.NewRequest(http.MethodPost, "/session", bytes.NewReader(body))
-	w := httptest.NewRecorder()
-	s.Sessions.Serve(cmd.Login(s.Control)).ServeHTTP(w, r)
-
-	res := w.Result()
-	t.Cleanup(func() { _ = res.Body.Close() })
-
-	if res.StatusCode != http.StatusNoContent {
+	var h metadata.MD
+	_, err = app.NewAuthServiceClient(pdtest.Serve(t, g)).SignIn(t.Context(),
+		app.AuthSignInRequest_builder{Alias: alias, Password: password}.Build(),
+		grpc.Header(&h))
+	if err != nil {
 		return nil
 	}
+
+	res := http.Response{Header: http.Header{"Set-Cookie": h.Get("set-cookie")}}
 	for _, c := range res.Cookies() {
 		if c.Value != "" {
 			return c
@@ -54,13 +60,26 @@ func signIn(t *testing.T, s *cmd.Server, alias, password string) *http.Cookie {
 	return nil
 }
 
+// mustURL is a cookie jar's idea of where it is.
+func mustURL(t *testing.T, s string) *url.URL {
+	t.Helper()
+
+	u, err := url.Parse(s)
+	require.NoError(t, err)
+
+	return u
+}
+
 // TestAnOperatorSignsIn is the console's front door, end to end from what
 // `roster init` printed.
 //
 // It is the seam payday left and could not fill: `auth` reads a credential and
-// does not issue one, and issuing is an HTTP endpoint. A browser has nowhere
-// safe to keep a secret, so what it gets is an opaque cookie naming a session
-// this server keeps.
+// does not issue one. A browser has nowhere safe to keep a secret, so what it
+// gets is an opaque cookie naming a session this server keeps -- and filling
+// the seam is `AuthService`, an RPC like everything else here, whose cookie
+// travels as the response metadata `web.Transcode` turns into a header. It read
+// as "issuing is HTTP" for a while and there was a route beside the service
+// saying so; there is one door now.
 func TestAnOperatorSignsIn(t *testing.T) {
 	x := require.New(t)
 
@@ -399,8 +418,8 @@ func TestTheTwoTrailsAreJoined(t *testing.T) {
 // TestNoVerifierReachesTheTrail is where `(payday.field).secret` was found to
 // be half true.
 //
-// `CredentialService` and `ApiKeyService` are unregistered and closed so that
-// nothing answers with a verifier. The trail went around all of it: the
+// `CredentialService`'s and `ApiKeyService`'s generated reads are shut a method
+// at a time so that nothing answers with a verifier. The trail went around all of it: the
 // recorder reads the bare server on purpose -- a row is recorded as it was
 // written, not as somebody was allowed to see it -- so an argon2id hash sat in
 // `Audit.value`, in the one table nothing erases, readable by anybody who may
@@ -472,9 +491,6 @@ func TestAConsoleReachesTheAdminPortOverHttp(t *testing.T) {
 	h, err := web.New(config.HttpConfig{AllowWeb: true}, g)
 	x.NoError(err)
 
-	v := cmd.Login(s.Control)
-	h.Handle("POST /session", s.Sessions.Serve(v))
-
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)
 
@@ -503,13 +519,15 @@ func TestAConsoleReachesTheAdminPortOverHttp(t *testing.T) {
 	code, _ := post("/roster.TenantService/Add", `{"alias":"newco"}`)
 	x.Equal(http.StatusUnauthorized, code)
 
-	code, body := post("/session",
-		`{"alias":"admin","password":"`+passwordFrom(t, out)+`"}`)
-	x.Equal(http.StatusNoContent, code, body)
+	// Signed in on the control plane's listener, which is the only one that
+	// serves a sign-in -- and then carried here. That is the console's own
+	// shape: one door to knock on, and the port it operates on is another.
+	jar.SetCookies(mustURL(t, srv.URL),
+		[]*http.Cookie{signIn(t, s, "admin", passwordFrom(t, out))})
 
 	// And now the thing a console is for, over JSON, with the cookie the
 	// browser is carrying.
-	code, body = post("/roster.TenantService/Add", `{"alias":"newco"}`)
+	code, body := post("/roster.TenantService/Add", `{"alias":"newco"}`)
 	x.Equal(http.StatusOK, code, body)
 	x.Contains(body, "newco")
 
@@ -536,10 +554,6 @@ func TestAConsoleReachesTheControlPlaneOverHttp(t *testing.T) {
 
 	h, err := web.New(config.HttpConfig{AllowWeb: true}, wg)
 	x.NoError(err)
-
-	v := cmd.Login(s.Control)
-	h.Handle("POST /session", s.Sessions.Serve(v))
-	h.Handle("DELETE /session", s.Sessions.Serve(v))
 
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)
@@ -568,8 +582,13 @@ func TestAConsoleReachesTheControlPlaneOverHttp(t *testing.T) {
 	code, _ := post("/roster.MeService/Get", `{}`)
 	x.Equal(http.StatusUnauthorized, code, "anonymous reached the control plane")
 
-	code, body := post("/session", `{"alias":"admin","password":"`+passwordFrom(t, out)+`"}`)
-	x.Equal(http.StatusNoContent, code, body)
+	// The sign-in is an RPC on this same mux, like everything else the page
+	// calls -- and the cookie comes back as an ordinary `set-cookie` header,
+	// which is the whole of what `web.Transcode` does with response metadata.
+	code, body := post("/roster.AuthService/SignIn",
+		`{"alias":"admin","password":"`+passwordFrom(t, out)+`"}`)
+	x.Equal(http.StatusOK, code, body)
+	x.NotEmpty(jar.Cookies(mustURL(t, srv.URL)), "signing in set no cookie")
 
 	// The three screens the first console is, in the order it would draw them.
 	t.Run("who am I", func(t *testing.T) {
@@ -615,36 +634,52 @@ func TestAConsoleReachesTheControlPlaneOverHttp(t *testing.T) {
 		x.NotContains(body, string(sum))
 	})
 
-	// `DELETE /session` is the sign-out the browser actually sends, and until
-	// now nothing sent it: the one sign-out test went through the gRPC
-	// `AuthService.SignOut`, which is the transcoded twin and not the route.
-	// The claim is immediacy -- the jar still holds the cookie, and the server
-	// no longer knows it.
-	t.Run("and DELETE /session ends it, immediately", func(t *testing.T) {
+	// The sign-out a browser actually sends. It was `DELETE /session`, a route
+	// beside the RPC that already did the same thing; it is the RPC now, over
+	// this same transcoder.
+	//
+	// The claim is immediacy, and it is made the hard way: the cookie the jar
+	// held is sent again by hand afterwards, so what refuses it is the row
+	// being gone rather than the browser having dropped a header.
+	t.Run("and signing out ends it, immediately", func(t *testing.T) {
 		x := require.New(t)
 
-		req, err := http.NewRequestWithContext(ctx, http.MethodDelete, srv.URL+"/session", nil)
-		x.NoError(err)
+		held := jar.Cookies(mustURL(t, srv.URL))
+		x.NotEmpty(held, "nothing was holding a session to end")
 
-		res, err := c.Do(req)
-		x.NoError(err)
-		res.Body.Close()
-		x.Equal(http.StatusNoContent, res.StatusCode)
+		code, body := post("/roster.AuthService/SignOut", `{}`)
+		x.Equal(http.StatusOK, code, body)
 
-		code, body := post("/roster.MeService/Get", `{}`)
-		x.Equal(http.StatusUnauthorized, code,
-			"a signed-out cookie was served: %s", body)
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost,
+			srv.URL+"/roster.MeService/Get", strings.NewReader(`{}`))
+		x.NoError(err)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Connect-Protocol-Version", "1")
+		for _, v := range held {
+			req.AddCookie(v)
+		}
+
+		res, err := http.DefaultClient.Do(req)
+		x.NoError(err)
+		defer res.Body.Close()
+
+		x.Equal(http.StatusUnauthorized, res.StatusCode, "a signed-out cookie was served")
 	})
 }
 
-// TestTheDataPlanesHttpSignsInNobody is `operating.md`'s warning about
-// `server.http`, asserted: `/session` is served on every listener that has
-// HTTP -- a console reaches one origin and signing in has to be there -- so on
-// the data plane's transcoder it **answers**, and the cookie it mints names
-// nobody every walled call can be made as. Signing in there is not an error
-// anybody is told about; it is a success that opens nothing, which is exactly
-// why it is worth a test and a paragraph.
-func TestTheDataPlanesHttpSignsInNobody(t *testing.T) {
+// TestTheDataPlanesHttpHasNoSignIn is the trap, removed.
+//
+// It used to be `TestTheDataPlanesHttpSignsInNobody`, and what it asserted was
+// the trap working as documented: `POST /session` was mounted on every listener
+// that had HTTP, so the customer-facing port **answered** an operator's password
+// with 204 and a cookie every walled call then named nobody with. A success
+// that opens nothing is the one failure a caller cannot tell from a bug, and it
+// cost a paragraph in `operating.md` to warn about.
+//
+// The route is gone (`AuthService`, `server/console`), and a service is
+// registered per listener -- so the data plane has no sign-in to answer with at
+// all. Which is what the port should always have said.
+func TestTheDataPlanesHttpHasNoSignIn(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
@@ -653,12 +688,9 @@ func TestTheDataPlanesHttpSignsInNobody(t *testing.T) {
 	g, err := s.Grpc(ctx, cmd.Config{})
 	x.NoError(err)
 
-	// The mount `serveHttp` does, on the walled server's transcoder.
+	// Exactly what `serveHttp` builds, on the walled server's transcoder.
 	h, err := web.New(config.HttpConfig{AllowWeb: true}, g)
 	x.NoError(err)
-
-	v := cmd.Login(s.Control)
-	h.Handle("POST /session", s.Sessions.Serve(v))
 
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)
@@ -684,10 +716,21 @@ func TestTheDataPlanesHttpSignsInNobody(t *testing.T) {
 		return res.StatusCode, string(b)
 	}
 
+	// The route that was here.
 	code, _ := post("/session", `{"alias":"admin","password":"`+passwordFrom(t, out)+`"}`)
-	x.Equal(http.StatusNoContent, code, "signing in answers -- that is the trap")
+	x.Equal(http.StatusNotFound, code, "the data plane still mints a session")
+
+	// And the service that replaced it, which is registered on the control
+	// listener and not on this one.
+	code, _ = post("/roster.AuthService/SignIn",
+		`{"alias":"admin","password":"`+passwordFrom(t, out)+`"}`)
+	x.Equal(http.StatusNotFound, code, "the data plane serves a sign-in")
+
+	here, err := url.Parse(srv.URL)
+	x.NoError(err)
+	x.Empty(jar.Cookies(here), "something on this listener answered with a cookie")
 
 	code, body := post("/roster.MeService/Get", `{}`)
 	x.Equal(http.StatusUnauthorized, code,
-		"an operator's session named somebody on the walled plane: %s", body)
+		"the data plane answered somebody who never signed in: %s", body)
 }

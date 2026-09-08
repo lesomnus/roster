@@ -20,6 +20,13 @@ import (
 // for the read and it took the write with it: nothing on the wire could set a
 // password, and `init` plus a shell was the only way in.
 //
+// It is no longer closed entirely. The service is registered for the overlays
+// written onto it since -- `Set`, `Unlock`, `Enrol` -- and only the generated
+// reads and the raw `Add` are shut, a method at a time. So the premise this
+// paragraph rests on has been gone for a while: what keeps `Reset` here is
+// history rather than reachability, and moving it onto the entity beside the
+// other three is a thing to do rather than a thing that cannot be done.
+//
 // An air-gapped deployment cannot live with that. There is no mail, so the
 // "somebody else" who delivers a recovery code is a **person**, which makes
 // recovery and an operator-initiated reset the same mechanism reached two ways

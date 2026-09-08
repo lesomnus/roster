@@ -621,7 +621,7 @@ func TestOverAskingIsRefusedBeforeThePasswordIsCompared(t *testing.T) {
 // TestRevokeIsTheDeleteD23PromisedAndDidNotHave.
 //
 // Without it, signing out of an app left that app holding a credential that
-// went on working: the generated service is unregistered and closed, and
+// went on working: the generated writes are shut a method at a time, and
 // `HolderService/Invalidate` is the wrong instrument -- it voids every
 // delegation the person has and touches nobody's session.
 func TestRevokeIsTheDeleteD23PromisedAndDidNotHave(t *testing.T) {

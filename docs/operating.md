@@ -390,9 +390,15 @@ people who run this deployment live. `roster init` makes the first one and
 prints their password once.
 
 ```
-POST /session      {"alias": "admin", "password": "..."}   -> 204, __Host-pd_session
-DELETE /session                                          -> 204
+POST /roster.AuthService/SignIn   {"alias": "admin", "password": "..."}
+                                                         -> 200, __Host-pd_session
+POST /roster.AuthService/SignOut  {}                     -> 200
 ```
+
+On `control.http`, and only there — a service is registered per listener. Both
+are ordinary RPCs; the cookie travels as `set-cookie` response metadata, which
+is what `web.Transcode` turns into a header. They were `POST /session` and
+`DELETE /session`, routes beside the service that already did it.
 
 The cookie is opaque, `HttpOnly`, `SameSite=Lax` and names a session this
 server keeps. It opens **two** listeners, and there are three in all:
@@ -440,12 +446,14 @@ only ever used a cookie.
 
 A browser cannot speak gRPC, so a port without `http` is a port a console
 cannot reach — and `server.http` is the wrong one: it fronts the **walled**
-data plane, where an operator's session names nobody. Sign in there and there
-is nothing to call.
+data plane, where an operator's session names nobody.
 
-`/session` is served on every listener that has HTTP, because a console
-reaches one origin and signing in has to be there. Which listener the session
-is a credential *for* is what differs.
+Signing in is served on `control.http` and nowhere else, because `AuthService`
+is registered there and a service is registered per listener. It used to be a
+route rather than a service, mounted on every listener that had HTTP — so the
+data plane's port answered an operator's password with a session that then
+named nobody, and this paragraph warned about it instead of the wiring fixing
+it. Sign in there now and there is nothing to sign in *to*.
 
 Three because it can be nothing else. The product port is walled and an
 operator has no tenant in that database, so it shows them nothing; and the

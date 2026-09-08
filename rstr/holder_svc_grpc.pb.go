@@ -107,11 +107,11 @@ type HolderServiceClient interface {
 	//
 	// # Why it cannot be read any other way
 	//
-	// `CredentialService` is not registered at all, because its generated `Get`
-	// answers with the verifier (D13). And `IdentityService` narrows by the
-	// **tenant**, so an operator's list of one person's identities is that whole
-	// tenant's, filtered in the app -- which is the leak D17 named and D23 exists
-	// to remove.
+	// `CredentialService`'s generated reads are shut a method at a time, because
+	// its `Get` answers with the verifier (D13). And `IdentityService` narrows by
+	// the **tenant**, so an operator's list of one person's identities is that
+	// whole tenant's, filtered in the app -- which is the leak D17 named and D23
+	// exists to remove.
 	//
 	// # Why it is not MeService
 	//
@@ -392,11 +392,11 @@ type HolderServiceServer interface {
 	//
 	// # Why it cannot be read any other way
 	//
-	// `CredentialService` is not registered at all, because its generated `Get`
-	// answers with the verifier (D13). And `IdentityService` narrows by the
-	// **tenant**, so an operator's list of one person's identities is that whole
-	// tenant's, filtered in the app -- which is the leak D17 named and D23 exists
-	// to remove.
+	// `CredentialService`'s generated reads are shut a method at a time, because
+	// its `Get` answers with the verifier (D13). And `IdentityService` narrows by
+	// the **tenant**, so an operator's list of one person's identities is that
+	// whole tenant's, filtered in the app -- which is the leak D17 named and D23
+	// exists to remove.
 	//
 	// # Why it is not MeService
 	//

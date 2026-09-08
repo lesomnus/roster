@@ -82,7 +82,7 @@ the page, one of the two is wrong and both are load-bearing.
 | `Verify` with the right secret answers who; with anything else it answers **no and nothing more** — one indistinguishable `ok:false` for a wrong password, an unknown alias, an unknown tenant and an account with no ways in, through the served stack | `TestAWrongSecretIsRefusedAndSaysNothingElse` · `TestSomebodyWhoIsNotHereIsRefusedTheSameWay` · `TestEveryNoOverTheWireIsTheSameNo` |
 | a delegation is bound to the person it was minted about **and** the key it was minted through; alone, or beside another app's key, it is worth nothing | `TestADelegationAloneIsWorthNothing` · `TestADelegationIsBoundToTheKeyAndNotToTheAppBehindIt` · `TestATenantKeysDelegationIsBoundToThePersonAndNotToTheKey` |
 | enough wrong answers close the account before the password is compared, and getting it right clears what getting it wrong left | `TestEnoughWrongAnswersCloseTheAccount` · `TestGettingItRightClearsWhatGettingItWrongLeftBehind` |
-| the console's cookie is minted by `POST /session`, ended by `DELETE /session`, and the end is immediate | `TestAnOperatorSignsIn` · `TestAConsoleReachesTheControlPlaneOverHttp` |
+| the console's cookie is minted by `AuthService.SignIn` and ended by `AuthService.SignOut` — one door, an RPC like every other call the page makes — and the end is immediate, so a browser that kept the cookie is answered nothing | `TestAnOperatorSignsIn` · `TestAConsoleReachesTheControlPlaneOverHttp` |
 | a person changes their **own** password by proving the current one — `CredentialService.Set` on your own row requires `current`, verified and counted like a sign-in, so a credential that merely acts as them cannot change it without knowing it; and the reopened service still never answers a stored verifier | `TestAPersonChangesTheirOwnPassword` · `TestTheCredentialServiceIsNotOnTheWire` |
 | the whole sign-in surface is a terminal command as well — verify, delegate, continue, link/redeem, revoke, enrol/confirm, accept — secrets on stdin, tokens printed once, and the uniform no surviving the shell | `TestTheTerminalIsACallerThatSignsPeopleIn` · `TestASecondFactorEndToEndAtAShell` · `TestContinueProvesAndDelegateMints` |
 
@@ -90,7 +90,7 @@ the page, one of the two is wrong and both are load-bearing.
 
 | the promise | pinned by |
 | --- | --- |
-| `server.addr` takes keys only — a cookie names nobody there, even though `/session` answers on its HTTP | `TestTheCookieOpensTheControlPlane` · `TestTheDataPlanesHttpSignsInNobody` |
+| `server.addr` takes keys only — a cookie names nobody there, and there is no sign-in on it to mint one | `TestTheCookieOpensTheControlPlane` · `TestTheDataPlanesHttpHasNoSignIn` |
 | `control.addr` takes a cookie **and** a service's `rk_`; a customer's `rt_` has no meaning there | `TestTheControlPlaneAuthenticatesItsOwnKeys` · `TestACustomersKeyHasNoMeaningAtTheControlPort` |
 | `admin.addr` is customers with no wall, behind an operator's session and nothing else — a key is not an operator | `TestAnOperatorAdministersCustomers` · `TestSigningOutReachesThePortWithNoWall` · `TestAnAdminPortWithNobodyToBeIsRefused` |
 | every HTTP listener is the same server transcoded: the same interceptors, the same wall, a curl away | `TestTheTutorialRunsAsWritten` · `TestAConsoleReachesTheControlPlaneOverHttp` · `TestAConsoleReachesTheAdminPortOverHttp` |

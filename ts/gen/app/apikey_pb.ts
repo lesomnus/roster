@@ -103,7 +103,7 @@ export type ApiKey = Message<"roster.ApiKey"> & {
   /**
    * The verifier, never the key: a hash of it, and the key itself is shown once
    * when it is made and never again. The same rule `Credential` states, and the
-   * reason `ApiKeyService` is not registered either.
+   * reason this service's generated reads are shut a method at a time.
    *
    * # Why it is unsalted, and indexed
    *
