@@ -260,13 +260,27 @@ can perfectly well have a personal Google account.
 
 ### And what its own credential has to reach
 
-A login app that fronts **several** operators cannot authenticate as a Holder.
-A Holder belongs to one tenant and the wall narrows what it may read to that, so
-it would resolve its own tenant and get NotFound for every other. What such a
-deployment needs is an API key, whose actor is not inside a tenant.
+One `rt_` per operator it fronts, picked by the host the browser arrived at.
 
-`examples/sso` runs as one operator's front door for exactly this reason, and
-says so where it wires the credential.
+This said a deployment key instead -- an `rk_`, whose actor is not inside a
+tenant -- because a Holder belongs to one tenant and the wall would answer
+NotFound for every other. That reasoning is right about the wall and wrong about
+what to do with it. `account/account.go` makes the argument this one missed: a
+deployment key resolves to a frame with **no** tenant and the policy hands it
+`frame.Everything`, so on an internet-facing app the thing keeping contoso's
+request out of fabrikam's rows is the app's own code. A tenant key resolves to a
+holder inside a tenant and the wall does the narrowing with no discipline asked
+of the app. So the app holds several credentials rather than one wide one, and
+`roster key add --tenant contoso --holder account` is how each is minted.
+
+The tenant an app names is always the app's **assertion** -- roster never sees
+the browser, so there is nothing else it could be -- and the key is the only
+thing that assertion is held against. `cmd/accountkey_test.go` is that fact, per
+call: look an identity up, enrol a stranger, accept a claim, read the row, check
+a password.
+
+`examples/sso` fronts one operator, so its map has one entry. That is the only
+difference between the two shapes.
 
 ### What roster does offer
 

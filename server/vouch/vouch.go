@@ -210,6 +210,57 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind, name strin
 		}
 	}
 
+	// Who this is about, **through the wall** -- and the row itself is thrown
+	// away, because what is wanted from this read is the refusal.
+	//
+	// # A caller may only check a password of somebody it can see
+	//
+	// The tenant in a sign-in form is the calling app's assertion. roster does
+	// not learn it from the browser -- it never sees one -- so the only thing
+	// that can hold that assertion to anything is the caller's own credential,
+	// and the only place that comparison happens is here.
+	//
+	// Read unwalled, this was `Vouch.Link`'s hole with a password in place of a
+	// token, and the same sentence describes it: a holder in contoso with
+	// `Vouch.Verify` and `Vouch.Delegate` -- the ordinary permissions of a front
+	// door -- could name `@fabrikam/erlich`, be told the password was right, and
+	// be handed a delegation that acts as somebody in an organisation contoso
+	// cannot otherwise see a row of. Two operators' people reuse a password
+	// often enough that this is not a thought experiment, and the delegation
+	// goes to the **app**, not to the person who typed it: fabrikam never
+	// agreed to contoso holding a credential for one of its people.
+	//
+	// `Accept` is the same shape and was already narrowed (`delegate.go`, the
+	// walled `Identity.Get`), which is what made this one findable: the OIDC arm
+	// of a front door refused what the password arm answered.
+	//
+	// The **credential** read below stays on the open server, and that is not an
+	// oversight either: `pd.Secret` clears the verifier on the walled stack, and
+	// comparing one is the whole of this package's job (`cmd/serve.go`). So the
+	// two reads want two servers -- who, behind the wall; what they hold, in
+	// front of it.
+	//
+	// It costs one indexed read on the sign-in path, and it is paid on the way
+	// to every answer rather than only to the refusals, which is what keeps it
+	// out of D14's ledger. A caller with no wall installed -- `cli`, the
+	// sandbox, the admin port, all of which build this service with one server
+	// passed twice -- reads the same server it always did.
+	if _, err := s.walled.Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref:    ref,
+		Select: app.HolderSelect_builder{}.Build(),
+	}.Build()); err != nil {
+		if status.Code(err) != codes.NotFound {
+			return nil, nil, err
+		}
+
+		// The same answer as a stranger, for the same reason `byAddress` gives:
+		// who is in another tenant is not this caller's to learn, any more than
+		// who is here at all is.
+		by.Burn(secret)
+
+		return no(), nil, nil
+	}
+
 	v, err := s.credentialNamed(ctx, s.open, ref, kind, name)
 	if err != nil {
 		if status.Code(err) != codes.NotFound {

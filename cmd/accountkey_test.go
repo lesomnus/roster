@@ -1,6 +1,7 @@
 package cmd_test
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
@@ -9,6 +10,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
@@ -25,9 +28,16 @@ import (
 // holder inside a tenant, the tenant travels with the actor, and the wall does
 // the narrowing with no discipline asked of the app. So the app holds one `rt_`
 // per tenant it fronts, picked by host, and this is what that buys, through
-// the served stack: the four calls a front door makes before it has a person
-// -- look an identity up, enrol a stranger, accept a claim, and read the row
-// -- each answer for the key's own tenant and refuse for another's.
+// the served stack: the five calls a front door makes before it has a person
+// -- look an identity up, enrol a stranger, accept a claim, read the row, and
+// check a password -- each answer for the key's own tenant and refuse for
+// another's.
+//
+// The last of those was added after the other four: `Accept` and `Vouch.Link`
+// each resolve who they are about through the walled stack and `Verify` did
+// not, so the same request that this test refuses as a claim was answered as a
+// password. `server/vouch/vouch.go` carries what that cost and why the read
+// moved.
 //
 // No new API: the key is `ApiKey.Issue` with a holder, which `roster key add
 // --tenant contoso --holder account` already mints. This test mints it the way
@@ -43,7 +53,7 @@ func TestAnAccountAppHoldsOneTenantsKeyAndReachesOnlyThatTenant(t *testing.T) {
 	// And what it hands out: `Accept`'s `methods` are bounded by what the
 	// caller may call, so a front door that mints delegations allowing
 	// `listPeople` holds `listPeople`.
-	frontDoor := []string{identityGet, identityAdd, holderAdd, holderGet, tenantGet, accept, listPeople}
+	frontDoor := []string{identityGet, identityAdd, holderAdd, holderGet, tenantGet, accept, verify, delegate, listPeople}
 
 	x := require.New(t)
 	b := keyFor(t, accept)
@@ -57,17 +67,43 @@ func TestAnAccountAppHoldsOneTenantsKeyAndReachesOnlyThatTenant(t *testing.T) {
 	x.True(strings.HasPrefix(token, keys.PrefixTenant), "the bench minted the wrong kind of key")
 	as := bearing(ctx, token)
 
-	// Somebody in contoso who arrives through a provider.
+	// Somebody in contoso who arrives through a provider, and has a password
+	// too -- a front door offers both arms and this test asks about both.
 	erin := addHolder(t, ctx, b.Server, b.Contoso, "erin")
 	mustIdentity(t, ctx, b.Server, erin, "entra", "entra-erin")
 	mayList(t, ctx, b, erin, listPeople)
+	mustPassword(t, ctx, b, erin, secret)
 
 	// And a second operator on the same roster, with somebody of their own --
 	// the same provider, because one human may well sign up to both, and the
 	// key must not be what relates them.
+	//
+	// Given the same password on purpose: two operators' people reuse one, and
+	// the question this test asks is what contoso's key may do about it.
 	fabrikam := add(t, ctx, b.Server, "fabrikam")
 	fab := addHolder(t, ctx, b.Server, fabrikam, "fab")
 	mustIdentity(t, ctx, b.Server, fab, "entra", "entra-fab")
+	mustPassword(t, ctx, b, fab, secret)
+	_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
+		Holder:  app.HolderRef_builder{Id: fab.Bytes()}.Build(),
+		Address: fabAddress,
+	}.Build())
+	x.NoError(err)
+
+	// And a role of fabrikam's own, so that a delegation for fab would have
+	// something to allow. What refuses below has to be the wall, not an empty
+	// intersection standing in for it.
+	fabRole, err2 := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
+		Tenant:  app.TenantRef_builder{Id: fabrikam.Bytes()}.Build(),
+		Alias:   "reader",
+		Methods: []string{listPeople},
+	}.Build())
+	x.NoError(err2)
+	_, err = b.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
+		Role:   app.RoleRef_builder{Id: fabRole.GetId()}.Build(),
+		Holder: app.HolderRef_builder{Id: fab.Bytes()}.Build(),
+	}.Build())
+	x.NoError(err)
 
 	identities := app.NewIdentityServiceClient(b.Conn)
 	holders := app.NewHolderServiceClient(b.Conn)
@@ -167,4 +203,75 @@ func TestAnAccountAppHoldsOneTenantsKeyAndReachesOnlyThatTenant(t *testing.T) {
 		x.NotEqual(codes.OK, status.Code(err), "a contoso key minted a delegation for somebody in fabrikam")
 		x.Empty(res.GetToken())
 	})
+
+	t.Run("it checks a password of its own tenant's person", func(t *testing.T) {
+		x := require.New(t)
+
+		v, err := vouch.Verify(as, app.VouchVerifyRequest_builder{
+			Who:    app.VouchWho_builder{Tenant: "contoso", Alias: "erin"}.Build(),
+			Secret: []byte(secret),
+		}.Build())
+		x.NoError(err)
+		x.True(v.GetOk(), "the front door could not check its own tenant's password")
+		x.Equal(erin.Bytes(), v.GetHolder())
+	})
+
+	t.Run("and checks nothing for another tenant's, by any of the three forms", func(t *testing.T) {
+		// The same sentence as `Accept` above, with a password instead of a
+		// claim. It was the arm that was open: `Accept` resolves the identity
+		// through the walled stack and `Vouch.Link` the holder, while this one
+		// read the person through the server the wall was never installed on --
+		// so a key that cannot see a fabrikam row could check a fabrikam
+		// password and be handed a delegation that acts as one.
+		//
+		// Three forms because `VouchWho` has three, and a rule written for the
+		// one a form collects is a rule the other two walk past.
+		for _, tt := range []struct {
+			name string
+			who  *app.VouchWho
+		}{
+			{"by id", app.VouchWho_builder{Id: fab.Bytes()}.Build()},
+			{"by @tenant/alias", app.VouchWho_builder{Tenant: "fabrikam", Alias: "fab"}.Build()},
+			{"by address", app.VouchWho_builder{Tenant: "fabrikam", Address: fabAddress}.Build()},
+		} {
+			t.Run(tt.name, func(t *testing.T) {
+				x := require.New(t)
+
+				v, err := vouch.Verify(as, app.VouchVerifyRequest_builder{
+					Who:    tt.who,
+					Secret: []byte(secret),
+				}.Build())
+				x.NoError(err, "a refusal here is an ordinary no, not an error")
+				x.False(v.GetOk(), "a contoso key checked a fabrikam password")
+
+				res, err := vouch.Delegate(as, app.VouchDelegateRequest_builder{
+					Who:     tt.who,
+					Secret:  []byte(secret),
+					Methods: []string{listPeople},
+				}.Build())
+				x.NoError(err)
+				x.False(res.GetVerified().GetOk())
+				x.Empty(res.GetToken(), "a contoso key minted a delegation for somebody in fabrikam")
+			})
+		}
+	})
+}
+
+// secret is the password both people in the test above hold, and fabAddress is
+// the one an address-form sign-in would collect for fabrikam's.
+const (
+	secret     = "correct horse battery staple"
+	fabAddress = "fab@fabrikam.example"
+)
+
+// mustPassword gives somebody one, through the server the deployment itself
+// reaches -- which is where a first password comes from.
+func mustPassword(t *testing.T, ctx context.Context, b *keyedBuilt, who pdid.Id, password string) {
+	t.Helper()
+
+	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+		Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
+		Secret: []byte(password),
+	}.Build())
+	require.NoError(t, err)
 }

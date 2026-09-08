@@ -119,7 +119,7 @@ the page, one of the two is wrong and both are load-bearing.
 
 | the promise | pinned by |
 | --- | --- |
-| the app holds one tenant key per operator and every call about a host goes out with that tenant's; a contoso key reads, enrols into and accepts claims about contoso and nothing of fabrikam's | `TestAnAccountAppHoldsOneTenantsKeyAndReachesOnlyThatTenant` · `TestTheAccountAppFrontsTwoOperators` |
+| the app holds one tenant key per operator and every call about a host goes out with that tenant's; a contoso key reads, enrols into, accepts claims about and **checks passwords for** contoso and nothing of fabrikam's -- by every form a sign-in collects | `TestAnAccountAppHoldsOneTenantsKeyAndReachesOnlyThatTenant` · `TestTheAccountAppFrontsTwoOperators` |
 | the browser speaks Connect to the app's origin and is answered by roster as the person; a method the app did not ask for stops at the app, a request no Connect client would make is refused, and no delegation is ever in a cookie | `TestABrowserSpeaksConnectToTheAppAndRosterAnswersAsThePerson` |
 | a stranger a provider vouches for is refused or enrolled as the deployment said, and never anywhere but the tenant the host resolved to | `TestTheAccountAppFrontsTwoOperators` · `TestAStrangerIsEnrolledWhereTheDeploymentSaysSo` |
 | a recovery link is mailed only to an address that is somebody's, answers the same whatever was typed, and hands over a password shown once rather than a session; a verification link stamps the address and signs nobody in, refused at the door that mints exactly as a recovery link is refused at the one that stamps | `TestSomebodyRecoversTheirAccountByMail` · `TestSomebodyVerifiesAnAddressOfTheirOwn` · `TestAnAddressIsVerifiedByALinkThatSignsNobodyIn` |
