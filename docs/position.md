@@ -134,7 +134,7 @@ shape.
 
 roster ships both of those callers, and neither moves the line. The console
 (`ts/console/`) is the admin console, on roster's own cookie. The account app
-(`account/`, `roster account serve`) is a Login App: a separate process holding
+(`account/`, `roster account serve`) is a login app: a separate process holding
 one tenant key per operator, doing the OIDC exchange with the providers an
 operator wrote down as `Connection` rows, minting the delegation through
 `Vouch.Accept`/`Delegate`, and handing the page's calls on to roster as the
@@ -146,6 +146,50 @@ nowhere safe to keep a token, so a product app exchanges what Hydra gave it for
 an opaque cookie of its own. `payday/auth/authsession` is that, and the only
 thing it asks the app for is a `Verify` — which with roster behind it is one
 call.
+
+### Two things called a login app
+
+The diagram above says **Login App** and the paragraph above says *login app*,
+and they are not the same box. The difference is one hop at the end, and it is
+the hop that decides whether you need Hydra at all.
+
+| | where the login ends | what roster ships |
+| --- | --- | --- |
+| a login app | a cookie of its own | `frontdoor`, a package an app imports |
+| **Hydra's** Login App | `acceptLoginRequest{subject}` | nothing; the identity half is the same call |
+
+`frontdoor` is a library and not an example. `account/` imports it and so does
+`examples/sso`: `Door.Handler` is the password and second-factor forms,
+`Door.Accept` turns a `(provider, subject)` a provider vouched for into a
+person and a session, `Door.Acting` makes a request that person, and
+`Door.Proxy` hands their calls on. An app that wants its own sign-in has most
+of one already.
+
+What is **not** here is the Hydra glue: nothing in this repository reads a
+`login_challenge` or answers `acceptLoginRequest`. Writing it is small and the
+identity half does not change -- call `Vouch.Accept` for the `Holder.id` and
+give it to Hydra, instead of letting `Door.Accept` end the login in a cookie.
+
+Which of the two you want is the table below: one relying party, or many.
+
+### It does not replace a reverse proxy
+
+Worth saying because the shape suggests it. A deployment with `oauth2-proxy` in
+front of each internal service has the proxy holding the session and forwarding
+to the app; roster has no such thing and `Door.Proxy` is not it -- that one
+proxies to **roster**, as the person, for the account page's own calls.
+
+With several services the answer is not to replace the proxy. It is to change
+what the proxy points at: Entra today, Hydra once there is a Login App, so that
+the `sub` in the token every service already trusts is a `Holder.id` rather than
+Entra's `oid`. The proxies do not change and neither do the services.
+
+The alternative, for a deployment that is not ready for Hydra, is to leave the
+flow alone and resolve the identity at the app boundary: `oauth2-proxy` passes
+Entra's subject, and the app asks roster once per session who that is. It costs
+a lookup in every app rather than one, and until it happens the identifier in
+the token is the provider's -- which is the thing that is expensive to undo,
+because by then it is in each app's own rows.
 
 ### One relying party, or many
 
