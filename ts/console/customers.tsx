@@ -227,6 +227,10 @@ function Tenants(props: { admin: Admin; may: (method: string) => boolean }): Rea
  * Labels are the one thing a page reads per tenant that the schema does not
  * name -- branding, a support address -- so they are drawn as lines of
  * `key=value` rather than as fields somebody would have to invent.
+ *
+ * The one checkbox is `config.password`, and it is a **way in** rather than a
+ * screen setting: roster refuses a password for a tenant that has it off, so
+ * the sign-in pages draw what is true rather than being told what to draw.
  */
 function EditTenant(props: { tenant: Tenant | undefined; may: (method: string) => boolean }): React.ReactNode {
 	const update = useCall(TenantService.method.update)
@@ -263,6 +267,11 @@ function EditTenant(props: { tenant: Tenant | undefined; may: (method: string) =
 							name: String(f.get('name') ?? '').trim(),
 							desc: String(f.get('desc') ?? '').trim(),
 							labels: parsed,
+							// Replaced whole, so the checkbox sends the whole
+							// message. `password: true` and not "unset" once
+							// somebody has touched the box: unset means the
+							// default and this is now a decision.
+							config: { password: f.get('password') !== null },
 						})
 						.then(() => say({ kind: 'done', text: 'saved' }))
 						.catch((e: unknown) => say({ kind: 'bad', text: e instanceof Error ? e.message : 'no' }))
@@ -271,6 +280,17 @@ function EditTenant(props: { tenant: Tenant | undefined; may: (method: string) =
 				<input name="name" placeholder="name" defaultValue={t.name} />
 				<input name="desc" placeholder="note" defaultValue={t.desc} />
 				<textarea name="labels" placeholder={'labels, one per line: brand=Contoso'} defaultValue={labels} rows={3} />
+				{/*
+					A way in, and not a screen setting: roster refuses a password
+					for a tenant with this off, so what the sign-in pages draw is
+					what is already true. For an operator whose people all arrive
+					through a directory -- a form nobody uses is a form that says
+					somebody here has a password.
+				*/}
+				<label className="check">
+					<input type="checkbox" name="password" defaultChecked={t.config?.password ?? true} />
+					a password is a way in here
+				</label>
 				<button type="submit" disabled={update.state === 'pending' || !props.may('/roster.TenantService/Update')}>
 					save
 				</button>

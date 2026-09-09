@@ -10,6 +10,7 @@ import (
 
 	"github.com/lesomnus/roster/internal/ent/predicate"
 	"github.com/lesomnus/roster/internal/ent/tenant"
+	"github.com/lesomnus/roster/rstr"
 	"github.com/protobuf-orm/ent/dialect/sql"
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	"github.com/protobuf-orm/ent/schema/field"
@@ -97,6 +98,18 @@ func (_u *TenantUpdate) SetNillableDateUpdated(v *time.Time) *TenantUpdate {
 	return _u
 }
 
+// SetConfig sets the "config" field.
+func (_u *TenantUpdate) SetConfig(v *rstr.TenantConfig) *TenantUpdate {
+	_u.mutation.SetConfig(v)
+	return _u
+}
+
+// ClearConfig clears the value of the "config" field.
+func (_u *TenantUpdate) ClearConfig() *TenantUpdate {
+	_u.mutation.ClearConfig()
+	return _u
+}
+
 // Mutation returns the TenantMutation object of the builder.
 func (_u *TenantUpdate) Mutation() *TenantMutation {
 	return _u.mutation
@@ -164,6 +177,19 @@ func (_u *TenantUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.DateCreatedCleared() {
 		_spec.ClearField(tenant.FieldDateCreated, field.TypeTime)
+	}
+	if value, ok := _u.mutation.Config(); ok {
+		vv, err := tenant.ValueScanner.Config.Value(value)
+		if err != nil {
+			return 0, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return 0, err
+		}
+		_spec.SetField(tenant.FieldConfig, field.TypeJson, vv)
+	}
+	if _u.mutation.ConfigCleared() {
+		_spec.ClearField(tenant.FieldConfig, field.TypeJson)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -252,6 +278,18 @@ func (_u *TenantUpdateOne) SetNillableDateUpdated(v *time.Time) *TenantUpdateOne
 	if v != nil {
 		_u.SetDateUpdated(*v)
 	}
+	return _u
+}
+
+// SetConfig sets the "config" field.
+func (_u *TenantUpdateOne) SetConfig(v *rstr.TenantConfig) *TenantUpdateOne {
+	_u.mutation.SetConfig(v)
+	return _u
+}
+
+// ClearConfig clears the value of the "config" field.
+func (_u *TenantUpdateOne) ClearConfig() *TenantUpdateOne {
+	_u.mutation.ClearConfig()
 	return _u
 }
 
@@ -352,6 +390,19 @@ func (_u *TenantUpdateOne) sqlSave(ctx context.Context) (_node *Tenant, err erro
 	}
 	if _u.mutation.DateCreatedCleared() {
 		_spec.ClearField(tenant.FieldDateCreated, field.TypeTime)
+	}
+	if value, ok := _u.mutation.Config(); ok {
+		vv, err := tenant.ValueScanner.Config.Value(value)
+		if err != nil {
+			return nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, err
+		}
+		_spec.SetField(tenant.FieldConfig, field.TypeJson, vv)
+	}
+	if _u.mutation.ConfigCleared() {
+		_spec.ClearField(tenant.FieldConfig, field.TypeJson)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Tenant{config: _u.config}

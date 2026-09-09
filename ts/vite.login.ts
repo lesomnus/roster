@@ -34,6 +34,18 @@ const people = [
 	{ alias: 'frank', password: 'correct horse battery staple', factor: '123456' },
 ]
 
+/**
+ * The operator's `Connection` rows, as the app would have read them.
+ *
+ * The round trip behind the button is a real one -- the browser leaves for a
+ * directory and comes back to `/callback` -- so there is nothing here to
+ * pretend with short of standing an OIDC provider up. What this fakes instead
+ * is the **answer**: `/provider` signs the first person in and redirects, which
+ * is what the whole trip amounts to from this page's side. What it cannot show
+ * is the directory's own screen, and nothing here claims to.
+ */
+const providers = [{ name: 'entra' }, { name: 'github' }]
+
 /** One browser's place in the walk, by the cookie this hands out. */
 const flows = new Map<string, { who: string; proved: string[] }>()
 
@@ -84,7 +96,25 @@ const sandbox = (): Connect.NextHandleFunction => async (req, res, next) => {
 
 	switch (`${req.method} ${url.pathname}`) {
 		case 'GET /flow':
-			return json(res, 200, { brand: 'Contoso', client: 'the demo product', scope: ['openid', 'profile', 'email'] })
+			return json(res, 200, {
+				brand: 'Contoso',
+				client: 'the demo product',
+				scope: ['openid', 'profile', 'email'],
+				providers: url.searchParams.has('consent_challenge') ? [] : providers,
+				password: !url.searchParams.has('consent_challenge'),
+			})
+
+		case 'GET /provider': {
+			// Where a directory would have sent the browser back to, minus the
+			// directory. `erin` because a provider sign-in has no second form:
+			// whatever the directory asked for, it asked for.
+			at.who = 'erin'
+			at.proved = ['password']
+			res.statusCode = 302
+			res.setHeader('location', '/consent?consent_challenge=sandbox')
+
+			return res.end()
+		}
 
 		case 'POST /session': {
 			const v = JSON.parse((await body(req)) || '{}') as { alias?: string; password?: string }
@@ -146,6 +176,10 @@ const sandbox = (): Connect.NextHandleFunction => async (req, res, next) => {
 
 export default defineConfig({
 	root: 'login',
+	// Its own optimizer cache, for the reason `vite.console.ts` gives: the
+	// default is one directory for all three configs, and `scripts/e2e.sh`
+	// runs two dev servers at once.
+	cacheDir: '../node_modules/.vite-login',
 	publicDir: false,
 	build: { outDir: '../dist/login', emptyOutDir: true },
 	plugins: [

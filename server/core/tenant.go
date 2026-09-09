@@ -186,8 +186,8 @@ type coreTenant struct {
 
 func (s Core) Tenant() app.TenantServiceServer { return coreTenant{s, s.Next().Tenant()} }
 
-// Update is the narrow write over a tenant: name, note and labels, and never
-// the alias or the identifier. See `tenant_svc.ext.proto`.
+// Update is the narrow write over a tenant: name, note, labels and the
+// settings, and never the alias or the identifier. See `tenant_svc.ext.proto`.
 func (s coreTenant) Update(ctx context.Context, req *app.TenantUpdateRequest) (*app.Tenant, error) {
 	patch := app.TenantPatchRequest_builder{
 		Ref:         req.GetRef(),
@@ -202,6 +202,12 @@ func (s coreTenant) Update(ctx context.Context, req *app.TenantUpdateRequest) (*
 	// A map has no presence: given, it replaces; empty, it is left as it is.
 	if len(req.GetLabels()) > 0 {
 		patch.Labels = req.GetLabels()
+	}
+	// A message does have presence, so an absent one is *leave it* and an empty
+	// one is *nothing is set* -- which for `password` means back to the default,
+	// and is a thing a caller may want to say.
+	if req.HasConfig() {
+		patch.Config = req.GetConfig()
 	}
 
 	return s.TenantServiceServer.Patch(ctx, patch.Build())

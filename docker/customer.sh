@@ -56,12 +56,14 @@ printf '{"role":{"slug":{"alias":"directory","tenant":{"alias":"%s"}}},"holder":
 	| roster binding add - >/dev/null
 
 # The Login App's own person and key: what it calls as itself before anybody
-# has signed in, `Me.Get` for the claims that go in the token, and
-# `Sync.Watch`, which is how it hears that somebody has been signed out
-# everywhere and tells Hydra to forget them. Nothing wider -- it draws no
-# account screens.
+# has signed in, the `Connection` rows and `Identity` for the provider half,
+# `Me.Get` for the claims that go in the token, and `Sync.Watch`, which is how
+# it hears that somebody has been signed out everywhere and tells Hydra to
+# forget them. Nothing wider -- it draws no account screens, and
+# `HolderService.Add` is left out on purpose: making people is what
+# `enrol: enrolling` needs and a wider grant than signing them in.
 roster holder add "@${t}/login-app" >/dev/null
-roster role add "@${t}/login-app" '{"methods":["/roster.TenantService/Get","/roster.VouchService/Verify","/roster.VouchService/Delegate","/roster.DelegationService/Revoke","/roster.SyncService/Watch","/roster.MeService/Get"]}' >/dev/null
+roster role add "@${t}/login-app" '{"methods":["/roster.TenantService/Get","/roster.VouchService/Verify","/roster.VouchService/Delegate","/roster.VouchService/Accept","/roster.DelegationService/Revoke","/roster.SyncService/Watch","/roster.ConnectionService/Get","/roster.ConnectionService/List","/roster.IdentityService/Get","/roster.IdentityService/Add","/roster.MeService/Get"]}' >/dev/null
 printf '{"role":{"slug":{"alias":"login-app","tenant":{"alias":"%s"}}},"holder":{"slug":{"alias":"login-app","tenant":{"alias":"%s"}}}}' "${t}" "${t}" \
 	| roster binding add - >/dev/null
 
@@ -69,7 +71,7 @@ printf '{"role":{"slug":{"alias":"login-app","tenant":{"alias":"%s"}}},"holder":
 # The directory's and the Login App's first and the account app's last, because
 # the account app's is the marker this script's "once" is decided by.
 umask 077
-roster key add --tenant "${t}" --holder login-app --name login-app --allow '/roster.TenantService/Get,/roster.VouchService/Verify,/roster.VouchService/Delegate,/roster.DelegationService/Revoke,/roster.SyncService/Watch,/roster.MeService/Get' 2>/dev/null >"${ACCOUNT_STATE}/${SEED_CUSTOMER}.login.key.tmp"
+roster key add --tenant "${t}" --holder login-app --name login-app --allow '/roster.TenantService/Get,/roster.VouchService/Verify,/roster.VouchService/Delegate,/roster.VouchService/Accept,/roster.DelegationService/Revoke,/roster.SyncService/Watch,/roster.ConnectionService/Get,/roster.ConnectionService/List,/roster.IdentityService/Get,/roster.IdentityService/Add,/roster.MeService/Get' 2>/dev/null >"${ACCOUNT_STATE}/${SEED_CUSTOMER}.login.key.tmp"
 mv "${ACCOUNT_STATE}/${SEED_CUSTOMER}.login.key.tmp" "${ACCOUNT_STATE}/${SEED_CUSTOMER}.login.key"
 roster key add --tenant "${t}" --holder directory --name directory --allow '/roster.TenantService/Get,/roster.HolderService/Get,/roster.HolderService/List,/roster.HolderService/Search,/roster.EmailService/Get,/roster.EmailService/List,/roster.GroupService/Get,/roster.GroupService/List,/roster.GroupMembershipService/List,/roster.SiteService/Get,/roster.SiteService/List,/roster.TeamService/Get,/roster.TeamService/List,/roster.TeamMembershipService/List,/roster.VouchService/Verify' 2>/dev/null >"${ACCOUNT_STATE}/${SEED_CUSTOMER}.ldap.key.tmp"
 mv "${ACCOUNT_STATE}/${SEED_CUSTOMER}.ldap.key.tmp" "${ACCOUNT_STATE}/${SEED_CUSTOMER}.ldap.key"

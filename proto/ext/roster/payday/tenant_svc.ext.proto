@@ -32,4 +32,8 @@ message TenantUpdateRequest {
   string name = 5;
   string desc = 6;
   map<string, string> labels = 7;
+
+  // The settings, replaced whole. Absent leaves them as they are, which is why
+  // a console that draws one checkbox has to send back the whole message.
+  TenantConfig config = 8;
 }

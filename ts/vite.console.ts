@@ -9,6 +9,17 @@ import react from '@vitejs/plugin-react'
 // rather than left to a README.
 export default defineConfig({
 	root: 'console',
+	// Its own dependency-optimizer cache, and not the default.
+	//
+	// The default is `<the nearest package.json>/node_modules/.vite`, which is
+	// `ts/` -- one directory for all three configs. `scripts/e2e.sh` runs two
+	// dev servers at once, and a page's modules are invalidated the moment the
+	// **other** server optimizes a set this one did not: the browser is then
+	// answered `504 Outdated Optimize Dep` for modules it already has, and the
+	// page never finishes. It cost an afternoon, presenting as the sandbox spec
+	// timing out while passing on its own -- because alone, the other server is
+	// never driven and so never re-optimizes.
+	cacheDir: '../node_modules/.vite-console',
 	base: '/',
 	publicDir: '../public',
 	build: { outDir: '../dist/console', emptyOutDir: true },

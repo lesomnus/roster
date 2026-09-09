@@ -10,6 +10,7 @@ import (
 	"uuid"
 
 	"github.com/lesomnus/roster/internal/ent/tenant"
+	"github.com/lesomnus/roster/rstr"
 	"github.com/protobuf-orm/ent"
 	"github.com/protobuf-orm/ent/dialect/sql"
 )
@@ -30,7 +31,9 @@ type Tenant struct {
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateCreated holds the value of the "date_created" field.
-	DateCreated  time.Time `json:"date_created,omitempty"`
+	DateCreated time.Time `json:"date_created,omitempty"`
+	// Config holds the value of the "config" field.
+	Config       *rstr.TenantConfig `json:"config,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -47,6 +50,8 @@ func (*Tenant) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullTime)
 		case tenant.FieldId:
 			values[i] = new(uuid.UUID)
+		case tenant.FieldConfig:
+			values[i] = tenant.ValueScanner.Config.ScanValue()
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -106,6 +111,12 @@ func (_m *Tenant) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.DateCreated = value.Time
 			}
+		case tenant.FieldConfig:
+			if value, err := tenant.ValueScanner.Config.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.Config = value
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -159,6 +170,9 @@ func (_m *Tenant) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("date_created=")
 	builder.WriteString(_m.DateCreated.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("config=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Config))
 	builder.WriteByte(')')
 	return builder.String()
 }

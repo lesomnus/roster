@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -23,6 +24,8 @@ import (
 	"github.com/lesomnus/otx/log"
 	"github.com/lesomnus/payday/auth/authsession"
 
+	"github.com/lesomnus/roster/account"
+	"github.com/lesomnus/roster/arrives"
 	"github.com/lesomnus/roster/cmd"
 	"github.com/lesomnus/roster/login"
 	rstr "github.com/lesomnus/roster/rstr"
@@ -62,6 +65,8 @@ func newCmdLoginServe(c *cmd.Config) *xli.Command {
 			&flg.Strings{Name: "key", Brief: "a tenant key, as alias=rt_…; repeat per operator fronted. Or " + LoginKeyPrefix + "<ALIAS> in the environment"},
 			&flg.Strings{Name: "client", Brief: "which OAuth clients are an operator's, as alias=client-id[,client-id…]; repeat per operator"},
 			&flg.String{Name: "consent", Brief: "what the consent hop does: skip (grant what the client asked for; the default) or ask (draw a screen)"},
+			&flg.String{Name: "base", Brief: "this app's public origin, registered with every provider as the redirect. One for the whole app"},
+			&flg.String{Name: "enrol", Brief: "what happens to a stranger a provider vouches for: invited (nobody) or enrolling"},
 			&flg.Strings{Name: "seal", Brief: "the key sessions are sealed under, as env:NAME; repeat to rotate"},
 			&flg.Switch{Name: "insecure-cookie", Brief: "drop Secure from the cookies, for plain http in development"},
 			&flg.String{Name: "static", Brief: "the built sign-in page (ts/dist/login)"},
@@ -99,6 +104,12 @@ func newCmdLoginServe(c *cmd.Config) *xli.Command {
 			}
 			if v, _ := flg.Find[string](cl, "consent"); v != "" {
 				lc.Consent = v
+			}
+			if v, _ := flg.Find[string](cl, "base"); v != "" {
+				lc.Base = v
+			}
+			if v, _ := flg.Find[string](cl, "enrol"); v != "" {
+				lc.Enrol = v
 			}
 
 			given, _ := flg.Find[[]string](cl, "client")
@@ -240,20 +251,34 @@ func newCmdLoginProvision(c *cmd.Config) *xli.Command {
 
 // LoginMethods is what the Login App calls as itself, and the whole of it.
 //
-// The four before `login.Methods` are the flow: resolve the operator, check a
-// secret, mint the delegation, end it. `Sync.Watch` is how it hears that
+// The password half is the flow: resolve the operator, check a secret, mint the
+// delegation, end it. The provider half is the other way in -- read the
+// operator's `Connection` rows to draw the buttons and to be the relying party,
+// find the `Identity` a directory's answer names, link one for somebody the
+// policy enrolled, and hand the claim over. `Sync.Watch` is how it hears that
 // somebody has been signed out everywhere so that Hydra can be told to forget
 // them. `login.Methods` is `Me.Get`, which is the claims that go in the token.
 //
-// It draws no account screens and reads nobody's rows but the person it is
+// **`HolderService.Add` is not here, and that is the point of the list.** It is
+// what `enrol: enrolling` needs, and making people is a wider grant than
+// signing them in: a key that holds it can write a row into an operator's
+// tenant for anybody a directory will vouch for. A deployment that wants it
+// mints its own key rather than getting one from a default.
+//
+// The app draws no account screens and reads nobody's rows but the person it is
 // signing in, which is why this list is short and why it is written here rather
 // than left to whoever runs the command.
 var LoginMethods = append([]string{
 	rstr.TenantService_Get_FullMethodName,
 	rstr.VouchService_Verify_FullMethodName,
 	rstr.VouchService_Delegate_FullMethodName,
+	rstr.VouchService_Accept_FullMethodName,
 	rstr.DelegationService_Revoke_FullMethodName,
 	rstr.SyncService_Watch_FullMethodName,
+	rstr.ConnectionService_Get_FullMethodName,
+	rstr.ConnectionService_List_FullMethodName,
+	rstr.IdentityService_Get_FullMethodName,
+	rstr.IdentityService_Add_FullMethodName,
 }, login.Methods...)
 
 // provision is one operator's front door.
@@ -497,6 +522,29 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 		return fmt.Errorf("login.consent (--consent): %w", err)
 	}
 
+	var base *url.URL
+	if lc.Base != "" {
+		base, err = url.Parse(lc.Base)
+		if err != nil {
+			return fmt.Errorf("login.base (--base): %w", err)
+		}
+	}
+
+	// The same two words the account app takes, and the same default. What is
+	// **not** the same is what `enrolling` costs here: the key this deployment
+	// mints for itself holds no `HolderService.Add`, so an operator asking for
+	// it has a key of their own to mint. Said at start rather than at the first
+	// stranger's sign-in.
+	var enrol arrives.Enrol
+	switch lc.Enrol {
+	case "", "invited":
+		enrol = arrives.Invited()
+	case "enrolling":
+		enrol = arrives.Enrolling()
+	default:
+		return fmt.Errorf("login.enrol (--enrol): %q is not one of invited, enrolling", lc.Enrol)
+	}
+
 	cfg := login.Config{
 		Consent:        how,
 		Roster:         lc.Roster,
@@ -505,7 +553,14 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 		Sessions:       authsession.New(sealed, opts...),
 		Remember:       lc.Remember,
 		InsecureCookie: lc.InsecureCookie,
-		Operators:      map[string]login.Operator{},
+		Base:           base,
+		Enrol:          enrol,
+
+		// `env:NAME`, roster's one vocabulary for a reference to a secret. The
+		// same function the account app and the directory resolve theirs with,
+		// and its refusals name no app for that reason.
+		Secret:    account.EnvSecret,
+		Operators: map[string]login.Operator{},
 	}
 	for alias, key := range lc.Keys {
 		cfg.Operators[alias] = login.Operator{Key: key, Clients: lc.Clients[alias]}

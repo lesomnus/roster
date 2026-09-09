@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/lesomnus/roster/internal/ent/predicate"
+	"github.com/lesomnus/roster/rstr"
 	"github.com/protobuf-orm/ent"
 	"github.com/protobuf-orm/ent/dialect/sql"
 )
@@ -22,6 +23,7 @@ type Mutation struct {
 	labels        *map[string]string
 	date_updated  *time.Time
 	date_created  *time.Time
+	_config       **rstr.TenantConfig
 	clearedFields map[string]struct{}
 	predicates    []predicate.Tenant
 }
@@ -180,6 +182,38 @@ func (m *Mutation) ResetDateCreated() {
 	delete(m.clearedFields, FieldDateCreated)
 }
 
+// SetConfig sets the "config" field.
+func (m *Mutation) SetConfig(rc *rstr.TenantConfig) {
+	m._config = &rc
+}
+
+// Config returns the value of the "config" field in the mutation.
+func (m *Mutation) Config() (r *rstr.TenantConfig, exists bool) {
+	v := m._config
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearConfig clears the value of the "config" field.
+func (m *Mutation) ClearConfig() {
+	m._config = nil
+	m.clearedFields[FieldConfig] = struct{}{}
+}
+
+// ConfigCleared returns if the "config" field was cleared in this mutation.
+func (m *Mutation) ConfigCleared() bool {
+	_, ok := m.clearedFields[FieldConfig]
+	return ok
+}
+
+// ResetConfig resets all changes to the "config" field.
+func (m *Mutation) ResetConfig() {
+	m._config = nil
+	delete(m.clearedFields, FieldConfig)
+}
+
 // Where appends a list predicates to the Mutation builder.
 func (m *Mutation) Where(ps ...predicate.Tenant) {
 	m.predicates = append(m.predicates, ps...)
@@ -214,7 +248,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 7)
 	if m.alias != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -232,6 +266,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.date_created != nil {
 		fields = append(fields, FieldDateCreated)
+	}
+	if m._config != nil {
+		fields = append(fields, FieldConfig)
 	}
 	return fields
 }
@@ -253,6 +290,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.DateUpdated()
 	case FieldDateCreated:
 		return m.DateCreated()
+	case FieldConfig:
+		return m.Config()
 	}
 	return nil, false
 }
@@ -311,6 +350,13 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDateCreated(v)
 		return nil
+	case FieldConfig:
+		v, ok := value.(*rstr.TenantConfig)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetConfig(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Tenant field %s", name)
 }
@@ -347,6 +393,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldDateCreated) {
 		fields = append(fields, FieldDateCreated)
 	}
+	if m.FieldCleared(FieldConfig) {
+		fields = append(fields, FieldConfig)
+	}
 	return fields
 }
 
@@ -366,6 +415,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldDateCreated:
 		m.ClearDateCreated()
+		return nil
+	case FieldConfig:
+		m.ClearConfig()
 		return nil
 	}
 	return fmt.Errorf("unknown Tenant nullable field %s", name)
@@ -392,6 +444,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldDateCreated:
 		m.ResetDateCreated()
+		return nil
+	case FieldConfig:
+		m.ResetConfig()
 		return nil
 	}
 	return fmt.Errorf("unknown Tenant field %s", name)

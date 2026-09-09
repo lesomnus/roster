@@ -44,6 +44,7 @@ type Tenant struct {
 	xxx_hidden_Labels      map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	xxx_hidden_Config      *TenantConfig          `protobuf:"bytes,8,opt,name=config"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -122,6 +123,13 @@ func (x *Tenant) GetDateCreated() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *Tenant) GetConfig() *TenantConfig {
+	if x != nil {
+		return x.xxx_hidden_Config
+	}
+	return nil
+}
+
 func (x *Tenant) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -153,6 +161,10 @@ func (x *Tenant) SetDateCreated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateCreated = v
 }
 
+func (x *Tenant) SetConfig(v *TenantConfig) {
+	x.xxx_hidden_Config = v
+}
+
 func (x *Tenant) HasDateUpdated() bool {
 	if x == nil {
 		return false
@@ -167,12 +179,23 @@ func (x *Tenant) HasDateCreated() bool {
 	return x.xxx_hidden_DateCreated != nil
 }
 
+func (x *Tenant) HasConfig() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Config != nil
+}
+
 func (x *Tenant) ClearDateUpdated() {
 	x.xxx_hidden_DateUpdated = nil
 }
 
 func (x *Tenant) ClearDateCreated() {
 	x.xxx_hidden_DateCreated = nil
+}
+
+func (x *Tenant) ClearConfig() {
+	x.xxx_hidden_Config = nil
 }
 
 type Tenant_builder struct {
@@ -194,6 +217,18 @@ type Tenant_builder struct {
 	// that is built because adding it later is every app's migration.
 	DateUpdated *timestamppb.Timestamp
 	DateCreated *timestamppb.Timestamp
+	// What this tenant has decided about itself, as against what it *is*.
+	//
+	// # Why a message and not a field per setting
+	//
+	// `Profile` on [Holder] makes the same trade and states its cost: one value
+	// to the database -- no filter, no index -- so anything that has to be
+	// **looked up** goes flat beside it. Nothing here is looked up; it is read by
+	// somebody already holding the tenant, on a path that was reading it anyway.
+	//
+	// What it buys is that the next setting is a field number in here rather than
+	// one of the nine an app gets on `Tenant` itself.
+	Config *TenantConfig
 }
 
 func (b0 Tenant_builder) Build() *Tenant {
@@ -207,6 +242,113 @@ func (b0 Tenant_builder) Build() *Tenant {
 	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateCreated = b.DateCreated
+	x.xxx_hidden_Config = b.Config
+	return m0
+}
+
+// TenantConfig is the settings, and each one is a **fact roster enforces**
+// rather than an instruction to a screen.
+//
+// D22 refuses the field that describes what to render, however small it looks,
+// and the first draft of `password` was exactly that -- a boolean the sign-in
+// page read to decide whether to draw a form, with `Vouch.Verify` going on
+// answering `ok` underneath it. That is a lock somebody sets and does not get:
+// the form disappears and the door stays open. D43 is the same mistake already
+// made once, where a TOTP seed was a whole sign-in because `Verify` counted it.
+//
+// So a setting only goes here if roster **acts on it**. A page reading one is
+// drawing what is true, not being told what to draw.
+type TenantConfig struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Password    bool                   `protobuf:"varint,1,opt,name=password"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *TenantConfig) Reset() {
+	*x = TenantConfig{}
+	mi := &file_roster_payday_tenant_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TenantConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TenantConfig) ProtoMessage() {}
+
+func (x *TenantConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_roster_payday_tenant_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *TenantConfig) GetPassword() bool {
+	if x != nil {
+		return x.xxx_hidden_Password
+	}
+	return false
+}
+
+func (x *TenantConfig) SetPassword(v bool) {
+	x.xxx_hidden_Password = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+}
+
+func (x *TenantConfig) HasPassword() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *TenantConfig) ClearPassword() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Password = false
+}
+
+type TenantConfig_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Whether a password is a way into this tenant.
+	//
+	// **Unset is yes**, which is the whole reason this field has presence where
+	// everything around it does not (`option features.field_presence = IMPLICIT`
+	// on the merged file). A tenant written before this existed reads `false` for
+	// an implicit bool, and every one of them would have been locked out of the
+	// one credential roster holds itself.
+	//
+	// What it turns off is **signing in**, on every path that ends in
+	// `Vouch.Verify` -- the Login App's form, the account page's, an LDAP bind,
+	// and the recovery link, which hands over a password and would otherwise mail
+	// somebody a way in that does not work. What it does **not** touch is
+	// `Credential.Set`: a tenant that turns this back on should find its people's
+	// passwords where they left them, and a write refused here would be a
+	// password screen that breaks with nothing saying why.
+	//
+	// For an operator whose people all arrive through a directory, which is the
+	// case it was asked for: a form nobody uses is a form that says somebody here
+	// has a password.
+	Password *bool
+}
+
+func (b0 TenantConfig_builder) Build() *TenantConfig {
+	m0 := &TenantConfig{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Password != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		x.xxx_hidden_Password = *b.Password
+	}
 	return m0
 }
 
@@ -214,7 +356,7 @@ var File_roster_payday_tenant_proto protoreflect.FileDescriptor
 
 const file_roster_payday_tenant_proto_rawDesc = "" +
 	"\n" +
-	"\x1aroster/payday/tenant.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xab\x03\n" +
+	"\x1aroster/payday/tenant.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xd9\x03\n" +
 	"\x06Tenant\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12\x1c\n" +
 	"\x05alias\x18\x04 \x01(\tB\x06\xea\x82\x16\x020\x01R\x05alias\x12\x12\n" +
@@ -222,7 +364,8 @@ const file_roster_payday_tenant_proto_rawDesc = "" +
 	"\x04desc\x18\x06 \x01(\tR\x04desc\x122\n" +
 	"\x06labels\x18\a \x03(\v2\x1a.roster.Tenant.LabelsEntryR\x06labels\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12H\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x1a9\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x12,\n" +
+	"\x06config\x18\b \x01(\v2\x14.roster.TenantConfigR\x06config\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:=\xca\xfc\x15\x04\x12\x02\x10\x01\x8a\xbb\x161\b\x012%\n" +
@@ -233,23 +376,27 @@ const file_roster_payday_tenant_proto_rawDesc = "" +
 	"\x04\n" +
 	"\x02id\x1a\x05\n" +
 	"\x03ref \x14(dB\x02\n" +
-	"\x00H\x01\x1a\x00B&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
+	"\x00H\x01\x1a\x00\"1\n" +
+	"\fTenantConfig\x12!\n" +
+	"\bpassword\x18\x01 \x01(\bB\x05\xaa\x01\x02\b\x01R\bpasswordB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_roster_payday_tenant_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_roster_payday_tenant_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_roster_payday_tenant_proto_goTypes = []any{
 	(*Tenant)(nil),                // 0: roster.Tenant
-	nil,                           // 1: roster.Tenant.LabelsEntry
-	(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
+	(*TenantConfig)(nil),          // 1: roster.TenantConfig
+	nil,                           // 2: roster.Tenant.LabelsEntry
+	(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
 }
 var file_roster_payday_tenant_proto_depIdxs = []int32{
-	1, // 0: roster.Tenant.labels:type_name -> roster.Tenant.LabelsEntry
-	2, // 1: roster.Tenant.date_updated:type_name -> google.protobuf.Timestamp
-	2, // 2: roster.Tenant.date_created:type_name -> google.protobuf.Timestamp
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	2, // 0: roster.Tenant.labels:type_name -> roster.Tenant.LabelsEntry
+	3, // 1: roster.Tenant.date_updated:type_name -> google.protobuf.Timestamp
+	3, // 2: roster.Tenant.date_created:type_name -> google.protobuf.Timestamp
+	1, // 3: roster.Tenant.config:type_name -> roster.TenantConfig
+	4, // [4:4] is the sub-list for method output_type
+	4, // [4:4] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_roster_payday_tenant_proto_init() }
@@ -263,7 +410,7 @@ func file_roster_payday_tenant_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_roster_payday_tenant_proto_rawDesc), len(file_roster_payday_tenant_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -190,6 +190,23 @@ type LoginConfig struct {
 	// the flag that fixes it (`cli/login.go`). Half an operator never runs.
 	Clients map[string][]string `yaml:"clients"`
 
+	// Base is this app's public origin, which every provider has registered as
+	// the redirect: `https://login.example.com`.
+	//
+	// **One for the whole app**, unlike the account app's, which has a host per
+	// operator. Hydra sends every browser here under one name, so there is one
+	// callback and which operator it belongs to comes from the state. An
+	// operator adding a `Connection` registers this URL with their directory.
+	Base string `yaml:"base"`
+
+	// Enrol is what happens to a stranger a provider vouches for: `invited`,
+	// which is nobody, or `enrolling`. Empty is `invited`.
+	//
+	// `enrolling` needs the key to hold `HolderService.Add`, which the one
+	// `roster login provision` mints does not: making people is a wider grant
+	// than signing them in, and `--enrol` is what says so out loud.
+	Enrol string `yaml:"enrol"`
+
 	// Consent is what happens at the consent hop: `skip`, which grants what the
 	// client asked for and draws nothing, or `ask`, which draws a screen.
 	//

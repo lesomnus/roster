@@ -8,7 +8,7 @@ import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Patch } from "../../patch/patch_pb.js";
 import { file_patch_patch } from "../../patch/patch_pb.js";
-import type { Tenant, TenantSchema } from "./tenant_pb.js";
+import type { Tenant, TenantConfig, TenantSchema } from "./tenant_pb.js";
 import { file_roster_payday_tenant } from "./tenant_pb.js";
 import type { Message } from "@bufbuild/protobuf";
 
@@ -16,7 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/tenant_svc.g.proto.
  */
 export const file_roster_payday_tenant_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("CiByb3N0ZXIvcGF5ZGF5L3RlbmFudF9zdmMuZy5wcm90bxIGcm9zdGVyIvUBChBUZW5hbnRBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEhQKBWFsaWFzGAQgASgJQgWqAQIIAhITCgRuYW1lGAUgASgJQgWqAQIIAhITCgRkZXNjGAYgASgJQgWqAQIIAhI0CgZsYWJlbHMYByADKAsyJC5yb3N0ZXIuVGVuYW50QWRkUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiWAoQVGVuYW50R2V0UmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuVGVuYW50UmVmEiQKBnNlbGVjdBgCIAEoCzIULnJvc3Rlci5UZW5hbnRTZWxlY3QiMQoJVGVuYW50UmVmEgwKAmlkGAEgASgMSAASDwoFYWxpYXMYBCABKAlIAEIFCgNrZXkiggEKDFRlbmFudFNlbGVjdBILCgNhbGwYASABKAgSDQoFYWxpYXMYBCABKAgSDAoEbmFtZRgFIAEoCBIMCgRkZXNjGAYgASgIEg4KBmxhYmVscxgHIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIpQCChJUZW5hbnRQYXRjaFJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLlRlbmFudFJlZhINCgVhbGlhcxgIIAEoCRIMCgRuYW1lGAogASgJEgwKBGRlc2MYDCABKAkSNgoGbGFiZWxzGA4gAygLMiYucm9zdGVyLlRlbmFudFBhdGNoUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIlEKElRlbmFudEFwcGx5UmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuVGVuYW50UmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giJQoTVGVuYW50RXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiZQoRVGVuYW50TGlzdFJlcXVlc3QSJQoHZmlsdGVycxgBIAMoCzIULnJvc3Rlci5UZW5hbnRGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIkgKElRlbmFudExpc3RSZXNwb25zZRIdCgVpdGVtcxgBIAMoCzIOLnJvc3Rlci5UZW5hbnQSEwoEbmV4dBgCIAEoCUIFqgECCAIiLgoMVGVuYW50RmlsdGVyEh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYi6wEKE1RlbmFudFVwZGF0ZVJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLlRlbmFudFJlZhIwCgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEgwKBG5hbWUYBSABKAkSDAoEZGVzYxgGIAEoCRI3CgZsYWJlbHMYByADKAsyJy5yb3N0ZXIuVGVuYW50VXBkYXRlUmVxdWVzdC5MYWJlbHNFbnRyeRotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBMooDCg1UZW5hbnRTZXJ2aWNlEi8KA0FkZBIYLnJvc3Rlci5UZW5hbnRBZGRSZXF1ZXN0Gg4ucm9zdGVyLlRlbmFudBIvCgNHZXQSGC5yb3N0ZXIuVGVuYW50R2V0UmVxdWVzdBoOLnJvc3Rlci5UZW5hbnQSMwoFUGF0Y2gSGi5yb3N0ZXIuVGVuYW50UGF0Y2hSZXF1ZXN0Gg4ucm9zdGVyLlRlbmFudBIzCgVBcHBseRIaLnJvc3Rlci5UZW5hbnRBcHBseVJlcXVlc3QaDi5yb3N0ZXIuVGVuYW50EjcKBUVyYXNlEhEucm9zdGVyLlRlbmFudFJlZhobLnJvc3Rlci5UZW5hbnRFcmFzZVJlc3BvbnNlEj0KBExpc3QSGS5yb3N0ZXIuVGVuYW50TGlzdFJlcXVlc3QaGi5yb3N0ZXIuVGVuYW50TGlzdFJlc3BvbnNlEjUKBlVwZGF0ZRIbLnJvc3Rlci5UZW5hbnRVcGRhdGVSZXF1ZXN0Gg4ucm9zdGVyLlRlbmFudEIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_tenant]);
+  fileDesc("CiByb3N0ZXIvcGF5ZGF5L3RlbmFudF9zdmMuZy5wcm90bxIGcm9zdGVyIpsCChBUZW5hbnRBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEhQKBWFsaWFzGAQgASgJQgWqAQIIAhITCgRuYW1lGAUgASgJQgWqAQIIAhITCgRkZXNjGAYgASgJQgWqAQIIAhI0CgZsYWJlbHMYByADKAsyJC5yb3N0ZXIuVGVuYW50QWRkUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEiQKBmNvbmZpZxgIIAEoCzIULnJvc3Rlci5UZW5hbnRDb25maWcaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJYChBUZW5hbnRHZXRSZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSJAoGc2VsZWN0GAIgASgLMhQucm9zdGVyLlRlbmFudFNlbGVjdCIxCglUZW5hbnRSZWYSDAoCaWQYASABKAxIABIPCgVhbGlhcxgEIAEoCUgAQgUKA2tleSKSAQoMVGVuYW50U2VsZWN0EgsKA2FsbBgBIAEoCBINCgVhbGlhcxgEIAEoCBIMCgRuYW1lGAUgASgIEgwKBGRlc2MYBiABKAgSDgoGbGFiZWxzGAcgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgSDgoGY29uZmlnGAggASgIIs8CChJUZW5hbnRQYXRjaFJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLlRlbmFudFJlZhINCgVhbGlhcxgIIAEoCRIMCgRuYW1lGAogASgJEgwKBGRlc2MYDCABKAkSNgoGbGFiZWxzGA4gAygLMiYucm9zdGVyLlRlbmFudFBhdGNoUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBIkCgZjb25maWcYECABKAsyFC5yb3N0ZXIuVGVuYW50Q29uZmlnEhMKC2NvbmZpZ19udWxsGBEgASgIGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiUQoSVGVuYW50QXBwbHlSZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIlChNUZW5hbnRFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCJlChFUZW5hbnRMaXN0UmVxdWVzdBIlCgdmaWx0ZXJzGAEgAygLMhQucm9zdGVyLlRlbmFudEZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAIiSAoSVGVuYW50TGlzdFJlc3BvbnNlEh0KBWl0ZW1zGAEgAygLMg4ucm9zdGVyLlRlbmFudBITCgRuZXh0GAIgASgJQgWqAQIIAiIuCgxUZW5hbnRGaWx0ZXISHgoDcmVmGAEgASgLMhEucm9zdGVyLlRlbmFudFJlZiKRAgoTVGVuYW50VXBkYXRlUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuVGVuYW50UmVmEjAKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEjcKBmxhYmVscxgHIAMoCzInLnJvc3Rlci5UZW5hbnRVcGRhdGVSZXF1ZXN0LkxhYmVsc0VudHJ5EiQKBmNvbmZpZxgIIAEoCzIULnJvc3Rlci5UZW5hbnRDb25maWcaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATKKAwoNVGVuYW50U2VydmljZRIvCgNBZGQSGC5yb3N0ZXIuVGVuYW50QWRkUmVxdWVzdBoOLnJvc3Rlci5UZW5hbnQSLwoDR2V0Ehgucm9zdGVyLlRlbmFudEdldFJlcXVlc3QaDi5yb3N0ZXIuVGVuYW50EjMKBVBhdGNoEhoucm9zdGVyLlRlbmFudFBhdGNoUmVxdWVzdBoOLnJvc3Rlci5UZW5hbnQSMwoFQXBwbHkSGi5yb3N0ZXIuVGVuYW50QXBwbHlSZXF1ZXN0Gg4ucm9zdGVyLlRlbmFudBI3CgVFcmFzZRIRLnJvc3Rlci5UZW5hbnRSZWYaGy5yb3N0ZXIuVGVuYW50RXJhc2VSZXNwb25zZRI9CgRMaXN0Ehkucm9zdGVyLlRlbmFudExpc3RSZXF1ZXN0Ghoucm9zdGVyLlRlbmFudExpc3RSZXNwb25zZRI1CgZVcGRhdGUSGy5yb3N0ZXIuVGVuYW50VXBkYXRlUmVxdWVzdBoOLnJvc3Rlci5UZW5hbnRCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_tenant]);
 
 /**
  * @generated from message roster.TenantAddRequest
@@ -51,6 +51,11 @@ export type TenantAddRequest = Message<"roster.TenantAddRequest"> & {
    * @generated from field: google.protobuf.Timestamp date_created = 15;
    */
   dateCreated?: Timestamp | undefined;
+
+  /**
+   * @generated from field: roster.TenantConfig config = 8;
+   */
+  config?: TenantConfig | undefined;
 };
 
 /**
@@ -149,6 +154,11 @@ export type TenantSelect = Message<"roster.TenantSelect"> & {
    * @generated from field: bool date_created = 15;
    */
   dateCreated: boolean;
+
+  /**
+   * @generated from field: bool config = 8;
+   */
+  config: boolean;
 };
 
 /**
@@ -210,6 +220,21 @@ export type TenantPatchRequest = Message<"roster.TenantPatchRequest"> & {
    * @generated from field: bool date_updated_force = 27;
    */
   dateUpdatedForce: boolean;
+
+  /**
+   * @generated from field: roster.TenantConfig config = 16;
+   */
+  config?: TenantConfig | undefined;
+
+  /**
+   * Clear config instead of writing it.
+   * It takes a field of its own because an unset value already means
+   * "leave it alone", so no value could have meant NULL. It wins
+   * outright: setting both this and config clears.
+   *
+   * @generated from field: bool config_null = 17;
+   */
+  configNull: boolean;
 };
 
 /**
@@ -382,6 +407,14 @@ export type TenantUpdateRequest = Message<"roster.TenantUpdateRequest"> & {
    * @generated from field: map<string, string> labels = 7;
    */
   labels: { [key: string]: string };
+
+  /**
+   * The settings, replaced whole. Absent leaves them as they are, which is why
+   * a console that draws one checkbox has to send back the whole message.
+   *
+   * @generated from field: roster.TenantConfig config = 8;
+   */
+  config?: TenantConfig | undefined;
 };
 
 /**

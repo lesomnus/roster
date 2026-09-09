@@ -96,6 +96,12 @@ against it. Its `alias` is unique across the whole deployment, so
 it is erased **hard** -- nothing names a tenant the way every trail row names
 the holder that acted, so there is nothing for its row to outlive.
 
+It carries one thing an operator decides about itself: `config.password`, which
+is whether a password is a way in here. A fact rather than a screen setting --
+roster refuses one for a tenant that says no, on every path that ends in
+`Vouch.Verify` and on the recovery link that would hand one over. **Unset is
+yes**, so a tenant that has never said keeps what it had.
+
 > **contoso** is a `Tenant`, and so is **fabrikam**. Every row below hangs off
 > one of them, and a read made in contoso cannot answer with a row of fabrikam's
 > -- not because a rule says so on each table, but because the predicate that

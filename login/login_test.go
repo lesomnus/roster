@@ -202,7 +202,11 @@ type deployment struct {
 
 func serve(t *testing.T) *deployment { return serveWith(t, login.Skip) }
 
-func serveWith(t *testing.T, how login.Consent) *deployment {
+func serveWith(t *testing.T, how login.Consent) *deployment { return serveAs(t, how, nil) }
+
+// serveAs is the deployment with one more say over its configuration, for the
+// settings only one test is about -- the enrolment policy, so far.
+func serveAs(t *testing.T, how login.Consent, with func(*login.Config)) *deployment {
 	t.Helper()
 	x := require.New(t)
 	ctx := t.Context()
@@ -279,10 +283,21 @@ func serveWith(t *testing.T, how login.Consent) *deployment {
 			Tenant: at, Alias: "front-door",
 			Methods: append([]string{
 				"/roster.TenantService/Get",
+				"/roster.TenantService/Update",
 				"/roster.VouchService/Verify",
 				"/roster.VouchService/Delegate",
+				"/roster.VouchService/Accept",
 				"/roster.DelegationService/Revoke",
 				"/roster.SyncService/Watch",
+				"/roster.ConnectionService/Get",
+				"/roster.ConnectionService/List",
+				"/roster.IdentityService/Get",
+				"/roster.IdentityService/Add",
+
+				// What `enrol: enrolling` needs, and what the key `roster login
+				// provision` mints deliberately does not hold. Here so that one
+				// test can be about the policy rather than about the grant.
+				"/roster.HolderService/Add",
 			}, login.Methods...),
 		}.Build())
 		x.NoError(err)
@@ -350,7 +365,7 @@ func serveWith(t *testing.T, how login.Consent) *deployment {
 	sealed, err := authsession.NewSealed(seal)
 	x.NoError(err)
 
-	a, err := login.New(ctx, login.Config{
+	cfg := login.Config{
 		// The page, standing in for the build: what these tests are about is
 		// the flow, and `ts/login/` is checked by the compiler and by
 		// `scripts/e2e.sh`.
@@ -362,7 +377,12 @@ func serveWith(t *testing.T, how login.Consent) *deployment {
 		Sessions:       authsession.New(sealed, authsession.Insecure()),
 		Operators:      operators,
 		InsecureCookie: true,
-	})
+	}
+	if with != nil {
+		with(&cfg)
+	}
+
+	a, err := login.New(ctx, cfg)
 	x.NoError(err)
 	t.Cleanup(func() { a.Close() })
 

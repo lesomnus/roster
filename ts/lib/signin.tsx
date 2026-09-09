@@ -12,11 +12,12 @@ import React, { useState } from 'react'
  * markup around it is the app's, which is why the account page's own screens
  * and the Login App's consent screen are not here.
  *
- * The two pages that draw it want different things around the same middle. The
- * account page offers the providers an operator wrote down and a recovery form;
- * the Login App offers neither and carries a challenge in every URL. So what
- * differs is props, and what does not is the part that was got wrong before it
- * was written down.
+ * The two pages that draw it want different things around the same middle. Both
+ * offer the providers an operator wrote down; the account page offers a
+ * recovery form and the Login App does not, because delivering a link is
+ * outside roster and outside that app, and the Login App carries a challenge in
+ * every URL. So what differs is props, and what does not is the part that was
+ * got wrong before it was written down.
  *
  * # It is a page and not a client
  *

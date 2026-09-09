@@ -7,6 +7,8 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	app "github.com/lesomnus/roster/rstr"
 )
 
 // randRead is `crypto/rand` behind a name, so that a test can be sure what it
@@ -270,4 +272,43 @@ func (v Totp) dummy() []byte {
 	}
 
 	return stored
+}
+
+// Offers is whether a tenant lets a kind be a way in.
+//
+// The sibling of [Begins], and the same shape: one sentence, asked wherever a
+// sign-in is decided, so that two callers cannot reach two answers. `Begins`
+// asks whether a kind *can* start one; this asks whether this tenant *permits*
+// the ones that can.
+//
+// # Why it is here and not read at each caller
+//
+// Because `TenantConfig.password` is a fact roster enforces, and a fact
+// enforced in two places is a fact enforced differently. Every path that ends
+// in a password -- the two forms, an LDAP bind, a recovery link -- goes through
+// this package, so this is where the tenant's word is turned into an answer.
+//
+// # Unset is yes
+//
+// The field has presence for that reason (`proto/ext/payday/tenant.ext.proto`),
+// and this is the function that depends on it: a tenant written before the
+// field existed, or one that has never been configured, offers what it always
+// offered. A nil tenant is the same answer -- a caller that did not select the
+// row has not been told no.
+func Offers(t *app.Tenant, kind string) bool {
+	switch kindOf(kind) {
+	case KindPassword, KindLink:
+		// A link is the recovery flow, which ends by handing somebody a
+		// password (`link.go`). A tenant with no passwords has nothing for it
+		// to hand over, and mailing a link that cannot work is worse than
+		// refusing to mint one.
+		return t.OffersPassword()
+
+	default:
+		// A second factor is not a way in, so a tenant's answer about ways in
+		// does not reach it. Somebody who arrived through a directory still
+		// proves a TOTP step, and that is the point of `Begins` being a
+		// separate question.
+		return true
+	}
 }

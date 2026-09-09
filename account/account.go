@@ -55,7 +55,6 @@ package account
 
 import (
 	"context"
-	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -81,6 +80,7 @@ import (
 	"github.com/lesomnus/payday/auth/authsession"
 	"github.com/lesomnus/payday/pdid"
 
+	"github.com/lesomnus/roster/arrives"
 	"github.com/lesomnus/roster/frontdoor"
 	rstr "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/front"
@@ -210,11 +210,13 @@ type App struct {
 	// crawler cannot make every request a round trip.
 	hosts sync.Map // front.Hostname(host) -> hostAnswer
 
-	// oidc is the discovery document per (tenant, connection), done once.
-	oidc sync.Map // tenantId + "\x00" + name -> *oidc.Provider
+	// arrives is the relying-party half: the `Connection` rows, the discovery,
+	// the exchange and the enrolment. Shared with the Login App, because both
+	// front doors read the same rows and a second copy drifts.
+	arrives *arrives.Providers
 
 	// flows is every sign-in or link started and not yet finished, by state.
-	flows *flows
+	flows *arrives.States[flow]
 }
 
 type hostAnswer struct {
@@ -272,8 +274,9 @@ func New(ctx context.Context, c Config) (*App, error) {
 		vouch:   rstr.NewVouchServiceClient(conn),
 		byId:    map[pdid.Id]*tenant{},
 		byAlias: map[string]*tenant{},
-		flows:   &flows{by: map[string]flow{}},
+		flows:   arrives.Held[flow](),
 	}
+	a.arrives = arrives.New(a.roster, c.Secret)
 
 	for alias, key := range c.Keys {
 		v, err := a.roster.Tenant().Get(withKey(ctx, key), rstr.TenantGetRequest_builder{
@@ -463,8 +466,11 @@ func (a *App) providers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tn, err := a.roster.Tenant().Get(withKey(r.Context(), t.key), rstr.TenantGetRequest_builder{
-		Ref:    rstr.TenantRef_builder{Id: t.id.Bytes()}.Build(),
-		Select: rstr.TenantSelect_builder{Alias: proto.Bool(true), Name: proto.Bool(true), Labels: proto.Bool(true)}.Build(),
+		Ref: rstr.TenantRef_builder{Id: t.id.Bytes()}.Build(),
+		Select: rstr.TenantSelect_builder{
+			Alias: proto.Bool(true), Name: proto.Bool(true), Labels: proto.Bool(true),
+			Config: proto.Bool(true),
+		}.Build(),
 	}.Build())
 	if err != nil {
 		http.Error(w, "cannot read the operator", http.StatusBadGateway)
@@ -483,7 +489,10 @@ func (a *App) providers(w http.ResponseWriter, r *http.Request) {
 		} `json:"tenant"`
 		Providers []provider `json:"providers"`
 		Password  bool       `json:"password"`
-	}{Password: true, Providers: []provider{}}
+		// What roster says, and not this app's guess. It was `true` here for as
+		// long as this endpoint existed, which made a tenant whose people all
+		// arrive through a directory draw a form nobody could use.
+	}{Password: tn.OffersPassword(), Providers: []provider{}}
 	out.Tenant.Alias = tn.GetAlias()
 	out.Tenant.Name = tn.GetName()
 	out.Tenant.Labels = tn.GetLabels()
@@ -498,61 +507,12 @@ func (a *App) providers(w http.ResponseWriter, r *http.Request) {
 
 // connections is the tenant's providers, read with the tenant's own key.
 func (a *App) connections(ctx context.Context, t *tenant) ([]*rstr.Connection, error) {
-	vs, err := a.roster.Connection().List(withKey(ctx, t.key), rstr.ConnectionListRequest_builder{
-		Filters: []*rstr.ConnectionFilter{rstr.ConnectionFilter_builder{
-			Tenant: rstr.TenantRef_builder{Id: t.id.Bytes()}.Build(),
-		}.Build()},
-	}.Build())
-	if err != nil {
-		return nil, err
-	}
-
-	return vs.GetItems(), nil
+	return a.arrives.Connections(withKey(ctx, t.key), t.id)
 }
 
-// relying is this app as the relying party for one connection of one tenant:
-// the discovery done, the secret resolved, the redirect fixed.
+// relying is this app as the relying party for one connection of one tenant.
 func (a *App) relying(ctx context.Context, t *tenant, name string, r *http.Request) (*oauth2.Config, *oidc.IDTokenVerifier, error) {
-	c, err := a.roster.Connection().Get(withKey(ctx, t.key), rstr.ConnectionGetRequest_builder{
-		Ref: rstr.ConnectionRef_builder{
-			At: rstr.ConnectionRefByAt_builder{
-				Tenant: rstr.TenantRef_builder{Id: t.id.Bytes()}.Build(),
-				Name:   proto.String(name),
-			}.Build(),
-		}.Build(),
-		Select: rstr.ConnectionSelect_builder{All: proto.Bool(true)}.Build(),
-	}.Build())
-	if err != nil {
-		return nil, nil, err
-	}
-
-	k := t.id.String() + "\x00" + name
-	var p *oidc.Provider
-	if v, ok := a.oidc.Load(k); ok {
-		p = v.(*oidc.Provider)
-	} else {
-		p, err = oidc.NewProvider(ctx, c.GetIssuer())
-		if err != nil {
-			return nil, nil, fmt.Errorf("discovery at %s: %w", c.GetIssuer(), err)
-		}
-		a.oidc.Store(k, p)
-	}
-
-	secret := ""
-	if ref := c.GetSecretRef(); ref != "" {
-		secret, err = a.c.Secret(ref)
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-
-	return &oauth2.Config{
-		ClientID:     c.GetClientId(),
-		ClientSecret: secret,
-		Endpoint:     p.Endpoint(),
-		RedirectURL:  a.redirect(r),
-		Scopes:       append([]string{oidc.ScopeOpenID}, c.GetScopes()...),
-	}, p.Verifier(&oidc.Config{ClientID: c.GetClientId()}), nil
+	return a.arrives.Relying(withKey(ctx, t.key), t.id, name, a.redirect(r))
 }
 
 // redirect is where a provider sends the browser back: `Base` if the
@@ -569,48 +529,14 @@ func (a *App) redirect(r *http.Request) string {
 	return scheme + "://" + r.Host + "/callback"
 }
 
-// A flow is one round trip to a provider, started and not yet finished.
-//
-// Held here rather than in the state parameter, because the callback arrives
-// under `Base`'s name and not the tenant's, so the tenant has to be remembered
-// and the state has to be a nonce and nothing else. The cookie binds the
-// browser to it: a callback carrying a state this browser did not start is
-// refused, whoever else's it was.
+// A flow is one round trip to a provider, started and not yet finished. It is
+// held by state in an [arrives.States]; the cookie below binds the browser to
+// it, so a callback carrying a state this browser did not start is refused.
 type flow struct {
 	tenant     *tenant
 	connection string
 	link       bool
 	who        pdid.Id // for a link: whose account is being added to
-	expires    time.Time
-}
-
-type flows struct {
-	mu sync.Mutex
-	by map[string]flow
-}
-
-func (f *flows) put(state string, v flow) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	now := time.Now()
-	for k, w := range f.by {
-		if now.After(w.expires) {
-			delete(f.by, k)
-		}
-	}
-	f.by[state] = v
-}
-
-func (f *flows) take(state string) (flow, bool) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	v, ok := f.by[state]
-	delete(f.by, state)
-	if !ok || time.Now().After(v.expires) {
-		return flow{}, false
-	}
-
-	return v, true
 }
 
 const stateCookie = "account_state"
@@ -665,12 +591,12 @@ func (a *App) start(w http.ResponseWriter, r *http.Request, link bool, who pdid.
 		return
 	}
 
-	state, err := nonce()
+	state, err := arrives.Nonce()
 	if err != nil {
 		http.Error(w, "cannot start", http.StatusInternalServerError)
 		return
 	}
-	a.flows.put(state, flow{tenant: t, connection: name, link: link, who: who, expires: time.Now().Add(10 * time.Minute)})
+	a.flows.Put(state, flow{tenant: t, connection: name, link: link, who: who}, 10*time.Minute)
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     stateCookie,
@@ -698,7 +624,7 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "no", http.StatusBadRequest)
 		return
 	}
-	f, ok := a.flows.take(state)
+	f, ok := a.flows.Take(state)
 	if !ok {
 		http.Error(w, "no", http.StatusBadRequest)
 		return
@@ -710,7 +636,7 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	who, err := claim(ctx, cfg, verifier, r.URL.Query().Get("code"))
+	who, err := a.arrives.Claim(ctx, cfg, verifier, r.URL.Query().Get("code"))
 	if err != nil {
 		http.Error(w, "no", http.StatusBadRequest)
 		return
@@ -765,78 +691,13 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 }
 
 // known makes sure the claim names somebody here, enrolling them if the
-// deployment's policy says so, and links the identity itself so a policy
-// cannot forget to or do it a second way.
+// deployment's policy says so. The holder it answers is unused on this path:
+// `Door.Accept` resolves the same claim again on roster's side, where the
+// delegation is minted.
 func (a *App) known(ctx context.Context, who Caller) error {
-	_, err := a.roster.Identity().Get(ctx, rstr.IdentityGetRequest_builder{
-		Ref: rstr.IdentityRef_builder{
-			Subject: rstr.IdentityRefBySubject_builder{
-				TenantId: who.Tenant.Bytes(),
-				Provider: proto.String(who.Provider),
-				Subject:  proto.String(who.Subject),
-			}.Build(),
-		}.Build(),
-	}.Build())
-	switch status.Code(err) {
-	case codes.OK:
-		return nil
-	case codes.NotFound:
-	default:
-		return err
-	}
+	_, err := a.arrives.Known(ctx, a.c.Enrol, who)
 
-	id, err := a.c.Enrol(ctx, a.roster, who)
-	if err != nil {
-		return err
-	}
-	if _, err := a.roster.Identity().Add(ctx, rstr.IdentityAddRequest_builder{
-		Holder:   rstr.HolderRef_builder{Id: id.Bytes()}.Build(),
-		Provider: who.Provider,
-		Subject:  who.Subject,
-	}.Build()); err != nil {
-		return fmt.Errorf("link %s/%s: %w", who.Provider, who.Subject, err)
-	}
-
-	return nil
-}
-
-// claim is what the provider said, verified: the exchange and the token check
-// that make this app the relying party.
-func claim(ctx context.Context, cfg *oauth2.Config, verifier *oidc.IDTokenVerifier, code string) (Caller, error) {
-	if code == "" {
-		return Caller{}, errors.New("no code")
-	}
-	tok, err := cfg.Exchange(ctx, code)
-	if err != nil {
-		return Caller{}, err
-	}
-	raw, ok := tok.Extra("id_token").(string)
-	if !ok {
-		return Caller{}, errors.New("no id_token")
-	}
-	id, err := verifier.Verify(ctx, raw)
-	if err != nil {
-		return Caller{}, err
-	}
-	var claims struct {
-		Email    string `json:"email"`
-		Verified bool   `json:"email_verified"`
-		Name     string `json:"name"`
-	}
-	if err := id.Claims(&claims); err != nil {
-		return Caller{}, err
-	}
-
-	return Caller{Subject: id.Subject, Email: claims.Email, Verified: claims.Verified, Name: claims.Name}, nil
-}
-
-func nonce() (string, error) {
-	b := make([]byte, 24)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-
-	return base64.RawURLEncoding.EncodeToString(b), nil
+	return err
 }
 
 // The two things a request carries below `resolve`: the tenant it is about,

@@ -366,8 +366,8 @@ func TestTheAccountAppFrontsTwoOperators(t *testing.T) {
 
 	t.Run("somebody contoso knows signs in through the provider", func(t *testing.T) {
 		x := require.New(t)
-		d.idp.subject = "3001"
-		d.idp.claims = map[string]any{"email": "erin@contoso.com", "email_verified": true}
+		d.idp.Subject = "3001"
+		d.idp.Claims = map[string]any{"email": "erin@contoso.com", "email_verified": true}
 
 		b := d.browser(t, "contoso.test")
 		code, body := b.do(t, http.MethodGet, "/login?connection=example", "", nil)
@@ -380,8 +380,8 @@ func TestTheAccountAppFrontsTwoOperators(t *testing.T) {
 
 	t.Run("and a stranger is refused, because the deployment said Invited", func(t *testing.T) {
 		x := require.New(t)
-		d.idp.subject = "9999"
-		d.idp.claims = map[string]any{"email": "stranger@contoso.com"}
+		d.idp.Subject = "9999"
+		d.idp.Claims = map[string]any{"email": "stranger@contoso.com"}
 
 		b := d.browser(t, "contoso.test")
 		code, _ := b.do(t, http.MethodGet, "/login?connection=example", "", nil)
@@ -408,8 +408,8 @@ func TestTheAccountAppFrontsTwoOperators(t *testing.T) {
 
 	t.Run("somebody signed in attaches a second account to their own row", func(t *testing.T) {
 		x := require.New(t)
-		d.idp.subject = "3001"
-		d.idp.claims = map[string]any{"email": "erin@contoso.com"}
+		d.idp.Subject = "3001"
+		d.idp.Claims = map[string]any{"email": "erin@contoso.com"}
 
 		b := d.browser(t, "contoso.test")
 		code, _ := b.do(t, http.MethodGet, "/login?connection=example", "", nil)
@@ -418,7 +418,7 @@ func TestTheAccountAppFrontsTwoOperators(t *testing.T) {
 		// A second account at the **same** provider is refused by roster -- a
 		// second one is a link that found the wrong row -- so this is what the
 		// page says when somebody tries.
-		d.idp.subject = "3002"
+		d.idp.Subject = "3002"
 		code, body := b.do(t, http.MethodPost, "/ways?connection=example", "", nil)
 		x.Equal(http.StatusConflict, code, body)
 
@@ -450,8 +450,8 @@ func TestTheAccountAppFrontsTwoOperators(t *testing.T) {
 func TestAStrangerIsEnrolledWhereTheDeploymentSaysSo(t *testing.T) {
 	x := require.New(t)
 	d := serve(t, account.Enrolling())
-	d.idp.subject = "7777"
-	d.idp.claims = map[string]any{"email": "newcomer@contoso.com", "name": "New Comer"}
+	d.idp.Subject = "7777"
+	d.idp.Claims = map[string]any{"email": "newcomer@contoso.com", "name": "New Comer"}
 
 	b := d.browser(t, "contoso.test")
 	code, body := b.do(t, http.MethodGet, "/login?connection=example", "", nil)
@@ -531,8 +531,8 @@ func TestSomebodyRecoversTheirAccountByMail(t *testing.T) {
 func TestSomebodyVerifiesAnAddressOfTheirOwn(t *testing.T) {
 	x := require.New(t)
 	d := serve(t, account.Invited())
-	d.idp.subject = "3001"
-	d.idp.claims = map[string]any{"email": "erin@contoso.com"}
+	d.idp.Subject = "3001"
+	d.idp.Claims = map[string]any{"email": "erin@contoso.com"}
 
 	b := d.browser(t, "contoso.test")
 	code, _ := b.do(t, http.MethodGet, "/login?connection=example", "", nil)
@@ -595,8 +595,8 @@ func between(s, a, z string) string {
 func TestSomebodyEnrolsAnAuthenticatorAppAndSignsInWithIt(t *testing.T) {
 	x := require.New(t)
 	d := serve(t, account.Invited())
-	d.idp.subject = "3001"
-	d.idp.claims = map[string]any{"email": "erin@contoso.com"}
+	d.idp.Subject = "3001"
+	d.idp.Claims = map[string]any{"email": "erin@contoso.com"}
 
 	b := d.browser(t, "contoso.test")
 	code, _ := b.do(t, http.MethodGet, "/login?connection=example", "", nil)

@@ -38,6 +38,14 @@
 // advance.* So this is `examples/sso` after the screens were written, with the
 // half that is the same in every app lifted out and the half that is that app's
 // -- its provider, its pages, its enrolment policy -- left where it was.
+//
+// Two of those three moved later, and only for roster's **own** front doors:
+// `arrives` is a `Connection` row turned into a relying party, with the
+// enrolment policy beside it, because the account app and the Login App read
+// the same rows and a second copy of that code drifts silently. It is a
+// separate package rather than a file here for the reason its own comment
+// gives: this one knows nothing about roster's entities on purpose. An app with
+// a provider of its own still has one of its own.
 package frontdoor
 
 import (

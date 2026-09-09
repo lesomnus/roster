@@ -112,6 +112,9 @@ func (s TenantServiceServer) Add(ctx context.Context, req *rstr.TenantAddRequest
 	} else {
 		q.SetDateCreated(st.now())
 	}
+	if req.HasConfig() {
+		q.SetConfig(req.GetConfig())
+	}
 
 	u, err := q.Save(ctx)
 	if err != nil {
@@ -193,6 +196,9 @@ func TenantSelectedFields(m *rstr.TenantSelect) []string {
 	if m.GetDateCreated() {
 		vs = append(vs, tenant.FieldDateCreated)
 	}
+	if m.GetConfig() {
+		vs = append(vs, tenant.FieldConfig)
+	}
 
 	return vs
 }
@@ -258,7 +264,7 @@ func TenantGetKey(ctx context.Context, db *ent.Client, ref *rstr.TenantRef) (uui
 var tenantOrmEntity = ormpatch.MustEntityOf(rstr.File_roster_payday_tenant_proto, "Tenant")
 
 var tenantPatchColumns = entpatch.Columns{
-	1: tenant.FieldId, 4: tenant.FieldAlias, 5: tenant.FieldName, 6: tenant.FieldDesc, 7: tenant.FieldLabels, 13: tenant.FieldDateUpdated, 15: tenant.FieldDateCreated}
+	1: tenant.FieldId, 4: tenant.FieldAlias, 5: tenant.FieldName, 6: tenant.FieldDesc, 7: tenant.FieldLabels, 13: tenant.FieldDateUpdated, 15: tenant.FieldDateCreated, 8: tenant.FieldConfig}
 
 func (s TenantServiceServer) Apply(ctx context.Context, req *rstr.TenantApplyRequest) (*rstr.Tenant, error) {
 	if !req.HasPatch() {

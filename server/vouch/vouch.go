@@ -53,6 +53,8 @@ import (
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 
+	"google.golang.org/protobuf/proto"
+
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/front"
 )
@@ -248,10 +250,17 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind, name strin
 	// out of D14's ledger. A caller with no wall installed -- `cli`, the
 	// sandbox, the admin port, all of which build this service with one server
 	// passed twice -- reads the same server it always did.
-	if _, err := s.walled.Holder().Get(ctx, app.HolderGetRequest_builder{
-		Ref:    ref,
-		Select: app.HolderSelect_builder{}.Build(),
-	}.Build()); err != nil {
+	//
+	// The tenant comes back on the same read, which is what makes [Offers] free
+	// -- it is one indexed read either way, and the alternative was a second
+	// one on every sign-in to ask a question that is almost always "yes".
+	whose, err := s.walled.Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref: ref,
+		Select: app.HolderSelect_builder{
+			Tenant: app.TenantSelect_builder{Config: proto.Bool(true)}.Build(),
+		}.Build(),
+	}.Build())
+	if err != nil {
 		if status.Code(err) != codes.NotFound {
 			return nil, nil, err
 		}
@@ -259,6 +268,23 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind, name strin
 		// The same answer as a stranger, for the same reason `byAddress` gives:
 		// who is in another tenant is not this caller's to learn, any more than
 		// who is here at all is.
+		by.Burn(secret)
+
+		return no(), nil, nil
+	}
+
+	if !Offers(whose.GetTenant(), kind) {
+		// This tenant does not let this kind in -- an operator whose people all
+		// arrive through a directory, and who turned the password off.
+		//
+		// **The same answer as a wrong password, and it costs the same.** Not
+		// an error, which is what the unknown-kind branch above returns: that
+		// one is a fact about the **deployment**, true before anybody is looked
+		// for, and this one is a fact about a tenant, which is a row this
+		// caller had to be able to see to get here. Answering it distinguishably
+		// would make a sign-in form a way to ask how another operator is
+		// configured -- and there is nothing to gain by it, because the app that
+		// draws the form was told by `/flow` and has no form to draw.
 		by.Burn(secret)
 
 		return no(), nil, nil

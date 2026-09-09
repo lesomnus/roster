@@ -85,3 +85,14 @@ type TeamMembership func(*sql.Selector)
 
 // Tenant is the predicate function for tenant builders.
 type Tenant func(*sql.Selector)
+
+// TenantOrErr calls the predicate only if the error is not nit.
+func TenantOrErr(p Tenant, err error) Tenant {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}

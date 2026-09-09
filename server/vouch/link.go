@@ -121,6 +121,7 @@ func (s *Server) Link(ctx context.Context, req *app.VouchLinkRequest) (*app.Vouc
 		Select: app.HolderSelect_builder{
 			DateErased:   z.Ptr(true),
 			DateDisabled: z.Ptr(true),
+			Tenant:       app.TenantSelect_builder{Config: z.Ptr(true)}.Build(),
 		}.Build(),
 	}.Build())
 	if err != nil {
@@ -128,6 +129,23 @@ func (s *Server) Link(ctx context.Context, req *app.VouchLinkRequest) (*app.Vouc
 			return nil, err
 		}
 
+		return app.VouchLinkResponse_builder{
+			Token:   token,
+			Expires: timestamppb.New(expires),
+		}.Build(), nil
+	}
+	if !Offers(who.GetTenant(), KindLink) {
+		// A tenant with no passwords has nothing for a link to hand over:
+		// `Redeem` ends by writing one (`Credential.Issue`), and a link that
+		// mints a credential nobody can sign in with is a mailbox full of dead
+		// ends. Refused where it is minted rather than where it is spent, so
+		// that nothing is sent at all.
+		//
+		// The same answer as a stranger, which is the answer this whole method
+		// gives to everything: a token that resolves to nothing. Distinguishing
+		// it would make the recovery form -- the one form meant to be filled in
+		// by people who are not signed in -- a way to read another operator's
+		// configuration.
 		return app.VouchLinkResponse_builder{
 			Token:   token,
 			Expires: timestamppb.New(expires),

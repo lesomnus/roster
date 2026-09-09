@@ -15,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/tenant.proto.
  */
 export const file_roster_payday_tenant: GenFile = /*@__PURE__*/
-  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L3RlbmFudC5wcm90bxIGcm9zdGVyIuYCCgZUZW5hbnQSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEhUKBWFsaWFzGAQgASgJQgbqghYCMAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEioKBmxhYmVscxgHIAMoCzIaLnJvc3Rlci5UZW5hbnQuTGFiZWxzRW50cnkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATo9yvwVBBICEAGKuxYxCAEyJQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZiAUKGRCAgoASAEaAEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L3RlbmFudC5wcm90bxIGcm9zdGVyIowDCgZUZW5hbnQSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEhUKBWFsaWFzGAQgASgJQgbqghYCMAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEioKBmxhYmVscxgHIAMoCzIaLnJvc3Rlci5UZW5hbnQuTGFiZWxzRW50cnkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASJAoGY29uZmlnGAggASgLMhQucm9zdGVyLlRlbmFudENvbmZpZxotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOj3K/BUEEgIQAYq7FjEIATIlChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmIBQoZEICCgBIARoAIicKDFRlbmFudENvbmZpZxIXCghwYXNzd29yZBgBIAEoCEIFqgECCAFCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Tenant is the wall an app is divided by.
@@ -79,6 +79,23 @@ export type Tenant = Message<"roster.Tenant"> & {
    * @generated from field: google.protobuf.Timestamp date_created = 15;
    */
   dateCreated?: Timestamp | undefined;
+
+  /**
+   * What this tenant has decided about itself, as against what it *is*.
+   *
+   * # Why a message and not a field per setting
+   *
+   * `Profile` on [Holder] makes the same trade and states its cost: one value
+   * to the database -- no filter, no index -- so anything that has to be
+   * **looked up** goes flat beside it. Nothing here is looked up; it is read by
+   * somebody already holding the tenant, on a path that was reading it anyway.
+   *
+   * What it buys is that the next setting is a field number in here rather than
+   * one of the nine an app gets on `Tenant` itself.
+   *
+   * @generated from field: roster.TenantConfig config = 8;
+   */
+  config?: TenantConfig | undefined;
 };
 
 /**
@@ -87,4 +104,54 @@ export type Tenant = Message<"roster.Tenant"> & {
  */
 export const TenantSchema: GenMessage<Tenant> = /*@__PURE__*/
   messageDesc(file_roster_payday_tenant, 0);
+
+/**
+ * TenantConfig is the settings, and each one is a **fact roster enforces**
+ * rather than an instruction to a screen.
+ *
+ * D22 refuses the field that describes what to render, however small it looks,
+ * and the first draft of `password` was exactly that -- a boolean the sign-in
+ * page read to decide whether to draw a form, with `Vouch.Verify` going on
+ * answering `ok` underneath it. That is a lock somebody sets and does not get:
+ * the form disappears and the door stays open. D43 is the same mistake already
+ * made once, where a TOTP seed was a whole sign-in because `Verify` counted it.
+ *
+ * So a setting only goes here if roster **acts on it**. A page reading one is
+ * drawing what is true, not being told what to draw.
+ *
+ * @generated from message roster.TenantConfig
+ */
+export type TenantConfig = Message<"roster.TenantConfig"> & {
+  /**
+   * Whether a password is a way into this tenant.
+   *
+   * **Unset is yes**, which is the whole reason this field has presence where
+   * everything around it does not (`option features.field_presence = IMPLICIT`
+   * on the merged file). A tenant written before this existed reads `false` for
+   * an implicit bool, and every one of them would have been locked out of the
+   * one credential roster holds itself.
+   *
+   * What it turns off is **signing in**, on every path that ends in
+   * `Vouch.Verify` -- the Login App's form, the account page's, an LDAP bind,
+   * and the recovery link, which hands over a password and would otherwise mail
+   * somebody a way in that does not work. What it does **not** touch is
+   * `Credential.Set`: a tenant that turns this back on should find its people's
+   * passwords where they left them, and a write refused here would be a
+   * password screen that breaks with nothing saying why.
+   *
+   * For an operator whose people all arrive through a directory, which is the
+   * case it was asked for: a form nobody uses is a form that says somebody here
+   * has a password.
+   *
+   * @generated from field: bool password = 1 [features.field_presence = EXPLICIT];
+   */
+  password: boolean;
+};
+
+/**
+ * Describes the message roster.TenantConfig.
+ * Use `create(TenantConfigSchema)` to create a new message.
+ */
+export const TenantConfigSchema: GenMessage<TenantConfig> = /*@__PURE__*/
+  messageDesc(file_roster_payday_tenant, 1);
 

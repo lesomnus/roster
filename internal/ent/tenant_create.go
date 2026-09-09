@@ -10,6 +10,7 @@ import (
 	"uuid"
 
 	"github.com/lesomnus/roster/internal/ent/tenant"
+	"github.com/lesomnus/roster/rstr"
 	"github.com/protobuf-orm/ent/dialect/sql"
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	"github.com/protobuf-orm/ent/schema/field"
@@ -63,6 +64,12 @@ func (_c *TenantCreate) SetNillableDateCreated(v *time.Time) *TenantCreate {
 	if v != nil {
 		_c.SetDateCreated(*v)
 	}
+	return _c
+}
+
+// SetConfig sets the "config" field.
+func (_c *TenantCreate) SetConfig(v *rstr.TenantConfig) *TenantCreate {
+	_c.mutation.SetConfig(v)
 	return _c
 }
 
@@ -125,7 +132,10 @@ func (_c *TenantCreate) sqlSave(ctx context.Context) (*Tenant, error) {
 	if err := _c.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := _c.createSpec()
+	_node, _spec, err := _c.createSpec()
+	if err != nil {
+		return nil, err
+	}
 	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
@@ -148,7 +158,7 @@ func (_c *TenantCreate) sqlSave(ctx context.Context) (*Tenant, error) {
 	return _node, nil
 }
 
-func (_c *TenantCreate) createSpec() (*Tenant, *sqlgraph.CreateSpec) {
+func (_c *TenantCreate) createSpec() (*Tenant, *sqlgraph.CreateSpec, error) {
 	var (
 		_node = &Tenant{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(tenant.Table, sqlgraph.NewFieldSpec(tenant.FieldId, field.TypeUuid))
@@ -181,7 +191,18 @@ func (_c *TenantCreate) createSpec() (*Tenant, *sqlgraph.CreateSpec) {
 		_spec.SetField(tenant.FieldDateCreated, field.TypeTime, value)
 		_node.DateCreated = value
 	}
-	return _node, _spec
+	if value, ok := _c.mutation.Config(); ok {
+		vv, err := tenant.ValueScanner.Config.Value(value)
+		if err != nil {
+			return nil, nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, nil, err
+		}
+		_spec.SetField(tenant.FieldConfig, field.TypeJson, vv)
+		_node.Config = value
+	}
+	return _node, _spec, nil
 }
 
 // TenantCreateBulk is the builder for creating many Tenant entities in bulk.
@@ -212,7 +233,10 @@ func (_c *TenantCreateBulk) Save(ctx context.Context) ([]*Tenant, error) {
 				}
 				builder.mutation = mutation
 				var err error
-				nodes[i], specs[i] = builder.createSpec()
+				nodes[i], specs[i], err = builder.createSpec()
+				if err != nil {
+					return nil, err
+				}
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {

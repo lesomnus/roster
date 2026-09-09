@@ -1408,6 +1408,17 @@ login:
     contoso: [contoso-web, contoso-mobile]
   # skip (the default) grants what the client asked for; ask draws a screen.
   consent: skip
+  # This app's public origin, which every operator registers with their
+  # directory as the redirect. **One for the whole app**, unlike the account
+  # app's: Hydra sends every browser here under one name, so there is one
+  # callback and the state says which operator it belongs to.
+  base: https://login.contoso.example
+  # What happens to a stranger a directory vouches for: invited (nobody, the
+  # default) or enrolling. `enrolling` needs the key to hold
+  # `HolderService.Add`, which the one `roster login provision` mints does not
+  # -- making people is a wider grant than signing them in, so a deployment
+  # that wants it mints its own.
+  enrol: invited
   # The built page. Empty serves none, which is right for a deployment that
   # puts `/login` and `/consent` behind its own static server.
   page:

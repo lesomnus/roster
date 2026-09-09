@@ -12,8 +12,8 @@ import { expect, test, type Page } from '@playwright/test'
 // its first run.
 //
 // And it needs nothing stood up, because `ts/vite.login.ts` is the app made up:
-// two people, one of them with a second factor, and the same three status codes
-// `frontdoor` answers. What that fake cannot check is anything about roster or
+// two people, one of them with a second factor, two providers, and the same
+// three status codes `frontdoor` answers. What that fake cannot check is anything about roster or
 // Hydra, and nothing here tries to -- `login/login_test.go` and
 // `scripts/hydra.sh` are where that lives. This checks the **page**: that the
 // form posts what the app reads, that a second factor is asked for and drawn
@@ -78,6 +78,25 @@ test('and the second form is asked for somebody who has one', async ({ page }) =
 	await page.locator('input[name=code]').fill('123456')
 	await page.locator('form button[type=submit]', { hasText: 'continue' }).click()
 
+	await expect(page.getByRole('button', { name: 'allow' })).toBeVisible()
+})
+
+test('the operator\'s providers are drawn, and one leaves for it', async ({ page }) => {
+	await begin(page)
+
+	// Drawn from what the app read out of roster, which the fake stands in for.
+	// The page is told a name and decides what to call the button.
+	const entra = page.getByRole('link', { name: 'sign in with entra' })
+	await expect(entra).toBeVisible()
+	await expect(page.getByRole('link', { name: 'sign in with github' })).toBeVisible()
+
+	// The challenge travels on the link, because the round trip comes back to
+	// `/callback` and has to find the flow it belongs to.
+	await expect(entra).toHaveAttribute('href', /login_challenge=sandbox.*connection=entra/)
+
+	// And it goes somewhere. The directory's own screen is not the sandbox's to
+	// have; what this checks is that the button is a hop and not a dead link.
+	await entra.click()
 	await expect(page.getByRole('button', { name: 'allow' })).toBeVisible()
 })
 

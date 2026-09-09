@@ -375,6 +375,16 @@ func DateCreatedNotNil() predicate.Tenant {
 	return predicate.Tenant(sql.FieldNotNull(FieldDateCreated))
 }
 
+// ConfigIsNil applies the IsNil predicate on the "config" field.
+func ConfigIsNil() predicate.Tenant {
+	return predicate.Tenant(sql.FieldIsNull(FieldConfig))
+}
+
+// ConfigNotNil applies the NotNil predicate on the "config" field.
+func ConfigNotNil() predicate.Tenant {
+	return predicate.Tenant(sql.FieldNotNull(FieldConfig))
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Tenant) predicate.Tenant {
 	return predicate.Tenant(sql.AndPredicates(predicates...))

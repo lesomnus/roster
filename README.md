@@ -350,7 +350,8 @@ than closed.
 same generated clients, same `covers()` deciding what is worth drawing; what
 differs is the transport.
 
-Two of them draw a sign-in, so it is one component: `ts/lib/signin.tsx`. What is
+Two of them draw a sign-in, so it is one component: `ts/lib/signin.tsx` -- the
+password form, the second factor, and the operator's provider buttons, in both. What is
 shared is what `frontdoor/web/frontdoor.js` says is worth sharing, having tried
 and refused the component library D22 asked for -- *three answers where a page
 expects two, and a second form that must not be drawn from anything the server
@@ -395,10 +396,16 @@ directory, over LDAP is how to run it.
 products**: the box Ory Hydra hands a `login_challenge` to, and the one that
 answers `acceptLoginRequest{subject}` with a `Holder.id` -- so the `sub` every
 product's token carries is a row here rather than a provider's own identifier.
-It imports `frontdoor` for the forms and the delegation, like the account app,
-and differs in one hop: where a login app ends in a cookie of its own, this ends
-at Hydra. Which operator a flow belongs to comes from the challenge's OAuth
+It imports `frontdoor` for the forms and the delegation and `arrives` for the
+provider round trip, like the account app, and differs in one hop: where a login
+app ends in a cookie of its own, this ends at Hydra -- for a password and for an
+account at a directory alike, which is why the same person is one `sub` whether
+they came through Entra on Monday or a password on Saturday. Which operator a flow belongs to comes from the challenge's OAuth
 client rather than from a hostname, and one `rt_` per operator follows from it.
+So does the one thing that is not the account app's shape: **one** redirect URI
+(`login.base`) for every operator, because Hydra sends every browser here under
+one name -- which operator a provider's callback belongs to is the state's to
+say.
 It holds `SyncService` open too, so somebody signed out everywhere in roster is
 somebody Hydra is told to forget. `go.mod` gains nothing for it: Hydra's admin
 API is six endpoints of JSON, spoken with `net/http` in `login/hydra.go`.

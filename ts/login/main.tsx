@@ -12,8 +12,9 @@
  * rule about one attempt per first form. The plain copy was a worse one.
  *
  * So the sign-in is `ts/lib/signin.tsx` and both pages draw it. What differs is
- * props: this one offers no providers and no recovery, and carries the
- * challenge Hydra redirected with in every URL of the flow.
+ * props: this one offers no recovery, because delivering a link is outside
+ * roster and outside this app, and it carries the challenge Hydra redirected
+ * with in every URL of the flow.
  *
  * # What is this app's own protocol, and what is not
  *
@@ -25,7 +26,7 @@
 import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 
-import { SignIn } from '../lib/signin.js'
+import { SignIn, type Provider } from '../lib/signin.js'
 import '../lib/style.css'
 
 /** Flow is what the app says about the challenge in this page's URL. */
@@ -33,6 +34,10 @@ interface Flow {
 	brand: string
 	client: string
 	scope: string[]
+
+	/** The ways in this operator has, which the app read out of roster. */
+	providers: Provider[]
+	password: boolean
 }
 
 /** The challenge, from the address the browser arrived at.
@@ -135,7 +140,19 @@ function Root(): React.ReactNode {
 			.catch(() => setBad(true))
 	}
 
-	return <SignIn brand={of.brand} password providers={[]} at={at} onDone={done} />
+	// A provider button leaves this page for the operator's directory and comes
+	// back to `/callback`, which finishes the flow without ever returning here.
+	// So the challenge travels on the link, the way it does on every other call.
+	return (
+		<SignIn
+			brand={of.brand}
+			password={of.password}
+			providers={of.providers}
+			providerHref={(name) => `${at('/provider')}&connection=${encodeURIComponent(name)}`}
+			at={at}
+			onDone={done}
+		/>
+	)
 }
 
 createRoot(document.getElementById('root') as HTMLElement).render(

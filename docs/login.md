@@ -168,8 +168,8 @@ callback.
 
 **roster ships the Login App now**: `login/`, run as `roster login serve`, the
 third consumer beside the account app and the directory. It reads the
-challenge, draws the same `frontdoor` forms, and answers
-`acceptLoginRequest{subject}` with a `Holder.id`; the consent hop reads the
+challenge, draws the same `frontdoor` forms **and the operator's providers**,
+and answers `acceptLoginRequest{subject}` with a `Holder.id` either way; the consent hop reads the
 person once, as them, and puts `preferred_username`, `name`, `groups` and a
 **verified** address into the `id_token`, each only if the client asked for the
 scope that carries it. What it never puts there is `methods` -- roster's answer
@@ -197,6 +197,155 @@ broken".
 the **pages** without any of that, `npm run dev:login` serves them with a
 made-up server behind them.
 
+### Every hop, and the call it makes
+
+The picture above is the shape. This is the wire: every redirect, every endpoint
+and every RPC, in order, for the two routes that reach a `Holder.id`.
+
+Both are the Login App's, and both are the account app's -- the two front doors
+draw the same forms over `ts/lib/signin.tsx` and are the same relying party over
+`arrives`. What differs is the ending: the account app finishes at its own
+cookie, and this one finishes at `acceptLoginRequest{subject}`.
+
+What the two routes share is the last fact and nothing else, which is the point:
+the `sub` a product sees names the same person whichever door they came through.
+roster is the relying party in neither -- `connection.proto` says why.
+
+#### A password, with Hydra in front
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant B as browser
+  participant P as product app
+  participant H as Hydra
+  participant L as Login App
+  participant R as roster
+
+  B->>P: GET /login
+  P-->>B: 302 → /oauth2/auth?client_id=…
+  B->>H: GET /oauth2/auth
+  H-->>B: 302 → /login?login_challenge=…
+
+  B->>L: GET /login?login_challenge=…
+  L->>H: GET /admin/oauth2/auth/requests/login
+  H-->>L: {client, skip, subject, requested_scope}
+  Note over L: the client id names the operator,<br/>and so the rt_ key every call below uses
+  L-->>B: the page
+  B->>L: GET /flow?login_challenge=…
+  L-->>B: {brand, client, scope}
+
+  B->>L: POST /session {alias, password}
+  L->>R: VouchService.Verify
+  R-->>L: {ok, holder} · {satisfied, available} · {locked_until}
+  L-->>B: 204 · 200 {factors} · 401
+
+  opt a second factor
+    B->>L: POST /session/continue {kind, name, secret}
+    L->>R: VouchService.Verify {continuation}
+    L-->>B: 204 · 401
+  end
+
+  B->>L: POST /accept?login_challenge=…
+  L->>H: PUT …/requests/login/accept {subject: Holder.id}
+  H-->>L: {redirect_to}
+  L-->>B: {redirect_to}
+  B->>H: the redirect
+  H-->>B: 302 → /consent?consent_challenge=…
+
+  B->>L: GET /consent?consent_challenge=…
+  L->>H: GET /admin/oauth2/auth/requests/consent
+  L->>R: MeService.Get, as the person
+  L->>H: PUT …/requests/consent/accept {grant_scope, session}
+  L-->>B: 303 → Hydra
+  B->>H: the redirect
+  H-->>B: 302 → /callback?code=…
+  B->>P: GET /callback?code=…
+  P->>H: POST /oauth2/token
+  H-->>P: {id_token}
+  P-->>B: Set-Cookie: session
+```
+
+| | the call | what it settles |
+| --- | --- | --- |
+| the challenge | `GET /admin/oauth2/auth/requests/login` | which **client**, and so which operator and which `rt_` key. Asked before a form is drawn, so a challenge this app fronts nobody for fails here rather than after somebody has typed a password |
+| `skip` | none | Hydra already knows this browser, within `remember`. `acceptLogin(v.Subject)` straight away: the subject is Hydra's and this app must not second-guess it |
+| the page | `GET /flow` | `{brand, client, scope}`. The page may not ask Hydra and this app may, so this is the one endpoint it has |
+| the first form | `VouchService.Verify` | 204 signed in · 200 one factor proved, another to prove · 401 everything else, and a wrong password, an unknown person and no such tenant are all the third |
+| the second form | `VouchService.Verify` with the continuation | the app holds no half-signed-in state: the continuation is roster's, short-lived and single-use |
+| the accept | `PUT …/login/accept` | **`subject` is the `Holder.id`.** Nobody is named until every form is answered -- accepting after the first would hand a product a token for somebody who proved half of what the deployment asked for |
+| the claims | `MeService.Get`, as the person | `preferred_username`, `name`, `groups`, a **verified** address -- each only if the client asked for the scope that carries it. Never `methods` |
+| the grant | `PUT …/consent/accept` | `consent: skip` grants and draws nothing; `ask` draws the screen and `POST /consent` is its answer. `reject` is the other one |
+
+The delegation this app minted is spent at the grant and the cookie is ended
+there (`Door.End`): a credential that outlives its use is one somebody has to
+remember to revoke.
+
+#### An account at a provider, with Hydra in front
+
+The same walk with the two forms replaced by a round trip. Everything after
+`Known` is the password path's last three hops, unchanged.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant B as browser
+  participant H as Hydra
+  participant L as Login App
+  participant E as Entra
+  participant R as roster
+
+  Note over B,L: /login?login_challenge=… as above
+  B->>L: GET /flow?login_challenge=…
+  L->>R: ConnectionService.List
+  L-->>B: {brand, providers:[{name}], password}
+
+  B->>L: GET /provider?login_challenge=…&connection=entra
+  L->>R: ConnectionService.Get
+  R-->>L: {issuer, client_id, scopes, secret_ref}
+  Note over L: secret_ref is resolved here.<br/>roster stores it and never reads it
+  L-->>B: 302 → Entra, state in a cookie
+  B->>E: the authorization request
+  E-->>B: 302 → /callback?code=…&state=…
+
+  B->>L: GET /callback
+  L->>E: POST /token, and verify the id_token
+  E-->>L: {sub, email, name}
+  L->>R: IdentityService.Get {tenant, provider, subject}
+  alt never seen here
+    R-->>L: NotFound
+    L->>R: HolderService.Add (Enrol), then IdentityService.Add
+  end
+  L->>R: VouchService.Accept {provider, subject}
+  R-->>L: {holder, delegation}
+  L->>H: PUT …/requests/login/accept {subject: Holder.id}
+  L-->>B: 303 → Hydra, and on to consent as above
+```
+
+| | the call | what it settles |
+| --- | --- | --- |
+| the buttons | `ConnectionService.List` | what `/flow` answers beside the brand. The **name** and nothing else: the issuer is where the browser is about to go, `secret_ref` is the operator's, and what to call the button is the page's -- D22 refuses the field that describes what to render |
+| the form | `TenantService.Get`, `config.password` | whether there is a password form at all. Not a screen setting: roster **refuses** a password for a tenant with this off (`vouch.Offers`), so the page draws what is already true. Unset is yes |
+| which operator | the challenge, again | `/provider` is in a flow, so the `Connection` rows read are the ones that client's operator can see. fabrikam's challenge cannot reach contoso's directory |
+| the redirect | `login.base` | **one URL for the whole app**, because Hydra sends every browser here under one name. Which operator a callback belongs to comes from the state, and the state is a nonce that names a row this app kept |
+| the exchange | the provider's own | the Login App is the relying party, exactly as the account app is |
+| a stranger | `login.enrol` | `invited` (the default) refuses; `enrolling` makes them, named by the local part of their address. `enrolling` needs `HolderService.Add`, which the provisioned key does not hold |
+| the sign-in | `VouchService.Accept` | the claim this app verified, exchanged for a delegation. Not `Verify`: there is no password here to check |
+| the session | `Door.Accept` | minted here for the same reason the password path has one -- the consent hop reads the person **as them** to fill the claims, and there is no other credential that may |
+| the accept | `PUT …/login/accept` | the `Holder.id`. The same string a password would have produced for the same person, which is what makes Monday-Entra and Saturday-password one `sub` |
+
+#### The account app, which has no Hydra
+
+Worth naming because it is the shape a deployment with **one** relying party
+should still take. Same package, same policy, different two ends: the tenant
+comes from the **host** (`FrontService.WhoseHost`, so there is a redirect per
+operator rather than one for all of them), and the walk finishes at the app's
+own cookie instead of at Hydra.
+
+`account/account.go`'s `login`/`callback` and `login/provider.go` are the two
+endings; everything between them is `arrives`.
+
+
 The other direction is done: **signing somebody out in roster reaches Hydra.**
 The Login App holds `SyncService` open, one stream per operator, and when roster
 says somebody has been signed out everywhere, suspended or erased it tells Hydra
@@ -211,6 +360,35 @@ ended at Hydra does not end custody's row by itself, and the OIDC logout
 endpoints are how that propagates. Handling it is one `store.Del`, and it is the
 product app's -- the hop above is roster to Hydra, and this one is Hydra to
 whatever holds a session.
+
+### A tenant with no passwords
+
+An operator whose people all arrive through a directory turns the password off,
+and what that means is worth being exact about, because the first draft of it
+meant something weaker.
+
+It is **not** *do not draw the form*. `TenantConfig.password` is a fact roster
+enforces: `Vouch.Verify` refuses the right password, and `Vouch.Link` mints no
+recovery link -- which ends by handing somebody a password, so a link for such a
+tenant is a mailbox full of dead ends. The two sign-in pages read the same field
+and draw no form, and that is the **consequence** rather than the feature.
+
+The difference is the one D43 already cost this repository once: there a TOTP
+seed was a whole sign-in because `Verify` counted it, and a switch that only
+hides a form is a lock somebody sets and does not get.
+
+Three things it deliberately does not reach:
+
+| | |
+| --- | --- |
+| `Credential.Set` | a tenant that turns it back on should find its people's passwords where they left them, and a refusal here would be a password screen that breaks with nothing saying why |
+| a second factor | not a way in, so a tenant's answer about ways in does not touch it -- somebody who arrived through a directory still proves a TOTP step |
+| another tenant | it is one row's setting, read through the wall on a call that was reading that row anyway |
+
+**Unset is yes.** The field carries presence where everything around it does
+not, for exactly that: a tenant written before it existed reads *false* for an
+implicit bool, and every one of them would have lost the one credential roster
+holds itself.
 
 ## A second factor, and whose it is
 

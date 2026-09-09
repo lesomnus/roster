@@ -30,6 +30,7 @@ type TenantAddRequest struct {
 	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
 	xxx_hidden_Labels      map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	xxx_hidden_Config      *TenantConfig          `protobuf:"bytes,8,opt,name=config"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -103,12 +104,19 @@ func (x *TenantAddRequest) GetDateCreated() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *TenantAddRequest) GetConfig() *TenantConfig {
+	if x != nil {
+		return x.xxx_hidden_Config
+	}
+	return nil
+}
+
 func (x *TenantAddRequest) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 7)
 }
 
 func (x *TenantAddRequest) SetAlias(v string) {
@@ -131,6 +139,10 @@ func (x *TenantAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateCreated = v
 }
 
+func (x *TenantAddRequest) SetConfig(v *TenantConfig) {
+	x.xxx_hidden_Config = v
+}
+
 func (x *TenantAddRequest) HasId() bool {
 	if x == nil {
 		return false
@@ -145,6 +157,13 @@ func (x *TenantAddRequest) HasDateCreated() bool {
 	return x.xxx_hidden_DateCreated != nil
 }
 
+func (x *TenantAddRequest) HasConfig() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Config != nil
+}
+
 func (x *TenantAddRequest) ClearId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Id = nil
@@ -152,6 +171,10 @@ func (x *TenantAddRequest) ClearId() {
 
 func (x *TenantAddRequest) ClearDateCreated() {
 	x.xxx_hidden_DateCreated = nil
+}
+
+func (x *TenantAddRequest) ClearConfig() {
+	x.xxx_hidden_Config = nil
 }
 
 type TenantAddRequest_builder struct {
@@ -163,6 +186,7 @@ type TenantAddRequest_builder struct {
 	Desc        string
 	Labels      map[string]string
 	DateCreated *timestamppb.Timestamp
+	Config      *TenantConfig
 }
 
 func (b0 TenantAddRequest_builder) Build() *TenantAddRequest {
@@ -170,7 +194,7 @@ func (b0 TenantAddRequest_builder) Build() *TenantAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 7)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Alias = b.Alias
@@ -178,6 +202,7 @@ func (b0 TenantAddRequest_builder) Build() *TenantAddRequest {
 	x.xxx_hidden_Desc = b.Desc
 	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_DateCreated = b.DateCreated
+	x.xxx_hidden_Config = b.Config
 	return m0
 }
 
@@ -449,6 +474,7 @@ type TenantSelect struct {
 	xxx_hidden_Labels      bool                   `protobuf:"varint,7,opt,name=labels"`
 	xxx_hidden_DateUpdated bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateCreated bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
+	xxx_hidden_Config      bool                   `protobuf:"varint,8,opt,name=config"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -529,39 +555,51 @@ func (x *TenantSelect) GetDateCreated() bool {
 	return false
 }
 
+func (x *TenantSelect) GetConfig() bool {
+	if x != nil {
+		return x.xxx_hidden_Config
+	}
+	return false
+}
+
 func (x *TenantSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 8)
 }
 
 func (x *TenantSelect) SetAlias(v bool) {
 	x.xxx_hidden_Alias = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 8)
 }
 
 func (x *TenantSelect) SetName(v bool) {
 	x.xxx_hidden_Name = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 8)
 }
 
 func (x *TenantSelect) SetDesc(v bool) {
 	x.xxx_hidden_Desc = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 8)
 }
 
 func (x *TenantSelect) SetLabels(v bool) {
 	x.xxx_hidden_Labels = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 8)
 }
 
 func (x *TenantSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 8)
 }
 
 func (x *TenantSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 8)
+}
+
+func (x *TenantSelect) SetConfig(v bool) {
+	x.xxx_hidden_Config = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 8)
 }
 
 func (x *TenantSelect) HasAll() bool {
@@ -613,6 +651,13 @@ func (x *TenantSelect) HasDateCreated() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
+func (x *TenantSelect) HasConfig() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
+}
+
 func (x *TenantSelect) ClearAll() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_All = false
@@ -648,6 +693,11 @@ func (x *TenantSelect) ClearDateCreated() {
 	x.xxx_hidden_DateCreated = false
 }
 
+func (x *TenantSelect) ClearConfig() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	x.xxx_hidden_Config = false
+}
+
 type TenantSelect_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -658,6 +708,7 @@ type TenantSelect_builder struct {
 	Labels      *bool
 	DateUpdated *bool
 	DateCreated *bool
+	Config      *bool
 }
 
 func (b0 TenantSelect_builder) Build() *TenantSelect {
@@ -665,32 +716,36 @@ func (b0 TenantSelect_builder) Build() *TenantSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 8)
 		x.xxx_hidden_All = *b.All
 	}
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 8)
 		x.xxx_hidden_Alias = *b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 8)
 		x.xxx_hidden_Name = *b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 8)
 		x.xxx_hidden_Desc = *b.Desc
 	}
 	if b.Labels != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 8)
 		x.xxx_hidden_Labels = *b.Labels
 	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 8)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 8)
 		x.xxx_hidden_DateCreated = *b.DateCreated
+	}
+	if b.Config != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 8)
+		x.xxx_hidden_Config = *b.Config
 	}
 	return m0
 }
@@ -704,6 +759,8 @@ type TenantPatchRequest struct {
 	xxx_hidden_Labels           map[string]string      `protobuf:"bytes,14,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateUpdatedForce bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
+	xxx_hidden_Config           *TenantConfig          `protobuf:"bytes,16,opt,name=config"`
+	xxx_hidden_ConfigNull       bool                   `protobuf:"varint,17,opt,name=config_null,json=configNull"`
 	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
 	XXX_presence                [1]uint32
 	unknownFields               protoimpl.UnknownFields
@@ -793,23 +850,37 @@ func (x *TenantPatchRequest) GetDateUpdatedForce() bool {
 	return false
 }
 
+func (x *TenantPatchRequest) GetConfig() *TenantConfig {
+	if x != nil {
+		return x.xxx_hidden_Config
+	}
+	return nil
+}
+
+func (x *TenantPatchRequest) GetConfigNull() bool {
+	if x != nil {
+		return x.xxx_hidden_ConfigNull
+	}
+	return false
+}
+
 func (x *TenantPatchRequest) SetRef(v *TenantRef) {
 	x.xxx_hidden_Ref = v
 }
 
 func (x *TenantPatchRequest) SetAlias(v string) {
 	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 9)
 }
 
 func (x *TenantPatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 9)
 }
 
 func (x *TenantPatchRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 9)
 }
 
 func (x *TenantPatchRequest) SetLabels(v map[string]string) {
@@ -822,7 +893,16 @@ func (x *TenantPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *TenantPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 9)
+}
+
+func (x *TenantPatchRequest) SetConfig(v *TenantConfig) {
+	x.xxx_hidden_Config = v
+}
+
+func (x *TenantPatchRequest) SetConfigNull(v bool) {
+	x.xxx_hidden_ConfigNull = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 9)
 }
 
 func (x *TenantPatchRequest) HasRef() bool {
@@ -867,6 +947,20 @@ func (x *TenantPatchRequest) HasDateUpdatedForce() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
+func (x *TenantPatchRequest) HasConfig() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Config != nil
+}
+
+func (x *TenantPatchRequest) HasConfigNull() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
+}
+
 func (x *TenantPatchRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
@@ -895,6 +989,15 @@ func (x *TenantPatchRequest) ClearDateUpdatedForce() {
 	x.xxx_hidden_DateUpdatedForce = false
 }
 
+func (x *TenantPatchRequest) ClearConfig() {
+	x.xxx_hidden_Config = nil
+}
+
+func (x *TenantPatchRequest) ClearConfigNull() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	x.xxx_hidden_ConfigNull = false
+}
+
 type TenantPatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -917,6 +1020,12 @@ type TenantPatchRequest_builder struct {
 	// refused rather than assumed, because an unset field cannot be told
 	// apart from a caller who never considered locking at all.
 	DateUpdatedForce *bool
+	Config           *TenantConfig
+	// Clear config instead of writing it.
+	// It takes a field of its own because an unset value already means
+	// "leave it alone", so no value could have meant NULL. It wins
+	// outright: setting both this and config clears.
+	ConfigNull *bool
 }
 
 func (b0 TenantPatchRequest_builder) Build() *TenantPatchRequest {
@@ -925,22 +1034,27 @@ func (b0 TenantPatchRequest_builder) Build() *TenantPatchRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 9)
 		x.xxx_hidden_Alias = b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 9)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 9)
 		x.xxx_hidden_Desc = b.Desc
 	}
 	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 9)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
+	}
+	x.xxx_hidden_Config = b.Config
+	if b.ConfigNull != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 9)
+		x.xxx_hidden_ConfigNull = *b.ConfigNull
 	}
 	return m0
 }
@@ -1369,6 +1483,7 @@ type TenantUpdateRequest struct {
 	xxx_hidden_Name        *string                `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_Desc        *string                `protobuf:"bytes,6,opt,name=desc"`
 	xxx_hidden_Labels      map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_Config      *TenantConfig          `protobuf:"bytes,8,opt,name=config"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -1441,6 +1556,13 @@ func (x *TenantUpdateRequest) GetLabels() map[string]string {
 	return nil
 }
 
+func (x *TenantUpdateRequest) GetConfig() *TenantConfig {
+	if x != nil {
+		return x.xxx_hidden_Config
+	}
+	return nil
+}
+
 func (x *TenantUpdateRequest) SetRef(v *TenantRef) {
 	x.xxx_hidden_Ref = v
 }
@@ -1451,16 +1573,20 @@ func (x *TenantUpdateRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *TenantUpdateRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 5)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 6)
 }
 
 func (x *TenantUpdateRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 5)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 6)
 }
 
 func (x *TenantUpdateRequest) SetLabels(v map[string]string) {
 	x.xxx_hidden_Labels = v
+}
+
+func (x *TenantUpdateRequest) SetConfig(v *TenantConfig) {
+	x.xxx_hidden_Config = v
 }
 
 func (x *TenantUpdateRequest) HasRef() bool {
@@ -1491,6 +1617,13 @@ func (x *TenantUpdateRequest) HasDesc() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
+func (x *TenantUpdateRequest) HasConfig() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Config != nil
+}
+
 func (x *TenantUpdateRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
@@ -1509,6 +1642,10 @@ func (x *TenantUpdateRequest) ClearDesc() {
 	x.xxx_hidden_Desc = nil
 }
 
+func (x *TenantUpdateRequest) ClearConfig() {
+	x.xxx_hidden_Config = nil
+}
+
 type TenantUpdateRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -1519,6 +1656,9 @@ type TenantUpdateRequest_builder struct {
 	Name   *string
 	Desc   *string
 	Labels map[string]string
+	// The settings, replaced whole. Absent leaves them as they are, which is why
+	// a console that draws one checkbox has to send back the whole message.
+	Config *TenantConfig
 }
 
 func (b0 TenantUpdateRequest_builder) Build() *TenantUpdateRequest {
@@ -1528,14 +1668,15 @@ func (b0 TenantUpdateRequest_builder) Build() *TenantUpdateRequest {
 	x.xxx_hidden_Ref = b.Ref
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 5)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 6)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 5)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 6)
 		x.xxx_hidden_Desc = b.Desc
 	}
 	x.xxx_hidden_Labels = b.Labels
+	x.xxx_hidden_Config = b.Config
 	return m0
 }
 
@@ -1543,14 +1684,15 @@ var File_roster_payday_tenant_svc_g_proto protoreflect.FileDescriptor
 
 const file_roster_payday_tenant_svc_g_proto_rawDesc = "" +
 	"\n" +
-	" roster/payday/tenant_svc.g.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x1aroster/payday/tenant.proto\"\xad\x02\n" +
+	" roster/payday/tenant_svc.g.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x1aroster/payday/tenant.proto\"\xdb\x02\n" +
 	"\x10TenantAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
 	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12<\n" +
 	"\x06labels\x18\a \x03(\v2$.roster.TenantAddRequest.LabelsEntryR\x06labels\x12=\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x1a9\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x12,\n" +
+	"\x06config\x18\b \x01(\v2\x14.roster.TenantConfigR\x06config\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"e\n" +
@@ -1560,7 +1702,7 @@ const file_roster_payday_tenant_svc_g_proto_rawDesc = "" +
 	"\tTenantRef\x12\x10\n" +
 	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x16\n" +
 	"\x05alias\x18\x04 \x01(\tH\x00R\x05aliasB\x05\n" +
-	"\x03key\"\xbc\x01\n" +
+	"\x03key\"\xd4\x01\n" +
 	"\fTenantSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\bR\x05alias\x12\x12\n" +
@@ -1568,7 +1710,8 @@ const file_roster_payday_tenant_svc_g_proto_rawDesc = "" +
 	"\x04desc\x18\x06 \x01(\bR\x04desc\x12\x16\n" +
 	"\x06labels\x18\a \x01(\bR\x06labels\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xdf\x02\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\x12\x16\n" +
+	"\x06config\x18\b \x01(\bR\x06config\"\xae\x03\n" +
 	"\x12TenantPatchRequest\x12#\n" +
 	"\x03ref\x18\x01 \x01(\v2\x11.roster.TenantRefR\x03ref\x12\x14\n" +
 	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
@@ -1577,7 +1720,10 @@ const file_roster_payday_tenant_svc_g_proto_rawDesc = "" +
 	"\x04desc\x18\f \x01(\tR\x04desc\x12>\n" +
 	"\x06labels\x18\x0e \x03(\v2&.roster.TenantPatchRequest.LabelsEntryR\x06labels\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x1a9\n" +
+	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x12,\n" +
+	"\x06config\x18\x10 \x01(\v2\x14.roster.TenantConfigR\x06config\x12\x1f\n" +
+	"\vconfig_null\x18\x11 \x01(\bR\n" +
+	"configNull\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"]\n" +
@@ -1594,13 +1740,14 @@ const file_roster_payday_tenant_svc_g_proto_rawDesc = "" +
 	"\x05items\x18\x01 \x03(\v2\x0e.roster.TenantR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"3\n" +
 	"\fTenantFilter\x12#\n" +
-	"\x03ref\x18\x01 \x01(\v2\x11.roster.TenantRefR\x03ref\"\x9d\x02\n" +
+	"\x03ref\x18\x01 \x01(\v2\x11.roster.TenantRefR\x03ref\"\xcb\x02\n" +
 	"\x13TenantUpdateRequest\x12#\n" +
 	"\x03ref\x18\x01 \x01(\v2\x11.roster.TenantRefR\x03ref\x12=\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
 	"\x04desc\x18\x06 \x01(\tR\x04desc\x12?\n" +
-	"\x06labels\x18\a \x03(\v2'.roster.TenantUpdateRequest.LabelsEntryR\x06labels\x1a9\n" +
+	"\x06labels\x18\a \x03(\v2'.roster.TenantUpdateRequest.LabelsEntryR\x06labels\x12,\n" +
+	"\x06config\x18\b \x01(\v2\x14.roster.TenantConfigR\x06config\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x012\x8a\x03\n" +
@@ -1630,44 +1777,48 @@ var file_roster_payday_tenant_svc_g_proto_goTypes = []any{
 	nil,                           // 12: roster.TenantPatchRequest.LabelsEntry
 	nil,                           // 13: roster.TenantUpdateRequest.LabelsEntry
 	(*timestamppb.Timestamp)(nil), // 14: google.protobuf.Timestamp
-	(*patchpb.Patch)(nil),         // 15: patch.Patch
-	(*Tenant)(nil),                // 16: roster.Tenant
+	(*TenantConfig)(nil),          // 15: roster.TenantConfig
+	(*patchpb.Patch)(nil),         // 16: patch.Patch
+	(*Tenant)(nil),                // 17: roster.Tenant
 }
 var file_roster_payday_tenant_svc_g_proto_depIdxs = []int32{
 	11, // 0: roster.TenantAddRequest.labels:type_name -> roster.TenantAddRequest.LabelsEntry
 	14, // 1: roster.TenantAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	2,  // 2: roster.TenantGetRequest.ref:type_name -> roster.TenantRef
-	3,  // 3: roster.TenantGetRequest.select:type_name -> roster.TenantSelect
-	2,  // 4: roster.TenantPatchRequest.ref:type_name -> roster.TenantRef
-	12, // 5: roster.TenantPatchRequest.labels:type_name -> roster.TenantPatchRequest.LabelsEntry
-	14, // 6: roster.TenantPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 7: roster.TenantApplyRequest.ref:type_name -> roster.TenantRef
-	15, // 8: roster.TenantApplyRequest.patch:type_name -> patch.Patch
-	9,  // 9: roster.TenantListRequest.filters:type_name -> roster.TenantFilter
-	16, // 10: roster.TenantListResponse.items:type_name -> roster.Tenant
-	2,  // 11: roster.TenantFilter.ref:type_name -> roster.TenantRef
-	2,  // 12: roster.TenantUpdateRequest.ref:type_name -> roster.TenantRef
-	14, // 13: roster.TenantUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
-	13, // 14: roster.TenantUpdateRequest.labels:type_name -> roster.TenantUpdateRequest.LabelsEntry
-	0,  // 15: roster.TenantService.Add:input_type -> roster.TenantAddRequest
-	1,  // 16: roster.TenantService.Get:input_type -> roster.TenantGetRequest
-	4,  // 17: roster.TenantService.Patch:input_type -> roster.TenantPatchRequest
-	5,  // 18: roster.TenantService.Apply:input_type -> roster.TenantApplyRequest
-	2,  // 19: roster.TenantService.Erase:input_type -> roster.TenantRef
-	7,  // 20: roster.TenantService.List:input_type -> roster.TenantListRequest
-	10, // 21: roster.TenantService.Update:input_type -> roster.TenantUpdateRequest
-	16, // 22: roster.TenantService.Add:output_type -> roster.Tenant
-	16, // 23: roster.TenantService.Get:output_type -> roster.Tenant
-	16, // 24: roster.TenantService.Patch:output_type -> roster.Tenant
-	16, // 25: roster.TenantService.Apply:output_type -> roster.Tenant
-	6,  // 26: roster.TenantService.Erase:output_type -> roster.TenantEraseResponse
-	8,  // 27: roster.TenantService.List:output_type -> roster.TenantListResponse
-	16, // 28: roster.TenantService.Update:output_type -> roster.Tenant
-	22, // [22:29] is the sub-list for method output_type
-	15, // [15:22] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	15, // 2: roster.TenantAddRequest.config:type_name -> roster.TenantConfig
+	2,  // 3: roster.TenantGetRequest.ref:type_name -> roster.TenantRef
+	3,  // 4: roster.TenantGetRequest.select:type_name -> roster.TenantSelect
+	2,  // 5: roster.TenantPatchRequest.ref:type_name -> roster.TenantRef
+	12, // 6: roster.TenantPatchRequest.labels:type_name -> roster.TenantPatchRequest.LabelsEntry
+	14, // 7: roster.TenantPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	15, // 8: roster.TenantPatchRequest.config:type_name -> roster.TenantConfig
+	2,  // 9: roster.TenantApplyRequest.ref:type_name -> roster.TenantRef
+	16, // 10: roster.TenantApplyRequest.patch:type_name -> patch.Patch
+	9,  // 11: roster.TenantListRequest.filters:type_name -> roster.TenantFilter
+	17, // 12: roster.TenantListResponse.items:type_name -> roster.Tenant
+	2,  // 13: roster.TenantFilter.ref:type_name -> roster.TenantRef
+	2,  // 14: roster.TenantUpdateRequest.ref:type_name -> roster.TenantRef
+	14, // 15: roster.TenantUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
+	13, // 16: roster.TenantUpdateRequest.labels:type_name -> roster.TenantUpdateRequest.LabelsEntry
+	15, // 17: roster.TenantUpdateRequest.config:type_name -> roster.TenantConfig
+	0,  // 18: roster.TenantService.Add:input_type -> roster.TenantAddRequest
+	1,  // 19: roster.TenantService.Get:input_type -> roster.TenantGetRequest
+	4,  // 20: roster.TenantService.Patch:input_type -> roster.TenantPatchRequest
+	5,  // 21: roster.TenantService.Apply:input_type -> roster.TenantApplyRequest
+	2,  // 22: roster.TenantService.Erase:input_type -> roster.TenantRef
+	7,  // 23: roster.TenantService.List:input_type -> roster.TenantListRequest
+	10, // 24: roster.TenantService.Update:input_type -> roster.TenantUpdateRequest
+	17, // 25: roster.TenantService.Add:output_type -> roster.Tenant
+	17, // 26: roster.TenantService.Get:output_type -> roster.Tenant
+	17, // 27: roster.TenantService.Patch:output_type -> roster.Tenant
+	17, // 28: roster.TenantService.Apply:output_type -> roster.Tenant
+	6,  // 29: roster.TenantService.Erase:output_type -> roster.TenantEraseResponse
+	8,  // 30: roster.TenantService.List:output_type -> roster.TenantListResponse
+	17, // 31: roster.TenantService.Update:output_type -> roster.Tenant
+	25, // [25:32] is the sub-list for method output_type
+	18, // [18:25] is the sub-list for method input_type
+	18, // [18:18] is the sub-list for extension type_name
+	18, // [18:18] is the sub-list for extension extendee
+	0,  // [0:18] is the sub-list for field type_name
 }
 
 func init() { file_roster_payday_tenant_svc_g_proto_init() }

@@ -3,7 +3,9 @@
 package tenant
 
 import (
+	"github.com/lesomnus/roster/rstr"
 	"github.com/protobuf-orm/ent/dialect/sql"
+	"github.com/protobuf-orm/ent/schema/field"
 )
 
 const (
@@ -23,6 +25,8 @@ const (
 	FieldDateUpdated = "date_updated"
 	// FieldDateCreated holds the string denoting the date_created field in the database.
 	FieldDateCreated = "date_created"
+	// FieldConfig holds the string denoting the config field in the database.
+	FieldConfig = "config"
 	// Table holds the table name of the tenant in the database.
 	Table = "tenant"
 )
@@ -36,6 +40,7 @@ var Columns = []string{
 	FieldLabels,
 	FieldDateUpdated,
 	FieldDateCreated,
+	FieldConfig,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -47,6 +52,13 @@ func ValidColumn(column string) bool {
 	}
 	return false
 }
+
+var (
+	// ValueScanner of all Tenant fields.
+	ValueScanner struct {
+		Config field.TypeValueScanner[*rstr.TenantConfig]
+	}
+)
 
 // OrderOption defines the ordering options for the Tenant queries.
 type OrderOption func(*sql.Selector)

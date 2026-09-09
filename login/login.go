@@ -15,10 +15,21 @@
 // Like `account/` and `ldap/` it reaches roster **only over the wire**, and
 // `scripts/test.sh` holds it to it: this package may not import `internal`,
 // `cmd` or `server`. What it does import is `frontdoor` -- the two forms, the
-// half session, the delegation held beside the cookie -- because everything up
+// half session, the delegation held beside the cookie -- and `arrives`, which
+// is a `Connection` row turned into a relying party. Both because everything up
 // to the last hop is the same sign-in every front door does. The last hop is
 // all that differs: `Door.Accept` ends a login in a cookie of its own, and this
 // ends it in `acceptLoginRequest`.
+//
+// # Two ways in, one ending
+//
+// A password, checked by roster; or an account at a directory, where this app
+// is the relying party and roster is deliberately not. They meet at the
+// `Holder.id`, which is what Hydra is told either way -- so a person who signs
+// in with Entra on Monday and a password on Saturday is one `sub` to every
+// product. `provider.go` is the second one, and the only thing about it that is
+// not the account app's shape is the redirect: one URL for every operator,
+// because Hydra sends every browser here under one name.
 //
 // # Which operator, and where that comes from
 //
@@ -42,6 +53,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"time"
 
 	"google.golang.org/grpc"
@@ -54,6 +66,7 @@ import (
 	"github.com/lesomnus/payday/auth/authsession"
 	"github.com/lesomnus/payday/pdid"
 
+	"github.com/lesomnus/roster/arrives"
 	"github.com/lesomnus/roster/frontdoor"
 	rstr "github.com/lesomnus/roster/rstr"
 )
@@ -121,6 +134,24 @@ type Config struct {
 	// Consent is whether the consent hop draws a screen; see [Consent].
 	Consent Consent
 
+	// Base is this app's public origin, the one registered with every provider
+	// as the redirect: `https://login.example.com`. Empty derives it from each
+	// request, which suits a development deployment and nothing else, since a
+	// provider will only send a browser back to a URL it was told about.
+	//
+	// One for the whole app, not one per operator: Hydra sends every browser
+	// here under one name. Which operator a callback belongs to comes from the
+	// state, never from the URL.
+	Base *url.URL
+
+	// Secret turns a `Connection.secret_ref` into the client secret it names.
+	// Nil is [account.EnvSecret]'s vocabulary, wired by the command.
+	Secret func(ref string) (string, error)
+
+	// Enrol is what happens to somebody a provider vouches for and roster has
+	// never seen. Nil is [arrives.Invited]: nobody.
+	Enrol arrives.Enrol
+
 	// InsecureCookie drops `Secure` from the session cookie, for a page served
 	// over plain http in development. It is `authsession`'s and is said there;
 	// this app sets no cookie of its own.
@@ -185,6 +216,13 @@ type App struct {
 	door   *frontdoor.Door
 	admin  admin
 
+	// arrives is the relying-party half, shared with the account app: the
+	// `Connection` rows, the discovery, the exchange and the enrolment.
+	arrives *arrives.Providers
+
+	// flows is every round trip to a provider started and not yet finished.
+	flows *arrives.States[flow]
+
 	byClient map[string]*operator
 
 	// The same rows as `byClient`, once each: an operator with two clients is
@@ -244,7 +282,9 @@ func New(ctx context.Context, c Config) (*App, error) {
 		sync:     rstr.NewSyncServiceClient(conn),
 		admin:    admin{base: c.Hydra, header: c.HydraHeader, client: http.DefaultClient},
 		byClient: map[string]*operator{},
+		flows:    arrives.Held[flow](),
 	}
+	a.arrives = arrives.New(a.roster, c.Secret)
 
 	for alias, o := range c.Operators {
 		if len(o.Clients) == 0 {
@@ -341,6 +381,12 @@ func (a *App) Handler() http.Handler {
 
 	// What turns a finished sign-in into Hydra's answer.
 	m.Handle("POST /accept", a.inFlow(http.HandlerFunc(a.accept)))
+
+	// The other way in. `/provider` is in a flow and `/callback` is not: a
+	// provider sends the browser back to one registered URL, and which flow
+	// that is comes from the state.
+	m.Handle("GET /provider", a.inFlow(http.HandlerFunc(a.provider)))
+	m.HandleFunc("GET /callback", a.callback)
 
 	// The built page, and its assets.
 	m.Handle("/", a.page())
@@ -456,7 +502,48 @@ func (a *App) flow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJson(w, map[string]any{"brand": o.name, "client": client, "scope": scope})
+	// The ways in, for a login screen. A consent screen has a person already
+	// and asks this for the client and the scopes alone.
+	ways := []map[string]string{}
+	password := false
+	if v != nil {
+		// What roster says, not what this app assumes. A tenant whose people
+		// all arrive through a directory turns the password off, and
+		// `Vouch.Verify` refuses one -- so a form drawn here would be a form
+		// that cannot work.
+		tn, err := a.roster.Tenant().Get(withKey(ctx, o.key), rstr.TenantGetRequest_builder{
+			Ref:    rstr.TenantRef_builder{Id: o.id.Bytes()}.Build(),
+			Select: rstr.TenantSelect_builder{Config: proto.Bool(true)}.Build(),
+		}.Build())
+		if err != nil {
+			a.broken(w, r, err)
+
+			return
+		}
+		password = tn.OffersPassword()
+
+		cs, err := a.arrives.Connections(withKey(ctx, o.key), o.id)
+		if err != nil {
+			a.broken(w, r, err)
+
+			return
+		}
+		for _, c := range cs {
+			// The name and nothing else. The issuer is where the browser is
+			// about to go and the page has no use for it, `secret_ref` is the
+			// operator's, and a label for the button is the page's to choose:
+			// D22 refuses the field that describes what to render.
+			ways = append(ways, map[string]string{"name": c.GetName()})
+		}
+	}
+
+	writeJson(w, map[string]any{
+		"brand":     o.name,
+		"client":    client,
+		"scope":     scope,
+		"providers": ways,
+		"password":  password,
+	})
 }
 
 // named is what to call a client on a screen.

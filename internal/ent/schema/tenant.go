@@ -4,10 +4,12 @@
 package schema
 
 import (
+	rstr "github.com/lesomnus/roster/rstr"
 	ent "github.com/protobuf-orm/ent"
 	entsql "github.com/protobuf-orm/ent/dialect/entsql"
 	schema "github.com/protobuf-orm/ent/schema"
 	field "github.com/protobuf-orm/ent/schema/field"
+	entpb "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpb"
 )
 
 type Tenant struct {
@@ -28,6 +30,8 @@ func (Tenant) Fields() []ent.Field {
 		field.Time("date_updated"),
 		field.Time("date_created").
 			Immutable().
+			Optional(),
+		field.Json("config", &rstr.TenantConfig{}).ValueScanner(entpb.ValueScanner[*rstr.TenantConfig]{}).
 			Optional(),
 	}
 }

@@ -7,6 +7,10 @@ import react from '@vitejs/plugin-react'
 // `roster account serve` -- there is no sandbox for it yet (ts/plan.md, P4).
 export default defineConfig({
 	root: 'account',
+	// Its own optimizer cache, for the reason `vite.console.ts` gives: the
+	// default is one directory for all three configs, and `scripts/e2e.sh`
+	// runs two dev servers at once.
+	cacheDir: '../node_modules/.vite-account',
 	publicDir: false,
 	build: { outDir: '../dist/account', emptyOutDir: true },
 	plugins: [react()],
