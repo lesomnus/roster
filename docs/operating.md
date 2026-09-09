@@ -1423,7 +1423,8 @@ login:
   # to say the address is verified. `enrolling` needs the key to hold
   # `HolderService.Add`, which the one `roster login provision` mints does not
   # -- making people is a wider grant than signing them in, so a deployment
-  # that wants it mints its own.
+  # that wants it -- `roster login provision` adds that one method when, and
+  # only when, this line says `enrolling`.
   enrol: invited
   # The built page. Empty serves none, which is right for a deployment that
   # puts `/login` and `/consent` behind its own static server.

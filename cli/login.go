@@ -220,8 +220,18 @@ func newCmdLoginProvision(c *cmd.Config) *xli.Command {
 				return err
 			}
 
+			// What the key is allowed, which is [LoginMethods] plus the one
+			// grant a policy asks for. `enrolling` makes people, and making
+			// people is wider than signing them in -- so it is granted only
+			// where a deployment wrote `login.enrol: enrolling` down, and never
+			// by default.
+			methods := LoginMethods
+			if c.Login.Enrol == "enrolling" {
+				methods = append(append([]string{}, LoginMethods...), rstr.HolderService_Add_FullMethodName)
+			}
+
 			for alias := range clients {
-				switch err := provision(ctx, s, alias, out); {
+				switch err := provision(ctx, s, alias, out, methods); {
 				case err == nil:
 				case errors.Is(err, errNoCustomer):
 					// **Skipped and not refused**, which is the difference
@@ -266,8 +276,13 @@ func newCmdLoginProvision(c *cmd.Config) *xli.Command {
 // **`HolderService.Add` is not here, and that is the point of the list.** It is
 // what `enrol: enrolling` needs, and making people is a wider grant than
 // signing them in: a key that holds it can write a row into an operator's
-// tenant for anybody a directory will vouch for. A deployment that wants it
-// mints its own key rather than getting one from a default.
+// tenant for anybody a directory will vouch for. `provision` adds it when --
+// and only when -- a deployment has written `login.enrol: enrolling` down, so
+// the grant follows a line somebody typed rather than a default.
+//
+// `enrol: expected`, which admits the people an operator entered and nobody
+// else, needs nothing beyond this list: it reads an `Email` row and writes an
+// `Identity`.
 //
 // The app draws no account screens and reads nobody's rows but the person it is
 // signing in, which is why this list is short and why it is written here rather
@@ -287,7 +302,7 @@ var LoginMethods = append([]string{
 }, login.Methods...)
 
 // provision is one operator's front door.
-func provision(ctx context.Context, s *cmd.Server, alias, out string) error {
+func provision(ctx context.Context, s *cmd.Server, alias, out string, methods []string) error {
 	tn, err := s.Ungated.Tenant().Get(ctx, rstr.TenantGetRequest_builder{
 		Ref:    rstr.TenantRef_builder{Alias: &alias}.Build(),
 		Select: rstr.TenantSelect_builder{}.Build(),
@@ -308,7 +323,7 @@ func provision(ctx context.Context, s *cmd.Server, alias, out string) error {
 	if err != nil {
 		return err
 	}
-	role, err := ensureRole(ctx, s, at)
+	role, err := ensureRole(ctx, s, at, methods)
 	if err != nil {
 		return err
 	}
@@ -389,12 +404,12 @@ func ensureHolder(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias 
 	return got.GetId(), nil
 }
 
-func ensureRole(ctx context.Context, s *cmd.Server, at *rstr.TenantRef) ([]byte, error) {
+func ensureRole(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, methods []string) ([]byte, error) {
 	// Patched when it is already there rather than left alone: the list above
 	// grows with the app, and a role written by an older version is a Login App
 	// that starts and then refuses one thing.
 	v, err := s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
-		Tenant: at, Alias: provisioned, Methods: LoginMethods,
+		Tenant: at, Alias: provisioned, Methods: methods,
 	}.Build())
 	if err == nil {
 		return v.GetId(), nil
@@ -417,7 +432,7 @@ func ensureRole(ctx context.Context, s *cmd.Server, at *rstr.TenantRef) ([]byte,
 	}
 	if _, err := s.Ungated.Role().Patch(ctx, rstr.RolePatchRequest_builder{
 		Ref:         rstr.RoleRef_builder{Id: got.GetId()}.Build(),
-		Methods:     LoginMethods,
+		Methods:     methods,
 		DateUpdated: got.GetDateUpdated(),
 	}.Build()); err != nil {
 		return nil, err
