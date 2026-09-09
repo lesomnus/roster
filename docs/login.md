@@ -369,6 +369,16 @@ directory, and it does not exist until the first sign-in. So `invited`, which
 matches an `Identity` row, can admit nobody at all through a directory unless
 somebody writes those rows by hand.
 
+What `enrolling` calls somebody is derived from their address and is **not**
+the local part of it: an alias begins with a lowercase letter and holds
+lowercase letters, digits and single hyphens, so `first.last` -- which is what a
+corporate directory hands out -- is not one. Every run of anything else becomes
+a hyphen, so `Seunghyun.Hwang@hday.dev` is `seunghyun-hwang`; an address with no
+name in it at all gets one nobody chose, which is payday's own answer to a row
+that needs a name before anybody has an opinion about it. Two addresses that
+fold to the same word both get in, and the second is the word plus four
+characters. An alias is changed afterwards; a refused sign-in is not.
+
 `expected` is the policy that means what *putting people in* sounds like: a
 `Holder` with an `Email` row, matched on the first sign-in and linked to the
 identity then, so every sign-in after it is the ordinary lookup. `enrolling`

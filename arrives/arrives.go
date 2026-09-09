@@ -48,6 +48,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/lesomnus/payday/pdid"
+	"github.com/lesomnus/payday/slug"
 
 	rstr "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/front"
@@ -146,22 +147,92 @@ func Enrolling() Enrol {
 			return id, nil
 		}
 
-		alias, _, ok := strings.Cut(who.Email, "@")
-		if !ok || alias == "" {
-			return pdid.Nil, fmt.Errorf("enrol %s/%s: no email to name them by", who.Provider, who.Subject)
-		}
+		alias := aliasOf(who.Email)
 
 		v, err := c.Holder().Add(ctx, rstr.HolderAddRequest_builder{
 			Tenant: rstr.TenantRef_builder{Alias: proto.String(who.TenantAlias)}.Build(),
 			Alias:  alias,
 			Name:   who.Name,
 		}.Build())
+		if status.Code(err) == codes.AlreadyExists {
+			// Two addresses whose local parts are the same word -- `alice` at
+			// two domains, or two people the derivation folded together. Both
+			// belong here and one of them cannot have the plain name, so it
+			// gets a name nobody chose rather than a refusal: a sign-in that
+			// fails because somebody else signed up first is not something the
+			// person at the form can do anything about.
+			v, err = c.Holder().Add(ctx, rstr.HolderAddRequest_builder{
+				Tenant: rstr.TenantRef_builder{Alias: proto.String(who.TenantAlias)}.Build(),
+				Alias:  alias + "-" + slug.RandomAliasN(4),
+				Name:   who.Name,
+			}.Build())
+		}
 		if err != nil {
 			return pdid.Nil, fmt.Errorf("enrol %s: %w", who.Email, err)
 		}
 
 		return pdid.From(v.GetId())
 	}
+}
+
+// aliasOf is what to call somebody a directory sent, from the address it sent.
+//
+// # Why the local part is not the answer on its own
+//
+// It is not an alias, and the common forms are exactly the ones that are not:
+// an alias begins with a lowercase letter and holds lowercase letters, digits
+// and single hyphens, so `first.last` -- which is what a corporate directory
+// hands out -- is refused, and so are `first+tag`, `first_last` and `3rin`.
+// This derived the local part unchanged and the first person with a dot in
+// their address got a 500 at the end of an otherwise complete sign-in.
+//
+// So every run of anything else becomes one hyphen, the ends are trimmed, and
+// what is left has to start with a letter. `Seunghyun.Hwang@hday.dev` is
+// `seunghyun-hwang`.
+//
+// # And why it can still answer with a name nobody chose
+//
+// Because an address may hold nothing an alias can be made of -- `123@`, or a
+// local part that is not Latin at all. payday's answer to *a row that needs a
+// name before anybody has an opinion about it* is [slug.RandomAlias], which is
+// what a server does with an `Add` that named nothing, and it is the right
+// answer here for the same reason: a name is changed afterwards and a refused
+// sign-in is not.
+func aliasOf(address string) string {
+	local, _, _ := strings.Cut(address, "@")
+
+	var b strings.Builder
+	dash := false
+	for _, r := range strings.ToLower(strings.TrimSpace(local)) {
+		switch {
+		case (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9'):
+			// An alias begins with a letter, so digits before the first one
+			// are dropped rather than carried to a name that will be refused.
+			if b.Len() == 0 && !(r >= 'a' && r <= 'z') {
+				continue
+			}
+			if dash {
+				b.WriteByte('-')
+			}
+			dash = false
+			b.WriteRune(r)
+
+		default:
+			// A run of anything else is one hyphen, and only once something has
+			// been written -- which is what keeps it off both ends.
+			dash = b.Len() > 0
+		}
+	}
+
+	v := b.String()
+	if len(v) > slug.AliasMaxLen {
+		v = strings.TrimRight(v[:slug.AliasMaxLen], "-")
+	}
+	if slug.Validate(v) != nil {
+		return slug.RandomAlias()
+	}
+
+	return v
 }
 
 // invitation is the `Holder` an operator entered for the address a directory

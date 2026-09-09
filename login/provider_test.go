@@ -381,3 +381,46 @@ func TestSomebodyTheOperatorEnteredIsTheSamePerson(t *testing.T) {
 		x.Equal(http.StatusSeeOther, res.StatusCode)
 	})
 }
+
+// TestADottedAddressSignsIn is the derivation, through the whole flow.
+//
+// A corporate directory hands out `first.last@`, and an alias holds no dots --
+// so this reached `acceptLoginRequest` and died at `Holder.Add` with
+// InvalidArgument, at the end of an otherwise complete sign-in. `arrives`
+// derives a name a row may have now, and the two people whose addresses fold to
+// the same word both get in.
+func TestADottedAddressSignsIn(t *testing.T) {
+	x := require.New(t)
+	p := idptest.New(t, "login-app")
+	d := serveAs(t, login.Skip, func(c *login.Config) { c.Enrol = arrives.Enrolling() })
+	d.connect(t, p, "entra")
+
+	named := func(challenge, subject, email string) string {
+		t.Helper()
+		p.Subject = subject
+		p.Claims = map[string]any{"email": email, "email_verified": true}
+		d.hydra.raise(challenge, "contoso-web")
+
+		res := d.through(t, d.browser(t), challenge, "entra")
+		x.Equal(http.StatusSeeOther, res.StatusCode, "%s could not sign in", email)
+
+		id, _ := d.hydra.told()
+		who, err := d.s.Ungated.Holder().Get(t.Context(), rstr.HolderGetRequest_builder{
+			Ref:    rstr.HolderRef_builder{Id: pdid.MustParse(id).Bytes()}.Build(),
+			Select: rstr.HolderSelect_builder{Alias: proto.Bool(true)}.Build(),
+		}.Build())
+		x.NoError(err)
+
+		return who.GetAlias()
+	}
+
+	x.Equal("seunghyun-hwang", named("c1", "sh-at-entra", "Seunghyun.Hwang@hday.dev"))
+
+	// And the collision: a different person whose address folds to the same
+	// word. One of them cannot have the plain name, and neither is refused --
+	// a sign-in that fails because somebody signed up first is not something
+	// the person at the form can do anything about.
+	other := named("c2", "sh2-at-entra", "seunghyun_hwang@hday.dev")
+	x.NotEqual("seunghyun-hwang", other)
+	x.Contains(other, "seunghyun-hwang-")
+}
