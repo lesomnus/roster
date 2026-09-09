@@ -8,9 +8,14 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
+	"github.com/lesomnus/z"
 
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/flg"
@@ -20,6 +25,8 @@ import (
 
 	"github.com/lesomnus/roster/cmd"
 	"github.com/lesomnus/roster/login"
+	rstr "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/keys"
 )
 
 // NewCmdLogin is `roster login`: the box Hydra hands a `login_challenge` to.
@@ -35,7 +42,7 @@ func NewCmdLogin(c *cmd.Config) *xli.Command {
 		Name:  "login",
 		Brief: "the Login App, for a deployment with Hydra in front",
 
-		Commands: xli.Commands{newCmdLoginServe(c)},
+		Commands: xli.Commands{newCmdLoginServe(c), newCmdLoginProvision(c)},
 	}
 }
 
@@ -118,6 +125,246 @@ func newCmdLoginServe(c *cmd.Config) *xli.Command {
 			return serveLogin(ctx, lc)
 		}),
 	}
+}
+
+// newCmdLoginProvision is `roster login provision`: the credential this app
+// needs, made where it will be used and living exactly as long.
+//
+// # The ordering it exists for
+//
+// `roster login serve` refuses to start without a tenant key, and a tenant key
+// cannot exist before this deployment has run once: minting one takes a tenant,
+// and a customer is made afterwards. So a deployment either does it by hand and
+// keeps the answer in a Secret, or runs this beside the process -- in the same
+// pod, on the same volume, before the server -- and points `login.keys` at the
+// file it writes.
+//
+// The second is better than a Secret and not only shorter. The key never leaves
+// the machine it was minted on, there is nothing to rotate because it is
+// replaced every time this runs, and a pod that is gone takes its credential
+// with it.
+//
+// # What it makes, and what it refuses to
+//
+// **Its own front door and nothing else.** For each operator named in
+// `login.clients` it ensures the holder `login-app`, a role holding exactly
+// what the app calls as itself, the binding between them, and a key -- then
+// writes the key to a file. What it does **not** do is make a tenant: a
+// customer is the operator's, and a command that made one by mentioning it
+// would be a way to write rows into somebody else's by typo. A tenant that is
+// not there is said by name.
+//
+// # It replaces rather than adds
+//
+// A key's alias is unique per holder, and a key cannot be read back -- so a
+// second run cannot reuse the first one's and must not leave it behind. The old
+// row is erased and a new one written, which is why a restart is a rotation and
+// why nothing accumulates.
+func newCmdLoginProvision(c *cmd.Config) *xli.Command {
+	return &xli.Command{
+		Name:  "provision",
+		Brief: "mint this deployment's own Login App key into a file, for `login.keys: file:…`",
+
+		Flags: flg.Flags{
+			&flg.String{Name: "out", Brief: "the directory to write <alias>.key into; /run/roster-login if empty"},
+			&flg.Strings{Name: "client", Brief: "which OAuth clients are an operator's, as alias=client-id[,…]; the `login.clients` block otherwise"},
+		},
+
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			given, _ := flg.Find[[]string](cl, "client")
+			clients, err := clientsOf(c.Login.Clients, LoginClientPrefix, given)
+			if err != nil {
+				return err
+			}
+			if len(clients) == 0 {
+				return errors.New("login.clients (--client alias=…): which operators this app fronts, and there are none")
+			}
+
+			out, _ := flg.Find[string](cl, "out")
+			if out == "" {
+				out = "/run/roster-login"
+			}
+			if err := os.MkdirAll(out, 0o700); err != nil {
+				return err
+			}
+
+			s, err := cmd.Build(ctx, *c)
+			if err != nil {
+				return err
+			}
+			defer s.Close()
+
+			// The schema, said the way `serve` says it. This runs **before**
+			// the server on a fresh volume -- that is the whole point of it --
+			// so the tables are not there yet, and a command that assumed they
+			// were would fail on exactly the first boot it exists for.
+			// `db.migrate: false` is a deployment saying this process may not
+			// alter tables, and it is answered here rather than worked around.
+			if err := ready(ctx, s, c.Db); err != nil {
+				return err
+			}
+
+			for alias := range clients {
+				if err := provision(ctx, s, alias, out); err != nil {
+					return fmt.Errorf("%s: %w", alias, err)
+				}
+			}
+
+			return nil
+		}),
+	}
+}
+
+// LoginMethods is what the Login App calls as itself, and the whole of it.
+//
+// The four before `login.Methods` are the flow: resolve the operator, check a
+// secret, mint the delegation, end it. `Sync.Watch` is how it hears that
+// somebody has been signed out everywhere so that Hydra can be told to forget
+// them. `login.Methods` is `Me.Get`, which is the claims that go in the token.
+//
+// It draws no account screens and reads nobody's rows but the person it is
+// signing in, which is why this list is short and why it is written here rather
+// than left to whoever runs the command.
+var LoginMethods = append([]string{
+	rstr.TenantService_Get_FullMethodName,
+	rstr.VouchService_Verify_FullMethodName,
+	rstr.VouchService_Delegate_FullMethodName,
+	rstr.DelegationService_Revoke_FullMethodName,
+	rstr.SyncService_Watch_FullMethodName,
+}, login.Methods...)
+
+// provision is one operator's front door.
+func provision(ctx context.Context, s *cmd.Server, alias, out string) error {
+	tn, err := s.Ungated.Tenant().Get(ctx, rstr.TenantGetRequest_builder{
+		Ref:    rstr.TenantRef_builder{Alias: &alias}.Build(),
+		Select: rstr.TenantSelect_builder{}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			// Said rather than made. A customer is the operator's.
+			return fmt.Errorf("no such customer; `roster tenant add @%s` is somebody's decision and not this command's", alias)
+		}
+
+		return err
+	}
+	at := rstr.TenantRef_builder{Id: tn.GetId()}.Build()
+
+	who, err := ensureHolder(ctx, s, at, alias)
+	if err != nil {
+		return err
+	}
+	role, err := ensureRole(ctx, s, at)
+	if err != nil {
+		return err
+	}
+	if _, err := s.Ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
+		Role:   rstr.RoleRef_builder{Id: role}.Build(),
+		Holder: rstr.HolderRef_builder{Id: who}.Build(),
+	}.Build()); err != nil && status.Code(err) != codes.AlreadyExists {
+		return err
+	}
+
+	// Erased first: a key's alias is unique per holder and this one cannot be
+	// read back, so the row from the last run is of no use to anybody and is
+	// one more thing that would answer if it leaked.
+	if v, err := s.Ungated.ApiKey().Get(ctx, rstr.ApiKeyGetRequest_builder{
+		Ref: rstr.ApiKeyRef_builder{
+			Slug: rstr.ApiKeyRefBySlug_builder{Holder: rstr.HolderRef_builder{Id: who}.Build(), Alias: z.Ptr(provisioned)}.Build(),
+		}.Build(),
+		Select: rstr.ApiKeySelect_builder{}.Build(),
+	}.Build()); err == nil {
+		if _, err := s.Ungated.ApiKey().Erase(ctx, rstr.ApiKeyRef_builder{Id: v.GetId()}.Build()); err != nil {
+			return err
+		}
+	} else if status.Code(err) != codes.NotFound {
+		return err
+	}
+
+	token, sum, err := keys.Mint(keys.PrefixTenant)
+	if err != nil {
+		return err
+	}
+	if _, err := s.Ungated.ApiKey().Add(ctx, rstr.ApiKeyAddRequest_builder{
+		Holder: rstr.HolderRef_builder{Id: who}.Build(), Alias: provisioned,
+		Secret: sum, Methods: LoginMethods,
+	}.Build()); err != nil {
+		return err
+	}
+
+	// `0600` and a directory this command made at `0700`: what is written is a
+	// credential, and the only reader is the process beside it.
+	path := filepath.Join(out, alias+".key")
+	if err := os.WriteFile(path, []byte(token+"\n"), 0o600); err != nil {
+		return err
+	}
+
+	log.From(ctx).InfoContext(ctx, "login: provisioned",
+		slog.String("operator", alias), slog.String("out", path), slog.Int("methods", len(LoginMethods)))
+
+	return nil
+}
+
+// provisioned is what this command's rows are called, so that a later run finds
+// them and a person reading the console can tell them from somebody's.
+const provisioned = "login-app"
+
+func ensureHolder(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias string) ([]byte, error) {
+	v, err := s.Ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{Tenant: at, Alias: provisioned}.Build())
+	if err == nil {
+		return v.GetId(), nil
+	}
+	if status.Code(err) != codes.AlreadyExists {
+		return nil, err
+	}
+
+	got, err := s.Ungated.Holder().Get(ctx, rstr.HolderGetRequest_builder{
+		Ref: rstr.HolderRef_builder{
+			Slug: rstr.HolderRefBySlug_builder{Alias: z.Ptr(provisioned), Tenant: at}.Build(),
+		}.Build(),
+		Select: rstr.HolderSelect_builder{}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	return got.GetId(), nil
+}
+
+func ensureRole(ctx context.Context, s *cmd.Server, at *rstr.TenantRef) ([]byte, error) {
+	// Patched when it is already there rather than left alone: the list above
+	// grows with the app, and a role written by an older version is a Login App
+	// that starts and then refuses one thing.
+	v, err := s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
+		Tenant: at, Alias: provisioned, Methods: LoginMethods,
+	}.Build())
+	if err == nil {
+		return v.GetId(), nil
+	}
+	if status.Code(err) != codes.AlreadyExists {
+		return nil, err
+	}
+
+	got, err := s.Ungated.Role().Get(ctx, rstr.RoleGetRequest_builder{
+		Ref: rstr.RoleRef_builder{
+			Slug: rstr.RoleRefBySlug_builder{Alias: z.Ptr(provisioned), Tenant: at}.Build(),
+		}.Build(),
+		// `date_updated` because a patch is refused without the version it is
+		// against -- which is the rule keeping two writers from each thinking
+		// they wrote last.
+		Select: rstr.RoleSelect_builder{DateUpdated: z.Ptr(true)}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+	if _, err := s.Ungated.Role().Patch(ctx, rstr.RolePatchRequest_builder{
+		Ref:         rstr.RoleRef_builder{Id: got.GetId()}.Build(),
+		Methods:     LoginMethods,
+		DateUpdated: got.GetDateUpdated(),
+	}.Build()); err != nil {
+		return nil, err
+	}
+
+	return got.GetId(), nil
 }
 
 func mustFind[T any](cl *xli.Command, name string) T {

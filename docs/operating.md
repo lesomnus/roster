@@ -1419,8 +1419,39 @@ login:
   # one replica**: with nothing here a key is made at start, so a second
   # replica cannot open what the first sealed and a restart loses every browser
   # that is half way through a second factor. It says so at start, loudly.
-  seal: [env:ROSTER_LOGIN_SEAL]
+  seal: [env:LOGIN_SEAL]
 ```
+
+`env:NAME` and `file:PATH` are both understood. **Do not name a `ROSTER_`
+variable**: the configuration loader claims those for the fields of the same
+name, so `env:ROSTER_LOGIN_SEAL` is read as `login.seal` itself -- a key where a
+list was expected, and a process that refuses to start.
+
+### The key cannot exist before this has run once
+
+`roster login serve` refuses to start without a tenant key, and minting one
+takes a tenant, which somebody makes after the first boot. So either the block
+above names an address only once a key is in hand, or:
+
+```sh
+roster login provision --out /run/roster-login
+```
+
+It ensures this deployment's **own** front door inside each operator named in
+`login.clients` -- a `login-app` holder, a role holding exactly what the app
+calls as itself, the binding, and a key -- and writes the key to
+`<out>/<alias>.key`. Then `login.keys` is `file:/run/roster-login/<alias>.key`
+and there is no Secret at all.
+
+It makes no **customer**: a tenant that is not there is refused by name, because
+whose customers exist is somebody's decision and not a command's. And it
+replaces rather than adds: a key cannot be read back, so a second run erases the
+one before it. A restart is a rotation, and a pod that is gone takes its
+credential with it.
+
+Beside the process is where it belongs -- the same machine, the same volume,
+before the server. In Kubernetes that is an `initContainer`; on a box it is a
+line in the unit before `ExecStart`.
 
 `login.clients` is a **list** per customer, because an operator with two
 products has two clients and one sign-in -- which is the case Hydra is for at

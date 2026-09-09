@@ -237,13 +237,52 @@ func serveAccount(ctx context.Context, ac cmd.AccountConfig) error {
 	return nil
 }
 
-// sealOf is the key sessions are sealed under, from `env:NAME` references, or
-// one made now.
+// secretRef is how this binary reads a secret somebody wrote down: `env:NAME`,
+// or `file:PATH`.
 //
-// `env:NAME` rather than the key itself, for the reason `--key` has an
+// `account.EnvSecret` knows the first and says the second is *a deployment's to
+// add* -- and `cli` is the deployment. `cmd` is what both entry points share;
+// this is a process reading a file, which is what belongs here and nowhere
+// else.
+//
+// # What `file:` is for
+//
+// A credential that never becomes a Secret. The Login App's key cannot exist
+// before this deployment has run once -- minting it takes a tenant, and a
+// tenant is made afterwards -- so a deployment either does it by hand and keeps
+// the answer somewhere, or lets `roster login provision` mint one into a path
+// beside the process and reads it from there. The second leaves nothing to
+// rotate, nothing in etcd, and nothing to leak: the key lives exactly as long
+// as the pod.
+//
+// Trailing whitespace goes, because the thing that wrote the file almost
+// certainly ended it with a newline and a key with one is not that key.
+func secretRef(ref string) (string, error) {
+	if path, ok := strings.CutPrefix(ref, "file:"); ok {
+		if path == "" {
+			return "", fmt.Errorf("secret_ref %q: file: names no path", ref)
+		}
+		b, err := os.ReadFile(path)
+		if err != nil {
+			return "", fmt.Errorf("secret_ref %q: %w", ref, err)
+		}
+		v := strings.TrimSpace(string(b))
+		if v == "" {
+			return "", fmt.Errorf("secret_ref %q: the file is empty", ref)
+		}
+
+		return v, nil
+	}
+
+	return account.EnvSecret(ref)
+}
+
+// sealOf is the key sessions are sealed under, from `env:NAME` or `file:PATH`
+// references, or one made now.
+//
+// A reference rather than the key itself, for the reason `--key` has an
 // environment form: a key is a secret, a flag is in the process list and a
-// configuration file is a file. Through [account.EnvSecret], which is the one
-// scheme this binary knows.
+// configuration file is a file. Through [secretRef].
 //
 // `who` is the block that names it, because two apps call this and an operator
 // reading *account.seal* about the Login App has been told the wrong setting to
@@ -263,7 +302,7 @@ func sealOf(who string, refs []string) (*authsession.Sealed, error) {
 
 	keys := make([][]byte, 0, len(refs))
 	for _, ref := range refs {
-		v, err := account.EnvSecret(ref)
+		v, err := secretRef(ref)
 		if err != nil {
 			return nil, fmt.Errorf("seal: %w", err)
 		}
@@ -297,7 +336,7 @@ func sealOf(who string, refs []string) (*authsession.Sealed, error) {
 func keysOf(refs map[string]string, prefix string, given []string) (map[string]string, error) {
 	out := map[string]string{}
 	for alias, ref := range refs {
-		v, err := account.EnvSecret(ref)
+		v, err := secretRef(ref)
 		if err != nil {
 			return nil, fmt.Errorf("keys.%s: %w", alias, err)
 		}
