@@ -50,6 +50,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
@@ -160,7 +161,9 @@ func (s *Server) Verify(ctx context.Context, req *app.VouchVerifyRequest) (*app.
 // the lockout, or the erasure check, or that every refusal has to cost the
 // same.
 func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind, name string, secret []byte) (*app.VouchVerifyResponse, *app.Credential, error) {
-	ref, err := refOf(who)
+	in := tenantOf(who, ctx)
+
+	ref, err := refOf(who, in)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -191,7 +194,7 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind, name strin
 		// a read, and a read that finds nothing costs the same as a wrong
 		// password below -- which is the whole of what D14 asks of every path
 		// that ends in a refusal.
-		ref, err = s.byAddress(ctx, who.GetTenant(), who.GetAddress())
+		ref, err = s.byAddress(ctx, in, who.GetAddress())
 		if err != nil {
 			if status.Code(err) != codes.NotFound {
 				return nil, nil, err
@@ -529,12 +532,48 @@ func kindOf(v string) string {
 	return v
 }
 
+// tenantOf is the tenant a request is about: the one it named, or -- when it
+// named none -- the caller's own.
+//
+// # Why a caller need not name its own tenant
+//
+// A front door holds one key per operator it fronts and calls with the key of
+// whichever one the host resolved to, so the tenant is already on the request
+// twice: once in the credential, once in the field. Since `Verify` began
+// checking that the two agree, the field is a restatement -- and one an app has
+// to keep in step with its own key selection, which is a second thing to get
+// right for no second guarantee. Left out, there is one: pick the right key.
+//
+// It stays available and it has to. An `rk_` is not inside a tenant and neither
+// is an unframed caller -- `roster vouch verify`, the sandbox, the admin port --
+// so for them the field is the only thing that says which operator, and naming
+// none is still the error it was.
+//
+// A caller that names one anyway is not trusted more for it: the walled read in
+// [Server.verify] answers for the key either way, so a field that disagrees with
+// the credential resolves to nobody.
+func tenantOf(w *app.VouchWho, ctx context.Context) *app.TenantRef {
+	if v := w.GetTenant(); v != "" {
+		return app.TenantRef_builder{Alias: z.Ptr(v)}.Build()
+	}
+
+	f, ok := frame.From(ctx)
+	if !ok || f.Tenant.IsZero() {
+		return nil
+	}
+
+	return app.TenantRef_builder{Id: f.Tenant.Bytes()}.Build()
+}
+
 // refOf is the holder a request named, and it refuses one that named two ways.
 //
 // Refused rather than resolved in some order: a caller that filled in both an
 // identifier and a name has not decided which it means, and picking one for
 // them makes the answer depend on a precedence rule nothing states.
-func refOf(w *app.VouchWho) (*app.HolderRef, error) {
+//
+// `in` is [tenantOf]: what the request named, or the caller's own tenant when it
+// named nothing. Nil is a caller that is in no tenant and named none.
+func refOf(w *app.VouchWho, in *app.TenantRef) (*app.HolderRef, error) {
 	id := w.GetId()
 	tenant, alias, address := w.GetTenant(), w.GetAlias(), w.GetAddress()
 
@@ -545,6 +584,10 @@ func refOf(w *app.VouchWho) (*app.HolderRef, error) {
 	switch {
 	case byId && (bySlug || byAddress || tenant != ""),
 		bySlug && byAddress:
+		// Against what the request **named**, not against `in`: a caller whose
+		// own tenant was filled in for it has not named two ways of finding
+		// anybody, and refusing an `id` because the caller happens to be inside
+		// a tenant would refuse every front door that sends one.
 		return nil, status.Error(codes.InvalidArgument,
 			"who: named more than one way of finding somebody; exactly one of them is meant")
 
@@ -553,9 +596,9 @@ func refOf(w *app.VouchWho) (*app.HolderRef, error) {
 		// address names an `Email` row and the person is what that row hangs
 		// off. So it is looked up rather than referred to, one step earlier,
 		// and this answers nil to say so.
-		if tenant == "" {
+		if in == nil {
 			return nil, status.Error(codes.InvalidArgument,
-				"who: an address is looked up within a tenant, and none was named")
+				"who: an address is looked up within a tenant, and none was named by a caller that is in none")
 		}
 
 		return nil, nil
@@ -569,15 +612,15 @@ func refOf(w *app.VouchWho) (*app.HolderRef, error) {
 		return app.HolderRef_builder{Id: k.Bytes()}.Build(), nil
 
 	case bySlug || tenant != "":
-		if tenant == "" || alias == "" {
+		if in == nil || alias == "" {
 			return nil, status.Error(codes.InvalidArgument,
-				"who: a name is a tenant and an alias, and one of them is missing")
+				"who: a name is a tenant and an alias; the alias is always the request's, and the tenant is the caller's own unless it is in none")
 		}
 
 		return app.HolderRef_builder{
 			Slug: app.HolderRefBySlug_builder{
 				Alias:  z.Ptr(alias),
-				Tenant: app.TenantRef_builder{Alias: z.Ptr(tenant)}.Build(),
+				Tenant: in,
 			}.Build(),
 		}.Build(), nil
 
@@ -606,9 +649,9 @@ func refOf(w *app.VouchWho) (*app.HolderRef, error) {
 // answer, and the caller above burns an argon2 comparison over it. Told apart,
 // this would answer *is there an account here* faster and more exactly than any
 // timing difference could.
-func (s *Server) byAddress(ctx context.Context, tenant, address string) (*app.HolderRef, error) {
+func (s *Server) byAddress(ctx context.Context, tenant *app.TenantRef, address string) (*app.HolderRef, error) {
 	t, err := s.open.Tenant().Get(ctx, app.TenantGetRequest_builder{
-		Ref:    app.TenantRef_builder{Alias: z.Ptr(tenant)}.Build(),
+		Ref:    tenant,
 		Select: app.TenantSelect_builder{}.Build(),
 	}.Build())
 	if err != nil {

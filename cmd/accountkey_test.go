@@ -216,6 +216,31 @@ func TestAnAccountAppHoldsOneTenantsKeyAndReachesOnlyThatTenant(t *testing.T) {
 		x.Equal(erin.Bytes(), v.GetHolder())
 	})
 
+	t.Run("and needs no tenant named, because its key is one", func(t *testing.T) {
+		x := require.New(t)
+
+		// The alias alone. A front door holding contoso's key has already said
+		// which operator by calling with it, and keeping the field in step with
+		// the key it picked is a second thing to get right for no second
+		// guarantee.
+		v, err := vouch.Verify(as, app.VouchVerifyRequest_builder{
+			Who:    app.VouchWho_builder{Alias: "erin"}.Build(),
+			Secret: []byte(secret),
+		}.Build())
+		x.NoError(err)
+		x.True(v.GetOk())
+		x.Equal(erin.Bytes(), v.GetHolder())
+
+		// And what it falls back to is the **caller's** tenant and not a search:
+		// fabrikam's alias, unqualified, is nobody in contoso.
+		v, err = vouch.Verify(as, app.VouchVerifyRequest_builder{
+			Who:    app.VouchWho_builder{Alias: "fab"}.Build(),
+			Secret: []byte(secret),
+		}.Build())
+		x.NoError(err)
+		x.False(v.GetOk(), "an unqualified alias reached another tenant")
+	})
+
 	t.Run("and checks nothing for another tenant's, by any of the three forms", func(t *testing.T) {
 		// The same sentence as `Accept` above, with a password instead of a
 		// claim. It was the arm that was open: `Accept` resolves the identity

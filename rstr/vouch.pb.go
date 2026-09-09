@@ -124,9 +124,16 @@ type VouchWho_builder struct {
 	// make -- or the tenant and an [VouchWho.address], which is what a form that
 	// asks for an email collects.
 	//
-	// The tenant is required by either, and comes from the front door rather than
-	// from the form: `FrontService.WhoseHost` turns the name a browser arrived at
-	// into one.
+	// The tenant comes from the front door rather than from the form:
+	// `FrontService.WhoseHost` turns the name a browser arrived at into one.
+	//
+	// **Optional for a caller that is inside a tenant**, which a front door
+	// holding one key per operator is: the key already says which one, `Verify`
+	// checks a named tenant against it anyway, and so a field kept in step with
+	// the key an app just picked is a second thing to get right for no second
+	// guarantee. Left out, there is one thing: pick the right key. A caller in no
+	// tenant -- an `rk_`, or one with no frame at all -- must still name it, and
+	// naming none is the error it was.
 	Tenant string
 	Alias  string
 	// An address, within a tenant. What most sign-in forms actually collect.

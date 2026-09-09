@@ -65,12 +65,18 @@ func (s *Server) Link(ctx context.Context, req *app.VouchLinkRequest) (*app.Vouc
 		return nil, err
 	}
 
-	ref, err := refOf(req.GetWho())
+	// The same tenant rule `Verify` has, and for the same reason: a front door
+	// asking for a link about somebody of its own operator has already said
+	// which one, in the key it is calling with. The walled read below is what
+	// makes that safe here too.
+	in := tenantOf(req.GetWho(), ctx)
+
+	ref, err := refOf(req.GetWho(), in)
 	if err != nil {
 		return nil, err
 	}
 	if ref == nil {
-		ref, err = s.byAddress(ctx, req.GetWho().GetTenant(), req.GetWho().GetAddress())
+		ref, err = s.byAddress(ctx, in, req.GetWho().GetAddress())
 		if err != nil {
 			if status.Code(err) != codes.NotFound {
 				return nil, err
