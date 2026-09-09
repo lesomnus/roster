@@ -21,6 +21,10 @@ var ErrUninvited = arrives.ErrUninvited
 // Invited refuses everybody roster has not been told about.
 func Invited() Enrol { return arrives.Invited() }
 
-// Enrolling makes an account for anybody the provider vouches for, named by the
-// local part of their address.
+// Expected admits somebody an operator entered, by the address on their row,
+// and nobody else.
+func Expected() Enrol { return arrives.Expected() }
+
+// Enrolling makes an account for anybody the provider vouches for, after
+// looking for an invitation the way [Expected] does.
 func Enrolling() Enrol { return arrives.Enrolling() }

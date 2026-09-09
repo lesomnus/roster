@@ -81,7 +81,7 @@ func newCmdAccountServe(c *cmd.Config) *xli.Command {
 			&flg.Switch{Name: "insecure", Brief: "dial roster without TLS"},
 			&flg.String{Name: "base", Brief: "this app's public origin, registered with every provider as the redirect"},
 			&flg.String{Name: "static", Brief: "a directory to serve as the page; empty serves none"},
-			&flg.String{Name: "enrol", Brief: "what happens to a stranger a provider vouches for: invited (nobody) or enrolling"},
+			&flg.String{Name: "enrol", Brief: "who a provider may sign in: invited (only somebody already linked), expected (somebody entered by address), enrolling (anybody)"},
 			&flg.Strings{Name: "key", Brief: "a tenant key, as alias=rt_…; repeat per operator fronted. Or ROSTER_ACCOUNT_KEY_<ALIAS> in the environment"},
 			&flg.Switch{Name: "insecure-cookie", Brief: "a cookie without Secure, for a page served over plain http in development"},
 			&flg.Strings{Name: "seal", Brief: "the key sessions are sealed into the cookie under, as env:NAME holding 32 bytes base64; repeat to rotate, the first seals. Empty is a key made at start, which is one replica"},
@@ -183,10 +183,12 @@ func serveAccount(ctx context.Context, ac cmd.AccountConfig) error {
 	switch ac.Enrol {
 	case "", "invited":
 		cfg.Enrol = account.Invited()
+	case "expected":
+		cfg.Enrol = account.Expected()
 	case "enrolling":
 		cfg.Enrol = account.Enrolling()
 	default:
-		return fmt.Errorf("account.enrol (--enrol): %q is not one of invited, enrolling", ac.Enrol)
+		return fmt.Errorf("account.enrol (--enrol): %q is not one of invited, expected, enrolling", ac.Enrol)
 	}
 	if ac.Page.Dir != "" {
 		cfg.Static = http.FileServer(http.Dir(ac.Page.Dir))

@@ -66,7 +66,7 @@ func newCmdLoginServe(c *cmd.Config) *xli.Command {
 			&flg.Strings{Name: "client", Brief: "which OAuth clients are an operator's, as alias=client-id[,client-id…]; repeat per operator"},
 			&flg.String{Name: "consent", Brief: "what the consent hop does: skip (grant what the client asked for; the default) or ask (draw a screen)"},
 			&flg.String{Name: "base", Brief: "this app's public origin, registered with every provider as the redirect. One for the whole app"},
-			&flg.String{Name: "enrol", Brief: "what happens to a stranger a provider vouches for: invited (nobody) or enrolling"},
+			&flg.String{Name: "enrol", Brief: "who a provider may sign in: invited (only somebody already linked), expected (somebody entered by address), enrolling (anybody)"},
 			&flg.Strings{Name: "seal", Brief: "the key sessions are sealed under, as env:NAME; repeat to rotate"},
 			&flg.Switch{Name: "insecure-cookie", Brief: "drop Secure from the cookies, for plain http in development"},
 			&flg.String{Name: "static", Brief: "the built sign-in page (ts/dist/login)"},
@@ -259,6 +259,10 @@ func newCmdLoginProvision(c *cmd.Config) *xli.Command {
 // somebody has been signed out everywhere so that Hydra can be told to forget
 // them. `login.Methods` is `Me.Get`, which is the claims that go in the token.
 //
+// `Email.Get` is the invitation: an operator who entered somebody in advance
+// knows their address and not the subject a directory will assert, so the first
+// sign-in is matched by the one and linked to the other.
+//
 // **`HolderService.Add` is not here, and that is the point of the list.** It is
 // what `enrol: enrolling` needs, and making people is a wider grant than
 // signing them in: a key that holds it can write a row into an operator's
@@ -279,6 +283,7 @@ var LoginMethods = append([]string{
 	rstr.ConnectionService_List_FullMethodName,
 	rstr.IdentityService_Get_FullMethodName,
 	rstr.IdentityService_Add_FullMethodName,
+	rstr.EmailService_Get_FullMethodName,
 }, login.Methods...)
 
 // provision is one operator's front door.
@@ -539,10 +544,12 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 	switch lc.Enrol {
 	case "", "invited":
 		enrol = arrives.Invited()
+	case "expected":
+		enrol = arrives.Expected()
 	case "enrolling":
 		enrol = arrives.Enrolling()
 	default:
-		return fmt.Errorf("login.enrol (--enrol): %q is not one of invited, enrolling", lc.Enrol)
+		return fmt.Errorf("login.enrol (--enrol): %q is not one of invited, expected, enrolling", lc.Enrol)
 	}
 
 	cfg := login.Config{

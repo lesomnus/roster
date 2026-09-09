@@ -50,6 +50,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	rstr "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/front"
 )
 
 // Caller is who a provider said signed in, before this deployment has decided
@@ -87,21 +88,64 @@ type Enrol func(ctx context.Context, c rstr.Client, who Caller) (pdid.Id, error)
 // ErrUninvited is what an [Enrol] answers when this person gets no account.
 var ErrUninvited = errors.New("arrives: nobody here")
 
-// Invited refuses everybody roster has not been told about. The default, and
-// the right one for a deployment where people are put in by an operator.
+// Invited refuses everybody roster has not been told about, where *told about*
+// means an `Identity` row: this is only reached when there is none, so it is
+// the policy that never makes one.
+//
+// Note what it does **not** do, because it reads as though it should: it does
+// not let in somebody an operator entered by name and address. It cannot -- the
+// operator does not know the subject a directory will assert, which is an
+// opaque identifier issued at that directory and not an address. [Expected] is
+// that policy.
 func Invited() Enrol {
 	return func(context.Context, rstr.Client, Caller) (pdid.Id, error) {
 		return pdid.Nil, ErrUninvited
 	}
 }
 
+// Expected is the operator's invitation: somebody they entered, and nobody
+// else. The `Holder` is theirs to make, with an `Email` row carrying the
+// address that person will arrive under; the first sign-in finds it and links
+// the identity, and every one after that finds the identity.
+//
+// The address is the only identifier an operator has before the first sign-in.
+// A directory's subject is issued at the directory and is not knowable in
+// advance, so a policy that matched on nothing else could never admit anybody.
+func Expected() Enrol {
+	return func(ctx context.Context, c rstr.Client, who Caller) (pdid.Id, error) {
+		id, ok, err := invitation(ctx, c, who)
+		if err != nil || !ok {
+			if err != nil {
+				return pdid.Nil, err
+			}
+
+			return pdid.Nil, ErrUninvited
+		}
+
+		return id, nil
+	}
+}
+
 // Enrolling makes an account for anybody the provider vouches for, named by the
-// local part of their address. For a deployment where signing in at the
-// operator's own directory *is* the invitation -- which is a decision about the
-// provider, and one to take knowing the tenant's key has to hold
-// `HolderService.Add` for it.
+// local part of their address -- **after** looking for an invitation, so an
+// operator may enter the people they know and let the rest arrive. For a
+// deployment where signing in at the operator's own directory *is* the
+// invitation, which is a decision about the provider and one to take knowing
+// the tenant's key has to hold `HolderService.Add` for it.
+//
+// The lookup is not an optimisation. Without it, entering somebody in advance
+// **breaks** their sign-in: the alias an operator chose is the alias this
+// derives, and `Holder.Add` answers AlreadyExists.
 func Enrolling() Enrol {
 	return func(ctx context.Context, c rstr.Client, who Caller) (pdid.Id, error) {
+		id, ok, err := invitation(ctx, c, who)
+		if err != nil {
+			return pdid.Nil, err
+		}
+		if ok {
+			return id, nil
+		}
+
 		alias, _, ok := strings.Cut(who.Email, "@")
 		if !ok || alias == "" {
 			return pdid.Nil, fmt.Errorf("enrol %s/%s: no email to name them by", who.Provider, who.Subject)
@@ -118,6 +162,62 @@ func Enrolling() Enrol {
 
 		return pdid.From(v.GetId())
 	}
+}
+
+// invitation is the `Holder` an operator entered for the address a directory
+// just vouched for, if there is one.
+//
+// # Why this is not a new grant
+//
+// `CLAUDE.md` already says what an `Email` row is: *`Identity.Add` and
+// `Email.Add` sound like keeping a directory tidy and each is a way to sign in
+// as whoever the row is about.* This is that sentence carried out. Writing the
+// row is gated where every grant is (`server/core/escalate.go`, *nobody writes
+// a way into an account wider than their own*), an address is unique within a
+// tenant so it cannot be claimed twice, and the wall means the row read is one
+// this caller could already see.
+//
+// # What it does add, and it is one condition
+//
+// **The provider must say the address is verified.** Without that, a directory
+// that lets somebody type an arbitrary address into their own profile is a
+// directory that hands out whichever account carries it. `email_verified` is
+// the claim, and an unverified one is not an answer here -- it falls through to
+// whatever the policy does with a stranger.
+func invitation(ctx context.Context, c rstr.Client, who Caller) (pdid.Id, bool, error) {
+	if who.Email == "" || !who.Verified {
+		return pdid.Nil, false, nil
+	}
+
+	v, err := c.Email().Get(ctx, rstr.EmailGetRequest_builder{
+		Ref: rstr.EmailRef_builder{
+			At: rstr.EmailRefByAt_builder{
+				TenantId: who.Tenant.Bytes(),
+				// The same normalisation the write is held to, from the same
+				// function: a lookup that lowers against a column that does not
+				// is an index comparing strings this never compares.
+				Address: proto.String(front.Address(who.Email)),
+			}.Build(),
+		}.Build(),
+		Select: rstr.EmailSelect_builder{
+			Holder: rstr.HolderSelect_builder{}.Build(),
+		}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) != codes.NotFound {
+			return pdid.Nil, false, err
+		}
+
+		return pdid.Nil, false, nil
+	}
+
+	h := v.GetHolder()
+	if h == nil || len(h.GetId()) == 0 {
+		return pdid.Nil, false, nil
+	}
+	id, err := pdid.From(h.GetId())
+
+	return id, err == nil, err
 }
 
 // Providers is one app's relying-party half.

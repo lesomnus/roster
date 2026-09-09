@@ -329,7 +329,7 @@ sequenceDiagram
 | which operator | the challenge, again | `/provider` is in a flow, so the `Connection` rows read are the ones that client's operator can see. fabrikam's challenge cannot reach contoso's directory |
 | the redirect | `login.base` | **one URL for the whole app**, because Hydra sends every browser here under one name. Which operator a callback belongs to comes from the state, and the state is a nonce that names a row this app kept |
 | the exchange | the provider's own | the Login App is the relying party, exactly as the account app is |
-| a stranger | `login.enrol` | `invited` (the default) refuses; `enrolling` makes them, named by the local part of their address. `enrolling` needs `HolderService.Add`, which the provisioned key does not hold |
+| who may sign in | `login.enrol` | `invited` admits only somebody already linked; `expected` admits somebody an operator entered, matched by the **address** on their row; `enrolling` admits a stranger too. `enrolling` needs `HolderService.Add`, which the provisioned key does not hold |
 | the sign-in | `VouchService.Accept` | the claim this app verified, exchanged for a delegation. Not `Verify`: there is no password here to check |
 | the session | `Door.Accept` | minted here for the same reason the password path has one -- the consent hop reads the person **as them** to fill the claims, and there is no other credential that may |
 | the accept | `PUT …/login/accept` | the `Holder.id`. The same string a password would have produced for the same person, which is what makes Monday-Entra and Saturday-password one `sub` |
@@ -360,6 +360,30 @@ ended at Hydra does not end custody's row by itself, and the OIDC logout
 endpoints are how that propagates. Handling it is one `store.Del`, and it is the
 product app's -- the hop above is roster to Hydra, and this one is Hydra to
 whatever holds a session.
+
+### Putting people in, and letting them arrive
+
+An operator entering somebody in advance knows their **address**. They cannot
+know the subject a directory will assert -- that is an identifier issued at the
+directory, and it does not exist until the first sign-in. So `invited`, which
+matches an `Identity` row, can admit nobody at all through a directory unless
+somebody writes those rows by hand.
+
+`expected` is the policy that means what *putting people in* sounds like: a
+`Holder` with an `Email` row, matched on the first sign-in and linked to the
+identity then, so every sign-in after it is the ordinary lookup. `enrolling`
+does the same match first and creates only when there is none -- which is not an
+optimisation but a **fix**: without it, entering somebody in advance broke their
+sign-in, because the alias an operator chose is the alias `enrolling` derives
+and `Holder.Add` answers AlreadyExists.
+
+Matching adds exactly one condition over what an `Email` row already was.
+`CLAUDE.md` says it: *`Identity.Add` and `Email.Add` sound like keeping a
+directory tidy and each is a way to sign in as whoever the row is about.*
+Writing one is gated where every grant is, and an address is unique within a
+tenant so it cannot be claimed twice. The condition is that the **directory**
+says the address is verified -- one that lets somebody type an address into
+their own profile would otherwise hand out whichever account carries it.
 
 ### A tenant with no passwords
 

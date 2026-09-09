@@ -279,3 +279,105 @@ func TestATenantWithNoPasswordDrawsNoForm(t *testing.T) {
 	_, code := d.signIn(t, d.browser(t), "c1", "erin", password)
 	x.Equal(http.StatusUnauthorized, code)
 }
+
+// TestSomebodyTheOperatorEnteredIsTheSamePerson is the other half of what a
+// deployment asked for: people put in by hand, and people who arrive.
+//
+// An operator entering somebody knows their **address** and cannot know the
+// subject a directory will assert -- that is issued at the directory. So the
+// first sign-in is matched by the one and linked to the other, and every sign-in
+// after it is the ordinary `Identity` lookup.
+func TestSomebodyTheOperatorEnteredIsTheSamePerson(t *testing.T) {
+	entered := func(t *testing.T, d *deployment, alias, address string) pdid.Id {
+		t.Helper()
+		x := require.New(t)
+
+		who, err := d.s.Ungated.Holder().Add(t.Context(), rstr.HolderAddRequest_builder{
+			Tenant: rstr.TenantRef_builder{Alias: proto.String("contoso")}.Build(),
+			Alias:  alias, Name: "Dana",
+		}.Build())
+		x.NoError(err)
+		_, err = d.s.Ungated.Email().Add(t.Context(), rstr.EmailAddRequest_builder{
+			Holder:  rstr.HolderRef_builder{Id: who.GetId()}.Build(),
+			Address: address,
+		}.Build())
+		x.NoError(err)
+		id, err := pdid.From(who.GetId())
+		x.NoError(err)
+
+		return id
+	}
+
+	// `expected` is the whole policy: the people an operator entered, and
+	// nobody else. Before this existed, `invited` was the only refusing policy
+	// and it could admit nobody at all through a directory.
+	t.Run("expected admits them and refuses a stranger", func(t *testing.T) {
+		x := require.New(t)
+		p := idptest.New(t, "login-app")
+		d := serveAs(t, login.Skip, func(c *login.Config) { c.Enrol = arrives.Expected() })
+		d.connect(t, p, "entra")
+
+		dana := entered(t, d, "dana", "dana@contoso.example")
+		p.Subject = "dana-at-entra"
+		p.Claims = map[string]any{"email": "Dana@Contoso.Example", "email_verified": true}
+		d.hydra.raise("c1", "contoso-web")
+
+		res := d.through(t, d.browser(t), "c1", "entra")
+		x.Equal(http.StatusSeeOther, res.StatusCode)
+		subject, _ := d.hydra.told()
+		x.Equal(dana.String(), subject, "a new holder was made for somebody already entered")
+
+		// Nobody else.
+		p.Subject = "mallory-at-entra"
+		p.Claims = map[string]any{"email": "mallory@contoso.example", "email_verified": true}
+		d.hydra.raise("c2", "contoso-web")
+		res = d.through(t, d.browser(t), "c2", "entra")
+		x.Equal(http.StatusForbidden, res.StatusCode)
+	})
+
+	// The condition, and the only thing matching adds over what `Email.Add`
+	// already is: a directory that lets somebody type an address into their own
+	// profile must not thereby hand out whichever account carries it.
+	t.Run("an unverified address matches nothing", func(t *testing.T) {
+		x := require.New(t)
+		p := idptest.New(t, "login-app")
+		d := serveAs(t, login.Skip, func(c *login.Config) { c.Enrol = arrives.Expected() })
+		d.connect(t, p, "entra")
+
+		entered(t, d, "dana", "dana@contoso.example")
+		p.Subject = "not-dana"
+		p.Claims = map[string]any{"email": "dana@contoso.example"}
+		d.hydra.raise("c1", "contoso-web")
+
+		res := d.through(t, d.browser(t), "c1", "entra")
+		x.Equal(http.StatusForbidden, res.StatusCode)
+	})
+
+	// And the bug the lookup closes on the other policy: entering somebody in
+	// advance used to **break** their sign-in, because the alias an operator
+	// chose is the alias `Enrolling` derives and `Holder.Add` answers
+	// AlreadyExists.
+	t.Run("enrolling finds them rather than colliding", func(t *testing.T) {
+		x := require.New(t)
+		p := idptest.New(t, "login-app")
+		d := serveAs(t, login.Skip, func(c *login.Config) { c.Enrol = arrives.Enrolling() })
+		d.connect(t, p, "entra")
+
+		dana := entered(t, d, "dana", "dana@contoso.example")
+		p.Subject = "dana-at-entra"
+		p.Claims = map[string]any{"email": "dana@contoso.example", "email_verified": true}
+		d.hydra.raise("c1", "contoso-web")
+
+		res := d.through(t, d.browser(t), "c1", "entra")
+		x.Equal(http.StatusSeeOther, res.StatusCode)
+		subject, _ := d.hydra.told()
+		x.Equal(dana.String(), subject)
+
+		// And a stranger still gets one, which is what the policy is for.
+		p.Subject = "new-at-entra"
+		p.Claims = map[string]any{"email": "erin2@contoso.example", "email_verified": true}
+		d.hydra.raise("c2", "contoso-web")
+		res = d.through(t, d.browser(t), "c2", "entra")
+		x.Equal(http.StatusSeeOther, res.StatusCode)
+	})
+}

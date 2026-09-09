@@ -1413,8 +1413,14 @@ login:
   # app's: Hydra sends every browser here under one name, so there is one
   # callback and the state says which operator it belongs to.
   base: https://login.contoso.example
-  # What happens to a stranger a directory vouches for: invited (nobody, the
-  # default) or enrolling. `enrolling` needs the key to hold
+  # Who a directory may sign in:
+  #   invited    only somebody already linked (an `Identity` row you wrote)
+  #   expected   somebody you entered, matched by the address on their row
+  #   enrolling  that, and a stranger too
+  # `expected` is what *putting people in* means -- a directory's subject is
+  # issued there and is not knowable in advance, so an operator entering
+  # somebody has their address and nothing else. Matching needs the directory
+  # to say the address is verified. `enrolling` needs the key to hold
   # `HolderService.Add`, which the one `roster login provision` mints does not
   # -- making people is a wider grant than signing them in, so a deployment
   # that wants it mints its own.

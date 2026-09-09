@@ -71,8 +71,8 @@ type AccountConfig struct {
 	// the other. The flag is still `--static`, which is what it was.
 	Page PageConfig `yaml:"page"`
 
-	// Enrol is what happens to a stranger a provider vouches for: `invited`,
-	// which is nobody, or `enrolling`.
+	// Enrol is who a provider may sign in: `invited`, `expected` or
+	// `enrolling`. See [LoginConfig.Enrol], which says what each is.
 	Enrol string `yaml:"enrol"`
 
 	// Keys is one tenant key per operator fronted, by alias.
@@ -199,8 +199,27 @@ type LoginConfig struct {
 	// operator adding a `Connection` registers this URL with their directory.
 	Base string `yaml:"base"`
 
-	// Enrol is what happens to a stranger a provider vouches for: `invited`,
-	// which is nobody, or `enrolling`. Empty is `invited`.
+	// Enrol is who a directory may sign in. Empty is `invited`.
+	//
+	//	invited    only somebody already linked -- an `Identity` row somebody
+	//	           wrote, naming the subject that directory asserts
+	//	expected   somebody an operator entered, matched by the **address** on
+	//	           their row, and nobody else
+	//	enrolling  that, and a stranger too, named by the local part of their
+	//	           address
+	//
+	// `expected` is what an operator means by *putting people in*, and
+	// `invited` is not: the subject a directory asserts is issued there and is
+	// not knowable in advance, so an operator entering somebody has their
+	// address and nothing else. `invited` can therefore admit nobody at all
+	// through a directory, which is right for a deployment that writes
+	// `Identity` rows itself and is a trap for one that does not.
+	//
+	// Matching adds one condition over what an `Email` row already is (*a way
+	// to sign in as whoever the row is about*, `CLAUDE.md`): the directory has
+	// to say the address is **verified**. One that lets somebody type an
+	// address into their own profile would otherwise hand out whichever account
+	// carries it.
 	//
 	// `enrolling` needs the key to hold `HolderService.Add`, which the one
 	// `roster login provision` mints does not: making people is a wider grant

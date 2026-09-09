@@ -80,10 +80,16 @@ go tool pd gen --check --ts .
 # `Hostname`, a pure function both sides have to agree on.
 # The directory (`ldap/`) is held to the same: a second consumer, the same
 # one exception (`front.Address`, so an address is looked up as it is stored).
+# `arrives/` is held to it too, though no process is it: it is the relying-party
+# half both front doors import, so anything it reaches, they reach. It takes the
+# same `server/front` exception the account app does, and for the same reason --
+# normalising an address is one function and a copy of it is an index comparing
+# strings roster never compares.
+#
 # So is the Login App (`login/`), which needs neither exception: what it reads
 # of roster is `rstr` and `frontdoor` and nothing else.
 echo "== the consumers reach roster only over the wire"
-for pkg in ./account/ ./ldap/ ./login/; do
+for pkg in ./account/ ./arrives/ ./ldap/ ./login/; do
 	if go list -f '{{join .Imports "\n"}}' "${pkg}" | grep -E '^github.com/lesomnus/roster/(internal|cmd|server/)' | grep -v '^github.com/lesomnus/roster/server/front$'; then
 		echo "${pkg} imports a server package; it is a consumer and reaches roster over the wire" >&2
 		exit 1
