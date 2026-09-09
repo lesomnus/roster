@@ -1389,16 +1389,25 @@ login:
   addr: :8091
   hydra:
     admin: http://hydra:4445
-  operators:
-    contoso:
-      key: env:ROSTER_LOGIN_KEY_CONTOSO
-      client: contoso-web
+  keys:
+    contoso: env:ROSTER_LOGIN_KEY_CONTOSO
+  clients:
+    contoso: [contoso-web, contoso-mobile]
+  # skip (the default) grants what the client asked for; ask draws a screen.
+  consent: skip
 ```
 
-`login.operators` is a block per customer where the other two have a flat `keys`
-map, because there are two facts about each -- the key, and the OAuth client
-that says which tenant a challenge belongs to -- and two maps keyed the same way
-is a place to add an entry to one and not the other.
+`login.clients` is a **list** per customer, because an operator with two
+products has two clients and one sign-in -- which is the case Hydra is for at
+all. A client named for two operators is refused at start: which one it is
+decides whose password gets checked. So is half an operator, a key with no
+client or a client with no key, by name and with the flag that fixes it.
+
+`consent: skip` is a decision and not an omission. Every client in that map was
+registered by this deployment for one of its own operators -- a third party
+cannot be in it -- so a consent screen for an app the operator wrote is a dialog
+people learn to click through. `ask` is for a deployment that registers clients
+somebody else wrote, where the screen is the whole point.
 
 Named is a listener and empty is nowhere, which is what `control` and `admin`
 already do. `roster serve` opens whichever are named, in the same errgroup as

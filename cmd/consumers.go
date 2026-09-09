@@ -164,9 +164,15 @@ type LoginConfig struct {
 	// See [AccountConfig.Keys]; `ROSTER_LOGIN_KEY_<ALIAS>` is merged with it.
 	Keys map[string]string `yaml:"keys"`
 
-	// Clients is which OAuth client is whose, by the same alias: `contoso:
-	// contoso-web`. It is what says which tenant a challenge belongs to, and it
-	// is the one setting here that is about Hydra's rows rather than roster's.
+	// Clients is which OAuth clients are whose, by the same alias: `contoso:
+	// [contoso-web, contoso-mobile]`. It is what says which tenant a challenge
+	// belongs to, and it is the one setting here that is about Hydra's rows
+	// rather than roster's.
+	//
+	// A **list**, because an operator with two products has two clients and one
+	// sign-in; `ROSTER_LOGIN_CLIENT_<ALIAS>` takes them comma separated, and so
+	// does `--client alias=a,b`. A client named for two operators is refused at
+	// start: which one it is decides whose password is checked.
 	//
 	// # Two flat maps and not a block per operator
 	//
@@ -182,7 +188,19 @@ type LoginConfig struct {
 	// The risk the block was for is closed where it actually bites: a key with
 	// no client, or a client with no key, is refused at start by name and with
 	// the flag that fixes it (`cli/login.go`). Half an operator never runs.
-	Clients map[string]string `yaml:"clients"`
+	Clients map[string][]string `yaml:"clients"`
+
+	// Consent is what happens at the consent hop: `skip`, which grants what the
+	// client asked for and draws nothing, or `ask`, which draws a screen.
+	//
+	// Empty is `skip`, and that is a decision rather than an omission. Every
+	// client in [Clients] was registered by this deployment for one of its own
+	// operators -- a third party cannot be in that map -- so every one of them
+	// is first-party, and a consent screen for an app the operator wrote is a
+	// dialog people learn to click through. `ask` is for a deployment that
+	// registers clients somebody else wrote, where the screen is the whole
+	// point.
+	Consent string `yaml:"consent"`
 
 	// Remember is how long Hydra should skip the form for a browser that has
 	// already signed in. Zero asks every time.

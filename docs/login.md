@@ -176,11 +176,24 @@ scope that carries it. What it never puts there is `methods` -- roster's answer
 about roster, which a product holding a copy of would hold a stale one.
 
 Which operator a flow belongs to comes from the challenge, not the hostname: it
-names the OAuth **client**, one per operator, read back over Hydra's admin API.
-So the tenant is Hydra's word rather than a header a browser wrote, and the key
-each call goes out with follows from it. `compose.yaml` runs the whole of it --
-Hydra, a client, the app -- and `docs/operating.md` § "One process, or four" is
-how a deployment says so.
+names the OAuth **client**, and each operator's clients are written down, read
+back over Hydra's admin API. So the tenant is Hydra's word rather than a header
+a browser wrote, and the key each call goes out with follows from it. Several
+clients per operator, because one sign-in across two products is the case Hydra
+is for at all.
+
+The consent hop **grants what the client asked for and draws nothing**, and
+that is `consent: skip`, the default and a decision: every client this app can
+have was registered by the deployment for one of its own operators, and a
+screen for an app the operator wrote is a dialog people learn to click through.
+`consent: ask` draws one -- who is asking, for what, allow or no -- and grants
+nothing until somebody says so. Neither mode lets a person grant *less* than
+was asked: an app that asked for a scope generally stops working without it, so
+the choice would be between "allow" and "allow, then find out something is
+broken".
+
+`compose.yaml` runs the whole of it -- Hydra, a client, the app -- and
+`docs/operating.md` § "One process, or four" is how a deployment says so.
 
 One thing to add on the day you do this: **back-channel logout.** A session
 ended at Hydra does not end custody's row by itself, and the OIDC logout

@@ -15,11 +15,11 @@ import (
 //
 // # Why this is not the Ory SDK
 //
-// It is four endpoints, JSON in and JSON out, and the client that speaks them
+// It is five endpoints, JSON in and JSON out, and the client that speaks them
 // is `net/http` and `encoding/json` -- both of which are already here. Taking
 // the generated SDK would put a versioned module in `go.mod` for the first
 // time in this repository, and what it would buy is types this file writes in
-// forty lines.
+// fifty lines.
 //
 // What the absence does **not** buy is independence from Hydra: the field names
 // below are its wire contract and a change to them breaks this at run time
@@ -124,16 +124,19 @@ func (a admin) consent(ctx context.Context, challenge string) (*consentRequest, 
 	return v, a.do(ctx, http.MethodGet, "consent", "consent_challenge", challenge, nil, v)
 }
 
-func (a admin) acceptConsent(ctx context.Context, challenge string, req *consentRequest, claims map[string]any) (string, error) {
+func (a admin) acceptConsent(ctx context.Context, challenge string, req *consentRequest, claims map[string]any, remember time.Duration) (string, error) {
 	v := &redirect{}
 	body := acceptConsent{
-		// What was asked for, in full. A screen that lets somebody grant less
-		// than a client asked for is a screen, and this app does not draw one
-		// yet -- what it must not do meanwhile is grant **more**, which is why
-		// this is the request's list and not a configured one.
-		Scope:    req.Scope,
-		Audience: req.Audience,
-		Session:  session{IdToken: claims},
+		// What was asked for, in full, and never more: this is the request's
+		// list and not a configured one. Granting **less** would be a screen
+		// that lets somebody pick, and neither mode draws that -- `Ask` is a
+		// yes or a no about what the client asked for, which is what a person
+		// can actually answer.
+		Scope:       req.Scope,
+		Audience:    req.Audience,
+		Session:     session{IdToken: claims},
+		Remember:    remember > 0,
+		RememberFor: int64(remember.Seconds()),
 	}
 	if err := a.do(ctx, http.MethodPut, "consent/accept", "consent_challenge", challenge, body, v); err != nil {
 		return "", err
@@ -142,7 +145,24 @@ func (a admin) acceptConsent(ctx context.Context, challenge string, req *consent
 	return v.To, nil
 }
 
-// do is the one request shape all four share.
+// rejectConsent is somebody saying no, which is an answer and not an error.
+//
+// `access_denied` is the OAuth code for it, so the client is told what happened
+// rather than being left at a redirect that never comes.
+func (a admin) rejectConsent(ctx context.Context, challenge string) (string, error) {
+	v := &redirect{}
+	body := map[string]string{
+		"error":             "access_denied",
+		"error_description": "the person was asked and said no",
+	}
+	if err := a.do(ctx, http.MethodPut, "consent/reject", "consent_challenge", challenge, body, v); err != nil {
+		return "", err
+	}
+
+	return v.To, nil
+}
+
+// do is the one request shape all five share.
 func (a admin) do(ctx context.Context, method, path, param, challenge string, in, out any) error {
 	if challenge == "" {
 		return fmt.Errorf("login: %s: no challenge", path)

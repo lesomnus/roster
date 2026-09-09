@@ -51,7 +51,8 @@ func newCmdLoginServe(c *cmd.Config) *xli.Command {
 			&flg.Switch{Name: "insecure", Brief: "dial roster without TLS"},
 			&flg.String{Name: "hydra", Brief: "Hydra's admin API, e.g. http://hydra:4445. Private: anybody who reaches it can sign anybody in as anybody"},
 			&flg.Strings{Name: "key", Brief: "a tenant key, as alias=rt_…; repeat per operator fronted. Or " + LoginKeyPrefix + "<ALIAS> in the environment"},
-			&flg.Strings{Name: "client", Brief: "which OAuth client is an operator's, as alias=client-id; repeat per operator"},
+			&flg.Strings{Name: "client", Brief: "which OAuth clients are an operator's, as alias=client-id[,client-id…]; repeat per operator"},
+			&flg.String{Name: "consent", Brief: "what the consent hop does: skip (grant what the client asked for; the default) or ask (draw a screen)"},
 			&flg.Strings{Name: "seal", Brief: "the key sessions are sealed under, as env:NAME; repeat to rotate"},
 			&flg.Switch{Name: "insecure-cookie", Brief: "drop Secure from the cookies, for plain http in development"},
 			&flg.String{Name: "static", Brief: "a sign-in page to serve instead of the one built in"},
@@ -86,6 +87,9 @@ func newCmdLoginServe(c *cmd.Config) *xli.Command {
 			}
 			if v, _ := flg.Find[string](cl, "static"); v != "" {
 				lc.Page = cmd.PageConfig{Dir: v}
+			}
+			if v, _ := flg.Find[string](cl, "consent"); v != "" {
+				lc.Consent = v
 			}
 
 			given, _ := flg.Find[[]string](cl, "client")
@@ -127,10 +131,10 @@ const LoginClientPrefix = "ROSTER_LOGIN_CLIENT_"
 // and `--client` over that. [keysOf] with nothing secret about it, and it is
 // not that function because an empty one is not an error here -- `whole` is
 // what says an operator is half written, and it can say which half.
-func clientsOf(refs map[string]string, prefix string, given []string) (map[string]string, error) {
-	out := map[string]string{}
-	for alias, client := range refs {
-		out[strings.ToLower(alias)] = client
+func clientsOf(refs map[string][]string, prefix string, given []string) (map[string][]string, error) {
+	out := map[string][]string{}
+	for alias, clients := range refs {
+		out[strings.ToLower(alias)] = clients
 	}
 	for _, kv := range os.Environ() {
 		name, value, ok := strings.Cut(kv, "=")
@@ -141,17 +145,30 @@ func clientsOf(refs map[string]string, prefix string, given []string) (map[strin
 		if !ok || alias == "" || value == "" {
 			continue
 		}
-		out[strings.ToLower(alias)] = value
+		out[strings.ToLower(alias)] = split(value)
 	}
 	for _, v := range given {
-		alias, client, ok := strings.Cut(v, "=")
-		if !ok || alias == "" || client == "" {
-			return nil, fmt.Errorf("--client %q: alias=client-id", v)
+		alias, clients, ok := strings.Cut(v, "=")
+		if !ok || alias == "" || clients == "" {
+			return nil, fmt.Errorf("--client %q: alias=client-id[,client-id…]", v)
 		}
-		out[strings.ToLower(alias)] = client
+		out[strings.ToLower(alias)] = split(clients)
 	}
 
 	return out, nil
+}
+
+// split is a comma list, which is how an operator with two products writes
+// them where only one string will fit -- an environment variable, or a flag.
+func split(v string) []string {
+	out := []string{}
+	for _, s := range strings.Split(v, ",") {
+		if s = strings.TrimSpace(s); s != "" {
+			out = append(out, s)
+		}
+	}
+
+	return out
 }
 
 // whole refuses an operator that is half written.
@@ -161,9 +178,9 @@ func clientsOf(refs map[string]string, prefix string, given []string) (map[strin
 // to, so their people reach a page that says the login is not working and
 // nothing anywhere says why. This is what `cmd.LoginConfig.Clients` gives as
 // the reason its two maps are two maps.
-func whole(keys, clients map[string]string) error {
+func whole(keys map[string]string, clients map[string][]string) error {
 	for alias := range keys {
-		if _, ok := clients[alias]; !ok {
+		if len(clients[alias]) == 0 {
 			return fmt.Errorf("login.clients.%s (--client %s=…): a key with no OAuth client is an operator no challenge resolves to", alias, alias)
 		}
 	}
@@ -197,7 +214,13 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 		opts = append(opts, authsession.Insecure())
 	}
 
+	how, err := login.ParseConsent(lc.Consent)
+	if err != nil {
+		return fmt.Errorf("login.consent (--consent): %w", err)
+	}
+
 	cfg := login.Config{
+		Consent:        how,
 		Roster:         lc.Roster,
 		Insecure:       lc.Insecure,
 		Hydra:          strings.TrimSuffix(lc.Hydra.Admin, "/"),
@@ -207,7 +230,7 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 		Operators:      map[string]login.Operator{},
 	}
 	for alias, key := range lc.Keys {
-		cfg.Operators[alias] = login.Operator{Key: key, Client: lc.Clients[alias]}
+		cfg.Operators[alias] = login.Operator{Key: key, Clients: lc.Clients[alias]}
 	}
 	if len(lc.Hydra.Header) > 0 {
 		cfg.HydraHeader = http.Header{}

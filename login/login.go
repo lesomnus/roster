@@ -86,6 +86,9 @@ var Methods = []string{rstr.MeService_Get_FullMethodName}
 // one's. The tenant is never the browser's word in either shape.
 const Challenge = "login_challenge"
 
+// consentChallenge is the second one Hydra redirects with.
+const consentChallenge = "consent_challenge"
+
 // Config is what a deployment has to say.
 type Config struct {
 	// Roster is where the data plane speaks gRPC.
@@ -111,9 +114,12 @@ type Config struct {
 	// operator and the code is the same either way.
 	Operators map[string]Operator
 
-	// Remember is how long Hydra should skip the form for a browser that has
-	// already signed in. Zero asks every time.
+	// Remember is how long Hydra should skip the form, and the consent screen,
+	// for a browser that has already been through them. Zero asks every time.
 	Remember time.Duration
+
+	// Consent is whether the consent hop draws a screen; see [Consent].
+	Consent Consent
 
 	// InsecureCookie drops `Secure` from the session cookie, for a page served
 	// over plain http in development. It is `authsession`'s and is said there;
@@ -136,10 +142,36 @@ type Operator struct {
 	// `roster key add --tenant contoso --holder login-app --allow …`.
 	Key string
 
-	// Client is the OAuth client registered with Hydra for this operator. It is
-	// what a challenge is matched against, and it is why this app needs no
-	// hostname.
-	Client string
+	// Clients are the OAuth clients registered with Hydra for this operator.
+	// A challenge naming one of them is a flow about this tenant, which is why
+	// this app needs no hostname. More than one because an operator with two
+	// products has two clients and one sign-in.
+	Clients []string
+}
+
+// Consent is what happens at the consent hop.
+type Consent int
+
+const (
+	// Skip grants what the client asked for and draws nothing. The default, and
+	// right for the clients this app can have: every one of them was registered
+	// by this deployment for one of its own operators.
+	Skip Consent = iota
+
+	// Ask draws a screen and grants nothing until somebody says so.
+	Ask
+)
+
+// ParseConsent is [Consent] as a deployment writes it.
+func ParseConsent(v string) (Consent, error) {
+	switch v {
+	case "", "skip":
+		return Skip, nil
+	case "ask":
+		return Ask, nil
+	}
+
+	return Skip, fmt.Errorf("%q is not one of skip, ask", v)
 }
 
 // App is the Login App.
@@ -156,10 +188,10 @@ type App struct {
 }
 
 type operator struct {
-	id     pdid.Id
-	alias  string
-	key    string
-	client string
+	id      pdid.Id
+	alias   string
+	key     string
+	clients []string
 }
 
 // New dials roster once and resolves each key to its tenant, so a key that
@@ -208,10 +240,10 @@ func New(ctx context.Context, c Config) (*App, error) {
 	}
 
 	for alias, o := range c.Operators {
-		if o.Client == "" {
+		if len(o.Clients) == 0 {
 			conn.Close()
 
-			return nil, fmt.Errorf("login: %s: Client: which OAuth client is this operator's", alias)
+			return nil, fmt.Errorf("login: %s: Clients: which OAuth clients are this operator's", alias)
 		}
 
 		v, err := a.roster.Tenant().Get(withKey(ctx, o.Key), rstr.TenantGetRequest_builder{
@@ -229,14 +261,18 @@ func New(ctx context.Context, c Config) (*App, error) {
 			return nil, err
 		}
 
-		if was, ok := a.byClient[o.Client]; ok {
-			conn.Close()
+		who := &operator{id: id, alias: alias, key: o.Key, clients: o.Clients}
+		for _, client := range o.Clients {
+			if was, ok := a.byClient[client]; ok {
+				conn.Close()
 
-			// Two operators on one client is a flow with two answers, and the
-			// answer decides whose password is checked. Refused at start.
-			return nil, fmt.Errorf("login: client %q is both %q's and %q's", o.Client, was.alias, alias)
+				// Two operators on one client is a flow with two answers, and
+				// the answer decides whose password is checked. Refused at
+				// start.
+				return nil, fmt.Errorf("login: client %q is both %q's and %q's", client, was.alias, alias)
+			}
+			a.byClient[client] = who
 		}
-		a.byClient[o.Client] = &operator{id: id, alias: alias, key: o.Key, client: o.Client}
 	}
 
 	a.door, err = frontdoor.New(frontdoor.Config{
@@ -277,6 +313,7 @@ func (a *App) Handler() http.Handler {
 	// Where Hydra sends the browser.
 	m.HandleFunc("GET /login", a.begin)
 	m.HandleFunc("GET /consent", a.consent)
+	m.HandleFunc("POST /consent", a.decide)
 
 	// The sign-in protocol, behind the flow the challenge names.
 	m.Handle("/session", a.inFlow(a.door.Handler()))
@@ -352,27 +389,67 @@ func (a *App) accept(w http.ResponseWriter, r *http.Request) {
 	writeJson(w, map[string]string{"redirect_to": to})
 }
 
-// consent is the second redirect, and the only place this app reads a person.
+// consent is the second redirect: what the client is asking for, and whether
+// anybody has to be asked about it.
+//
+// Hydra's own `skip` is answered first and is not a mode: it means this browser
+// has already consented and Hydra remembered, so there is nothing to ask and
+// asking again is the dialog people learn to click through.
 func (a *App) consent(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	challenge := r.URL.Query().Get("consent_challenge")
-
-	v, err := a.admin.consent(ctx, challenge)
+	v, o, err := a.asking(r.Context(), r.URL.Query().Get(consentChallenge))
 	if err != nil {
 		a.broken(w, r, err)
 
 		return
 	}
-	o, ok := a.byClient[v.Client.Id]
-	if !ok {
-		a.broken(w, r, fmt.Errorf("login: no operator holds the client %q", v.Client.Id))
+
+	if v.Skip || a.c.Consent == Skip {
+		a.grant(w, r, v, o)
 
 		return
 	}
 
-	// As the person, with this app's key beside their delegation: one call, and
-	// what comes back is theirs by construction rather than by this app
-	// remembering to filter.
+	a.ask(w, r, v)
+}
+
+// decide is the screen's answer, and the only two there are.
+func (a *App) decide(w http.ResponseWriter, r *http.Request) {
+	challenge := r.FormValue(consentChallenge)
+
+	if r.FormValue("allow") == "" {
+		to, err := a.admin.rejectConsent(r.Context(), challenge)
+		if err != nil {
+			a.broken(w, r, err)
+
+			return
+		}
+
+		// The flow is over either way, so the credential this app minted goes
+		// the same way it does on a yes.
+		http.SetCookie(w, a.door.End(r.Context(), r))
+		http.Redirect(w, r, to, http.StatusSeeOther)
+
+		return
+	}
+
+	v, o, err := a.asking(r.Context(), challenge)
+	if err != nil {
+		a.broken(w, r, err)
+
+		return
+	}
+
+	a.grant(w, r, v, o)
+}
+
+// grant reads the person once, as them, and answers Hydra.
+//
+// The only place this app reads anybody. What it reads is `Me.Get`, which
+// answers everything a claim could come from in one call, and what it puts in
+// the token is decided by the scope the client asked for -- `claimsOf`.
+func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o *operator) {
+	ctx := r.Context()
+
 	claims := map[string]any{}
 	as, err := a.door.Acting(withKey(ctx, o.key), r)
 	switch {
@@ -397,7 +474,7 @@ func (a *App) consent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	to, err := a.admin.acceptConsent(ctx, challenge, v, claims)
+	to, err := a.admin.acceptConsent(ctx, v.Challenge, v, claims, a.c.Remember)
 	if err != nil {
 		a.broken(w, r, err)
 
@@ -410,6 +487,27 @@ func (a *App) consent(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, a.door.End(ctx, r))
 
 	http.Redirect(w, r, to, http.StatusSeeOther)
+}
+
+// asking is the consent request and the operator it belongs to.
+func (a *App) asking(ctx context.Context, challenge string) (*consentRequest, *operator, error) {
+	v, err := a.admin.consent(ctx, challenge)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	o, ok := a.byClient[v.Client.Id]
+	if !ok {
+		return nil, nil, fmt.Errorf("login: no operator holds the client %q", v.Client.Id)
+	}
+
+	// Hydra answers the challenge it was asked about, and the rest of this
+	// reads it from there rather than from the URL again.
+	if v.Challenge == "" {
+		v.Challenge = challenge
+	}
+
+	return v, o, nil
 }
 
 // whose is the operator a challenge belongs to.

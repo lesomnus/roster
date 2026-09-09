@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"io"
 	"net"
 	"net/http"
 	"net/http/cookiejar"
@@ -46,6 +47,7 @@ type hydra struct {
 	subject  string            // what `acceptLoginRequest` was told
 	claims   map[string]any    // what `acceptConsentRequest` was told
 	accepted int
+	rejected bool
 }
 
 func newHydra(t *testing.T) *hydra {
@@ -69,6 +71,13 @@ func newHydra(t *testing.T) *hydra {
 		h.mu.Unlock()
 
 		writeJson(w, map[string]string{"redirect_to": "/consent?consent_challenge=" + r.URL.Query().Get("login_challenge")})
+	})
+	m.HandleFunc("PUT /admin/oauth2/auth/requests/consent/reject", func(w http.ResponseWriter, r *http.Request) {
+		h.mu.Lock()
+		h.rejected = true
+		h.mu.Unlock()
+
+		writeJson(w, map[string]string{"redirect_to": "/denied"})
 	})
 	m.HandleFunc("PUT /admin/oauth2/auth/requests/consent/accept", func(w http.ResponseWriter, r *http.Request) {
 		var body struct {
@@ -125,6 +134,13 @@ func (h *hydra) told() (string, map[string]any) {
 	return h.subject, h.claims
 }
 
+func (h *hydra) said() (int, bool) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	return h.accepted, h.rejected
+}
+
 func writeJson(w http.ResponseWriter, v any) {
 	w.Header().Set("content-type", "application/json")
 	_ = json.NewEncoder(w).Encode(v)
@@ -139,7 +155,9 @@ type deployment struct {
 	who map[string]pdid.Id // alias -> the person in that operator's tenant
 }
 
-func serve(t *testing.T) *deployment {
+func serve(t *testing.T) *deployment { return serveWith(t, login.Skip) }
+
+func serveWith(t *testing.T, how login.Consent) *deployment {
 	t.Helper()
 	x := require.New(t)
 	ctx := t.Context()
@@ -235,7 +253,9 @@ func serve(t *testing.T) *deployment {
 		}.Build())
 		x.NoError(err)
 
-		operators[alias] = login.Operator{Key: token, Client: alias + "-web"}
+		// Two clients for one operator, because a customer with two products
+		// has two and one sign-in.
+		operators[alias] = login.Operator{Key: token, Clients: []string{alias + "-web", alias + "-mobile"}}
 	}
 
 	g, err := s.Grpc(ctx, cmd.Config{})
@@ -252,6 +272,7 @@ func serve(t *testing.T) *deployment {
 	x.NoError(err)
 
 	a, err := login.New(ctx, login.Config{
+		Consent:        how,
 		Roster:         l.Addr().String(),
 		Insecure:       true,
 		Hydra:          d.hydra.URL,
@@ -398,4 +419,133 @@ func TestAFlowReachesOnlyItsOwnOperator(t *testing.T) {
 	x.NoError(err)
 	defer res.Body.Close()
 	x.Equal(http.StatusBadGateway, res.StatusCode)
+}
+
+// TestASecondClientIsTheSameOperator, which is what an operator with two
+// products has.
+//
+// One sign-in and two relying parties is the case Hydra is for at all, so a
+// Login App that could only hold one client per customer would answer half of
+// what it exists to answer.
+func TestASecondClientIsTheSameOperator(t *testing.T) {
+	x := require.New(t)
+	d := serve(t)
+	b := d.browser(t)
+
+	d.hydra.raise("m1", "contoso-mobile")
+
+	res, err := b.Get(d.app.URL + "/login?login_challenge=m1")
+	x.NoError(err)
+	defer res.Body.Close()
+	x.Equal(http.StatusOK, res.StatusCode)
+
+	_, code := d.signIn(t, b, "m1", "erin", password)
+	x.Equal(http.StatusOK, code)
+
+	subject, _ := d.hydra.told()
+	x.Equal(d.who["contoso"].String(), subject)
+}
+
+// TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne is the other half of
+// the decision `skip` makes silently today.
+//
+// Under `skip` the consent hop is a redirect and nothing is drawn, which is
+// right for the clients this app can have -- every one of them was registered
+// by this deployment for one of its own operators. Under `ask` it is a screen,
+// and nothing is granted until somebody says so.
+func TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne(t *testing.T) {
+	consent := func(t *testing.T, d *deployment, b *http.Client, challenge string) *http.Response {
+		t.Helper()
+		res, err := b.Get(d.app.URL + "/consent?consent_challenge=" + challenge)
+		require.NoError(t, err)
+
+		return res
+	}
+
+	t.Run("skip draws nothing and grants", func(t *testing.T) {
+		x := require.New(t)
+		d := serve(t)
+		b := d.browser(t)
+		d.hydra.raise("c1", "contoso-web")
+
+		_, code := d.signIn(t, b, "c1", "erin", password)
+		x.Equal(http.StatusOK, code)
+
+		res := consent(t, d, b, "c1")
+		defer res.Body.Close()
+		x.Equal(http.StatusSeeOther, res.StatusCode)
+
+		_, claims := d.hydra.told()
+		x.Equal("erin", claims["preferred_username"])
+	})
+
+	t.Run("ask draws a screen and grants nothing yet", func(t *testing.T) {
+		x := require.New(t)
+		d := serveWith(t, login.Ask)
+		b := d.browser(t)
+		d.hydra.raise("c2", "contoso-web")
+
+		_, code := d.signIn(t, b, "c2", "erin", password)
+		x.Equal(http.StatusOK, code)
+
+		res := consent(t, d, b, "c2")
+		defer res.Body.Close()
+		body, err := io.ReadAll(res.Body)
+		x.NoError(err)
+		x.Equal(http.StatusOK, res.StatusCode, "a screen was asked for and a redirect came back")
+		x.Contains(string(body), "contoso-web", "the screen does not say which app is asking")
+		x.Contains(string(body), "profile", "the screen does not say what it is asking for")
+
+		// **Nothing granted.** A screen that has been drawn and not answered
+		// must leave the flow where it was, or the screen is decoration.
+		_, claims := d.hydra.told()
+		x.Nil(claims)
+	})
+
+	t.Run("and grants on a yes", func(t *testing.T) {
+		x := require.New(t)
+		d := serveWith(t, login.Ask)
+		b := d.browser(t)
+		d.hydra.raise("c3", "contoso-web")
+
+		_, code := d.signIn(t, b, "c3", "erin", password)
+		x.Equal(http.StatusOK, code)
+
+		res := consent(t, d, b, "c3")
+		res.Body.Close()
+
+		res, err := b.PostForm(d.app.URL+"/consent", url.Values{
+			"consent_challenge": {"c3"}, "allow": {"1"},
+		})
+		x.NoError(err)
+		defer res.Body.Close()
+		x.Equal(http.StatusSeeOther, res.StatusCode)
+
+		_, claims := d.hydra.told()
+		x.Equal("erin", claims["preferred_username"])
+	})
+
+	t.Run("and rejects on a no", func(t *testing.T) {
+		x := require.New(t)
+		d := serveWith(t, login.Ask)
+		b := d.browser(t)
+		d.hydra.raise("c4", "contoso-web")
+
+		_, code := d.signIn(t, b, "c4", "erin", password)
+		x.Equal(http.StatusOK, code)
+
+		res := consent(t, d, b, "c4")
+		res.Body.Close()
+
+		res, err := b.PostForm(d.app.URL+"/consent", url.Values{"consent_challenge": {"c4"}})
+		x.NoError(err)
+		defer res.Body.Close()
+		x.Equal(http.StatusSeeOther, res.StatusCode)
+
+		_, rejected := d.hydra.said()
+		x.True(rejected, "a no granted anyway")
+
+		_, claims := d.hydra.told()
+		x.Nil(claims)
+	})
 }

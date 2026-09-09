@@ -1,9 +1,11 @@
 package login
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
 	"encoding/json"
+	"html/template"
 	"net/http"
 )
 
@@ -26,6 +28,42 @@ func (a *App) page(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("cache-control", "no-store")
 
 	_, _ = w.Write(page)
+}
+
+// The consent screen, drawn only under [Ask].
+//
+// A template where the sign-in page is not, because this one says something
+// about **this** flow -- which app is asking, and for what -- and a page that
+// read that from its own URL would be a page a link could put words in.
+//
+//go:embed consent.html
+var consentPage string
+
+var consentTemplate = template.Must(template.New("consent").Parse(consentPage))
+
+func (a *App) ask(w http.ResponseWriter, r *http.Request, v *consentRequest) {
+	name := v.Client.Name
+	if name == "" {
+		name = v.Client.Id
+	}
+
+	// Rendered to a buffer first: a template that fails half way has already
+	// written half a page, and the answer to a broken deployment is one line
+	// rather than a form with no buttons.
+	b := &bytes.Buffer{}
+	if err := consentTemplate.Execute(b, struct {
+		Client    string
+		Scope     []string
+		Challenge string
+	}{Client: name, Scope: v.Scope, Challenge: v.Challenge}); err != nil {
+		a.broken(w, r, err)
+
+		return
+	}
+
+	w.Header().Set("content-type", "text/html; charset=utf-8")
+	w.Header().Set("cache-control", "no-store")
+	_, _ = w.Write(b.Bytes())
 }
 
 func writeJson(w http.ResponseWriter, v any) {
