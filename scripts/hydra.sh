@@ -45,6 +45,9 @@ echo "== up"
 # `login` rather than the default set, because its dependencies are everything
 # this walk needs and nothing it does not: the account app and the directory are
 # other gates' business.
+#
+# This is the step that waits: `login` depends on `customer` having **completed**,
+# so when it returns the tenant is seeded and the app has its key.
 docker compose up -d --build login >/dev/null
 
 # `customer.sh` has already run -- `login` waits on it -- so the person exists
@@ -62,5 +65,12 @@ echo "   ${sub}"
 echo "== the flow"
 # In the dev image and on the compose network, so nothing has to be published
 # and the walk works wherever the engine is.
-docker compose run --rm --entrypoint /usr/local/bin/flow.sh \
+#
+# `--no-deps`, and it is not a nicety. Without it `run` sees that `--build`
+# above gave the services a new image, **recreates** `roster` and `customer`,
+# and starts the walk while the seed is still running -- so the password is
+# refused and the failure reads like the app. It cost a red CI to find, on a
+# machine with nothing cached, and never happened on a desk where the volumes
+# were already warm.
+docker compose run --rm --no-deps --entrypoint /usr/local/bin/flow.sh \
 	-e "EXPECT_SUB=${sub}" login "$@"

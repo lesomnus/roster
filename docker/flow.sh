@@ -27,6 +27,17 @@ login=$(getent hosts login | awk '{print $1; exit}')
 hydra=$(getent hosts hydra | awk '{print $1; exit}')
 [ -n "${login}" ] && [ -n "${hydra}" ] || { echo "flow: login and hydra are not both up" >&2; exit 1; }
 
+# The app answers when it has its key and Hydra is up, which `login.sh` waits
+# for inside the container -- so a container that is running is not yet an app
+# that is serving. Waited for here rather than assumed, because the failure
+# otherwise is a refused password and a message about the wrong thing.
+i=0
+until curl -sS -o /dev/null "http://${login}:8091/" 2>/dev/null; do
+	i=$((i + 1))
+	[ "${i}" -lt 60 ] || { echo "flow: the login app never answered" >&2; exit 1; }
+	sleep 1
+done
+
 jar=$(mktemp)
 trap 'rm -f "${jar}"' EXIT
 resolve="--resolve login.test:8091:${login} --resolve hydra.test:4444:${hydra}"
