@@ -151,8 +151,13 @@ func newCmdLoginServe(c *cmd.Config) *xli.Command {
 // what the app calls as itself, the binding between them, and a key -- then
 // writes the key to a file. What it does **not** do is make a tenant: a
 // customer is the operator's, and a command that made one by mentioning it
-// would be a way to write rows into somebody else's by typo. A tenant that is
-// not there is said by name.
+// would be a way to write rows into somebody else's by typo.
+//
+// A tenant that is not there is **skipped and said**, not refused. This runs
+// beside the server on every start, and a fresh volume has no customers -- so a
+// refusal here is a deployment that cannot come up until somebody has run
+// something inside a pod that is not running. The Login App stays off until
+// `login.addr` names it, which is the line that waits.
 //
 // # It replaces rather than adds
 //
@@ -205,7 +210,25 @@ func newCmdLoginProvision(c *cmd.Config) *xli.Command {
 			}
 
 			for alias := range clients {
-				if err := provision(ctx, s, alias, out); err != nil {
+				switch err := provision(ctx, s, alias, out); {
+				case err == nil:
+				case errors.Is(err, errNoCustomer):
+					// **Skipped and not refused**, which is the difference
+					// between a command and a gate. This runs beside the
+					// server on every start -- an init container, a line in a
+					// unit -- and a fresh volume has no customers at all, so
+					// refusing here would be a deployment that cannot come up
+					// until somebody has run something inside a pod that is
+					// not running. Said loudly, once per operator, and the
+					// Login App stays off until `login.addr` names it.
+					// To stderr rather than through `log`: this command
+					// stands up no telemetry, and what it says is read in
+					// `kubectl logs` of an init container.
+					fmt.Fprintf(os.Stderr,
+						"roster: %s: no such customer, so no key for it. `roster tenant add @%s` first;"+
+							" the Login App stays off until it is there.\n", alias, alias)
+
+				default:
 					return fmt.Errorf("%s: %w", alias, err)
 				}
 			}
@@ -241,8 +264,10 @@ func provision(ctx context.Context, s *cmd.Server, alias, out string) error {
 	}.Build())
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
-			// Said rather than made. A customer is the operator's.
-			return fmt.Errorf("no such customer; `roster tenant add @%s` is somebody's decision and not this command's", alias)
+			// Said rather than made. A customer is the operator's, and a
+			// command that made one by mentioning it would be a way to write
+			// rows into somebody else's tenant by typo.
+			return errNoCustomer
 		}
 
 		return err
@@ -298,11 +323,15 @@ func provision(ctx context.Context, s *cmd.Server, alias, out string) error {
 		return err
 	}
 
-	log.From(ctx).InfoContext(ctx, "login: provisioned",
-		slog.String("operator", alias), slog.String("out", path), slog.Int("methods", len(LoginMethods)))
+	fmt.Fprintf(os.Stderr, "roster: %s: key for @%s/%s written to %s, allowing %d method(s).\n",
+		alias, alias, provisioned, path, len(LoginMethods))
 
 	return nil
 }
+
+// errNoCustomer is a tenant this deployment does not have. Not a failure: see
+// where it is caught.
+var errNoCustomer = errors.New("no such customer")
 
 // provisioned is what this command's rows are called, so that a later run finds
 // them and a person reading the console can tell them from somebody's.

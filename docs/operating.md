@@ -1443,11 +1443,16 @@ calls as itself, the binding, and a key -- and writes the key to
 `<out>/<alias>.key`. Then `login.keys` is `file:/run/roster-login/<alias>.key`
 and there is no Secret at all.
 
-It makes no **customer**: a tenant that is not there is refused by name, because
-whose customers exist is somebody's decision and not a command's. And it
-replaces rather than adds: a key cannot be read back, so a second run erases the
-one before it. A restart is a rotation, and a pod that is gone takes its
-credential with it.
+It makes no **customer**: a tenant that is not there is **skipped and said**,
+because whose customers exist is somebody's decision and not a command's. Not
+refused -- this runs on every start, and a fresh volume has no customers, so a
+refusal would be a deployment that cannot come up until somebody has run
+something inside a pod that is not running. What waits instead is `login.addr`,
+which stays empty until there is a key.
+
+And it replaces rather than adds: a key cannot be read back, so a second run
+erases the one before it. A restart is a rotation, and a pod that is gone takes
+its credential with it.
 
 Beside the process is where it belongs -- the same machine, the same volume,
 before the server. In Kubernetes that is an `initContainer`; on a box it is a
