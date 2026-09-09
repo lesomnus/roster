@@ -269,7 +269,16 @@ docker compose up --build
 roster on Postgres, both planes, the console served by roster under
 `/`, one customer already stood up (`contoso`, with `erin` in it), and
 the account app fronting them on its own port — the way it is deployed, with a
-key the `customer` service minted once. Not the sandbox: this is the pages
+key the `customer` service minted once. Beside them: the directory on `:1389`,
+and — for the shape a deployment with several products has — **Hydra** on
+`:4444` with the Login App on `:8091`, which is what turns a password into an
+`id_token` whose `sub` is a `Holder.id`. One flow through it, checked:
+
+```sh
+./scripts/hydra.sh          # up, walk one OAuth flow to a token, down
+./scripts/hydra.sh --hold   # leave it up to look at
+```
+ Not the sandbox: this is the pages
 talking to a roster that is really there, which is where the differences from
 SQLite show up — and they have shown up more than once. `ts/e2e/` runs against
 it unchanged:

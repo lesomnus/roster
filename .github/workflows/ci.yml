@@ -161,6 +161,23 @@ jobs:
         working-directory: ts
       - run: ./scripts/e2e.sh
 
+  # One OAuth flow through a real Hydra, which is the half the Login App's own
+  # tests cannot have: they run against a fake, because what they are about is
+  # which operator a challenge resolves to and what ends up in the token, and
+  # that is decided here rather than by Hydra. What Hydra decides is the
+  # protocol around it, and two things were wrong in it with every other gate
+  # green -- the challenge does not fit in a cookie, and the app's own
+  # environment variables were reported as typos.
+  #
+  # Its own job because it is `compose.yaml` and an engine rather than a `go
+  # test`, and because a minute of it is not a minute every other job should
+  # pay.
+  hydra:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./scripts/hydra.sh
+
   # The image, last, and only after everything above is green.
   #
   # A job of this workflow rather than one of its own, which is the mistake it
@@ -173,7 +190,7 @@ jobs:
   # change that breaks the build still fails here rather than on the day
   # somebody deploys.
   image:
-    needs: [go, postgres, ts, e2e]
+    needs: [go, postgres, ts, e2e, hydra]
     runs-on: ubuntu-latest
 
     permissions:

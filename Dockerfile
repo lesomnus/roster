@@ -103,12 +103,16 @@ CMD ["serve"]
 # variable. See `docker/entrypoint.sh`.
 FROM alpine:3.22 AS dev
 
-RUN apk add --no-cache ca-certificates
+# `curl` beside the certificates because this stage is the one the scripts in
+# `docker/` run in, and `scripts/hydra.sh` walks a whole OAuth flow with it --
+# from **inside** the compose network, so the walk needs nothing published and
+# no second image. busybox `wget` cannot: the flow is redirects and cookies.
+RUN apk add --no-cache ca-certificates curl
 
 COPY --from=build /out/roster /usr/local/bin/roster
 COPY --from=page /src/ts/dist/console /usr/share/roster/console
 COPY --from=page /src/ts/dist/account /usr/share/roster/account
-COPY docker/entrypoint.sh docker/customer.sh docker/account.sh docker/ldap.sh docker/login.sh /usr/local/bin/
+COPY docker/entrypoint.sh docker/customer.sh docker/account.sh docker/ldap.sh docker/login.sh docker/flow.sh /usr/local/bin/
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["serve"]

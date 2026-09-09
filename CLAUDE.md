@@ -86,6 +86,7 @@ checkout.
 
 ```sh
 ./scripts/e2e.sh          # the two pages, in a browser, against a real deployment
+./scripts/hydra.sh        # one OAuth flow, through a real Hydra, to an id_token
 ```
 
 **Touching `ts/` means running this too.** It stands roster up the way
@@ -94,6 +95,12 @@ account app with Playwright (`ts/e2e/`). It is not in `test.sh` because it
 needs a browser and a minute; it found three defects on its first run that
 every other gate was green on, so it is a gate. `./scripts/e2e.sh --hold`
 leaves the deployment up to look at.
+
+**Touching `login/` means running `hydra.sh`.** It stands `compose.yaml` up --
+Hydra, its client, the Login App -- and walks an authorization-code flow to an
+`id_token`, checking its `sub` is the `Holder.id` roster holds. `login/`'s own
+tests use a fake Hydra, deliberately; the two defects that fake could not have
+had were both found by this. `--hold` leaves it up.
 
 ## Do not edit — regenerate
 
