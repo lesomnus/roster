@@ -147,5 +147,17 @@ the page, one of the two is wrong and both are load-bearing.
 | somebody disabled is not in the tree, from the next search on | `TestTheDisabledAreNotListed` |
 | the wire refuses every write and compare, SASL, an unknown critical control, and a bind in the clear when TLS is required; two searches share a connection, an abandoned one answers nothing, StartTLS turns the connection and LDAPS is the listener's | `TestTheDirectoryIsReadOnlyOnTheWire` · `TestASaslBindIsNotSupported` · `TestAnUnknownCriticalControlRefusesTheOperation` · `TestTwoSearchesShareAConnection` · `TestAnAbandonedSearchAnswersNothing` · `TestStartTlsTurnsTheConnection` · `TestLdapsIsTheListenersBusiness` |
 | `roster ldap serve` is told everything from the shell and refuses with a sentence for each thing it was not; told everything, a client binds with an app password and searches | `TestLdapServeIsToldEverything` · `TestLdapIsToldEverything` |
-| `ldap/` reaches roster only over the wire — it imports no server package but `front.Address` | `scripts/test.sh`, *the account app and the directory reach roster only over the wire* |
+| `ldap/` reaches roster only over the wire — it imports no server package but `front.Address` | `scripts/test.sh`, *the consumers reach roster only over the wire* |
+
+## The Login App
+
+[login.md](login.md) § "What changes when Hydra is in front" is what it is for.
+
+| the promise | pinned by |
+| --- | --- |
+| a browser Hydra sends here signs in and Hydra is told a `Holder.id`, and the token carries what the client's scope asked for and never roster's method list | `TestALoginAppTellsHydraWhoSignedIn` · `scripts/hydra.sh` |
+| which operator a flow is about comes from the challenge's OAuth client and not from a hostname: a flow raised for one client signs in that operator's person and not another's, even where both have the same alias and the same password; several clients are one operator | `TestAFlowReachesOnlyItsOwnOperator` · `TestASecondClientIsTheSameOperator` |
+| the consent hop is what a deployment said: `skip` grants what the client asked for and draws nothing, `ask` draws a screen and grants nothing until somebody says so — and a no is `access_denied` rather than a redirect that never comes | `TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne` |
+| signing somebody out everywhere in roster makes Hydra forget them, so the next product they open finds a form; somebody who was suspended and is not any more is **not** signed out again for coming back | `TestSigningSomebodyOutEverywhereReachesHydra` · `TestSomebodyBackInGoodStandingIsNotSignedOutAgain` |
+| `login/` reaches roster only over the wire, and imports no server package at all | `scripts/test.sh`, *the consumers reach roster only over the wire* |
 | the account page mints an app password by the app's name, shows it once beside its one method, and revokes it from the same list | `scripts/e2e.sh` — `ts/e2e/account.spec.ts`, *an app password is a key minted by the app's name* |

@@ -10,6 +10,8 @@ import (
 	"os"
 	"strings"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/flg"
 
@@ -260,9 +262,22 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 		<-ctx.Done()
 		_ = srv.Close()
 	}()
-	if err := srv.Serve(l); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		return err
-	}
 
-	return nil
+	// The sign-in and the sign-out, in one errgroup: an app that answers
+	// challenges while roster cannot tell it who has been signed out is an app
+	// serving a token it should not have. Whichever stops first stops the
+	// other. `App.Watch` decides for itself what is worth stopping for --
+	// a dropped stream is a reconnect, and a deployment with no broker is loud
+	// and not fatal.
+	g, ctx := errgroup.WithContext(ctx)
+	g.Go(func() error { return a.Watch(ctx) })
+	g.Go(func() error {
+		if err := srv.Serve(l); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			return err
+		}
+
+		return nil
+	})
+
+	return g.Wait()
 }

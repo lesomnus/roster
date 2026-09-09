@@ -15,7 +15,7 @@ import (
 //
 // # Why this is not the Ory SDK
 //
-// It is five endpoints, JSON in and JSON out, and the client that speaks them
+// It is six endpoints, JSON in and JSON out, and the client that speaks them
 // is `net/http` and `encoding/json` -- both of which are already here. Taking
 // the generated SDK would put a versioned module in `go.mod` for the first
 // time in this repository, and what it would buy is types this file writes in
@@ -162,7 +162,44 @@ func (a admin) rejectConsent(ctx context.Context, challenge string) (string, err
 	return v.To, nil
 }
 
-// do is the one request shape all five share.
+// revokeSessions tells Hydra to forget a browser it remembers as somebody.
+//
+// The other half of `remember`: with it, Hydra skips the form for a browser
+// that has already signed in, and this is what makes "signed out everywhere"
+// mean it. Idempotent, and 404 for somebody Hydra never remembered is not an
+// error worth having -- there is nothing to do about it and nothing was left
+// wrong.
+//
+// Not under `auth/requests/`, which is why it does not go through [admin.do]:
+// that path is challenges, and this is the session behind them.
+func (a admin) revokeSessions(ctx context.Context, subject string) error {
+	u := fmt.Sprintf("%s/admin/oauth2/auth/sessions/login?subject=%s", a.base, url.QueryEscape(subject))
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, u, nil)
+	if err != nil {
+		return err
+	}
+	for k, vs := range a.header {
+		for _, v := range vs {
+			req.Header.Add(k, v)
+		}
+	}
+
+	res, err := a.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("login: hydra: %w", err)
+	}
+	defer res.Body.Close()
+	_, _ = io.Copy(io.Discard, res.Body)
+
+	if res.StatusCode/100 != 2 && res.StatusCode != http.StatusNotFound {
+		return fmt.Errorf("login: hydra: DELETE sessions/login: %s", res.Status)
+	}
+
+	return nil
+}
+
+// do is the one request shape the five challenge calls share.
 func (a admin) do(ctx context.Context, method, path, param, challenge string, in, out any) error {
 	if challenge == "" {
 		return fmt.Errorf("login: %s: no challenge", path)

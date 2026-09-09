@@ -181,10 +181,15 @@ type App struct {
 
 	roster rstr.Client
 	me     rstr.MeServiceClient
+	sync   rstr.SyncServiceClient
 	door   *frontdoor.Door
 	admin  admin
 
 	byClient map[string]*operator
+
+	// The same rows as `byClient`, once each: an operator with two clients is
+	// one stream and not two.
+	operators []*operator
 }
 
 type operator struct {
@@ -235,6 +240,7 @@ func New(ctx context.Context, c Config) (*App, error) {
 		conn:     conn,
 		roster:   rstr.NewClient(conn),
 		me:       rstr.NewMeServiceClient(conn),
+		sync:     rstr.NewSyncServiceClient(conn),
 		admin:    admin{base: c.Hydra, header: c.HydraHeader, client: http.DefaultClient},
 		byClient: map[string]*operator{},
 	}
@@ -262,6 +268,7 @@ func New(ctx context.Context, c Config) (*App, error) {
 		}
 
 		who := &operator{id: id, alias: alias, key: o.Key, clients: o.Clients}
+		a.operators = append(a.operators, who)
 		for _, client := range o.Clients {
 			if was, ok := a.byClient[client]; ok {
 				conn.Close()

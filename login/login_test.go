@@ -1,6 +1,7 @@
 package login_test
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
@@ -10,11 +11,16 @@ import (
 	"net/http/cookiejar"
 	"net/http/httptest"
 	"net/url"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/lesomnus/payday/auth/authsession"
@@ -42,12 +48,13 @@ const password = "correct horse battery staple"
 type hydra struct {
 	*httptest.Server
 
-	mu       sync.Mutex
-	client   map[string]string // challenge -> the client it was raised for
-	subject  string            // what `acceptLoginRequest` was told
-	claims   map[string]any    // what `acceptConsentRequest` was told
-	accepted int
-	rejected bool
+	mu        sync.Mutex
+	client    map[string]string // challenge -> the client it was raised for
+	subject   string            // what `acceptLoginRequest` was told
+	claims    map[string]any    // what `acceptConsentRequest` was told
+	accepted  int
+	rejected  bool
+	forgotten []string // the subjects hydra was told to forget
 }
 
 func newHydra(t *testing.T) *hydra {
@@ -71,6 +78,13 @@ func newHydra(t *testing.T) *hydra {
 		h.mu.Unlock()
 
 		writeJson(w, map[string]string{"redirect_to": "/consent?consent_challenge=" + r.URL.Query().Get("login_challenge")})
+	})
+	m.HandleFunc("DELETE /admin/oauth2/auth/sessions/login", func(w http.ResponseWriter, r *http.Request) {
+		h.mu.Lock()
+		h.forgotten = append(h.forgotten, r.URL.Query().Get("subject"))
+		h.mu.Unlock()
+
+		w.WriteHeader(http.StatusNoContent)
 	})
 	m.HandleFunc("PUT /admin/oauth2/auth/requests/consent/reject", func(w http.ResponseWriter, r *http.Request) {
 		h.mu.Lock()
@@ -134,6 +148,13 @@ func (h *hydra) told() (string, map[string]any) {
 	return h.subject, h.claims
 }
 
+func (h *hydra) forgot() []string {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	return append([]string(nil), h.forgotten...)
+}
+
 func (h *hydra) said() (int, bool) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -151,6 +172,14 @@ type deployment struct {
 	s     *cmd.Server
 	hydra *hydra
 	app   *httptest.Server
+	a     *login.App
+
+	// An operator, over the wire. `SyncService` publishes from an interceptor,
+	// so a write through `Ungated` writes the row and tells nobody
+	// (`cmd/sync_test.go` says so in as many words) -- and this test is about
+	// what a stream carries.
+	conn *grpc.ClientConn
+	ops  context.Context
 
 	who map[string]pdid.Id // alias -> the person in that operator's tenant
 }
@@ -184,6 +213,7 @@ func serveWith(t *testing.T, how login.Consent) *deployment {
 
 	d := &deployment{s: s, hydra: newHydra(t), who: map[string]pdid.Id{}}
 	operators := map[string]login.Operator{}
+	opsKey := ""
 
 	// Two operators, each with a person who has a password and a key for this
 	// app -- one per tenant, on a holder inside it.
@@ -236,6 +266,7 @@ func serveWith(t *testing.T, how login.Consent) *deployment {
 				"/roster.VouchService/Verify",
 				"/roster.VouchService/Delegate",
 				"/roster.DelegationService/Revoke",
+				"/roster.SyncService/Watch",
 			}, login.Methods...),
 		}.Build())
 		x.NoError(err)
@@ -256,6 +287,33 @@ func serveWith(t *testing.T, how login.Consent) *deployment {
 		// Two clients for one operator, because a customer with two products
 		// has two and one sign-in.
 		operators[alias] = login.Operator{Key: token, Clients: []string{alias + "-web", alias + "-mobile"}}
+
+		if alias != "contoso" {
+			continue
+		}
+
+		// Somebody who may operate on contoso's people, for the pokes below.
+		// Over the wire, because that is the only way a write is published.
+		ops, err := s.Ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{Tenant: at, Alias: "poker"}.Build())
+		x.NoError(err)
+		everything, err := s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
+			Tenant: at, Alias: "poke-all", Methods: []string{"/roster.*/*"},
+		}.Build())
+		x.NoError(err)
+		_, err = s.Ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
+			Role:   rstr.RoleRef_builder{Id: everything.GetId()}.Build(),
+			Holder: rstr.HolderRef_builder{Id: ops.GetId()}.Build(),
+		}.Build())
+		x.NoError(err)
+
+		var sum2 []byte
+		opsKey, sum2, err = keys.Mint(keys.PrefixTenant)
+		x.NoError(err)
+		_, err = s.Ungated.ApiKey().Add(ctx, rstr.ApiKeyAddRequest_builder{
+			Holder: rstr.HolderRef_builder{Id: ops.GetId()}.Build(), Alias: "poker", Secret: sum2,
+			Methods: []string{"/roster.*/*"},
+		}.Build())
+		x.NoError(err)
 	}
 
 	g, err := s.Grpc(ctx, cmd.Config{})
@@ -264,6 +322,11 @@ func serveWith(t *testing.T, how login.Consent) *deployment {
 	x.NoError(err)
 	go func() { _ = g.Serve(l) }()
 	t.Cleanup(func() { g.Stop() })
+
+	d.conn, err = grpc.NewClient(l.Addr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	x.NoError(err)
+	t.Cleanup(func() { d.conn.Close() })
+	d.ops = metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+opsKey)
 
 	seal := make([]byte, authsession.KeySize)
 	_, err = rand.Read(seal)
@@ -283,6 +346,7 @@ func serveWith(t *testing.T, how login.Consent) *deployment {
 	x.NoError(err)
 	t.Cleanup(func() { a.Close() })
 
+	d.a = a
 	d.app = httptest.NewServer(a.Handler())
 	t.Cleanup(d.app.Close)
 
@@ -548,4 +612,83 @@ func TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne(t *testing.T) {
 		_, claims := d.hydra.told()
 		x.Nil(claims)
 	})
+}
+
+// TestSigningSomebodyOutEverywhereReachesHydra is the hole this closes, and it
+// is a quiet one: without it an operator signs somebody out, roster's own
+// credentials stop working, and Hydra goes on remembering them -- so the next
+// product they open gets a fresh token with no form in between.
+//
+// roster does not know Hydra exists and this test does not change that. What it
+// watches is `SyncService`, which says what has stopped being good about
+// somebody in roster's own vocabulary; turning that into a `DELETE` is the
+// Login App's, because the Login App is what knows about Hydra.
+func TestSigningSomebodyOutEverywhereReachesHydra(t *testing.T) {
+	x := require.New(t)
+	d := serve(t)
+	ctx := t.Context()
+
+	go func() { _ = d.a.Watch(ctx) }()
+
+	// A moment for the streams to be open, or the event is one nothing was
+	// listening for -- which is what this stream promises and does not replay.
+	erin := d.who["contoso"]
+	x.Eventually(func() bool {
+		_, err := rstr.NewHolderServiceClient(d.conn).Invalidate(d.ops, rstr.HolderInvalidateRequest_builder{
+			Ref: rstr.HolderRef_builder{Id: erin.Bytes()}.Build(),
+		}.Build())
+		x.NoError(err)
+
+		return slices.Contains(d.hydra.forgot(), erin.String())
+	}, 10*time.Second, 100*time.Millisecond, "hydra was never told to forget her")
+
+	// And nobody else. A stream narrowed by the wall hears one tenant per key,
+	// and an event about contoso's erin must not reach fabrikam's.
+	for _, s := range d.hydra.forgot() {
+		x.NotEqual(d.who["fabrikam"].String(), s, "an event about contoso reached fabrikam")
+	}
+}
+
+// TestSomebodyBackInGoodStandingIsNotSignedOutAgain, which is what the stream
+// carrying **state and not a delta** costs an app that does not think about it.
+//
+// `date_invalidated` is monotonic and never cleared, so every later event about
+// somebody carries it still set. An app that revoked on "is it set" would sign
+// somebody out the moment after they signed back in -- once per event, forever.
+func TestSomebodyBackInGoodStandingIsNotSignedOutAgain(t *testing.T) {
+	x := require.New(t)
+	d := serve(t)
+	ctx := t.Context()
+
+	go func() { _ = d.a.Watch(ctx) }()
+
+	erin := d.who["contoso"]
+	ref := rstr.HolderRef_builder{Id: erin.Bytes()}.Build()
+	h := rstr.NewHolderServiceClient(d.conn)
+
+	x.Eventually(func() bool {
+		_, err := h.Invalidate(d.ops, rstr.HolderInvalidateRequest_builder{Ref: ref}.Build())
+		x.NoError(err)
+
+		return len(d.hydra.forgot()) > 0
+	}, 10*time.Second, 100*time.Millisecond)
+
+	was := len(d.hydra.forgot())
+
+	// Something else about her that is not a sign-out. The event carries the
+	// old `date_invalidated` -- still set, and not newer than what was acted on.
+	_, err := h.Disable(d.ops, rstr.HolderDisableRequest_builder{Ref: ref}.Build())
+	x.NoError(err)
+	_, err = h.Enable(d.ops, rstr.HolderEnableRequest_builder{Ref: ref}.Build())
+	x.NoError(err)
+
+	// A disable is its own reason to forget her, so the count may move once for
+	// that. What it must not do is keep moving: the enable that follows carries
+	// the same two timestamps and is not a third sign-out.
+	x.Eventually(func() bool { return len(d.hydra.forgot()) > was }, 10*time.Second, 50*time.Millisecond,
+		"a suspension did not reach hydra")
+	after := len(d.hydra.forgot())
+
+	time.Sleep(500 * time.Millisecond)
+	x.Equal(after, len(d.hydra.forgot()), "she was signed out again for coming back")
 }

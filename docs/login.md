@@ -195,9 +195,20 @@ broken".
 `compose.yaml` runs the whole of it -- Hydra, a client, the app -- and
 `docs/operating.md` § "One process, or four" is how a deployment says so.
 
+The other direction is done: **signing somebody out in roster reaches Hydra.**
+The Login App holds `SyncService` open, one stream per operator, and when roster
+says somebody has been signed out everywhere, suspended or erased it tells Hydra
+to forget them -- so the next product they open finds a form rather than a fresh
+token. roster does not know Hydra exists and this does not change that: the
+stream says what has stopped being good in roster's own vocabulary, to any app
+holding a credential, and turning that into a `DELETE` is the Login App's,
+because the Login App is what knows about Hydra.
+
 One thing to add on the day you do this: **back-channel logout.** A session
 ended at Hydra does not end custody's row by itself, and the OIDC logout
-endpoints are how that propagates. Handling it is one `store.Del`.
+endpoints are how that propagates. Handling it is one `store.Del`, and it is the
+product app's -- the hop above is roster to Hydra, and this one is Hydra to
+whatever holds a session.
 
 ## A second factor, and whose it is
 
