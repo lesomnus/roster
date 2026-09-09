@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# The two pages, driven by a browser against a deployment stood up the way
-# `docs/operating.md` says to stand one up.
+# The three pages, driven by a browser: two against a deployment stood up the
+# way `docs/operating.md` says to stand one up, and the Login App's against
+# nothing at all -- `ts/vite.login.ts` is that app made up, which is the whole
+# reason it costs nothing to drive here.
 #
 # `scripts/test.sh` checks that the pages type-check and bundle, and the Go
 # suites check every rule the pages rely on -- against a server in the same
@@ -46,7 +48,7 @@ fi
 # server left over from a `--hold` the day before answered for the sandbox,
 # serving the modules it had cached, and a change to the library it served
 # was invisible for an afternoon.
-for port in 18051 18052 18061 18062 18071 18072 18090 18100; do
+for port in 18051 18052 18061 18062 18071 18072 18090 18100 18101; do
 	if (exec 3<>"/dev/tcp/127.0.0.1/${port}") 2>/dev/null; then
 		echo "something is already listening on 127.0.0.1:${port}; stop it first (a --hold left running?)" >&2
 		exit 1
@@ -151,6 +153,16 @@ if [ "${E2E_SANDBOX:-1}" != "0" ]; then
 else
 	unset E2E_SANDBOX
 fi
+
+# The Login App's page, against **nothing**: `vite.login.ts` is the app made up,
+# so this needs no roster, no Hydra and no key. It is here rather than in a gate
+# of its own because it is a page in a browser, which is what this script is,
+# and because every other gate on that page is blind to it -- `hydra.sh` walks
+# the whole flow with curl and never runs a line of it.
+export E2E_LOGIN="http://127.0.0.1:18101"
+(cd ts && exec ./node_modules/.bin/vite --config vite.login.ts --port 18101 --strictPort >"${work}/login.log" 2>&1) &
+pids+=($!)
+up "${E2E_LOGIN}/login?login_challenge=sandbox"
 
 # `--hold` leaves the deployment up for a browser or a curl, which is how a
 # failure the specs report is looked at.

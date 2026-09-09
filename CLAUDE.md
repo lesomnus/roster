@@ -85,16 +85,17 @@ leaves to CI is `buf breaking`, which is about the branch rather than about the
 checkout.
 
 ```sh
-./scripts/e2e.sh          # the two pages, in a browser, against a real deployment
+./scripts/e2e.sh          # the three pages, in a browser
 ./scripts/hydra.sh        # one OAuth flow, through a real Hydra, to an id_token
 ```
 
 **Touching `ts/` means running this too.** It stands roster up the way
 `docs/operating.md` says to, seeds a customer, and drives the console and the
-account app with Playwright (`ts/e2e/`). It is not in `test.sh` because it
-needs a browser and a minute; it found three defects on its first run that
-every other gate was green on, so it is a gate. `./scripts/e2e.sh --hold`
-leaves the deployment up to look at.
+account app with Playwright (`ts/e2e/`) -- and the Login App's page against
+**nothing**, because `ts/vite.login.ts` is that app made up and so it costs a
+port. It is not in `test.sh` because it needs a browser and a minute; it found
+three defects on its first run that every other gate was green on, so it is a
+gate. `./scripts/e2e.sh --hold` leaves the deployment up to look at.
 
 **Touching `login/` means running `hydra.sh`.** It stands `compose.yaml` up from
 **nothing** -- Hydra, its client, the Login App -- and walks an
