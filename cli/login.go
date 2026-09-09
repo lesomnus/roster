@@ -35,7 +35,7 @@ func NewCmdLogin(c *cmd.Config) *xli.Command {
 		Name:  "login",
 		Brief: "the Login App, for a deployment with Hydra in front",
 
-		Commands: xli.Commands{newCmdLoginServe(c)},
+		Commands: xli.Commands{newCmdLoginServe(c), newCmdLoginSandbox()},
 	}
 }
 
@@ -116,6 +116,52 @@ func newCmdLoginServe(c *cmd.Config) *xli.Command {
 			}
 
 			return serveLogin(ctx, lc)
+		}),
+	}
+}
+
+// newCmdLoginSandbox is `roster login sandbox`: the pages, with nothing behind
+// them.
+//
+// No roster, no Hydra, no database and no flags worth having -- which is the
+// whole point. What it is for is looking at the flow: the same form, the same
+// consent screen, the same `frontdoor.js`, and a made-up server. See
+// `login.Sandbox`, including why the console's sandbox does the opposite.
+func newCmdLoginSandbox() *xli.Command {
+	return &xli.Command{
+		Name:  "sandbox",
+		Brief: "the sign-in pages with nothing behind them, to look at",
+
+		Flags: flg.Flags{
+			&flg.String{Name: "listen", Brief: "where to serve it; 127.0.0.1:8091 if empty"},
+		},
+
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			addr, _ := flg.Find[string](cl, "listen")
+			if addr == "" {
+				// Loopback and not `:8091`, unlike everything else here. This
+				// signs nobody in and says so, and a thing that looks like a
+				// login page should not be reachable from a network by
+				// accident.
+				addr = "127.0.0.1:8091"
+			}
+
+			l, err := net.Listen("tcp", addr)
+			if err != nil {
+				return err
+			}
+			log.From(ctx).InfoContext(ctx, "login: sandbox", slog.String("addr", l.Addr().String()))
+
+			srv := &http.Server{Handler: login.NewSandbox().Handler()}
+			go func() {
+				<-ctx.Done()
+				_ = srv.Close()
+			}()
+			if err := srv.Serve(l); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				return err
+			}
+
+			return nil
 		}),
 	}
 }

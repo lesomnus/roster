@@ -193,7 +193,9 @@ the choice would be between "allow" and "allow, then find out something is
 broken".
 
 `compose.yaml` runs the whole of it -- Hydra, a client, the app -- and
-`docs/operating.md` § "One process, or four" is how a deployment says so.
+`docs/operating.md` § "One process, or four" is how a deployment says so. To see
+the **pages** without any of that, `roster login sandbox` serves them with a
+made-up server behind them.
 
 The other direction is done: **signing somebody out in roster reaches Hydra.**
 The Login App holds `SyncService` open, one stream per operator, and when roster

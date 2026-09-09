@@ -278,6 +278,19 @@ and — for the shape a deployment with several products has — **Hydra** on
 ./scripts/hydra.sh          # up, walk one OAuth flow to a token, down
 ./scripts/hydra.sh --hold   # leave it up to look at
 ```
+
+And for the **pages** alone -- deciding whether you want this app, or changing
+the form -- there is nothing to stand up at all:
+
+```sh
+roster login sandbox        # 127.0.0.1:8091, and it signs nobody into anything
+```
+
+The same form, the same consent screen, the same `frontdoor.js`; what is made up
+is the server. Two people to be, one of them with a second factor, and the last
+page spells out the claims a product would have been given. It is the opposite
+of the console's sandbox, which compiles the **real** server into the page --
+and `login/sandbox.go` says why each is the right way round for what it is.
  Not the sandbox: this is the pages
 talking to a roster that is really there, which is where the differences from
 SQLite show up — and they have shown up more than once. `ts/e2e/` runs against

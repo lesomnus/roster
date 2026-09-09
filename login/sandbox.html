@@ -1,0 +1,47 @@
+<!doctype html>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>the login app, with nothing behind it</title>
+<style>
+	body {
+		font: 15px/1.6 system-ui, sans-serif;
+		margin: 3rem auto;
+		max-width: 34rem;
+		padding: 0 1rem;
+	}
+	h1 { font-size: 1.3rem; }
+	table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+	td, th { text-align: left; padding: 0.35rem 0.6rem; border-bottom: 1px solid #eee; }
+	code { font-family: ui-monospace, monospace; }
+	.none { color: #888; }
+	.go { display: inline-block; margin-top: 1rem; }
+</style>
+
+<h1>the login app, with nothing behind it</h1>
+
+<p>
+	Every page from here is the real one — the same form, the same consent
+	screen, the same <code>frontdoor.js</code>. What is made up is the server:
+	there is no roster to ask and no Hydra to be redirected by, so nothing you
+	do here signs anybody into anything.
+</p>
+
+<p>Somebody to be:</p>
+
+<table>
+	<tr><th>who</th><th>password</th><th>second factor</th></tr>
+	{{ range . }}
+	<tr>
+		<td><code>{{ .Alias }}</code></td>
+		<td><code>{{ .Password }}</code></td>
+		<td>{{ if .Factor }}<code>{{ .Factor }}</code>{{ else }}<span class="none">none</span>{{ end }}</td>
+	</tr>
+	{{ end }}
+</table>
+
+<p class="none">
+	A wrong password is refused the way the real one refuses it, and so is a
+	wrong code — one answer for both, which is the rule and is worth seeing.
+</p>
+
+<a class="go" href="/login?login_challenge=sandbox">start a sign-in →</a>

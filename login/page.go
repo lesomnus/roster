@@ -19,7 +19,10 @@ import (
 //go:embed login.html
 var page []byte
 
-func (a *App) page(w http.ResponseWriter, r *http.Request) {
+func (a *App) page(w http.ResponseWriter, r *http.Request) { form(w) }
+
+// form is the sign-in page, which the sandbox serves unchanged.
+func form(w http.ResponseWriter) {
 	w.Header().Set("content-type", "text/html; charset=utf-8")
 
 	// A form for one flow, and the flow is in a cookie. Nothing here is
@@ -42,6 +45,17 @@ var consentPage string
 var consentTemplate = template.Must(template.New("consent").Parse(consentPage))
 
 func (a *App) ask(w http.ResponseWriter, r *http.Request, v *consentRequest) {
+	if err := ask(w, v); err != nil {
+		a.broken(w, r, err)
+	}
+}
+
+// ask draws the consent screen.
+//
+// A function rather than only a method, because the sandbox draws the **same**
+// screen with nothing behind it -- a page that is real and a server that is
+// not, which is what makes looking at it worth anything.
+func ask(w http.ResponseWriter, v *consentRequest) error {
 	name := v.Client.Name
 	if name == "" {
 		name = v.Client.Id
@@ -56,14 +70,14 @@ func (a *App) ask(w http.ResponseWriter, r *http.Request, v *consentRequest) {
 		Scope     []string
 		Challenge string
 	}{Client: name, Scope: v.Scope, Challenge: v.Challenge}); err != nil {
-		a.broken(w, r, err)
-
-		return
+		return err
 	}
 
 	w.Header().Set("content-type", "text/html; charset=utf-8")
 	w.Header().Set("cache-control", "no-store")
 	_, _ = w.Write(b.Bytes())
+
+	return nil
 }
 
 func writeJson(w http.ResponseWriter, v any) {

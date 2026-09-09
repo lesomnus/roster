@@ -1,0 +1,48 @@
+<!doctype html>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>what a product would have been given</title>
+<style>
+	body {
+		font: 15px/1.6 system-ui, sans-serif;
+		margin: 3rem auto;
+		max-width: 34rem;
+		padding: 0 1rem;
+	}
+	h1 { font-size: 1.3rem; }
+	pre { background: #f6f6f6; padding: 0.8rem; overflow-x: auto; border-radius: 4px; }
+	code { font-family: ui-monospace, monospace; }
+	.none { color: #888; }
+</style>
+
+{{ if .Allowed }}
+<h1>signed in</h1>
+
+<p>
+	The real app has redirected the browser back to Hydra by now, and this page
+	does not exist there. What is worth showing instead is what Hydra would put
+	in the <code>id_token</code>, which is <code>login/claims.go</code>'s
+	decision:
+</p>
+
+<pre>{{ .Claims }}</pre>
+
+<p class="none">
+	No <code>methods</code>, ever. That is roster's answer about roster, and a
+	product holding a copy of it would hold a stale one — so a product asks
+	roster, keyed on <code>sub</code>.
+</p>
+{{ else }}
+<h1>not allowed</h1>
+
+<p>
+	The consent screen was answered <em>no</em>, so nothing was granted. The
+	real app tells Hydra <code>access_denied</code>, which is an answer — the
+	client is told what happened rather than left at a redirect that never
+	comes.
+</p>
+{{ end }}
+
+<p>proved: {{ range .Proved }}<code>{{ . }}</code> {{ else }}<span class="none">nothing</span>{{ end }}</p>
+
+<p><a href="/">again</a></p>
