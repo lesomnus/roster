@@ -375,7 +375,19 @@ func (d *Door) finish(w http.ResponseWriter, r *http.Request) {
 // a live credential for that person in roster's table until its own clock runs
 // out, which is what D23 said *revoking it is a delete* about.
 func (d *Door) SignOut(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	http.SetCookie(w, d.End(r.Context(), r))
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// End is [Door.SignOut] without the answer: the session dropped, the delegation
+// revoked, and the cookie that says so handed back rather than written.
+//
+// A seam rather than a second copy, because not every app ends a session by
+// answering `DELETE /session`. A Login App finishes at a **redirect** -- the
+// flow is over and Hydra holds what the browser came for -- and a handler that
+// wrote 204 on the way there would win the response. Whatever writes the
+// cookie, what happens to the delegation is the same and is here.
+func (d *Door) End(ctx context.Context, r *http.Request) *http.Cookie {
 	key := d.keyOf(r)
 
 	// `Take` and not `Read`: dead or alive. A session that expired here first
@@ -389,8 +401,7 @@ func (d *Door) SignOut(w http.ResponseWriter, r *http.Request) {
 		_, _ = d.c.Delegation.Revoke(ctx, rstr.DelegationRevokeRequest_builder{Token: v.Held[heldToken]}.Build())
 	}
 
-	http.SetCookie(w, d.c.Sessions.End(ctx, key))
-	w.WriteHeader(http.StatusNoContent)
+	return d.c.Sessions.End(ctx, key)
 }
 
 // answer mints the cookie the last call earned, and says which of the three
