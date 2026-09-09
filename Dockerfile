@@ -79,10 +79,11 @@ FROM gcr.io/distroless/static-debian12:nonroot AS app
 
 COPY --from=build /out/roster /usr/local/bin/roster
 
-# Where the pages land. A deployment points at them:
+# Where the three pages land. A deployment points at each:
 #
-#   control.console.dir            the console, served under `/console/`
-#   roster account serve --static  the account page
+#   control.console.dir            the console, served at `/` on that listener
+#   account.page.dir               the account page
+#   login.page.dir                 the Login App's, for a deployment with Hydra
 COPY --from=page /src/ts/dist/console /usr/share/roster/console
 COPY --from=page /src/ts/dist/account /usr/share/roster/account
 COPY --from=page /src/ts/dist/login /usr/share/roster/login
