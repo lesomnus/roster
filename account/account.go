@@ -164,14 +164,20 @@ var Methods = []string{
 // EnvSecret resolves `env:NAME` and refuses every other scheme. A second scheme
 // -- a file, a secrets manager -- is a deployment's to add through
 // [Config.Secret]; roster's own vocabulary is this one.
+//
+// Its refusals name **no app**, though this package is one. Three things call
+// it -- the account app, the directory and the Login App -- and a message that
+// said `account:` to somebody running `roster login serve` has told them to go
+// and read about a setting their deployment may not have. The caller says
+// which setting; this says what is wrong with the reference.
 func EnvSecret(ref string) (string, error) {
 	name, ok := strings.CutPrefix(ref, "env:")
 	if !ok || name == "" {
-		return "", fmt.Errorf("account: secret_ref %q: only env:NAME is understood here", ref)
+		return "", fmt.Errorf("secret_ref %q: only env:NAME is understood here", ref)
 	}
 	v, ok := os.LookupEnv(name)
 	if !ok {
-		return "", fmt.Errorf("account: secret_ref %q: %s is not set", ref, name)
+		return "", fmt.Errorf("secret_ref %q: %s is not set", ref, name)
 	}
 
 	return v, nil
