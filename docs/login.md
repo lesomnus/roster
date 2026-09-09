@@ -194,7 +194,7 @@ broken".
 
 `compose.yaml` runs the whole of it -- Hydra, a client, the app -- and
 `docs/operating.md` § "One process, or four" is how a deployment says so. To see
-the **pages** without any of that, `roster login sandbox` serves them with a
+the **pages** without any of that, `npm run dev:login` serves them with a
 made-up server behind them.
 
 The other direction is done: **signing somebody out in roster reaches Hydra.**

@@ -321,8 +321,8 @@ go run ./cmd/roster init          # the first tenant, and somebody in it
 go run ./cmd/roster serve
 go run ./cmd/roster config env    # every variable this can be told through
 
-go run ./cmd/roster login sandbox  # the sign-in pages, with nothing behind them
 cd ts && npm install && npm run dev            # the console, cross-origin
+npm --prefix ts run dev:login                  # the sign-in pages, no backend at all
 go run ./cmd/roster account serve --roster … \
   --connect … --key contoso=rt_… --static ts/dist/account   # the front door
 go run ./cmd/roster ldap serve --roster … --key contoso=rt_…  # the directory
@@ -330,7 +330,7 @@ go run ./cmd/roster ldap serve --roster … --key contoso=rt_…  # the director
 docker compose up --build       # Postgres, both planes, a customer, both pages, LDAP
 ```
 
-Two UIs, and one to three processes. `roster serve` serves the console under
+Three UIs, and one to four processes. `roster serve` serves the console under
 `/` on `control.http` when `control.console.dir` names the build.
 `roster account serve` holds tenant keys and faces the internet; `roster ldap
 serve` is roster as a directory for clients that speak nothing else.

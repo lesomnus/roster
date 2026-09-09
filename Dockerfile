@@ -85,6 +85,7 @@ COPY --from=build /out/roster /usr/local/bin/roster
 #   roster account serve --static  the account page
 COPY --from=page /src/ts/dist/console /usr/share/roster/console
 COPY --from=page /src/ts/dist/account /usr/share/roster/account
+COPY --from=page /src/ts/dist/login /usr/share/roster/login
 
 USER nonroot:nonroot
 
@@ -114,6 +115,7 @@ RUN apk add --no-cache ca-certificates curl oath-toolkit-oathtool
 COPY --from=build /out/roster /usr/local/bin/roster
 COPY --from=page /src/ts/dist/console /usr/share/roster/console
 COPY --from=page /src/ts/dist/account /usr/share/roster/account
+COPY --from=page /src/ts/dist/login /usr/share/roster/login
 COPY docker/entrypoint.sh docker/customer.sh docker/account.sh docker/ldap.sh docker/login.sh docker/flow.sh /usr/local/bin/
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

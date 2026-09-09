@@ -1,83 +1,56 @@
 package login
 
 import (
-	"bytes"
 	"context"
-	_ "embed"
 	"encoding/json"
-	"html/template"
 	"net/http"
 )
 
-// The page, served rather than built.
+// The page, built rather than served.
 //
-// One file, no toolchain, and it imports `frontdoor.js` from this same app --
-// which is what `frontdoor.Script` is mounted for. A deployment that wants its
-// own serves it with [Config.Page] instead; what it must keep is the last hop,
-// `POST /accept`, because that is the half no other front door has.
+// `ts/login/` over the same `ts/lib/` the console and the account page are
+// over, which is where the sign-in they both draw lives. It was one file of
+// plain HTML for a day, on a reason that was about something else: `frontdoor`
+// ships its browser half with **no build on purpose**, so that somebody else's
+// Go product app can mount one route and write plain markup, and
+// `examples/sso/account.html` is that page. roster's own pages were never the
+// subject -- and roster already had one drawing this exact flow, with a
+// security key and the rule about one attempt per first form, which the plain
+// copy did not.
 //
-//go:embed login.html
-var page []byte
+// So `login.page.dir` names a build, the way `account.page.dir` and
+// `control.console.dir` do. A deployment that serves the page from somewhere
+// else leaves it out; what it must keep is the last hop, `POST /accept`,
+// because that is the half no other front door has.
 
-func (a *App) page(w http.ResponseWriter, r *http.Request) { form(w) }
-
-// form is the sign-in page, which the sandbox serves unchanged.
-func form(w http.ResponseWriter) {
-	w.Header().Set("content-type", "text/html; charset=utf-8")
-
-	// A form for one flow, and the flow is in a cookie. Nothing here is
-	// cacheable and a stale copy is a browser posting to a challenge that has
-	// been spent.
-	w.Header().Set("cache-control", "no-store")
-
-	_, _ = w.Write(page)
-}
-
-// The consent screen, drawn only under [Ask].
+// page serves the built page: the two screens at their own paths, and the
+// assets under them.
 //
-// A template where the sign-in page is not, because this one says something
-// about **this** flow -- which app is asking, and for what -- and a page that
-// read that from its own URL would be a page a link could put words in.
-//
-//go:embed consent.html
-var consentPage string
-
-var consentTemplate = template.Must(template.New("consent").Parse(consentPage))
-
-func (a *App) ask(w http.ResponseWriter, r *http.Request, v *consentRequest) {
-	if err := ask(w, v); err != nil {
-		a.broken(w, r, err)
-	}
-}
-
-// ask draws the consent screen.
-//
-// A function rather than only a method, because the sandbox draws the **same**
-// screen with nothing behind it -- a page that is real and a server that is
-// not, which is what makes looking at it worth anything.
-func ask(w http.ResponseWriter, v *consentRequest) error {
-	name := v.Client.Name
-	if name == "" {
-		name = v.Client.Id
+// One handler for both, because they are one page -- it reads which screen it
+// is from the challenge in its own URL. A file server would answer 404 for
+// `/login`, which is a path in the app and not a file in the build.
+func (a *App) page() http.Handler {
+	if a.c.Page == nil {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, "this deployment serves no sign-in page", http.StatusNotFound)
+		})
 	}
 
-	// Rendered to a buffer first: a template that fails half way has already
-	// written half a page, and the answer to a broken deployment is one line
-	// rather than a form with no buttons.
-	b := &bytes.Buffer{}
-	if err := consentTemplate.Execute(b, struct {
-		Client    string
-		Scope     []string
-		Challenge string
-	}{Client: name, Scope: v.Scope, Challenge: v.Challenge}); err != nil {
-		return err
-	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/login", "/consent":
+			// A screen, and the build has one document. Rewritten rather than
+			// redirected: the challenge is in the query and a redirect that
+			// dropped it would be a page with nothing to ask about.
+			r = r.Clone(r.Context())
+			r.URL.Path = "/"
+		}
 
-	w.Header().Set("content-type", "text/html; charset=utf-8")
-	w.Header().Set("cache-control", "no-store")
-	_, _ = w.Write(b.Bytes())
-
-	return nil
+		// A form for one flow. Nothing here is cacheable and a stale copy is a
+		// browser posting to a challenge that has been spent.
+		w.Header().Set("cache-control", "no-store")
+		a.c.Page.ServeHTTP(w, r)
+	})
 }
 
 func writeJson(w http.ResponseWriter, v any) {

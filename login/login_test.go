@@ -6,7 +6,6 @@ import (
 	"encoding/base32"
 	"encoding/base64"
 	"encoding/json"
-	"io"
 	"net"
 	"net/http"
 	"net/http/cookiejar"
@@ -352,6 +351,10 @@ func serveWith(t *testing.T, how login.Consent) *deployment {
 	x.NoError(err)
 
 	a, err := login.New(ctx, login.Config{
+		// The page, standing in for the build: what these tests are about is
+		// the flow, and `ts/login/` is checked by the compiler and by
+		// `scripts/e2e.sh`.
+		Page:           http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte("the form")) }),
 		Consent:        how,
 		Roster:         l.Addr().String(),
 		Insecure:       true,
@@ -570,12 +573,26 @@ func TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne(t *testing.T) {
 		x.Equal(http.StatusOK, code)
 
 		res := consent(t, d, b, "c2")
-		defer res.Body.Close()
-		body, err := io.ReadAll(res.Body)
-		x.NoError(err)
+		res.Body.Close()
 		x.Equal(http.StatusOK, res.StatusCode, "a screen was asked for and a redirect came back")
-		x.Contains(string(body), "contoso-web", "the screen does not say which app is asking")
-		x.Contains(string(body), "profile", "the screen does not say what it is asking for")
+
+		// What the screen says is what `/flow` answers: the page is one
+		// document for both screens and reads which it is from its own URL, so
+		// this is where *which app is asking* is decided.
+		res, err := b.Get(d.app.URL + "/flow?consent_challenge=c2")
+		x.NoError(err)
+		defer res.Body.Close()
+		x.Equal(http.StatusOK, res.StatusCode)
+
+		var asking struct {
+			Brand  string   `json:"brand"`
+			Client string   `json:"client"`
+			Scope  []string `json:"scope"`
+		}
+		x.NoError(json.NewDecoder(res.Body).Decode(&asking))
+		x.Equal("contoso-web", asking.Client, "the screen has nothing to say which app is asking")
+		x.Contains(asking.Scope, "profile", "the screen has nothing to say what it is asking for")
+		x.NotEmpty(asking.Brand, "the screen has nothing to call the operator")
 
 		// **Nothing granted.** A screen that has been drawn and not answered
 		// must leave the flow where it was, or the screen is decoration.

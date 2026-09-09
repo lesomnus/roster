@@ -341,13 +341,20 @@ was HTTP — so the customer-facing port answered an operator's password with a
 204 and a cookie that opened nothing, a trap that had to be documented rather
 than closed.
 
-## Two UIs, one library
+## Three UIs, one library
 
-`ts/` builds two pages over one `ts/lib/` and one `ts/gen/`: the **console**
-(`ts/console/`), which an operator opens, and the **account** page
-(`ts/account/`), which a customer's people sign in at. Same store, same
-generated clients, same `covers()` deciding what is worth drawing; what differs
-is the transport. The console speaks Connect to `control.http` and `admin.http`;
+`ts/` builds three pages over one `ts/lib/` and one `ts/gen/`: the **console**
+(`ts/console/`), which an operator opens, the **account** page
+(`ts/account/`), which a customer's people sign in at, and the **Login App's**
+(`ts/login/`), which is where a browser Hydra redirected ends up. Same store,
+same generated clients, same `covers()` deciding what is worth drawing; what
+differs is the transport.
+
+Two of them draw a sign-in, so it is one component: `ts/lib/signin.tsx`. What is
+shared is what `frontdoor/web/frontdoor.js` says is worth sharing, having tried
+and refused the component library D22 asked for -- *three answers where a page
+expects two, and a second form that must not be drawn from anything the server
+said to call it.* The markup around it is each page's own. The console speaks Connect to `control.http` and `admin.http`;
 the account page speaks Connect to its own origin and `roster account serve`
 hands each call on to roster **as the person** (`frontdoor.Door.Proxy`), so a
 browser never holds a roster token.

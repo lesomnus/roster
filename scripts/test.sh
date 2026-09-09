@@ -110,10 +110,10 @@ fi
 echo "== for the browser"
 GOOS=js GOARCH=wasm go build ./...
 
-# The console, which the compiler is the whole of the check on: `ts/` declares
-# no test script, so what is verified is that it type-checks and bundles. CI
-# runs this as a job of its own as well, on a runner with no Go on it, so that a
-# broken server does not hide a broken page.
-echo "== the console"
+# The three pages, which the compiler is the whole of the check on: `ts/`
+# declares no test script, so what is verified is that they type-check and
+# bundle. CI runs this as a job of its own as well, on a runner with no Go on
+# it, so that a broken server does not hide a broken page.
+echo "== the three pages"
 npm --prefix ts run check
 npm --prefix ts run build

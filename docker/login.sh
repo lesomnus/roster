@@ -47,4 +47,5 @@ exec roster login serve \
 	--hydra "${HYDRA_ADMIN}" \
 	--client "${SEED_CUSTOMER}=${OAUTH_CLIENT}" \
 	--consent "${LOGIN_CONSENT}" \
+	--static /usr/share/roster/login \
 	--insecure-cookie "$@"

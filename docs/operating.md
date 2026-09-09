@@ -283,14 +283,14 @@ And for the **pages** alone -- deciding whether you want this app, or changing
 the form -- there is nothing to stand up at all:
 
 ```sh
-roster login sandbox        # 127.0.0.1:8091, and it signs nobody into anything
+npm --prefix ts run dev:login   # :5175, and it signs nobody into anything
 ```
 
-The same form, the same consent screen, the same `frontdoor.js`; what is made up
-is the server. Two people to be, one of them with a second factor, and the last
-page spells out the claims a product would have been given. It is the opposite
-of the console's sandbox, which compiles the **real** server into the page --
-and `login/sandbox.go` says why each is the right way round for what it is.
+The real pages, and a made-up server: `ts/vite.login.ts` answers `/session` and
+the rest from a password in a map, with two people to be and one of them holding
+a second factor. It is the opposite of `dev:sandbox`, which compiles the **real**
+server into the page -- and both are right for what they are, which that file
+says at length.
  Not the sandbox: this is the pages
 talking to a roster that is really there, which is where the differences from
 SQLite show up — and they have shown up more than once. `ts/e2e/` runs against

@@ -175,9 +175,14 @@ step "hydra -> consent" "$(printf '%s' "${l}" | cut -c1-40)…"
 # the half a unit test cannot check against a real Hydra's challenge.
 if [ "${CONSENT}" = "ask" ]; then
 	consent=$(printf '%s' "${l}" | sed 's/.*consent_challenge=//')
-	page=$(c "${l}" -H "Cookie: ${cookie}")
-	printf '%s' "${page}" | grep -q 'name="allow"' || die "consent=ask drew no screen: ${page}"
-	printf '%s' "${page}" | grep -q "${OAUTH_CLIENT}" || die "the screen does not say which app is asking"
+
+	# 200 and not a redirect: a screen was drawn. **What** it says is `/flow`,
+	# because the page is one document for both screens and asks the app which
+	# it is -- so grepping the HTML would be grepping a bundle.
+	got=$(c -o /dev/null -w '%{http_code}' "${l}" -H "Cookie: ${cookie}")
+	[ "${got}" = "200" ] || die "consent=ask answered ${got} where a screen was asked for"
+	asking=$(c "http://login.test:8091/flow?consent_challenge=${consent}" -H "Cookie: ${cookie}")
+	printf '%s' "${asking}" | grep -q "${OAUTH_CLIENT}" || die "the screen has nothing to say which app is asking: ${asking}"
 	step "consent, drawn and not yet granted" "a screen"
 
 	l=$(c -o /dev/null -D - -X POST "http://login.test:8091/consent" -H "Cookie: ${cookie}" \

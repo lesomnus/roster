@@ -195,6 +195,7 @@ type App struct {
 type operator struct {
 	id      pdid.Id
 	alias   string
+	name    string
 	key     string
 	clients []string
 }
@@ -253,7 +254,8 @@ func New(ctx context.Context, c Config) (*App, error) {
 		}
 
 		v, err := a.roster.Tenant().Get(withKey(ctx, o.Key), rstr.TenantGetRequest_builder{
-			Ref: rstr.TenantRef_builder{Alias: proto.String(alias)}.Build(),
+			Ref:    rstr.TenantRef_builder{Alias: proto.String(alias)}.Build(),
+			Select: rstr.TenantSelect_builder{Name: proto.Bool(true)}.Build(),
 		}.Build())
 		if err != nil {
 			conn.Close()
@@ -267,7 +269,11 @@ func New(ctx context.Context, c Config) (*App, error) {
 			return nil, err
 		}
 
-		who := &operator{id: id, alias: alias, key: o.Key, clients: o.Clients}
+		name := v.GetName()
+		if name == "" {
+			name = alias
+		}
+		who := &operator{id: id, alias: alias, name: name, key: o.Key, clients: o.Clients}
 		a.operators = append(a.operators, who)
 		for _, client := range o.Clients {
 			if was, ok := a.byClient[client]; ok {
@@ -317,10 +323,17 @@ func (a *App) Close() error { return a.conn.Close() }
 func (a *App) Handler() http.Handler {
 	m := http.NewServeMux()
 
-	// Where Hydra sends the browser.
+	// Where Hydra sends the browser. Both serve the same page, which reads
+	// which screen it is from the challenge in its own URL.
 	m.HandleFunc("GET /login", a.begin)
 	m.HandleFunc("GET /consent", a.consent)
 	m.HandleFunc("POST /consent", a.decide)
+
+	// What the page needs about a flow, and the only thing it asks for. Unlike
+	// the console and the account page there is not one Connect call from this
+	// browser: what a flow is about is Hydra's to say, and only this app may
+	// ask Hydra.
+	m.HandleFunc("GET /flow", a.flow)
 
 	// The sign-in protocol, behind the flow the challenge names.
 	m.Handle("/session", a.inFlow(a.door.Handler()))
@@ -329,14 +342,8 @@ func (a *App) Handler() http.Handler {
 	// What turns a finished sign-in into Hydra's answer.
 	m.Handle("POST /accept", a.inFlow(http.HandlerFunc(a.accept)))
 
-	// The browser half of `frontdoor`, so the page needs no toolchain.
-	m.HandleFunc("GET /frontdoor.js", frontdoor.Script)
-
-	if a.c.Page != nil {
-		m.Handle("/", a.c.Page)
-	} else {
-		m.HandleFunc("/", a.page)
-	}
+	// The built page, and its assets.
+	m.Handle("/", a.page())
 
 	return m
 }
@@ -372,7 +379,7 @@ func (a *App) begin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.page(w, r)
+	a.page().ServeHTTP(w, r)
 }
 
 // accept is the last hop: this app's session becomes Hydra's answer.
@@ -416,7 +423,49 @@ func (a *App) consent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.ask(w, r, v)
+	// The page, which will ask `/flow` what this client wants. Drawn here
+	// rather than rendered here, so there is one screen and not two of them in
+	// two technologies.
+	a.page().ServeHTTP(w, r)
+}
+
+// flow is what the page needs about the challenge in its own URL, and the only
+// thing it asks this app for.
+func (a *App) flow(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var (
+		v   *loginRequest
+		o   *operator
+		err error
+
+		client string
+		scope  []string
+	)
+	if c := r.URL.Query().Get(consentChallenge); c != "" {
+		var req *consentRequest
+		if req, o, err = a.asking(ctx, c); err == nil {
+			client, scope = named(req.Client), req.Scope
+		}
+	} else if v, o, err = a.whose(ctx, r.URL.Query().Get(Challenge)); err == nil {
+		client, scope = named(v.Client), v.Scope
+	}
+	if err != nil {
+		a.broken(w, r, err)
+
+		return
+	}
+
+	writeJson(w, map[string]any{"brand": o.name, "client": client, "scope": scope})
+}
+
+// named is what to call a client on a screen.
+func named(c client) string {
+	if c.Name != "" {
+		return c.Name
+	}
+
+	return c.Id
 }
 
 // decide is the screen's answer, and the only two there are.
