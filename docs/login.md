@@ -224,6 +224,14 @@ remembered, or what order the prompts come in. That is the flow, and the flow is
 wherever the browser is — the Login App with Hydra in front, the product app
 without.
 
+The Login App draws it: the password alone answers *there is more*, the page
+offers what `available` names, and the one thing this app decides is that
+**Hydra is told nobody** until the second form is answered. Accepting after the
+first would hand a product a token for somebody who proved half of what the
+deployment asked for — worse than having no second factor, because the operator
+believes they have one. `scripts/hydra.sh` walks it with an authenticator in
+hand.
+
 payday already left the seam for the half-signed-in state: a `Verify` may set
 `Session.Expires` itself, which is how an app gives a short session to somebody
 who has not finished a second factor.
