@@ -96,11 +96,13 @@ needs a browser and a minute; it found three defects on its first run that
 every other gate was green on, so it is a gate. `./scripts/e2e.sh --hold`
 leaves the deployment up to look at.
 
-**Touching `login/` means running `hydra.sh`.** It stands `compose.yaml` up --
-Hydra, its client, the Login App -- and walks an authorization-code flow to an
-`id_token`, checking its `sub` is the `Holder.id` roster holds. `login/`'s own
-tests use a fake Hydra, deliberately; the two defects that fake could not have
-had were both found by this. `--hold` leaves it up.
+**Touching `login/` means running `hydra.sh`.** It stands `compose.yaml` up from
+**nothing** -- Hydra, its client, the Login App -- and walks an
+authorization-code flow twice, once per consent mode: to an `id_token` whose
+`sub` is the `Holder.id` roster holds, then a second flow Hydra skips the form
+for, then `Holder.Invalidate` over roster's HTTP port, then the form asked for
+again. `login/`'s own tests use a fake Hydra, deliberately, and every defect
+this has found was one that fake was green on. `--hold` leaves it up.
 
 ## Do not edit — regenerate
 

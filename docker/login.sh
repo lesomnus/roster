@@ -14,6 +14,8 @@ set -eu
 : "${LOGIN_PORT:=8091}"
 : "${HYDRA_ADMIN:=http://hydra:4445}"
 : "${OAUTH_CLIENT:=demo}"
+: "${LOGIN_CONSENT:=skip}"
+: "${LOGIN_REMEMBER:=1h}"
 
 key="${ACCOUNT_STATE}/${SEED_CUSTOMER}.login.key"
 until [ -e "${key}" ]; do
@@ -32,6 +34,11 @@ done
 alias="$(printf '%s' "${SEED_CUSTOMER}" | tr '[:lower:]-' '[:upper:]_')"
 export "ROSTER_LOGIN_KEY_${alias}=$(cat "${key}")"
 
+# How long Hydra skips the form for a browser that has already signed in. On by
+# default here because it is what makes "signed out everywhere" observable at
+# all: with nothing remembered there is nothing for roster's sign-out to reach.
+export ROSTER_LOGIN_REMEMBER="${LOGIN_REMEMBER}"
+
 # One replica, so no `--seal`: the key is made at start, and what it seals is a
 # session that lives from the form to the consent screen.
 exec roster login serve \
@@ -39,4 +46,5 @@ exec roster login serve \
 	--roster roster:50051 --insecure \
 	--hydra "${HYDRA_ADMIN}" \
 	--client "${SEED_CUSTOMER}=${OAUTH_CLIENT}" \
+	--consent "${LOGIN_CONSENT}" \
 	--insecure-cookie "$@"

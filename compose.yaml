@@ -290,6 +290,10 @@ services:
       SEED_CUSTOMER: ${SEED_CUSTOMER:-contoso}
       PUBLIC_HOST: ${PUBLIC_HOST:-localhost}
       OAUTH_CLIENT: demo
+      # `skip` grants what the client asked for and draws nothing, which is
+      # right for a client this deployment registered itself; `ask` draws a
+      # screen. `scripts/hydra.sh` walks both.
+      LOGIN_CONSENT: ${LOGIN_CONSENT:-skip}
     ports:
       - "8091:8091"
     volumes:

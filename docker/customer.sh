@@ -1,4 +1,9 @@
 #!/bin/sh
+# Its "once" is a file on a volume, so a seed that **grows** -- a role with one
+# more method, a key for a service that did not exist last week -- does not
+# reach a deployment that has already been stood up. `docker compose down -v`
+# is how to get it, and `scripts/hydra.sh` does that on every run for exactly
+# this reason.
 # The first customer, once, and the keys the account app and the directory
 # front them with.
 #
