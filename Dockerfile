@@ -103,11 +103,13 @@ CMD ["serve"]
 # variable. See `docker/entrypoint.sh`.
 FROM alpine:3.22 AS dev
 
-# `curl` beside the certificates because this stage is the one the scripts in
-# `docker/` run in, and `scripts/hydra.sh` walks a whole OAuth flow with it --
-# from **inside** the compose network, so the walk needs nothing published and
-# no second image. busybox `wget` cannot: the flow is redirects and cookies.
-RUN apk add --no-cache ca-certificates curl
+# `curl` and `oathtool` beside the certificates because this stage is the one
+# the scripts in `docker/` run in, and `scripts/hydra.sh` walks a whole OAuth
+# flow with them -- from **inside** the compose network, so the walk needs
+# nothing published and no second image. busybox `wget` cannot do the first: the
+# flow is redirects and cookies. And the second form wants six digits from a
+# seed, which is an authenticator app's whole job and `oathtool`'s.
+RUN apk add --no-cache ca-certificates curl oath-toolkit-oathtool
 
 COPY --from=build /out/roster /usr/local/bin/roster
 COPY --from=page /src/ts/dist/console /usr/share/roster/console

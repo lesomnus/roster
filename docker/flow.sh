@@ -68,6 +68,18 @@ fix() { sed 's|http://localhost:8091|http://login.test:8091|; s|http://localhost
 step() { printf '%-38s %s\n' "$1" "$2"; }
 die() { echo "flow: $1" >&2; exit 1; }
 
+# One call to roster, over its own HTTP port, as a caller with a key -- which is
+# how anything that is not gRPC reaches it. `connect-protocol-version` because a
+# call is what **says so** and is addressed to a service: without it the
+# transcoder reads the request as a page's route and answers 404.
+rpc() {
+	curl -sS -X POST "http://roster:8080/roster.$1" \
+		-H "authorization: Bearer ${INVALIDATE_KEY}" \
+		-H 'content-type: application/json' -H 'connect-protocol-version: 1' \
+		-d "$2"
+}
+json() { sed "s/.*\"$1\":\"//; s/\".*//"; }
+
 authorize="http://hydra.test:4444/oauth2/auth?client_id=${OAUTH_CLIENT}&response_type=code&scope=openid+profile+email&redirect_uri=$(printf '%s' "${CALLBACK}" | sed 's|:|%3A|g; s|/|%2F|g')&state=abcdefghijklmnopqrst"
 
 # begin is a product sending a browser to Hydra, as far as the login app's door.
@@ -81,18 +93,74 @@ begin() {
 	began=$(c -o /dev/null -D - "$(printf '%s' "${l}" | fix)" | code)
 }
 
+# An authenticator on her account, when this walk is the one about second
+# factors. `who` names no tenant on purpose: the key is one, which is what
+# `Vouch` reads it from.
+if [ "${FACTOR:-}" = "totp" ]; then
+	[ -n "${INVALIDATE_KEY:-}" ] || die "a factor needs a key to enrol it with"
+
+	seed=$(rpc CredentialService/Enrol \
+		"$(printf '{"ref":{"slug":{"alias":"%s","tenant":{"alias":"%s"}}},"kind":"totp"}' "${SEED_USER}" "${SEED_CUSTOMER}")" \
+		| json seed)
+	case "${seed}" in "") die "roster enrolled no authenticator";; esac
+
+	# The **previous** window, so the current code stays unspent for the sign-in
+	# a moment later: a step that has been spent does not work twice, which is
+	# roster's replay rule and would otherwise refuse the right code.
+	#
+	# base64 because `secret` is a protobuf `bytes` and this is JSON. Sent as
+	# the six digits it looks like, it is decoded into something else and
+	# compared against the real code, which answers *nobody* -- the same answer
+	# a wrong password gets, and about a different thing.
+	#
+	# And `who` names no tenant, which the key already does. That is the rule
+	# `proto/app/vouch.proto` states and this is a caller relying on it.
+	out=$(rpc VouchService/Verify \
+		"$(printf '{"who":{"alias":"%s"},"kind":"totp","secret":"%s"}' \
+			"${SEED_USER}" "$(printf '%s' "$(oathtool --totp -b -N '-30 seconds' "${seed}")" | base64)")")
+	printf '%s' "${out}" | grep -q '"satisfied":\["totp"\]' || die "the factor did not confirm: ${out}"
+	step "${SEED_USER} enrols an authenticator" "confirmed"
+fi
+
 begin
 [ "${began}" = "200" ] || die "the sign-in page answered ${began}"
 step "the product sends a browser to hydra" "a form, ${began}"
 
 # The cookie by hand for the rest, because a jar will not send one to a host
 # `--resolve` invented. Everything else about the walk is the browser's.
-cookie=$(c -o /dev/null -D - -X POST "http://login.test:8091/session?login_challenge=${challenge}" \
+head=$(c -o /dev/null -D - -X POST "http://login.test:8091/session?login_challenge=${challenge}" \
 	-H 'content-type: application/json' \
-	-d "$(printf '{"alias":"%s","password":"%s"}' "${SEED_USER}" "${SEED_PASSWORD}")" \
-	| tr -d '\r' | awk '/^[Ss]et-[Cc]ookie:/{print $2}' | sed 's/;$//')
+	-d "$(printf '{"alias":"%s","password":"%s"}' "${SEED_USER}" "${SEED_PASSWORD}")" | tr -d '\r')
+cookie=$(printf '%s' "${head}" | awk '/^[Ss]et-[Cc]ookie:/{print $2}' | sed 's/;$//')
 [ -n "${cookie}" ] || die "the password was not accepted"
-step "${SEED_USER} types the password" "204, ${cookie%%=*}"
+
+if [ "${FACTOR:-}" = "totp" ]; then
+	# 200 and not 204: a third answer, and the whole point of it is that the
+	# flow is **not** finished. What the page draws the second form from is in
+	# the body; what this checks is that Hydra is told nobody yet.
+	got=$(printf '%s' "${head}" | code)
+	[ "${got}" = "200" ] || die "a password alone finished a sign-in with a factor on it (${got})"
+	step "${SEED_USER} types the password" "${got}, one more to prove"
+
+	got=$(c -o /dev/null -w '%{http_code}' -X POST "http://login.test:8091/accept?login_challenge=${challenge}" \
+		-H "Cookie: ${cookie}")
+	[ "${got}" = "401" ] || die "a half-signed-in browser was accepted (${got})"
+	step "and hydra is told nobody yet" "${got}"
+
+	head=$(c -o /dev/null -D - -X POST "http://login.test:8091/session/continue?login_challenge=${challenge}" \
+		-H "Cookie: ${cookie}" -H 'content-type: application/json' \
+		-d "$(printf '{"kind":"totp","secret":"%s"}' "$(oathtool --totp -b "${seed}")")" | tr -d '\r')
+	got=$(printf '%s' "${head}" | code)
+	[ "${got}" = "204" ] || die "the code from her authenticator was refused (${got})"
+
+	# A finished sign-in is a new session: the half one carried a continuation
+	# and an empty grant, and this one carries the delegation.
+	cookie=$(printf '%s' "${head}" | awk '/^[Ss]et-[Cc]ookie:/{print $2}' | sed 's/;$//')
+	[ -n "${cookie}" ] || die "finishing the second form set no session"
+	step "and the code from her authenticator" "${got}, ${cookie%%=*}"
+else
+	step "${SEED_USER} types the password" "204, ${cookie%%=*}"
+fi
 
 to=$(c -X POST "http://login.test:8091/accept?login_challenge=${challenge}" -H "Cookie: ${cookie}" \
 	| sed 's/.*"redirect_to":"//; s/".*//; s|\\u0026|\&|g' | fix)
@@ -163,18 +231,10 @@ begin
 [ "${began}" = "303" ] || die "hydra asked for the form again for a browser it remembers (${began})"
 step "a second flow skips the form" "${began}, remembered"
 
-# Over roster's own HTTP port, as a caller with a key -- which is how anything
-# that is not gRPC reaches it, and one more thing this walk gets for free.
-#
-# `connect-protocol-version` because a call is what **says so** and is addressed
-# to a service: without it the request is a page's route as far as the
-# transcoder is concerned, and the answer is 404 rather than a refusal.
-out=$(c -o /dev/null -w '%{http_code}' -X POST "http://roster:8080/roster.HolderService/Invalidate" \
-	-H "authorization: Bearer ${INVALIDATE_KEY}" -H 'content-type: application/json' \
-	-H 'connect-protocol-version: 1' \
-	-d "$(printf '{"ref":{"slug":{"alias":"%s","tenant":{"alias":"%s"}}}}' "${SEED_USER}" "${SEED_CUSTOMER}")")
-[ "${out}" = "200" ] || die "roster refused the sign-out: ${out}"
-step "roster signs ${SEED_USER} out everywhere" "${out}"
+rpc HolderService/Invalidate \
+	"$(printf '{"ref":{"slug":{"alias":"%s","tenant":{"alias":"%s"}}}}' "${SEED_USER}" "${SEED_CUSTOMER}")" \
+	| grep -q 'dateInvalidated' || die "roster refused the sign-out"
+step "roster signs ${SEED_USER} out everywhere" "ok"
 
 # And the Login App carries it across. `SyncService` is a stream, so this is the
 # one place a moment has to pass -- and what it is waiting for is a fact about

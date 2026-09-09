@@ -74,17 +74,20 @@ if [ -z "${sub}" ]; then
 fi
 echo "   ${sub}"
 
-# A key that may sign her out, for the last two steps of the walk. `erin` holds
-# the seeded `everything` role and `mayReach` passes for your own row, so this
-# is her signing herself out -- which is the same write an operator makes and
-# needs nobody wider to exist.
+# A key that may sign her out and give her an authenticator, for the steps of
+# the walk that are about her rather than about a flow. `erin` holds the seeded
+# `everything` role and `mayReach` passes for your own row, so this is her doing
+# both to herself -- which is the same write an operator makes and needs nobody
+# wider to exist.
 echo "== a key that may sign her out"
 # A name of this run's own, because a key's name is unique per holder and this
 # script is run again on the same volumes.
 gate="hydra-gate-${RANDOM}${RANDOM}"
 invalidate="$(docker compose exec -T -e "GATE=${gate}" roster sh -lc \
 	'roster key add --tenant "${SEED_CUSTOMER:-contoso}" --holder "${SEED_USER:-erin}" \
-		--name "${GATE}" --allow /roster.HolderService/Invalidate 2>/dev/null' | tr -d "\r\n")"
+		--name "${GATE}" \
+		--allow /roster.HolderService/Invalidate,/roster.CredentialService/Enrol,/roster.VouchService/Verify \
+		2>/dev/null' | tr -d "\r\n")"
 case "${invalidate}" in rt_*) ;; *) echo "no key to sign her out with: ${invalidate}" >&2; exit 1;; esac
 
 # The walk, twice: once as deployed, and once with the consent screen on.
@@ -102,7 +105,8 @@ walk() {
 	echo
 	echo "== the flow, consent=$1"
 	docker compose run --rm --no-deps --entrypoint /usr/local/bin/flow.sh \
-		-e "EXPECT_SUB=${sub}" -e "CONSENT=$1" -e "INVALIDATE_KEY=${invalidate}" login "${@:2}"
+		-e "EXPECT_SUB=${sub}" -e "CONSENT=$1" -e "INVALIDATE_KEY=${invalidate}" \
+		-e "FACTOR=${FACTOR:-}" login "${@:2}"
 }
 
 walk skip "$@"
@@ -114,3 +118,9 @@ echo "== again, with the consent screen on"
 LOGIN_CONSENT=ask docker compose up -d --no-deps login >/dev/null
 walk ask "$@"
 LOGIN_CONSENT=skip docker compose up -d --no-deps login >/dev/null
+
+# And last, because it gives her an authenticator and does not take it away:
+# from here on the password alone is half of a sign-in.
+echo
+echo "== and with a second factor on her account"
+FACTOR=totp walk skip "$@"

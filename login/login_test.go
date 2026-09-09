@@ -3,6 +3,7 @@ package login_test
 import (
 	"context"
 	"crypto/rand"
+	"encoding/base32"
 	"encoding/base64"
 	"encoding/json"
 	"io"
@@ -33,6 +34,7 @@ import (
 	"github.com/lesomnus/roster/login"
 	rstr "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
+	"github.com/lesomnus/roster/server/vouch"
 )
 
 const password = "correct horse battery staple"
@@ -747,4 +749,157 @@ func addPerson(t *testing.T, ctx context.Context, d *deployment, alias string) p
 	require.NoError(t, err)
 
 	return id
+}
+
+// enrolTotp gives somebody an authenticator and proves it once, which is what
+// makes it count: roster writes the row with its step at zero and does not
+// offer a factor at a sign-in until one `Verify` has passed.
+func (d *deployment) enrolTotp(t *testing.T, ctx context.Context, who pdid.Id) []byte {
+	t.Helper()
+	x := require.New(t)
+
+	res, err := d.s.Ungated.Credential().Enrol(ctx, rstr.CredentialEnrolRequest_builder{
+		Ref:  rstr.HolderRef_builder{Id: who.Bytes()}.Build(),
+		Kind: vouch.KindTotp,
+	}.Build())
+	x.NoError(err)
+
+	seed, err := base32.StdEncoding.WithPadding(base32.NoPadding).DecodeString(res.GetSeed())
+	x.NoError(err)
+
+	// The **previous** step, which roster takes inside its skew window. The
+	// current one would be spent by this call, and a spent step does not work
+	// twice -- so a sign-in a moment later, with the app showing the same six
+	// digits, would be refused for the right reason at the wrong time.
+	got, err := rstr.NewVouchServiceClient(d.conn).Verify(d.ops, rstr.VouchVerifyRequest_builder{
+		Who:    rstr.VouchWho_builder{Id: who.Bytes()}.Build(),
+		Kind:   vouch.KindTotp,
+		Secret: []byte(vouch.CodeAt(seed, time.Now().Unix()/30-1)),
+	}.Build())
+	x.NoError(err)
+
+	// `satisfied` and not `ok`: `ok` is *this sign-in is finished*, and one
+	// factor of two never is. What says the code was right -- which is the
+	// whole of what confirming a factor asks -- is that its kind is in there.
+	x.Contains(got.GetSatisfied(), vouch.KindTotp, "the factor that was just enrolled did not verify")
+
+	return seed
+}
+
+// post is one call in a flow, with the browser's cookie and the challenge.
+func (d *deployment) post(t *testing.T, b *http.Client, path, challenge string, body any) *http.Response {
+	t.Helper()
+	x := require.New(t)
+
+	at := d.app.URL + path + "?login_challenge=" + url.QueryEscape(challenge)
+	if body == nil {
+		res, err := b.Post(at, "", nil)
+		x.NoError(err)
+
+		return res
+	}
+
+	v, err := json.Marshal(body)
+	x.NoError(err)
+	res, err := b.Post(at, "application/json", strings.NewReader(string(v)))
+	x.NoError(err)
+
+	return res
+}
+
+// TestASecondFactorIsAskedForAndTheFlowWaitsForIt.
+//
+// The half-signed-in state is `frontdoor`'s and roster's between them -- a
+// continuation held beside a session with an empty grant -- and what this adds
+// is the one thing neither of them can decide: that **Hydra is not told
+// anybody** until it is finished. A Login App that accepted after the first
+// form would hand a product a token for somebody who proved half of what the
+// deployment asked for, which is worse than having no second factor at all,
+// because the operator believes they have one.
+func TestASecondFactorIsAskedForAndTheFlowWaitsForIt(t *testing.T) {
+	x := require.New(t)
+	d := serve(t)
+	b := d.browser(t)
+	ctx := t.Context()
+
+	erin := d.who["contoso"]
+	seed := d.enrolTotp(t, ctx, erin)
+	d.hydra.raise("f1", "contoso-web")
+
+	res, err := b.Get(d.app.URL + "/login?login_challenge=f1")
+	x.NoError(err)
+	res.Body.Close()
+	x.Equal(http.StatusOK, res.StatusCode)
+
+	// The password alone, which is now half of it. Not a refusal and not a
+	// sign-in: a third answer, and what it carries is what the page needs to
+	// draw the second form.
+	res = d.post(t, b, "/session", "f1", map[string]string{"alias": "erin", "password": password})
+	defer res.Body.Close()
+	x.Equal(http.StatusOK, res.StatusCode, "a password alone finished a sign-in with a second factor on it")
+
+	var half struct {
+		Satisfied []string `json:"satisfied"`
+		Available []string `json:"available"`
+	}
+	x.NoError(json.NewDecoder(res.Body).Decode(&half))
+	x.Equal([]string{vouch.KindPassword}, half.Satisfied)
+	x.Equal([]string{vouch.KindTotp}, half.Available, "the page has nothing to draw the second form from")
+
+	// And Hydra is told nobody. This is the assertion the whole test is for.
+	res = d.post(t, b, "/accept", "f1", nil)
+	res.Body.Close()
+	x.Equal(http.StatusUnauthorized, res.StatusCode, "a half-signed-in browser was accepted")
+
+	subject, _ := d.hydra.told()
+	x.Empty(subject, "hydra was told somebody who had not finished")
+
+	// The code, from the app in front of them.
+	res = d.post(t, b, "/session/continue", "f1", map[string]string{
+		"kind":   vouch.KindTotp,
+		"secret": vouch.CodeAt(seed, time.Now().Unix()/30),
+	})
+	res.Body.Close()
+	x.Equal(http.StatusNoContent, res.StatusCode, "the code was refused")
+
+	// And now, and only now.
+	res = d.post(t, b, "/accept", "f1", nil)
+	defer res.Body.Close()
+	x.Equal(http.StatusOK, res.StatusCode)
+
+	subject, _ = d.hydra.told()
+	x.Equal(erin.String(), subject)
+}
+
+// TestAWrongSecondFactorFinishesNothing, which is the other half of the
+// sentence above: the flow does not merely wait, it refuses.
+func TestAWrongSecondFactorFinishesNothing(t *testing.T) {
+	x := require.New(t)
+	d := serve(t)
+	b := d.browser(t)
+	ctx := t.Context()
+
+	d.enrolTotp(t, ctx, d.who["contoso"])
+	d.hydra.raise("f2", "contoso-web")
+
+	res, err := b.Get(d.app.URL + "/login?login_challenge=f2")
+	x.NoError(err)
+	res.Body.Close()
+
+	res = d.post(t, b, "/session", "f2", map[string]string{"alias": "erin", "password": password})
+	res.Body.Close()
+	x.Equal(http.StatusOK, res.StatusCode)
+
+	res = d.post(t, b, "/session/continue", "f2", map[string]string{
+		"kind": vouch.KindTotp, "secret": "000000",
+	})
+	res.Body.Close()
+	x.Equal(http.StatusUnauthorized, res.StatusCode, "a wrong code finished a sign-in")
+
+	res = d.post(t, b, "/accept", "f2", nil)
+	res.Body.Close()
+	x.Equal(http.StatusUnauthorized, res.StatusCode)
+
+	subject, _ := d.hydra.told()
+	x.Empty(subject, "hydra was told somebody who answered the second form wrong")
 }
