@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"sync"
 	"testing"
@@ -283,20 +284,24 @@ func (d *deployment) browser(t *testing.T) *http.Client {
 }
 
 // signIn is the page's two calls: the form, then the last hop.
-func (d *deployment) signIn(t *testing.T, b *http.Client, who, secret string) (string, int) {
+func (d *deployment) signIn(t *testing.T, b *http.Client, challenge, who, secret string) (string, int) {
 	t.Helper()
 	x := require.New(t)
 
+	at := func(path string) string {
+		return d.app.URL + path + "?login_challenge=" + url.QueryEscape(challenge)
+	}
+
 	body, err := json.Marshal(map[string]string{"alias": who, "password": secret})
 	x.NoError(err)
-	res, err := b.Post(d.app.URL+"/session", "application/json", strings.NewReader(string(body)))
+	res, err := b.Post(at("/session"), "application/json", strings.NewReader(string(body)))
 	x.NoError(err)
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusNoContent {
 		return "", res.StatusCode
 	}
 
-	res, err = b.Post(d.app.URL+"/accept", "", nil)
+	res, err = b.Post(at("/accept"), "", nil)
 	x.NoError(err)
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
@@ -329,7 +334,7 @@ func TestALoginAppTellsHydraWhoSignedIn(t *testing.T) {
 	defer res.Body.Close()
 	x.Equal(http.StatusOK, res.StatusCode)
 
-	to, code := d.signIn(t, b, "erin", password)
+	to, code := d.signIn(t, b, "c1", "erin", password)
 	x.Equal(http.StatusOK, code)
 	x.Contains(to, "consent_challenge=c1")
 
@@ -375,7 +380,7 @@ func TestAFlowReachesOnlyItsOwnOperator(t *testing.T) {
 			defer res.Body.Close()
 			x.Equal(http.StatusOK, res.StatusCode)
 
-			_, code := d.signIn(t, b, "erin", password)
+			_, code := d.signIn(t, b, tt.client, "erin", password)
 			x.Equal(http.StatusOK, code)
 
 			subject, _ := d.hydra.told()

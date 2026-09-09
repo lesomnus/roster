@@ -87,12 +87,17 @@ func Cmd(c *cmd.Config) *xli.Command {
 			NewCmdServe(c),
 			NewCmdAccount(c),
 			NewCmdLdap(c),
+			NewCmdLogin(c),
 		}, NewCmdEntities(c)...),
 
-		// `ROSTER_ACCOUNT_KEY_<ALIAS>` and `ROSTER_LDAP_KEY_<ALIAS>` are read by
-		// `roster account serve` and `roster ldap serve` themselves
-		// (`keysFrom`), not by the loader, and are not typos.
-		Handler: xli.Chain(pdcmd.Load(cmd.Loader, c, pdcmd.Reads("ACCOUNT_KEY_", "LDAP_KEY_")), hal(c), xli.RequireSubcommand()),
+		// `ROSTER_ACCOUNT_KEY_<ALIAS>` and the three beside it are read by the
+		// consumers themselves (`keysOf`, `clientsOf`), not by the loader, and
+		// are not typos. Anything else beginning `ROSTER_` that no field
+		// answers to is reported, which is what a typo looks like -- and which
+		// is how the Login App's two were found, by being reported.
+		Handler: xli.Chain(pdcmd.Load(cmd.Loader, c,
+			pdcmd.Reads("ACCOUNT_KEY_", "LDAP_KEY_", "LOGIN_KEY_", "LOGIN_CLIENT_"),
+		), hal(c), xli.RequireSubcommand()),
 	}
 }
 

@@ -50,10 +50,20 @@ roster role add "@${t}/directory" '{"methods":["/roster.TenantService/Get","/ros
 printf '{"role":{"slug":{"alias":"directory","tenant":{"alias":"%s"}}},"holder":{"slug":{"alias":"directory","tenant":{"alias":"%s"}}}}' "${t}" "${t}" \
 	| roster binding add - >/dev/null
 
+# The Login App's own person and key: what it calls as itself before anybody
+# has signed in, plus `Me.Get` for the claims a consent screen puts in the
+# token. Nothing wider -- it draws no account screens.
+roster holder add "@${t}/login-app" >/dev/null
+roster role add "@${t}/login-app" '{"methods":["/roster.TenantService/Get","/roster.VouchService/Verify","/roster.VouchService/Delegate","/roster.DelegationService/Revoke","/roster.MeService/Get"]}' >/dev/null
+printf '{"role":{"slug":{"alias":"login-app","tenant":{"alias":"%s"}}},"holder":{"slug":{"alias":"login-app","tenant":{"alias":"%s"}}}}' "${t}" "${t}" \
+	| roster binding add - >/dev/null
+
 # To a file first and moved into place, so a half-written key is never read.
-# The directory's key first and the account app's last, because the account
-# app's is the marker this script's "once" is decided by.
+# The directory's and the Login App's first and the account app's last, because
+# the account app's is the marker this script's "once" is decided by.
 umask 077
+roster key add --tenant "${t}" --holder login-app --name login-app --allow '/roster.TenantService/Get,/roster.VouchService/Verify,/roster.VouchService/Delegate,/roster.DelegationService/Revoke,/roster.MeService/Get' 2>/dev/null >"${ACCOUNT_STATE}/${SEED_CUSTOMER}.login.key.tmp"
+mv "${ACCOUNT_STATE}/${SEED_CUSTOMER}.login.key.tmp" "${ACCOUNT_STATE}/${SEED_CUSTOMER}.login.key"
 roster key add --tenant "${t}" --holder directory --name directory --allow '/roster.TenantService/Get,/roster.HolderService/Get,/roster.HolderService/List,/roster.HolderService/Search,/roster.EmailService/Get,/roster.EmailService/List,/roster.GroupService/Get,/roster.GroupService/List,/roster.GroupMembershipService/List,/roster.SiteService/Get,/roster.SiteService/List,/roster.TeamService/Get,/roster.TeamService/List,/roster.TeamMembershipService/List,/roster.VouchService/Verify' 2>/dev/null >"${ACCOUNT_STATE}/${SEED_CUSTOMER}.ldap.key.tmp"
 mv "${ACCOUNT_STATE}/${SEED_CUSTOMER}.ldap.key.tmp" "${ACCOUNT_STATE}/${SEED_CUSTOMER}.ldap.key"
 roster key add --tenant "${t}" --holder account --name account --allow '/roster.*/*' 2>/dev/null >"${key}.tmp"

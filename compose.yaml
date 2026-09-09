@@ -47,7 +47,9 @@ services:
       - -c
       - >-
         psql -h postgres -U roster -d roster -tAc "SELECT 1 FROM pg_database WHERE datname = 'control'" | grep -q 1
-        || psql -h postgres -U roster -d roster -c "CREATE DATABASE control OWNER roster"
+        || psql -h postgres -U roster -d roster -c "CREATE DATABASE control OWNER roster";
+        psql -h postgres -U roster -d roster -tAc "SELECT 1 FROM pg_database WHERE datname = 'hydra'" | grep -q 1
+        || psql -h postgres -U roster -d roster -c "CREATE DATABASE hydra OWNER roster"
 
   roster:
     # `dev` and not the default stage. The image has two: `app` is what a
@@ -196,6 +198,100 @@ services:
       LDAP_BIND: ${LDAP_BIND:-key}
     ports:
       - "1389:1389"
+    volumes:
+      - account:/var/lib/roster-account:ro
+
+  # Hydra, for the shape a deployment with several products has: one sign-in,
+  # tokens each of them verifies. It has **no user database** -- that is the
+  # whole reason the next two services exist -- and it never sees a password.
+  #
+  #     http://localhost:8091/  is where it sends a browser to be signed in
+  #
+  # A development configuration: `dev` mode serves the public port over plain
+  # http, and the secrets below are in this file, which is what makes them
+  # development secrets.
+  hydra-migrate:
+    image: oryd/hydra:v2.2.0
+    depends_on:
+      planes:
+        condition: service_completed_successfully
+    environment:
+      DSN: postgres://roster:roster@postgres:5432/hydra?sslmode=disable
+    command: ["migrate", "sql", "-e", "--yes"]
+
+  hydra:
+    image: oryd/hydra:v2.2.0
+    depends_on:
+      hydra-migrate:
+        condition: service_completed_successfully
+    environment:
+      DSN: postgres://roster:roster@postgres:5432/hydra?sslmode=disable
+      SECRETS_SYSTEM: youReallyNeedToChangeThis
+      URLS_SELF_ISSUER: http://${PUBLIC_HOST:-localhost}:4444
+      URLS_LOGIN: http://${PUBLIC_HOST:-localhost}:8091/login
+      URLS_CONSENT: http://${PUBLIC_HOST:-localhost}:8091/consent
+      # The Login App answers consent itself, so nothing here draws a screen.
+      # A deployment that wants one points `URLS_CONSENT` at its own.
+      LOG_LEVEL: warn
+    command: ["serve", "all", "--dev"]
+    ports:
+      - "4444:4444" # the public endpoints a product app uses
+      - "4445:4445" # admin: private, and this line is what a deployment removes
+
+  # The OAuth client the demo signs in for, once. One client per operator is
+  # what makes a challenge say which tenant it belongs to -- see `login/`.
+  #
+  # `import` rather than `create`, because `create` generates the id and this
+  # one has to be a name two other things already know: the Login App's
+  # `--client contoso=demo`, and whatever performs the flow.
+  hydra-client:
+    image: oryd/hydra:v2.2.0
+    depends_on:
+      hydra:
+        condition: service_started
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        until hydra list clients --endpoint http://hydra:4445 >/dev/null 2>&1; do sleep 1; done
+        hydra get client demo --endpoint http://hydra:4445 >/dev/null 2>&1 && exit 0
+        cat >/tmp/demo.json <<'EOF'
+        [{
+          "client_id": "demo",
+          "client_secret": "demo-secret",
+          "client_name": "the demo product",
+          "grant_types": ["authorization_code", "refresh_token"],
+          "response_types": ["code"],
+          "scope": "openid offline profile email",
+          "redirect_uris": ["http://127.0.0.1:5555/callback"],
+          "token_endpoint_auth_method": "client_secret_post"
+        }]
+        EOF
+        hydra import client --endpoint http://hydra:4445 /tmp/demo.json
+
+  # The Login App: what Hydra hands a `login_challenge` to, and what answers
+  # `acceptLoginRequest{subject}` with a `Holder.id`. Its own process with its
+  # own key, like the other two consumers.
+  #
+  #     docker run --rm -it --network host oryd/hydra:v2.2.0 perform \
+  #       authorization-code --client-id demo --client-secret demo-secret \
+  #       --endpoint http://localhost:4444 --port 5555 \
+  #       --scope openid,offline,profile,email
+  login:
+    build:
+      context: .
+      target: dev
+    depends_on:
+      customer:
+        condition: service_completed_successfully
+      hydra-client:
+        condition: service_completed_successfully
+    entrypoint: ["/usr/local/bin/login.sh"]
+    environment:
+      SEED_CUSTOMER: ${SEED_CUSTOMER:-contoso}
+      PUBLIC_HOST: ${PUBLIC_HOST:-localhost}
+      OAUTH_CLIENT: demo
+    ports:
+      - "8091:8091"
     volumes:
       - account:/var/lib/roster-account:ro
 

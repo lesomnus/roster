@@ -70,16 +70,18 @@ type Config struct {
 	// is loud.
 	Control ControlConfig `yaml:"control"`
 
-	// Account and Ldap are the two consumers, when this deployment runs them
-	// itself. Named is a listener and empty is nowhere, the shape `control` and
+	// Account, Ldap and Login are the three consumers, when this deployment runs
+	// them itself. Named is a listener and empty is nowhere, the shape `control` and
 	// `admin` have -- and a deployment that wants them in processes of their
 	// own leaves both out and runs `roster account serve` and `roster ldap
-	// serve`, which read the same blocks and take flags over them.
+	// serve` -- or `roster login serve` -- which read the same blocks and take
+	// flags over them.
 	//
 	// They reach roster over the wire either way, which is what `cmd/consumers.go`
 	// is about and what `scripts/test.sh` holds them to.
 	Account AccountConfig `yaml:"account"`
 	Ldap    LdapConfig    `yaml:"ldap"`
+	Login   LoginConfig   `yaml:"login"`
 
 	// Admin is where an operator administers **customers**: the data plane,
 	// with no wall, behind a session. Empty is nowhere.

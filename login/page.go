@@ -11,9 +11,8 @@ import (
 //
 // One file, no toolchain, and it imports `frontdoor.js` from this same app --
 // which is what `frontdoor.Script` is mounted for. A deployment that wants its
-// own sign-in page serves that instead and leaves this out; what it must keep
-// is the last hop, `POST /accept`, because that is the half no other front door
-// has.
+// own serves it with [Config.Page] instead; what it must keep is the last hop,
+// `POST /accept`, because that is the half no other front door has.
 //
 //go:embed login.html
 var page []byte

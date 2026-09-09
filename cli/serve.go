@@ -127,8 +127,8 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 			g.Go(func() error { return spin.Run(ctx, slices.Values(s.Spin)) })
 			g.Go(func() error { return s.Serve(ctx, *c, l) })
 
-			// The two consumers, when this deployment runs them itself rather
-			// than in processes of their own. Named is a listener and empty is
+			// The consumers, when this deployment runs them itself rather than
+			// in processes of their own. Named is a listener and empty is
 			// nowhere; `cmd/consumers.go` says which a deployment should want.
 			//
 			// In the same errgroup as the server, which is the whole of what
@@ -148,6 +148,13 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 					return err
 				}
 				g.Go(func() error { return serveLdap(ctx, lc) })
+			}
+			if c.Login.Serves() {
+				gc, err := loginApp(c, l)
+				if err != nil {
+					return err
+				}
+				g.Go(func() error { return serveLogin(ctx, gc) })
 			}
 
 			return g.Wait()
@@ -214,6 +221,28 @@ func frontDoor(c *cmd.Config, l net.Listener) (cmd.AccountConfig, error) {
 	ac.Keys = keys
 
 	return ac, nil
+}
+
+// loginApp is `login:` with the same default, for the same reason -- and with
+// each operator's two halves checked against each other, because half of one
+// runs and answers nothing.
+func loginApp(c *cmd.Config, l net.Listener) (cmd.LoginConfig, error) {
+	gc := c.Login
+	if gc.Roster == "" {
+		gc.Roster = l.Addr().String()
+	}
+
+	clients, err := clientsOf(gc.Clients, LoginClientPrefix, nil)
+	if err != nil {
+		return gc, err
+	}
+	keys, err := keysOf(gc.Keys, LoginKeyPrefix, nil)
+	if err != nil {
+		return gc, err
+	}
+	gc.Keys, gc.Clients = keys, clients
+
+	return gc, whole(keys, clients)
 }
 
 // directory is `ldap:` with the same default, for the same reason.

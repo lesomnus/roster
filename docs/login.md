@@ -166,6 +166,22 @@ So the app-side code barely moves. `authsession` asks for a `Verify` either way;
 what changes is what fills it — a call to roster, or the completion of an OIDC
 callback.
 
+**roster ships the Login App now**: `login/`, run as `roster login serve`, the
+third consumer beside the account app and the directory. It reads the
+challenge, draws the same `frontdoor` forms, and answers
+`acceptLoginRequest{subject}` with a `Holder.id`; the consent hop reads the
+person once, as them, and puts `preferred_username`, `name`, `groups` and a
+**verified** address into the `id_token`, each only if the client asked for the
+scope that carries it. What it never puts there is `methods` -- roster's answer
+about roster, which a product holding a copy of would hold a stale one.
+
+Which operator a flow belongs to comes from the challenge, not the hostname: it
+names the OAuth **client**, one per operator, read back over Hydra's admin API.
+So the tenant is Hydra's word rather than a header a browser wrote, and the key
+each call goes out with follows from it. `compose.yaml` runs the whole of it --
+Hydra, a client, the app -- and `docs/operating.md` § "One process, or four" is
+how a deployment says so.
+
 One thing to add on the day you do this: **back-channel logout.** A session
 ended at Hydra does not end custody's row by itself, and the OIDC logout
 endpoints are how that propagates. Handling it is one `store.Del`.

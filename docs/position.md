@@ -162,7 +162,7 @@ the hop that decides whether you need Hydra at all.
 | | where the login ends | what roster ships |
 | --- | --- | --- |
 | a login app | a cookie of its own | `frontdoor`, a package an app imports |
-| **Hydra's** Login App | `acceptLoginRequest{subject}` | nothing; the identity half is the same call |
+| **Hydra's** Login App | `acceptLoginRequest{subject}` | `login/`, and `roster login serve` |
 
 `frontdoor` is a library and not an example. `account/` imports it and so does
 `examples/sso`: `Door.Handler` is the password and second-factor forms,
@@ -171,10 +171,25 @@ person and a session, `Door.Acting` makes a request that person, and
 `Door.Proxy` hands their calls on. An app that wants its own sign-in has most
 of one already.
 
-What is **not** here is the Hydra glue: nothing in this repository reads a
-`login_challenge` or answers `acceptLoginRequest`. Writing it is small and the
-identity half does not change -- call `Vouch.Accept` for the `Holder.id` and
-give it to Hydra, instead of letting `Door.Accept` end the login in a cookie.
+The Hydra glue is here now, and it is the third consumer: `login/`, a process
+that reads a `login_challenge`, draws the form through the same `frontdoor`, and
+answers `acceptLoginRequest{subject}` with a `Holder.id`. This document said for
+months that writing it was small and that the identity half did not change; both
+turned out to be true, and the second is why nothing else moved -- the last hop
+is `Door.Who` instead of a cookie, and everything before it is the sign-in every
+front door does.
+
+**It moves no line.** roster still signs nothing: the token a product verifies
+is Hydra's, and what this app contributes is the one string Hydra has no way to
+choose. It is a caller on the list above rather than an exception to it, holds
+one tenant key per operator like the other two, and reaches roster only over the
+wire.
+
+What it does take on is a **wire contract with somebody else's product** --
+Hydra's admin API, four endpoints, whose field names break this at run time if
+they change. That is the whole of the coupling and it is in one file
+(`login/hydra.go`), spoken with `net/http`, so `go.mod` still names no client
+of anything.
 
 Which of the two you want is the table below: one relying party, or many.
 

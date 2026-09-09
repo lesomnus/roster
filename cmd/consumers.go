@@ -1,10 +1,13 @@
 package cmd
 
-// The two consumers, as configuration.
+import "time"
+
+// The three consumers, as configuration.
 //
-// `roster account serve` and `roster ldap serve` are separate processes that
-// reach roster over the wire, and `scripts/test.sh` holds them to it: neither
-// package may import `internal`, `cmd` or `server` (`server/front` excepted).
+// `roster account serve`, `roster ldap serve` and `roster login serve` are
+// separate processes that reach roster over the wire, and `scripts/test.sh`
+// holds them to it: none of those packages may import `internal`, `cmd` or
+// `server` (`server/front` excepted, and `login/` takes not even that).
 // That is what makes them proof that roster's wire API is enough, and none of
 // it changes here.
 //
@@ -136,6 +139,86 @@ type LdapConfig struct {
 
 // Serves is whether this deployment answers LDAP.
 func (c LdapConfig) Serves() bool { return c.Addr != "" || c.AddrTls != "" }
+
+// LoginConfig is the Login App: the box Hydra hands a `login_challenge` to.
+//
+// The third consumer, and the one whose settings are not all roster's -- it has
+// an `hydra` block, because the glue is the glue. Everything else reads like
+// the two above: named is a listener, empty is nowhere, and the keys are
+// references rather than tokens.
+type LoginConfig struct {
+	// Addr is where it listens. Empty is nowhere.
+	Addr string `yaml:"addr"`
+
+	// Roster is where the data plane speaks gRPC, defaulting to this
+	// deployment's own for the reason [AccountConfig.Roster] gives.
+	Roster string `yaml:"roster"`
+
+	// Insecure dials roster without TLS.
+	Insecure bool `yaml:"insecure"`
+
+	// Hydra is the one thing here that is not roster's.
+	Hydra HydraConfig `yaml:"hydra"`
+
+	// Keys is one tenant key per operator fronted, by alias, as `env:NAME`.
+	// See [AccountConfig.Keys]; `ROSTER_LOGIN_KEY_<ALIAS>` is merged with it.
+	Keys map[string]string `yaml:"keys"`
+
+	// Clients is which OAuth client is whose, by the same alias: `contoso:
+	// contoso-web`. It is what says which tenant a challenge belongs to, and it
+	// is the one setting here that is about Hydra's rows rather than roster's.
+	//
+	// # Two flat maps and not a block per operator
+	//
+	// A block would carry both facts about one customer together, and the first
+	// draft of this was one -- the argument being that two maps keyed the same
+	// way is a place to add an entry to one and not the other. What decided
+	// against it is the **environment**: a key is a secret, so it arrives as
+	// `ROSTER_LOGIN_KEY_<ALIAS>`, which is flat and which nothing nested
+	// answers to. A nested block would have needed a flat `keys` beside it
+	// anyway, and then there are two places to write a key, which is worse than
+	// two places to write an operator.
+	//
+	// The risk the block was for is closed where it actually bites: a key with
+	// no client, or a client with no key, is refused at start by name and with
+	// the flag that fixes it (`cli/login.go`). Half an operator never runs.
+	Clients map[string]string `yaml:"clients"`
+
+	// Remember is how long Hydra should skip the form for a browser that has
+	// already signed in. Zero asks every time.
+	Remember time.Duration `yaml:"remember"`
+
+	// Seal is the key sessions are sealed into the cookie under; see
+	// [AccountConfig.Seal]. The session here is short -- it holds one browser
+	// between the form and the consent screen and is closed at the redirect --
+	// but a second replica still has to be able to open one.
+	Seal []string `yaml:"seal"`
+
+	// InsecureCookie drops `Secure`, for a page served over plain http in
+	// development.
+	InsecureCookie bool `yaml:"insecure_cookie"`
+
+	// Page is the sign-in page, when a deployment serves its own instead of the
+	// one this app embeds. Empty takes the embedded one.
+	Page PageConfig `yaml:"page"`
+}
+
+// HydraConfig is where Hydra's admin API answers.
+type HydraConfig struct {
+	// Admin is its base URL, e.g. `http://hydra:4445`.
+	//
+	// **Private by construction.** Anybody who reaches this can sign anybody in
+	// as anybody, so what protects it is that it is not routable rather than a
+	// credential. A deployment that puts a proxy in front says so with [Header].
+	Admin string `yaml:"admin"`
+
+	// Header is sent with every admin call, as `Name: value`, for that proxy.
+	// The deployment's arrangement and not this app's.
+	Header map[string]string `yaml:"header"`
+}
+
+// Serves is whether this deployment answers a login flow.
+func (c LoginConfig) Serves() bool { return c.Addr != "" }
 
 // TlsConfig is a certificate and the key that goes with it, as paths.
 type TlsConfig struct {

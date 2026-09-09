@@ -67,12 +67,24 @@ import (
 // and asking for more buys nothing.
 var Methods = []string{rstr.MeService_Get_FullMethodName}
 
-// FlowCookie is where the challenge rides between the redirect and the form.
+// Challenge is the query parameter every request in a flow carries.
 //
-// The **challenge** and nothing else. Which operator it belongs to is looked up
-// from Hydra each time rather than written here, because a cookie is something
-// the browser holds and a tenant in one would be a tenant the browser picked.
-const FlowCookie = "flow"
+// The same name Hydra redirects with, so the page needs no template: it lands
+// on `/login?login_challenge=…` and reads its own URL.
+//
+// # Why not a cookie
+//
+// It was one, for half an hour. Hydra's challenge is an opaque string of about
+// two kilobytes and a cookie is capped at four, which is close enough that the
+// first real flow through `compose.yaml` returned 400 with nothing set. A limit
+// that near is not one to design against.
+//
+// Nothing is lost by carrying it in the open. A challenge is not a secret --
+// the browser arrived holding it, in its address bar -- and it is not trusted
+// either: what a request may do is decided by looking it up **at Hydra**, and a
+// browser that sends a different valid one gets that flow rather than this
+// one's. The tenant is never the browser's word in either shape.
+const Challenge = "login_challenge"
 
 // Config is what a deployment has to say.
 type Config struct {
@@ -103,10 +115,15 @@ type Config struct {
 	// already signed in. Zero asks every time.
 	Remember time.Duration
 
-	// InsecureCookie drops `Secure` from the flow cookie, for a page served
-	// over plain http in development. The session's own is `authsession`'s and
-	// is said there.
+	// InsecureCookie drops `Secure` from the session cookie, for a page served
+	// over plain http in development. It is `authsession`'s and is said there;
+	// this app sets no cookie of its own.
 	InsecureCookie bool
+
+	// Page is the sign-in page, when a deployment serves its own rather than
+	// the one embedded here. What it may not leave out is the last hop --
+	// `POST /accept` -- because that is the half no other front door has.
+	Page http.Handler
 }
 
 // Operator is one customer this app is a front door for.
@@ -271,14 +288,18 @@ func (a *App) Handler() http.Handler {
 	// The browser half of `frontdoor`, so the page needs no toolchain.
 	m.HandleFunc("GET /frontdoor.js", frontdoor.Script)
 
-	m.HandleFunc("/", a.page)
+	if a.c.Page != nil {
+		m.Handle("/", a.c.Page)
+	} else {
+		m.HandleFunc("/", a.page)
+	}
 
 	return m
 }
 
 // begin is the redirect from Hydra: the start of one browser's flow.
 func (a *App) begin(w http.ResponseWriter, r *http.Request) {
-	challenge := r.URL.Query().Get("login_challenge")
+	challenge := r.URL.Query().Get(Challenge)
 
 	// Asked for now, though nothing on the page needs it: a challenge that
 	// names a client this app fronts nobody for is a misconfiguration, and the
@@ -307,7 +328,6 @@ func (a *App) begin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.SetCookie(w, a.flowCookie(challenge))
 	a.page(w, r)
 }
 
@@ -322,9 +342,7 @@ func (a *App) accept(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	challenge, _ := flowOf(r)
-
-	to, err := a.admin.acceptLogin(r.Context(), challenge, who.String(), a.c.Remember)
+	to, err := a.admin.acceptLogin(r.Context(), r.URL.Query().Get(Challenge), who.String(), a.c.Remember)
 	if err != nil {
 		a.broken(w, r, err)
 
@@ -390,7 +408,6 @@ func (a *App) consent(w http.ResponseWriter, r *http.Request) {
 	// it was for, and a credential that outlives its use is a credential
 	// somebody has to remember to revoke.
 	http.SetCookie(w, a.door.End(ctx, r))
-	http.SetCookie(w, a.flowCookie(""))
 
 	http.Redirect(w, r, to, http.StatusSeeOther)
 }
@@ -417,8 +434,8 @@ func (a *App) whose(ctx context.Context, challenge string) (*loginRequest, *oper
 // inFlow puts the operator a request's challenge names into its context.
 func (a *App) inFlow(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		challenge, ok := flowOf(r)
-		if !ok {
+		challenge := r.URL.Query().Get(Challenge)
+		if challenge == "" {
 			http.Error(w, "no", http.StatusBadRequest)
 
 			return
@@ -433,31 +450,6 @@ func (a *App) inFlow(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r.WithContext(withOperator(withKey(r.Context(), o.key), o)))
 	})
-}
-
-func (a *App) flowCookie(challenge string) *http.Cookie {
-	c := &http.Cookie{
-		Name:     FlowCookie,
-		Value:    challenge,
-		Path:     "/",
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-		Secure:   !a.c.InsecureCookie,
-	}
-	if challenge == "" {
-		c.MaxAge = -1
-	}
-
-	return c
-}
-
-func flowOf(r *http.Request) (string, bool) {
-	c, err := r.Cookie(FlowCookie)
-	if err != nil || c.Value == "" {
-		return "", false
-	}
-
-	return c.Value, true
 }
 
 // broken is everything that is this deployment's fault rather than the

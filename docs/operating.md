@@ -1348,11 +1348,11 @@ The compose stack runs one on `1389` (`LDAP_BIND=either` turns passwords on).
 What it refuses and why, the tree, the filters and which roster read each
 becomes: [ldap.md](ldap.md).
 
-## One process, or three
+## One process, or four
 
-`roster serve`, `roster account serve` and `roster ldap serve` are three
-commands of one binary, and a deployment that wants all three has been three
-containers. It can be one:
+`roster serve`, `roster account serve`, `roster ldap serve` and `roster login
+serve` are four commands of one binary, and a deployment that wants them all has
+been four containers. It can be one:
 
 ```yaml
 # roster.yaml
@@ -1374,7 +1374,22 @@ ldap:
   bind: key
   keys:
     contoso: env:ROSTER_LDAP_KEY_CONTOSO
+
+# Only for a deployment with Hydra in front; see login.md.
+login:
+  addr: :8091
+  hydra:
+    admin: http://hydra:4445
+  operators:
+    contoso:
+      key: env:ROSTER_LOGIN_KEY_CONTOSO
+      client: contoso-web
 ```
+
+`login.operators` is a block per customer where the other two have a flat `keys`
+map, because there are two facts about each -- the key, and the OAuth client
+that says which tenant a challenge belongs to -- and two maps keyed the same way
+is a place to add an entry to one and not the other.
 
 Named is a listener and empty is nowhere, which is what `control` and `admin`
 already do. `roster serve` opens whichever are named, in the same errgroup as
