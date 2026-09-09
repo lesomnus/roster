@@ -1408,6 +1408,18 @@ login:
     contoso: [contoso-web, contoso-mobile]
   # skip (the default) grants what the client asked for; ask draws a screen.
   consent: skip
+  # The built page. Empty serves none, which is right for a deployment that
+  # puts `/login` and `/consent` behind its own static server.
+  page:
+    dir: /usr/share/roster/login
+  # How long Hydra skips the form for a browser that has already signed in.
+  # Zero asks every time.
+  remember: 1h
+  # Sessions are sealed into the cookie under this. **Name one for more than
+  # one replica**: with nothing here a key is made at start, so a second
+  # replica cannot open what the first sealed and a restart loses every browser
+  # that is half way through a second factor. It says so at start, loudly.
+  seal: [env:ROSTER_LOGIN_SEAL]
 ```
 
 `login.clients` is a **list** per customer, because an operator with two

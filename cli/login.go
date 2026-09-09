@@ -207,7 +207,7 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 		return errors.New("login.hydra.admin (--hydra): where Hydra's admin API answers")
 	}
 
-	sealed, err := sealOf(lc.Seal)
+	sealed, err := sealOf("login", lc.Seal)
 	if err != nil {
 		return err
 	}

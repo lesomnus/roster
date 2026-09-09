@@ -202,7 +202,7 @@ func serveAccount(ctx context.Context, ac cmd.AccountConfig) error {
 	//
 	// With nothing named the key is made here, at start: right for one replica,
 	// and a restart signs everybody out, which is the safe direction.
-	sealed, err := sealOf(ac.Seal)
+	sealed, err := sealOf("account", ac.Seal)
 	if err != nil {
 		return err
 	}
@@ -244,13 +244,19 @@ func serveAccount(ctx context.Context, ac cmd.AccountConfig) error {
 // environment form: a key is a secret, a flag is in the process list and a
 // configuration file is a file. Through [account.EnvSecret], which is the one
 // scheme this binary knows.
-func sealOf(refs []string) (*authsession.Sealed, error) {
+//
+// `who` is the block that names it, because two apps call this and an operator
+// reading *account.seal* about the Login App has been told the wrong setting to
+// go and change.
+func sealOf(who string, refs []string) (*authsession.Sealed, error) {
 	if len(refs) == 0 {
 		k := make([]byte, authsession.KeySize)
 		if _, err := rand.Read(k); err != nil {
 			return nil, err
 		}
-		log.From(context.Background()).Warn("account: sessions sealed under a key made at start; a second replica cannot open them, and a restart signs everybody out. --seal env:NAME (or account.seal) names one to share")
+		log.From(context.Background()).Warn(fmt.Sprintf(
+			"%s: sessions sealed under a key made at start; a second replica cannot open them, and a restart signs everybody out. --seal env:NAME (or %s.seal) names one to share",
+			who, who))
 
 		return authsession.NewSealed(k)
 	}
