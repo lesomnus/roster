@@ -155,6 +155,21 @@ func (h *hydra) forgot() []string {
 	return append([]string(nil), h.forgotten...)
 }
 
+// times is how often hydra was told to forget one subject.
+func (h *hydra) times(subject string) int {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	n := 0
+	for _, v := range h.forgotten {
+		if v == subject {
+			n++
+		}
+	}
+
+	return n
+}
+
 func (h *hydra) said() (int, bool) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -662,33 +677,74 @@ func TestSomebodyBackInGoodStandingIsNotSignedOutAgain(t *testing.T) {
 
 	go func() { _ = d.a.Watch(ctx) }()
 
+	h := rstr.NewHolderServiceClient(d.conn)
 	erin := d.who["contoso"]
 	ref := rstr.HolderRef_builder{Id: erin.Bytes()}.Build()
-	h := rstr.NewHolderServiceClient(d.conn)
 
+	// Somebody else in the same tenant, to mark the stream with. Events arrive
+	// in order on one stream, so once a mark has been acted on everything sent
+	// before it has been too -- which is the difference between waiting for a
+	// fact and sleeping for a guess. The first version of this test slept, and
+	// was flaky on a loaded runner and nowhere else.
+	other := addPerson(t, ctx, d, "marker")
+	marks := 0
+	mark := func() {
+		t.Helper()
+		_, err := h.Invalidate(d.ops, rstr.HolderInvalidateRequest_builder{
+			Ref: rstr.HolderRef_builder{Id: other.Bytes()}.Build(),
+		}.Build())
+		x.NoError(err)
+		marks++
+		x.Eventually(func() bool { return d.hydra.times(other.String()) >= marks },
+			10*time.Second, 20*time.Millisecond, "the stream stopped carrying anything")
+	}
+
+	// The stream replays nothing, so an event sent before it was listening is
+	// an event nobody hears. Poked until one lands, which is also what says the
+	// watcher is up.
 	x.Eventually(func() bool {
 		_, err := h.Invalidate(d.ops, rstr.HolderInvalidateRequest_builder{Ref: ref}.Build())
 		x.NoError(err)
 
-		return len(d.hydra.forgot()) > 0
-	}, 10*time.Second, 100*time.Millisecond)
+		return d.hydra.times(erin.String()) > 0
+	}, 10*time.Second, 100*time.Millisecond, "hydra was never told to forget her")
 
-	was := len(d.hydra.forgot())
+	mark()
+	was := d.hydra.times(erin.String())
 
-	// Something else about her that is not a sign-out. The event carries the
-	// old `date_invalidated` -- still set, and not newer than what was acted on.
+	// A suspension is its own reason to forget her, and the count moves once.
 	_, err := h.Disable(d.ops, rstr.HolderDisableRequest_builder{Ref: ref}.Build())
 	x.NoError(err)
+	mark()
+	after := d.hydra.times(erin.String())
+	x.Greater(after, was, "a suspension did not reach hydra")
+
+	// And back in good standing, which is **not** a third sign-out. The event
+	// carries the same two timestamps as the one before it: still set, and not
+	// newer than what was acted on.
 	_, err = h.Enable(d.ops, rstr.HolderEnableRequest_builder{Ref: ref}.Build())
 	x.NoError(err)
+	mark()
+	x.Equal(after, d.hydra.times(erin.String()), "she was signed out again for coming back")
+}
 
-	// A disable is its own reason to forget her, so the count may move once for
-	// that. What it must not do is keep moving: the enable that follows carries
-	// the same two timestamps and is not a third sign-out.
-	x.Eventually(func() bool { return len(d.hydra.forgot()) > was }, 10*time.Second, 50*time.Millisecond,
-		"a suspension did not reach hydra")
-	after := len(d.hydra.forgot())
+// addPerson puts somebody in contoso, for a test that needs a second one.
+func addPerson(t *testing.T, ctx context.Context, d *deployment, alias string) pdid.Id {
+	t.Helper()
 
-	time.Sleep(500 * time.Millisecond)
-	x.Equal(after, len(d.hydra.forgot()), "she was signed out again for coming back")
+	tn, err := d.s.Ungated.Holder().Get(ctx, rstr.HolderGetRequest_builder{
+		Ref:    rstr.HolderRef_builder{Id: d.who["contoso"].Bytes()}.Build(),
+		Select: rstr.HolderSelect_builder{Tenant: rstr.TenantSelect_builder{}.Build()}.Build(),
+	}.Build())
+	require.NoError(t, err)
+
+	v, err := d.s.Ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Id: tn.GetTenant().GetId()}.Build(), Alias: alias,
+	}.Build())
+	require.NoError(t, err)
+
+	id, err := pdid.From(v.GetId())
+	require.NoError(t, err)
+
+	return id
 }
