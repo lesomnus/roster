@@ -384,6 +384,21 @@ protocol itself is `ldap/wire`, five messages on BER and nothing borrowed.
 `docs/ldap.md` is the design and its reasons; `docs/operating.md` § A
 directory, over LDAP is how to run it.
 
+`roster login serve` is a fourth, and the one for a deployment with **several
+products**: the box Ory Hydra hands a `login_challenge` to, and the one that
+answers `acceptLoginRequest{subject}` with a `Holder.id` -- so the `sub` every
+product's token carries is a row here rather than a provider's own identifier.
+It imports `frontdoor` for the forms and the delegation, like the account app,
+and differs in one hop: where a login app ends in a cookie of its own, this ends
+at Hydra. Which operator a flow belongs to comes from the challenge's OAuth
+client rather than from a hostname, and one `rt_` per operator follows from it.
+It holds `SyncService` open too, so somebody signed out everywhere in roster is
+somebody Hydra is told to forget. `go.mod` gains nothing for it: Hydra's admin
+API is six endpoints of JSON, spoken with `net/http` in `login/hydra.go`.
+`docs/login.md` § What changes when Hydra is in front is when to want it, and
+`./scripts/hydra.sh` walks a whole authorization-code flow through the real
+thing.
+
 The sandbox (`npm run dev:sandbox`) is the console with the server compiled
 into the page: `wasm/` serves the control listener and the admin one from one
 instance, under two entry points the page dials by name. `wasm/sandbox` is the
