@@ -355,6 +355,38 @@ stream says what has stopped being good in roster's own vocabulary, to any app
 holding a credential, and turning that into a `DELETE` is the Login App's,
 because the Login App is what knows about Hydra.
 
+### Signing out reaches the issuer
+
+`/logout` is the third thing Hydra redirects to, beside `/login` and
+`/consent`, and it draws nothing.
+
+Without it *sign out* was a lie in the most convincing way a deployment can
+produce one: the product's own session went, the next page started a flow, Hydra
+still remembered the browser and answered it **without a form**, and the person
+who clicked the button was looking at their name again. Nothing had leaked. They
+were still right.
+
+So an app that means it sends the browser to the issuer's `end_session_endpoint`
+— `examples/product` reads it off discovery — and Hydra redirects here with a
+`logout_challenge`. This says yes, for `consent: skip`'s reason one screen
+along: every client this app can front was registered by the deployment for one
+of its own operators, so a *sign out* that arrived from one of them is a person
+who clicked *sign out*.
+
+⚠️ A logout **no relying party started** is refused rather than asked about.
+Somebody typed the URL, or a page they were reading loaded it as an image — and
+handing a person a button about a thing a third party caused is worse than doing
+nothing. `rp_initiated` is the field, and it is what a confirmation screen would
+have been for.
+
+`id_token_hint` is not sent, because the token is used once at the callback and
+thrown away. What answers the question it would have answered is `rp_initiated`
+at the other end.
+
+**It does not reach the other products.** Somebody signed in to two apps who
+signs out of one ends the issuer's memory and that app's session; the second
+app's cookie is its own until it expires. That is the next paragraph.
+
 One thing to add on the day you do this: **back-channel logout.** A session
 ended at Hydra does not end custody's row by itself, and the OIDC logout
 endpoints are how that propagates. Handling it is one `store.Del`, and it is the

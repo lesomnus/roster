@@ -102,6 +102,9 @@ const Challenge = "login_challenge"
 // consentChallenge is the second one Hydra redirects with.
 const consentChallenge = "consent_challenge"
 
+// logoutChallenge is the third.
+const logoutChallenge = "logout_challenge"
+
 // Config is what a deployment has to say.
 type Config struct {
 	// Roster is where the data plane speaks gRPC.
@@ -388,6 +391,9 @@ func (a *App) Handler() http.Handler {
 	m.Handle("GET /provider", a.inFlow(http.HandlerFunc(a.provider)))
 	m.HandleFunc("GET /callback", a.callback)
 
+	// The third screen Hydra redirects to, and the one that is not a screen.
+	m.HandleFunc("GET /logout", a.logout)
+
 	// The built page, and its assets.
 	m.Handle("/", a.page())
 
@@ -447,6 +453,73 @@ func (a *App) accept(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJson(w, map[string]string{"redirect_to": to})
+}
+
+// logout is Hydra asking whether somebody meant it, and this says yes.
+//
+// # Why it draws nothing
+//
+// `consent: skip`'s argument, one screen along: every client this app can front
+// was registered by the deployment for one of its own operators, so a *sign
+// out* that arrived from one of them is a person who clicked *sign out*. A
+// confirmation screen there is the dialog people learn to click through, and it
+// is in the way of the thing they asked for rather than of a thing they did
+// not.
+//
+// What the screen is actually for is the other case, and it is answered without
+// one: a logout that **no relying party started** -- somebody typed the URL, or
+// a page they were reading loaded it as an image -- is refused rather than
+// asked about. A nuisance a third party can cause is not something to hand a
+// person a button for.
+//
+// # What it ends, and what it does not
+//
+// Hydra's session for that browser, which is the one that was making *sign out*
+// a lie: the product's own session was already gone and the next page came back
+// signed in because the issuer still remembered.
+//
+// It does **not** reach the other products. A person signed in to two apps who
+// signs out of one ends the issuer's memory and that app's session, and the
+// second app's cookie is its own until it expires. Ending that is back-channel
+// logout, which is a thing each product grows -- `docs/login.md` says so beside
+// this.
+func (a *App) logout(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	challenge := r.URL.Query().Get(logoutChallenge)
+	if challenge == "" {
+		a.broken(w, r, errors.New("login: no challenge"))
+
+		return
+	}
+
+	v, err := a.admin.logout(ctx, challenge)
+	if err != nil {
+		a.broken(w, r, err)
+
+		return
+	}
+	if !v.RpInitiated {
+		// Nobody's app asked. Refused rather than drawn, and refused quietly:
+		// what a person would see is a page that did nothing, which is what
+		// happened.
+		http.Error(w, "no", http.StatusBadRequest)
+
+		return
+	}
+
+	to, err := a.admin.acceptLogout(ctx, challenge)
+	if err != nil {
+		a.broken(w, r, err)
+
+		return
+	}
+
+	// This app's own session too, for the browser that has one. It is short --
+	// it holds somebody between the form and the consent screen -- and a person
+	// signing out with one open is a person who would sign in again and find
+	// the old one waiting.
+	http.SetCookie(w, a.door.End(ctx, r))
+	http.Redirect(w, r, to, http.StatusSeeOther)
 }
 
 // consent is the second redirect: what the client is asking for, and whether

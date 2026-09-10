@@ -42,14 +42,23 @@ func serve(t *testing.T, p *idptest.Idp) (*app, *httptest.Server) {
 	sealed, err := authsession.NewSealed(key)
 	x.NoError(err)
 
+	// Read the way `run` reads it, so the helper and the binary agree about
+	// what discovery said.
+	var discovered struct {
+		EndSession string `json:"end_session_endpoint"`
+	}
+	x.NoError(provider.Claims(&discovered))
+
 	a := &app{
-		verifier: provider.Verifier(&oidc.Config{ClientID: audience}),
-		sessions: authsession.New(sealed, authsession.WithCookie("product_session"), authsession.Insecure()),
-		flows:    map[string]flow{},
+		endSession: discovered.EndSession,
+		verifier:   provider.Verifier(&oidc.Config{ClientID: audience}),
+		sessions:   authsession.New(sealed, authsession.WithCookie("product_session"), authsession.Insecure()),
+		flows:      map[string]flow{},
 	}
 
 	s := httptest.NewServer(a.handler())
 	t.Cleanup(s.Close)
+	a.base = s.URL
 
 	a.cfg = &oauth2.Config{
 		ClientID: audience,
@@ -168,6 +177,68 @@ func TestSigningOutEndsThisAppsSessionAndNotTheIssuers(t *testing.T) {
 	defer res.Body.Close()
 	x.Equal(http.StatusFound, res.StatusCode)
 	x.Contains(res.Header.Get("location"), p.URL)
+}
+
+// TestSigningOutAsksTheIssuerToForgetToo is the half that was missing, and the
+// one a person actually means.
+//
+// Ending this app's session and stopping there is what made *sign out* a lie:
+// the next page starts a flow, the issuer still remembers the browser, answers
+// it without a form, and they are looking at their name again.
+func TestSigningOutAsksTheIssuerToForgetToo(t *testing.T) {
+	x := require.New(t)
+	p := idptest.New(t, audience)
+	p.Subject = "somebody"
+
+	a, s := serve(t, p)
+	b := browser(t)
+
+	res, err := b.Get(s.URL + "/")
+	x.NoError(err)
+	defer res.Body.Close()
+	x.Contains(read(t, res), "somebody")
+
+	no := &http.Client{Jar: b.Jar, CheckRedirect: func(*http.Request, []*http.Request) error {
+		return http.ErrUseLastResponse
+	}}
+	res, err = no.Get(s.URL + "/sign-out")
+	x.NoError(err)
+	defer res.Body.Close()
+
+	// **To the issuer**, and carrying where to come back to. Without this the
+	// redirect is to `/`, which signs them straight back in.
+	to := res.Header.Get("location")
+	x.Contains(to, a.endSession, "sign-out did not reach the issuer's end-session endpoint")
+	x.Contains(to, "post_logout_redirect_uri")
+	x.Contains(to, "client_id="+audience)
+}
+
+// TestAnIssuerWithNoEndSessionEndpointStillSignsOutHere: what the other half
+// keeps working without.
+func TestAnIssuerWithNoEndSessionEndpointStillSignsOutHere(t *testing.T) {
+	x := require.New(t)
+	p := idptest.New(t, audience)
+	p.Subject = "somebody"
+
+	a, s := serve(t, p)
+	a.endSession = ""
+	b := browser(t)
+
+	res, err := b.Get(s.URL + "/")
+	x.NoError(err)
+	defer res.Body.Close()
+
+	no := &http.Client{Jar: b.Jar, CheckRedirect: func(*http.Request, []*http.Request) error {
+		return http.ErrUseLastResponse
+	}}
+	res, err = no.Get(s.URL + "/sign-out")
+	x.NoError(err)
+	defer res.Body.Close()
+	x.Equal("/", res.Header.Get("location"))
+
+	for _, c := range b.Jar.Cookies(mustParse(t, s.URL)) {
+		x.NotEqual("product_session", c.Name)
+	}
 }
 
 // TestACallbackWithoutItsOwnStateIsRefused: the one hop somebody else can aim

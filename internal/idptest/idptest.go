@@ -54,10 +54,15 @@ func New(t *testing.T, audience string) *Idp {
 	m.HandleFunc("/.well-known/openid-configuration", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("content-type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"issuer":                                p.URL,
-			"authorization_endpoint":                p.URL + "/authorize",
-			"token_endpoint":                        p.URL + "/token",
-			"jwks_uri":                              p.URL + "/keys",
+			"issuer":                 p.URL,
+			"authorization_endpoint": p.URL + "/authorize",
+			"token_endpoint":         p.URL + "/token",
+			"jwks_uri":               p.URL + "/keys",
+			// The one an app needs to ask the issuer to forget a browser.
+			// Discovery is where it is found, and `oidc.Provider` does not
+			// model it -- so an app reads it off the raw document and a fake
+			// has to publish it.
+			"end_session_endpoint":                  p.URL + "/logout",
 			"id_token_signing_alg_values_supported": []string{"RS256"},
 		})
 	})
@@ -74,6 +79,13 @@ func New(t *testing.T, audience string) *Idp {
 		q.Set("state", r.URL.Query().Get("state"))
 		to.RawQuery = q.Encode()
 		http.Redirect(w, r, to.String(), http.StatusFound)
+	})
+	m.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
+		to := r.URL.Query().Get("post_logout_redirect_uri")
+		if to == "" {
+			to = "/"
+		}
+		http.Redirect(w, r, to, http.StatusFound)
 	})
 	m.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
 		claims := map[string]any{

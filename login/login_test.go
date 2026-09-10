@@ -56,10 +56,15 @@ type hydra struct {
 	accepted  int
 	rejected  bool
 	forgotten []string // the subjects hydra was told to forget
+
+	// The third challenge. `rp` is whether a relying party started it, which
+	// is the field the app's one refusal reads.
+	rp      map[string]bool
+	endedBy map[string]bool
 }
 
 func newHydra(t *testing.T) *hydra {
-	h := &hydra{client: map[string]string{}}
+	h := &hydra{client: map[string]string{}, rp: map[string]bool{}, endedBy: map[string]bool{}}
 
 	m := http.NewServeMux()
 	m.HandleFunc("GET /admin/oauth2/auth/requests/login", func(w http.ResponseWriter, r *http.Request) {
@@ -80,6 +85,39 @@ func newHydra(t *testing.T) *hydra {
 
 		writeJson(w, map[string]string{"redirect_to": "/consent?consent_challenge=" + r.URL.Query().Get("login_challenge")})
 	})
+	// The logout challenge, and accepting it. What a real Hydra does with the
+	// second is end the session it holds for that browser; what this does is
+	// remember that it was asked, which is the fact the app is on the hook for.
+	m.HandleFunc("GET /admin/oauth2/auth/requests/logout", func(w http.ResponseWriter, r *http.Request) {
+		c := r.URL.Query().Get("logout_challenge")
+
+		h.mu.Lock()
+		client, ok := h.client[c]
+		rp := h.rp[c]
+		h.mu.Unlock()
+
+		if !ok {
+			http.Error(w, `{"error":"no such challenge"}`, http.StatusNotFound)
+
+			return
+		}
+		writeJson(w, map[string]any{
+			"challenge":    c,
+			"subject":      "somebody",
+			"rp_initiated": rp,
+			"client":       map[string]string{"client_id": client},
+		})
+	})
+	m.HandleFunc("PUT /admin/oauth2/auth/requests/logout/accept", func(w http.ResponseWriter, r *http.Request) {
+		c := r.URL.Query().Get("logout_challenge")
+
+		h.mu.Lock()
+		h.endedBy[c] = true
+		h.mu.Unlock()
+
+		writeJson(w, map[string]any{"redirect_to": "https://a-product.test/after-logout"})
+	})
+
 	m.HandleFunc("DELETE /admin/oauth2/auth/sessions/login", func(w http.ResponseWriter, r *http.Request) {
 		h.mu.Lock()
 		h.forgotten = append(h.forgotten, r.URL.Query().Get("subject"))
@@ -136,6 +174,23 @@ func (h *hydra) raised(w http.ResponseWriter, r *http.Request, param string) {
 }
 
 // raise is a browser arriving at a client's `/login`, as far as this app sees.
+// asked is a logout Hydra was told about, and whether a relying party started
+// it. `raise` is its sibling for a login.
+func (h *hydra) asked(challenge, client string, rp bool) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.client[challenge] = client
+	h.rp[challenge] = rp
+}
+
+// ended is whether that logout challenge was accepted.
+func (h *hydra) ended(challenge string) bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	return h.endedBy[challenge]
+}
+
 func (h *hydra) raise(challenge, client string) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -942,4 +997,64 @@ func TestAWrongSecondFactorFinishesNothing(t *testing.T) {
 
 	subject, _ := d.hydra.told()
 	x.Empty(subject, "hydra was told somebody who answered the second form wrong")
+}
+
+// The third challenge, and the one that was missing.
+//
+// A person who clicks *sign out* in a product ends that product's session, and
+// the issuer was never asked -- so the next page starts a flow Hydra answers
+// without a form and they land signed in. Nothing leaks and it is correct, and
+// it is also the most convincing bug report a deployment can produce. It was
+// this one's: two HAR files, both showing `login_verifier` coming straight back
+// with no form drawn.
+func TestSigningOutEndsWhatTheIssuerRemembers(t *testing.T) {
+	x := require.New(t)
+	d := serve(t)
+
+	d.hydra.asked("l1", "contoso-web", true)
+
+	res, err := d.browser(t).Get(d.app.URL + "/logout?logout_challenge=l1")
+	x.NoError(err)
+	defer res.Body.Close()
+
+	x.Equal(http.StatusSeeOther, res.StatusCode)
+	x.Equal("https://a-product.test/after-logout", res.Header.Get("location"))
+	x.True(d.hydra.ended("l1"), "hydra was not told to end the session")
+}
+
+// TestALogoutNoAppAskedForIsRefused: the case a confirmation screen exists for,
+// answered without one.
+//
+// Somebody typed the URL, or a page they were reading loaded it as an image.
+// Drawing a button there hands a person a decision about a thing a third party
+// caused; refusing costs them nothing, because they did not ask.
+func TestALogoutNoAppAskedForIsRefused(t *testing.T) {
+	x := require.New(t)
+	d := serve(t)
+
+	d.hydra.asked("l1", "contoso-web", false)
+
+	res, err := d.browser(t).Get(d.app.URL + "/logout?logout_challenge=l1")
+	x.NoError(err)
+	defer res.Body.Close()
+
+	x.Equal(http.StatusBadRequest, res.StatusCode)
+	x.False(d.hydra.ended("l1"), "a logout nobody asked for was accepted")
+}
+
+// TestALogoutChallengeIsAskedAbout: the same rule every other hop keeps -- what
+// a request may do is decided by looking it up at Hydra, not by reading it.
+func TestALogoutChallengeIsAskedAbout(t *testing.T) {
+	x := require.New(t)
+	d := serve(t)
+
+	res, err := d.browser(t).Get(d.app.URL + "/logout?logout_challenge=never-raised")
+	x.NoError(err)
+	defer res.Body.Close()
+	x.Equal(http.StatusBadGateway, res.StatusCode)
+
+	res, err = d.browser(t).Get(d.app.URL + "/logout")
+	x.NoError(err)
+	defer res.Body.Close()
+	x.Equal(http.StatusBadGateway, res.StatusCode)
 }

@@ -80,8 +80,14 @@ type flow struct {
 type app struct {
 	cfg      *oauth2.Config
 	verifier *oidc.IDTokenVerifier
-	claims   func(context.Context, *oidc.IDToken) (id string, err error)
-	sessions *authsession.Sessions
+
+	// Where the issuer says its own session is ended, read from discovery, and
+	// this app's origin to come back to. Empty is an issuer that publishes no
+	// such endpoint, and signing out is then this app's half alone.
+	endSession string
+	base       string
+	claims     func(context.Context, *oidc.IDToken) (id string, err error)
+	sessions   *authsession.Sessions
 
 	mu    sync.Mutex
 	flows map[string]flow
@@ -140,7 +146,17 @@ func run() error {
 		opts = append(opts, authsession.Insecure())
 	}
 
+	// `end_session_endpoint` is not in `oidc.Provider`'s struct, so it is read
+	// off the raw discovery document -- which is the library's own way of
+	// saying an app may need what it did not model.
+	var discovered struct {
+		EndSession string `json:"end_session_endpoint"`
+	}
+	_ = p.Claims(&discovered)
+
 	a := &app{
+		endSession: discovered.EndSession,
+		base:       to.String(),
 		cfg: &oauth2.Config{
 			ClientID:     *clientId,
 			ClientSecret: *secret,
@@ -307,9 +323,46 @@ func (a *app) callback(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
+// signOut ends this app's session and then asks the **issuer** to end its own.
+//
+// The second half is the one that was missing, and its absence is the most
+// convincing bug report a deployment can produce: the cookie is gone, the next
+// page starts a flow, the issuer still remembers the browser and answers it
+// without a form, and the person who clicked *sign out* is looking at their
+// name again. Nothing leaked. It is still wrong to them, and they are right.
+//
+// So the redirect goes to `end_session_endpoint` -- discovery's own name for it
+// -- and the issuer sends the browser back here afterwards. A deployment whose
+// issuer publishes no such endpoint gets what this used to do, which is at
+// least this app's half.
+//
+// `id_token_hint` is not sent because there is nothing to send it: the token is
+// used once, at the callback, and thrown away, which is the argument
+// `authsession` opens with and is not worth undoing for a hint. What answers
+// the question it would have answered is `rp_initiated` at the other end -- the
+// issuer knows an app asked, and that is the fact a confirmation screen exists
+// to establish.
 func (a *app) signOut(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, a.sessions.End(r.Context(), a.sessions.KeyOf(cookiesOf(r))))
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+
+	if a.endSession == "" {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+
+		return
+	}
+
+	to, err := url.Parse(a.endSession)
+	if err != nil {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+
+		return
+	}
+	q := to.Query()
+	q.Set("post_logout_redirect_uri", a.base)
+	q.Set("client_id", a.cfg.ClientID)
+	to.RawQuery = q.Encode()
+
+	http.Redirect(w, r, to.String(), http.StatusSeeOther)
 }
 
 // who is the session, read back. Nothing is asked of the issuer here and

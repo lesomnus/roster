@@ -145,6 +145,50 @@ func (a admin) acceptConsent(ctx context.Context, challenge string, req *consent
 	return v.To, nil
 }
 
+// logout is the third challenge, and the one that was missing.
+//
+// A person who clicks *sign out* in a product ends **that product's** session,
+// and the issuer was never asked -- so the next page starts a flow Hydra
+// answers without a form, and they land signed in. Nothing leaks and it is
+// correct, and it is also the most convincing bug report a deployment can
+// produce.
+//
+// So an app that means it sends the browser to Hydra's `end_session_endpoint`,
+// Hydra redirects here with a `logout_challenge`, and this says yes.
+func (a admin) logout(ctx context.Context, challenge string) (*logoutRequest, error) {
+	v := &logoutRequest{}
+
+	return v, a.do(ctx, http.MethodGet, "logout", "logout_challenge", challenge, nil, v)
+}
+
+// acceptLogout ends the session Hydra holds for that browser.
+//
+// The body is empty and there is nothing to say: unlike a login or a consent,
+// there is no subject to name and no scope to grant. What is being answered is
+// whether the person meant it.
+func (a admin) acceptLogout(ctx context.Context, challenge string) (string, error) {
+	v := &redirect{}
+	if err := a.do(ctx, http.MethodPut, "logout/accept", "logout_challenge", challenge, struct{}{}, v); err != nil {
+		return "", err
+	}
+
+	return v.To, nil
+}
+
+// logoutRequest is what Hydra says about one.
+type logoutRequest struct {
+	Challenge string `json:"challenge"`
+	Subject   string `json:"subject"`
+	Sid       string `json:"sid"`
+
+	// Whether a relying party asked, or somebody typed the URL. It is the one
+	// field that decides whether this needs a person's answer -- see
+	// `login.go`, `logout`.
+	RpInitiated bool `json:"rp_initiated"`
+
+	Client client `json:"client"`
+}
+
 // rejectConsent is somebody saying no, which is an answer and not an error.
 //
 // `access_denied` is the OAuth code for it, so the client is told what happened
