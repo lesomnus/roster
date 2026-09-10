@@ -16,6 +16,7 @@
 # Run through `scripts/hydra.sh`, from inside the compose network.
 set -eu
 
+: "${ISSUER:=http://hydra.test:4444}"
 : "${SEED_USER:=erin}"
 : "${SEED_PASSWORD:=correct horse battery staple}"
 
@@ -42,7 +43,11 @@ loc() { tr -d '\r' | awk '/^[Ll]ocation:/{print $2}'; }
 code() { tr -d '\r' | awk '/^HTTP/{print $2; exit}'; }
 # Hydra and the Login App answer with the host machine's name, which is not a
 # name anything in here resolves. Only the host moves.
-fix() { sed 's|http://localhost:8091|http://login:8091|; s|http://localhost:4444|http://hydra:4444|'; }
+# Only the Login App's host moves: the issuer already answers to a name this
+# network resolves (`ISSUER_HOST` in `compose.yaml`), and it has to -- the
+# browser's session cookie is scoped to whatever host it was set on, so a walk
+# that reached the same Hydra under two names would be two browsers.
+fix() { sed "s|http://localhost:8091|http://login:8091|; s|http://localhost:4444|${ISSUER}|"; }
 die() { echo "behind: $*" >&2; exit 1; }
 step() { printf '%-38s %s\n' "$1" "$2"; }
 
@@ -123,7 +128,7 @@ step "a page and a fetch, with no session" "a redirect and a 401"
 # `oauth2-proxy` has no way to put the token on that link. So Hydra marks the
 # logout not rp-initiated, the Login App draws the confirmation, and the last
 # page is whatever `urls.post_logout_redirect` names.
-end=$(printf 'http://hydra:4444/oauth2/sessions/logout?client_id=behind' | sed 's|:|%3A|g; s|/|%2F|g; s|?|%3F|g; s|=|%3D|g')
+end=$(printf '%s/oauth2/sessions/logout?client_id=behind' "${ISSUER}" | sed 's|:|%3A|g; s|/|%2F|g; s|?|%3F|g; s|=|%3D|g')
 l=$(c -o /dev/null -D - "http://behind:4180/oauth2/sign_out?rd=${end}" | loc | fix)
 case "${l}" in
 */oauth2/sessions/logout*) ;;

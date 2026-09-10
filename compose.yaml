@@ -227,7 +227,20 @@ services:
     environment:
       DSN: postgres://roster:roster@postgres:5432/hydra?sslmode=disable
       SECRETS_SYSTEM: youReallyNeedToChangeThis
-      URLS_SELF_ISSUER: http://${PUBLIC_HOST:-localhost}:4444
+      # Its own variable, and this is the one thing `PUBLIC_HOST` cannot cover.
+      #
+      # Every URL in `/.well-known/openid-configuration` is built from this, and
+      # a **relying party** reads that document -- so the name has to be one
+      # this network resolves. `PUBLIC_HOST` is the name a browser on the host
+      # machine uses, and inside a container `localhost` is that container.
+      # `scripts/hydra.sh` sets it to `hydra.test`, which is an alias on the
+      # service below; a human leaves it and gets what they had.
+      #
+      # It was not this way for an afternoon, and the shape of the failure is
+      # worth keeping: discovery can be pointed elsewhere (`go-oidc` has a
+      # context for it) and the **endpoints in the document** still are not, so
+      # signing in worked and exchanging the code did not.
+      URLS_SELF_ISSUER: http://${ISSUER_HOST:-${PUBLIC_HOST:-localhost}}:4444
       URLS_LOGIN: http://${PUBLIC_HOST:-localhost}:8091/login
       URLS_CONSENT: http://${PUBLIC_HOST:-localhost}:8091/consent
       # And where it asks whether somebody meant to sign out.
@@ -252,6 +265,12 @@ services:
       # A deployment that wants one points `URLS_CONSENT` at its own.
       LOG_LEVEL: warn
     command: ["serve", "all", "--dev"]
+    networks:
+      default:
+        # The name `ISSUER_HOST` and `flow.sh`'s `--resolve` both use. A
+        # single-label host is one a cookie jar will not answer to, which is
+        # why it has a dot in it.
+        aliases: ["hydra.test"]
     ports:
       - "4444:4444" # the public endpoints a product app uses
       - "4445:4445" # admin: private, and this line is what a deployment removes
@@ -299,6 +318,20 @@ services:
         }]
         EOF
         hydra import client --endpoint http://hydra:4445 /tmp/behind.json
+        cat >/tmp/itself.json <<'EOF'
+        [{
+          "client_id": "itself",
+          "client_secret": "itself-secret",
+          "client_name": "the demo that authenticates itself",
+          "grant_types": ["authorization_code", "refresh_token"],
+          "response_types": ["code"],
+          "scope": "openid offline profile email",
+          "redirect_uris": ["http://product:5555/callback"],
+          "post_logout_redirect_uris": ["http://product:5555"],
+          "token_endpoint_auth_method": "client_secret_post"
+        }]
+        EOF
+        hydra import client --endpoint http://hydra:4445 /tmp/itself.json
 
   # The Login App: what Hydra hands a `login_challenge` to, and what answers
   # `acceptLoginRequest{subject}` with a `Holder.id`. Its own process with its
@@ -364,11 +397,10 @@ services:
       OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
       OAUTH2_PROXY_REDIRECT_URL: http://behind:4180/oauth2/callback
 
-      OAUTH2_PROXY_SKIP_OIDC_DISCOVERY: "true"
-      OAUTH2_PROXY_OIDC_ISSUER_URL: http://${PUBLIC_HOST:-localhost}:4444
-      OAUTH2_PROXY_LOGIN_URL: http://hydra:4444/oauth2/auth
-      OAUTH2_PROXY_REDEEM_URL: http://hydra:4444/oauth2/token
-      OAUTH2_PROXY_OIDC_JWKS_URL: http://hydra:4444/.well-known/jwks.json
+      # Discovery, the way a deployment does it -- which it could not be while
+      # the issuer answered to a name this network does not resolve. See
+      # `URLS_SELF_ISSUER` above.
+      OAUTH2_PROXY_OIDC_ISSUER_URL: http://${ISSUER_HOST:-${PUBLIC_HOST:-localhost}}:4444
 
       # The identity is `sub` and not an address. oauth2-proxy keys a session on
       # an email by default and refuses a token with none -- and roster puts
@@ -388,9 +420,40 @@ services:
       # not follow is send the browser to `/` -- so the sign-out silently
       # becomes the proxy forgetting its own session and nothing else, which is
       # the exact lie the second hop exists to prevent.
-      OAUTH2_PROXY_WHITELIST_DOMAINS: "hydra:4444,login:8091"
+      OAUTH2_PROXY_WHITELIST_DOMAINS: "hydra.test:4444,login:8091"
     ports:
       - "4180:4180"
+
+  # And the other shape: an app that is the relying party **itself**.
+  #
+  # `behind` above is a page that knows nothing, with a proxy in front.
+  # `examples/product` holds the token, keeps a session of its own, and asks the
+  # issuer to end it -- which is the shape a product with its own login already
+  # has, and the one the deployment's `itself.login-demo.hday.dev` is.
+  #
+  # It is here because nothing local ran it. Its own tests use a fake IdP, and
+  # `docker/flow.sh` walks the protocol with `curl` rather than the app -- so
+  # the **URLs this app builds** were checked against nothing, and the first one
+  # that was wrong was found by a person clicking sign out in a cluster.
+  product:
+    build:
+      context: .
+      target: dev
+    depends_on:
+      hydra-client:
+        condition: service_completed_successfully
+      login:
+        condition: service_started
+    entrypoint: ["/usr/local/bin/example-product"]
+    command:
+      - --listen=:5555
+      - --issuer=http://${ISSUER_HOST:-${PUBLIC_HOST:-localhost}}:4444
+      - --client-id=itself
+      - --client-secret=itself-secret
+      - --base=http://product:5555
+      - --insecure-cookie
+    ports:
+      - "5555:5555"
 
 volumes:
   postgres:

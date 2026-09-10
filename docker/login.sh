@@ -19,6 +19,9 @@ set -eu
 # deployment has -- and it is what makes "which operator a challenge is about"
 # a question with an answer, rather than a lookup that could not be wrong.
 : "${PROXY_CLIENT:=behind}"
+# And the third: the app that is the relying party itself, which
+# `docker/itself.sh` walks.
+: "${SELF_CLIENT:=itself}"
 : "${LOGIN_CONSENT:=skip}"
 : "${LOGIN_REMEMBER:=1h}"
 
@@ -50,7 +53,7 @@ exec roster login serve \
 	--listen ":${LOGIN_PORT}" \
 	--roster roster:50051 --insecure \
 	--hydra "${HYDRA_ADMIN}" \
-	--client "${SEED_CUSTOMER}=${OAUTH_CLIENT},${PROXY_CLIENT}" \
+	--client "${SEED_CUSTOMER}=${OAUTH_CLIENT},${PROXY_CLIENT},${SELF_CLIENT}" \
 	--consent "${LOGIN_CONSENT}" \
 	--static /usr/share/roster/login \
 	--insecure-cookie "$@"

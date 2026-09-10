@@ -25,6 +25,13 @@ set -o pipefail
 __root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${__root}"
 
+# The issuer answers to a name **this network** resolves, because the two demo
+# relying parties read its discovery document and every URL in it is built from
+# here. `hydra.test` is an alias on the service; `compose.yaml` says the rest. A
+# person running `docker compose up` by hand leaves this alone and gets
+# `localhost`, which is what their own browser wants.
+export ISSUER_HOST=hydra.test
+
 hold=0
 if [ "${1:-}" = "--hold" ]; then
 	hold=1
@@ -126,6 +133,14 @@ echo
 echo "== and the same issuer, seen by somebody else's relying party"
 docker compose up -d --no-deps --wait behind >/dev/null
 docker compose run --rm --no-deps --entrypoint /usr/local/bin/behind.sh login "$@"
+
+# And the other one, which fails differently: an app that holds the token and
+# builds its own URLs. What `flow.sh` cannot check is exactly those, because it
+# builds them itself out of what it registered the client with.
+echo
+echo "== and the same issuer, seen by an app that is the relying party itself"
+docker compose up -d --no-deps --wait product >/dev/null
+docker compose run --rm --no-deps --entrypoint /usr/local/bin/itself.sh login "$@"
 
 # And last, because it gives her an authenticator and does not take it away:
 # from here on the password alone is half of a sign-in.

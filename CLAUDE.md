@@ -98,17 +98,17 @@ three defects on its first run that every other gate was green on, so it is a
 gate. `./scripts/e2e.sh --hold` leaves the deployment up to look at.
 
 **Touching `login/` means running `hydra.sh`.** It stands `compose.yaml` up
-from **nothing** -- Hydra, its client, the Login App -- and walks an
-authorization-code flow twice, once per consent mode: to an `id_token` whose
-`sub` is the `Holder.id` roster holds, then a second flow Hydra skips the
-form for, then `Holder.Invalidate` over roster's HTTP port, then the form
-asked for again -- and then the person signing **out** at the issuer, both
-with the token and without it. Then it walks the same issuer from **somebody
-else's** relying party: `oauth2-proxy` in front of a page
-(`docker/behind.sh`), which is the shape the deployment's `behind.login-
-demo` is and the one that has produced every defect a local gate could not
-see. `login/`'s own tests use a fake Hydra, deliberately, and every defect
-this has found was one that fake was green on. `--hold` leaves it up.
+from **nothing** and walks the flow four ways. Three are `curl` against the
+protocol, once per consent mode and once with a second factor: to an
+`id_token` whose `sub` is the `Holder.id` roster holds, a second flow Hydra
+skips the form for -- **and the claims in the token that one hands back** --
+then `Holder.Invalidate`, then the form asked for again, then the person
+signing **out**, with the token and without it. The fourth and fifth are the
+two demo relying parties, which is where every defect a local gate could not
+see has come from: `docker/behind.sh` is `oauth2-proxy` in front of a page,
+`docker/itself.sh` is `examples/product` holding its own token and building
+its own URLs. `login/`'s own tests use a fake Hydra, deliberately, and every
+defect this has found was one that fake was green on. `--hold` leaves it up.
 
 ## Do not edit — regenerate
 
