@@ -91,11 +91,21 @@ function away(res: import('node:http').ServerResponse, connection: string): void
 <meta charset="utf-8">
 <title>${connection} \u2014 the sandbox</title>
 <style>
+  /* The four values ts/lib/style.css uses, copied rather than imported: this
+     page is not one of the app's and must not start looking like one. What it
+     may not do is flash white at somebody whose form was dark, which is the
+     whole of why the colours are here at all -- and why they are not backticked
+     above, since this whole document is one template literal. */
+  :root { color-scheme: light dark;
+          --bg: #f6f7f9; --surface-2: #f0f2f5; --text: #1f2328; --muted: #6b7280 }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f1216; --surface-2: #1f242c; --text: #e6e8eb; --muted: #9aa3ad }
+  }
   body { font: 15px/1.6 system-ui, sans-serif; margin: 0; display: grid; place-items: center;
-         min-height: 100vh; background: #f6f6f7; color: #222 }
+         min-height: 100vh; background: var(--bg); color: var(--text) }
   main { max-width: 30rem; padding: 2rem; text-align: center }
-  code { background: #e9e9ec; padding: .1em .35em; border-radius: .2em }
-  p.note { color: #666 }
+  code { background: var(--surface-2); padding: .1em .35em; border-radius: .2em }
+  p.note { color: var(--muted) }
   button { font: inherit; padding: .5em 1.2em; margin-top: 1rem; cursor: pointer }
 </style>
 <main>
