@@ -127,6 +127,26 @@ func run() error {
 		return fmt.Errorf("--base: %w", err)
 	}
 
+	// **How the secret is sent, said rather than discovered.**
+	//
+	// `p.Endpoint()` leaves `AuthStyle` unset, which means `golang.org/x/oauth2`
+	// *probes*: it tries HTTP Basic, and if the issuer refuses it tries the
+	// body instead -- then **caches the answer for the life of the process**.
+	// The cache is the problem. A client registered for one method and later
+	// changed to the other is one this process keeps addressing the old way,
+	// with no second try, because the probe already ran. That is not a
+	// hypothetical: it signed nobody in for an hour, and every gate was green,
+	// because a gate starts a fresh process and the probe finds the right
+	// answer on its first go.
+	//
+	// So it is `client_secret_basic`, in the code, matching what the client is
+	// registered with. It is the default in OIDC and in Hydra, it is what the
+	// probe would have chosen anyway, and a client registered for the other one
+	// now fails the **first** exchange rather than the first exchange after a
+	// registration changes under a running pod.
+	endpoint := p.Endpoint()
+	endpoint.AuthStyle = oauth2.AuthStyleInHeader
+
 	// The **audience** is not optional, and `authoidc` refuses to be built
 	// without one. A verifier that skips it accepts a token minted for any
 	// relying party of the same issuer.
@@ -161,7 +181,7 @@ func run() error {
 		cfg: &oauth2.Config{
 			ClientID:     *clientId,
 			ClientSecret: *secret,
-			Endpoint:     p.Endpoint(),
+			Endpoint:     endpoint,
 			RedirectURL:  to.JoinPath("/callback").String(),
 			Scopes:       []string{oidc.ScopeOpenID, "profile", "email"},
 		},

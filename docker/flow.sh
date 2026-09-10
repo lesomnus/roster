@@ -219,9 +219,13 @@ sign_in() {
 	grant=$(printf '%s' "${l}" | sed 's/.*[?&]code=//; s/&.*//')
 	[ -n "${grant}" ] || die "no authorization code came back: ${l}"
 
-	token=$(c -X POST http://hydra.test:4444/oauth2/token \
+	# The secret in the **header**, which is what `token_endpoint_auth_method`
+# says these clients take -- and what every Go relying party sends first.
+# `compose.yaml` has the paragraph about why that method is written down
+# rather than left to a probe.
+token=$(c -X POST http://hydra.test:4444/oauth2/token \
 		-d grant_type=authorization_code -d "code=${grant}" \
-		-d "redirect_uri=${CALLBACK}" -d "client_id=${OAUTH_CLIENT}" -d "client_secret=${CLIENT_SECRET}")
+		-d "redirect_uri=${CALLBACK}" -u "${OAUTH_CLIENT}:${CLIENT_SECRET}")
 	id=$(printf '%s' "${token}" | sed 's/.*"id_token":"//; s/".*//')
 	[ -n "${id}" ] || die "no id_token: ${token}"
 
@@ -284,7 +288,7 @@ grant=$(printf '%s' "${l}" | sed 's/.*[?&]code=//; s/&.*//')
 [ -n "${grant}" ] || die "the remembered flow handed back no code: ${l}"
 again=$(c -X POST http://hydra.test:4444/oauth2/token \
 	-d grant_type=authorization_code -d "code=${grant}" \
-	-d "redirect_uri=${CALLBACK}" -d "client_id=${OAUTH_CLIENT}" -d "client_secret=${CLIENT_SECRET}" \
+	-d "redirect_uri=${CALLBACK}" -u "${OAUTH_CLIENT}:${CLIENT_SECRET}" \
 	| sed 's/.*"id_token":"//; s/".*//' | payload)
 printf '%s' "${again}" | grep -q '"preferred_username":"'"${SEED_USER}"'"' \
 	|| die "a token from a remembered browser carries no claims: ${again}"

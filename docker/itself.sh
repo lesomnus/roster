@@ -83,7 +83,16 @@ esac
 step "${SEED_USER} signs in" "-> back to the app"
 
 # The callback, and then the page it sends the browser to.
-l=$(c -o /dev/null -D - "${l}" | loc)
+#
+# Its **status** first, because everything this app refuses it refuses with a
+# 400 and one word, so a walk that only followed the redirect read a missing
+# `Location` as an empty URL and said `curl: option : blank argument`. What
+# actually happened is in the app's log; what it costs to find out is what this
+# line saves.
+head=$(c -o /dev/null -D - "${l}" | tr -d '\r')
+got=$(printf '%s' "${head}" | code)
+[ "${got}" = "303" ] || die "the callback answered ${got}; the app's log says which of its checks refused it"
+l=$(printf '%s' "${head}" | loc)
 case "${l}" in
 /*) l="${BASE}${l}" ;;
 esac
