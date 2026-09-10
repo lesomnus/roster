@@ -432,15 +432,64 @@ func (p *Providers) Known(ctx context.Context, enrol Enrol, who Caller) (pdid.Id
 	if err != nil {
 		return pdid.Nil, err
 	}
-	if _, err := p.roster.Identity().Add(ctx, rstr.IdentityAddRequest_builder{
+	link, err := p.roster.Identity().Add(ctx, rstr.IdentityAddRequest_builder{
 		Holder:   rstr.HolderRef_builder{Id: id.Bytes()}.Build(),
 		Provider: who.Provider,
 		Subject:  who.Subject,
-	}.Build()); err != nil {
+	}.Build())
+	if err != nil {
 		return pdid.Nil, fmt.Errorf("link %s/%s: %w", who.Provider, who.Subject, err)
 	}
 
+	p.attest(ctx, id, link, who)
+
 	return id, nil
+}
+
+// attest writes down the address the directory just handed over, on the word of
+// the identity that carried it.
+//
+// # Why this is not optional and was missing
+//
+// The address arrives inside a token the directory signed, names the person
+// (`Enrolling` derives an alias from it), and was then **thrown away**. Nothing
+// else can put it back: the account page's own route mints a link and mails it,
+// and a deployment with no mail has no route at all. So a person who arrived
+// through a directory had an account roster could not say the address of, and
+// every token minted for them afterwards was missing the claim a product asked
+// for.
+//
+// The schema had been waiting for this. `Email.vouched_by` is *which identity
+// vouched for it, if one did*, and it says an address in a provider's claims is
+// *only as good as that provider's own check* -- and nothing had ever written
+// it.
+//
+// # Why a failure here is not a failure
+//
+// Signing somebody in worked. The identity is linked, the `sub` is theirs, and
+// what is missing is a convenience -- so refusing the sign-in over it would
+// trade the thing that matters for the thing that does not. A tenant whose key
+// does not allow `Email.Attest` is the ordinary case of that, and it is a
+// deployment choosing not to store addresses rather than a fault.
+func (p *Providers) attest(ctx context.Context, who pdid.Id, link *rstr.Identity, from Caller) {
+	if from.Email == "" {
+		return
+	}
+
+	_, _ = p.roster.Email().Attest(ctx, rstr.EmailAttestRequest_builder{
+		Holder:  rstr.HolderRef_builder{Id: who.Bytes()}.Build(),
+		Address: proto.String(front.Address(from.Email)),
+
+		// Whose word it was, which is the whole of what makes this different
+		// from an address somebody typed.
+		VouchedBy: rstr.IdentityRef_builder{Id: link.GetId()}.Build(),
+
+		// What the **provider** said, and not what this app thinks. A directory
+		// that does not send `email_verified` gets a row with the address and
+		// the evidence and no stamp, which is exactly right: the address is
+		// kept, and nothing claims a check that did not happen.
+		Verified: proto.Bool(from.Verified),
+	}.Build())
 }
 
 // Nonce is a state parameter: 24 bytes, and nothing else.

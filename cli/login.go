@@ -271,7 +271,9 @@ func newCmdLoginProvision(c *cmd.Config) *xli.Command {
 //
 // `Email.Get` is the invitation: an operator who entered somebody in advance
 // knows their address and not the subject a directory will assert, so the first
-// sign-in is matched by the one and linked to the other.
+// sign-in is matched by the one and linked to the other. `Email.Attest` is the
+// other direction -- the address the directory itself handed over, kept with
+// the identity that vouched for it.
 //
 // **`HolderService.Add` is not here, and that is the point of the list.** It is
 // what `enrol: enrolling` needs, and making people is a wider grant than
@@ -299,6 +301,13 @@ var LoginMethods = append([]string{
 	rstr.IdentityService_Get_FullMethodName,
 	rstr.IdentityService_Add_FullMethodName,
 	rstr.EmailService_Get_FullMethodName,
+
+	// The address a directory hands over, written down on that directory's
+	// word. Without it a person who arrived through one has an account roster
+	// cannot say the address of, and the token every product reads is missing
+	// the claim it asked for -- with no other route to fix it in a deployment
+	// that cannot send mail.
+	rstr.EmailService_Attest_FullMethodName,
 }, login.Methods...)
 
 // provision is one operator's front door.

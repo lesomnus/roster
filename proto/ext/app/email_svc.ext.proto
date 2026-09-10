@@ -47,6 +47,37 @@ service EmailService {
   // link. What a caller may rely on is that after `OK` the address is
   // `date_verified` at this moment, and that nothing was signed in.
   rpc Confirm(EmailConfirmRequest) returns (EmailConfirmResponse);
+
+  // Attest writes an address a **provider** vouched for, and stamps it when
+  // that provider said it had checked.
+  //
+  // # Why a link cannot answer this
+  //
+  // `Verify` and `Confirm` are for an address nobody has vouched for: somebody
+  // typed it, and the way to find out whether they hold that mailbox is to send
+  // a nonce there and see it come back. An address that arrived inside a token
+  // a directory signed is not that. The check has been done, by whoever the
+  // person authenticates at, and sending a link asks them to prove again what
+  // an authority already asserted -- in a deployment with no mail, asks them to
+  // prove it by a route that does not exist.
+  //
+  // So this is the second road to `date_verified`, and the first was written
+  // knowing there would be one: `Email.vouched_by` is *which identity vouched
+  // for it, if one did*, and it says an address in a provider's claims is *only
+  // as good as that provider's own check*. Nothing had ever written it.
+  //
+  // # What it does not do
+  //
+  // Believe the caller about the checking. `verified` is what the **provider**
+  // said -- `email_verified` in an OIDC token -- and a caller that sets it
+  // falsely is a caller that could instead have linked an identity and been
+  // that person outright. What it may not do is escape the rules every other
+  // way in meets: `vouched_by` is required, so a row written here always says
+  // whose word it was, and a later decision is made on evidence rather than on
+  // a flag somebody set.
+  //
+  // Refused, like `Email.Add`, for a holder wider than the caller.
+  rpc Attest(EmailAttestRequest) returns (Email);
 }
 
 message EmailVerifyRequest {
@@ -63,6 +94,25 @@ message EmailVerifyResponse {
   string token = 1 [features.field_presence = IMPLICIT];
 
   google.protobuf.Timestamp expires = 2;
+}
+
+message EmailAttestRequest {
+  // Whose address it is.
+  HolderRef holder = 1;
+
+  // The address, as the provider spelled it. Normalised here the way every
+  // other write is, so that a lookup and a write agree.
+  string address = 8;
+
+  // Which identity vouched, and it is **required**: an attestation with no
+  // voucher is an address somebody typed, and that has `Add` and a link.
+  IdentityRef vouched_by = 10;
+
+  // Whether that provider said it had checked the address -- `email_verified`
+  // in a token. False writes the row and stamps nothing, which is the right
+  // answer for a directory that does not say: the address is kept, the evidence
+  // is kept, and nothing claims a check that did not happen.
+  bool verified = 9;
 }
 
 message EmailConfirmRequest {

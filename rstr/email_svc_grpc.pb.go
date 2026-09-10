@@ -28,6 +28,7 @@ const (
 	EmailService_Watch_FullMethodName   = "/roster.EmailService/Watch"
 	EmailService_Verify_FullMethodName  = "/roster.EmailService/Verify"
 	EmailService_Confirm_FullMethodName = "/roster.EmailService/Confirm"
+	EmailService_Attest_FullMethodName  = "/roster.EmailService/Attest"
 )
 
 // EmailServiceClient is the client API for EmailService service.
@@ -73,6 +74,36 @@ type EmailServiceClient interface {
 	// link. What a caller may rely on is that after `OK` the address is
 	// `date_verified` at this moment, and that nothing was signed in.
 	Confirm(ctx context.Context, in *EmailConfirmRequest, opts ...grpc.CallOption) (*EmailConfirmResponse, error)
+	// Attest writes an address a **provider** vouched for, and stamps it when
+	// that provider said it had checked.
+	//
+	// # Why a link cannot answer this
+	//
+	// `Verify` and `Confirm` are for an address nobody has vouched for: somebody
+	// typed it, and the way to find out whether they hold that mailbox is to send
+	// a nonce there and see it come back. An address that arrived inside a token
+	// a directory signed is not that. The check has been done, by whoever the
+	// person authenticates at, and sending a link asks them to prove again what
+	// an authority already asserted -- in a deployment with no mail, asks them to
+	// prove it by a route that does not exist.
+	//
+	// So this is the second road to `date_verified`, and the first was written
+	// knowing there would be one: `Email.vouched_by` is *which identity vouched
+	// for it, if one did*, and it says an address in a provider's claims is *only
+	// as good as that provider's own check*. Nothing had ever written it.
+	//
+	// # What it does not do
+	//
+	// Believe the caller about the checking. `verified` is what the **provider**
+	// said -- `email_verified` in an OIDC token -- and a caller that sets it
+	// falsely is a caller that could instead have linked an identity and been
+	// that person outright. What it may not do is escape the rules every other
+	// way in meets: `vouched_by` is required, so a row written here always says
+	// whose word it was, and a later decision is made on evidence rather than on
+	// a flag somebody set.
+	//
+	// Refused, like `Email.Add`, for a holder wider than the caller.
+	Attest(ctx context.Context, in *EmailAttestRequest, opts ...grpc.CallOption) (*Email, error)
 }
 
 type emailServiceClient struct {
@@ -182,6 +213,16 @@ func (c *emailServiceClient) Confirm(ctx context.Context, in *EmailConfirmReques
 	return out, nil
 }
 
+func (c *emailServiceClient) Attest(ctx context.Context, in *EmailAttestRequest, opts ...grpc.CallOption) (*Email, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Email)
+	err := c.cc.Invoke(ctx, EmailService_Attest_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // EmailServiceServer is the server API for EmailService service.
 // All implementations must embed UnimplementedEmailServiceServer
 // for forward compatibility.
@@ -225,6 +266,36 @@ type EmailServiceServer interface {
 	// link. What a caller may rely on is that after `OK` the address is
 	// `date_verified` at this moment, and that nothing was signed in.
 	Confirm(context.Context, *EmailConfirmRequest) (*EmailConfirmResponse, error)
+	// Attest writes an address a **provider** vouched for, and stamps it when
+	// that provider said it had checked.
+	//
+	// # Why a link cannot answer this
+	//
+	// `Verify` and `Confirm` are for an address nobody has vouched for: somebody
+	// typed it, and the way to find out whether they hold that mailbox is to send
+	// a nonce there and see it come back. An address that arrived inside a token
+	// a directory signed is not that. The check has been done, by whoever the
+	// person authenticates at, and sending a link asks them to prove again what
+	// an authority already asserted -- in a deployment with no mail, asks them to
+	// prove it by a route that does not exist.
+	//
+	// So this is the second road to `date_verified`, and the first was written
+	// knowing there would be one: `Email.vouched_by` is *which identity vouched
+	// for it, if one did*, and it says an address in a provider's claims is *only
+	// as good as that provider's own check*. Nothing had ever written it.
+	//
+	// # What it does not do
+	//
+	// Believe the caller about the checking. `verified` is what the **provider**
+	// said -- `email_verified` in an OIDC token -- and a caller that sets it
+	// falsely is a caller that could instead have linked an identity and been
+	// that person outright. What it may not do is escape the rules every other
+	// way in meets: `vouched_by` is required, so a row written here always says
+	// whose word it was, and a later decision is made on evidence rather than on
+	// a flag somebody set.
+	//
+	// Refused, like `Email.Add`, for a holder wider than the caller.
+	Attest(context.Context, *EmailAttestRequest) (*Email, error)
 	mustEmbedUnimplementedEmailServiceServer()
 }
 
@@ -261,6 +332,9 @@ func (UnimplementedEmailServiceServer) Verify(context.Context, *EmailVerifyReque
 }
 func (UnimplementedEmailServiceServer) Confirm(context.Context, *EmailConfirmRequest) (*EmailConfirmResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Confirm not implemented")
+}
+func (UnimplementedEmailServiceServer) Attest(context.Context, *EmailAttestRequest) (*Email, error) {
+	return nil, status.Error(codes.Unimplemented, "method Attest not implemented")
 }
 func (UnimplementedEmailServiceServer) mustEmbedUnimplementedEmailServiceServer() {}
 func (UnimplementedEmailServiceServer) testEmbeddedByValue()                      {}
@@ -438,6 +512,24 @@ func _EmailService_Confirm_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _EmailService_Attest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EmailAttestRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EmailServiceServer).Attest(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: EmailService_Attest_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EmailServiceServer).Attest(ctx, req.(*EmailAttestRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // EmailService_ServiceDesc is the grpc.ServiceDesc for EmailService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -476,6 +568,10 @@ var EmailService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Confirm",
 			Handler:    _EmailService_Confirm_Handler,
+		},
+		{
+			MethodName: "Attest",
+			Handler:    _EmailService_Attest_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

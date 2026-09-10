@@ -294,6 +294,7 @@ func serveAs(t *testing.T, how login.Consent, with func(*login.Config)) *deploym
 				"/roster.IdentityService/Get",
 				"/roster.IdentityService/Add",
 				"/roster.EmailService/Get",
+				"/roster.EmailService/Attest",
 				"/roster.EmailService/Add",
 
 				// What `enrol: enrolling` needs, and what the key `roster login

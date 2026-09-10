@@ -20,7 +20,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/email_svc.g.proto.
  */
 export const file_app_email_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChVhcHAvZW1haWxfc3ZjLmcucHJvdG8SBnJvc3RlciKAAgoPRW1haWxBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSFgoHYWRkcmVzcxgIIAEoCUIFqgECCAISMQoNZGF0ZV92ZXJpZmllZBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASJwoKdm91Y2hlZF9ieRgKIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIYCgl0ZW5hbnRfaWQYCyABKAxCBaoBAggCEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiVQoPRW1haWxHZXRSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIjCgZzZWxlY3QYAiABKAsyEy5yb3N0ZXIuRW1haWxTZWxlY3QicQoIRW1haWxSZWYSDAoCaWQYASABKAxIABIsCgdhZGRyZXNzGAIgASgLMhkucm9zdGVyLkVtYWlsUmVmQnlBZGRyZXNzSAASIgoCYXQYCyABKAsyFC5yb3N0ZXIuRW1haWxSZWZCeUF0SABCBQoDa2V5IkcKEUVtYWlsUmVmQnlBZGRyZXNzEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSDwoHYWRkcmVzcxgIIAEoCSIyCgxFbWFpbFJlZkJ5QXQSEQoJdGVuYW50X2lkGAsgASgMEg8KB2FkZHJlc3MYCCABKAki6AEKC0VtYWlsU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0Eg8KB2FkZHJlc3MYCCABKAgSFQoNZGF0ZV92ZXJpZmllZBgJIAEoCBIqCgp2b3VjaGVkX2J5GAogASgLMhYucm9zdGVyLklkZW50aXR5U2VsZWN0EhEKCXRlbmFudF9pZBgLIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIqICChFFbWFpbFBhdGNoUmVxdWVzdBIdCgNyZWYYASABKAsyEC5yb3N0ZXIuRW1haWxSZWYSDwoHYWRkcmVzcxgQIAEoCRIxCg1kYXRlX3ZlcmlmaWVkGBIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3ZlcmlmaWVkX251bGwYEyABKAgSJwoKdm91Y2hlZF9ieRgUIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIXCg92b3VjaGVkX2J5X251bGwYFSABKAgSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiTwoRRW1haWxBcHBseVJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLkVtYWlsUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giJAoSRW1haWxFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCJjChBFbWFpbExpc3RSZXF1ZXN0EiQKB2ZpbHRlcnMYASADKAsyEy5yb3N0ZXIuRW1haWxGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIkYKEUVtYWlsTGlzdFJlc3BvbnNlEhwKBWl0ZW1zGAEgAygLMg0ucm9zdGVyLkVtYWlsEhMKBG5leHQYAiABKAlCBaoBAggCIk8KC0VtYWlsRmlsdGVyEh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmIlcKEUVtYWlsV2F0Y2hSZXF1ZXN0EiQKB2ZpbHRlcnMYASADKAsyEy5yb3N0ZXIuRW1haWxGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiOwoSRW1haWxXYXRjaFJlc3BvbnNlEiUKBWl0ZW1zGAEgAygLMhYucm9zdGVyLkVtYWlsV2F0Y2hJdGVtIlEKDkVtYWlsV2F0Y2hJdGVtEgoKAmlkGAEgASgMEhwKBXZhbHVlGAIgASgLMg0ucm9zdGVyLkVtYWlsEhUKBmFjdGlvbhgDIAEoCUIFqgECCAIiYAoSRW1haWxWZXJpZnlSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIrCgdleHBpcmVzGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJYChNFbWFpbFZlcmlmeVJlc3BvbnNlEhQKBXRva2VuGAEgASgJQgWqAQIIAhIrCgdleHBpcmVzGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIrChNFbWFpbENvbmZpcm1SZXF1ZXN0EhQKBXRva2VuGAEgASgJQgWqAQIIAiI0ChRFbWFpbENvbmZpcm1SZXNwb25zZRIcCgVlbWFpbBgBIAEoCzINLnJvc3Rlci5FbWFpbDKRBAoMRW1haWxTZXJ2aWNlEi0KA0FkZBIXLnJvc3Rlci5FbWFpbEFkZFJlcXVlc3QaDS5yb3N0ZXIuRW1haWwSLQoDR2V0Ehcucm9zdGVyLkVtYWlsR2V0UmVxdWVzdBoNLnJvc3Rlci5FbWFpbBIxCgVQYXRjaBIZLnJvc3Rlci5FbWFpbFBhdGNoUmVxdWVzdBoNLnJvc3Rlci5FbWFpbBIxCgVBcHBseRIZLnJvc3Rlci5FbWFpbEFwcGx5UmVxdWVzdBoNLnJvc3Rlci5FbWFpbBI1CgVFcmFzZRIQLnJvc3Rlci5FbWFpbFJlZhoaLnJvc3Rlci5FbWFpbEVyYXNlUmVzcG9uc2USOwoETGlzdBIYLnJvc3Rlci5FbWFpbExpc3RSZXF1ZXN0Ghkucm9zdGVyLkVtYWlsTGlzdFJlc3BvbnNlEkAKBVdhdGNoEhkucm9zdGVyLkVtYWlsV2F0Y2hSZXF1ZXN0Ghoucm9zdGVyLkVtYWlsV2F0Y2hSZXNwb25zZTABEkEKBlZlcmlmeRIaLnJvc3Rlci5FbWFpbFZlcmlmeVJlcXVlc3QaGy5yb3N0ZXIuRW1haWxWZXJpZnlSZXNwb25zZRJECgdDb25maXJtEhsucm9zdGVyLkVtYWlsQ29uZmlybVJlcXVlc3QaHC5yb3N0ZXIuRW1haWxDb25maXJtUmVzcG9uc2VCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_email, file_app_identity_svc_g, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChVhcHAvZW1haWxfc3ZjLmcucHJvdG8SBnJvc3RlciKAAgoPRW1haWxBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSFgoHYWRkcmVzcxgIIAEoCUIFqgECCAISMQoNZGF0ZV92ZXJpZmllZBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASJwoKdm91Y2hlZF9ieRgKIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIYCgl0ZW5hbnRfaWQYCyABKAxCBaoBAggCEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiVQoPRW1haWxHZXRSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIjCgZzZWxlY3QYAiABKAsyEy5yb3N0ZXIuRW1haWxTZWxlY3QicQoIRW1haWxSZWYSDAoCaWQYASABKAxIABIsCgdhZGRyZXNzGAIgASgLMhkucm9zdGVyLkVtYWlsUmVmQnlBZGRyZXNzSAASIgoCYXQYCyABKAsyFC5yb3N0ZXIuRW1haWxSZWZCeUF0SABCBQoDa2V5IkcKEUVtYWlsUmVmQnlBZGRyZXNzEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSDwoHYWRkcmVzcxgIIAEoCSIyCgxFbWFpbFJlZkJ5QXQSEQoJdGVuYW50X2lkGAsgASgMEg8KB2FkZHJlc3MYCCABKAki6AEKC0VtYWlsU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0Eg8KB2FkZHJlc3MYCCABKAgSFQoNZGF0ZV92ZXJpZmllZBgJIAEoCBIqCgp2b3VjaGVkX2J5GAogASgLMhYucm9zdGVyLklkZW50aXR5U2VsZWN0EhEKCXRlbmFudF9pZBgLIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIqICChFFbWFpbFBhdGNoUmVxdWVzdBIdCgNyZWYYASABKAsyEC5yb3N0ZXIuRW1haWxSZWYSDwoHYWRkcmVzcxgQIAEoCRIxCg1kYXRlX3ZlcmlmaWVkGBIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3ZlcmlmaWVkX251bGwYEyABKAgSJwoKdm91Y2hlZF9ieRgUIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIXCg92b3VjaGVkX2J5X251bGwYFSABKAgSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiTwoRRW1haWxBcHBseVJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLkVtYWlsUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giJAoSRW1haWxFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCJjChBFbWFpbExpc3RSZXF1ZXN0EiQKB2ZpbHRlcnMYASADKAsyEy5yb3N0ZXIuRW1haWxGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIkYKEUVtYWlsTGlzdFJlc3BvbnNlEhwKBWl0ZW1zGAEgAygLMg0ucm9zdGVyLkVtYWlsEhMKBG5leHQYAiABKAlCBaoBAggCIk8KC0VtYWlsRmlsdGVyEh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmIlcKEUVtYWlsV2F0Y2hSZXF1ZXN0EiQKB2ZpbHRlcnMYASADKAsyEy5yb3N0ZXIuRW1haWxGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiOwoSRW1haWxXYXRjaFJlc3BvbnNlEiUKBWl0ZW1zGAEgAygLMhYucm9zdGVyLkVtYWlsV2F0Y2hJdGVtIlEKDkVtYWlsV2F0Y2hJdGVtEgoKAmlkGAEgASgMEhwKBXZhbHVlGAIgASgLMg0ucm9zdGVyLkVtYWlsEhUKBmFjdGlvbhgDIAEoCUIFqgECCAIiYAoSRW1haWxWZXJpZnlSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIrCgdleHBpcmVzGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJYChNFbWFpbFZlcmlmeVJlc3BvbnNlEhQKBXRva2VuGAEgASgJQgWqAQIIAhIrCgdleHBpcmVzGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIrChNFbWFpbENvbmZpcm1SZXF1ZXN0EhQKBXRva2VuGAEgASgJQgWqAQIIAiI0ChRFbWFpbENvbmZpcm1SZXNwb25zZRIcCgVlbWFpbBgBIAEoCzINLnJvc3Rlci5FbWFpbCKDAQoSRW1haWxBdHRlc3RSZXF1ZXN0EiEKBmhvbGRlchgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSDwoHYWRkcmVzcxgIIAEoCRInCgp2b3VjaGVkX2J5GAogASgLMhMucm9zdGVyLklkZW50aXR5UmVmEhAKCHZlcmlmaWVkGAkgASgIMsYECgxFbWFpbFNlcnZpY2USLQoDQWRkEhcucm9zdGVyLkVtYWlsQWRkUmVxdWVzdBoNLnJvc3Rlci5FbWFpbBItCgNHZXQSFy5yb3N0ZXIuRW1haWxHZXRSZXF1ZXN0Gg0ucm9zdGVyLkVtYWlsEjEKBVBhdGNoEhkucm9zdGVyLkVtYWlsUGF0Y2hSZXF1ZXN0Gg0ucm9zdGVyLkVtYWlsEjEKBUFwcGx5Ehkucm9zdGVyLkVtYWlsQXBwbHlSZXF1ZXN0Gg0ucm9zdGVyLkVtYWlsEjUKBUVyYXNlEhAucm9zdGVyLkVtYWlsUmVmGhoucm9zdGVyLkVtYWlsRXJhc2VSZXNwb25zZRI7CgRMaXN0Ehgucm9zdGVyLkVtYWlsTGlzdFJlcXVlc3QaGS5yb3N0ZXIuRW1haWxMaXN0UmVzcG9uc2USQAoFV2F0Y2gSGS5yb3N0ZXIuRW1haWxXYXRjaFJlcXVlc3QaGi5yb3N0ZXIuRW1haWxXYXRjaFJlc3BvbnNlMAESQQoGVmVyaWZ5Ehoucm9zdGVyLkVtYWlsVmVyaWZ5UmVxdWVzdBobLnJvc3Rlci5FbWFpbFZlcmlmeVJlc3BvbnNlEkQKB0NvbmZpcm0SGy5yb3N0ZXIuRW1haWxDb25maXJtUmVxdWVzdBocLnJvc3Rlci5FbWFpbENvbmZpcm1SZXNwb25zZRIzCgZBdHRlc3QSGi5yb3N0ZXIuRW1haWxBdHRlc3RSZXF1ZXN0Gg0ucm9zdGVyLkVtYWlsQiFaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHJiCGVkaXRpb25zcOgH", [file_app_email, file_app_identity_svc_g, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.EmailAddRequest
@@ -629,6 +629,51 @@ export const EmailConfirmResponseSchema: GenMessage<EmailConfirmResponse> = /*@_
   messageDesc(file_app_email_svc_g, 18);
 
 /**
+ * @generated from message roster.EmailAttestRequest
+ */
+export type EmailAttestRequest = Message<"roster.EmailAttestRequest"> & {
+  /**
+   * Whose address it is.
+   *
+   * @generated from field: roster.HolderRef holder = 1;
+   */
+  holder?: HolderRef | undefined;
+
+  /**
+   * The address, as the provider spelled it. Normalised here the way every
+   * other write is, so that a lookup and a write agree.
+   *
+   * @generated from field: string address = 8;
+   */
+  address: string;
+
+  /**
+   * Which identity vouched, and it is **required**: an attestation with no
+   * voucher is an address somebody typed, and that has `Add` and a link.
+   *
+   * @generated from field: roster.IdentityRef vouched_by = 10;
+   */
+  vouchedBy?: IdentityRef | undefined;
+
+  /**
+   * Whether that provider said it had checked the address -- `email_verified`
+   * in a token. False writes the row and stamps nothing, which is the right
+   * answer for a directory that does not say: the address is kept, the evidence
+   * is kept, and nothing claims a check that did not happen.
+   *
+   * @generated from field: bool verified = 9;
+   */
+  verified: boolean;
+};
+
+/**
+ * Describes the message roster.EmailAttestRequest.
+ * Use `create(EmailAttestRequestSchema)` to create a new message.
+ */
+export const EmailAttestRequestSchema: GenMessage<EmailAttestRequest> = /*@__PURE__*/
+  messageDesc(file_app_email_svc_g, 19);
+
+/**
  * @generated from service roster.EmailService
  */
 export const EmailService: GenService<{
@@ -742,6 +787,44 @@ export const EmailService: GenService<{
     methodKind: "unary";
     input: typeof EmailConfirmRequestSchema;
     output: typeof EmailConfirmResponseSchema;
+  },
+  /**
+   * Attest writes an address a **provider** vouched for, and stamps it when
+   * that provider said it had checked.
+   *
+   * # Why a link cannot answer this
+   *
+   * `Verify` and `Confirm` are for an address nobody has vouched for: somebody
+   * typed it, and the way to find out whether they hold that mailbox is to send
+   * a nonce there and see it come back. An address that arrived inside a token
+   * a directory signed is not that. The check has been done, by whoever the
+   * person authenticates at, and sending a link asks them to prove again what
+   * an authority already asserted -- in a deployment with no mail, asks them to
+   * prove it by a route that does not exist.
+   *
+   * So this is the second road to `date_verified`, and the first was written
+   * knowing there would be one: `Email.vouched_by` is *which identity vouched
+   * for it, if one did*, and it says an address in a provider's claims is *only
+   * as good as that provider's own check*. Nothing had ever written it.
+   *
+   * # What it does not do
+   *
+   * Believe the caller about the checking. `verified` is what the **provider**
+   * said -- `email_verified` in an OIDC token -- and a caller that sets it
+   * falsely is a caller that could instead have linked an identity and been
+   * that person outright. What it may not do is escape the rules every other
+   * way in meets: `vouched_by` is required, so a row written here always says
+   * whose word it was, and a later decision is made on evidence rather than on
+   * a flag somebody set.
+   *
+   * Refused, like `Email.Add`, for a holder wider than the caller.
+   *
+   * @generated from rpc roster.EmailService.Attest
+   */
+  attest: {
+    methodKind: "unary";
+    input: typeof EmailAttestRequestSchema;
+    output: typeof EmailSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_app_email_svc_g, 0);

@@ -395,6 +395,35 @@ tenant so it cannot be claimed twice. The condition is that the **directory**
 says the address is verified -- one that lets somebody type an address into
 their own profile would otherwise hand out whichever account carries it.
 
+### The address a directory hands over
+
+It is written down, on that directory's word.
+
+The address arrives inside a token the directory signed, and it names the person
+-- `enrolling` derives an alias from it. It was then **thrown away**, and nothing
+could put it back: the account page's own route mints a link and mails it, so a
+deployment with no mail had no route at all. What that left was somebody roster
+could not say the address of, and a token missing the claim a product asked for.
+
+`Email.Attest` is the second road to `date_verified`, and the first was written
+knowing there would be one: `Email.vouched_by` is *which identity vouched for
+it, if one did*, and says an address in a provider's claims is *only as good as
+that provider's own check*. Nothing had ever written it.
+
+| the directory said | the row |
+| --- | --- |
+| `email_verified: true` | the address, the voucher, **and the stamp** — so the token carries `email` |
+| nothing, or false | the address and the voucher, **no stamp** — the address is kept, and nothing claims a check that did not happen |
+
+The second row is the common one and is why this is not a flag the app decides.
+Microsoft's endpoint often sends no `email_verified` at all, and the right
+answer to that is to keep the evidence rather than to guess.
+
+What a link is still for is the other thing entirely: an address **nobody** has
+vouched for, typed by a person, where the way to find out whether they hold that
+mailbox is to send a nonce there and see it come back. There is nothing to prove
+about an address an authority already asserted.
+
 ### Somebody with no account at the directory
 
 An intern, a contractor, a robot: no Entra account, and they still have to sign
@@ -433,7 +462,8 @@ and `enrolling` makes a **second** `Holder`. One person, two `sub`s, and the
 first one holds their history.
 
 So write the row when the person is made, even though no mail will be sent to
-it and nothing will verify it yet:
+it and nothing will verify it yet -- the other direction is `Email.Attest`
+above, which writes it for somebody who arrives through the directory first:
 
 ```sh
 roster email add '{"holder":{"slug":{"alias":"intern-kim","tenant":{"alias":"hday"}}},

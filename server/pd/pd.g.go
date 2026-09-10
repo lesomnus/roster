@@ -10050,6 +10050,11 @@ func (s interceptEmail) Confirm(ctx context.Context, req *rstr.EmailConfirmReque
 		rstr.EmailService_Confirm_FullMethodName, req, s.EmailServiceServer.Confirm)
 }
 
+func (s interceptEmail) Attest(ctx context.Context, req *rstr.EmailAttestRequest) (*rstr.Email, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.EmailServiceServer,
+		rstr.EmailService_Attest_FullMethodName, req, s.EmailServiceServer.Attest)
+}
+
 func (s Intercept) Credential() rstr.CredentialServiceServer {
 	return interceptCredential{s, s.Next().Credential()}
 }
@@ -11925,6 +11930,19 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 		}
 
 		res, err := s.Email().Confirm(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.EmailService_Attest_FullMethodName:
+		v := &rstr.EmailAttestRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Email().Attest(ctx, v)
 		if err != nil {
 			return nil, err
 		}

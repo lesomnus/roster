@@ -152,6 +152,82 @@ func (s coreEmail) Verify(ctx context.Context, req *app.EmailVerifyRequest) (*ap
 	return app.EmailVerifyResponse_builder{Token: token, Expires: timestamppb.New(expires)}.Build(), nil
 }
 
+// Attest writes an address a provider vouched for, and stamps it when that
+// provider said it had checked.
+//
+// `email_svc.ext.proto` argues for it. What is here is the two rules it meets
+// and one it is held to:
+//
+//   - **`mayWriteAWayIn`**, exactly as `Add` is. An address is a way into an
+//     account and this writes one; that it arrived in somebody's token changes
+//     nothing about whose row it lands on.
+//   - **A voucher is required.** An attestation with no identity behind it is
+//     an address somebody typed, and that has `Add` and a link.
+//   - **The stamp goes through `Next().Patch`**, which is `Confirm`'s road and
+//     for `Confirm`'s reason: `date_verified` is refused to a request, so the
+//     one way to it is a server writing it below the gate.
+//
+// Idempotent, because a person signs in more than once: an address already on
+// that row is stamped rather than refused, so the second sign-in after a
+// directory started saying `email_verified` writes what the first could not.
+func (s coreEmail) Attest(ctx context.Context, req *app.EmailAttestRequest) (*app.Email, error) {
+	if err := normalised("address", req.GetAddress(), front.Address); err != nil {
+		return nil, err
+	}
+	if req.GetVouchedBy() == nil {
+		return nil, status.Error(codes.InvalidArgument, "vouched_by: an attestation says whose word it was")
+	}
+	if err := s.mayWriteAWayIn(ctx, "holder", req.GetHolder()); err != nil {
+		return nil, err
+	}
+
+	v, err := s.EmailServiceServer.Add(ctx, app.EmailAddRequest_builder{
+		Holder:    req.GetHolder(),
+		Address:   req.GetAddress(),
+		VouchedBy: req.GetVouchedBy(),
+	}.Build())
+	switch {
+	case err == nil:
+	case status.Code(err) == codes.AlreadyExists:
+		// Theirs already, or somebody else's -- and the read below is narrowed
+		// by the wall, so an address held in another tenant is not found here
+		// and this answers what a stranger's does.
+		v, err = s.EmailServiceServer.Get(ctx, app.EmailGetRequest_builder{
+			Ref: app.EmailRef_builder{
+				Address: app.EmailRefByAddress_builder{
+					Holder:  req.GetHolder(),
+					Address: z.Ptr(front.Address(req.GetAddress())),
+				}.Build(),
+			}.Build(),
+			Select: app.EmailSelect_builder{
+				DateUpdated:  z.Ptr(true),
+				DateVerified: z.Ptr(true),
+			}.Build(),
+		}.Build())
+		if err != nil {
+			// Looked up on **this holder's** row, so a NotFound here is the
+			// address being somebody else's -- which is what `AlreadyExists`
+			// meant and is a refusal rather than a thing to stamp. An address
+			// is one person's within a tenant, and that is the rule F7 closed.
+			return nil, err
+		}
+
+	default:
+		return nil, err
+	}
+
+	if !req.GetVerified() || v.GetDateVerified() != nil {
+		// Nothing the provider said to write down, or it is already written.
+		return v, nil
+	}
+
+	return s.Next().Email().Patch(ctx, app.EmailPatchRequest_builder{
+		Ref:          app.EmailRef_builder{Id: v.GetId()}.Build(),
+		DateVerified: timestamppb.Now(),
+		DateUpdated:  v.GetDateUpdated(),
+	}.Build())
+}
+
 // Confirm spends a verification link and stamps its address.
 //
 // Every refusal is one `NotFound`, for `Vouch.Redeem`'s reason: a token never

@@ -424,3 +424,116 @@ func TestADottedAddressSignsIn(t *testing.T) {
 	x.NotEqual("seunghyun-hwang", other)
 	x.Contains(other, "seunghyun-hwang-")
 }
+
+// TestTheAddressADirectoryHandedOverIsKept.
+//
+// It was thrown away. The address arrives inside a token the directory signed
+// and names the person -- `Enrolling` derives an alias from it -- and then no
+// row held it, so the account had no address roster could say and every token
+// afterwards was missing the claim a product asked for. Nothing else could put
+// it back: the account page's route mints a link and mails it, and this
+// deployment has no mail.
+func TestTheAddressADirectoryHandedOverIsKept(t *testing.T) {
+	address := func(t *testing.T, d *deployment, who pdid.Id) *rstr.Email {
+		t.Helper()
+		vs, err := d.s.Ungated.Email().List(t.Context(), rstr.EmailListRequest_builder{
+			Filters: []*rstr.EmailFilter{rstr.EmailFilter_builder{
+				Holder: rstr.HolderRef_builder{Id: who.Bytes()}.Build(),
+			}.Build()},
+		}.Build())
+		require.NoError(t, err)
+		if len(vs.GetItems()) == 0 {
+			return nil
+		}
+
+		// Listed narrow and read wide: a list answers what a list answers, and
+		// what this is about is the stamp and the voucher.
+		v, err := d.s.Ungated.Email().Get(t.Context(), rstr.EmailGetRequest_builder{
+			Ref: rstr.EmailRef_builder{Id: vs.GetItems()[0].GetId()}.Build(),
+			Select: rstr.EmailSelect_builder{
+				All:       proto.Bool(true),
+				VouchedBy: rstr.IdentitySelect_builder{All: proto.Bool(true)}.Build(),
+			}.Build(),
+		}.Build())
+		require.NoError(t, err)
+
+		return v
+	}
+
+	t.Run("verified, so it is stamped and the token carries it", func(t *testing.T) {
+		x := require.New(t)
+		p := idptest.New(t, "login-app")
+		d := serveAs(t, login.Skip, func(c *login.Config) { c.Enrol = arrives.Enrolling() })
+		d.connect(t, p, "entra")
+
+		p.Subject = "dana-at-entra"
+		p.Claims = map[string]any{"email": "Dana@Contoso.Example", "email_verified": true, "name": "Dana"}
+		d.hydra.raise("c1", "contoso-web")
+
+		// **One browser for the whole walk.** A second one has no session, so
+		// the consent hop reads nobody and fills no claims -- which is a real
+		// answer (`grant` handles it) and makes an assertion about claims pass
+		// for the wrong reason.
+		b := d.browser(t)
+		res := d.through(t, b, "c1", "entra")
+		x.Equal(http.StatusSeeOther, res.StatusCode)
+		id, _ := d.hydra.told()
+		who := pdid.MustParse(id)
+
+		v := address(t, d, who)
+		x.NotNil(v, "the address the directory handed over was thrown away")
+
+		// Normalised on the way in, the way every other write is.
+		x.Equal("dana@contoso.example", v.GetAddress())
+
+		// Stamped, because the directory said it had checked.
+		x.NotNil(v.GetDateVerified())
+
+		// And **whose word it was**, which is the difference between this and
+		// an address somebody typed.
+		x.Equal("entra", v.GetVouchedBy().GetProvider())
+
+		// The consequence: a product asking for the `email` scope gets one.
+		res, err := b.Get(d.app.URL + "/consent?consent_challenge=c1")
+		x.NoError(err)
+		defer res.Body.Close()
+		_, claims := d.hydra.told()
+		x.Equal("dana@contoso.example", claims["email"])
+		x.Equal(true, claims["email_verified"])
+	})
+
+	// The half that matters for a directory that does not send the claim --
+	// which is common, and is why this is not a flag this app decides.
+	t.Run("unverified, so it is kept and nothing is claimed", func(t *testing.T) {
+		x := require.New(t)
+		p := idptest.New(t, "login-app")
+		d := serveAs(t, login.Skip, func(c *login.Config) { c.Enrol = arrives.Enrolling() })
+		d.connect(t, p, "entra")
+
+		p.Subject = "eve-at-entra"
+		p.Claims = map[string]any{"email": "eve@contoso.example", "name": "Eve"}
+		d.hydra.raise("c1", "contoso-web")
+
+		b := d.browser(t)
+		res := d.through(t, b, "c1", "entra")
+		x.Equal(http.StatusSeeOther, res.StatusCode)
+		id, _ := d.hydra.told()
+
+		v := address(t, d, pdid.MustParse(id))
+		x.NotNil(v, "the address was dropped for not being verified")
+		x.Equal("eve@contoso.example", v.GetAddress())
+
+		// Kept, with the evidence, and **not** stamped: a later decision is
+		// made on what the provider said rather than on a flag somebody set.
+		x.Nil(v.GetDateVerified())
+		x.Equal("entra", v.GetVouchedBy().GetProvider())
+
+		// And the token says nothing, which is `claimsOf`'s rule: the verified
+		// address or no claim.
+		res, err := b.Get(d.app.URL + "/consent?consent_challenge=c1")
+		x.NoError(err)
+		defer res.Body.Close()
+		_, claims := d.hydra.told()
+		x.NotContains(claims, "email")
+	})
+}
