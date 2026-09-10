@@ -97,13 +97,15 @@ port. It is not in `test.sh` because it needs a browser and a minute; it found
 three defects on its first run that every other gate was green on, so it is a
 gate. `./scripts/e2e.sh --hold` leaves the deployment up to look at.
 
-**Touching `login/` means running `hydra.sh`.** It stands `compose.yaml` up from
-**nothing** -- Hydra, its client, the Login App -- and walks an
+**Touching `login/` means running `hydra.sh`.** It stands `compose.yaml` up
+from **nothing** -- Hydra, its client, the Login App -- and walks an
 authorization-code flow twice, once per consent mode: to an `id_token` whose
-`sub` is the `Holder.id` roster holds, then a second flow Hydra skips the form
-for, then `Holder.Invalidate` over roster's HTTP port, then the form asked for
-again. `login/`'s own tests use a fake Hydra, deliberately, and every defect
-this has found was one that fake was green on. `--hold` leaves it up.
+`sub` is the `Holder.id` roster holds, then a second flow Hydra skips the
+form for, then `Holder.Invalidate` over roster's HTTP port, then the form
+asked for again -- and then the person signing **out** at the issuer, which
+is a hop the fake has no rules about and where the last defect was.
+`login/`'s own tests use a fake Hydra, deliberately, and every defect this
+has found was one that fake was green on. `--hold` leaves it up.
 
 ## Do not edit — regenerate
 

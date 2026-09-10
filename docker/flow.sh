@@ -126,85 +126,95 @@ begin
 [ "${began}" = "200" ] || die "the sign-in page answered ${began}"
 step "the product sends a browser to hydra" "a form, ${began}"
 
-# The cookie by hand for the rest, because a jar will not send one to a host
-# `--resolve` invented. Everything else about the walk is the browser's.
-head=$(c -o /dev/null -D - -X POST "http://login.test:8091/session?login_challenge=${challenge}" \
-	-H 'content-type: application/json' \
-	-d "$(printf '{"alias":"%s","password":"%s"}' "${SEED_USER}" "${SEED_PASSWORD}")" | tr -d '\r')
-cookie=$(printf '%s' "${head}" | awk '/^[Ss]et-[Cc]ookie:/{print $2}' | sed 's/;$//')
-[ -n "${cookie}" ] || die "the password was not accepted"
-
-if [ "${FACTOR:-}" = "totp" ]; then
-	# 200 and not 204: a third answer, and the whole point of it is that the
-	# flow is **not** finished. What the page draws the second form from is in
-	# the body; what this checks is that Hydra is told nobody yet.
-	got=$(printf '%s' "${head}" | code)
-	[ "${got}" = "200" ] || die "a password alone finished a sign-in with a factor on it (${got})"
-	step "${SEED_USER} types the password" "${got}, one more to prove"
-
-	got=$(c -o /dev/null -w '%{http_code}' -X POST "http://login.test:8091/accept?login_challenge=${challenge}" \
-		-H "Cookie: ${cookie}")
-	[ "${got}" = "401" ] || die "a half-signed-in browser was accepted (${got})"
-	step "and hydra is told nobody yet" "${got}"
-
-	head=$(c -o /dev/null -D - -X POST "http://login.test:8091/session/continue?login_challenge=${challenge}" \
-		-H "Cookie: ${cookie}" -H 'content-type: application/json' \
-		-d "$(printf '{"kind":"totp","secret":"%s"}' "$(oathtool --totp -b "${seed}")")" | tr -d '\r')
-	got=$(printf '%s' "${head}" | code)
-	[ "${got}" = "204" ] || die "the code from her authenticator was refused (${got})"
-
-	# A finished sign-in is a new session: the half one carried a continuation
-	# and an empty grant, and this one carries the delegation.
+# sign_in is the whole walk from the form to a token, and it is a function
+# because it is run twice: the sign-out at the bottom **consumes** the session
+# everything above depends on, so what comes after it needs a new one.
+#
+# It sets `cookie`, `id` and `sub`, which is what a shell function does instead
+# of answering.
+sign_in() {
+	# The cookie by hand for the rest, because a jar will not send one to a host
+	# `--resolve` invented. Everything else about the walk is the browser's.
+	head=$(c -o /dev/null -D - -X POST "http://login.test:8091/session?login_challenge=${challenge}" \
+		-H 'content-type: application/json' \
+		-d "$(printf '{"alias":"%s","password":"%s"}' "${SEED_USER}" "${SEED_PASSWORD}")" | tr -d '\r')
 	cookie=$(printf '%s' "${head}" | awk '/^[Ss]et-[Cc]ookie:/{print $2}' | sed 's/;$//')
-	[ -n "${cookie}" ] || die "finishing the second form set no session"
-	step "and the code from her authenticator" "${got}, ${cookie%%=*}"
-else
-	step "${SEED_USER} types the password" "204, ${cookie%%=*}"
-fi
+	[ -n "${cookie}" ] || die "the password was not accepted"
 
-to=$(c -X POST "http://login.test:8091/accept?login_challenge=${challenge}" -H "Cookie: ${cookie}" \
-	| sed 's/.*"redirect_to":"//; s/".*//; s|\\u0026|\&|g' | fix)
-case "${to}" in http*) ;; *) die "nothing was accepted: ${to}";; esac
-step "hydra is told the subject" "$(printf '%s' "${to}" | cut -c1-40)…"
+	if [ "${FACTOR:-}" = "totp" ]; then
+		# 200 and not 204: a third answer, and the whole point of it is that the
+		# flow is **not** finished. What the page draws the second form from is in
+		# the body; what this checks is that Hydra is told nobody yet.
+		got=$(printf '%s' "${head}" | code)
+		[ "${got}" = "200" ] || die "a password alone finished a sign-in with a factor on it (${got})"
+		step "${SEED_USER} types the password" "${got}, one more to prove"
 
-l=$(c -o /dev/null -D - "${to}" | loc | fix)
-step "hydra -> consent" "$(printf '%s' "${l}" | cut -c1-40)…"
+		got=$(c -o /dev/null -w '%{http_code}' -X POST "http://login.test:8091/accept?login_challenge=${challenge}" \
+			-H "Cookie: ${cookie}")
+		[ "${got}" = "401" ] || die "a half-signed-in browser was accepted (${got})"
+		step "and hydra is told nobody yet" "${got}"
 
-# The consent hop, and the two shapes it has. `skip` is a redirect and nothing
-# drawn; `ask` is a page that grants nothing until it is answered -- which is
-# the half a unit test cannot check against a real Hydra's challenge.
-if [ "${CONSENT}" = "ask" ]; then
-	consent=$(printf '%s' "${l}" | sed 's/.*consent_challenge=//')
+		head=$(c -o /dev/null -D - -X POST "http://login.test:8091/session/continue?login_challenge=${challenge}" \
+			-H "Cookie: ${cookie}" -H 'content-type: application/json' \
+			-d "$(printf '{"kind":"totp","secret":"%s"}' "$(oathtool --totp -b "${seed}")")" | tr -d '\r')
+		got=$(printf '%s' "${head}" | code)
+		[ "${got}" = "204" ] || die "the code from her authenticator was refused (${got})"
 
-	# 200 and not a redirect: a screen was drawn. **What** it says is `/flow`,
-	# because the page is one document for both screens and asks the app which
-	# it is -- so grepping the HTML would be grepping a bundle.
-	got=$(c -o /dev/null -w '%{http_code}' "${l}" -H "Cookie: ${cookie}")
-	[ "${got}" = "200" ] || die "consent=ask answered ${got} where a screen was asked for"
-	asking=$(c "http://login.test:8091/flow?consent_challenge=${consent}" -H "Cookie: ${cookie}")
-	printf '%s' "${asking}" | grep -q "${OAUTH_CLIENT}" || die "the screen has nothing to say which app is asking: ${asking}"
-	step "consent, drawn and not yet granted" "a screen"
+		# A finished sign-in is a new session: the half one carried a continuation
+		# and an empty grant, and this one carries the delegation.
+		cookie=$(printf '%s' "${head}" | awk '/^[Ss]et-[Cc]ookie:/{print $2}' | sed 's/;$//')
+		[ -n "${cookie}" ] || die "finishing the second form set no session"
+		step "and the code from her authenticator" "${got}, ${cookie%%=*}"
+	else
+		step "${SEED_USER} types the password" "204, ${cookie%%=*}"
+	fi
 
-	l=$(c -o /dev/null -D - -X POST "http://login.test:8091/consent" -H "Cookie: ${cookie}" \
-		-d "consent_challenge=${consent}" -d "allow=1" | loc | fix)
-	step "somebody says allow" "$(printf '%s' "${l}" | cut -c1-40)…"
-else
-	l=$(c -o /dev/null -D - "${l}" -H "Cookie: ${cookie}" | loc | fix)
-	step "consent -> hydra" "$(printf '%s' "${l}" | cut -c1-40)…"
-fi
+	to=$(c -X POST "http://login.test:8091/accept?login_challenge=${challenge}" -H "Cookie: ${cookie}" \
+		| sed 's/.*"redirect_to":"//; s/".*//; s|\\u0026|\&|g' | fix)
+	case "${to}" in http*) ;; *) die "nothing was accepted: ${to}";; esac
+	step "hydra is told the subject" "$(printf '%s' "${to}" | cut -c1-40)…"
 
-l=$(c -o /dev/null -D - "${l}" | loc)
-step "the code, at the product's callback" "$(printf '%s' "${l}" | cut -c1-40)…"
+	l=$(c -o /dev/null -D - "${to}" | loc | fix)
+	step "hydra -> consent" "$(printf '%s' "${l}" | cut -c1-40)…"
 
-grant=$(printf '%s' "${l}" | sed 's/.*[?&]code=//; s/&.*//')
-[ -n "${grant}" ] || die "no authorization code came back: ${l}"
+	# The consent hop, and the two shapes it has. `skip` is a redirect and nothing
+	# drawn; `ask` is a page that grants nothing until it is answered -- which is
+	# the half a unit test cannot check against a real Hydra's challenge.
+	if [ "${CONSENT}" = "ask" ]; then
+		consent=$(printf '%s' "${l}" | sed 's/.*consent_challenge=//')
 
-token=$(c -X POST http://hydra.test:4444/oauth2/token \
-	-d grant_type=authorization_code -d "code=${grant}" \
-	-d "redirect_uri=${CALLBACK}" -d "client_id=${OAUTH_CLIENT}" -d "client_secret=${CLIENT_SECRET}")
-id=$(printf '%s' "${token}" | sed 's/.*"id_token":"//; s/".*//')
-[ -n "${id}" ] || die "no id_token: ${token}"
+		# 200 and not a redirect: a screen was drawn. **What** it says is `/flow`,
+		# because the page is one document for both screens and asks the app which
+		# it is -- so grepping the HTML would be grepping a bundle.
+		got=$(c -o /dev/null -w '%{http_code}' "${l}" -H "Cookie: ${cookie}")
+		[ "${got}" = "200" ] || die "consent=ask answered ${got} where a screen was asked for"
+		asking=$(c "http://login.test:8091/flow?consent_challenge=${consent}" -H "Cookie: ${cookie}")
+		printf '%s' "${asking}" | grep -q "${OAUTH_CLIENT}" || die "the screen has nothing to say which app is asking: ${asking}"
+		step "consent, drawn and not yet granted" "a screen"
 
+		l=$(c -o /dev/null -D - -X POST "http://login.test:8091/consent" -H "Cookie: ${cookie}" \
+			-d "consent_challenge=${consent}" -d "allow=1" | loc | fix)
+		step "somebody says allow" "$(printf '%s' "${l}" | cut -c1-40)…"
+	else
+		l=$(c -o /dev/null -D - "${l}" -H "Cookie: ${cookie}" | loc | fix)
+		step "consent -> hydra" "$(printf '%s' "${l}" | cut -c1-40)…"
+	fi
+
+	l=$(c -o /dev/null -D - "${l}" | loc)
+	step "the code, at the product's callback" "$(printf '%s' "${l}" | cut -c1-40)…"
+
+	grant=$(printf '%s' "${l}" | sed 's/.*[?&]code=//; s/&.*//')
+	[ -n "${grant}" ] || die "no authorization code came back: ${l}"
+
+	token=$(c -X POST http://hydra.test:4444/oauth2/token \
+		-d grant_type=authorization_code -d "code=${grant}" \
+		-d "redirect_uri=${CALLBACK}" -d "client_id=${OAUTH_CLIENT}" -d "client_secret=${CLIENT_SECRET}")
+	id=$(printf '%s' "${token}" | sed 's/.*"id_token":"//; s/".*//')
+	[ -n "${id}" ] || die "no id_token: ${token}"
+
+}
+
+sign_in
 # The payload, base64url with the padding put back.
 claims=$(printf '%s' "${id}" | cut -d. -f2 | tr '_-' '/+' | awk '{ n = length($0) % 4; if (n) $0 = $0 substr("===", 1, 4 - n); print }' | base64 -d)
 sub=$(printf '%s' "${claims}" | sed 's/.*"sub":"//; s/".*//')
@@ -251,5 +261,85 @@ until begin; [ "${began}" = "200" ]; do
 	sleep 1
 done
 step "and hydra asks for the form again" "${began}"
+
+# The other sign-out: the **person's**, through the issuer's own endpoint.
+#
+# This is where the gap was. A product ends its own session and stops, the next
+# page starts a flow, Hydra still remembers the browser and answers it without a
+# form, and somebody who clicked *sign out* is looking at their name again --
+# which is what two HAR files from a real deployment showed. The Login App
+# serves `/logout` for it now, and this is the walk that would have caught the
+# thing that got past every other gate: **the fake Hydra in `login/`'s own tests
+# does not refuse a `post_logout_redirect_uri` that comes with no
+# `id_token_hint`, and the real one does.**
+#
+# Not on the second-factor walk, and the reason is roster's replay rule working:
+# a TOTP step that has been spent does not work twice, so a second sign-in
+# inside the same thirty seconds is refused with a 401. Waiting out the window
+# would put half a minute into every run to assert a third time what the two
+# walks above already do -- and signing out has nothing to do with how somebody
+# signed in.
+if [ "${FACTOR:-}" = "totp" ]; then
+	echo "flow: ok"
+	exit 0
+fi
+
+# A session to sign out **of**: the half above ended the one the walk started
+# with, and Hydra forgetting a browser is the thing this is about.
+#
+# `remember` covers the **consent** as well as the login, so a second sign-in
+# in one run is one Hydra grants without drawing anything -- and `sign_in`
+# asserts a screen when `CONSENT=ask`. The same reset the top of this file
+# makes, for the same reason and one walk later.
+if [ "${CONSENT}" = "ask" ] && [ -n "${EXPECT_SUB:-}" ]; then
+	curl -sS -o /dev/null -X DELETE \
+		"http://hydra:4445/admin/oauth2/auth/sessions/consent?subject=${EXPECT_SUB}&all=true" || true
+fi
+
+begin
+[ "${began}" = "200" ] || die "the form was not asked for before the sign-out walk (${began})"
+sign_in
+
+step "the person signs out at the issuer" "…"
+
+# Hydra's rule, tried the wrong way round first on purpose: a redirect back
+# without a hint is refused, and it says so.
+end_session="http://hydra.test:4444/oauth2/sessions/logout"
+back_to=$(printf '%s' "${CALLBACK}" | sed 's|:|%3A|g; s|/|%2F|g')
+
+no_hint=$(c -o /dev/null -D - "${end_session}?client_id=${OAUTH_CLIENT}&post_logout_redirect_uri=${back_to}" | loc)
+case "${no_hint}" in
+*error*id_token_hint*) step "  a redirect with no hint" "refused, as it should be" ;;
+*) die "hydra allowed a post_logout_redirect_uri with no id_token_hint: ${no_hint}" ;;
+esac
+
+# And with one. Hydra sends the browser to the Login App's `/logout`, which
+# accepts without drawing anything, and then back to where the request said.
+to=$(c -o /dev/null -D - "${end_session}?client_id=${OAUTH_CLIENT}&id_token_hint=${id}&post_logout_redirect_uri=${back_to}" | loc)
+case "${to}" in
+*"/logout?logout_challenge="*) ;;
+*) die "hydra did not ask the login app about the logout: ${to}" ;;
+esac
+# Two hops back, not one: the app answers with Hydra's own URL carrying a
+# `logout_verifier`, and **that** is what ends the session and redirects. The
+# same shape a login and a consent have -- the app says yes to the issuer and
+# the issuer decides what the browser does next.
+back=$(c -o /dev/null -D - "$(printf '%s' "${to}" | fix)" | loc | fix)
+case "${back}" in
+*logout_verifier=*) step "  the login app said yes" "hydra verifies it" ;;
+*) die "the login app did not send the browser back to hydra: ${back}" ;;
+esac
+
+back=$(c -o /dev/null -D - "${back}" | loc)
+case "${back}" in
+"${CALLBACK}"*) step "  and hydra sends it on" "back to the product" ;;
+*) die "hydra did not send the browser back to the product: ${back}" ;;
+esac
+
+# The whole of what it was for: the next flow asks for the form again, because
+# the issuer has forgotten this browser.
+begin
+[ "${began}" = "200" ] || die "hydra still remembers her after a logout (${began})"
+step "  and the form is asked for again" "${began}"
 
 echo "flow: ok"
