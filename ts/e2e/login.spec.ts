@@ -54,7 +54,7 @@ test('a password alone finishes it for somebody with no second factor', async ({
 	// The consent screen, which is where `POST /accept` sent her -- so getting
 	// here at all is the last hop having worked.
 	await expect(page.getByRole('button', { name: 'allow' })).toBeVisible()
-	await expect(page.getByText('openid')).toBeVisible()
+	await expect(page.getByText('who you are')).toBeVisible()
 })
 
 test('and the second form is asked for somebody who has one', async ({ page }) => {
@@ -113,11 +113,20 @@ test('the consent screen is a screen, and a no is an answer', async ({ page }) =
 	await begin(page)
 	await first(page, 'erin')
 
-	// Which app is asking, and for what. Neither is the page's to invent.
+	// Which app is asking, and where. Neither is the page's to invent -- the
+	// client is Hydra's word about the challenge and the brand is roster's
+	// about the operator.
 	await expect(page.getByRole('heading', { name: 'the demo product' })).toBeVisible()
-	for (const scope of ['openid', 'profile', 'email']) {
-		await expect(page.getByText(scope, { exact: true })).toBeVisible()
+	await expect(page.getByText('Contoso')).toBeVisible()
+
+	// And what it is asking for, **in words**. The wire names are OIDC's and
+	// are for a client to send: a screen that lists `profile` has asked
+	// somebody to agree to a word. So this asserts the sentence rather than the
+	// scope, which is the page having done the one thing it is for.
+	for (const said of ['who you are', 'your name', 'your email address']) {
+		await expect(page.getByText(said)).toBeVisible()
 	}
+	await expect(page.getByText('profile', { exact: true })).toHaveCount(0)
 
 	// No checkboxes. A screen that lets somebody grant less than a client asked
 	// for reads like a choice and is not one.

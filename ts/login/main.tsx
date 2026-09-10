@@ -69,6 +69,37 @@ function Broken(): React.ReactNode {
 	)
 }
 
+/**
+ * says is what a scope means, in words.
+ *
+ * The names are OIDC's and they are for a client to send, not for a person to
+ * read: nobody outside this trade knows what `profile` covers, and a screen
+ * that lists it has asked somebody to agree to a word. So the known ones are
+ * spelled out and anything else is shown as it came -- an operator's own scope
+ * is theirs to name, and inventing a sentence for one would be worse than
+ * printing it.
+ *
+ * This is the **page** deciding, from a fact the app sent. The app sends the
+ * scopes the client asked for and never a line of text to render, which is the
+ * refusal D22 asks for; what to call them where somebody is reading is not the
+ * server's to say.
+ */
+function says(scope: string): { what: string; how?: string } {
+	switch (scope) {
+		case 'openid':
+			return { what: 'who you are', how: 'the identifier this account is known by' }
+		case 'profile':
+			return { what: 'your name', how: 'what you are called here, and the teams you are in' }
+		case 'email':
+			return { what: 'your email address', how: 'the one that has been confirmed, if there is one' }
+		case 'offline':
+		case 'offline_access':
+			return { what: 'to stay signed in', how: 'so it does not ask again every time you open it' }
+		default:
+			return { what: scope }
+	}
+}
+
 /** Consent is the screen a deployment asks for, when it asks for one. */
 function Consent(props: { of: Flow }): React.ReactNode {
 	const [sent, setSent] = useState(false)
@@ -86,14 +117,35 @@ function Consent(props: { of: Flow }): React.ReactNode {
 	}
 
 	return (
-		<main className="sign-in">
-			<h1>{props.of.client}</h1>
-			<p>wants to know who you are and to see:</p>
-			<ul>
-				{props.of.scope.map((s) => (
-					<li key={s}>{s}</li>
-				))}
-				{props.of.scope.length === 0 && <li className="note">nothing beyond who you are</li>}
+		<main className="sign-in consent">
+			{/*
+				Whose deployment this is, above whose app is asking. A consent
+				screen is the one place somebody is being asked to agree to
+				something, and the first question they have is where they are.
+			*/}
+			<p className="at">{props.of.brand}</p>
+
+			<h1>
+				<strong>{props.of.client}</strong> wants to sign you in
+			</h1>
+
+			<ul className="scopes">
+				{props.of.scope.map((s) => {
+					const v = says(s)
+
+					return (
+						<li key={s}>
+							<span className="what">{v.what}</span>
+							{v.how !== undefined && <span className="how">{v.how}</span>}
+						</li>
+					)
+				})}
+				{props.of.scope.length === 0 && (
+					<li>
+						<span className="what">who you are</span>
+						<span className="how">nothing beyond the identifier this account is known by</span>
+					</li>
+				)}
 			</ul>
 
 			{/*
@@ -102,15 +154,24 @@ function Consent(props: { of: Flow }): React.ReactNode {
 				an app that asked for a scope generally stops working without
 				it, so the person is picking between "allow" and "allow, then
 				find out something is broken".
+
+				`allow` is the act and looks like one; `no` is a real button and
+				not a link, because refusing is an answer this screen is asking
+				for rather than a way out of it.
 			*/}
 			<div className="acts">
-				<button type="button" disabled={sent} onClick={() => answer(true)}>
+				<button type="button" className="go" disabled={sent} onClick={() => answer(true)}>
 					allow
 				</button>
-				<button type="button" className="link" disabled={sent} onClick={() => answer(false)}>
+				<button type="button" disabled={sent} onClick={() => answer(false)}>
 					no
 				</button>
 			</div>
+
+			<p className="note">
+				You are agreeing to <strong>{props.of.client}</strong> knowing this, not to it acting for
+				you elsewhere.
+			</p>
 		</main>
 	)
 }

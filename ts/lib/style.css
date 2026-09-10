@@ -602,6 +602,101 @@ p.bad {
 	font-size: 0.85rem;
 }
 
+/* The consent screen: the same card as a sign-in, asking a different question.
+ *
+ * It is the one place somebody is asked to agree to something, so it says three
+ * things in order -- where they are, who is asking, and what that means -- and
+ * the scopes are the middle of it rather than a list of the words a client sent.
+ */
+.consent .at {
+	color: var(--muted);
+	font-size: 0.85rem;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+}
+
+.consent h1 {
+	font-size: 1.15rem;
+	font-weight: 400;
+	line-height: 1.4;
+	margin: 0;
+	color: var(--muted);
+}
+
+.consent h1 strong {
+	display: block;
+	font-size: 1.35rem;
+	font-weight: 600;
+	color: var(--text);
+}
+
+/* One row per scope: what it is, and under it what that covers. No bullets --
+   a list of two-line rows is already a list, and the marker competes with the
+   thing that matters. */
+.consent ul.scopes {
+	list-style: none;
+	margin: var(--s-2) 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	background: var(--border);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	overflow: hidden;
+}
+
+.consent ul.scopes li {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding: var(--s-2) var(--s-3);
+	background: var(--surface-2);
+}
+
+.consent .what {
+	font-size: 0.95rem;
+}
+
+.consent .how {
+	color: var(--muted);
+	font-size: 0.82rem;
+	line-height: 1.4;
+}
+
+/* The answer, and both of them are answers. `allow` carries the accent the way
+   a form's submit does -- it is the act -- and `no` is a real button beside it,
+   because refusing is what this screen is asking for rather than a way out. */
+.consent .acts {
+	display: flex;
+	gap: var(--s-2);
+	margin: var(--s-2) 0 0;
+}
+
+.consent .acts button {
+	flex: 1;
+	padding: var(--s-2) var(--s-3);
+}
+
+.consent .acts button.go {
+	flex: 2;
+	background: var(--accent);
+	border-color: var(--accent);
+	color: var(--accent-text);
+	font-weight: 500;
+}
+
+.consent .acts button.go:hover:not([disabled]) {
+	filter: brightness(1.08);
+}
+
+.consent > p.note {
+	color: var(--muted);
+	font-size: 0.8rem;
+	line-height: 1.5;
+	margin-top: var(--s-1);
+}
+
 /* The sandbox coming up: the same card as a sign-in, with a bar in it. */
 .booting {
 	max-width: 24rem;
