@@ -354,9 +354,16 @@ func provision(ctx context.Context, s *cmd.Server, alias, out string, methods []
 	if err != nil {
 		return err
 	}
+	// **The same list the role got**, and that is the whole of the fix this
+	// line once needed: a delegation is the intersection of what the key allows
+	// and what the holder may do, so a key carrying the base list under a role
+	// carrying the wider one allows the base list. The role had
+	// `HolderService.Add` for `enrol: enrolling` and the key did not, so the
+	// first person Entra vouched for reached the end of a whole sign-in and was
+	// refused at the one write that makes them somebody.
 	if _, err := s.Ungated.ApiKey().Add(ctx, rstr.ApiKeyAddRequest_builder{
 		Holder: rstr.HolderRef_builder{Id: who}.Build(), Alias: provisioned,
-		Secret: sum, Methods: LoginMethods,
+		Secret: sum, Methods: methods,
 	}.Build()); err != nil {
 		return err
 	}
