@@ -391,7 +391,9 @@ func (a *App) Handler() http.Handler {
 	m.Handle("GET /provider", a.inFlow(http.HandlerFunc(a.provider)))
 	m.HandleFunc("GET /callback", a.callback)
 
-	// The third screen Hydra redirects to, and the one that is not a screen.
+	// The third screen Hydra redirects to, and the one that is a screen only
+	// half the time: drawn when nothing proved a relying party started the
+	// sign-out, and answered without drawing when something did.
 	m.HandleFunc("GET /logout", a.logout)
 	m.HandleFunc("POST /logout", a.leave)
 
