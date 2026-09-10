@@ -395,6 +395,57 @@ tenant so it cannot be claimed twice. The condition is that the **directory**
 says the address is verified -- one that lets somebody type an address into
 their own profile would otherwise hand out whichever account carries it.
 
+### Somebody with no account at the directory
+
+An intern, a contractor, a robot: no Entra account, and they still have to sign
+in. Nothing above applies to them, because `Enrol` decides where somebody who
+**arrived through a directory** lands and they did not arrive through one.
+
+They are three commands and no policy:
+
+```sh
+roster holder add @hday/intern-kim
+roster vouch reset @hday/intern-kim      # thirty-two bytes, printed once
+```
+
+and a role, the way [usage/permissions.md](usage/permissions.md) writes one.
+
+The form takes an alias where it would take an address, and the rest is the
+password path at the top of this document. No `Email` row is needed anywhere:
+`preferred_username` is the alias, and the `email` claim is simply absent --
+`claimsOf` writes a **verified** address or nothing, so a client that asked for
+the `email` scope gets a token without one rather than a token that lies.
+
+Two things to know before the first one of these exists.
+
+**`config.password` locks them out.** It is the switch two sections down, and
+the two features point opposite ways: an operator whose people *mostly* arrive
+through a directory turns the password off, and the people who cannot use the
+directory are exactly the ones that refuses. roster enforces it, so this is not
+a form that disappears -- it is `Vouch.Verify` saying no. A tenant with anybody
+in this section keeps the password on, which is the default.
+
+**Give them the address they will one day have.** This is the one that shows up
+late and reads as a bug. The day the intern gets an Entra account, `expected`
+and `enrolling` look for an `Email` row carrying the address the directory
+vouched for -- and if the operator never wrote one, there is nothing to match
+and `enrolling` makes a **second** `Holder`. One person, two `sub`s, and the
+first one holds their history.
+
+So write the row when the person is made, even though no mail will be sent to
+it and nothing will verify it yet:
+
+```sh
+roster email add '{"holder":{"slug":{"alias":"intern-kim","tenant":{"alias":"hday"}}},
+                   "address":"kim@hday.dev"}'
+```
+
+The first sign-in through the directory then finds that row, links the identity
+to it, and every sign-in after that is the ordinary `Identity` lookup. The other
+way round works too and is the person's own: signed in with their password, they
+attach the provider account from the account page (`Identity.Add` with their own
+reference), which is the same link written from the other end.
+
 ### A tenant with no passwords
 
 An operator whose people all arrive through a directory turns the password off,

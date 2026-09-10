@@ -1414,6 +1414,9 @@ login:
   # callback and the state says which operator it belongs to.
   base: https://login.contoso.example
   # Who a directory may sign in:
+  # (Somebody with no account at the directory at all -- an intern, a robot --
+  # is not this setting's business: they get a password, and `login.md` has the
+  # three commands and the one thing to do in advance.)
   #   invited    only somebody already linked (an `Identity` row you wrote)
   #   expected   somebody you entered, matched by the address on their row
   #   enrolling  that, and a stranger too
