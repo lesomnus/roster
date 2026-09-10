@@ -95,8 +95,17 @@ test('the operator\'s providers are drawn, and one leaves for it', async ({ page
 	await expect(entra).toHaveAttribute('href', /login_challenge=sandbox.*connection=entra/)
 
 	// And it goes somewhere. The directory's own screen is not the sandbox's to
-	// have; what this checks is that the button is a hop and not a dead link.
+	// have, so what stands in says which hop is missing -- and this asserts the
+	// **order**, which is the thing the page teaches wrong when the stand-in is
+	// a bare redirect: the directory comes before the consent screen, and
+	// nobody is named until it has answered.
 	await entra.click()
+	await expect(page.getByRole('heading', { name: 'off to entra' })).toBeVisible()
+	await expect(page.getByRole('button', { name: 'allow' })).toHaveCount(0)
+
+	// It comes back on its own after three seconds; the button is for not
+	// waiting, and it is what this clicks so the spec is not a sleep.
+	await page.getByRole('button', { name: 'back now' }).click()
 	await expect(page.getByRole('button', { name: 'allow' })).toBeVisible()
 })
 

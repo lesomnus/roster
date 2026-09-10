@@ -13,8 +13,11 @@ import type { Connect } from 'vite'
 // for a change to a label.
 //
 // So the middleware below is the app, made up: a password in a map, two people,
-// one of them with a second factor. It answers the same three status codes
-// `frontdoor` does, because that is the part a page can get wrong.
+// one of them with a second factor, two providers. It answers the same three
+// status codes `frontdoor` does, because that is the part a page can get wrong.
+//
+// The one hop it cannot have is the trip to a directory, which leaves this
+// origin -- see `away`, and the shape it exists to stop teaching.
 //
 // It is the **opposite** of `dev:sandbox`, which compiles the real server into
 // the page, and both are right for what they are: the console *is* calls, so a
@@ -37,12 +40,11 @@ const people = [
 /**
  * The operator's `Connection` rows, as the app would have read them.
  *
- * The round trip behind the button is a real one -- the browser leaves for a
+ * The round trip behind a button is a real one -- the browser leaves for a
  * directory and comes back to `/callback` -- so there is nothing here to
- * pretend with short of standing an OIDC provider up. What this fakes instead
- * is the **answer**: `/provider` signs the first person in and redirects, which
- * is what the whole trip amounts to from this page's side. What it cannot show
- * is the directory's own screen, and nothing here claims to.
+ * pretend with short of standing an OIDC provider up. What stands in is [away]:
+ * a page that says which hop is missing, and comes back. What it cannot show is
+ * the directory's own screen, and nothing here claims to.
  */
 const providers = [{ name: 'entra' }, { name: 'github' }]
 
@@ -71,6 +73,52 @@ function json(res: import('node:http').ServerResponse, code: number, v: unknown)
 	res.statusCode = code
 	res.setHeader('content-type', 'application/json')
 	res.end(JSON.stringify(v))
+}
+
+/**
+ * away is the trip to a directory, drawn rather than taken.
+ *
+ * Deliberately not a screen of this app's: no shared stylesheet, no component,
+ * nothing that could be mistaken for something a deployment serves. What it has
+ * to be is honest about which hop is missing -- and unattended, because
+ * somebody opening `dev:login` to look at a form should not have to read a
+ * button to get past the one screen that is not a form.
+ */
+function away(res: import('node:http').ServerResponse, connection: string): void {
+	res.statusCode = 200
+	res.setHeader('content-type', 'text/html; charset=utf-8')
+	res.end(`<!doctype html>
+<meta charset="utf-8">
+<title>${connection} \u2014 the sandbox</title>
+<style>
+  body { font: 15px/1.6 system-ui, sans-serif; margin: 0; display: grid; place-items: center;
+         min-height: 100vh; background: #f6f6f7; color: #222 }
+  main { max-width: 30rem; padding: 2rem; text-align: center }
+  code { background: #e9e9ec; padding: .1em .35em; border-radius: .2em }
+  p.note { color: #666 }
+  button { font: inherit; padding: .5em 1.2em; margin-top: 1rem; cursor: pointer }
+</style>
+<main>
+  <h1>off to <code>${connection}</code></h1>
+  <p>A real deployment leaves this origin here, for the operator\u2019s directory,
+     and comes back to <code>/callback</code> with a code. This is where you
+     would type your work account.</p>
+  <p class="note">There is no directory behind the sandbox, so it comes back on
+     its own \u2014 as whoever the fake server says signed in.</p>
+  <p><strong>back in <span id="n">3</span></strong></p>
+  <button type="button" id="now">back now</button>
+</main>
+<script>
+  const go = () => location.assign('/callback')
+  document.getElementById('now').addEventListener('click', go)
+  let n = 3
+  const t = setInterval(() => {
+    n -= 1
+    if (n <= 0) { clearInterval(t); go(); return }
+    document.getElementById('n').textContent = String(n)
+  }, 1000)
+</script>
+`)
 }
 
 const sandbox = (): Connect.NextHandleFunction => async (req, res, next) => {
@@ -105,9 +153,27 @@ const sandbox = (): Connect.NextHandleFunction => async (req, res, next) => {
 			})
 
 		case 'GET /provider': {
-			// Where a directory would have sent the browser back to, minus the
-			// directory. `erin` because a provider sign-in has no second form:
-			// whatever the directory asked for, it asked for.
+			// The hop the sandbox cannot have. A real one leaves this origin
+			// for the operator's directory, and there is none behind a made-up
+			// server -- so what stands in is a page that **says so** and comes
+			// back, rather than a redirect that lands on the next screen so
+			// fast the trip looks like it never happened.
+			//
+			// It was that redirect for a day, and it taught the wrong shape:
+			// the provider button appeared to lead straight to the consent
+			// screen, so the consent screen appeared to come *before* the
+			// directory. It comes after. Nobody is named until the directory
+			// has answered.
+			return away(res, url.searchParams.get('connection') ?? 'the directory')
+		}
+
+		case 'GET /callback': {
+			// Where the directory sends the browser back, which in a real
+			// deployment carries `code` and `state`. The fake carries neither
+			// and does what the real one ends with: this is somebody now.
+			//
+			// `erin` because a provider sign-in has no second form -- whatever
+			// the directory asked for, it asked for.
 			at.who = 'erin'
 			at.proved = ['password']
 			res.statusCode = 302
