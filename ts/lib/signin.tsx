@@ -315,8 +315,19 @@ export function SignIn(props: SignInProps): React.ReactNode {
 					<section className="providers">
 						{props.providers.map((p) => (
 							<a key={p.name} className="button" href={props.providerHref?.(p.name) ?? '#'}>
-								{mark(p.issuer)}
-								<span>sign in with {p.name}</span>
+								{/*
+									Three parts and not one sentence, so that
+									the three line up **down** the list: the
+									mark's slot is a fixed width whether or not
+									there is a mark in it, and "sign in with" is
+									the same string in every one, so the names
+									start at the same place however long the one
+									above is. Centred, they did not: a long name
+									pushed its own logo left.
+								*/}
+								<span className="mark">{mark(p.issuer)}</span>
+								<span className="with">sign in with</span>
+								<span className="who">{p.name}</span>
 							</a>
 						))}
 					</section>

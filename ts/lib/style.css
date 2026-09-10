@@ -659,19 +659,51 @@ p.bad {
 .providers button {
 	display: flex;
 	align-items: center;
-	justify-content: center;
 	gap: var(--s-2);
 	width: 100%;
-	text-align: center;
 }
 
-/* The vendor's own mark, at the height of the text beside it. `flex: none` so a
-   long name does not squeeze it, and it is `aria-hidden` in the markup because
+/* A provider reads down the list in three columns: the mark, "sign in with",
+   the name. They line up because the first two are the same width in every row
+   -- the slot is fixed whether or not a mark went in it, and the middle is the
+   same string every time -- so the names start where the name above starts.
+   Centred, they did not: a long name pushed its own logo left. */
+.providers a.button {
+	justify-content: start;
+	text-align: left;
+}
+
+.providers button {
+	justify-content: center;
+}
+
+/* The vendor's own mark, at the height of the text beside it, in a slot that
+   holds the column open when there is none. `aria-hidden` in the markup, since
    the button already says whose it is. */
-.providers a.button svg {
+.providers .mark {
 	flex: none;
+	display: grid;
+	place-items: center;
 	width: 1.05em;
 	height: 1.05em;
+}
+
+.providers .mark svg {
+	width: 100%;
+	height: 100%;
+}
+
+/* Never wrapped: it is the middle column, and a break in it moves the one after
+   it. The **name** may wrap, which is what a long one should do. */
+.providers .with {
+	flex: none;
+	white-space: nowrap;
+	color: var(--muted);
+}
+
+.providers .who {
+	min-width: 0;
+	overflow-wrap: anywhere;
 }
 
 /* The rule between the password form and the list, with a word in it.
