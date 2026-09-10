@@ -572,6 +572,35 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 		opts = append(opts, authsession.Insecure())
 	}
 
+	// The app's own memory of a browser, on **Hydra's clock**.
+	//
+	// This session used to live from the form to the consent screen and be
+	// closed at the redirect, on the rule that a credential should not outlive
+	// its use. The cost of that was invisible and large: the claims in a token
+	// are read as the person, with the delegation this session holds, so every
+	// flow after the first -- a second product, or the same one opened again --
+	// found no session and put nothing but `sub` in the token. With `remember`
+	// set, that is **most** flows, and a deployment's tokens carry no name and
+	// no address for eight hours at a time.
+	//
+	// So the session lasts exactly as long as Hydra will skip the form. Hydra
+	// remembering this browser and this app remembering it are one fact, and a
+	// second clock under it is what produced the hole. No idle window for the
+	// same reason: Hydra's `remember_for` is absolute, and an idle timeout here
+	// would end the app's half early and bring the empty tokens back for
+	// anybody who steps away.
+	//
+	// What the cookie is worth is the other half of why this is safe: the
+	// delegation it holds is narrowed to [login.Methods], which is `Me.Get`
+	// and nothing else, about the one person it names. Somebody who steals it
+	// reads that person's own profile; they cannot sign in as them, write
+	// anything, or read anybody else. And it is revoked where every other
+	// delegation is -- `Holder.Invalidate`, which this app already hears
+	// through `Sync.Watch`.
+	if lc.Remember > 0 {
+		opts = append(opts, authsession.WithLifetime(lc.Remember), authsession.WithIdle(0))
+	}
+
 	how, err := login.ParseConsent(lc.Consent)
 	if err != nil {
 		return fmt.Errorf("login.consent (--consent): %w", err)

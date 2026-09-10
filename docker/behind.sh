@@ -95,6 +95,29 @@ printf '%s' "${who}" | grep -q '"user"' || die "there is no identifier in the se
 printf '%s' "${who}" | grep -qE '"user":"[^"]+"' || die "the identifier in the session is empty: ${who}"
 step "and the session names somebody" "$(printf '%s' "${who}" | cut -c1-40)…"
 
+# The asymmetry a page in front of this has to cope with, and the one that got
+# reported as *signed in, but the session shows nothing*.
+#
+# A browser with no session is answered two different ways by the same proxy: a
+# **page** is a redirect, and since the issuer remembers the browser the whole
+# chain is silent and the page comes back looking as it did -- while a **fetch**
+# for the session is a bare 401. So a page that outlives its session, from the
+# cache or the back button, draws *signed in* over an empty answer, and the
+# only thing that looks broken is the part that is working.
+#
+# Written down here because the fix for it lives in whatever page is in front,
+# and a page cannot be written against a rule nobody stated.
+away=$(mktemp)
+got=$(curl -sS -c "${away}" -b "${away}" -o /dev/null -w '%{http_code}' "http://behind:4180/oauth2/userinfo")
+[ "${got}" = "401" ] || die "a fetch with no session answered ${got}, not 401"
+l=$(curl -sS -c "${away}" -b "${away}" -o /dev/null -D - "http://behind:4180/" | loc)
+case "${l}" in
+*/oauth2/*) ;;
+*) die "a page with no session was not sent to sign in: ${l}" ;;
+esac
+rm -f "${away}"
+step "a page and a fetch, with no session" "a redirect and a 401"
+
 # Signing out, which for this shape is two hops and no `id_token_hint`: the
 # proxy ends its own session and sends the browser on to the issuer, and
 # `oauth2-proxy` has no way to put the token on that link. So Hydra marks the

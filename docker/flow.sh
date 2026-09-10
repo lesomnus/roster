@@ -93,7 +93,11 @@ begin() {
 	challenge=$(printf '%s' "${l}" | sed 's/.*login_challenge=//')
 	[ -n "${challenge}" ] || die "hydra raised no login challenge"
 
-	began=$(c -o /dev/null -D - "$(printf '%s' "${l}" | fix)" | code)
+	# The answer once, read twice: a challenge is single-use, so asking again to
+	# find out where it went would be asking about one that has been spent.
+	head=$(c -o /dev/null -D - "$(printf '%s' "${l}" | fix)" | tr -d '\r')
+	began=$(printf '%s' "${head}" | code)
+	went=$(printf '%s' "${head}" | awk '/^[Ll]ocation:/{print $2}' | fix)
 }
 
 # An authenticator on her account, when this walk is the one about second
@@ -225,7 +229,8 @@ sign_in() {
 
 sign_in
 # The payload, base64url with the padding put back.
-claims=$(printf '%s' "${id}" | cut -d. -f2 | tr '_-' '/+' | awk '{ n = length($0) % 4; if (n) $0 = $0 substr("===", 1, 4 - n); print }' | base64 -d)
+payload() { cut -d. -f2 | tr '_-' '/+' | awk '{ n = length($0) % 4; if (n) $0 = $0 substr("===", 1, 4 - n); print }' | base64 -d; }
+claims=$(printf '%s' "${id}" | payload)
 sub=$(printf '%s' "${claims}" | sed 's/.*"sub":"//; s/".*//')
 step "the id_token's sub" "${sub}"
 
@@ -254,6 +259,36 @@ fi
 begin
 [ "${began}" = "303" ] || die "hydra asked for the form again for a browser it remembers (${began})"
 step "a second flow skips the form" "${began}, remembered"
+
+# And **what is in the token it hands back**, which nothing here looked at until
+# a deployment reported that a page could read nothing about the person it had
+# just signed in. The claims are read as the person, with the delegation the
+# app's own session holds -- and that session was closed at the end of every
+# flow, so this one, and every flow after the first, carried `sub` and nothing
+# else. With `remember` set, that is most of the tokens a deployment issues.
+#
+# The step above was here the whole time and passed: it asserted that the form
+# was skipped, which is a fact about Hydra, and stopped before the fact about
+# this app.
+l="${went}"
+for _ in 1 2 3 4 5; do
+	case "${l}" in "${CALLBACK}"*) break ;; esac
+	l=$(c -o /dev/null -D - "${l}" | loc | fix)
+done
+case "${l}" in
+"${CALLBACK}"*) ;;
+*) die "the remembered flow did not reach the callback: ${l}" ;;
+esac
+
+grant=$(printf '%s' "${l}" | sed 's/.*[?&]code=//; s/&.*//')
+[ -n "${grant}" ] || die "the remembered flow handed back no code: ${l}"
+again=$(c -X POST http://hydra.test:4444/oauth2/token \
+	-d grant_type=authorization_code -d "code=${grant}" \
+	-d "redirect_uri=${CALLBACK}" -d "client_id=${OAUTH_CLIENT}" -d "client_secret=${CLIENT_SECRET}" \
+	| sed 's/.*"id_token":"//; s/".*//' | payload)
+printf '%s' "${again}" | grep -q '"preferred_username":"'"${SEED_USER}"'"' \
+	|| die "a token from a remembered browser carries no claims: ${again}"
+step "  and it carries the claims too" "preferred_username"
 
 rpc HolderService/Invalidate \
 	"$(printf '{"ref":{"slug":{"alias":"%s","tenant":{"alias":"%s"}}}}' "${SEED_USER}" "${SEED_CUSTOMER}")" \

@@ -162,7 +162,7 @@ the page, one of the two is wrong and both are load-bearing.
 
 | the promise | pinned by |
 | --- | --- |
-| a browser Hydra sends here signs in and Hydra is told a `Holder.id`, and the token carries what the client's scope asked for and never roster's method list | `TestALoginAppTellsHydraWhoSignedIn` · `scripts/hydra.sh` |
+| a browser Hydra sends here signs in and Hydra is told a `Holder.id`, and the token carries what the client's scope asked for and never roster's method list — **on every flow, including the ones Hydra answers without a form**, which is most of them wherever `remember` is set | `TestALoginAppTellsHydraWhoSignedIn` · `TestASecondFlowCarriesTheClaimsToo` · `scripts/hydra.sh` |
 | which operator a flow is about comes from the challenge's OAuth client and not from a hostname: a flow raised for one client signs in that operator's person and not another's, even where both have the same alias and the same password; several clients are one operator | `TestAFlowReachesOnlyItsOwnOperator` · `TestASecondClientIsTheSameOperator` |
 | the consent hop is what a deployment said: `skip` grants what the client asked for and draws nothing, `ask` draws a screen and grants nothing until somebody says so — and a no is `access_denied` rather than a redirect that never comes | `TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne` |
 | signing somebody out everywhere in roster makes Hydra forget them, so the next product they open finds a form; somebody who was suspended and is not any more is **not** signed out again for coming back | `TestSigningSomebodyOutEverywhereReachesHydra` · `TestSomebodyBackInGoodStandingIsNotSignedOutAgain` |

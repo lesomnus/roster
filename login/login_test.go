@@ -576,6 +576,53 @@ func TestALoginAppTellsHydraWhoSignedIn(t *testing.T) {
 	x.NotContains(claims, "methods")
 }
 
+// TestASecondFlowCarriesTheClaimsToo: the browser Hydra remembers, and the
+// tokens that were empty for it.
+//
+// The claims are read as the person, with the delegation this app's own session
+// holds -- and that session was closed at the end of every flow, on the rule
+// that a credential should not outlive its use. So the **second** product
+// somebody opened, and the same one opened again, got a token carrying `sub`
+// and nothing else. With `remember` set that is most of a deployment's tokens,
+// and what it looks like from a page is an opaque identifier where a name
+// should be, which is how it was reported.
+//
+// *Its use* is the claims, and a remembered browser comes back for them. So the
+// session lasts as long as Hydra will skip the form, and no longer.
+func TestASecondFlowCarriesTheClaimsToo(t *testing.T) {
+	x := require.New(t)
+	// `Remember` is the condition: it is what makes a second flow skip the form,
+	// and what the session's own clock is now set from. A deployment that
+	// remembers nothing has no second flow to hold anything for.
+	d := serveAs(t, login.Skip, func(c *login.Config) { c.Remember = time.Hour })
+	b := d.browser(t)
+
+	d.hydra.raise("c1", "contoso-web")
+	_, code := d.signIn(t, b, "c1", "erin", password)
+	x.Equal(http.StatusOK, code)
+
+	res, err := b.Get(d.app.URL + "/consent?consent_challenge=c1")
+	x.NoError(err)
+	defer res.Body.Close()
+	x.Equal(http.StatusSeeOther, res.StatusCode)
+
+	_, claims := d.hydra.told()
+	x.Equal("erin", claims["preferred_username"])
+
+	// A second flow for the same browser, with **no form**: another product, or
+	// this one opened again. Nothing signs in; the consent hop is all there is.
+	d.hydra.raise("c2", "contoso-web")
+
+	res, err = b.Get(d.app.URL + "/consent?consent_challenge=c2")
+	x.NoError(err)
+	defer res.Body.Close()
+	x.Equal(http.StatusSeeOther, res.StatusCode)
+
+	_, claims = d.hydra.told()
+	x.Equal("erin", claims["preferred_username"], "a remembered browser got a token with no claims")
+	x.Equal("Erin of contoso", claims["name"])
+}
+
 // TestAFlowReachesOnlyItsOwnOperator, which is what one instance fronting
 // several of them has to be held to.
 //

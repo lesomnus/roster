@@ -540,9 +540,9 @@ func (a *App) logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// This app's own session too, for the browser that has one. It is short --
-	// it holds somebody between the form and the consent screen -- and a person
-	// signing out with one open is a person who would sign in again and find
+	// This app's own session too, for the browser that has one. It lasts as
+	// long as Hydra's memory of the same browser, so a person signing out with
+	// one open is exactly a person who would otherwise sign in again and find
 	// the old one waiting.
 	http.SetCookie(w, a.door.End(ctx, r))
 	http.Redirect(w, r, to, http.StatusSeeOther)
@@ -761,9 +761,13 @@ func (a *App) decide(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// The flow is over either way, so the credential this app minted goes
-		// the same way it does on a yes.
-		http.SetCookie(w, a.door.End(r.Context(), r))
+		// The credential goes the same way it does on a yes, which is now
+		// *stays, unless nothing is remembered*. A no is about this client and
+		// not about the person: Hydra still remembers who they are, and the
+		// next product they open is a flow that needs the claims.
+		if a.c.Remember <= 0 {
+			http.SetCookie(w, a.door.End(r.Context(), r))
+		}
 		http.Redirect(w, r, to, http.StatusSeeOther)
 
 		return
@@ -800,10 +804,16 @@ func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o
 		claims = claimsOf(me, v.Scope)
 
 	case errors.Is(err, frontdoor.ErrNotSignedIn):
-		// Hydra remembered the subject and this app's own session is gone --
-		// a second client, or a browser that came back. The token still gets a
-		// `sub`, which is Hydra's; what it does not get is the claims, because
-		// reading them needs a credential nobody here holds any more.
+		// Hydra remembers this browser and this app does not: its session
+		// outlived nothing, or `remember` is zero and there is no session to
+		// have. The token still gets a `sub`, which is Hydra's; what it does
+		// not get is the claims, because reading them needs a credential
+		// nobody here holds.
+		//
+		// This used to be **every** flow after the first, because the session
+		// was closed at each redirect -- see the end of this function. It is
+		// now the edge it reads like: a browser whose session outlived Hydra's
+		// answer, or a deployment that remembers nothing.
 
 	default:
 		a.broken(w, r, err)
@@ -818,10 +828,28 @@ func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o
 		return
 	}
 
-	// The flow is over: the delegation this app minted has done the one thing
-	// it was for, and a credential that outlives its use is a credential
-	// somebody has to remember to revoke.
-	http.SetCookie(w, a.door.End(ctx, r))
+	// And the session **stays**, for as long as Hydra will skip the form.
+	//
+	// It used to end here, on the rule that a credential which outlives its use
+	// is a credential somebody has to remember to revoke. The rule is right and
+	// the reading of *its use* was wrong: what this delegation is for is the
+	// claims above, and a browser Hydra remembers comes back for those again --
+	// a second product, or the same one opened tomorrow morning. Ended here,
+	// every one of those flows found no session and put nothing but `sub` in
+	// the token, which with `remember` set is most of the tokens a deployment
+	// issues. It was written down as a known consequence, in the branch above,
+	// and it was a defect: a page reading its own token saw an opaque
+	// identifier twice and no name, and reported the sign-in as broken.
+	//
+	// It is still bounded, by the same clock Hydra uses (`cli/login.go`), and
+	// it is still narrow: [Methods] is `Me.Get` alone about one person.
+	//
+	// `Remember` of zero is a deployment that asks every time, so there is no
+	// later flow to hold anything for and the credential goes at the redirect
+	// the way it always did.
+	if a.c.Remember <= 0 {
+		http.SetCookie(w, a.door.End(ctx, r))
+	}
 
 	http.Redirect(w, r, to, http.StatusSeeOther)
 }

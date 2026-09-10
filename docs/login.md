@@ -355,6 +355,37 @@ stream says what has stopped being good in roster's own vocabulary, to any app
 holding a credential, and turning that into a `DELETE` is the Login App's,
 because the Login App is what knows about Hydra.
 
+### The app's own session, and why it is not shorter
+
+It lasts as long as `remember` — the same clock Hydra skips the form on.
+
+It was closed at the end of every flow, on a rule that is right in general: a
+credential which outlives its use is one somebody has to remember to revoke. The
+reading of *its use* was wrong. What the delegation in that session is for is
+the **claims**, read as the person by `Me.Get` at the consent hop, and a browser
+Hydra remembers comes back for those — a second product, or the same one opened
+the next morning. Closed at the redirect, every one of those flows found no
+session and handed back a token carrying `sub` and nothing else.
+
+⚠️ With `remember` set that is **most** of a deployment's tokens. What it looks
+like from a product is an opaque identifier where a name should be, and that is
+how it was reported: *signed in, but the session shows nothing.* Nothing was
+broken and nothing leaked; the tokens were simply empty.
+
+What makes the longer session affordable is what is in it. `login.Methods` is
+`Me.Get` and nothing else, so the delegation reads that one person's own profile
+and can do nothing else — not sign in as them, not write, not read anybody else.
+It is revoked where every delegation is, by `Holder.Invalidate`, which this app
+already hears through `Sync.Watch`. And it has no idle window, because Hydra's
+`remember_for` has none: a second clock under Hydra's is what produced the hole
+in the first place.
+
+The alternative was reading the person with the **operator's** key instead,
+which needs no session at all. It was refused: it would widen this app's role to
+`Holder.Get` across the tenant, and it would give up the property that a token's
+claims are read *as* the person who just authenticated — which is what makes it
+structurally impossible for one person's claims to end up in another's token.
+
 ### Signing out reaches the issuer
 
 `/logout` is the third thing Hydra redirects to, beside `/login` and

@@ -243,9 +243,13 @@ type LoginConfig struct {
 	Remember time.Duration `yaml:"remember"`
 
 	// Seal is the key sessions are sealed into the cookie under; see
-	// [AccountConfig.Seal]. The session here is short -- it holds one browser
-	// between the form and the consent screen and is closed at the redirect --
-	// but a second replica still has to be able to open one.
+	// [AccountConfig.Seal]. A second replica has to be able to open one.
+	//
+	// The session here lasts as long as [LoginConfig.Remember]: it is this
+	// app's half of the same fact Hydra keeps, and what it holds is a
+	// delegation narrowed to `Me.Get` about one person. It was closed at the
+	// redirect for a while, which made every flow after the first hand back a
+	// token with no name and no address in it.
 	Seal []string `yaml:"seal"`
 
 	// InsecureCookie drops `Secure`, for a page served over plain http in
