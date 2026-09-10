@@ -45,6 +45,7 @@ import (
 	"flag"
 	"fmt"
 	"html"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -246,11 +247,39 @@ func (a *app) callback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	http.SetCookie(w, &http.Cookie{Name: "product_state", Path: "/", MaxAge: -1})
 
+	// **One answer to the browser, and one line in the log.**
+	//
+	// A browser is told `no` and nothing else, which is right: every branch
+	// below is either somebody's mistake or an attack, and telling them apart
+	// out loud tells an attacker which. What is not right is the log saying
+	// nothing either, which is what this did -- a deployment answered 400 to
+	// every sign-in and the only way to find out which of five checks refused
+	// it was to guess, five times, a deploy apart.
+	//
+	// So: the reason goes to the log, never the code or the token, and the
+	// browser still gets `no`.
+	no := func(why string, err error) {
+		if err != nil {
+			log.Printf("product: callback refused: %s: %v", why, err)
+		} else {
+			log.Printf("product: callback refused: %s", why)
+		}
+		http.Error(w, "no", http.StatusBadRequest)
+	}
+
 	state := r.URL.Query().Get("state")
 	c, err := r.Cookie("product_state")
-	if err != nil || state == "" || c.Value != state {
-		// One answer for a missing cookie, a missing parameter and a mismatch.
-		http.Error(w, "no", http.StatusBadRequest)
+	switch {
+	case state == "":
+		no("the issuer sent no state", nil)
+
+		return
+	case err != nil:
+		no("this browser has no state cookie", nil)
+
+		return
+	case c.Value != state:
+		no("the state does not match the cookie", nil)
 
 		return
 	}
@@ -259,27 +288,35 @@ func (a *app) callback(w http.ResponseWriter, r *http.Request) {
 	f, ok := a.flows[state]
 	delete(a.flows, state)
 	a.mu.Unlock()
-	if !ok || time.Now().After(f.expires) {
-		http.Error(w, "no", http.StatusBadRequest)
+	switch {
+	case !ok:
+		// A flow this process did not start. It is in memory, so a restart is
+		// one way and a second replica is the other.
+		no("no flow here started with that state", nil)
+
+		return
+	case time.Now().After(f.expires):
+		no("the flow is older than ten minutes", nil)
 
 		return
 	}
 
 	tok, err := a.cfg.Exchange(ctx, r.URL.Query().Get("code"))
 	if err != nil {
-		http.Error(w, "no", http.StatusBadRequest)
+		no("the issuer would not exchange the code", err)
 
 		return
 	}
 	raw, ok := tok.Extra("id_token").(string)
 	if !ok {
+		log.Print("product: callback refused: the exchange carried no id_token")
 		http.Error(w, "no id_token", http.StatusBadGateway)
 
 		return
 	}
 	id, err := a.verifier.Verify(ctx, raw)
 	if err != nil {
-		http.Error(w, "no", http.StatusBadRequest)
+		no("the id_token does not verify", err)
 
 		return
 	}
