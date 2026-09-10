@@ -23,6 +23,8 @@ func (Connection) Fields() []ent.Field {
 			Immutable(),
 		field.String("name"),
 		field.String("desc"),
+		field.Json("labels", map[string]string{}).
+			Optional(),
 		field.String("issuer"),
 		field.String("client_id"),
 		field.Json("scopes", []string{}).

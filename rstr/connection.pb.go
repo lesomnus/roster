@@ -58,6 +58,7 @@ type Connection struct {
 	xxx_hidden_Tenant      *Tenant                `protobuf:"bytes,2,opt,name=tenant"`
 	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Labels      map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_Issuer      string                 `protobuf:"bytes,8,opt,name=issuer"`
 	xxx_hidden_ClientId    string                 `protobuf:"bytes,9,opt,name=client_id,json=clientId"`
 	xxx_hidden_Scopes      []string               `protobuf:"bytes,10,rep,name=scopes"`
@@ -120,6 +121,13 @@ func (x *Connection) GetDesc() string {
 		return x.xxx_hidden_Desc
 	}
 	return ""
+}
+
+func (x *Connection) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
 }
 
 func (x *Connection) GetIssuer() string {
@@ -188,6 +196,10 @@ func (x *Connection) SetName(v string) {
 
 func (x *Connection) SetDesc(v string) {
 	x.xxx_hidden_Desc = v
+}
+
+func (x *Connection) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
 }
 
 func (x *Connection) SetIssuer(v string) {
@@ -275,6 +287,18 @@ type Connection_builder struct {
 	// reason `MailDomain`'s is.
 	Name string
 	Desc string
+	// Whatever the deployment keeps about this row that the schema does not name.
+	//
+	// Number seven because that is the one an entity spends on labels or leaves
+	// empty, and this one has a use for it: a row a provisioner wrote carries
+	// `roster.declared` (`cmd/resources.go`), which is what `server/core` reads
+	// to refuse a console edit to something a file owns.
+	//
+	// Metadata about **where the row came from**, which is what a label is for
+	// everywhere else that has them -- and not a setting roster acts on. A
+	// setting goes in a field, so that what is configuration and what is a note
+	// stay tellable apart.
+	Labels map[string]string
 	// Where discovery is done, as the provider publishes it:
 	// "https://accounts.google.com".
 	//
@@ -311,6 +335,7 @@ func (b0 Connection_builder) Build() *Connection {
 	x.xxx_hidden_Tenant = b.Tenant
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Desc = b.Desc
+	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_Issuer = b.Issuer
 	x.xxx_hidden_ClientId = b.ClientId
 	x.xxx_hidden_Scopes = b.Scopes
@@ -325,13 +350,14 @@ var File_app_connection_proto protoreflect.FileDescriptor
 
 const file_app_connection_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/connection.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xc6\x04\n" +
+	"\x14app/connection.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xb9\x05\n" +
 	"\n" +
 	"Connection\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\tR\x04desc\x12\x16\n" +
+	"\x04desc\x18\x06 \x01(\tR\x04desc\x126\n" +
+	"\x06labels\x18\a \x03(\v2\x1e.roster.Connection.LabelsEntryR\x06labels\x12\x16\n" +
 	"\x06issuer\x18\b \x01(\tR\x06issuer\x12\x1b\n" +
 	"\tclient_id\x18\t \x01(\tR\bclientId\x12\x16\n" +
 	"\x06scopes\x18\n" +
@@ -341,7 +367,10 @@ const file_app_connection_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:\x7f\xca\xfc\x15D\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\x7f\xca\xfc\x15D\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
 	"\x02id\x10\x01\x1a\x1c\x12\x02at\x1a\n" +
 	"\n" +
@@ -356,22 +385,24 @@ const file_app_connection_proto_rawDesc = "" +
 	"\x03ref\x1a\b\n" +
 	"\x06tenant \x14(dB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_app_connection_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_app_connection_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_app_connection_proto_goTypes = []any{
 	(*Connection)(nil),            // 0: roster.Connection
-	(*Tenant)(nil),                // 1: roster.Tenant
-	(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
+	nil,                           // 1: roster.Connection.LabelsEntry
+	(*Tenant)(nil),                // 2: roster.Tenant
+	(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
 }
 var file_app_connection_proto_depIdxs = []int32{
-	1, // 0: roster.Connection.tenant:type_name -> roster.Tenant
-	2, // 1: roster.Connection.date_updated:type_name -> google.protobuf.Timestamp
-	2, // 2: roster.Connection.date_erased:type_name -> google.protobuf.Timestamp
-	2, // 3: roster.Connection.date_created:type_name -> google.protobuf.Timestamp
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	2, // 0: roster.Connection.tenant:type_name -> roster.Tenant
+	1, // 1: roster.Connection.labels:type_name -> roster.Connection.LabelsEntry
+	3, // 2: roster.Connection.date_updated:type_name -> google.protobuf.Timestamp
+	3, // 3: roster.Connection.date_erased:type_name -> google.protobuf.Timestamp
+	3, // 4: roster.Connection.date_created:type_name -> google.protobuf.Timestamp
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_app_connection_proto_init() }
@@ -386,7 +417,7 @@ func file_app_connection_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_connection_proto_rawDesc), len(file_app_connection_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   1,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

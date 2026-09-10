@@ -231,6 +231,16 @@ func DescContainsFold(v string) predicate.Connection {
 	return predicate.Connection(sql.FieldContainsFold(FieldDesc, v))
 }
 
+// LabelsIsNil applies the IsNil predicate on the "labels" field.
+func LabelsIsNil() predicate.Connection {
+	return predicate.Connection(sql.FieldIsNull(FieldLabels))
+}
+
+// LabelsNotNil applies the NotNil predicate on the "labels" field.
+func LabelsNotNil() predicate.Connection {
+	return predicate.Connection(sql.FieldNotNull(FieldLabels))
+}
+
 // IssuerEQ applies the EQ predicate on the "issuer" field.
 func IssuerEQ(v string) predicate.Connection {
 	return predicate.Connection(sql.FieldEQ(FieldIssuer, v))

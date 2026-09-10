@@ -1526,6 +1526,69 @@ refusing to let `account/` or `ldap/` import the server at all. `compose.yaml`
 runs the three-process shape, and this file's own quickstart is the one-process
 one.
 
+## Declaring the rows that are configuration
+
+A `Connection` is a customer's directory: an issuer, a client id, the scopes,
+and a reference to a secret roster stores and never reads. It is configuration
+by every test one can put to it — written once, the same on every replica, and
+rebuilt from what somebody wrote down. What it was until now is a row somebody
+typed into a console, which is a deployment that cannot be stood up twice the
+same way.
+
+```yaml
+# resources.yaml
+resources:
+  - kind: Tenant
+    alias: hday
+    name: Holiday Robot
+  - kind: Connection
+    tenant: hday
+    name: entra
+    issuer: https://login.microsoftonline.com/<tenant>/v2.0
+    client_id: <the app registration>
+    scopes: [email, profile]
+    # A reference. roster stores this string and never reads it; the app that
+    # is the relying party resolves it (`env:NAME`, `file:PATH`).
+    secret_ref: env:ENTRA_SECRET
+  - kind: Host
+    tenant: hday
+    name: hday.dev
+  - kind: MailDomain
+    tenant: hday
+    name: hday.dev
+    routes: entra
+```
+
+`serve` applies these before it serves, and `roster resources apply --dry-run`
+says what a file would do before a restart does it. In Kubernetes that is GitOps
+without roster knowing what Kubernetes is: the file is in a ConfigMap, editing
+it changes the hash, the pod is replaced, and the new one applies it.
+
+**It never erases.** A resource dropped from the file leaves its row where it
+is. That is not laziness — `Connection.Update` exists because erase-and-add on a
+provider is a gap in service and, under a mistyped name, every identity through
+it orphaned silently. Removing a row is a person's act.
+
+**It writes as somebody.** A `provisioner` holder in the control plane, made on
+first run, framed as the actor of every write, so the trail names which rows a
+file wrote. It has no password and no key: it is not something that signs in, it
+is something the trail can name.
+
+**What it writes, it owns.** A declared row carries `roster.declared` and an
+edit to it from a port is refused. The console edit was already futile — the
+next start would overwrite it — and a setting that was right on Tuesday and
+wrong on Wednesday, with a node draining in between, is worse than being told
+no. The cost is real: fixing a declared row by hand during an outage becomes a
+git round trip, and a deployment that would rather have the text field declares
+fewer things.
+
+What is **not** declarable is `Holder`, `Credential`, `Identity` and `Email` —
+people and the ways into their accounts. A file that made those is a file that
+grants access to whoever can write it, and `server/core/escalate.go` is a whole
+document about not doing that by accident. `Role` and `Binding` are the same
+argument one step out and are a better idea than they look, since RBAC in git is
+reviewed RBAC; they are left out for now on purpose rather than refused.
+
 ## Signing somebody in
 
 See [login.md](login.md) for the whole path. In short: a product app calls

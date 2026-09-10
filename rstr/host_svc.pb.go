@@ -28,6 +28,7 @@ type HostAddRequest struct {
 	xxx_hidden_Tenant      *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
 	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Labels      map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
@@ -88,6 +89,13 @@ func (x *HostAddRequest) GetDesc() string {
 	return ""
 }
 
+func (x *HostAddRequest) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
 func (x *HostAddRequest) GetDateCreated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateCreated
@@ -100,7 +108,7 @@ func (x *HostAddRequest) SetId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 5)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 6)
 }
 
 func (x *HostAddRequest) SetTenant(v *TenantRef) {
@@ -113,6 +121,10 @@ func (x *HostAddRequest) SetName(v string) {
 
 func (x *HostAddRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = v
+}
+
+func (x *HostAddRequest) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
 }
 
 func (x *HostAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
@@ -160,6 +172,7 @@ type HostAddRequest_builder struct {
 	Tenant      *TenantRef
 	Name        string
 	Desc        string
+	Labels      map[string]string
 	DateCreated *timestamppb.Timestamp
 }
 
@@ -168,12 +181,13 @@ func (b0 HostAddRequest_builder) Build() *HostAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 5)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 6)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Tenant = b.Tenant
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Desc = b.Desc
+	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_DateCreated = b.DateCreated
 	return m0
 }
@@ -443,6 +457,7 @@ type HostSelect struct {
 	xxx_hidden_Tenant      *TenantSelect          `protobuf:"bytes,2,opt,name=tenant"`
 	xxx_hidden_Name        bool                   `protobuf:"varint,5,opt,name=name"`
 	xxx_hidden_Desc        bool                   `protobuf:"varint,6,opt,name=desc"`
+	xxx_hidden_Labels      bool                   `protobuf:"varint,7,opt,name=labels"`
 	xxx_hidden_DateUpdated bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
@@ -505,6 +520,13 @@ func (x *HostSelect) GetDesc() bool {
 	return false
 }
 
+func (x *HostSelect) GetLabels() bool {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return false
+}
+
 func (x *HostSelect) GetDateUpdated() bool {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -528,7 +550,7 @@ func (x *HostSelect) GetDateCreated() bool {
 
 func (x *HostSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 8)
 }
 
 func (x *HostSelect) SetTenant(v *TenantSelect) {
@@ -537,27 +559,32 @@ func (x *HostSelect) SetTenant(v *TenantSelect) {
 
 func (x *HostSelect) SetName(v bool) {
 	x.xxx_hidden_Name = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 8)
 }
 
 func (x *HostSelect) SetDesc(v bool) {
 	x.xxx_hidden_Desc = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 8)
+}
+
+func (x *HostSelect) SetLabels(v bool) {
+	x.xxx_hidden_Labels = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 8)
 }
 
 func (x *HostSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 8)
 }
 
 func (x *HostSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 8)
 }
 
 func (x *HostSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 8)
 }
 
 func (x *HostSelect) HasAll() bool {
@@ -588,25 +615,32 @@ func (x *HostSelect) HasDesc() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
-func (x *HostSelect) HasDateUpdated() bool {
+func (x *HostSelect) HasLabels() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
 }
 
-func (x *HostSelect) HasDateErased() bool {
+func (x *HostSelect) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
-func (x *HostSelect) HasDateCreated() bool {
+func (x *HostSelect) HasDateErased() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+}
+
+func (x *HostSelect) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
 }
 
 func (x *HostSelect) ClearAll() {
@@ -628,18 +662,23 @@ func (x *HostSelect) ClearDesc() {
 	x.xxx_hidden_Desc = false
 }
 
-func (x *HostSelect) ClearDateUpdated() {
+func (x *HostSelect) ClearLabels() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_Labels = false
+}
+
+func (x *HostSelect) ClearDateUpdated() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
 	x.xxx_hidden_DateUpdated = false
 }
 
 func (x *HostSelect) ClearDateErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
 	x.xxx_hidden_DateErased = false
 }
 
 func (x *HostSelect) ClearDateCreated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
 	x.xxx_hidden_DateCreated = false
 }
 
@@ -650,6 +689,7 @@ type HostSelect_builder struct {
 	Tenant      *TenantSelect
 	Name        *bool
 	Desc        *bool
+	Labels      *bool
 	DateUpdated *bool
 	DateErased  *bool
 	DateCreated *bool
@@ -660,28 +700,32 @@ func (b0 HostSelect_builder) Build() *HostSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 8)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Tenant = b.Tenant
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 8)
 		x.xxx_hidden_Name = *b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 8)
 		x.xxx_hidden_Desc = *b.Desc
 	}
+	if b.Labels != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 8)
+		x.xxx_hidden_Labels = *b.Labels
+	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 8)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 8)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 8)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	return m0
@@ -692,6 +736,7 @@ type HostPatchRequest struct {
 	xxx_hidden_Ref              *HostRef               `protobuf:"bytes,1,opt,name=ref"`
 	xxx_hidden_Name             *string                `protobuf:"bytes,10,opt,name=name"`
 	xxx_hidden_Desc             *string                `protobuf:"bytes,12,opt,name=desc"`
+	xxx_hidden_Labels           map[string]string      `protobuf:"bytes,14,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateUpdatedForce bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
 	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
@@ -752,6 +797,13 @@ func (x *HostPatchRequest) GetDesc() string {
 	return ""
 }
 
+func (x *HostPatchRequest) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
 func (x *HostPatchRequest) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -772,12 +824,16 @@ func (x *HostPatchRequest) SetRef(v *HostRef) {
 
 func (x *HostPatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 5)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 6)
 }
 
 func (x *HostPatchRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 5)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 6)
+}
+
+func (x *HostPatchRequest) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
 }
 
 func (x *HostPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -786,7 +842,7 @@ func (x *HostPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *HostPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 5)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 6)
 }
 
 func (x *HostPatchRequest) HasRef() bool {
@@ -821,7 +877,7 @@ func (x *HostPatchRequest) HasDateUpdatedForce() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
 func (x *HostPatchRequest) ClearRef() {
@@ -843,16 +899,17 @@ func (x *HostPatchRequest) ClearDateUpdated() {
 }
 
 func (x *HostPatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
 	x.xxx_hidden_DateUpdatedForce = false
 }
 
 type HostPatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref  *HostRef
-	Name *string
-	Desc *string
+	Ref    *HostRef
+	Name   *string
+	Desc   *string
+	Labels map[string]string
 	// The version this update requires the stored date_updated to be.
 	// It is a precondition, not a write: the update applies only if the row
 	// still holds this value, and the server stamps the new version itself.
@@ -875,16 +932,17 @@ func (b0 HostPatchRequest_builder) Build() *HostPatchRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 5)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 6)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 5)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 6)
 		x.xxx_hidden_Desc = b.Desc
 	}
+	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 5)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 6)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	return m0
@@ -1469,6 +1527,7 @@ type MailDomainAddRequest struct {
 	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_Provider    string                 `protobuf:"bytes,9,opt,name=provider"`
 	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Labels      map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
@@ -1536,6 +1595,13 @@ func (x *MailDomainAddRequest) GetDesc() string {
 	return ""
 }
 
+func (x *MailDomainAddRequest) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
 func (x *MailDomainAddRequest) GetDateCreated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateCreated
@@ -1548,7 +1614,7 @@ func (x *MailDomainAddRequest) SetId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 7)
 }
 
 func (x *MailDomainAddRequest) SetTenant(v *TenantRef) {
@@ -1565,6 +1631,10 @@ func (x *MailDomainAddRequest) SetProvider(v string) {
 
 func (x *MailDomainAddRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = v
+}
+
+func (x *MailDomainAddRequest) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
 }
 
 func (x *MailDomainAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
@@ -1613,6 +1683,7 @@ type MailDomainAddRequest_builder struct {
 	Name        string
 	Provider    string
 	Desc        string
+	Labels      map[string]string
 	DateCreated *timestamppb.Timestamp
 }
 
@@ -1621,13 +1692,14 @@ func (b0 MailDomainAddRequest_builder) Build() *MailDomainAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 7)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Tenant = b.Tenant
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Provider = b.Provider
 	x.xxx_hidden_Desc = b.Desc
+	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_DateCreated = b.DateCreated
 	return m0
 }
@@ -2005,6 +2077,7 @@ type MailDomainSelect struct {
 	xxx_hidden_Name        bool                   `protobuf:"varint,5,opt,name=name"`
 	xxx_hidden_Provider    bool                   `protobuf:"varint,9,opt,name=provider"`
 	xxx_hidden_Desc        bool                   `protobuf:"varint,6,opt,name=desc"`
+	xxx_hidden_Labels      bool                   `protobuf:"varint,7,opt,name=labels"`
 	xxx_hidden_DateUpdated bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
@@ -2074,6 +2147,13 @@ func (x *MailDomainSelect) GetDesc() bool {
 	return false
 }
 
+func (x *MailDomainSelect) GetLabels() bool {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return false
+}
+
 func (x *MailDomainSelect) GetDateUpdated() bool {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -2097,7 +2177,7 @@ func (x *MailDomainSelect) GetDateCreated() bool {
 
 func (x *MailDomainSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 9)
 }
 
 func (x *MailDomainSelect) SetTenant(v *TenantSelect) {
@@ -2106,32 +2186,37 @@ func (x *MailDomainSelect) SetTenant(v *TenantSelect) {
 
 func (x *MailDomainSelect) SetName(v bool) {
 	x.xxx_hidden_Name = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 9)
 }
 
 func (x *MailDomainSelect) SetProvider(v bool) {
 	x.xxx_hidden_Provider = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 9)
 }
 
 func (x *MailDomainSelect) SetDesc(v bool) {
 	x.xxx_hidden_Desc = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 9)
+}
+
+func (x *MailDomainSelect) SetLabels(v bool) {
+	x.xxx_hidden_Labels = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 9)
 }
 
 func (x *MailDomainSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 9)
 }
 
 func (x *MailDomainSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 9)
 }
 
 func (x *MailDomainSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 9)
 }
 
 func (x *MailDomainSelect) HasAll() bool {
@@ -2169,25 +2254,32 @@ func (x *MailDomainSelect) HasDesc() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
 }
 
-func (x *MailDomainSelect) HasDateUpdated() bool {
+func (x *MailDomainSelect) HasLabels() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
-func (x *MailDomainSelect) HasDateErased() bool {
+func (x *MailDomainSelect) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
-func (x *MailDomainSelect) HasDateCreated() bool {
+func (x *MailDomainSelect) HasDateErased() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
+}
+
+func (x *MailDomainSelect) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
 }
 
 func (x *MailDomainSelect) ClearAll() {
@@ -2214,18 +2306,23 @@ func (x *MailDomainSelect) ClearDesc() {
 	x.xxx_hidden_Desc = false
 }
 
-func (x *MailDomainSelect) ClearDateUpdated() {
+func (x *MailDomainSelect) ClearLabels() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_Labels = false
+}
+
+func (x *MailDomainSelect) ClearDateUpdated() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
 	x.xxx_hidden_DateUpdated = false
 }
 
 func (x *MailDomainSelect) ClearDateErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
 	x.xxx_hidden_DateErased = false
 }
 
 func (x *MailDomainSelect) ClearDateCreated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
 	x.xxx_hidden_DateCreated = false
 }
 
@@ -2237,6 +2334,7 @@ type MailDomainSelect_builder struct {
 	Name        *bool
 	Provider    *bool
 	Desc        *bool
+	Labels      *bool
 	DateUpdated *bool
 	DateErased  *bool
 	DateCreated *bool
@@ -2247,32 +2345,36 @@ func (b0 MailDomainSelect_builder) Build() *MailDomainSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 9)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Tenant = b.Tenant
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 9)
 		x.xxx_hidden_Name = *b.Name
 	}
 	if b.Provider != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 9)
 		x.xxx_hidden_Provider = *b.Provider
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 9)
 		x.xxx_hidden_Desc = *b.Desc
 	}
+	if b.Labels != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 9)
+		x.xxx_hidden_Labels = *b.Labels
+	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 9)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 9)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 9)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	return m0
@@ -2284,6 +2386,7 @@ type MailDomainPatchRequest struct {
 	xxx_hidden_Name             *string                `protobuf:"bytes,10,opt,name=name"`
 	xxx_hidden_Provider         *string                `protobuf:"bytes,18,opt,name=provider"`
 	xxx_hidden_Desc             *string                `protobuf:"bytes,12,opt,name=desc"`
+	xxx_hidden_Labels           map[string]string      `protobuf:"bytes,14,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateUpdatedForce bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
 	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
@@ -2354,6 +2457,13 @@ func (x *MailDomainPatchRequest) GetDesc() string {
 	return ""
 }
 
+func (x *MailDomainPatchRequest) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
 func (x *MailDomainPatchRequest) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -2374,17 +2484,21 @@ func (x *MailDomainPatchRequest) SetRef(v *MailDomainRef) {
 
 func (x *MailDomainPatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 7)
 }
 
 func (x *MailDomainPatchRequest) SetProvider(v string) {
 	x.xxx_hidden_Provider = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 7)
 }
 
 func (x *MailDomainPatchRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 7)
+}
+
+func (x *MailDomainPatchRequest) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
 }
 
 func (x *MailDomainPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -2393,7 +2507,7 @@ func (x *MailDomainPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *MailDomainPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 7)
 }
 
 func (x *MailDomainPatchRequest) HasRef() bool {
@@ -2435,7 +2549,7 @@ func (x *MailDomainPatchRequest) HasDateUpdatedForce() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
 func (x *MailDomainPatchRequest) ClearRef() {
@@ -2462,7 +2576,7 @@ func (x *MailDomainPatchRequest) ClearDateUpdated() {
 }
 
 func (x *MailDomainPatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
 	x.xxx_hidden_DateUpdatedForce = false
 }
 
@@ -2473,6 +2587,7 @@ type MailDomainPatchRequest_builder struct {
 	Name     *string
 	Provider *string
 	Desc     *string
+	Labels   map[string]string
 	// The version this update requires the stored date_updated to be.
 	// It is a precondition, not a write: the update applies only if the row
 	// still holds this value, and the server stamps the new version itself.
@@ -2495,20 +2610,21 @@ func (b0 MailDomainPatchRequest_builder) Build() *MailDomainPatchRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 7)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Provider != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 7)
 		x.xxx_hidden_Provider = b.Provider
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 7)
 		x.xxx_hidden_Desc = b.Desc
 	}
+	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 7)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	return m0
@@ -3124,37 +3240,46 @@ var File_app_host_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_host_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/host_svc.g.proto\x12\x06roster\x1a\x0eapp/host.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/tenant_svc.g.proto\"\xc0\x01\n" +
+	"\x14app/host_svc.g.proto\x12\x06roster\x1a\x0eapp/host.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/tenant_svc.g.proto\"\xb7\x02\n" +
 	"\x0eHostAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
-	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12=\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"_\n" +
+	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12:\n" +
+	"\x06labels\x18\a \x03(\v2\".roster.HostAddRequest.LabelsEntryR\x06labels\x12=\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"_\n" +
 	"\x0eHostGetRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.roster.HostRefR\x03ref\x12*\n" +
 	"\x06select\x18\x02 \x01(\v2\x12.roster.HostSelectR\x06select\"8\n" +
 	"\aHostRef\x12\x10\n" +
 	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x14\n" +
 	"\x04name\x18\x05 \x01(\tH\x00R\x04nameB\x05\n" +
-	"\x03key\"\xdb\x01\n" +
+	"\x03key\"\xf3\x01\n" +
 	"\n" +
 	"HostSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x14.roster.TenantSelectR\x06tenant\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\bR\x04name\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\bR\x04desc\x12!\n" +
+	"\x04desc\x18\x06 \x01(\bR\x04desc\x12\x16\n" +
+	"\x06labels\x18\a \x01(\bR\x06labels\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xca\x01\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xc3\x02\n" +
 	"\x10HostPatchRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.roster.HostRefR\x03ref\x12\x12\n" +
 	"\x04name\x18\n" +
 	" \x01(\tR\x04name\x12\x12\n" +
-	"\x04desc\x18\f \x01(\tR\x04desc\x12=\n" +
+	"\x04desc\x18\f \x01(\tR\x04desc\x12<\n" +
+	"\x06labels\x18\x0e \x03(\v2$.roster.HostPatchRequest.LabelsEntryR\x06labels\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"Y\n" +
+	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"Y\n" +
 	"\x10HostApplyRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.roster.HostRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"+\n" +
@@ -3174,14 +3299,18 @@ const file_app_host_svc_g_proto_rawDesc = "" +
 	"\x11HostUpdateRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.roster.HostRefR\x03ref\x12=\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\tR\x04desc\"\xe9\x01\n" +
+	"\x04desc\x18\x06 \x01(\tR\x04desc\"\xe6\x02\n" +
 	"\x14MailDomainAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12!\n" +
 	"\bprovider\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\bprovider\x12\x19\n" +
-	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12=\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"q\n" +
+	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12@\n" +
+	"\x06labels\x18\a \x03(\v2(.roster.MailDomainAddRequest.LabelsEntryR\x06labels\x12=\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"q\n" +
 	"\x14MailDomainGetRequest\x12'\n" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.MailDomainRefR\x03ref\x120\n" +
 	"\x06select\x18\x02 \x01(\v2\x18.roster.MailDomainSelectR\x06select\"U\n" +
@@ -3191,25 +3320,30 @@ const file_app_host_svc_g_proto_rawDesc = "" +
 	"\x03key\"R\n" +
 	"\x11MailDomainRefByAt\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x12\n" +
-	"\x04name\x18\x05 \x01(\tR\x04name\"\xfd\x01\n" +
+	"\x04name\x18\x05 \x01(\tR\x04name\"\x95\x02\n" +
 	"\x10MailDomainSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x14.roster.TenantSelectR\x06tenant\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\bR\x04name\x12\x1a\n" +
 	"\bprovider\x18\t \x01(\bR\bprovider\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\bR\x04desc\x12!\n" +
+	"\x04desc\x18\x06 \x01(\bR\x04desc\x12\x16\n" +
+	"\x06labels\x18\a \x01(\bR\x06labels\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xf2\x01\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xf1\x02\n" +
 	"\x16MailDomainPatchRequest\x12'\n" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.MailDomainRefR\x03ref\x12\x12\n" +
 	"\x04name\x18\n" +
 	" \x01(\tR\x04name\x12\x1a\n" +
 	"\bprovider\x18\x12 \x01(\tR\bprovider\x12\x12\n" +
-	"\x04desc\x18\f \x01(\tR\x04desc\x12=\n" +
+	"\x04desc\x18\f \x01(\tR\x04desc\x12B\n" +
+	"\x06labels\x18\x0e \x03(\v2*.roster.MailDomainPatchRequest.LabelsEntryR\x06labels\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"e\n" +
+	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"e\n" +
 	"\x16MailDomainApplyRequest\x12'\n" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.MailDomainRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"1\n" +
@@ -3247,7 +3381,7 @@ const file_app_host_svc_g_proto_rawDesc = "" +
 	"\x04List\x12\x1d.roster.MailDomainListRequest\x1a\x1e.roster.MailDomainListResponse\x12=\n" +
 	"\x06Update\x12\x1f.roster.MailDomainUpdateRequest\x1a\x12.roster.MailDomainB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_host_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
+var file_app_host_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
 var file_app_host_svc_g_proto_goTypes = []any{
 	(*HostAddRequest)(nil),          // 0: roster.HostAddRequest
 	(*HostGetRequest)(nil),          // 1: roster.HostGetRequest
@@ -3272,79 +3406,87 @@ var file_app_host_svc_g_proto_goTypes = []any{
 	(*MailDomainListResponse)(nil),  // 20: roster.MailDomainListResponse
 	(*MailDomainFilter)(nil),        // 21: roster.MailDomainFilter
 	(*MailDomainUpdateRequest)(nil), // 22: roster.MailDomainUpdateRequest
-	(*TenantRef)(nil),               // 23: roster.TenantRef
-	(*timestamppb.Timestamp)(nil),   // 24: google.protobuf.Timestamp
-	(*TenantSelect)(nil),            // 25: roster.TenantSelect
-	(*patchpb.Patch)(nil),           // 26: patch.Patch
-	(*Host)(nil),                    // 27: roster.Host
-	(*MailDomain)(nil),              // 28: roster.MailDomain
+	nil,                             // 23: roster.HostAddRequest.LabelsEntry
+	nil,                             // 24: roster.HostPatchRequest.LabelsEntry
+	nil,                             // 25: roster.MailDomainAddRequest.LabelsEntry
+	nil,                             // 26: roster.MailDomainPatchRequest.LabelsEntry
+	(*TenantRef)(nil),               // 27: roster.TenantRef
+	(*timestamppb.Timestamp)(nil),   // 28: google.protobuf.Timestamp
+	(*TenantSelect)(nil),            // 29: roster.TenantSelect
+	(*patchpb.Patch)(nil),           // 30: patch.Patch
+	(*Host)(nil),                    // 31: roster.Host
+	(*MailDomain)(nil),              // 32: roster.MailDomain
 }
 var file_app_host_svc_g_proto_depIdxs = []int32{
-	23, // 0: roster.HostAddRequest.tenant:type_name -> roster.TenantRef
-	24, // 1: roster.HostAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	2,  // 2: roster.HostGetRequest.ref:type_name -> roster.HostRef
-	3,  // 3: roster.HostGetRequest.select:type_name -> roster.HostSelect
-	25, // 4: roster.HostSelect.tenant:type_name -> roster.TenantSelect
-	2,  // 5: roster.HostPatchRequest.ref:type_name -> roster.HostRef
-	24, // 6: roster.HostPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 7: roster.HostApplyRequest.ref:type_name -> roster.HostRef
-	26, // 8: roster.HostApplyRequest.patch:type_name -> patch.Patch
-	9,  // 9: roster.HostListRequest.filters:type_name -> roster.HostFilter
-	27, // 10: roster.HostListResponse.items:type_name -> roster.Host
-	2,  // 11: roster.HostFilter.ref:type_name -> roster.HostRef
-	23, // 12: roster.HostFilter.tenant:type_name -> roster.TenantRef
-	2,  // 13: roster.HostUpdateRequest.ref:type_name -> roster.HostRef
-	24, // 14: roster.HostUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
-	23, // 15: roster.MailDomainAddRequest.tenant:type_name -> roster.TenantRef
-	24, // 16: roster.MailDomainAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	13, // 17: roster.MailDomainGetRequest.ref:type_name -> roster.MailDomainRef
-	15, // 18: roster.MailDomainGetRequest.select:type_name -> roster.MailDomainSelect
-	14, // 19: roster.MailDomainRef.at:type_name -> roster.MailDomainRefByAt
-	23, // 20: roster.MailDomainRefByAt.tenant:type_name -> roster.TenantRef
-	25, // 21: roster.MailDomainSelect.tenant:type_name -> roster.TenantSelect
-	13, // 22: roster.MailDomainPatchRequest.ref:type_name -> roster.MailDomainRef
-	24, // 23: roster.MailDomainPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	13, // 24: roster.MailDomainApplyRequest.ref:type_name -> roster.MailDomainRef
-	26, // 25: roster.MailDomainApplyRequest.patch:type_name -> patch.Patch
-	21, // 26: roster.MailDomainListRequest.filters:type_name -> roster.MailDomainFilter
-	28, // 27: roster.MailDomainListResponse.items:type_name -> roster.MailDomain
-	13, // 28: roster.MailDomainFilter.ref:type_name -> roster.MailDomainRef
-	23, // 29: roster.MailDomainFilter.tenant:type_name -> roster.TenantRef
-	13, // 30: roster.MailDomainUpdateRequest.ref:type_name -> roster.MailDomainRef
-	24, // 31: roster.MailDomainUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
-	0,  // 32: roster.HostService.Add:input_type -> roster.HostAddRequest
-	1,  // 33: roster.HostService.Get:input_type -> roster.HostGetRequest
-	4,  // 34: roster.HostService.Patch:input_type -> roster.HostPatchRequest
-	5,  // 35: roster.HostService.Apply:input_type -> roster.HostApplyRequest
-	2,  // 36: roster.HostService.Erase:input_type -> roster.HostRef
-	7,  // 37: roster.HostService.List:input_type -> roster.HostListRequest
-	10, // 38: roster.HostService.Update:input_type -> roster.HostUpdateRequest
-	11, // 39: roster.MailDomainService.Add:input_type -> roster.MailDomainAddRequest
-	12, // 40: roster.MailDomainService.Get:input_type -> roster.MailDomainGetRequest
-	16, // 41: roster.MailDomainService.Patch:input_type -> roster.MailDomainPatchRequest
-	17, // 42: roster.MailDomainService.Apply:input_type -> roster.MailDomainApplyRequest
-	13, // 43: roster.MailDomainService.Erase:input_type -> roster.MailDomainRef
-	19, // 44: roster.MailDomainService.List:input_type -> roster.MailDomainListRequest
-	22, // 45: roster.MailDomainService.Update:input_type -> roster.MailDomainUpdateRequest
-	27, // 46: roster.HostService.Add:output_type -> roster.Host
-	27, // 47: roster.HostService.Get:output_type -> roster.Host
-	27, // 48: roster.HostService.Patch:output_type -> roster.Host
-	27, // 49: roster.HostService.Apply:output_type -> roster.Host
-	6,  // 50: roster.HostService.Erase:output_type -> roster.HostEraseResponse
-	8,  // 51: roster.HostService.List:output_type -> roster.HostListResponse
-	27, // 52: roster.HostService.Update:output_type -> roster.Host
-	28, // 53: roster.MailDomainService.Add:output_type -> roster.MailDomain
-	28, // 54: roster.MailDomainService.Get:output_type -> roster.MailDomain
-	28, // 55: roster.MailDomainService.Patch:output_type -> roster.MailDomain
-	28, // 56: roster.MailDomainService.Apply:output_type -> roster.MailDomain
-	18, // 57: roster.MailDomainService.Erase:output_type -> roster.MailDomainEraseResponse
-	20, // 58: roster.MailDomainService.List:output_type -> roster.MailDomainListResponse
-	28, // 59: roster.MailDomainService.Update:output_type -> roster.MailDomain
-	46, // [46:60] is the sub-list for method output_type
-	32, // [32:46] is the sub-list for method input_type
-	32, // [32:32] is the sub-list for extension type_name
-	32, // [32:32] is the sub-list for extension extendee
-	0,  // [0:32] is the sub-list for field type_name
+	27, // 0: roster.HostAddRequest.tenant:type_name -> roster.TenantRef
+	23, // 1: roster.HostAddRequest.labels:type_name -> roster.HostAddRequest.LabelsEntry
+	28, // 2: roster.HostAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	2,  // 3: roster.HostGetRequest.ref:type_name -> roster.HostRef
+	3,  // 4: roster.HostGetRequest.select:type_name -> roster.HostSelect
+	29, // 5: roster.HostSelect.tenant:type_name -> roster.TenantSelect
+	2,  // 6: roster.HostPatchRequest.ref:type_name -> roster.HostRef
+	24, // 7: roster.HostPatchRequest.labels:type_name -> roster.HostPatchRequest.LabelsEntry
+	28, // 8: roster.HostPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 9: roster.HostApplyRequest.ref:type_name -> roster.HostRef
+	30, // 10: roster.HostApplyRequest.patch:type_name -> patch.Patch
+	9,  // 11: roster.HostListRequest.filters:type_name -> roster.HostFilter
+	31, // 12: roster.HostListResponse.items:type_name -> roster.Host
+	2,  // 13: roster.HostFilter.ref:type_name -> roster.HostRef
+	27, // 14: roster.HostFilter.tenant:type_name -> roster.TenantRef
+	2,  // 15: roster.HostUpdateRequest.ref:type_name -> roster.HostRef
+	28, // 16: roster.HostUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
+	27, // 17: roster.MailDomainAddRequest.tenant:type_name -> roster.TenantRef
+	25, // 18: roster.MailDomainAddRequest.labels:type_name -> roster.MailDomainAddRequest.LabelsEntry
+	28, // 19: roster.MailDomainAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	13, // 20: roster.MailDomainGetRequest.ref:type_name -> roster.MailDomainRef
+	15, // 21: roster.MailDomainGetRequest.select:type_name -> roster.MailDomainSelect
+	14, // 22: roster.MailDomainRef.at:type_name -> roster.MailDomainRefByAt
+	27, // 23: roster.MailDomainRefByAt.tenant:type_name -> roster.TenantRef
+	29, // 24: roster.MailDomainSelect.tenant:type_name -> roster.TenantSelect
+	13, // 25: roster.MailDomainPatchRequest.ref:type_name -> roster.MailDomainRef
+	26, // 26: roster.MailDomainPatchRequest.labels:type_name -> roster.MailDomainPatchRequest.LabelsEntry
+	28, // 27: roster.MailDomainPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	13, // 28: roster.MailDomainApplyRequest.ref:type_name -> roster.MailDomainRef
+	30, // 29: roster.MailDomainApplyRequest.patch:type_name -> patch.Patch
+	21, // 30: roster.MailDomainListRequest.filters:type_name -> roster.MailDomainFilter
+	32, // 31: roster.MailDomainListResponse.items:type_name -> roster.MailDomain
+	13, // 32: roster.MailDomainFilter.ref:type_name -> roster.MailDomainRef
+	27, // 33: roster.MailDomainFilter.tenant:type_name -> roster.TenantRef
+	13, // 34: roster.MailDomainUpdateRequest.ref:type_name -> roster.MailDomainRef
+	28, // 35: roster.MailDomainUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
+	0,  // 36: roster.HostService.Add:input_type -> roster.HostAddRequest
+	1,  // 37: roster.HostService.Get:input_type -> roster.HostGetRequest
+	4,  // 38: roster.HostService.Patch:input_type -> roster.HostPatchRequest
+	5,  // 39: roster.HostService.Apply:input_type -> roster.HostApplyRequest
+	2,  // 40: roster.HostService.Erase:input_type -> roster.HostRef
+	7,  // 41: roster.HostService.List:input_type -> roster.HostListRequest
+	10, // 42: roster.HostService.Update:input_type -> roster.HostUpdateRequest
+	11, // 43: roster.MailDomainService.Add:input_type -> roster.MailDomainAddRequest
+	12, // 44: roster.MailDomainService.Get:input_type -> roster.MailDomainGetRequest
+	16, // 45: roster.MailDomainService.Patch:input_type -> roster.MailDomainPatchRequest
+	17, // 46: roster.MailDomainService.Apply:input_type -> roster.MailDomainApplyRequest
+	13, // 47: roster.MailDomainService.Erase:input_type -> roster.MailDomainRef
+	19, // 48: roster.MailDomainService.List:input_type -> roster.MailDomainListRequest
+	22, // 49: roster.MailDomainService.Update:input_type -> roster.MailDomainUpdateRequest
+	31, // 50: roster.HostService.Add:output_type -> roster.Host
+	31, // 51: roster.HostService.Get:output_type -> roster.Host
+	31, // 52: roster.HostService.Patch:output_type -> roster.Host
+	31, // 53: roster.HostService.Apply:output_type -> roster.Host
+	6,  // 54: roster.HostService.Erase:output_type -> roster.HostEraseResponse
+	8,  // 55: roster.HostService.List:output_type -> roster.HostListResponse
+	31, // 56: roster.HostService.Update:output_type -> roster.Host
+	32, // 57: roster.MailDomainService.Add:output_type -> roster.MailDomain
+	32, // 58: roster.MailDomainService.Get:output_type -> roster.MailDomain
+	32, // 59: roster.MailDomainService.Patch:output_type -> roster.MailDomain
+	32, // 60: roster.MailDomainService.Apply:output_type -> roster.MailDomain
+	18, // 61: roster.MailDomainService.Erase:output_type -> roster.MailDomainEraseResponse
+	20, // 62: roster.MailDomainService.List:output_type -> roster.MailDomainListResponse
+	32, // 63: roster.MailDomainService.Update:output_type -> roster.MailDomain
+	50, // [50:64] is the sub-list for method output_type
+	36, // [36:50] is the sub-list for method input_type
+	36, // [36:36] is the sub-list for extension type_name
+	36, // [36:36] is the sub-list for extension extendee
+	0,  // [0:36] is the sub-list for field type_name
 }
 
 func init() { file_app_host_svc_g_proto_init() }
@@ -3368,7 +3510,7 @@ func file_app_host_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_host_svc_g_proto_rawDesc), len(file_app_host_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   23,
+			NumMessages:   27,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

@@ -168,6 +168,7 @@ var (
 		{Name: "id", Type: field.TypeUuid, Unique: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "desc", Type: field.TypeString},
+		{Name: "labels", Type: field.TypeJson, Nullable: true},
 		{Name: "issuer", Type: field.TypeString},
 		{Name: "client_id", Type: field.TypeString},
 		{Name: "scopes", Type: field.TypeJson, Nullable: true},
@@ -185,7 +186,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "connection_tenant_tenant",
-				Columns:    []*schema.Column{ConnectionColumns[10]},
+				Columns:    []*schema.Column{ConnectionColumns[11]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -194,12 +195,12 @@ var (
 			{
 				Name:    "connection_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{ConnectionColumns[9], ConnectionColumns[0]},
+				Columns: []*schema.Column{ConnectionColumns[10], ConnectionColumns[0]},
 			},
 			{
 				Name:    "connection_name_tenant_id",
 				Unique:  true,
-				Columns: []*schema.Column{ConnectionColumns[1], ConnectionColumns[10]},
+				Columns: []*schema.Column{ConnectionColumns[1], ConnectionColumns[11]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -525,6 +526,7 @@ var (
 		{Name: "id", Type: field.TypeUuid, Unique: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "desc", Type: field.TypeString},
+		{Name: "labels", Type: field.TypeJson, Nullable: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
@@ -538,7 +540,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "host_tenant_tenant",
-				Columns:    []*schema.Column{HostColumns[6]},
+				Columns:    []*schema.Column{HostColumns[7]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -547,7 +549,7 @@ var (
 			{
 				Name:    "host_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{HostColumns[5], HostColumns[0]},
+				Columns: []*schema.Column{HostColumns[6], HostColumns[0]},
 			},
 			{
 				Name:    "host_name",
@@ -652,6 +654,7 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "provider", Type: field.TypeString},
 		{Name: "desc", Type: field.TypeString},
+		{Name: "labels", Type: field.TypeJson, Nullable: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
@@ -665,7 +668,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "maildomain_tenant_tenant",
-				Columns:    []*schema.Column{MaildomainColumns[7]},
+				Columns:    []*schema.Column{MaildomainColumns[8]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -674,12 +677,12 @@ var (
 			{
 				Name:    "maildomain_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{MaildomainColumns[6], MaildomainColumns[0]},
+				Columns: []*schema.Column{MaildomainColumns[7], MaildomainColumns[0]},
 			},
 			{
 				Name:    "maildomain_name_tenant_id",
 				Unique:  true,
-				Columns: []*schema.Column{MaildomainColumns[1], MaildomainColumns[7]},
+				Columns: []*schema.Column{MaildomainColumns[1], MaildomainColumns[8]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},

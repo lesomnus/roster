@@ -1109,6 +1109,23 @@ func (m *ConnectionMutation) OldDesc(ctx context.Context) (v string, err error) 
 	return oldValue.Desc, nil
 }
 
+// OldLabels returns the old "labels" field's value of the Connection entity.
+// If the Connection object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectionMutation) OldLabels(ctx context.Context) (v map[string]string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldLabels is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldLabels requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLabels: %w", err)
+	}
+	return oldValue.Labels, nil
+}
+
 // OldIssuer returns the old "issuer" field's value of the Connection entity.
 // If the Connection object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -1254,6 +1271,8 @@ func (m *ConnectionMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldName(ctx)
 	case connection.FieldDesc:
 		return m.OldDesc(ctx)
+	case connection.FieldLabels:
+		return m.OldLabels(ctx)
 	case connection.FieldIssuer:
 		return m.OldIssuer(ctx)
 	case connection.FieldClientId:
@@ -3437,6 +3456,23 @@ func (m *HostMutation) OldDesc(ctx context.Context) (v string, err error) {
 	return oldValue.Desc, nil
 }
 
+// OldLabels returns the old "labels" field's value of the Host entity.
+// If the Host object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HostMutation) OldLabels(ctx context.Context) (v map[string]string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldLabels is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldLabels requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLabels: %w", err)
+	}
+	return oldValue.Labels, nil
+}
+
 // OldDateUpdated returns the old "date_updated" field's value of the Host entity.
 // If the Host object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -3514,6 +3550,8 @@ func (m *HostMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldName(ctx)
 	case host.FieldDesc:
 		return m.OldDesc(ctx)
+	case host.FieldLabels:
+		return m.OldLabels(ctx)
 	case host.FieldDateUpdated:
 		return m.OldDateUpdated(ctx)
 	case host.FieldDateErased:
@@ -4213,6 +4251,23 @@ func (m *MailDomainMutation) OldDesc(ctx context.Context) (v string, err error) 
 	return oldValue.Desc, nil
 }
 
+// OldLabels returns the old "labels" field's value of the MailDomain entity.
+// If the MailDomain object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MailDomainMutation) OldLabels(ctx context.Context) (v map[string]string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldLabels is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldLabels requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLabels: %w", err)
+	}
+	return oldValue.Labels, nil
+}
+
 // OldDateUpdated returns the old "date_updated" field's value of the MailDomain entity.
 // If the MailDomain object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -4292,6 +4347,8 @@ func (m *MailDomainMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldProvider(ctx)
 	case maildomain.FieldDesc:
 		return m.OldDesc(ctx)
+	case maildomain.FieldLabels:
+		return m.OldLabels(ctx)
 	case maildomain.FieldDateUpdated:
 		return m.OldDateUpdated(ctx)
 	case maildomain.FieldDateErased:

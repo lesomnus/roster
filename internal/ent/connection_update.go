@@ -58,6 +58,18 @@ func (_u *ConnectionUpdate) SetNillableDesc(v *string) *ConnectionUpdate {
 	return _u
 }
 
+// SetLabels sets the "labels" field.
+func (_u *ConnectionUpdate) SetLabels(v map[string]string) *ConnectionUpdate {
+	_u.mutation.SetLabels(v)
+	return _u
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (_u *ConnectionUpdate) ClearLabels() *ConnectionUpdate {
+	_u.mutation.ClearLabels()
+	return _u
+}
+
 // SetIssuer sets the "issuer" field.
 func (_u *ConnectionUpdate) SetIssuer(v string) *ConnectionUpdate {
 	_u.mutation.SetIssuer(v)
@@ -216,6 +228,12 @@ func (_u *ConnectionUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(connection.FieldDesc, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.Labels(); ok {
+		_spec.SetField(connection.FieldLabels, field.TypeJson, value)
+	}
+	if _u.mutation.LabelsCleared() {
+		_spec.ClearField(connection.FieldLabels, field.TypeJson)
+	}
 	if value, ok := _u.mutation.Issuer(); ok {
 		_spec.SetField(connection.FieldIssuer, field.TypeString, value)
 	}
@@ -295,6 +313,18 @@ func (_u *ConnectionUpdateOne) SetNillableDesc(v *string) *ConnectionUpdateOne {
 	if v != nil {
 		_u.SetDesc(*v)
 	}
+	return _u
+}
+
+// SetLabels sets the "labels" field.
+func (_u *ConnectionUpdateOne) SetLabels(v map[string]string) *ConnectionUpdateOne {
+	_u.mutation.SetLabels(v)
+	return _u
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (_u *ConnectionUpdateOne) ClearLabels() *ConnectionUpdateOne {
+	_u.mutation.ClearLabels()
 	return _u
 }
 
@@ -485,6 +515,12 @@ func (_u *ConnectionUpdateOne) sqlSave(ctx context.Context) (_node *Connection, 
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(connection.FieldDesc, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Labels(); ok {
+		_spec.SetField(connection.FieldLabels, field.TypeJson, value)
+	}
+	if _u.mutation.LabelsCleared() {
+		_spec.ClearField(connection.FieldLabels, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Issuer(); ok {
 		_spec.SetField(connection.FieldIssuer, field.TypeString, value)

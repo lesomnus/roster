@@ -116,6 +116,9 @@ func (s HostServiceServer) Add(ctx context.Context, req *rstr.HostAddRequest) (*
 	}
 	q.SetName(req.GetName())
 	q.SetDesc(req.GetDesc())
+	if u := req.GetLabels(); len(u) > 0 {
+		q.SetLabels(u)
+	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
 		q.SetDateCreated(req.GetDateCreated().AsTime())
@@ -194,6 +197,9 @@ func HostSelectedFields(m *rstr.HostSelect) []string {
 	}
 	if m.GetDesc() {
 		vs = append(vs, host.FieldDesc)
+	}
+	if m.GetLabels() {
+		vs = append(vs, host.FieldLabels)
 	}
 	if m.GetDateUpdated() {
 		vs = append(vs, host.FieldDateUpdated)
@@ -275,7 +281,7 @@ func HostGetKey(ctx context.Context, db *ent.Client, ref *rstr.HostRef) (uuid.UU
 var hostOrmEntity = ormpatch.MustEntityOf(rstr.File_app_host_proto, "Host")
 
 var hostPatchColumns = entpatch.Columns{
-	1: host.FieldId, 2: host.TenantColumn, 5: host.FieldName, 6: host.FieldDesc, 13: host.FieldDateUpdated, 14: host.FieldDateErased, 15: host.FieldDateCreated}
+	1: host.FieldId, 2: host.TenantColumn, 5: host.FieldName, 6: host.FieldDesc, 7: host.FieldLabels, 13: host.FieldDateUpdated, 14: host.FieldDateErased, 15: host.FieldDateCreated}
 
 func (s HostServiceServer) Apply(ctx context.Context, req *rstr.HostApplyRequest) (*rstr.Host, error) {
 	if !req.HasPatch() {
@@ -580,6 +586,9 @@ func (s MailDomainServiceServer) Add(ctx context.Context, req *rstr.MailDomainAd
 	q.SetName(req.GetName())
 	q.SetProvider(req.GetProvider())
 	q.SetDesc(req.GetDesc())
+	if u := req.GetLabels(); len(u) > 0 {
+		q.SetLabels(u)
+	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
 		q.SetDateCreated(req.GetDateCreated().AsTime())
@@ -662,6 +671,9 @@ func MailDomainSelectedFields(m *rstr.MailDomainSelect) []string {
 	if m.GetDesc() {
 		vs = append(vs, maildomain.FieldDesc)
 	}
+	if m.GetLabels() {
+		vs = append(vs, maildomain.FieldLabels)
+	}
 	if m.GetDateUpdated() {
 		vs = append(vs, maildomain.FieldDateUpdated)
 	}
@@ -742,7 +754,7 @@ func MailDomainGetKey(ctx context.Context, db *ent.Client, ref *rstr.MailDomainR
 var mailDomainOrmEntity = ormpatch.MustEntityOf(rstr.File_app_host_proto, "MailDomain")
 
 var mailDomainPatchColumns = entpatch.Columns{
-	1: maildomain.FieldId, 2: maildomain.TenantColumn, 5: maildomain.FieldName, 9: maildomain.FieldProvider, 6: maildomain.FieldDesc, 13: maildomain.FieldDateUpdated, 14: maildomain.FieldDateErased, 15: maildomain.FieldDateCreated}
+	1: maildomain.FieldId, 2: maildomain.TenantColumn, 5: maildomain.FieldName, 9: maildomain.FieldProvider, 6: maildomain.FieldDesc, 7: maildomain.FieldLabels, 13: maildomain.FieldDateUpdated, 14: maildomain.FieldDateErased, 15: maildomain.FieldDateCreated}
 
 func (s MailDomainServiceServer) Apply(ctx context.Context, req *rstr.MailDomainApplyRequest) (*rstr.MailDomain, error) {
 	if !req.HasPatch() {

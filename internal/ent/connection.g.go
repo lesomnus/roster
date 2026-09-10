@@ -21,6 +21,7 @@ func (e *Connection) Proto() *rstr.Connection {
 	}
 	x.SetName(e.Name)
 	x.SetDesc(e.Desc)
+	x.SetLabels(e.Labels)
 	x.SetIssuer(e.Issuer)
 	x.SetClientId(e.ClientId)
 	x.SetScopes(e.Scopes)

@@ -88,6 +88,7 @@ func Cmd(c *cmd.Config) *xli.Command {
 			NewCmdAccount(c),
 			NewCmdLdap(c),
 			NewCmdLogin(c),
+			NewCmdResources(c),
 		}, NewCmdEntities(c)...),
 
 		// `ROSTER_ACCOUNT_KEY_<ALIAS>` and the three beside it are read by the

@@ -24,6 +24,8 @@ type Connection struct {
 	Name string `json:"name,omitempty"`
 	// Desc holds the value of the "desc" field.
 	Desc string `json:"desc,omitempty"`
+	// Labels holds the value of the "labels" field.
+	Labels map[string]string `json:"labels,omitempty"`
 	// Issuer holds the value of the "issuer" field.
 	Issuer string `json:"issuer,omitempty"`
 	// ClientId holds the value of the "client_id" field.
@@ -71,7 +73,7 @@ func (*Connection) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case connection.FieldScopes:
+		case connection.FieldLabels, connection.FieldScopes:
 			values[i] = new([]byte)
 		case connection.FieldName, connection.FieldDesc, connection.FieldIssuer, connection.FieldClientId, connection.FieldSecretRef:
 			values[i] = new(sql.NullString)
@@ -111,6 +113,14 @@ func (_m *Connection) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field desc", values[i])
 			} else if value.Valid {
 				_m.Desc = value.String
+			}
+		case connection.FieldLabels:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field labels", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.Labels); err != nil {
+					return fmt.Errorf("unmarshal field labels: %w", err)
+				}
 			}
 		case connection.FieldIssuer:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -209,6 +219,9 @@ func (_m *Connection) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("desc=")
 	builder.WriteString(_m.Desc)
+	builder.WriteString(", ")
+	builder.WriteString("labels=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Labels))
 	builder.WriteString(", ")
 	builder.WriteString("issuer=")
 	builder.WriteString(_m.Issuer)

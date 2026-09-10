@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/host.proto.
  */
 export const file_app_host: GenFile = /*@__PURE__*/
-  fileDesc("Cg5hcHAvaG9zdC5wcm90bxIGcm9zdGVyIoADCgRIb3N0EhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESFAoEbmFtZRgFIAEoCUIG6oIWAjABEgwKBGRlc2MYBiABKAkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOmHK/BUmEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxYzCBQyLwoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZ0ZW5hbnQgFChkIq4DCgpNYWlsRG9tYWluEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESDAoEbmFtZRgFIAEoCRIQCghwcm92aWRlchgJIAEoCRIMCgRkZXNjGAYgASgJEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADp/yvwVRBICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGhwSAmF0GgoKBnRlbmFudBACGggKBG5hbWUQBTABirsWMwgVMi8KEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYaCAoGdGVuYW50IBQoZEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_tenant, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg5hcHAvaG9zdC5wcm90bxIGcm9zdGVyItkDCgRIb3N0EhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESFAoEbmFtZRgFIAEoCUIG6oIWAjABEgwKBGRlc2MYBiABKAkSKAoGbGFiZWxzGAcgAygLMhgucm9zdGVyLkhvc3QuTGFiZWxzRW50cnkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6Ycr8FSYSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQAYq7FjMIFDIvChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudCAUKGQijQQKCk1haWxEb21haW4SFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARIMCgRuYW1lGAUgASgJEhAKCHByb3ZpZGVyGAkgASgJEgwKBGRlc2MYBiABKAkSLgoGbGFiZWxzGAcgAygLMh4ucm9zdGVyLk1haWxEb21haW4uTGFiZWxzRW50cnkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6f8r8FUQSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARocEgJhdBoKCgZ0ZW5hbnQQAhoICgRuYW1lEAUwAYq7FjMIFTIvChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudCAUKGRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_tenant, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Host is a name a front door answers at, and the tenant it belongs to.
@@ -120,6 +120,23 @@ export type Host = Message<"roster.Host"> & {
   desc: string;
 
   /**
+   * Whatever the deployment keeps about this row that the schema does not name.
+   *
+   * Number seven because that is the one an entity spends on labels or leaves
+   * empty, and this one has a use for it: a row a provisioner wrote carries
+   * `roster.declared` (`cmd/resources.go`), which is what `server/core` reads
+   * to refuse a console edit to something a file owns.
+   *
+   * Metadata about **where the row came from**, which is what a label is for
+   * everywhere else that has them -- and not a setting roster acts on. A
+   * setting goes in a field, so that what is configuration and what is a note
+   * stay tellable apart.
+   *
+   * @generated from field: map<string, string> labels = 7;
+   */
+  labels: { [key: string]: string };
+
+  /**
    * @generated from field: google.protobuf.Timestamp date_updated = 13;
    */
   dateUpdated?: Timestamp | undefined;
@@ -208,6 +225,23 @@ export type MailDomain = Message<"roster.MailDomain"> & {
    * @generated from field: string desc = 6;
    */
   desc: string;
+
+  /**
+   * Whatever the deployment keeps about this row that the schema does not name.
+   *
+   * Number seven because that is the one an entity spends on labels or leaves
+   * empty, and this one has a use for it: a row a provisioner wrote carries
+   * `roster.declared` (`cmd/resources.go`), which is what `server/core` reads
+   * to refuse a console edit to something a file owns.
+   *
+   * Metadata about **where the row came from**, which is what a label is for
+   * everywhere else that has them -- and not a setting roster acts on. A
+   * setting goes in a field, so that what is configuration and what is a note
+   * stay tellable apart.
+   *
+   * @generated from field: map<string, string> labels = 7;
+   */
+  labels: { [key: string]: string };
 
   /**
    * @generated from field: google.protobuf.Timestamp date_updated = 13;

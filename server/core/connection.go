@@ -19,8 +19,20 @@ func (s Core) Connection() app.ConnectionServiceServer {
 	return coreConnection{s, s.Next().Connection()}
 }
 
-// Update is `Patch` with the name held back.
+// Update is `Patch` with the name held back -- and refused outright on a row a
+// file declared, which `declared.go` argues for.
 func (s coreConnection) Update(ctx context.Context, req *app.ConnectionUpdateRequest) (*app.Connection, error) {
+	got, err := s.ConnectionServiceServer.Get(ctx, app.ConnectionGetRequest_builder{
+		Ref:    req.GetRef(),
+		Select: app.ConnectionSelect_builder{Labels: z.Ptr(true)}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.mayWriteDeclared(ctx, "ref", got.GetLabels()); err != nil {
+		return nil, err
+	}
+
 	patch := app.ConnectionPatchRequest_builder{
 		Ref:         req.GetRef(),
 		DateUpdated: req.GetDateUpdated(),

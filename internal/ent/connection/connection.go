@@ -16,6 +16,8 @@ const (
 	FieldName = "name"
 	// FieldDesc holds the string denoting the desc field in the database.
 	FieldDesc = "desc"
+	// FieldLabels holds the string denoting the labels field in the database.
+	FieldLabels = "labels"
 	// FieldIssuer holds the string denoting the issuer field in the database.
 	FieldIssuer = "issuer"
 	// FieldClientId holds the string denoting the client_id field in the database.
@@ -50,6 +52,7 @@ var Columns = []string{
 	FieldId,
 	FieldName,
 	FieldDesc,
+	FieldLabels,
 	FieldIssuer,
 	FieldClientId,
 	FieldScopes,

@@ -71,6 +71,18 @@ func (_u *MailDomainUpdate) SetNillableDesc(v *string) *MailDomainUpdate {
 	return _u
 }
 
+// SetLabels sets the "labels" field.
+func (_u *MailDomainUpdate) SetLabels(v map[string]string) *MailDomainUpdate {
+	_u.mutation.SetLabels(v)
+	return _u
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (_u *MailDomainUpdate) ClearLabels() *MailDomainUpdate {
+	_u.mutation.ClearLabels()
+	return _u
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_u *MailDomainUpdate) SetDateUpdated(v time.Time) *MailDomainUpdate {
 	_u.mutation.SetDateUpdated(v)
@@ -172,6 +184,12 @@ func (_u *MailDomainUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(maildomain.FieldDesc, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.Labels(); ok {
+		_spec.SetField(maildomain.FieldLabels, field.TypeJson, value)
+	}
+	if _u.mutation.LabelsCleared() {
+		_spec.ClearField(maildomain.FieldLabels, field.TypeJson)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(maildomain.FieldDateUpdated, field.TypeTime, value)
 	}
@@ -245,6 +263,18 @@ func (_u *MailDomainUpdateOne) SetNillableDesc(v *string) *MailDomainUpdateOne {
 	if v != nil {
 		_u.SetDesc(*v)
 	}
+	return _u
+}
+
+// SetLabels sets the "labels" field.
+func (_u *MailDomainUpdateOne) SetLabels(v map[string]string) *MailDomainUpdateOne {
+	_u.mutation.SetLabels(v)
+	return _u
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (_u *MailDomainUpdateOne) ClearLabels() *MailDomainUpdateOne {
+	_u.mutation.ClearLabels()
 	return _u
 }
 
@@ -378,6 +408,12 @@ func (_u *MailDomainUpdateOne) sqlSave(ctx context.Context) (_node *MailDomain, 
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(maildomain.FieldDesc, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Labels(); ok {
+		_spec.SetField(maildomain.FieldLabels, field.TypeJson, value)
+	}
+	if _u.mutation.LabelsCleared() {
+		_spec.ClearField(maildomain.FieldLabels, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(maildomain.FieldDateUpdated, field.TypeTime, value)

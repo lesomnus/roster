@@ -35,6 +35,12 @@ func (_c *HostCreate) SetDesc(v string) *HostCreate {
 	return _c
 }
 
+// SetLabels sets the "labels" field.
+func (_c *HostCreate) SetLabels(v map[string]string) *HostCreate {
+	_c.mutation.SetLabels(v)
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *HostCreate) SetDateUpdated(v time.Time) *HostCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -181,6 +187,10 @@ func (_c *HostCreate) createSpec() (*Host, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Desc(); ok {
 		_spec.SetField(host.FieldDesc, field.TypeString, value)
 		_node.Desc = value
+	}
+	if value, ok := _c.mutation.Labels(); ok {
+		_spec.SetField(host.FieldLabels, field.TypeJson, value)
+		_node.Labels = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(host.FieldDateUpdated, field.TypeTime, value)

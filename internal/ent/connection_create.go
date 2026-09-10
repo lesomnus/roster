@@ -35,6 +35,12 @@ func (_c *ConnectionCreate) SetDesc(v string) *ConnectionCreate {
 	return _c
 }
 
+// SetLabels sets the "labels" field.
+func (_c *ConnectionCreate) SetLabels(v map[string]string) *ConnectionCreate {
+	_c.mutation.SetLabels(v)
+	return _c
+}
+
 // SetIssuer sets the "issuer" field.
 func (_c *ConnectionCreate) SetIssuer(v string) *ConnectionCreate {
 	_c.mutation.SetIssuer(v)
@@ -214,6 +220,10 @@ func (_c *ConnectionCreate) createSpec() (*Connection, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Desc(); ok {
 		_spec.SetField(connection.FieldDesc, field.TypeString, value)
 		_node.Desc = value
+	}
+	if value, ok := _c.mutation.Labels(); ok {
+		_spec.SetField(connection.FieldLabels, field.TypeJson, value)
+		_node.Labels = value
 	}
 	if value, ok := _c.mutation.Issuer(); ok {
 		_spec.SetField(connection.FieldIssuer, field.TypeString, value)

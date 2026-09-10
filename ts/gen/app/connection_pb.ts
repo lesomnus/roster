@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/connection.proto.
  */
 export const file_app_connection: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcHAvY29ubmVjdGlvbi5wcm90bxIGcm9zdGVyIuMDCgpDb25uZWN0aW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEg4KBmlzc3VlchgIIAEoCRIRCgljbGllbnRfaWQYCSABKAkSDgoGc2NvcGVzGAogAygJEhIKCnNlY3JldF9yZWYYCyABKAkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOn/K/BVEEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaHBICYXQaCgoGdGVuYW50EAIaCAoEbmFtZRAFMAGKuxYzCBkyLwoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZ0ZW5hbnQgFChkQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_tenant, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChRhcHAvY29ubmVjdGlvbi5wcm90bxIGcm9zdGVyIsIECgpDb25uZWN0aW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEi4KBmxhYmVscxgHIAMoCzIeLnJvc3Rlci5Db25uZWN0aW9uLkxhYmVsc0VudHJ5Eg4KBmlzc3VlchgIIAEoCRIRCgljbGllbnRfaWQYCSABKAkSDgoGc2NvcGVzGAogAygJEhIKCnNlY3JldF9yZWYYCyABKAkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6f8r8FUQSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARocEgJhdBoKCgZ0ZW5hbnQQAhoICgRuYW1lEAUwAYq7FjMIGTIvChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudCAUKGRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_tenant, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Connection is which provider one operator's people arrive through.
@@ -79,6 +79,23 @@ export type Connection = Message<"roster.Connection"> & {
    * @generated from field: string desc = 6;
    */
   desc: string;
+
+  /**
+   * Whatever the deployment keeps about this row that the schema does not name.
+   *
+   * Number seven because that is the one an entity spends on labels or leaves
+   * empty, and this one has a use for it: a row a provisioner wrote carries
+   * `roster.declared` (`cmd/resources.go`), which is what `server/core` reads
+   * to refuse a console edit to something a file owns.
+   *
+   * Metadata about **where the row came from**, which is what a label is for
+   * everywhere else that has them -- and not a setting roster acts on. A
+   * setting goes in a field, so that what is configuration and what is a note
+   * stay tellable apart.
+   *
+   * @generated from field: map<string, string> labels = 7;
+   */
+  labels: { [key: string]: string };
 
   /**
    * Where discovery is done, as the provider publishes it:

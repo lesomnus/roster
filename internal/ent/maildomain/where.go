@@ -286,6 +286,16 @@ func DescContainsFold(v string) predicate.MailDomain {
 	return predicate.MailDomain(sql.FieldContainsFold(FieldDesc, v))
 }
 
+// LabelsIsNil applies the IsNil predicate on the "labels" field.
+func LabelsIsNil() predicate.MailDomain {
+	return predicate.MailDomain(sql.FieldIsNull(FieldLabels))
+}
+
+// LabelsNotNil applies the NotNil predicate on the "labels" field.
+func LabelsNotNil() predicate.MailDomain {
+	return predicate.MailDomain(sql.FieldNotNull(FieldLabels))
+}
+
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
 func DateUpdatedEQ(v time.Time) predicate.MailDomain {
 	return predicate.MailDomain(sql.FieldEQ(FieldDateUpdated, v))

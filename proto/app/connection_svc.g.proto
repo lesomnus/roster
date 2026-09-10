@@ -30,6 +30,7 @@ message ConnectionAddRequest {
   TenantRef tenant = 2;
   string name = 5 [features.field_presence = IMPLICIT];
   string desc = 6 [features.field_presence = IMPLICIT];
+  map<string, string> labels = 7;
   string issuer = 8 [features.field_presence = IMPLICIT];
   string client_id = 9 [features.field_presence = IMPLICIT];
   repeated string scopes = 10;
@@ -59,6 +60,7 @@ message ConnectionSelect {
   TenantSelect tenant = 2;
   bool name = 5;
   bool desc = 6;
+  bool labels = 7;
   bool issuer = 8;
   bool client_id = 9;
   bool scopes = 10;
@@ -72,6 +74,7 @@ message ConnectionPatchRequest {
   ConnectionRef ref = 1;
   string name = 10;
   string desc = 12;
+  map<string, string> labels = 14;
   string issuer = 16;
   string client_id = 18;
   repeated string scopes = 20;

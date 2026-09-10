@@ -111,6 +111,24 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 				return err
 			}
 
+			// What a file declared, before anything is served.
+			//
+			// After `Ready` because it writes rows and the tables have to be
+			// there; before the listener because a caller that arrived between
+			// the two would see a deployment half configured. A failure here
+			// stops the process rather than being logged: a declared
+			// `Connection` that did not apply is a directory nobody can sign in
+			// through, and coming up anyway would make that somebody's morning
+			// instead of this line.
+			if rs, err := cmd.ReadResources(c.Resources); err != nil {
+				return err
+			} else if v, err := cmd.ApplyResources(ctx, s, rs, false); err != nil {
+				return err
+			} else if len(rs) > 0 {
+				log.From(ctx).InfoContext(ctx, "resources",
+					slog.Int("added", len(v.Added)), slog.Int("changed", len(v.Changed)), slog.Int("same", len(v.Same)))
+			}
+
 			l, err := net.Listen("tcp", c.Server.ListenAddr())
 			if err != nil {
 				return err

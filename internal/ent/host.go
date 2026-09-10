@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -23,6 +24,8 @@ type Host struct {
 	Name string `json:"name,omitempty"`
 	// Desc holds the value of the "desc" field.
 	Desc string `json:"desc,omitempty"`
+	// Labels holds the value of the "labels" field.
+	Labels map[string]string `json:"labels,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -62,6 +65,8 @@ func (*Host) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case host.FieldLabels:
+			values[i] = new([]byte)
 		case host.FieldName, host.FieldDesc:
 			values[i] = new(sql.NullString)
 		case host.FieldDateUpdated, host.FieldDateErased, host.FieldDateCreated:
@@ -100,6 +105,14 @@ func (_m *Host) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field desc", values[i])
 			} else if value.Valid {
 				_m.Desc = value.String
+			}
+		case host.FieldLabels:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field labels", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.Labels); err != nil {
+					return fmt.Errorf("unmarshal field labels: %w", err)
+				}
 			}
 		case host.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -172,6 +185,9 @@ func (_m *Host) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("desc=")
 	builder.WriteString(_m.Desc)
+	builder.WriteString(", ")
+	builder.WriteString("labels=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Labels))
 	builder.WriteString(", ")
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))

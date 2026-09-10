@@ -48,6 +48,7 @@ message HostAddRequest {
   TenantRef tenant = 2;
   string name = 5 [features.field_presence = IMPLICIT];
   string desc = 6 [features.field_presence = IMPLICIT];
+  map<string, string> labels = 7;
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -68,6 +69,7 @@ message HostSelect {
   TenantSelect tenant = 2;
   bool name = 5;
   bool desc = 6;
+  bool labels = 7;
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;
@@ -77,6 +79,7 @@ message HostPatchRequest {
   HostRef ref = 1;
   string name = 10;
   string desc = 12;
+  map<string, string> labels = 14;
   // The version this update requires the stored date_updated to be.
   // It is a precondition, not a write: the update applies only if the row
   // still holds this value, and the server stamps the new version itself.
@@ -158,6 +161,7 @@ message MailDomainAddRequest {
   string name = 5 [features.field_presence = IMPLICIT];
   string provider = 9 [features.field_presence = IMPLICIT];
   string desc = 6 [features.field_presence = IMPLICIT];
+  map<string, string> labels = 7;
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -184,6 +188,7 @@ message MailDomainSelect {
   bool name = 5;
   bool provider = 9;
   bool desc = 6;
+  bool labels = 7;
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;
@@ -194,6 +199,7 @@ message MailDomainPatchRequest {
   string name = 10;
   string provider = 18;
   string desc = 12;
+  map<string, string> labels = 14;
   // The version this update requires the stored date_updated to be.
   // It is a precondition, not a write: the update applies only if the row
   // still holds this value, and the server stamps the new version itself.

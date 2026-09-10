@@ -57,6 +57,18 @@ func (_u *HostUpdate) SetNillableDesc(v *string) *HostUpdate {
 	return _u
 }
 
+// SetLabels sets the "labels" field.
+func (_u *HostUpdate) SetLabels(v map[string]string) *HostUpdate {
+	_u.mutation.SetLabels(v)
+	return _u
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (_u *HostUpdate) ClearLabels() *HostUpdate {
+	_u.mutation.ClearLabels()
+	return _u
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_u *HostUpdate) SetDateUpdated(v time.Time) *HostUpdate {
 	_u.mutation.SetDateUpdated(v)
@@ -155,6 +167,12 @@ func (_u *HostUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(host.FieldDesc, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.Labels(); ok {
+		_spec.SetField(host.FieldLabels, field.TypeJson, value)
+	}
+	if _u.mutation.LabelsCleared() {
+		_spec.ClearField(host.FieldLabels, field.TypeJson)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(host.FieldDateUpdated, field.TypeTime, value)
 	}
@@ -214,6 +232,18 @@ func (_u *HostUpdateOne) SetNillableDesc(v *string) *HostUpdateOne {
 	if v != nil {
 		_u.SetDesc(*v)
 	}
+	return _u
+}
+
+// SetLabels sets the "labels" field.
+func (_u *HostUpdateOne) SetLabels(v map[string]string) *HostUpdateOne {
+	_u.mutation.SetLabels(v)
+	return _u
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (_u *HostUpdateOne) ClearLabels() *HostUpdateOne {
+	_u.mutation.ClearLabels()
 	return _u
 }
 
@@ -344,6 +374,12 @@ func (_u *HostUpdateOne) sqlSave(ctx context.Context) (_node *Host, err error) {
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(host.FieldDesc, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Labels(); ok {
+		_spec.SetField(host.FieldLabels, field.TypeJson, value)
+	}
+	if _u.mutation.LabelsCleared() {
+		_spec.ClearField(host.FieldLabels, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(host.FieldDateUpdated, field.TypeTime, value)

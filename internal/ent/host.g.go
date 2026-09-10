@@ -21,6 +21,7 @@ func (e *Host) Proto() *rstr.Host {
 	}
 	x.SetName(e.Name)
 	x.SetDesc(e.Desc)
+	x.SetLabels(e.Labels)
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))
@@ -41,6 +42,7 @@ func (e *MailDomain) Proto() *rstr.MailDomain {
 	x.SetName(e.Name)
 	x.SetProvider(e.Provider)
 	x.SetDesc(e.Desc)
+	x.SetLabels(e.Labels)
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))

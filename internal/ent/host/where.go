@@ -216,6 +216,16 @@ func DescContainsFold(v string) predicate.Host {
 	return predicate.Host(sql.FieldContainsFold(FieldDesc, v))
 }
 
+// LabelsIsNil applies the IsNil predicate on the "labels" field.
+func LabelsIsNil() predicate.Host {
+	return predicate.Host(sql.FieldIsNull(FieldLabels))
+}
+
+// LabelsNotNil applies the NotNil predicate on the "labels" field.
+func LabelsNotNil() predicate.Host {
+	return predicate.Host(sql.FieldNotNull(FieldLabels))
+}
+
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
 func DateUpdatedEQ(v time.Time) predicate.Host {
 	return predicate.Host(sql.FieldEQ(FieldDateUpdated, v))

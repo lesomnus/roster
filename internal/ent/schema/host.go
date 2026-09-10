@@ -23,6 +23,8 @@ func (Host) Fields() []ent.Field {
 			Immutable(),
 		field.String("name"),
 		field.String("desc"),
+		field.Json("labels", map[string]string{}).
+			Optional(),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().
@@ -72,6 +74,8 @@ func (MailDomain) Fields() []ent.Field {
 		field.String("name"),
 		field.String("provider"),
 		field.String("desc"),
+		field.Json("labels", map[string]string{}).
+			Optional(),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().

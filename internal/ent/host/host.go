@@ -16,6 +16,8 @@ const (
 	FieldName = "name"
 	// FieldDesc holds the string denoting the desc field in the database.
 	FieldDesc = "desc"
+	// FieldLabels holds the string denoting the labels field in the database.
+	FieldLabels = "labels"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
@@ -42,6 +44,7 @@ var Columns = []string{
 	FieldId,
 	FieldName,
 	FieldDesc,
+	FieldLabels,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,

@@ -59,6 +59,17 @@ type Config struct {
 	Otel   config.OtelConfig   `yaml:"otel"`
 	Watch  config.WatchConfig  `yaml:"watch"`
 
+	// Resources are files declaring rows that are configuration: a customer,
+	// the names it is reached at, the directories its people arrive through.
+	// `serve` applies them before it serves.
+	//
+	// Empty is none, which is every deployment that has not asked for this and
+	// leaves the console the only way those rows are made. See
+	// `cmd/resources.go` for the three rules -- it adds and updates and never
+	// erases, it writes as a `provisioner` the trail can name, and what it
+	// writes it owns.
+	Resources []string `yaml:"resources"`
+
 	// Control is who may call this deployment, and it is roster again -- a
 	// second instance, in this process, on its own database. See
 	// docs/position.md, 'Two planes, one schema'.

@@ -101,6 +101,19 @@ message Host {
 
   string desc = 6;
 
+  // Whatever the deployment keeps about this row that the schema does not name.
+  //
+  // Number seven because that is the one an entity spends on labels or leaves
+  // empty, and this one has a use for it: a row a provisioner wrote carries
+  // `roster.declared` (`cmd/resources.go`), which is what `server/core` reads
+  // to refuse a console edit to something a file owns.
+  //
+  // Metadata about **where the row came from**, which is what a label is for
+  // everywhere else that has them -- and not a setting roster acts on. A
+  // setting goes in a field, so that what is configuration and what is a note
+  // stay tellable apart.
+  map<string, string> labels = 7;
+
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {
@@ -197,6 +210,19 @@ message MailDomain {
   string provider = 9;
 
   string desc = 6;
+
+  // Whatever the deployment keeps about this row that the schema does not name.
+  //
+  // Number seven because that is the one an entity spends on labels or leaves
+  // empty, and this one has a use for it: a row a provisioner wrote carries
+  // `roster.declared` (`cmd/resources.go`), which is what `server/core` reads
+  // to refuse a console edit to something a file owns.
+  //
+  // Metadata about **where the row came from**, which is what a label is for
+  // everywhere else that has them -- and not a setting roster acts on. A
+  // setting goes in a field, so that what is configuration and what is a note
+  // stay tellable apart.
+  map<string, string> labels = 7;
 
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];

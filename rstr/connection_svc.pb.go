@@ -28,6 +28,7 @@ type ConnectionAddRequest struct {
 	xxx_hidden_Tenant      *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
 	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Labels      map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_Issuer      string                 `protobuf:"bytes,8,opt,name=issuer"`
 	xxx_hidden_ClientId    string                 `protobuf:"bytes,9,opt,name=client_id,json=clientId"`
 	xxx_hidden_Scopes      []string               `protobuf:"bytes,10,rep,name=scopes"`
@@ -92,6 +93,13 @@ func (x *ConnectionAddRequest) GetDesc() string {
 	return ""
 }
 
+func (x *ConnectionAddRequest) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
 func (x *ConnectionAddRequest) GetIssuer() string {
 	if x != nil {
 		return x.xxx_hidden_Issuer
@@ -132,7 +140,7 @@ func (x *ConnectionAddRequest) SetId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 10)
 }
 
 func (x *ConnectionAddRequest) SetTenant(v *TenantRef) {
@@ -145,6 +153,10 @@ func (x *ConnectionAddRequest) SetName(v string) {
 
 func (x *ConnectionAddRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = v
+}
+
+func (x *ConnectionAddRequest) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
 }
 
 func (x *ConnectionAddRequest) SetIssuer(v string) {
@@ -208,6 +220,7 @@ type ConnectionAddRequest_builder struct {
 	Tenant      *TenantRef
 	Name        string
 	Desc        string
+	Labels      map[string]string
 	Issuer      string
 	ClientId    string
 	Scopes      []string
@@ -220,12 +233,13 @@ func (b0 ConnectionAddRequest_builder) Build() *ConnectionAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 10)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Tenant = b.Tenant
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Desc = b.Desc
+	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_Issuer = b.Issuer
 	x.xxx_hidden_ClientId = b.ClientId
 	x.xxx_hidden_Scopes = b.Scopes
@@ -606,6 +620,7 @@ type ConnectionSelect struct {
 	xxx_hidden_Tenant      *TenantSelect          `protobuf:"bytes,2,opt,name=tenant"`
 	xxx_hidden_Name        bool                   `protobuf:"varint,5,opt,name=name"`
 	xxx_hidden_Desc        bool                   `protobuf:"varint,6,opt,name=desc"`
+	xxx_hidden_Labels      bool                   `protobuf:"varint,7,opt,name=labels"`
 	xxx_hidden_Issuer      bool                   `protobuf:"varint,8,opt,name=issuer"`
 	xxx_hidden_ClientId    bool                   `protobuf:"varint,9,opt,name=client_id,json=clientId"`
 	xxx_hidden_Scopes      bool                   `protobuf:"varint,10,opt,name=scopes"`
@@ -672,6 +687,13 @@ func (x *ConnectionSelect) GetDesc() bool {
 	return false
 }
 
+func (x *ConnectionSelect) GetLabels() bool {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return false
+}
+
 func (x *ConnectionSelect) GetIssuer() bool {
 	if x != nil {
 		return x.xxx_hidden_Issuer
@@ -723,7 +745,7 @@ func (x *ConnectionSelect) GetDateCreated() bool {
 
 func (x *ConnectionSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 12)
 }
 
 func (x *ConnectionSelect) SetTenant(v *TenantSelect) {
@@ -732,47 +754,52 @@ func (x *ConnectionSelect) SetTenant(v *TenantSelect) {
 
 func (x *ConnectionSelect) SetName(v bool) {
 	x.xxx_hidden_Name = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 12)
 }
 
 func (x *ConnectionSelect) SetDesc(v bool) {
 	x.xxx_hidden_Desc = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 12)
+}
+
+func (x *ConnectionSelect) SetLabels(v bool) {
+	x.xxx_hidden_Labels = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 12)
 }
 
 func (x *ConnectionSelect) SetIssuer(v bool) {
 	x.xxx_hidden_Issuer = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 12)
 }
 
 func (x *ConnectionSelect) SetClientId(v bool) {
 	x.xxx_hidden_ClientId = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 12)
 }
 
 func (x *ConnectionSelect) SetScopes(v bool) {
 	x.xxx_hidden_Scopes = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 12)
 }
 
 func (x *ConnectionSelect) SetSecretRef(v bool) {
 	x.xxx_hidden_SecretRef = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 12)
 }
 
 func (x *ConnectionSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 12)
 }
 
 func (x *ConnectionSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 12)
 }
 
 func (x *ConnectionSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 12)
 }
 
 func (x *ConnectionSelect) HasAll() bool {
@@ -803,53 +830,60 @@ func (x *ConnectionSelect) HasDesc() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
-func (x *ConnectionSelect) HasIssuer() bool {
+func (x *ConnectionSelect) HasLabels() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
 }
 
-func (x *ConnectionSelect) HasClientId() bool {
+func (x *ConnectionSelect) HasIssuer() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
-func (x *ConnectionSelect) HasScopes() bool {
+func (x *ConnectionSelect) HasClientId() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
-func (x *ConnectionSelect) HasSecretRef() bool {
+func (x *ConnectionSelect) HasScopes() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
 }
 
-func (x *ConnectionSelect) HasDateUpdated() bool {
+func (x *ConnectionSelect) HasSecretRef() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
 }
 
-func (x *ConnectionSelect) HasDateErased() bool {
+func (x *ConnectionSelect) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
 }
 
-func (x *ConnectionSelect) HasDateCreated() bool {
+func (x *ConnectionSelect) HasDateErased() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
+}
+
+func (x *ConnectionSelect) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
 }
 
 func (x *ConnectionSelect) ClearAll() {
@@ -871,38 +905,43 @@ func (x *ConnectionSelect) ClearDesc() {
 	x.xxx_hidden_Desc = false
 }
 
-func (x *ConnectionSelect) ClearIssuer() {
+func (x *ConnectionSelect) ClearLabels() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_Labels = false
+}
+
+func (x *ConnectionSelect) ClearIssuer() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
 	x.xxx_hidden_Issuer = false
 }
 
 func (x *ConnectionSelect) ClearClientId() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
 	x.xxx_hidden_ClientId = false
 }
 
 func (x *ConnectionSelect) ClearScopes() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
 	x.xxx_hidden_Scopes = false
 }
 
 func (x *ConnectionSelect) ClearSecretRef() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
 	x.xxx_hidden_SecretRef = false
 }
 
 func (x *ConnectionSelect) ClearDateUpdated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
 	x.xxx_hidden_DateUpdated = false
 }
 
 func (x *ConnectionSelect) ClearDateErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
 	x.xxx_hidden_DateErased = false
 }
 
 func (x *ConnectionSelect) ClearDateCreated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
 	x.xxx_hidden_DateCreated = false
 }
 
@@ -913,6 +952,7 @@ type ConnectionSelect_builder struct {
 	Tenant      *TenantSelect
 	Name        *bool
 	Desc        *bool
+	Labels      *bool
 	Issuer      *bool
 	ClientId    *bool
 	Scopes      *bool
@@ -927,44 +967,48 @@ func (b0 ConnectionSelect_builder) Build() *ConnectionSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 12)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Tenant = b.Tenant
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 12)
 		x.xxx_hidden_Name = *b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 12)
 		x.xxx_hidden_Desc = *b.Desc
 	}
+	if b.Labels != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 12)
+		x.xxx_hidden_Labels = *b.Labels
+	}
 	if b.Issuer != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 12)
 		x.xxx_hidden_Issuer = *b.Issuer
 	}
 	if b.ClientId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 12)
 		x.xxx_hidden_ClientId = *b.ClientId
 	}
 	if b.Scopes != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 12)
 		x.xxx_hidden_Scopes = *b.Scopes
 	}
 	if b.SecretRef != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 12)
 		x.xxx_hidden_SecretRef = *b.SecretRef
 	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 12)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 12)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 12)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	return m0
@@ -975,6 +1019,7 @@ type ConnectionPatchRequest struct {
 	xxx_hidden_Ref              *ConnectionRef         `protobuf:"bytes,1,opt,name=ref"`
 	xxx_hidden_Name             *string                `protobuf:"bytes,10,opt,name=name"`
 	xxx_hidden_Desc             *string                `protobuf:"bytes,12,opt,name=desc"`
+	xxx_hidden_Labels           map[string]string      `protobuf:"bytes,14,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_Issuer           *string                `protobuf:"bytes,16,opt,name=issuer"`
 	xxx_hidden_ClientId         *string                `protobuf:"bytes,18,opt,name=client_id,json=clientId"`
 	xxx_hidden_Scopes           []string               `protobuf:"bytes,20,rep,name=scopes"`
@@ -1039,6 +1084,13 @@ func (x *ConnectionPatchRequest) GetDesc() string {
 	return ""
 }
 
+func (x *ConnectionPatchRequest) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
 func (x *ConnectionPatchRequest) GetIssuer() string {
 	if x != nil {
 		if x.xxx_hidden_Issuer != nil {
@@ -1096,22 +1148,26 @@ func (x *ConnectionPatchRequest) SetRef(v *ConnectionRef) {
 
 func (x *ConnectionPatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 10)
 }
 
 func (x *ConnectionPatchRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 10)
+}
+
+func (x *ConnectionPatchRequest) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
 }
 
 func (x *ConnectionPatchRequest) SetIssuer(v string) {
 	x.xxx_hidden_Issuer = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 10)
 }
 
 func (x *ConnectionPatchRequest) SetClientId(v string) {
 	x.xxx_hidden_ClientId = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 10)
 }
 
 func (x *ConnectionPatchRequest) SetScopes(v []string) {
@@ -1120,7 +1176,7 @@ func (x *ConnectionPatchRequest) SetScopes(v []string) {
 
 func (x *ConnectionPatchRequest) SetSecretRef(v string) {
 	x.xxx_hidden_SecretRef = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 10)
 }
 
 func (x *ConnectionPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -1129,7 +1185,7 @@ func (x *ConnectionPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *ConnectionPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 10)
 }
 
 func (x *ConnectionPatchRequest) HasRef() bool {
@@ -1157,21 +1213,21 @@ func (x *ConnectionPatchRequest) HasIssuer() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
 }
 
 func (x *ConnectionPatchRequest) HasClientId() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
 func (x *ConnectionPatchRequest) HasSecretRef() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
 }
 
 func (x *ConnectionPatchRequest) HasDateUpdated() bool {
@@ -1185,7 +1241,7 @@ func (x *ConnectionPatchRequest) HasDateUpdatedForce() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
 }
 
 func (x *ConnectionPatchRequest) ClearRef() {
@@ -1203,17 +1259,17 @@ func (x *ConnectionPatchRequest) ClearDesc() {
 }
 
 func (x *ConnectionPatchRequest) ClearIssuer() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
 	x.xxx_hidden_Issuer = nil
 }
 
 func (x *ConnectionPatchRequest) ClearClientId() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
 	x.xxx_hidden_ClientId = nil
 }
 
 func (x *ConnectionPatchRequest) ClearSecretRef() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
 	x.xxx_hidden_SecretRef = nil
 }
 
@@ -1222,7 +1278,7 @@ func (x *ConnectionPatchRequest) ClearDateUpdated() {
 }
 
 func (x *ConnectionPatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
 	x.xxx_hidden_DateUpdatedForce = false
 }
 
@@ -1232,6 +1288,7 @@ type ConnectionPatchRequest_builder struct {
 	Ref       *ConnectionRef
 	Name      *string
 	Desc      *string
+	Labels    map[string]string
 	Issuer    *string
 	ClientId  *string
 	Scopes    []string
@@ -1258,29 +1315,30 @@ func (b0 ConnectionPatchRequest_builder) Build() *ConnectionPatchRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 10)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 10)
 		x.xxx_hidden_Desc = b.Desc
 	}
+	x.xxx_hidden_Labels = b.Labels
 	if b.Issuer != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 10)
 		x.xxx_hidden_Issuer = b.Issuer
 	}
 	if b.ClientId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 10)
 		x.xxx_hidden_ClientId = b.ClientId
 	}
 	x.xxx_hidden_Scopes = b.Scopes
 	if b.SecretRef != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 10)
 		x.xxx_hidden_SecretRef = b.SecretRef
 	}
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 10)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	return m0
@@ -1977,19 +2035,23 @@ var File_app_connection_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_connection_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1aapp/connection_svc.g.proto\x12\x06roster\x1a\x14app/connection.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/tenant_svc.g.proto\"\xc7\x02\n" +
+	"\x1aapp/connection_svc.g.proto\x12\x06roster\x1a\x14app/connection.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/tenant_svc.g.proto\"\xc4\x03\n" +
 	"\x14ConnectionAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
-	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12\x1d\n" +
+	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12@\n" +
+	"\x06labels\x18\a \x03(\v2(.roster.ConnectionAddRequest.LabelsEntryR\x06labels\x12\x1d\n" +
 	"\x06issuer\x18\b \x01(\tB\x05\xaa\x01\x02\b\x02R\x06issuer\x12\"\n" +
 	"\tclient_id\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\bclientId\x12\x16\n" +
 	"\x06scopes\x18\n" +
 	" \x03(\tR\x06scopes\x12$\n" +
 	"\n" +
 	"secret_ref\x18\v \x01(\tB\x05\xaa\x01\x02\b\x02R\tsecretRef\x12=\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"q\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"q\n" +
 	"\x14ConnectionGetRequest\x12'\n" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.ConnectionRefR\x03ref\x120\n" +
 	"\x06select\x18\x02 \x01(\v2\x18.roster.ConnectionSelectR\x06select\"U\n" +
@@ -1999,12 +2061,13 @@ const file_app_connection_svc_g_proto_rawDesc = "" +
 	"\x03key\"R\n" +
 	"\x11ConnectionRefByAt\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x12\n" +
-	"\x04name\x18\x05 \x01(\tR\x04name\"\xcd\x02\n" +
+	"\x04name\x18\x05 \x01(\tR\x04name\"\xe5\x02\n" +
 	"\x10ConnectionSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x14.roster.TenantSelectR\x06tenant\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\bR\x04name\x12\x12\n" +
 	"\x04desc\x18\x06 \x01(\bR\x04desc\x12\x16\n" +
+	"\x06labels\x18\a \x01(\bR\x06labels\x12\x16\n" +
 	"\x06issuer\x18\b \x01(\bR\x06issuer\x12\x1b\n" +
 	"\tclient_id\x18\t \x01(\bR\bclientId\x12\x16\n" +
 	"\x06scopes\x18\n" +
@@ -2014,19 +2077,23 @@ const file_app_connection_svc_g_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xc2\x02\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xc1\x03\n" +
 	"\x16ConnectionPatchRequest\x12'\n" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.ConnectionRefR\x03ref\x12\x12\n" +
 	"\x04name\x18\n" +
 	" \x01(\tR\x04name\x12\x12\n" +
-	"\x04desc\x18\f \x01(\tR\x04desc\x12\x16\n" +
+	"\x04desc\x18\f \x01(\tR\x04desc\x12B\n" +
+	"\x06labels\x18\x0e \x03(\v2*.roster.ConnectionPatchRequest.LabelsEntryR\x06labels\x12\x16\n" +
 	"\x06issuer\x18\x10 \x01(\tR\x06issuer\x12\x1b\n" +
 	"\tclient_id\x18\x12 \x01(\tR\bclientId\x12\x16\n" +
 	"\x06scopes\x18\x14 \x03(\tR\x06scopes\x12\x1d\n" +
 	"\n" +
 	"secret_ref\x18\x16 \x01(\tR\tsecretRef\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"e\n" +
+	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"e\n" +
 	"\x16ConnectionApplyRequest\x12'\n" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.ConnectionRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"1\n" +
@@ -2061,7 +2128,7 @@ const file_app_connection_svc_g_proto_rawDesc = "" +
 	"\x04List\x12\x1d.roster.ConnectionListRequest\x1a\x1e.roster.ConnectionListResponse\x12=\n" +
 	"\x06Update\x12\x1f.roster.ConnectionUpdateRequest\x1a\x12.roster.ConnectionB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_connection_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_app_connection_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_app_connection_svc_g_proto_goTypes = []any{
 	(*ConnectionAddRequest)(nil),    // 0: roster.ConnectionAddRequest
 	(*ConnectionGetRequest)(nil),    // 1: roster.ConnectionGetRequest
@@ -2075,49 +2142,53 @@ var file_app_connection_svc_g_proto_goTypes = []any{
 	(*ConnectionListResponse)(nil),  // 9: roster.ConnectionListResponse
 	(*ConnectionFilter)(nil),        // 10: roster.ConnectionFilter
 	(*ConnectionUpdateRequest)(nil), // 11: roster.ConnectionUpdateRequest
-	(*TenantRef)(nil),               // 12: roster.TenantRef
-	(*timestamppb.Timestamp)(nil),   // 13: google.protobuf.Timestamp
-	(*TenantSelect)(nil),            // 14: roster.TenantSelect
-	(*patchpb.Patch)(nil),           // 15: patch.Patch
-	(*Connection)(nil),              // 16: roster.Connection
+	nil,                             // 12: roster.ConnectionAddRequest.LabelsEntry
+	nil,                             // 13: roster.ConnectionPatchRequest.LabelsEntry
+	(*TenantRef)(nil),               // 14: roster.TenantRef
+	(*timestamppb.Timestamp)(nil),   // 15: google.protobuf.Timestamp
+	(*TenantSelect)(nil),            // 16: roster.TenantSelect
+	(*patchpb.Patch)(nil),           // 17: patch.Patch
+	(*Connection)(nil),              // 18: roster.Connection
 }
 var file_app_connection_svc_g_proto_depIdxs = []int32{
-	12, // 0: roster.ConnectionAddRequest.tenant:type_name -> roster.TenantRef
-	13, // 1: roster.ConnectionAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	2,  // 2: roster.ConnectionGetRequest.ref:type_name -> roster.ConnectionRef
-	4,  // 3: roster.ConnectionGetRequest.select:type_name -> roster.ConnectionSelect
-	3,  // 4: roster.ConnectionRef.at:type_name -> roster.ConnectionRefByAt
-	12, // 5: roster.ConnectionRefByAt.tenant:type_name -> roster.TenantRef
-	14, // 6: roster.ConnectionSelect.tenant:type_name -> roster.TenantSelect
-	2,  // 7: roster.ConnectionPatchRequest.ref:type_name -> roster.ConnectionRef
-	13, // 8: roster.ConnectionPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 9: roster.ConnectionApplyRequest.ref:type_name -> roster.ConnectionRef
-	15, // 10: roster.ConnectionApplyRequest.patch:type_name -> patch.Patch
-	10, // 11: roster.ConnectionListRequest.filters:type_name -> roster.ConnectionFilter
-	16, // 12: roster.ConnectionListResponse.items:type_name -> roster.Connection
-	2,  // 13: roster.ConnectionFilter.ref:type_name -> roster.ConnectionRef
-	12, // 14: roster.ConnectionFilter.tenant:type_name -> roster.TenantRef
-	2,  // 15: roster.ConnectionUpdateRequest.ref:type_name -> roster.ConnectionRef
-	13, // 16: roster.ConnectionUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
-	0,  // 17: roster.ConnectionService.Add:input_type -> roster.ConnectionAddRequest
-	1,  // 18: roster.ConnectionService.Get:input_type -> roster.ConnectionGetRequest
-	5,  // 19: roster.ConnectionService.Patch:input_type -> roster.ConnectionPatchRequest
-	6,  // 20: roster.ConnectionService.Apply:input_type -> roster.ConnectionApplyRequest
-	2,  // 21: roster.ConnectionService.Erase:input_type -> roster.ConnectionRef
-	8,  // 22: roster.ConnectionService.List:input_type -> roster.ConnectionListRequest
-	11, // 23: roster.ConnectionService.Update:input_type -> roster.ConnectionUpdateRequest
-	16, // 24: roster.ConnectionService.Add:output_type -> roster.Connection
-	16, // 25: roster.ConnectionService.Get:output_type -> roster.Connection
-	16, // 26: roster.ConnectionService.Patch:output_type -> roster.Connection
-	16, // 27: roster.ConnectionService.Apply:output_type -> roster.Connection
-	7,  // 28: roster.ConnectionService.Erase:output_type -> roster.ConnectionEraseResponse
-	9,  // 29: roster.ConnectionService.List:output_type -> roster.ConnectionListResponse
-	16, // 30: roster.ConnectionService.Update:output_type -> roster.Connection
-	24, // [24:31] is the sub-list for method output_type
-	17, // [17:24] is the sub-list for method input_type
-	17, // [17:17] is the sub-list for extension type_name
-	17, // [17:17] is the sub-list for extension extendee
-	0,  // [0:17] is the sub-list for field type_name
+	14, // 0: roster.ConnectionAddRequest.tenant:type_name -> roster.TenantRef
+	12, // 1: roster.ConnectionAddRequest.labels:type_name -> roster.ConnectionAddRequest.LabelsEntry
+	15, // 2: roster.ConnectionAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	2,  // 3: roster.ConnectionGetRequest.ref:type_name -> roster.ConnectionRef
+	4,  // 4: roster.ConnectionGetRequest.select:type_name -> roster.ConnectionSelect
+	3,  // 5: roster.ConnectionRef.at:type_name -> roster.ConnectionRefByAt
+	14, // 6: roster.ConnectionRefByAt.tenant:type_name -> roster.TenantRef
+	16, // 7: roster.ConnectionSelect.tenant:type_name -> roster.TenantSelect
+	2,  // 8: roster.ConnectionPatchRequest.ref:type_name -> roster.ConnectionRef
+	13, // 9: roster.ConnectionPatchRequest.labels:type_name -> roster.ConnectionPatchRequest.LabelsEntry
+	15, // 10: roster.ConnectionPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 11: roster.ConnectionApplyRequest.ref:type_name -> roster.ConnectionRef
+	17, // 12: roster.ConnectionApplyRequest.patch:type_name -> patch.Patch
+	10, // 13: roster.ConnectionListRequest.filters:type_name -> roster.ConnectionFilter
+	18, // 14: roster.ConnectionListResponse.items:type_name -> roster.Connection
+	2,  // 15: roster.ConnectionFilter.ref:type_name -> roster.ConnectionRef
+	14, // 16: roster.ConnectionFilter.tenant:type_name -> roster.TenantRef
+	2,  // 17: roster.ConnectionUpdateRequest.ref:type_name -> roster.ConnectionRef
+	15, // 18: roster.ConnectionUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
+	0,  // 19: roster.ConnectionService.Add:input_type -> roster.ConnectionAddRequest
+	1,  // 20: roster.ConnectionService.Get:input_type -> roster.ConnectionGetRequest
+	5,  // 21: roster.ConnectionService.Patch:input_type -> roster.ConnectionPatchRequest
+	6,  // 22: roster.ConnectionService.Apply:input_type -> roster.ConnectionApplyRequest
+	2,  // 23: roster.ConnectionService.Erase:input_type -> roster.ConnectionRef
+	8,  // 24: roster.ConnectionService.List:input_type -> roster.ConnectionListRequest
+	11, // 25: roster.ConnectionService.Update:input_type -> roster.ConnectionUpdateRequest
+	18, // 26: roster.ConnectionService.Add:output_type -> roster.Connection
+	18, // 27: roster.ConnectionService.Get:output_type -> roster.Connection
+	18, // 28: roster.ConnectionService.Patch:output_type -> roster.Connection
+	18, // 29: roster.ConnectionService.Apply:output_type -> roster.Connection
+	7,  // 30: roster.ConnectionService.Erase:output_type -> roster.ConnectionEraseResponse
+	9,  // 31: roster.ConnectionService.List:output_type -> roster.ConnectionListResponse
+	18, // 32: roster.ConnectionService.Update:output_type -> roster.Connection
+	26, // [26:33] is the sub-list for method output_type
+	19, // [19:26] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_app_connection_svc_g_proto_init() }
@@ -2137,7 +2208,7 @@ func file_app_connection_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_connection_svc_g_proto_rawDesc), len(file_app_connection_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -41,6 +41,12 @@ func (_c *MailDomainCreate) SetDesc(v string) *MailDomainCreate {
 	return _c
 }
 
+// SetLabels sets the "labels" field.
+func (_c *MailDomainCreate) SetLabels(v map[string]string) *MailDomainCreate {
+	_c.mutation.SetLabels(v)
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *MailDomainCreate) SetDateUpdated(v time.Time) *MailDomainCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -194,6 +200,10 @@ func (_c *MailDomainCreate) createSpec() (*MailDomain, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Desc(); ok {
 		_spec.SetField(maildomain.FieldDesc, field.TypeString, value)
 		_node.Desc = value
+	}
+	if value, ok := _c.mutation.Labels(); ok {
+		_spec.SetField(maildomain.FieldLabels, field.TypeJson, value)
+		_node.Labels = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(maildomain.FieldDateUpdated, field.TypeTime, value)
