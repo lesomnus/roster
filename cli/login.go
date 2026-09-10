@@ -375,8 +375,11 @@ func provision(ctx context.Context, s *cmd.Server, alias, out string, methods []
 		return err
 	}
 
+	// `methods` and not `LoginMethods`: the count is the one that was written,
+	// and a line reporting the base list while a policy widened it is a line
+	// that says twelve on the run that granted thirteen.
 	fmt.Fprintf(os.Stderr, "roster: %s: key for @%s/%s written to %s, allowing %d method(s).\n",
-		alias, alias, provisioned, path, len(LoginMethods))
+		alias, alias, provisioned, path, len(methods))
 
 	return nil
 }
