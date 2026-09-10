@@ -72,12 +72,30 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 	-ldflags="-s -w -X github.com/lesomnus/payday/version.version=${APP_VERSION}" \
 	-o /out/roster ./cmd/roster
 
+# And the example product app, which is not roster and is in this image anyway.
+#
+# It is the second half of a deployment's smoke test: `oauth2-proxy` in front of
+# a static page proves the issuer is one a standard relying party accepts, and
+# this proves the pieces an app written against payday actually uses -- the
+# token verified in-process, `sub` read alone, a session of the app's own.
+# Neither covers the other and a deployment has both shapes in it.
+#
+# A second image would be a second build, a second tag and a second thing to
+# pin; a second binary is a few megabytes and no pipeline. It is named for what
+# it is, nothing runs it unless a deployment says so, and deleting this stanza
+# is the whole of removing it.
+RUN --mount=type=cache,target=/root/.cache/go-build \
+	CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+	go build -trimpath -ldflags="-s -w" \
+	-o /out/example-product ./examples/product
+
 # Static rather than scratch: `roster account serve` makes outbound TLS calls to
 # whatever providers a tenant wrote down as `Connection` rows, so it needs root
 # certificates, and this is the smallest base that has them and a nonroot uid.
 FROM gcr.io/distroless/static-debian12:nonroot AS app
 
 COPY --from=build /out/roster /usr/local/bin/roster
+COPY --from=build /out/example-product /usr/local/bin/example-product
 
 # Where the three pages land. A deployment points at each:
 #
@@ -114,6 +132,7 @@ FROM alpine:3.22 AS dev
 RUN apk add --no-cache ca-certificates curl oath-toolkit-oathtool
 
 COPY --from=build /out/roster /usr/local/bin/roster
+COPY --from=build /out/example-product /usr/local/bin/example-product
 COPY --from=page /src/ts/dist/console /usr/share/roster/console
 COPY --from=page /src/ts/dist/account /usr/share/roster/account
 COPY --from=page /src/ts/dist/login /usr/share/roster/login

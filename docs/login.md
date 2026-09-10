@@ -682,6 +682,33 @@ what it demonstrates is a per-tenant caller and not the control-plane one this
 section is about. The paragraph above is the answer for a caller that acts
 across every tenant — custody — and its own tests are where that is exercised.
 
+## Two demos, because the two shapes fail differently
+
+`docs/position.md` says a deployment with several services should not replace
+its reverse proxy but **change what the proxy points at**. That is one of the
+two shapes an app can take, and there is a runnable example of each -- neither
+covers the other, and a real deployment has both in it.
+
+| | the app is | it proves |
+| --- | --- | --- |
+| a proxy in front | oblivious. It serves bytes and `oauth2-proxy` holds the session | the issuer is one a **standard, third-party** relying party accepts. Not our code being lenient about our own tokens |
+| `examples/product` | the relying party. It exchanges, verifies, and keeps a session of its own | the pieces an app written against payday uses: `authoidc.Subject` reading `sub` alone, `authsession` holding an opaque cookie |
+
+`examples/product` is not `examples/sso`, and the difference is which side
+roster is on. There, a provider sits **above** roster -- somebody arrives from
+Google or Entra and roster is asked who that is -- so pointing it at roster's
+own Hydra would be circular, since the `sub` there is already the `Holder.id` it
+would be looking an `Identity` up by. Here roster is **below** the issuer, which
+is this section's picture from the product's side, and the app never calls
+roster at all.
+
+Its tests found the thing that reads as a bug and is not: signing out ends the
+**app's** session and the issuer was not asked, so the next page starts a flow
+that Hydra answers without a form. Nothing leaks, and a person who clicked
+*sign out* and landed signed in would still say something is wrong -- which is
+what the logout endpoints are for, and the paragraph above about back-channel
+logout being the product app's half.
+
 ## See also
 
 - [`server/vouch`](../server/vouch) — the package comment is the detail
