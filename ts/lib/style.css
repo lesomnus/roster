@@ -655,26 +655,72 @@ p.bad {
 	margin: 0;
 }
 
-.providers a.button,
 .providers button {
 	display: flex;
 	align-items: center;
+	justify-content: center;
 	gap: var(--s-2);
 	width: 100%;
 }
 
-/* A provider reads down the list in three columns: the mark, "sign in with",
-   the name. They line up because the first two are the same width in every row
-   -- the slot is fixed whether or not a mark went in it, and the middle is the
-   same string every time -- so the names start where the name above starts.
-   Centred, they did not: a long name pushed its own logo left. */
+/* A provider reads down the list in three columns -- the mark, "sign in with",
+   the name -- and the three of them sit in the **middle** of the row.
+ *
+ * Those two wants pull against each other, which is why this is a grid and not
+ * a flex line. Centring each row on its own makes the columns disagree, since
+ * the rows are different widths; aligning them by starting each row at the left
+ * leaves the list hanging off one edge of a card that is centred about
+ * everything else.
+ *
+ * So the columns belong to the **list** and every row borrows them: five
+ * tracks, `1fr` on each end and the three real ones between, and a row is a
+ * subgrid spanning all five. The equal `1fr`s are what centres the group, and
+ * because the tracks are the list's, the widest name sets the column for every
+ * row rather than for its own.
+ *
+ * Baseline flexbox is left behind for a browser without subgrid -- aligned and
+ * not centred, which is the half worth keeping of the two. */
 .providers a.button {
+	display: flex;
+	align-items: center;
 	justify-content: start;
+	gap: var(--s-2);
+	width: 100%;
 	text-align: left;
 }
 
-.providers button {
-	justify-content: center;
+@supports (grid-template-columns: subgrid) {
+	.providers {
+		display: grid;
+		grid-template-columns: 1fr auto auto auto 1fr;
+		gap: var(--s-2) 0;
+	}
+
+	.providers a.button {
+		display: grid;
+		grid-column: 1 / -1;
+		grid-template-columns: subgrid;
+		align-items: center;
+		gap: 0;
+	}
+
+	.providers a.button > .mark {
+		grid-column: 2;
+	}
+
+	.providers a.button > .with {
+		grid-column: 3;
+		margin: 0 var(--s-2);
+	}
+
+	.providers a.button > .who {
+		grid-column: 4;
+	}
+
+	/* Not a subgrid row: it has one label and no columns to line up with. */
+	.providers button {
+		grid-column: 1 / -1;
+	}
 }
 
 /* The vendor's own mark, at the height of the text beside it, in a slot that
