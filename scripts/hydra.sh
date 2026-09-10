@@ -97,6 +97,19 @@ invalidate="$(docker compose exec -T -e "GATE=${gate}" roster sh -lc \
 		2>/dev/null' | tr -d "\r\n")"
 case "${invalidate}" in rt_*) ;; *) echo "no key to sign her out with: ${invalidate}" >&2; exit 1;; esac
 
+# Before any of it: are the clients registered in a way this stack works with?
+#
+# It is the cheapest gate here and the one that would have caught three of the
+# four defects a person found in a browser this week -- a missing
+# `post_logout_redirect_uris`, a `token_endpoint_auth_method` nothing here
+# sends, a client named in `login.clients` that Hydra has never heard of. The
+# walks below exercise the stack; this asks whether the stack is put together
+# right, which is a different question and a much faster one.
+echo
+echo "== the clients, as hydra has them"
+docker compose run --rm --no-deps --entrypoint roster login \
+	login doctor --hydra http://hydra:4445 --client "${SEED_CUSTOMER:-contoso}=demo,behind,itself"
+
 # The walk, twice: once as deployed, and once with the consent screen on.
 #
 # In the dev image and on the compose network, so nothing has to be published

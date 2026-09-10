@@ -166,6 +166,50 @@ func (a admin) logout(ctx context.Context, challenge string) (*logoutRequest, er
 // The body is empty and there is nothing to say: unlike a login or a consent,
 // there is no subject to name and no scope to grant. What is being answered is
 // whether the person meant it.
+// getClient reads one registered OAuth client, and answers `nil` for one Hydra
+// has never heard of.
+//
+// Not through [admin.do], which builds the path every challenge shares --
+// `requests/<thing>?<param>=<challenge>`. A client is addressed by its id in the
+// path and there is no challenge, so it is the one call here that is shaped
+// differently.
+func (a admin) getClient(ctx context.Context, id string) (*hydraClient, error) {
+	u := fmt.Sprintf("%s/admin/clients/%s", a.base, url.PathEscape(id))
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+	if err != nil {
+		return nil, err
+	}
+	for k, vs := range a.header {
+		for _, v := range vs {
+			req.Header.Add(k, v)
+		}
+	}
+	req.Header.Set("accept", "application/json")
+
+	res, err := a.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("login: hydra: %w", err)
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+	if res.StatusCode/100 != 2 {
+		b, _ := io.ReadAll(io.LimitReader(res.Body, 4<<10))
+
+		return nil, fmt.Errorf("login: hydra: GET clients/%s: %s: %s", id, res.Status, bytes.TrimSpace(b))
+	}
+
+	v := &hydraClient{}
+	if err := json.NewDecoder(res.Body).Decode(v); err != nil {
+		return nil, err
+	}
+
+	return v, nil
+}
+
 // rejectLogout is somebody answering the confirmation with no.
 //
 // It answers nothing to redirect to, and Hydra's own API has no body for it:

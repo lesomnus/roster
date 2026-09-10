@@ -30,6 +30,7 @@ the page, one of the two is wrong and both are load-bearing.
 
 | the promise | pinned by |
 | --- | --- |
+| the OAuth clients this app fronts are registered in a way it works with, and a deployment can ask before anybody clicks anything: the method its relying parties send the secret with, a callback, a way back from a sign-out, and no client named here that the issuer has never heard of | `TestDoctorFindsWhatCostAnHourEach` · `TestDoctorFindsAClientNamedHereAndNowhereElse` · `scripts/hydra.sh` |
 | `roster init` seeds one operator bound to `/roster.*/*`, prints the password once, and the identifier it prints is the row it wrote | `TestInitSeedsAnOperator` · `TestInitLeavesTheTwoFilesTheTutorialNames` |
 | the password init printed signs the operator in; a wrong one, an unknown alias, and a data-plane holder do not | `TestAGivenPasswordIsTheOneThatSignsIn` · `TestAnOperatorSignsIn` |
 | the shipped `roster.yaml`, unedited, is a working first run: `init`, two SQLite files, a server that builds and passes its readiness check | `TestTheShippedConfigurationIsAFirstRun` |

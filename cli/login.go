@@ -45,7 +45,7 @@ func NewCmdLogin(c *cmd.Config) *xli.Command {
 		Name:  "login",
 		Brief: "the Login App, for a deployment with Hydra in front",
 
-		Commands: xli.Commands{newCmdLoginServe(c), newCmdLoginProvision(c)},
+		Commands: xli.Commands{newCmdLoginServe(c), newCmdLoginProvision(c), newCmdLoginDoctor(c)},
 	}
 }
 
@@ -255,6 +255,74 @@ func newCmdLoginProvision(c *cmd.Config) *xli.Command {
 			}
 
 			return nil
+		}),
+	}
+}
+
+// newCmdLoginDoctor is the check a deployment runs before anybody clicks
+// anything, and `login/doctor.go` says at length what it is for.
+//
+// It exits **1** when something is broken, so a Job that runs it fails rather
+// than logging into a stream nobody reads. Fragile findings are printed and do
+// not fail: they are things that work, and a deployment that has decided to
+// live with one should not have a red sync forever.
+func newCmdLoginDoctor(c *cmd.Config) *xli.Command {
+	return &xli.Command{
+		Name:  "doctor",
+		Brief: "ask hydra whether the clients this app fronts are registered in a way this stack works with",
+
+		Flags: flg.Flags{
+			&flg.String{Name: "hydra", Brief: "where hydra's admin API answers; the `login.hydra.admin` block otherwise"},
+			&flg.Strings{Name: "client", Brief: "which OAuth clients are an operator's, as alias=client-id[,…]; the `login.clients` block otherwise"},
+		},
+
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			given, _ := flg.Find[[]string](cl, "client")
+			clients, err := clientsOf(c.Login.Clients, LoginClientPrefix, given)
+			if err != nil {
+				return err
+			}
+			if len(clients) == 0 {
+				return errors.New("login.clients (--client alias=…): which operators this app fronts, and there are none")
+			}
+
+			at, _ := flg.Find[string](cl, "hydra")
+			if at == "" {
+				at = c.Login.Hydra.Admin
+			}
+			if at == "" {
+				return errors.New("login.hydra.admin (--hydra): where hydra's admin API answers")
+			}
+
+			found, err := login.Doctor(ctx, at, nil, clients)
+			if err != nil {
+				return err
+			}
+
+			broken := 0
+			for _, f := range found {
+				if f.Severity == login.Broken {
+					broken++
+				}
+				fmt.Fprintln(os.Stdout, f)
+			}
+
+			n := 0
+			for _, ids := range clients {
+				n += len(ids)
+			}
+			if len(found) == 0 {
+				fmt.Fprintf(os.Stdout, "ok: %d client(s), nothing this can see is wrong\n", n)
+
+				return nil
+			}
+			if broken == 0 {
+				fmt.Fprintf(os.Stdout, "%d client(s): nothing broken, %d thing(s) to know about\n", n, len(found))
+
+				return nil
+			}
+
+			return fmt.Errorf("%d of %d client(s) cannot sign anybody in", broken, n)
 		}),
 	}
 }
