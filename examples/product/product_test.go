@@ -209,8 +209,39 @@ func TestSigningOutAsksTheIssuerToForgetToo(t *testing.T) {
 	// redirect is to `/`, which signs them straight back in.
 	to := res.Header.Get("location")
 	x.Contains(to, a.endSession, "sign-out did not reach the issuer's end-session endpoint")
-	x.Contains(to, "post_logout_redirect_uri")
 	x.Contains(to, "client_id="+audience)
+
+	// And the hint, **with** the redirect and never without it: Hydra refuses
+	// a `post_logout_redirect_uri` that comes with no `id_token_hint`, in as
+	// many words, and asking anyway turns a sign-out that quietly did half the
+	// job into one that errors.
+	x.Contains(to, "id_token_hint=")
+	x.Contains(to, "post_logout_redirect_uri")
+}
+
+// TestASignOutWithNoSessionAsksForNoRedirect is the other half of that rule.
+//
+// No session is no hint, and no hint means the redirect back may not be asked
+// for. What somebody gets is a logout that works and a page that is the
+// issuer's -- which is worse to look at and better than an error.
+func TestASignOutWithNoSessionAsksForNoRedirect(t *testing.T) {
+	x := require.New(t)
+	p := idptest.New(t, audience)
+	p.Subject = "somebody"
+
+	a, s := serve(t, p)
+
+	no := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error {
+		return http.ErrUseLastResponse
+	}}
+	res, err := no.Get(s.URL + "/sign-out")
+	x.NoError(err)
+	defer res.Body.Close()
+
+	to := res.Header.Get("location")
+	x.Contains(to, a.endSession)
+	x.NotContains(to, "id_token_hint")
+	x.NotContains(to, "post_logout_redirect_uri")
 }
 
 // TestAnIssuerWithNoEndSessionEndpointStillSignsOutHere: what the other half

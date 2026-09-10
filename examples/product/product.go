@@ -291,7 +291,22 @@ func (a *app) callback(w http.ResponseWriter, r *http.Request) {
 	var claims map[string]any
 	_ = id.Claims(&claims)
 
-	held := map[string]string{}
+	held := map[string]string{
+		// **Kept, and only for signing out.**
+		//
+		// The paragraph above says the token is used once and thrown away, and
+		// that is still what happens to it as a credential: nothing below reads
+		// it to decide anything, and every later request is answered from the
+		// session. What it is kept for is `id_token_hint`, which the issuer
+		// requires before it will send a browser back to this app after a
+		// logout -- Hydra refuses a `post_logout_redirect_uri` without one, and
+		// the alternative is signing somebody out onto a stranger's page.
+		//
+		// It costs cookie: this session is sealed into one, so the token's
+		// bytes ride in every request. A product with a session **store** puts
+		// it there instead and pays nothing.
+		hint: raw,
+	}
 	for _, k := range []string{"preferred_username", "name", "email", "iss", "aud", "exp"} {
 		if v, ok := claims[k]; ok {
 			held[k] = fmt.Sprint(v)
@@ -343,6 +358,12 @@ func (a *app) callback(w http.ResponseWriter, r *http.Request) {
 // issuer knows an app asked, and that is the fact a confirmation screen exists
 // to establish.
 func (a *app) signOut(w http.ResponseWriter, r *http.Request) {
+	// Read **before** ending, because the hint is in the session that is about
+	// to go.
+	held := ""
+	if v, err := a.sessions.Read(r.Context(), a.sessions.KeyOf(cookiesOf(r))); err == nil {
+		held = v.Held[hint]
+	}
 	http.SetCookie(w, a.sessions.End(r.Context(), a.sessions.KeyOf(cookiesOf(r))))
 
 	if a.endSession == "" {
@@ -358,8 +379,19 @@ func (a *app) signOut(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	q := to.Query()
-	q.Set("post_logout_redirect_uri", a.base)
 	q.Set("client_id", a.cfg.ClientID)
+
+	// **The redirect back is asked for only with the hint**, because the issuer
+	// refuses it without one -- Hydra says so in as many words. Without the
+	// hint this still signs somebody out; what they do not get is a way back
+	// here, and they land on whatever page the issuer ends a logout on.
+	//
+	// Asking anyway is the shape this had for an afternoon, and it turned a
+	// sign-out that quietly did half the job into one that errored.
+	if held != "" {
+		q.Set("id_token_hint", held)
+		q.Set("post_logout_redirect_uri", a.base)
+	}
 	to.RawQuery = q.Encode()
 
 	http.Redirect(w, r, to.String(), http.StatusSeeOther)
@@ -383,6 +415,10 @@ func (a *app) who(r *http.Request) ([][2]string, error) {
 
 	return out, nil
 }
+
+// hint is where the token is kept, and it is kept for one thing: the issuer
+// requires it before sending a browser back here after a logout.
+const hint = "id_token"
 
 func cookiesOf(r *http.Request) []string { return r.Header.Values("cookie") }
 

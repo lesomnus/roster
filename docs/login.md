@@ -379,9 +379,17 @@ handing a person a button about a thing a third party caused is worse than doing
 nothing. `rp_initiated` is the field, and it is what a confirmation screen would
 have been for.
 
-`id_token_hint` is not sent, because the token is used once at the callback and
-thrown away. What answers the question it would have answered is `rp_initiated`
-at the other end.
+⚠️ **The redirect back needs `id_token_hint`**, and Hydra says so in as many
+words: *logout failed because query parameter post_logout_redirect_uri is set
+but id_token_hint is missing.* This was written the other way round first, on
+the reasoning that `rp_initiated` answers the question a hint would -- which is
+true of the **confirmation** and not of the redirect, and made a sign-out that
+quietly did half the job into one that errored.
+
+So an app that wants somebody to land back on its own page keeps the token for
+that and nothing else -- `examples/product` does, in its session, and pays for
+it in cookie. An app that cannot asks for no redirect and signs out onto the
+issuer's own page. Both end the session; only one comes back.
 
 **It does not reach the other products.** Somebody signed in to two apps who
 signs out of one ends the issuer's memory and that app's session; the second
