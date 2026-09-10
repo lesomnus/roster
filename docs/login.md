@@ -373,11 +373,29 @@ along: every client this app can front was registered by the deployment for one
 of its own operators, so a *sign out* that arrived from one of them is a person
 who clicked *sign out*.
 
-⚠️ A logout **no relying party started** is refused rather than asked about.
-Somebody typed the URL, or a page they were reading loaded it as an image — and
-handing a person a button about a thing a third party caused is worse than doing
-nothing. `rp_initiated` is the field, and it is what a confirmation screen would
-have been for.
+⚠️ `rp_initiated` does **not** mean a relying party asked. It means the request
+carried an `id_token_hint`. Hydra raises the challenge either way and asks this
+app about it (v2.2.0, `consent/strategy_default.go`: no hint, `RPInitiated:
+false`, and it redirects here regardless).
+
+This was read as the wider thing and such a logout was **refused** — on the
+reasoning that somebody had typed the URL or a page had loaded it as an image,
+and that handing a person a button about a thing a third party caused is worse
+than doing nothing. What it actually refused was every sign-out from an app that
+does not keep its `id_token`, which is most of them. A cluster reported it as a
+page saying `no`.
+
+So there is a confirmation screen, which is what the refusal was standing in
+for. A third party can cause a **question**; the person who did click *sign out*
+answers it. It names no app, because a request that proved which one is a
+request this screen is never drawn for, and a likely name would be a guess drawn
+on a page somebody is about to trust. It says what signing out here does not
+reach — every other app's own session, below. A no is `logout/reject` and
+nowhere to send the browser, because there is no relying party waiting.
+
+And it is the same rule as everywhere else: `POST /logout` asks Hydra about the
+challenge again rather than believing the form, so the confirmation cannot be
+skipped by posting the challenge of a logout an app **did** start.
 
 ⚠️ **The redirect back needs `id_token_hint`**, and Hydra says so in as many
 words: *logout failed because query parameter post_logout_redirect_uri is set
@@ -389,7 +407,9 @@ quietly did half the job into one that errored.
 So an app that wants somebody to land back on its own page keeps the token for
 that and nothing else -- `examples/product` does, in its session, and pays for
 it in cookie. An app that cannot asks for no redirect and signs out onto the
-issuer's own page. Both end the session; only one comes back.
+issuer's own page. Both end the session; only one comes back -- and the one that
+does not is also the one that gets the confirmation screen, because the same
+missing hint decides both.
 
 **It does not reach the other products.** Somebody signed in to two apps who
 signs out of one ends the issuer's memory and that app's session; the second

@@ -166,6 +166,16 @@ func (a admin) logout(ctx context.Context, challenge string) (*logoutRequest, er
 // The body is empty and there is nothing to say: unlike a login or a consent,
 // there is no subject to name and no scope to grant. What is being answered is
 // whether the person meant it.
+// rejectLogout is somebody answering the confirmation with no.
+//
+// It answers nothing to redirect to, and Hydra's own API has no body for it:
+// there is no relying party waiting to be told, because the whole reason a
+// person was asked is that nobody proved there was one. The browser stays
+// where it is, signed in, which is what the answer meant.
+func (a admin) rejectLogout(ctx context.Context, challenge string) error {
+	return a.do(ctx, http.MethodPut, "logout/reject", "logout_challenge", challenge, struct{}{}, nil)
+}
+
 func (a admin) acceptLogout(ctx context.Context, challenge string) (string, error) {
 	v := &redirect{}
 	if err := a.do(ctx, http.MethodPut, "logout/accept", "logout_challenge", challenge, struct{}{}, v); err != nil {
@@ -288,6 +298,13 @@ func (a admin) do(ctx context.Context, method, path, param, challenge string, in
 		b, _ := io.ReadAll(io.LimitReader(res.Body, 4<<10))
 
 		return fmt.Errorf("login: hydra: %s %s: %s: %s", method, path, res.Status, bytes.TrimSpace(b))
+	}
+
+	// Nothing to read, for the one call that answers nothing: Hydra's
+	// `logout/reject` is a 204, and decoding into a nil is an error about this
+	// code rather than about the request.
+	if out == nil {
+		return nil
 	}
 
 	return json.NewDecoder(res.Body).Decode(out)

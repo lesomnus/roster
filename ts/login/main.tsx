@@ -38,6 +38,12 @@ interface Flow {
 	/** The ways in this operator has, which the app read out of roster. */
 	providers: Provider[]
 	password: boolean
+
+	/** Set on the one flow that asks nothing and offers no way in: a sign-out
+	 * nobody proved an app started. There is no `client` on it, because a
+	 * logout that named one is one Hydra answers without drawing anything.
+	 */
+	logout?: boolean
 }
 
 /** The challenge, from the address the browser arrived at.
@@ -49,7 +55,7 @@ interface Flow {
  */
 function challenge(): { name: string; value: string } {
 	const q = new URLSearchParams(location.search)
-	for (const name of ['login_challenge', 'consent_challenge']) {
+	for (const name of ['login_challenge', 'consent_challenge', 'logout_challenge']) {
 		const value = q.get(name)
 		if (value !== null && value !== '') return { name, value }
 	}
@@ -176,6 +182,77 @@ function Consent(props: { of: Flow }): React.ReactNode {
 	)
 }
 
+/** Logout is the confirmation for a sign-out no relying party proved it asked
+ * for -- which is any sign-out that arrived without an `id_token_hint`, and is
+ * far more of them than the name suggests.
+ *
+ * It exists because a third party can send a browser here: a link, or a page
+ * that loaded the address as an image. What that gets them is a question. What
+ * it must not get them is somebody signed out without being asked, and what the
+ * person who really did click sign out must not get is a page saying no.
+ */
+function Logout(props: { of: Flow }): React.ReactNode {
+	const [sent, setSent] = useState(false)
+	const [stayed, setStayed] = useState(false)
+
+	const answer = (allow: boolean): void => {
+		setSent(true)
+		const body = new URLSearchParams({ logout_challenge: c.value })
+		if (allow) body.set('allow', '1')
+		void fetch('/logout', {
+			method: 'POST',
+			headers: { 'content-type': 'application/x-www-form-urlencoded' },
+			body,
+		})
+			.then(async (res) => (res.ok ? ((await res.json()) as { signed_out: boolean; to?: string }) : Promise.reject(new Error('no'))))
+			.then((v) => {
+				// A no has nowhere to send the browser, because there is no
+				// relying party waiting -- that is the whole reason this screen
+				// was drawn. So it says what happened and stops.
+				if (v.signed_out && v.to !== undefined) location.assign(v.to)
+				else setStayed(true)
+			})
+			.catch(() => setStayed(true))
+	}
+
+	if (stayed) {
+		return (
+			<main className="sign-in consent">
+				<h1>you are still signed in</h1>
+				<p className="note">Nothing changed. You can close this page.</p>
+			</main>
+		)
+	}
+
+	return (
+		<main className="sign-in consent">
+			{props.of.brand !== '' && <p className="at">{props.of.brand}</p>}
+
+			<h1>sign out?</h1>
+
+			{/*
+				It does not say which app asked, because nothing here knows: a
+				request that proved which one is a request this screen is never
+				drawn for. Naming a likely one would be a guess on a screen
+				somebody is about to trust.
+			*/}
+			<p className="note">
+				This signs you out here. Apps you are already signed in to may keep their own session
+				until it runs out.
+			</p>
+
+			<div className="acts">
+				<button type="button" className="go" disabled={sent} onClick={() => answer(true)}>
+					sign out
+				</button>
+				<button type="button" disabled={sent} onClick={() => answer(false)}>
+					stay signed in
+				</button>
+			</div>
+		</main>
+	)
+}
+
 function Root(): React.ReactNode {
 	const [of, setOf] = useState<Flow | null>(null)
 	const [bad, setBad] = useState(false)
@@ -191,6 +268,7 @@ function Root(): React.ReactNode {
 	if (of === null) return <main className="sign-in" />
 
 	if (c.name === 'consent_challenge') return <Consent of={of} />
+	if (c.name === 'logout_challenge') return <Logout of={of} />
 
 	// The last hop, and the only thing on this page that is not an ordinary
 	// sign-in: roster has said who this is, and Hydra is waiting to be told.

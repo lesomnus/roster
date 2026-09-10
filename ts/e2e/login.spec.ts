@@ -135,3 +135,35 @@ test('the consent screen is a screen, and a no is an answer', async ({ page }) =
 	await page.getByRole('button', { name: 'no' }).click()
 	await expect(page).toHaveURL(/denied/)
 })
+
+// The third screen, and the one whose absence was a defect a cluster reported.
+//
+// A sign-out that arrives with no `id_token_hint` is one Hydra raises a
+// challenge for and marks not rp-initiated -- which is most of them, because a
+// product that read its `id_token` once at the callback has nothing to send
+// back. This app refused those, so signing out was a page saying `no`. The
+// screen is what the refusal was standing in for: a third party can cause a
+// question, and the person who did click sign out answers it.
+test('the sign-out screen asks, and a no leaves the session alone', async ({ page }) => {
+	await page.goto(`${base}/logout?logout_challenge=sandbox`)
+
+	await expect(page.getByRole('heading', { name: 'sign out?' })).toBeVisible()
+	await expect(page.getByText('Contoso')).toBeVisible()
+
+	// It names no app, because nothing here knows which one: a request that
+	// proved it is a request this screen is never drawn for. And it says what
+	// signing out here does **not** reach, which is every other app's own
+	// session.
+	await expect(page.getByText('the demo product')).toHaveCount(0)
+	await expect(page.getByText(/may keep their own session/)).toBeVisible()
+
+	await page.getByRole('button', { name: 'stay signed in' }).click()
+	await expect(page.getByRole('heading', { name: 'you are still signed in' })).toBeVisible()
+})
+
+test('and a yes is the one that ends it', async ({ page }) => {
+	await page.goto(`${base}/logout?logout_challenge=sandbox`)
+
+	await page.getByRole('button', { name: 'sign out' }).click()
+	await expect(page).toHaveURL(/signed-out/)
+})

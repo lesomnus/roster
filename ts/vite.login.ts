@@ -150,7 +150,7 @@ const sandbox = (): Connect.NextHandleFunction => async (req, res, next) => {
 
 	// The two screens are the same page: vite serves `index.html` at the root,
 	// and the app reads which it is from the challenge in the URL.
-	if (url.pathname === '/login' || url.pathname === '/consent') {
+	if (url.pathname === '/login' || url.pathname === '/consent' || url.pathname === '/logout') {
 		if (req.method === 'GET') {
 			req.url = '/'
 
@@ -160,6 +160,14 @@ const sandbox = (): Connect.NextHandleFunction => async (req, res, next) => {
 
 	switch (`${req.method} ${url.pathname}`) {
 		case 'GET /flow':
+			// The sign-out screen asks nothing of anybody and offers no way
+			// in: it is drawn for a logout that arrived with no
+			// `id_token_hint`, so there is no client to name and nothing to
+			// grant. Its own answer rather than a field on the other one.
+			if (url.searchParams.has('logout_challenge')) {
+				return json(res, 200, { brand: 'Contoso', logout: true })
+			}
+
 			return json(res, 200, {
 				brand: 'Contoso',
 				client: 'the demo product',
@@ -241,6 +249,20 @@ const sandbox = (): Connect.NextHandleFunction => async (req, res, next) => {
 			}
 
 			return json(res, 200, { redirect_to: '/consent?consent_challenge=sandbox' })
+		}
+
+		case 'POST /logout': {
+			// The two answers, and the asymmetry that is the point of the
+			// screen: a yes has somewhere to send the browser, a no has
+			// nowhere -- because the reason anybody was asked is that no
+			// relying party proved it was waiting.
+			const v = new URLSearchParams(await body(req))
+			if (v.get('allow') === null) {
+				return json(res, 200, { signed_out: false })
+			}
+			flows.delete(key(req, res))
+
+			return json(res, 200, { signed_out: true, to: '/?signed-out' })
 		}
 
 		case 'POST /consent': {

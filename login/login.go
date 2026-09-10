@@ -393,6 +393,7 @@ func (a *App) Handler() http.Handler {
 
 	// The third screen Hydra redirects to, and the one that is not a screen.
 	m.HandleFunc("GET /logout", a.logout)
+	m.HandleFunc("POST /logout", a.leave)
 
 	// The built page, and its assets.
 	m.Handle("/", a.page())
@@ -499,10 +500,21 @@ func (a *App) logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !v.RpInitiated {
-		// Nobody's app asked. Refused rather than drawn, and refused quietly:
-		// what a person would see is a page that did nothing, which is what
-		// happened.
-		http.Error(w, "no", http.StatusBadRequest)
+		// Nobody **proved** an app asked, which is a narrower thing than
+		// nobody asking, and the first cut of this read it as the wider one
+		// and refused. What `rp_initiated` actually reports is whether the
+		// request carried an `id_token_hint` (Hydra v2.2.0,
+		// `consent/strategy_default.go`: no hint, `RPInitiated: false`, and it
+		// asks this app anyway) -- so a relying party that signs somebody out
+		// without sending the token back got a page saying `no`, which is the
+		// defect the cluster found.
+		//
+		// The answer the spec gives is the one a refusal was standing in for:
+		// **ask the person**. A third party can cause a question and nothing
+		// else, and the person who did click sign out gets to say yes. Drawn
+		// rather than rendered, like the consent screen and for the same
+		// reason -- one screen, not two of them in two technologies.
+		a.page().ServeHTTP(w, r)
 
 		return
 	}
@@ -520,6 +532,55 @@ func (a *App) logout(w http.ResponseWriter, r *http.Request) {
 	// the old one waiting.
 	http.SetCookie(w, a.door.End(ctx, r))
 	http.Redirect(w, r, to, http.StatusSeeOther)
+}
+
+// leave is the confirmation screen's answer, for the logout nobody proved a
+// relying party started.
+//
+// A no is Hydra's `logout/reject` and nowhere to send the browser: there is no
+// waiting relying party to redirect to, because that is the whole reason the
+// question was asked. The page says so and stays where it is.
+func (a *App) leave(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	challenge := r.FormValue(logoutChallenge)
+
+	// Asked again rather than trusted from the form: a browser that posts the
+	// challenge of a logout an app **did** start would otherwise skip the
+	// confirmation this endpoint exists to collect. It is the same read the
+	// GET made and Hydra is the one holding the answer.
+	v, err := a.admin.logout(ctx, challenge)
+	if err != nil {
+		a.broken(w, r, err)
+
+		return
+	}
+	if v.RpInitiated {
+		http.Error(w, "no", http.StatusBadRequest)
+
+		return
+	}
+
+	if r.FormValue("allow") == "" {
+		if err := a.admin.rejectLogout(ctx, challenge); err != nil {
+			a.broken(w, r, err)
+
+			return
+		}
+
+		writeJson(w, map[string]any{"signed_out": false})
+
+		return
+	}
+
+	to, err := a.admin.acceptLogout(ctx, challenge)
+	if err != nil {
+		a.broken(w, r, err)
+
+		return
+	}
+
+	http.SetCookie(w, a.door.End(ctx, r))
+	writeJson(w, map[string]any{"signed_out": true, "to": to})
 }
 
 // consent is the second redirect: what the client is asking for, and whether
@@ -552,6 +613,38 @@ func (a *App) consent(w http.ResponseWriter, r *http.Request) {
 // thing it asks this app for.
 func (a *App) flow(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+
+	// The sign-out screen, which is the one shape that asks nothing of roster.
+	// What it needs is that it **is** that screen and who this deployment is
+	// for; there is no client, because a logout with a client is one Hydra
+	// marked `rp_initiated` and this app never draws.
+	if c := r.URL.Query().Get(logoutChallenge); c != "" {
+		v, err := a.admin.logout(ctx, c)
+		if err != nil {
+			a.broken(w, r, err)
+
+			return
+		}
+		if v.RpInitiated {
+			http.Error(w, "no", http.StatusBadRequest)
+
+			return
+		}
+
+		// A brand when there is one to be sure of. This app fronts a list of
+		// operators, and a logout names a subject rather than a client, so
+		// with several of them **which** customer's person this is cannot be
+		// told from the request -- and a brand picked from the first row would
+		// be a guess drawn on a screen. With one, it is not a guess.
+		brand := ""
+		if len(a.operators) == 1 {
+			brand = a.operators[0].name
+		}
+
+		writeJson(w, map[string]any{"brand": brand, "logout": true})
+
+		return
+	}
 
 	var (
 		v   *loginRequest

@@ -53,10 +53,13 @@ trap 'rm -f "${jar}"' EXIT
 # behaviour and it would make the `ask` walk see a redirect where it expects a
 # screen, so this run starts by forgetting what an earlier one agreed to. A new
 # jar is not enough: the memory is Hydra's, keyed on the subject.
-if [ "${CONSENT}" = "ask" ] && [ -n "${EXPECT_SUB:-}" ]; then
-	curl -sS -o /dev/null -X DELETE \
-		"http://hydra:4445/admin/oauth2/auth/sessions/consent?subject=${EXPECT_SUB}&all=true" || true
-fi
+forget_consent() {
+	if [ "${CONSENT}" = "ask" ] && [ -n "${EXPECT_SUB:-}" ]; then
+		curl -sS -o /dev/null -X DELETE \
+			"http://hydra:4445/admin/oauth2/auth/sessions/consent?subject=${EXPECT_SUB}&all=true" || true
+	fi
+}
+forget_consent
 resolve="--resolve login.test:8091:${login} --resolve hydra.test:4444:${hydra}"
 
 c() { curl -sS ${resolve} -c "${jar}" -b "${jar}" "$@"; }
@@ -133,6 +136,12 @@ step "the product sends a browser to hydra" "a form, ${began}"
 # It sets `cookie`, `id` and `sub`, which is what a shell function does instead
 # of answering.
 sign_in() {
+	# `remember` covers the **consent** as well as the login, so the second and
+	# third of these would be granted without drawing anything -- and this
+	# asserts a screen when `CONSENT=ask`. Forgotten here rather than by each
+	# caller, because a caller that has to remember is a caller that will not.
+	forget_consent
+
 	# The cookie by hand for the rest, because a jar will not send one to a host
 	# `--resolve` invented. Everything else about the walk is the browser's.
 	head=$(c -o /dev/null -D - -X POST "http://login.test:8091/session?login_challenge=${challenge}" \
@@ -286,16 +295,6 @@ fi
 
 # A session to sign out **of**: the half above ended the one the walk started
 # with, and Hydra forgetting a browser is the thing this is about.
-#
-# `remember` covers the **consent** as well as the login, so a second sign-in
-# in one run is one Hydra grants without drawing anything -- and `sign_in`
-# asserts a screen when `CONSENT=ask`. The same reset the top of this file
-# makes, for the same reason and one walk later.
-if [ "${CONSENT}" = "ask" ] && [ -n "${EXPECT_SUB:-}" ]; then
-	curl -sS -o /dev/null -X DELETE \
-		"http://hydra:4445/admin/oauth2/auth/sessions/consent?subject=${EXPECT_SUB}&all=true" || true
-fi
-
 begin
 [ "${began}" = "200" ] || die "the form was not asked for before the sign-out walk (${began})"
 sign_in
@@ -340,6 +339,56 @@ esac
 # the issuer has forgotten this browser.
 begin
 [ "${began}" = "200" ] || die "hydra still remembers her after a logout (${began})"
+step "  and the form is asked for again" "${began}"
+
+# And the other shape, which is the one the fake was agreeable about and a
+# cluster was not: a relying party that sends the browser to the end session
+# endpoint **without** the token. Hydra raises the challenge anyway and marks it
+# not rp-initiated -- and this app answered `no` to it for a day, which is every
+# sign-out from a product that does not keep its `id_token` around.
+sign_in
+step "a sign-out with no hint" "…"
+
+to=$(c -o /dev/null -D - "${end_session}" | loc)
+case "${to}" in
+*"/logout?logout_challenge="*) ;;
+*) die "hydra did not ask the login app about a hintless logout: ${to}" ;;
+esac
+# Its own name: `begin` writes `challenge`, and a walk that kept the logout's
+# there would post a login challenge to `/logout` and read the 502 as the app.
+leaving=$(printf '%s' "${to}" | sed 's/.*logout_challenge=//')
+
+# Drawn, and nothing done until it is answered. 200 and not a redirect is the
+# whole assertion: a redirect here is either the refusal this used to be or a
+# session ended without anybody being asked.
+got=$(c -o /dev/null -w '%{http_code}' "$(printf '%s' "${to}" | fix)")
+[ "${got}" = "200" ] || die "a sign-out with no hint answered ${got} where a screen was asked for"
+c "http://login.test:8091/flow?logout_challenge=${leaving}" | grep -q '"logout":true' \
+	|| die "the page was not told which screen this is"
+step "  a screen, not a refusal" "${got}"
+
+# Still signed in until somebody says so. The screen being drawn is half of
+# what this walk is about; the other half is that drawing it did nothing.
+begin
+[ "${began}" = "303" ] || die "a drawn confirmation ended the session anyway (${began})"
+step "  and nothing ended yet" "${began}, still remembered"
+
+# The answer. It is a fetch and not a form post -- the screen is a page, so what
+# comes back is where to send the browser rather than a redirect -- and the hop
+# after it is Hydra's own, the same `logout_verifier` the hinted walk follows.
+said=$(c -X POST "http://login.test:8091/logout" -d "logout_challenge=${leaving}" -d "allow=1")
+case "${said}" in
+*'"signed_out":true'*) ;;
+*) die "the confirmation was not accepted: ${said}" ;;
+esac
+step "  somebody says sign out" "accepted"
+
+back=$(printf '%s' "${said}" | sed 's/.*"to":"//; s/".*//; s|\\u0026|\&|g' | fix)
+back=$(c -o /dev/null -D - "${back}" | loc)
+step "  and hydra verifies it" "$(printf '%s' "${back}" | cut -c1-40)…"
+
+begin
+[ "${began}" = "200" ] || die "hydra still remembers her after a confirmed logout (${began})"
 step "  and the form is asked for again" "${began}"
 
 echo "flow: ok"

@@ -59,12 +59,18 @@ type hydra struct {
 
 	// The third challenge. `rp` is whether a relying party started it, which
 	// is the field the app's one refusal reads.
-	rp      map[string]bool
-	endedBy map[string]bool
+	rp        map[string]bool
+	endedBy   map[string]bool
+	refusedBy map[string]bool
 }
 
 func newHydra(t *testing.T) *hydra {
-	h := &hydra{client: map[string]string{}, rp: map[string]bool{}, endedBy: map[string]bool{}}
+	h := &hydra{
+		client:    map[string]string{},
+		rp:        map[string]bool{},
+		endedBy:   map[string]bool{},
+		refusedBy: map[string]bool{},
+	}
 
 	m := http.NewServeMux()
 	m.HandleFunc("GET /admin/oauth2/auth/requests/login", func(w http.ResponseWriter, r *http.Request) {
@@ -116,6 +122,16 @@ func newHydra(t *testing.T) *hydra {
 		h.mu.Unlock()
 
 		writeJson(w, map[string]any{"redirect_to": "https://a-product.test/after-logout"})
+	})
+	// And refusing it, which a real Hydra answers with a 204 and no body.
+	m.HandleFunc("PUT /admin/oauth2/auth/requests/logout/reject", func(w http.ResponseWriter, r *http.Request) {
+		c := r.URL.Query().Get("logout_challenge")
+
+		h.mu.Lock()
+		h.refusedBy[c] = true
+		h.mu.Unlock()
+
+		w.WriteHeader(http.StatusNoContent)
 	})
 
 	m.HandleFunc("DELETE /admin/oauth2/auth/sessions/login", func(w http.ResponseWriter, r *http.Request) {
@@ -189,6 +205,15 @@ func (h *hydra) ended(challenge string) bool {
 	defer h.mu.Unlock()
 
 	return h.endedBy[challenge]
+}
+
+// refused is whether it was answered with a no, which is a different fact from
+// not having been answered at all.
+func (h *hydra) refused(challenge string) bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	return h.refusedBy[challenge]
 }
 
 func (h *hydra) raise(challenge, client string) {
@@ -427,7 +452,19 @@ func serveAs(t *testing.T, how login.Consent, with func(*login.Config)) *deploym
 		// The page, standing in for the build: what these tests are about is
 		// the flow, and `ts/login/` is checked by the compiler and by
 		// `scripts/e2e.sh`.
-		Page:           http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte("the form")) }),
+		// One document and a 404 for everything else, which is what a build
+		// is. A fixture that answered every path was green on a screen whose
+		// path `page()` had not been taught to rewrite, and `hydra.sh` found
+		// it -- so this is the shape of the thing rather than a stand-in for
+		// it.
+		Page: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path != "/" {
+				http.NotFound(w, r)
+
+				return
+			}
+			_, _ = w.Write([]byte("the form"))
+		}),
 		Consent:        how,
 		Roster:         l.Addr().String(),
 		Insecure:       true,
@@ -1022,13 +1059,20 @@ func TestSigningOutEndsWhatTheIssuerRemembers(t *testing.T) {
 	x.True(d.hydra.ended("l1"), "hydra was not told to end the session")
 }
 
-// TestALogoutNoAppAskedForIsRefused: the case a confirmation screen exists for,
-// answered without one.
+// TestALogoutNobodyProvedAnAppAskedForIsConfirmed: the case a confirmation
+// screen exists for, and the case this app got wrong.
 //
-// Somebody typed the URL, or a page they were reading loaded it as an image.
-// Drawing a button there hands a person a decision about a thing a third party
-// caused; refusing costs them nothing, because they did not ask.
-func TestALogoutNoAppAskedForIsRefused(t *testing.T) {
+// `rp_initiated` reads like *did an app ask*, and what it reports is narrower:
+// whether the request carried an `id_token_hint`. Hydra raises the challenge
+// either way and asks this app about it (v2.2.0,
+// `consent/strategy_default.go`). So the first cut of this refused with a 400,
+// and a relying party that signed somebody out without sending the token back
+// got a page saying `no` -- which is what a cluster reported.
+//
+// The screen is what the refusal was standing in for. A third party can send a
+// browser here and what that gets them is a question; the person who did click
+// sign out gets to answer it.
+func TestALogoutNobodyProvedAnAppAskedForIsConfirmed(t *testing.T) {
 	x := require.New(t)
 	d := serve(t)
 
@@ -1038,8 +1082,92 @@ func TestALogoutNoAppAskedForIsRefused(t *testing.T) {
 	x.NoError(err)
 	defer res.Body.Close()
 
+	x.Equal(http.StatusOK, res.StatusCode, "a sign-out with no hint was not drawn")
+	x.False(d.hydra.ended("l1"), "the session ended before anybody answered")
+
+	// And what the page draws it from. There is no client on it: a logout that
+	// named one is one Hydra marks `rp_initiated`, which this screen is never
+	// drawn for.
+	res, err = d.browser(t).Get(d.app.URL + "/flow?logout_challenge=l1")
+	x.NoError(err)
+	defer res.Body.Close()
+	x.Equal(http.StatusOK, res.StatusCode)
+
+	var flow struct {
+		Logout bool   `json:"logout"`
+		Brand  string `json:"brand"`
+		Client string `json:"client"`
+	}
+	x.NoError(json.NewDecoder(res.Body).Decode(&flow))
+	x.True(flow.Logout, "the page was not told which screen this is")
+	x.Empty(flow.Client)
+}
+
+// TestTheConfirmedSignOutIsTheOneThatEnds: the yes, and the no.
+func TestTheConfirmedSignOutIsTheOneThatEnds(t *testing.T) {
+	x := require.New(t)
+
+	t.Run("yes", func(t *testing.T) {
+		x := require.New(t)
+		d := serve(t)
+		d.hydra.asked("l1", "contoso-web", false)
+
+		res, err := d.browser(t).PostForm(d.app.URL+"/logout",
+			url.Values{"logout_challenge": {"l1"}, "allow": {"1"}})
+		x.NoError(err)
+		defer res.Body.Close()
+
+		x.Equal(http.StatusOK, res.StatusCode)
+		x.True(d.hydra.ended("l1"), "somebody said yes and the session did not end")
+
+		var v struct {
+			SignedOut bool   `json:"signed_out"`
+			To        string `json:"to"`
+		}
+		x.NoError(json.NewDecoder(res.Body).Decode(&v))
+		x.True(v.SignedOut)
+		x.Equal("https://a-product.test/after-logout", v.To)
+	})
+
+	t.Run("no", func(t *testing.T) {
+		x := require.New(t)
+		d := serve(t)
+		d.hydra.asked("l1", "contoso-web", false)
+
+		res, err := d.browser(t).PostForm(d.app.URL+"/logout", url.Values{"logout_challenge": {"l1"}})
+		x.NoError(err)
+		defer res.Body.Close()
+
+		x.Equal(http.StatusOK, res.StatusCode)
+		x.False(d.hydra.ended("l1"), "somebody said no and was signed out anyway")
+		x.True(d.hydra.refused("l1"), "hydra was left holding a challenge nobody answered")
+	})
+
+	_ = x
+}
+
+// TestTheAnswerIsForTheScreenThatWasDrawn: posting the challenge of a logout an
+// app **did** start is refused.
+//
+// Not a formality. That flow is the one this app answers without drawing
+// anything, and an endpoint that took either kind would be a way to reach the
+// accept without the browser ever having been asked -- so the confirmation
+// would be a screen rather than a rule. It is asked at Hydra again for the same
+// reason every other hop is: what a request may do is looked up, never read off
+// the form.
+func TestTheAnswerIsForTheScreenThatWasDrawn(t *testing.T) {
+	x := require.New(t)
+	d := serve(t)
+
+	d.hydra.asked("l1", "contoso-web", true)
+
+	res, err := d.browser(t).PostForm(d.app.URL+"/logout",
+		url.Values{"logout_challenge": {"l1"}, "allow": {"1"}})
+	x.NoError(err)
+	defer res.Body.Close()
+
 	x.Equal(http.StatusBadRequest, res.StatusCode)
-	x.False(d.hydra.ended("l1"), "a logout nobody asked for was accepted")
+	x.False(d.hydra.ended("l1"))
 }
 
 // TestALogoutChallengeIsAskedAbout: the same rule every other hop keeps -- what
