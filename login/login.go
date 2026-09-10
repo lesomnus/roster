@@ -504,7 +504,7 @@ func (a *App) flow(w http.ResponseWriter, r *http.Request) {
 
 	// The ways in, for a login screen. A consent screen has a person already
 	// and asks this for the client and the scopes alone.
-	ways := []map[string]string{}
+	ways := []map[string]any{}
 	password := false
 	if v != nil {
 		// What roster says, not what this app assumes. A tenant whose people
@@ -529,11 +529,25 @@ func (a *App) flow(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		for _, c := range cs {
-			// The name and nothing else. The issuer is where the browser is
-			// about to go and the page has no use for it, `secret_ref` is the
-			// operator's, and a label for the button is the page's to choose:
-			// D22 refuses the field that describes what to render.
-			ways = append(ways, map[string]string{"name": c.GetName()})
+			// The name and the issuer, and nothing else. `secret_ref` is the
+			// operator's and never leaves this process; the client id is
+			// theirs too.
+			//
+			// The issuer is here because it is the only honest way for a page
+			// to know **whose** directory this is. A `Connection` may be
+			// called `entra`, `ms` or `work` -- that is the operator's label,
+			// and drawing a vendor's mark from it would be drawing from a
+			// label, which D22 refuses. A host is a fact:
+			// `login.microsoftonline.com` is Microsoft whatever the row is
+			// called. It is also where the browser is about to go, so it is
+			// not a thing being disclosed.
+			//
+			// What is still refused is a field that says which mark to draw.
+			// The page reads the host and decides.
+			ways = append(ways, map[string]any{
+				"name":   c.GetName(),
+				"issuer": c.GetIssuer(),
+			})
 		}
 	}
 

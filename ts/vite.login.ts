@@ -46,7 +46,13 @@ const people = [
  * a page that says which hop is missing, and comes back. What it cannot show is
  * the directory's own screen, and nothing here claims to.
  */
-const providers = [{ name: 'entra' }, { name: 'github' }]
+const providers = [
+	// The issuers are the real ones, because the page reads the **host** to
+	// know whose mark to draw and a made-up one would draw none -- which is
+	// exactly the thing somebody opening this is trying to look at.
+	{ name: 'entra', issuer: 'https://login.microsoftonline.com/common/v2.0' },
+	{ name: 'github', issuer: 'https://github.com' },
+]
 
 /** One browser's place in the walk, by the cookie this hands out. */
 const flows = new Map<string, { who: string; proved: string[] }>()

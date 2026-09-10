@@ -628,10 +628,72 @@ p.bad {
 
 /* The providers as buttons above the password form, because a person who
    arrives through Entra should not read a password field first. */
+/* The ways in that are not a password: one per line, full width, and no box
+   around them.
+ *
+ * They were a wrapping row of chips beside the form, which read as a toolbar --
+ * two words a person has to parse before knowing whether either is their
+ * organisation. Stacked, each is a target the width of the form above it and
+ * the list is read down rather than across. The container carries nothing of
+ * its own: the buttons are the group. */
 .providers {
 	display: flex;
-	flex-wrap: wrap;
+	flex-direction: column;
+	align-items: stretch;
 	gap: var(--s-2);
+
+	/* Undone rather than avoided. `.sign-in` is a `main`, so `main > section`
+	   makes every section inside it a card -- background, border, shadow and
+	   padding -- and this one is not a card: it is the buttons and nothing
+	   else. Written out here because the alternative is narrowing the card
+	   rule, and that rule is right about every other screen. */
+	background: none;
+	border: 0;
+	border-radius: 0;
+	box-shadow: none;
+	padding: 0;
+	margin: 0;
+}
+
+.providers a.button,
+.providers button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--s-2);
+	width: 100%;
+	text-align: center;
+}
+
+/* The vendor's own mark, at the height of the text beside it. `flex: none` so a
+   long name does not squeeze it, and it is `aria-hidden` in the markup because
+   the button already says whose it is. */
+.providers a.button svg {
+	flex: none;
+	width: 1.05em;
+	height: 1.05em;
+}
+
+/* The rule between the password form and the list, with a word in it.
+ *
+ * A bare `<hr>` says the page ended; a word says there is another way. The
+ * lines are drawn with a border on a pseudo-element each rather than as a
+ * background, so they take the theme's border colour without a second variable
+ * to keep in step. */
+.sign-in p.or {
+	display: flex;
+	align-items: center;
+	gap: var(--s-3);
+	margin: var(--s-2) 0;
+	color: var(--muted);
+	font-size: 0.85rem;
+}
+
+.sign-in p.or::before,
+.sign-in p.or::after {
+	content: '';
+	flex: 1;
+	border-top: 1px solid var(--border);
 }
 
 /* ------------------------------------------------- screen particulars */
