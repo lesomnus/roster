@@ -384,8 +384,27 @@ esac
 step "  somebody says sign out" "accepted"
 
 back=$(printf '%s' "${said}" | sed 's/.*"to":"//; s/".*//; s|\\u0026|\&|g' | fix)
-back=$(c -o /dev/null -D - "${back}" | loc)
-step "  and hydra verifies it" "$(printf '%s' "${back}" | cut -c1-40)…"
+back=$(c -o /dev/null -D - "${back}" | loc | fix)
+
+# **Where it lands**, and this line was a `step` printing a URL nobody read.
+# What it printed was Hydra's own fallback page -- the true end of a successful
+# sign-out, addressed to an administrator: *the Default Post Logout URL is not
+# set which is why you are seeing this fallback page*. A person who clicked sign
+# out read that and reported the sign-out as broken, and this walk had been
+# green on it.
+#
+# There is no `post_logout_redirect_uri` on this flow and there cannot be: Hydra
+# refuses one without a hint. So the last page is the deployment's to name,
+# which is `urls.post_logout_redirect` -- `URLS_POST_LOGOUT_REDIRECT` in
+# `compose.yaml`, and this refuses to pass without it.
+case "${back}" in
+*/signed-out*) ;;
+*fallback*) die "a finished sign-out ends on hydra's fallback page: ${back}" ;;
+*) die "a finished sign-out did not end anywhere this deployment named: ${back}" ;;
+esac
+got=$(c -o /dev/null -w '%{http_code}' "${back}")
+[ "${got}" = "200" ] || die "the page a sign-out ends on answered ${got}"
+step "  and lands on a page for a person" "${got}"
 
 begin
 [ "${began}" = "200" ] || die "hydra still remembers her after a confirmed logout (${began})"

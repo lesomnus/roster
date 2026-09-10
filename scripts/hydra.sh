@@ -119,6 +119,14 @@ LOGIN_CONSENT=ask docker compose up -d --no-deps login >/dev/null
 walk ask "$@"
 LOGIN_CONSENT=skip docker compose up -d --no-deps login >/dev/null
 
+# The other kind of relying party, before the factor walk changes what a
+# password is worth: `oauth2-proxy` in front of a page, which is the shape half
+# the deployment's apps are in and the one that produced the last two defects.
+echo
+echo "== and the same issuer, seen by somebody else's relying party"
+docker compose up -d --no-deps --wait behind >/dev/null
+docker compose run --rm --no-deps --entrypoint /usr/local/bin/behind.sh login "$@"
+
 # And last, because it gives her an authenticator and does not take it away:
 # from here on the password alone is half of a sign-in.
 echo

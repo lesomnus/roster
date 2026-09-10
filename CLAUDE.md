@@ -102,10 +102,13 @@ from **nothing** -- Hydra, its client, the Login App -- and walks an
 authorization-code flow twice, once per consent mode: to an `id_token` whose
 `sub` is the `Holder.id` roster holds, then a second flow Hydra skips the
 form for, then `Holder.Invalidate` over roster's HTTP port, then the form
-asked for again -- and then the person signing **out** at the issuer, which
-is a hop the fake has no rules about and where the last defect was.
-`login/`'s own tests use a fake Hydra, deliberately, and every defect this
-has found was one that fake was green on. `--hold` leaves it up.
+asked for again -- and then the person signing **out** at the issuer, both
+with the token and without it. Then it walks the same issuer from **somebody
+else's** relying party: `oauth2-proxy` in front of a page
+(`docker/behind.sh`), which is the shape the deployment's `behind.login-
+demo` is and the one that has produced every defect a local gate could not
+see. `login/`'s own tests use a fake Hydra, deliberately, and every defect
+this has found was one that fake was green on. `--hold` leaves it up.
 
 ## Do not edit — regenerate
 

@@ -395,6 +395,18 @@ func (a *App) Handler() http.Handler {
 	m.HandleFunc("GET /logout", a.logout)
 	m.HandleFunc("POST /logout", a.leave)
 
+	// Where a sign-out ends when it asked to come back nowhere. Hydra's
+	// `urls.post_logout_redirect`, and the only screen here that is not part of
+	// a flow: there is no challenge on it and nothing to look up, because by
+	// the time a browser arrives the thing it is about is already over.
+	//
+	// It exists because the alternative is Hydra's fallback page, which tells a
+	// person who clicked *sign out* that an administrator has not configured
+	// something.
+	m.HandleFunc("GET /signed-out", func(w http.ResponseWriter, r *http.Request) {
+		a.page().ServeHTTP(w, r)
+	})
+
 	// The built page, and its assets.
 	m.Handle("/", a.page())
 

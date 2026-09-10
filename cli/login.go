@@ -489,12 +489,28 @@ func clientsOf(refs map[string][]string, prefix string, given []string) (map[str
 		}
 		out[strings.ToLower(alias)] = split(value)
 	}
+	// A repeat is per **operator**, so a repeat of the same one is somebody
+	// writing what the comma list is for and getting only the last of it. It
+	// layers over the block and the environment on purpose -- a deployment
+	// narrowing what it was configured with -- and there is no reading of one
+	// command line under which naming an operator twice was meant.
+	//
+	// Silent, it is an operator whose other client no challenge resolves to,
+	// which is a page that says the login is not working for half the people.
+	seen := map[string]bool{}
 	for _, v := range given {
 		alias, clients, ok := strings.Cut(v, "=")
 		if !ok || alias == "" || clients == "" {
 			return nil, fmt.Errorf("--client %q: alias=client-id[,client-id…]", v)
 		}
-		out[strings.ToLower(alias)] = split(clients)
+
+		alias = strings.ToLower(alias)
+		if seen[alias] {
+			return nil, fmt.Errorf("--client %q: %s is named twice; one operator's clients are one comma list", v, alias)
+		}
+		seen[alias] = true
+
+		out[alias] = split(clients)
 	}
 
 	return out, nil

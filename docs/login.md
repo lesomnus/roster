@@ -411,6 +411,16 @@ issuer's own page. Both end the session; only one comes back -- and the one that
 does not is also the one that gets the confirmation screen, because the same
 missing hint decides both.
 
+⚠️ **Set `urls.post_logout_redirect`.** That is the page the one that does not
+come back ends on, and left unset it is Hydra's own fallback, which says: *the
+Default Post Logout URL is not set which is why you are seeing this fallback
+page. Your log out request however succeeded ... If you are a user, please
+contact the administrator.* Every word of it is true and it is the last thing a
+person sees after clicking *sign out*, so the sign-out gets reported as broken.
+The Login App serves `/signed-out` for it -- the one screen here with no
+challenge on it, because by the time a browser arrives the thing it is about is
+over.
+
 **It does not reach the other products.** Somebody signed in to two apps who
 signs out of one ends the issuer's memory and that app's session; the second
 app's cookie is its own until it expires. That is the next paragraph.

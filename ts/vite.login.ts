@@ -150,7 +150,7 @@ const sandbox = (): Connect.NextHandleFunction => async (req, res, next) => {
 
 	// The two screens are the same page: vite serves `index.html` at the root,
 	// and the app reads which it is from the challenge in the URL.
-	if (url.pathname === '/login' || url.pathname === '/consent' || url.pathname === '/logout') {
+	if (['/login', '/consent', '/logout', '/signed-out'].includes(url.pathname)) {
 		if (req.method === 'GET') {
 			req.url = '/'
 

@@ -14,6 +14,11 @@ set -eu
 : "${LOGIN_PORT:=8091}"
 : "${HYDRA_ADMIN:=http://hydra:4445}"
 : "${OAUTH_CLIENT:=demo}"
+# The second client one operator has: `oauth2-proxy` in front of a page, which
+# `docker/behind.sh` walks. Two clients for one tenant is the shape a real
+# deployment has -- and it is what makes "which operator a challenge is about"
+# a question with an answer, rather than a lookup that could not be wrong.
+: "${PROXY_CLIENT:=behind}"
 : "${LOGIN_CONSENT:=skip}"
 : "${LOGIN_REMEMBER:=1h}"
 
@@ -45,7 +50,7 @@ exec roster login serve \
 	--listen ":${LOGIN_PORT}" \
 	--roster roster:50051 --insecure \
 	--hydra "${HYDRA_ADMIN}" \
-	--client "${SEED_CUSTOMER}=${OAUTH_CLIENT}" \
+	--client "${SEED_CUSTOMER}=${OAUTH_CLIENT},${PROXY_CLIENT}" \
 	--consent "${LOGIN_CONSENT}" \
 	--static /usr/share/roster/login \
 	--insecure-cookie "$@"

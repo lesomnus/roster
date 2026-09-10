@@ -167,3 +167,21 @@ test('and a yes is the one that ends it', async ({ page }) => {
 	await page.getByRole('button', { name: 'sign out' }).click()
 	await expect(page).toHaveURL(/signed-out/)
 })
+
+// Where a sign-out ends when it asked to come back nowhere -- which is every
+// sign-out with no `id_token_hint`, because Hydra refuses a
+// `post_logout_redirect_uri` without one.
+//
+// Unset, that page is Hydra's own fallback: *the Default Post Logout URL is not
+// set which is why you are seeing this fallback page ... If you are a user,
+// please contact the administrator.* It is the true end of a **successful**
+// sign-out and it reads like a broken deployment, which is how it was reported.
+test('a sign-out that comes back nowhere still ends on a page for a person', async ({ page }) => {
+	await page.goto(`${base}/signed-out`)
+
+	await expect(page.getByRole('heading', { name: 'you are signed out' })).toBeVisible()
+
+	// It asks the app nothing: there is no challenge on this page and the thing
+	// it is about is already over, so a `/flow` call could only fail.
+	await expect(page.getByRole('heading', { name: 'this login is not working' })).toHaveCount(0)
+})

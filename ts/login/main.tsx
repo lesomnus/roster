@@ -253,17 +253,45 @@ function Logout(props: { of: Flow }): React.ReactNode {
 	)
 }
 
+/** Gone is where a sign-out ends when it asked to come back nowhere -- which is
+ * every sign-out that arrived without an `id_token_hint`, because Hydra refuses
+ * a `post_logout_redirect_uri` without one.
+ *
+ * It is the only screen here that is not part of a flow: no challenge, nothing
+ * to ask the app about, and nothing that can fail. Hydra's own fallback page is
+ * what stands here otherwise, and it tells a person who clicked *sign out* that
+ * an administrator has not set a configuration key.
+ */
+function Gone(): React.ReactNode {
+	return (
+		<main className="sign-in consent">
+			<h1>you are signed out</h1>
+			<p className="note">
+				You can close this page. Apps you were signed in to may keep their own session until it
+				runs out.
+			</p>
+		</main>
+	)
+}
+
 function Root(): React.ReactNode {
 	const [of, setOf] = useState<Flow | null>(null)
 	const [bad, setBad] = useState(false)
 
+	// Before anything is fetched: this page has no challenge and asking the app
+	// about the one that is not there would draw the broken screen.
+	const gone = location.pathname === '/signed-out'
+
 	useEffect(() => {
+		if (gone) return
+
 		void fetch(at('/flow'))
 			.then(async (res) => (res.ok ? ((await res.json()) as Flow) : Promise.reject(new Error('no'))))
 			.then(setOf)
 			.catch(() => setBad(true))
-	}, [])
+	}, [gone])
 
+	if (gone) return <Gone />
 	if (bad) return <Broken />
 	if (of === null) return <main className="sign-in" />
 

@@ -237,6 +237,17 @@ services:
       # somebody clicks the button. `flow.sh` walks it, and refuses to pass
       # without this line.
       URLS_LOGOUT: http://${PUBLIC_HOST:-localhost}:8091/logout
+      # And where a browser lands when the sign-out asked to come back
+      # **nowhere**, which is every sign-out that arrived with no
+      # `id_token_hint`: Hydra refuses a `post_logout_redirect_uri` without one,
+      # so an app that cannot send the token has no say in the last page.
+      #
+      # Left unset, that page is Hydra's own fallback, and what it says is
+      # addressed to an administrator: *the Default Post Logout URL is not set
+      # which is why you are seeing this fallback page*. It is the true end of a
+      # successful sign-out and it reads like a broken deployment. A person who
+      # clicked *sign out* is told to contact somebody.
+      URLS_POST_LOGOUT_REDIRECT: http://${PUBLIC_HOST:-localhost}:8091/signed-out
       # The Login App answers consent itself, so nothing here draws a screen.
       # A deployment that wants one points `URLS_CONSENT` at its own.
       LOG_LEVEL: warn
@@ -275,6 +286,19 @@ services:
         }]
         EOF
         hydra import client --endpoint http://hydra:4445 /tmp/demo.json
+        cat >/tmp/behind.json <<'EOF'
+        [{
+          "client_id": "behind",
+          "client_secret": "behind-secret",
+          "client_name": "the demo behind a proxy",
+          "grant_types": ["authorization_code", "refresh_token"],
+          "response_types": ["code"],
+          "scope": "openid offline profile email",
+          "redirect_uris": ["http://behind:4180/oauth2/callback"],
+          "token_endpoint_auth_method": "client_secret_post"
+        }]
+        EOF
+        hydra import client --endpoint http://hydra:4445 /tmp/behind.json
 
   # The Login App: what Hydra hands a `login_challenge` to, and what answers
   # `acceptLoginRequest{subject}` with a `Holder.id`. Its own process with its
@@ -306,6 +330,67 @@ services:
       - "8091:8091"
     volumes:
       - account:/var/lib/roster-account:ro
+
+  # A relying party that is **not ours**, which is the whole of what it is for.
+  #
+  # `examples/product` is our code trusting our issuer, so it is lenient about
+  # our tokens in ways we cannot see. `oauth2-proxy` is a standard third party
+  # and the shape half the internal apps are already deployed in -- a page that
+  # knows nothing about authentication with a proxy in front of it -- and it is
+  # what the deployment's `behind.login-demo.hday.dev` is.
+  #
+  # It is here because that deployment produced two defects nothing local was
+  # able to see: a sign-out that ended on Hydra's administrator-facing fallback
+  # page, and a session the page could read nothing out of. Both are this
+  # shape's and neither is `examples/product`'s.
+  #
+  # `skip_oidc_discovery`, because the issuer a token says (`URLS_SELF_ISSUER`,
+  # the host machine's name) is not a name anything inside this network can
+  # reach. So the `iss` it checks stays what Hydra writes and the three URLs it
+  # fetches are the ones that resolve here. A deployment discovers, and
+  # `docs/operating.md` has that config.
+  behind:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.14.2
+    depends_on:
+      hydra-client:
+        condition: service_completed_successfully
+      login:
+        condition: service_started
+    environment:
+      OAUTH2_PROXY_PROVIDER: oidc
+      OAUTH2_PROXY_CLIENT_ID: behind
+      OAUTH2_PROXY_CLIENT_SECRET: behind-secret
+      OAUTH2_PROXY_COOKIE_SECRET: sixteen-bytes-ok
+      OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
+      OAUTH2_PROXY_REDIRECT_URL: http://behind:4180/oauth2/callback
+
+      OAUTH2_PROXY_SKIP_OIDC_DISCOVERY: "true"
+      OAUTH2_PROXY_OIDC_ISSUER_URL: http://${PUBLIC_HOST:-localhost}:4444
+      OAUTH2_PROXY_LOGIN_URL: http://hydra:4444/oauth2/auth
+      OAUTH2_PROXY_REDEEM_URL: http://hydra:4444/oauth2/token
+      OAUTH2_PROXY_OIDC_JWKS_URL: http://hydra:4444/.well-known/jwks.json
+
+      # The identity is `sub` and not an address. oauth2-proxy keys a session on
+      # an email by default and refuses a token with none -- and roster puts
+      # `email` in a token only when the address is **verified**, so somebody
+      # with no address at all would be refused for a reason that is not about
+      # them. This is the line every relying party of roster will want, and it
+      # is in the deployment's config with the same paragraph.
+      OAUTH2_PROXY_OIDC_EMAIL_CLAIM: sub
+      OAUTH2_PROXY_EMAIL_DOMAINS: "*"
+      OAUTH2_PROXY_SCOPE: openid profile email
+
+      OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: "true"
+      OAUTH2_PROXY_UPSTREAMS: static://200
+      OAUTH2_PROXY_COOKIE_SECURE: "false"
+      # With the port, and that is not a detail: a bare `hydra` does not match
+      # `http://hydra:4444/...`, and what oauth2-proxy does with an `rd` it will
+      # not follow is send the browser to `/` -- so the sign-out silently
+      # becomes the proxy forgetting its own session and nothing else, which is
+      # the exact lie the second hop exists to prevent.
+      OAUTH2_PROXY_WHITELIST_DOMAINS: "hydra:4444,login:8091"
+    ports:
+      - "4180:4180"
 
 volumes:
   postgres:

@@ -38,7 +38,7 @@ func (a *App) page() http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/login", "/consent", "/logout":
+		case "/login", "/consent", "/logout", "/signed-out":
 			// A screen, and the build has one document. Rewritten rather than
 			// redirected: the challenge is in the query and a redirect that
 			// dropped it would be a page with nothing to ask about.
