@@ -9790,6 +9790,11 @@ func (s interceptHolder) Update(ctx context.Context, req *rstr.HolderUpdateReque
 		rstr.HolderService_Update_FullMethodName, req, s.HolderServiceServer.Update)
 }
 
+func (s interceptHolder) Realias(ctx context.Context, req *rstr.HolderRealiasRequest) (*rstr.Holder, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
+		rstr.HolderService_Realias_FullMethodName, req, s.HolderServiceServer.Realias)
+}
+
 func (s interceptHolder) Disable(ctx context.Context, req *rstr.HolderDisableRequest) (*rstr.Holder, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
 		rstr.HolderService_Disable_FullMethodName, req, s.HolderServiceServer.Disable)
@@ -11387,6 +11392,19 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 		}
 
 		res, err := s.Holder().Update(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.HolderService_Realias_FullMethodName:
+		v := &rstr.HolderRealiasRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Holder().Realias(ctx, v)
 		if err != nil {
 			return nil, err
 		}

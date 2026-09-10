@@ -83,20 +83,6 @@ func (_c *HolderCreate) SetNillableDateCreated(v *time.Time) *HolderCreate {
 	return _c
 }
 
-// SetIdpSubject sets the "idp_subject" field.
-func (_c *HolderCreate) SetIdpSubject(v string) *HolderCreate {
-	_c.mutation.SetIdpSubject(v)
-	return _c
-}
-
-// SetNillableIdpSubject sets the "idp_subject" field if the given value is not nil.
-func (_c *HolderCreate) SetNillableIdpSubject(v *string) *HolderCreate {
-	if v != nil {
-		_c.SetIdpSubject(*v)
-	}
-	return _c
-}
-
 // SetProfile sets the "profile" field.
 func (_c *HolderCreate) SetProfile(v *rstr.Profile) *HolderCreate {
 	_c.mutation.SetProfile(v)
@@ -275,10 +261,6 @@ func (_c *HolderCreate) createSpec() (*Holder, *sqlgraph.CreateSpec, error) {
 	if value, ok := _c.mutation.DateCreated(); ok {
 		_spec.SetField(holder.FieldDateCreated, field.TypeTime, value)
 		_node.DateCreated = value
-	}
-	if value, ok := _c.mutation.IdpSubject(); ok {
-		_spec.SetField(holder.FieldIdpSubject, field.TypeString, value)
-		_node.IdpSubject = &value
 	}
 	if value, ok := _c.mutation.Profile(); ok {
 		vv, err := holder.ValueScanner.Profile.Value(value)

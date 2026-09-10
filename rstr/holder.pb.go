@@ -45,7 +45,6 @@ type Holder struct {
 	xxx_hidden_DateUpdated     *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased      *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated     *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
-	xxx_hidden_IdpSubject      string                 `protobuf:"bytes,8,opt,name=idp_subject,json=idpSubject"`
 	xxx_hidden_Profile         *Profile               `protobuf:"bytes,9,opt,name=profile"`
 	xxx_hidden_Data            *anypb.Any             `protobuf:"bytes,10,opt,name=data"`
 	xxx_hidden_DateInvalidated *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_invalidated,json=dateInvalidated"`
@@ -142,13 +141,6 @@ func (x *Holder) GetDateCreated() *timestamppb.Timestamp {
 	return nil
 }
 
-func (x *Holder) GetIdpSubject() string {
-	if x != nil {
-		return x.xxx_hidden_IdpSubject
-	}
-	return ""
-}
-
 func (x *Holder) GetProfile() *Profile {
 	if x != nil {
 		return x.xxx_hidden_Profile
@@ -214,10 +206,6 @@ func (x *Holder) SetDateErased(v *timestamppb.Timestamp) {
 
 func (x *Holder) SetDateCreated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateCreated = v
-}
-
-func (x *Holder) SetIdpSubject(v string) {
-	x.xxx_hidden_IdpSubject = v
 }
 
 func (x *Holder) SetProfile(v *Profile) {
@@ -356,20 +344,6 @@ type Holder_builder struct {
 	// the alias comes free again.
 	DateErased  *timestamppb.Timestamp
 	DateCreated *timestamppb.Timestamp
-	// The subject an identity provider knows this holder by, for whenever this
-	// app grows past `Plain` auth.
-	//
-	// **Nullable**, and that is the part worth reading. Two holders cannot be one
-	// person to whatever issued the credential, so it wants to be unique -- but
-	// most holders have none, and a unique column that is usually the empty
-	// string admits exactly one such row. Nullable is what makes "unset" not
-	// collide with "unset": a unique index permits many NULLs and one of each
-	// value.
-	//
-	// **Deprecated by [Identity].** It is one-to-one and this deployment needs
-	// one-to-many -- the same person arrives through Entra and through GitHub.
-	// Kept only so that removing it is a migration somebody decides to run.
-	IdpSubject string
 	// What this person is called, as one thing.
 	//
 	// roster is the profile service, which the design puts **outside** the
@@ -468,7 +442,6 @@ func (b0 Holder_builder) Build() *Holder {
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
-	x.xxx_hidden_IdpSubject = b.IdpSubject
 	x.xxx_hidden_Profile = b.Profile
 	x.xxx_hidden_Data = b.Data
 	x.xxx_hidden_DateInvalidated = b.DateInvalidated
@@ -605,7 +578,7 @@ var File_roster_payday_holder_proto protoreflect.FileDescriptor
 
 const file_roster_payday_holder_proto_rawDesc = "" +
 	"\n" +
-	"\x1aroster/payday/holder.proto\x12\x06roster\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x1aroster/payday/tenant.proto\"\xe2\x06\n" +
+	"\x1aroster/payday/holder.proto\x12\x06roster\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x1aroster/payday/tenant.proto\"\xb7\x06\n" +
 	"\x06Holder\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x14\n" +
@@ -617,8 +590,6 @@ const file_roster_payday_holder_proto_rawDesc = "" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x12)\n" +
-	"\vidp_subject\x18\b \x01(\tB\b\xea\x82\x16\x040\x018\x01R\n" +
-	"idpSubject\x12)\n" +
 	"\aprofile\x18\t \x01(\v2\x0f.roster.ProfileR\aprofile\x12(\n" +
 	"\x04data\x18\n" +
 	" \x01(\v2\x14.google.protobuf.AnyR\x04data\x12M\n" +

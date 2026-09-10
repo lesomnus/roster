@@ -36,9 +36,6 @@ func (Holder) Fields() []ent.Field {
 		field.Time("date_created").
 			Immutable().
 			Optional(),
-		field.String("idp_subject").
-			Nillable().
-			Optional(),
 		field.Json("profile", &rstr.Profile{}).ValueScanner(entpb.ValueScanner[*rstr.Profile]{}).
 			Optional(),
 		field.Json("data", &anypb.Any{}).ValueScanner(entpb.ValueScanner[*anypb.Any]{}).
@@ -68,9 +65,6 @@ func (Holder) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("alias").
 			Edges("tenant").
-			Unique().
-			Annotations(entsql.IndexWhere("date_erased IS NULL")),
-		index.Fields("idp_subject").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 	}

@@ -77,6 +77,36 @@ func (s coreHolder) Update(ctx context.Context, req *app.HolderUpdateRequest) (*
 	return s.HolderServiceServer.Patch(ctx, patch.Build())
 }
 
+// Realias writes the index, which is what makes it a method of its own and not
+// a field on `Update`: `(alias, tenant)` is what every reference resolves
+// through, so a caller who may change it can make a script, a bookmark and
+// somebody else's runbook stop finding a person.
+//
+// The version is carried through and not made optional. Unlike `Disable` and
+// the two beside it, this **replaces a value the caller read** -- somebody else
+// may have renamed the same row in between, and two editors reaching two names
+// is exactly what a lost update is.
+//
+// Nothing else is checked here, and that is the point of it being a narrow
+// write: an alias that is not one is refused by the grammar payday already
+// holds every alias to, and one somebody in this tenant already has is refused
+// by the unique index that was there before this method was.
+//
+// **No `mayReach`, and that is the same answer `Disable` gives.** Renaming an
+// administrator does not let anybody become them; it only makes them harder to
+// find, which is D26's shape -- a denial of service that is a real gap and a
+// different one. What it is *not* is escalation, and `escalate.go` guards the
+// writes that are: a credential, a way in. If this grew one it would have to
+// grow one on `Disable` first, and that decision is written down over there
+// rather than taken here by a method that arrived later.
+func (s coreHolder) Realias(ctx context.Context, req *app.HolderRealiasRequest) (*app.Holder, error) {
+	return s.HolderServiceServer.Patch(ctx, app.HolderPatchRequest_builder{
+		Ref:         req.GetRef(),
+		Alias:       z.Ptr(req.GetAlias()),
+		DateUpdated: req.GetDateUpdated(),
+	}.Build())
+}
+
 // Disable, Enable and Invalidate are the two facts an operator writes about
 // somebody, and neither is a thing that holder carries about itself.
 //

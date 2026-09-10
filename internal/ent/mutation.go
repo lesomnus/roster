@@ -3174,23 +3174,6 @@ func (m *HolderMutation) OldDateCreated(ctx context.Context) (v time.Time, err e
 	return oldValue.DateCreated, nil
 }
 
-// OldIdpSubject returns the old "idp_subject" field's value of the Holder entity.
-// If the Holder object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *HolderMutation) OldIdpSubject(ctx context.Context) (v *string, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldIdpSubject is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldIdpSubject requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldIdpSubject: %w", err)
-	}
-	return oldValue.IdpSubject, nil
-}
-
 // OldProfile returns the old "profile" field's value of the Holder entity.
 // If the Holder object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -3295,8 +3278,6 @@ func (m *HolderMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldDateErased(ctx)
 	case holder.FieldDateCreated:
 		return m.OldDateCreated(ctx)
-	case holder.FieldIdpSubject:
-		return m.OldIdpSubject(ctx)
 	case holder.FieldProfile:
 		return m.OldProfile(ctx)
 	case holder.FieldData:

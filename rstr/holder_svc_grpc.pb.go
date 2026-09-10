@@ -27,6 +27,7 @@ const (
 	HolderService_List_FullMethodName       = "/roster.HolderService/List"
 	HolderService_Watch_FullMethodName      = "/roster.HolderService/Watch"
 	HolderService_Update_FullMethodName     = "/roster.HolderService/Update"
+	HolderService_Realias_FullMethodName    = "/roster.HolderService/Realias"
 	HolderService_Disable_FullMethodName    = "/roster.HolderService/Disable"
 	HolderService_Enable_FullMethodName     = "/roster.HolderService/Enable"
 	HolderService_Invalidate_FullMethodName = "/roster.HolderService/Invalidate"
@@ -81,6 +82,41 @@ type HolderServiceClient interface {
 	// same rows. The overlay mechanism exists for exactly this and nothing had
 	// used it.
 	Update(ctx context.Context, in *HolderUpdateRequest, opts ...grpc.CallOption) (*Holder, error)
+	// Realias changes what a person is written as: `@contoso/alice` becomes
+	// `@contoso/alice-kim`.
+	//
+	// # Why it is not a field on Update
+	//
+	// `Disable`'s reason, one row over. Roles are lists of methods, so a separate
+	// name is the only way a deployment can grant one without granting the other
+	// -- and these two are not the same permission at all. `Update` writes what a
+	// holder carries about itself and nothing the wall, the trail or a permission
+	// reads. This writes the **index**: `(alias, tenant)` is what every reference
+	// resolves through, so a caller who may change it can make a script, a
+	// bookmark and somebody else's runbook stop finding a person.
+	//
+	// # Why not Rename
+	//
+	// Because a `Holder` has three things that look like a name -- `alias`, which
+	// is this; `name`, which is set on `Add` and which nothing may change; and
+	// `profile.display_name`, which is what `Update` writes and what a console
+	// draws. An operator reading `Rename` in a role's method list would grant it
+	// meaning the last of those, and get the first. The ugly name is the point.
+	//
+	// # The old alias is not held
+	//
+	// It comes free the moment this returns, and somebody else may take it. That
+	// is deliberate and it is the same answer soft erasure already gives: the
+	// index covers the rows that are still here, so an erased holder's alias is
+	// free too.
+	//
+	// What follows is that `@contoso/alice` may later be a **different person**,
+	// and nothing about the first one changes -- their `Holder.id` is what a
+	// token carries and what the trail names, and it did not move. An alias is a
+	// convenience for people typing; the reference is the identifier. Holding the
+	// old one instead would mean a name can never be reused, which is a second
+	// trap rather than a fix for the first.
+	Realias(ctx context.Context, in *HolderRealiasRequest, opts ...grpc.CallOption) (*Holder, error)
 	// Disable stops somebody signing in, and leaves their rows where they are.
 	//
 	// Its own method rather than a field on `Update`, because it is not a thing
@@ -260,6 +296,16 @@ func (c *holderServiceClient) Update(ctx context.Context, in *HolderUpdateReques
 	return out, nil
 }
 
+func (c *holderServiceClient) Realias(ctx context.Context, in *HolderRealiasRequest, opts ...grpc.CallOption) (*Holder, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Holder)
+	err := c.cc.Invoke(ctx, HolderService_Realias_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *holderServiceClient) Disable(ctx context.Context, in *HolderDisableRequest, opts ...grpc.CallOption) (*Holder, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Holder)
@@ -366,6 +412,41 @@ type HolderServiceServer interface {
 	// same rows. The overlay mechanism exists for exactly this and nothing had
 	// used it.
 	Update(context.Context, *HolderUpdateRequest) (*Holder, error)
+	// Realias changes what a person is written as: `@contoso/alice` becomes
+	// `@contoso/alice-kim`.
+	//
+	// # Why it is not a field on Update
+	//
+	// `Disable`'s reason, one row over. Roles are lists of methods, so a separate
+	// name is the only way a deployment can grant one without granting the other
+	// -- and these two are not the same permission at all. `Update` writes what a
+	// holder carries about itself and nothing the wall, the trail or a permission
+	// reads. This writes the **index**: `(alias, tenant)` is what every reference
+	// resolves through, so a caller who may change it can make a script, a
+	// bookmark and somebody else's runbook stop finding a person.
+	//
+	// # Why not Rename
+	//
+	// Because a `Holder` has three things that look like a name -- `alias`, which
+	// is this; `name`, which is set on `Add` and which nothing may change; and
+	// `profile.display_name`, which is what `Update` writes and what a console
+	// draws. An operator reading `Rename` in a role's method list would grant it
+	// meaning the last of those, and get the first. The ugly name is the point.
+	//
+	// # The old alias is not held
+	//
+	// It comes free the moment this returns, and somebody else may take it. That
+	// is deliberate and it is the same answer soft erasure already gives: the
+	// index covers the rows that are still here, so an erased holder's alias is
+	// free too.
+	//
+	// What follows is that `@contoso/alice` may later be a **different person**,
+	// and nothing about the first one changes -- their `Holder.id` is what a
+	// token carries and what the trail names, and it did not move. An alias is a
+	// convenience for people typing; the reference is the identifier. Holding the
+	// old one instead would mean a name can never be reused, which is a second
+	// trap rather than a fix for the first.
+	Realias(context.Context, *HolderRealiasRequest) (*Holder, error)
 	// Disable stops somebody signing in, and leaves their rows where they are.
 	//
 	// Its own method rather than a field on `Update`, because it is not a thing
@@ -479,6 +560,9 @@ func (UnimplementedHolderServiceServer) Watch(*HolderWatchRequest, grpc.ServerSt
 }
 func (UnimplementedHolderServiceServer) Update(context.Context, *HolderUpdateRequest) (*Holder, error) {
 	return nil, status.Error(codes.Unimplemented, "method Update not implemented")
+}
+func (UnimplementedHolderServiceServer) Realias(context.Context, *HolderRealiasRequest) (*Holder, error) {
+	return nil, status.Error(codes.Unimplemented, "method Realias not implemented")
 }
 func (UnimplementedHolderServiceServer) Disable(context.Context, *HolderDisableRequest) (*Holder, error) {
 	return nil, status.Error(codes.Unimplemented, "method Disable not implemented")
@@ -656,6 +740,24 @@ func _HolderService_Update_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HolderService_Realias_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HolderRealiasRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HolderServiceServer).Realias(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HolderService_Realias_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HolderServiceServer).Realias(ctx, req.(*HolderRealiasRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _HolderService_Disable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(HolderDisableRequest)
 	if err := dec(in); err != nil {
@@ -798,6 +900,10 @@ var HolderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Update",
 			Handler:    _HolderService_Update_Handler,
+		},
+		{
+			MethodName: "Realias",
+			Handler:    _HolderService_Realias_Handler,
 		},
 		{
 			MethodName: "Disable",

@@ -28,9 +28,6 @@ func (e *Holder) Proto() *rstr.Holder {
 		x.SetDateErased(timestamppb.New(*e.DateErased))
 	}
 	x.SetDateCreated(timestamppb.New(e.DateCreated))
-	if e.IdpSubject != nil {
-		x.SetIdpSubject(*e.IdpSubject)
-	}
 	if e.Profile != nil {
 		x.SetProfile(e.Profile)
 	}

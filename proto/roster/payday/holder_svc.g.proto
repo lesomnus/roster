@@ -53,6 +53,41 @@ service HolderService {
   // same rows. The overlay mechanism exists for exactly this and nothing had
   // used it.
   rpc Update(HolderUpdateRequest) returns (Holder);
+  // Realias changes what a person is written as: `@contoso/alice` becomes
+  // `@contoso/alice-kim`.
+  //
+  // # Why it is not a field on Update
+  //
+  // `Disable`'s reason, one row over. Roles are lists of methods, so a separate
+  // name is the only way a deployment can grant one without granting the other
+  // -- and these two are not the same permission at all. `Update` writes what a
+  // holder carries about itself and nothing the wall, the trail or a permission
+  // reads. This writes the **index**: `(alias, tenant)` is what every reference
+  // resolves through, so a caller who may change it can make a script, a
+  // bookmark and somebody else's runbook stop finding a person.
+  //
+  // # Why not Rename
+  //
+  // Because a `Holder` has three things that look like a name -- `alias`, which
+  // is this; `name`, which is set on `Add` and which nothing may change; and
+  // `profile.display_name`, which is what `Update` writes and what a console
+  // draws. An operator reading `Rename` in a role's method list would grant it
+  // meaning the last of those, and get the first. The ugly name is the point.
+  //
+  // # The old alias is not held
+  //
+  // It comes free the moment this returns, and somebody else may take it. That
+  // is deliberate and it is the same answer soft erasure already gives: the
+  // index covers the rows that are still here, so an erased holder's alias is
+  // free too.
+  //
+  // What follows is that `@contoso/alice` may later be a **different person**,
+  // and nothing about the first one changes -- their `Holder.id` is what a
+  // token carries and what the trail names, and it did not move. An alias is a
+  // convenience for people typing; the reference is the identifier. Holding the
+  // old one instead would mean a name can never be reused, which is a second
+  // trap rather than a fix for the first.
+  rpc Realias(HolderRealiasRequest) returns (Holder);
   // Disable stops somebody signing in, and leaves their rows where they are.
   //
   // Its own method rather than a field on `Update`, because it is not a thing
@@ -143,7 +178,6 @@ message HolderAddRequest {
   string desc = 6 [features.field_presence = IMPLICIT];
   map<string, string> labels = 7;
   google.protobuf.Timestamp date_created = 15;
-  string idp_subject = 8;
   Profile profile = 9;
   google.protobuf.Any data = 10;
   google.protobuf.Timestamp date_invalidated = 11;
@@ -159,7 +193,6 @@ message HolderRef {
   oneof key {
     bytes id = 1;
     HolderRefBySlug slug = 4;
-    string idp_subject = 8;
   }
 }
 
@@ -178,7 +211,6 @@ message HolderSelect {
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;
-  bool idp_subject = 8;
   bool profile = 9;
   bool data = 10;
   bool date_invalidated = 11;
@@ -205,12 +237,6 @@ message HolderPatchRequest {
   // refused rather than assumed, because an unset field cannot be told
   // apart from a caller who never considered locking at all.
   bool date_updated_force = 27;
-  string idp_subject = 16;
-  // Clear idp_subject instead of writing it.
-  // It takes a field of its own because an unset value already means
-  // "leave it alone", so no value could have meant NULL. It wins
-  // outright: setting both this and idp_subject clears.
-  bool idp_subject_null = 17;
   Profile profile = 18;
   // Clear profile instead of writing it.
   // It takes a field of its own because an unset value already means
@@ -348,6 +374,19 @@ message HolderUpdateRequest {
   // neither.
   Profile profile = 9;
   google.protobuf.Any data = 10;
+}
+
+message HolderRealiasRequest {
+  HolderRef ref = 1;
+
+  // Optimistic locking, as `Patch` takes it: the version this caller read.
+  google.protobuf.Timestamp date_updated = 13;
+
+  // The new one, on the field number it lands in. Refused if it is not an
+  // alias, and refused if somebody in this tenant already has it -- both by
+  // rules that were there before this method was, which is most of why this is
+  // a narrow write rather than a special case.
+  string alias = 4;
 }
 
 message HolderDisableRequest {

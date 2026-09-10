@@ -115,6 +115,14 @@ tenants is not a field write, since their whole trail was stamped with where
 they were. Erased **softly**, because a deleted holder would leave the trail
 saying who while nobody could find out who.
 
+Its `alias` is what a person writes it as within its tenant, and it moves:
+`Holder.Realias` is a method of its own so that a deployment may grant renaming
+without granting a profile edit -- it writes the **index** every reference
+resolves through, where `Update` writes what the row carries about itself. The
+old alias comes free, so `@contoso/alice` may later be somebody else; what does
+not move is the identifier, which is what a token carries and what the trail
+names.
+
 It carries the two facts an app has to hear about. `date_invalidated` is *sign
 out everywhere* as a fact rather than as a list of sessions, and `date_disabled`
 is *this person is not to sign in, and their rows stay* -- neither a lockout,

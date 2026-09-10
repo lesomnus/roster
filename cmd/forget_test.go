@@ -106,7 +106,6 @@ func TestForgettingSomebodyKeepsTheEventAndLosesTheContents(t *testing.T) {
 		x.NoError(err)
 		x.Empty(v.Alias)
 		x.Empty(v.Name)
-		x.Empty(v.IdpSubject)
 		x.Nil(v.Profile)
 		x.NotNil(v.DateErased)
 

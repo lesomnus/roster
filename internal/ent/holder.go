@@ -36,8 +36,6 @@ type Holder struct {
 	DateErased *time.Time `json:"date_erased,omitempty"`
 	// DateCreated holds the value of the "date_created" field.
 	DateCreated time.Time `json:"date_created,omitempty"`
-	// IdpSubject holds the value of the "idp_subject" field.
-	IdpSubject *string `json:"idp_subject,omitempty"`
 	// Profile holds the value of the "profile" field.
 	Profile *rstr.Profile `json:"profile,omitempty"`
 	// Data holds the value of the "data" field.
@@ -81,7 +79,7 @@ func (*Holder) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case holder.FieldLabels:
 			values[i] = new([]byte)
-		case holder.FieldAlias, holder.FieldName, holder.FieldDesc, holder.FieldIdpSubject:
+		case holder.FieldAlias, holder.FieldName, holder.FieldDesc:
 			values[i] = new(sql.NullString)
 		case holder.FieldDateUpdated, holder.FieldDateErased, holder.FieldDateCreated, holder.FieldDateInvalidated, holder.FieldDateDisabled:
 			values[i] = new(sql.NullTime)
@@ -156,13 +154,6 @@ func (_m *Holder) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field date_created", values[i])
 			} else if value.Valid {
 				_m.DateCreated = value.Time
-			}
-		case holder.FieldIdpSubject:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field idp_subject", values[i])
-			} else if value.Valid {
-				_m.IdpSubject = new(string)
-				*_m.IdpSubject = value.String
 			}
 		case holder.FieldProfile:
 			if value, err := holder.ValueScanner.Profile.FromValue(values[i]); err != nil {
@@ -259,11 +250,6 @@ func (_m *Holder) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("date_created=")
 	builder.WriteString(_m.DateCreated.Format(time.ANSIC))
-	builder.WriteString(", ")
-	if v := _m.IdpSubject; v != nil {
-		builder.WriteString("idp_subject=")
-		builder.WriteString(*v)
-	}
 	builder.WriteString(", ")
 	builder.WriteString("profile=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Profile))

@@ -130,6 +130,7 @@ func NewCmdEntities(c *cmd.Config) xli.Commands {
 	// one a console can reach and a terminal cannot (D58).
 	for _, v := range []struct{ path, method, brief string }{
 		{"holder/update", "roster.HolderService.Update", "replace somebody's profile, whole"},
+		{"holder/realias", "roster.HolderService.Realias", "change what somebody is written as; the old alias comes free"},
 		{"holder/disable", "roster.HolderService.Disable", "refuse somebody everywhere, now"},
 		{"holder/enable", "roster.HolderService.Enable", "let a disabled somebody back in"},
 		{"holder/invalidate", "roster.HolderService.Invalidate", "void everything issued to somebody before now"},

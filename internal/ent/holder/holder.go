@@ -29,8 +29,6 @@ const (
 	FieldDateErased = "date_erased"
 	// FieldDateCreated holds the string denoting the date_created field in the database.
 	FieldDateCreated = "date_created"
-	// FieldIdpSubject holds the string denoting the idp_subject field in the database.
-	FieldIdpSubject = "idp_subject"
 	// FieldProfile holds the string denoting the profile field in the database.
 	FieldProfile = "profile"
 	// FieldData holds the string denoting the data field in the database.
@@ -64,7 +62,6 @@ var Columns = []string{
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
-	FieldIdpSubject,
 	FieldProfile,
 	FieldData,
 	FieldDateInvalidated,
@@ -126,11 +123,6 @@ func ByDateErased(opts ...sql.OrderTermOption) OrderOption {
 // ByDateCreated orders the results by the date_created field.
 func ByDateCreated(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDateCreated, opts...).ToFunc()
-}
-
-// ByIdpSubject orders the results by the idp_subject field.
-func ByIdpSubject(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldIdpSubject, opts...).ToFunc()
 }
 
 // ByDateInvalidated orders the results by the date_invalidated field.

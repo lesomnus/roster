@@ -19,10 +19,10 @@ func init() {
 	holderFields := schema.Holder{}.Fields()
 	_ = holderFields
 	// holderDescProfile is the schema descriptor for profile field.
-	holderDescProfile := holderFields[9].Descriptor()
+	holderDescProfile := holderFields[8].Descriptor()
 	holder.ValueScanner.Profile = holderDescProfile.ValueScanner.(field.TypeValueScanner[*rstr.Profile])
 	// holderDescData is the schema descriptor for data field.
-	holderDescData := holderFields[10].Descriptor()
+	holderDescData := holderFields[9].Descriptor()
 	holder.ValueScanner.Data = holderDescData.ValueScanner.(field.TypeValueScanner[*anypb.Any])
 	tenantFields := schema.Tenant{}.Fields()
 	_ = tenantFields

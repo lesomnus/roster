@@ -663,7 +663,8 @@ function Emails(props: { holder: Uint8Array; may: (method: string) => boolean })
  *
  * `Holder.Update` is the narrow write: the profile and the app's own data, and
  * nothing that moves somebody between tenants, renames them into another alias,
- * or changes what they may do. It takes the version this page read, so a form
+ * or changes what they may do. The alias is [Realias], drawn below and granted
+ * apart from this. It takes the version this page read, so a form
  * left open while somebody else edited is refused rather than applied to
  * whatever the row became.
  */

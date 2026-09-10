@@ -26,7 +26,6 @@ type Mutation struct {
 	date_updated     *time.Time
 	date_erased      *time.Time
 	date_created     *time.Time
-	idp_subject      *string
 	profile          **rstr.Profile
 	data             **anypb.Any
 	date_invalidated *time.Time
@@ -221,38 +220,6 @@ func (m *Mutation) DateCreatedCleared() bool {
 func (m *Mutation) ResetDateCreated() {
 	m.date_created = nil
 	delete(m.clearedFields, FieldDateCreated)
-}
-
-// SetIdpSubject sets the "idp_subject" field.
-func (m *Mutation) SetIdpSubject(s string) {
-	m.idp_subject = &s
-}
-
-// IdpSubject returns the value of the "idp_subject" field in the mutation.
-func (m *Mutation) IdpSubject() (r string, exists bool) {
-	v := m.idp_subject
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ClearIdpSubject clears the value of the "idp_subject" field.
-func (m *Mutation) ClearIdpSubject() {
-	m.idp_subject = nil
-	m.clearedFields[FieldIdpSubject] = struct{}{}
-}
-
-// IdpSubjectCleared returns if the "idp_subject" field was cleared in this mutation.
-func (m *Mutation) IdpSubjectCleared() bool {
-	_, ok := m.clearedFields[FieldIdpSubject]
-	return ok
-}
-
-// ResetIdpSubject resets all changes to the "idp_subject" field.
-func (m *Mutation) ResetIdpSubject() {
-	m.idp_subject = nil
-	delete(m.clearedFields, FieldIdpSubject)
 }
 
 // SetProfile sets the "profile" field.
@@ -463,7 +430,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 12)
 	if m.alias != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -484,9 +451,6 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.date_created != nil {
 		fields = append(fields, FieldDateCreated)
-	}
-	if m.idp_subject != nil {
-		fields = append(fields, FieldIdpSubject)
 	}
 	if m.profile != nil {
 		fields = append(fields, FieldProfile)
@@ -525,8 +489,6 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.DateErased()
 	case FieldDateCreated:
 		return m.DateCreated()
-	case FieldIdpSubject:
-		return m.IdpSubject()
 	case FieldProfile:
 		return m.Profile()
 	case FieldData:
@@ -602,13 +564,6 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDateCreated(v)
 		return nil
-	case FieldIdpSubject:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetIdpSubject(v)
-		return nil
 	case FieldProfile:
 		v, ok := value.(*rstr.Profile)
 		if !ok {
@@ -683,9 +638,6 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldDateCreated) {
 		fields = append(fields, FieldDateCreated)
 	}
-	if m.FieldCleared(FieldIdpSubject) {
-		fields = append(fields, FieldIdpSubject)
-	}
 	if m.FieldCleared(FieldProfile) {
 		fields = append(fields, FieldProfile)
 	}
@@ -720,9 +672,6 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldDateCreated:
 		m.ClearDateCreated()
-		return nil
-	case FieldIdpSubject:
-		m.ClearIdpSubject()
 		return nil
 	case FieldProfile:
 		m.ClearProfile()
@@ -764,9 +713,6 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldDateCreated:
 		m.ResetDateCreated()
-		return nil
-	case FieldIdpSubject:
-		m.ResetIdpSubject()
 		return nil
 	case FieldProfile:
 		m.ResetProfile()

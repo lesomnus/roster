@@ -146,7 +146,6 @@ func Forget(ctx context.Context, db *ent.Client, who pdid.Id, archive string) (R
 		SetLabels(map[string]string{}).
 		ClearProfile().
 		ClearData().
-		SetIdpSubject("").
 		SetDateUpdated(time.Now())
 	if v.DateErased == nil {
 		// Asked for by somebody who had not left first. Leaving is implied by
