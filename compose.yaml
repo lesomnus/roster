@@ -278,9 +278,10 @@ services:
     # So this stays the **fast** rig and is not the production-shaped one.
     # What it therefore cannot see: anything Hydra only enforces outside `--dev`,
     # anything about TLS termination (`X-Forwarded-Proto`, `r.TLS != nil`), and
-    # anything that needs the real manifests. `scripts/cluster.sh` is where that
-    # lives, and it runs the deployment's own manifests rather than an
-    # imitation of them.
+    # anything that needs the real manifests. The gate for **those** is the
+    # deployment's own manifests in a real cluster, and it does not exist yet
+    # -- `docs/roadmap.md` carries it as open rather than this file naming a
+    # script that is not here.
     command: ["serve", "all", "--dev"]
     networks:
       default:
