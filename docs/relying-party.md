@@ -240,6 +240,45 @@ That route reads `ConnectionService` for where to send them, `IdentityService`
 can tell which route a person took, which is the point.
 [`docs/login.md`](login.md) § *Every hop* draws it beside this one.
 
+### Why those are HTTP and not RPCs
+
+Every endpoint in the Login App row is **ours, hand-written**: `GET /login`,
+`GET /consent`, `GET /flow`, `POST /accept` and the two `/logout`s are
+`login/login.go`'s `Handler()`, and the `/session` family is
+`frontdoor.Door.Handler()` -- roster's own package, the same three routes the
+account app mounts, on the app's own mux. Neither consumer registers a gRPC or
+Connect service at all.
+
+So why is the sign-in not `AuthService`? Not because protobuf cannot answer with
+a cookie. It can, and `proto/app/auth.proto` says so in as many words: a cookie
+is a response header, `set-cookie` is response metadata, and `web.Transcode`
+hands one to the browser as the other. `AuthService.SignIn` does exactly that,
+and for a while the absence of it here read as *issuing is HTTP*, which is wrong.
+
+The real line is **whose session it is**. `AuthService` mints roster's own
+session for roster's own browser -- the admin console, on the control plane's
+listener alone (`console.Auth(…, s.Sessions)` in `cmd/serve.go`), for operators,
+in roster's session store. The Login App's cookie is the Login App's: its origin,
+its store, its row, its lifetime. CLAUDE.md's second rule is what settles it --
+*a session cookie for another app's browser is not roster's to make* -- and so
+does the history: `POST /session` was once mounted on every listener that had
+HTTP, a twin of `AuthService.SignIn`, and on the data plane it answered an
+operator's password with 204 and a cookie that opened nothing. Deleting it is
+why `cmd/serve.go` now carries the paragraph *no sign-in route here, and the
+absence is the point*.
+
+Which puts the line between the two halves of every diagram above:
+
+| | |
+| --- | --- |
+| browser ↔ app | HTTP, each app's own. Redirects and `Set-Cookie`, which is what a browser is, and a challenge in a query string, which is what Hydra hands over |
+| app ↔ roster | protobuf, generated, over gRPC. The five calls in the table, and nothing else |
+
+And the Login App is the one front door with **no** Connect call from the browser
+at all -- not even to ask what the flow is about, because that is Hydra's to say
+and only this app may ask Hydra. `GET /flow` is that answer relayed, and it is
+the only endpoint its page has.
+
 ## `behind`: a page with a proxy in front
 
 Nothing of ours runs in this shape. `oauth2-proxy` holds the session and the
