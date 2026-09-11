@@ -2,8 +2,10 @@ package login
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"slices"
 	"sort"
 	"strings"
@@ -124,8 +126,14 @@ type hydraClient struct {
 // `clients` is `login.clients`: an operator's alias against the client ids that
 // are theirs. What comes back is every finding, worst first, and an empty slice
 // is a deployment with nothing wrong that this can see.
-func Doctor(ctx context.Context, hydra string, header http.Header, clients map[string][]string) ([]Finding, error) {
+func Doctor(ctx context.Context, hydra, public string, header http.Header, clients map[string][]string) ([]Finding, error) {
 	a := admin{base: strings.TrimSuffix(hydra, "/"), header: header, client: http.DefaultClient}
+	public = strings.TrimSuffix(public, "/")
+
+	// One registered client, for the probes below: what Hydra was **told** can
+	// only be found out by asking it to do something, and asking it to start a
+	// flow needs a client and one of its own redirect URIs.
+	var sample *hydraClient
 
 	out := []Finding{}
 	for _, alias := range sorted(clients) {
@@ -133,6 +141,10 @@ func Doctor(ctx context.Context, hydra string, header http.Header, clients map[s
 			v, err := a.getClient(ctx, id)
 			if err != nil {
 				return nil, err
+			}
+
+			if sample == nil && v != nil && len(v.Redirects) > 0 {
+				sample = v
 			}
 
 			out = append(out, check(alias, id, v)...)
@@ -144,6 +156,8 @@ func Doctor(ctx context.Context, hydra string, header http.Header, clients map[s
 		return nil, err
 	}
 	out = append(out, found...)
+
+	out = append(out, told(ctx, public, sample)...)
 
 	sort.SliceStable(out, func(i, j int) bool { return out[i].Severity < out[j].Severity })
 
@@ -263,3 +277,105 @@ func check(alias, id string, v *hydraClient) []Finding {
 
 	return out
 }
+
+// told is what Hydra was configured with, which it will not say.
+//
+// Its settings are not on the admin API and not in the discovery document --
+// `urls.login`, `urls.consent`, `urls.logout`, `urls.post_logout_redirect` are
+// a file and environment variables on the other side of a network. What is
+// answerable is what Hydra **does**, so these ask it to do the two things whose
+// answer is the setting:
+//
+//   - end a session for a browser that has none. Hydra redirects to
+//     `urls.post_logout_redirect`, or, unset, to a fallback page of its own
+//     whose text tells whoever clicked sign out to contact an administrator.
+//     That page is the end of a **successful** sign-out and it was reported as
+//     the sign-out being broken.
+//   - start a flow. Hydra redirects to `urls.login`, or to a fallback.
+//
+// Both are on Hydra's **public** port; its admin port serves neither. Nothing
+// here is followed: what is being read is where it points.
+func told(ctx context.Context, public string, sample *hydraClient) []Finding {
+	if public == "" {
+		return nil
+	}
+
+	// A client that does not follow anything: the Location **is** the answer.
+	c := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	at := func(u string) (string, error) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+		if err != nil {
+			return "", err
+		}
+		res, err := c.Do(req)
+		if err != nil {
+			return "", err
+		}
+		defer res.Body.Close()
+
+		return res.Header.Get("location"), nil
+	}
+
+	out := []Finding{}
+	add := func(s Severity, what, costs string) {
+		out = append(out, Finding{Severity: s, What: what, Costs: costs})
+	}
+
+	// Discovery first, because it is also the thing that says the rest of this
+	// is worth trying.
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, public+"/.well-known/openid-configuration", nil)
+	if err != nil {
+		return nil
+	}
+	res, err := c.Do(req)
+	if err != nil {
+		add(Fragile, fmt.Sprintf("its public endpoints did not answer at %s", public),
+			"nothing here could be checked about what hydra was told; pass --public if it is somewhere else")
+
+		return out
+	}
+	defer res.Body.Close()
+
+	var doc struct {
+		Issuer     string   `json:"issuer"`
+		EndSession string   `json:"end_session_endpoint"`
+		Methods    []string `json:"token_endpoint_auth_methods_supported"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&doc); err != nil || doc.Issuer == "" {
+		add(Fragile, fmt.Sprintf("%s answered something that is not a discovery document", public),
+			"nothing here could be checked about what hydra was told")
+
+		return out
+	}
+
+	if !slices.Contains(doc.Methods, AuthMethod) {
+		add(Broken, fmt.Sprintf("it does not offer %s, which is how every relying party here sends its secret", AuthMethod),
+			"every sign-in answers 400 at the exchange, whatever the clients say")
+	}
+
+	if doc.EndSession == "" {
+		add(Broken, "it publishes no end_session_endpoint",
+			"an app can end its own session and nothing else, so the next page signs the person straight back in")
+	} else if to, err := at(doc.EndSession); err == nil && isFallback(to) {
+		add(Broken, "urls.post_logout_redirect is not set",
+			"a sign-out that asked to come back nowhere ends on hydra's own page, which tells the person who clicked it to contact an administrator")
+	}
+
+	// And where a browser is sent to sign in. It needs a client and one of its
+	// own redirect URIs, because Hydra refuses the request before it decides
+	// where to send anybody.
+	if sample != nil {
+		u := fmt.Sprintf("%s/oauth2/auth?client_id=%s&response_type=code&scope=openid&state=%s&redirect_uri=%s",
+			public, url.QueryEscape(sample.Id), "roster-login-doctor-probe", url.QueryEscape(sample.Redirects[0]))
+		if to, err := at(u); err == nil && isFallback(to) {
+			add(Broken, "urls.login does not point at this app",
+				"a browser sent here to sign in lands on hydra's fallback page instead of a form")
+		}
+	}
+
+	return out
+}
+
+// isFallback is Hydra answering with a page of its own because it was told
+// nowhere to send the browser.
+func isFallback(to string) bool { return strings.Contains(to, "/oauth2/fallbacks/") }

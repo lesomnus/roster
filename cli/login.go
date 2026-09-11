@@ -273,6 +273,7 @@ func newCmdLoginDoctor(c *cmd.Config) *xli.Command {
 
 		Flags: flg.Flags{
 			&flg.String{Name: "hydra", Brief: "where hydra's admin API answers; the `login.hydra.admin` block otherwise"},
+			&flg.String{Name: "public", Brief: "where hydra's public endpoints answer, for the half about what hydra was told; derived from --hydra otherwise"},
 			&flg.Strings{Name: "client", Brief: "which OAuth clients are an operator's, as alias=client-id[,…]; the `login.clients` block otherwise"},
 		},
 
@@ -294,7 +295,20 @@ func newCmdLoginDoctor(c *cmd.Config) *xli.Command {
 				return errors.New("login.hydra.admin (--hydra): where hydra's admin API answers")
 			}
 
-			found, err := login.Doctor(ctx, at, nil, clients)
+			// What Hydra was told is only answerable on its **public** port,
+			// and roster has no field that says where that is -- the Login App
+			// needs the admin API and nothing else. Rather than add a setting
+			// for a check, this derives it from the address it already has,
+			// which is `4445` -> `4444` on a Hydra left at its defaults. A
+			// deployment that moved them passes `--public`, and one that does
+			// neither is **told** the checks were skipped rather than left to
+			// read a pass that did not happen.
+			public, _ := flg.Find[string](cl, "public")
+			if public == "" {
+				public = strings.Replace(at, ":4445", ":4444", 1)
+			}
+
+			found, err := login.Doctor(ctx, at, public, nil, clients)
 			if err != nil {
 				return err
 			}

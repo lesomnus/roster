@@ -62,7 +62,7 @@ func TestDoctorPassesAClientRegisteredTheWayThisStackNeeds(t *testing.T) {
 	x := require.New(t)
 
 	at := clients(t, map[string]map[string]any{"app": good()})
-	found, err := login.Doctor(context.Background(), at, nil, map[string][]string{"contoso": {"app"}})
+	found, err := login.Doctor(context.Background(), at, "", nil, map[string][]string{"contoso": {"app"}})
 	x.NoError(err)
 	x.Empty(found)
 }
@@ -125,7 +125,7 @@ func TestDoctorFindsWhatCostAnHourEach(t *testing.T) {
 			tc.break_(v)
 
 			at := clients(t, map[string]map[string]any{"app": v})
-			found, err := login.Doctor(context.Background(), at, nil, map[string][]string{"contoso": {"app"}})
+			found, err := login.Doctor(context.Background(), at, "", nil, map[string][]string{"contoso": {"app"}})
 			x.NoError(err)
 			x.Len(found, 1)
 			x.Equal(tc.how, found[0].Severity)
@@ -150,7 +150,7 @@ func TestDoctorKnowsWhichDirectionCosts(t *testing.T) {
 		x := require.New(t)
 
 		at := clients(t, map[string]map[string]any{"app": good()})
-		found, err := login.Doctor(context.Background(), at, nil, map[string][]string{"contoso": {"app", "ghost"}})
+		found, err := login.Doctor(context.Background(), at, "", nil, map[string][]string{"contoso": {"app", "ghost"}})
 		x.NoError(err)
 		x.Len(found, 1)
 		x.Equal(login.Fragile, found[0].Severity, "a client nothing can raise a flow for refuses nobody")
@@ -165,7 +165,7 @@ func TestDoctorKnowsWhichDirectionCosts(t *testing.T) {
 		stray["client_id"] = "stray"
 
 		at := clients(t, map[string]map[string]any{"app": good(), "stray": stray})
-		found, err := login.Doctor(context.Background(), at, nil, map[string][]string{"contoso": {"app"}})
+		found, err := login.Doctor(context.Background(), at, "", nil, map[string][]string{"contoso": {"app"}})
 		x.NoError(err)
 		x.Len(found, 1)
 		x.Equal(login.Broken, found[0].Severity)
@@ -183,9 +183,140 @@ func TestDoctorPutsWhatIsBrokenFirst(t *testing.T) {
 	v["token_endpoint_auth_method"] = "none"
 
 	at := clients(t, map[string]map[string]any{"app": v})
-	found, err := login.Doctor(context.Background(), at, nil, map[string][]string{"contoso": {"app"}})
+	found, err := login.Doctor(context.Background(), at, "", nil, map[string][]string{"contoso": {"app"}})
 	x.NoError(err)
 	x.Len(found, 2)
 	x.Equal(login.Broken, found[0].Severity)
 	x.Equal(login.Fragile, found[1].Severity)
+}
+
+// hydra is one whose settings can be varied, for the half of `Doctor` that is
+// about what Hydra was **told**. Those settings are not on any API, so what is
+// faked here is what Hydra *does*: where it sends a browser.
+type issuer struct {
+	endSession bool
+	methods    []string
+	afterOut   string // where an end-session with no session lands
+	toForm     string // where an authorize lands
+}
+
+func serving(t *testing.T, v issuer) string {
+	t.Helper()
+
+	m := http.NewServeMux()
+	m.HandleFunc("GET /.well-known/openid-configuration", func(w http.ResponseWriter, r *http.Request) {
+		doc := map[string]any{
+			"issuer":                                "https://issuer.test",
+			"token_endpoint_auth_methods_supported": v.methods,
+		}
+		if v.endSession {
+			doc["end_session_endpoint"] = "http://" + r.Host + "/oauth2/sessions/logout"
+		}
+		w.Header().Set("content-type", "application/json")
+		_ = json.NewEncoder(w).Encode(doc)
+	})
+	m.HandleFunc("GET /oauth2/sessions/logout", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, v.afterOut, http.StatusFound)
+	})
+	m.HandleFunc("GET /oauth2/auth", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, v.toForm, http.StatusFound)
+	})
+
+	s := httptest.NewServer(m)
+	t.Cleanup(s.Close)
+
+	return s.URL
+}
+
+func well() issuer {
+	return issuer{
+		endSession: true,
+		methods:    []string{"client_secret_post", login.AuthMethod, "none"},
+		afterOut:   "https://login.test/signed-out",
+		toForm:     "https://login.test/login?login_challenge=x",
+	}
+}
+
+// TestDoctorAsksHydraToDoTheThingsItsSettingsDecide: what Hydra was configured
+// with is on the other side of a network, in a file and some environment
+// variables, and on no API at all. What is answerable is what it **does**.
+func TestDoctorAsksHydraToDoTheThingsItsSettingsDecide(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		with func(*issuer)
+		how  login.Severity
+		says string
+	}{
+		{
+			// The one that made a successful sign-out read as a broken
+			// deployment: Hydra's own fallback page tells whoever clicked the
+			// button to contact an administrator.
+			name: "urls.post_logout_redirect unset",
+			with: func(v *issuer) { v.afterOut = "https://issuer.test/oauth2/fallbacks/logout/callback" },
+			how:  login.Broken,
+			says: "urls.post_logout_redirect",
+		},
+		{
+			name: "urls.login unset",
+			with: func(v *issuer) { v.toForm = "https://issuer.test/oauth2/fallbacks/error?error=x" },
+			how:  login.Broken,
+			says: "urls.login",
+		},
+		{
+			name: "no end_session_endpoint",
+			with: func(v *issuer) { v.endSession = false },
+			how:  login.Broken,
+			says: "end_session_endpoint",
+		},
+		{
+			// The registration and the issuer have to agree, and a client can
+			// be registered for a method the issuer does not offer.
+			name: "the issuer does not offer the method every app here sends",
+			with: func(v *issuer) { v.methods = []string{"client_secret_post"} },
+			how:  login.Broken,
+			says: login.AuthMethod,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			x := require.New(t)
+
+			v := well()
+			tc.with(&v)
+
+			at := clients(t, map[string]map[string]any{"app": good()})
+			found, err := login.Doctor(context.Background(), at, serving(t, v), nil, map[string][]string{"contoso": {"app"}})
+			x.NoError(err)
+			x.Len(found, 1)
+			x.Equal(tc.how, found[0].Severity)
+			x.Contains(found[0].What, tc.says)
+			x.Empty(found[0].About, "a finding about the deployment names no client")
+		})
+	}
+
+	t.Run("all of it as it should be", func(t *testing.T) {
+		x := require.New(t)
+
+		at := clients(t, map[string]map[string]any{"app": good()})
+		found, err := login.Doctor(context.Background(), at, serving(t, well()), nil, map[string][]string{"contoso": {"app"}})
+		x.NoError(err)
+		x.Empty(found)
+	})
+}
+
+// TestDoctorSaysWhenItCouldNotLook, which is the difference between a check and
+// a check that passes for the wrong reason.
+//
+// The public endpoints are derived from the admin address unless a deployment
+// says otherwise, and a derivation can be wrong. Silence there would be a green
+// run that asked nothing.
+func TestDoctorSaysWhenItCouldNotLook(t *testing.T) {
+	x := require.New(t)
+
+	at := clients(t, map[string]map[string]any{"app": good()})
+	found, err := login.Doctor(context.Background(), at, "http://127.0.0.1:1", nil, map[string][]string{"contoso": {"app"}})
+	x.NoError(err)
+	x.Len(found, 1)
+	x.Equal(login.Fragile, found[0].Severity)
+	x.Contains(found[0].What, "did not answer")
+	x.Contains(found[0].Costs, "--public")
 }
