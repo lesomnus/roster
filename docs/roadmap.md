@@ -664,37 +664,38 @@ in 2026-08, and one of them closed by *looking*:
 - **RPCs without commands.** Zero, as of the D58 row above; the three absences
   that remain are decisions, not gaps.
 
-### Open: the gate that runs the deployment's own manifests
+### Open, and filed
 
-Every defect this week was found by a person clicking something in a browser,
-and every one of them lived in the gap between `compose.yaml` and a cluster:
+Three, from the week the deployment found four defects nobody here had:
 
-| | caught by a fresh rig? |
-| --- | --- |
-| two hand-kept copies of one contract disagreeing (a missing `post_logout_redirect_uris`, a `token_endpoint_auth_method` nothing sends) | yes, once there is one copy |
-| behaviour that only appears when configuration changes **under a running process** (`oauth2` probes for the auth method and caches it) | **no** -- it needs a step that changes the registration and signs in again without restarting |
+- **[#11](https://github.com/lesomnus/roster/issues/11) `login doctor` checks
+  the clients, not what Hydra was told.** One of the four was on Hydra's side --
+  `urls.post_logout_redirect` never set, so a sign-out ended on a page
+  addressed to an administrator -- and Hydra does not expose its configuration
+  over the admin API, so that half has to be inferred rather than read.
+- **[#12](https://github.com/lesomnus/roster/issues/12) a gate that runs the
+  deployment's own manifests.** `compose.yaml` is an imitation of a deployment
+  and every defect lived in the gap. It needs `deploy/` here first, so the
+  contract is upstream and a deployment is an overlay rather than a second
+  copy. Proven feasible: k3d builds a cluster against this checkout's engine
+  and `kubectl` reaches it from a container on the cluster's network.
+- **[#13](https://github.com/lesomnus/roster/issues/13) two changes that break
+  a deployment on upgrade**, with nothing but a commit message saying so.
 
-`roster login doctor` closes the first column from either side, and is done.
-The second needs a cluster: k3d with the deployment's own manifests, the walks
-in `docker/` run against it, and then one more step that mutates a client and
-tries again.
+And the thing worth keeping from the week, because it points at which of those
+matters: **none of the four was roster changing behaviour under a working
+deployment.** They were contract mismatches -- a field absent from a
+registration, a Hydra setting never made, a method nothing here sends, a
+consequence written down as known and never read as a defect. A cluster gate
+catches regressions; there were none. `doctor` catches contracts, and that is
+where they all were.
 
-Proven feasible, not built: k3d makes a cluster against this checkout's engine,
-and `kubectl` reaches it from a container on the cluster's own network (the
-engine is remote, so published ports are not the way in -- the same constraint
-`docker/flow.sh` already works under).
-
-What it needs, and why it is not a morning's work:
-
-- **`deploy/` in roster** -- the reference manifests, so the contract is
-  upstream and a deployment is an overlay rather than a second copy. roster
-  ships none today.
-- TLS in front, because Hydra outside `--dev` refuses an `http://` issuer, and
-  every container then has to trust the certificate.
-- A seed, which is `docker/customer.sh` as a Job.
-- The deployment's own secrets are SOPS-encrypted to a key this rig cannot
-  have, which is another reason the reference manifests are roster's rather
-  than borrowed.
+The one exception is the shape #12 exists for: `golang.org/x/oauth2` probes for
+the client authentication method and **caches** it, so a client changed under a
+running pod is addressed the old way with no second try. Every gate here was
+green and would have been green for either registration, because a gate starts
+a fresh process. That one needs a cluster **and** a step that changes the
+registration and signs in again without restarting anything.
 
 ## See also
 
