@@ -264,6 +264,23 @@ services:
       # The Login App answers consent itself, so nothing here draws a screen.
       # A deployment that wants one points `URLS_CONSENT` at its own.
       LOG_LEVEL: warn
+    # ⚠️ `--dev` **disables critical security checks**, in Hydra's own words,
+    # and the deployment runs `serve all` without it. That difference is here
+    # on purpose and it is worth knowing exactly what it costs.
+    #
+    # Taking it out was tried. Hydra then refuses to start: *issuer URL scheme
+    # must be HTTPS unless development mode is enabled* -- and that is not one
+    # variable, it is a TLS-terminating proxy in front, a certificate
+    # authority every container has to trust, and every URL in every walk. It
+    # is most of a second cluster, hand-built, beside the one the deployment
+    # already describes.
+    #
+    # So this stays the **fast** rig and is not the production-shaped one.
+    # What it therefore cannot see: anything Hydra only enforces outside `--dev`,
+    # anything about TLS termination (`X-Forwarded-Proto`, `r.TLS != nil`), and
+    # anything that needs the real manifests. `scripts/cluster.sh` is where that
+    # lives, and it runs the deployment's own manifests rather than an
+    # imitation of them.
     command: ["serve", "all", "--dev"]
     networks:
       default:
