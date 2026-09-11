@@ -172,7 +172,29 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 				if err != nil {
 					return err
 				}
-				g.Go(func() error { return serveLogin(ctx, gc) })
+
+				// **Nothing to front, so it stays off and the rest serves.**
+				//
+				// `minted` drops an operator whose key has not been written
+				// yet, which on a first start is all of them: `roster login
+				// provision` skips a tenant that does not exist, and the
+				// tenant is made by `resources:` a moment from now, by this
+				// process. Refusing here would be the deployment that cannot
+				// come up because it has not come up -- which is what it was,
+				// and what `deploy/` found on an empty cluster.
+				//
+				// The next start finds the key and fronts them. Until then
+				// this says so, once, rather than a browser saying it.
+				//
+				// `roster login serve` still refuses: somebody typed that, and
+				// a process whose only job is the Login App has nothing to do
+				// without one.
+				if len(gc.Clients) == 0 {
+					slog.Warn("login: no operator has a key yet, so the login app is not serving; " +
+						"make a tenant and restart")
+				} else {
+					g.Go(func() error { return serveLogin(ctx, gc) })
+				}
 			}
 
 			return g.Wait()
@@ -254,7 +276,16 @@ func loginApp(c *cmd.Config, l net.Listener) (cmd.LoginConfig, error) {
 	if err != nil {
 		return gc, err
 	}
-	keys, err := keysOf(gc.Keys, LoginKeyPrefix, nil)
+	// Before `keysOf`, which reads the files -- and before it refuses an empty
+	// set, which on a first start is what is left.
+	refs, clients := minted(gc.Keys, clients)
+	if len(refs) == 0 && len(clients) == 0 {
+		gc.Keys, gc.Clients = nil, nil
+
+		return gc, nil
+	}
+
+	keys, err := keysOf(refs, LoginKeyPrefix, nil)
 	if err != nil {
 		return gc, err
 	}

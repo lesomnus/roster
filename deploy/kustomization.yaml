@@ -1,0 +1,38 @@
+# The reference deployment. `deploy/README.md` says why it is in roster.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# No namespace: an overlay chooses one, the way the deployment that uses this
+# already does.
+resources:
+  - ./secrets.yaml
+  - ./roster.yaml
+  - ./hydra.yaml
+  # The OAuth clients, applied after a sync and then checked.
+  - ./clients.yaml
+
+configMapGenerator:
+  # roster's own file format, embedded rather than indented inside a ConfigMap:
+  # `roster config env` prints every setting it holds, `roster --config` reads
+  # it on a laptop, and an editor knows what it is.
+  - name: roster
+    files:
+      - config.yaml
+      # The rows that are configuration. In the same ConfigMap, so that editing
+      # either replaces the pod that applies it.
+      - resources.yaml
+  # One file per client, named for its id. `clients.yaml` reads the name from
+  # the file rather than the document, so `x.json` is the client `x` and its
+  # secret is the one mounted at `/secrets/x`.
+  - name: roster-hydra-clients
+    files:
+      - clients/product.json
+
+images:
+  # An overlay pins a digest. A rig follows the branch it is testing.
+  - name: ghcr.io/lesomnus/roster
+    newTag: edge
+  - name: oryd/hydra
+    newTag: v2.2.0
+  - name: curlimages/curl
+    newTag: "8.11.1"

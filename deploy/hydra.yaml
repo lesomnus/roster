@@ -1,0 +1,124 @@
+# The issuer.
+#
+# What an overlay changes here is the host in `URLS_*` and where the database
+# lives. What it should not change is that the four `URLS_` are all set: one of
+# them was missing in a real deployment for a day and what that looked like was
+# a **successful** sign-out ending on a page telling the person to contact an
+# administrator.
+apiVersion: v1
+kind: Service
+metadata:
+  name: roster-hydra
+spec:
+  selector:
+    app.kubernetes.io/name: roster
+    app.kubernetes.io/component: hydra
+  ports:
+    # Public: the browser's half of the protocol, and the only one a host is
+    # ever put in front of.
+    - { name: public, port: 4444, targetPort: public }
+    # Admin: register a client, read a challenge, accept a login. **Anybody who
+    # reaches this can sign anybody in as anybody**, so nothing routes it and
+    # what protects it is that fact rather than a credential. The Login App and
+    # `roster login doctor` call it in-cluster.
+    - { name: admin, port: 4445, targetPort: admin }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: roster-hydra
+  labels:
+    app.kubernetes.io/name: roster
+    app.kubernetes.io/component: hydra
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: roster
+      app.kubernetes.io/component: hydra
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: roster
+        app.kubernetes.io/component: hydra
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        fsGroup: 65532
+        seccompProfile: { type: RuntimeDefault }
+
+      # Hydra does not migrate on start and says so by refusing to serve. Run
+      # every rollout, because it is idempotent.
+      initContainers:
+        - name: migrate
+          image: oryd/hydra
+          args: ["migrate", "sql", "-e", "--yes"]
+          env:
+            - { name: DSN, value: "sqlite:///data/hydra.db?_fk=true" }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - { name: data, mountPath: /data }
+
+      containers:
+        - name: hydra
+          image: oryd/hydra
+          # **Not `--dev`.** Its own help calls that *disables critical security
+          # checks*, and a deployment that runs it is one whose issuer behaves
+          # differently from the thing it was tested against. `compose.yaml` in
+          # roster still does, and says so where it does; this is the shape that
+          # does not have to.
+          args: ["serve", "all"]
+          env:
+            - { name: DSN, value: "sqlite:///data/hydra.db?_fk=true" }
+
+            # **Rotating this invalidates every token and every remembered
+            # session**, which is the safe direction and is why Hydra takes a
+            # list rather than one value. An overlay replaces the Secret.
+            - name: SECRETS_SYSTEM
+              valueFrom: { secretKeyRef: { name: roster-hydra, key: system } }
+
+            # `iss` in every token, and the base of the discovery document each
+            # product fetches. It is **https** and Hydra insists on that outside
+            # `--dev`; TLS ends in front, which is the next line.
+            - { name: URLS_SELF_ISSUER, value: "https://sso.roster.test" }
+            - { name: SERVE_PUBLIC_TLS_ALLOW_TERMINATION_FROM, value: "0.0.0.0/0" }
+
+            # The three redirects, and the fourth that is not a redirect to this
+            # app at all.
+            - { name: URLS_LOGIN, value: "https://login.roster.test/login" }
+            - { name: URLS_CONSENT, value: "https://login.roster.test/consent" }
+            - { name: URLS_LOGOUT, value: "https://login.roster.test/logout" }
+            # Where a browser lands when the sign-out asked to come back
+            # **nowhere**, which is every sign-out that arrived with no
+            # `id_token_hint`. Unset, that page is Hydra's own fallback, whose
+            # text is addressed to an administrator.
+            - { name: URLS_POST_LOGOUT_REDIRECT, value: "https://login.roster.test/signed-out" }
+
+            - { name: LOG_LEVEL, value: "info" }
+            - { name: LOG_FORMAT, value: "json" }
+
+          ports:
+            - { name: public, containerPort: 4444 }
+            - { name: admin, containerPort: 4445 }
+
+          readinessProbe:
+            httpGet: { path: /health/ready, port: admin }
+            initialDelaySeconds: 2
+            periodSeconds: 5
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - { name: data, mountPath: /data }
+
+      volumes:
+        # An overlay that wants this to survive a node replaces it with a claim.
+        - name: data
+          emptyDir: {}

@@ -1,0 +1,11 @@
+# The rows that are configuration, declared. `serve` applies these before it
+# serves and never erases.
+#
+# People are deliberately not here: `Holder`, `Credential`, `Identity` and
+# `Email` are the ways into an account, and a file that made those would grant
+# access to whoever can write it. The seed Job makes the one person this rig
+# signs in as, which is a different thing and says so.
+resources:
+  - kind: Tenant
+    alias: acme
+    name: Acme

@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"os"
+	"path/filepath"
 )
 
 // One operator's clients are one comma list, and naming the operator twice is
@@ -33,4 +35,57 @@ func TestAnOperatorsClientsAreOneList(t *testing.T) {
 	got, err = clientsOf(map[string][]string{"contoso": {"old"}}, "NOTHING_", []string{"contoso=demo"})
 	x.NoError(err)
 	x.Equal(map[string][]string{"contoso": {"demo"}}, got)
+}
+
+// TestAnOperatorWithNoKeyYetIsDroppedAndNotFatal: the state a first start has,
+// and one that used to be a deployment that could not come up at all.
+//
+// `roster login provision` writes these files and skips an operator whose
+// tenant does not exist -- a fresh volume has no customers. Refusing here put
+// that back: the file the skipped operator would have had is missing, so the
+// server would not start, so the tenant could never be made, so the file would
+// never exist. `deploy/` hit it on its first run against an empty cluster.
+func TestAnOperatorWithNoKeyYetIsDroppedAndNotFatal(t *testing.T) {
+	x := require.New(t)
+
+	dir := t.TempDir()
+	there := filepath.Join(dir, "there.key")
+	x.NoError(os.WriteFile(there, []byte("rt_there"), 0o600))
+
+	keys, clients := minted(
+		map[string]string{"there": "file:" + there, "notyet": "file:" + filepath.Join(dir, "notyet.key")},
+		map[string][]string{"there": {"a"}, "notyet": {"b"}},
+	)
+
+	// Both halves, because `whole` refuses a client with no key -- and should,
+	// since that is how a deployment finds out it wrote one and forgot the
+	// other. What is dropped here is not that mistake.
+	x.Equal(map[string]string{"there": "file:" + there}, keys)
+	x.Equal(map[string][]string{"there": {"a"}}, clients)
+
+	got, err := keysOf(keys, "NOTHING_", nil)
+	x.NoError(err)
+	x.NoError(whole(got, clients))
+}
+
+// TestOnlyAFileAndOnlyMissingIsForgiven: everything else is a deployment
+// configured wrong, and those still stop it.
+func TestOnlyAFileAndOnlyMissingIsForgiven(t *testing.T) {
+	x := require.New(t)
+
+	dir := t.TempDir()
+	unreadable := filepath.Join(dir, "locked.key")
+	x.NoError(os.WriteFile(unreadable, []byte("rt_x"), 0o000))
+
+	for _, ref := range []string{"env:NOTHING_SET_HERE", "file:" + unreadable} {
+		keys, clients := minted(
+			map[string]string{"one": ref},
+			map[string][]string{"one": {"a"}},
+		)
+		x.Len(keys, 1, "%s is not a key that has not been written yet", ref)
+
+		_, err := keysOf(keys, "NOTHING_", nil)
+		x.Error(err, "%s should stop the process", ref)
+		_ = clients
+	}
 }

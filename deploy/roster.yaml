@@ -1,0 +1,158 @@
+# Storage. No `storageClassName`, so a cluster's default is used -- an overlay
+# names one, and `docs/operating.md` § "Which database" is the question of
+# whether SQLite on a volume is the right answer at all.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: roster-data
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: roster-control
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+# roster itself: the data plane, the control plane, and the Login App, in one
+# process. `docs/operating.md` § "One process, or three" is whether it should
+# be, and the answer is a deployment's.
+apiVersion: v1
+kind: Service
+metadata:
+  name: roster-data
+spec:
+  selector:
+    app.kubernetes.io/name: roster
+    app.kubernetes.io/component: server
+  ports:
+    - { name: grpc, port: 8080, targetPort: grpc }
+    - { name: http, port: 8081, targetPort: http }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: roster-login
+spec:
+  selector:
+    app.kubernetes.io/name: roster
+    app.kubernetes.io/component: server
+  ports:
+    - { name: http, port: 8091, targetPort: login }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: roster
+  labels:
+    app.kubernetes.io/name: roster
+    app.kubernetes.io/component: server
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: roster
+      app.kubernetes.io/component: server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: roster
+        app.kubernetes.io/component: server
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        fsGroup: 65532
+        seccompProfile: { type: RuntimeDefault }
+
+      # The Login App's own key, minted into a file at every start.
+      #
+      # **It replaces rather than adds**: a key cannot be read back, so a second
+      # run cannot reuse the first one's and must not leave it behind. A restart
+      # is a rotation and nothing accumulates. It is an init container because
+      # the server needs the file to exist before it serves, and it is allowed
+      # to find no tenant at all -- a fresh volume has none, and refusing there
+      # is a deployment that cannot come up until somebody has run something
+      # inside a pod that is not running.
+      initContainers:
+        - name: provision
+          image: ghcr.io/lesomnus/roster
+          args: ["--config", "/config/config.yaml", "login", "provision", "--out", "/run/login"]
+          env:
+            - name: ROSTER_VOUCH_KEYS
+              valueFrom: { secretKeyRef: { name: roster-vouch, key: keys } }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - { name: config, mountPath: /config, readOnly: true }
+            - { name: data, mountPath: /data }
+            - { name: control, mountPath: /control }
+            - { name: login, mountPath: /run/login }
+
+      containers:
+        - name: roster
+          image: ghcr.io/lesomnus/roster
+          args: ["--config", "/config/config.yaml", "serve"]
+          env:
+            # What a TOTP seed is wrapped with before it is stored. Rotating it
+            # is a decision about every enrolled authenticator at once.
+            - name: ROSTER_VOUCH_KEYS
+              valueFrom: { secretKeyRef: { name: roster-vouch, key: keys } }
+          ports:
+            - { name: grpc, containerPort: 8080 }
+            - { name: http, containerPort: 8081 }
+            - { name: control, containerPort: 8060 }
+            - { name: control-http, containerPort: 8061 }
+            - { name: login, containerPort: 8091 }
+          # `/` on the control plane's **HTTP** listener: a real answer from
+          # the process that would be serving RPCs, needing no endpoint added
+          # for a probe's sake. Two ways this was written wrong first, both of
+          # which are a pod that never becomes ready and neither of which says
+          # so: `/healthz`, which is a 404 because there is no such path, and
+          # `control`, which is the gRPC port and answers HTTP/2 frames.
+          readinessProbe:
+            httpGet: { path: /, port: control-http }
+            initialDelaySeconds: 3
+          livenessProbe:
+            httpGet: { path: /, port: control-http }
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - { name: config, mountPath: /config, readOnly: true }
+            - { name: data, mountPath: /data }
+            - { name: control, mountPath: /control }
+            # Read-only here and written by the init container: the server is
+            # not the thing that mints its own credential.
+            - { name: login, mountPath: /run/login, readOnly: true }
+
+      volumes:
+        - name: config
+          configMap: { name: roster }
+        # **Claims, not `emptyDir`**, and not only because a deployment wants
+        # its data. Written as `emptyDir` first, this could never front
+        # anybody: the tenant is made by `resources:` when the server starts,
+        # `login provision` reads it on the *next* start to mint the key, and a
+        # volume that goes with the pod means the next start has no tenant
+        # again. It came up every time and the Login App was off every time.
+        - name: data
+          persistentVolumeClaim: { claimName: roster-data }
+        - name: control
+          persistentVolumeClaim: { claimName: roster-control }
+        # This one **is** a pod's lifetime, on purpose: the key is minted at
+        # every start and a stale one left behind is a credential to revoke.
+        - name: login
+          emptyDir: {}

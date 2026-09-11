@@ -1,0 +1,72 @@
+# What roster is told, in a deployment.
+#
+# The shape rather than the values: an overlay replaces the hosts, the storage
+# and the secrets, and inherits the rest. What it must **not** restate is the
+# `login:` block, because that is where two of this week's four defects were --
+# a client list and an issuer address that were written once here and once
+# somewhere else, and disagreed.
+resources: [/config/resources.yaml]
+
+server:
+  addr: 0.0.0.0:8080
+  http:
+    addr: 0.0.0.0:8081
+    allow_web: true
+
+# SQLite on a volume, which is what a deployment of this size wants and what
+# `docs/operating.md` § "Which database" says the trade is. An overlay that
+# outgrows it replaces `db:` and `control.db:` and changes nothing else.
+db:
+  driver: sqlite3
+  dsn: "file:/data/roster.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)"
+  migrate: true
+watch:
+  broker: memory
+
+control:
+  db:
+    driver: sqlite3
+    dsn: "file:/control/roster-control.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)"
+    migrate: true
+  watch:
+    broker: memory
+  addr: 0.0.0.0:8060
+  # The control plane's HTTP listener, which is what a probe asks and what the
+  # console is served on. `control.addr` above is **gRPC** -- a probe pointed at
+  # it gets an HTTP/2 SETTINGS frame and reads it as a malformed response, which
+  # is a pod that never becomes ready and says nothing about why.
+  http:
+    addr: 0.0.0.0:8061
+  # The console, served under `/` on the listener above. It is also what makes
+  # that `/` answer at all: without this the control plane's HTTP listener has
+  # no root and a probe pointed there gets a 404 forever, which is a pod that
+  # never becomes ready and says nothing about why.
+  console:
+    dir: /usr/share/roster/console
+
+# The Login App, in the same process. `docs/operating.md` § "One process, or
+# three" is the question of whether it should be, and the answer is a
+# deployment's; this is the cheap one.
+login:
+  addr: 0.0.0.0:8091
+  hydra:
+    admin: http://roster-hydra:4445
+  # Made at start by the init container and read from a file, because a tenant
+  # can be made after this has first run -- so a key cannot be put anywhere in
+  # advance, and one put there afterwards is a thing to rotate.
+  keys:
+    acme: file:/run/login/acme.key
+  # **Which challenges this app answers at all.** A client not in here is a
+  # flow that reaches a page saying the login is not working, and a client in
+  # here that the issuer has never heard of is a flow nothing can raise --
+  # `roster login doctor` says which of those a deployment has.
+  clients:
+    acme: [product]
+  # roster speaks plain gRPC on the pod network, so the app that dials it has
+  # to be told that. Without it the handshake fails with *first record does not
+  # look like a TLS handshake*, which reads like a certificate problem and is a
+  # missing line.
+  insecure: true
+  base: http://roster-login:8091
+  insecure_cookie: true
+  remember: 8h

@@ -1,0 +1,14 @@
+{
+  "client_id": "product",
+  "client_name": "the product this rig signs somebody in to",
+  "client_secret": "@SECRET@",
+  "grant_types": ["authorization_code", "refresh_token"],
+  "response_types": ["code"],
+  "scope": "openid offline profile email",
+
+  "token_endpoint_auth_method": "client_secret_basic",
+
+  "redirect_uris": ["https://product.roster.test/callback"],
+
+  "post_logout_redirect_uris": ["https://product.roster.test"]
+}

@@ -30,6 +30,7 @@ import (
 	"github.com/lesomnus/roster/login"
 	rstr "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
+	"io/fs"
 )
 
 // NewCmdLogin is `roster login`: the box Hydra hands a `login_challenge` to.
@@ -117,6 +118,9 @@ func newCmdLoginServe(c *cmd.Config) *xli.Command {
 			if err != nil {
 				return err
 			}
+
+			// Before `keysOf`, which reads the files.
+			lc.Keys, lc.Clients = minted(lc.Keys, lc.Clients)
 
 			lc.Keys, err = keysOf(lc.Keys, LoginKeyPrefix, mustFind[[]string](cl, "key"))
 			if err != nil {
@@ -339,6 +343,58 @@ func newCmdLoginDoctor(c *cmd.Config) *xli.Command {
 			return fmt.Errorf("%d of %d client(s) cannot sign anybody in", broken, n)
 		}),
 	}
+}
+
+// minted drops the operators whose key has not been written yet.
+//
+// **A state a first start has, and one that used to stop the process.**
+// `roster login provision` writes these files and deliberately *skips* an
+// operator whose tenant does not exist -- a fresh volume has no customers, and
+// refusing there would be a deployment that cannot come up until somebody has
+// run something inside a pod that is not running. Refusing here put that back:
+// the file the skipped operator would have had is missing, so the server would
+// not start, so the tenant could never be made, so the file would never exist.
+// `deploy/` hit exactly that on its first run against an empty cluster.
+//
+// So the operator is dropped and the process is not, and **loudly**: their
+// people reach a page saying the login is not working until somebody makes the
+// tenant and the pod restarts, and nobody should have to find that in a
+// browser.
+//
+// Only `file:`, and only *not there*. An `env:` that is empty, or a path that
+// exists and cannot be read, is a deployment configured wrong and still stops
+// it -- [keysOf] decides that, and this does not reach it.
+// It drops the operator from **both** halves, because [whole] refuses a client
+// with no key -- and rightly: that is how a deployment finds out it wrote one
+// and forgot the other. What is dropped here is not that mistake, and saying so
+// is the difference between the two.
+func minted(keys map[string]string, clients map[string][]string) (map[string]string, map[string][]string) {
+	ks := map[string]string{}
+	gone := map[string]bool{}
+	for alias, ref := range keys {
+		if path, ok := strings.CutPrefix(ref, "file:"); ok {
+			if _, err := os.Stat(path); errors.Is(err, fs.ErrNotExist) {
+				slog.Warn("login: this operator has no key yet, so it is not fronted; "+
+					"`roster tenant add` it and restart, or take it out of login.clients",
+					"alias", alias, "ref", ref)
+
+				gone[alias] = true
+
+				continue
+			}
+		}
+		ks[alias] = ref
+	}
+
+	cs := map[string][]string{}
+	for alias, ids := range clients {
+		if gone[alias] {
+			continue
+		}
+		cs[alias] = ids
+	}
+
+	return ks, cs
 }
 
 // LoginMethods is what the Login App calls as itself, and the whole of it.
