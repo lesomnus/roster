@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
+	"strings"
 	"time"
 )
 
@@ -208,6 +210,82 @@ func (a admin) getClient(ctx context.Context, id string) (*hydraClient, error) {
 	}
 
 	return v, nil
+}
+
+// listClients is every client id Hydra holds, following its pages.
+//
+// Paged because Hydra pages: the default is small and a deployment with a
+// product per team runs past it, and a check that silently saw the first
+// twenty would be a check that passes for the wrong reason.
+func (a admin) listClients(ctx context.Context) ([]string, error) {
+	out := []string{}
+	next := "/admin/clients?page_size=100"
+
+	for range 100 {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, a.base+next, nil)
+		if err != nil {
+			return nil, err
+		}
+		for k, vs := range a.header {
+			for _, v := range vs {
+				req.Header.Add(k, v)
+			}
+		}
+		req.Header.Set("accept", "application/json")
+
+		res, err := a.client.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("login: hydra: %w", err)
+		}
+
+		if res.StatusCode/100 != 2 {
+			b, _ := io.ReadAll(io.LimitReader(res.Body, 4<<10))
+			res.Body.Close()
+
+			return nil, fmt.Errorf("login: hydra: GET clients: %s: %s", res.Status, bytes.TrimSpace(b))
+		}
+
+		var page []struct {
+			Id string `json:"client_id"`
+		}
+		err = json.NewDecoder(res.Body).Decode(&page)
+		link := res.Header.Get("link")
+		res.Body.Close()
+		if err != nil {
+			return nil, err
+		}
+		for _, v := range page {
+			out = append(out, v.Id)
+		}
+
+		// `Link: </admin/clients?…>; rel="next", …`, and a `next` that repeats
+		// the page just read is the last one -- Hydra answers that rather than
+		// leaving the relation out.
+		to := relNext(link)
+		if to == "" || to == next {
+			break
+		}
+		next = to
+	}
+
+	sort.Strings(out)
+
+	return out, nil
+}
+
+// relNext is the `next` target of an RFC 8288 `Link` header, or empty.
+func relNext(v string) string {
+	for _, part := range strings.Split(v, ",") {
+		i, j := strings.Index(part, "<"), strings.Index(part, ">")
+		if i < 0 || j < i {
+			continue
+		}
+		if strings.Contains(part[j:], `rel="next"`) {
+			return part[i+1 : j]
+		}
+	}
+
+	return ""
 }
 
 // rejectLogout is somebody answering the confirmation with no.

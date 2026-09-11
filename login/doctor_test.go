@@ -16,6 +16,14 @@ func clients(t *testing.T, have map[string]map[string]any) string {
 	t.Helper()
 
 	m := http.NewServeMux()
+	m.HandleFunc("GET /admin/clients", func(w http.ResponseWriter, r *http.Request) {
+		out := []map[string]any{}
+		for _, v := range have {
+			out = append(out, v)
+		}
+		w.Header().Set("content-type", "application/json")
+		_ = json.NewEncoder(w).Encode(out)
+	})
 	m.HandleFunc("GET /admin/clients/{id}", func(w http.ResponseWriter, r *http.Request) {
 		v, ok := have[r.PathValue("id")]
 		if !ok {
@@ -127,22 +135,43 @@ func TestDoctorFindsWhatCostAnHourEach(t *testing.T) {
 	}
 }
 
-// TestDoctorFindsAClientNamedHereAndNowhereElse: the half `login.clients`
-// cannot check for itself.
+// TestDoctorKnowsWhichDirectionCosts: the two ways a client and this app's
+// configuration can disagree, and only one of them refuses anybody.
 //
-// A client id in this app's configuration that Hydra has never heard of is an
-// operator whose people reach a page saying the login is not working, and the
-// only sign of it is in a log nobody is reading at the time.
-func TestDoctorFindsAClientNamedHereAndNowhereElse(t *testing.T) {
-	x := require.New(t)
+// The first cut of this had it backwards, and its first run in a cluster failed
+// the sync over the harmless one. Hydra raises a challenge for a client **it**
+// has: one it has never heard of is one no flow can name, so a row here with no
+// client behind it costs nobody anything until somebody registers it. A client
+// Hydra holds that nothing here claims is the other story -- a flow for it
+// resolves to no operator, and a browser is shown *this login is not working*
+// with nothing in it to say which client or whose.
+func TestDoctorKnowsWhichDirectionCosts(t *testing.T) {
+	t.Run("named here and nowhere else", func(t *testing.T) {
+		x := require.New(t)
 
-	at := clients(t, map[string]map[string]any{"app": good()})
-	found, err := login.Doctor(context.Background(), at, nil, map[string][]string{"contoso": {"app", "ghost"}})
-	x.NoError(err)
-	x.Len(found, 1)
-	x.Equal(login.Broken, found[0].Severity)
-	x.Equal("ghost", found[0].About)
-	x.Contains(found[0].What, "hydra has no such client")
+		at := clients(t, map[string]map[string]any{"app": good()})
+		found, err := login.Doctor(context.Background(), at, nil, map[string][]string{"contoso": {"app", "ghost"}})
+		x.NoError(err)
+		x.Len(found, 1)
+		x.Equal(login.Fragile, found[0].Severity, "a client nothing can raise a flow for refuses nobody")
+		x.Equal("ghost", found[0].About)
+		x.Contains(found[0].What, "hydra has no such client")
+	})
+
+	t.Run("at hydra and claimed by nobody", func(t *testing.T) {
+		x := require.New(t)
+
+		stray := good()
+		stray["client_id"] = "stray"
+
+		at := clients(t, map[string]map[string]any{"app": good(), "stray": stray})
+		found, err := login.Doctor(context.Background(), at, nil, map[string][]string{"contoso": {"app"}})
+		x.NoError(err)
+		x.Len(found, 1)
+		x.Equal(login.Broken, found[0].Severity)
+		x.Equal("stray", found[0].About)
+		x.Contains(found[0].What, "no operator here claims it")
+	})
 }
 
 // TestDoctorPutsWhatIsBrokenFirst, because a deployment reads the first line.

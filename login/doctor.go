@@ -139,7 +139,57 @@ func Doctor(ctx context.Context, hydra string, header http.Header, clients map[s
 		}
 	}
 
+	found, err := strays(ctx, a, clients)
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, found...)
+
 	sort.SliceStable(out, func(i, j int) bool { return out[i].Severity < out[j].Severity })
+
+	return out, nil
+}
+
+// strays is the direction that costs somebody: a client Hydra will raise
+// challenges for that no operator here claims.
+//
+// This app resolves a flow to an operator **by its client id**, so a challenge
+// for one that is not in `login.clients` reaches `no operator holds the client`
+// -- which a browser is shown as *this login is not working*, with nothing in
+// it to say which client or whose. Registering a client at Hydra and forgetting
+// the line here is the way that happens, and it is one line in two
+// repositories.
+//
+// Every client Hydra holds is asked about, because in a deployment like this
+// one Hydra is roster's and there is nobody else to own one. A deployment that
+// shares its Hydra with something that is not fronted here would want this
+// narrowed, and would know it.
+func strays(ctx context.Context, a admin, clients map[string][]string) ([]Finding, error) {
+	claimed := map[string]bool{}
+	for _, ids := range clients {
+		for _, id := range ids {
+			claimed[id] = true
+		}
+	}
+
+	ids, err := a.listClients(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := []Finding{}
+	for _, id := range ids {
+		if claimed[id] {
+			continue
+		}
+
+		out = append(out, Finding{
+			Severity: Broken,
+			About:    id,
+			What:     "hydra has it and no operator here claims it",
+			Costs:    "every flow raised for it reaches a page saying the login is not working",
+		})
+	}
 
 	return out, nil
 }
@@ -158,11 +208,18 @@ func sorted(m map[string][]string) []string {
 // knows. A `nil` document is a client Hydra has never heard of.
 func check(alias, id string, v *hydraClient) []Finding {
 	if v == nil {
+		// **Not broken, and the first cut of this had it the wrong way round.**
+		//
+		// Hydra raises a challenge for a client it has. One it has never heard
+		// of is one no flow can name, so nothing is refused and nobody sees
+		// anything -- the row here is a product that has not been registered
+		// yet, or a typo that has never been reached. The direction that does
+		// cost somebody is the other one, and [strays] is where it is found.
 		return []Finding{{
-			Severity: Broken,
+			Severity: Fragile,
 			About:    id,
 			What:     fmt.Sprintf("%s names it and hydra has no such client", alias),
-			Costs:    "every flow raised for it reaches a page saying the login is not working",
+			Costs:    "no flow can be raised for it, so nothing is broken -- but if it was meant to be live, it is not",
 		}}
 	}
 
