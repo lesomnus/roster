@@ -64,11 +64,50 @@ proxy**: `X-Forwarded-Proto`, and an app that reads `r.TLS`. A deployment ends
 TLS at its ingress and tells Hydra so with
 `serve.public.tls.allow_termination_from` instead.
 
-## What is not here yet
+## The walk
 
-Somebody to sign in **as**, and therefore the walk. `docker/`'s walks need a
-person with a password, which is a seed Job, and then they would run as a Job in
-this cluster rather than against `compose.yaml`. Until then what this proves is
-that the manifests stand up, that a relying party reads the issuer's discovery
-document over real TLS, and that `roster login doctor` passes against what they
-produce -- which is the half every defect so far has been in.
+`docker/itself.sh` -- the same script `scripts/hydra.sh` runs against compose --
+as a Job **inside** the cluster, which is what makes the Services resolve and
+the issuer's certificate trustable. A product goes round the whole loop: the
+page nobody is signed in for, the sign-in, the page naming her, the sign-out
+with the token it kept for it, and the form asked for again.
+
+Somebody to sign in **as** is the rig's, not `deploy/`'s: `Holder`,
+`Credential`, `Identity` and `Email` are the ways into an account, and a file
+that made those would grant access to whoever can write it. `scripts/cluster.sh`
+makes one person the way `docs/operating.md` says to, one `kubectl exec` per
+write -- the image is distroless and has no shell to hand a script to.
+
+## What `--dev` was hiding
+
+Every one of these is a thing `compose.yaml` cannot find, and each cost a run:
+
+- **A relying party's callback must be https.** *Redirect URL is using an
+  insecure protocol, http is only allowed for hosts with suffix 'localhost'* --
+  so `examples/product` grew `--tls-cert`/`--tls-key`, and the rig issues it a
+  certificate from the same CA. A deployment ends TLS at its ingress and needs
+  neither.
+- **`serve.public.tls.enabled` is not implied** by setting a certificate path.
+  Without it Hydra serves plain HTTP and says nothing; what fails is the relying
+  party, with *server gave HTTP response to HTTPS client*.
+- **The Login App serves no page unless told where it is.** `login.page.dir`
+  missing is a 404 at `/login`, which from a browser looks like the issuer is
+  broken.
+
+And one about the walk rather than the deployment: the issuer's refusals come
+back to the **app's own callback**, so matching the host is not enough to say a
+flow worked. Checked that way, an `?error=` read as a success and what surfaced
+was the app refusing a code the issuer had never issued.
+
+## What is still not here
+
+**Being behind a proxy.** Hydra terminates TLS itself here, so
+`X-Forwarded-Proto` and an app reading `r.TLS` are still covered nowhere. A
+deployment ends TLS at its ingress and tells Hydra with
+`serve.public.tls.allow_termination_from`.
+
+**A registration changed under a running pod**, which is the one class a rig
+that builds a cluster and walks it once cannot see: `golang.org/x/oauth2` probes
+for the client authentication method and caches it, so an app keeps addressing a
+changed client the old way with no second try. It needs a step that mutates and
+tries again without restarting anything.

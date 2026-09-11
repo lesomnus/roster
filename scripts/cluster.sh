@@ -96,9 +96,15 @@ kube() {
 		"${KUBECTL_IMAGE}" sh -c "$*"
 }
 
-echo "== the image this checkout builds"
+echo "== the images this checkout builds"
+# Two, and the second is not a detail. What the deployment runs is the `app`
+# stage, which is **distroless**: no shell, no `curl`, and none of `docker/`'s
+# walks -- all of which is right for what it ships and all of which a walk
+# needs. So the walk runs the `dev` stage, the same one `scripts/hydra.sh` runs
+# against compose, and the thing under test is still the `app` one.
 docker build -q --target app -t "roster-cluster:${CLUSTER}" . >/dev/null
-k3d image import "roster-cluster:${CLUSTER}" -c "${CLUSTER}" >/dev/null
+docker build -q --target dev -t "roster-walk:${CLUSTER}" . >/dev/null
+k3d image import "roster-cluster:${CLUSTER}" "roster-walk:${CLUSTER}" -c "${CLUSTER}" >/dev/null
 
 cp -r deploy "${work}/deploy"
 # The rig runs what was just built rather than what is published.
@@ -128,13 +134,20 @@ docker run --rm --entrypoint sh -v "${vol}:/w" alpine/openssl:3.3.2 -c '
 	cd /tmp
 	openssl req -x509 -newkey rsa:2048 -nodes -days 1 -keyout ca.key -out ca.crt \
 		-subj "/CN=roster cluster rig" >/dev/null 2>&1
-	openssl req -newkey rsa:2048 -nodes -keyout tls.key -out tls.csr \
-		-subj "/CN=roster-hydra" >/dev/null 2>&1
-	printf "subjectAltName=DNS:%s,DNS:%s,DNS:%s\n" \
-		roster-hydra.roster.svc.cluster.local roster-hydra.roster.svc roster-hydra > ext
-	openssl x509 -req -in tls.csr -CA ca.crt -CAkey ca.key -CAcreateserial \
-		-days 1 -extfile ext -out tls.crt >/dev/null 2>&1
-	mkdir -p /w/tls && cp tls.crt tls.key ca.crt /w/tls/
+	# One per host that serves TLS, from the one CA. The **product** needs one
+	# too, and that is the rule `--dev` hides: an issuer not in development
+	# mode refuses a redirect URI over plain http -- *http is only allowed for
+	# hosts with suffix localhost* -- so a relying party reached at any other
+	# name cannot complete a flow at all.
+	for h in roster-hydra roster-product; do
+		openssl req -newkey rsa:2048 -nodes -keyout "${h}.key" -out "${h}.csr" \
+			-subj "/CN=${h}" >/dev/null 2>&1
+		printf "subjectAltName=DNS:%s.roster.svc.cluster.local,DNS:%s.roster.svc,DNS:%s\n" \
+			"${h}" "${h}" "${h}" > ext
+		openssl x509 -req -in "${h}.csr" -CA ca.crt -CAkey ca.key -CAcreateserial \
+			-days 1 -extfile ext -out "${h}.crt" >/dev/null 2>&1
+	done
+	mkdir -p /w/tls && cp roster-hydra.crt roster-hydra.key roster-product.crt roster-product.key ca.crt /w/tls/
 ' >/dev/null
 
 carry
@@ -143,9 +156,12 @@ echo "== up"
 kube "kubectl create ns ${NS} >/dev/null"
 # Before the manifests, because Hydra will not start without it.
 kube "kubectl -n ${NS} create secret generic roster-hydra-tls \
-	--from-file=tls.crt=/w/tls/tls.crt \
-	--from-file=tls.key=/w/tls/tls.key \
+	--from-file=tls.crt=/w/tls/roster-hydra.crt \
+	--from-file=tls.key=/w/tls/roster-hydra.key \
 	--from-file=ca.crt=/w/tls/ca.crt >/dev/null"
+kube "kubectl -n ${NS} create secret generic roster-product-tls \
+	--from-file=tls.crt=/w/tls/roster-product.crt \
+	--from-file=tls.key=/w/tls/roster-product.key >/dev/null"
 kube "kubectl -n ${NS} apply -k /w/deploy >/dev/null"
 kube "kubectl -n ${NS} rollout status deploy/roster-hydra --timeout=300s"
 
@@ -176,6 +192,75 @@ kube "kubectl -n ${NS} logs job/roster-hydra-clients"
 kube "kubectl -n ${NS} wait --for=condition=complete job/roster-hydra-clients-check --timeout=180s >/dev/null" \
 	|| { echo; echo "cluster: the check refused this deployment:"; kube "kubectl -n ${NS} logs job/roster-hydra-clients-check"; exit 1; }
 kube "kubectl -n ${NS} logs job/roster-hydra-clients-check"
+
+# **Somebody to sign in as**, which `deploy/` deliberately does not declare:
+# `Holder`, `Credential`, `Identity` and `Email` are the ways into an account,
+# and a file that made those would grant access to whoever can write it. So the
+# rig makes its own person, the way `docs/operating.md` says to.
+#
+# Inside the roster pod rather than as a Job, because these are local writes to
+# a database that pod has open -- and piped in rather than quoted onto one
+# command line, which through a shell, a container and `kubectl exec` is three
+# layers of quoting to be wrong about.
+
+cat > "${work}/walk.yaml" <<EOF
+# The walk, as a Job **inside** the cluster -- which is what makes the Services
+# resolve and the issuer's certificate trustable. It is \`docker/itself.sh\`
+# unchanged: the same script \`scripts/hydra.sh\` runs against compose, told
+# three addresses.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: roster-walk
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: walk
+          image: roster-walk:${CLUSTER}
+          command: ["/usr/local/bin/itself.sh"]
+          env:
+            - { name: ISSUER, value: "https://roster-hydra.roster.svc.cluster.local:4444" }
+            - { name: LOGIN, value: "http://roster-login.roster.svc.cluster.local:8091" }
+            - { name: BASE, value: "https://roster-product.roster.svc.cluster.local:5555" }
+            # curl's own name for a trust store, because this issuer's
+            # certificate is the rig's own.
+            - { name: CURL_CA_BUNDLE, value: /tls/ca.crt }
+          volumeMounts:
+            - { name: tls, mountPath: /tls, readOnly: true }
+      volumes:
+        - name: tls
+          secret:
+            secretName: roster-hydra-tls
+            items: [{ key: ca.crt, path: ca.crt }]
+EOF
+carry
+
+echo
+echo "== somebody to sign in as"
+# One command per `exec`, because the image is **distroless** and has no shell
+# to give a script to -- which is right for what it ships and is a thing to
+# find out here rather than in a deployment's runbook.
+seed() { kube "kubectl -n ${NS} exec -i deploy/roster -c roster -- roster --config /config/config.yaml $*"; }
+seed "holder add @acme/erin" >/dev/null 2>&1 || true
+seed "role add @acme/everything '{\"methods\":[\"/roster.*/*\"]}'" >/dev/null 2>&1 || true
+kube "printf '%s' '{\"role\":{\"slug\":{\"alias\":\"everything\",\"tenant\":{\"alias\":\"acme\"}}},\"holder\":{\"slug\":{\"alias\":\"erin\",\"tenant\":{\"alias\":\"acme\"}}}}' \
+	| kubectl -n ${NS} exec -i deploy/roster -c roster -- roster --config /config/config.yaml binding add -" >/dev/null 2>&1 || true
+kube "printf '%s' 'correct horse battery staple' \
+	| kubectl -n ${NS} exec -i deploy/roster -c roster -- roster --config /config/config.yaml vouch set --password-stdin @acme/erin" >/dev/null
+echo "erin, with a password"
+
+echo
+echo "== the flow, in the cluster"
+kube "kubectl -n ${NS} delete job roster-walk --ignore-not-found >/dev/null 2>&1; kubectl -n ${NS} apply -f /w/walk.yaml >/dev/null"
+if ! kube "kubectl -n ${NS} wait --for=condition=complete job/roster-walk --timeout=300s >/dev/null"; then
+	kube "kubectl -n ${NS} logs job/roster-walk"
+	echo "cluster: the walk did not finish" >&2
+	exit 1
+fi
+kube "kubectl -n ${NS} logs job/roster-walk"
 
 echo
 echo "cluster: ok"

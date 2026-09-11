@@ -102,6 +102,8 @@ func run() error {
 		secret   = flag.String("client-secret", os.Getenv("PRODUCT_CLIENT_SECRET"), "or PRODUCT_CLIENT_SECRET")
 		base     = flag.String("base", "", "this app's public origin, e.g. https://hello.hday.dev")
 		insecure = flag.Bool("insecure-cookie", false, "drop Secure, for plain http in development")
+		cert     = flag.String("tls-cert", "", "serve TLS with this certificate; plain http if empty")
+		certKey  = flag.String("tls-key", "", "the key for --tls-cert")
 	)
 	flag.Parse()
 
@@ -196,8 +198,27 @@ func run() error {
 		_ = srv.Close()
 	}()
 
+	// **TLS, when a deployment has a certificate for this app.**
+	//
+	// Not a nicety. An issuer that is not in development mode refuses a
+	// redirect URI over plain http -- *http is only allowed for hosts with
+	// suffix 'localhost'* -- so an app reached at any other name has to be
+	// served over TLS or it cannot complete a flow at all. Ory's `--dev` turns
+	// that check off, which is why a rig that runs with it never finds out.
+	//
+	// A real deployment ends TLS at its ingress and this stays empty; what
+	// needs it is a cluster with no ingress in front, which is what
+	// `scripts/cluster.sh` is.
 	fmt.Fprintf(os.Stderr, "product: %s, trusting %s as %s\n", *addr, *issuer, *clientId)
-	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+
+	serve := srv.ListenAndServe
+	if *cert != "" || *certKey != "" {
+		if *cert == "" || *certKey == "" {
+			return errors.New("--tls-cert and --tls-key: one without the other serves nothing")
+		}
+		serve = func() error { return srv.ListenAndServeTLS(*cert, *certKey) }
+	}
+	if err := serve(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
 

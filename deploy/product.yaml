@@ -55,11 +55,14 @@ spec:
             # no further.
             - --issuer=https://roster-hydra.roster.svc.cluster.local:4444
             - --client-id=product
-            - --base=http://roster-product.roster.svc.cluster.local:5555
-            # No TLS in front of this one, so its session cookie could not be
-            # `Secure`. A deployment serves its products over TLS and leaves
-            # this out.
-            - --insecure-cookie
+            # **https**, and that is the issuer's rule rather than a
+            # preference: one not in development mode refuses a redirect URI
+            # over plain http unless the host ends in `.localhost`. A
+            # deployment ends TLS at its ingress and this app stays plain
+            # behind it; a cluster with no ingress has to serve it itself.
+            - --base=https://roster-product.roster.svc.cluster.local:5555
+            - --tls-cert=/tls/tls.crt
+            - --tls-key=/tls/tls.key
           env:
             - name: PRODUCT_CLIENT_SECRET
               valueFrom: { secretKeyRef: { name: roster-product, key: client-secret } }
@@ -70,7 +73,7 @@ spec:
           ports:
             - { name: http, containerPort: 5555 }
           readinessProbe:
-            httpGet: { path: /healthz, port: http }
+            httpGet: { path: /healthz, port: http, scheme: HTTPS }
             initialDelaySeconds: 2
             periodSeconds: 5
           securityContext:
@@ -80,7 +83,14 @@ spec:
           volumeMounts:
             - { name: tls, mountPath: /tls, readOnly: true }
       volumes:
+        # Two things in one mount: the certificate this app serves, and the CA
+        # its issuer is signed by.
         - name: tls
-          secret:
-            secretName: roster-hydra-tls
-            items: [{ key: ca.crt, path: ca.crt }]
+          projected:
+            sources:
+              - secret:
+                  name: roster-product-tls
+                  items: [{ key: tls.crt, path: tls.crt }, { key: tls.key, path: tls.key }]
+              - secret:
+                  name: roster-hydra-tls
+                  items: [{ key: ca.crt, path: ca.crt }]

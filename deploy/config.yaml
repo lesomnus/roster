@@ -67,6 +67,12 @@ login:
   # look like a TLS handshake*, which reads like a certificate problem and is a
   # missing line.
   insecure: true
-  base: http://roster-login:8091
+  # The sign-in page, which the image already carries. Without it the Login App
+  # answers **404** for `/login` -- *this deployment serves no sign-in page* --
+  # and a browser Hydra redirected there gets nothing. It is the one line whose
+  # absence looks like the issuer is broken.
+  page:
+    dir: /usr/share/roster/login
+  base: http://roster-login.roster.svc.cluster.local:8091
   insecure_cookie: true
   remember: 8h

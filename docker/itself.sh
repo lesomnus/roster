@@ -21,14 +21,15 @@
 # Run through `scripts/hydra.sh`, from inside the compose network.
 set -eu
 
+# Three addresses and nothing about where they are. The compose network is the
+# default; `scripts/cluster.sh` runs this same script as a Job inside a cluster,
+# where they are Services and the issuer is https on a certificate that Job is
+# handed. A walk that only knew one of those would only ever check one of them.
 : "${ISSUER:=http://hydra.test:4444}"
+: "${LOGIN:=http://login:8091}"
+: "${BASE:=http://product:5555}"
 : "${SEED_USER:=erin}"
 : "${SEED_PASSWORD:=correct horse battery staple}"
-: "${BASE:=http://product:5555}"
-
-for h in product login hydra; do
-	getent hosts "${h}" >/dev/null || { echo "itself: ${h} is not up" >&2; exit 1; }
-done
 
 i=0
 until curl -sS -o /dev/null "${BASE}/healthz" 2>/dev/null; do
@@ -43,13 +44,11 @@ trap 'rm -f "${jar}"' EXIT
 c() { curl -sS -c "${jar}" -b "${jar}" "$@"; }
 loc() { tr -d '\r' | awk '/^[Ll]ocation:/{print $2}'; }
 code() { tr -d '\r' | awk '/^HTTP/{print $2; exit}'; }
-# Hydra and the Login App answer with the host machine's name, which nothing in
-# here resolves. Only the host moves.
 # Only the Login App's host moves: the issuer already answers to a name this
 # network resolves (`ISSUER_HOST` in `compose.yaml`), and it has to -- the
 # browser's session cookie is scoped to whatever host it was set on, so a walk
 # that reached the same Hydra under two names would be two browsers.
-fix() { sed "s|http://localhost:8091|http://login:8091|; s|http://localhost:4444|${ISSUER}|"; }
+fix() { sed "s|http://localhost:8091|${LOGIN}|; s|http://localhost:4444|${ISSUER}|"; }
 die() { echo "itself: $*" >&2; exit 1; }
 step() { printf '%-38s %s\n' "$1" "$2"; }
 
@@ -65,19 +64,27 @@ l=$(c -o /dev/null -D - "${l}" | loc | fix)
 challenge=$(printf '%s' "${l}" | sed 's/.*login_challenge=//')
 [ -n "${challenge}" ] || die "hydra raised no login challenge: ${l}"
 
-head=$(c -o /dev/null -D - -X POST "http://login:8091/session?login_challenge=${challenge}" \
+head=$(c -o /dev/null -D - -X POST "${LOGIN}/session?login_challenge=${challenge}" \
 	-H 'content-type: application/json' \
 	-d "$(printf '{"alias":"%s","password":"%s"}' "${SEED_USER}" "${SEED_PASSWORD}")" | tr -d '\r')
 cookie=$(printf '%s' "${head}" | awk '/^[Ss]et-[Cc]ookie:/{print $2}' | sed 's/;$//')
 [ -n "${cookie}" ] || die "the password was not accepted"
 
-to=$(c -X POST "http://login:8091/accept?login_challenge=${challenge}" -H "Cookie: ${cookie}" \
+to=$(c -X POST "${LOGIN}/accept?login_challenge=${challenge}" -H "Cookie: ${cookie}" \
 	| sed 's/.*"redirect_to":"//; s/".*//; s|\\u0026|\&|g' | fix)
 l=$(c -o /dev/null -D - "${to}" | loc | fix)
 l=$(c -o /dev/null -D - "${l}" -H "Cookie: ${cookie}" | loc | fix)
 l=$(c -o /dev/null -D - "${l}" | loc | fix)
 case "${l}" in
-"${BASE}"*) ;;
+*error=*)
+	# **The issuer's refusals come back to the app's own callback**, so the
+	# host is not enough to say a flow worked. Checked for the host alone,
+	# this read an `?error=` as a success and handed the app a callback with
+	# no code in it -- and what came out was a 400 from the app about an
+	# authorization code the issuer had never issued. The real sentence was in
+	# the issuer's log the whole time.
+	die "the issuer refused the flow: $(printf '%s' "${l}" | sed 's/.*error_description=//; s/&.*//' | sed 's/+/ /g; s/%20/ /g; s/%27/'"'"'/g; s/%2C/,/g; s/%3A/:/g; s/%2F/\//g')" ;;
+"${BASE}"*code=*) ;;
 *) die "the code did not come back to the app: ${l}" ;;
 esac
 step "${SEED_USER} signs in" "-> back to the app"
