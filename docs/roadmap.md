@@ -666,7 +666,7 @@ in 2026-08, and one of them closed by *looking*:
 
 ### Open, and filed
 
-Three, from the week the deployment found four defects nobody here had:
+Two, from the week the deployment found four defects nobody here had:
 
 - **[#11](https://github.com/lesomnus/roster/issues/11) `login doctor` checks
   the clients, not what Hydra was told.** One of the four was on Hydra's side --
@@ -679,8 +679,6 @@ Three, from the week the deployment found four defects nobody here had:
   contract is upstream and a deployment is an overlay rather than a second
   copy. Proven feasible: k3d builds a cluster against this checkout's engine
   and `kubectl` reaches it from a container on the cluster's network.
-- **[#13](https://github.com/lesomnus/roster/issues/13) two changes that break
-  a deployment on upgrade**, with nothing but a commit message saying so.
 
 And the thing worth keeping from the week, because it points at which of those
 matters: **none of the four was roster changing behaviour under a working
