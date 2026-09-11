@@ -228,13 +228,26 @@ spec:
             # `roster-hydra:4444`, which is right -- said rather than derived
             # so that moving the port moves one line here instead of turning
             # the check into one that reports it could not look.
-            - --public=http://roster-hydra:4444
+            # The issuer's own name over TLS, because that is what it now
+            # serves. Derived it would be `http://roster-hydra:4444`, which
+            # answers bytes that are not a discovery document -- and this said
+            # so rather than passing, which is the whole reason that finding
+            # exists.
+            - --public=https://roster-hydra.roster.svc.cluster.local:4444
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities: { drop: ["ALL"] }
+          env:
+            # The issuer's certificate is this rig's own.
+            - { name: SSL_CERT_FILE, value: /tls/ca.crt }
           volumeMounts:
             - { name: config, mountPath: /config, readOnly: true }
+            - { name: tls, mountPath: /tls, readOnly: true }
       volumes:
         - name: config
           configMap: { name: roster }
+        - name: tls
+          secret:
+            secretName: roster-hydra-tls
+            items: [{ key: ca.crt, path: ca.crt }]

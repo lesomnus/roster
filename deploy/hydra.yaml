@@ -83,21 +83,45 @@ spec:
               valueFrom: { secretKeyRef: { name: roster-hydra, key: system } }
 
             # `iss` in every token, and the base of the discovery document each
-            # product fetches. It is **https** and Hydra insists on that outside
-            # `--dev`; TLS ends in front, which is the next line.
-            - { name: URLS_SELF_ISSUER, value: "https://sso.roster.test" }
-            - { name: SERVE_PUBLIC_TLS_ALLOW_TERMINATION_FROM, value: "0.0.0.0/0" }
+            # product fetches. **https**, because Hydra outside `--dev` refuses
+            # any other scheme -- *issuer URL scheme must be HTTPS unless
+            # development mode is enabled*, and it says that by not starting.
+            #
+            # The name is a Service's, in full, for two reasons. It has to
+            # resolve wherever a relying party runs, and the only place all of
+            # them do is **inside the cluster** -- which is why the walks are a
+            # Job here rather than something on the outside reaching in. And it
+            # has a dot in it, because a cookie jar will not answer to a
+            # single-label host and a sign-in is mostly cookies.
+            - { name: URLS_SELF_ISSUER, value: "https://roster-hydra.roster.svc.cluster.local:4444" }
+
+            # And Hydra terminates it itself.
+            #
+            # A deployment ends TLS at its ingress and tells Hydra so with
+            # `serve.public.tls.allow_termination_from` instead; this does it
+            # here because an ingress is a second thing to stand up and the
+            # scheme is what the issuer rule is about. What that gives up is
+            # everything about **being behind a proxy** -- `X-Forwarded-Proto`,
+            # and an app that reads `r.TLS` -- which is written down as still
+            # missing rather than quietly not covered.
+            - { name: SERVE_PUBLIC_TLS_ENABLED, value: "true" }
+            - { name: SERVE_PUBLIC_TLS_CERT_PATH, value: /tls/tls.crt }
+            - { name: SERVE_PUBLIC_TLS_KEY_PATH, value: /tls/tls.key }
 
             # The three redirects, and the fourth that is not a redirect to this
             # app at all.
-            - { name: URLS_LOGIN, value: "https://login.roster.test/login" }
-            - { name: URLS_CONSENT, value: "https://login.roster.test/consent" }
-            - { name: URLS_LOGOUT, value: "https://login.roster.test/logout" }
+            # Plain http, and only the issuer is not: the scheme rule is
+            # about `URLS_SELF_ISSUER` alone. A deployment serves its Login App
+            # over TLS because a browser is typing a password into it, which is
+            # a different reason and one this rig has no browser for.
+            - { name: URLS_LOGIN, value: "http://roster-login.roster.svc.cluster.local:8091/login" }
+            - { name: URLS_CONSENT, value: "http://roster-login.roster.svc.cluster.local:8091/consent" }
+            - { name: URLS_LOGOUT, value: "http://roster-login.roster.svc.cluster.local:8091/logout" }
             # Where a browser lands when the sign-out asked to come back
             # **nowhere**, which is every sign-out that arrived with no
             # `id_token_hint`. Unset, that page is Hydra's own fallback, whose
             # text is addressed to an administrator.
-            - { name: URLS_POST_LOGOUT_REDIRECT, value: "https://login.roster.test/signed-out" }
+            - { name: URLS_POST_LOGOUT_REDIRECT, value: "http://roster-login.roster.svc.cluster.local:8091/signed-out" }
 
             - { name: LOG_LEVEL, value: "info" }
             - { name: LOG_FORMAT, value: "json" }
@@ -117,8 +141,14 @@ spec:
             capabilities: { drop: ["ALL"] }
           volumeMounts:
             - { name: data, mountPath: /data }
+            - { name: tls, mountPath: /tls, readOnly: true }
 
       volumes:
+        # Made by `scripts/cluster.sh` and not checked in, unlike the fake
+        # secrets beside it: a certificate expires, so one in git is a rig that
+        # works until a date nobody wrote down.
+        - name: tls
+          secret: { secretName: roster-hydra-tls }
         # An overlay that wants this to survive a node replaces it with a claim.
         - name: data
           emptyDir: {}

@@ -1,0 +1,86 @@
+# A relying party, so there is something to sign somebody in **to**.
+#
+# `examples/product` from this repository: an app that holds the token, keeps a
+# session of its own, and asks the issuer to end it. It is the shape a product
+# with its own login already has, and it is here because the thing roster and
+# Hydra and the Login App exist for is a product going round the loop -- each of
+# them is checked on its own and that is not the same check.
+#
+# An overlay replaces it with whatever it actually deploys. What it should keep
+# is that **something** is here, because a deployment where nothing has ever
+# gone round the loop is one where the first product to try is the test.
+apiVersion: v1
+kind: Service
+metadata:
+  name: roster-product
+spec:
+  selector:
+    app.kubernetes.io/name: roster
+    app.kubernetes.io/component: product
+  ports:
+    - { name: http, port: 5555, targetPort: http }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: roster-product
+  labels:
+    app.kubernetes.io/name: roster
+    app.kubernetes.io/component: product
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: roster
+      app.kubernetes.io/component: product
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: roster
+        app.kubernetes.io/component: product
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: product
+          image: ghcr.io/lesomnus/roster
+          command: ["/usr/local/bin/example-product"]
+          args:
+            - --listen=0.0.0.0:5555
+            # The issuer's own name, in full. Discovery is fetched from it and
+            # every endpoint in that document is built from it, so a name this
+            # process cannot resolve is a sign-in that gets as far as a code and
+            # no further.
+            - --issuer=https://roster-hydra.roster.svc.cluster.local:4444
+            - --client-id=product
+            - --base=http://roster-product.roster.svc.cluster.local:5555
+            # No TLS in front of this one, so its session cookie could not be
+            # `Secure`. A deployment serves its products over TLS and leaves
+            # this out.
+            - --insecure-cookie
+          env:
+            - name: PRODUCT_CLIENT_SECRET
+              valueFrom: { secretKeyRef: { name: roster-product, key: client-secret } }
+            # The issuer's certificate is this rig's own, so the trust store has
+            # to be told. A deployment's issuer has a certificate the world
+            # already trusts and needs none of this.
+            - { name: SSL_CERT_FILE, value: /tls/ca.crt }
+          ports:
+            - { name: http, containerPort: 5555 }
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - { name: tls, mountPath: /tls, readOnly: true }
+      volumes:
+        - name: tls
+          secret:
+            secretName: roster-hydra-tls
+            items: [{ key: ca.crt, path: ca.crt }]

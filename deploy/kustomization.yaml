@@ -8,6 +8,8 @@ resources:
   - ./secrets.yaml
   - ./roster.yaml
   - ./hydra.yaml
+  # Something to sign somebody in to;  says why a rig needs one.
+  - ./product.yaml
   # The OAuth clients, applied after a sync and then checked.
   - ./clients.yaml
 

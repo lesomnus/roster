@@ -45,10 +45,30 @@ rig: a deployment overlays its own and never uses these. They are checked in
 rather than generated because a generated secret is one the walks would have to
 be told about, and then the rig has a moving part a deployment does not.
 
+## TLS, and the `--dev` that is not here
+
+Hydra outside `--dev` refuses an `http://` issuer -- *issuer URL scheme must be
+HTTPS unless development mode is enabled*, said by not starting -- so it
+terminates TLS itself here, on a certificate `scripts/cluster.sh` makes and a CA
+every other pod is handed. `compose.yaml` still runs `--dev` and says so where
+it does; this is the shape that does not have to, which is the point of it
+existing.
+
+The issuer is a **Service's own name in full**, which is two constraints at
+once: it has to resolve wherever a relying party runs, and the only place all of
+them do is inside the cluster; and it has to have a dot in it, because a cookie
+jar will not answer to a single-label host and a sign-in is mostly cookies.
+
+What that gives up, and is not covered anywhere yet, is **being behind a
+proxy**: `X-Forwarded-Proto`, and an app that reads `r.TLS`. A deployment ends
+TLS at its ingress and tells Hydra so with
+`serve.public.tls.allow_termination_from` instead.
+
 ## What is not here yet
 
-Signing anybody in. That needs TLS in front -- Hydra outside `--dev` refuses an
-`http://` issuer -- and a relying party, and then it would be `docker/`'s walks
-pointed at this instead of at `compose.yaml`. Until then what this proves is
-that the manifests stand up and that `roster login doctor` passes against what
-they produce, which is the half every defect so far has been in.
+Somebody to sign in **as**, and therefore the walk. `docker/`'s walks need a
+person with a password, which is a seed Job, and then they would run as a Job in
+this cluster rather than against `compose.yaml`. Until then what this proves is
+that the manifests stand up, that a relying party reads the issuer's discovery
+document over real TLS, and that `roster login doctor` passes against what they
+produce -- which is the half every defect so far has been in.

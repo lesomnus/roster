@@ -118,10 +118,35 @@ s = open(p).read().replace(
 open(p, "w").write(s)
 PY
 
+# The issuer's certificate, made here rather than checked in: one in git works
+# until a date nobody wrote down. Hydra terminates TLS itself in this rig --
+# `deploy/hydra.yaml` says what that gives up -- and everything that talks to it
+# is handed the CA, which is what `ca.crt` in the same Secret is for.
+echo "== a certificate for the issuer"
+docker run --rm --entrypoint sh -v "${vol}:/w" alpine/openssl:3.3.2 -c '
+	set -e
+	cd /tmp
+	openssl req -x509 -newkey rsa:2048 -nodes -days 1 -keyout ca.key -out ca.crt \
+		-subj "/CN=roster cluster rig" >/dev/null 2>&1
+	openssl req -newkey rsa:2048 -nodes -keyout tls.key -out tls.csr \
+		-subj "/CN=roster-hydra" >/dev/null 2>&1
+	printf "subjectAltName=DNS:%s,DNS:%s,DNS:%s\n" \
+		roster-hydra.roster.svc.cluster.local roster-hydra.roster.svc roster-hydra > ext
+	openssl x509 -req -in tls.csr -CA ca.crt -CAkey ca.key -CAcreateserial \
+		-days 1 -extfile ext -out tls.crt >/dev/null 2>&1
+	mkdir -p /w/tls && cp tls.crt tls.key ca.crt /w/tls/
+' >/dev/null
+
 carry
 
 echo "== up"
-kube "kubectl create ns ${NS} >/dev/null && kubectl -n ${NS} apply -k /w/deploy >/dev/null"
+kube "kubectl create ns ${NS} >/dev/null"
+# Before the manifests, because Hydra will not start without it.
+kube "kubectl -n ${NS} create secret generic roster-hydra-tls \
+	--from-file=tls.crt=/w/tls/tls.crt \
+	--from-file=tls.key=/w/tls/tls.key \
+	--from-file=ca.crt=/w/tls/ca.crt >/dev/null"
+kube "kubectl -n ${NS} apply -k /w/deploy >/dev/null"
 kube "kubectl -n ${NS} rollout status deploy/roster-hydra --timeout=300s"
 
 # **Twice, and the second one is the check.**
