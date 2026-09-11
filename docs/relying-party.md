@@ -38,6 +38,208 @@ the issuer's side; this document is it from the product's.
 | `scripts/cluster.sh` | k3d over `deploy/`, and `itself.sh` as a Job inside it |
 | `login/doctor.go` | `roster login doctor`: whether the clients are registered in a way any of this works with |
 
+## The loop, twice
+
+Four diagrams, and every arrow is an endpoint or an RPC that exists. The Login
+App's middle is the same in all four and is compressed here -- the hop-by-hop
+version, including the second factor and what each answer settles, is
+[`docs/login.md`](login.md) § *Every hop, and the call it makes*.
+
+### Behind a proxy, signing in
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant B as browser
+  participant X as oauth2-proxy
+  participant H as Hydra
+  participant L as Login App
+  participant R as roster
+
+  B->>X: GET /
+  X-->>B: 302 → /oauth2/start
+  B->>X: GET /oauth2/start
+  X-->>B: 302 → /oauth2/auth?client_id=behind
+  B->>H: GET /oauth2/auth
+  H-->>B: 302 → /login?login_challenge=…
+
+  Note over B,R: the Login App, compressed -- docs/login.md § Every hop
+  B->>L: GET /login?login_challenge=…
+  L->>H: GET /admin/oauth2/auth/requests/login
+  H-->>L: {client, skip, subject, requested_scope}
+  L-->>B: the form
+  B->>L: GET /flow?login_challenge=…
+  L-->>B: {brand, client, scope}
+  B->>L: POST /session {alias, password}
+  L->>R: roster.VouchService/Delegate
+  R-->>L: {verified: {ok, token: rd_…}}
+  L-->>B: 204, Set-Cookie: the Login App's session
+  B->>L: POST /accept?login_challenge=…
+  L->>H: PUT …/requests/login/accept {subject: Holder.id}
+  L-->>B: {redirect_to}
+  B->>H: the redirect
+  H-->>B: 302 → /consent?consent_challenge=…
+  B->>L: GET /consent?consent_challenge=…
+  L->>H: GET /admin/oauth2/auth/requests/consent
+  L->>R: roster.MeService/Get, as the person
+  L->>H: PUT …/requests/consent/accept {grant_scope, session}
+  L-->>B: 303 → Hydra
+
+  B->>H: the redirect
+  H-->>B: 302 → /oauth2/callback?code=…
+  B->>X: GET /oauth2/callback?code=…
+  X->>H: POST /oauth2/token, secret in the header
+  H-->>X: {id_token}
+  X-->>B: Set-Cookie: the proxy's session, 302 → /
+  B->>X: GET /
+  X-->>B: 200, the page behind it
+  B->>X: GET /oauth2/userinfo
+  X-->>B: {"user": "the sub"}
+```
+
+The last two arrows are the half a page draws and the half that was empty in the
+cluster: the proxy's own endpoint over the proxy's own cookie, answering `sub`
+because `oidc_email_claim` says so.
+
+### Behind a proxy, signing out
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant B as browser
+  participant X as oauth2-proxy
+  participant H as Hydra
+  participant L as Login App
+  participant R as roster
+
+  B->>X: GET /oauth2/sign_out?rd=…/oauth2/sessions/logout
+  Note over X: it drops its own cookie. It holds no id_token to send on.
+  X-->>B: 302 → /oauth2/sessions/logout?client_id=behind
+  B->>H: GET /oauth2/sessions/logout
+  H-->>B: 302 → /logout?logout_challenge=…
+
+  B->>L: GET /logout?logout_challenge=…
+  L->>H: GET /admin/oauth2/auth/requests/logout
+  H-->>L: {rp_initiated: false}
+  Note over L: no hint, so nobody proved an app asked -- draw the screen
+  L-->>B: the confirmation
+
+  B->>L: POST /logout {logout_challenge, allow}
+  L->>H: GET /admin/oauth2/auth/requests/logout
+  Note over L,H: asked again, not believed from the form
+  L->>H: PUT …/requests/logout/accept
+  L->>R: roster.DelegationService/Revoke
+  L-->>B: {signed_out: true, to}
+  B->>H: the redirect
+  H-->>B: 302 → urls.post_logout_redirect
+  B->>L: GET /signed-out
+  L-->>B: 200, a page for a person
+```
+
+A **no** is `PUT …/requests/logout/reject` and nowhere to send the browser --
+there is no relying party waiting, which is the whole reason the question was
+asked.
+
+### The app itself, signing in
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant B as browser
+  participant P as examples/product
+  participant H as Hydra
+  participant L as Login App
+  participant R as roster
+
+  Note over P,H: at startup, once
+  P->>H: GET /.well-known/openid-configuration
+  H-->>P: {authorization_endpoint, token_endpoint, jwks_uri, end_session_endpoint}
+
+  B->>P: GET /
+  Note over P: no session, so begin a flow
+  P-->>B: Set-Cookie: product_state=nonce, 302 → /oauth2/auth?client_id=itself
+  B->>H: GET /oauth2/auth
+  H-->>B: 302 → /login?login_challenge=…
+
+  Note over B,R: the Login App, as above
+  B->>L: GET /login, GET /flow, POST /session, POST /accept
+  L->>R: roster.VouchService/Delegate, then roster.MeService/Get
+  L->>H: PUT …/requests/login/accept, PUT …/requests/consent/accept
+
+  H-->>B: 302 → /callback?code=…
+  B->>P: GET /callback?code=…&state=…
+  Note over P: the state matches its cookie, and the flow is one this process started
+  P->>H: POST /oauth2/token, secret in the header
+  H-->>P: {id_token}
+  P->>P: verifier.Verify, audience and signature
+  Note over P: Mint{Id: sub, Grant: Whole, Held: id_token}
+  P-->>B: Set-Cookie: product_session, 303 → /
+  B->>P: GET /
+  P-->>B: 200, the claims and which of them is the identity
+```
+
+Nothing after the callback asks Hydra or roster anything: `GET /` is the sealed
+cookie read back, which is what the shape is for.
+
+### The app itself, signing out
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant B as browser
+  participant P as examples/product
+  participant H as Hydra
+  participant L as Login App
+  participant R as roster
+
+  B->>P: GET /sign-out
+  Note over P: read the id_token out of the session, then end the session
+  P-->>B: 303 → /oauth2/sessions/logout?id_token_hint=…&post_logout_redirect_uri=…
+  B->>H: GET /oauth2/sessions/logout
+  H-->>B: 302 → /logout?logout_challenge=…
+
+  B->>L: GET /logout?logout_challenge=…
+  L->>H: GET /admin/oauth2/auth/requests/logout
+  H-->>L: {rp_initiated: true}
+  Note over L: the hint proved an app asked -- there is nothing to confirm
+  L->>H: PUT …/requests/logout/accept
+  L->>R: roster.DelegationService/Revoke
+  L-->>B: 303 → …?logout_verifier=…
+  B->>H: the redirect
+  H-->>B: 302 → the app's own origin
+  B->>P: GET /
+  P-->>B: 302 → /oauth2/auth, the form asked for again
+```
+
+The last two arrows are the assertion, not a flourish: a sign-out that ended the
+app's session and not the issuer's comes back here *signed in*, silently, and
+that is what made *sign out* a lie.
+
+### Every API in those four
+
+| whose | the call | what it is for |
+| --- | --- | --- |
+| the product | `GET /`, `GET /callback`, `GET /sign-out`, `GET /healthz` | the whole of `examples/product` |
+| `oauth2-proxy` | `GET /oauth2/start`, `/oauth2/callback`, `/oauth2/userinfo`, `/oauth2/sign_out?rd=`, `/ping` | the same four jobs, done by somebody else's code |
+| Hydra, public | `GET /.well-known/openid-configuration` · `GET /oauth2/auth` · `POST /oauth2/token` · `GET /oauth2/sessions/logout` | the protocol. A relying party touches only these |
+| Hydra, admin | `GET\|PUT /admin/oauth2/auth/requests/{login,consent,logout}[/accept\|/reject]` · `GET /admin/clients` · `DELETE /admin/oauth2/auth/sessions/login` | the Login App's side, and **private** -- `login/hydra.go` is all of it, in one file, with no SDK |
+| the Login App | `GET /login` · `GET /consent` · `POST /consent` · `GET /logout` · `POST /logout` · `GET /signed-out` · `GET /flow` · `POST /session` · `POST /session/continue` · `DELETE /session` · `POST /accept` | the pages Hydra's four `URLS_*` point at, the one endpoint the page may ask (`/flow`), and `frontdoor`'s three (`POST /session` and after) |
+| roster, gRPC | `roster.VouchService/Delegate` · `roster.DelegationService/Revoke` · `roster.MeService/Get` · `roster.TenantService/Get` · `roster.SyncService/Watch` | the whole of what roster is asked on this route. `Delegate` verifies the secret **and** mints the `rd_` that `Me.Get` is then made with; `Watch` is continuous and in none of the diagrams -- it is how somebody being disabled reaches the sessions already open |
+
+Two things that table says better than prose. The product and the proxy never
+reach roster -- **no roster key, no RPC, nothing but a token** -- and roster is
+never told what a flow is: it is asked to prove a secret, to say who the caller
+is, and to revoke a delegation.
+
+What is not in those four is the **other way in**: `GET /provider` and
+`GET /callback` on the Login App, where somebody arrives from Entra or GitHub.
+That route reads `ConnectionService` for where to send them, `IdentityService`
+(and `HolderService.Add`, for somebody new) for who came back, and
+`VouchService/Accept` instead of `Delegate` -- and then ends identically, at
+`acceptLoginRequest{subject}` with a `Holder.id`. Nothing in front of the issuer
+can tell which route a person took, which is the point.
+[`docs/login.md`](login.md) § *Every hop* draws it beside this one.
+
 ## `behind`: a page with a proxy in front
 
 Nothing of ours runs in this shape. `oauth2-proxy` holds the session and the

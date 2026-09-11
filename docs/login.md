@@ -236,13 +236,13 @@ sequenceDiagram
   L-->>B: {brand, client, scope}
 
   B->>L: POST /session {alias, password}
-  L->>R: VouchService.Verify
-  R-->>L: {ok, holder} · {satisfied, available} · {locked_until}
+  L->>R: VouchService.Delegate
+  R-->>L: {ok, holder, token: rd_…} · {satisfied, available} · {locked_until}
   L-->>B: 204 · 200 {factors} · 401
 
   opt a second factor
     B->>L: POST /session/continue {kind, name, secret}
-    L->>R: VouchService.Verify {continuation}
+    L->>R: VouchService.Delegate {continuation}
     L-->>B: 204 · 401
   end
 
@@ -271,8 +271,8 @@ sequenceDiagram
 | the challenge | `GET /admin/oauth2/auth/requests/login` | which **client**, and so which operator and which `rt_` key. Asked before a form is drawn, so a challenge this app fronts nobody for fails here rather than after somebody has typed a password |
 | `skip` | none | Hydra already knows this browser, within `remember`. `acceptLogin(v.Subject)` straight away: the subject is Hydra's and this app must not second-guess it |
 | the page | `GET /flow` | `{brand, client, scope}`. The page may not ask Hydra and this app may, so this is the one endpoint it has |
-| the first form | `VouchService.Verify` | 204 signed in · 200 one factor proved, another to prove · 401 everything else, and a wrong password, an unknown person and no such tenant are all the third |
-| the second form | `VouchService.Verify` with the continuation | the app holds no half-signed-in state: the continuation is roster's, short-lived and single-use |
+| the first form | `VouchService.Delegate` | 204 signed in · 200 one factor proved, another to prove · 401 everything else, and a wrong password, an unknown person and no such tenant are all the third. `Delegate` and not `Verify` because a yes has to come back with the `rd_` the consent hop reads `Me.Get` with — § *Asking roster as the person who just signed in* |
+| the second form | `VouchService.Delegate` with the continuation | the app holds no half-signed-in state: the continuation is roster's, short-lived and single-use |
 | the accept | `PUT …/login/accept` | **`subject` is the `Holder.id`.** Nobody is named until every form is answered -- accepting after the first would hand a product a token for somebody who proved half of what the deployment asked for |
 | the claims | `MeService.Get`, as the person | `preferred_username`, `name`, `groups`, a **verified** address -- each only if the client asked for the scope that carries it. Never `methods` |
 | the grant | `PUT …/consent/accept` | `consent: skip` grants and draws nothing; `ask` draws the screen and `POST /consent` is its answer. `reject` is the other one |
@@ -389,7 +389,9 @@ structurally impossible for one person's claims to end up in another's token.
 ### Signing out reaches the issuer
 
 `/logout` is the third thing Hydra redirects to, beside `/login` and
-`/consent`, and it draws nothing.
+`/consent`, and half the time it draws nothing: a sign-out that proved a relying
+party asked is accepted silently, and one that did not is the confirmation screen
+below.
 
 Without it *sign out* was a lie in the most convincing way a deployment can
 produce one: the product's own session went, the next page started a flow, Hydra

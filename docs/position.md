@@ -107,7 +107,7 @@ sequenceDiagram
   E-->>L: (provider, subject)
 
   L->>R: ① Identity → Holder.id, which is `sub`
-  L->>R: ② VouchService.Verify — a password, a link
+  L->>R: ② Vouch.Delegate a password, Vouch.Redeem a link
   L->>R: ③ the tenant, and the token's other claims
 
   L-->>H: acceptLoginRequest{subject: Holder.id}
