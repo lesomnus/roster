@@ -18,7 +18,9 @@
 # The app asks to come back to its own origin; the client had only its callback
 # registered, because that is all the template in the deployment's README wrote.
 #
-# Run through `scripts/hydra.sh`, from inside the compose network.
+# Run through `scripts/hydra.sh`, from inside the compose network, and by
+# `scripts/cluster.sh` as a Job inside a cluster. `docs/relying-party.md` is the
+# shape of both demos and what each assertion here is for.
 set -eu
 
 # Three addresses and nothing about where they are. The compose network is the

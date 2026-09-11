@@ -825,6 +825,11 @@ covers the other, and a real deployment has both in it.
 | a proxy in front | oblivious. It serves bytes and `oauth2-proxy` holds the session | the issuer is one a **standard, third-party** relying party accepts. Not our code being lenient about our own tokens |
 | `examples/product` | the relying party. It exchanges, verifies, and keeps a session of its own | the pieces an app written against payday uses: `authoidc.Subject` reading `sub` alone, `authsession` holding an opaque cookie |
 
+[docs/relying-party.md](relying-party.md) is both of them in detail -- which file
+is which, the API each call is, what the issuer has to be told, and which gate
+can see what. What follows here is the part that is about the **issuer** rather
+than about a product.
+
 `examples/product` is not `examples/sso`, and the difference is which side
 roster is on. There, a provider sits **above** roster -- somebody arrives from
 Google or Entra and roster is asked who that is -- so pointing it at roster's
@@ -847,5 +852,7 @@ logout being the product app's half.
   with Google, Entra or GitHub and finds out who they are here. The package
   comment is the detail; the tests are the flow, run against a provider that
   answers over HTTP
+- [`docs/relying-party.md`](relying-party.md) — the two demo products, their
+  files, and the API each of them uses
 - payday's [guide/signing-in.md](https://github.com/lesomnus/payday/blob/main/docs/guide/signing-in.md)
   — how to put one of these in front of any payday app

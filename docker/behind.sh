@@ -2,10 +2,11 @@
 # The other shape of relying party, walked: a page that knows nothing about
 # authentication, with `oauth2-proxy` in front of it.
 #
-# `docker/flow.sh` walks our own code -- `examples/product` trusting our issuer,
-# which is lenient about our tokens in ways we cannot see from inside. This
-# walks a **standard third party**, and it is here because the deployment of
-# exactly this shape produced two defects every local gate was green on:
+# `docker/itself.sh` walks our own code -- `examples/product` trusting our
+# issuer, which is lenient about our tokens in ways we cannot see from inside,
+# and `docker/flow.sh` walks the protocol with `curl`. This walks a **standard
+# third party**, and it is here because the deployment of exactly this shape
+# produced two defects every local gate was green on:
 #
 #   - a sign-out that ended on Hydra's own fallback page, whose text tells the
 #     person who clicked it to contact an administrator
@@ -14,6 +15,8 @@
 # Both are about the proxy and neither is reachable from `flow.sh`.
 #
 # Run through `scripts/hydra.sh`, from inside the compose network.
+# `docs/relying-party.md` is the shape of both demos and what each assertion
+# here is for.
 set -eu
 
 : "${ISSUER:=http://hydra.test:4444}"
@@ -41,8 +44,6 @@ trap 'rm -f "${jar}"' EXIT
 c() { curl -sS -c "${jar}" -b "${jar}" "$@"; }
 loc() { tr -d '\r' | awk '/^[Ll]ocation:/{print $2}'; }
 code() { tr -d '\r' | awk '/^HTTP/{print $2; exit}'; }
-# Hydra and the Login App answer with the host machine's name, which is not a
-# name anything in here resolves. Only the host moves.
 # Only the Login App's host moves: the issuer already answers to a name this
 # network resolves (`ISSUER_HOST` in `compose.yaml`), and it has to -- the
 # browser's session cookie is scoped to whatever host it was set on, so a walk

@@ -107,8 +107,10 @@ signing **out**, with the token and without it. The fourth and fifth are the
 two demo relying parties, which is where every defect a local gate could not
 see has come from: `docker/behind.sh` is `oauth2-proxy` in front of a page,
 `docker/itself.sh` is `examples/product` holding its own token and building
-its own URLs. `login/`'s own tests use a fake Hydra, deliberately, and every
-defect this has found was one that fake was green on. `--hold` leaves it up.
+its own URLs -- `docs/relying-party.md` is what each of the two is and which
+defects only its own shape produces. `login/`'s own tests use a fake Hydra,
+deliberately, and every defect this has found was one that fake was green on.
+`--hold` leaves it up.
 
 ## Do not edit — regenerate
 
@@ -377,6 +379,8 @@ a browser holds and `auth` reads credentials rather than making them.
 - `docs/baseline.md` — the promises a normal user relies on, each pinned to its
   tests. **Touching code under one of them means running its tests, and a
   baseline test is never weakened to let a change pass.**
+- `docs/relying-party.md` — the two shapes an app takes in front of the issuer,
+  the two runnable ones, and the API each uses
 - `README.md` — the same ground at length, including upgrading payday
 - <https://github.com/lesomnus/payday/tree/main/docs> — the guides and the
   references behind them

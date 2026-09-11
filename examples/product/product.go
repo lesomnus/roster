@@ -27,6 +27,10 @@
 // know what to do with one: what it knows about somebody is a token, which is
 // the point being demonstrated.
 //
+// `docs/relying-party.md` is both shapes written down -- the files, the API each
+// call below is, what the issuer has to be told about each, and which gate can
+// see what.
+//
 // # The one line worth copying
 //
 //	authoidc.Subject
@@ -87,7 +91,6 @@ type app struct {
 	// such endpoint, and signing out is then this app's half alone.
 	endSession string
 	base       string
-	claims     func(context.Context, *oidc.IDToken) (id string, err error)
 	sessions   *authsession.Sessions
 
 	mu    sync.Mutex
@@ -429,12 +432,18 @@ func (a *app) callback(w http.ResponseWriter, r *http.Request) {
 // issuer publishes no such endpoint gets what this used to do, which is at
 // least this app's half.
 //
-// `id_token_hint` is not sent because there is nothing to send it: the token is
-// used once, at the callback, and thrown away, which is the argument
-// `authsession` opens with and is not worth undoing for a hint. What answers
-// the question it would have answered is `rp_initiated` at the other end -- the
-// issuer knows an app asked, and that is the fact a confirmation screen exists
-// to establish.
+// `id_token_hint` is sent when there is one, and the session is where it came
+// from -- see [hint]. It had to be: without it Hydra refuses a
+// `post_logout_redirect_uri`, so an app that cannot produce the token has no say
+// in the last page a person sees and lands on whatever
+// `urls.post_logout_redirect` names. The cost is the token riding in this app's
+// cookie, which `callback` weighs.
+//
+// A relying party that genuinely cannot send one -- `oauth2-proxy` in front of a
+// page, which is the other demo -- is not refused. Hydra raises the challenge
+// either way and marks it not `rp_initiated`, and what the Login App draws then
+// is a confirmation screen: a third party can cause the question, and the person
+// who did click *sign out* answers it.
 func (a *app) signOut(w http.ResponseWriter, r *http.Request) {
 	// Read **before** ending, because the hint is in the session that is about
 	// to go.

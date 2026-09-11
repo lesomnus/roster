@@ -25,6 +25,7 @@ why it is worded as a test rather than as a list.
 | [docs/entity.md](docs/entity.md) | the twenty-three tables, drawn, with a paragraph each |
 | [docs/operating.md](docs/operating.md) | running one: keys, roles, TLS |
 | [docs/login.md](docs/login.md) | what happens when somebody signs in |
+| [docs/relying-party.md](docs/relying-party.md) | the two shapes an app takes in front of it, and the two that are runnable |
 | [docs/roadmap.md](docs/roadmap.md) | what is being built next, in order, and how far it has got |
 
 ## What it does
