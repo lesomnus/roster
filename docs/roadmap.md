@@ -675,17 +675,20 @@ in 2026-08, and one of them closed by *looking*:
 
 ### Open, and filed
 
-One, from the week the deployment found four defects nobody here had:
+**Nothing.** [#12](https://github.com/lesomnus/roster/issues/12) is closed: the
+reference manifests are here, `scripts/cluster.sh` stands them up in k3d, all
+three walks run inside it, the registration is changed under the running pods,
+the whole flow runs again behind a TLS terminator -- and the deployment that
+started it is an **overlay** on `deploy/` rather than a copy of it.
 
-- **[#12](https://github.com/lesomnus/roster/issues/12) a gate that runs the
-  deployment's own manifests.** `compose.yaml` is an imitation of a deployment
-  and every defect lived in the gap. It needs `deploy/` here first, so the
-  contract is upstream and a deployment is an overlay rather than a second
-  copy. Proven feasible: k3d builds a cluster against this checkout's engine
-  and `kubectl` reaches it from a container on the cluster's network.
+What is left is the thing that gate cannot have: **it does not run unless
+somebody remembers.** `scripts/test.sh`, `e2e.sh` and `hydra.sh` are CI jobs;
+this one is not, and it found eight defects in two days. *A list of commands to
+remember is a list somebody forgets one of* is this repository's own sentence
+about exactly that, and it is the next thing to write.
 
-And the thing worth keeping from the week, because it points at which of those
-matters: **none of the four was roster changing behaviour under a working
+And the thing worth keeping from the week that produced it, because it points at
+which kind of gate matters: **none of the four was roster changing behaviour under a working
 deployment.** They were contract mismatches -- a field absent from a
 registration, a Hydra setting never made, a method nothing here sends, a
 consequence written down as known and never read as a defect. A cluster gate
