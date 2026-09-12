@@ -38,39 +38,30 @@ see:
   plane's **HTTP** listener rather than its gRPC one, and `/` only answers
   there when the console is served.
 
-## What is deliberately fake
+## There are no Secrets here
 
-The secrets. `secrets.yaml` holds values anybody can read, because this is a
-rig. They are checked in rather than generated because a generated secret is one
-the walks would have to be told about, and then the rig has a moving part a
-deployment does not.
+**This base ships none**, and that is the one thing about it that was learned the
+expensive way. It had three -- `roster-hydra`, `roster-vouch`, `roster-product`,
+with values anybody can read, because this is a rig -- and a deployment that
+overlays it brings its own **under the same names**, which is the only sensible
+naming. Both of those are true and together they do not work:
 
-⚠️ **An overlay has to say what happens to them**, and which way it goes wrong
-depends on what it calls its own:
+- kustomize accumulates **generators before patches**, so a `$patch: delete` of
+  the base's Secret does not prevent the collision. What comes out is
+  `id … Name:"roster-hydra" … exists; can not use behavior: 'unspecified'`, at
+  build time, and the deployment cannot sync at all.
+- and a generator plugin -- ksops, decrypting SOPS files -- cannot declare
+  `behavior: replace` to get around it.
 
-- **the same names** (`roster-hydra`, `roster-vouch`) -- kustomize refuses the
-  build, *may not add resource with an already registered id*. Annoying, and the
-  good outcome: it is a build error rather than a deployment.
-- **different names** -- the base's placeholders survive, and what the pods read
-  is whichever name the base's Deployment names. That is a deployment signing
-  tokens with `this-is-a-rig-and-not-a-secret` and saying nothing about it, which
-  is the worst shape a default can have.
+So the rig makes its own with `kubectl create secret`, beside the four it already
+made that way, and what an overlay inherits from here is **no Secret at all**.
+Which is also the safer default: a base that ships a token-signing key readable on
+GitHub is one an overlay has to remember to remove.
 
-So an overlay either replaces them by name -- a `secretGenerator` or a generator
-of its own using the base's names -- or removes them:
-
-```yaml
-patches:
-  - target: { kind: Secret, name: roster-product }
-    patch: |
-      $patch: delete
-      apiVersion: v1
-      kind: Secret
-      metadata: { name: roster-product }
-```
-
-Found by writing an overlay for a real deployment rather than by reading this
-file, which is the only way that class of thing is ever found.
+Found the way these things are found -- by a real deployment failing to render,
+one commit after the local render said it was fine. The local render had the
+generator stubbed out, because the age key is not on this machine and should not
+be.
 
 ## Using it as a base
 

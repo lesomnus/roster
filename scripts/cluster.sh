@@ -261,6 +261,24 @@ carry
 
 echo "== up"
 kube "kubectl create ns ${NS} >/dev/null"
+
+# **The secrets, which `deploy/` deliberately ships none of.**
+#
+# It had three, with values anybody can read, and an overlay bringing its own
+# under the same names could not build at all: kustomize accumulates generators
+# before patches, so a `$patch: delete` of the base's does not prevent the
+# collision -- `id … Name:"roster-hydra" … exists; can not use behavior:
+# 'unspecified'`. A real deployment found that one commit after a local render
+# said it was fine, because the local render had the SOPS generator stubbed out.
+#
+# So they are the rig's, like the certificates below, and nothing a deployment
+# inherits has a credential in it.
+kube "kubectl -n ${NS} create secret generic roster-hydra \
+	--from-literal=system=this-is-a-rig-and-not-a-secret >/dev/null"
+kube "kubectl -n ${NS} create secret generic roster-vouch \
+	--from-literal=keys='[\"rig:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\"]' >/dev/null"
+kube "kubectl -n ${NS} create secret generic roster-product \
+	--from-literal=client-secret=this-is-a-rig-and-not-a-secret-either >/dev/null"
 # Before the manifests, because Hydra will not start without it.
 kube "kubectl -n ${NS} create secret generic roster-hydra-tls \
 	--from-file=tls.crt=/w/tls/roster-hydra.crt \

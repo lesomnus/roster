@@ -5,7 +5,6 @@ kind: Kustomization
 # No namespace: an overlay chooses one, the way the deployment that uses this
 # already does.
 resources:
-  - ./secrets.yaml
   - ./roster.yaml
   - ./hydra.yaml
   # Something to sign somebody in to. `docs/relying-party.md` is what it is --
