@@ -85,7 +85,11 @@ head=$(c -o /dev/null -D - -X POST "${LOGIN}/session?login_challenge=${challenge
 	-H 'content-type: application/json' \
 	-d "$(printf '{"alias":"%s","password":"%s"}' "${SEED_USER}" "${SEED_PASSWORD}")" | tr -d '\r')
 cookie=$(printf '%s' "${head}" | awk '/^[Ss]et-[Cc]ookie:/{print $2}' | sed 's/;$//')
-[ -n "${cookie}" ] || die "the password was not accepted"
+# **The status, and what else it can mean.** No cookie here is not only a wrong
+# password: the same 401 is a challenge raised for a client this app fronts
+# nobody for, which is what a `login.clients` that has not reached the pod yet
+# looks like. It cost a CI run to read the first sentence as the only one.
+[ -n "${cookie}" ] || die "no session from the first form: $(printf '%s' "${head}" | code) -- a wrong password, or a challenge for a client this app fronts nobody for"
 
 to=$(c -X POST "${LOGIN}/accept?login_challenge=${challenge}" -H "Cookie: ${cookie}" \
 	| sed 's/.*"redirect_to":"//; s/".*//; s|\\u0026|\&|g' | fix)

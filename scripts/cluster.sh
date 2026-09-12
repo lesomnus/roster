@@ -183,14 +183,35 @@ kube() {
 		"${KUBECTL_IMAGE}" sh -c "$*"
 }
 
+# tried is a build that survives the registry having a bad minute.
+#
+# This is the phase that reaches out to Docker Hub, and the first CI run of this
+# script failed on `auth.docker.io` resetting the connection while resolving
+# `alpine:3.22` -- nothing about the repository, and a red run that says *failed
+# to fetch oauth token* teaches somebody to ignore a red run. Twice, ten seconds
+# apart, and loudly: a build that needed the retry says so, so a registry that is
+# down for longer than that is still a failure and still legible.
+tried() {
+	local i
+	for i in 1 2; do
+		if "$@"; then
+			return 0
+		fi
+		echo "   (the registry refused; trying once more)" >&2
+		sleep 10
+	done
+
+	"$@"
+}
+
 echo "== the images this checkout builds"
 # Two, and the second is not a detail. What the deployment runs is the `app`
 # stage, which is **distroless**: no shell, no `curl`, and none of `docker/`'s
 # walks -- all of which is right for what it ships and all of which a walk
 # needs. So the walk runs the `dev` stage, the same one `scripts/hydra.sh` runs
 # against compose, and the thing under test is still the `app` one.
-docker build -q --target app -t "roster-cluster:${CLUSTER}" . >/dev/null
-docker build -q --target dev -t "roster-walk:${CLUSTER}" . >/dev/null
+tried docker build -q --target app -t "roster-cluster:${CLUSTER}" . >/dev/null
+tried docker build -q --target dev -t "roster-walk:${CLUSTER}" . >/dev/null
 k3d image import "roster-cluster:${CLUSTER}" "roster-walk:${CLUSTER}" -c "${CLUSTER}" >/dev/null
 
 cp -r deploy "${work}/deploy"
@@ -1054,8 +1075,19 @@ carry
 # exactly the mistake a second relying party invites.
 two=0
 resync /w/behind || two=$?
+
 [ "${two}" = "0" ] \
 	|| { kube "kubectl -n ${NS} logs job/roster-hydra-clients"; kube "kubectl -n ${NS} logs job/roster-hydra-clients-check"; echo "cluster: the second client is not registered the way this stack needs (${two})" >&2; exit 1; }
+# **And wait for the pod**, because declaring a client is a configuration change.
+#
+# `login.clients` is in the `roster` ConfigMap, whose name carries a hash of its
+# contents -- so adding the second client gives the Deployment a new pod template
+# and a rollout. The walk below asks the **Login App** to resolve a challenge
+# raised for that client, and an app that has not restarted yet fronts nobody for
+# it. What that looks like from the walk is `the password was not accepted`,
+# which is a sentence about the wrong thing; it cost a CI run, where everything
+# is slower than on a desk and the race actually lands.
+kube "kubectl -n ${NS} rollout status deploy/roster --timeout=300s >/dev/null"
 echo "   a second relying party is declared, registered and claimed"
 
 cat > "${work}/behind.yaml" <<EOF
