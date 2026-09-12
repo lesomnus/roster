@@ -1789,11 +1789,14 @@ Nothing written down is plaintext, and it warns once.
 - **`Binding` cannot be re-pointed.** Its edges are immutable, so changing who
   holds what is a delete and an add. That is the safe direction and it is worth
   knowing before writing a console screen that looks like an edit.
-- **No second factor other than TOTP.** `Credential.Enrol` writes a seed, `Verify`
-  and `Continue` check the codes, and the `continuation` between them is an
-  opaque handle carrying *this person satisfied the first factor* — so an app
-  serving two forms holds nothing but a string. [position.md](position.md),
-  § "Second factors", is the why.
+- **No second factor beyond a code and a key.** TOTP and WebAuthn, and nothing
+  that has to be *delivered* — no SMS, no push, no emailed code — because
+  sending is not roster's, which is the bullet below about the magic link said
+  once about factors. `Credential.Enrol` writes a seed, `Verify` and `Continue`
+  check the codes, and the `continuation` between them is an opaque handle
+  carrying *this person satisfied the first factor* — so an app serving two
+  forms holds nothing but a string. [position.md](position.md), § "Second
+  factors", is the why.
 
   Two things about it are the operator's. It needs `vouch.keys`
   (`ROSTER_VOUCH_KEYS`), because a seed is the one secret roster has to be able
