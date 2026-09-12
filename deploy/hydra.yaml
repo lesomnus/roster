@@ -23,6 +23,29 @@ spec:
     # `roster login doctor` call it in-cluster.
     - { name: admin, port: 4445, targetPort: admin }
 ---
+# What Hydra keeps: the clients, the consent sessions and the signing keys.
+#
+# **A claim and not an `emptyDir`**, for `roster.yaml`'s reason and one of its
+# own. Losing it is every token invalid and every remembered browser asked again
+# -- recoverable, and not nothing. It was an `emptyDir` with a comment saying an
+# overlay replaces it, and writing that overlay is what showed the comment was
+# the wrong end of the job: a volume whose **kind** changes cannot be patched by
+# a strategic merge (the `emptyDir` survives and the claim is dropped in
+# silence), so every deployment would have had to do the awkward thing. Declared
+# here, an overlay says the class and the size like it does for the other two.
+#
+# No `storageClassName`, so a cluster's default is used and an overlay names its
+# own.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: roster-hydra
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -170,6 +193,5 @@ spec:
         # did put it.
         - name: tmp
           emptyDir: {}
-        # An overlay that wants this to survive a node replaces it with a claim.
         - name: data
-          emptyDir: {}
+          persistentVolumeClaim: { claimName: roster-hydra }
