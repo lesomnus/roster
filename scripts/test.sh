@@ -50,6 +50,10 @@ fi
 echo "== roster"
 go build ./...
 go vet ./...
+# The suite, which includes the documentation: `cli/docs_test.go` opens every
+# path, command, test name, variable and link the pages and the comments name.
+# That is here rather than in a script of its own because it needs the command
+# tree this binary builds, which is a Go call and not a `--help` to parse.
 go test -count=1 "$@" ./...
 
 # What no compiler and no test can see.

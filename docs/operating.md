@@ -667,7 +667,7 @@ given it away. On the client side that is payday's `DialConfig`:
 ```yaml
 roster:
   addr: roster:50051
-  token: ${ROSTER_TOKEN}
+  token: ${PRODUCT_ROSTER_TOKEN}     # the app's own variable, not one of roster's
   tls:
     ca_file: /etc/ssl/private-ca.pem
 ```
