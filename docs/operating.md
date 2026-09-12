@@ -1508,6 +1508,62 @@ the file that already says `server.addr` is one more place for two answers to
 drift. It is a default and not a shortcut -- the call still goes out on a
 socket, with a key, and comes back through the wall.
 
+### A sign-in page of your own
+
+The pages this binary carries are one implementation of an HTTP surface, and the
+surface is the supported thing: `docs/login.md` § *A page of your own, and the
+contract it writes against* is every endpoint, what each promises, and the rules
+a page has to keep. A deployment that wants its own screens writes them
+against that, and then either hands the build to this binary --
+
+```yaml
+login:
+  page:
+    dir: /usr/share/roster/login   # what this binary serves at /login
+```
+
+```sh
+roster login serve --static ./my-login/dist   # the same thing, as a flag
+```
+
+-- or leaves the setting out and serves the pages itself, with Hydra's
+`urls.login`/`urls.consent`/`urls.logout` pointing at them and this binary
+answering only the endpoints -- under one constraint that is not negotiable:
+**this app sends no CORS headers**, so the page has to reach `POST /session` and
+`POST /accept` as **same origin**. A page on another origin is refused by the
+browser before roster is asked anything. In practice that is a proxy putting the
+page and this listener under one name, which is what a deployment with an ingress
+already has.
+
+The console has `control.http.origins` for exactly this case and the Login App
+has no equivalent, which is an absence rather than a wall: these endpoints set a
+cookie, so an origin list here hands somebody else's page the ability to mint
+one, and nobody has needed it enough to decide the shape. `CLAUDE.md` § *Before
+answering "roster cannot do that"* is how to add it.
+
+⚠️ **Empty means this binary serves no page at all**, and what a browser gets at
+`/login` is a **404** with *this deployment serves no sign-in page*. It looks
+exactly like the issuer being broken, and the two ways to arrive at it are
+forgetting this setting and pointing it at a directory that was never built.
+`scripts/cluster.sh` cost a run to it.
+
+To develop one against nothing:
+
+```sh
+npm --prefix ts run dev:login
+```
+
+`ts/vite.login.ts` is the app made up -- two people, one of them with a second
+factor, two providers, and the same three status codes `frontdoor` answers -- so
+a page can be written and looked at with no roster, no Hydra and no database. It
+is also a second implementation of the contract above, which is part of why the
+contract is written down.
+
+What a page may **not** leave out is `POST /accept`. It is the hop that turns a
+finished sign-in into Hydra's answer, no other front door has it, and a page
+without it signs somebody in and leaves the flow hanging with nothing on screen
+to say so.
+
 ### Which to run
 
 Three processes, when the blast radius is worth the pods. The account app faces

@@ -112,6 +112,13 @@ defects only its own shape produces. `login/`'s own tests use a fake Hydra,
 deliberately, and every defect this has found was one that fake was green on.
 `--hold` leaves it up.
 
+**And a route added to `login/login.go` is a contract change.** That app's HTTP
+surface is what a deployment writing its own sign-in page builds against
+(`docs/login.md` § *A page of your own*, `login.page.dir`), so the table there and
+those routes are kept in step by `login/contract_test.go` -- in both directions,
+because a mounted endpoint nobody promised to keep is how an internal shape
+becomes an accidental API.
+
 ## Do not edit — regenerate
 
 | | |

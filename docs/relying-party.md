@@ -274,6 +274,11 @@ Which puts the line between the two halves of every diagram above:
 | browser ↔ app | HTTP, each app's own. Redirects and `Set-Cookie`, which is what a browser is, and a challenge in a query string, which is what Hydra hands over |
 | app ↔ roster | protobuf, generated, over gRPC. The five calls in the table, and nothing else |
 
+That HTTP half is written down as a contract now, because a deployment serving
+its own sign-in screens writes code against it:
+[`docs/login.md`](login.md) § *A page of your own, and the contract it writes
+against*, kept in step with the routes by `login/contract_test.go`.
+
 And the Login App is the one front door with **no** Connect call from the browser
 at all -- not even to ask what the flow is about, because that is Hydra's to say
 and only this app may ask Hydra. `GET /flow` is that answer relayed, and it is

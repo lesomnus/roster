@@ -355,6 +355,70 @@ stream says what has stopped being good in roster's own vocabulary, to any app
 holding a credential, and turning that into a `DELETE` is the Login App's,
 because the Login App is what knows about Hydra.
 
+### A page of your own, and the contract it writes against
+
+The page in `ts/login/` is **one implementation** of the surface below, not the
+surface. A deployment that wants its own sign-in screens builds them and points
+`login.page.dir` at the result (`docs/operating.md` § *A sign-in page of your
+own*); one that serves them from its own static server leaves the setting out
+and keeps the endpoints.
+
+Which makes this a contract rather than an internal shape, and it is written
+down for a reason that has already happened three times in the other direction:
+there are **four** implementations of it in this repository -- the real app and
+the made-up server in `ts/vite.login.ts` on one side, `ts/lib/signin.tsx` and
+`frontdoor/web/frontdoor.js` on the other -- and nothing had said what they were
+all implementing.
+
+Every pattern below is mounted by `App.Handler()` (`login/login.go`), except the
+three marked `frontdoor`, which are `Door.Handler()`'s and are the same three the
+account app serves. `login/contract_test.go` fails when this table and those two
+functions stop agreeing, in either direction.
+
+| mounted as | what it promises a page | pinned by |
+| --- | --- | --- |
+| `GET /login` | the first screen, as a document. Hydra's own `skip` is answered here instead, with a 303 and no page drawn | `TestALoginAppTellsHydraWhoSignedIn` · `TestASecondFlowCarriesTheClaimsToo` |
+| `GET /flow` | `{brand, client, scope, providers, password}` for a login challenge, `{brand, logout}` for a logout one. **The only thing a page may ask**, because what a flow is about is Hydra's to say and only this app may ask Hydra | `TestATenantWithNoPasswordDrawsNoForm` · `ts/e2e/login.spec.ts` |
+| `/session`, `/session/` | mounted so `frontdoor`'s three below see the whole path. One handler, three methods | `TestALoginAppTellsHydraWhoSignedIn` |
+| `POST /session` | *frontdoor.* `{alias\|address, password}` → **204** signed in · **200** `{satisfied, available}` one factor proved and more to prove · **401** everything else | `TestALoginAppTellsHydraWhoSignedIn` · `TestASecondFactorIsAskedForAndTheFlowWaitsForIt` · `TestARosterThatIsDownIsNotAWrongPassword` |
+| `POST /session/continue` | *frontdoor.* `{kind, name, secret}` → **204** · **401**. One attempt per first form: the half-session is spent whether the answer was right or not | `TestAWrongSecondFactorFinishesNothing` · `TestAHalfSessionIsOverWhenTheAppSaidItWas` · `TestASignedInBrowserSurvivesAStraySecondForm` |
+| `DELETE /session` | *frontdoor.* Drops this app's session and revokes the delegation. Not part of the flow -- the flow's own ending is `POST /accept` -- and mounted because it is the same handler | `TestSigningOutRevokesEvenAWindowThatHasPassed` |
+| `POST /accept` | `{redirect_to}`, and **the hop no other front door has**: it turns a finished sign-in into `acceptLoginRequest{subject}`. A page that leaves this out signs somebody in and never ends the flow. 401 when nobody is signed in, or is half way | `TestALoginAppTellsHydraWhoSignedIn` · `TestAFlowReachesOnlyItsOwnOperator` |
+| `GET /provider` | 302 to the directory this operator's `Connection` names, with the state in a cookie | `TestSomebodyArrivesThroughAProvider` · `TestAProviderFlowReachesOnlyItsOwnOperator` |
+| `GET /callback` | where a directory sends the browser back. **Not** in a flow: one URL for the whole app, and which flow it belongs to comes from the state | `TestACallbackWithoutItsOwnStateIsRefused` · `TestAStrangerIsRefusedUnlessTheDeploymentEnrols` |
+| `GET /consent` | a screen when `login.consent` is `ask`, a 303 when it is `skip` or Hydra remembered | `TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne` |
+| `POST /consent` | the screen's answer. A no is `consent/reject` and the browser goes back to the client with a refusal | `TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne` · `ts/e2e/login.spec.ts` |
+| `GET /logout` | a screen only half the time: drawn when nothing proved a relying party started the sign-out, answered with a 303 when something did | `TestALogoutNobodyProvedAnAppAskedForIsConfirmed` · `TestSigningOutEndsWhatTheIssuerRemembers` · `docker/behind.sh` |
+| `POST /logout` | `{logout_challenge, allow}` → `{signed_out, to}`, or `{signed_out: false}` and nowhere to go. **400 for a logout an app did prove it started**, because that one is never drawn | `TestTheConfirmedSignOutIsTheOneThatEnds` · `TestTheAnswerIsForTheScreenThatWasDrawn` · `TestALogoutChallengeIsAskedAbout` |
+| `GET /signed-out` | the page a sign-out that asked to come back nowhere ends on. The one screen here with no challenge on it | `docker/behind.sh` · `ts/e2e/login.spec.ts` |
+| `/` | the build, and its assets. `/login`, `/consent`, `/logout` and `/signed-out` are rewritten to `/` rather than redirected, so a page is **one document** that reads which screen it is from the challenge in its own URL | `docker/itself.sh` · `ts/e2e/login.spec.ts` |
+
+And the rules, which are the part that is easy to get wrong and the reason
+`frontdoor/web/frontdoor.js` exists at all:
+
+- **Three answers where a page expects two.** 204, 200 and 401 -- and the 401 is
+  one answer for a wrong password, an unknown person, somebody with no password
+  and a tenant this deployment does not serve. roster took care to make those
+  one answer; a page that tells them apart undoes it.
+- **Never draw the second form from anything the server called it.** roster
+  answers what is `satisfied` and what is `available`; what to call a factor and
+  which to offer is the page's. The field that would decide it here is refused on
+  purpose.
+- **The challenge rides in the query, and nothing believes it without asking
+  Hydra.** It was a cookie for half an hour and could not be: Hydra's challenge
+  is about two kilobytes against a four-kilobyte cap, which the first flow found
+  by answering 400.
+- **Hold nothing.** No token, no continuation, no idea how many steps there are.
+  The cookie the app set is the whole of the state, so script on the page has
+  nothing to reach.
+- **Nothing is cacheable.** `cache-control: no-store` is set for you on every
+  screen; a stale copy is a browser posting to a challenge that has been spent.
+- **An answer you do not recognise is a refusal, not a crash.** Two rows above
+  gained a state after they were first written -- `GET /logout` became a screen
+  half the time, and `/flow` learned to answer `{brand, logout}` -- and a page
+  that draws *this did not work* for an unknown answer survives that. It is the
+  one thing asked of a page in return for the table being a contract.
+
 ### The app's own session, and why it is not shorter
 
 It lasts as long as `remember` — the same clock Hydra skips the form on.
