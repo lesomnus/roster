@@ -13,7 +13,7 @@ import (
 )
 
 // TestSomebodyRemovesASecondFactorOfTheirOwn is `Credential.Erase` on the wire
-// (`ts/plan.md` § B): the verb that existed, served, with the layer it owed.
+// the verb that existed, served, with the layer it owed.
 //
 // A person removes a factor they no longer have -- the phone that was lost --
 // by calling the operator's verb about their own row, which is the line. What

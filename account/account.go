@@ -24,7 +24,8 @@
 // disagree. Never a server **stack**, `internal/*` or `cmd/*`: it reaches
 // roster over the wire with a credential an operator minted, and if it could
 // reach past that the account app would be the second thing in this repository
-// that can, which is one more than there should be (`ts/plan.md`, invariant 1).
+// that can, which is one more than there should be. `scripts/test.sh` refuses
+// the import rather than trusting this paragraph.
 //
 // # One tenant key per operator it fronts
 //

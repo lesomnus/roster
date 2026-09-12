@@ -11,7 +11,7 @@ import (
 )
 
 // TestAnOperatorSaysHowACustomersPeopleArrive is the *arrives through* panel
-// of the console (`ts/src/arrives.tsx`), made as the writes it makes: on the
+// of the console (`ts/console/arrives.tsx`), made as the writes it makes: on the
 // admin port, with the operator's session, about one customer.
 //
 // Three entities and no new RPC. A `Host` is a name that means this tenant, a

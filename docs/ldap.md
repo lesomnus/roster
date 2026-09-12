@@ -7,29 +7,59 @@ Grafana, a printer's address book -- asks exactly those questions, in a
 protocol from 1997 that none of them will stop speaking. `roster ldap serve`
 answers them.
 
-This began as the plan for it and is now the description of it; the
-[progress](#progress) table at the end is the record of how it was built, and
-`docs/operating.md` § A directory, over LDAP is the operator's page.
+This page is the design **and** how to run it. The
+[progress](#progress) table at the end is the record of how it was built.
 
 ## What it is, in one paragraph
 
 **`roster ldap serve` is a consumer**, exactly as `roster account serve` is:
-its own process, holding one tenant key per operator it fronts, reaching
-roster over the wire and never past it. It speaks LDAPv3 on one side and
-`rstr` on the other, and it *translates*: a bind is `Vouch.Verify` or a key
-read back through `Me.Get`, a search is `Holder.Search`, `Holder.List`,
-`Email.List`, `GroupMembership.List`. It holds no data, keeps no cache and
+one tenant key per operator it fronts, reaching roster over the wire and never
+past it, whether it runs as its own process or as a block in the server's. It
+speaks LDAPv3 on one side and `rstr` on the other, and it *translates*: a bind is
+`Vouch.Verify` or a key read back through `Me.Get`, a search is `Holder.Search`,
+`Holder.List`, `Email.List`, `GroupMembership.List`. It holds no data, keeps no cache and
 writes nothing. roster does not change for it -- which is the test of whether
 it belongs here at all (`position.md` § The line: *who checks this?* roster,
 every time).
 
-## Why it is not part of `roster serve`
+## Running it
 
-The reason the account app is not: this process holds tenant keys and faces
-a network of appliances, and roster's own listeners -- the admin port most of
-all -- must not be in the process that does. And a smaller one: LDAP is
-optional. A deployment with nothing that speaks it should not have a port that
-does.
+```sh
+roster ldap serve --roster roster:8080 \
+  --key contoso=rt_… --key fabrikam=rt_…      # or ROSTER_LDAP_KEY_<ALIAS>
+  --tls cert.pem,key.pem --require-tls \
+  --listen :389 --listen-tls :636
+```
+
+Or as a block in `roster.yaml`, which puts it in the same process as the server
+(`operating.md` § "One process, or four" is the trade -- this process holds tenant
+keys and faces a network of appliances, so a deployment that cares keeps it in a
+container of its own):
+
+```yaml
+ldap:
+  addr: :389
+  bind: key
+  keys:
+    contoso: env:ROSTER_LDAP_KEY_CONTOSO
+```
+
+Either way it is a **consumer**: one tenant key per operator, reaching roster over
+the wire and never past it. Mint the key for a holder of its own with the role in
+§ [The key this process holds](#the-key-this-process-holds); `docker/customer.sh`
+is that, as a script.
+
+`--require-tls` refuses a bind in the clear, which is what a simple bind over
+plain TCP is. Offer StartTLS with `--tls`, LDAPS with `--listen-tls`, or terminate
+TLS in front and pass the plain port on a private network.
+
+```sh
+ldapsearch -H ldap://localhost:1389 -x \
+  -D uid=erin,ou=people,o=contoso -w rt_… \
+  -b o=contoso '(&(objectClass=inetOrgPerson)(memberOf=cn=payroll,ou=groups,o=contoso))' mail
+```
+
+The compose stack runs one on `1389`, and `LDAP_BIND=either` turns passwords on.
 
 ## The bind, which is the whole design
 
@@ -266,7 +296,7 @@ minted by the app's name*).
 | `ldap/wire/` | the protocol: one connection's loop, and the handful of messages this process speaks, decoded from and encoded to BER. Nothing in it knows what a holder is |
 | `cli/ldap.go` | `roster ldap serve`: `--listen` (`:389`), `--listen-tls`, `--roster`, `--insecure`, `--key`/`ROSTER_LDAP_KEY_<ALIAS>`, `--base`, `--bind`, `--tls`, `--require-tls` |
 | `docker/ldap.sh`, `compose.yaml` | the `ldap` service beside `account`, on `1389`, its key from the same `customer` one-shot; `LDAP_BIND=either` turns password binds on |
-| `docs/operating.md` | § A directory, over LDAP -- the operator's page |
+| `docs/operating.md` | § "One process, or four" -- where the `ldap:` block sits |
 | `docs/usage/ways-in.md` | a paragraph under the tenant key: an app password is a key |
 | `docs/baseline.md` | § A directory over LDAP, one row per promise below |
 
@@ -371,4 +401,4 @@ comment beside what it decides.
 | L0 | the wire | **done** — `ldap/wire`: the loop, simple bind, search, unbind, abandon, StartTLS (and LDAPS as the listener's), WhoAmI, paging, the refusal table. Proved against `go-ldap` as the client and by hand for what it has no call for (abandon); under the race detector |
 | L1 | people | **done** — `ldap/`: the tree above the people, `ou=people` with every attribute in the table (`mail` verified only, disabled absent), bind in all three modes with roster's `ok` as the second-factor rule, search planned into `Holder.Get`/`Holder.Search`/`Email.Get`/`Holder.List` and evaluated off the BER tree, paging on roster's own cursor, `uid` and `mail` found without regard to case. `roster ldap serve` with `--key`/`ROSTER_LDAP_KEY_`, `--base`, `--bind`, `--tls`, `--listen-tls`, `--require-tls`. The import check learned `ldap/`. Eight tests in `ldap/`, one in `cmd/` |
 | L2 | groups, teams, sites | **done** — `ou=groups` as `groupOfNames` with `member` the DNs of people in the tree (the disabled are not named), `ou=sites/ou=<site>/ou=teams/cn=<team>` and `ou=teams` under the suffix for a team with no site, `memberOf` on a person from the other end, `(memberOf=…)` planned into one membership list. A subtree search from a suffix or the root pages in stages -- people on roster's cursor, then the groups, then the sites -- carried in the cookie, so a client paging the whole server sees every entry once. `TestGroupsTeamsAndSitesAreTheTree` |
-| L3 | shipped | **done** — the `ldap` compose service on `1389` with its key from `customer.sh`, `operating.md` § A directory, over LDAP, `ways-in.md` on app passwords, `baseline.md` § A directory over LDAP, the account page's *mint an app password* form and its spec, and this file as a description |
+| L3 | shipped | **done** — the `ldap` compose service on `1389` with its key from `customer.sh`, `operating.md` § "One process, or four", `usage/ways-in.md` on app passwords, `baseline.md` § A directory over LDAP, the account page's *mint an app password* form and its spec, and this file as a description |

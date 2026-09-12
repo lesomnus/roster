@@ -172,7 +172,7 @@ func SplitMethods(vs []string) []string {
 // is the row as each write left it, so one method answers **every table's
 // contents, across every tenant, across all time** -- including rows long since
 // deleted, since nothing erases a trail row. It is the single widest read this
-// app has, and `cl/trailkey_test.go` is what says so.
+// app has, and `cmd/trailkey_test.go` is what says so.
 //
 // Said rather than refused. A compliance exporter is a real service and this is
 // the method it needs; what is wrong is granting it by reaching for `*` and not

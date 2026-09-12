@@ -13,7 +13,7 @@ import (
 )
 
 // TestAnAddressIsVerifiedByALinkThatSignsNobodyIn is `Email.Verify` and
-// `Email.Confirm` (`ts/plan.md` § D): on the resource, because unlike recovery
+// `Email.Confirm` is on the resource, because unlike recovery
 // there is a row to reference; and worth strictly less than a recovery link,
 // because a mailbox read once must not be an account held.
 //

@@ -20,7 +20,7 @@ import (
 // token in a page is a bearer token in every extension, log line and
 // screenshot that page ever meets. So the delegation stays in this process,
 // beside the session that earned it, and the browser holds the app's own cookie
-// and nothing else (`ts/plan.md`, invariant 6).
+// and nothing else.
 //
 // # Why a proxy and not a handler per feature
 //
@@ -30,7 +30,7 @@ import (
 // hand-made JSON shape rather than to roster. This is the alternative: the page
 // speaks Connect to the app's own origin exactly as the console speaks it to
 // roster, and this hands the call on with two headers changed. The transport is
-// the only thing that differs between the two UIs, which `ts/src/client.ts`
+// the only thing that differs between the two UIs, which `ts/lib/client.ts`
 // says is the whole idea.
 //
 // # What it checks, in the order it checks

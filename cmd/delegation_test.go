@@ -322,7 +322,7 @@ func TestNothingMintsADelegationThatOpensNoDoor(t *testing.T) {
 //
 // The generated `Get` answers with whatever it is asked for, and one of those
 // is the verifier -- which is why the service was once left off the wire whole.
-// `ts/plan.md` § C opened `Get`, `List` and `Erase`, because a person listing
+// `Get`, `List` and `Erase` are open because a person listing
 // where they are signed in is a read of these rows and a curated copy on
 // `MeService.Get` would have been a second name for them. What makes that safe
 // is the layer roster already has for every `(payday.field).secret`: the sink

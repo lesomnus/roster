@@ -75,7 +75,7 @@ roster group add @newco/oncall
 
 echo '{"group": {"slug":{"alias":"oncall","tenant":{"alias":"newco"}}},
        "holder":{"slug": {"alias":"alice", "tenant":{"alias":"newco"}}}}' \
-  | roster groupmembership add -
+  | roster group-membership add -
 
 echo '{"role": {"slug":{"alias":"support","tenant":{"alias":"newco"}}},
        "group":{"slug":{"alias":"oncall", "tenant":{"alias":"newco"}}}}' \
@@ -122,7 +122,7 @@ roster team add @newco/eu-ops '{"site":{"slug":{"alias":"eu","tenant":{"alias":"
 echo '{"team":  {"slug": {"alias":"eu-ops","site":{"slug":{"alias":"eu","tenant":{"alias":"newco"}}}}},
        "holder":{"slug": {"alias":"alice", "tenant":{"alias":"newco"}}},
        "role":  {"slug":{"alias":"eu-support","tenant":{"alias":"newco"}}}}' \
-  | roster teammembership add -
+  | roster team-membership add -
 ```
 
 **A team is named within its site, not its tenant.** `TeamRefBySlug` carries a
@@ -177,7 +177,43 @@ from somebody who already held it.
 
 So a command succeeding at a shell says nothing about whether a caller could
 make the same write. If you are working out what a role needs, test it as a
-caller — `client.addr` with a key, or the tutorial's last section.
+caller -- `client.addr` with a key ([cli.md](cli.md)), or the tutorial's last
+section.
+
+## And you cannot write a way into an account wider than yours
+
+The second rule, and the one that does not look like permissions. Resetting a
+password is a way to become somebody, so every write that adds one is refused
+unless that person's permissions are a subset of the caller's:
+
+| | |
+| --- | --- |
+| `CredentialService/Set`, `/Issue`, `/Unlock` | their secret |
+| `CredentialService/Enrol` | their second factor |
+| `IdentityService/Add` | an account at a provider that signs in as them |
+| `EmailService/Add` | a mailbox a recovery link is sent to |
+| `ApiKeyService/Add`, `/Issue` | a key that **acts as** them |
+
+The middle two are worth reading twice before granting. They sound like keeping a
+directory tidy, and each is a way to sign in as whoever the row is about: link an
+account you control to somebody's `Holder`, or put a mailbox you read on it and
+ask for a link.
+
+**What counts as theirs is wider than what they may hand out.** Somebody
+provisioned as an administrator through a `TeamMembership`, or through a `Group`,
+holds those permissions *for this rule* even though they may not bind them
+anywhere. The two readings differ on purpose: missing a path in the first rule
+refuses a grant somebody could have made, which is a conversation, and missing one
+in the second lets an administrator be reset by anybody.
+
+Changing your own is always allowed, and nothing here stops you **suspending** an
+administrator -- that is a denial of service rather than an escalation, and it is
+deliberately not covered. `server/core/escalate.go` is both rules, with the file
+comment that says how they were arrived at.
+
+⚠️ On `admin.addr` these are **waived**, because an operator's standing there comes
+from the port rather than from a role: [operating.md](../operating.md) § "What the
+admin port waives" is the whole of it.
 
 ## Seeing what somebody holds
 

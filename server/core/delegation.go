@@ -17,7 +17,7 @@ import (
 // coreDelegation is the layer over the generated `DelegationService`.
 //
 // The service is served: `Revoke`, the delete a sign-out makes with a token in
-// hand, and -- since `ts/plan.md` § C -- `Get`, `List` and `Erase`, so a person
+// hand, and `Get`, `List` and `Erase` beside it, so a person
 // sees where they are signed in and ends one by reference. The token in
 // `secret` never travels: the sink strips it on the way out like every other
 // secret, and this layer holds the rows to `mayReach`. `Add` stays closed,

@@ -14,7 +14,7 @@ import (
 )
 
 // TestSomebodySeesWhereTheyAreSignedInAndEndsOne is `Delegation.List` and
-// `Delegation.Erase` on the wire (`ts/plan.md` § C): the entity's own verbs,
+// `Delegation.Erase` on the wire: the entity's own verbs,
 // served behind the layer that strips the token and the rule that narrows the
 // rows, instead of a curated field on `Me.Get`.
 //

@@ -24,7 +24,7 @@ The cast is the one the tests use:
 | **contoso** | a customer of this deployment, and **fabrikam** is another one |
 | **seoul**, **frankfurt** | the two places contoso runs the product |
 | **alice** | somebody at contoso, who signs in with a password |
-| **erin** | an contoso engineer, who arrives from contoso's Entra |
+| **erin** | a contoso engineer, who arrives from contoso's Entra |
 | **admin** | not at contoso at all — whoever runs this deployment, and the only one of the four who uses the console |
 
 Nothing contoso writes is visible to fabrikam, and that is the first fact rather
@@ -597,35 +597,41 @@ retired number to something else makes old trail rows say the wrong word. 5 and
 6 are a gap payday keeps for itself, which is why an app's own entities start at
 7.
 
+**Declared in** is where the schema is -- `proto/app/` for roster's own, the
+copied-in `proto/roster/payday/` for the four it inherits, and *+ overlay* for the
+two it adds fields to in `proto/ext/payday/`. The fields are **not** listed here on purpose: a column list
+in prose is wrong on the commit that adds a field, and the declaration is two
+clicks away and carries the argument as well.
+
 **Wall** is how the tenant a row belongs to is reached. **Watch** is whether the
 entity streams its changes. **Erase** is soft (stamped, and the row stays) or
 hard (gone).
 
-| entity | domain | wall | watch | erase | columns of its own |
+| entity | domain | wall | watch | erase | declared in |
 | --- | --- | --- | --- | --- | --- |
-| 🏢 `Tenant` | 1 | the wall itself | -- | hard | `alias`, `name`, `desc`, `labels` |
-| 👤 `Holder` | 2 | `tenant` edge | yes | soft | `alias`, `name`, `desc`, `labels`, `idp_subject`, `profile`, `data`, `date_invalidated`, `date_disabled` |
-| 📖 `Audit` | 3 | `tenant_id` OR `actor_tenant_id` OR `counterpart_tenant_id` | -- | hard | `actor_id`, `trace_id`, `action`, `object_id`, `patch`, `value`, `domain` |
-| 📤 `Outbox` | 4 | `global:` — served to nobody | -- | hard | `actor_id`, `method`, `by`, `object_id`, `patch` |
-| 📍 `Site` | 7 | `tenant` edge | yes | soft | `alias`, `name`, `desc`, `labels` |
-| 🪪 `Identity` | 8 | via `holder.tenant`, stamped | yes | soft | `provider`, `subject` |
-| 📧 `Email` | 9 | via `holder.tenant`, stamped | yes | soft | `address`, `date_verified`, `vouched_by` |
-| 🎽 `Team` | 10 | `tenant` edge | yes | soft | `alias`, `name`, `desc`, `site` |
-| 🚩 `SiteMembership` | 11 | via `holder.tenant` | yes | soft | `holder`, `site` |
-| 🏅 `TeamMembership` | 12 | via `holder.tenant` | yes | soft | `holder`, `team`, `role` |
-| 🔒 `Credential` | 13 | via `holder.tenant` | yes | soft | `name`, `kind`, `secret`, `failures`, `date_locked`, `date_rotated`, `last_step` |
-| 🔑 `ApiKey` | 14 | via `holder.tenant` | -- | soft | `alias`, `desc`, `methods`, `secret`, `date_used`, `date_expires` |
-| 📜 `Role` | 15 | `tenant` edge | -- | soft | `alias`, `name`, `desc`, `methods`, `site` |
-| 👥 `Group` | 16 | `tenant` edge | -- | soft | `alias`, `name`, `desc`, `site` |
-| 🫂 `GroupMembership` | 17 | via `holder.tenant` | -- | soft | `holder`, `group` |
-| 🔗 `Binding` | 18 | via `role.tenant` | -- | soft | `role`, `site`, `holder`, `group` |
-| 🎫 `Delegation` | 19 | via `holder.tenant` | -- | soft | `methods`, `secret`, `issuer`, `date_expires` |
-| 🌐 `Host` | 20 | `tenant` edge | -- | soft | `name`, `desc` |
-| 📮 `MailDomain` | 21 | `tenant` edge | -- | soft | `name`, `provider`, `desc` |
-| ⏳ `Continuation` | 22 | via `holder.tenant` | -- | soft | `satisfied`, `secret`, `issuer`, `metered_by`, `date_expires` |
-| ✨ `Link` | 23 | via `holder.tenant` | -- | soft | `secret`, `issuer`, `date_expires` |
-| 🍪 `Session` | 24 | via `holder.tenant` | -- | soft | `grant`, `secret`, `date_expires`, `date_idle` |
-| 🔌 `Connection` | 25 | `tenant` edge | -- | soft | `name`, `desc`, `issuer`, `client_id`, `scopes`, `secret_ref` |
+| 🏢 `Tenant` | 1 | the wall itself | -- | hard | `proto/roster/payday/tenant.proto` + overlay |
+| 👤 `Holder` | 2 | `tenant` edge | yes | soft | `proto/roster/payday/holder.proto` + overlay |
+| 📖 `Audit` | 3 | `tenant_id` OR `actor_tenant_id` OR `counterpart_tenant_id` | -- | hard | `proto/roster/payday/audit.proto` |
+| 📤 `Outbox` | 4 | `global:` — served to nobody | -- | hard | `proto/roster/payday/outbox.proto` |
+| 📍 `Site` | 7 | `tenant` edge | yes | soft | `proto/app/site.proto` |
+| 🪪 `Identity` | 8 | via `holder.tenant`, stamped | yes | soft | `proto/app/identity.proto` |
+| 📧 `Email` | 9 | via `holder.tenant`, stamped | yes | soft | `proto/app/email.proto` |
+| 🎽 `Team` | 10 | `tenant` edge | yes | soft | `proto/app/team.proto` |
+| 🚩 `SiteMembership` | 11 | via `holder.tenant` | yes | soft | `proto/app/membership.proto` |
+| 🏅 `TeamMembership` | 12 | via `holder.tenant` | yes | soft | `proto/app/membership.proto` |
+| 🔒 `Credential` | 13 | via `holder.tenant` | yes | soft | `proto/app/credential.proto` |
+| 🔑 `ApiKey` | 14 | via `holder.tenant` | -- | soft | `proto/app/apikey.proto` |
+| 📜 `Role` | 15 | `tenant` edge | -- | soft | `proto/app/role.proto` |
+| 👥 `Group` | 16 | `tenant` edge | -- | soft | `proto/app/group.proto` |
+| 🫂 `GroupMembership` | 17 | via `holder.tenant` | -- | soft | `proto/app/group.proto` |
+| 🔗 `Binding` | 18 | via `role.tenant` | -- | soft | `proto/app/role.proto` |
+| 🎫 `Delegation` | 19 | via `holder.tenant` | -- | soft | `proto/app/delegation.proto` |
+| 🌐 `Host` | 20 | `tenant` edge | -- | soft | `proto/app/host.proto` |
+| 📮 `MailDomain` | 21 | `tenant` edge | -- | soft | `proto/app/host.proto` |
+| ⏳ `Continuation` | 22 | via `holder.tenant` | -- | soft | `proto/app/continuation.proto` |
+| ✨ `Link` | 23 | via `holder.tenant` | -- | soft | `proto/app/link.proto` |
+| 🍪 `Session` | 24 | via `holder.tenant` | -- | soft | `proto/app/session.proto` |
+| 🔌 `Connection` | 25 | `tenant` edge | -- | soft | `proto/app/connection.proto` |
 
 `id` and `date_created` are on everything and are left out above, and so are
 `date_updated` and `date_erased` wherever an entity has them. Neither is

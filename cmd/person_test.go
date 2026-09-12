@@ -11,7 +11,7 @@ import (
 )
 
 // TestAnOperatorFinishesAPerson is the rest of the person panel
-// (`ts/src/people.tsx`), made as the panel makes it: on the admin port, with the
+// (`ts/console/people.tsx`), made as the panel makes it: on the admin port, with the
 // operator's session, about one of a customer's people.
 //
 // Four writes the panel grew and the reads beside them. An address added and
@@ -21,8 +21,8 @@ import (
 // needs no escalation rule because taking a way in away is not adding one --
 // but meets D42's rule like everybody else: the **last** way in is not taken
 // away by anybody, operator included, because an operator who means to shut
-// somebody out has `Disable` and does not need to strand them (`ts/plan.md`
-// § I, verified here); a profile replaced whole through
+// somebody out has `Disable` and does not need to strand them, verified here;
+// a profile replaced whole through
 // `Holder.Update`; and the person erased, softly, after which no read finds
 // them and the trail still does.
 func TestAnOperatorFinishesAPerson(t *testing.T) {

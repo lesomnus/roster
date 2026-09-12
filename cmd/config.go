@@ -146,7 +146,8 @@ type Config struct {
 	// roster's and not payday's, and that is where the line falls: payday holds
 	// the trail and offers the half of forgetting that has no judgement in it,
 	// and *which rows are a person's* is a fact about this app's schema that no
-	// framework can read. See `server/forget` and `docs/RUNTIME.md` §7.
+	// framework can read. See `server/forget`, and `docs/operating.md` §
+	// "Destroying somebody, which an erase does not" for the operator's half.
 	Holder HolderConfig `yaml:"holder"`
 }
 

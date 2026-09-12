@@ -178,8 +178,8 @@ at all:
   so one written on the administrator's row is a credential for the
   administrator.
 
-The local CLI is outside both, like every local command — see
-[README.md](README.md) § a note on the CLI.
+The local CLI is outside both, like every local command -- see
+[cli.md](cli.md) § "Two modes".
 
 ## A delegation — `rd_`
 
@@ -205,6 +205,45 @@ caller without resolving to a row and there is nothing to compare.
 An app asks for one at the moment it needs it, and a shell can too:
 `roster vouch delegate` prints one for scripting the same flow, bound to the
 key in `client.auth` exactly as an app's would be.
+
+### What a key means, to the app that was handed one
+
+A token somebody pastes into a script means something only here, so the app that
+receives it has to ask:
+
+```
+payday.TokenService/Introspect { token: "rt_…" }
+  → who it stands for, and what it was narrowed to
+```
+
+The app asks with **its own** key, which is the whole of the trust decision and is
+per app. Two things about the answer: it is about the **holder** rather than the
+key, so an app resolves it against its own rows; and it sees only **this plane's**
+keys -- the `rk_`s `roster key add` mints live in the other database, and there is
+no query from one to the other, so they are not refused here, they are invisible.
+
+## Somebody's own record
+
+```
+MeService.Get {}      # takes nothing, answers about the caller
+```
+
+Their identifiers, addresses, teams, every method they may call, and the three
+ways in that resolve to them -- the credentials roster holds, the provider accounts
+somebody else does, and the keys that act as them. The method list is the union the
+server enforces, so what a page shows and what it is allowed to do cannot drift.
+
+It needs **no role**: requiring one to learn that you hold none is a deployment
+where a new account cannot be told what it is for. `MeService/Unlink` and
+`MeService/SignOutEverywhere` are waived for the same reason -- neither can be
+pointed at anybody else, and only a subject-less method can be waived at all.
+
+Everything else a person does about their own row is the **operator's verb with
+their own reference**: `IdentityService/Add` to attach a provider account,
+`ApiKeyService/Issue` and `/Erase` for their own keys. There is no self-only twin
+of a verb anywhere in roster, and the two rules in
+[permissions.md](permissions.md) are what keep such a write no wider than the
+person making it. `examples/sso` draws all of it.
 
 ## An account somewhere else — an identity
 

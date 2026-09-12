@@ -73,8 +73,8 @@ fi
 go tool pd doctor .
 go tool pd gen --check --ts .
 
-# That the account app is a consumer and only a consumer (`account/`, and
-# `ts/plan.md`'s first invariant): it reaches roster over the wire with a key
+# That the account app is a consumer and only a consumer (`account/`): it
+# reaches roster over the wire with a key
 # an operator minted, and if it could reach past that it would be the second
 # thing in this repository that can. `server/front` is the one exception --
 # `Hostname`, a pure function both sides have to agree on.

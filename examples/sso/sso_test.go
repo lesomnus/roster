@@ -1484,7 +1484,7 @@ func TestSigningOutEverywhereEndsBothHalves(t *testing.T) {
 // provider they already use -- one per person, which `server/core` refuses
 // because *a second one is a link that found the wrong row*. The success path
 // wants a second provider and is asserted where roster is, in
-// `cmd/melink_test.go`.
+// `cmd/ownway_test.go`.
 func TestAddingAWayInIsRoutedNow(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()

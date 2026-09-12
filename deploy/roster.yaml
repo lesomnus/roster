@@ -41,7 +41,7 @@ spec:
     - { name: http, port: 8061, targetPort: control-http }
 ---
 # roster itself: the data plane, the control plane, and the Login App, in one
-# process. `docs/operating.md` § "One process, or three" is whether it should
+# process. `docs/operating.md` § "One process, or four" is whether it should
 # be, and the answer is a deployment's.
 apiVersion: v1
 kind: Service

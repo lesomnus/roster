@@ -8,8 +8,8 @@ then write the part no schema can state.
 is how it was built, what is open, and how far new work has got -- **update its
 progress table in the same commit as the work.** A decision's why is written
 beside the thing it decides -- a file comment, a proto comment, the relevant doc
--- never in a central log; there no longer is one. `README.md` is the long
-version of the mechanics below.
+-- never in a central log; there no longer is one. `docs/development.md` is the
+long version of the mechanics below, and `docs/README.md` maps the rest.
 
 ## The one rule
 
@@ -364,7 +364,7 @@ serve` is roster as a directory for clients that speak nothing else.
 Those two are also **blocks** — `account:` and `ldap:`, named is a listener and
 empty is nowhere — so `roster serve` opens them and a deployment need not be
 three containers to run one binary. Which to want is a question about blast
-radius and it is the deployment's: `docs/operating.md`, "One process, or three",
+radius and it is the deployment's: `docs/operating.md`, "One process, or four",
 and `cmd/consumers.go` for why it is not this repository's answer.
 
 **Either way they are consumers that reach roster only over the wire**
@@ -402,6 +402,8 @@ a browser holds and `auth` reads credentials rather than making them.
   baseline test is never weakened to let a change pass.**
 - `docs/relying-party.md` — the two shapes an app takes in front of the issuer,
   the two runnable ones, and the API each uses
-- `README.md` — the same ground at length, including upgrading payday
+- `docs/README.md` — the map of all of it, by the question each page answers
+- `docs/development.md` — the mechanics above at length: generation, upgrading
+  payday, the three pages, the sandbox, and what the generator refuses
 - <https://github.com/lesomnus/payday/tree/main/docs> — the guides and the
   references behind them

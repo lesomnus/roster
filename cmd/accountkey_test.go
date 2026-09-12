@@ -18,7 +18,7 @@ import (
 )
 
 // TestAnAccountAppHoldsOneTenantsKeyAndReachesOnlyThatTenant is the spike
-// `ts/plan.md` § E asked for, and the fact P4 is built on.
+// the account app is built on.
 //
 // An account app that fronts several operators has two credentials to choose
 // from. A deployment key (`rk_`) resolves to a frame with **no tenant** and the

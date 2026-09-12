@@ -31,7 +31,7 @@ import (
 )
 
 // TestABrowserSpeaksConnectToTheAppAndRosterAnswersAsThePerson is the spike
-// `ts/plan.md` § F asked for: one `Me.Get`, spoken by a browser to the app's
+// One `Me.Get`, spoken by a browser to the app's
 // own origin in the protocol the console speaks to roster, handed on with the
 // delegation swapped in, answered by roster about the person who signed in.
 //

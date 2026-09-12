@@ -663,10 +663,10 @@ roster login doctor --hydra … --client contoso=demo,behind,itself
 | | what it answers | in |
 | --- | --- | --- |
 | `roster login doctor` | are the clients registered in a way this stack works with, and what was Hydra **told** | a second |
-| `docker/flow.sh` | does a real Hydra's protocol fit the Login App | compose |
-| `docker/behind.sh` | does a **standard third party** accept this issuer, and what does its session say | compose |
+| `docker/flow.sh` | does a real Hydra's protocol fit the Login App | compose, and a cluster |
+| `docker/behind.sh` | does a **standard third party** accept this issuer, and what does its session say | compose, and a cluster |
 | `docker/itself.sh` | do the URLs **our app builds** work | compose, and a cluster |
-| `scripts/cluster.sh` | does any of it work over the real manifests, with no `--dev` | k3d |
+| `scripts/cluster.sh` | does any of it work over the real manifests, with no `--dev` -- including **after the registration changes under the running pods** | k3d |
 
 `login/doctor.go` is the cheapest of them and the one that would have caught
 three of the four defects a person found in a browser: a missing
@@ -689,11 +689,15 @@ URL in every walk. `scripts/cluster.sh` is where that is paid, and three rules
 - the Login App answers **404** at `/login` unless `login.page.dir` says where
   the page is, which from a browser looks like the issuer is broken
 
-What none of them see yet is in roster issue #12: being **behind a proxy**, since
-Hydra terminates TLS itself in the rig, so `X-Forwarded-Proto` and `r.TLS` are
-exercised nowhere -- and a **registration changed under a running pod**, which is
-the `AuthStyle` story above and is invisible to any gate that starts a fresh
-process.
+The two shapes that used to be covered nowhere (roster issue #12, closed) are
+both in `scripts/cluster.sh` now, and each needs a cluster for its own reason.
+**A registration changed under a running pod** is the `AuthStyle` story above,
+invisible to every gate that starts a fresh process: the rig changes the declared
+client, re-syncs, and asserts that a sign-in fails, that **restarting the app does
+not cure it**, and that putting the registration back cures it with no restart.
+**Behind something that ends TLS** is the other: an nginx in front of Hydra with
+the issuer's public name, so `X-Forwarded-Proto` is exercised and nothing in the
+stack serves its own TLS.
 
 ## See also
 

@@ -86,7 +86,7 @@ func ready(ctx context.Context, s *cmd.Server, c config.DbConfig) error {
 // NewCmdServe is `<app> serve`.
 //
 // It is the app's own and not payday's, for the reason at the top of
-// `cl/config.go`: the body of this command is the stack, and a framework that
+// `cmd/config.go`: the body of this command is the stack, and a framework that
 // supplied it would be hiding the one thing a reader of an app most needs to
 // see.
 func NewCmdServe(c *cmd.Config) *xli.Command {

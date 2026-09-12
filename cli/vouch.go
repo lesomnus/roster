@@ -49,7 +49,7 @@ import (
 //
 // # The keyring travels with it; the corpus is core's
 //
-// Built the way `cl/admin.go` builds the same service. The keyring is handed
+// Built the way `cmd/admin.go` builds the same service. The keyring is handed
 // to the vouch server, for the seed `enrol` wraps. The leaked-password corpus
 // is not: it moved to `core` with the credential write, so `reset` and `set`
 // run it through the layer -- this command reaches the same `Ungated` stack
@@ -87,7 +87,7 @@ func NewCmdVouch(c *cmd.Config) *xli.Command {
 
 // vouching is the service these three call, and the deployment that answers it.
 //
-// `Ungated` on both arguments, which is what `cl/admin.go` passes as well:
+// `Ungated` on both arguments, which is what `cmd/admin.go` passes as well:
 // the wall narrows by a tenant the caller belongs to, and there is no caller.
 func vouching(ctx context.Context, c *cmd.Config) (*cmd.Server, *vouch.Server, error) {
 	s, err := cmd.Build(ctx, *c)

@@ -442,7 +442,7 @@ const needs = [
  * together split across them and nothing erroring.
  *
  * It was `roster init --tenant-id` and had nowhere to go when `init` stopped
- * making customers. `docs/operating.md` carries the warning.
+ * making customers. `docs/usage/customers.md` § "Giving it an identifier" carries the warning.
  */
 async function stand(
 	admin: Admin,

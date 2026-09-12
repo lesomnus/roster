@@ -14,7 +14,7 @@ server:
     allow_web: true
 
 # SQLite on a volume, which is what a deployment of this size wants and what
-# `docs/operating.md` § "Which database" says the trade is. An overlay that
+# `docs/operating.md` § "Which database" says what the trade is. An overlay that
 # outgrows it replaces `db:` and `control.db:` and changes nothing else.
 db:
   driver: sqlite3

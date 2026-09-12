@@ -171,7 +171,7 @@ person and a session, `Door.Acting` makes a request that person, and
 `Door.Proxy` hands their calls on. An app that wants its own sign-in has most
 of one already.
 
-The Hydra glue is here now, and it is the third consumer: `login/`, a process
+The Hydra glue is here now, and it is a consumer like the other two: `login/`, a process
 that reads a `login_challenge`, draws the form through the same `frontdoor`, and
 answers `acceptLoginRequest{subject}` with a `Holder.id`. This document said for
 months that writing it was small and that the identity half did not change; both
@@ -367,7 +367,8 @@ in the first refuses a grant somebody could have made, which is a conversation.
 Missing one in the second is an administrator that reads as holding nothing, and
 anybody who may reset a password can become them.
 
-`operating.md` has the operator's half of both.
+[usage/permissions.md](usage/permissions.md) has both rules as an operator meets
+them, and `server/core/escalate.go` is the code.
 
 ## Two planes, one schema
 

@@ -117,7 +117,7 @@ func TestNobodyMintsAKeyWiderThanThemselves(t *testing.T) {
 // minter holds is a credential for the administrator, written by somebody who
 // could not otherwise reach them.
 //
-// `core/apikey.go` records exactly this as the finding the methods check alone
+// `server/core/apikey.go` records exactly this as the finding the methods check alone
 // left open, one door over. This is the same door reached from the wire.
 func TestNobodyMintsAKeyOnSomebodyElsesAccount(t *testing.T) {
 	x := require.New(t)
