@@ -63,6 +63,7 @@ spec:
             capabilities: { drop: ["ALL"] }
           volumeMounts:
             - { name: data, mountPath: /data }
+            - { name: tmp, mountPath: /tmp }
 
       containers:
         - name: hydra
@@ -142,13 +143,29 @@ spec:
           volumeMounts:
             - { name: data, mountPath: /data }
             - { name: tls, mountPath: /tls, readOnly: true }
+            - { name: tmp, mountPath: /tmp }
 
       volumes:
         # Made by `scripts/cluster.sh` and not checked in, unlike the fake
         # secrets beside it: a certificate expires, so one in git is a rig that
         # works until a date nobody wrote down.
         - name: tls
-          secret: { secretName: roster-hydra-tls }
+          secret:
+            secretName: roster-hydra-tls
+            # **Optional**, for `clients.yaml`'s reason and with a sharper edge
+            # here: a deployment that ends TLS at its ingress has no such Secret
+            # at all, and a volume that is not optional is a **pod that never
+            # starts**. Found by writing the overlay for a real deployment, where
+            # it was the one thing that would have stopped it coming up.
+            optional: true
+        # Somewhere writable. `readOnlyRootFilesystem: true` is right and it is
+        # not the whole story: a Go toolchain and TLS both want a temporary
+        # directory, and finding that out at run time is a pod that works until
+        # the day something needs one. Cheap insurance rather than a discovered
+        # requirement, which is how the deployment that had this before the base
+        # did put it.
+        - name: tmp
+          emptyDir: {}
         # An overlay that wants this to survive a node replaces it with a claim.
         - name: data
           emptyDir: {}

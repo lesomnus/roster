@@ -86,6 +86,14 @@ spec:
         app.kubernetes.io/name: roster
         app.kubernetes.io/component: server
     spec:
+      # **No service-link environment variables.**
+      #
+      # roster reports a `ROSTER_` variable no field answers to, because that is
+      # what a typo looks like. Kubernetes injects one pair per Service in the
+      # namespace, and fifty-seven of them turned that warning into noise that
+      # would hide the line it exists for -- a real `ROSTER_LOGIN_ADDRR` as entry
+      # fifty-eight. Nothing here reads them and nothing should.
+      enableServiceLinks: false
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532
@@ -117,6 +125,7 @@ spec:
             - { name: data, mountPath: /data }
             - { name: control, mountPath: /control }
             - { name: login, mountPath: /run/login }
+            - { name: tmp, mountPath: /tmp }
 
       containers:
         - name: roster
@@ -166,6 +175,7 @@ spec:
             # Read-only here and written by the init container: the server is
             # not the thing that mints its own credential.
             - { name: login, mountPath: /run/login, readOnly: true }
+            - { name: tmp, mountPath: /tmp }
 
       volumes:
         - name: config
@@ -183,4 +193,11 @@ spec:
         # This one **is** a pod's lifetime, on purpose: the key is minted at
         # every start and a stale one left behind is a credential to revoke.
         - name: login
+          # **In memory**, so it is never on a disk: it holds a live credential,
+          # and one that outlived the process would be one nobody remembers to
+          # revoke.
+          emptyDir: { medium: Memory }
+        # Somewhere writable, because `readOnlyRootFilesystem` is right and a Go
+        # toolchain and TLS both want a temporary directory anyway.
+        - name: tmp
           emptyDir: {}
