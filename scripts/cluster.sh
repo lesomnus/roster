@@ -26,13 +26,24 @@
 # network, and the kubeconfig is rewritten to the in-network address. It is the
 # same constraint `docker/flow.sh` already works under.
 #
+# # And then the flow, and the one class a fresh cluster cannot see
+#
+# `docker/itself.sh` runs as a Job **inside** the cluster -- the same script
+# `scripts/hydra.sh` runs against compose, told three addresses -- so a product
+# goes round the loop over the real manifests against a Hydra with no `--dev`.
+#
+# After which the registration is **changed under the running pods** and the
+# whole thing is asked again. That is the shape of the outage every other gate
+# here is blind to (#12), and the last phase is what says it cannot happen
+# quietly.
+#
 # # What it does not do yet
 #
-# Sign anybody in. That needs TLS in front (Hydra outside `--dev` refuses an
-# `http://` issuer) and a relying party, and then it would be `docker/`'s walks
-# pointed at this instead of at compose. Until then what this checks is that
-# the manifests stand up and the contract holds, which is the half every defect
-# so far was in.
+# Put anything **behind a proxy**. Hydra terminates TLS itself here, so
+# `X-Forwarded-Proto` and an app reading `r.TLS` are exercised nowhere -- and a
+# deployment ends TLS at its ingress. `docker/flow.sh` and `docker/behind.sh`
+# are still compose-only as well; `behind.sh` is the oauth2-proxy shape, which
+# is half of what a deployment runs.
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -75,6 +86,71 @@ cleanup() {
 	fi
 }
 trap cleanup EXIT
+
+# settled is a Job's outcome: 0 complete, 1 failed, 2 still going after `secs`.
+#
+# `kubectl wait --for=condition=complete` is the obvious call and is wrong for
+# the last phase here, where a **failure is the expected answer**: it would
+# spend its whole timeout on it. So both conditions are watched, which costs a
+# poll and buys an answer as soon as there is one.
+settled() {
+	local job="$1" secs="${2:-300}" i=0 t
+	while [ "${i}" -lt "${secs}" ]; do
+		t="$(kube "kubectl -n ${NS} get job/${job} -o jsonpath='{.status.conditions[*].type}' 2>/dev/null" || true)"
+		case " ${t} " in
+		*" Complete "*) return 0 ;;
+		*" Failed "*) return 1 ;;
+		esac
+
+		i=$((i + 5))
+		sleep 5
+	done
+
+	return 2
+}
+
+# walk is `docker/itself.sh` in the cluster, once, with its output on stdout
+# whichever way it went. Deleted first because a Job's pod template is
+# immutable, so an `apply` over a finished one is refused.
+walk() {
+	kube "kubectl -n ${NS} delete job roster-walk --ignore-not-found >/dev/null 2>&1; kubectl -n ${NS} apply -f /w/walk.yaml >/dev/null"
+
+	local out=0
+	settled roster-walk || out=$?
+	kube "kubectl -n ${NS} logs job/roster-walk" || true
+
+	return "${out}"
+}
+
+# resync is the two Jobs in `clients.yaml`, run the way a sync runs them: the
+# one that writes the clients, and then the one that checks what Hydra now
+# holds. 0 both fine, 1 the check went red, 2 it never finished, 3 the write
+# itself failed.
+#
+# **The order is the whole of this function**, and leaving it to `apply` is a
+# bug this rig had: the manifests say `sync-wave: "0"` then `"1"` and Argo
+# honours that, while plain `kubectl apply` starts both at once. So the check
+# read a registration the sync had not written yet -- which passed, and which
+# made the phase that changes a registration report that nothing was wrong with
+# it. Applying twice, with the check deleted in between, is the re-sync that
+# puts it second.
+resync() {
+	kube "kubectl -n ${NS} delete job --all >/dev/null 2>&1; kubectl -n ${NS} apply -k /w/deploy >/dev/null"
+	settled roster-hydra-clients || return 3
+
+	kube "kubectl -n ${NS} delete job roster-hydra-clients-check >/dev/null 2>&1; kubectl -n ${NS} apply -k /w/deploy >/dev/null"
+
+	local out=0
+	settled roster-hydra-clients-check || out=$?
+
+	return "${out}"
+}
+
+# product is the pod serving the relying party, by uid. Which pod it is matters
+# for exactly one assertion and it is the assertion the last phase is about.
+product() {
+	kube "kubectl -n ${NS} get pod -l app.kubernetes.io/component=product -o jsonpath='{.items[0].metadata.uid}'"
+}
 
 echo "== from nothing"
 k3d cluster delete "${CLUSTER}" >/dev/null 2>&1 || true
@@ -184,13 +260,16 @@ kube "kubectl -n ${NS} logs deploy/roster --tail=200 | grep -E 'login - addr'" \
 
 echo
 echo "== the clients, as hydra has them"
-# The Jobs are Argo hooks, so nothing here runs them in order: delete and
-# re-apply, then read what they said.
-kube "kubectl -n ${NS} delete job --all >/dev/null 2>&1; kubectl -n ${NS} apply -k /w/deploy >/dev/null"
-kube "kubectl -n ${NS} wait --for=condition=complete job/roster-hydra-clients --timeout=180s >/dev/null"
+# The Jobs are Argo hooks, so nothing here runs them: `resync` does, in the
+# order the waves ask for.
+ran=0
+resync || ran=$?
 kube "kubectl -n ${NS} logs job/roster-hydra-clients"
-kube "kubectl -n ${NS} wait --for=condition=complete job/roster-hydra-clients-check --timeout=180s >/dev/null" \
-	|| { echo; echo "cluster: the check refused this deployment:"; kube "kubectl -n ${NS} logs job/roster-hydra-clients-check"; exit 1; }
+case "${ran}" in
+0) ;;
+3) echo "cluster: the clients were not applied at all" >&2; exit 1 ;;
+*) echo; echo "cluster: the check refused this deployment:"; kube "kubectl -n ${NS} logs job/roster-hydra-clients-check"; exit 1 ;;
+esac
 kube "kubectl -n ${NS} logs job/roster-hydra-clients-check"
 
 # **Somebody to sign in as**, which `deploy/` deliberately does not declare:
@@ -254,13 +333,120 @@ echo "erin, with a password"
 
 echo
 echo "== the flow, in the cluster"
-kube "kubectl -n ${NS} delete job roster-walk --ignore-not-found >/dev/null 2>&1; kubectl -n ${NS} apply -f /w/walk.yaml >/dev/null"
-if ! kube "kubectl -n ${NS} wait --for=condition=complete job/roster-walk --timeout=300s >/dev/null"; then
-	kube "kubectl -n ${NS} logs job/roster-walk"
-	echo "cluster: the walk did not finish" >&2
+walk || { echo "cluster: the walk did not finish" >&2; exit 1; }
+
+# **The class no fresh cluster catches**, and the reason this rig is a rig
+# rather than one more walk (#12).
+#
+# Everything above starts a fresh process, and a fresh process gets the client's
+# authentication method right **whatever it is registered as**:
+# `golang.org/x/oauth2` probes -- the header, then the body -- and caches what
+# worked for the life of that process. So the hour `itself.login-demo` signed
+# nobody in was invisible to every gate: a commit changed the declared client to
+# `client_secret_post`, the sync applied it, and the pods that were **already
+# running** went on sending the header with no second try. Restart them and it
+# works. Run any test and it passes.
+#
+# Two things are asserted here, and neither is about that library being wrong:
+#
+#   1. the deployment's **own** check goes red on the sync that does it, so
+#      somebody is told at push time rather than by a person in a browser
+#   2. the failure is **deterministic** -- it survives a restart, and it clears
+#      without one -- which is what pinning the method in code bought. Before
+#      that, a restart cured it and hid it, which is the property that turned a
+#      configuration mistake into an hour.
+echo
+echo "== and then the registration changes under the running pods"
+
+was="$(product)"
+
+# The change a person made, made the way they made it: the declaration, then a
+# sync. Not a `curl` at the admin API -- that would be this rig inventing a way
+# to break a deployment, where what is worth reproducing is the way a deployment
+# actually breaks.
+python3 - "${work}/deploy/clients/product.json" <<'PY'
+import sys
+
+p = sys.argv[1]
+s = open(p).read()
+assert '"client_secret_basic"' in s, "the client no longer says what this phase changes"
+open(p, "w").write(s.replace('"client_secret_basic"', '"client_secret_post"'))
+PY
+carry
+broke=0
+resync || broke=$?
+[ "${broke}" != "3" ] \
+	|| { kube "kubectl -n ${NS} logs job/roster-hydra-clients"; echo "cluster: the sync that was meant to break it did not run" >&2; exit 1; }
+echo "   the declared client now says client_secret_post"
+
+# And **nothing was restarted**, which is the whole of what makes this the class
+# it is. A rig that recreated the pods here would be testing a fresh process
+# again, which is the thing that was always green.
+now="$(product)"
+[ -n "${now}" ] && [ "${now}" = "${was}" ] \
+	|| { echo "cluster: the product pod was replaced, so this phase is testing a fresh process" >&2; exit 1; }
+echo "   and the app is the pod that was already running"
+
+# 1. The deployment's own gate, on the same sync.
+[ "${broke}" = "1" ] || {
+	echo "cluster: the check passed a registration this stack cannot use (${broke})" >&2
+	kube "kubectl -n ${NS} logs job/roster-hydra-clients-check"
+	exit 1
+}
+kube "kubectl -n ${NS} logs job/roster-hydra-clients-check --tail=20" \
+	| grep -q 'client_secret_post' \
+	|| { echo "cluster: the check went red for some other reason:"; kube "kubectl -n ${NS} logs job/roster-hydra-clients-check"; exit 1; }
+echo "   the sync's own check refuses it, naming the method"
+
+# 2. And a sign-in stops, at the exchange, on the first attempt.
+if walk >/dev/null 2>&1; then
+	echo "cluster: a sign-in worked against a registration the app cannot use, which means this phase proves nothing" >&2
 	exit 1
 fi
-kube "kubectl -n ${NS} logs job/roster-walk"
+kube "kubectl -n ${NS} logs job/roster-walk" | grep -q 'the callback answered 400' \
+	|| { echo "cluster: the walk failed somewhere other than the exchange:"; kube "kubectl -n ${NS} logs job/roster-walk"; exit 1; }
+# The sentence that says which of the app's five checks refused it, which is the
+# other thing that hour cost -- it used to answer 400 and log nothing.
+kube "kubectl -n ${NS} logs deploy/roster-product --tail=50" | grep -q 'would not exchange the code' \
+	|| { echo "cluster: the app did not say why it refused the callback:"; kube "kubectl -n ${NS} logs deploy/roster-product --tail=50"; exit 1; }
+echo "   and a sign-in fails at the exchange, in one line in the app's log"
+
+# 3. **A restart does not cure it**, which is the assertion this whole phase is
+# built to make. A probing client would come up, try the header, be refused, try
+# the body, and work -- so the registration and the code would disagree with
+# nothing to show for it until the next thing to read the registration. The
+# method is in the code now, so a fresh process fails exactly as the old one
+# did.
+kube "kubectl -n ${NS} rollout restart deploy/roster-product >/dev/null"
+kube "kubectl -n ${NS} rollout status deploy/roster-product --timeout=300s >/dev/null"
+if walk >/dev/null 2>&1; then
+	echo "cluster: a restart cured it, so the method is being discovered rather than said -- the defect in #12 is back" >&2
+	exit 1
+fi
+echo "   restarting the app does not cure it, which is the point"
+
+echo
+echo "== and the registration going back is the whole of the fix"
+
+python3 - "${work}/deploy/clients/product.json" <<'PY'
+import sys
+
+p = sys.argv[1]
+s = open(p).read()
+open(p, "w").write(s.replace('"client_secret_post"', '"client_secret_basic"'))
+PY
+carry
+after="$(product)"
+resync || { kube "kubectl -n ${NS} logs job/roster-hydra-clients-check"; echo "cluster: the check still refuses a deployment that is put back" >&2; exit 1; }
+echo "   the check passes again"
+
+# **With no restart**, which is the other half of the method being said rather
+# than discovered: nothing is cached, so there is nothing to clear. A deployment
+# recovers by fixing the declaration and waiting for a sync.
+walk || { echo "cluster: putting the registration back did not sign anybody in" >&2; exit 1; }
+[ "$(product)" = "${after}" ] \
+	|| { echo "cluster: the app restarted during the recovery, so 'no restart' is not what was checked" >&2; exit 1; }
+echo "   and so does the flow, on the pod that never restarted"
 
 echo
 echo "cluster: ok"

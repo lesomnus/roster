@@ -87,6 +87,7 @@ checkout.
 ```sh
 ./scripts/e2e.sh          # the three pages, in a browser
 ./scripts/hydra.sh        # one OAuth flow, through a real Hydra, to an id_token
+./scripts/cluster.sh      # deploy/ in k3d, and the class a fresh process hides
 ```
 
 **Touching `ts/` means running this too.** It stands roster up the way
@@ -96,6 +97,16 @@ account app with Playwright (`ts/e2e/`) -- and the Login App's page against
 port. It is not in `test.sh` because it needs a browser and a minute; it found
 three defects on its first run that every other gate was green on, so it is a
 gate. `./scripts/e2e.sh --hold` leaves the deployment up to look at.
+
+**Touching `examples/product` or `deploy/` means running `cluster.sh`.** It
+stands `deploy/` up in k3d against a Hydra with **no `--dev`**, walks
+`docker/itself.sh` as a Job inside it, and then changes the declared client
+**under the running pods** and walks it again -- because the one class every
+other gate here is blind to is behaviour that only appears when configuration
+changes under a process that is already up (#12). What it pins about that app is
+that the client authentication method is **said in code**: a restart must not
+cure a registration mismatch, and putting the registration back must cure it
+with no restart. Take `AuthStyle` out and the rig fails on that line.
 
 **Touching `login/` means running `hydra.sh`.** It stands `compose.yaml` up
 from **nothing** and walks the flow four ways. Three are `curl` against the

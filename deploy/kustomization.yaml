@@ -8,7 +8,8 @@ resources:
   - ./secrets.yaml
   - ./roster.yaml
   - ./hydra.yaml
-  # Something to sign somebody in to;  says why a rig needs one.
+  # Something to sign somebody in to. `docs/relying-party.md` is what it is --
+  # the shape of app that holds its own token -- and why a rig needs one at all.
   - ./product.yaml
   # The OAuth clients, applied after a sync and then checked.
   - ./clients.yaml
