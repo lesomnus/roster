@@ -173,6 +173,10 @@ func serveAccount(ctx context.Context, ac cmd.AccountConfig) error {
 		Connect:  target,
 		Insecure: ac.Insecure,
 		Keys:     ac.Keys,
+
+		// The same setting the session store is built with below, because this
+		// app sets one cookie the store does not: a provider flow's state.
+		InsecureCookie: ac.InsecureCookie,
 	}
 	if ac.Base != "" {
 		cfg.Base, err = url.Parse(ac.Base)

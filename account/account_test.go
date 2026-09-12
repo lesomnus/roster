@@ -245,6 +245,10 @@ func serve(t *testing.T, enrol account.Enrol) *deployment {
 		Base:     base,
 		Enrol:    enrol,
 		Sessions: sessions(),
+		// Over plain http, like `sessions()` above says: a `Secure` cookie is
+		// one this browser would not send back, and a test that lied about the
+		// scheme would pass while a deployment over http did not.
+		InsecureCookie: true,
 		// The page, standing in for the built UI: the round trips end here.
 		Static: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte("home")) }),
 		// The mailer, standing in for one: it keeps what it was asked to send.

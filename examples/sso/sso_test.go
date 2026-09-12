@@ -326,6 +326,9 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 		Provider:     "example",
 		Scopes:       []string{"email"},
 		Tenants:      tenants,
+		// This harness is plain http, so a `Secure` cookie is one the browser
+		// below would not send back.
+		InsecureCookie: true,
 	}, conn, sessions, enrol(client))
 	x.NoError(err)
 

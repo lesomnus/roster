@@ -93,6 +93,10 @@ type app struct {
 	base       string
 	sessions   *authsession.Sessions
 
+	// insecure is `--insecure-cookie`: what the session store was built with,
+	// kept because the state cookie below is this app's own to mark.
+	insecure bool
+
 	mu    sync.Mutex
 	flows map[string]flow
 }
@@ -183,6 +187,7 @@ func run() error {
 	a := &app{
 		endSession: discovered.EndSession,
 		base:       to.String(),
+		insecure:   *insecure,
 		cfg: &oauth2.Config{
 			ClientID:     *clientId,
 			ClientSecret: *secret,
@@ -278,9 +283,15 @@ func (a *app) begin(w http.ResponseWriter, r *http.Request) {
 	a.flows[state] = flow{expires: now.Add(10 * time.Minute)}
 	a.mu.Unlock()
 
+	// `Secure` from the flag and **not from `r.TLS`**, which is nil in every
+	// deployment that ends TLS at an ingress -- so the guess dropped `Secure`
+	// from a flow's state cookie on exactly the deployments that have a
+	// certificate. `X-Forwarded-Proto` answers it too and is a header a client
+	// can write; which scheme this app is reached over is something whoever
+	// started it knows.
 	http.SetCookie(w, &http.Cookie{
 		Name: "product_state", Value: state, Path: "/",
-		HttpOnly: true, Secure: r.TLS != nil, SameSite: http.SameSiteLaxMode, MaxAge: 600,
+		HttpOnly: true, Secure: !a.insecure, SameSite: http.SameSiteLaxMode, MaxAge: 600,
 	})
 	http.Redirect(w, r, a.cfg.AuthCodeURL(state), http.StatusFound)
 }

@@ -122,6 +122,20 @@ type Config struct {
 	// Sessions is this app's own cookie. Never roster's.
 	Sessions *authsession.Sessions
 
+	// InsecureCookie drops `Secure` from the cookies this app sets itself, for
+	// a page served over plain http in development. It is the same setting
+	// `Sessions` is built with and is here because this app sets one cookie of
+	// its own -- the state of a provider flow -- and that one is not
+	// `authsession`'s to mark.
+	//
+	// **A deployment fact and not a guess.** This read `r.TLS != nil`, which is
+	// nil in every deployment that ends TLS at an ingress -- which is this one,
+	// since this app faces the internet -- so the state cookie of an OIDC flow
+	// went out without `Secure` over https. `X-Forwarded-Proto` would answer it
+	// too and is a header a client can write; what the scheme actually is, is
+	// something the deployment knows and the request does not.
+	InsecureCookie bool
+
 	// Static is the page, or nil for a placeholder that says where the API is.
 	Static http.Handler
 
@@ -603,7 +617,7 @@ func (a *App) start(w http.ResponseWriter, r *http.Request, link bool, who pdid.
 		Value:    state,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   r.TLS != nil,
+		Secure:   !a.c.InsecureCookie,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   600,
 	})

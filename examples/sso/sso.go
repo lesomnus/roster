@@ -116,6 +116,16 @@ type Config struct {
 	// name somebody.
 	Scopes []string
 
+	// InsecureCookie drops `Secure` from the state cookie, for a page served
+	// over plain http -- a development deployment, and this example's own
+	// tests.
+	//
+	// **A deployment fact and not a guess.** This was `r.TLS != nil`, which is
+	// nil behind anything that ends TLS for it, so the one cookie protecting a
+	// flow from being handed to somebody else's browser lost `Secure` on
+	// exactly the deployments that have a certificate.
+	InsecureCookie bool
+
 	// Tenants is which tenant each name this deployment serves belongs to:
 	// "contoso.example.com" -> "contoso".
 	//
@@ -217,6 +227,10 @@ type App struct {
 	sessions *authsession.Sessions
 	enrol    Enrol
 	tenants  map[string]string
+
+	// What [Config.InsecureCookie] said, for the one cookie this app sets that
+	// `sessions` does not.
+	insecureCookie bool
 
 	// `MeService` and `FrontService` are hand-written and so are not among the
 	// entity services `rstr.Client` bundles. `VouchService` is not here at all
@@ -332,6 +346,8 @@ func New(ctx context.Context, c Config, conn *grpc.ClientConn, s *authsession.Se
 		tenants:  c.Tenants,
 		after:    "/",
 
+		insecureCookie: c.InsecureCookie,
+
 		door:  door,
 		me_:   rstr.NewMeServiceClient(conn),
 		front: front,
@@ -434,7 +450,7 @@ func (a *App) start(w http.ResponseWriter, r *http.Request, cookie string) {
 		Value:    state,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   r.TLS != nil,
+		Secure:   !a.insecureCookie,
 		SameSite: http.SameSiteLaxMode,
 		// Long enough to sign in at the provider and no longer.
 		MaxAge: int((10 * time.Minute).Seconds()),
