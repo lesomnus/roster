@@ -178,6 +178,38 @@ jobs:
       - uses: actions/checkout@v5
       - run: ./scripts/hydra.sh
 
+  # The reference deployment, in a real cluster, and the class no fresh process
+  # can see.
+  #
+  # `scripts/cluster.sh`: `deploy/` stood up in k3d with the image this commit
+  # builds, against a Hydra with **no `--dev`**; all three walks from `docker/`
+  # as Jobs inside it; the declared client changed **under the running pods** and
+  # the whole thing asked again; and then the same flow with TLS ending in front
+  # of everything, as an overlay -- which is the shape a deployment has.
+  #
+  # It is here because of what it found in two days: eight defects in `deploy/`,
+  # every one of them a thing the deployment that uses it knew and the base did
+  # not, and three of them a deployment that would not have started or rendered
+  # at all. None of that is reachable from a `go test` or from `compose.yaml`,
+  # which runs `--dev` and says so.
+  #
+  # **Not path-filtered, and that is deliberate.** The obvious version -- run it
+  # only when `deploy/` or `examples/product` changed -- needs an `if:`, and a
+  # `needs` job that is *skipped* skips its dependents: `image` would stop
+  # building on every pull request, which is the property that job exists for. A
+  # gate that is sometimes skipped is also a gate somebody has to reason about
+  # before trusting it, and this one is ten minutes on a runner nobody is waiting
+  # for.
+  cluster:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      # Pinned, because the installer follows `main` otherwise and a cluster that
+      # comes up differently next month is a red run about the wrong thing.
+      - run: curl -sSL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.9.0 bash
+      - run: ./scripts/cluster.sh
+
   # The image, last, and only after everything above is green.
   #
   # A job of this workflow rather than one of its own, which is the mistake it
@@ -190,7 +222,7 @@ jobs:
   # change that breaks the build still fails here rather than on the day
   # somebody deploys.
   image:
-    needs: [go, postgres, ts, e2e, hydra]
+    needs: [go, postgres, ts, e2e, hydra, cluster]
     runs-on: ubuntu-latest
 
     permissions:
