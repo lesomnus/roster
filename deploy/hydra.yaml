@@ -43,6 +43,10 @@ spec:
         app.kubernetes.io/name: roster
         app.kubernetes.io/component: hydra
     spec:
+      # No service-link environment variables, for `roster.yaml`'s reason: one
+      # pair per Service in the namespace, and neither Hydra nor its migration
+      # reads any of them.
+      enableServiceLinks: false
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532
