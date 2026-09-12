@@ -33,10 +33,15 @@ set -eu
 : "${SEED_USER:=erin}"
 : "${SEED_PASSWORD:=correct horse battery staple}"
 
+# Waited for, and **the last attempt's reason is kept**: a wait loop that throws
+# its errors away says *the proxy never answered* whether nothing is listening,
+# the name does not resolve, or a certificate will not verify -- which are three
+# different mornings. The certificate one is not hypothetical: the name was added
+# to the terminator a phase later than to its SANs.
 i=0
-until curl -sS -o /dev/null "${PROXY}/ping" 2>/dev/null; do
+until why=$(curl -sS -o /dev/null "${PROXY}/ping" 2>&1); do
 	i=$((i + 1))
-	[ "${i}" -lt 60 ] || { echo "behind: the proxy never answered" >&2; exit 1; }
+	[ "${i}" -lt 60 ] || { echo "behind: the proxy never answered: ${why}" >&2; exit 1; }
 	sleep 1
 done
 
@@ -56,13 +61,19 @@ step() { printf '%-38s %s\n' "$1" "$2"; }
 
 # A page nobody is signed in for. The proxy sends the browser to the issuer,
 # which sends it to the Login App, which asks roster.
-l=$(c -o /dev/null -D - "${PROXY}/" | loc)
+#
+# The **status** is kept beside the Location, because a proxy that answers this
+# without a redirect answers it several ways -- 200 from the upstream, 401, a 404
+# from whatever is actually in front -- and `Location: ` empty is the same
+# message for all of them. It cost a run.
+head=$(c -o /dev/null -D - "${PROXY}/" | tr -d '\r')
+l=$(printf '%s' "${head}" | loc)
 case "${l}" in
 */oauth2/start*) l=$(c -o /dev/null -D - "${PROXY}${l}" | loc) ;;
 esac
 case "${l}" in
 */oauth2/auth*) ;;
-*) die "the proxy did not send the browser to the issuer: ${l}" ;;
+*) die "the proxy did not send the browser to the issuer: $(printf '%s' "${head}" | code) ${l:-(no Location)}" ;;
 esac
 step "a page nobody is signed in for" "-> the issuer"
 

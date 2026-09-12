@@ -25,6 +25,11 @@ set -eu
 : "${OAUTH_CLIENT:=demo}"
 : "${CLIENT_SECRET:=demo-secret}"
 : "${CALLBACK:=http://127.0.0.1:5555/callback}"
+# Where a sign-out asks to come back to, which is a **different** registered URL
+# from the callback and not always the same one: `examples/product` asks for its
+# own origin, so a deployment registers that. Defaulting to the callback is what
+# `compose.yaml`'s client happens to register, and the cluster says its own.
+: "${AFTER_LOGOUT:=${CALLBACK}}"
 : "${CONSENT:=skip}"
 
 # Four addresses and nothing about where they are, as in `docker/itself.sh`. The
@@ -361,7 +366,7 @@ step "the person signs out at the issuer" "…"
 # Hydra's rule, tried the wrong way round first on purpose: a redirect back
 # without a hint is refused, and it says so.
 end_session="${ISSUER}/oauth2/sessions/logout"
-back_to=$(printf '%s' "${CALLBACK}" | sed 's|:|%3A|g; s|/|%2F|g')
+back_to=$(printf '%s' "${AFTER_LOGOUT}" | sed 's|:|%3A|g; s|/|%2F|g')
 
 no_hint=$(c -o /dev/null -D - "${end_session}?client_id=${OAUTH_CLIENT}&post_logout_redirect_uri=${back_to}" | loc)
 case "${no_hint}" in
@@ -388,7 +393,7 @@ esac
 
 back=$(c -o /dev/null -D - "${back}" | loc)
 case "${back}" in
-"${CALLBACK}"*) step "  and hydra sends it on" "back to the product" ;;
+"${AFTER_LOGOUT}"*) step "  and hydra sends it on" "back to the product" ;;
 *) die "hydra did not send the browser back to the product: ${back}" ;;
 esac
 

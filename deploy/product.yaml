@@ -93,4 +93,8 @@ spec:
                   items: [{ key: tls.crt, path: tls.crt }, { key: tls.key, path: tls.key }]
               - secret:
                   name: roster-hydra-tls
+                  # Optional for `clients.yaml`'s reason: it is the rig's own
+                  # Secret, and a deployment's issuer has a certificate the world
+                  # already trusts.
+                  optional: true
                   items: [{ key: ca.crt, path: ca.crt }]

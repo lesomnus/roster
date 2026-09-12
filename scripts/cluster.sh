@@ -46,10 +46,13 @@
 # deployment writes and because nothing had ever written one, so *the base is
 # overlay-able* was a claim and not a fact.
 #
-# # What it does not do yet
+# # And all three walks, not one
 #
-# `docker/flow.sh` and `docker/behind.sh` are still compose-only; `behind.sh` is
-# the oauth2-proxy shape, which is half of what a deployment runs.
+# `docker/itself.sh` is our own app, `docker/flow.sh` is the protocol with curl,
+# and `docker/behind.sh` is `oauth2-proxy` in front of a page -- a **standard
+# third party**, which does its own discovery and fetches the key set itself over
+# TLS it has to be taught to trust. All three are the scripts `scripts/hydra.sh`
+# runs against compose, told where things are.
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -238,8 +241,15 @@ docker run --rm --entrypoint sh -v "${vol}:/w" alpine/openssl:3.3.2 -c '
 	# several hosts and the names are what it routes on.
 	openssl req -newkey rsa:2048 -nodes -keyout roster-edge.key -out roster-edge.csr \
 		-subj "/CN=roster-edge" >/dev/null 2>&1
+	# Every name the terminator answers to, and **all of them up front**. The
+	# third one was added to nginx a phase later than to this list, and what
+	# that looked like was a walk whose curl could not verify a certificate and
+	# a wait loop reporting that nothing answered.
+	#
+	# No apostrophes in here: this whole block is one single-quoted argument to
+	# sh -c, so one ends the string and openssl is handed the rest as flags.
 	printf "subjectAltName=%s\n" \
-		"DNS:roster-issuer.roster.svc.cluster.local,DNS:roster-issuer.roster.svc,DNS:roster-issuer,DNS:roster-app.roster.svc.cluster.local,DNS:roster-app.roster.svc,DNS:roster-app" > ext
+		"DNS:roster-issuer.roster.svc.cluster.local,DNS:roster-issuer.roster.svc,DNS:roster-issuer,DNS:roster-app.roster.svc.cluster.local,DNS:roster-app.roster.svc,DNS:roster-app,DNS:roster-proxy.roster.svc.cluster.local,DNS:roster-proxy.roster.svc,DNS:roster-proxy" > ext
 	openssl x509 -req -in roster-edge.csr -CA ca.crt -CAkey ca.key -CAcreateserial \
 		-days 1 -extfile ext -out roster-edge.crt >/dev/null 2>&1
 
@@ -536,6 +546,41 @@ data:
         proxy_set_header X-Forwarded-For $remote_addr;
       }
     }
+    # And the third relying party, which is somebody else's code: `oauth2-proxy`
+    # in front of a page. It is here from the **start** rather than added when
+    # its walk runs, and that is not tidiness -- this file is mounted with
+    # `subPath`, and a subPath mount **never sees an updated ConfigMap**. Nginx
+    # would not reload for one either. Editing it later left the terminator
+    # serving two names and answering the third from whichever block is first,
+    # which reads as *404 page not found* from a Go server nobody expected to be
+    # in the path.
+    #
+    # Which also fixes the order it has to be in: nginx resolves a plain
+    # `proxy_pass` name **at startup**, so the Service below has to exist before
+    # this pod does. It does, with no endpoints, which is enough for DNS.
+    server {
+      listen 8443 ssl;
+      server_name roster-proxy roster-proxy.roster.svc roster-proxy.roster.svc.cluster.local;
+      ssl_certificate     /tls/tls.crt;
+      ssl_certificate_key /tls/tls.key;
+      location / {
+        proxy_pass http://roster-behind:4180;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-For $remote_addr;
+      }
+    }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: roster-proxy
+spec:
+  selector:
+    app.kubernetes.io/name: roster
+    app.kubernetes.io/component: edge
+  ports:
+    - { name: https, port: 443, targetPort: https }
 ---
 apiVersion: v1
 kind: Service
@@ -597,6 +642,89 @@ spec:
           secret: { secretName: roster-edge-tls }
 EOF
 
+cat > "${work}/behind/proxy.yaml" <<'EOF'
+apiVersion: v1
+kind: Service
+metadata:
+  name: roster-behind
+spec:
+  selector:
+    app.kubernetes.io/name: roster
+    app.kubernetes.io/component: behind
+  ports:
+    - { name: http, port: 4180, targetPort: http }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: roster-behind
+  labels:
+    app.kubernetes.io/name: roster
+    app.kubernetes.io/component: behind
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: roster
+      app.kubernetes.io/component: behind
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: roster
+        app.kubernetes.io/component: behind
+    spec:
+      containers:
+        - name: proxy
+          image: quay.io/oauth2-proxy/oauth2-proxy:v7.14.2
+          env:
+            - { name: OAUTH2_PROXY_PROVIDER, value: oidc }
+            - { name: OAUTH2_PROXY_CLIENT_ID, value: behind }
+            - name: OAUTH2_PROXY_CLIENT_SECRET
+              valueFrom: { secretKeyRef: { name: roster-behind, key: client-secret } }
+            - { name: OAUTH2_PROXY_COOKIE_SECRET, value: sixteen-bytes-ok }
+            - { name: OAUTH2_PROXY_HTTP_ADDRESS, value: "0.0.0.0:4180" }
+            # **It is behind a proxy, and it has to be told.** Without this
+            # oauth2-proxy ignores `X-Forwarded-*` and works its own URLs out
+            # from the request it was handed, which here is plain http on a
+            # Service name no browser can reach.
+            - { name: OAUTH2_PROXY_REVERSE_PROXY, value: "true" }
+            # Its **public** URL, which is the terminator's name and not its own
+            # Service: what it registers has to be what a browser reaches.
+            - { name: OAUTH2_PROXY_REDIRECT_URL, value: "https://roster-proxy.roster.svc.cluster.local/oauth2/callback" }
+            - { name: OAUTH2_PROXY_OIDC_ISSUER_URL, value: "https://roster-issuer.roster.svc.cluster.local" }
+            # The issuer's certificate is this rig's own, and this is somebody
+            # else's client: it has its own name for a trust store.
+            - { name: OAUTH2_PROXY_PROVIDER_CA_FILES, value: /tls/ca.crt }
+            # **The identity is `sub` and not an address.** oauth2-proxy keys a
+            # session on an email and refuses a token with none, and roster puts
+            # `email` in a token only when the address is verified -- so this is
+            # the line every relying party of roster wants.
+            - { name: OAUTH2_PROXY_OIDC_EMAIL_CLAIM, value: sub }
+            - { name: OAUTH2_PROXY_EMAIL_DOMAINS, value: "*" }
+            - { name: OAUTH2_PROXY_SCOPE, value: "openid profile email" }
+            - { name: OAUTH2_PROXY_SKIP_PROVIDER_BUTTON, value: "true" }
+            - { name: OAUTH2_PROXY_UPSTREAMS, value: "static://200" }
+            - { name: OAUTH2_PROXY_COOKIE_SECURE, value: "true" }
+            # With the port where there is one, and the name a browser uses:
+            # what oauth2-proxy does with an `rd` it will not follow is send the
+            # browser to `/`, which turns a sign-out into the proxy forgetting
+            # its own session and nothing else.
+            - { name: OAUTH2_PROXY_WHITELIST_DOMAINS, value: "roster-issuer.roster.svc.cluster.local,roster-login.roster.svc.cluster.local:8091" }
+          ports:
+            - { name: http, containerPort: 4180 }
+          readinessProbe:
+            httpGet: { path: /ping, port: http }
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          volumeMounts:
+            - { name: tls, mountPath: /tls, readOnly: true }
+      volumes:
+        - name: tls
+          secret:
+            secretName: roster-hydra-tls
+            items: [{ key: ca.crt, path: ca.crt }]
+EOF
+
 # The overlay: the same base, with TLS ending in front of it. Every patch here is
 # a line a deployment writes for its own hostnames.
 cat > "${work}/behind/kustomization.yaml" <<'EOF'
@@ -606,6 +734,9 @@ kind: Kustomization
 resources:
   - ../deploy
   - ./edge.yaml
+  # Somebody else's relying party, up with the terminator rather than when its
+  # walk runs: the terminator has to be able to resolve it at startup.
+  - ./proxy.yaml
 
 patches:
   # Hydra: stop serving TLS, trust the terminator's word about the scheme, and
@@ -691,8 +822,14 @@ carry
 # with `field is immutable` and a page of diff. `resync` below does the same
 # thing for the same reason, and a deployment gets it from Argo's
 # `hook-delete-policy: BeforeHookCreation`.
+# Before the apply, because a pod that names a Secret which is not there yet is a
+# pod that waits -- and this is the rig's, like the TLS ones above.
+kube "kubectl -n ${NS} create secret generic roster-behind \
+	--from-literal=client-secret=this-is-a-rig-and-not-a-secret-either >/dev/null 2>&1 || true"
+
 kube "kubectl -n ${NS} delete job --all >/dev/null 2>&1; kubectl -n ${NS} apply -k /w/behind >/dev/null"
 kube "kubectl -n ${NS} rollout status deploy/roster-edge --timeout=300s >/dev/null"
+kube "kubectl -n ${NS} rollout status deploy/roster-behind --timeout=300s >/dev/null"
 kube "kubectl -n ${NS} rollout status deploy/roster-hydra --timeout=300s >/dev/null"
 
 # **The product coming up at all is the first assertion.** It does discovery
@@ -718,6 +855,239 @@ walkyaml \
 	"https://roster-app.roster.svc.cluster.local"
 walk || { echo "cluster: the flow does not survive TLS ending in front of it" >&2; exit 1; }
 echo "   and the flow goes round, with nothing serving its own TLS"
+
+
+# **The other two walks**, which are the other two halves of what a deployment
+# runs -- and both against the terminated shape above, because that is the one a
+# deployment has.
+#
+# `docker/flow.sh` is the **protocol**, walked with curl rather than by an app, so
+# it needs what a product would have been handed: the client's secret to exchange
+# a code with, the `Holder.id` the token has to name, and a key that may sign her
+# out and enrol a second factor.
+#
+# `docker/behind.sh` is `oauth2-proxy` in front of a page: a **standard third
+# party**, which is the half of a deployment's apps our own code cannot speak for
+# -- it does its own discovery and fetches the key set itself, over TLS it has to
+# be taught to trust, which is a thing only somebody else's client can check for
+# us.
+echo
+echo "== the other two walks, over the manifests"
+
+# Who erin is, which is the fact the token has to carry.
+sub="$(kube "kubectl -n ${NS} exec deploy/roster -c roster -- roster --config /config/config.yaml holder get -o json @acme/erin" \
+	| sed -n 's/.*"id": "\([^"]*\)".*/\1/p' | head -1 | tr -d '\r')"
+[ -n "${sub}" ] || { echo "cluster: the seeded person has no id" >&2; exit 1; }
+
+# A key that may sign her out and give her an authenticator, for the steps of the
+# walk that are about **her** rather than about a flow.
+#
+# Piped into a Secret **inside the cluster** and never through this shell: a key
+# is a credential, and one that goes through a terminal is one in a scrollback.
+kube "kubectl -n ${NS} delete secret roster-walk-key --ignore-not-found >/dev/null 2>&1; \
+	kubectl -n ${NS} exec deploy/roster -c roster -- roster --config /config/config.yaml \
+		key add --tenant acme --holder erin --name walk \
+		--allow /roster.HolderService/Invalidate,/roster.CredentialService/Enrol,/roster.VouchService/Verify \
+	| tr -d '\r\n' > /tmp/k && kubectl -n ${NS} create secret generic roster-walk-key --from-file=key=/tmp/k >/dev/null"
+echo "   erin is ${sub}, and holds a key that may sign her out"
+
+cat > "${work}/flow.yaml" <<EOF
+# \`docker/flow.sh\` in the cluster: the protocol, with curl standing in for a
+# product. What it checks that the two app walks cannot is the claims in the
+# token, a second flow the issuer skips the form for, an \`Invalidate\` reaching
+# the issuer, and the sign-out asked for with no hint.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: roster-flow
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: flow
+          image: roster-walk:${CLUSTER}
+          command: ["/usr/local/bin/flow.sh"]
+          env:
+            - { name: SEED_CUSTOMER, value: "acme" }
+            - { name: SEED_USER, value: "erin" }
+            - { name: SEED_PASSWORD, value: "correct horse battery staple" }
+            - { name: LOGIN, value: "http://roster-login.roster.svc.cluster.local:8091" }
+            - { name: ISSUER, value: "https://roster-issuer.roster.svc.cluster.local" }
+            - { name: ADMIN, value: "http://roster-hydra:4445" }
+            # roster's own HTTP port, which is how anything that is not gRPC
+            # reaches it -- and the **data plane's** Service, which is called
+            # roster-data here because the one called roster in a deployment is
+            # the console's. Getting that wrong is a walk that gets all the way
+            # to the claims and then cannot resolve a host.
+            #
+            # No backticks in this heredoc: it is unquoted, because it
+            # interpolates the image tag and the subject, so a backtick is a
+            # command substitution and the error it gives is *roster-data:
+            # command not found* from the rig rather than anything about the walk.
+            - { name: ROSTER, value: "http://roster-data:8081" }
+            - { name: OAUTH_CLIENT, value: "product" }
+            # A registered redirect of that client, because the issuer refuses
+            # any other -- nothing fetches it, the walk reads the code out of
+            # the redirect.
+            - { name: CALLBACK, value: "https://roster-app.roster.svc.cluster.local/callback" }
+            # And where a sign-out asks to come back to, which is the app's
+            # **origin** and not its callback -- because that is what
+            # examples/product asks for and therefore what the client registers.
+            # Hydra refuses any other, in as many words, and that refusal is how
+            # this walk found out that the two are different URLs.
+            - { name: AFTER_LOGOUT, value: "https://roster-app.roster.svc.cluster.local" }
+            - { name: EXPECT_SUB, value: "${sub}" }
+            - { name: CONSENT, value: "skip" }
+            - { name: CURL_CA_BUNDLE, value: /tls/ca.crt }
+            - name: CLIENT_SECRET
+              valueFrom: { secretKeyRef: { name: roster-product, key: client-secret } }
+            - name: INVALIDATE_KEY
+              valueFrom: { secretKeyRef: { name: roster-walk-key, key: key } }
+          volumeMounts:
+            - { name: tls, mountPath: /tls, readOnly: true }
+      volumes:
+        - name: tls
+          secret:
+            secretName: roster-hydra-tls
+            items: [{ key: ca.crt, path: ca.crt }]
+EOF
+carry
+
+kube "kubectl -n ${NS} delete job roster-flow --ignore-not-found >/dev/null 2>&1; kubectl -n ${NS} apply -f /w/flow.yaml >/dev/null"
+if ! settled roster-flow; then
+	kube "kubectl -n ${NS} logs job/roster-flow"
+	echo "cluster: the protocol walk did not finish" >&2
+	exit 1
+fi
+kube "kubectl -n ${NS} logs job/roster-flow"
+
+
+# A second relying party is a second **declared** client, which is three files and
+# not one: the document, the secret it names, and the line in `login.clients` that
+# says this app answers challenges for it. Leaving that last one out is one of the
+# four defects `roster login doctor` exists for, so the rig does it the way a
+# deployment does and the check gets to prove it.
+cat > "${work}/deploy/clients/behind.json" <<'EOF'
+{
+  "client_id": "behind",
+  "client_name": "the page a standard proxy sits in front of",
+  "client_secret": "@SECRET@",
+  "grant_types": ["authorization_code", "refresh_token"],
+  "response_types": ["code"],
+  "scope": "openid offline profile email",
+
+  "token_endpoint_auth_method": "client_secret_basic",
+
+  "redirect_uris": ["https://roster-proxy.roster.svc.cluster.local/oauth2/callback"],
+
+  "post_logout_redirect_uris": []
+}
+EOF
+
+python3 - "${work}/deploy/kustomization.yaml" "${work}/deploy/config.yaml" "${work}/behind/kustomization.yaml" <<'PY'
+import sys
+
+ku, cfg, overlay = sys.argv[1], sys.argv[2], sys.argv[3]
+
+# The generator has to know about the second file.
+s = open(ku).read()
+old = "      - clients/product.json"
+assert old in s
+open(ku, "w").write(s.replace(old, old + "\n      - clients/behind.json", 1))
+
+# And the Login App has to answer challenges for it.
+s = open(cfg).read()
+old = "    acme: [product]"
+assert old in s, "login.clients no longer reads the way this rig expects"
+open(cfg, "w").write(s.replace(old, "    acme: [product, behind]", 1))
+
+# The proxy joins the overlay, and the Job that registers clients needs the
+# second secret mounted where it looks for it: `/secrets/<id>`. Volumes and mounts
+# merge by name, so this adds one of each and restates nothing.
+s = open(overlay).read()
+s += """  - patch: |
+      apiVersion: batch/v1
+      kind: Job
+      metadata:
+        name: roster-hydra-clients
+      spec:
+        template:
+          spec:
+            containers:
+              - name: apply
+                volumeMounts:
+                  - { name: behind, mountPath: /secrets/behind, readOnly: true }
+            volumes:
+              - name: behind
+                secret: { secretName: roster-behind, items: [{ key: client-secret, path: client-secret }] }
+"""
+open(overlay, "w").write(s)
+PY
+carry
+
+# The client is declared, so the clients Job needs the second secret mounted and
+# the Login App needs to claim it. Both are files above; this is the sync.
+
+# The second client, registered and then asked about -- and the `doctor` run is
+# not a formality here: a client Hydra has that `login.clients` does not name is
+# the defect that reaches a person as *this login is not working*, and it is
+# exactly the mistake a second relying party invites.
+two=0
+resync /w/behind || two=$?
+[ "${two}" = "0" ] \
+	|| { kube "kubectl -n ${NS} logs job/roster-hydra-clients"; kube "kubectl -n ${NS} logs job/roster-hydra-clients-check"; echo "cluster: the second client is not registered the way this stack needs (${two})" >&2; exit 1; }
+echo "   a second relying party is declared, registered and claimed"
+
+cat > "${work}/behind.yaml" <<EOF
+# \`docker/behind.sh\` in the cluster: a page with \`oauth2-proxy\` in front,
+# which is the shape half of a deployment's apps are in and the one our own code
+# cannot speak for.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: roster-behind-walk
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: walk
+          image: roster-walk:${CLUSTER}
+          command: ["/usr/local/bin/behind.sh"]
+          env:
+            - { name: PROXY, value: "https://roster-proxy.roster.svc.cluster.local" }
+            - { name: LOGIN, value: "http://roster-login.roster.svc.cluster.local:8091" }
+            - { name: ISSUER, value: "https://roster-issuer.roster.svc.cluster.local" }
+            - { name: CLIENT, value: "behind" }
+            - { name: SEED_USER, value: "erin" }
+            - { name: SEED_PASSWORD, value: "correct horse battery staple" }
+            - { name: CURL_CA_BUNDLE, value: /tls/ca.crt }
+          volumeMounts:
+            - { name: tls, mountPath: /tls, readOnly: true }
+      volumes:
+        - name: tls
+          secret:
+            secretName: roster-hydra-tls
+            items: [{ key: ca.crt, path: ca.crt }]
+EOF
+carry
+
+kube "kubectl -n ${NS} delete job roster-behind-walk --ignore-not-found >/dev/null 2>&1; kubectl -n ${NS} apply -f /w/behind.yaml >/dev/null"
+if ! settled roster-behind-walk; then
+	kube "kubectl -n ${NS} logs job/roster-behind-walk"
+	# And what the two things in the path have to say, because a walk that fails
+	# at a proxy is a walk whose own output is one line about a header.
+	echo "--- the proxy"
+	kube "kubectl -n ${NS} logs deploy/roster-behind --tail=40" || true
+	echo "--- the terminator"
+	kube "kubectl -n ${NS} logs deploy/roster-edge --tail=20" || true
+	echo "cluster: somebody else's relying party did not get round the loop" >&2
+	exit 1
+fi
+kube "kubectl -n ${NS} logs job/roster-behind-walk"
 
 echo
 echo "cluster: ok"

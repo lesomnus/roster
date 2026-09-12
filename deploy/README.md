@@ -41,9 +41,58 @@ see:
 ## What is deliberately fake
 
 The secrets. `secrets.yaml` holds values anybody can read, because this is a
-rig: a deployment overlays its own and never uses these. They are checked in
-rather than generated because a generated secret is one the walks would have to
-be told about, and then the rig has a moving part a deployment does not.
+rig. They are checked in rather than generated because a generated secret is one
+the walks would have to be told about, and then the rig has a moving part a
+deployment does not.
+
+⚠️ **An overlay has to say what happens to them**, and which way it goes wrong
+depends on what it calls its own:
+
+- **the same names** (`roster-hydra`, `roster-vouch`) -- kustomize refuses the
+  build, *may not add resource with an already registered id*. Annoying, and the
+  good outcome: it is a build error rather than a deployment.
+- **different names** -- the base's placeholders survive, and what the pods read
+  is whichever name the base's Deployment names. That is a deployment signing
+  tokens with `this-is-a-rig-and-not-a-secret` and saying nothing about it, which
+  is the worst shape a default can have.
+
+So an overlay either replaces them by name -- a `secretGenerator` or a generator
+of its own using the base's names -- or removes them:
+
+```yaml
+patches:
+  - target: { kind: Secret, name: roster-product }
+    patch: |
+      $patch: delete
+      apiVersion: v1
+      kind: Secret
+      metadata: { name: roster-product }
+```
+
+Found by writing an overlay for a real deployment rather than by reading this
+file, which is the only way that class of thing is ever found.
+
+## Using it as a base
+
+```yaml
+resources:
+  - github.com/lesomnus/roster//deploy?ref=<a commit, never a branch>
+```
+
+Pin a **commit**. `?ref=main` is a deployment whose manifests change when
+somebody else pushes, which is the thing GitOps exists to stop.
+
+What an overlay is expected to bring, and what it should leave alone:
+
+| | |
+| --- | --- |
+| its own | hosts, secrets, storage class, image digests, the products it actually runs, and `config.yaml` -- by a `configMapGenerator` for `roster` with `behavior: replace` |
+| the base's | what a client has to be registered with, which `URLS_*` Hydra needs, that the clients are applied and then **checked** -- the four things that were wrong when they were written twice |
+
+The pieces of the rig that a deployment does not want are `product.yaml` (there
+to have something to sign in *to*) and `secrets.yaml` above; both come out with a
+`$patch: delete`. `scripts/cluster.sh`'s own overlay (`--behind`'s phases) is a
+worked example of everything on this list except the secrets.
 
 ## TLS, and the `--dev` that is not here
 
@@ -59,18 +108,24 @@ once: it has to resolve wherever a relying party runs, and the only place all of
 them do is inside the cluster; and it has to have a dot in it, because a cookie
 jar will not answer to a single-label host and a sign-in is mostly cookies.
 
-What that gives up, and is not covered anywhere yet, is **being behind a
-proxy**: `X-Forwarded-Proto`, and an app that reads `r.TLS`. A deployment ends
-TLS at its ingress and tells Hydra so with
-`serve.public.tls.allow_termination_from` instead.
+A deployment does it the other way -- an ingress holds the certificate and Hydra
+is told so with `serve.public.tls.allow_termination_from` -- and
+`scripts/cluster.sh` stands **that** up too, as an overlay on this, in its last
+phases. What the two shapes cost each other is why both are run: an app behind a
+terminator sees plain http while its public origin is https, and one that works
+its own scheme out from `r.TLS` is wrong there. One did.
 
-## The walk
+## The walks
 
-`docker/itself.sh` -- the same script `scripts/hydra.sh` runs against compose --
-as a Job **inside** the cluster, which is what makes the Services resolve and
-the issuer's certificate trustable. A product goes round the whole loop: the
-page nobody is signed in for, the sign-in, the page naming her, the sign-out
-with the token it kept for it, and the form asked for again.
+The three scripts `scripts/hydra.sh` runs against compose, as Jobs **inside** the
+cluster -- which is what makes the Services resolve and the issuer's certificate
+trustable:
+
+| | |
+| --- | --- |
+| `docker/itself.sh` | our own app, round the whole loop: the page nobody is signed in for, the sign-in, the page naming her, the sign-out with the token it kept for it, and the form asked for again |
+| `docker/flow.sh` | the protocol with curl, which is where the claims in the token, a second flow the issuer skips the form for, and an `Invalidate` reaching the issuer are checked |
+| `docker/behind.sh` | `oauth2-proxy` in front of a page: a **standard third party**, which does its own discovery and fetches the key set itself over TLS it has to be taught to trust -- the one thing our own code cannot check for us |
 
 Somebody to sign in **as** is the rig's, not `deploy/`'s: `Holder`,
 `Credential`, `Identity` and `Email` are the ways into an account, and a file
@@ -99,15 +154,17 @@ back to the **app's own callback**, so matching the host is not enough to say a
 flow worked. Checked that way, an `?error=` read as a success and what surfaced
 was the app refusing a code the issuer had never issued.
 
-## What is still not here
+## The class a fresh cluster cannot see
 
-**Being behind a proxy.** Hydra terminates TLS itself here, so
-`X-Forwarded-Proto` and an app reading `r.TLS` are still covered nowhere. A
-deployment ends TLS at its ingress and tells Hydra with
-`serve.public.tls.allow_termination_from`.
+Everything above starts a fresh process, and a fresh process gets a client's
+authentication method right whatever it is registered as: `golang.org/x/oauth2`
+probes and caches what worked for the life of that process. So the hour a
+deployment signed nobody in was invisible to every gate -- the declaration
+changed, the sync applied it, and the pods **already running** kept addressing
+Hydra the old way with no second try.
 
-**A registration changed under a running pod**, which is the one class a rig
-that builds a cluster and walks it once cannot see: `golang.org/x/oauth2` probes
-for the client authentication method and caches it, so an app keeps addressing a
-changed client the old way with no second try. It needs a step that mutates and
-tries again without restarting anything.
+So the rig changes the declaration and syncs, and then asks again without
+restarting anything: the check goes red naming the method, the sign-in fails at
+the exchange, **a restart does not cure it**, and putting the declaration back
+does -- with no restart. The fourth is the assertion, because before the method
+was said in code a restart cured it and hid it.

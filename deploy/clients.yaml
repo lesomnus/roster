@@ -247,7 +247,21 @@ spec:
       volumes:
         - name: config
           configMap: { name: roster }
+        # The issuer's CA, for a rig whose certificate nothing already trusts.
+        #
+        # **Optional, and that is what makes this base applyable by somebody
+        # else.** `roster-hydra-tls` is `scripts/cluster.sh`'s own Secret; a
+        # deployment whose issuer has a certificate the world trusts has no such
+        # thing, and a volume that is not optional is a Job that never starts --
+        # so an overlay would have had to patch this mount out before it could
+        # apply the base at all. Missing, `SSL_CERT_FILE` names a file that is
+        # not there, Go falls back to the system roots, and that is the right
+        # answer for a real issuer.
+        #
+        # Found by writing an overlay for a real deployment, which is the only
+        # way a base's coupling to its own rig ever shows up.
         - name: tls
           secret:
             secretName: roster-hydra-tls
+            optional: true
             items: [{ key: ca.crt, path: ca.crt }]
