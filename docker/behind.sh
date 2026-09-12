@@ -19,20 +19,22 @@
 # here is for.
 set -eu
 
+# Three addresses and nothing about where they are, as in `docker/itself.sh` and
+# for the same reason: the compose network is the default, and
+# `scripts/cluster.sh` runs this same script as a Job inside a cluster where they
+# are Services and the issuer is https behind something that ends TLS.
 : "${ISSUER:=http://hydra.test:4444}"
+: "${LOGIN:=http://login:8091}"
+: "${PROXY:=http://behind:4180}"
+# Which OAuth client the proxy is, for the one URL this walk builds by hand: the
+# proxy has no way to put an `id_token_hint` on a sign-out, so the `client_id` is
+# all the issuer gets to work out whose logout this is.
+: "${CLIENT:=behind}"
 : "${SEED_USER:=erin}"
 : "${SEED_PASSWORD:=correct horse battery staple}"
 
-behind=$(getent hosts behind | awk '{print $1; exit}')
-login=$(getent hosts login | awk '{print $1; exit}')
-hydra=$(getent hosts hydra | awk '{print $1; exit}')
-[ -n "${behind}" ] && [ -n "${login}" ] && [ -n "${hydra}" ] || {
-	echo "behind: the three are not all up" >&2
-	exit 1
-}
-
 i=0
-until curl -sS -o /dev/null "http://behind:4180/ping" 2>/dev/null; do
+until curl -sS -o /dev/null "${PROXY}/ping" 2>/dev/null; do
 	i=$((i + 1))
 	[ "${i}" -lt 60 ] || { echo "behind: the proxy never answered" >&2; exit 1; }
 	sleep 1
@@ -48,15 +50,15 @@ code() { tr -d '\r' | awk '/^HTTP/{print $2; exit}'; }
 # network resolves (`ISSUER_HOST` in `compose.yaml`), and it has to -- the
 # browser's session cookie is scoped to whatever host it was set on, so a walk
 # that reached the same Hydra under two names would be two browsers.
-fix() { sed "s|http://localhost:8091|http://login:8091|; s|http://localhost:4444|${ISSUER}|"; }
+fix() { sed "s|http://localhost:8091|${LOGIN}|; s|http://localhost:4444|${ISSUER}|"; }
 die() { echo "behind: $*" >&2; exit 1; }
 step() { printf '%-38s %s\n' "$1" "$2"; }
 
 # A page nobody is signed in for. The proxy sends the browser to the issuer,
 # which sends it to the Login App, which asks roster.
-l=$(c -o /dev/null -D - "http://behind:4180/" | loc)
+l=$(c -o /dev/null -D - "${PROXY}/" | loc)
 case "${l}" in
-*/oauth2/start*) l=$(c -o /dev/null -D - "http://behind:4180${l}" | loc) ;;
+*/oauth2/start*) l=$(c -o /dev/null -D - "${PROXY}${l}" | loc) ;;
 esac
 case "${l}" in
 */oauth2/auth*) ;;
@@ -68,13 +70,13 @@ l=$(c -o /dev/null -D - "$(printf '%s' "${l}" | fix)" | loc | fix)
 challenge=$(printf '%s' "${l}" | sed 's/.*login_challenge=//')
 [ -n "${challenge}" ] || die "hydra raised no login challenge: ${l}"
 
-head=$(c -o /dev/null -D - -X POST "http://login:8091/session?login_challenge=${challenge}" \
+head=$(c -o /dev/null -D - -X POST "${LOGIN}/session?login_challenge=${challenge}" \
 	-H 'content-type: application/json' \
 	-d "$(printf '{"alias":"%s","password":"%s"}' "${SEED_USER}" "${SEED_PASSWORD}")" | tr -d '\r')
 cookie=$(printf '%s' "${head}" | awk '/^[Ss]et-[Cc]ookie:/{print $2}' | sed 's/;$//')
 [ -n "${cookie}" ] || die "the password was not accepted"
 
-to=$(c -X POST "http://login:8091/accept?login_challenge=${challenge}" -H "Cookie: ${cookie}" \
+to=$(c -X POST "${LOGIN}/accept?login_challenge=${challenge}" -H "Cookie: ${cookie}" \
 	| sed 's/.*"redirect_to":"//; s/".*//; s|\\u0026|\&|g' | fix)
 l=$(c -o /dev/null -D - "${to}" | loc | fix)
 l=$(c -o /dev/null -D - "${l}" -H "Cookie: ${cookie}" | loc | fix)
@@ -85,7 +87,7 @@ l=$(c -o /dev/null -D - "${l}" | loc)
 case "${l}" in
 http*) l=$(c -o /dev/null -D - "${l}" | loc) ;;
 esac
-got=$(c -o /dev/null -D - "http://behind:4180/" | code)
+got=$(c -o /dev/null -D - "${PROXY}/" | code)
 [ "${got}" = "200" ] || die "the page did not open for a browser that signed in (${got})"
 step "and the page opens" "${got}"
 
@@ -93,7 +95,7 @@ step "and the page opens" "${got}"
 # was empty in the cluster. It is the proxy's own endpoint over the proxy's own
 # cookie: no call to roster, because the point is what a product ends up
 # knowing, which is the token and nothing else.
-who=$(c -w '\n%{http_code}' "http://behind:4180/oauth2/userinfo")
+who=$(c -w '\n%{http_code}' "${PROXY}/oauth2/userinfo")
 got=$(printf '%s' "${who}" | tail -1)
 who=$(printf '%s' "${who}" | sed '$d')
 [ "${got}" = "200" ] || die "the session says nothing about who is signed in (${got}): ${who}"
@@ -114,9 +116,9 @@ step "and the session names somebody" "$(printf '%s' "${who}" | cut -c1-40)…"
 # Written down here because the fix for it lives in whatever page is in front,
 # and a page cannot be written against a rule nobody stated.
 away=$(mktemp)
-got=$(curl -sS -c "${away}" -b "${away}" -o /dev/null -w '%{http_code}' "http://behind:4180/oauth2/userinfo")
+got=$(curl -sS -c "${away}" -b "${away}" -o /dev/null -w '%{http_code}' "${PROXY}/oauth2/userinfo")
 [ "${got}" = "401" ] || die "a fetch with no session answered ${got}, not 401"
-l=$(curl -sS -c "${away}" -b "${away}" -o /dev/null -D - "http://behind:4180/" | loc)
+l=$(curl -sS -c "${away}" -b "${away}" -o /dev/null -D - "${PROXY}/" | loc)
 case "${l}" in
 */oauth2/*) ;;
 *) die "a page with no session was not sent to sign in: ${l}" ;;
@@ -129,8 +131,8 @@ step "a page and a fetch, with no session" "a redirect and a 401"
 # `oauth2-proxy` has no way to put the token on that link. So Hydra marks the
 # logout not rp-initiated, the Login App draws the confirmation, and the last
 # page is whatever `urls.post_logout_redirect` names.
-end=$(printf '%s/oauth2/sessions/logout?client_id=behind' "${ISSUER}" | sed 's|:|%3A|g; s|/|%2F|g; s|?|%3F|g; s|=|%3D|g')
-l=$(c -o /dev/null -D - "http://behind:4180/oauth2/sign_out?rd=${end}" | loc | fix)
+end=$(printf '%s/oauth2/sessions/logout?client_id=%s' "${ISSUER}" "${CLIENT}" | sed 's|:|%3A|g; s|/|%2F|g; s|?|%3F|g; s|=|%3D|g')
+l=$(c -o /dev/null -D - "${PROXY}/oauth2/sign_out?rd=${end}" | loc | fix)
 case "${l}" in
 */oauth2/sessions/logout*) ;;
 *) die "the proxy did not send the browser on to the issuer: ${l}" ;;
@@ -148,7 +150,7 @@ got=$(c -o /dev/null -w '%{http_code}' "${l}")
 [ "${got}" = "200" ] || die "the confirmation was not drawn (${got})"
 step "  and is asked to confirm" "${got}"
 
-said=$(c -X POST "http://login:8091/logout" -d "logout_challenge=${leaving}" -d "allow=1")
+said=$(c -X POST "${LOGIN}/logout" -d "logout_challenge=${leaving}" -d "allow=1")
 case "${said}" in
 *'"signed_out":true'*) ;;
 *) die "the confirmation was not accepted: ${said}" ;;
@@ -169,9 +171,9 @@ step "  and lands on a page for a person" "${got}"
 
 # And the whole of what the second hop is for: the issuer has forgotten this
 # browser, so opening the page again is a form and not a silent sign-in.
-l=$(c -o /dev/null -D - "http://behind:4180/" | loc)
+l=$(c -o /dev/null -D - "${PROXY}/" | loc)
 case "${l}" in
-*/oauth2/start*) l=$(c -o /dev/null -D - "http://behind:4180${l}" | loc) ;;
+*/oauth2/start*) l=$(c -o /dev/null -D - "${PROXY}${l}" | loc) ;;
 esac
 l=$(c -o /dev/null -D - "$(printf '%s' "${l}" | fix)" | loc | fix)
 got=$(c -o /dev/null -D - "${l}" | code)

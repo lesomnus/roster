@@ -27,16 +27,35 @@ set -eu
 : "${CALLBACK:=http://127.0.0.1:5555/callback}"
 : "${CONSENT:=skip}"
 
-login=$(getent hosts login | awk '{print $1; exit}')
-hydra=$(getent hosts hydra | awk '{print $1; exit}')
-[ -n "${login}" ] && [ -n "${hydra}" ] || { echo "flow: login and hydra are not both up" >&2; exit 1; }
+# Four addresses and nothing about where they are, as in `docker/itself.sh`. The
+# compose network is the default, where the two names have a dot in them because
+# a cookie jar will not answer to a single-label host and this walk is mostly
+# cookies -- and `--resolve` is what makes those names mean the two containers.
+# `scripts/cluster.sh` runs this same script as a Job inside a cluster, where the
+# Services are already dotted and nothing has to be invented.
+: "${LOGIN:=http://login.test:8091}"
+: "${ISSUER:=http://hydra.test:4444}"
+: "${ADMIN:=http://hydra:4445}"
+: "${ROSTER:=http://roster:8080}"
+
+# `--resolve` is needed for exactly the invented names and nothing else, so the
+# names are what decides rather than a flag somebody has to remember to unset.
+resolve=""
+case "${LOGIN}${ISSUER}" in
+*login.test*|*hydra.test*)
+	login=$(getent hosts login | awk '{print $1; exit}')
+	hydra=$(getent hosts hydra | awk '{print $1; exit}')
+	[ -n "${login}" ] && [ -n "${hydra}" ] || { echo "flow: login and hydra are not both up" >&2; exit 1; }
+	resolve="--resolve login.test:8091:${login} --resolve hydra.test:4444:${hydra}"
+	;;
+esac
 
 # The app answers when it has its key and Hydra is up, which `login.sh` waits
 # for inside the container -- so a container that is running is not yet an app
 # that is serving. Waited for here rather than assumed, because the failure
 # otherwise is a refused password and a message about the wrong thing.
 i=0
-until curl -sS -o /dev/null "http://${login}:8091/" 2>/dev/null; do
+until curl -sS ${resolve} -o /dev/null "${LOGIN}/" 2>/dev/null; do
 	i=$((i + 1))
 	[ "${i}" -lt 60 ] || { echo "flow: the login app never answered" >&2; exit 1; }
 	sleep 1
@@ -56,18 +75,17 @@ trap 'rm -f "${jar}"' EXIT
 forget_consent() {
 	if [ "${CONSENT}" = "ask" ] && [ -n "${EXPECT_SUB:-}" ]; then
 		curl -sS -o /dev/null -X DELETE \
-			"http://hydra:4445/admin/oauth2/auth/sessions/consent?subject=${EXPECT_SUB}&all=true" || true
+			"${ADMIN}/admin/oauth2/auth/sessions/consent?subject=${EXPECT_SUB}&all=true" || true
 	fi
 }
 forget_consent
-resolve="--resolve login.test:8091:${login} --resolve hydra.test:4444:${hydra}"
 
 c() { curl -sS ${resolve} -c "${jar}" -b "${jar}" "$@"; }
 loc() { tr -d '\r' | awk '/^[Ll]ocation:/{print $2}'; }
 code() { tr -d '\r' | awk '/^HTTP/{print $2; exit}'; }
 # What Hydra was told to redirect to is a name a browser resolves, and this is
 # not a browser. Only the host moves; the challenge in the query does not.
-fix() { sed 's|http://localhost:8091|http://login.test:8091|; s|http://localhost:4444|http://hydra.test:4444|'; }
+fix() { sed "s|http://localhost:8091|${LOGIN}|; s|http://localhost:4444|${ISSUER}|"; }
 step() { printf '%-38s %s\n' "$1" "$2"; }
 die() { echo "flow: $1" >&2; exit 1; }
 
@@ -76,14 +94,14 @@ die() { echo "flow: $1" >&2; exit 1; }
 # call is what **says so** and is addressed to a service: without it the
 # transcoder reads the request as a page's route and answers 404.
 rpc() {
-	curl -sS -X POST "http://roster:8080/roster.$1" \
+	curl -sS -X POST "${ROSTER}/roster.$1" \
 		-H "authorization: Bearer ${INVALIDATE_KEY}" \
 		-H 'content-type: application/json' -H 'connect-protocol-version: 1' \
 		-d "$2"
 }
 json() { sed "s/.*\"$1\":\"//; s/\".*//"; }
 
-authorize="http://hydra.test:4444/oauth2/auth?client_id=${OAUTH_CLIENT}&response_type=code&scope=openid+profile+email&redirect_uri=$(printf '%s' "${CALLBACK}" | sed 's|:|%3A|g; s|/|%2F|g')&state=abcdefghijklmnopqrst"
+authorize="${ISSUER}/oauth2/auth?client_id=${OAUTH_CLIENT}&response_type=code&scope=openid+profile+email&redirect_uri=$(printf '%s' "${CALLBACK}" | sed 's|:|%3A|g; s|/|%2F|g')&state=abcdefghijklmnopqrst"
 
 # begin is a product sending a browser to Hydra, as far as the login app's door.
 # It answers the challenge, and leaves the status in `began`.
@@ -148,7 +166,7 @@ sign_in() {
 
 	# The cookie by hand for the rest, because a jar will not send one to a host
 	# `--resolve` invented. Everything else about the walk is the browser's.
-	head=$(c -o /dev/null -D - -X POST "http://login.test:8091/session?login_challenge=${challenge}" \
+	head=$(c -o /dev/null -D - -X POST "${LOGIN}/session?login_challenge=${challenge}" \
 		-H 'content-type: application/json' \
 		-d "$(printf '{"alias":"%s","password":"%s"}' "${SEED_USER}" "${SEED_PASSWORD}")" | tr -d '\r')
 	cookie=$(printf '%s' "${head}" | awk '/^[Ss]et-[Cc]ookie:/{print $2}' | sed 's/;$//')
@@ -162,12 +180,12 @@ sign_in() {
 		[ "${got}" = "200" ] || die "a password alone finished a sign-in with a factor on it (${got})"
 		step "${SEED_USER} types the password" "${got}, one more to prove"
 
-		got=$(c -o /dev/null -w '%{http_code}' -X POST "http://login.test:8091/accept?login_challenge=${challenge}" \
+		got=$(c -o /dev/null -w '%{http_code}' -X POST "${LOGIN}/accept?login_challenge=${challenge}" \
 			-H "Cookie: ${cookie}")
 		[ "${got}" = "401" ] || die "a half-signed-in browser was accepted (${got})"
 		step "and hydra is told nobody yet" "${got}"
 
-		head=$(c -o /dev/null -D - -X POST "http://login.test:8091/session/continue?login_challenge=${challenge}" \
+		head=$(c -o /dev/null -D - -X POST "${LOGIN}/session/continue?login_challenge=${challenge}" \
 			-H "Cookie: ${cookie}" -H 'content-type: application/json' \
 			-d "$(printf '{"kind":"totp","secret":"%s"}' "$(oathtool --totp -b "${seed}")")" | tr -d '\r')
 		got=$(printf '%s' "${head}" | code)
@@ -182,7 +200,7 @@ sign_in() {
 		step "${SEED_USER} types the password" "204, ${cookie%%=*}"
 	fi
 
-	to=$(c -X POST "http://login.test:8091/accept?login_challenge=${challenge}" -H "Cookie: ${cookie}" \
+	to=$(c -X POST "${LOGIN}/accept?login_challenge=${challenge}" -H "Cookie: ${cookie}" \
 		| sed 's/.*"redirect_to":"//; s/".*//; s|\\u0026|\&|g' | fix)
 	case "${to}" in http*) ;; *) die "nothing was accepted: ${to}";; esac
 	step "hydra is told the subject" "$(printf '%s' "${to}" | cut -c1-40)…"
@@ -201,11 +219,11 @@ sign_in() {
 		# it is -- so grepping the HTML would be grepping a bundle.
 		got=$(c -o /dev/null -w '%{http_code}' "${l}" -H "Cookie: ${cookie}")
 		[ "${got}" = "200" ] || die "consent=ask answered ${got} where a screen was asked for"
-		asking=$(c "http://login.test:8091/flow?consent_challenge=${consent}" -H "Cookie: ${cookie}")
+		asking=$(c "${LOGIN}/flow?consent_challenge=${consent}" -H "Cookie: ${cookie}")
 		printf '%s' "${asking}" | grep -q "${OAUTH_CLIENT}" || die "the screen has nothing to say which app is asking: ${asking}"
 		step "consent, drawn and not yet granted" "a screen"
 
-		l=$(c -o /dev/null -D - -X POST "http://login.test:8091/consent" -H "Cookie: ${cookie}" \
+		l=$(c -o /dev/null -D - -X POST "${LOGIN}/consent" -H "Cookie: ${cookie}" \
 			-d "consent_challenge=${consent}" -d "allow=1" | loc | fix)
 		step "somebody says allow" "$(printf '%s' "${l}" | cut -c1-40)…"
 	else
@@ -223,7 +241,7 @@ sign_in() {
 # says these clients take -- and what every Go relying party sends first.
 # `compose.yaml` has the paragraph about why that method is written down
 # rather than left to a probe.
-token=$(c -X POST http://hydra.test:4444/oauth2/token \
+token=$(c -X POST "${ISSUER}/oauth2/token" \
 		-d grant_type=authorization_code -d "code=${grant}" \
 		-d "redirect_uri=${CALLBACK}" -u "${OAUTH_CLIENT}:${CLIENT_SECRET}")
 	id=$(printf '%s' "${token}" | sed 's/.*"id_token":"//; s/".*//')
@@ -286,7 +304,7 @@ esac
 
 grant=$(printf '%s' "${l}" | sed 's/.*[?&]code=//; s/&.*//')
 [ -n "${grant}" ] || die "the remembered flow handed back no code: ${l}"
-again=$(c -X POST http://hydra.test:4444/oauth2/token \
+again=$(c -X POST "${ISSUER}/oauth2/token" \
 	-d grant_type=authorization_code -d "code=${grant}" \
 	-d "redirect_uri=${CALLBACK}" -u "${OAUTH_CLIENT}:${CLIENT_SECRET}" \
 	| sed 's/.*"id_token":"//; s/".*//' | payload)
@@ -342,7 +360,7 @@ step "the person signs out at the issuer" "…"
 
 # Hydra's rule, tried the wrong way round first on purpose: a redirect back
 # without a hint is refused, and it says so.
-end_session="http://hydra.test:4444/oauth2/sessions/logout"
+end_session="${ISSUER}/oauth2/sessions/logout"
 back_to=$(printf '%s' "${CALLBACK}" | sed 's|:|%3A|g; s|/|%2F|g')
 
 no_hint=$(c -o /dev/null -D - "${end_session}?client_id=${OAUTH_CLIENT}&post_logout_redirect_uri=${back_to}" | loc)
@@ -402,7 +420,7 @@ leaving=$(printf '%s' "${to}" | sed 's/.*logout_challenge=//')
 # session ended without anybody being asked.
 got=$(c -o /dev/null -w '%{http_code}' "$(printf '%s' "${to}" | fix)")
 [ "${got}" = "200" ] || die "a sign-out with no hint answered ${got} where a screen was asked for"
-c "http://login.test:8091/flow?logout_challenge=${leaving}" | grep -q '"logout":true' \
+c "${LOGIN}/flow?logout_challenge=${leaving}" | grep -q '"logout":true' \
 	|| die "the page was not told which screen this is"
 step "  a screen, not a refusal" "${got}"
 
@@ -415,7 +433,7 @@ step "  and nothing ended yet" "${began}, still remembered"
 # The answer. It is a fetch and not a form post -- the screen is a page, so what
 # comes back is where to send the browser rather than a redirect -- and the hop
 # after it is Hydra's own, the same `logout_verifier` the hinted walk follows.
-said=$(c -X POST "http://login.test:8091/logout" -d "logout_challenge=${leaving}" -d "allow=1")
+said=$(c -X POST "${LOGIN}/logout" -d "logout_challenge=${leaving}" -d "allow=1")
 case "${said}" in
 *'"signed_out":true'*) ;;
 *) die "the confirmation was not accepted: ${said}" ;;

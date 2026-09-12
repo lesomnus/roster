@@ -55,12 +55,31 @@ die() { echo "itself: $*" >&2; exit 1; }
 step() { printf '%-38s %s\n' "$1" "$2"; }
 
 # The app sends a browser nobody is signed in for to the issuer.
-l=$(c -o /dev/null -D - "${BASE}/" | loc | fix)
+head=$(c -o /dev/null -D - "${BASE}/" | tr -d '\r')
+l=$(printf '%s' "${head}" | loc | fix)
 case "${l}" in
 */oauth2/auth*) ;;
 *) die "the app did not send the browser to the issuer: ${l}" ;;
 esac
 step "a page nobody is signed in for" "-> the issuer"
+
+# **And the flow's state cookie is `Secure`**, whenever this app is reached over
+# https -- which it is not able to work out for itself, and must not try.
+#
+# The reason this line exists: it was `Secure: r.TLS != nil`, which is nil in
+# every deployment that ends TLS in front of the app. So the cookie that keeps
+# one browser's flow from being finished by another went out unmarked on exactly
+# the deployments that have a certificate, and no gate saw it because the only
+# rig there was served TLS from the app itself. It is the flag now
+# (`--insecure-cookie`), so this asserts the deployment's answer and not the
+# request's.
+case "${BASE}" in
+https://*)
+	printf '%s' "${head}" | grep -i '^set-cookie: product_state' | grep -qi 'Secure' \
+		|| die "the state cookie is not Secure over https: $(printf '%s' "${head}" | grep -i '^set-cookie:')"
+	step "  and the state cookie is marked" "Secure"
+	;;
+esac
 
 l=$(c -o /dev/null -D - "${l}" | loc | fix)
 challenge=$(printf '%s' "${l}" | sed 's/.*login_challenge=//')

@@ -37,13 +37,19 @@
 # here is blind to (#12), and the last phase is what says it cannot happen
 # quietly.
 #
+# # And then again, behind something that ends TLS
+#
+# Which is the shape a deployment has: an ingress with the certificate, the
+# issuer told so with `serve.public.tls.allow_termination_from`, and every app
+# behind it seeing plain http while its public origin is https. That is written
+# as a kustomize **overlay** on `deploy/` -- both because it is what a
+# deployment writes and because nothing had ever written one, so *the base is
+# overlay-able* was a claim and not a fact.
+#
 # # What it does not do yet
 #
-# Put anything **behind a proxy**. Hydra terminates TLS itself here, so
-# `X-Forwarded-Proto` and an app reading `r.TLS` are exercised nowhere -- and a
-# deployment ends TLS at its ingress. `docker/flow.sh` and `docker/behind.sh`
-# are still compose-only as well; `behind.sh` is the oauth2-proxy shape, which
-# is half of what a deployment runs.
+# `docker/flow.sh` and `docker/behind.sh` are still compose-only; `behind.sh` is
+# the oauth2-proxy shape, which is half of what a deployment runs.
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -135,10 +141,12 @@ walk() {
 # it. Applying twice, with the check deleted in between, is the re-sync that
 # puts it second.
 resync() {
-	kube "kubectl -n ${NS} delete job --all >/dev/null 2>&1; kubectl -n ${NS} apply -k /w/deploy >/dev/null"
+	local dir="${1:-/w/deploy}"
+
+	kube "kubectl -n ${NS} delete job --all >/dev/null 2>&1; kubectl -n ${NS} apply -k ${dir} >/dev/null"
 	settled roster-hydra-clients || return 3
 
-	kube "kubectl -n ${NS} delete job roster-hydra-clients-check >/dev/null 2>&1; kubectl -n ${NS} apply -k /w/deploy >/dev/null"
+	kube "kubectl -n ${NS} delete job roster-hydra-clients-check >/dev/null 2>&1; kubectl -n ${NS} apply -k ${dir} >/dev/null"
 
 	local out=0
 	settled roster-hydra-clients-check || out=$?
@@ -223,7 +231,20 @@ docker run --rm --entrypoint sh -v "${vol}:/w" alpine/openssl:3.3.2 -c '
 		openssl x509 -req -in "${h}.csr" -CA ca.crt -CAkey ca.key -CAcreateserial \
 			-days 1 -extfile ext -out "${h}.crt" >/dev/null 2>&1
 	done
-	mkdir -p /w/tls && cp roster-hydra.crt roster-hydra.key roster-product.crt roster-product.key ca.crt /w/tls/
+
+	# And one for the thing that **ends** TLS in front of both of them, which is
+	# what a deployment has and what the certificates above stand in for. Two
+	# names on one certificate, because an ingress is one terminator serving
+	# several hosts and the names are what it routes on.
+	openssl req -newkey rsa:2048 -nodes -keyout roster-edge.key -out roster-edge.csr \
+		-subj "/CN=roster-edge" >/dev/null 2>&1
+	printf "subjectAltName=%s\n" \
+		"DNS:roster-issuer.roster.svc.cluster.local,DNS:roster-issuer.roster.svc,DNS:roster-issuer,DNS:roster-app.roster.svc.cluster.local,DNS:roster-app.roster.svc,DNS:roster-app" > ext
+	openssl x509 -req -in roster-edge.csr -CA ca.crt -CAkey ca.key -CAcreateserial \
+		-days 1 -extfile ext -out roster-edge.crt >/dev/null 2>&1
+
+	mkdir -p /w/tls && cp roster-hydra.crt roster-hydra.key roster-product.crt roster-product.key \
+		roster-edge.crt roster-edge.key ca.crt /w/tls/
 ' >/dev/null
 
 carry
@@ -238,6 +259,9 @@ kube "kubectl -n ${NS} create secret generic roster-hydra-tls \
 kube "kubectl -n ${NS} create secret generic roster-product-tls \
 	--from-file=tls.crt=/w/tls/roster-product.crt \
 	--from-file=tls.key=/w/tls/roster-product.key >/dev/null"
+kube "kubectl -n ${NS} create secret generic roster-edge-tls \
+	--from-file=tls.crt=/w/tls/roster-edge.crt \
+	--from-file=tls.key=/w/tls/roster-edge.key >/dev/null"
 kube "kubectl -n ${NS} apply -k /w/deploy >/dev/null"
 kube "kubectl -n ${NS} rollout status deploy/roster-hydra --timeout=300s"
 
@@ -282,7 +306,11 @@ kube "kubectl -n ${NS} logs job/roster-hydra-clients-check"
 # command line, which through a shell, a container and `kubectl exec` is three
 # layers of quoting to be wrong about.
 
-cat > "${work}/walk.yaml" <<EOF
+# walkyaml writes the walk's Job for one pair of addresses: the issuer and the
+# app. Two phases run it -- the issuer serving TLS itself, and the issuer behind
+# something that ends TLS -- and the script it runs is the same either way.
+walkyaml() {
+	cat > "${work}/walk.yaml" <<EOF
 # The walk, as a Job **inside** the cluster -- which is what makes the Services
 # resolve and the issuer's certificate trustable. It is \`docker/itself.sh\`
 # unchanged: the same script \`scripts/hydra.sh\` runs against compose, told
@@ -301,9 +329,9 @@ spec:
           image: roster-walk:${CLUSTER}
           command: ["/usr/local/bin/itself.sh"]
           env:
-            - { name: ISSUER, value: "https://roster-hydra.roster.svc.cluster.local:4444" }
+            - { name: ISSUER, value: "$1" }
             - { name: LOGIN, value: "http://roster-login.roster.svc.cluster.local:8091" }
-            - { name: BASE, value: "https://roster-product.roster.svc.cluster.local:5555" }
+            - { name: BASE, value: "$2" }
             # curl's own name for a trust store, because this issuer's
             # certificate is the rig's own.
             - { name: CURL_CA_BUNDLE, value: /tls/ca.crt }
@@ -315,7 +343,12 @@ spec:
             secretName: roster-hydra-tls
             items: [{ key: ca.crt, path: ca.crt }]
 EOF
-carry
+	carry
+}
+
+walkyaml \
+	"https://roster-hydra.roster.svc.cluster.local:4444" \
+	"https://roster-product.roster.svc.cluster.local:5555"
 
 echo
 echo "== somebody to sign in as"
@@ -447,6 +480,244 @@ walk || { echo "cluster: putting the registration back did not sign anybody in" 
 [ "$(product)" = "${after}" ] \
 	|| { echo "cluster: the app restarted during the recovery, so 'no restart' is not what was checked" >&2; exit 1; }
 echo "   and so does the flow, on the pod that never restarted"
+
+
+# **Behind something that ends TLS**, which is the shape a deployment has and the
+# last thing #12 listed as covered nowhere.
+#
+# Up to here Hydra serves TLS itself. That is right for a cluster with no ingress
+# and it is not what a deployment does: a deployment ends TLS at its ingress and
+# tells Hydra so with `serve.public.tls.allow_termination_from`, so the issuer
+# sees plain http with `X-Forwarded-Proto: https` on it and every URL it builds
+# has to be the **public** scheme anyway. Nothing here had ever seen that, and
+# what lives there is a whole class: an app that works out its own scheme from
+# `r.TLS` gets it wrong, and one that builds a URL from what it was told gets it
+# right. One such app was wrong (`98a2b99`).
+#
+# It is an **overlay** rather than a second rig, which is the other thing worth
+# proving: `deploy/` says an overlay is how a deployment changes the host in
+# `URLS_*` and where TLS ends, and until now nothing had written one.
+echo
+echo "== and again, with TLS ending in front of it"
+
+mkdir -p "${work}/behind"
+
+# The terminator. nginx, unprivileged, one certificate with both names on it,
+# and the two headers that make this the shape it is -- so the issuer knows the
+# browser arrived over https and which name it asked for.
+cat > "${work}/behind/edge.yaml" <<'EOF'
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: roster-edge
+data:
+  edge.conf: |
+    server {
+      listen 8443 ssl;
+      server_name roster-issuer roster-issuer.roster.svc roster-issuer.roster.svc.cluster.local;
+      ssl_certificate     /tls/tls.crt;
+      ssl_certificate_key /tls/tls.key;
+      location / {
+        proxy_pass http://roster-hydra:4444;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-For $remote_addr;
+      }
+    }
+    server {
+      listen 8443 ssl;
+      server_name roster-app roster-app.roster.svc roster-app.roster.svc.cluster.local;
+      ssl_certificate     /tls/tls.crt;
+      ssl_certificate_key /tls/tls.key;
+      location / {
+        proxy_pass http://roster-product:5555;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-For $remote_addr;
+      }
+    }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: roster-issuer
+spec:
+  selector:
+    app.kubernetes.io/name: roster
+    app.kubernetes.io/component: edge
+  ports:
+    - { name: https, port: 443, targetPort: https }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: roster-app
+spec:
+  selector:
+    app.kubernetes.io/name: roster
+    app.kubernetes.io/component: edge
+  ports:
+    - { name: https, port: 443, targetPort: https }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: roster-edge
+  labels:
+    app.kubernetes.io/name: roster
+    app.kubernetes.io/component: edge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: roster
+      app.kubernetes.io/component: edge
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: roster
+        app.kubernetes.io/component: edge
+    spec:
+      containers:
+        - name: nginx
+          image: nginxinc/nginx-unprivileged:1.27-alpine
+          ports:
+            - { name: https, containerPort: 8443 }
+          readinessProbe:
+            tcpSocket: { port: https }
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          volumeMounts:
+            - { name: conf, mountPath: /etc/nginx/conf.d/edge.conf, subPath: edge.conf, readOnly: true }
+            - { name: tls, mountPath: /tls, readOnly: true }
+      volumes:
+        - name: conf
+          configMap: { name: roster-edge }
+        - name: tls
+          secret: { secretName: roster-edge-tls }
+EOF
+
+# The overlay: the same base, with TLS ending in front of it. Every patch here is
+# a line a deployment writes for its own hostnames.
+cat > "${work}/behind/kustomization.yaml" <<'EOF'
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../deploy
+  - ./edge.yaml
+
+patches:
+  # Hydra: stop serving TLS, trust the terminator's word about the scheme, and
+  # publish the **public** name -- which is what every URL in the discovery
+  # document is built from, so this and the terminator's certificate are one
+  # decision.
+  #
+  # A strategic merge and not a replace: `env` merges by `name`, so this says the
+  # three that change and inherits the rest. A patch that listed them all would
+  # be a second copy of the base's contract, which is the shape this repository
+  # keeps finding defects in.
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: roster-hydra
+      spec:
+        template:
+          spec:
+            containers:
+              - name: hydra
+                env:
+                  - { name: SERVE_PUBLIC_TLS_ENABLED, value: "false" }
+                  - { name: SERVE_PUBLIC_TLS_ALLOW_TERMINATION_FROM, value: "10.42.0.0/16" }
+                  - { name: URLS_SELF_ISSUER, value: "https://roster-issuer.roster.svc.cluster.local" }
+  # The relying party: plain http, no certificate of its own, and its **public**
+  # origin is https. Which is every app behind an ingress -- and the pair of
+  # lines that makes it one: the app is told what it is reached as rather than
+  # working it out from the connection it got.
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: roster-product
+      spec:
+        template:
+          spec:
+            containers:
+              - name: product
+                args:
+                  - --listen=0.0.0.0:5555
+                  - --issuer=https://roster-issuer.roster.svc.cluster.local
+                  - --client-id=product
+                  - --base=https://roster-app.roster.svc.cluster.local
+                readinessProbe:
+                  httpGet: { scheme: HTTP }
+  # And the check that reads what Hydra was told: the public port moved, so the
+  # one line naming it moves with it. `deploy/clients.yaml` says that line is
+  # said rather than derived for this reason.
+  - patch: |
+      apiVersion: batch/v1
+      kind: Job
+      metadata:
+        name: roster-hydra-clients-check
+      spec:
+        template:
+          spec:
+            containers:
+              - name: doctor
+                args:
+                  - --config=/config/config.yaml
+                  - login
+                  - doctor
+                  - --public=https://roster-issuer.roster.svc.cluster.local
+EOF
+
+# The client's URLs move with the app, because a redirect URI is the **public**
+# one and the issuer refuses anything else. Same file, same sync as the phase
+# above.
+python3 - "${work}/deploy/clients/product.json" <<'PY'
+import sys
+
+p = sys.argv[1]
+s = open(p).read()
+old = "https://roster-product.roster.svc.cluster.local:5555"
+assert old in s, "the client no longer names the app this phase moves"
+open(p, "w").write(s.replace(old, "https://roster-app.roster.svc.cluster.local"))
+PY
+carry
+
+# The Jobs go first, because **a Job's pod template is immutable**: this overlay
+# changes the check's arguments, and an `apply` over a finished Job is refused
+# with `field is immutable` and a page of diff. `resync` below does the same
+# thing for the same reason, and a deployment gets it from Argo's
+# `hook-delete-policy: BeforeHookCreation`.
+kube "kubectl -n ${NS} delete job --all >/dev/null 2>&1; kubectl -n ${NS} apply -k /w/behind >/dev/null"
+kube "kubectl -n ${NS} rollout status deploy/roster-edge --timeout=300s >/dev/null"
+kube "kubectl -n ${NS} rollout status deploy/roster-hydra --timeout=300s >/dev/null"
+
+# **The product coming up at all is the first assertion.** It does discovery
+# against `--issuer` at startup and refuses a document whose `iss` is not that
+# string, so an issuer that published `http://` here -- which is what it would
+# do if `allow_termination_from` were missing or the terminator sent no
+# `X-Forwarded-Proto` -- is a pod that never becomes ready.
+kube "kubectl -n ${NS} rollout status deploy/roster-product --timeout=300s >/dev/null" \
+	|| { kube "kubectl -n ${NS} logs deploy/roster-product --tail=20"; echo "cluster: the relying party would not come up behind the terminator" >&2; exit 1; }
+echo "   the issuer is behind nginx, and the app came up against it"
+
+moved=0
+resync /w/behind || moved=$?
+[ "${moved}" = "0" ] \
+	|| { kube "kubectl -n ${NS} logs job/roster-hydra-clients-check"; echo "cluster: the check refuses the deployment behind a terminator (${moved})" >&2; exit 1; }
+echo "   and the check passes against the public name"
+
+# And the whole flow through it. The same script again, told the two public
+# names -- so what it proves this time is that nothing in the stack decided its
+# own scheme from the connection it was handed.
+walkyaml \
+	"https://roster-issuer.roster.svc.cluster.local" \
+	"https://roster-app.roster.svc.cluster.local"
+walk || { echo "cluster: the flow does not survive TLS ending in front of it" >&2; exit 1; }
+echo "   and the flow goes round, with nothing serving its own TLS"
 
 echo
 echo "cluster: ok"
