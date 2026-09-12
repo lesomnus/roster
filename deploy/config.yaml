@@ -18,7 +18,7 @@ server:
 # outgrows it replaces `db:` and `control.db:` and changes nothing else.
 db:
   driver: sqlite3
-  dsn: "file:/data/roster.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)"
+  dsn: "file:/data/roster.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_txlock=immediate"
   migrate: true
 watch:
   broker: memory
@@ -26,7 +26,7 @@ watch:
 control:
   db:
     driver: sqlite3
-    dsn: "file:/control/roster-control.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)"
+    dsn: "file:/control/roster-control.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_txlock=immediate"
     migrate: true
   watch:
     broker: memory

@@ -6,7 +6,7 @@
 
 db:
   driver: sqlite3
-  dsn: "file:roster.db?_pragma=foreign_keys(1)"
+  dsn: "file:roster.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_txlock=immediate"
 
 server:
   addr: ":50051"
@@ -41,7 +41,7 @@ server:
 control:
   db:
     driver: sqlite3
-    dsn: "file:roster-control.db?_pragma=foreign_keys(1)"
+    dsn: "file:roster-control.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_txlock=immediate"
   addr: "127.0.0.1:50052"
   # What the console talks to. A browser cannot speak gRPC, and this is the
   # port that has the rows a console is for. `ts/src/main.tsx` looks here by

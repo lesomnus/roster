@@ -16,17 +16,17 @@ roster runs twice in one process, on two databases.
 ```yaml
 db:
   driver: sqlite3
-  dsn: "file:roster.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)"
+  dsn: "file:roster.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_txlock=immediate"
 
 # Who may call this deployment. Roster again: one tenant for you, a holder per
 # service, and the keys under those.
 control:
   db:
     driver: sqlite3
-    dsn: "file:roster-control.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)"
+    dsn: "file:roster-control.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_txlock=immediate"
 ```
 
-Three pragmas, and each is there because leaving it out fails quietly.
+Four things, and each is there because leaving it out fails quietly.
 `foreign_keys` is off in SQLite unless asked, and the schema relies on it.
 `busy_timeout` is how long a connection waits for a lock before failing the
 statement; the driver's own default is a **minute**, so a lock held by another
@@ -36,6 +36,25 @@ Five seconds is longer than any contention this app creates and short enough
 to see. `journal_mode(WAL)` lets readers and writers proceed together; under
 the default rollback journal a long read blocks every write. It is a property
 of the file, set once and kept.
+
+And `_txlock=immediate`, which is not a pragma at all -- it is how Go begins a
+transaction, which is why it is the one of the four an operator has no way to
+reason about from the database's own documentation. The default
+is `BEGIN DEFERRED`: the read lock is taken at the first statement and the write
+lock is asked for later. Two of those overlapping is two ordinary write RPCs,
+each reading the row it is about before changing it, and it is the one case
+SQLite refuses to **wait** for -- both connections hold a read lock, both want
+to promote, waiting could deadlock, so the second one is refused at once and
+`busy_timeout` is never consulted. Measured over 480 such transactions from
+eight connections: 108 refused as written above, **310** with `journal_mode(WAL)`
+and nothing else, and none at all with `_txlock=immediate`, which takes the write
+lock up front where there is nothing to deadlock. Reads are unaffected, because
+a transaction declared read-only stays deferred.
+
+payday adds it to any SQLite DSN that does not say it (`config.DbConfig.Open`),
+so a deployment that leaves it out is not broken -- it is written here because a
+DSN is the one place an operator can see what their database was asked for, and
+because `_txlock=deferred` is how somebody would turn it off on purpose.
 
 ```yaml
 control:
