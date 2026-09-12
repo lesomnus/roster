@@ -43,6 +43,26 @@ control:
   # never becomes ready and says nothing about why.
   console:
     dir: /usr/share/roster/console
+    # Where the page reaches the admin listener **from a browser**. Empty is the
+    # customers screen not being offered, which is better than offering one that
+    # cannot answer -- and it stays empty until a deployment routes a host to
+    # the block below.
+    admin: ""
+
+# The data plane with **no wall**, which is what the console's customers screen
+# reads: creating a customer happens before there is a tenant to be narrowed to,
+# so it cannot be done through the walled plane at all.
+#
+# Up, and offered to nobody. There is no Service for it here and `origins` is
+# empty, because the caller is a browser on the console's own origin and that
+# origin is a deployment's to know. Both lines are filled in together or neither
+# is; `cmd/serve.go` is why this is a third listener rather than a flag.
+admin:
+  addr: 0.0.0.0:8070
+  http:
+    addr: 0.0.0.0:8071
+    allow_web: true
+    origins: []
 
 # The Login App, in the same process. `docs/operating.md` § "One process, or
 # three" is the question of whether it should be, and the answer is a

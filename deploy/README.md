@@ -91,7 +91,17 @@ What an overlay is expected to bring, and what it should leave alone:
 
 The pieces of the rig that a deployment does not want are `product.yaml` (there
 to have something to sign in *to*) and `secrets.yaml` above; both come out with a
-`$patch: delete`. `scripts/cluster.sh`'s own overlay (`--behind`'s phases) is a
+`$patch: delete`.
+
+**And the other shape of relying party is deliberately not here.** `oauth2-proxy`
+in front of a page is half of what a deployment runs
+(`docs/relying-party.md`), and it was moved into this directory and moved
+straight back out: the issuer refuses a redirect URI over plain http unless the
+host ends in `.localhost`, so that shape needs something terminating TLS in front
+of it -- an **ingress**, which is the deployment's and not this base's.
+`product.yaml` is here only because it can serve its own certificate.
+So the proxy demo lives in whatever has a terminator: `scripts/cluster.sh`'s
+overlay, or a deployment beside its own ingress. `scripts/cluster.sh`'s own overlay (`--behind`'s phases) is a
 worked example of everything on this list except the secrets.
 
 ## TLS, and the `--dev` that is not here
