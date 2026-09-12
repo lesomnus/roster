@@ -23,6 +23,7 @@ why it is worded as a test rather than as a list.
 | --- | --- |
 | [docs/position.md](docs/position.md) | what roster is, and **where it stops** |
 | [docs/entity.md](docs/entity.md) | the twenty-three tables, drawn, with a paragraph each |
+| [docs/glossary.md](docs/glossary.md) | the words -- the wall, the gate, a grant, a walk, a rig -- and the four that name two things |
 | [docs/operating.md](docs/operating.md) | running one: keys, roles, TLS |
 | [docs/login.md](docs/login.md) | what happens when somebody signs in |
 | [docs/relying-party.md](docs/relying-party.md) | the two shapes an app takes in front of it, and the two that are runnable |

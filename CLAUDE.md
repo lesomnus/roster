@@ -394,6 +394,9 @@ a browser holds and `auth` reads credentials rather than making them.
 ## Reference
 
 - `docs/entity.md` — the twenty-three entities, how they relate, one paragraph each
+- `docs/glossary.md` — the vocabulary this file uses as given: the wall, the gate,
+  a grant, a layer, a plane, a walk, a rig. Four words name two things each and it
+  says which
 - `docs/baseline.md` — the promises a normal user relies on, each pinned to its
   tests. **Touching code under one of them means running its tests, and a
   baseline test is never weakened to let a change pass.**
