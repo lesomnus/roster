@@ -277,6 +277,27 @@ did the verifying, and `Add` refuses a request carrying one.
 > them. Both are guarded by the same rule a password is: nobody writes a way
 > into an account wider than their own.
 
+### A second directory, added by the person themselves
+
+An operator with two `Connection` rows -- Entra and GitHub, say -- has people who
+arrived through one of them and may want both. That is the account page's *signs
+in with* section: a row per directory the operator offers, where the one they
+arrived through says who they are there and offers to unlink, and the one they
+have not used offers **connect**. Pressing it is a round trip to that directory
+and back, and what lands on their row is `Identity.Add` with their own reference.
+
+Two things it does not do, each for a reason:
+
+- **It does not offer the directory they already use.** roster refuses a second
+  identity at one provider -- *a second one is a link that found the wrong row*
+  (`server/core/identity.go`) -- so a button for it would be a trip to a
+  directory that ends in a refusal.
+- **The operator's console has no such button.** A subject is issued at the
+  directory and does not exist until somebody signs in there, so an operator
+  cannot write one; what they can do instead is write the `Email` row the first
+  sign-in matches (`../login.md` § *Putting people in, and letting them arrive*).
+  The console lists what somebody signs in with and can take one away.
+
 ## A second factor
 
 ```

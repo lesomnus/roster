@@ -325,6 +325,23 @@ func (b *browser) do(t *testing.T, method, path, body string, with func(*http.Re
 	return res.StatusCode, string(out)
 }
 
+// landed is `do` and **where it ended up**, which is the whole of what a browser
+// experiences after pressing *connect*: out to a directory, back to `/callback`,
+// and on to this app's own page with a word in the query saying how it went.
+func (b *browser) landed(t *testing.T, method, path string) (int, string) {
+	t.Helper()
+
+	req, err := http.NewRequestWithContext(t.Context(), method, b.base+path, nil)
+	require.NoError(t, err)
+	req.Host = b.host
+
+	res, err := b.Do(req)
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	return res.StatusCode, res.Request.URL.String()
+}
+
 // rpc speaks Connect to the app's origin, the way the page does.
 func (b *browser) rpc(t *testing.T, method, body string) (int, string) {
 	t.Helper()
@@ -420,18 +437,22 @@ func TestTheAccountAppFrontsTwoOperators(t *testing.T) {
 		x.Equal(http.StatusOK, code)
 
 		// A second account at the **same** provider is refused by roster -- a
-		// second one is a link that found the wrong row -- so this is what the
-		// page says when somebody tries.
+		// second one is a link that found the wrong row -- and what a browser
+		// gets is its own page back with a word for it, because somebody pressed
+		// *connect* and has been to a directory since.
 		d.idp.Subject = "3002"
-		code, body := b.do(t, http.MethodPost, "/ways?connection=example", "", nil)
-		x.Equal(http.StatusConflict, code, body)
+		code, to := b.landed(t, http.MethodPost, "/ways?connection=example")
+		x.Equal(http.StatusOK, code, to)
+		x.Contains(to, "link=already", "the page was not told why: %s", to)
+		x.Contains(to, "at=example")
 
 		// At another provider it lands on her: the provider says who it is, the
 		// session says whose account it is for, and the request says nothing.
-		code, body = b.do(t, http.MethodPost, "/ways?connection=other", "", nil)
-		x.Equal(http.StatusOK, code, body)
+		code, to = b.landed(t, http.MethodPost, "/ways?connection=other")
+		x.Equal(http.StatusOK, code, to)
+		x.Contains(to, "link=ok", "a link that worked did not say so: %s", to)
 
-		code, body = b.rpc(t, "/roster.MeService/Get", `{}`)
+		code, body := b.rpc(t, "/roster.MeService/Get", `{}`)
 		x.Equal(http.StatusOK, code, body)
 		x.Contains(body, `"other"`, "the second account did not land on erin: %s", body)
 		x.Contains(body, `"3001"`)

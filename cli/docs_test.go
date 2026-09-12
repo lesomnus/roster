@@ -79,7 +79,8 @@ func TestTheDocumentationNamesFilesThatExist(t *testing.T) {
 		if !strings.Contains(s, "/") || strings.ContainsAny(s, " *…()\"'") {
 			return false
 		}
-		if strings.Contains(s, "://") || strings.HasPrefix(s, "/") || strings.HasPrefix(s, "@") {
+		if strings.Contains(s, "://") || strings.Contains(s, "${") ||
+			strings.HasPrefix(s, "/") || strings.HasPrefix(s, "@") {
 			return false
 		}
 		if strings.HasSuffix(s, "/") {
@@ -98,7 +99,15 @@ func TestTheDocumentationNamesFilesThatExist(t *testing.T) {
 		src, err := os.ReadFile(filepath.Join(root, f))
 		x.NoError(err)
 
+		page := strings.HasSuffix(f, ".md")
 		for i, line := range strings.Split(string(src), "\n") {
+			// In a page every line counts; in source only a comment does. A
+			// backtick is a raw string in Go and a template literal in
+			// TypeScript, and `${base}/` is neither a path nor a mistake.
+			if !page && !comment(line) {
+				continue
+			}
+
 			for _, tok := range regexp.MustCompile("`([^`\n]+)`").FindAllStringSubmatch(line, -1) {
 				p := strings.TrimRight(strings.SplitN(tok[1], "#", 2)[0], ",.;:")
 				if !looksLikeAPath(p) {
@@ -320,6 +329,14 @@ func TestTheDocumentationLinksResolve(t *testing.T) {
 			}
 		}
 	}
+}
+
+// comment reports whether a line of source is one.
+func comment(line string) bool {
+	s := strings.TrimSpace(line)
+
+	return strings.HasPrefix(s, "//") || strings.HasPrefix(s, "*") ||
+		strings.HasPrefix(s, "/*") || strings.HasPrefix(s, "#")
 }
 
 // docs is every page a reader is pointed at, which is every page but the record.

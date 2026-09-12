@@ -37,6 +37,44 @@ test('a password signs her in, and a wrong one does not', async ({ page }) => {
 	await signOut(page)
 })
 
+test('a second directory is one button, and the one she arrived through is not offered', async ({ page }) => {
+	// The rig gives contoso two connections and erin an identity at one of them,
+	// which is the shape an operator with Entra and GitHub has. What this pins is
+	// that the page draws a row per **connection** rather than a button per
+	// provider: `connect entra` would be a round trip that ends in roster
+	// refusing a second identity there, so it is not drawn at all.
+	await signIn(page)
+	await signedIn(page)
+
+	const ways = page.locator('section', { has: page.getByRole('heading', { name: 'signs in with' }) })
+	const entra = ways.locator('tr', { hasText: 'entra' })
+	const github = ways.locator('tr', { hasText: 'github' })
+
+	await expect(entra.locator('.mono', { hasText: 'e2e-erin-at-entra' })).toBeVisible()
+	await expect(entra.locator('button', { hasText: 'unlink' })).toBeVisible()
+	await expect(entra.locator('button', { hasText: 'connect' })).toHaveCount(0)
+
+	await expect(github).toContainText('not connected')
+	await expect(github.locator('button', { hasText: 'connect' })).toBeVisible()
+	await expect(github.locator('button', { hasText: 'unlink' })).toHaveCount(0)
+
+	// And the password is still a row of its own, above them.
+	await expect(ways.locator('tr', { hasText: 'password' })).toBeVisible()
+
+	// A connect that has been to a directory and back lands here with a word for
+	// how it went, which the page draws in this section and takes out of the URL
+	// -- `account/account_test.go` is where the round trip that produces it is
+	// walked; this is the half that is a page.
+	await page.goto(`${base}/?link=taken&at=github`)
+	await expect(ways.locator('.bad')).toContainText('already a way in for somebody here')
+	await expect(page).toHaveURL(`${base}/`)
+
+	await page.goto(`${base}/?link=ok&at=github`)
+	await expect(ways.locator('.note')).toContainText('github is a way in now')
+
+	await signOut(page)
+})
+
 test('she changes her password, which asks for the current one', async ({ page }) => {
 	await signIn(page)
 	await signedIn(page)

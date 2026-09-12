@@ -668,17 +668,29 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 			Provider: who.Provider,
 			Subject:  who.Subject,
 		}.Build())
+		// Back to the page, whichever way it went, with a word for it.
+		//
+		// A browser is here because somebody pressed *connect* on their own
+		// account page and has been to a directory and back; a plain-text status
+		// leaves them on a page with their answer and no way back to the account
+		// it was about -- and the answer they get most is *taken*, since a
+		// provider account already on somebody else's row is the ordinary
+		// mistake. The page draws the word in the section the button was in.
+		//
+		// The statuses are gone rather than moved: there is no caller here but
+		// the form, and the success path always redirected.
+		why := "error"
 		switch status.Code(err) {
 		case codes.OK:
-			http.Redirect(w, r, "/", http.StatusFound)
+			why = "ok"
 		case codes.AlreadyExists:
-			http.Error(w, "that account is already a way in", http.StatusConflict)
+			why = "taken"
 		case codes.InvalidArgument:
-			http.Error(w, "you already sign in with this provider", http.StatusConflict)
+			why = "already"
 		default:
 			fmt.Fprintf(os.Stderr, "account: link %s/%s: %v\n", who.Provider, who.Subject, err)
-			http.Error(w, "cannot add", http.StatusInternalServerError)
 		}
+		http.Redirect(w, r, "/?link="+why+"&at="+url.QueryEscape(who.Provider), http.StatusFound)
 
 		return
 	}

@@ -131,6 +131,40 @@ function Account(props: { of: Providers; onSignOut: () => void }): React.ReactNo
 }
 
 /** Needs says which grant a section is waiting on, instead of drawing a dead button. */
+/**
+ * said is what `/callback` left in the URL after a *connect*, taken out of it.
+ *
+ * The account app is one screen with no router, so a word in the query is how a
+ * round trip that ended at a directory says how it went. It is read once and
+ * removed, because a reload should not repeat an answer about something that
+ * happened before it.
+ */
+const landed = ((): { why: string; at: string } | null => {
+	const q = new URLSearchParams(window.location.search)
+	const why = q.get('link')
+	if (why === null) {
+		return null
+	}
+
+	window.history.replaceState(null, '', window.location.pathname)
+
+	return { why, at: q.get('at') ?? '' }
+})()
+
+/** how is what to say about it, in the section the button was in. */
+function how(v: { why: string; at: string }): { ok: boolean; text: string } {
+	switch (v.why) {
+		case 'ok':
+			return { ok: true, text: `${v.at} is a way in now` }
+		case 'taken':
+			return { ok: false, text: `that ${v.at} account is already a way in for somebody here` }
+		case 'already':
+			return { ok: false, text: `you already sign in with ${v.at}` }
+		default:
+			return { ok: false, text: `${v.at} could not be added` }
+	}
+}
+
 function Needs(props: { method: string }): React.ReactNode {
 	return <p className="none">this needs a role naming {props.method}</p>
 }
@@ -187,7 +221,31 @@ function Profile(props: { own: Uint8Array; alias: string; may: (m: string) => bo
 	)
 }
 
-/** Ways is how the person signs in, and the provider accounts they can add or take back. */
+/**
+ * Ways is how the person signs in: the password, and a row per directory this
+ * operator offers.
+ *
+ * # A row per connection, not a button per provider
+ *
+ * This drew the identities the person had and then a button for **every**
+ * connection the tenant has, which is one screen for two questions and gets the
+ * common case wrong. An operator with Entra and GitHub registered, and somebody
+ * who arrived through Entra, saw `add entra` beside `add github` -- and the first
+ * of those is a round trip to Entra that ends in roster refusing it, because a
+ * second identity at one provider is *a link that found the wrong row*
+ * (`server/core/identity.go`). The only way to find that out was to go and come
+ * back.
+ *
+ * So the list is the **connections**, each saying whether it is connected: the
+ * one they used says who they are there and offers to unlink, and the one they
+ * have not used offers to connect. Which is also the feature an operator with two
+ * directories wanted -- *I signed up with Entra and I would like GitHub too* is
+ * one button, where it belongs, and the button that cannot work is not drawn.
+ *
+ * An identity at a provider the tenant no longer offers keeps its row, dim and
+ * without a connect: a `Connection` is configuration and may be withdrawn, and
+ * the way in it wrote is still a way in until somebody takes it back.
+ */
 function Ways(props: {
 	of: Providers
 	own: Uint8Array
@@ -198,6 +256,7 @@ function Ways(props: {
 	const unlink = useCall(MeService.method.unlink)
 	const [gone, setGone] = useState<string[]>([])
 	const [bad, setBad] = useState<string | null>(null)
+	const [note, setNote] = useState(landed === null ? null : how(landed))
 
 	const link = (name: string): void => {
 		const f = document.createElement('form')
@@ -207,8 +266,28 @@ function Ways(props: {
 		f.submit()
 	}
 
+	const may = props.may('/roster.IdentityService/Add')
 	const ids = props.identities.filter((i) => !gone.includes(uuid(i.id)))
 	const passwords = props.credentials.filter((c) => c.kind === 'password')
+
+	const at = (name: string): { id: Uint8Array; provider: string; subject: string } | undefined =>
+		ids.find((i) => i.provider === name)
+
+	// The connections, then whatever the person holds that is not one of them.
+	const rows: { provider: string; offered: boolean }[] = [
+		...props.of.providers.map((p) => ({ provider: p.name, offered: true })),
+		...ids
+			.filter((i) => !props.of.providers.some((p) => p.name === i.provider))
+			.map((i) => ({ provider: i.provider, offered: false })),
+	]
+
+	const off = (i: { id: Uint8Array }): void => {
+		setBad(null)
+		void unlink
+			.call({ id: i.id })
+			.then(() => setGone((was) => [...was, uuid(i.id)]))
+			.catch((e: unknown) => setBad(said(e)))
+	}
 
 	return (
 		<section>
@@ -222,37 +301,39 @@ function Ways(props: {
 							<td />
 						</tr>
 					))}
-					{ids.map((i) => (
-						<tr key={uuid(i.id)}>
-							<td>{i.provider}</td>
-							<td className="mono">{i.subject}</td>
-							<td>
-								{/* `Me.Unlink` is waived: taking back a way in needs no
-								    role. roster refuses the last one. */}
-								<button
-									onClick={() => {
-										setBad(null)
-										void unlink
-											.call({ id: i.id })
-											.then(() => setGone((was) => [...was, uuid(i.id)]))
-											.catch((e: unknown) => setBad(said(e)))
-									}}
-								>
-									unlink
-								</button>
-							</td>
-						</tr>
-					))}
+					{rows.map((r) => {
+						const has = at(r.provider)
+
+						return (
+							<tr key={r.provider}>
+								<td className={r.offered ? undefined : 'dim'}>{r.provider}</td>
+								<td className={has === undefined ? 'dim' : 'mono'}>
+									{has === undefined ? 'not connected' : has.subject}
+								</td>
+								<td>
+									{has !== undefined ? (
+										/* `Me.Unlink` is waived: taking back a way in needs no
+										   role. roster refuses the last one. */
+										<button onClick={() => off(has)}>unlink</button>
+									) : (
+										r.offered && (
+											<button disabled={!may} onClick={() => link(r.provider)}>
+												connect
+											</button>
+										)
+									)}
+								</td>
+							</tr>
+						)
+					})}
 				</tbody>
 			</table>
-			{props.of.providers.length > 0 && (
-				<p className="acts">
-					{props.of.providers.map((p) => (
-						<button key={p.name} disabled={!props.may('/roster.IdentityService/Add')} onClick={() => link(p.name)}>
-							add {p.name}
-						</button>
-					))}
-					{!props.may('/roster.IdentityService/Add') && <Needs method="/roster.IdentityService/Add" />}
+			{!may && rows.some((r) => r.offered && at(r.provider) === undefined) && (
+				<Needs method="/roster.IdentityService/Add" />
+			)}
+			{note !== null && (
+				<p className={note.ok ? 'note' : 'bad'} onClick={() => setNote(null)}>
+					{note.text}
 				</p>
 			)}
 			{bad !== null && <p className="bad">{bad}</p>}

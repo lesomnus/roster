@@ -111,6 +111,22 @@ echo '{"role":{"slug":{"alias":"everything","tenant":{"alias":"contoso"}}},"hold
 	| r binding add - >/dev/null
 echo "${E2E_ERIN_PASSWORD}" | r vouch set --password-stdin @contoso/erin >/dev/null 2>&1
 r host add '{"tenant":{"alias":"contoso"},"name":"localhost"}' >/dev/null
+
+# Two directories, and erin arrived through one of them.
+#
+# Which is the case the *signs in with* section is drawn for: a `Connection` is
+# configuration and roster validates neither the issuer nor the secret, so two
+# of them cost two rows and no provider -- and what the page has to get right is
+# that the one she used offers *unlink* and the one she has not offers *connect*.
+# `add entra` used to be drawn beside `add github`, and clicking it was a round
+# trip to a directory that ends in roster refusing a second identity there.
+for c in entra github; do
+	r connection add "{\"tenant\":{\"alias\":\"contoso\"},\"name\":\"${c}\",
+		\"issuer\":\"https://${c}.invalid/v2.0\",\"client_id\":\"e2e\",
+		\"scopes\":[\"openid\",\"email\"],\"secret_ref\":\"env:E2E_${c}_SECRET\"}" >/dev/null
+done
+r identity add '{"holder":{"slug":{"alias":"erin","tenant":{"alias":"contoso"}}},
+	"provider":"entra","subject":"e2e-erin-at-entra"}' >/dev/null
 # The account app's own key: a person of the tenant's, holding what the app
 # calls as itself (`account/account.go` says which), which is not everything.
 r holder add @contoso/account >/dev/null
