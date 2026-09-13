@@ -210,10 +210,23 @@ What comes out is an ordinary `rt_`: it belongs to the person who approved it, i
 is revoked from the same list. Two consequences of that worth knowing before the
 first one:
 
+- **A deployment has to turn this on**: `account.terminal`, off unless said,
+  because it is a door into an account. Off, the command is told so rather than
+  waiting (`docs/operating.md` § "One process, or four").
 - **You can only sign a terminal in for methods your own role names.** A key acts
   as you, so `ApiKeyService/Issue` refuses one naming anything you do not hold --
   and a *waived* method is not a held one, so a role that names nothing cannot
-  approve even `Me.Get`.
+  approve even `Me.Get`. What that means in practice is that the people who are to
+  do this hold a role naming both:
+
+  ```sh
+  roster role add @contoso/terminals \
+    '{"methods":["/roster.ApiKeyService/Issue","/roster.MeService/Get"]}'
+  ```
+
+  It is the same constraint an app password is under, and it is deliberately not
+  special-cased: the rule that refuses it is the one that stops anybody handing out
+  more than they hold, and a waiver is about *calling* rather than about holding.
 - **It is the front door that does this, not roster.** `--at` is an account app,
   which is the thing that holds a key, knows which operator a host belongs to and
   can see who is signed in. `account/device.go` says why roster itself answers

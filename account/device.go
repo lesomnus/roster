@@ -221,6 +221,22 @@ func userCode() (string, error) {
 	return string(out), nil
 }
 
+// offered is whether this deployment signs terminals in at all.
+//
+// A 501 and not a 404, which is the difference between *this deployment does not
+// do that* and *you asked for the wrong thing* -- the same answer the mail flows
+// give when nothing can deliver. A terminal that gets it says so and stops,
+// rather than polling for fifteen minutes on a code nobody can approve.
+func (a *App) offered(w http.ResponseWriter) bool {
+	if a.c.Terminal {
+		return true
+	}
+
+	http.Error(w, "this deployment does not sign terminals in", http.StatusNotImplemented)
+
+	return false
+}
+
 // begin is a terminal asking to be signed in. No session: there is nobody yet,
 // which is the whole of the flow.
 //
@@ -229,6 +245,10 @@ func userCode() (string, error) {
 // -- and the **answer** is the RFC's, so a client written against the standard
 // reads what it expects.
 func (a *App) deviceBegin(w http.ResponseWriter, r *http.Request) {
+	if !a.offered(w) {
+		return
+	}
+
 	t, ok := tenantFrom(r.Context())
 	if !ok {
 		http.Error(w, "no operator here serves this name", http.StatusNotFound)
@@ -289,6 +309,10 @@ func (a *App) deviceBegin(w http.ResponseWriter, r *http.Request) {
 // written to read: `authorization_pending` means keep going, `slow_down` means
 // keep going more slowly, and the other two are over.
 func (a *App) devicePoll(w http.ResponseWriter, r *http.Request) {
+	if !a.offered(w) {
+		return
+	}
+
 	code := r.URL.Query().Get("device_code")
 	if code == "" {
 		http.Error(w, "device_code", http.StatusBadRequest)
@@ -335,6 +359,10 @@ func deviceErr(w http.ResponseWriter, why string) {
 // devicePending is the page asking what a code it has been given is for, so that
 // somebody approving one is told what they are allowing.
 func (a *App) devicePending(w http.ResponseWriter, r *http.Request) {
+	if !a.offered(w) {
+		return
+	}
+
 	who, ok := a.door.Who(r.Context(), r)
 	if !ok {
 		http.Error(w, "no", http.StatusForbidden)
@@ -378,6 +406,10 @@ func (a *App) devicePending(w http.ResponseWriter, r *http.Request) {
 // buys nothing here that the person could not have asked for themselves. Which is
 // the whole reason the flow is in this app rather than in roster.
 func (a *App) deviceApprove(w http.ResponseWriter, r *http.Request) {
+	if !a.offered(w) {
+		return
+	}
+
 	ctx := r.Context()
 	who, ok := a.door.Who(ctx, r)
 	if !ok {

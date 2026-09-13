@@ -27,7 +27,7 @@ import (
 func TestATerminalIsSignedInFromABrowser(t *testing.T) {
 	x := require.New(t)
 
-	d := serve(t, account.Invited())
+	d := serve(t, account.Invited(), terminal)
 	mints(t, d)
 	term := d.browser(t, "contoso.test") // no session, and never gets one
 	her := d.browser(t, "contoso.test")
@@ -109,7 +109,7 @@ func TestATerminalIsSignedInFromABrowser(t *testing.T) {
 func TestATerminalNobodyApprovesGetsNothing(t *testing.T) {
 	x := require.New(t)
 
-	d := serve(t, account.Invited())
+	d := serve(t, account.Invited(), terminal)
 	mints(t, d)
 	term := d.browser(t, "contoso.test")
 	her := d.browser(t, "contoso.test")
@@ -159,7 +159,7 @@ func TestATerminalNobodyApprovesGetsNothing(t *testing.T) {
 func TestATerminalIsNeverAllowedMoreThanWhoeverApprovesIt(t *testing.T) {
 	x := require.New(t)
 
-	d := serve(t, account.Invited())
+	d := serve(t, account.Invited(), terminal)
 	password(t, d) // a password, and **not** the role that may mint a key
 
 	term := d.browser(t, "contoso.test")
@@ -200,7 +200,7 @@ func TestATerminalIsNeverAllowedMoreThanWhoeverApprovesIt(t *testing.T) {
 func TestTheCommandWalksTheFlowItPrints(t *testing.T) {
 	x := require.New(t)
 
-	d := serve(t, account.Invited())
+	d := serve(t, account.Invited(), terminal)
 	mints(t, d)
 
 	her := d.browser(t, "contoso.test")
@@ -282,6 +282,45 @@ func (h hostIs) RoundTrip(r *http.Request) (*http.Response, error) {
 
 	return res, err
 }
+
+// TestADeploymentThatDoesNotSignTerminalsInSaysSo is the switch, which is off
+// unless a deployment says otherwise -- a door into an account, and the
+// narrowest default is what this repository does with those.
+//
+// 501 and not 404, because the two say different things to a client: *this
+// deployment does not do that* is the end of the flow, and *no such thing* reads
+// like a version mismatch somebody should retry past.
+func TestADeploymentThatDoesNotSignTerminalsInSaysSo(t *testing.T) {
+	x := require.New(t)
+
+	d := serve(t, account.Invited()) // and **not** `terminal`
+	term := d.browser(t, "contoso.test")
+
+	for _, at := range []struct{ method, path string }{
+		{http.MethodPost, "/device/begin"},
+		{http.MethodGet, "/device/poll?device_code=x"},
+		{http.MethodGet, "/device/pending?user_code=x"},
+		{http.MethodPost, "/device/approve"},
+	} {
+		code, body := term.do(t, at.method, at.path, `{}`, nil)
+		x.Equal(http.StatusNotImplemented, code, "%s %s: %s", at.method, at.path, body)
+	}
+
+	// And the page is told, so it draws no form whose every answer is a 501.
+	code, body := term.do(t, http.MethodGet, "/providers", "", nil)
+	x.Equal(http.StatusOK, code, body)
+	x.Contains(body, `"terminal":false`)
+
+	// The command says it rather than polling at a door that is not there.
+	_, err := cli.SignIn(t.Context(), func(string, ...any) (int, error) { return 0, nil },
+		&http.Client{Transport: hostIs{name: "contoso.test"}},
+		d.app.URL, "laptop", []string{"/roster.MeService/Get"})
+	x.Error(err)
+	x.Contains(err.Error(), "does not sign terminals in")
+}
+
+// terminal turns the flow on, which a deployment has to do on purpose.
+func terminal(c *account.Config) { c.Terminal = true }
 
 // polls is one poll, answering the reason it came back with.
 // password gives erin one, since the harness signs her in through a provider.

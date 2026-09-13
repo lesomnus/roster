@@ -84,6 +84,7 @@ func newCmdAccountServe(c *cmd.Config) *xli.Command {
 			&flg.String{Name: "enrol", Brief: "who a provider may sign in: invited (only somebody already linked), expected (somebody entered by address), enrolling (anybody)"},
 			&flg.Strings{Name: "key", Brief: "a tenant key, as alias=rt_…; repeat per operator fronted. Or ROSTER_ACCOUNT_KEY_<ALIAS> in the environment"},
 			&flg.Switch{Name: "insecure-cookie", Brief: "a cookie without Secure, for a page served over plain http in development"},
+			&flg.Switch{Name: "terminal", Brief: "let a machine with no browser ask for a key here (`roster sign-in`)"},
 			&flg.Strings{Name: "seal", Brief: "the key sessions are sealed into the cookie under, as env:NAME holding 32 bytes base64; repeat to rotate, the first seals. Empty is a key made at start, which is one replica"},
 		},
 
@@ -124,6 +125,9 @@ func newCmdAccountServe(c *cmd.Config) *xli.Command {
 			}
 			if v, _ := flg.Find[bool](cl, "insecure-cookie"); v {
 				ac.InsecureCookie = true
+			}
+			if v, _ := flg.Find[bool](cl, "terminal"); v {
+				ac.Terminal = true
 			}
 			if vs, _ := flg.Find[[]string](cl, "seal"); len(vs) > 0 {
 				ac.Seal = vs
@@ -177,6 +181,7 @@ func serveAccount(ctx context.Context, ac cmd.AccountConfig) error {
 		// The same setting the session store is built with below, because this
 		// app sets one cookie the store does not: a provider flow's state.
 		InsecureCookie: ac.InsecureCookie,
+		Terminal:       ac.Terminal,
 	}
 	if ac.Base != "" {
 		cfg.Base, err = url.Parse(ac.Base)

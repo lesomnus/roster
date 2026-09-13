@@ -51,6 +51,7 @@ const root = createRoot(document.getElementById('root') as HTMLElement)
 interface Providers {
 	tenant: { alias: string; name: string; labels: Record<string, string> }
 	providers: { name: string; issuer: string }[]
+	terminal?: boolean
 	password: boolean
 }
 
@@ -131,7 +132,7 @@ function Account(props: { of: Providers; onSignOut: () => void }): React.ReactNo
 				<Password own={own} may={may} />
 				<Factors own={own} alias={v.alias} brand={props.of.tenant.name || props.of.tenant.alias} may={may} />
 				<Sessions own={own} may={may} />
-				<Terminal may={may} />
+				{props.of.terminal === true && <Terminal may={may} />}
 				<Keys own={own} keys={v.keys} may={may} />
 			</main>
 		</div>

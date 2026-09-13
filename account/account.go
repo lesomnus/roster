@@ -137,6 +137,11 @@ type Config struct {
 	// something the deployment knows and the request does not.
 	InsecureCookie bool
 
+	// Terminal is whether `roster sign-in` works here: see [cmd.AccountConfig]'s
+	// field of the same name for why it is off unless a deployment says so. Off,
+	// the four `/device` endpoints answer 501 and the page draws nothing.
+	Terminal bool
+
 	// Static is the page, or nil for a placeholder that says where the API is.
 	Static http.Handler
 
@@ -515,10 +520,15 @@ func (a *App) providers(w http.ResponseWriter, r *http.Request) {
 		} `json:"tenant"`
 		Providers []provider `json:"providers"`
 		Password  bool       `json:"password"`
+
+		// Whether a terminal may ask for a key here, so the page draws that
+		// section only where it would work rather than offering a form whose
+		// every answer is a 501.
+		Terminal bool `json:"terminal"`
 		// What roster says, and not this app's guess. It was `true` here for as
 		// long as this endpoint existed, which made a tenant whose people all
 		// arrive through a directory draw a form nobody could use.
-	}{Password: tn.OffersPassword(), Providers: []provider{}}
+	}{Password: tn.OffersPassword(), Providers: []provider{}, Terminal: a.c.Terminal}
 	out.Tenant.Alias = tn.GetAlias()
 	out.Tenant.Name = tn.GetName()
 	out.Tenant.Labels = tn.GetLabels()

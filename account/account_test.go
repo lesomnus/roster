@@ -64,7 +64,9 @@ func (d *deployment) sent(to string) string {
 	return ""
 }
 
-func serve(t *testing.T, enrol account.Enrol) *deployment {
+// serve stands the app up. `with` is for the settings a test is about rather
+// than the ones every test needs -- `terminal`, below, is the only one so far.
+func serve(t *testing.T, enrol account.Enrol, with ...func(*account.Config)) *deployment {
 	t.Helper()
 	x := require.New(t)
 	ctx := t.Context()
@@ -260,6 +262,10 @@ func serve(t *testing.T, enrol account.Enrol) *deployment {
 			return nil
 		},
 	}
+	for _, w := range with {
+		w(&cfg)
+	}
+
 	a, err := account.New(ctx, cfg)
 	x.NoError(err)
 	t.Cleanup(func() { a.Close() })

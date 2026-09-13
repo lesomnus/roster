@@ -226,6 +226,7 @@ account:
   addr: :8090
   base: https://account.contoso.example
   page: { dir: /usr/share/roster/account }
+  terminal: true                          # `roster sign-in`; off unless said
   keys:
     contoso: env:ROSTER_ACCOUNT_KEY_CONTOSO
 
@@ -249,6 +250,15 @@ login:                                    # only with Hydra in front; see login.
   remember: 1h
   seal: [env:LOGIN_SEAL]
 ```
+
+`account.terminal` is **off unless a deployment says so**, and it is the one
+setting in that block that opens a door into an account: it lets a machine with no
+browser ask for a key, approved by the person in a page they are already signed in
+at ([usage/ways-in.md](usage/ways-in.md) § *A terminal, signed in from a browser*).
+Off, those endpoints answer 501 and the page draws no form for them. The blunt
+control is a different thing and turns off more: grant no role naming
+`ApiKey.Issue` and **no** self-service key can be minted, the page's own app
+passwords included.
 
 **Named is a listener and empty is nowhere**, which is what `control` and `admin`
 already do. `roster serve` opens whichever are named, in the same errgroup as the
