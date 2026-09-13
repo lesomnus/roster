@@ -84,6 +84,13 @@ function said(e: unknown): string {
 	return e instanceof Error ? e.message : 'no'
 }
 
+/** why is what a plain-text refusal from this app's own endpoints says. */
+async function why(res: Response): Promise<string> {
+	const text = (await res.text()).trim()
+
+	return text === '' ? `that did not work (${res.status})` : text
+}
+
 const ref = (id: Uint8Array) => ({ key: { case: 'id' as const, value: id } })
 
 /** brandOf is what to call the operator this front door is for. */
@@ -124,6 +131,7 @@ function Account(props: { of: Providers; onSignOut: () => void }): React.ReactNo
 				<Password own={own} may={may} />
 				<Factors own={own} alias={v.alias} brand={props.of.tenant.name || props.of.tenant.alias} may={may} />
 				<Sessions own={own} may={may} />
+				<Terminal may={may} />
 				<Keys own={own} keys={v.keys} may={may} />
 			</main>
 		</div>
@@ -149,6 +157,22 @@ const landed = ((): { why: string; at: string } | null => {
 	window.history.replaceState(null, '', window.location.pathname)
 
 	return { why, at: q.get('at') ?? '' }
+})()
+
+/**
+ * waiting is the `user_code` a terminal's complete URL carried, if this browser
+ * followed one -- so somebody who clicked the link does not retype what they were
+ * about to type.
+ */
+const waiting = ((): string | null => {
+	const v = new URLSearchParams(window.location.search).get('user_code')
+	if (v === null) {
+		return null
+	}
+
+	window.history.replaceState(null, '', window.location.pathname)
+
+	return v.toUpperCase()
 })()
 
 /** how is what to say about it, in the section the button was in. */
@@ -735,6 +759,99 @@ function Sessions(props: { own: Uint8Array; may: (m: string) => boolean }): Reac
  * they would have to look up.
  */
 const appPasswordMethods = ['/roster.MeService/Get']
+
+/**
+ * Terminal is a command line waiting to be signed in: RFC 8628's user code.
+ *
+ * It sits above the keys because that is what it makes -- one key, named after
+ * the machine, with what that machine asked for and nothing more. The code is
+ * typed here rather than guessed at by the page, and `?user_code=` fills it in
+ * for anybody who followed the complete URL the terminal printed (the same thing
+ * a QR code carries).
+ *
+ * What it shows before the button is what the terminal **asked to be allowed**,
+ * because that is the whole of the decision: `account/device.go` refuses to mint
+ * anything wider than the person approving it, and somebody who cannot see the
+ * list cannot be said to have approved it.
+ */
+function Terminal(props: { may: (m: string) => boolean }): React.ReactNode {
+	const [code, setCode] = useState(waiting ?? '')
+	const [asked, setAsked] = useState<{ name: string; methods: string[] } | null>(null)
+	const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null)
+
+	const look = (v: string): void => {
+		setNote(null)
+		setAsked(null)
+		void fetch(`/device/pending?user_code=${encodeURIComponent(v)}`)
+			.then(async (res) =>
+				res.ok
+					? setAsked((await res.json()) as { name: string; methods: string[] })
+					: setNote({ ok: false, text: await why(res) }),
+			)
+			.catch(() => setNote({ ok: false, text: 'that could not be looked up' }))
+	}
+
+	const answer = (deny: boolean): void => {
+		setNote(null)
+		void fetch('/device/approve', json({ user_code: code, deny }))
+			.then(async (res) => {
+				if (!res.ok) {
+					setNote({ ok: false, text: await why(res) })
+
+					return
+				}
+				setAsked(null)
+				setCode('')
+				setNote({ ok: true, text: deny ? 'refused, and the terminal has been told' : 'signed in; the terminal has its key' })
+			})
+			.catch(() => setNote({ ok: false, text: 'that could not be answered' }))
+	}
+
+	return (
+		<section>
+			<h2>a terminal</h2>
+			<p className="note">
+				Running <code>roster sign-in</code> somewhere prints a code. Type it here to give that
+				machine a key of its own.
+			</p>
+			<p className="acts">
+				<input
+					name="user_code"
+					value={code}
+					placeholder="XXXX-XXXX"
+					onChange={(e) => setCode(e.target.value.toUpperCase())}
+				/>
+				<button disabled={code.trim() === ''} onClick={() => look(code)}>
+					look it up
+				</button>
+			</p>
+			{asked !== null && (
+				<>
+					<table>
+						<tbody>
+							<tr>
+								<td>the machine</td>
+								<td className="mono">{asked.name}</td>
+							</tr>
+							<tr>
+								<td>it may call</td>
+								<td className="mono">{asked.methods.join(', ')}</td>
+							</tr>
+						</tbody>
+					</table>
+					<p className="acts">
+						<button disabled={!props.may('/roster.ApiKeyService/Issue')} onClick={() => answer(false)}>
+							sign it in
+						</button>
+						<button onClick={() => answer(true)}>no</button>
+					</p>
+					{!props.may('/roster.ApiKeyService/Issue') && <Needs method="/roster.ApiKeyService/Issue" />}
+				</>
+			)}
+			{note !== null && <p className={note.ok ? 'note' : 'bad'}>{note.text}</p>}
+		</section>
+	)
+}
 
 function Keys(props: {
 	own: Uint8Array

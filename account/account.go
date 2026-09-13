@@ -230,6 +230,10 @@ type App struct {
 	// front doors read the same rows and a second copy drifts.
 	arrives *arrives.Providers
 
+	// devices is every terminal waiting to be signed in, by both of its codes.
+	// See `device.go` for why the flow is here and not in roster.
+	devices *devices
+
 	// flows is every sign-in or link started and not yet finished, by state.
 	flows *arrives.States[flow]
 }
@@ -290,6 +294,7 @@ func New(ctx context.Context, c Config) (*App, error) {
 		byId:    map[pdid.Id]*tenant{},
 		byAlias: map[string]*tenant{},
 		flows:   arrives.Held[flow](),
+		devices: held(),
 	}
 	a.arrives = arrives.New(a.roster, c.Secret)
 
@@ -355,6 +360,12 @@ func (a *App) Handler() http.Handler {
 	m.HandleFunc("GET /providers", a.providers)
 	m.HandleFunc("GET /login", a.login)
 	m.HandleFunc("POST /ways", a.addWay)
+
+	// A terminal, which has no browser and no credential: `device.go`.
+	m.HandleFunc("POST /device/begin", a.deviceBegin)
+	m.HandleFunc("GET /device/poll", a.devicePoll)
+	m.HandleFunc("GET /device/pending", a.devicePending)
+	m.HandleFunc("POST /device/approve", a.deviceApprove)
 	m.HandleFunc("GET /callback", a.callback)
 	m.HandleFunc("POST /recover", a.recover)
 	m.HandleFunc("GET /redeem", a.redeem)

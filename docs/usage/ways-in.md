@@ -181,6 +181,44 @@ at all:
 The local CLI is outside both, like every local command -- see
 [cli.md](cli.md) § "Two modes".
 
+### A terminal, signed in from a browser
+
+A machine with no browser -- a server over SSH, a container, somebody's laptop on
+a fresh checkout -- gets its key without anybody copying one:
+
+```sh
+roster sign-in --at https://account.contoso.example \
+  --name laptop --allow /roster.MeService/Get --out ~/.roster/key
+```
+
+```
+  open      https://account.contoso.example/device
+  and type  WDJB-MJHT
+
+waiting, for up to 15m0s...
+```
+
+Somebody opens that page in a browser they are **already signed in at**, types the
+eight characters, sees what the terminal asked to be allowed, and says yes; the
+command writes the key and stops. That is RFC 8628, the device grant -- the same
+flow every CLI with a *go here and type this* screen uses -- and it is polling
+rather than anything cleverer, because a machine in that position has nothing that
+can be called back.
+
+What comes out is an ordinary `rt_`: it belongs to the person who approved it, is
+**never wider than they are**, appears in their keys beside the app passwords, and
+is revoked from the same list. Two consequences of that worth knowing before the
+first one:
+
+- **You can only sign a terminal in for methods your own role names.** A key acts
+  as you, so `ApiKeyService/Issue` refuses one naming anything you do not hold --
+  and a *waived* method is not a held one, so a role that names nothing cannot
+  approve even `Me.Get`.
+- **It is the front door that does this, not roster.** `--at` is an account app,
+  which is the thing that holds a key, knows which operator a host belongs to and
+  can see who is signed in. `account/device.go` says why roster itself answers
+  none of it.
+
 ## A delegation — `rd_`
 
 For an app that is drawing a person their own record and should not do it with

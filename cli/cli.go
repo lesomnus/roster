@@ -81,6 +81,7 @@ func Cmd(c *cmd.Config) *xli.Command {
 			NewCmdKey(c),
 			NewCmdIssue(c),
 			NewCmdVouch(c),
+			NewCmdSignIn(c),
 			NewCmdTrail(c),
 			NewCmdForget(c),
 			NewCmdRestore(c),
