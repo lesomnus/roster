@@ -204,6 +204,40 @@ tried() {
 	"$@"
 }
 
+# standing is the node still being there, which `--wait` does not promise.
+#
+# `k3d cluster create --wait` waits for the API to answer **once**, and the two
+# builds below take two minutes on a two-core runner. k3s loses its health check
+# while they run, the engine restarts the container under its restart policy, and
+# what that looks like is not an error about any of that: `k3d image import` logs
+# `container ... is restarting` and **exits 0**, so the run carries on and dies
+# two steps later on `kubectl` failing to resolve the node -- *server
+# misbehaving*, from Docker's embedded DNS, naming nothing. That is the whole
+# cost of this having been assumed rather than waited for.
+#
+# So it is waited for, as a fact and not a duration: the container is running and
+# the API answers `/readyz`.
+standing() {
+	local i state
+	for i in $(seq 1 60); do
+		state="$(docker inspect -f '{{.State.Status}}' "k3d-${CLUSTER}-server-0" 2>/dev/null || true)"
+		# The redirection is on `kube` and not inside it: while the node is down
+		# it is the docker client that fails, and sixty copies of its DNS error
+		# is the noise this is meant to replace.
+		if [ "${state}" = "running" ] \
+			&& kube "kubectl get --raw /readyz" >/dev/null 2>&1; then
+			return 0
+		fi
+
+		sleep 2
+	done
+
+	echo "the cluster's node never came back; it is ${state:-gone}" >&2
+	docker logs --tail 40 "k3d-${CLUSTER}-server-0" >&2 2>&1 || true
+
+	return 1
+}
+
 echo "== the images this checkout builds"
 # Two, and the second is not a detail. What the deployment runs is the `app`
 # stage, which is **distroless**: no shell, no `curl`, and none of `docker/`'s
@@ -212,7 +246,16 @@ echo "== the images this checkout builds"
 # against compose, and the thing under test is still the `app` one.
 tried docker build -q --target app -t "roster-cluster:${CLUSTER}" . >/dev/null
 tried docker build -q --target dev -t "roster-walk:${CLUSTER}" . >/dev/null
-k3d image import "roster-cluster:${CLUSTER}" "roster-walk:${CLUSTER}" -c "${CLUSTER}" >/dev/null
+standing
+
+# Its output rather than its status, because a node that refuses the copy is an
+# `ERRO` line and an exit code of zero.
+imported="$(k3d image import "roster-cluster:${CLUSTER}" "roster-walk:${CLUSTER}" -c "${CLUSTER}" 2>&1)" || true
+if printf '%s' "${imported}" | grep -q 'ERRO'; then
+	printf '%s\n' "${imported}" >&2
+	echo "the images did not reach the node" >&2
+	exit 1
+fi
 
 cp -r deploy "${work}/deploy"
 # The rig runs what was just built rather than what is published.
