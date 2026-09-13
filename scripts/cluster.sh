@@ -215,17 +215,24 @@ tried() {
 # misbehaving*, from Docker's embedded DNS, naming nothing. That is the whole
 # cost of this having been assumed rather than waited for.
 #
-# So it is waited for, as a fact and not a duration: the container is running and
-# the API answers `/readyz`.
+# What it waits for is an **exec**, and not the API, for two reasons. It is
+# literally the thing `k3d image import` does and the thing that failed, so it is
+# the precondition rather than a proxy for it. And `kube` cannot be used here at
+# all: the kubeconfig reaches the volume with `carry`, which is a hundred lines
+# below, so a `kubectl` through it fails for want of a file and keeps failing --
+# which is what the first version of this did, for four minutes, while reporting
+# the node as `running`.
+#
+# `kubectl version --client` is the probe because `/bin/kubectl` is in the k3s
+# node image (a symlink to `k3s`) and `--client` needs no cluster, no kubeconfig
+# and no network.
 standing() {
 	local i state
 	for i in $(seq 1 60); do
 		state="$(docker inspect -f '{{.State.Status}}' "k3d-${CLUSTER}-server-0" 2>/dev/null || true)"
-		# The redirection is on `kube` and not inside it: while the node is down
-		# it is the docker client that fails, and sixty copies of its DNS error
-		# is the noise this is meant to replace.
 		if [ "${state}" = "running" ] \
-			&& kube "kubectl get --raw /readyz" >/dev/null 2>&1; then
+			&& docker exec "k3d-${CLUSTER}-server-0" \
+				kubectl version --client >/dev/null 2>&1; then
 			return 0
 		fi
 
