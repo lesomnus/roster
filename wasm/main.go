@@ -204,11 +204,11 @@ func main() {
 	who := sandbox.Believe(op)
 	srv := drpc.NewServer(gw,
 		drpc.WithStatsHandler(otxgrpc.NewServerLogger(o)),
-		drpc.ChainUnaryInterceptors(
+		drpc.ChainUnaryInterceptor(
 			pdauth.InterceptorUnary(who, sandbox.Resolver(cmd.Resolver(s.Control.Ungated, nil)), cmd.Public),
 			gate.Unary(cmd.Policy(s.Control.Ent)),
 		),
-		drpc.ChainStreamInterceptors(
+		drpc.ChainStreamInterceptor(
 			pdauth.InterceptorStream(who, sandbox.Resolver(cmd.Resolver(s.Control.Ungated, nil)), cmd.Public),
 			gate.Stream(cmd.Policy(s.Control.Ent)),
 		),
@@ -234,12 +234,12 @@ func main() {
 	agw := jsport.NewGateway(jsport.WithEntryPoint(AdminEntryPoint))
 	asrv := drpc.NewServer(agw,
 		drpc.WithStatsHandler(otxgrpc.NewServerLogger(o)),
-		drpc.ChainUnaryInterceptors(
+		drpc.ChainUnaryInterceptor(
 			pdauth.InterceptorUnary(who, sandbox.Resolver(cmd.Resolver(s.Control.Ungated, nil)), cmd.Public),
 			gate.Unary(cmd.Policy(s.Control.Ent)),
 			cmd.Intent(s.Control.Ent),
 		),
-		drpc.ChainStreamInterceptors(
+		drpc.ChainStreamInterceptor(
 			pdauth.InterceptorStream(who, sandbox.Resolver(cmd.Resolver(s.Control.Ungated, nil)), cmd.Public),
 			gate.Stream(cmd.Policy(s.Control.Ent)),
 		),

@@ -20,10 +20,7 @@ FROM --platform=$BUILDPLATFORM node:22 AS page
 
 WORKDIR /src/ts
 
-# `vendor/` beside the manifests: `@lesomnus/grpc-dgram` is a tarball built from
-# a commit until it is released, and `npm ci` reads it. See `ts/vendor/README.md`.
 COPY ts/package.json ts/package-lock.json ./
-COPY ts/vendor ./vendor
 RUN npm ci --no-audit --no-fund
 
 COPY ts/ ./

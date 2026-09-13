@@ -130,9 +130,6 @@ React is a **peer** dependency of payday and an optional one. `payday/store` and
 `payday/query` know nothing about it; `payday/react` is thirty lines of
 `useSyncExternalStore` over them.
 
-`ts/vendor/` holds two libraries ahead of their releases, as tarballs; its README
-says how they were built and when to remove them.
-
 ### The sandbox
 
 `npm run dev:sandbox` compiles the server into the page -- `GOOS=js GOARCH=wasm`,

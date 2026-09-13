@@ -380,7 +380,7 @@ func sources(t *testing.T, root string) []string {
 	out := docs(t, root)
 	skip := []string{
 		"node_modules", string(filepath.Separator) + "dist", "internal/ent/",
-		"server/bare/", "server/pd/", "ts/gen/", "proto/roster/payday/", "ts/vendor/",
+		"server/bare/", "server/pd/", "ts/gen/", "proto/roster/payday/",
 		".git", "rstr/",
 	}
 
