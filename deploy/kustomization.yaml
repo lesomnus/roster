@@ -35,6 +35,6 @@ images:
   - name: ghcr.io/lesomnus/roster
     newTag: edge
   - name: oryd/hydra
-    newTag: v2.2.0
+    newTag: v26.2.0
   - name: curlimages/curl
     newTag: "8.11.1"

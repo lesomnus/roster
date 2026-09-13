@@ -442,7 +442,8 @@ cost a cluster run to find:
 
 - ⚠️ **`rp_initiated` does not mean a relying party asked.** It means the request
   carried an `id_token_hint`. Hydra raises the challenge either way and asks this
-  app about it (v2.2.0, `consent/strategy_default.go`). Read as the wider thing, it
+  app about it, and `docker/flow.sh` walks both halves against the pinned
+  version. Read as the wider thing, it
   refuses every sign-out from an app that does not keep its `id_token`, which is
   most of them -- so there is a **confirmation screen** instead. A third party can
   cause a question; the person who did click *sign out* answers it. It names no

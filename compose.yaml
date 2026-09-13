@@ -211,7 +211,7 @@ services:
   # http, and the secrets below are in this file, which is what makes them
   # development secrets.
   hydra-migrate:
-    image: oryd/hydra:v2.2.0
+    image: oryd/hydra:v26.2.0
     depends_on:
       planes:
         condition: service_completed_successfully
@@ -220,7 +220,7 @@ services:
     command: ["migrate", "sql", "-e", "--yes"]
 
   hydra:
-    image: oryd/hydra:v2.2.0
+    image: oryd/hydra:v26.2.0
     depends_on:
       hydra-migrate:
         condition: service_completed_successfully
@@ -300,7 +300,7 @@ services:
   # one has to be a name two other things already know: the Login App's
   # `--client contoso=demo`, and whatever performs the flow.
   hydra-client:
-    image: oryd/hydra:v2.2.0
+    image: oryd/hydra:v26.2.0
     depends_on:
       hydra:
         condition: service_started
@@ -364,7 +364,7 @@ services:
   # `acceptLoginRequest{subject}` with a `Holder.id`. Its own process with its
   # own key, like the other two consumers.
   #
-  #     docker run --rm -it --network host oryd/hydra:v2.2.0 perform \
+  #     docker run --rm -it --network host oryd/hydra:v26.2.0 perform \
   #       authorization-code --client-id demo --client-secret demo-secret \
   #       --endpoint http://localhost:4444 --port 5555 \
   #       --scope openid,offline,profile,email

@@ -438,3 +438,68 @@ func repoRoot(t *testing.T) string {
 
 	return ""
 }
+
+// TestTheHydraPinIsOneVersion holds every place that names a Hydra against every
+// other, because this repository ran an ancient one for four days without
+// noticing.
+//
+// `oryd/hydra:v2.2.0` was written from Ory's older documentation rather than from
+// the registry -- the real tags are `v26.2.0` and `v25.4.0`, and 2.x is from
+// before they changed the scheme -- and the pin sat in `compose.yaml`,
+// `deploy/kustomization.yaml` and three comments that each said `v2.2.0` about
+// Hydra's behaviour. Nothing compared them, and the upgrade was only asked for
+// because somebody wanted a feature the old one does not have.
+//
+// So: the images agree with each other, and a page or a comment that names a
+// version names **that** one. What it cannot check is whether the pin is current,
+// which is a question for a person with a registry.
+func TestTheHydraPinIsOneVersion(t *testing.T) {
+	x := require.New(t)
+	root := repoRoot(t)
+
+	pinned := map[string][]string{}
+	for _, f := range sources(t, root) {
+		// A pin is in a manifest. A comment that quotes an old tag while
+		// explaining it -- this one does -- is prose.
+		if !strings.HasSuffix(f, ".yaml") {
+			continue
+		}
+
+		src, err := os.ReadFile(filepath.Join(root, f))
+		x.NoError(err)
+
+		for _, m := range regexp.MustCompile(`oryd/hydra:(v[\d.]+)`).FindAllStringSubmatch(string(src), -1) {
+			pinned[m[1]] = append(pinned[m[1]], f)
+		}
+		// `deploy/kustomization.yaml` names the image and the tag on two lines.
+		for _, m := range regexp.MustCompile(`(?s)name: oryd/hydra\s*\n\s*newTag: "?(v[\d.]+)`).FindAllStringSubmatch(string(src), -1) {
+			pinned[m[1]] = append(pinned[m[1]], f)
+		}
+	}
+	x.Len(pinned, 1, "more than one Hydra is pinned here: %v", pinned)
+
+	var only string
+	for v := range pinned {
+		only = v
+	}
+
+	// And a claim about Hydra's behaviour names the version it was read off.
+	for _, f := range sources(t, root) {
+		src, err := os.ReadFile(filepath.Join(root, f))
+		x.NoError(err)
+
+		page := strings.HasSuffix(f, ".md")
+		for i, line := range strings.Split(string(src), "\n") {
+			if !page && !comment(line) {
+				continue
+			}
+			if strings.Contains(line, "docs/roadmap.md") {
+				continue
+			}
+
+			for _, m := range regexp.MustCompile(`[Hh]ydra (v[\d.]+)`).FindAllStringSubmatch(line, -1) {
+				x.Equal(only, m[1], "%s:%d says Hydra %s and the pin is %s", f, i+1, m[1], only)
+			}
+		}
+	}
+}

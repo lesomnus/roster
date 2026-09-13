@@ -1111,8 +1111,9 @@ func TestSigningOutEndsWhatTheIssuerRemembers(t *testing.T) {
 //
 // `rp_initiated` reads like *did an app ask*, and what it reports is narrower:
 // whether the request carried an `id_token_hint`. Hydra raises the challenge
-// either way and asks this app about it (v2.2.0,
-// `consent/strategy_default.go`). So the first cut of this refused with a 400,
+// either way and asks this app about it -- `docker/flow.sh` walks both halves
+// against whatever version is pinned, which is how this stays true across an
+// upgrade. So the first cut of this refused with a 400,
 // and a relying party that signed somebody out without sending the token back
 // got a page saying `no` -- which is what a cluster reported.
 //

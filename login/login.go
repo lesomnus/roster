@@ -517,9 +517,12 @@ func (a *App) logout(w http.ResponseWriter, r *http.Request) {
 		// Nobody **proved** an app asked, which is a narrower thing than
 		// nobody asking, and the first cut of this read it as the wider one
 		// and refused. What `rp_initiated` actually reports is whether the
-		// request carried an `id_token_hint` (Hydra v2.2.0,
-		// `consent/strategy_default.go`: no hint, `RPInitiated: false`, and it
-		// asks this app anyway) -- so a relying party that signs somebody out
+		// request carried an `id_token_hint`: no hint, `RPInitiated: false`, and
+		// it asks this app anyway. Read off Hydra's own
+		// `consent/strategy_default.go` at v2.2.0 and still true at the pinned
+		// version, which `docker/flow.sh` asserts from both ends rather than
+		// from a file nobody here can see -- so a relying party that signs
+		// somebody out
 		// without sending the token back got a page saying `no`, which is the
 		// defect the cluster found.
 		//
