@@ -67,6 +67,25 @@ func TestDoctorPassesAClientRegisteredTheWayThisStackNeeds(t *testing.T) {
 	x.Empty(found)
 }
 
+// TestDoctorPassesAPublicClient, a page that signs people in with PKCE.
+//
+// It has no secret to send in any header, so `none` is its registration rather
+// than a mistake -- and the first cut of the check refused it as broken, which
+// failed a deployment's sync for the one shape a browser app can take.
+func TestDoctorPassesAPublicClient(t *testing.T) {
+	x := require.New(t)
+
+	page := good()
+	page["token_endpoint_auth_method"] = login.PublicAuthMethod
+	page["grant_types"] = []string{"authorization_code"}
+	page["scope"] = "openid profile email"
+
+	at := clients(t, map[string]map[string]any{"app": page})
+	found, err := login.Doctor(context.Background(), at, "", nil, map[string][]string{"contoso": {"app"}})
+	x.NoError(err)
+	x.Empty(found)
+}
+
 // TestDoctorFindsWhatCostAnHourEach: one case per defect a person found in a
 // browser. Each of these was a deployment nobody could sign in to, or a
 // sign-out that ended somewhere it should not, and each was invisible to every
@@ -180,7 +199,7 @@ func TestDoctorPutsWhatIsBrokenFirst(t *testing.T) {
 
 	v := good()
 	delete(v, "post_logout_redirect_uris")
-	v["token_endpoint_auth_method"] = "none"
+	v["token_endpoint_auth_method"] = "client_secret_post"
 
 	at := clients(t, map[string]map[string]any{"app": v})
 	found, err := login.Doctor(context.Background(), at, "", nil, map[string][]string{"contoso": {"app"}})

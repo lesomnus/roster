@@ -106,6 +106,19 @@ func (f Finding) String() string {
 // answerable for the same choice.
 const AuthMethod = "client_secret_basic"
 
+// PublicAuthMethod is how a **public** client is registered: a page with no
+// server of its own, which cannot keep a secret and so has none, and proves it
+// is the one that asked for the code with PKCE instead.
+//
+// It is not the relying parties above with the secret left out. Nothing sends a
+// secret for it -- the browser posts the code and the verifier -- so "this stack
+// sends the secret in the header" is not a statement about it, and reading
+// `none` as a mistake refused the one registration a page can have. What a
+// public client costs is that PKCE is the whole of its proof, which is Hydra's
+// to enforce (`oauth2.pkce.enforced_for_public_clients`) and not something the
+// admin API says.
+const PublicAuthMethod = "none"
+
 // hydraClient is what the admin API says about a registered client. It is the
 // whole document rather than the two fields the flow needs, because what this
 // checks is the fields nothing else reads.
@@ -243,7 +256,7 @@ func check(alias, id string, v *hydraClient) []Finding {
 	}
 
 	switch v.AuthMethod {
-	case AuthMethod:
+	case AuthMethod, PublicAuthMethod:
 	case "":
 		add(Broken, "it names no token_endpoint_auth_method",
 			"hydra picks its own default, which is a thing to find out about on the day it changes")
