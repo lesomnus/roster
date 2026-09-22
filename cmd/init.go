@@ -7,6 +7,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/protobuf-orm/ent/dialect"
+	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
+
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
@@ -138,7 +141,7 @@ func Seed(ctx context.Context, s *Server, in Seeding) (Seeded, error) {
 		return Seeded{}, err
 	}
 
-	if err := allow(ctx, s, k, j); err != nil {
+	if err := allow(ctx, s.Ungated, k, j); err != nil {
 		return Seeded{}, fmt.Errorf("the first binding: %w", err)
 	}
 
@@ -171,8 +174,8 @@ const EveryRosterMethod = "/" + string(protoPackage) + ".*/*"
 // Through `Ungated`, where there is no frame, so `mayGrantEverything` waives
 // itself -- which is the only place it ever does. Every later grant of this
 // descends from somebody who already held it.
-func allow(ctx context.Context, s *Server, in pdid.Id, to pdid.Id) error {
-	r, err := s.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
+func allow(ctx context.Context, at app.Server, in pdid.Id, to pdid.Id) error {
+	r, err := at.Role().Add(ctx, app.RoleAddRequest_builder{
 		Tenant: app.TenantRef_builder{Id: in.Bytes()}.Build(),
 		Alias:  Everyverb,
 		Desc:   "Every Rpc roster serves, including ones added by a later release.",
@@ -193,7 +196,7 @@ func allow(ctx context.Context, s *Server, in pdid.Id, to pdid.Id) error {
 		return err
 	}
 
-	_, err = s.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
+	_, err = at.Binding().Add(ctx, app.BindingAddRequest_builder{
 		Role:   app.RoleRef_builder{Id: r.GetId()}.Build(),
 		Holder: app.HolderRef_builder{Id: to.Bytes()}.Build(),
 	}.Build())
@@ -226,37 +229,62 @@ func allow(ctx context.Context, s *Server, in pdid.Id, to pdid.Id) error {
 // refuses to take a key for the same reason. What this prints is shown once and
 // stored as an argon2id hash, so the deployment cannot tell anybody what it was
 // any more than it can tell them their key.
+//
+// # One transaction
+//
+// The holder, the role and its binding, and the password are three writes, and
+// the last is the one that can be refused -- too short, too long, in the
+// leaked corpus. Written one at a time, a refusal left the first two behind
+// and every later `init` stopped at the role with `AlreadyExists`: a control
+// plane with an operator nobody could sign in as and no command to finish it
+// (#20). So all three are one transaction on the control plane, rebound the
+// way `BatchService.Do` rebinds a batch, and a refused password leaves nothing.
+//
+// What that does not change is the refusal to run twice. On a seeded database
+// the role is still what fails, before the password is reached, and now it
+// takes the holder lookup with it rather than leaving it.
 func seedOperator(ctx context.Context, s *Server, alias, given string) (pdid.Id, string, error) {
-	// The same owner tenant `roster key add` uses, made here if this is a fresh
-	// control plane. There is nothing to choose: a control plane has one owner.
-	who, err := ServiceOf(ctx, s, alias)
-	if err != nil {
-		return pdid.Nil, "", err
-	}
-
-	t, err := s.Ent.Tenant.Query().First(ctx)
-	if err != nil {
-		return pdid.Nil, "", err
-	}
-	if err := allow(ctx, s, pdid.Id(t.Id), who); err != nil {
-		return pdid.Nil, "", err
-	}
-
 	secret := given
 	if secret == "" {
+		var err error
 		secret, err = passphrase()
 		if err != nil {
 			return pdid.Nil, "", err
 		}
 	}
 
+	drv, tx, err := dialect.BeginTx(ctx, s.Drv)
+	if err != nil {
+		return pdid.Nil, "", err
+	}
+	defer tx.Rollback()
+
+	at, err := enttx.Rebind(s.Ungated, drv)
+	if err != nil {
+		return pdid.Nil, "", err
+	}
+
+	// The same owner tenant `roster key add` uses, made here if this is a fresh
+	// control plane. There is nothing to choose: a control plane has one owner.
+	who, tenant, err := serviceIn(ctx, at, alias)
+	if err != nil {
+		return pdid.Nil, "", err
+	}
+	if err := allow(ctx, at, tenant, who); err != nil {
+		return pdid.Nil, "", err
+	}
+
 	// Hashed by the service that will later check it, so the argon2 parameters
 	// are in one place. A hash computed here would be a second set of them, and
 	// the weaker of the two is the one that matters.
-	if _, err := s.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+	if _, err := at.Credential().Set(ctx, app.CredentialSetRequest_builder{
 		Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		Secret: []byte(secret),
 	}.Build()); err != nil {
+		return pdid.Nil, "", err
+	}
+
+	if err := tx.Commit(); err != nil {
 		return pdid.Nil, "", err
 	}
 

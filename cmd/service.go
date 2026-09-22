@@ -34,19 +34,41 @@ import (
 // The tenant it goes in is the control plane's only one, made here if the
 // database is new. There is nothing to choose: a control plane has one owner.
 func ServiceOf(ctx context.Context, s *Server, alias string) (pdid.Id, error) {
-	t, err := s.Ent.Tenant.Query().First(ctx)
+	who, _, err := serviceIn(ctx, s.Ungated, alias)
+	return who, err
+}
+
+// serviceIn is [ServiceOf] on any stack, and the owner tenant it landed in.
+//
+// A stack rather than a [Server] so that `seedOperator` can hand it one rebound
+// onto a transaction: every read and write here goes through it, and none
+// around it, or the transaction would hold half of them.
+func serviceIn(ctx context.Context, at app.Server, alias string) (pdid.Id, pdid.Id, error) {
+	ts, err := at.Tenant().List(ctx, app.TenantListRequest_builder{Size: 1}.Build())
 	if err != nil {
-		v, err := s.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{
+		return pdid.Nil, pdid.Nil, err
+	}
+
+	var tenant pdid.Id
+	if vs := ts.GetItems(); len(vs) > 0 {
+		tenant = MustFrom(vs[0].GetId())
+	} else {
+		v, err := at.Tenant().Add(ctx, app.TenantAddRequest_builder{
 			Alias: "owner",
 		}.Build())
 		if err != nil {
-			return pdid.Nil, err
+			return pdid.Nil, pdid.Nil, err
 		}
 
-		return holderOf(ctx, s, MustFrom(v.GetId()), alias)
+		tenant = MustFrom(v.GetId())
 	}
 
-	return holderOf(ctx, s, pdid.Id(t.Id), alias)
+	who, err := holderOf(ctx, at, tenant, alias)
+	if err != nil {
+		return pdid.Nil, pdid.Nil, err
+	}
+
+	return who, tenant, nil
 }
 
 // customerOf is one of a customer's people, by the tenant they are in and their
@@ -90,8 +112,8 @@ func TenantRef(v string) *app.TenantRef {
 	return app.TenantRef_builder{Alias: z.Ptr(v)}.Build()
 }
 
-func holderOf(ctx context.Context, s *Server, in pdid.Id, alias string) (pdid.Id, error) {
-	v, err := s.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
+func holderOf(ctx context.Context, at app.Server, in pdid.Id, alias string) (pdid.Id, error) {
+	v, err := at.Holder().Get(ctx, app.HolderGetRequest_builder{
 		Ref: app.HolderRef_builder{
 			Slug: app.HolderRefBySlug_builder{
 				Alias:  z.Ptr(alias),
@@ -103,7 +125,7 @@ func holderOf(ctx context.Context, s *Server, in pdid.Id, alias string) (pdid.Id
 		return pdid.From(v.GetId())
 	}
 
-	w, err := s.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{
+	w, err := at.Holder().Add(ctx, app.HolderAddRequest_builder{
 		Tenant: app.TenantRef_builder{Id: in.Bytes()}.Build(),
 		Alias:  alias,
 	}.Build())

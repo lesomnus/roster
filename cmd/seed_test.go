@@ -222,6 +222,48 @@ func TestASecondSeedStopsBeforeTheOperator(t *testing.T) {
 	})
 }
 
+// TestARefusedInitLeavesNothing is #20.
+//
+// `init --password-stdin` writes the operator, their role and their password,
+// and the password is the one of the three that can be refused. Written one at
+// a time, a refusal left the first two behind and every `init` after it
+// stopped at the role with `AlreadyExists` -- an operator nobody could sign in
+// as, and no command that would finish them. A container whose entrypoint
+// seeds from its environment met that on every restart.
+func TestARefusedInitLeavesNothing(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	c := seedbed(t)
+
+	err := piped(t, "short", cli.NewCmdInit(&c), "--password-stdin")
+	x.Error(err, "a password under the minimum length was accepted")
+
+	s, err := cmd.Build(ctx, c)
+	x.NoError(err)
+	t.Cleanup(func() { s.Close() })
+
+	for name, count := range map[string]func() (int, error){
+		"tenant":  func() (int, error) { return s.Control.Ent.Tenant.Query().Count(ctx) },
+		"holder":  func() (int, error) { return s.Control.Ent.Holder.Query().Count(ctx) },
+		"role":    func() (int, error) { return s.Control.Ent.Role.Query().Count(ctx) },
+		"binding": func() (int, error) { return s.Control.Ent.Binding.Query().Count(ctx) },
+	} {
+		n, err := count()
+		x.NoError(err)
+		x.Zero(n, "the refused init left a %s behind", name)
+	}
+
+	t.Run("and the next one runs", func(t *testing.T) {
+		x := require.New(t)
+
+		out, err := initRun(t, c)
+		x.NoError(err, "init after a refused one: %s", out)
+
+		x.NotNil(signIn(t, s, "admin", passwordFrom(t, out)))
+	})
+}
+
 // TestAConsoleIssuesAPasswordForAnOperator is `Credential.Issue` with a
 // `service` -- the control plane's half -- travelled end to end.
 //
