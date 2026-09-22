@@ -53,6 +53,27 @@ roster vouch unlock @newco/alice
 The same three acts are on the console, on a person's own panel. Nothing is only
 in one of them.
 
+### If the one locked out is the operator
+
+The operator `roster init` made lives on the **control plane**, a different
+database from the people above, so the same three take `--control`:
+
+```sh
+roster vouch reset --control @admin                    # generated here, printed once
+roster vouch unlock --control @admin
+```
+
+This is the way back for a deployment with **one** operator who has lost the
+password `init` printed: every other door that writes a password needs a
+credential, and theirs is the one gone. Use `reset` rather than `set` for it:
+`reset` also signs out everything the old password opened, because a recovery
+that leaves the old sessions alive is not one. `set --control` is there too,
+and changes the password only.
+
+The person is looked up and never created, so a typo is refused rather than
+becoming a second operator. A second operator is the console's
+*issue a password*, or `roster issue password`.
+
 ### If a deployment names a leaked-password corpus
 
 ```yaml

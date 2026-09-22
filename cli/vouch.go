@@ -99,32 +99,101 @@ func vouching(ctx context.Context, c *cmd.Config) (*cmd.Server, *vouch.Server, e
 		vouch.WithKeys(s.Keyring)), nil
 }
 
-// whom is the person a command was pointed at.
+// whom is the person a command was pointed at, and the stack that writes them.
 //
 // `pdcmd.ArgRef` and `whoIs` rather than a parser of this file's own, so that
 // `@tenant/alias` means here what it means to `roster forget` and to every
 // entity command.
-func whom(ctx context.Context, s *cmd.Server, cl *xli.Command) (*app.VouchWho, error) {
+//
+// # `--control`
+//
+// The operator who runs the console is a holder too, and on the **other**
+// database: `s.Ent` is whatever `db:` opened, and the control plane is built
+// from `control.db` beside it. Without the switch this answered *no holder is
+// called "admin"* about the one person a deployment of one operator cannot do
+// without -- and every other way back in needs a credential they have lost
+// (#16). `roster key add --service` already crossed to the control plane; this
+// is the same crossing for a person.
+//
+// A switch and not `--service NAME`, because here the person is REF and stays
+// REF: `@admin` and an identifier mean what they mean on the data plane.
+//
+// # Looked up here, and named to `Issue`
+//
+// `Credential.Issue` on the control plane takes a person by `service` and
+// nothing else, and makes one where the name matches nobody -- which is how the
+// console adds a second operator, and is the wrong answer to a typo in a
+// recovery. So the person is found here first, by lookup only, and `Issue` is
+// handed the alias of a row that already exists. `service` is that alias, and
+// empty on the data plane, where `Issue` takes a `ref`.
+type whomed struct {
+	at      app.Server
+	who     *app.VouchWho
+	service string
+}
+
+// issuing is the request `reset` makes about this person.
+func (w whomed) issuing(kind string) *app.CredentialIssueRequest {
+	req := app.CredentialIssueRequest_builder{Kind: kind}
+	if w.service != "" {
+		req.Service = w.service
+	} else {
+		req.Ref = app.HolderRef_builder{Id: w.who.GetId()}.Build()
+	}
+
+	return req.Build()
+}
+
+func whom(ctx context.Context, s *cmd.Server, cl *xli.Command) (whomed, error) {
 	ref, named := arg.Get[pdcmd.Ref](cl, "REF")
 	if !named {
-		return nil, errors.New("REF: who, as @tenant/alias or an identifier")
+		return whomed{}, errors.New("REF: who, as @tenant/alias or an identifier")
 	}
 	if err := ref.Expect(pd.HolderDomain); err != nil {
-		return nil, err
+		return whomed{}, err
 	}
 
-	who, err := whoIs(ctx, s.Ent, ref)
+	control, _ := flg.Find[bool](cl, "control")
+	if !control {
+		who, err := whoIs(ctx, s.Ent, ref)
+		if err != nil {
+			return whomed{}, err
+		}
+
+		return whomed{at: s.Ungated, who: app.VouchWho_builder{Id: who.Bytes()}.Build()}, nil
+	}
+
+	if s.Control == nil {
+		return whomed{}, errors.New("--control: this deployment has no control plane; see `control` in the configuration")
+	}
+
+	who, err := whoIs(ctx, s.Control.Ent, ref)
 	if err != nil {
-		return nil, err
+		return whomed{}, err
 	}
 
-	return app.VouchWho_builder{Id: who.Bytes()}.Build(), nil
+	h, err := s.Control.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		return whomed{}, err
+	}
+
+	return whomed{
+		at:      s.Control.Ungated,
+		who:     app.VouchWho_builder{Id: who.Bytes()}.Build(),
+		service: h.GetAlias(),
+	}, nil
 }
 
 func refArg() arg.Args {
 	return arg.Args{
 		&pdcmd.ArgRef{Name: "REF", Brief: "who, as @tenant/alias or an identifier"},
 	}
+}
+
+func controlFlag() *flg.Switch {
+	return &flg.Switch{Name: "control", Brief: "REF is on the control plane: an operator of this deployment"}
 }
 
 // newCmdVouchReset generates a password and prints it once.
@@ -148,6 +217,7 @@ func newCmdVouchReset(c *cmd.Config) *xli.Command {
 
 		Flags: flg.Flags{
 			&flg.String{Name: "kind", Brief: "which credential; empty is the password"},
+			controlFlag(),
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
@@ -157,17 +227,14 @@ func newCmdVouchReset(c *cmd.Config) *xli.Command {
 			}
 			defer s.Close()
 
-			who, err := whom(ctx, s, cl)
+			w, err := whom(ctx, s, cl)
 			if err != nil {
 				return err
 			}
 
 			kind, _ := flg.Find[string](cl, "kind")
 
-			res, err := s.Ungated.Credential().Issue(ctx, app.CredentialIssueRequest_builder{
-				Ref:  app.HolderRef_builder{Id: who.GetId()}.Build(),
-				Kind: kind,
-			}.Build())
+			res, err := w.at.Credential().Issue(ctx, w.issuing(kind))
 			if err != nil {
 				return err
 			}
@@ -200,6 +267,7 @@ func newCmdVouchSet(c *cmd.Config) *xli.Command {
 		Flags: flg.Flags{
 			&flg.Switch{Name: "password-stdin", Brief: "read the password from stdin; required"},
 			&flg.String{Name: "kind", Brief: "which credential; empty is the password"},
+			controlFlag(),
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
@@ -225,7 +293,7 @@ func newCmdVouchSet(c *cmd.Config) *xli.Command {
 			}
 			defer s.Close()
 
-			who, err := whom(ctx, s, cl)
+			w, err := whom(ctx, s, cl)
 			if err != nil {
 				return err
 			}
@@ -234,8 +302,8 @@ func newCmdVouchSet(c *cmd.Config) *xli.Command {
 
 			// Set is a `Credential` write now, named by reference. Locally,
 			// through `Ungated`, where a frameless caller waives the reach rule.
-			if _, err := s.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-				Ref:    app.HolderRef_builder{Id: who.GetId()}.Build(),
+			if _, err := w.at.Credential().Set(ctx, app.CredentialSetRequest_builder{
+				Ref:    app.HolderRef_builder{Id: w.who.GetId()}.Build(),
 				Kind:   kind,
 				Secret: []byte(secret),
 			}.Build()); err != nil {
@@ -264,6 +332,7 @@ func newCmdVouchUnlock(c *cmd.Config) *xli.Command {
 
 		Flags: flg.Flags{
 			&flg.String{Name: "kind", Brief: "which credential; empty is the password"},
+			controlFlag(),
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
@@ -273,7 +342,7 @@ func newCmdVouchUnlock(c *cmd.Config) *xli.Command {
 			}
 			defer s.Close()
 
-			who, err := whom(ctx, s, cl)
+			w, err := whom(ctx, s, cl)
 			if err != nil {
 				return err
 			}
@@ -283,8 +352,8 @@ func newCmdVouchUnlock(c *cmd.Config) *xli.Command {
 			// Unlock is a `Credential` write now (`Vouch.Unlock` moved onto the
 			// entity), named by reference. Locally, through `Ungated`, so the
 			// escalation rule waives itself for a frameless caller.
-			res, err := s.Ungated.Credential().Unlock(ctx, app.CredentialUnlockRequest_builder{
-				Ref:  app.HolderRef_builder{Id: who.GetId()}.Build(),
+			res, err := w.at.Credential().Unlock(ctx, app.CredentialUnlockRequest_builder{
+				Ref:  app.HolderRef_builder{Id: w.who.GetId()}.Build(),
 				Kind: kind,
 			}.Build())
 			if err != nil {
