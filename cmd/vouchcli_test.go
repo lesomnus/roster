@@ -307,3 +307,51 @@ func TestTheCliLetsASoleOperatorBackIn(t *testing.T) {
 		x.NoError(cli.NewCmdVouch(&c).Run(ctx, []string{"unlock", "--control", "@admin"}))
 	})
 }
+
+// TestTheControlPlaneHoldsTheCorpusToo is #18.
+//
+// The control plane was built with `vouch.lockout` and `vouch.password` and not
+// `vouch.breached`, beside a comment saying an operator's password is held to
+// the same numbers as anybody's. So the account that runs the deployment was
+// the one whose password nothing checked against the corpus.
+func TestTheControlPlaneHoldsTheCorpusToo(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	c := seedbed(t)
+	c.Vouch.Breached = leakedCorpus(t, "hunter2hunter2")
+
+	// On a database of its own, because a refused `init` is not rolled back:
+	// the operator and their role are written before the password is, so the
+	// database it leaves is one `init` will not run against again.
+	t.Run("init will not seed an operator with one", func(t *testing.T) {
+		x := require.New(t)
+
+		c := seedbed(t)
+		c.Vouch.Breached = leakedCorpus(t, "hunter2hunter2")
+
+		err := piped(t, "hunter2hunter2", cli.NewCmdInit(&c), "--password-stdin")
+		x.Error(err, "the first operator was given a password this deployment refuses everywhere else")
+		x.Equal(codes.FailedPrecondition, status.Code(err))
+	})
+
+	out, err := initRun(t, c)
+	x.NoError(err, "init: %s", out)
+
+	err = piped(t, "hunter2hunter2", cli.NewCmdVouch(&c), "set", "--password-stdin", "--control", "@admin")
+	x.Error(err, "an operator's password went past the corpus")
+	x.Equal(codes.FailedPrecondition, status.Code(err))
+
+	t.Run("and the check is a check rather than a refusal of everything", func(t *testing.T) {
+		x := require.New(t)
+
+		x.NoError(piped(t, "correct horse battery staple",
+			cli.NewCmdVouch(&c), "set", "--password-stdin", "--control", "@admin"))
+
+		s, err := cmd.Build(ctx, c)
+		x.NoError(err)
+		t.Cleanup(func() { s.Close() })
+
+		x.NotNil(signIn(t, s, "admin", "correct horse battery staple"))
+	})
+}
