@@ -321,19 +321,11 @@ func TestTheControlPlaneHoldsTheCorpusToo(t *testing.T) {
 	c := seedbed(t)
 	c.Vouch.Breached = leakedCorpus(t, "hunter2hunter2")
 
-	// On a database of its own, because a refused `init` is not rolled back:
-	// the operator and their role are written before the password is, so the
-	// database it leaves is one `init` will not run against again.
-	t.Run("init will not seed an operator with one", func(t *testing.T) {
-		x := require.New(t)
-
-		c := seedbed(t)
-		c.Vouch.Breached = leakedCorpus(t, "hunter2hunter2")
-
-		err := piped(t, "hunter2hunter2", cli.NewCmdInit(&c), "--password-stdin")
-		x.Error(err, "the first operator was given a password this deployment refuses everywhere else")
-		x.Equal(codes.FailedPrecondition, status.Code(err))
-	})
+	// On the same database the rest of this runs on, which is #20: a refused
+	// `init` is one transaction and leaves nothing for the next to trip on.
+	err := piped(t, "hunter2hunter2", cli.NewCmdInit(&c), "--password-stdin")
+	x.Error(err, "the first operator was given a password this deployment refuses everywhere else")
+	x.Equal(codes.FailedPrecondition, status.Code(err))
 
 	out, err := initRun(t, c)
 	x.NoError(err, "init: %s", out)
