@@ -8,6 +8,7 @@ import (
 	"github.com/lesomnus/xli"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	"github.com/lesomnus/payday/pdid"
@@ -226,5 +227,83 @@ func TestUnlockSaysWhetherItDidAnything(t *testing.T) {
 
 		err := cli.NewCmdVouch(&c).Run(ctx, []string{"reset", "@nowhere/admin"})
 		x.Error(err)
+	})
+}
+
+// TestTheCliLetsASoleOperatorBackIn is #16.
+//
+// `roster init` makes the first operator and prints their password once. A
+// deployment with one operator that loses it had no way back: every door that
+// writes a password needs a credential, and `vouch` -- the one that needs none
+// -- looked the person up on the data plane, where the operator is not.
+//
+// `reset` and not `set`, and the difference is the second half of the test: a
+// recovery that leaves the old sessions alive is not one.
+func TestTheCliLetsASoleOperatorBackIn(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	c := seedbed(t)
+
+	out, err := initRun(t, c)
+	x.NoError(err, "init: %s", out)
+	lost := passwordFrom(t, out)
+
+	s, err := cmd.Build(ctx, c)
+	x.NoError(err)
+	t.Cleanup(func() { s.Close() })
+
+	// Somebody holding the session the lost password opened -- which is the
+	// case a recovery is for.
+	held := signIn(t, s, "admin", lost)
+	x.NotNil(held)
+
+	conn := servedControl(t, s)
+	as := metadata.NewOutgoingContext(ctx, metadata.Pairs("cookie", held.Name+"="+held.Value))
+
+	_, err = app.NewMeServiceClient(conn).Get(as, app.MeGetRequest_builder{}.Build())
+	x.NoError(err)
+
+	t.Run("and without the switch the operator is nobody", func(t *testing.T) {
+		x := require.New(t)
+
+		err := cli.NewCmdVouch(&c).Run(ctx, []string{"reset", "@admin"})
+		x.Error(err, "the data plane answered about somebody who lives on the control plane")
+		x.ErrorContains(err, "no holder is called")
+	})
+
+	secret := stdoutOf(t, cli.NewCmdVouch(&c), "reset", "--control", "@admin")
+	x.NotEmpty(secret)
+
+	x.NotNil(signIn(t, s, "admin", secret), "the password the command printed does not open the console")
+	x.Nil(signIn(t, s, "admin", lost), "the lost password still opens the console")
+
+	t.Run("and the session the lost one opened is over", func(t *testing.T) {
+		x := require.New(t)
+
+		_, err := app.NewMeServiceClient(conn).Get(as, app.MeGetRequest_builder{}.Build())
+		x.Error(err)
+		x.Equal(codes.Unauthenticated, status.Code(err))
+	})
+
+	t.Run("and a typo is refused rather than made an operator", func(t *testing.T) {
+		x := require.New(t)
+
+		err := cli.NewCmdVouch(&c).Run(ctx, []string{"reset", "--control", "@admni"})
+		x.Error(err)
+
+		n, err := s.Control.Ent.Holder.Query().Count(ctx)
+		x.NoError(err)
+		x.Equal(1, n, "a recovery wrote a holder")
+	})
+
+	t.Run("and set and unlock cross with it", func(t *testing.T) {
+		x := require.New(t)
+
+		x.NoError(piped(t, "correct horse battery staple",
+			cli.NewCmdVouch(&c), "set", "--password-stdin", "--control", "@admin"))
+		x.NotNil(signIn(t, s, "admin", "correct horse battery staple"))
+
+		x.NoError(cli.NewCmdVouch(&c).Run(ctx, []string{"unlock", "--control", "@admin"}))
 	})
 }
