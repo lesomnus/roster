@@ -184,10 +184,12 @@ var ErrOutboxHasNowhereToGo = errors.New("watch.outbox: nothing would ever publi
 func Build(ctx context.Context, c Config) (*Server, error) {
 	// The data plane, and a standalone with no control: people and customers
 	// mint `rt_`. The control plane recurses with `keys.PrefixDeployment` below.
-	return build(ctx, c, keys.PrefixTenant)
+	return build(ctx, c, keys.PrefixTenant, nil)
 }
 
-func build(ctx context.Context, c Config, prefix string) (*Server, error) {
+// build is one plane. `leaked` is a corpus already opened and checked, handed
+// to the control plane by the data plane that read it -- see where it recurses.
+func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) (*Server, error) {
 	// The two blocks that are answered by silence when the one field they hang
 	// off is missing, refused before anything is opened.
 	//
@@ -316,7 +318,6 @@ func build(ctx context.Context, c Config, prefix string) (*Server, error) {
 	// The corpus, checked for the order it has to be in rather than trusted:
 	// one that is not sorted answers *no* to things that are in it, which is
 	// the direction that fails quietly.
-	var leaked vouch.Breached
 	if c.Vouch.Breached != "" {
 		if err := vouch.Sorted(c.Vouch.Breached); err != nil {
 			db.Close()
@@ -415,7 +416,15 @@ func build(ctx context.Context, c Config, prefix string) (*Server, error) {
 			// person who runs the deployment would be backwards. The keyring
 			// is not carried over -- the control plane holds no second factors.
 			Vouch: VouchConfig{Lockout: c.Vouch.Lockout, Password: c.Vouch.Password},
-		}, keys.PrefixDeployment)
+
+			// And the corpus, which this left out while saying the line above
+			// (#18): every operator's password -- their own change in the
+			// console, `init --password-stdin`, `vouch set --control` -- was
+			// the one write in the deployment nothing checked against it.
+			// Handed over as the value this build already opened rather than
+			// as `vouch.breached` again, because `vouch.Sorted` reads the whole
+			// file and the published corpus is tens of gigabytes.
+		}, keys.PrefixDeployment, leaked)
 		if err != nil {
 			db.Close()
 
