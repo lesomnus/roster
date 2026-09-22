@@ -15,7 +15,6 @@ and a real deployment has both in it.
 | the OAuth client | `behind` | `itself` in compose, `product` in `deploy/` |
 | the walk | `docker/behind.sh` | `docker/itself.sh` |
 | in a real cluster | nowhere yet | `scripts/cluster.sh`, as a Job |
-| deployed as | `behind.login-demo.hday.dev` | `itself.login-demo.hday.dev` |
 | it proves | the issuer is one a **standard third party** accepts -- not our own code being lenient about our own tokens | the pieces an app written against payday actually uses |
 
 `docs/position.md` § *It does not replace a reverse proxy* is why the first one

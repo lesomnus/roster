@@ -473,8 +473,8 @@ walk || { echo "cluster: the walk did not finish" >&2; exit 1; }
 # Everything above starts a fresh process, and a fresh process gets the client's
 # authentication method right **whatever it is registered as**:
 # `golang.org/x/oauth2` probes -- the header, then the body -- and caches what
-# worked for the life of that process. So the hour `itself.login-demo` signed
-# nobody in was invisible to every gate: a commit changed the declared client to
+# worked for the life of that process. So an app that signed nobody in for an
+# hour was invisible to every gate: a commit changed the declared client to
 # `client_secret_post`, the sync applied it, and the pods that were **already
 # running** went on sending the header with no second try. Restart them and it
 # works. Run any test and it passes.

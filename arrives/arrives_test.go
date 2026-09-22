@@ -16,8 +16,8 @@ import (
 // with a dot in their address reached the end of a whole sign-in and got a 500.
 func TestAnAddressBecomesANameARowMayHave(t *testing.T) {
 	for _, c := range []struct{ address, want string }{
-		{"seunghyun.hwang@hday.dev", "seunghyun-hwang"},
-		{"Seunghyun.Hwang@hday.dev", "seunghyun-hwang"},
+		{"erin.hart@contoso.example", "erin-hart"},
+		{"Erin.Hart@contoso.example", "erin-hart"},
 		{"  erin@contoso.example  ", "erin"},
 		{"erin+tag@contoso.example", "erin-tag"},
 		{"erin_h@contoso.example", "erin-h"},

@@ -1,6 +1,6 @@
 # The OAuth clients, declared.
 #
-# They were not, and that is how signing out of `itself.login-demo` came to end
+# They were not, and that is how signing out of `examples/product` came to end
 # on an error page: each client was registered by hand with `hydra import
 # client`, copied from the template in this repository's README, and that
 # template listed only `redirect_uris`. `examples/product` asks to come back to
