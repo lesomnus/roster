@@ -187,8 +187,8 @@ func Enrolling() Enrol {
 // their address got a 500 at the end of an otherwise complete sign-in.
 //
 // So every run of anything else becomes one hyphen, the ends are trimmed, and
-// what is left has to start with a letter. `Seunghyun.Hwang@hday.dev` is
-// `seunghyun-hwang`.
+// what is left has to start with a letter. `Erin.Hart@contoso.example` is
+// `erin-hart`.
 //
 // # And why it can still answer with a name nobody chose
 //

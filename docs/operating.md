@@ -328,21 +328,21 @@ that cannot be stood up twice the same way.
 # resources.yaml
 resources:
   - kind: Tenant
-    alias: hday
-    name: Holiday Robot
+    alias: contoso
+    name: Contoso
   - kind: Connection
-    tenant: hday
+    tenant: contoso
     name: entra
     issuer: https://login.microsoftonline.com/<tenant>/v2.0
     client_id: <the app registration>
     scopes: [email, profile]
     secret_ref: env:ENTRA_SECRET     # roster stores this and never reads it
   - kind: Host
-    tenant: hday
-    name: hday.dev
+    tenant: contoso
+    name: contoso.example
   - kind: MailDomain
-    tenant: hday
-    name: hday.dev
+    tenant: contoso
+    name: contoso.example
     routes: entra
 ```
 

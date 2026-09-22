@@ -414,15 +414,15 @@ func TestADottedAddressSignsIn(t *testing.T) {
 		return who.GetAlias()
 	}
 
-	x.Equal("seunghyun-hwang", named("c1", "sh-at-entra", "Seunghyun.Hwang@hday.dev"))
+	x.Equal("erin-hart", named("c1", "eh-at-entra", "Erin.Hart@contoso.example"))
 
 	// And the collision: a different person whose address folds to the same
 	// word. One of them cannot have the plain name, and neither is refused --
 	// a sign-in that fails because somebody signed up first is not something
 	// the person at the form can do anything about.
-	other := named("c2", "sh2-at-entra", "seunghyun_hwang@hday.dev")
-	x.NotEqual("seunghyun-hwang", other)
-	x.Contains(other, "seunghyun-hwang-")
+	other := named("c2", "eh2-at-entra", "erin_hart@contoso.example")
+	x.NotEqual("erin-hart", other)
+	x.Contains(other, "erin-hart-")
 }
 
 // TestTheAddressADirectoryHandedOverIsKept.

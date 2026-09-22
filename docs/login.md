@@ -491,7 +491,7 @@ What `enrolling` calls somebody is derived from the address and is **not** the
 local part of it: an alias begins with a lowercase letter and holds lowercase
 letters, digits and single hyphens, so `first.last` -- which is what a corporate
 directory hands out -- is not one. Every run of anything else becomes a hyphen, so
-`Seunghyun.Hwang@hday.dev` is `seunghyun-hwang`; two addresses that fold to the
+`Erin.Hart@contoso.example` is `erin-hart`; two addresses that fold to the
 same word both get in, and the second is the word plus four characters. An alias is
 changed afterwards; a refused sign-in is not.
 
@@ -502,8 +502,8 @@ Nothing above applies to them, because `login.enrol` decides where somebody who
 **arrived through a directory** lands.
 
 ```sh
-roster holder add @hday/intern-kim
-roster vouch reset @hday/intern-kim      # thirty-two bytes, printed once
+roster holder add @contoso/intern-kim
+roster vouch reset @contoso/intern-kim      # thirty-two bytes, printed once
 ```
 
 and a role, the way [usage/permissions.md](usage/permissions.md) writes one. The
@@ -528,8 +528,8 @@ makes a **second** `Holder`. One person, two `sub`s, and the first one holds the
 history.
 
 ```sh
-roster email add '{"holder":{"slug":{"alias":"intern-kim","tenant":{"alias":"hday"}}},
-                   "address":"kim@hday.dev"}'
+roster email add '{"holder":{"slug":{"alias":"intern-kim","tenant":{"alias":"contoso"}}},
+                   "address":"kim@contoso.example"}'
 ```
 
 The first sign-in through the directory then finds that row, links the identity to

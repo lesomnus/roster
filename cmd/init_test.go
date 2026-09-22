@@ -507,12 +507,12 @@ func TestTheFirstTenantCanBeGivenItsIdentifier(t *testing.T) {
 
 	// The shape an app writes down: a constant somebody composed, not one
 	// roster minted.
-	at := pdid.MustParse("00000000-0000-8000-8001-686461790000")
+	at := pdid.MustParse("00000000-0000-8000-8001-0123456789ab")
 
 	s := fresh(t)
 
 	v, err := cmd.Seed(ctx, s, cmd.Seeding{
-		Tenant: "hday", Holder: "admin", Operator: "admin",
+		Tenant: "contoso", Holder: "admin", Operator: "admin",
 		TenantId: at,
 	})
 	x.NoError(err)
@@ -520,7 +520,7 @@ func TestTheFirstTenantCanBeGivenItsIdentifier(t *testing.T) {
 
 	// The row and not just the answer.
 	got, err := s.Ungated.Tenant().Get(ctx, app.TenantGetRequest_builder{
-		Ref: app.TenantRef_builder{Alias: strPtr("hday")}.Build(),
+		Ref: app.TenantRef_builder{Alias: strPtr("contoso")}.Build(),
 	}.Build())
 	x.NoError(err)
 	x.Equal(at.Bytes(), got.GetId())

@@ -396,13 +396,12 @@ services:
   # `examples/product` is our code trusting our issuer, so it is lenient about
   # our tokens in ways we cannot see. `oauth2-proxy` is a standard third party
   # and the shape half the internal apps are already deployed in -- a page that
-  # knows nothing about authentication with a proxy in front of it -- and it is
-  # what the deployment's `behind.login-demo.hday.dev` is.
+  # knows nothing about authentication with a proxy in front of it.
   #
-  # It is here because that deployment produced two defects nothing local was
-  # able to see: a sign-out that ended on Hydra's administrator-facing fallback
-  # page, and a session the page could read nothing out of. Both are this
-  # shape's and neither is `examples/product`'s.
+  # It is here because that shape produced two defects nothing local was able to
+  # see: a sign-out that ended on Hydra's administrator-facing fallback page,
+  # and a session the page could read nothing out of. Both are this shape's and
+  # neither is `examples/product`'s.
   #
   # `skip_oidc_discovery`, because the issuer a token says (`URLS_SELF_ISSUER`,
   # the host machine's name) is not a name anything inside this network can
@@ -456,7 +455,7 @@ services:
   # `behind` above is a page that knows nothing, with a proxy in front.
   # `examples/product` holds the token, keeps a session of its own, and asks the
   # issuer to end it -- which is the shape a product with its own login already
-  # has, and the one the deployment's `itself.login-demo.hday.dev` is.
+  # has.
   #
   # It is here because nothing local ran it. Its own tests use a fake IdP, and
   # `docker/flow.sh` walks the protocol with `curl` rather than the app -- so

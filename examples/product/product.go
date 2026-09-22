@@ -1,4 +1,4 @@
-// Package main is a product app that trusts `sso.hday.dev`, and nothing else.
+// Package main is a product app that trusts `sso.contoso.example`, and nothing else.
 //
 // # Which of the two shapes this is
 //
@@ -104,10 +104,10 @@ type app struct {
 func run() error {
 	var (
 		addr     = flag.String("listen", ":8080", "where to serve")
-		issuer   = flag.String("issuer", "", "the OIDC issuer, e.g. https://sso.hday.dev")
+		issuer   = flag.String("issuer", "", "the OIDC issuer, e.g. https://sso.contoso.example")
 		clientId = flag.String("client-id", "", "what this app is called to the issuer")
 		secret   = flag.String("client-secret", os.Getenv("PRODUCT_CLIENT_SECRET"), "or PRODUCT_CLIENT_SECRET")
-		base     = flag.String("base", "", "this app's public origin, e.g. https://hello.hday.dev")
+		base     = flag.String("base", "", "this app's public origin, e.g. https://hello.contoso.example")
 		insecure = flag.Bool("insecure-cookie", false, "drop Secure, for plain http in development")
 		cert     = flag.String("tls-cert", "", "serve TLS with this certificate; plain http if empty")
 		certKey  = flag.String("tls-key", "", "the key for --tls-cert")
