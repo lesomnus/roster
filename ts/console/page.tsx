@@ -289,7 +289,7 @@ function Services(props: { may: (method: string) => boolean }): React.ReactNode 
 				fill in opens no door.
 			</p>
 
-			{/* `roster key add --service custody --allow …`, from a page: the
+			{/* `roster control key add --allow … custody`, from a page: the
 			    service is made if it is not there, because a service is not
 			    something set up on purpose before it is needed. The token is
 			    shown once. */}

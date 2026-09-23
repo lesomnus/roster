@@ -40,8 +40,8 @@ import (
 // credential a terminal holds can succeed at it: minting is granting, the
 // grant rule reads what the caller holds *through a binding*, and a key holds
 // none -- by design, or a key could replicate itself wider. The callers with
-// bindings are people, and a person at a terminal is a shell (`roster key
-// add --service`) or a console. A flag here would be a command that
+// bindings are people, and a person at a terminal is a shell (`roster
+// control key add`) or a console. A flag here would be a command that
 // structurally never works, which is the thing D58 refuses to mint.
 func NewCmdIssue(c *cmd.Config) *xli.Command {
 	return &xli.Command{

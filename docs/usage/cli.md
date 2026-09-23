@@ -44,8 +44,27 @@ test it remotely with a key.
 
 | | |
 | --- | --- |
-| local only | `init`, `key add`, `vouch reset\|set\|unlock`, `trail`, `forget`, `restore`, `resources` -- what they write is not served, which is the whole reason they are commands |
+| local only | `init`, `key add`, `vouch reset\|set\|unlock`, `trail`, `forget`, `restore`, `resources`, and all of `control` -- what they write is not served, which is the whole reason they are commands |
 | remote only | the rest of `vouch` (`verify`, `delegate`, `continue`, `link`, `redeem`, `revoke`, `enrol`, `accept`), `issue`, `me` -- those calls are a *caller's*, and a local run has none |
+
+### The control plane is `roster control`
+
+The operators and this deployment's own services live on a second database,
+`control.db`, and every command that writes there is under one word:
+
+```sh
+roster control key add --allow '/roster.VouchService/Verify' portal   # an rk_; naming it makes it
+roster control vouch reset @admin                                     # the operator's way back in
+roster control holder ls                                              # who the operators and services are
+```
+
+The entity commands are all there except `tenant add`: the control plane has
+one tenant, and an operator is named by alias alone because of it. What answers
+across both planes stays outside -- `roster key list` and `roster key revoke`,
+because a key's identifier does not say which database it is in.
+
+A machine that works for **one** customer is not this. It is a holder in their
+tenant with an `rt_`: `roster key add --tenant … --holder …`.
 
 ## How anything is named
 
@@ -96,7 +115,7 @@ decision rather than a gap:
 | --- | --- |
 | `Apply` | one of payday's two general writes, closed unless a deployment opts in, and roster does not |
 | `AuthService` | it mints the console's session, and a session cookie is a browser's credential where a terminal's is a key |
-| a *service's* key over the wire | minting is granting, the grant rule reads bindings, and a key holds none. The mints for a service are `roster key add` and a console |
+| a *service's* key over the wire | minting is granting, the grant rule reads bindings, and a key holds none. The mints for a service are `roster control key add` and a console |
 
 payday's own framework services get no `roster` command either: `TokenService/Introspect`
 is what an app calls to check a credential, and `BatchService` is the generic

@@ -69,7 +69,7 @@ the page, one of the two is wrong and both are load-bearing.
 
 | the promise | pinned by |
 | --- | --- |
-| `roster key add` mints once to stdout, `--allow` is required and a list, and the prefix follows from the flags — never from the caller | `TestTheCliMintsACustomersKey` · `TestAllowIsAListHoweverItIsWritten` |
+| `roster key add` mints once to stdout, `--allow` is required and a list, and the prefix follows from the command — `key add` or `control key add` — never from the caller | `TestTheCliMintsACustomersKey` · `TestAllowIsAListHoweverItIsWritten` |
 | an `rt_` is mintable over the wire through its three doors, held to both escalation rules at each | `TestACustomerMintsTheirOwnKeyOverTheWire` · `TestNobodyMintsAKeyWiderThanThemselves` · `TestNobodyMintsAKeyOnSomebodyElsesAccount` · `TestAKeyIsNotMintedIntoAnotherTenant` |
 | a person mints a key that acts as them and no more than them, from the wire and from their own terminal | `TestSomebodyMintsAKeyThatActsAsThem` · `TestSelfServiceOverTheWireWithHerOwnKey` · `TestTheCliIsAlsoACustomersPerson` |
 | a key calls its allow list and nothing else, and never more than its holder | `TestAKeyReachesWhatItWasMadeFor` · `TestAKeyReachesNothingElse` · `TestATenantKeyIsTheirsAndNotTheDeploymentS` |

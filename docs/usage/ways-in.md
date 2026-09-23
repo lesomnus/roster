@@ -56,19 +56,19 @@ in one of them.
 ### If the one locked out is the operator
 
 The operator `roster init` made lives on the **control plane**, a different
-database from the people above, so the same three take `--control`:
+database from the people above, so the same three are under `roster control`:
 
 ```sh
-roster vouch reset --control @admin                    # generated here, printed once
-roster vouch unlock --control @admin
+roster control vouch reset @admin                      # generated here, printed once
+roster control vouch unlock @admin
 ```
 
 This is the way back for a deployment with **one** operator who has lost the
 password `init` printed: every other door that writes a password needs a
 credential, and theirs is the one gone. Use `reset` rather than `set` for it:
 `reset` also signs out everything the old password opened, because a recovery
-that leaves the old sessions alive is not one. `set --control` is there too,
-and changes the password only.
+that leaves the old sessions alive is not one. `roster control vouch set` is
+there too, and changes the password only.
 
 The person is looked up and never created, so a typo is refused rather than
 becoming a second operator. A second operator is the console's
@@ -109,8 +109,13 @@ For **your own services**: the login app, a product backend, a job that reads
 the trail. They are holders of the control plane, and a key presents **as
 itself** rather than as a person.
 
+*Your own* is the deployment's, not a customer's. A machine that works for **one**
+tenant — its CI, its sync job — is an ordinary holder in that tenant with an
+`rt_` ([below](#a-tenant-key--rt_)), which is why the command says `control`: it
+writes to the other database.
+
 ```sh
-roster key add --service custody --allow '/roster.VouchService/Verify,/roster.MeService/Get'
+roster control key add --allow '/roster.VouchService/Verify,/roster.MeService/Get' custody
 ```
 
 ```
@@ -118,8 +123,8 @@ rk_rCHP-AyXhX7cbNIjgLLL8udW6hOchSQKHzRkcpMWWwc
 key 01a03322-… for @custody, allowing 2 method(s). This is the only time it is shown.
 ```
 
-Printed to **stdout** and the sentence to stderr, so `$(roster key add …)` is
-the key and nothing else. Shown once; what is stored is a hash.
+Printed to **stdout** and the sentence to stderr, so `$(roster control key add …)`
+is the key and nothing else. Shown once; what is stored is a hash.
 
 Naming a service **creates** it. A service is not something anybody sets up on
 purpose before they need it, and the control plane has one tenant so an alias
@@ -132,10 +137,13 @@ Write it however reads best — the flag repeats, and each occurrence may itself
 be a comma-separated list:
 
 ```sh
-roster key add --service custody \
+roster control key add \
   --allow /roster.VouchService/Verify \
-  --allow /roster.MeService/Get
+  --allow /roster.MeService/Get \
+  custody
 ```
+
+Flags come before the name, as everywhere in this CLI.
 
 **A deployment key is not walled by tenant.** It is the widest credential this
 deployment issues. Some methods are wider than they look and the command says so
@@ -291,7 +299,7 @@ payday.TokenService/Introspect { token: "rt_…" }
 The app asks with **its own** key, which is the whole of the trust decision and is
 per app. Two things about the answer: it is about the **holder** rather than the
 key, so an app resolves it against its own rows; and it sees only **this plane's**
-keys -- the `rk_`s `roster key add` mints live in the other database, and there is
+keys -- the `rk_`s `roster control key add` mints live in the other database, and there is
 no query from one to the other, so they are not refused here, they are invisible.
 
 ## Somebody's own record

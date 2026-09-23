@@ -27,7 +27,7 @@ import (
 // ServiceOf is the holder a key is for, made if this is the first key for it.
 //
 // Made rather than refused, because a service is not a thing somebody creates
-// on purpose before they need it: `key add --service custody` is the moment
+// on purpose before they need it: `control key add custody` is the moment
 // custody becomes a caller of this deployment, and asking for two commands to
 // express one intent is how a runbook grows a step nobody remembers.
 //
@@ -155,7 +155,8 @@ func MustFrom(b []byte) pdid.Id {
 // fix and was the whole of the bug. A scalar flag takes the **last**
 // occurrence -- which is right for `--config` and every other *choose one*
 // flag, and silently wrong for a list. `roster key add --service kamino
-// --allow /roster.VouchService/Verify --allow /roster.HolderService/Get` minted
+// --allow /roster.VouchService/Verify --allow /roster.HolderService/Get` -- as
+// `roster control key add` was spelled then -- minted
 // a key allowing the second and nothing else, and the only sign was the line
 // this prints saying `allowing 1 method(s)`.
 //

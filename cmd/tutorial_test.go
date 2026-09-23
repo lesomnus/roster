@@ -89,8 +89,8 @@ func TestTheTutorialRunsAsWritten(t *testing.T) {
 	// what `stdoutOf` captures and this test then signs in with.
 	pw := stdoutOf(t, cli.Cmd(&c), "vouch", "reset", "@newco/alice")
 
-	app := stdoutOf(t, cli.NewCmdKey(&c), "add", "--service", "portal",
-		"--allow", "/roster.VouchService/Verify,/roster.MeService/Get")
+	app := stdoutOf(t, cli.NewCmdControl(&c), "key", "add",
+		"--allow", "/roster.VouchService/Verify,/roster.MeService/Get", "portal")
 	key := stdoutOf(t, cli.NewCmdKey(&c), "add", "--tenant", "newco", "--holder", "alice",
 		"--name", "laptop", "--allow", "/roster.MeService/Get")
 
@@ -196,8 +196,8 @@ func TestTheTutorialRunsAsWritten(t *testing.T) {
 	_, err = entities(t, &c, "host", "add", `{"tenant":{"alias":"newco"},"name":"newco.example.com"}`)
 	x.NoError(err)
 
-	fd := stdoutOf(t, cli.NewCmdKey(&c), "add", "--service", "frontdoor",
-		"--allow", "/roster.FrontService/WhoseHost,/roster.VouchService/Verify")
+	fd := stdoutOf(t, cli.NewCmdControl(&c), "key", "add",
+		"--allow", "/roster.FrontService/WhoseHost,/roster.VouchService/Verify", "frontdoor")
 
 	t.Run("a hostname resolves to a tenant and nothing else", func(t *testing.T) {
 		x := require.New(t)

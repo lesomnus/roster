@@ -67,9 +67,9 @@ func NewCmdVouch(c *cmd.Config) *xli.Command {
 		Brief: "a person's way in: check it, mint it, hand it out, end it",
 
 		Commands: xli.Commands{
-			newCmdVouchReset(c),
-			newCmdVouchSet(c),
-			newCmdVouchUnlock(c),
+			newCmdVouchReset(c, false),
+			newCmdVouchSet(c, false),
+			newCmdVouchUnlock(c, false),
 
 			// The wire half, which dials where the three above open the
 			// database; `vouchwire.go` says why the line falls there.
@@ -105,18 +105,21 @@ func vouching(ctx context.Context, c *cmd.Config) (*cmd.Server, *vouch.Server, e
 // `@tenant/alias` means here what it means to `roster forget` and to every
 // entity command.
 //
-// # `--control`
+// # `control`
 //
 // The operator who runs the console is a holder too, and on the **other**
 // database: `s.Ent` is whatever `db:` opened, and the control plane is built
-// from `control.db` beside it. Without the switch this answered *no holder is
+// from `control.db` beside it. Without a way across this answered *no holder is
 // called "admin"* about the one person a deployment of one operator cannot do
 // without -- and every other way back in needs a credential they have lost
-// (#16). `roster key add --service` already crossed to the control plane; this
-// is the same crossing for a person.
+// (#16).
 //
-// A switch and not `--service NAME`, because here the person is REF and stays
-// REF: `@admin` and an identifier mean what they mean on the data plane.
+// The way across is `roster control vouch`, the same three commands built with
+// `control` true. It was a `--control` switch on each, which put the choice of
+// database in a flag somebody could leave off -- and left off, `reset @admin`
+// is a refusal about a name, or a reset of a customer's person who happens to
+// be called that. REF stays REF either way: `@admin` and an identifier mean
+// what they mean on the data plane.
 //
 // # Looked up here, and named to `Issue`
 //
@@ -144,7 +147,7 @@ func (w whomed) issuing(kind string) *app.CredentialIssueRequest {
 	return req.Build()
 }
 
-func whom(ctx context.Context, s *cmd.Server, cl *xli.Command) (whomed, error) {
+func whom(ctx context.Context, s *cmd.Server, cl *xli.Command, control bool) (whomed, error) {
 	ref, named := arg.Get[pdcmd.Ref](cl, "REF")
 	if !named {
 		return whomed{}, errors.New("REF: who, as @tenant/alias or an identifier")
@@ -153,7 +156,6 @@ func whom(ctx context.Context, s *cmd.Server, cl *xli.Command) (whomed, error) {
 		return whomed{}, err
 	}
 
-	control, _ := flg.Find[bool](cl, "control")
 	if !control {
 		who, err := whoIs(ctx, s.Ent, ref)
 		if err != nil {
@@ -164,7 +166,7 @@ func whom(ctx context.Context, s *cmd.Server, cl *xli.Command) (whomed, error) {
 	}
 
 	if s.Control == nil {
-		return whomed{}, errors.New("--control: this deployment has no control plane; see `control` in the configuration")
+		return whomed{}, errors.New("this deployment has no control plane; see `control` in the configuration")
 	}
 
 	who, err := whoIs(ctx, s.Control.Ent, ref)
@@ -192,10 +194,6 @@ func refArg() arg.Args {
 	}
 }
 
-func controlFlag() *flg.Switch {
-	return &flg.Switch{Name: "control", Brief: "REF is on the control plane: an operator of this deployment"}
-}
-
 // newCmdVouchReset generates a password and prints it once.
 //
 // Generated and not typed, which is the same decision `roster init` makes about
@@ -208,7 +206,7 @@ func controlFlag() *flg.Switch {
 // its name, the way `vouch set`, `unlock` and `enrol` kept theirs when those
 // moved onto the entity. What an operator types is not a thing to churn because
 // a method found its own rows.
-func newCmdVouchReset(c *cmd.Config) *xli.Command {
+func newCmdVouchReset(c *cmd.Config, control bool) *xli.Command {
 	return &xli.Command{
 		Name:  "reset",
 		Brief: "give somebody a new password, generated here and printed once",
@@ -217,7 +215,6 @@ func newCmdVouchReset(c *cmd.Config) *xli.Command {
 
 		Flags: flg.Flags{
 			&flg.String{Name: "kind", Brief: "which credential; empty is the password"},
-			controlFlag(),
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
@@ -227,7 +224,7 @@ func newCmdVouchReset(c *cmd.Config) *xli.Command {
 			}
 			defer s.Close()
 
-			w, err := whom(ctx, s, cl)
+			w, err := whom(ctx, s, cl, control)
 			if err != nil {
 				return err
 			}
@@ -257,7 +254,7 @@ func newCmdVouchReset(c *cmd.Config) *xli.Command {
 // On a pipe and never as an argument, which is `roster init --password-stdin`'s
 // rule and `roster key add`'s reason for refusing to take a key: an argument is
 // in the shell history and in the process list.
-func newCmdVouchSet(c *cmd.Config) *xli.Command {
+func newCmdVouchSet(c *cmd.Config, control bool) *xli.Command {
 	return &xli.Command{
 		Name:  "set",
 		Brief: "write a password somebody chose, read from stdin",
@@ -267,7 +264,6 @@ func newCmdVouchSet(c *cmd.Config) *xli.Command {
 		Flags: flg.Flags{
 			&flg.Switch{Name: "password-stdin", Brief: "read the password from stdin; required"},
 			&flg.String{Name: "kind", Brief: "which credential; empty is the password"},
-			controlFlag(),
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
@@ -293,7 +289,7 @@ func newCmdVouchSet(c *cmd.Config) *xli.Command {
 			}
 			defer s.Close()
 
-			w, err := whom(ctx, s, cl)
+			w, err := whom(ctx, s, cl, control)
 			if err != nil {
 				return err
 			}
@@ -323,7 +319,7 @@ func newCmdVouchSet(c *cmd.Config) *xli.Command {
 // answer to what locking by name costs: an account can be held closed by
 // somebody else, and a person on site can simply open it. The secret is
 // untouched, which is what makes it different from a reset.
-func newCmdVouchUnlock(c *cmd.Config) *xli.Command {
+func newCmdVouchUnlock(c *cmd.Config, control bool) *xli.Command {
 	return &xli.Command{
 		Name:  "unlock",
 		Brief: "open an account that wrong answers closed, without changing the secret",
@@ -332,7 +328,6 @@ func newCmdVouchUnlock(c *cmd.Config) *xli.Command {
 
 		Flags: flg.Flags{
 			&flg.String{Name: "kind", Brief: "which credential; empty is the password"},
-			controlFlag(),
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
@@ -342,7 +337,7 @@ func newCmdVouchUnlock(c *cmd.Config) *xli.Command {
 			}
 			defer s.Close()
 
-			w, err := whom(ctx, s, cl)
+			w, err := whom(ctx, s, cl, control)
 			if err != nil {
 				return err
 			}
