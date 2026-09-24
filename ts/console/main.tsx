@@ -56,16 +56,25 @@ const ADDR: string =
 /**
  * Where the **customers** are.
  *
- * `admin.http`, the third listener, and the one the comment above called a
- * later screen. It is a second address rather than a second path because it is
- * a second server: the rows are the data plane's, in another database, and
- * `roster.HolderService` means a different thing on each -- an operator there,
- * a customer's person here. They cannot share a port, because both would
- * register that service under one name.
+ * `admin.http`, the third listener, and a second **server**: the rows are the
+ * data plane's, in another database, and `roster.HolderService` means a
+ * different thing on each -- an operator there, a customer's person here. They
+ * cannot share a port, because both would register that service under one name.
  *
- * The session cookie is the same one; `cmd/admin.go` reads it. What a
- * deployment has to add is `origins:` under `admin.http`, for the reason
- * `control.http` needs it.
+ * They do have to share a **host**. The session cookie `cmd/admin.go` reads is
+ * the one `AuthService.SignIn` set on the control listener, and it is
+ * `__Host-` prefixed: host-only, so a browser at `console.example` sends it to
+ * `console.example` and nowhere else. An admin listener on an origin of its own
+ * therefore gets every call as nobody, and has no `SignIn` to mint a session of
+ * its own. So `control.console.admin` is a path -- `/x/admin`, a route in front
+ * of `admin.http` on this host -- and a base URL's path is what the RPC name is
+ * appended to, so that reaches it.
+ *
+ * A value naming another host is **refused here** rather than dialed. It would
+ * draw the panel and fail every call, which is worse than the empty value's
+ * *not offered*; the port is not compared, because a cookie ignores it.
+ *
+ * With one origin there is nothing for `origins:` under `admin.http` to say.
  *
  * The sandbox has no third listener but a second server in the same instance,
  * dialed by name in `customers()` below -- so this is not asked there.
@@ -80,17 +89,42 @@ const ADDR: string =
 // mounts the console somewhere else still finds it beside the page.
 async function adminAddr(): Promise<string | null> {
 	const env = import.meta.env['VITE_ADMIN_ADDR'] as string | undefined
-	if (env !== undefined) return env
-	if (import.meta.env.DEV) return 'http://localhost:8081'
+	if (env !== undefined) return reachable(env)
+	if (import.meta.env.DEV) return reachable('http://localhost:8081')
 	try {
 		const res = await fetch(import.meta.env.BASE_URL + 'config.json')
 		if (!res.ok) return null
 		const v = (await res.json()) as { admin?: string }
 
-		return v.admin !== undefined && v.admin !== '' ? v.admin : null
+		return v.admin !== undefined && v.admin !== '' ? reachable(v.admin) : null
 	} catch {
 		return null
 	}
+}
+
+/**
+ * The address, or null where the cookie cannot follow it.
+ *
+ * `hostname` and not `host`: a cookie is not scoped by port, so the dev
+ * server's `localhost:8081` beside a page on `localhost:8082` is one host and
+ * works -- which is also why no gate here catches the shape that does not. A
+ * relative value resolves onto this page and is always reachable.
+ *
+ * Said out loud rather than returned quietly, because the deployment that
+ * writes a second host has read the documentation that used to recommend one.
+ */
+function reachable(at: string): string | null {
+	const u = new URL(at, location.href)
+	if (u.hostname === location.hostname) return at
+
+	console.error(
+		`the admin listener is configured at ${u.origin}, and this page is at ${location.origin}. ` +
+			'the session is a __Host- cookie, so the browser sends it to this host and to no other -- ' +
+			'every call would arrive as nobody. put admin.http behind a path on this host ' +
+			'(control.console.admin: /x/admin) instead. the customers screen is not offered.',
+	)
+
+	return null
 }
 
 const root = createRoot(document.getElementById('root') as HTMLElement)

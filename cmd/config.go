@@ -477,11 +477,24 @@ type ConsoleConfig struct {
 	// Dir is `ts/dist/console`, or wherever the build was put.
 	Dir string `yaml:"dir"`
 
-	// Admin is where the page reaches the admin listener from a browser --
-	// `admin.http`'s public origin, `https://roster-admin.internal` -- since a
-	// page served by one listener has no way to know the other's address. Empty
-	// leaves the customers panels unoffered, which is also what a deployment
-	// with no admin listener means.
+	// Admin is where the page reaches the admin listener from a browser, since
+	// a page served by one listener has no way to know the other's address.
+	// Empty leaves the customers panels unoffered, which is also what a
+	// deployment with no admin listener means.
+	//
+	// **On the console's own host**, which is why a path -- `/x/admin`, a route
+	// a proxy in front puts on `admin.http` -- is the shape to write and an
+	// origin of its own is not. The session is a `__Host-` cookie, so a browser
+	// sends it to the host that set it and to nothing else; a page at
+	// `console.example` calling `admin.example` carries no cookie, the admin
+	// listener has no `SignIn` to mint one, and every call arrives as nobody.
+	// The page compares the two hosts and leaves the panel unoffered when they
+	// differ, because a screen that is drawn and refuses everything is worse
+	// than one that is not there.
+	//
+	// The two listeners still cannot share a **port**: both register
+	// `roster.HolderService` and it means a different thing on each. One host
+	// in front of two ports is not that constraint.
 	Admin string `yaml:"admin"`
 }
 

@@ -173,12 +173,29 @@ data plane, where an operator's session names nobody.
 control:
   console:
     dir: /usr/share/roster/console    # empty serves no page
-    admin: https://admin.example      # where the browser reaches admin.http
+    admin: /x/admin                   # where the browser reaches admin.http
 ```
 
 `roster serve` serves the built page at `/` on `control.http` when `dir` names it.
 The customers screen talks to `admin.http` directly, which is what `admin:` is
 for, and the operator who signed in on one is the caller on the other.
+
+**It has to be the same host as the console**, which is why the value above is a
+path and not an origin. The session is carried in a `__Host-` cookie, and that
+prefix means host-only: a browser will not send a cookie set for
+`console.example` to `admin.example`, or to `admin-api.console.example`. The
+admin listener authenticates that cookie and has no `SignIn` of its own, so
+every call from a cross-host page arrives as **nobody** -- and the screen is
+drawn rather than refused, which is worse than not offering it. The page checks
+the two hosts now and leaves the panel unoffered when they differ, saying so in
+the browser's console.
+
+A path works because a base URL's path is what the RPC name is appended to, so
+`/x/admin` or `https://console.example/x/admin` both reach a proxy route in
+front of `admin.http`. The cookie rides along because its path is the root, and
+`admin.http.origins` can stay empty because there is only one origin. What the
+two listeners still cannot share is a **port**: both register
+`roster.HolderService`, which means a different thing on each.
 
 Signing in is `AuthService.SignIn` on `control.http` and nowhere else -- a service
 is registered per listener -- and the cookie travels as `set-cookie` response

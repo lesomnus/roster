@@ -45,8 +45,13 @@ control:
     dir: /usr/share/roster/console
     # Where the page reaches the admin listener **from a browser**. Empty is the
     # customers screen not being offered, which is better than offering one that
-    # cannot answer -- and it stays empty until a deployment routes a host to
-    # the block below.
+    # cannot answer -- and it stays empty until a deployment puts a route on
+    # this host in front of the block below.
+    #
+    # A path, when it is written: `/x/admin`. The session is a `__Host-` cookie
+    # and a browser sends one to the host that set it and to no other, so an
+    # admin listener on a host of its own receives every call as nobody. The
+    # page refuses such a value rather than drawing a screen that cannot answer.
     admin: ""
 
 # The data plane with **no wall**, which is what the console's customers screen
