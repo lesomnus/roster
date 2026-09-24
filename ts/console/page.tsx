@@ -1,5 +1,5 @@
 /**
- * The console: what an operator runs a deployment with.
+ * The admin console: what an operator runs a deployment with.
  *
  * It is the **control plane**, which is a different set of rows from every
  * other port this app serves. Here a `Holder` is not a person a product app

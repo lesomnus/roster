@@ -3,7 +3,7 @@ import { useSyncExternalStore } from 'react'
 /**
  * The address bar is where a page keeps which screen it is on.
  *
- * The console kept it in component state -- which screen, which customer,
+ * The admin console kept it in component state -- which screen, which customer,
  * which panel, which person -- so the history had one entry for the whole
  * visit: the back button left the app, a reload lost the place, and a link
  * to a customer's people could not be sent. This is the least that fixes it:

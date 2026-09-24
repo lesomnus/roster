@@ -545,7 +545,7 @@ func TestNoFilterCarriesARowFromAnotherTenant(t *testing.T) {
 // reason for existing is serving it. `cmd.GrpcControl` registers
 // `s.Control.Walled.ApiKey()` and the comment beside it says *`Get` still
 // answers with the verifier column if it is asked for* -- which is what makes
-// this worth running rather than reading. If that were true, the console an
+// this worth running rather than reading. If that were true, the admin console an
 // operator signs in to would hand out the digest of every key in the
 // deployment, and the wall would not have been crossed to get it: they are that
 // tenant's own rows.

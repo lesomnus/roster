@@ -46,7 +46,7 @@ import '../lib/style.css'
 // port.
 //
 // `import.meta.env.DEV` and not the path. It used to ask whether the path began
-// with `/console/`, which answered the question by accident: the console is at
+// with `/console/`, which answered the question by accident: the admin console is at
 // `/` now and there is nothing in an address to read. What was ever being asked
 // is whether this was built for a deployment, and that is a constant the
 // bundler substitutes rather than a guess about a URL.
@@ -77,7 +77,7 @@ const ADDR: string =
 // screen is not offered.
 //
 // Under the page's base rather than at the root, so that a deployment which
-// mounts the console somewhere else still finds it beside the page.
+// mounts the admin console somewhere else still finds it beside the page.
 async function adminAddr(): Promise<string | null> {
 	const env = import.meta.env['VITE_ADMIN_ADDR'] as string | undefined
 	if (env !== undefined) return env
@@ -262,7 +262,7 @@ async function customers(): Promise<{ app: App; admin: Admin } | null> {
 	})()
 	if (transport === null) return null
 
-	// Keyed apart from the console's own store for the same reason there are two
+	// Keyed apart from the admin console's own store for the same reason there are two
 	// of them: what they hold is not the same rows.
 	//
 	// The clients come back beside the store because not everything is a read

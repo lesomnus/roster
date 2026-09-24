@@ -503,3 +503,66 @@ func TestTheHydraPinIsOneVersion(t *testing.T) {
 		}
 	}
 }
+
+// banned is a phrase the glossary settled against, and what to write instead.
+//
+// Only phrases where the word names the **wrong thing** rather than reading
+// oddly: a `operator` that means a customer organisation is not a style
+// preference, it is the reader being told the opposite of what is true.
+var banned = []struct{ pattern, instead string }{
+	{`\b[Tt]he console\b`, "the admin console, or the user console; `a console` alone is a terminal"},
+	{`\bper operator\b`, "per tenant -- an operator runs the deployment and is never a customer"},
+	{`\beach operator\b`, "each tenant"},
+	{`\bevery operator\b`, "every tenant"},
+	{`\boperator it fronts\b`, "tenant it fronts"},
+	{`\boperator this app fronts\b`, "tenant this app fronts"},
+}
+
+// allowed is where a banned phrase is the subject rather than a use of it.
+var allowed = map[string]string{
+	"docs/glossary.md": "the page that defines the words quotes them",
+}
+
+// TestTheWordsAreTheOnesInTheGlossary holds the documentation and every comment
+// to `docs/glossary.md`.
+//
+// Two words did the damage this exists to stop. **operator** means whoever runs
+// the deployment, and `login/` used it for the customer organisation being
+// fronted -- so `one key per **operator**` said the opposite of what the code
+// does,
+// in a file whose whole subject is which tenant a flow belongs to. **console**
+// named one page while a second is being designed for a different caller
+// entirely (#34), so every unqualified use was about to become ambiguous rather
+// than merely terse.
+//
+// `docs/roadmap.md` is not read, for the reason `docs` gives: it is the record
+// of what was done, in the words used at the time.
+func TestTheWordsAreTheOnesInTheGlossary(t *testing.T) {
+	x := require.New(t)
+	root := repoRoot(t)
+
+	for _, f := range sources(t, root) {
+		if _, ok := allowed[f]; ok {
+			continue
+		}
+
+		src, err := os.ReadFile(filepath.Join(root, f))
+		x.NoError(err)
+
+		page := strings.HasSuffix(f, ".md")
+		for i, line := range strings.Split(string(src), "\n") {
+			// A comment or a page: code may call a variable what it likes, and
+			// renaming an identifier is not what this is for.
+			if !page && !comment(line) {
+				continue
+			}
+
+			for _, b := range banned {
+				if regexp.MustCompile(b.pattern).MatchString(line) {
+					x.Fail("a word the glossary settled",
+						"%s:%d matches %s; write %s", f, i+1, b.pattern, b.instead)
+				}
+			}
+		}
+	}
+}

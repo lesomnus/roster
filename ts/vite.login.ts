@@ -20,7 +20,7 @@ import type { Connect } from 'vite'
 // origin -- see `away`, and the shape it exists to stop teaching.
 //
 // It is the **opposite** of `dev:sandbox`, which compiles the real server into
-// the page, and both are right for what they are: the console *is* calls, so a
+// the page, and both are right for what they are: the admin console *is* calls, so a
 // fake server there would be a fake answer to every question it exists to ask.
 //
 // # It is not a test double

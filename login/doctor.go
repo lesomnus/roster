@@ -16,7 +16,7 @@ import (
 //
 // # What this app needs from Hydra, and cannot ask for
 //
-// The Login App fronts a list of operators, each with a list of OAuth clients,
+// The Login App fronts a list of tenants, each with a list of OAuth clients,
 // and every one of those clients is registered **at Hydra** by somebody else --
 // a `hydra import client`, a Job, a console. Nothing in this repository writes
 // them and nothing here can: a client is the product's, and its secret is the
@@ -136,7 +136,7 @@ type hydraClient struct {
 // Doctor asks Hydra whether the clients this app fronts are registered in a way
 // this stack works with.
 //
-// `clients` is `login.clients`: an operator's alias against the client ids that
+// `clients` is `login.clients`: an tenant's alias against the client ids that
 // are theirs. What comes back is every finding, worst first, and an empty slice
 // is a deployment with nothing wrong that this can see.
 func Doctor(ctx context.Context, hydra, public string, header http.Header, clients map[string][]string) ([]Finding, error) {
@@ -178,10 +178,10 @@ func Doctor(ctx context.Context, hydra, public string, header http.Header, clien
 }
 
 // strays is the direction that costs somebody: a client Hydra will raise
-// challenges for that no operator here claims.
+// challenges for that no tenant here claims.
 //
-// This app resolves a flow to an operator **by its client id**, so a challenge
-// for one that is not in `login.clients` reaches `no operator holds the client`
+// This app resolves a flow to an tenant **by its client id**, so a challenge
+// for one that is not in `login.clients` reaches `no tenant holds the client`
 // -- which a browser is shown as *this login is not working*, with nothing in
 // it to say which client or whose. Registering a client at Hydra and forgetting
 // the line here is the way that happens, and it is one line in two
@@ -213,7 +213,7 @@ func strays(ctx context.Context, a admin, clients map[string][]string) ([]Findin
 		out = append(out, Finding{
 			Severity: Broken,
 			About:    id,
-			What:     "hydra has it and no operator here claims it",
+			What:     "hydra has it and no tenant here claims it",
 			Costs:    "every flow raised for it reaches a page saying the login is not working",
 		})
 	}

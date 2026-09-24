@@ -64,7 +64,7 @@ type Config struct {
 	// `serve` applies them before it serves.
 	//
 	// Empty is none, which is every deployment that has not asked for this and
-	// leaves the console the only way those rows are made. See
+	// leaves the admin console the only way those rows are made. See
 	// `cmd/resources.go` for the three rules -- it adds and updates and never
 	// erases, it writes as a `provisioner` the trail can name, and what it
 	// writes it owns.
@@ -426,7 +426,7 @@ type ControlConfig struct {
 	// and not the data plane's.
 	//
 	// It was `memory`, written into the code rather than read from anywhere,
-	// and that made the console the one screen a second replica silently broke:
+	// and that made the admin console the one screen a second replica silently broke:
 	// a key issued on one process would never reach an operator watching on
 	// another, on a stream that stayed open and looked healthy.
 	//

@@ -204,7 +204,7 @@ func allow(ctx context.Context, at app.Server, in pdid.Id, to pdid.Id) error {
 	return err
 }
 
-// seedOperator is the person who signs in to the console, and the password they
+// seedOperator is the person who signs in to the admin console, and the password they
 // do it with.
 //
 // # Why the control plane
@@ -217,7 +217,7 @@ func allow(ctx context.Context, at app.Server, in pdid.Id, to pdid.Id) error {
 // # Why a password and not a key
 //
 // A key is for a machine and travels on every call. This is a person at a
-// browser, and what a browser carries is a session cookie the console sets
+// browser, and what a browser carries is a session cookie the admin console sets
 // after checking a secret; see `payday/auth/authsession` and
 // `docs/guide/signing-in.md`. `VouchService` is what checks it, on the control
 // plane's own instance.
@@ -295,7 +295,7 @@ func seedOperator(ctx context.Context, s *Server, alias, given string) (pdid.Id,
 //
 // Long enough that it is not guessed and not a word anybody will recognise,
 // because the one thing it must not be is something somebody keeps. It is for
-// the first sign-in, and the console's job is to make them change it.
+// the first sign-in, and the admin console's job is to make them change it.
 func passphrase() (string, error) {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {

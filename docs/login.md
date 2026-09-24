@@ -156,10 +156,10 @@ client asked for the scope that carries it. What it never puts there is `methods
 stale one.
 
 Which operator a flow belongs to comes from the **challenge**, not the hostname:
-it names the OAuth client, and each operator's clients are written down
+it names the OAuth client, and each tenant's clients are written down
 (`login.clients`) and read back over Hydra's admin API. So the tenant is Hydra's
 word rather than a header a browser wrote, and the key each call goes out with
-follows from it. Several clients per operator, because one sign-in across two
+follows from it. Several clients per tenant, because one sign-in across two
 products is the case Hydra is for at all.
 
 The consent hop **grants what the client asked for and draws nothing**, which is
@@ -312,13 +312,13 @@ sequenceDiagram
 **The account app is the same walk with no Hydra**, and it is the shape a
 deployment with one relying party should still take: same package, same policy,
 two different ends -- the tenant comes from the **host**
-(`FrontService.WhoseHost`, so there is a redirect per operator rather than one for
+(`FrontService.WhoseHost`, so there is a redirect per tenant rather than one for
 all of them), and it finishes at the app's own cookie.
 `account/account.go`'s `login`/`callback` and `login/provider.go` are the two
 endings; everything between them is `arrives`.
 
 And the other direction is done: **signing somebody out in roster reaches
-Hydra.** The Login App holds `SyncService` open, one stream per operator, and when
+Hydra.** The Login App holds `SyncService` open, one stream per tenant, and when
 roster says somebody has been signed out everywhere, suspended or erased it tells
 Hydra to forget them -- so the next product they open finds a form rather than a
 fresh token. roster does not know Hydra exists and this does not change that: the
@@ -644,7 +644,7 @@ Holder with one history.
 ### What a front door needs
 
 **Which tenant it is**, from the host the browser arrived at -- and **one `rt_` per
-operator it fronts**, picked by the same fact.
+tenant it fronts**, picked by the same fact.
 
 Not one deployment key: an `rk_` resolves to a frame with no tenant and the policy
 hands it `frame.Everything`, so on an internet-facing app the thing keeping

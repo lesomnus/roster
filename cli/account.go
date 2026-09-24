@@ -82,7 +82,7 @@ func newCmdAccountServe(c *cmd.Config) *xli.Command {
 			&flg.String{Name: "base", Brief: "this app's public origin, registered with every provider as the redirect"},
 			&flg.String{Name: "static", Brief: "a directory to serve as the page; empty serves none"},
 			&flg.String{Name: "enrol", Brief: "who a provider may sign in: invited (only somebody already linked), expected (somebody entered by address), enrolling (anybody)"},
-			&flg.Strings{Name: "key", Brief: "a tenant key, as alias=rt_…; repeat per operator fronted. Or ROSTER_ACCOUNT_KEY_<ALIAS> in the environment"},
+			&flg.Strings{Name: "key", Brief: "a tenant key, as alias=rt_…; repeat per tenant fronted. Or ROSTER_ACCOUNT_KEY_<ALIAS> in the environment"},
 			&flg.Switch{Name: "insecure-cookie", Brief: "a cookie without Secure, for a page served over plain http in development"},
 			&flg.Switch{Name: "terminal", Brief: "let a machine with no browser ask for a key here (`roster sign-in`)"},
 			&flg.Strings{Name: "seal", Brief: "the key sessions are sealed into the cookie under, as env:NAME holding 32 bytes base64; repeat to rotate, the first seals. Empty is a key made at start, which is one replica"},
@@ -327,7 +327,7 @@ func sealOf(who string, refs []string) (*authsession.Sealed, error) {
 	return authsession.NewSealed(keys...)
 }
 
-// keysOf is one tenant key per operator, from three places that are three
+// keysOf is one tenant key per tenant, from three places that are three
 // different kinds of thing.
 //
 //   - the block, whose values are **references** (`env:NAME`), because a
@@ -372,7 +372,7 @@ func keysOf(refs map[string]string, prefix string, given []string) (map[string]s
 		out[strings.ToLower(alias)] = token
 	}
 	if len(out) == 0 {
-		return nil, fmt.Errorf("--key alias=rt_… (or %s<ALIAS>, or the `keys` block): one tenant key per operator this fronts", prefix)
+		return nil, fmt.Errorf("--key alias=rt_… (or %s<ALIAS>, or the `keys` block): one tenant key per tenant this fronts", prefix)
 	}
 
 	return out, nil

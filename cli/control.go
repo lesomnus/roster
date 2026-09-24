@@ -146,7 +146,7 @@ func newCmdControlVouch(c *cmd.Config) *xli.Command {
 // for who is registered there, `api-key ls` for what they hold,
 // `holder disable` for stopping one.
 //
-// There was no way to see any of it from a shell. The console was the only
+// There was no way to see any of it from a shell. The admin console was the only
 // view of the control plane's rows, which made a deployment run from a
 // terminal one whose operators nobody could list.
 //

@@ -29,7 +29,7 @@ import (
 //
 // # What goes wrong without it
 //
-// Nothing, for a long time. The row is written, the console lists it, and the
+// Nothing, for a long time. The row is written, the admin console lists it, and the
 // only thing that never happens is a match: `FrontService.WhoseHost` normalises
 // what a browser arrived at, so a row that is not normalised is a row no
 // request ever reaches. The symptom is a sign-in page saying nobody is there,

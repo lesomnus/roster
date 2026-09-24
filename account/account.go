@@ -27,7 +27,7 @@
 // that can, which is one more than there should be. `scripts/test.sh` refuses
 // the import rather than trusting this paragraph.
 //
-// # One tenant key per operator it fronts
+// # One tenant key per tenant it fronts
 //
 // A deployment key resolves to a frame with no tenant and the policy hands it
 // `frame.Everything`; on an internet-facing app that is an actor reaching every
@@ -44,7 +44,7 @@
 // `env:CONTOSO_ENTRA_SECRET`), a string roster stores and never reads. This app
 // reads the rows with the tenant's key, resolves the reference ([Config.Secret]),
 // and does the OIDC exchange -- being the relying party, which is what roster
-// is not. An operator adds a provider in the console and this app offers it on
+// is not. An operator adds a provider in the admin console and this app offers it on
 // the next sign-in page it draws; there is nothing to restart.
 //
 // # What is this deployment's to decide
@@ -100,8 +100,8 @@ type Config struct {
 	// Insecure dials `Roster` without TLS. A development setting.
 	Insecure bool
 
-	// Keys is one tenant key per operator this app fronts, by the tenant's
-	// alias. Minted by an operator -- the console's *arrives through* panel, or
+	// Keys is one tenant key per tenant this app fronts, by the tenant's
+	// alias. Minted by an operator -- the admin console's *arrives through* panel, or
 	// `roster key add --tenant contoso --holder account` -- for a holder in that
 	// tenant whose role names what a front door calls (see [Methods]).
 	Keys map[string]string
@@ -206,7 +206,7 @@ func EnvSecret(ref string) (string, error) {
 // ErrUnknownHost is a name this app serves nobody under.
 var ErrUnknownHost = errors.New("account: no operator here serves this name")
 
-// tenant is one operator this app fronts, resolved once at start.
+// tenant is one tenant this app fronts, resolved once at start.
 type tenant struct {
 	id    pdid.Id
 	alias string
@@ -258,7 +258,7 @@ func New(ctx context.Context, c Config) (*App, error) {
 	case c.Connect == nil:
 		return nil, errors.New("account: Connect: where the same server speaks Connect over HTTP")
 	case len(c.Keys) == 0:
-		return nil, errors.New("account: Keys: one tenant key per operator this app fronts; none is nobody to front")
+		return nil, errors.New("account: Keys: one tenant key per tenant this app fronts; none is nobody to front")
 	case c.Sessions == nil:
 		return nil, errors.New("account: Sessions: the cookie is the app's, so the app makes it")
 	}

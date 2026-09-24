@@ -70,7 +70,7 @@ func mustURL(t *testing.T, s string) *url.URL {
 	return u
 }
 
-// TestAnOperatorSignsIn is the console's front door, end to end from what
+// TestAnOperatorSignsIn is the admin console's front door, end to end from what
 // `roster init` printed.
 //
 // It is the seam payday left and could not fill: `auth` reads a credential and
@@ -520,7 +520,7 @@ func TestAConsoleReachesTheAdminPortOverHttp(t *testing.T) {
 	x.Equal(http.StatusUnauthorized, code)
 
 	// Signed in on the control plane's listener, which is the only one that
-	// serves a sign-in -- and then carried here. That is the console's own
+	// serves a sign-in -- and then carried here. That is the admin console's own
 	// shape: one door to knock on, and the port it operates on is another.
 	jar.SetCookies(mustURL(t, srv.URL),
 		[]*http.Cookie{signIn(t, s, "admin", passwordFrom(t, out))})

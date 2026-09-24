@@ -45,7 +45,7 @@ type admin struct {
 
 // client is the OAuth client a challenge was raised for.
 //
-// The `client_id` is what says **which operator** this flow belongs to, and it
+// The `client_id` is what says **which tenant** this flow belongs to, and it
 // is the whole reason this app needs no hostname: it comes from Hydra over the
 // admin API rather than from the browser or from this app's own guess.
 type client struct {

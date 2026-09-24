@@ -82,7 +82,7 @@ func TestSomebodyArrivesThroughAProvider(t *testing.T) {
 	d.connect(t, p, "entra")
 	p.Subject = "erin-at-entra"
 
-	// The identity, written by an operator: `enrol: invited` is the default and
+	// The identity, written by an tenant: `enrol: invited` is the default and
 	// this person was expected.
 	_, err := d.s.Ungated.Identity().Add(t.Context(), rstr.IdentityAddRequest_builder{
 		Holder:   rstr.HolderRef_builder{Id: d.who["contoso"].Bytes()}.Build(),
@@ -210,7 +210,7 @@ func TestACallbackWithoutItsOwnStateIsRefused(t *testing.T) {
 }
 
 // TestAProviderFlowReachesOnlyItsOwnOperator: the challenge decides which
-// operator's `Connection` rows are read, so fabrikam's client cannot walk into
+// tenant's `Connection` rows are read, so fabrikam's client cannot walk into
 // contoso's directory.
 func TestAProviderFlowReachesOnlyItsOwnOperator(t *testing.T) {
 	x := require.New(t)
@@ -283,7 +283,7 @@ func TestATenantWithNoPasswordDrawsNoForm(t *testing.T) {
 // TestSomebodyTheOperatorEnteredIsTheSamePerson is the other half of what a
 // deployment asked for: people put in by hand, and people who arrive.
 //
-// An operator entering somebody knows their **address** and cannot know the
+// An tenant entering somebody knows their **address** and cannot know the
 // subject a directory will assert -- that is issued at the directory. So the
 // first sign-in is matched by the one and linked to the other, and every sign-in
 // after it is the ordinary `Identity` lookup.
@@ -308,7 +308,7 @@ func TestSomebodyTheOperatorEnteredIsTheSamePerson(t *testing.T) {
 		return id
 	}
 
-	// `expected` is the whole policy: the people an operator entered, and
+	// `expected` is the whole policy: the people an tenant entered, and
 	// nobody else. Before this existed, `invited` was the only refusing policy
 	// and it could admit nobody at all through a directory.
 	t.Run("expected admits them and refuses a stranger", func(t *testing.T) {
@@ -354,7 +354,7 @@ func TestSomebodyTheOperatorEnteredIsTheSamePerson(t *testing.T) {
 	})
 
 	// And the bug the lookup closes on the other policy: entering somebody in
-	// advance used to **break** their sign-in, because the alias an operator
+	// advance used to **break** their sign-in, because the alias an tenant
 	// chose is the alias `Enrolling` derives and `Holder.Add` answers
 	// AlreadyExists.
 	t.Run("enrolling finds them rather than colliding", func(t *testing.T) {

@@ -48,7 +48,7 @@ and one that created them with permissions would decide something only you know.
 
 ## Standing a customer up
 
-Four writes, and then a way in. This is what the console's *new customer* form
+Four writes, and then a way in. This is what the admin console's *new customer* form
 does, in the same order:
 
 ```sh
@@ -80,9 +80,9 @@ somebody with no role. Both are finishable, because whoever is writing is outsid
 every tenant. That is the difference from the deadlock a *caller* would hit, where
 writing the first role needs a binding only writing the first role could give.
 
-An operator with no shell does the same four from the console's customers screen,
+An operator with no shell does the same four from the admin console's customers screen,
 over `admin.addr`, as a session and through every rule. Nothing is only in one
-path: [operating.md](../operating.md) § "The console" is why that works, and what
+path: [operating.md](../operating.md) § "The admin console" is why that works, and what
 it costs.
 
 ## Where a customer's requests come from

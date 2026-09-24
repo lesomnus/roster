@@ -132,7 +132,7 @@ func TestTheControlPlaneMigratesWhenItSaysSo(t *testing.T) {
 
 	x.NoError(cli.Ready(ctx, s, c))
 
-	// The table the console signs in through, which is the one a deployment
+	// The table the admin console signs in through, which is the one a deployment
 	// upgraded past P9 would have been missing. Queried rather than listed,
 	// because what matters is that the control plane's own client can read it.
 	_, err = s.Control.Ent.Session.Query().Count(ctx)

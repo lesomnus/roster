@@ -32,7 +32,7 @@ import (
 
 // TestABrowserSpeaksConnectToTheAppAndRosterAnswersAsThePerson is the spike
 // One `Me.Get`, spoken by a browser to the app's
-// own origin in the protocol the console speaks to roster, handed on with the
+// own origin in the protocol the admin console speaks to roster, handed on with the
 // delegation swapped in, answered by roster about the person who signed in.
 //
 // It is the whole of what the account app is built on afterwards -- `ts/gen`
@@ -112,7 +112,7 @@ func TestABrowserSpeaksConnectToTheAppAndRosterAnswersAsThePerson(t *testing.T) 
 
 	// roster served twice off one server: gRPC for the app's own calls, and
 	// Connect over HTTP for what the proxy hands on -- the second listener a
-	// deployment has for the console, `README.md` § A browser.
+	// deployment has for the admin console, `README.md` § A browser.
 	g, err := s.Grpc(ctx, cmd.Config{})
 	x.NoError(err)
 	l, err := net.Listen("tcp", "127.0.0.1:0")

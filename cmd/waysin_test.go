@@ -27,7 +27,7 @@ import (
 // because `Verify` counted it, and the fix was one sentence both sides ask.
 // `vouch.Offers` is this one's, over `Tenant.OffersPassword`.
 
-// off turns the password off for a tenant, through the verb the console calls
+// off turns the password off for a tenant, through the verb the admin console calls
 // rather than through `Patch`, which is closed on the wire anyway.
 func off(t *testing.T, b *built, in pdid.Id) {
 	t.Helper()

@@ -222,7 +222,7 @@ func TestAGeneralWriteIsNotAWayRoundTheEscalationRule(t *testing.T) {
 // position `apikey.go` describes for the hole it closed: *nothing exploited it,
 // and the reason is not a check -- it is that minting a key needed a shell.* A
 // console is what removes the shell, and roster has one. So this is written at
-// the layer, which is where the console's write lands, and the consequence is
+// the layer, which is where the admin console's write lands, and the consequence is
 // then shown over the wire because the token it mints works there today.
 func TestNobodyMintsAKeyOnSomebodyElsesHolder(t *testing.T) {
 	x := require.New(t)

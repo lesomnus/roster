@@ -1,8 +1,8 @@
 /**
- * The console's server, in the page.
+ * The admin console's server, in the page.
  *
  * A reload is a fresh deployment: two new databases, `roster init` run again,
- * nothing left over. Somebody working on the console starts no backend,
+ * nothing left over. Somebody working on the admin console starts no backend,
  * migrates nothing, and does not have to remember what state they left it in.
  *
  * # It answers with a transport and nothing else

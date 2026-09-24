@@ -11,7 +11,7 @@ import (
 // # Scope decides, and nothing else does
 //
 // A claim is in the token because the client asked for the scope that carries
-// it. That is the OIDC contract and it is also the useful boundary: an operator
+// it. That is the OIDC contract and it is also the useful boundary: an tenant
 // grants a client `email` by registering it with that scope, not by this app
 // having an opinion. A scope nobody asked for produces no claim even when the
 // read answered with one.

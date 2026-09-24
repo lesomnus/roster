@@ -9,7 +9,7 @@
 // configuration and has nothing to do with roster.
 //
 // It is not right about roster's own two front doors. Both read the operator's
-// providers out of roster -- `Connection`, added on the console's *arrives
+// providers out of roster -- `Connection`, added on the admin console's *arrives
 // through* panel -- and a `Connection` is roster's vocabulary, not an app's.
 // `frontdoor` knows nothing about roster's entities on purpose, so a package
 // that turns one into an `oauth2.Config` does not belong inside it.

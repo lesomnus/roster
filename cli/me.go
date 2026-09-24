@@ -28,7 +28,7 @@ import (
 // `MeService` is what a **person inside a tenant** asks about their own record,
 // and until now it had no command at all -- so the caller this CLI is most
 // obviously for could read every entity and not the one answer that is about
-// them. The console had it and a terminal did not, which is the shape D58 is
+// them. The admin console had it and a terminal did not, which is the shape D58 is
 // about.
 //
 // # It is remote only, and that is not an omission

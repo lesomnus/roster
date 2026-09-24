@@ -18,7 +18,7 @@
  *
  * # What is this app's own protocol, and what is not
  *
- * All of it. Unlike the console and the account page there is not one Connect
+ * All of it. Unlike the admin console and the account page there is not one Connect
  * call here: what this page needs about a flow, it asks the app it is served
  * by, because the app is the only thing that may ask Hydra. `/flow` is that --
  * who is being signed in to, which client is asking, and for what.

@@ -28,16 +28,16 @@ import (
 // of those into `DELETE /admin/oauth2/auth/sessions/login` is a fact about
 // Hydra, so it lives in the package that already knows about Hydra.
 //
-// Without it there is a real hole and it is quiet: an operator signs somebody
+// Without it there is a real hole and it is quiet: an tenant signs somebody
 // out everywhere, roster's own credentials stop working, and Hydra goes on
 // remembering them -- so the next product they open gets a fresh token with no
 // form in between.
 //
-// # One stream per operator, and no filter
+// # One stream per tenant, and no filter
 //
 // `SyncWatchRequest` is empty on purpose: what an app hears is narrowed by the
-// **wall**, exactly as a read is. This app holds one `rt_` per operator, so it
-// opens one stream per operator and each hears that tenant and no other. There
+// **wall**, exactly as a read is. This app holds one `rt_` per tenant, so it
+// opens one stream per tenant and each hears that tenant and no other. There
 // is nothing to filter and nothing that could be filtered wrong.
 //
 // # What a reconnect means
@@ -54,12 +54,12 @@ import (
 // app that refused to sign anybody in because it could not sign anybody out is
 // worse than one that says so loudly and goes on working.
 func (a *App) Watch(ctx context.Context) error {
-	if len(a.operators) == 0 {
+	if len(a.tenants) == 0 {
 		return nil
 	}
 
 	g, ctx := errgroup.WithContext(ctx)
-	for _, o := range a.operators {
+	for _, o := range a.tenants {
 		g.Go(func() error { return a.watch(ctx, o) })
 	}
 
@@ -73,8 +73,8 @@ const (
 	watchAtMost  = 30 * time.Second
 )
 
-func (a *App) watch(ctx context.Context, o *operator) error {
-	log := slog.With("operator", o.alias)
+func (a *App) watch(ctx context.Context, o *tenant) error {
+	log := slog.With("tenant", o.alias)
 	wait := watchBackoff
 
 	for ctx.Err() == nil {
@@ -91,7 +91,7 @@ func (a *App) watch(ctx context.Context, o *operator) error {
 			// Not something waiting fixes: a deployment with no broker, or a
 			// key whose role does not name this. Loudly, once, and this app
 			// goes on signing people in -- what it cannot do is sign them out
-			// when roster says to, which an operator has to know.
+			// when roster says to, which an tenant has to know.
 			log.ErrorContext(ctx, "login: roster will not say when somebody is signed out; hydra will keep remembering them", "err", err)
 
 			return nil
@@ -110,7 +110,7 @@ func (a *App) watch(ctx context.Context, o *operator) error {
 }
 
 // stream is one connection, and what it remembers lives exactly as long.
-func (a *App) stream(ctx context.Context, o *operator) error {
+func (a *App) stream(ctx context.Context, o *tenant) error {
 	s, err := a.sync.Watch(withKey(ctx, o.key), rstr.SyncWatchRequest_builder{}.Build())
 	if err != nil {
 		return err
@@ -156,7 +156,7 @@ func (a *App) stream(ctx context.Context, o *operator) error {
 			// reconnect above is the retry this design has. Logged so it is not
 			// silent.
 			slog.ErrorContext(ctx, "login: could not tell hydra to forget somebody",
-				"operator", o.alias, "subject", who, "err", err)
+				"tenant", o.alias, "subject", who, "err", err)
 		}
 	}
 }

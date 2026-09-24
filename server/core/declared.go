@@ -15,7 +15,7 @@ import (
 // # Why refusing is kinder than allowing
 //
 // `cmd/resources.go` applies what a deployment declared, every time it starts.
-// So an operator who edits a declared `Connection` in the console has made a
+// So an operator who edits a declared `Connection` in the admin console has made a
 // change that survives until the next restart and then vanishes -- and the
 // restart is a config change, an image bump, a node draining, none of which
 // look related. They would be left with a setting that was right on Tuesday and

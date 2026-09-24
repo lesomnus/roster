@@ -100,8 +100,8 @@ across every entity.
 
 ```sh
 cd ts && npm install
-npm run dev            # the console, against a running roster
-npm run dev:sandbox    # the console with the whole server compiled into the page
+npm run dev            # the admin console, against a running roster
+npm run dev:sandbox    # the admin console with the whole server compiled into the page
 npm run dev:login      # the sign-in pages, with a made-up server behind them
 ```
 
@@ -134,7 +134,7 @@ React is a **peer** dependency of payday and an optional one. `payday/store` and
 
 `npm run dev:sandbox` compiles the server into the page -- `GOOS=js GOARCH=wasm`,
 SQLite in a Worker, a message port instead of HTTP/2. A reload is a fresh
-deployment. One instance serves **two** servers, because the console reaches
+deployment. One instance serves **two** servers, because the admin console reaches
 `control.http` and `admin.http`, and the page dials the second by name on the
 same socket. The cookie cannot work over a message port, so `wasm/sandbox`
 remembers who signed in -- a sandbox being a sandbox, and `wasm/main.go` says how
@@ -169,7 +169,7 @@ Under TLS the same listener carries native gRPC as well, by ALPN.
 **The sign-in is not a route.** It was `POST /session` on every listener that had
 HTTP, on the reasoning that issuing a credential is HTTP because `auth` reads one
 and never makes one. Half true: a cookie is a response header, and `web.Transcode`
-hands `set-cookie` metadata to the browser as one -- so the console's sign-in is
+hands `set-cookie` metadata to the browser as one -- so the admin console's sign-in is
 `AuthService.SignIn`, an RPC like every other call the page makes. It also
 removed what the route cost, which was the data plane's port answering an
 operator's password with a cookie that opened nothing.

@@ -165,7 +165,7 @@ func TestInitLeavesADeploymentThatWorks(t *testing.T) {
 	})
 }
 
-// TestInitSeedsAnOperator is the console's bootstrap: somebody in the control
+// TestInitSeedsAnOperator is the admin console's bootstrap: somebody in the control
 // plane who can sign in, because a console cannot be the thing that creates the
 // first person allowed to use it.
 func TestInitSeedsAnOperator(t *testing.T) {
@@ -184,7 +184,7 @@ func TestInitSeedsAnOperator(t *testing.T) {
 	x.NotEmpty(secret)
 	x.GreaterOrEqual(len(secret), 32)
 
-	// It verifies against the control plane, which is what the console will do.
+	// It verifies against the control plane, which is what the admin console will do.
 	v, err := s.Control.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
 		Ref: app.HolderRef_builder{
 			Slug: app.HolderRefBySlug_builder{
@@ -443,7 +443,7 @@ func TestNobodyWidensARoleTheyHold(t *testing.T) {
 // there is no `--password` flag and there will not be, because an argument is
 // in the shell history and in the process list.
 //
-// What matters is that the thing typed into the console is the thing the
+// What matters is that the thing typed into the admin console is the thing the
 // environment said, which is one call to check and easy to get subtly wrong.
 func TestAGivenPasswordIsTheOneThatSignsIn(t *testing.T) {
 	x := require.New(t)

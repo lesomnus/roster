@@ -28,20 +28,20 @@
 // `Holder.id`, which is what Hydra is told either way -- so a person who signs
 // in with Entra on Monday and a password on Saturday is one `sub` to every
 // product. `provider.go` is the second one, and the only thing about it that is
-// not the account app's shape is the redirect: one URL for every operator,
+// not the account app's shape is the redirect: one URL for every tenant,
 // because Hydra sends every browser here under one name.
 //
-// # Which operator, and where that comes from
+// # Which tenant, and where that comes from
 //
 // Not from the hostname. `account/` resolves the browser's `Host` because it
 // has nothing else; this app has something better, and it arrives with the
-// browser: the challenge names the **OAuth client**, one per operator, read
+// browser: the challenge names the **OAuth client**, one per tenant, read
 // from Hydra over the admin API. So which tenant a flow belongs to is Hydra's
 // word rather than a header the browser wrote or a mapping this app parsed --
 // and it is re-derived from the challenge on every request, never carried in
 // anything the browser holds.
 //
-// The key follows from it: one `rt_` per operator, and every call about a flow
+// The key follows from it: one `rt_` per tenant, and every call about a flow
 // goes out with the key of the tenant that flow's client resolved to. See
 // `docs/login.md`, § "And what its own credential has to reach", for why that
 // is several narrow credentials rather than one wide one.
@@ -126,9 +126,9 @@ type Config struct {
 	// is Hydra's, and this one is closed as soon as the flow finishes.
 	Sessions *authsession.Sessions
 
-	// Operators is who this app fronts, by the tenant's alias. One entry is one
-	// operator and the code is the same either way.
-	Operators map[string]Operator
+	// Tenants is who this app fronts, by the tenant's alias. One entry is one
+	// tenant and the code is the same either way.
+	Tenants map[string]Tenant
 
 	// Remember is how long Hydra should skip the form, and the consent screen,
 	// for a browser that has already been through them. Zero asks every time.
@@ -142,8 +142,8 @@ type Config struct {
 	// request, which suits a development deployment and nothing else, since a
 	// provider will only send a browser back to a URL it was told about.
 	//
-	// One for the whole app, not one per operator: Hydra sends every browser
-	// here under one name. Which operator a callback belongs to comes from the
+	// One for the whole app, not one per tenant: Hydra sends every browser
+	// here under one name. Which tenant a callback belongs to comes from the
 	// state, never from the URL.
 	Base *url.URL
 
@@ -166,19 +166,19 @@ type Config struct {
 	Page http.Handler
 }
 
-// Operator is one customer this app is a front door for.
+// Tenant is one customer this app is a front door for.
 //
 // The two facts are one block rather than two maps keyed the same way, because
 // two maps is a place to add an entry to one and not the other.
-type Operator struct {
+type Tenant struct {
 	// Key is this app's `rt_` for that tenant: a key on a holder inside it, so
 	// the wall narrows what it may read with no discipline asked of this app.
 	// `roster key add --tenant contoso --holder login-app --allow …`.
 	Key string
 
-	// Clients are the OAuth clients registered with Hydra for this operator.
+	// Clients are the OAuth clients registered with Hydra for this tenant.
 	// A challenge naming one of them is a flow about this tenant, which is why
-	// this app needs no hostname. More than one because an operator with two
+	// this app needs no hostname. More than one because a tenant with two
 	// products has two clients and one sign-in.
 	Clients []string
 }
@@ -189,7 +189,7 @@ type Consent int
 const (
 	// Skip grants what the client asked for and draws nothing. The default, and
 	// right for the clients this app can have: every one of them was registered
-	// by this deployment for one of its own operators.
+	// by this deployment for one of its own tenants.
 	Skip Consent = iota
 
 	// Ask draws a screen and grants nothing until somebody says so.
@@ -226,14 +226,14 @@ type App struct {
 	// flows is every round trip to a provider started and not yet finished.
 	flows *arrives.States[flow]
 
-	byClient map[string]*operator
+	byClient map[string]*tenant
 
-	// The same rows as `byClient`, once each: an operator with two clients is
+	// The same rows as `byClient`, once each: a tenant with two clients is
 	// one stream and not two.
-	operators []*operator
+	tenants []*tenant
 }
 
-type operator struct {
+type tenant struct {
 	id      pdid.Id
 	alias   string
 	name    string
@@ -242,7 +242,7 @@ type operator struct {
 }
 
 // New dials roster once and resolves each key to its tenant, so a key that
-// cannot see the operator it is for is refused at start rather than at
+// cannot see the tenant it is for is refused at start rather than at
 // somebody's first sign-in.
 func New(ctx context.Context, c Config) (*App, error) {
 	switch {
@@ -252,11 +252,11 @@ func New(ctx context.Context, c Config) (*App, error) {
 		return nil, errors.New("login: Hydra: where its admin API answers")
 	case c.Sessions == nil:
 		return nil, errors.New("login: Sessions: the cookie is the app's, so the app makes it")
-	case len(c.Operators) == 0:
-		return nil, errors.New("login: Operators: one per customer this app fronts; none is nobody to front")
+	case len(c.Tenants) == 0:
+		return nil, errors.New("login: Tenants: one per customer this app fronts; none is nobody to front")
 	}
 
-	// The credential of every call is whichever operator's key the context
+	// The credential of every call is whichever tenant's key the context
 	// carries, put there by `flow` from the challenge the request named. A call
 	// made with none goes out with none and is refused by roster, which is the
 	// right answer for a request no flow resolved.
@@ -284,16 +284,16 @@ func New(ctx context.Context, c Config) (*App, error) {
 		me:       rstr.NewMeServiceClient(conn),
 		sync:     rstr.NewSyncServiceClient(conn),
 		admin:    admin{base: c.Hydra, header: c.HydraHeader, client: http.DefaultClient},
-		byClient: map[string]*operator{},
+		byClient: map[string]*tenant{},
 		flows:    arrives.Held[flow](),
 	}
 	a.arrives = arrives.New(a.roster, c.Secret)
 
-	for alias, o := range c.Operators {
+	for alias, o := range c.Tenants {
 		if len(o.Clients) == 0 {
 			conn.Close()
 
-			return nil, fmt.Errorf("login: %s: Clients: which OAuth clients are this operator's", alias)
+			return nil, fmt.Errorf("login: %s: Clients: which OAuth clients are this tenant's", alias)
 		}
 
 		v, err := a.roster.Tenant().Get(withKey(ctx, o.Key), rstr.TenantGetRequest_builder{
@@ -316,13 +316,13 @@ func New(ctx context.Context, c Config) (*App, error) {
 		if name == "" {
 			name = alias
 		}
-		who := &operator{id: id, alias: alias, name: name, key: o.Key, clients: o.Clients}
-		a.operators = append(a.operators, who)
+		who := &tenant{id: id, alias: alias, name: name, key: o.Key, clients: o.Clients}
+		a.tenants = append(a.tenants, who)
 		for _, client := range o.Clients {
 			if was, ok := a.byClient[client]; ok {
 				conn.Close()
 
-				// Two operators on one client is a flow with two answers, and
+				// Two tenants on one client is a flow with two answers, and
 				// the answer decides whose password is checked. Refused at
 				// start.
 				return nil, fmt.Errorf("login: client %q is both %q's and %q's", client, was.alias, alias)
@@ -339,10 +339,10 @@ func New(ctx context.Context, c Config) (*App, error) {
 
 		// The host is not read. `frontdoor` asks for a tenant per request and
 		// takes a `ctx` to answer from, which is the whole of what this app
-		// needs: `flow` has already put the operator there, resolved from the
+		// needs: `flow` has already put the tenant there, resolved from the
 		// challenge through Hydra.
 		Tenant: func(ctx context.Context, host string) (string, error) {
-			o, ok := operatorOf(ctx)
+			o, ok := tenantOf(ctx)
 			if !ok {
 				return "", frontdoor.ErrUnknownHost
 			}
@@ -373,7 +373,7 @@ func (a *App) Handler() http.Handler {
 	m.HandleFunc("POST /consent", a.decide)
 
 	// What the page needs about a flow, and the only thing it asks for. Unlike
-	// the console and the account page there is not one Connect call from this
+	// the admin console and the account page there is not one Connect call from this
 	// browser: what a flow is about is Hydra's to say, and only this app may
 	// ask Hydra.
 	m.HandleFunc("GET /flow", a.flow)
@@ -475,7 +475,7 @@ func (a *App) accept(w http.ResponseWriter, r *http.Request) {
 // # Why it draws nothing
 //
 // `consent: skip`'s argument, one screen along: every client this app can front
-// was registered by the deployment for one of its own operators, so a *sign
+// was registered by the deployment for one of its own tenants, so a *sign
 // out* that arrived from one of them is a person who clicked *sign out*. A
 // confirmation screen there is the dialog people learn to click through, and it
 // is in the way of the thing they asked for rather than of a thing they did
@@ -649,13 +649,13 @@ func (a *App) flow(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// A brand when there is one to be sure of. This app fronts a list of
-		// operators, and a logout names a subject rather than a client, so
+		// tenants, and a logout names a subject rather than a client, so
 		// with several of them **which** customer's person this is cannot be
 		// told from the request -- and a brand picked from the first row would
 		// be a guess drawn on a screen. With one, it is not a guess.
 		brand := ""
-		if len(a.operators) == 1 {
-			brand = a.operators[0].name
+		if len(a.tenants) == 1 {
+			brand = a.tenants[0].name
 		}
 
 		writeJson(w, map[string]any{"brand": brand, "logout": true})
@@ -665,7 +665,7 @@ func (a *App) flow(w http.ResponseWriter, r *http.Request) {
 
 	var (
 		v   *loginRequest
-		o   *operator
+		o   *tenant
 		err error
 
 		client string
@@ -713,12 +713,12 @@ func (a *App) flow(w http.ResponseWriter, r *http.Request) {
 		}
 		for _, c := range cs {
 			// The name and the issuer, and nothing else. `secret_ref` is the
-			// operator's and never leaves this process; the client id is
+			// tenant's and never leaves this process; the client id is
 			// theirs too.
 			//
 			// The issuer is here because it is the only honest way for a page
 			// to know **whose** directory this is. A `Connection` may be
-			// called `entra`, `ms` or `work` -- that is the operator's label,
+			// called `entra`, `ms` or `work` -- that is the tenant's label,
 			// and drawing a vendor's mark from it would be drawing from a
 			// label, which D22 refuses. A host is a fact:
 			// `login.microsoftonline.com` is Microsoft whatever the row is
@@ -791,7 +791,7 @@ func (a *App) decide(w http.ResponseWriter, r *http.Request) {
 // The only place this app reads anybody. What it reads is `Me.Get`, which
 // answers everything a claim could come from in one call, and what it puts in
 // the token is decided by the scope the client asked for -- `claimsOf`.
-func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o *operator) {
+func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o *tenant) {
 	ctx := r.Context()
 
 	claims := map[string]any{}
@@ -857,8 +857,8 @@ func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o
 	http.Redirect(w, r, to, http.StatusSeeOther)
 }
 
-// asking is the consent request and the operator it belongs to.
-func (a *App) asking(ctx context.Context, challenge string) (*consentRequest, *operator, error) {
+// asking is the consent request and the tenant it belongs to.
+func (a *App) asking(ctx context.Context, challenge string) (*consentRequest, *tenant, error) {
 	v, err := a.admin.consent(ctx, challenge)
 	if err != nil {
 		return nil, nil, err
@@ -866,7 +866,7 @@ func (a *App) asking(ctx context.Context, challenge string) (*consentRequest, *o
 
 	o, ok := a.byClient[v.Client.Id]
 	if !ok {
-		return nil, nil, fmt.Errorf("login: no operator holds the client %q", v.Client.Id)
+		return nil, nil, fmt.Errorf("login: no tenant holds the client %q", v.Client.Id)
 	}
 
 	// Hydra answers the challenge it was asked about, and the rest of this
@@ -878,12 +878,12 @@ func (a *App) asking(ctx context.Context, challenge string) (*consentRequest, *o
 	return v, o, nil
 }
 
-// whose is the operator a challenge belongs to.
+// whose is the tenant a challenge belongs to.
 //
 // Two lookups and no cache: the challenge is read from Hydra on every request
 // that names one, so which tenant a flow is about is never something this app
 // remembers or the browser carries.
-func (a *App) whose(ctx context.Context, challenge string) (*loginRequest, *operator, error) {
+func (a *App) whose(ctx context.Context, challenge string) (*loginRequest, *tenant, error) {
 	v, err := a.admin.login(ctx, challenge)
 	if err != nil {
 		return nil, nil, err
@@ -891,13 +891,13 @@ func (a *App) whose(ctx context.Context, challenge string) (*loginRequest, *oper
 
 	o, ok := a.byClient[v.Client.Id]
 	if !ok {
-		return nil, nil, fmt.Errorf("login: no operator holds the client %q", v.Client.Id)
+		return nil, nil, fmt.Errorf("login: no tenant holds the client %q", v.Client.Id)
 	}
 
 	return v, o, nil
 }
 
-// inFlow puts the operator a request's challenge names into its context.
+// inFlow puts the tenant a request's challenge names into its context.
 func (a *App) inFlow(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		challenge := r.URL.Query().Get(Challenge)
@@ -914,7 +914,7 @@ func (a *App) inFlow(next http.Handler) http.Handler {
 			return
 		}
 
-		next.ServeHTTP(w, r.WithContext(withOperator(withKey(r.Context(), o.key), o)))
+		next.ServeHTTP(w, r.WithContext(withTenant(withKey(r.Context(), o.key), o)))
 	})
 }
 
@@ -924,7 +924,7 @@ func (a *App) inFlow(next http.Handler) http.Handler {
 // One answer because the alternatives all tell a browser something about the
 // deployment: which client is unknown, that Hydra is down, that a challenge was
 // already spent. None of that is a person's to learn from a login page, and all
-// of it is an operator's to read here.
+// of it is an tenant's to read here.
 func (a *App) broken(w http.ResponseWriter, r *http.Request, err error) {
 	slog.ErrorContext(r.Context(), "login", "path", r.URL.Path, "err", err)
 	http.Error(w, "this login is not working", http.StatusBadGateway)

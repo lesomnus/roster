@@ -4,7 +4,7 @@
  *
  * # It reads a different port
  *
- * The rest of the console is the **control plane** -- who runs the deployment
+ * The rest of the admin console is the **control plane** -- who runs the deployment
  * and which services call it. These rows are the **data plane**, which is
  * another database, and an operator has no tenant there: their row is in the
  * control plane, so the wall on `server.http` narrows them to a tenant that does

@@ -563,7 +563,7 @@ func kindOf(v string) string {
 //
 // # Why a caller need not name its own tenant
 //
-// A front door holds one key per operator it fronts and calls with the key of
+// A front door holds one key per tenant it fronts and calls with the key of
 // whichever one the host resolved to, so the tenant is already on the request
 // twice: once in the credential, once in the field. Since `Verify` began
 // checking that the two agree, the field is a restatement -- and one an app has

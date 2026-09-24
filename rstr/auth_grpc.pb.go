@@ -67,7 +67,7 @@ const (
 // paragraph in `aboutYourself` says what it cost not to.
 //
 // It stays here rather than moving to `MeService` for one reason: `MeService`
-// is served on both planes and knows nothing about the console's session store,
+// is served on both planes and knows nothing about the admin console's session store,
 // while this is served where the sessions are. A `me.WithSessions` option would
 // undo the sentence `me.proto` makes about roster not knowing the caller's
 // session, to move a method whose neighbour is `SignIn`.
@@ -178,7 +178,7 @@ func (c *authServiceClient) SignOut(ctx context.Context, in *AuthSignOutRequest,
 // paragraph in `aboutYourself` says what it cost not to.
 //
 // It stays here rather than moving to `MeService` for one reason: `MeService`
-// is served on both planes and knows nothing about the console's session store,
+// is served on both planes and knows nothing about the admin console's session store,
 // while this is served where the sessions are. A `me.WithSessions` option would
 // undo the sentence `me.proto` makes about roster not knowing the caller's
 // session, to move a method whose neighbour is `SignIn`.

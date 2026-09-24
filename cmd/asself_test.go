@@ -161,7 +161,7 @@ func TestNothingTheWallIsWaivedForCanNameAnybody(t *testing.T) {
 	// `AuthService` is asked directly rather than through the loop, because the
 	// loop reads the **data plane's** descriptors and this service is
 	// registered on the control listener alone. Which is also how it went
-	// unnoticed: it was not waived, and the console calls it in a `.finally`,
+	// unnoticed: it was not waived, and the admin console calls it in a `.finally`,
 	// so a refused sign-out reset the page, looked like it worked, and left the
 	// cookie opening the control plane. The only operator role most deployments
 	// have is `/roster.*/*`, so it was waiting for the first narrow one.
@@ -579,7 +579,7 @@ func TestNobodyEnrolsASecondFactorOnSomebodyWiderThanThey(t *testing.T) {
 // a reset wants one field `Set` does not take, or because two round trips
 // looked like one too many. `Reset` already reaches for `s.walled.Credential()`
 // on the line below, so the parts are in scope and the diff is short. What goes
-// with them is the refusal, and then every operator holds every permission in
+// with them is the refusal, and then every tenant holds every permission in
 // their tenant, two calls at a time, with a generated password to show for it.
 //
 // The other edit of that family is passing a context that is not the caller's

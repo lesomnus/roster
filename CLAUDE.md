@@ -74,7 +74,7 @@ one on the branch.
 ```
 
 **Run this rather than the parts of it.** It is gofmt, the build, the vet, the
-tests, `pd doctor`, `pd gen --check --ts`, the wasm build and the console, in
+tests, `pd doctor`, `pd gen --check --ts`, the wasm build and the admin console, in
 that order -- and the two that have actually caught something are the two no
 compiler complains about. A list of commands to remember is a list somebody
 forgets one of, which is how this repository learned to want a script.
@@ -91,7 +91,7 @@ checkout.
 ```
 
 **Touching `ts/` means running this too.** It stands roster up the way
-`docs/operating.md` says to, seeds a customer, and drives the console and the
+`docs/operating.md` says to, seeds a customer, and drives the admin console and the
 account app with Playwright (`ts/e2e/`) -- and the Login App's page against
 **nothing**, because `ts/vite.login.ts` is that app made up and so it costs a
 port. It is not in `test.sh` because it needs a browser and a minute; it found
@@ -347,7 +347,7 @@ go run ./cmd/roster init          # the first tenant, and somebody in it
 go run ./cmd/roster serve
 go run ./cmd/roster config env    # every variable this can be told through
 
-cd ts && npm install && npm run dev            # the console, cross-origin
+cd ts && npm install && npm run dev            # the admin console, cross-origin
 npm --prefix ts run dev:login                  # the sign-in pages, no backend at all
 go run ./cmd/roster account serve --roster … \
   --connect … --key contoso=rt_… --static ts/dist/account   # the front door
@@ -356,7 +356,7 @@ go run ./cmd/roster ldap serve --roster … --key contoso=rt_…  # the director
 docker compose up --build       # Postgres, both planes, a customer, both pages, LDAP
 ```
 
-Three UIs, and one to four processes. `roster serve` serves the console under
+Three UIs, and one to four processes. `roster serve` serves the admin console under
 `/` on `control.http` when `control.console.dir` names the build.
 `roster account serve` holds tenant keys and faces the internet; `roster ldap
 serve` is roster as a directory for clients that speak nothing else.
@@ -388,7 +388,7 @@ certificate authority and no HTTP endpoint: `roster key add` mints one from a
 shell, and `ApiKey.Issue` mints one over the wire. mTLS is
 the other answer and is a deployment's to configure.
 
-What is HTTP is the console's **session cookie**, because that is a credential
+What is HTTP is the admin console's **session cookie**, because that is a credential
 a browser holds and `auth` reads credentials rather than making them.
 
 ## Reference

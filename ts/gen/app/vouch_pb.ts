@@ -48,7 +48,7 @@ export type VouchWho = Message<"roster.VouchWho"> & {
    * `FrontService.WhoseHost` turns the name a browser arrived at into one.
    *
    * **Optional for a caller that is inside a tenant**, which a front door
-   * holding one key per operator is: the key already says which one, `Verify`
+   * holding one key per tenant is: the key already says which one, `Verify`
    * checks a named tenant against it anyway, and so a field kept in step with
    * the key an app just picked is a second thing to get right for no second
    * guarantee. Left out, there is one thing: pick the right key. A caller in no

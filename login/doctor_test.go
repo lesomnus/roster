@@ -162,7 +162,7 @@ func TestDoctorFindsWhatCostAnHourEach(t *testing.T) {
 // has: one it has never heard of is one no flow can name, so a row here with no
 // client behind it costs nobody anything until somebody registers it. A client
 // Hydra holds that nothing here claims is the other story -- a flow for it
-// resolves to no operator, and a browser is shown *this login is not working*
+// resolves to no tenant, and a browser is shown *this login is not working*
 // with nothing in it to say which client or whose.
 func TestDoctorKnowsWhichDirectionCosts(t *testing.T) {
 	t.Run("named here and nowhere else", func(t *testing.T) {
@@ -189,7 +189,7 @@ func TestDoctorKnowsWhichDirectionCosts(t *testing.T) {
 		x.Len(found, 1)
 		x.Equal(login.Broken, found[0].Severity)
 		x.Equal("stray", found[0].About)
-		x.Contains(found[0].What, "no operator here claims it")
+		x.Contains(found[0].What, "no tenant here claims it")
 	})
 }
 

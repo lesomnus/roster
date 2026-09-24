@@ -54,7 +54,7 @@ var _ authsession.Store = (*Store)(nil)
 // point. So a row that is already there is updated rather than refused, and the
 // update touches the one column that can have changed.
 func (s *Store) Put(ctx context.Context, v authsession.Session) error {
-	// Nowhere to put it, and said so rather than dropped: the console holds
+	// Nowhere to put it, and said so rather than dropped: the admin console holds
 	// nothing beside a session, and an app that did would find its sign-in
 	// refused here instead of finding its every call answered as a session
 	// that cannot act.
@@ -151,11 +151,11 @@ func (s *Store) Get(ctx context.Context, key string) (authsession.Session, error
 		// the place that can say so, which is worth spelling out because
 		// `MeService.SignOutEverywhere`'s contract sounds like it forbids it.
 		// roster answers *invalid since when* and an app answers *what is
-		// still alive* -- and for the console's cookies, **roster is the
+		// still alive* -- and for the admin console's cookies, **roster is the
 		// app**. This is roster answering as one.
 		//
 		// Nothing here read the stamp until 2026-08-28, so "sign out
-		// everywhere" pressed in the console voided delegations a customer's
+		// everywhere" pressed in the admin console voided delegations a customer's
 		// apps held and left every console session alive -- including the one
 		// a takeover had opened, which is the session the button is for. The
 		// keys a person minted stay, as everywhere: a key is named, listed and

@@ -23,7 +23,7 @@ import "time"
 //
 // # Why a deployment might still want three processes
 //
-// The account app faces the internet and holds one tenant key per operator.
+// The account app faces the internet and holds one tenant key per tenant.
 // The control plane holds every key and the database. In one process a bug in
 // the first reaches the second; in three, that is a kernel boundary rather than
 // a code one. Worth the pods for a deployment that has them, and a lot of
@@ -75,7 +75,7 @@ type AccountConfig struct {
 	// `enrolling`. See [LoginConfig.Enrol], which says what each is.
 	Enrol string `yaml:"enrol"`
 
-	// Keys is one tenant key per operator fronted, by alias.
+	// Keys is one tenant key per tenant fronted, by alias.
 	//
 	// The values are **references** and not tokens: `env:NAME`, the one scheme
 	// this binary knows. A key is a secret and this file is not a place for
@@ -133,7 +133,7 @@ type LdapConfig struct {
 	// Insecure dials roster without TLS.
 	Insecure bool `yaml:"insecure"`
 
-	// Keys is one tenant key per operator fronted, by alias, as `env:NAME`.
+	// Keys is one tenant key per tenant fronted, by alias, as `env:NAME`.
 	// See [AccountConfig.Keys]; `ROSTER_LDAP_KEY_<ALIAS>` is merged with it.
 	Keys map[string]string `yaml:"keys"`
 
@@ -176,7 +176,7 @@ type LoginConfig struct {
 	// Hydra is the one thing here that is not roster's.
 	Hydra HydraConfig `yaml:"hydra"`
 
-	// Keys is one tenant key per operator fronted, by alias, as `env:NAME`.
+	// Keys is one tenant key per tenant fronted, by alias, as `env:NAME`.
 	// See [AccountConfig.Keys]; `ROSTER_LOGIN_KEY_<ALIAS>` is merged with it.
 	Keys map[string]string `yaml:"keys"`
 
@@ -185,12 +185,12 @@ type LoginConfig struct {
 	// belongs to, and it is the one setting here that is about Hydra's rows
 	// rather than roster's.
 	//
-	// A **list**, because an operator with two products has two clients and one
+	// A **list**, because an tenant with two products has two clients and one
 	// sign-in; `ROSTER_LOGIN_CLIENT_<ALIAS>` takes them comma separated, and so
-	// does `--client alias=a,b`. A client named for two operators is refused at
+	// does `--client alias=a,b`. A client named for two tenants is refused at
 	// start: which one it is decides whose password is checked.
 	//
-	// # Two flat maps and not a block per operator
+	// # Two flat maps and not a block per tenant
 	//
 	// A block would carry both facts about one customer together, and the first
 	// draft of this was one -- the argument being that two maps keyed the same
@@ -199,34 +199,34 @@ type LoginConfig struct {
 	// `ROSTER_LOGIN_KEY_<ALIAS>`, which is flat and which nothing nested
 	// answers to. A nested block would have needed a flat `keys` beside it
 	// anyway, and then there are two places to write a key, which is worse than
-	// two places to write an operator.
+	// two places to write an tenant.
 	//
 	// The risk the block was for is closed where it actually bites: a key with
 	// no client, or a client with no key, is refused at start by name and with
-	// the flag that fixes it (`cli/login.go`). Half an operator never runs.
+	// the flag that fixes it (`cli/login.go`). Half an tenant never runs.
 	Clients map[string][]string `yaml:"clients"`
 
 	// Base is this app's public origin, which every provider has registered as
 	// the redirect: `https://login.example.com`.
 	//
 	// **One for the whole app**, unlike the account app's, which has a host per
-	// operator. Hydra sends every browser here under one name, so there is one
-	// callback and which operator it belongs to comes from the state. An
-	// operator adding a `Connection` registers this URL with their directory.
+	// tenant. Hydra sends every browser here under one name, so there is one
+	// callback and which tenant it belongs to comes from the state. An
+	// tenant adding a `Connection` registers this URL with their directory.
 	Base string `yaml:"base"`
 
 	// Enrol is who a directory may sign in. Empty is `invited`.
 	//
 	//	invited    only somebody already linked -- an `Identity` row somebody
 	//	           wrote, naming the subject that directory asserts
-	//	expected   somebody an operator entered, matched by the **address** on
+	//	expected   somebody an tenant entered, matched by the **address** on
 	//	           their row, and nobody else
 	//	enrolling  that, and a stranger too, named by the local part of their
 	//	           address
 	//
-	// `expected` is what an operator means by *putting people in*, and
+	// `expected` is what an tenant means by *putting people in*, and
 	// `invited` is not: the subject a directory asserts is issued there and is
-	// not knowable in advance, so an operator entering somebody has their
+	// not knowable in advance, so an tenant entering somebody has their
 	// address and nothing else. `invited` can therefore admit nobody at all
 	// through a directory, which is right for a deployment that writes
 	// `Identity` rows itself and is a trap for one that does not.
@@ -247,8 +247,8 @@ type LoginConfig struct {
 	//
 	// Empty is `skip`, and that is a decision rather than an omission. Every
 	// client in [Clients] was registered by this deployment for one of its own
-	// operators -- a third party cannot be in that map -- so every one of them
-	// is first-party, and a consent screen for an app the operator wrote is a
+	// tenants -- a third party cannot be in that map -- so every one of them
+	// is first-party, and a consent screen for an app the tenant wrote is a
 	// dialog people learn to click through. `ask` is for a deployment that
 	// registers clients somebody else wrote, where the screen is the whole
 	// point.

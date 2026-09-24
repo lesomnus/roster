@@ -50,7 +50,7 @@ say so:
 roster vouch unlock @newco/alice
 ```
 
-The same three acts are on the console, on a person's own panel. Nothing is only
+The same three acts are on the admin console, on a person's own panel. Nothing is only
 in one of them.
 
 ### If the one locked out is the operator
@@ -71,7 +71,7 @@ that leaves the old sessions alive is not one. `roster control vouch set` is
 there too, and changes the password only.
 
 The person is looked up and never created, so a typo is refused rather than
-becoming a second operator. A second operator is the console's
+becoming a second operator. A second operator is the admin console's
 *issue a password*, or `roster issue password`.
 
 ### If a deployment names a leaked-password corpus
@@ -176,7 +176,7 @@ Three other ways to get one, all the same row:
 | | |
 | --- | --- |
 | `ApiKeyService.Issue` on `server.addr` | a customer's own admin, for somebody in their tenant |
-| `ApiKeyService.Issue` on `admin.addr` | an operator, from the console |
+| `ApiKeyService.Issue` on `admin.addr` | an operator, from the admin console |
 | `ApiKeyService.Issue` with your **own** reference | a person, for themselves — the same verb, and the app or shell is what passes only their reference |
 
 As themselves, from their own terminal, that last one is:
@@ -376,7 +376,7 @@ Two things it does not do, each for a reason:
   directory and does not exist until somebody signs in there, so an operator
   cannot write one; what they can do instead is write the `Email` row the first
   sign-in matches (`../login.md` § *Putting people in, and letting them arrive*).
-  The console lists what somebody signs in with and can take one away.
+  The admin console lists what somebody signs in with and can take one away.
 
 ## A second factor
 

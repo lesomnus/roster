@@ -9,6 +9,11 @@ It is one layer of an identity system and not the whole of one: the protocol is
 [Ory Hydra](https://www.ory.sh/hydra/)'s and the sign-in flow is an app's. roster
 owns the records they both ask about, and owns `sub`.
 
+> **Read [docs/glossary.md](docs/glossary.md) first.** A handful of words here --
+> *holder*, *tenant*, *roster operator*, *roster user*, *admin console*, *user
+> console* -- mean one thing each and are used that way everywhere, including in
+> commits and issues. `cli/docs_test.go` holds the documentation to it.
+
 > **roster stores facts and verifies claims about them. It never issues anything
 > a third party verifies.**
 
@@ -27,7 +32,7 @@ docker compose up --build
 
 | | | |
 | --- | --- | --- |
-| the console | <http://localhost:8082/> | `admin` / `admin` |
+| the admin console | <http://localhost:8082/> | `admin` / `admin` |
 | a customer's own people | <http://localhost:8090/> | `erin` / `correct horse battery staple` |
 | a product app, holding its own token | <http://localhost:5555/> | sign in through Hydra |
 | the same page behind `oauth2-proxy` | <http://localhost:4180/> | the other relying-party shape |
