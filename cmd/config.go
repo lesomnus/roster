@@ -94,6 +94,17 @@ type Config struct {
 	Ldap    LdapConfig    `yaml:"ldap"`
 	Login   LoginConfig   `yaml:"login"`
 
+	// SignIn is whether the **data plane** answers `AuthService.SignIn`, so a
+	// roster user can be a caller of roster itself rather than only of an app
+	// in front of it.
+	//
+	// **Off unless said**, and the reason is the one `Public` gives about the
+	// method it makes public: anybody who reaches the port may guess passwords,
+	// and this port is the reachable one. What makes guessing expensive is the
+	// lockout in `server/vouch`; what makes it *narrow* is that a sign-in here
+	// is about one tenant, resolved from the name the browser arrived at.
+	SignIn SignInConfig `yaml:"sign_in"`
+
 	// Admin is where an operator administers **customers**: the data plane,
 	// with no wall, behind a session. Empty is nowhere.
 	//
@@ -470,6 +481,20 @@ type ControlConfig struct {
 	// none, which is what `npm run dev` wants -- it serves the page itself and
 	// is told `origins:` instead.
 	Console ConsoleConfig `yaml:"console"`
+}
+
+// SignInConfig is the data plane's own door for a roster user.
+//
+// A block rather than a boolean because what a deployment will want to say next
+// is about the same door -- which names it answers at, how hard a wrong answer
+// is made -- and a `sign_in: true` that grows a sibling is a key that meant a
+// block all along.
+type SignInConfig struct {
+	// Enabled is whether `AuthService` is registered on the data plane at all.
+	//
+	// Not *whether it refuses*: a method that is served and says no is a method
+	// somebody can count answers from. Off, it is not on the wire.
+	Enabled bool `yaml:"enabled"`
 }
 
 // ConsoleConfig is the page an operator opens, as this listener serves it.

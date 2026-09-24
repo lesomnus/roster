@@ -129,6 +129,36 @@ did nothing is one somebody runs against the wrong deployment and believes.
 is a customer nobody asked for -- so the first act after `init` is the same act as
 the hundredth: [usage/customers.md](usage/customers.md).
 
+## Signing in on the data plane
+
+```yaml
+sign_in:
+  enabled: true     # default false
+```
+
+Off, `AuthService` is not registered on the data plane at all and a caller gets
+`Unimplemented` -- not a refusal, which would be a method somebody can count
+answers from. On, a **roster user** signs in to roster itself, and the cookie
+they get names a holder of that plane, so every read it makes is narrowed by the
+wall to their own tenant.
+
+**Which tenant is the name they arrived at.** A `Host` row says which tenant
+answers at which name, and a name nothing claims is a refusal that says so. That
+is the only place the answer could come from: this request has no tenant field,
+and one would be a caller naming the tenant it would like its guesses checked
+against.
+
+Behind a terminator the public name is `X-Forwarded-Host` and `Host` is whatever
+the internal Service is called, so roster reads the first and falls back to the
+second. A deployment whose proxy does not set it will resolve to the internal
+name, and no `Host` row will claim that -- which fails loudly rather than
+signing somebody in to the wrong tenant.
+
+What it costs is what any public sign-in costs: whoever reaches the port may
+guess passwords. The lockout in `vouch.lockout` is what makes that expensive,
+and this being off by default is what keeps the surface off a port that is
+reachable by design.
+
 ## The listeners
 
 Five at most, and which open is what the configuration named.
