@@ -79,6 +79,7 @@ func Cmd(c *cmd.Config) *xli.Command {
 			pdcmd.NewCmdConfig(cmd.Loader, c),
 			NewCmdInit(c),
 			NewCmdKey(c),
+			NewCmdControl(c),
 			NewCmdIssue(c),
 			NewCmdVouch(c),
 			NewCmdSignIn(c),

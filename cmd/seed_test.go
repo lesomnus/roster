@@ -298,8 +298,8 @@ func TestAConsoleIssuesAPasswordForAnOperator(t *testing.T) {
 	issue := app.NewCredentialServiceClient(conn)
 
 	// Naming somebody who is not there creates them, which is the flow: an
-	// operator is added by being given a way in, the same decision `roster key
-	// add --service` already made about a caller.
+	// operator is added by being given a way in, the same decision `roster
+	// control key add` already made about a caller.
 	v, err := issue.Issue(as, app.CredentialIssueRequest_builder{Service: "second"}.Build())
 	x.NoError(err)
 	x.NotEmpty(v.GetSecret())

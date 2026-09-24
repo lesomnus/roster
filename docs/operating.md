@@ -413,7 +413,7 @@ then moving it to the front.
 
 What to type -- `roster vouch reset|set|unlock`, and the same three RPCs from a
 console -- is [usage/ways-in.md](usage/ways-in.md). An operator who has lost
-their own console password is `roster vouch reset --control @admin` from a
+their own console password is `roster control vouch reset @admin` from a
 shell on the box; with one operator there is no other way back. Two rules run over all of
 them, and they are the reason that page exists as well as this one: nobody hands
 out a method they do not hold, and nobody writes a way into an account wider than

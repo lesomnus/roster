@@ -25,7 +25,7 @@ Three notes about the list itself:
 | **holder** (2.6k) | a row for somebody or something that can be a caller: a person, or a service. Not a user account -- credentials hang off it rather than in it. `Holder.id` is the `sub` |
 | **operator** (990) | whoever runs this deployment. Their own rows live in the **control plane**, and their people sign in to the console |
 | **customer** | a tenant, from the operator's side of the table. `roster tenant add` makes one; the console's *customers* screen is about them |
-| **person** vs **service** | which kind of holder. A person gets a password and a second factor; a service gets a key. `roster key add --tenant/--holder` tells them apart by which flags were given |
+| **person** vs **service** | which kind of holder. A person gets a password and a second factor; a service gets a key. Not the same split as the planes: a customer's machine is a service in their tenant (`roster key add`), and a service of the deployment's own is on the control plane (`roster control key add`) |
 | **custody** (69) | a caller that acts across **every** tenant -- the deployment's own machinery rather than a customer's. `docs/position.md` is where the line is |
 
 ## What protects what
@@ -74,7 +74,7 @@ Three notes about the list itself:
 
 | | |
 | --- | --- |
-| **the trail** (437) | the audit table: who wrote what, when, and what it was before. payday's `Audit` entity, `server/trail` for retention. A deployment key reads every tenant's, which `roster key add` says out loud |
+| **the trail** (437) | the audit table: who wrote what, when, and what it was before. payday's `Audit` entity, `server/trail` for retention. A deployment key reads every tenant's, which `roster control key add` says out loud |
 | **the corpus** (73) | the breached-password list a new password is checked against, in the one place that holds the row |
 | **an epoch** | a counter on a `Holder` that invalidates everything issued before it. `Holder.Invalidate` moves it, which is how *sign this person out of everything* reaches sessions and delegations that are already open |
 | **a seam** (29) | payday's word for a place it deliberately leaves for an app to fill -- `auth` reads a credential and does not issue one, and `AuthService` is roster filling that seam |

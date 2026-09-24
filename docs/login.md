@@ -725,7 +725,7 @@ happened to hold it.
 Every one of those is an argument against the *table*, not against the *schema*.
 The control plane is the same schema on its own database with its own single
 tenant, so a `Holder` there is a caller rather than a person, and its `rk_` holds
-no tenant. `roster key add --service …` mints it;
+no tenant. `roster control key add …` mints it;
 [usage/ways-in.md](usage/ways-in.md) is what to type.
 
 `examples/sso` shows the **other** shape on purpose: its machine is a `Holder` in

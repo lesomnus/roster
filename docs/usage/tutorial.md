@@ -104,11 +104,12 @@ The secret is on **stdout** and the sentence on stderr, so
 **A key for your login app**, which is a service of yours and not of newco's:
 
 ```sh
-APP=$(roster key add --service portal \
-        --allow '/roster.VouchService/Verify,/roster.MeService/Get')
+APP=$(roster control key add \
+        --allow '/roster.VouchService/Verify,/roster.MeService/Get' portal)
 ```
 
-Naming `portal` created it. `--allow` is required — everything hands out more
+Naming `portal` created it, on the control plane — the deployment's own
+database, not newco's, which is what `control` says. `--allow` is required — everything hands out more
 than anybody asked for, and nothing mints a key that silently does not work.
 
 **A key for Alice's laptop**, which acts *as her*:
@@ -203,8 +204,8 @@ If your product resolves a customer by hostname:
 ```sh
 roster host add '{"tenant":{"alias":"newco"},"name":"newco.example.com"}'
 
-FD=$(roster key add --service frontdoor \
-       --allow '/roster.FrontService/WhoseHost,/roster.VouchService/Verify')
+FD=$(roster control key add \
+       --allow '/roster.FrontService/WhoseHost,/roster.VouchService/Verify' frontdoor)
 
 curl -sS -X POST http://127.0.0.1:8080/roster.FrontService/WhoseHost \
   -H 'content-type: application/json' -H 'connect-protocol-version: 1' \

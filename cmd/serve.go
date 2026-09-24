@@ -419,7 +419,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 
 			// And the corpus, which this left out while saying the line above
 			// (#18): every operator's password -- their own change in the
-			// console, `init --password-stdin`, `vouch set --control` -- was
+			// console, `init --password-stdin`, `control vouch set` -- was
 			// the one write in the deployment nothing checked against it.
 			// Handed over as the value this build already opened rather than
 			// as `vouch.breached` again, because `vouch.Sorted` reads the whole

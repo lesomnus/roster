@@ -118,9 +118,34 @@ func NewCmdEntities(c *cmd.Config) xli.Commands {
 		panic(err)
 	}
 
-	// The rest of the entity services: the methods the overlays declared,
-	// which the six generated verbs cannot know about. `Tree.Unary` is the
-	// other half of the same seam -- everything around the call is payday's,
+	overlays(t)
+
+	// And this app's other hand-written services, remote only for `me`'s
+	// reason each: they are questions to a served deployment, and the local
+	// pipe mounts the entity services alone.
+	front := newCmdFront(c)
+	front.Handler = xli.Chain(t.WithConn(), xli.RequireSubcommand())
+	if err := t.Add("front", front); err != nil {
+		panic(err)
+	}
+
+	sy := newCmdSync(c)
+	sy.Handler = xli.Chain(t.WithConn(), xli.RequireSubcommand())
+	if err := t.Add("sync", sy); err != nil {
+		panic(err)
+	}
+
+	return t.Commands()
+}
+
+// overlays mounts the methods the overlays declared on `t`, which the six
+// generated verbs cannot know about.
+//
+// A function because two trees want them: this one, and the control plane's in
+// `control.go`, where `holder disable` and `invalidate` are how an operator's
+// account is stopped.
+func overlays(t *pdcmd.Tree) {
+	// `Tree.Unary` is the other half of the seam `Tree.Add` is -- everything around the call is payday's,
 	// and what a method *means* is this app's, which is why the briefs are
 	// written out here: "Disable" as its own description is a command somebody
 	// has to guess at.
@@ -156,23 +181,6 @@ func NewCmdEntities(c *cmd.Config) xli.Commands {
 			panic(err)
 		}
 	}
-
-	// And this app's other hand-written services, remote only for `me`'s
-	// reason each: they are questions to a served deployment, and the local
-	// pipe mounts the entity services alone.
-	front := newCmdFront(c)
-	front.Handler = xli.Chain(t.WithConn(), xli.RequireSubcommand())
-	if err := t.Add("front", front); err != nil {
-		panic(err)
-	}
-
-	sy := newCmdSync(c)
-	sy.Handler = xli.Chain(t.WithConn(), xli.RequireSubcommand())
-	if err := t.Add("sync", sy); err != nil {
-		panic(err)
-	}
-
-	return t.Commands()
 }
 
 // connector is [local] or [remote], decided when the command runs.
@@ -252,8 +260,14 @@ func (l local) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
 		return nil, nil, err
 	}
 
+	return piped(s, s.Ungated)
+}
+
+// piped is `at` on a listener with no address, and a connection to it. The
+// returned func closes all of it and `s` with it.
+func piped(s *cmd.Server, at app.Server) (pdcmd.Conn, func(), error) {
 	g := grpc.NewServer()
-	app.RegisterServer(g, s.Ungated)
+	app.RegisterServer(g, at)
 
 	lis := bufconn.Listen(1 << 20)
 	go g.Serve(lis)

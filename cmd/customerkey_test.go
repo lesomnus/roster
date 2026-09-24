@@ -174,8 +174,10 @@ func TestNamingACustomersPersonDoesNotCreateThem(t *testing.T) {
 	x.Zero(n, "naming a customer's person created them")
 }
 
-// TestAKeyIsForOnePlaneOrTheOther, said by the flags rather than by a --kind
-// nobody would get right.
+// TestAKeyIsForOnePlaneOrTheOther, said by the command rather than by a flag:
+// `roster key add` is a customer's person and `roster control key add` is a
+// service of the deployment's own, and `--service` -- which turned the first into
+// the second -- is gone rather than quietly meaning something else.
 func TestAKeyIsForOnePlaneOrTheOther(t *testing.T) {
 	c := seedbed(t)
 
@@ -184,8 +186,8 @@ func TestAKeyIsForOnePlaneOrTheOther(t *testing.T) {
 		args []string
 		says string
 	}{
-		{"both at once", []string{"--service", "custody", "--tenant", "newco", "--holder", "admin"}, "name one"},
-		{"neither", nil, "--service"},
+		{"the flag that crossed planes", []string{"--service", "custody"}, "service"},
+		{"neither", nil, "roster control key add"},
 		{"a person and no tenant", []string{"--holder", "admin"}, "--tenant"},
 		{"a tenant and nobody in it", []string{"--tenant", "newco"}, "--holder"},
 	} {
@@ -254,8 +256,8 @@ func TestRevokingReachesTheKeyItNames(t *testing.T) {
 
 	theirs := stdoutOf(t, cli.NewCmdKey(&c), "add",
 		"--tenant", "newco", "--holder", "alice", "--allow", "/roster.MeService/Get")
-	ours := stdoutOf(t, cli.NewCmdKey(&c), "add",
-		"--service", "custody", "--allow", "/roster.HolderService/Get")
+	ours := stdoutOf(t, cli.NewCmdControl(&c), "key", "add",
+		"--allow", "/roster.HolderService/Get", "custody")
 
 	// Both, which is the other half: this listed the control plane's alone, so
 	// the key the command beside it had just minted appeared nowhere.
@@ -392,8 +394,8 @@ func TestAllowIsAListHoweverItIsWritten(t *testing.T) {
 			out, err := initRun(t, c)
 			x.NoError(err, "init: %s", out)
 
-			args := append([]string{"add", "--service", "custody"}, tc.args...)
-			x.NotEmpty(stdoutOf(t, cli.NewCmdKey(&c), args...))
+			args := append(append([]string{"key", "add"}, tc.args...), "custody")
+			x.NotEmpty(stdoutOf(t, cli.NewCmdControl(&c), args...))
 
 			s, err := cmd.Build(ctx, c)
 			x.NoError(err)
@@ -414,7 +416,7 @@ func TestAllowIsAListHoweverItIsWritten(t *testing.T) {
 		out, err := initRun(t, c)
 		x.NoError(err, "init: %s", out)
 
-		err = cli.NewCmdKey(&c).Run(t.Context(), []string{"add", "--service", "custody"})
+		err = cli.NewCmdControl(&c).Run(t.Context(), []string{"key", "add", "custody"})
 		x.Error(err, "a key that allows nothing is not a key")
 		x.ErrorContains(err, "--allow")
 	})

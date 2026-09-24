@@ -374,7 +374,7 @@ func TestABatchIsTheSameKey(t *testing.T) {
 	x.Equal(codes.PermissionDenied, status.Code(err))
 }
 
-// TestTheFirstKeyMakesWhatItNeeds, which is what `roster key add --service
+// TestTheFirstKeyMakesWhatItNeeds, which is what `roster control key add
 // custody` does against an empty control plane.
 //
 // A service is not something an operator creates on purpose before they need

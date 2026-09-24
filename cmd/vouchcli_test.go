@@ -264,7 +264,7 @@ func TestTheCliLetsASoleOperatorBackIn(t *testing.T) {
 	_, err = app.NewMeServiceClient(conn).Get(as, app.MeGetRequest_builder{}.Build())
 	x.NoError(err)
 
-	t.Run("and without the switch the operator is nobody", func(t *testing.T) {
+	t.Run("and on the data plane the operator is nobody", func(t *testing.T) {
 		x := require.New(t)
 
 		err := cli.NewCmdVouch(&c).Run(ctx, []string{"reset", "@admin"})
@@ -272,7 +272,7 @@ func TestTheCliLetsASoleOperatorBackIn(t *testing.T) {
 		x.ErrorContains(err, "no holder is called")
 	})
 
-	secret := stdoutOf(t, cli.NewCmdVouch(&c), "reset", "--control", "@admin")
+	secret := stdoutOf(t, cli.NewCmdControl(&c), "vouch", "reset", "@admin")
 	x.NotEmpty(secret)
 
 	x.NotNil(signIn(t, s, "admin", secret), "the password the command printed does not open the console")
@@ -289,7 +289,7 @@ func TestTheCliLetsASoleOperatorBackIn(t *testing.T) {
 	t.Run("and a typo is refused rather than made an operator", func(t *testing.T) {
 		x := require.New(t)
 
-		err := cli.NewCmdVouch(&c).Run(ctx, []string{"reset", "--control", "@admni"})
+		err := cli.NewCmdControl(&c).Run(ctx, []string{"vouch", "reset", "@admni"})
 		x.Error(err)
 
 		n, err := s.Control.Ent.Holder.Query().Count(ctx)
@@ -301,10 +301,10 @@ func TestTheCliLetsASoleOperatorBackIn(t *testing.T) {
 		x := require.New(t)
 
 		x.NoError(piped(t, "correct horse battery staple",
-			cli.NewCmdVouch(&c), "set", "--password-stdin", "--control", "@admin"))
+			cli.NewCmdControl(&c), "vouch", "set", "--password-stdin", "@admin"))
 		x.NotNil(signIn(t, s, "admin", "correct horse battery staple"))
 
-		x.NoError(cli.NewCmdVouch(&c).Run(ctx, []string{"unlock", "--control", "@admin"}))
+		x.NoError(cli.NewCmdControl(&c).Run(ctx, []string{"vouch", "unlock", "@admin"}))
 	})
 }
 
@@ -330,7 +330,7 @@ func TestTheControlPlaneHoldsTheCorpusToo(t *testing.T) {
 	out, err := initRun(t, c)
 	x.NoError(err, "init: %s", out)
 
-	err = piped(t, "hunter2hunter2", cli.NewCmdVouch(&c), "set", "--password-stdin", "--control", "@admin")
+	err = piped(t, "hunter2hunter2", cli.NewCmdControl(&c), "vouch", "set", "--password-stdin", "@admin")
 	x.Error(err, "an operator's password went past the corpus")
 	x.Equal(codes.FailedPrecondition, status.Code(err))
 
@@ -338,7 +338,7 @@ func TestTheControlPlaneHoldsTheCorpusToo(t *testing.T) {
 		x := require.New(t)
 
 		x.NoError(piped(t, "correct horse battery staple",
-			cli.NewCmdVouch(&c), "set", "--password-stdin", "--control", "@admin"))
+			cli.NewCmdControl(&c), "vouch", "set", "--password-stdin", "@admin"))
 
 		s, err := cmd.Build(ctx, c)
 		x.NoError(err)
