@@ -714,23 +714,31 @@ app's own credential. `delegation.proto` is the why.
 
 ## What a calling machine is, and where it lives
 
-**A machine is a `Holder` in the control plane.** A caller has to be a row,
-because roster answers nothing anonymously -- and every way of putting one in the
-*data plane* is wrong: `Holder.id` is the `sub` of every token, so a service there
-has a `sub`; a `Holder` belongs to one tenant and is walled by it, while a front
-door acts across every tenant it has users in; and `grpcx.Limit` counts per tenant
-off the frame, so all of one app's verifies would count against whichever tenant
-happened to hold it.
+A caller has to be a row, because roster answers nothing anonymously. Which
+plane the row is in follows from **what the caller acts across**, and there are
+two answers rather than one.
 
-Every one of those is an argument against the *table*, not against the *schema*.
-The control plane is the same schema on its own database with its own single
-tenant, so a `Holder` there is a caller rather than a person, and its `rk_` holds
-no tenant. `roster control key add …` mints it;
-[usage/ways-in.md](usage/ways-in.md) is what to type.
+**A front door is a `Holder` in each tenant it fronts, with an `rt_`** -- the
+answer § *What a front door needs* gives above, and the one this app, `account/`
+and `examples/sso` all take. The key resolves to a holder inside a tenant, so
+the wall narrows every read and write with no discipline asked of the app.
+`roster key add --tenant contoso --holder login-app …` mints one.
 
-`examples/sso` shows the **other** shape on purpose: its machine is a `Holder` in
-the tenant it serves, with an `rt_`, which is the per-tenant caller a front door
-should be.
+**A caller that acts across every tenant is a `Holder` in the control plane,
+with an `rk_`** -- the deployment's own machinery: a job that reads the trail, a
+console, the custody callers `docs/position.md` draws the line for. Three facts
+make that the right table for them and the wrong one for a front door:
+`Holder.id` is the `sub` of every token, so a row in the data plane is
+somebody a product app may be handed; a `Holder` belongs to one tenant and is
+walled by it; and `grpcx.Limit` counts per tenant off the frame. For a caller
+whose work really is every tenant's, each of those is in the way. For a front
+door they are the point -- except the last, which is the cost: an `rk_` resolves
+to a frame with no tenant and the policy hands it `frame.Everything`, so what
+keeps one tenant's rows out of another's is the app's own code.
+
+So the question to ask of a new machine is not which plane is for machines. It
+is whether one tenant's wall is a fact about this caller or an obstacle to it.
+[usage/ways-in.md](usage/ways-in.md) is what to type for either.
 
 ## See also
 
