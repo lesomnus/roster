@@ -1849,14 +1849,14 @@ func (b0 ApiKeyFilter_builder) Build() *ApiKeyFilter {
 }
 
 type ApiKeyIssueRequest struct {
-	state              protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Service string                 `protobuf:"bytes,1,opt,name=service"`
-	xxx_hidden_Alias   string                 `protobuf:"bytes,2,opt,name=alias"`
-	xxx_hidden_Methods []string               `protobuf:"bytes,3,rep,name=methods"`
-	xxx_hidden_Expires *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=expires"`
-	xxx_hidden_Holder  *HolderRef             `protobuf:"bytes,5,opt,name=holder"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_HolderAlias string                 `protobuf:"bytes,1,opt,name=holder_alias,json=holderAlias"`
+	xxx_hidden_Alias       string                 `protobuf:"bytes,2,opt,name=alias"`
+	xxx_hidden_Methods     []string               `protobuf:"bytes,3,rep,name=methods"`
+	xxx_hidden_Expires     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=expires"`
+	xxx_hidden_Holder      *HolderRef             `protobuf:"bytes,5,opt,name=holder"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *ApiKeyIssueRequest) Reset() {
@@ -1884,9 +1884,9 @@ func (x *ApiKeyIssueRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *ApiKeyIssueRequest) GetService() string {
+func (x *ApiKeyIssueRequest) GetHolderAlias() string {
 	if x != nil {
-		return x.xxx_hidden_Service
+		return x.xxx_hidden_HolderAlias
 	}
 	return ""
 }
@@ -1919,8 +1919,8 @@ func (x *ApiKeyIssueRequest) GetHolder() *HolderRef {
 	return nil
 }
 
-func (x *ApiKeyIssueRequest) SetService(v string) {
-	x.xxx_hidden_Service = v
+func (x *ApiKeyIssueRequest) SetHolderAlias(v string) {
+	x.xxx_hidden_HolderAlias = v
 }
 
 func (x *ApiKeyIssueRequest) SetAlias(v string) {
@@ -1967,7 +1967,7 @@ type ApiKeyIssueRequest_builder struct {
 	// The holder it is for, by alias within this plane's one tenant, created if
 	// it is not there. **Control plane only.** Giving both this and `holder` is
 	// refused.
-	Service string
+	HolderAlias string
 	// What somebody calls this key when deciding whether to revoke it.
 	Alias string
 	// What it may be used for, in full. Empty is refused rather than defaulted:
@@ -1987,7 +1987,7 @@ func (b0 ApiKeyIssueRequest_builder) Build() *ApiKeyIssueRequest {
 	m0 := &ApiKeyIssueRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_Service = b.Service
+	x.xxx_hidden_HolderAlias = b.HolderAlias
 	x.xxx_hidden_Alias = b.Alias
 	x.xxx_hidden_Methods = b.Methods
 	x.xxx_hidden_Expires = b.Expires
@@ -2147,9 +2147,9 @@ const file_app_apikey_svc_g_proto_rawDesc = "" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"^\n" +
 	"\fApiKeyFilter\x12#\n" +
 	"\x03ref\x18\x01 \x01(\v2\x11.roster.ApiKeyRefR\x03ref\x12)\n" +
-	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\"\xcd\x01\n" +
-	"\x12ApiKeyIssueRequest\x12\x1f\n" +
-	"\aservice\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\aservice\x12\x1b\n" +
+	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\"\xd6\x01\n" +
+	"\x12ApiKeyIssueRequest\x12(\n" +
+	"\fholder_alias\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\vholderAlias\x12\x1b\n" +
 	"\x05alias\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x18\n" +
 	"\amethods\x18\x03 \x03(\tR\amethods\x124\n" +
 	"\aexpires\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\x12)\n" +

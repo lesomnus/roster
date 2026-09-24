@@ -4,7 +4,7 @@
  * It is the **control plane**, which is a different set of rows from every
  * other port this app serves. Here a `Holder` is not a person a product app
  * signs in — those are customers' people, in the other database — it is
- * somebody who runs this deployment, or a service that calls it.
+ * somebody who runs this deployment, or something that calls it.
  *
  * And a `Holder` is **not** a person or a machine. Nothing in the schema says
  * which, and nothing should: it is somebody or something registered here that
@@ -13,7 +13,7 @@
  * for.
  *
  * So the two screens below split by **how a caller arrives**, not by what it
- * is, and say so on the page. That they line up with people and services today
+ * is, and say so on the page. That they line up with people and machines today
  * is how this deployment happens to be used, not a rule.
  *
  * @module
@@ -36,8 +36,8 @@ import type { Admin } from '../lib/client.js'
 import { Customers } from './customers.js'
 
 
-type Screen = 'operators' | 'services' | 'customers' | 'you'
-const screenNames: readonly Screen[] = ['operators', 'services', 'customers', 'you']
+type Screen = 'operators' | 'keys' | 'customers' | 'you'
+const screenNames: readonly Screen[] = ['operators', 'keys', 'customers', 'you']
 
 function screenOf(v: string | undefined): Screen {
 	return (screenNames as readonly string[]).includes(v ?? '') ? (v as Screen) : 'operators'
@@ -84,7 +84,7 @@ export function Page(props: {
 	// altered client could talk out of.
 	const screens: { at: Screen; name: string; ok: boolean }[] = [
 		{ at: 'operators', name: 'signs in', ok: may('/roster.HolderService/List') },
-		{ at: 'services', name: 'calls in', ok: may('/roster.ApiKeyService/List') },
+		{ at: 'keys', name: 'calls in', ok: may('/roster.ApiKeyService/List') },
 
 		// The data plane, through the admin listener. Two conditions rather than
 		// one: the method an operator may call, and whether this deployment has
@@ -117,7 +117,7 @@ export function Page(props: {
 
 			<main>
 				{at === 'operators' && <Operators may={may} />}
-				{at === 'services' && <Services may={may} />}
+				{at === 'keys' && <Keys may={may} />}
 				{at === 'customers' && (
 					<Customers app={props.customers} admin={props.admin} may={may} ungated={props.ungated} />
 				)}
@@ -131,7 +131,7 @@ export function Page(props: {
  * Everybody registered here, which is what a `Holder` is.
  *
  * Titled by how they arrive rather than by what they are, because the schema
- * does not say what they are and neither should this. `Services` below is the
+ * does not say what they are and neither should this. `Keys` below is the
  * same rows read from the other end: a holder with keys.
  */
 function Operators(props: { may: (method: string) => boolean }): React.ReactNode {
@@ -146,9 +146,9 @@ function Operators(props: { may: (method: string) => boolean }): React.ReactNode
 		<section>
 			<h2>signs in</h2>
 
-			{/* A new operator is one call: `Credential.Issue` with `service`
-			    makes the person in the control plane's one tenant if they are
-			    not there, and answers with a generated password, once. There is
+			{/* A new operator is one call: `Credential.Issue` with
+			    `holder_alias` makes the row in the control plane's one tenant
+			    if it is not there, and answers with a generated password, once. There is
 			    no field to type one into, for the reason `roster init` has
 			    none. It was `IssueService.IssuePassword`, which wrote the same
 			    column with none of the rules `server/core` puts on it. */}
@@ -161,7 +161,7 @@ function Operators(props: { may: (method: string) => boolean }): React.ReactNode
 
 					say(null)
 					void issue
-						.call({ service: alias })
+						.call({ holderAlias: alias })
 						.then((r) => {
 							form.reset()
 							say({ kind: 'secret', text: `${alias}: ${r.secret}` })
@@ -221,7 +221,7 @@ function Operators(props: { may: (method: string) => boolean }): React.ReactNode
  * `(payday.field).secret`, so it is cleared on the way out and never reaches a
  * page — and never reaches the trail either.
  */
-function Services(props: { may: (method: string) => boolean }): React.ReactNode {
+function Keys(props: { may: (method: string) => boolean }): React.ReactNode {
 	const vs = useQuery(ApiKeyService.method.list, {})
 	const issue = useCall(ApiKeyService.method.issue)
 	const erase = useCall(ApiKeyService.method.erase)
@@ -290,25 +290,25 @@ function Services(props: { may: (method: string) => boolean }): React.ReactNode 
 			</p>
 
 			{/* `roster control key add --allow … custody`, from a page: the
-			    service is made if it is not there, because a service is not
-			    something set up on purpose before it is needed. The token is
-			    shown once. */}
+			    holder is made if it is not there, because a caller of this
+			    deployment's own is not a row set up on purpose before it is
+			    needed. The token is shown once. */}
 			<form
 				onSubmit={(e) => {
 					e.preventDefault()
 					const form = e.currentTarget
 					const f = new FormData(form)
-					const service = String(f.get('service') ?? '').trim()
+					const holder = String(f.get('holder') ?? '').trim()
 					const alias = String(f.get('alias') ?? '').trim() || 'default'
 					const methods = String(f.get('methods') ?? '')
 						.split(/[\s,]+/)
 						.map((s) => s.trim())
 						.filter((s) => s !== '')
-					if (service === '' || methods.length === 0) return
+					if (holder === '' || methods.length === 0) return
 
 					say(null)
 					void issue
-						.call({ service, alias, methods })
+						.call({ holderAlias: holder, alias, methods })
 						.then((r) => {
 							form.reset()
 							say({ kind: 'secret', text: r.token })
@@ -316,11 +316,11 @@ function Services(props: { may: (method: string) => boolean }): React.ReactNode 
 						.catch((e: unknown) => say({ kind: 'bad', text: e instanceof Error ? e.message : 'no' }))
 				}}
 			>
-				<input name="service" placeholder="service, e.g. custody" required />
+				<input name="holder" placeholder="holder, e.g. custody" required />
 				<input name="alias" placeholder="key name (default)" />
 				<input name="methods" placeholder="/roster.VouchService/Verify, …" className="wide" required />
 				<button type="submit" disabled={issue.state === 'pending' || !props.may('/roster.ApiKeyService/Issue')}>
-					mint a service key
+					mint a key
 				</button>
 			</form>
 			{said?.kind === 'secret' && (

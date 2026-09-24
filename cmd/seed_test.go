@@ -300,7 +300,7 @@ func TestAConsoleIssuesAPasswordForAnOperator(t *testing.T) {
 	// Naming somebody who is not there creates them, which is the flow: an
 	// operator is added by being given a way in, the same decision `roster
 	// control key add` already made about a caller.
-	v, err := issue.Issue(as, app.CredentialIssueRequest_builder{Service: "second"}.Build())
+	v, err := issue.Issue(as, app.CredentialIssueRequest_builder{HolderAlias: "second"}.Build())
 	x.NoError(err)
 	x.NotEmpty(v.GetSecret())
 	x.GreaterOrEqual(len(v.GetSecret()), 32)
@@ -316,7 +316,7 @@ func TestAConsoleIssuesAPasswordForAnOperator(t *testing.T) {
 	t.Run("and issuing again replaces what was there", func(t *testing.T) {
 		x := require.New(t)
 
-		w, err := issue.Issue(as, app.CredentialIssueRequest_builder{Service: "second"}.Build())
+		w, err := issue.Issue(as, app.CredentialIssueRequest_builder{HolderAlias: "second"}.Build())
 		x.NoError(err)
 		x.NotEqual(v.GetSecret(), w.GetSecret())
 
@@ -339,7 +339,7 @@ func TestAConsoleIssuesAPasswordForAnOperator(t *testing.T) {
 		// password, so the plaintext it looked for was one no row was holding
 		// any more and the loop was guaranteed to pass. What has to be absent
 		// is the secret that was just handed out.
-		u, err := issue.Issue(as, app.CredentialIssueRequest_builder{Service: "kept"}.Build())
+		u, err := issue.Issue(as, app.CredentialIssueRequest_builder{HolderAlias: "kept"}.Build())
 		x.NoError(err)
 		x.NotEmpty(u.GetSecret())
 
@@ -360,7 +360,7 @@ func TestAConsoleIssuesAPasswordForAnOperator(t *testing.T) {
 	t.Run("and nobody without a session asks for one", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := issue.Issue(ctx, app.CredentialIssueRequest_builder{Service: "third"}.Build())
+		_, err := issue.Issue(ctx, app.CredentialIssueRequest_builder{HolderAlias: "third"}.Build())
 		x.Error(err)
 		x.Equal(codes.Unauthenticated, status.Code(err))
 	})

@@ -1,0 +1,16 @@
+{
+	"name": "lesomnus/roster",
+	"dockerComposeFile": "docker-compose.yaml",
+	"service": "dev",
+	"workspaceFolder": "/workspace",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"golang.go",
+				"bufbuild.vscode-buf",
+				"hashicorp.hcl",
+				"streetsidesoftware.code-spell-checker"
+			]
+		}
+	}
+}

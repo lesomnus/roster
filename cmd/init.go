@@ -266,7 +266,7 @@ func seedOperator(ctx context.Context, s *Server, alias, given string) (pdid.Id,
 
 	// The same owner tenant `roster key add` uses, made here if this is a fresh
 	// control plane. There is nothing to choose: a control plane has one owner.
-	who, tenant, err := serviceIn(ctx, at, alias)
+	who, tenant, err := holderNamedIn(ctx, at, alias)
 	if err != nil {
 		return pdid.Nil, "", err
 	}

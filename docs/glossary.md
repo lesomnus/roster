@@ -22,10 +22,10 @@ Three notes about the list itself:
 | | |
 | --- | --- |
 | **tenant** (3.3k) | one customer organisation. The unit the wall narrows to, and `Tenant.id` is on nearly every row |
-| **holder** (2.6k) | a row for somebody or something that can be a caller: a person, or a service. Not a user account -- credentials hang off it rather than in it. `Holder.id` is the `sub` |
+| **holder** (2.6k) | a row for somebody or something that can be a caller. Not a user account -- credentials hang off it rather than in it, and nothing on the row says whether a person or a machine is behind it. `Holder.id` is the `sub` |
 | **operator** (990) | whoever runs this deployment. Their own rows live in the **control plane**, and their people sign in to the console |
 | **customer** | a tenant, from the operator's side of the table. `roster tenant add` makes one; the console's *customers* screen is about them |
-| **person** vs **service** | which kind of holder. A person gets a password and a second factor; a service gets a key. Not the same split as the planes: a customer's machine is a service in their tenant (`roster key add`), and a service of the deployment's own is on the control plane (`roster control key add`) |
+| **a holder's credential** | what tells two holders apart, since the row does not: a `Credential` (a password, a second factor) or an `ApiKey`. One holder may have both, and roster refuses neither -- `roster control key add --allow … admin` mints a key on the operator's own row. Which plane it is in is the other difference, and the one the `rk_`/`rt_` prefix comes from |
 | **custody** (69) | a caller that acts across **every** tenant -- the deployment's own machinery rather than a customer's. `docs/position.md` is where the line is |
 
 ## What protects what

@@ -160,21 +160,21 @@ func (s coreApiKey) Issue(ctx context.Context, req *app.ApiKeyIssueRequest) (*ap
 
 // whoseKey resolves whom a minted key is for, the same pair `Issue.IssueKey`
 // took and told apart by the plane: a `holder` reference on the data plane
-// (`rt_`), a `service` alias created if absent on the control plane (`rk_`).
+// (`rt_`), a `holder_alias` created if absent on the control plane (`rk_`).
 func (s coreApiKey) whoseKey(ctx context.Context, req *app.ApiKeyIssueRequest) (*app.HolderRef, error) {
-	service, ref := req.GetService(), req.GetHolder()
-	byName := service != ""
+	alias, ref := req.GetHolderAlias(), req.GetHolder()
+	byName := alias != ""
 	byRef := ref != nil
 
 	switch {
 	case byName && byRef:
 		return nil, status.Error(codes.InvalidArgument,
-			"a service and a holder name whose key this is two ways; give one")
+			"holder_alias and holder name whose key this is two ways; give one")
 
 	case s.prefix == keys.PrefixTenant:
 		if !byRef {
 			return nil, status.Error(codes.InvalidArgument,
-				"holder: whose key this is; `service` is the other plane's, where there is one tenant")
+				"holder: whose key this is; `holder_alias` is the other plane's, where there is one tenant")
 		}
 
 		// Read back through the wall, so a reference this caller cannot see is a
@@ -189,23 +189,23 @@ func (s coreApiKey) whoseKey(ctx context.Context, req *app.ApiKeyIssueRequest) (
 
 	case byRef:
 		return nil, status.Error(codes.InvalidArgument,
-			"holder: this plane has one tenant, so a key is for a `service` by name")
+			"holder: this plane has one tenant, so a key is for a `holder_alias`")
 
 	case !byName:
-		return nil, status.Error(codes.InvalidArgument, "service: whose key this is")
+		return nil, status.Error(codes.InvalidArgument, "holder_alias: whose key this is")
 	}
 
-	return s.serviceHolder(ctx, service)
+	return s.holderNamed(ctx, alias)
 }
 
-// serviceHolder is a control-plane holder by alias, made if it is not there --
-// because a service is not something set up on purpose before it is needed,
-// which is what `roster key add` already decided.
+// holderNamed is a control-plane holder by alias, made if it is not there --
+// because a caller of this deployment's own is not a row set up on purpose
+// before it is needed, which is what `roster control key add` already decided.
 //
 // On `Core` rather than on this file's layer, because `Credential.Issue` names
-// a new operator the same way and for the same reason: a console that has just
+// a new holder the same way and for the same reason: a console that has just
 // typed somebody's name has thereby created them.
-func (s Core) serviceHolder(ctx context.Context, alias string) (*app.HolderRef, error) {
+func (s Core) holderNamed(ctx context.Context, alias string) (*app.HolderRef, error) {
 	ts, err := s.Next().Tenant().List(ctx, app.TenantListRequest_builder{Size: 1}.Build())
 	if err != nil {
 		return nil, err
@@ -299,8 +299,9 @@ func (s coreApiKey) reaches(ctx context.Context, ref *app.ApiKeyRef) error {
 		return err
 	}
 	if len(v.GetHolder().GetId()) == 0 {
-		// The deployment's own key hangs off a service, and a service is not
-		// somebody whose reach is compared: the control port's own rules stand.
+		// The deployment's own key hangs off a holder of the control plane, and
+		// that is not somebody whose reach is compared: the control port's own
+		// rules stand.
 		return nil
 	}
 	holder, err := pdid.From(v.GetHolder().GetId())

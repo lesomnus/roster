@@ -126,7 +126,7 @@ func TestIssueMintsOverTheWire(t *testing.T) {
 	// `mayReach` passes because there is nothing to escalate to. A key
 	// re-issuing for an operator who already holds a role is the case it now
 	// refuses, which is what retired the `BecomesAnOperator` warning
-	// (`cmd/service.go`).
+	// (`cmd/holder.go`).
 	t.Run("a first password for an operator, printed once", func(t *testing.T) {
 		x := require.New(t)
 

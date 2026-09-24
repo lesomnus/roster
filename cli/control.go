@@ -18,7 +18,7 @@ import (
 
 // NewCmdControl is `roster control`: the commands that write to the control
 // plane, which is a database of its own (`control.db`) holding this
-// deployment's operators and its own services.
+// deployment's own holders: its operators, and whatever calls in.
 //
 // # A subcommand, not a flag
 //
@@ -46,7 +46,7 @@ import (
 func NewCmdControl(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "control",
-		Brief: "the control plane: this deployment's operators and its own services",
+		Brief: "the control plane: this deployment's own holders and their keys",
 
 		Commands: append(xli.Commands{
 			newCmdControlKey(c),
@@ -60,7 +60,7 @@ func NewCmdControl(c *cmd.Config) *xli.Command {
 func newCmdControlKey(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "key",
-		Brief: "mint a key for one of this deployment's own services",
+		Brief: "mint a key for one of this deployment's own holders",
 
 		Commands: xli.Commands{
 			newCmdControlKeyAdd(c),
@@ -70,32 +70,29 @@ func newCmdControlKey(c *cmd.Config) *xli.Command {
 	}
 }
 
-// newCmdControlKeyAdd mints an `rk_` for one of this deployment's own services
+// newCmdControlKeyAdd mints an `rk_` for one of this deployment's own callers
 // -- the Login App, a product backend, a job reading the trail -- and prints it
 // once.
 //
-// # Naming a service makes it
+// # Naming a holder makes it
 //
-// Unlike a customer's person, which `roster key add` only looks up. A service
-// is not something somebody sets up on purpose before they need it: this is
-// the moment it becomes a caller, and the control plane has one tenant so the
-// name is the whole of who. [cmd.ServiceOf] is that decision.
+// Unlike one of a customer's, which `roster key add` only looks up. A caller of
+// this deployment's own is not a row somebody sets up on purpose beforehand:
+// this is the moment it becomes one, and the control plane has one tenant so
+// the name is the whole of who. [cmd.HolderNamed] is that decision.
 func newCmdControlKeyAdd(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "add",
-		Brief: "mint a key for a service of this deployment, made if new, and print it once",
+		Brief: "mint a key for a holder of this deployment, made if new, and print it once",
 
 		Args: arg.Args{
-			&arg.String{Name: "SERVICE", Brief: "which service, by alias; made if there is none"},
+			&arg.String{Name: "HOLDER", Brief: "which holder, by alias; made if there is none"},
 		},
 
 		Flags: mintFlags(),
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
-			service, _ := arg.Get[string](cl, "SERVICE")
-			if service == "" {
-				return errors.New("SERVICE: which of this deployment's services the key is for")
-			}
+			alias, _ := arg.Get[string](cl, "HOLDER")
 
 			m, err := mintingOf(cl)
 			if err != nil {
@@ -114,12 +111,12 @@ func newCmdControlKeyAdd(c *cmd.Config) *xli.Command {
 				return err
 			}
 
-			who, err := cmd.ServiceOf(ctx, s.Control, service)
+			who, err := cmd.HolderNamed(ctx, s.Control, alias)
 			if err != nil {
 				return err
 			}
 
-			return m.mint(ctx, s.Control.Ungated, who, keys.PrefixDeployment, "@"+service)
+			return m.mint(ctx, s.Control.Ungated, who, keys.PrefixDeployment, "@"+alias)
 		}),
 	}
 }
@@ -146,7 +143,7 @@ func newCmdControlVouch(c *cmd.Config) *xli.Command {
 }
 
 // newCmdControlEntities is the entity tree on the control plane: `holder ls`
-// for who the operators and services are, `api-key ls` for what they hold,
+// for who is registered there, `api-key ls` for what they hold,
 // `holder disable` for stopping one.
 //
 // There was no way to see any of it from a shell. The console was the only
@@ -156,7 +153,7 @@ func newCmdControlVouch(c *cmd.Config) *xli.Command {
 // # Without `tenant add`
 //
 // The control plane has **one** tenant, and that is load-bearing:
-// [cmd.ServiceOf] takes the first tenant it lists, and `Credential.Issue`
+// [cmd.HolderNamed] takes the first tenant it lists, and `Credential.Issue`
 // names an operator by alias alone because an alias names one person only
 // where there is one tenant. A second tenant would make both answer about
 // whichever row a query happened to return first -- so the command that could

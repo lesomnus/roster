@@ -221,7 +221,7 @@ func asProvisioner(ctx context.Context, s *Server) (context.Context, error) {
 
 	// The same call `roster key add` makes for a service, which is what this
 	// is: a row in the control plane's one tenant, made if it is not there.
-	who, err := ServiceOf(ctx, s.Control, Provisioner)
+	who, err := HolderNamed(ctx, s.Control, Provisioner)
 	if err != nil {
 		return nil, err
 	}
