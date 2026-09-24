@@ -126,9 +126,9 @@ key 01a03322-… for @custody, allowing 2 method(s). This is the only time it is
 Printed to **stdout** and the sentence to stderr, so `$(roster control key add …)`
 is the key and nothing else. Shown once; what is stored is a hash.
 
-Naming a service **creates** it. A service is not something anybody sets up on
-purpose before they need it, and the control plane has one tenant so an alias
-names one caller.
+Naming a holder **creates** it. A caller of your own is not a row anybody sets
+up on purpose before they need it, and the control plane has one tenant so an
+alias names one of them.
 
 `--allow` is required in both directions: everything hands out more than anybody
 asked for, and nothing mints a key that silently does not work.
@@ -155,7 +155,7 @@ write in this deployment, in every tenant, for as long as the retention policy
 keeps them.
 ```
 
-`--expires 720h` bounds one. Empty is forever, which is what a service wants.
+`--expires 720h` bounds one. Empty is forever, which is what a machine wants.
 
 ## A tenant key — `rt_`
 
@@ -167,9 +167,9 @@ their tenant, and never wider than what they hold.
 roster key add --tenant newco --holder alice --allow '/roster.HolderService/Get'
 ```
 
-Naming a holder who is not there is a **refusal**, unlike a service. A
-customer's people are the customer's, and a command that made one by mentioning
-them would write rows into somebody else's tenant by typo.
+Naming a holder who is not there is a **refusal**, unlike `roster control key
+add`. A customer's people are the customer's, and a command that made one by
+mentioning them would write rows into somebody else's tenant by typo.
 
 Three other ways to get one, all the same row:
 

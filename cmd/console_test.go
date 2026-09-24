@@ -255,7 +255,7 @@ func TestAConsoleManagesKeys(t *testing.T) {
 		x := require.New(t)
 
 		// A key to find, minted the way the CLI does.
-		who, err := cmd.ServiceOf(ctx, s.Control, "custody")
+		who, err := cmd.HolderNamed(ctx, s.Control, "custody")
 		x.NoError(err)
 
 		_, sum, err := keys.Mint(keys.PrefixDeployment)
@@ -441,7 +441,7 @@ func TestNoVerifierReachesTheTrail(t *testing.T) {
 	x.NotEmpty(cred.Secret, "nothing was stored, so this proves nothing")
 
 	// And a key, which is the other verifier.
-	who, err := cmd.ServiceOf(ctx, s.Control, "custody")
+	who, err := cmd.HolderNamed(ctx, s.Control, "custody")
 	x.NoError(err)
 
 	_, sum, err := keys.Mint(keys.PrefixDeployment)
@@ -611,7 +611,7 @@ func TestAConsoleReachesTheControlPlaneOverHttp(t *testing.T) {
 		x := require.New(t)
 
 		// A service and a key, the way `roster key add` makes them.
-		who, err := cmd.ServiceOf(ctx, s.Control, "custody")
+		who, err := cmd.HolderNamed(ctx, s.Control, "custody")
 		x.NoError(err)
 
 		_, sum, err := keys.Mint(keys.PrefixDeployment)

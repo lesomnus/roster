@@ -100,7 +100,7 @@ func TestTheConsoleSignsInAsAnRpc(t *testing.T) {
 		x := require.New(t)
 
 		code, body := post("/roster.ApiKeyService/Issue",
-			`{"service":"custody","alias":"production","methods":["/roster.VouchService/Verify"]}`)
+			`{"holderAlias":"custody","alias":"production","methods":["/roster.VouchService/Verify"]}`)
 		x.Equal(http.StatusOK, code, body)
 		x.Contains(body, `"rk_`, "the key was not in the answer")
 
@@ -115,7 +115,7 @@ func TestTheConsoleSignsInAsAnRpc(t *testing.T) {
 		x := require.New(t)
 
 		code, _ := post("/roster.ApiKeyService/Issue",
-			`{"service":"custody","alias":"empty","methods":[]}`)
+			`{"holderAlias":"custody","alias":"empty","methods":[]}`)
 		x.Equal(http.StatusBadRequest, code)
 	})
 

@@ -2852,13 +2852,13 @@ func (b0 CredentialEnrolResponse_builder) Build() *CredentialEnrolResponse {
 }
 
 type CredentialIssueRequest struct {
-	state              protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref     *HolderRef             `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Kind    string                 `protobuf:"bytes,2,opt,name=kind"`
-	xxx_hidden_Email   *EmailRef              `protobuf:"bytes,3,opt,name=email"`
-	xxx_hidden_Service string                 `protobuf:"bytes,4,opt,name=service"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref         *HolderRef             `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Kind        string                 `protobuf:"bytes,2,opt,name=kind"`
+	xxx_hidden_Email       *EmailRef              `protobuf:"bytes,3,opt,name=email"`
+	xxx_hidden_HolderAlias string                 `protobuf:"bytes,4,opt,name=holder_alias,json=holderAlias"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *CredentialIssueRequest) Reset() {
@@ -2907,9 +2907,9 @@ func (x *CredentialIssueRequest) GetEmail() *EmailRef {
 	return nil
 }
 
-func (x *CredentialIssueRequest) GetService() string {
+func (x *CredentialIssueRequest) GetHolderAlias() string {
 	if x != nil {
-		return x.xxx_hidden_Service
+		return x.xxx_hidden_HolderAlias
 	}
 	return ""
 }
@@ -2926,8 +2926,8 @@ func (x *CredentialIssueRequest) SetEmail(v *EmailRef) {
 	x.xxx_hidden_Email = v
 }
 
-func (x *CredentialIssueRequest) SetService(v string) {
-	x.xxx_hidden_Service = v
+func (x *CredentialIssueRequest) SetHolderAlias(v string) {
+	x.xxx_hidden_HolderAlias = v
 }
 
 func (x *CredentialIssueRequest) HasRef() bool {
@@ -2971,7 +2971,7 @@ type CredentialIssueRequest_builder struct {
 	// Whose, by alias within this plane's one tenant, created if they are not
 	// there. **Control plane only.** Giving this with either of the two above is
 	// refused.
-	Service string
+	HolderAlias string
 }
 
 func (b0 CredentialIssueRequest_builder) Build() *CredentialIssueRequest {
@@ -2981,7 +2981,7 @@ func (b0 CredentialIssueRequest_builder) Build() *CredentialIssueRequest {
 	x.xxx_hidden_Ref = b.Ref
 	x.xxx_hidden_Kind = b.Kind
 	x.xxx_hidden_Email = b.Email
-	x.xxx_hidden_Service = b.Service
+	x.xxx_hidden_HolderAlias = b.HolderAlias
 	return m0
 }
 
@@ -3151,12 +3151,12 @@ const file_app_credential_svc_g_proto_rawDesc = "" +
 	"\vattestation\x18\x05 \x01(\fR\vattestation\"M\n" +
 	"\x17CredentialEnrolResponse\x12\x19\n" +
 	"\x04seed\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04seed\x12\x17\n" +
-	"\x03uri\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x03uri\"\xa1\x01\n" +
+	"\x03uri\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x03uri\"\xaa\x01\n" +
 	"\x16CredentialIssueRequest\x12#\n" +
 	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\x12\x19\n" +
 	"\x04kind\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04kind\x12&\n" +
-	"\x05email\x18\x03 \x01(\v2\x10.roster.EmailRefR\x05email\x12\x1f\n" +
-	"\aservice\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\aservice\"8\n" +
+	"\x05email\x18\x03 \x01(\v2\x10.roster.EmailRefR\x05email\x12(\n" +
+	"\fholder_alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\vholderAlias\"8\n" +
 	"\x17CredentialIssueResponse\x12\x1d\n" +
 	"\x06secret\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06secret2\xf8\x05\n" +
 	"\x11CredentialService\x127\n" +

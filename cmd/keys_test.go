@@ -404,7 +404,7 @@ func TestTheFirstKeyMakesWhatItNeeds(t *testing.T) {
 	x.NoError(err)
 	x.Zero(n)
 
-	who, err := cmd.ServiceOf(ctx, s.Control, "custody")
+	who, err := cmd.HolderNamed(ctx, s.Control, "custody")
 	x.NoError(err)
 
 	// The owner's tenant and the service, made on the way.
@@ -414,7 +414,7 @@ func TestTheFirstKeyMakesWhatItNeeds(t *testing.T) {
 	x.Equal(who.String(), pdid.Id(v.Id).String())
 
 	// And asking again is the same service rather than a second one.
-	again, err := cmd.ServiceOf(ctx, s.Control, "custody")
+	again, err := cmd.HolderNamed(ctx, s.Control, "custody")
 	x.NoError(err)
 	x.Equal(who, again)
 

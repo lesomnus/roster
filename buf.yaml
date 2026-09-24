@@ -31,3 +31,16 @@ lint:
 breaking:
   use:
     - FILE
+  except:
+    # A field's **name** is not its wire. The number and the type are what an
+    # encoded message carries, and those are still checked -- what these two
+    # rules cover is the accessor a generated client calls and the key a JSON
+    # body uses, and both are regenerated here from this schema. Excluded when
+    # `service` became `holder_alias` on `ApiKey.Issue` and `Credential.Issue`
+    # (#28): the field named a kind of holder that does not exist, and the only
+    # caller that sends it as JSON is this repository's own console.
+    #
+    # The day something outside this repository reads these, put them back:
+    # then a rename is a migration somebody else has to make.
+    - FIELD_SAME_NAME
+    - FIELD_SAME_JSON_NAME

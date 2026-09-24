@@ -49,13 +49,13 @@ test it remotely with a key.
 
 ### The control plane is `roster control`
 
-The operators and this deployment's own services live on a second database,
+The operators and this deployment's own callers live on a second database,
 `control.db`, and every command that writes there is under one word:
 
 ```sh
 roster control key add --allow '/roster.VouchService/Verify' portal   # an rk_; naming it makes it
 roster control vouch reset @admin                                     # the operator's way back in
-roster control holder ls                                              # who the operators and services are
+roster control holder ls                                              # every holder of the control plane
 ```
 
 The entity commands are all there except `tenant add`: the control plane has

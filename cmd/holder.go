@@ -1,8 +1,8 @@
 // Package cmd, this file: who a key is for, and what it may call.
 //
 // Here rather than beside `roster key add` in `cli` because `Seed` names a
-// service too -- a deployment raised by a Go call is the same deployment -- and
-// a helper written twice is a helper that drifts.
+// holder the same way -- a deployment raised by a Go call is the same
+// deployment -- and a helper written twice is a helper that drifts.
 package cmd
 
 import (
@@ -24,26 +24,26 @@ import (
 	app "github.com/lesomnus/roster/rstr"
 )
 
-// ServiceOf is the holder a key is for, made if this is the first key for it.
+// HolderNamed is a holder of this plane by alias, made if there is none.
 //
-// Made rather than refused, because a service is not a thing somebody creates
-// on purpose before they need it: `control key add custody` is the moment
-// custody becomes a caller of this deployment, and asking for two commands to
-// express one intent is how a runbook grows a step nobody remembers.
+// Made rather than refused, because a caller of this deployment's own is not a
+// row somebody creates on purpose beforehand: `control key add custody` is the
+// moment custody becomes one, and asking for two commands to express one
+// intent is how a runbook grows a step nobody remembers.
 //
 // The tenant it goes in is the control plane's only one, made here if the
 // database is new. There is nothing to choose: a control plane has one owner.
-func ServiceOf(ctx context.Context, s *Server, alias string) (pdid.Id, error) {
-	who, _, err := serviceIn(ctx, s.Ungated, alias)
+func HolderNamed(ctx context.Context, s *Server, alias string) (pdid.Id, error) {
+	who, _, err := holderNamedIn(ctx, s.Ungated, alias)
 	return who, err
 }
 
-// serviceIn is [ServiceOf] on any stack, and the owner tenant it landed in.
+// holderNamedIn is [HolderNamed] on any stack, and the owner tenant it landed in.
 //
 // A stack rather than a [Server] so that `seedOperator` can hand it one rebound
 // onto a transaction: every read and write here goes through it, and none
 // around it, or the transaction would hold half of them.
-func serviceIn(ctx context.Context, at app.Server, alias string) (pdid.Id, pdid.Id, error) {
+func holderNamedIn(ctx context.Context, at app.Server, alias string) (pdid.Id, pdid.Id, error) {
 	ts, err := at.Tenant().List(ctx, app.TenantListRequest_builder{Size: 1}.Build())
 	if err != nil {
 		return pdid.Nil, pdid.Nil, err
@@ -75,8 +75,8 @@ func serviceIn(ctx context.Context, at app.Server, alias string) (pdid.Id, pdid.
 // alias, and is a refusal where there is no such person.
 //
 // Looked up and never created, which is the difference between this and
-// [serviceOf] beside it. The control plane has one tenant and a service is a
-// row somebody names when they need it; the data plane has many, a customer's
+// [HolderNamed] beside it. The control plane has one tenant and a row there is
+// one somebody names when they need it; the data plane has many, a customer's
 // people are the customer's, and a command that made one by mentioning them
 // would write rows into somebody else's tenant by typo.
 //

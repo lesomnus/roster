@@ -305,7 +305,7 @@ The linker follows imports, so one of those in `cmd` is thirty-five megabytes
 added to the module a browser downloads — and nothing fails, the page just gets
 slower. `scripts/test.sh` checks the Wasm dependency graph for it. A new command
 goes in `cli/`; a helper both a command and the sandbox need goes in `cmd/`
-(`cmd/service.go` is the one that had to move back).
+(`cmd/holder.go` is the one that had to move back).
 
 The sandbox does not migrate: `wasm/schema` is the same tables as one SQL
 script, kept true by `TestTheScriptIsThisSchema`.

@@ -188,18 +188,18 @@ func TestTheTwoPlanesNameAHolderTheirOwnWay(t *testing.T) {
 	c := app.NewApiKeyServiceClient(conn)
 
 	_, err := c.Issue(wire, app.ApiKeyIssueRequest_builder{
-		Service: "made-up-by-mentioning",
-		Alias:   "ci",
-		Methods: []string{listHolder},
+		HolderAlias: "made-up-by-mentioning",
+		Alias:       "ci",
+		Methods:     []string{listHolder},
 	}.Build())
 	x.Equal(codes.InvalidArgument, status.Code(err))
 	x.Contains(status.Convert(err).Message(), "holder:")
 
 	_, err = c.Issue(wire, app.ApiKeyIssueRequest_builder{
-		Service: "both",
-		Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
-		Alias:   "ci",
-		Methods: []string{listHolder},
+		HolderAlias: "both",
+		Holder:      app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Alias:       "ci",
+		Methods:     []string{listHolder},
 	}.Build())
 	x.Equal(codes.InvalidArgument, status.Code(err))
 	x.Contains(status.Convert(err).Message(), "two ways")

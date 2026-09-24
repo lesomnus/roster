@@ -419,11 +419,11 @@ func (s coreCredential) Issue(ctx context.Context, req *app.CredentialIssueReque
 //
 // `ApiKey.Issue`'s `whoseKey` is the same function one file over and the same
 // reasoning: which plane a caller is on is `WithPrefix`, a fact about the stack
-// that answered, so `service` off the control plane and `ref`/`email` on it are
-// refused by the wiring rather than by a flag.
+// that answered, so `holder_alias` off the control plane and `ref`/`email` on
+// it are refused by the wiring rather than by a flag.
 func (s coreCredential) whosePassword(ctx context.Context, req *app.CredentialIssueRequest) (*app.HolderRef, error) {
-	service, ref, email := req.GetService(), req.GetRef(), req.GetEmail()
-	byName, byRef, byMail := service != "", ref != nil, email != nil
+	alias, ref, email := req.GetHolderAlias(), req.GetRef(), req.GetEmail()
+	byName, byRef, byMail := alias != "", ref != nil, email != nil
 
 	switch {
 	case (byName && byRef) || (byName && byMail) || (byRef && byMail):
@@ -441,7 +441,7 @@ func (s coreCredential) whosePassword(ctx context.Context, req *app.CredentialIs
 		switch {
 		case byName:
 			return nil, status.Error(codes.InvalidArgument,
-				"service: a bare alias is one person only where there is one tenant, which is the "+
+				"holder_alias: a bare alias names one row only where there is one tenant, which is the "+
 					"control plane; here somebody is a `ref` or an `email` of theirs")
 
 		case byMail:
@@ -474,13 +474,13 @@ func (s coreCredential) whosePassword(ctx context.Context, req *app.CredentialIs
 
 	case byRef || byMail:
 		return nil, status.Error(codes.InvalidArgument,
-			"this plane has one tenant, so somebody is a `service` by name")
+			"this plane has one tenant, so somebody is a `holder_alias`")
 
 	case !byName:
-		return nil, status.Error(codes.InvalidArgument, "service: whose password this is")
+		return nil, status.Error(codes.InvalidArgument, "holder_alias: whose password this is")
 	}
 
-	return s.serviceHolder(ctx, service)
+	return s.holderNamed(ctx, alias)
 }
 
 // reauth is the proof a caller gives before their own password is replaced:

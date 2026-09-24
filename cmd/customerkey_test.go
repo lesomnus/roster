@@ -133,7 +133,7 @@ func TestTheCliMintsACustomersKey(t *testing.T) {
 	})
 }
 
-// TestNamingACustomersPersonDoesNotCreateThem is the half `serviceOf` decides
+// TestNamingACustomersPersonDoesNotCreateThem is the half `HolderNamed` decides
 // the other way, and the difference is the wall.
 //
 // The control plane has one tenant, so naming a service **is** the moment it

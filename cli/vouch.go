@@ -123,23 +123,23 @@ func vouching(ctx context.Context, c *cmd.Config) (*cmd.Server, *vouch.Server, e
 //
 // # Looked up here, and named to `Issue`
 //
-// `Credential.Issue` on the control plane takes a person by `service` and
+// `Credential.Issue` on the control plane takes a person by `holder_alias` and
 // nothing else, and makes one where the name matches nobody -- which is how the
 // console adds a second operator, and is the wrong answer to a typo in a
 // recovery. So the person is found here first, by lookup only, and `Issue` is
-// handed the alias of a row that already exists. `service` is that alias, and
+// handed the alias of a row that already exists. `alias` is that name, and
 // empty on the data plane, where `Issue` takes a `ref`.
 type whomed struct {
-	at      app.Server
-	who     *app.VouchWho
-	service string
+	at    app.Server
+	who   *app.VouchWho
+	alias string
 }
 
 // issuing is the request `reset` makes about this person.
 func (w whomed) issuing(kind string) *app.CredentialIssueRequest {
 	req := app.CredentialIssueRequest_builder{Kind: kind}
-	if w.service != "" {
-		req.Service = w.service
+	if w.alias != "" {
+		req.HolderAlias = w.alias
 	} else {
 		req.Ref = app.HolderRef_builder{Id: w.who.GetId()}.Build()
 	}
@@ -182,9 +182,9 @@ func whom(ctx context.Context, s *cmd.Server, cl *xli.Command, control bool) (wh
 	}
 
 	return whomed{
-		at:      s.Control.Ungated,
-		who:     app.VouchWho_builder{Id: who.Bytes()}.Build(),
-		service: h.GetAlias(),
+		at:    s.Control.Ungated,
+		who:   app.VouchWho_builder{Id: who.Bytes()}.Build(),
+		alias: h.GetAlias(),
 	}, nil
 }
 
