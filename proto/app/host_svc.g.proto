@@ -4,6 +4,7 @@ package roster;
 import "app/host.proto";
 import "google/protobuf/timestamp.proto";
 import "patch/patch.proto";
+import "roster/payday/holder_svc.g.proto";
 import "roster/payday/tenant_svc.g.proto";
 
 option go_package = "github.com/lesomnus/roster/rstr";
@@ -49,6 +50,7 @@ message HostAddRequest {
   string name = 5 [features.field_presence = IMPLICIT];
   string desc = 6 [features.field_presence = IMPLICIT];
   map<string, string> labels = 7;
+  HolderRef acts_as = 8;
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -70,6 +72,7 @@ message HostSelect {
   bool name = 5;
   bool desc = 6;
   bool labels = 7;
+  HolderSelect acts_as = 8;
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;
@@ -80,6 +83,12 @@ message HostPatchRequest {
   string name = 10;
   string desc = 12;
   map<string, string> labels = 14;
+  HolderRef acts_as = 16;
+  // Clear acts_as instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and acts_as clears.
+  bool acts_as_null = 17;
   // The version this update requires the stored date_updated to be.
   // It is a precondition, not a write: the update applies only if the row
   // still holds this value, and the server stamps the new version itself.

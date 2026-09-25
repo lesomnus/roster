@@ -8,17 +8,20 @@ import (
 	errors "errors"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
+	holder "github.com/lesomnus/roster/internal/ent/holder"
 	host "github.com/lesomnus/roster/internal/ent/host"
 	maildomain "github.com/lesomnus/roster/internal/ent/maildomain"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
+	graph "github.com/protobuf-orm/protobuf-orm/graph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	uuid "uuid"
 )
 
@@ -91,7 +94,7 @@ func (s HostServiceServer) Add(ctx context.Context, req *rstr.HostAddRequest) (*
 	st := s
 	st.Db = tx.Db
 
-	ds := make([]func(v *rstr.Host), 0, 1)
+	ds := make([]func(v *rstr.Host), 0, 2)
 	q := st.Db.Host.Create()
 	var k uuid.UUID
 	if req.HasId() {
@@ -118,6 +121,16 @@ func (s HostServiceServer) Add(ctx context.Context, req *rstr.HostAddRequest) (*
 	q.SetDesc(req.GetDesc())
 	if u := req.GetLabels(); len(u) > 0 {
 		q.SetLabels(u)
+	}
+	if req.HasActsAs() {
+		if k, err := HolderGetKey(ctx, st.Db, req.GetActsAs()); err != nil {
+			return nil, err
+		} else {
+			q.SetActsAsId(k)
+			ds = append(ds, func(v *rstr.Host) {
+				v.SetActsAs(rstr.Holder_builder{Id: k[:]}.Build())
+			})
+		}
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
@@ -224,6 +237,12 @@ func HostSelect(q *ent.HostQuery, m *rstr.HostSelect) {
 			TenantSelect(q, m.GetTenant())
 		})
 	}
+	if m.HasActsAs() {
+		q.WithActsAs(func(q *ent.HolderQuery) {
+			q.Where(holder.DateErasedIsNil())
+			HolderSelect(q, m.GetActsAs())
+		})
+	}
 }
 
 func HostSelectInit(q *ent.HostQuery, m *rstr.HostSelect) {
@@ -231,11 +250,22 @@ func HostSelectInit(q *ent.HostQuery, m *rstr.HostSelect) {
 		HostSelect(q, m)
 	} else {
 		q.WithTenant(selectTenantKey)
+		q.WithActsAs(selectHolderKey)
 	}
 }
 
 func (s HostServiceServer) Patch(ctx context.Context, req *rstr.HostPatchRequest) (*rstr.Host, error) {
-	doc, err := ormpatch.FromPatchRequest(hostOrmEntity, req.ProtoReflect(), nil)
+	doc, err := ormpatch.FromPatchRequest(hostOrmEntity, req.ProtoReflect(), func(ed graph.Edge, ref protoreflect.Message) (protoreflect.Value, error) {
+		switch ed.Number() {
+		case 8:
+			k, err := HolderGetKey(ctx, s.Db, ref.Interface().(*rstr.HolderRef))
+			if err != nil {
+				return protoreflect.Value{}, err
+			}
+			return protoreflect.ValueOfBytes(k[:]), nil
+		}
+		return protoreflect.Value{}, status.Errorf(codes.Internal, "no key resolver for edge: %s", ed.Name())
+	})
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
 			return nil, err
@@ -281,7 +311,7 @@ func HostGetKey(ctx context.Context, db *ent.Client, ref *rstr.HostRef) (uuid.UU
 var hostOrmEntity = ormpatch.MustEntityOf(rstr.File_app_host_proto, "Host")
 
 var hostPatchColumns = entpatch.Columns{
-	1: host.FieldId, 2: host.TenantColumn, 5: host.FieldName, 6: host.FieldDesc, 7: host.FieldLabels, 13: host.FieldDateUpdated, 14: host.FieldDateErased, 15: host.FieldDateCreated}
+	1: host.FieldId, 2: host.TenantColumn, 5: host.FieldName, 6: host.FieldDesc, 7: host.FieldLabels, 8: host.ActsAsColumn, 13: host.FieldDateUpdated, 14: host.FieldDateErased, 15: host.FieldDateCreated}
 
 func (s HostServiceServer) Apply(ctx context.Context, req *rstr.HostApplyRequest) (*rstr.Host, error) {
 	if !req.HasPatch() {

@@ -2,6 +2,7 @@ edition = "2023";
 
 package roster;
 
+import "roster/payday/holder.proto";
 import "roster/payday/tenant.proto";
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
@@ -113,6 +114,38 @@ message Host {
   // setting goes in a field, so that what is configuration and what is a note
   // stay tellable apart.
   map<string, string> labels = 7;
+
+  // The holder a **deployment key** borrows when a request says it arrived
+  // here, and unset is nobody to borrow.
+  //
+  // # What it is for
+  //
+  // One Login App instance fronting many tenants. It holds one credential
+  // (`docs/login.md`), and the roster-hosted shape is an `rk_` -- which
+  // resolves to a frame with no tenant, so the policy hands it
+  // `frame.Everything` and what keeps one tenant's rows out of another's is the
+  // app's own code.
+  //
+  // This is what roster narrows it **to** instead. A request carrying
+  // `roster-at: contoso.example.com` resolves through this row to a tenant and
+  // to the holder that tenant put here, and the frame is that holder's: their
+  // bindings, their tenant, and `grpcx.Limit` counting against them rather than
+  // against nothing.
+  //
+  // # It grants nothing
+  //
+  // An `rk_` already sees every tenant. Borrowing a nominated holder's frame is
+  // strictly **less** than what it had, which is why this needs no escalation
+  // rule of its own and why either a tenant's own administrator or a roster
+  // operator may write it. What it is, is a tenant choosing how narrow the app
+  // in front of them is.
+  //
+  // # Whose holder
+  //
+  // One of this tenant's, and `server/core` refuses one from another: a row
+  // that named somebody else's would hand a caller a frame in a tenant that
+  // never agreed to it, which is the shape [core.agrees] exists for.
+  Holder acts_as = 8 [(orm.edge) = {nullable: true}];
 
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];

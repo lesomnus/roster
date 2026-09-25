@@ -504,6 +504,15 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		// across every tenant, on the page it wrote a delegation to narrow.
 		chain := []auth.Handler{
 			keys.Acting(control.Ungated, s.Ungated),
+
+			// And a deployment key narrowed to the holder a `Host` nominates,
+			// for the app in front of many tenants that holds one credential.
+			// Ahead of `Bearer` for the reason `Acting` is: a request that
+			// declares a name and gets it wrong must stop rather than fall
+			// through to be answered as the key itself, which is the wide
+			// frame it was trying to replace.
+			keys.At(control.Ungated, s.Ungated),
+
 			auth.Bearer(keys.Store(control.Ungated, s.Ungated)),
 		}
 

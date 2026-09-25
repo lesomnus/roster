@@ -191,7 +191,7 @@ export const Host = {
 	schema: HostSchema,
 	domain: 20,
 	version: "dateUpdated",
-	refs: [{ field: "tenant", to: "roster.Tenant" }],
+	refs: [{ field: "tenant", to: "roster.Tenant" }, { field: "actsAs", to: "roster.Holder" }],
 	key: "id",
 	ids: ["id"],
 	service: HostService,

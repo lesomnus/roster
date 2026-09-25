@@ -34,6 +34,8 @@ func (Host) Fields() []ent.Field {
 			Optional(),
 		field.Uuid("tenant_id").
 			Immutable(),
+		field.Uuid("acts_as_id").
+			Optional(),
 	}
 }
 
@@ -44,6 +46,9 @@ func (Host) Edges() []ent.Edge {
 			Field("tenant_id").
 			Required().
 			Immutable(),
+		edge.To("acts_as", Holder.Type).
+			Unique().
+			Field("acts_as_id"),
 	}
 }
 

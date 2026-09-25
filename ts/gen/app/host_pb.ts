@@ -5,6 +5,8 @@
 
 import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
+import type { Holder } from "../roster/payday/holder_pb.js";
+import { file_roster_payday_holder } from "../roster/payday/holder_pb.js";
 import type { Tenant } from "../roster/payday/tenant_pb.js";
 import { file_roster_payday_tenant } from "../roster/payday/tenant_pb.js";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
@@ -17,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/host.proto.
  */
 export const file_app_host: GenFile = /*@__PURE__*/
-  fileDesc("Cg5hcHAvaG9zdC5wcm90bxIGcm9zdGVyItkDCgRIb3N0EhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESFAoEbmFtZRgFIAEoCUIG6oIWAjABEgwKBGRlc2MYBiABKAkSKAoGbGFiZWxzGAcgAygLMhgucm9zdGVyLkhvc3QuTGFiZWxzRW50cnkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6Ycr8FSYSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQAYq7FjMIFDIvChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudCAUKGQijQQKCk1haWxEb21haW4SFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARIMCgRuYW1lGAUgASgJEhAKCHByb3ZpZGVyGAkgASgJEgwKBGRlc2MYBiABKAkSLgoGbGFiZWxzGAcgAygLMh4ucm9zdGVyLk1haWxEb21haW4uTGFiZWxzRW50cnkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6f8r8FUQSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARocEgJhdBoKCgZ0ZW5hbnQQAhoICgRuYW1lEAUwAYq7FjMIFTIvChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudCAUKGRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_tenant, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg5hcHAvaG9zdC5wcm90bxIGcm9zdGVyIoIECgRIb3N0EhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESFAoEbmFtZRgFIAEoCUIG6oIWAjABEgwKBGRlc2MYBiABKAkSKAoGbGFiZWxzGAcgAygLMhgucm9zdGVyLkhvc3QuTGFiZWxzRW50cnkSJwoHYWN0c19hcxgIIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgI4ARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATphyvwVJhICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABirsWMwgUMi8KEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYaCAoGdGVuYW50IBQoZCKNBAoKTWFpbERvbWFpbhIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJgoGdGVuYW50GAIgASgLMg4ucm9zdGVyLlRlbmFudEIG8oIWAkABEgwKBG5hbWUYBSABKAkSEAoIcHJvdmlkZXIYCSABKAkSDAoEZGVzYxgGIAEoCRIuCgZsYWJlbHMYByADKAsyHi5yb3N0ZXIuTWFpbERvbWFpbi5MYWJlbHNFbnRyeRI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATp/yvwVRBICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGhwSAmF0GgoKBnRlbmFudBACGggKBG5hbWUQBTABirsWMwgVMi8KEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYaCAoGdGVuYW50IBQoZEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_holder, file_roster_payday_tenant, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Host is a name a front door answers at, and the tenant it belongs to.
@@ -135,6 +137,42 @@ export type Host = Message<"roster.Host"> & {
    * @generated from field: map<string, string> labels = 7;
    */
   labels: { [key: string]: string };
+
+  /**
+   * The holder a **deployment key** borrows when a request says it arrived
+   * here, and unset is nobody to borrow.
+   *
+   * # What it is for
+   *
+   * One Login App instance fronting many tenants. It holds one credential
+   * (`docs/login.md`), and the roster-hosted shape is an `rk_` -- which
+   * resolves to a frame with no tenant, so the policy hands it
+   * `frame.Everything` and what keeps one tenant's rows out of another's is the
+   * app's own code.
+   *
+   * This is what roster narrows it **to** instead. A request carrying
+   * `roster-at: contoso.example.com` resolves through this row to a tenant and
+   * to the holder that tenant put here, and the frame is that holder's: their
+   * bindings, their tenant, and `grpcx.Limit` counting against them rather than
+   * against nothing.
+   *
+   * # It grants nothing
+   *
+   * An `rk_` already sees every tenant. Borrowing a nominated holder's frame is
+   * strictly **less** than what it had, which is why this needs no escalation
+   * rule of its own and why either a tenant's own administrator or a roster
+   * operator may write it. What it is, is a tenant choosing how narrow the app
+   * in front of them is.
+   *
+   * # Whose holder
+   *
+   * One of this tenant's, and `server/core` refuses one from another: a row
+   * that named somebody else's would hand a caller a frame in a tenant that
+   * never agreed to it, which is the shape [core.agrees] exists for.
+   *
+   * @generated from field: roster.Holder acts_as = 8;
+   */
+  actsAs?: Holder | undefined;
 
   /**
    * @generated from field: google.protobuf.Timestamp date_updated = 13;

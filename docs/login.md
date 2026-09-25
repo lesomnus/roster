@@ -646,11 +646,32 @@ Holder with one history.
 **Which tenant it is**, from the host the browser arrived at -- and **one `rt_` per
 tenant it fronts**, picked by the same fact.
 
-Not one deployment key: an `rk_` resolves to a frame with no tenant and the policy
-hands it `frame.Everything`, so on an internet-facing app the thing keeping
-contoso's request out of fabrikam's rows would be the app's own code. A tenant key
-resolves to a holder inside a tenant and the wall does the narrowing with no
-discipline asked of the app. `roster key add --tenant contoso --holder account`
+Not one deployment key **on its own**: an `rk_` resolves to a frame with no
+tenant and the policy hands it `frame.Everything`, so on an internet-facing app
+the thing keeping contoso's request out of fabrikam's rows would be the app's
+own code. A tenant key resolves to a holder inside a tenant and the wall does
+the narrowing with no discipline asked of the app.
+
+There is now a third shape for the app one **roster operator** runs in front of
+many tenants, and it is the objection above answered rather than waived. A
+`Host` may nominate a holder -- `acts_as`, written by that tenant -- and a
+request that says which name it arrived at is answered as that holder:
+
+```
+authorization: Bearer rk_…          who is calling
+roster-at: contoso.example.com      which name this call is about
+```
+
+roster resolves the name to its tenant and to the holder that tenant nominated,
+and the frame is **that holder's**: their bindings, their tenant, and
+`grpcx.Limit` counting against them rather than against nothing. A name nothing
+claims, or one whose tenant nominated nobody, is refused rather than answered as
+the key -- which would hand back the wide frame the caller was narrowing.
+
+It grants nothing. The key already saw every tenant, so borrowing a nominated
+holder is strictly less, which is why it needs no escalation rule and why the
+tenant is the one who writes the nomination. `server/keys/at.go` is the
+mechanism and `proto/app/host.proto` is the field. `roster key add --tenant contoso --holder account`
 mints each one, and `cmd/accountkey_test.go` is that fact per call.
 
 The tenant an app names is always the app's **assertion** -- roster never sees the

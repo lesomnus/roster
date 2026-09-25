@@ -531,6 +531,7 @@ var (
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
 		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "acts_as_id", Type: field.TypeUuid, Nullable: true},
 	}
 	// HostTable holds the schema information for the "host" table.
 	HostTable = &schema.Table{
@@ -543,6 +544,12 @@ var (
 				Columns:    []*schema.Column{HostColumns[7]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "host_holder_acts_as",
+				Columns:    []*schema.Column{HostColumns[8]},
+				RefColumns: []*schema.Column{HolderColumns[0]},
+				OnDelete:   schema.SetNull,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -1081,6 +1088,7 @@ func init() {
 		Table: "holder",
 	}
 	HostTable.ForeignKeys[0].RefTable = TenantTable
+	HostTable.ForeignKeys[1].RefTable = HolderTable
 	HostTable.Annotation = &entsql.Annotation{
 		Table: "host",
 	}
