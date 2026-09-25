@@ -30,7 +30,9 @@ func TestTheConsoleSignsInAsAnRpc(t *testing.T) {
 	s, out := inited(t)
 	secret := passwordFrom(t, out)
 
-	g, err := s.GrpcControl(ctx, cmd.Config{})
+	// The **admin** listener: the page is served there and signs in there,
+	// because a `__Host-` cookie is host-only (#27, #32).
+	g, err := s.GrpcAdmin(ctx, cmd.Config{})
 	x.NoError(err)
 
 	h, err := web.New(config.HttpConfig{AllowWeb: true}, g)
@@ -96,26 +98,33 @@ func TestTheConsoleSignsInAsAnRpc(t *testing.T) {
 
 	// The thing the generated `Add` structurally cannot do: answer with the
 	// secret it just made.
+	//
+	// An `rt_` and not an `rk_`, because this is the admin listener: the data
+	// plane with no wall, where a key is a customer's person's. The
+	// deployment's own are `roster control key add`, in a shell.
 	t.Run("and issues a key, readable once", func(t *testing.T) {
 		x := require.New(t)
 
-		code, body := post("/roster.ApiKeyService/Issue",
-			`{"holderAlias":"custody","alias":"production","methods":["/roster.VouchService/Verify"]}`)
+		code, body := post("/roster.TenantService/Add", `{"alias":"newco"}`)
 		x.Equal(http.StatusOK, code, body)
-		x.Contains(body, `"rk_`, "the key was not in the answer")
+
+		code, body = post("/roster.ApiKeyService/Issue",
+			`{"holder":{"slug":{"alias":"admin","tenant":{"alias":"newco"}}},"alias":"production","methods":["/roster.VouchService/Verify"]}`)
+		x.Equal(http.StatusOK, code, body)
+		x.Contains(body, `"rt_`, "the key was not in the answer")
 
 		// And never again. The row holds a hash.
 		code, body = post("/roster.ApiKeyService/List", `{}`)
 		x.Equal(http.StatusOK, code, body)
 		x.Contains(body, `"production"`)
-		x.NotContains(body, `"rk_`)
+		x.NotContains(body, `"rt_`)
 	})
 
 	t.Run("a key that allows nothing is refused", func(t *testing.T) {
 		x := require.New(t)
 
 		code, _ := post("/roster.ApiKeyService/Issue",
-			`{"holderAlias":"custody","alias":"empty","methods":[]}`)
+			`{"holder":{"slug":{"alias":"admin","tenant":{"alias":"newco"}}},"alias":"empty","methods":[]}`)
 		x.Equal(http.StatusBadRequest, code)
 	})
 

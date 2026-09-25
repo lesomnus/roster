@@ -37,12 +37,17 @@ import '../lib/style.css'
  * the app itself is same-origin and needs none of that.
  *
  * The **control** listener, which is what this console is: who runs the
- * deployment, which services call it, what each key may do. Not `server.http`,
- * which fronts the walled data plane where an operator's session names nobody;
- * and not `admin.http`, which reaches customers and is a later screen.
+ * customers, and where an operator signs in. Not `server.http`, which fronts
+ * the walled data plane where an operator's session names nobody; and not
+ * `control.http`, which serves the RPCs a shell makes and no page at all.
+ *
+ * **One origin for the whole page**, which #27 forced: the session is a
+ * `__Host-` cookie, host-only, so a page and every listener it calls have to be
+ * one host. The page is served by `admin.http` and calls it, and there is
+ * nothing to configure.
  */
 // Served by roster itself, the RPCs are on this page's own origin; under `npm
-// run dev` they are wherever `VITE_ADDR` says, or the control listener's usual
+// run dev` they are wherever `VITE_ADDR` says, or the admin listener's usual
 // port.
 //
 // `import.meta.env.DEV` and not the path. It used to ask whether the path began
@@ -51,47 +56,7 @@ import '../lib/style.css'
 // is whether this was built for a deployment, and that is a constant the
 // bundler substitutes rather than a guess about a URL.
 const ADDR: string =
-	import.meta.env['VITE_ADDR'] ?? (import.meta.env.DEV ? 'http://localhost:8082' : location.origin)
-
-/**
- * Where the **customers** are.
- *
- * `admin.http`, the third listener, and the one the comment above called a
- * later screen. It is a second address rather than a second path because it is
- * a second server: the rows are the data plane's, in another database, and
- * `roster.HolderService` means a different thing on each -- an operator there,
- * a customer's person here. They cannot share a port, because both would
- * register that service under one name.
- *
- * The session cookie is the same one; `cmd/admin.go` reads it. What a
- * deployment has to add is `origins:` under `admin.http`, for the reason
- * `control.http` needs it.
- *
- * The sandbox has no third listener but a second server in the same instance,
- * dialed by name in `customers()` below -- so this is not asked there.
- */
-// The admin listener is another origin whatever serves this page, and one the
-// page cannot guess: told by `VITE_ADMIN_ADDR` under `npm run dev`, and by
-// `config.json` -- `control.console.admin` in `roster.yaml` -- when roster
-// serves the page. Empty is a deployment that has not said, and the customers
-// screen is not offered.
-//
-// Under the page's base rather than at the root, so that a deployment which
-// mounts the admin console somewhere else still finds it beside the page.
-async function adminAddr(): Promise<string | null> {
-	const env = import.meta.env['VITE_ADMIN_ADDR'] as string | undefined
-	if (env !== undefined) return env
-	if (import.meta.env.DEV) return 'http://localhost:8081'
-	try {
-		const res = await fetch(import.meta.env.BASE_URL + 'config.json')
-		if (!res.ok) return null
-		const v = (await res.json()) as { admin?: string }
-
-		return v.admin !== undefined && v.admin !== '' ? v.admin : null
-	} catch {
-		return null
-	}
-}
+	import.meta.env['VITE_ADDR'] ?? (import.meta.env.DEV ? 'http://localhost:8081' : location.origin)
 
 const root = createRoot(document.getElementById('root') as HTMLElement)
 
@@ -237,38 +202,26 @@ function SignIn(props: { onDone: () => void }): React.ReactNode {
 }
 
 /**
- * customers opens a second store, on the admin listener.
+ * customers is the store and the clients the customers screen draws from.
  *
- * Second because a `Store` holds rows by entity and `roster.Holder` is two
- * different tables across these two ports; one store would have them overwrite
- * each other by identifier.
+ * The **same** transport the rest of the page uses, because there is one
+ * listener now: `admin.http` serves the page, signs the operator in, and
+ * answers about customers. It was a second transport to a second origin, which
+ * a `__Host-` cookie could never have reached (#27).
  *
- * In the sandbox it is the second server the one instance publishes, dialed
- * by name the way `admin.http` is dialed beside `control.http` -- the same
- * databases, the same signed-in operator (`wasm/main.go`).
+ * In the sandbox it is the second server the one instance publishes, dialed by
+ * name -- the same databases, the same signed-in operator (`wasm/main.go`).
+ *
+ * The clients come back beside the store because not everything is a read of a
+ * row: a reset answers with a secret that is never written down, so there is
+ * nothing for the store to hold and nothing for it to redraw.
  */
-async function customers(): Promise<{ app: App; admin: Admin } | null> {
-	const transport = await (async (): Promise<Transport | null> => {
-		if (import.meta.env['VITE_SANDBOX'] !== undefined) {
-			return sandbox?.dial('drpcAdmin') ?? null
-		}
-		const at = await adminAddr()
-		if (at === null) return null
+async function customers(transport: Transport): Promise<{ app: App; admin: Admin } | null> {
+	const at =
+		import.meta.env['VITE_SANDBOX'] !== undefined ? (sandbox?.dial('drpcAdmin') ?? null) : transport
+	if (at === null) return null
 
-		return createConnectTransport({
-			baseUrl: at,
-			fetch: (input, init) => fetch(input, { ...init, credentials: 'include' }),
-		})
-	})()
-	if (transport === null) return null
-
-	// Keyed apart from the admin console's own store for the same reason there are two
-	// of them: what they hold is not the same rows.
-	//
-	// The clients come back beside the store because not everything is a read
-	// of a row: a reset answers with a secret that is never written down, so
-	// there is nothing for the store to hold and nothing for it to redraw.
-	return { app: await open(transport, 'console:admin'), admin: admin(transport) }
+	return { app: await open(at, 'console:admin'), admin: admin(at) }
 }
 
 /**
@@ -330,7 +283,7 @@ async function run(transport: Transport): Promise<void> {
 	// Opened beside it rather than inside the screen, so that a page which
 	// never opens the customers tab still pays for it once and a page that does
 	// draws immediately. It is a store, not a call.
-	const theirs = await customers()
+	const theirs = await customers(transport)
 	const ungated = ungatedTransports()
 
 	const render = (signedIn: boolean): void => {

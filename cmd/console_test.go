@@ -40,7 +40,11 @@ func signIn(t *testing.T, s *cmd.Server, alias, password string) *http.Cookie {
 	t.Helper()
 	x := require.New(t)
 
-	g, err := s.GrpcControl(t.Context(), cmd.Config{})
+	// The **admin** listener, which is where a roster operator signs in: the
+	// page is served there and a `__Host-` cookie is host-only, so the two have
+	// to be one host (#27, #32). The control listener serves the RPCs a shell
+	// makes and no sign-in at all.
+	g, err := s.GrpcAdmin(t.Context(), cmd.Config{})
 	x.NoError(err)
 
 	var h metadata.MD
@@ -531,19 +535,24 @@ func TestAConsoleReachesTheAdminPortOverHttp(t *testing.T) {
 	x.Equal(1, n, "the one the console made, and `init` leaves no customer beside it")
 }
 
-// TestAConsoleReachesTheControlPlaneOverHttp is the **first** console's path.
+// TestTheAdminPortIsTheWholeOfTheConsolesPath is the admin console's path.
 //
-// What an operator manages before any customer exists is the deployment itself:
-// who else may sign in, which services call it, what each of their keys may do.
-// All of that is control plane, none of it is on the other two ports, and a
-// browser needs a transcoder in front of it like anything else.
-func TestAConsoleReachesTheControlPlaneOverHttp(t *testing.T) {
+// **One listener for the whole page**, which is what #27 forced and #32 made
+// the shape: the session is a `__Host-` cookie, host-only, so a page and every
+// listener it calls have to be one host. So the page, the sign-in, *who am I*
+// and the customers are all `admin.http`.
+//
+// What an operator manages about the **deployment itself** -- who else may sign
+// in, which services call it, what each key may do -- is `roster control …` in
+// a shell now. The control listener still serves those RPCs and answers an
+// `rk_` rather than a cookie; what it does not do is sign anybody in.
+func TestTheAdminPortIsTheWholeOfTheConsolesPath(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
 	s, out := inited(t)
 
-	wg, err := s.GrpcControl(ctx, cmd.Config{})
+	wg, err := s.GrpcAdmin(ctx, cmd.Config{})
 	require.NoError(t, err)
 
 	h, err := web.New(config.HttpConfig{AllowWeb: true}, wg)
@@ -574,7 +583,7 @@ func TestAConsoleReachesTheControlPlaneOverHttp(t *testing.T) {
 	}
 
 	code, _ := post("/roster.MeService/Get", `{}`)
-	x.Equal(http.StatusUnauthorized, code, "anonymous reached the control plane")
+	x.Equal(http.StatusUnauthorized, code, "anonymous reached the admin port")
 
 	// The sign-in is an RPC on this same mux, like everything else the page
 	// calls -- and the cookie comes back as an ordinary `set-cookie` header,
@@ -584,7 +593,7 @@ func TestAConsoleReachesTheControlPlaneOverHttp(t *testing.T) {
 	x.Equal(http.StatusOK, code, body)
 	x.NotEmpty(jar.Cookies(mustURL(t, srv.URL)), "signing in set no cookie")
 
-	// The three screens the first console is, in the order it would draw them.
+	// The screens the admin console is, in the order it would draw them.
 	t.Run("who am I", func(t *testing.T) {
 		x := require.New(t)
 
@@ -593,39 +602,27 @@ func TestAConsoleReachesTheControlPlaneOverHttp(t *testing.T) {
 		x.Contains(body, `"admin"`)
 	})
 
-	t.Run("who else runs this deployment", func(t *testing.T) {
+	t.Run("and the customers, which is what this port is for", func(t *testing.T) {
+		x := require.New(t)
+
+		code, body := post("/roster.TenantService/Add", `{"alias":"newco"}`)
+		x.Equal(http.StatusOK, code, body)
+
+		code, body = post("/roster.TenantService/List", `{}`)
+		x.Equal(http.StatusOK, code, body)
+		x.Contains(body, `"newco"`)
+	})
+
+	// The deployment's own rows are not here, and that is the arrangement
+	// rather than an omission: `HolderService` on this listener is a
+	// **customer's** people, because this port is the data plane with no wall.
+	// Who runs the deployment is `roster control holder ls`.
+	t.Run("and the deployment's own people are not what this port answers", func(t *testing.T) {
 		x := require.New(t)
 
 		code, body := post("/roster.HolderService/List", `{}`)
 		x.Equal(http.StatusOK, code, body)
-		x.Contains(body, `"admin"`)
-	})
-
-	t.Run("and what may call it", func(t *testing.T) {
-		x := require.New(t)
-
-		// A service and a key, the way `roster key add` makes them.
-		who, err := cmd.HolderNamed(ctx, s.Control, "custody")
-		x.NoError(err)
-
-		_, sum, err := keys.Mint(keys.PrefixDeployment)
-		x.NoError(err)
-
-		_, err = s.Control.Ungated.ApiKey().Add(ctx, app.ApiKeyAddRequest_builder{
-			Holder:  app.HolderRef_builder{Id: who.Bytes()}.Build(),
-			Alias:   "production",
-			Secret:  sum,
-			Methods: []string{"/roster.VouchService/Verify"},
-		}.Build())
-		x.NoError(err)
-
-		code, body := post("/roster.ApiKeyService/List", `{}`)
-		x.Equal(http.StatusOK, code, body)
-		x.Contains(body, `"production"`)
-
-		// And the verifier is not in the answer, which is why this service is
-		// on this port and no other.
-		x.NotContains(body, string(sum))
+		x.NotContains(body, `"custody"`, "the control plane's rows were served by the admin port")
 	})
 
 	// The sign-out a browser actually sends. It was `DELETE /session`, a route

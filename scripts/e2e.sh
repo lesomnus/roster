@@ -58,7 +58,7 @@ done
 # Ports nothing else on a desk is likely to be on. `localhost` rather than
 # `127.0.0.1` for the account app because a security key's relying party is a
 # domain, and an address is not one.
-export E2E_CONSOLE="http://127.0.0.1:18062/"
+export E2E_CONSOLE="http://127.0.0.1:18072/"
 export E2E_ACCOUNT="http://localhost:18090"
 export E2E_OPS_PASSWORD="ops-$(head -c 12 /dev/urandom | base64 | tr -d '/+=')"
 export E2E_ERIN_PASSWORD="correct horse battery staple"
@@ -88,15 +88,13 @@ control:
     addr: 127.0.0.1:18062
     allow_web: true
     allow_pprof: true
-  console:
-    dir: ${__root}/ts/dist/console
-    admin: ${admin_http}
 admin:
   addr: 127.0.0.1:18071
   http:
     addr: 127.0.0.1:18072
     allow_web: true
-    origins: ["http://127.0.0.1:18062"]
+  console:
+    dir: ${__root}/ts/dist/console
 vouch:
   keys: ["e2e:$(head -c 32 /dev/urandom | base64)"]
 YAML

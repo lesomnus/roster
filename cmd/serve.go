@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -226,7 +225,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 				"plane is built -- no api key is read, no console session is minted, and control.addr " +
 				"opens nothing. name a database, or take the block out")
 	}
-	if said(c.Admin) && !c.Control.Serves() {
+	if said(c.Admin.ServerConfig) && !c.Control.Serves() {
 		return nil, errors.New(
 			"admin: the port takes a session cookie and resolves it against the control plane's " +
 				"holders, and control.db.driver names no database, so there is nobody to be and no " +
@@ -1253,17 +1252,13 @@ func (s *Server) GrpcControl(ctx context.Context, c Config, opts ...grpc.ServerO
 	// be reachable by anybody who is not administering the deployment. Nothing
 	// in this process can enforce that; the address is what enforces it.
 
-	// What a console asks that no entity answers: a session. It reads the
-	// **ungated** server, because a sign-in runs before there is anybody to be
-	// walled by. See `server/console`.
-	//
-	// `IssueService` was registered here beside it and is gone: minting a key is
-	// `ApiKey.Issue` and issuing a password is `Credential.Issue`, both verbs on
-	// the rows they write, both served by the `Register` above through the
-	// control plane's own walled stack -- so both are held to the rules every
-	// other grant is rather than going around them, which is what the pair here
-	// did.
-	app.RegisterAuthServiceServer(g, console.Auth(s.Control.Ungated, s.Control.Ent, s.Sessions))
+	// No `AuthService` here, and no page either. Both moved to `admin.http`,
+	// which is where a roster operator opens a browser: a session cookie is
+	// `__Host-` prefixed and host-only, so the page and the listener it signs
+	// in at have to be one host, and the customers screen is on that listener
+	// (#27, #32). What is left on this one is what a shell makes -- the RPCs
+	// behind `roster control …` -- and those carry an `rk_` rather than a
+	// cookie.
 
 	return g, nil
 }
@@ -1338,7 +1333,7 @@ func (s *Server) serveControlHttp(ctx context.Context, c Config, g *grpc.Server)
 		return func() {}, nil
 	}
 
-	return s.http(ctx, "control.http", c.Control.Http, g, ConsoleMount(c.Control.Console))
+	return s.http(ctx, "control.http", c.Control.Http, g)
 }
 
 // ConsoleMount mounts the built page at `/`, beside the RPCs it calls.
@@ -1368,13 +1363,6 @@ func ConsoleMount(c ConsoleConfig) func(*web.Mux) {
 			return
 		}
 		files := http.FileServer(http.Dir(c.Dir))
-		m.HandleFunc("GET /config.json", func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("content-type", "application/json")
-			w.Header().Set("cache-control", "no-store")
-			_ = json.NewEncoder(w).Encode(struct {
-				Admin string `json:"admin"`
-			}{Admin: c.Admin})
-		})
 		m.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			at := filepath.Join(c.Dir, filepath.FromSlash(strings.TrimPrefix(r.URL.Path, "/")))
 			if st, err := os.Stat(at); err != nil || st.IsDir() {
@@ -1402,7 +1390,7 @@ func (s *Server) serveAdminHttp(ctx context.Context, c Config, g *grpc.Server) (
 		return func() {}, nil
 	}
 
-	return s.http(ctx, "admin.http", c.Admin.Http, g)
+	return s.http(ctx, "admin.http", c.Admin.Http, g, ConsoleMount(c.Admin.Console))
 }
 
 func (s *Server) http(ctx context.Context, name string, c config.HttpConfig, g *grpc.Server, mounts ...func(*web.Mux)) (func(), error) {

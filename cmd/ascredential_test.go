@@ -560,10 +560,6 @@ func TestSigningOutReachesThePortWithNoWall(t *testing.T) {
 	x.NoError(err)
 	admin := pdtest.Serve(t, g)
 
-	gc, err := s.GrpcControl(ctx, cmd.Config{})
-	x.NoError(err)
-	control := pdtest.Serve(t, gc)
-
 	as := metadata.NewOutgoingContext(ctx, metadata.Pairs("cookie", c.Name+"="+c.Value))
 
 	// Creating a customer, which is the port's reason to exist and needs no
@@ -572,7 +568,9 @@ func TestSigningOutReachesThePortWithNoWall(t *testing.T) {
 		app.TenantAddRequest_builder{Alias: "before"}.Build())
 	x.NoError(err, "the control: the cookie administers customers")
 
-	_, err = app.NewAuthServiceClient(control).SignOut(as, &app.AuthSignOutRequest{})
+	// Signed out where it was signed in, which is this same listener now: the
+	// page, the sign-in and the customers are one host (#27, #32).
+	_, err = app.NewAuthServiceClient(admin).SignOut(as, &app.AuthSignOutRequest{})
 	x.NoError(err)
 
 	t.Run("the cookie is nobody the moment it is ended", func(t *testing.T) {
