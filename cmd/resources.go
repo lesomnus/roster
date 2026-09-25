@@ -11,10 +11,13 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/lesomnus/z"
+
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/core"
 )
 
 // Declaring a deployment's rows in a file, and applying them at start.
@@ -166,6 +169,18 @@ func ApplyResources(ctx context.Context, s *Server, rs []Resource, dry bool) (Ap
 		return out, err
 	}
 
+	// The stack the **admin console** writes a customer through, and for its
+	// reason: the provisioner is a holder of the control plane, so a layer
+	// whose judgements read the data plane finds it holding nothing --
+	// `Granted` looks for its bindings where they are not. That did not matter
+	// while a declared tenant was one row; it does now that `Tenant.Add` writes
+	// the role that administers it, and granting is refused for anything the
+	// granter does not hold.
+	at, err := Admin(s)
+	if err != nil {
+		return out, err
+	}
+
 	for i, r := range rs {
 		var (
 			what string
@@ -174,13 +189,13 @@ func ApplyResources(ctx context.Context, s *Server, rs []Resource, dry bool) (Ap
 		)
 		switch r.Kind {
 		case "Tenant":
-			what, was, err = applyTenant(as, s, r, dry)
+			what, was, err = applyTenant(as, at, r, dry)
 		case "Connection":
-			what, was, err = applyConnection(as, s, r, dry)
+			what, was, err = applyConnection(as, at, r, dry)
 		case "Host":
-			what, was, err = applyHost(as, s, r, dry)
+			what, was, err = applyHost(as, at, r, dry)
 		case "MailDomain":
-			what, was, err = applyMailDomain(as, s, r, dry)
+			what, was, err = applyMailDomain(as, at, r, dry)
 		default:
 			// Named rather than ignored. A `kind` this does not know is a
 			// typo or a thing somebody expected to work, and either way a
@@ -226,6 +241,19 @@ func asProvisioner(ctx context.Context, s *Server) (context.Context, error) {
 		return nil, err
 	}
 
+	// And holding what it hands out, which is new since `Tenant.Add` began
+	// writing the role that administers the tenant it makes: declaring a
+	// customer is now granting `/roster.*/*` inside it, and `mayGrant` reads
+	// what the **caller** holds. A provisioner bound to nothing could make no
+	// tenant at all -- refused at the role, with the tenant rolled back.
+	//
+	// The control plane's own `everything`, which `roster init` wrote. Bound
+	// rather than written, so the provisioner holds what an operator holds and
+	// no more, and `AlreadyExists` is this having run before.
+	if err := allowProvisioner(ctx, s.Control, who); err != nil {
+		return nil, err
+	}
+
 	// `frame.Everything` because this writes across every tenant, and the wall
 	// is what would otherwise narrow it. The server is `Ungated` either way;
 	// what the frame buys is the **trail**, which now names which rows a file
@@ -251,13 +279,13 @@ func labelsOf(r Resource) map[string]string {
 // reason (`proto/ext/app/host_svc.ext.proto` and its neighbours); this is that
 // rule arrived at from the other side.
 
-func applyTenant(ctx context.Context, s *Server, r Resource, dry bool) (string, string, error) {
+func applyTenant(ctx context.Context, s app.Server, r Resource, dry bool) (string, string, error) {
 	what := "@" + r.Alias
 	if r.Alias == "" {
 		return what, "", errors.New("alias")
 	}
 
-	got, err := s.Ungated.Tenant().Get(ctx, app.TenantGetRequest_builder{
+	got, err := s.Tenant().Get(ctx, app.TenantGetRequest_builder{
 		Ref:    app.TenantRef_builder{Alias: proto.String(r.Alias)}.Build(),
 		Select: app.TenantSelect_builder{All: proto.Bool(true)}.Build(),
 	}.Build())
@@ -265,7 +293,7 @@ func applyTenant(ctx context.Context, s *Server, r Resource, dry bool) (string, 
 		if dry {
 			return what, "added", nil
 		}
-		_, err = s.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{
+		_, err = s.Tenant().Add(ctx, app.TenantAddRequest_builder{
 			Alias: r.Alias, Name: r.Name, Desc: r.Desc, Labels: labelsOf(r),
 		}.Build())
 
@@ -281,7 +309,7 @@ func applyTenant(ctx context.Context, s *Server, r Resource, dry bool) (string, 
 		return what, "changed", nil
 	}
 
-	_, err = s.Ungated.Tenant().Patch(ctx, app.TenantPatchRequest_builder{
+	_, err = s.Tenant().Patch(ctx, app.TenantPatchRequest_builder{
 		Ref:         app.TenantRef_builder{Id: got.GetId()}.Build(),
 		Name:        proto.String(r.Name),
 		Desc:        proto.String(r.Desc),
@@ -292,14 +320,14 @@ func applyTenant(ctx context.Context, s *Server, r Resource, dry bool) (string, 
 	return what, "changed", err
 }
 
-func applyConnection(ctx context.Context, s *Server, r Resource, dry bool) (string, string, error) {
+func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (string, string, error) {
 	what := "@" + r.Tenant + "/" + r.Name
 	at, err := tenantRef(ctx, s, r)
 	if err != nil {
 		return what, "", err
 	}
 
-	got, err := s.Ungated.Connection().Get(ctx, app.ConnectionGetRequest_builder{
+	got, err := s.Connection().Get(ctx, app.ConnectionGetRequest_builder{
 		Ref: app.ConnectionRef_builder{
 			At: app.ConnectionRefByAt_builder{Tenant: at, Name: proto.String(r.Name)}.Build(),
 		}.Build(),
@@ -309,7 +337,7 @@ func applyConnection(ctx context.Context, s *Server, r Resource, dry bool) (stri
 		if dry {
 			return what, "added", nil
 		}
-		_, err = s.Ungated.Connection().Add(ctx, app.ConnectionAddRequest_builder{
+		_, err = s.Connection().Add(ctx, app.ConnectionAddRequest_builder{
 			Tenant: at, Name: r.Name, Desc: r.Desc,
 			Issuer: r.Issuer, ClientId: r.ClientId, Scopes: r.Scopes, SecretRef: r.SecretRef,
 			Labels: labelsOf(r),
@@ -329,7 +357,7 @@ func applyConnection(ctx context.Context, s *Server, r Resource, dry bool) (stri
 		return what, "changed", nil
 	}
 
-	_, err = s.Ungated.Connection().Patch(ctx, app.ConnectionPatchRequest_builder{
+	_, err = s.Connection().Patch(ctx, app.ConnectionPatchRequest_builder{
 		Ref:         app.ConnectionRef_builder{Id: got.GetId()}.Build(),
 		Desc:        proto.String(r.Desc),
 		Issuer:      proto.String(r.Issuer),
@@ -343,14 +371,14 @@ func applyConnection(ctx context.Context, s *Server, r Resource, dry bool) (stri
 	return what, "changed", err
 }
 
-func applyHost(ctx context.Context, s *Server, r Resource, dry bool) (string, string, error) {
+func applyHost(ctx context.Context, s app.Server, r Resource, dry bool) (string, string, error) {
 	what := r.Name
 	at, err := tenantRef(ctx, s, r)
 	if err != nil {
 		return what, "", err
 	}
 
-	got, err := s.Ungated.Host().Get(ctx, app.HostGetRequest_builder{
+	got, err := s.Host().Get(ctx, app.HostGetRequest_builder{
 		Ref:    app.HostRef_builder{Name: proto.String(r.Name)}.Build(),
 		Select: app.HostSelect_builder{All: proto.Bool(true)}.Build(),
 	}.Build())
@@ -358,7 +386,7 @@ func applyHost(ctx context.Context, s *Server, r Resource, dry bool) (string, st
 		if dry {
 			return what, "added", nil
 		}
-		_, err = s.Ungated.Host().Add(ctx, app.HostAddRequest_builder{
+		_, err = s.Host().Add(ctx, app.HostAddRequest_builder{
 			Tenant: at, Name: r.Name, Desc: r.Desc, Labels: labelsOf(r),
 		}.Build())
 
@@ -374,7 +402,7 @@ func applyHost(ctx context.Context, s *Server, r Resource, dry bool) (string, st
 		return what, "changed", nil
 	}
 
-	_, err = s.Ungated.Host().Patch(ctx, app.HostPatchRequest_builder{
+	_, err = s.Host().Patch(ctx, app.HostPatchRequest_builder{
 		Ref:         app.HostRef_builder{Id: got.GetId()}.Build(),
 		Desc:        proto.String(r.Desc),
 		Labels:      labelsOf(r),
@@ -384,7 +412,7 @@ func applyHost(ctx context.Context, s *Server, r Resource, dry bool) (string, st
 	return what, "changed", err
 }
 
-func applyMailDomain(ctx context.Context, s *Server, r Resource, dry bool) (string, string, error) {
+func applyMailDomain(ctx context.Context, s app.Server, r Resource, dry bool) (string, string, error) {
 	what := r.Name
 	at, err := tenantRef(ctx, s, r)
 	if err != nil {
@@ -398,7 +426,7 @@ func applyMailDomain(ctx context.Context, s *Server, r Resource, dry bool) (stri
 		At: app.MailDomainRefByAt_builder{Tenant: at, Name: proto.String(r.Name)}.Build(),
 	}.Build()
 
-	got, err := s.Ungated.MailDomain().Get(ctx, app.MailDomainGetRequest_builder{
+	got, err := s.MailDomain().Get(ctx, app.MailDomainGetRequest_builder{
 		Ref:    ref,
 		Select: app.MailDomainSelect_builder{All: proto.Bool(true)}.Build(),
 	}.Build())
@@ -406,7 +434,7 @@ func applyMailDomain(ctx context.Context, s *Server, r Resource, dry bool) (stri
 		if dry {
 			return what, "added", nil
 		}
-		_, err = s.Ungated.MailDomain().Add(ctx, app.MailDomainAddRequest_builder{
+		_, err = s.MailDomain().Add(ctx, app.MailDomainAddRequest_builder{
 			Tenant: at, Name: r.Name, Desc: r.Desc, Provider: r.Routes, Labels: labelsOf(r),
 		}.Build())
 
@@ -422,7 +450,7 @@ func applyMailDomain(ctx context.Context, s *Server, r Resource, dry bool) (stri
 		return what, "changed", nil
 	}
 
-	_, err = s.Ungated.MailDomain().Patch(ctx, app.MailDomainPatchRequest_builder{
+	_, err = s.MailDomain().Patch(ctx, app.MailDomainPatchRequest_builder{
 		Ref:         app.MailDomainRef_builder{Id: got.GetId()}.Build(),
 		Desc:        proto.String(r.Desc),
 		Provider:    proto.String(r.Routes),
@@ -436,7 +464,7 @@ func applyMailDomain(ctx context.Context, s *Server, r Resource, dry bool) (stri
 // tenantRef is the customer a resource hangs off, and a refusal when it names
 // none: everything but a `Tenant` is inside one, and a resource that forgot to
 // say which would otherwise land wherever the first query looked.
-func tenantRef(ctx context.Context, s *Server, r Resource) (*app.TenantRef, error) {
+func tenantRef(ctx context.Context, s app.Server, r Resource) (*app.TenantRef, error) {
 	if r.Tenant == "" {
 		return nil, errors.New("tenant")
 	}
@@ -466,4 +494,42 @@ func same(a, b []string) bool {
 	}
 
 	return true
+}
+
+// allowProvisioner binds the provisioner to the control plane's `everything`,
+// and is a no-op on the second run.
+func allowProvisioner(ctx context.Context, s *Server, who pdid.Id) error {
+	t, err := s.Ent.Tenant.Query().First(ctx)
+	if err != nil {
+		return fmt.Errorf("resources: the control plane has no owner: %w", err)
+	}
+
+	r, err := s.Ungated.Role().Get(ctx, app.RoleGetRequest_builder{
+		Ref: app.RoleRef_builder{
+			Slug: app.RoleRefBySlug_builder{
+				Alias:  z.Ptr(core.Everyverb),
+				Tenant: app.TenantRef_builder{Id: t.Id[:]}.Build(),
+			}.Build(),
+		}.Build(),
+	}.Build())
+	if status.Code(err) == codes.NotFound {
+		// A control plane raised by a Go call rather than by `roster init` --
+		// a test, the sandbox -- has the tenant and not the role. Written the
+		// way `init` writes it, through `Ungated`, where a frameless caller
+		// waives `mayGrant`.
+		return allow(ctx, s.Ungated, pdid.Id(t.Id), who)
+	}
+	if err != nil {
+		return fmt.Errorf("resources: the role a provisioner is bound to: %w", err)
+	}
+
+	_, err = s.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
+		Role:   app.RoleRef_builder{Id: r.GetId()}.Build(),
+		Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
+	}.Build())
+	if err != nil && status.Code(err) != codes.AlreadyExists {
+		return fmt.Errorf("resources: binding the provisioner: %w", err)
+	}
+
+	return nil
 }

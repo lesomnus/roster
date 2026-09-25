@@ -36,7 +36,8 @@ t="${SEED_CUSTOMER}"
 u="${SEED_USER}"
 roster tenant add "@${t}" >/dev/null
 roster holder add "@${t}/${u}" >/dev/null
-roster role add "@${t}/everything" '{"methods":["/roster.*/*"]}' >/dev/null
+# The `everything` role arrives with the tenant (`server/core/tenant.go`), so
+# this binds to it rather than writing a second one.
 printf '{"role":{"slug":{"alias":"everything","tenant":{"alias":"%s"}}},"holder":{"slug":{"alias":"%s","tenant":{"alias":"%s"}}}}' "${t}" "${u}" "${t}" \
 	| roster binding add - >/dev/null
 printf '%s' "${SEED_PASSWORD}" | roster vouch set --password-stdin "@${t}/${u}" >/dev/null 2>&1

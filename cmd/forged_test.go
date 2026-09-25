@@ -105,8 +105,15 @@ func TestPlainDoesNotHandOutEveryTenant(t *testing.T) {
 
 		v, err := list(as(t, "@contoso/alice"))
 		x.NoError(err)
-		x.Len(v.GetItems(), 1)
-		x.Equal("alice", v.GetItems()[0].GetAlias())
+
+		// Two, and both are contoso's: alice, and the `admin` the tenant was
+		// made with (`server/core/tenant.go`). What is being measured is that
+		// fabrikam's are not here.
+		seen := []string{}
+		for _, h := range v.GetItems() {
+			seen = append(seen, h.GetAlias())
+		}
+		x.ElementsMatch([]string{"admin", "alice"}, seen)
 	})
 
 	// The forgery. Nobody minted this, it is in no database, and until now the

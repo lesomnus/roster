@@ -3,12 +3,14 @@ package core
 import (
 	"context"
 
-	"github.com/lesomnus/z"
-
 	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
+	"github.com/lesomnus/z"
+	"github.com/protobuf-orm/ent/dialect"
+	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/keys"
 )
 
 // A row that names two tenants, refused.
@@ -211,4 +213,149 @@ func (s coreTenant) Update(ctx context.Context, req *app.TenantUpdateRequest) (*
 	}
 
 	return s.TenantServiceServer.Patch(ctx, patch.Build())
+}
+
+// Everyverb is what the first role of a tenant is called, and EveryMethod is
+// what it holds.
+//
+// A name somebody will read in a list of roles and understand without opening
+// it, and a **pattern** rather than an enumeration: a list written the day a
+// tenant is made is what existed that day, and its administrator is the one
+// person who must not have to notice a release adding a method.
+//
+// `/roster.*/*` and not `/*.*/*`, which would take in payday's own -- the same
+// line `roster init` draws for the operator's own role, and `cmd` takes these
+// rather than spelling them a second time.
+const (
+	Everyverb   = "everything"
+	EveryMethod = "/roster.*/*"
+
+	// Administers is what the first holder of a tenant is called. A name
+	// somebody can guess from outside, because a caller that has just made a
+	// tenant has to be able to name its administrator without being told.
+	Administers = "admin"
+)
+
+// Add is a tenant **and somebody who can administer it**.
+//
+// # Why the generated verb does more than the row
+//
+// Because the row on its own is not a thing anybody wanted. A customer was four
+// writes -- the tenant, the first holder, a role that administers it, the
+// binding -- and what the four left between the first and the last was a tenant
+// **nobody could do anything in**. The only way to finish one was a roster
+// operator reaching inside through `admin.addr`, the port where standing comes
+// from the port rather than from a role, which is the shape #26 is about.
+//
+// So the four are one act on the verb that already means *make a tenant*,
+// rather than a second verb meaning *make a tenant properly*. `docs/usage/customers.md`
+// argued the opposite once -- no fifth RPC, because a composite would be a
+// fifth thing to hold to the rules -- and that is about a **caller** composing
+// them. Every write below goes back through `s.Core`, this layer, so a role
+// naming methods the caller does not hold meets `mayGrant` here exactly as it
+// would have arriving on its own.
+//
+// # And what it does not do
+//
+// Hand out a way in. The first holder gets no password here, because a verb
+// that answers with a row cannot answer with a secret as well -- and the verb
+// that does is `Credential.Issue`, which needs nothing from this one: the
+// holder is `@<tenant>/admin`, by slug, and a caller that has just made the
+// tenant knows both halves.
+//
+//	roster tenant add @newco
+//	roster vouch reset @newco/admin
+//
+// # The control plane is not a customer
+//
+// There, the one tenant is the deployment itself and its first holder is
+// `roster init`'s business -- named by `--operator`, bound by `allow`, and
+// given a password in the same act. `WithPrefix` is what tells the two apart,
+// the same fact `ApiKey.Issue` and `Credential.Issue` read.
+//
+// # One transaction
+//
+// Four writes, and a refusal at any of them leaves nothing: an alias already
+// taken, a role wider than the caller holds. Written one at a time a refusal
+// would leave a tenant nobody can get into whose alias cannot be used again --
+// `roster init`'s failure before #20, at a larger size. A caller who has
+// already arranged a transaction -- a batch -- arrives with no driver and runs
+// inside theirs.
+func (s coreTenant) Add(ctx context.Context, req *app.TenantAddRequest) (*app.Tenant, error) {
+	if s.prefix != keys.PrefixTenant {
+		return s.TenantServiceServer.Add(ctx, req)
+	}
+
+	var out *app.Tenant
+
+	// `below` and not `at.Tenant()`: the row is the write this layer is
+	// **in** the middle of, so sending it back through the layer would be
+	// this method calling itself. The three after it do go through, because
+	// each is a write the layer has rules about.
+	run := func(at app.Server, below app.TenantServiceServer) error {
+		t, err := below.Add(ctx, req)
+		if err != nil {
+			return err
+		}
+
+		h, err := at.Holder().Add(ctx, app.HolderAddRequest_builder{
+			Tenant: app.TenantRef_builder{Id: t.GetId()}.Build(),
+			Alias:  Administers,
+		}.Build())
+		if err != nil {
+			return err
+		}
+
+		r, err := at.Role().Add(ctx, app.RoleAddRequest_builder{
+			Tenant:  app.TenantRef_builder{Id: t.GetId()}.Build(),
+			Alias:   Everyverb,
+			Desc:    "Everything roster serves about this tenant, including what a later release adds.",
+			Methods: []string{EveryMethod},
+		}.Build())
+		if err != nil {
+			return err
+		}
+
+		if _, err := at.Binding().Add(ctx, app.BindingAddRequest_builder{
+			Role:   app.RoleRef_builder{Id: r.GetId()}.Build(),
+			Holder: app.HolderRef_builder{Id: h.GetId()}.Build(),
+		}.Build()); err != nil {
+			return err
+		}
+
+		out = t
+
+		return nil
+	}
+
+	if s.drv == nil {
+		if err := run(s.Core, s.TenantServiceServer); err != nil {
+			return nil, err
+		}
+
+		return out, nil
+	}
+
+	drv, tx, err := dialect.BeginTx(ctx, s.drv)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	// This layer again over a rebound one below it, which is what
+	// [Core.WithDriver] does and what `only` does beside it: the rules carry
+	// over and the driver does not, so nothing inside opens a second
+	// transaction in this one.
+	next, err := enttx.Rebind(s.Next(), drv)
+	if err != nil {
+		return nil, err
+	}
+	if err := run(s.over(next), next.Tenant()); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }

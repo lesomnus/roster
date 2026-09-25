@@ -401,36 +401,27 @@ function People(props: {
 // one ends it, and this string contains one.
 const every = '/roster.*/*'
 
-/** The four writes, so the button can be drawn as what it actually does. */
-const needs = [
-	'/roster.TenantService/Add',
-	'/roster.HolderService/Add',
-	'/roster.RoleService/Add',
-	'/roster.BindingService/Add',
-]
+/** The two calls below, so the button can be drawn as what it does. */
+const needs = ['/roster.TenantService/Add', '/roster.CredentialService/Issue']
 
 /**
- * stand puts a customer up: a tenant, somebody in it, a role, and the binding.
+ * stand puts a customer up: the tenant with its administrator, and a password.
  *
- * Four calls and not one, because there is no fifth RPC that does this and
- * there should not be -- each of the four is checked by the same rules every
- * other write on this port is, and a composite would be a fifth thing to hold
- * them to.
+ * Two calls, where this was four. `Tenant.Add` writes the tenant, the holder
+ * that administers it, the role and the binding in one transaction
+ * (`server/core/tenant.go`), and `Credential.Issue` is the ordinary verb that
+ * answers a password once, pointed at the person the first call made.
  *
- * # It is not a transaction, and that is survivable here
+ * The four were argued for once: each is held to the same rules every other
+ * write on this port is, and a composite would be a fifth thing to hold them
+ * to. That is about a **caller** composing them; the three writes inside `Add`
+ * go back through the layer they would have arrived at on their own, so a role
+ * wider than the caller holds is refused there exactly as `Role.Add` refuses
+ * it.
  *
- * `BatchService` is served on the data plane and not on this port, and the
- * pattern an operator holds would not cover it in any case: that pattern is
- * roster's own package and a batch is payday's. So a call that fails part way
- * leaves what came before it.
- *
- * What that leaves is a tenant with nobody in it, or somebody with no role --
- * and neither is the deadlock `roster init` was fixed for. That one was real
- * because writing the first role needs a binding only writing the first role
- * could give; here the operator writes it from **outside** every tenant, so
- * they can simply finish. Which is why this says how far it got rather than
- * trying to undo it: rolling back would delete rows a second operator may
- * already be looking at.
+ * What the four left is what changed the answer: a tenant with nobody who could
+ * do anything in it, finishable only by an operator reaching inside through
+ * this port -- the one that waives two rules.
  *
  * # The identifier
  *
@@ -451,9 +442,6 @@ async function stand(
 	who: string,
 	id: string,
 ): Promise<{ tenant: Tenant; said: string }> {
-	const said = (at: string, e: unknown): Error =>
-		new Error(`${at}: ${e instanceof Error ? e.message : 'no'}`)
-
 	// Before anything is written, so a typo is a refusal rather than a customer
 	// under an identifier nobody meant.
 	let given: Uint8Array | undefined
@@ -470,44 +458,34 @@ async function stand(
 			given === undefined ? { alias, name } : { alias, name, id: given },
 		)
 	} catch (e) {
-		throw said('the tenant was not created', e)
+		throw new Error(`${alias} was not created: ${e instanceof Error ? e.message : 'no'}`)
 	}
 
-	const at = { key: { case: 'id' as const, value: tenant.id } }
-
-	let holder
+	// The way in, which is the ordinary verb pointed at the person the write
+	// above made: `admin` in the tenant, by slug, because a caller that has
+	// just made one knows both halves. It answers a password once.
+	let secret: string
 	try {
-		holder = await admin.holder.add({ tenant: at, alias: who })
-	} catch (e) {
-		throw said(`${alias} exists and has nobody in it`, e)
-	}
-
-	let role
-	try {
-		role = await admin.role.add({
-			tenant: at,
-			alias: 'everything',
-			desc: 'Every RPC roster serves, including ones added by a later release.',
-			methods: [every],
+		const res = await admin.credential.issue({
+			ref: {
+				key: {
+					case: 'slug',
+					value: { alias: who, tenant: { key: { case: 'id', value: tenant.id } } },
+				},
+			},
 		})
+		secret = res.secret
 	} catch (e) {
-		throw said(`${alias} exists and ${who} is in it, holding nothing`, e)
-	}
-
-	try {
-		await admin.binding.add({
-			role: { key: { case: 'id', value: role.id } },
-			holder: { key: { case: 'id', value: holder.id } },
-		})
-	} catch (e) {
-		throw said(`${alias} exists with a role nobody is bound to`, e)
+		throw new Error(
+			`${alias} is up and ${who} has no password yet: ${e instanceof Error ? e.message : 'no'}`,
+		)
 	}
 
 	return {
 		tenant,
 		said:
-			`${alias} is up, and ${who} holds ${every} in it — ` +
-			'and nothing to call with yet. Open them below and write a password or a key.',
+			`${alias} is up, and ${who} holds ${every} in it. ` +
+			`Their password is ${secret} — it is shown once, and they should change it.`,
 	}
 }
 

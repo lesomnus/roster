@@ -863,7 +863,7 @@ func atTheConsole(t *testing.T, ctx context.Context, b *keyedBuilt) context.Cont
 
 	r, err := b.Control.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
 		Tenant:  app.TenantRef_builder{Id: tenant.Bytes()}.Build(),
-		Alias:   "everything",
+		Alias:   "all",
 		Methods: []string{"/roster.*/*"},
 	}.Build())
 	x.NoError(err)
@@ -885,7 +885,7 @@ func atTheDataPlane(t *testing.T, ctx context.Context, b *keyedBuilt) context.Co
 
 	r, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
 		Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
-		Alias:   "everything",
+		Alias:   "all",
 		Methods: []string{"/roster.*/*"},
 	}.Build())
 	x.NoError(err)

@@ -60,15 +60,17 @@ func TestTheTutorialRunsAsWritten(t *testing.T) {
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })
 
-	// §2 -- a customer, and it is four writes.
+	// §2 -- a customer, and it is one write that makes four rows.
 	_, err = entities(t, &c, "tenant", "add", "@newco", `{"name":"Newco Ltd"}`)
 	x.NoError(err)
-	_, err = entities(t, &c, "holder", "add", "@newco/admin", `{"name":"Ada Admin"}`)
-	x.NoError(err)
-	_, err = entities(t, &c, "role", "add", "@newco/everything", `{"methods":["/roster.*/*"]}`)
-	x.NoError(err)
-	bind(t, &c, `{"role":  {"slug":{"alias":"everything","tenant":{"alias":"newco"}}},
-	              "holder":{"slug":{"alias":"admin",      "tenant":{"alias":"newco"}}}}`)
+
+	// The three the page says arrive with it, read back rather than taken on
+	// trust: a tenant with nobody who can administer it is the state this
+	// stopped being possible.
+	_, err = entities(t, &c, "holder", "get", "@newco/admin")
+	x.NoError(err, "the tenant arrived with nobody in it")
+	_, err = entities(t, &c, "role", "get", "@newco/everything")
+	x.NoError(err, "the tenant arrived with no role to administer it")
 
 	table, err := entities(t, &c, "tenant", "ls", "-o", "table")
 	x.NoError(err)

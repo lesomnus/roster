@@ -60,7 +60,7 @@ func TestServeOpensTheConsumersItIsToldTo(t *testing.T) {
 	// `scripts/e2e.sh` grants the front door the same way.
 	r, err := s.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
 		Tenant:  app.TenantRef_builder{Id: tn.GetId()}.Build(),
-		Alias:   "everything",
+		Alias:   "all",
 		Methods: []string{"/roster.*/*"},
 	}.Build())
 	x.NoError(err)

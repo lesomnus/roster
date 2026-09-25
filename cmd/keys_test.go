@@ -361,9 +361,11 @@ func TestABatchIsTheSameKey(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
+	// Three: the two the harness put there, and the `admin` the tenant was made
+	// with (`server/core/tenant.go`).
 	n, err := b.Ent.Holder.Query().Count(t.Context())
 	x.NoError(err)
-	x.Equal(2, n, "the batch did not write")
+	x.Equal(3, n, "the batch did not write")
 
 	// And what it is not for does not become allowed by being wrapped.
 	_, err = pdpb.NewBatchServiceClient(b.Conn).Do(ctx, pdpb.BatchRequest_builder{

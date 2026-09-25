@@ -12,7 +12,10 @@ import (
 
 	"github.com/lesomnus/payday/pdid"
 
+	"github.com/lesomnus/z"
+
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/core"
 )
 
 // Seeded is what a fresh deployment is: the operator who runs it, and the
@@ -128,21 +131,34 @@ func Seed(ctx context.Context, s *Server, in Seeding) (Seeded, error) {
 		return Seeded{}, err
 	}
 
-	h, err := s.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{
-		Tenant: app.TenantRef_builder{Id: t.GetId()}.Build(),
-		Alias:  holder,
-	}.Build())
+	// The tenant arrived with one, which is what `Tenant.Add` means on this
+	// plane now (`server/core/tenant.go`): a customer is never made without
+	// somebody who can administer it. So the alias this was asked for is
+	// either that person -- the ordinary case, and there is nothing to write
+	// -- or a second one, who is bound to the role the first already holds.
+	j, err := holderOf(ctx, s.Ungated, k, holder)
 	if err != nil {
 		return Seeded{}, fmt.Errorf("holder %q: %w", holder, err)
 	}
+	if holder != core.Administers {
+		r, err := s.Ungated.Role().Get(ctx, app.RoleGetRequest_builder{
+			Ref: app.RoleRef_builder{
+				Slug: app.RoleRefBySlug_builder{
+					Alias:  z.Ptr(core.Everyverb),
+					Tenant: app.TenantRef_builder{Id: t.GetId()}.Build(),
+				}.Build(),
+			}.Build(),
+		}.Build())
+		if err != nil {
+			return Seeded{}, fmt.Errorf("the first role: %w", err)
+		}
 
-	j, err := pdid.From(h.GetId())
-	if err != nil {
-		return Seeded{}, err
-	}
-
-	if err := allow(ctx, s.Ungated, k, j); err != nil {
-		return Seeded{}, fmt.Errorf("the first binding: %w", err)
+		if _, err := s.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
+			Role:   app.RoleRef_builder{Id: r.GetId()}.Build(),
+			Holder: app.HolderRef_builder{Id: j.Bytes()}.Build(),
+		}.Build()); err != nil {
+			return Seeded{}, fmt.Errorf("the first binding: %w", err)
+		}
 	}
 
 	v := Seeded{Tenant: k, Holder: j}
@@ -158,16 +174,16 @@ func Seed(ctx context.Context, s *Server, in Seeding) (Seeded, error) {
 	return v, nil
 }
 
-// everything is what the first role is called, on both planes.
+// Everyverb is what the first role is called, on both planes, and
+// EveryRosterMethod is what it holds: this app's own package, whatever is in it
+// now and whatever a later release puts there.
 //
-// A name somebody will read in a list of roles and understand without opening
-// it, which matters more here than anywhere else: it is the role that explains
-// why somebody could do something.
-const Everyverb = "everything"
-
-// everyRosterMethod is what that role holds: this app's own package, whatever
-// is in it now and whatever a later release puts there.
-const EveryRosterMethod = "/" + string(protoPackage) + ".*/*"
+// `server/core`'s, because `Tenant.Establish` writes the same role for a
+// customer and a constant spelled twice is one that drifts once.
+const (
+	Everyverb         = core.Everyverb
+	EveryRosterMethod = core.EveryMethod
+)
 
 // allow writes the role that says everything and binds it.
 //

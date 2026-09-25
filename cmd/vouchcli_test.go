@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/lesomnus/xli"
+	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -46,10 +47,23 @@ func customer(t *testing.T, s *cmd.Server, tenant, holder string) pdid.Id {
 	tn, err := s.Ungated.Tenant().Add(t.Context(), app.TenantAddRequest_builder{Alias: tenant}.Build())
 	x.NoError(err)
 
-	h, err := s.Ungated.Holder().Add(t.Context(), app.HolderAddRequest_builder{
-		Tenant: app.TenantRef_builder{Id: tn.GetId()}.Build(),
-		Alias:  holder,
-	}.Build())
+	// Made if they are not there: a tenant arrives with the holder that
+	// administers it (`server/core/tenant.go`), so asking for `admin` is
+	// asking for the row that is already in it.
+	at := app.HolderRef_builder{
+		Slug: app.HolderRefBySlug_builder{
+			Alias:  z.Ptr(holder),
+			Tenant: app.TenantRef_builder{Id: tn.GetId()}.Build(),
+		}.Build(),
+	}.Build()
+
+	h, err := s.Ungated.Holder().Get(t.Context(), app.HolderGetRequest_builder{Ref: at}.Build())
+	if err != nil {
+		h, err = s.Ungated.Holder().Add(t.Context(), app.HolderAddRequest_builder{
+			Tenant: app.TenantRef_builder{Id: tn.GetId()}.Build(),
+			Alias:  holder,
+		}.Build())
+	}
 	x.NoError(err)
 
 	k, err := pdid.From(h.GetId())

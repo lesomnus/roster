@@ -54,26 +54,16 @@ func TestAnOperatorStandsUpACustomerThatCanBeUsed(t *testing.T) {
 		app.TenantAddRequest_builder{Alias: "newco", Name: "Newco Ltd"}.Build())
 	x.NoError(err)
 
-	h, err := app.NewHolderServiceClient(admin).Add(as, app.HolderAddRequest_builder{
-		Tenant: app.TenantRef_builder{Id: tn.GetId()}.Build(),
-		Alias:  "admin",
-	}.Build())
-	x.NoError(err)
-
-	// The pattern and not an enumeration, for `allow()`'s reason: a list
-	// written the day a customer is created is what existed that day, and the
-	// first administrator is the one person who must not have to notice an
-	// upgrade.
-	r, err := app.NewRoleServiceClient(admin).Add(as, app.RoleAddRequest_builder{
-		Tenant:  app.TenantRef_builder{Id: tn.GetId()}.Build(),
-		Alias:   "everything",
-		Methods: []string{"/roster.*/*"},
-	}.Build())
-	x.NoError(err)
-
-	_, err = app.NewBindingServiceClient(admin).Add(as, app.BindingAddRequest_builder{
-		Role:   app.RoleRef_builder{Id: r.GetId()}.Build(),
-		Holder: app.HolderRef_builder{Id: h.GetId()}.Build(),
+	// The tenant arrived with all three: the holder that administers it, the
+	// role, and the binding (`server/core/tenant.go`). Read back rather than
+	// written again, which is what the four calls this used to make became.
+	h, err := app.NewHolderServiceClient(admin).Get(as, app.HolderGetRequest_builder{
+		Ref: app.HolderRef_builder{
+			Slug: app.HolderRefBySlug_builder{
+				Alias:  strPtr("admin"),
+				Tenant: app.TenantRef_builder{Id: tn.GetId()}.Build(),
+			}.Build(),
+		}.Build(),
 	}.Build())
 	x.NoError(err)
 
