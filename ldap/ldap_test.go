@@ -434,7 +434,14 @@ func TestASuffixIsATenant(t *testing.T) {
 
 	// And the whole server is both, each under its own name.
 	all := search(t, c, "", goldap.ScopeWholeSubtree, "(objectClass=inetOrgPerson)", "uid")
-	x.ElementsMatch([]string{kimDN, leeDN, adminDN, directoryDN, "uid=kim,ou=people,o=fabrikam", "uid=directory,ou=people,o=fabrikam"}, dns(all))
+	x.ElementsMatch([]string{
+		kimDN, leeDN, adminDN, directoryDN,
+		"uid=kim,ou=people,o=fabrikam",
+		"uid=directory,ou=people,o=fabrikam",
+
+		// The holder every tenant is made with (`server/core/tenant.go`).
+		"uid=admin,ou=people,o=fabrikam",
+	}, dns(all))
 
 	t.Run("a suffix renamed is the same tenant", func(t *testing.T) {
 		x := require.New(t)

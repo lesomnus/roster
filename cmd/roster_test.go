@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"testing"
 
+	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 
@@ -134,8 +135,24 @@ func (b *built) tenant(t *testing.T, ctx context.Context, alias string) pdid.Id 
 	return mustId(t, v.GetId())
 }
 
+// holder is somebody in a tenant, made if they are not there.
+//
+// Made **if**, because a tenant arrives with one: `Tenant.Add` writes the
+// holder that administers it (`server/core/tenant.go`), so a test asking for
+// `admin` is asking for the row that is already there rather than a second one.
 func (b *built) holder(t *testing.T, ctx context.Context, in pdid.Id, alias string) pdid.Id {
 	t.Helper()
+
+	at := app.HolderRef_builder{
+		Slug: app.HolderRefBySlug_builder{
+			Alias:  z.Ptr(alias),
+			Tenant: app.TenantRef_builder{Id: in.Bytes()}.Build(),
+		}.Build(),
+	}.Build()
+
+	if v, err := b.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{Ref: at}.Build()); err == nil {
+		return mustId(t, v.GetId())
+	}
 
 	v, err := b.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{
 		Tenant: app.TenantRef_builder{Id: in.Bytes()}.Build(),

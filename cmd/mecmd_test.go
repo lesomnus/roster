@@ -117,8 +117,11 @@ func TestTheCliIsAlsoACustomersPerson(t *testing.T) {
 	t.Run("she sees her tenant's people and no others", func(t *testing.T) {
 		x := require.New(t)
 
+		// Two, and both are hers: herself, and the `admin` her tenant was made
+		// with (`server/core/tenant.go`). What is being measured is that the
+		// other tenant's people are not here.
 		vs := stdoutOf(t, root(t, &hers), "holder", "ls", "-o", "name")
-		x.Len(strings.Fields(vs), 1, "the wall did not narrow a customer's read:\n%s", vs)
+		x.Len(strings.Fields(vs), 2, "the wall did not narrow a customer's read:\n%s", vs)
 	})
 
 	t.Run("and is refused what her role does not name", func(t *testing.T) {

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/lesomnus/xli"
+	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -76,16 +77,25 @@ func TestTheCliMintsACustomersKey(t *testing.T) {
 	tn, err := s.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: "newco"}.Build())
 	x.NoError(err)
 
-	h, err := s.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{
-		Tenant: app.TenantRef_builder{Id: tn.GetId()}.Build(),
-		Alias:  "admin",
+	// The tenant arrived with them: `Tenant.Add` writes the holder that
+	// administers it (`server/core/tenant.go`).
+	h, err := s.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref: app.HolderRef_builder{
+			Slug: app.HolderRefBySlug_builder{
+				Alias:  z.Ptr("admin"),
+				Tenant: app.TenantRef_builder{Id: tn.GetId()}.Build(),
+			}.Build(),
+		}.Build(),
 	}.Build())
 	x.NoError(err)
 
-	r, err := s.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
-		Tenant:  app.TenantRef_builder{Id: tn.GetId()}.Build(),
-		Alias:   "everything",
-		Methods: []string{"/roster.*/*"},
+	r, err := s.Ungated.Role().Get(ctx, app.RoleGetRequest_builder{
+		Ref: app.RoleRef_builder{
+			Slug: app.RoleRefBySlug_builder{
+				Alias:  z.Ptr("everything"),
+				Tenant: app.TenantRef_builder{Id: tn.GetId()}.Build(),
+			}.Build(),
+		}.Build(),
 	}.Build())
 	x.NoError(err)
 
@@ -169,9 +179,11 @@ func TestNamingACustomersPersonDoesNotCreateThem(t *testing.T) {
 	x.NoError(err)
 	t.Cleanup(func() { s2.Close() })
 
+	// One: the administrator the tenant was made with, and nobody the command
+	// named.
 	n, err := s2.Ent.Holder.Query().Count(ctx)
 	x.NoError(err)
-	x.Zero(n, "naming a customer's person created them")
+	x.Equal(1, n, "naming a customer's person created them")
 }
 
 // TestAKeyIsForOnePlaneOrTheOther, said by the command rather than by a flag:

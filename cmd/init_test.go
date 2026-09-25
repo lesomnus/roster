@@ -121,9 +121,15 @@ func TestInitLeavesADeploymentThatWorks(t *testing.T) {
 			app.TenantAddRequest_builder{Alias: "newco"}.Build())
 		x.NoError(err, "the deployment cannot be administered by the person init named")
 
-		h, err := app.NewHolderServiceClient(admin).Add(as, app.HolderAddRequest_builder{
-			Tenant: app.TenantRef_builder{Id: tn.GetId()}.Build(),
-			Alias:  "admin",
+		// The tenant arrived with them; what is being tested is the binding
+		// below, which is the write that used to be impossible from outside.
+		h, err := app.NewHolderServiceClient(admin).Get(as, app.HolderGetRequest_builder{
+			Ref: app.HolderRef_builder{
+				Slug: app.HolderRefBySlug_builder{
+					Alias:  strPtr("admin"),
+					Tenant: app.TenantRef_builder{Id: tn.GetId()}.Build(),
+				}.Build(),
+			}.Build(),
 		}.Build())
 		x.NoError(err)
 
@@ -133,7 +139,7 @@ func TestInitLeavesADeploymentThatWorks(t *testing.T) {
 		// reaches a tenant that did not exist a moment ago.
 		r, err := app.NewRoleServiceClient(admin).Add(as, app.RoleAddRequest_builder{
 			Tenant:  app.TenantRef_builder{Id: tn.GetId()}.Build(),
-			Alias:   "everything",
+			Alias:   "everything-else",
 			Methods: []string{"/roster.*/*"},
 		}.Build())
 		x.NoError(err)
@@ -355,7 +361,7 @@ func TestNobodyGrantsEverythingWhoDoesNotHoldIt(t *testing.T) {
 	})
 }
 
-const everythingAlias = "everything"
+const everythingAlias = "everything-as-well"
 
 func strPtr(s string) *string { return &s }
 

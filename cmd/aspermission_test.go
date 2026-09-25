@@ -456,8 +456,11 @@ func TestABatchIsNoWayRoundTheEscalationRule(t *testing.T) {
 		return pdpb.Op_builder{Method: method, Request: v}.Build()
 	}
 
+	was, err := b.Ent.Role.Query().Count(ctx)
+	x.NoError(err)
+
 	// The two Rpcs `escalate.go` opens with, in one transaction.
-	_, err := pdpb.NewBatchServiceClient(conn).Do(wire, pdpb.BatchRequest_builder{
+	_, err = pdpb.NewBatchServiceClient(conn).Do(wire, pdpb.BatchRequest_builder{
 		Ops: []*pdpb.Op{op(addRole, app.RoleAddRequest_builder{
 			Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 			Alias:   "sneaky",
@@ -468,9 +471,11 @@ func TestABatchIsNoWayRoundTheEscalationRule(t *testing.T) {
 		"a batch wrote a role holding what its caller does not -- the layer is missing from the stack the transaction runs on")
 
 	// Nothing was written, which is the transaction doing its half.
+	// The roles that were there before it: the one every tenant is made with,
+	// per tenant, and whatever the harness granted.
 	n, err := b.Ent.Role.Query().Count(ctx)
 	x.NoError(err)
-	x.Equal(1, n, "the refused batch left a role behind")
+	x.Equal(was, n, "the refused batch left a role behind")
 
 	// And what she may write, she may write in a batch -- so the refusal above
 	// is the escalation and not the batch.

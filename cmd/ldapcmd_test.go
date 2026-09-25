@@ -92,7 +92,10 @@ func TestLdapServeIsToldEverything(t *testing.T) {
 		uids = append(uids, e.GetAttributeValue("uid"))
 		x.True(strings.HasSuffix(e.DN, ",ou=people,dc=newco,dc=example"), e.DN)
 	}
-	x.ElementsMatch([]string{"alice", "bob"}, uids)
+	// `admin` among them: every tenant is made with the holder that
+	// administers it (`server/core/tenant.go`), and the directory shows
+	// everybody in the tenant.
+	x.ElementsMatch([]string{"admin", "alice", "bob"}, uids)
 
 	cancel()
 	x.NoError(<-done, "serve did not stop cleanly when told to")

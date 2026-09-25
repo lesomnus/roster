@@ -77,7 +77,7 @@ func TestAConsoleWatchingOneReplicaHearsTheOther(t *testing.T) {
 	// premise being tested one level down.
 	role, err := one.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
 		Tenant:  app.TenantRef_builder{Id: at0.Bytes()}.Build(),
-		Alias:   "everything",
+		Alias:   "all",
 		Methods: []string{"/roster.*/*"},
 	}.Build())
 	x.NoError(err)

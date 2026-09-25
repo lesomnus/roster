@@ -48,42 +48,54 @@ and one that created them with permissions would decide something only you know.
 
 ## Standing a customer up
 
-Four writes, and then a way in. This is what the admin console's *new customer* form
-does, in the same order:
+One write, and then a way in:
 
 ```sh
-roster tenant add @newco
-roster holder add @newco/admin
-roster role   add @newco/everything '{"methods":["/roster.*/*"]}'
-
-echo '{"role":  {"slug":{"alias":"everything","tenant":{"alias":"newco"}}},
-       "holder":{"slug":{"alias":"admin",     "tenant":{"alias":"newco"}}}}' \
-  | roster binding add -
-
-roster key add --tenant newco --holder admin --allow '/roster.*/*'
+roster tenant add @newco '{"name":"Newco Ltd"}'
+roster vouch reset @newco/admin          # a password, printed once
 ```
 
-`everything` is a **pattern** and not a list. A list written the day a customer is
-created is what existed that day; the next release adds an RPC their administrator
-cannot call and cannot grant themselves either, because granting is refused for
-anything the granter does not already hold. It is still an ordinary role -- unbind
-it and it is gone, erase it and every binding to it goes too.
+The first command writes four rows: the tenant, `admin` in it, a role called
+`everything` that holds `/roster.*/*`, and the binding. The second is the
+ordinary way anybody gets a password, pointed at the person the first made.
 
-### It is four writes and not a transaction
+`everything` is a **pattern** and not a list. A list written the day a customer
+is created is what existed that day; the next release adds an RPC their
+administrator cannot call and cannot grant themselves either, because granting
+is refused for anything the granter does not already hold. It is still an
+ordinary role -- unbind it and it is gone, erase it and every binding to it goes
+too.
 
-There is no fifth RPC that does all of it and there should not be: each of the
-four is held to the same rules every other write is, and a composite would be a
-fifth thing to hold to them.
+### Why `add` writes four rows
 
-A failure part way leaves what came before it -- a tenant with nobody in it, or
-somebody with no role. Both are finishable, because whoever is writing is outside
-every tenant. That is the difference from the deadlock a *caller* would hit, where
-writing the first role needs a binding only writing the first role could give.
+It used to write one, and the other three were yours. This page argued they
+should stay four separate writes: each is held to the same rules every other
+write is, and a composite would be a fifth thing to hold to them.
 
-An operator with no shell does the same four from the admin console's customers screen,
-over `admin.addr`, as a session and through every rule. Nothing is only in one
-path: [operating.md](../operating.md) § "The admin console" is why that works, and what
-it costs.
+That argument is about a **caller** composing them, and `Tenant.Add` is not one.
+The three writes after the row go back through the same layer they would have
+arrived at on their own, so a role naming methods the caller does not hold is
+refused there exactly as `Role.Add` refuses it.
+
+What the four actually left was worse than the risk: a tenant with **nobody who
+could do anything in it**, finishable only by a roster operator reaching inside
+through `admin.addr` -- where standing comes from the port and two escalation
+rules are waived. That is what made *let a customer manage their own people*
+mean *act as the operator*.
+
+It is one transaction, which four calls could not be: a refusal part way leaves
+nothing, rather than a tenant nobody can get into whose alias cannot be used
+again.
+
+**The control plane's tenant is not a customer**, and `Tenant.Add` does nothing
+extra there: its one tenant is the deployment itself, and its first holder is
+`roster init`'s -- named by `--operator`, bound, and given a password in the
+same act.
+
+A roster operator with no shell does the same from the admin console's customers
+screen, over `admin.addr`, as a session and through every rule. Nothing is only
+in one path: [operating.md](../operating.md) § "The admin console" is why that
+works, and what it costs.
 
 ## Where a customer's requests come from
 

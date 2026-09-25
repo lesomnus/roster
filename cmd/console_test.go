@@ -24,6 +24,7 @@ import (
 
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/core"
 	"github.com/lesomnus/roster/server/keys"
 )
 
@@ -297,30 +298,23 @@ func TestAnOperatorAdministersCustomers(t *testing.T) {
 
 	as := metadata.NewOutgoingContext(ctx, metadata.Pairs("cookie", c.Name+"="+c.Value))
 
-	// The whole of setting a customer up, which is what `roster init` does for
-	// the first one. The last two are what fails when `core` reads the wrong
-	// database: `Granted` looks for the operator's bindings in the data plane
-	// and finds none.
+	// The whole of setting a customer up, which is one call now: the tenant,
+	// the holder that administers it, the role, and the binding
+	// (`server/core/tenant.go`). The last two are what fails when `core` reads
+	// the wrong database -- `Granted` looks for the operator's bindings in the
+	// data plane and finds none -- so a refusal here is that bug, and it is
+	// inside the call rather than two calls later.
 	tn, err := app.NewTenantServiceClient(conn).Add(as,
 		app.TenantAddRequest_builder{Alias: "newco"}.Build())
-	x.NoError(err)
-
-	h, err := app.NewHolderServiceClient(conn).Add(as, app.HolderAddRequest_builder{
-		Tenant: app.TenantRef_builder{Id: tn.GetId()}.Build(),
-		Alias:  "admin",
-	}.Build())
-	x.NoError(err)
-
-	r, err := app.NewRoleServiceClient(conn).Add(as, app.RoleAddRequest_builder{
-		Tenant:  app.TenantRef_builder{Id: tn.GetId()}.Build(),
-		Alias:   "everything",
-		Methods: []string{"/roster.*/*"},
-	}.Build())
 	x.NoError(err, "the operator could not give the new customer's admin anything")
 
-	_, err = app.NewBindingServiceClient(conn).Add(as, app.BindingAddRequest_builder{
-		Role:   app.RoleRef_builder{Id: r.GetId()}.Build(),
-		Holder: app.HolderRef_builder{Id: h.GetId()}.Build(),
+	_, err = app.NewHolderServiceClient(conn).Get(as, app.HolderGetRequest_builder{
+		Ref: app.HolderRef_builder{
+			Slug: app.HolderRefBySlug_builder{
+				Alias:  strPtr(core.Administers),
+				Tenant: app.TenantRef_builder{Id: tn.GetId()}.Build(),
+			}.Build(),
+		}.Build(),
 	}.Build())
 	x.NoError(err)
 

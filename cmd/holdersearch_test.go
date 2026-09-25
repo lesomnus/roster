@@ -77,7 +77,8 @@ func TestSearchFindsPeopleByWhoTheyAre(t *testing.T) {
 			after = res.GetNext()
 		}
 		// Everybody in contoso whose alias, name or display name has an "a":
-		// sam, kim-taylor (Taylor) -- and erin's "Erin Kim" does not.
-		x.ElementsMatch([]string{"sam", "kim-taylor"}, seen)
+		// sam, kim-taylor (Taylor), and the `admin` every tenant is made with
+		// -- and erin's "Erin Kim" does not.
+		x.ElementsMatch([]string{"admin", "sam", "kim-taylor"}, seen)
 	})
 }

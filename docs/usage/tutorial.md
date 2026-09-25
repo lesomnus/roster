@@ -46,17 +46,16 @@ roster serve
 
 ## 2. A customer
 
-Four writes. This is the whole of standing one up:
+One write, and it stands the whole thing up:
 
 ```sh
 roster tenant add @newco '{"name":"Newco Ltd"}'
-roster holder add @newco/admin '{"name":"Ada Admin"}'
-roster role   add @newco/everything '{"methods":["/roster.*/*"]}'
-
-echo '{"role":  {"slug":{"alias":"everything","tenant":{"alias":"newco"}}},
-       "holder":{"slug": {"alias":"admin",     "tenant":{"alias":"newco"}}}}' \
-  | roster binding add -
 ```
+
+The tenant, `@newco/admin` in it, a role called `everything` that holds
+`/roster.*/*`, and the binding between them. A customer is never made without
+somebody who can administer it, because the state where one exists and nobody
+can do anything in it is only finishable by an operator reaching inside.
 
 ```sh
 roster tenant ls -o table

@@ -104,9 +104,11 @@ r() { "${work}/roster" --config "${work}/roster.yaml" "$@"; }
 
 echo "== init and seed"
 echo "${E2E_OPS_PASSWORD}" | r init --operator admin --password-stdin >/dev/null
+# The tenant arrives with `@contoso/admin`, the `everything` role and the
+# binding between them: `Tenant.Add` writes all four (`server/core/tenant.go`).
+# What this adds is erin, bound to the role that is already there.
 r tenant add @contoso '{"name":"Contoso"}' >/dev/null
 r holder add @contoso/erin >/dev/null
-r role add @contoso/everything '{"methods":["/roster.*/*"]}' >/dev/null
 echo '{"role":{"slug":{"alias":"everything","tenant":{"alias":"contoso"}}},"holder":{"slug":{"alias":"erin","tenant":{"alias":"contoso"}}}}' \
 	| r binding add - >/dev/null
 echo "${E2E_ERIN_PASSWORD}" | r vouch set --password-stdin @contoso/erin >/dev/null 2>&1

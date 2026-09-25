@@ -216,11 +216,25 @@ Most of what looks like a new service is a method on an entity that already has
 one. Before writing a `*_svc` proto, ask **which single entity's rows this
 reads or writes**:
 
-- **It transforms or guards a generated verb** — hashes the secret on
-  `Credential.Add`, strips a column out of a `Get`, refuses a field on `Patch`.
-  That is a **layer** in `server/core`, in front of the generated `Gate`; it
-  needs no new RPC. `pd.Secret` is the shape (`cmd/serve.go`), and per-target
-  rules live here because the gate sees only the method, not the request.
+- **It transforms, guards, or completes a generated verb** — hashes the secret
+  on `Credential.Add`, strips a column out of a `Get`, refuses a field on
+  `Patch`; or writes the rows that verb is useless without, as `Tenant.Add`
+  writes the holder, role and binding that administer the tenant it makes
+  (`server/core/tenant.go`). That is a **layer** in `server/core`, in front of
+  the generated `Gate`; it needs no new RPC. `pd.Secret` is the shape
+  (`cmd/serve.go`), and per-target rules live here because the gate sees only
+  the method, not the request.
+
+  **Completing is the branch that gets missed**, because the other two only ever
+  make a verb do *less*. The question is not how many rows are written; it is
+  whether they are the same act. A tenant nobody can administer is not a smaller
+  version of a tenant, it is an unfinished one -- so finishing it belongs to
+  `Add` rather than to `Establish` beside it, and *a second verb is one more
+  name for the same act* the way a second service is one more name for the same
+  rows. Three things make it safe: the inner writes go back through `s.Core`, so
+  every rule that would have met them on their own still does; they are one
+  transaction, so a refusal leaves nothing; and the plane is read from
+  `WithPrefix` where the act differs between them.
 - **It is a new verb on those same rows** — `Verify` a secret, `Unlock` a
   lockout, `Disable` somebody. That is an **overlay** in `proto/ext/`: a method
   added to the entity's own service. `HolderService`'s `Disable`/`Enable`/

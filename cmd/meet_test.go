@@ -39,7 +39,7 @@ func TestMeAnswersWhatTheCredentialLeavesOfWhatIsHeld(t *testing.T) {
 		x := require.New(t)
 
 		who := b.holder(t, ctx, b.Contoso, "erin")
-		b.mayCall(t, ctx, who, "everything", everyone)
+		b.mayCall(t, ctx, who, "everything-too", everyone)
 
 		f := frame.New(who, b.Contoso, frame.Whole().To(meGet, emailAdd)).WithScope(frame.Only(b.Contoso))
 		v, err := s.Get(frame.Into(ctx, f), app.MeGetRequest_builder{}.Build())
