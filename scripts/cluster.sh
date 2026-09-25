@@ -53,6 +53,23 @@
 # third party**, which does its own discovery and fetches the key set itself over
 # TLS it has to be taught to trust. All three are the scripts `scripts/hydra.sh`
 # runs against compose, told where things are.
+#
+# # What this script is red for, when it is not the code
+#
+# #39: four red runs in one afternoon and three of them were this rig. Two were
+# a Service name inside the cluster that had been resolving moments earlier and
+# spent five of the job's eleven minutes on it; one was containerd not listening
+# when the images were copied in. What each of those cost was not the failure --
+# it was that a gate which is red for its own reasons teaches people to rerun
+# without reading, which is the state where a real failure gets rerun too.
+#
+# Three answers, and they are in three places rather than here. `docker/dial.sh`
+# bounds and retries every call the walks make, so a name that never resolves
+# fails in twenty seconds rather than five minutes and one that was briefly
+# unresolvable is a pass. `standing` below waits for the socket the import
+# actually needs. And `resolver` leaves CoreDNS's restart count in the log of
+# any run that goes out red, because the one thing #39 could not do was check
+# its own guess.
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -83,7 +100,43 @@ vol="roster-cluster-$$"
 docker volume create "${vol}" >/dev/null
 carry() { tar -C "${work}" -cf - . | docker run --rm -i -v "${vol}:/w" alpine sh -c 'tar -C /w -xf -'; }
 
+# resolver is what CoreDNS was doing, and it is printed only on the way out red.
+#
+# #39's open question, made answerable rather than answered. Two of that issue's
+# four red runs were a Service name inside the cluster that had been resolving
+# moments earlier, and the guess was CoreDNS restarting under the load of two
+# `docker build`s -- a guess nobody could check, because by the time anybody
+# read the run the cluster was gone. `docker/dial.sh`'s retry is what makes a
+# blip stop failing the run; this is what makes the next one leave evidence.
+#
+# Two lines and no `-o` at all: `get pods` already prints READY, STATUS and
+# **RESTARTS**, which is the whole hypothesis in one number, and a
+# `custom-columns` spelling of it would be a jsonpath with brackets in it going
+# through two shells. Then the previous container's log, which says nothing
+# where there was no previous container -- `--previous` errors there, and an
+# error is exactly what this must not add to a run that is already failing.
+#
+# Everything is `|| true` and every stream is redirected for that reason: a
+# diagnostic that can fail the cleanup would replace the real message with its
+# own.
+resolver() {
+	{
+		echo
+		echo "-- kube-system/coredns, in case the name that did not resolve was its"
+		kube "kubectl -n kube-system get pods -l k8s-app=kube-dns" 2>/dev/null || true
+		kube "kubectl -n kube-system logs -l k8s-app=kube-dns --tail=20 --previous" 2>/dev/null || true
+	} >&2
+}
+
 cleanup() {
+	# Before anything is torn down, and only when the run is going out red --
+	# and only when there is a cluster to ask, so that a run which fell over
+	# before one existed says what it fell over on and nothing else.
+	local out=$?
+	if [ "${out}" -ne 0 ] && docker inspect "k3d-${CLUSTER}-server-0" >/dev/null 2>&1; then
+		resolver
+	fi
+
 	rm -rf "${work}"
 	docker volume rm -f "${vol}" >/dev/null 2>&1 || true
 	if [ -z "${hold}" ]; then
@@ -204,7 +257,7 @@ tried() {
 	"$@"
 }
 
-# standing is the node still being there, which `--wait` does not promise.
+# standing is the node ready to be copied into, which `--wait` does not promise.
 #
 # `k3d cluster create --wait` waits for the API to answer **once**, and the two
 # builds below take two minutes on a two-core runner. k3s loses its health check
@@ -215,31 +268,52 @@ tried() {
 # misbehaving*, from Docker's embedded DNS, naming nothing. That is the whole
 # cost of this having been assumed rather than waited for.
 #
-# What it waits for is an **exec**, and not the API, for two reasons. It is
-# literally the thing `k3d image import` does and the thing that failed, so it is
-# the precondition rather than a proxy for it. And `kube` cannot be used here at
-# all: the kubeconfig reaches the volume with `carry`, which is a hundred lines
-# below, so a `kubectl` through it fails for want of a file and keeps failing --
-# which is what the first version of this did, for four minutes, while reporting
-# the node as `running`.
+# What it waits for is an **exec**, and not the API. `kube` cannot be used here
+# at all: the kubeconfig reaches the volume with `carry`, which is a hundred
+# lines below, so a `kubectl` through it fails for want of a file and keeps
+# failing -- which is what the first version of this did, for four minutes,
+# while reporting the node as `running`.
 #
-# `kubectl version --client` is the probe because `/bin/kubectl` is in the k3s
-# node image (a symlink to `k3s`) and `--client` needs no cluster, no kubeconfig
-# and no network.
+# # The probe is containerd's socket, and it took a second failure to get there
+#
+# It was `kubectl version --client`, which proves the exec works and nothing
+# else -- `--client` needs no cluster, no kubeconfig and no network, which is
+# what recommended it. What `k3d image import` actually needs is **containerd
+# listening**, and on a slow runner the node can be running, exec-able and
+# still not have it (#39):
+#
+#     ctr: connection error: … dial unix /run/k3s/containerd/containerd.sock:
+#     connect: connection refused
+#     the images did not reach the node
+#
+# So the probe is the thing rather than a proxy for it: `ctr` is in the node
+# image as a symlink to `k3s`, it defaults to exactly that socket, and it exits
+# non-zero until something is listening on it. That is literally what the import
+# does.
+#
+# # A deadline rather than a count
+#
+# Because an attempt no longer costs about nothing, and what it costs is not
+# ours to know: `ctr` on k3s 1.35 stats the socket and returns at once, and on
+# 1.31 it dials and waits ten seconds for its own deadline. Sixty attempts with
+# two seconds between them is a minute under one and twelve under the other,
+# and twelve is longer than the job this is inside. So the wait is three
+# minutes, whatever each attempt happens to cost -- which is the number
+# somebody reading this actually wants to know.
 standing() {
-	local i state
-	for i in $(seq 1 60); do
+	local until_ state
+	until_=$(( $(date +%s) + 180 ))
+	while [ "$(date +%s)" -lt "${until_}" ]; do
 		state="$(docker inspect -f '{{.State.Status}}' "k3d-${CLUSTER}-server-0" 2>/dev/null || true)"
 		if [ "${state}" = "running" ] \
-			&& docker exec "k3d-${CLUSTER}-server-0" \
-				kubectl version --client >/dev/null 2>&1; then
+			&& docker exec "k3d-${CLUSTER}-server-0" ctr version >/dev/null 2>&1; then
 			return 0
 		fi
 
 		sleep 2
 	done
 
-	echo "the cluster's node never came back; it is ${state:-gone}" >&2
+	echo "the node never got ready to be copied into; it is ${state:-gone}" >&2
 	docker logs --tail 40 "k3d-${CLUSTER}-server-0" >&2 2>&1 || true
 
 	return 1

@@ -34,7 +34,12 @@ done
 # Hydra's admin API, which this app cannot start without and which comes up on
 # its own clock. Waited for here rather than with a compose condition because
 # what matters is that it **answers**, not that its container is running.
-until wget -qO- "${HYDRA_ADMIN}/health/ready" >/dev/null 2>&1; do
+#
+# `-T 2` for the reason `docker/dial.sh` gives about the walks: the loop around
+# it is the patience, and an attempt that hangs on a name spends the whole
+# budget on its first iteration. busybox `wget` waits fifteen minutes by
+# default, which is longer than anything that runs this.
+until wget -T 2 -qO- "${HYDRA_ADMIN}/health/ready" >/dev/null 2>&1; do
 	echo "roster: waiting for ${HYDRA_ADMIN}" >&2
 	sleep 1
 done

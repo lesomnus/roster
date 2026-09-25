@@ -19,6 +19,9 @@
 # single-label host and this walk is mostly cookies.
 set -eu
 
+# What every call here is willing to wait for, in one place; see `docker/dial.sh`.
+. "$(dirname "$0")/dial.sh"
+
 : "${SEED_CUSTOMER:=contoso}"
 : "${SEED_USER:=erin}"
 : "${SEED_PASSWORD:=correct horse battery staple}"
@@ -60,7 +63,7 @@ esac
 # that is serving. Waited for here rather than assumed, because the failure
 # otherwise is a refused password and a message about the wrong thing.
 i=0
-until curl -sS ${resolve} -o /dev/null "${LOGIN}/" 2>/dev/null; do
+until curl -sS ${PROBE} ${resolve} -o /dev/null "${LOGIN}/" 2>/dev/null; do
 	i=$((i + 1))
 	[ "${i}" -lt 60 ] || { echo "flow: the login app never answered" >&2; exit 1; }
 	sleep 1
@@ -79,13 +82,13 @@ trap 'rm -f "${jar}"' EXIT
 # jar is not enough: the memory is Hydra's, keyed on the subject.
 forget_consent() {
 	if [ "${CONSENT}" = "ask" ] && [ -n "${EXPECT_SUB:-}" ]; then
-		curl -sS -o /dev/null -X DELETE \
+		curl -sS ${DIAL} -o /dev/null -X DELETE \
 			"${ADMIN}/admin/oauth2/auth/sessions/consent?subject=${EXPECT_SUB}&all=true" || true
 	fi
 }
 forget_consent
 
-c() { curl -sS ${resolve} -c "${jar}" -b "${jar}" "$@"; }
+c() { curl -sS ${DIAL} ${resolve} -c "${jar}" -b "${jar}" "$@"; }
 loc() { tr -d '\r' | awk '/^[Ll]ocation:/{print $2}'; }
 code() { tr -d '\r' | awk '/^HTTP/{print $2; exit}'; }
 # What Hydra was told to redirect to is a name a browser resolves, and this is
@@ -99,7 +102,7 @@ die() { echo "flow: $1" >&2; exit 1; }
 # call is what **says so** and is addressed to a service: without it the
 # transcoder reads the request as a page's route and answers 404.
 rpc() {
-	curl -sS -X POST "${ROSTER}/roster.$1" \
+	curl -sS ${DIAL} -X POST "${ROSTER}/roster.$1" \
 		-H "authorization: Bearer ${INVALIDATE_KEY}" \
 		-H 'content-type: application/json' -H 'connect-protocol-version: 1' \
 		-d "$2"

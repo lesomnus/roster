@@ -19,6 +19,9 @@
 # here is for.
 set -eu
 
+# What every call here is willing to wait for, in one place; see `docker/dial.sh`.
+. "$(dirname "$0")/dial.sh"
+
 # Three addresses and nothing about where they are, as in `docker/itself.sh` and
 # for the same reason: the compose network is the default, and
 # `scripts/cluster.sh` runs this same script as a Job inside a cluster where they
@@ -39,7 +42,7 @@ set -eu
 # different mornings. The certificate one is not hypothetical: the name was added
 # to the terminator a phase later than to its SANs.
 i=0
-until why=$(curl -sS -o /dev/null "${PROXY}/ping" 2>&1); do
+until why=$(curl -sS ${PROBE} -o /dev/null "${PROXY}/ping" 2>&1); do
 	i=$((i + 1))
 	[ "${i}" -lt 60 ] || { echo "behind: the proxy never answered: ${why}" >&2; exit 1; }
 	sleep 1
@@ -48,7 +51,7 @@ done
 jar=$(mktemp)
 trap 'rm -f "${jar}"' EXIT
 
-c() { curl -sS -c "${jar}" -b "${jar}" "$@"; }
+c() { curl -sS ${DIAL} -c "${jar}" -b "${jar}" "$@"; }
 loc() { tr -d '\r' | awk '/^[Ll]ocation:/{print $2}'; }
 code() { tr -d '\r' | awk '/^HTTP/{print $2; exit}'; }
 # Only the Login App's host moves: the issuer already answers to a name this
@@ -131,9 +134,9 @@ step "and the session names somebody" "$(printf '%s' "${who}" | cut -c1-40)…"
 # Written down here because the fix for it lives in whatever page is in front,
 # and a page cannot be written against a rule nobody stated.
 away=$(mktemp)
-got=$(curl -sS -c "${away}" -b "${away}" -o /dev/null -w '%{http_code}' "${PROXY}/oauth2/userinfo")
+got=$(curl -sS ${DIAL} -c "${away}" -b "${away}" -o /dev/null -w '%{http_code}' "${PROXY}/oauth2/userinfo")
 [ "${got}" = "401" ] || die "a fetch with no session answered ${got}, not 401"
-l=$(curl -sS -c "${away}" -b "${away}" -o /dev/null -D - "${PROXY}/" | loc)
+l=$(curl -sS ${DIAL} -c "${away}" -b "${away}" -o /dev/null -D - "${PROXY}/" | loc)
 case "${l}" in
 */oauth2/*) ;;
 *) die "a page with no session was not sent to sign in: ${l}" ;;

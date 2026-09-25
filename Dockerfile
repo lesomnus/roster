@@ -136,7 +136,7 @@ COPY --from=page /src/ts/dist/console /usr/share/roster/console
 COPY --from=page /src/ts/dist/user /usr/share/roster/user
 COPY --from=page /src/ts/dist/account /usr/share/roster/account
 COPY --from=page /src/ts/dist/login /usr/share/roster/login
-COPY docker/entrypoint.sh docker/customer.sh docker/account.sh docker/ldap.sh docker/login.sh docker/flow.sh docker/behind.sh docker/itself.sh /usr/local/bin/
+COPY docker/entrypoint.sh docker/customer.sh docker/account.sh docker/ldap.sh docker/login.sh docker/dial.sh docker/flow.sh docker/behind.sh docker/itself.sh /usr/local/bin/
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["serve"]
