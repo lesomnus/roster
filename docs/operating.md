@@ -242,12 +242,13 @@ holder is an edge. Expired rows are collected hourly by `session.Sweep`, which
 nothing depends on for correctness -- `authsession` checks both clocks when it
 reads one.
 
-### What the admin port waives, and it does not look like it
+### `admin.addr` is root, and a role on it is not a fence
 
-An operator's standing on `admin.addr` comes from the **port** rather than from a
-role, which is what lets an air gap have an operator instead of a mail server. The
-cost is that two rules in `server/core` read bindings the caller has none of, so
-on this port they refuse nothing:
+Standing here comes from the **port** rather than from a role, which is what
+lets an air gap have a roster operator instead of a mail server. Say what that
+means plainly: **this port is root.** It is the data plane with no wall, and two
+rules in `server/core` read bindings the caller has none of, so on this port they
+refuse nothing:
 
 - **writing somebody's credential** (`Credential.Issue`, `Set`, `Unlock`) is not
   held to *their permissions are a subset of yours*;
@@ -255,8 +256,23 @@ on this port they refuse nothing:
   and this is the silent one -- those two carry the rule on the data plane, and
   nothing about the call says which port it arrived at.
 
-So granting either of them on this port is granting the account. `cmd/admin.go`
-is where that is written down beside the wiring.
+So a role granted on this port is narrower than it looks: the methods it names
+are the ones a caller may reach, and the rules that would have narrowed *whose
+rows* are not running. Granting either of the two above is granting the account.
+`cmd/admin.go` is where that is written down beside the wiring.
+
+**What makes that acceptable is that it is no longer the only door.** A tenant's
+own administrator signs in on the data plane (`sign_in.enabled`) and works
+through the **walled** plane, where both rules are in force and the wall narrows
+every read to their tenant. So the deployment's root is for what only somebody
+outside every tenant can do -- making and unmaking tenants, and the recovery a
+tenant with one administrator has nobody inside it for -- and a tenant's own
+work has a door of its own.
+
+It stays root rather than being trimmed to that list. A root that can be
+surprised by what it cannot do is worse than one that is documented, and the
+answer to *should an operator be doing this?* is a question about the deployment
+rather than a method table.
 
 ## One process, or four
 
