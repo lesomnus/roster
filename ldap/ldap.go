@@ -1,7 +1,7 @@
 // Package ldap is a directory over roster: what `roster ldap serve` is.
 //
 // It is a consumer, exactly as `account` is -- its own process, one tenant
-// key per operator it fronts, reaching roster over the wire and never past
+// key per tenant it fronts, reaching roster over the wire and never past
 // it -- and what it does is translate. A bind is `Me.Get` bearing the app
 // password the client presented, or `Vouch.Verify` with the person's own; a
 // search is `Holder.Get`, `Holder.Search`, `Holder.List` and the lists beside
@@ -89,7 +89,7 @@ type Config struct {
 	// Insecure dials it without TLS. A development setting.
 	Insecure bool
 
-	// Keys is one tenant key per operator this directory fronts, by the
+	// Keys is one tenant key per tenant this directory fronts, by the
 	// tenant's alias. Minted for a holder in that tenant whose role names
 	// what a directory reads (`docs/ldap.md` § The key this process holds).
 	Keys map[string]string

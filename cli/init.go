@@ -183,7 +183,7 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 			//
 			// A deployment with no customers is the correct state to be left
 			// in: a tenant is a customer, and one written by `init` was a
-			// customer nobody asked for. What replaces it is the console, where
+			// customer nobody asked for. What replaces it is the admin console, where
 			// the first one is made the same way the hundredth is.
 			cl.Printf("\nthere are no customers yet, which is the right state to start in.\n")
 			cl.Printf("the console makes the first one -- a tenant, somebody in it, and the role\n")

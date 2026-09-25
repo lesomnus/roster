@@ -204,7 +204,7 @@ func TestAnOperatorStandsUpACustomerThatCanBeUsed(t *testing.T) {
 	t.Run("and none of it needs a shell on the box", func(t *testing.T) {
 		x := require.New(t)
 
-		// The claim the console rests on: every write above went over a port,
+		// The claim the admin console rests on: every write above went over a port,
 		// as a session, through the rules -- not through `Ungated`. A caller
 		// with no session gets none of it.
 		_, err := app.NewTenantServiceClient(admin).Add(ctx,

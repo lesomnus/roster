@@ -62,7 +62,7 @@ export function app(transport: Transport): App {
  * Admin is what a page calls on the **admin** listener, which is where a
  * deployment's operator reaches its customers.
  *
- * Not the whole of `App`, because this is not a second copy of the console: it
+ * Not the whole of `App`, because this is not a second copy of the admin console: it
  * is the writes an operator makes -- about one person, and about standing a
  * customer up -- and a page reads through the store for everything else.
  *

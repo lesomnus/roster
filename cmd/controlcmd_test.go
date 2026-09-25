@@ -13,7 +13,7 @@ import (
 // command about customers.
 //
 // Before it, nothing in a shell could list the operators: the entity commands
-// were built on the data plane alone, and the console was the only view.
+// were built on the data plane alone, and the admin console was the only view.
 func TestTheControlPlaneHasCommandsOfItsOwn(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()

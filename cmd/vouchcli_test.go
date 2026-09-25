@@ -63,7 +63,7 @@ func customer(t *testing.T, s *cmd.Server, tenant, holder string) pdid.Id {
 // `roster key add --tenant` gives a **machine** a way in. This is the one for a
 // person, and it was refused on the grounds that generating a password is an
 // act with somebody on the other end of it -- so a terminal was the wrong place
-// and the console was the right one.
+// and the admin console was the right one.
 //
 // That is not a difference. An operator at a console is a person at a screen
 // reading a secret out; both reach the same `VouchService`, over the same rows,

@@ -254,7 +254,7 @@ func (s *collected) first(t *testing.T) *app.Credential {
 // chose.
 //
 // It said `memory` in the code -- `cmd/serve.go`, inside the nested `Build`
-// that makes the second plane -- which made the console the one screen a second
+// that makes the second plane -- which made the admin console the one screen a second
 // replica broke without saying so. An operator watching on process A would
 // never hear about a key issued on process B, on a stream that stayed open and
 // looked healthy.

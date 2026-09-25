@@ -31,7 +31,7 @@ argued from nothing.
 | mint and check a magic link | send the mail |
 | verify a TOTP code or a WebAuthn assertion | decide when a second factor is needed |
 | an opaque API key a product app asks about | a signed token a product app verifies alone |
-| the console's own cookie, where roster is the server the browser is talking to | a session cookie for somebody else's browser |
+| the admin console's own cookie, where roster is the server the browser is talking to | a session cookie for somebody else's browser |
 
 The two columns are not the same kind of thing, and that is the whole of it:
 **verifying is a question answered in one place, now. Issuing is a credential
@@ -63,7 +63,7 @@ protocol and a Login App is the flow. roster answers the question they both ask
 One qualification, because the earlier wording said "or hold a session" and the
 code says otherwise: roster **does** hold a session for its own console, through
 `payday/auth/authsession`. That is not an exception to anything. A cookie is set
-by the server the browser is talking to, and for the console that server is
+by the server the browser is talking to, and for the admin console that server is
 roster. What roster does not do is mint a session for **somebody else's**
 browser — custody's cookie is custody's, and login.md draws where the split
 falls.
@@ -130,14 +130,14 @@ the per-request path.** No session check and no token check reaches it, which is
 the property the request was actually after, had without roster signing
 anything. And the caller list is unchanged by any of it — the Login App and
 admin consoles; no customer's browser reaches roster — which is the sign it is
-the right shape. (An operator's does, two paragraphs down: the console is a
+the right shape. (An operator's does, two paragraphs down: the admin console is a
 browser and roster's own cookie is what it holds. Different plane, and it is a
 caller on this list rather than an exception to it.)
 
-roster ships both of those callers, and neither moves the line. The console
+roster ships both of those callers, and neither moves the line. The admin console
 (`ts/console/`) is the admin console, on roster's own cookie. The account app
 (`account/`, `roster account serve`) is a login app: a separate process holding
-one tenant key per operator, doing the OIDC exchange with the providers an
+one tenant key per tenant, doing the OIDC exchange with the providers an
 operator wrote down as `Connection` rows, minting the delegation through
 `Vouch.Accept`/`Delegate`, and handing the page's calls on to roster as the
 person. It is a consumer -- it reaches roster only over the wire -- and
@@ -182,7 +182,7 @@ front door does.
 **It moves no line.** roster still signs nothing: the token a product verifies
 is Hydra's, and what this app contributes is the one string Hydra has no way to
 choose. It is a caller on the list above rather than an exception to it, holds
-one tenant key per operator like the other two, and reaches roster only over the
+one tenant key per tenant like the other two, and reaches roster only over the
 wire.
 
 What it does take on is a **wire contract with somebody else's product** --

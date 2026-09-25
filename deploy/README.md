@@ -36,7 +36,7 @@ see:
 - Three shapes of configuration that are only wrong at run time: the vouch
   keyring is `ROSTER_VOUCH_KEYS` and a **list**, the probe wants the control
   plane's **HTTP** listener rather than its gRPC one, and `/` only answers
-  there when the console is served.
+  there when the admin console is served.
 
 ## There are no Secrets here
 

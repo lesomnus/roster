@@ -27,7 +27,7 @@ import (
 //
 // It was only on a port, and the reason given was that generating a password is
 // an act with a person on the other end of it -- so a terminal was the wrong
-// place for it and the console was the right one.
+// place for it and the admin console was the right one.
 //
 // That is not a difference. An operator at a console is also a person at a
 // screen reading a secret out; both reach the same `VouchService`, over the
@@ -107,7 +107,7 @@ func vouching(ctx context.Context, c *cmd.Config) (*cmd.Server, *vouch.Server, e
 //
 // # `control`
 //
-// The operator who runs the console is a holder too, and on the **other**
+// The operator who runs the admin console is a holder too, and on the **other**
 // database: `s.Ent` is whatever `db:` opened, and the control plane is built
 // from `control.db` beside it. Without a way across this answered *no holder is
 // called "admin"* about the one person a deployment of one operator cannot do

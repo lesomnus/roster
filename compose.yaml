@@ -8,7 +8,7 @@
 #
 # `PUBLIC_HOST` is the name a browser reaches this by, `localhost` unless
 # said otherwise: the account app resolves the customer by that name, and the
-# console is told where the admin listener is by it. The console itself is
+# console is told where the admin listener is by it. The admin console itself is
 # `localhost` only: its cookie is `__Host-` and `Secure`, which a browser takes
 # over plain http from that name and from nowhere else.
 name: roster
@@ -97,7 +97,7 @@ services:
       ROSTER_SERVER_HTTP_ADDR: ":8080"
       ROSTER_SERVER_HTTP_ALLOW_WEB: "true"
 
-      # The control plane, with the console mounted on it; the page is told
+      # The control plane, with the admin console mounted on it; the page is told
       # where the admin listener is, since it has no way to guess.
       ROSTER_CONTROL_ADDR: ":50052"
       ROSTER_CONTROL_HTTP_ADDR: ":8082"
@@ -293,7 +293,7 @@ services:
       - "4444:4444" # the public endpoints a product app uses
       - "4445:4445" # admin: private, and this line is what a deployment removes
 
-  # The OAuth client the demo signs in for, once. One client per operator is
+  # The OAuth client the demo signs in for, once. One client per tenant is
   # what makes a challenge say which tenant it belongs to -- see `login/`.
   #
   # `import` rather than `create`, because `create` generates the id and this

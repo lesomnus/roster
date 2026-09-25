@@ -78,7 +78,7 @@ func TestAHostStaysAsItIsComparedWhenItIsRenamed(t *testing.T) {
 
 			// The message names what it should have been. Fixing it quietly is
 			// the alternative and it is worse: the caller gets back a row that
-			// differs from what it wrote, and the console that wrote it cannot
+			// differs from what it wrote, and the admin console that wrote it cannot
 			// find the name the person just typed.
 			// Quoted, which is what makes this an assertion. `normalised` says
 			// *stored as it is compared, so %q rather than %q*, so the message

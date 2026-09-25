@@ -1,9 +1,9 @@
 //go:build js && wasm
 
-// The console's server, in the page.
+// The admin console's server, in the page.
 //
 // A reload is a fresh deployment: two new databases, `roster init` run again,
-// nothing left over. Somebody working on the console starts no backend,
+// nothing left over. Somebody working on the admin console starts no backend,
 // migrates nothing, and does not have to remember what state they left it in.
 //
 // # What is the same, and what is not
@@ -214,7 +214,7 @@ func main() {
 		),
 	)
 
-	// The control plane's rows, which is what the console is for: what
+	// The control plane's rows, which is what the admin console is for: what
 	// `cmd.GrpcControl` puts on `control.http`, less what a page never calls.
 	cmd.Register(srv, s.Control.Walled)
 	app.RegisterMeServiceServer(srv, me.New(s.Control.Ent, cmd.Everything(s.Control.Ent), me.WithWrites(s.Control.Walled)))

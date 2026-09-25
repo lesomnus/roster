@@ -29,7 +29,7 @@ control plane
   bound to role "everything" = /roster.*/* -- every RPC roster serves, now and after an upgrade
   password  EQwFb5X74bcKhtm9LbQ1erW23bOXNxxmP672FfKGvkY
 
-sign in to the console as admin. that password is shown once and is not stored -- write it down now.
+sign in to the admin console as admin. that password is shown once and is not stored -- write it down now.
 
 there are no customers yet, which is the right state to start in.
 ```
@@ -245,9 +245,9 @@ control plane          data plane
   owner/frontdoor          alice   → support, a password, a laptop key
 ```
 
-Nothing here needed a browser. The console does the same acts for an operator
+Nothing here needed a browser. The admin console does the same acts for an operator
 who has no shell, over `admin.addr`, through the rules rather than around them —
-see [`../operating.md`](../operating.md) § the console.
+see [`../operating.md`](../operating.md) § the admin console.
 
 ## Where to go next
 

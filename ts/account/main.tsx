@@ -1,12 +1,12 @@
 /**
  * The account app's page: sign in, and the account.
  *
- * # The same client as the console, one origin over
+ * # The same client as the admin console, one origin over
  *
  * Everything this page reads or writes about the person is a Connect call to
  * **this** origin -- `/roster.MeService/Get` and the rest -- which `roster
  * account serve` hands on to roster as the person (`frontdoor.Door.Proxy`). So
- * this is `ts/gen` and the same store the console uses, with the transport
+ * this is `ts/gen` and the same store the admin console uses, with the transport
  * pointed at `location.origin`; nothing here knows roster's address, and the
  * browser never holds a roster token.
  *
@@ -263,7 +263,7 @@ function Profile(props: { own: Uint8Array; alias: string; may: (m: string) => bo
  *
  * So the list is the **connections**, each saying whether it is connected: the
  * one they used says who they are there and offers to unlink, and the one they
- * have not used offers to connect. Which is also the feature an operator with two
+ * have not used offers to connect. Which is also the feature a tenant with two
  * directories wanted -- *I signed up with Entra and I would like GitHub too* is
  * one button, where it belongs, and the button that cannot work is not drawn.
  *

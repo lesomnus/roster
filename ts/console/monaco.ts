@@ -2,10 +2,10 @@
  * The editor the devtools panel takes, fetched rather than imported.
  *
  * Monaco is four megabytes and the first screen of the panel is a table.
- * Imported at the top of a module it lands in the entry chunk, so the console
+ * Imported at the top of a module it lands in the entry chunk, so the admin console
  * itself would not render until all of it had arrived -- and signing in, which
  * is what happens first, needs none of it. Asked for beside the page, the two
- * are independent: the console is on the screen and usable while the editor is
+ * are independent: the admin console is on the screen and usable while the editor is
  * still coming, and the panel is whole without one. A `Get` opened before it
  * lands is the same document, read-only, and becomes editable when it lands.
  *

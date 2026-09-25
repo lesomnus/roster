@@ -13,7 +13,7 @@ This page is the design **and** how to run it. The
 ## What it is, in one paragraph
 
 **`roster ldap serve` is a consumer**, exactly as `roster account serve` is:
-one tenant key per operator it fronts, reaching roster over the wire and never
+one tenant key per tenant it fronts, reaching roster over the wire and never
 past it, whether it runs as its own process or as a block in the server's. It
 speaks LDAPv3 on one side and `rstr` on the other, and it *translates*: a bind is
 `Vouch.Verify` or a key read back through `Me.Get`, a search is `Holder.Search`,
@@ -44,7 +44,7 @@ ldap:
     contoso: env:ROSTER_LDAP_KEY_CONTOSO
 ```
 
-Either way it is a **consumer**: one tenant key per operator, reaching roster over
+Either way it is a **consumer**: one tenant key per tenant, reaching roster over
 the wire and never past it. Mint the key for a holder of its own with the role in
 § [The key this process holds](#the-key-this-process-holds); `docker/customer.sh`
 is that, as a script.

@@ -43,7 +43,7 @@ the page, one of the two is wrong and both are load-bearing.
 | the promise | pinned by |
 | --- | --- |
 | the whole of `usage/tutorial.md`, as typed: four writes stand a customer up, `vouch reset` prints a working password, `key add` mints both kinds, curl verifies and reads over `server.http`, a narrow key is refused, `WhoseHost` resolves, revoke stops the key on the next call | `TestTheTutorialRunsAsWritten` |
-| the same stand-up through the console's port instead of a shell, ending in a person who can be | `TestAnOperatorStandsUpACustomerThatCanBeUsed` · `TestAnOperatorAdministersCustomers` |
+| the same stand-up through the admin console's port instead of a shell, ending in a person who can be | `TestAnOperatorStandsUpACustomerThatCanBeUsed` · `TestAnOperatorAdministersCustomers` |
 | creating a person is inert: no credential, no permission, nothing to present until a way in and a binding are each deliberately written | `TestAnOperatorStandsUpACustomerThatCanBeUsed` |
 
 ## Two customers, one deployment
@@ -83,7 +83,7 @@ the page, one of the two is wrong and both are load-bearing.
 | `Verify` with the right secret answers who; with anything else it answers **no and nothing more** — one indistinguishable `ok:false` for a wrong password, an unknown alias, an unknown tenant and an account with no ways in, through the served stack | `TestAWrongSecretIsRefusedAndSaysNothingElse` · `TestSomebodyWhoIsNotHereIsRefusedTheSameWay` · `TestEveryNoOverTheWireIsTheSameNo` |
 | a delegation is bound to the person it was minted about **and** the key it was minted through; alone, or beside another app's key, it is worth nothing | `TestADelegationAloneIsWorthNothing` · `TestADelegationIsBoundToTheKeyAndNotToTheAppBehindIt` · `TestATenantKeysDelegationIsBoundToThePersonAndNotToTheKey` |
 | enough wrong answers close the account before the password is compared, and getting it right clears what getting it wrong left | `TestEnoughWrongAnswersCloseTheAccount` · `TestGettingItRightClearsWhatGettingItWrongLeftBehind` |
-| the console's cookie is minted by `AuthService.SignIn` and ended by `AuthService.SignOut` — one door, an RPC like every other call the page makes — and the end is immediate, so a browser that kept the cookie is answered nothing | `TestAnOperatorSignsIn` · `TestAConsoleReachesTheControlPlaneOverHttp` |
+| the admin console's cookie is minted by `AuthService.SignIn` and ended by `AuthService.SignOut` — one door, an RPC like every other call the page makes — and the end is immediate, so a browser that kept the cookie is answered nothing | `TestAnOperatorSignsIn` · `TestAConsoleReachesTheControlPlaneOverHttp` |
 | a person changes their **own** password by proving the current one — `CredentialService.Set` on your own row requires `current`, verified and counted like a sign-in, so a credential that merely acts as them cannot change it without knowing it; and the reopened service still never answers a stored verifier | `TestAPersonChangesTheirOwnPassword` · `TestTheCredentialServiceIsNotOnTheWire` |
 | the whole sign-in surface is a terminal command as well — verify, delegate, continue, link/redeem, revoke, enrol/confirm, accept — secrets on stdin, tokens printed once, and the uniform no surviving the shell | `TestTheTerminalIsACallerThatSignsPeopleIn` · `TestASecondFactorEndToEndAtAShell` · `TestContinueProvesAndDelegateMints` |
 
@@ -103,7 +103,7 @@ the page, one of the two is wrong and both are load-bearing.
 | --- | --- |
 | a revoke is a delete: the very next call bearing the key finds nothing, from either plane, and a revoked key's delegations die with it | `TestRevokingAKeyStopsItAtOnce` · `TestRevokingReachesTheKeyItNames` · `TestADelegationIsBoundToTheKeyAndNotToTheAppBehindIt` |
 | `Disable` stops the person at every door on their next call — their keys, their delegations, their password, and a console session if they are an operator | `TestADisabledHolderIsNotToSignInAndNotSignedIn` · `TestASuspendedPersonIsSuspendedInFrontOfEveryApp` · `TestADisabledHolderIsRefusedBareOverTheWire` |
-| `Invalidate` voids everything **issued** before now — sessions and delegations, the console's own included — and deliberately not named keys | `TestInvalidatingVoidsWhatWasIssuedBefore` · `TestInvalidateEndsTheConsolesOwnSessions` · `TestSomebodySignsThemselvesOutOfEverything` |
+| `Invalidate` voids everything **issued** before now — sessions and delegations, the admin console's own included — and deliberately not named keys | `TestInvalidatingVoidsWhatWasIssuedBefore` · `TestInvalidateEndsTheConsolesOwnSessions` · `TestSomebodySignsThemselvesOutOfEverything` |
 | an erase makes somebody unreachable at the wire — key, password, name — while destroying nothing | `TestAnErasedHolderIsStoppedAtTheWire` · `TestAnErasedHolderCannotAuthenticate` · `TestNothingOfAnErasedHolderIsReadableThroughARowThatOutlivedThem` |
 | every one of these is a terminal command as well — `roster holder disable`, `enable`, `invalidate`, `signs-in`, `reaches` — walled and gated like any caller, and `roster sync watch` is where a stop is seen landing | `TestTheTerminalOperatesOnSomebody` · `TestSyncWatchFromATerminal` |
 
@@ -120,7 +120,7 @@ the page, one of the two is wrong and both are load-bearing.
 
 | the promise | pinned by |
 | --- | --- |
-| the app holds one tenant key per operator and every call about a host goes out with that tenant's; a contoso key reads, enrols into, accepts claims about and **checks passwords for** contoso and nothing of fabrikam's -- by every form a sign-in collects | `TestAnAccountAppHoldsOneTenantsKeyAndReachesOnlyThatTenant` · `TestTheAccountAppFrontsTwoOperators` |
+| the app holds one tenant key per tenant and every call about a host goes out with that tenant's; a contoso key reads, enrols into, accepts claims about and **checks passwords for** contoso and nothing of fabrikam's -- by every form a sign-in collects | `TestAnAccountAppHoldsOneTenantsKeyAndReachesOnlyThatTenant` · `TestTheAccountAppFrontsTwoOperators` |
 | the browser speaks Connect to the app's origin and is answered by roster as the person; a method the app did not ask for stops at the app, a request no Connect client would make is refused, and no delegation is ever in a cookie | `TestABrowserSpeaksConnectToTheAppAndRosterAnswersAsThePerson` |
 | a stranger a provider vouches for is refused or enrolled as the deployment said, and never anywhere but the tenant the host resolved to | `TestTheAccountAppFrontsTwoOperators` · `TestAStrangerIsEnrolledWhereTheDeploymentSaysSo` |
 | a recovery link is mailed only to an address that is somebody's, answers the same whatever was typed, and hands over a password shown once rather than a session; a verification link stamps the address and signs nobody in, refused at the door that mints exactly as a recovery link is refused at the one that stamps | `TestSomebodyRecoversTheirAccountByMail` · `TestSomebodyVerifiesAnAddressOfTheirOwn` · `TestAnAddressIsVerifiedByALinkThatSignsNobodyIn` |

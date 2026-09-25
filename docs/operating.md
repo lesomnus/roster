@@ -96,7 +96,7 @@ control plane
   bound to role "everything" = /roster.*/* -- every RPC roster serves, now and after an upgrade
   password  kQ9x...
 
-sign in to the console as admin. that password is shown once and is not stored -- write it down now.
+sign in to the admin console as admin. that password is shown once and is not stored -- write it down now.
 
 there are no customers yet, which is the right state to start in.
 ```
@@ -138,7 +138,7 @@ Five at most, and which open is what the configuration named.
 | `server.addr` | product apps | gRPC, **walled** and gated. Keys only -- a cookie names nobody here |
 | `server.http.addr` | anything that cannot speak gRPC | the same, transcoded (Connect, gRPC-Web) |
 | `control.addr` | a console, and the deployment's own services | who runs this deployment, which services call it, their keys. Takes a session cookie **and** an `rk_` |
-| `control.http.addr` | a console in a browser | the same, transcoded. This is what the console talks to, and where `AuthService` is registered |
+| `control.http.addr` | a console in a browser | the same, transcoded. This is what the admin console talks to, and where `AuthService` is registered |
 | `admin.addr` / `.http.addr` | a console | **customers**: the data plane with no wall, behind an operator's session |
 
 ```yaml
@@ -167,7 +167,7 @@ A browser cannot speak gRPC, so a port with no `http` block is a port a console
 cannot reach. `server.http` is the wrong one for a console: it fronts the walled
 data plane, where an operator's session names nobody.
 
-## The console
+## The admin console
 
 ```yaml
 control:
@@ -293,7 +293,7 @@ a tenant, which somebody makes after the first boot.
 roster login provision --out /run/roster-login
 ```
 
-It ensures this deployment's **own** front door inside each operator named in
+It ensures this deployment's **own** front door inside each tenant named in
 `login.clients` -- a `login-app` holder, a role holding exactly what the app calls
 as itself, the binding, and a key -- and writes the key to `<out>/<alias>.key`, so
 `login.keys` is `file:/run/roster-login/<alias>.key` and there is no Secret at
@@ -307,7 +307,7 @@ before `ExecStart` on a box. `deploy/` is that, as manifests.
 ### Which to run
 
 Four processes, when the blast radius is worth the pods: the account app and the
-Login App face the internet and hold one tenant key per operator, while the
+Login App face the internet and hold one tenant key per tenant, while the
 control plane holds every key and the database. In one process a bug in the first
 reaches the second; in four that is a kernel boundary rather than a code one.
 
@@ -469,7 +469,7 @@ audit:
       profile: forever           # a hostname is not personal data
 ```
 
-`retain` is operational -- what the console can show, what a query costs, how big
+`retain` is operational -- what the admin console can show, what a query costs, how big
 the disk is. `destroy` is the obligation, normally years the longer of the two.
 Between them the row lives in `archive`, one gzipped file per month **per kind**.
 
@@ -695,7 +695,7 @@ terminator in front, which is what `deploy/` assumes and what
 docker compose up --build
 ```
 
-roster on Postgres, both planes, the console, one customer already stood up
+roster on Postgres, both planes, the admin console, one customer already stood up
 (`contoso`, with `erin` in it), the account app, the directory, and -- for the
 shape a deployment with several products has -- Hydra with the Login App beside
 it, plus two demo relying parties.

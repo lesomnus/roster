@@ -41,7 +41,7 @@ import (
 // because erase-and-add on a provider is a gap in service and, under a
 // mistyped name, every identity through it orphaned silently. A reconciler that
 // deleted what it no longer saw would do that on a bad merge. Removing a row is
-// a person's act, with the console or the terminal.
+// a person's act, with the admin console or the terminal.
 //
 // **It writes as somebody.** Every row carries `Audit.actor_id`, and a
 // provisioner that wrote as nobody would leave a trail that says a row appeared.

@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// The console: one of the two UIs this package builds, each from its own root
+// The admin console: one of the two UIs this package builds, each from its own root
 // over the same `lib/` and `gen/`. `vite.account.ts` is the other.
 //
 // What it takes to serve the sandbox, which is two things and neither is

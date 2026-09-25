@@ -23,8 +23,12 @@ Three notes about the list itself:
 | --- | --- |
 | **tenant** (3.3k) | one customer organisation. The unit the wall narrows to, and `Tenant.id` is on nearly every row |
 | **holder** (2.6k) | a row for somebody or something that can be a caller. Not a user account -- credentials hang off it rather than in it, and nothing on the row says whether a person or a machine is behind it. `Holder.id` is the `sub` |
-| **operator** (990) | whoever runs this deployment. Their own rows live in the **control plane**, and their people sign in to the console |
-| **customer** | a tenant, from the operator's side of the table. `roster tenant add` makes one; the console's *customers* screen is about them |
+| **roster operator** (990, usually written *operator*) | whoever runs this **deployment**. A holder of the **control plane**, and the only one who makes and unmakes tenants. Never a tenant: *an operator's tenant* is a sentence with no meaning here, and where prose wants the customer organisation the word is **tenant** |
+| **roster user** | a holder of the **data plane** -- somebody in a tenant. What they may do is their bindings, and the wall narrows every read to their own tenant |
+| **tenant administrator** | a roster user whose role administers their tenant. **Not a kind of row**: the schema has no such thing, and it is a holder with a binding (#29) |
+| **customer** | a tenant, from the roster operator's side of the table. `roster tenant add` makes one; the admin console's *customers* screen is about them |
+| **admin console** | the page a **roster operator** opens. Today it is served by the control listener and reaches `admin.addr` for customers; #32 moves it whole onto the admin listener |
+| **user console** | the page a **roster user** opens, showing their own tenant and nothing else, over the walled data plane. Does not exist yet (#34) |
 | **a holder's credential** | what tells two holders apart, since the row does not: a `Credential` (a password, a second factor) or an `ApiKey`. One holder may have both, and roster refuses neither -- `roster control key add --allow … admin` mints a key on the operator's own row. Which plane it is in is the other difference, and the one the `rk_`/`rt_` prefix comes from |
 | **custody** (69) | a caller that acts across **every** tenant -- the deployment's own machinery rather than a customer's. `docs/position.md` is where the line is |
 
@@ -37,7 +41,7 @@ Three notes about the list itself:
 | ⚠️ **the gate** (377) | **two things.** (1) The generated authorization layer -- `pd.GateBuild`, `gate.Policy` -- which decides whether a caller may call a **method**, and knows nothing about rows. (2) Informally, "a gate" is any check that has to pass: `scripts/test.sh`, `hydra.sh`, the CI jobs. Sense (1) is a thing in the process; sense (2) is a thing in CI |
 | **a grant** (374) | **any write that changes what the gate will answer for somebody.** Wider than the writes that name a role -- `GroupMembership.Add` grants as much as `Binding.Add` -- and `server/core/escalate.go` is where the answers live |
 | **a layer** (224) | a server that wraps another and calls `Next()` with a different request, so a field can mean one thing where a caller reaches it and another by the time a row is written. `server/core` is roster's. CLAUDE.md § *Writing a layer* is the mechanics |
-| **a plane** (753) | one of the two (now three) servers roster runs in one process on separate databases: the **data plane** (customers and their people), the **control plane** (who may call this deployment, and the console), and the **admin** listener -- the data plane with no wall, for work that happens before there is a tenant to be narrowed to |
+| **a plane** (753) | one of the two (now three) servers roster runs in one process on separate databases: the **data plane** (customers and their people), the **control plane** (who may call this deployment, and the admin console), and the **admin** listener -- the data plane with no wall, for work that happens before there is a tenant to be narrowed to |
 
 ## What a caller carries
 
@@ -53,11 +57,11 @@ Three notes about the list itself:
 
 | | |
 | --- | --- |
-| **the console** | roster's own admin UI, served at `/` on the control plane's HTTP listener. `ts/console/` |
-| **the account app** | roster's front door for a customer's own people -- their own record, their own ways in. Its own process, holding one tenant key per operator. `account/`, `ts/account/` |
-| **the Login App** | what Hydra hands a `login_challenge` to, and what answers with a `Holder.id`. `login/`, `ts/login/` |
+| **the admin console** | roster's own UI for a **roster operator**, served at `/` on the control plane's HTTP listener. `ts/console/`. Write *admin console* rather than *the admin console*: a **user console** is the other one (#34), and *a console* on its own is a terminal somebody is sitting at |
+| **the account app** | roster's front door for a tenant's own people -- their own record, their own ways in. Its own process, holding one tenant key per **tenant** it fronts. `account/`, `ts/account/` |
+| **the Login App** | what Hydra hands a `login_challenge` to, and what answers with a `Holder.id`. `login/`, `ts/login/`. **Self-hosted** is a roster user running it for their own tenant with one `rt_`; **roster-hosted** is a roster operator running one instance for many tenants |
 | **the front door** (227) | the shared browser-facing half both of those are built on: `POST /session` and after. `frontdoor/`, and `frontdoor/web/frontdoor.js` is its browser side |
-| **the sandbox** (211) | two different ones, and both are *the real thing with something faked* -- in opposite directions. The Login App's is the real pages with a **made-up server**: `npm --prefix ts run dev:login`, over `ts/vite.login.ts`. The console's is the real **server** compiled into the page: `npm --prefix ts run dev:sandbox`, over `wasm/`. Each fakes the half that is not what it exists to show |
+| **the sandbox** (211) | two different ones, and both are *the real thing with something faked* -- in opposite directions. The Login App's is the real pages with a **made-up server**: `npm --prefix ts run dev:login`, over `ts/vite.login.ts`. The admin console's is the real **server** compiled into the page: `npm --prefix ts run dev:sandbox`, over `wasm/`. Each fakes the half that is not what it exists to show |
 | **a relying party** | an app that trusts the issuer's tokens. Two shapes, and a deployment has both: `docs/relying-party.md` |
 
 ## How it is checked

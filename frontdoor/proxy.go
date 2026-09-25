@@ -28,7 +28,7 @@ import (
 // person could do -- `GET /me`, `POST /me/keys`, `DELETE /me/ways/{id}` -- and
 // none of `ts/gen` was any use to it, because the browser was talking to a
 // hand-made JSON shape rather than to roster. This is the alternative: the page
-// speaks Connect to the app's own origin exactly as the console speaks it to
+// speaks Connect to the app's own origin exactly as the admin console speaks it to
 // roster, and this hands the call on with two headers changed. The transport is
 // the only thing that differs between the two UIs, which `ts/lib/client.ts`
 // says is the whole idea.
@@ -45,7 +45,7 @@ import (
 // [Door.Acting]'s reason.
 //
 // What goes out is the app's own credential -- `bearer`, asked per request,
-// because an app fronting several operators holds one tenant key per operator
+// because an app fronting several operators holds one tenant key per tenant
 // and which one is a fact about the host the browser arrived at -- and the
 // person's delegation in `roster-as`; what came in as `Cookie` and
 // `Authorization` is dropped. What comes back is roster's answer, untouched.

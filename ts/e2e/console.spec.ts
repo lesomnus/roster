@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-// The console, as an operator uses it: sign in with the password `roster init`
+// The admin console, as an operator uses it: sign in with the password `roster init`
 // took, stand a customer up from the customers screen -- which is the page
 // reaching the admin listener from another origin, with the session cookie
 // the control listener set -- and see their first person.

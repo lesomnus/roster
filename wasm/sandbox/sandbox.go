@@ -80,7 +80,7 @@ func Believe(o *Operator) pdauth.Handler {
 	})
 }
 
-// Auth is the console's `AuthService` with the memory attached: a sign-in it
+// Auth is the admin console's `AuthService` with the memory attached: a sign-in it
 // accepts is remembered, a sign-out forgets.
 //
 // The tenant is the deployment's own -- the one `roster init` wrote, which is

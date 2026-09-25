@@ -114,7 +114,7 @@ decision rather than a gap:
 | | |
 | --- | --- |
 | `Apply` | one of payday's two general writes, closed unless a deployment opts in, and roster does not |
-| `AuthService` | it mints the console's session, and a session cookie is a browser's credential where a terminal's is a key |
+| `AuthService` | it mints the admin console's session, and a session cookie is a browser's credential where a terminal's is a key |
 | a *service's* key over the wire | minting is granting, the grant rule reads bindings, and a key holds none. The mints for a service are `roster control key add` and a console |
 
 payday's own framework services get no `roster` command either: `TokenService/Introspect`

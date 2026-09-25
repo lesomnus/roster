@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-// The sandbox: the console with the whole server compiled into the page, one
+// The sandbox: the admin console with the whole server compiled into the page, one
 // instance serving two servers -- the control plane, and the admin one the
 // customers screen dials by name. Nothing else in the repository opens it, so this is what
 // keeps `npm run dev:sandbox` from quietly stopping being a thing that works.

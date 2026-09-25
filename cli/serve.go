@@ -264,7 +264,7 @@ func frontDoor(c *cmd.Config, l net.Listener) (cmd.AccountConfig, error) {
 }
 
 // loginApp is `login:` with the same default, for the same reason -- and with
-// each operator's two halves checked against each other, because half of one
+// each tenant's two halves checked against each other, because half of one
 // runs and answers nothing.
 func loginApp(c *cmd.Config, l net.Listener) (cmd.LoginConfig, error) {
 	gc := c.Login

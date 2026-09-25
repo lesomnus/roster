@@ -1008,7 +1008,7 @@ spec:
             # roster's own HTTP port, which is how anything that is not gRPC
             # reaches it -- and the **data plane's** Service, which is called
             # roster-data here because the one called roster in a deployment is
-            # the console's. Getting that wrong is a walk that gets all the way
+            # the admin console's. Getting that wrong is a walk that gets all the way
             # to the claims and then cannot resolve a host.
             #
             # No backticks in this heredoc: it is unquoted, because it

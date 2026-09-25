@@ -134,7 +134,7 @@ func (p policy) May(ctx context.Context, c gate.Call) error {
 //
 // It was not on this list and the effect was quiet, which is why it is worth
 // writing down. An operator whose role did not happen to name it was refused,
-// and the console calls it in a `.finally`, so the page reset, the button
+// and the admin console calls it in a `.finally`, so the page reset, the button
 // looked like it worked, and the cookie went on opening the control plane. The
 // only operator role most deployments have is `/roster.*/*`, so it was a hole
 // waiting for the first narrow role somebody wrote.

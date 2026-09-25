@@ -86,7 +86,7 @@ func TestAGrantNothingCanReadAllowsNothing(t *testing.T) {
 	store := session.New(s.Control.Ent)
 
 	// The contrast, from the same store and the same key one moment earlier:
-	// what the console mints is whole, so anything short of whole below is this
+	// what the admin console mints is whole, so anything short of whole below is this
 	// row's grant becoming unreadable and nothing else.
 	was, err := store.Get(ctx, c.Value)
 	x.NoError(err)

@@ -42,7 +42,7 @@ const password = "correct horse battery staple"
 // of what it was told.
 //
 // A fake rather than the real thing because what these tests are about is the
-// **flow** -- which operator a challenge resolves to, which key its calls go
+// **flow** -- which tenant a challenge resolves to, which key its calls go
 // out with, and what ends up in the token -- and none of that is decided by
 // Hydra. What Hydra decides is the protocol around it, and `compose.yaml` runs
 // the real one for that.
@@ -263,21 +263,21 @@ func writeJson(w http.ResponseWriter, v any) {
 	_ = json.NewEncoder(w).Encode(v)
 }
 
-// deployment is a roster with two operators and the Login App in front of both.
+// deployment is a roster with two tenants and the Login App in front of both.
 type deployment struct {
 	s     *cmd.Server
 	hydra *hydra
 	app   *httptest.Server
 	a     *login.App
 
-	// An operator, over the wire. `SyncService` publishes from an interceptor,
+	// An tenant, over the wire. `SyncService` publishes from an interceptor,
 	// so a write through `Ungated` writes the row and tells nobody
 	// (`cmd/sync_test.go` says so in as many words) -- and this test is about
 	// what a stream carries.
 	conn *grpc.ClientConn
 	ops  context.Context
 
-	who map[string]pdid.Id // alias -> the person in that operator's tenant
+	who map[string]pdid.Id // alias -> the person in that tenant's tenant
 }
 
 func serve(t *testing.T) *deployment { return serveWith(t, login.Skip) }
@@ -312,10 +312,10 @@ func serveAs(t *testing.T, how login.Consent, with func(*login.Config)) *deploym
 	x.NoError(err)
 
 	d := &deployment{s: s, hydra: newHydra(t), who: map[string]pdid.Id{}}
-	operators := map[string]login.Operator{}
+	tenants := map[string]login.Tenant{}
 	opsKey := ""
 
-	// Two operators, each with a person who has a password and a key for this
+	// Two tenants, each with a person who has a password and a key for this
 	// app -- one per tenant, on a holder inside it.
 	for _, alias := range []string{"contoso", "fabrikam"} {
 		var tn *rstr.Tenant
@@ -330,7 +330,7 @@ func serveAs(t *testing.T, how login.Consent, with func(*login.Config)) *deploym
 		at := rstr.TenantRef_builder{Id: tn.GetId()}.Build()
 
 		// Somebody to sign in. The **same password in both**, on purpose: two
-		// operators' people reuse one, and what must not follow is that a flow
+		// tenants' people reuse one, and what must not follow is that a flow
 		// for one of them reaches the other.
 		who, err := s.Ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
 			Tenant: at, Alias: "erin", Name: "Erin of " + alias,
@@ -398,9 +398,9 @@ func serveAs(t *testing.T, how login.Consent, with func(*login.Config)) *deploym
 		}.Build())
 		x.NoError(err)
 
-		// Two clients for one operator, because a customer with two products
+		// Two clients for one tenant, because a customer with two products
 		// has two and one sign-in.
-		operators[alias] = login.Operator{Key: token, Clients: []string{alias + "-web", alias + "-mobile"}}
+		tenants[alias] = login.Tenant{Key: token, Clients: []string{alias + "-web", alias + "-mobile"}}
 
 		if alias != "contoso" {
 			continue
@@ -470,7 +470,7 @@ func serveAs(t *testing.T, how login.Consent, with func(*login.Config)) *deploym
 		Insecure:       true,
 		Hydra:          d.hydra.URL,
 		Sessions:       authsession.New(sealed, authsession.Insecure()),
-		Operators:      operators,
+		Tenants:        tenants,
 		InsecureCookie: true,
 	}
 	if with != nil {
@@ -626,7 +626,7 @@ func TestASecondFlowCarriesTheClaimsToo(t *testing.T) {
 // TestAFlowReachesOnlyItsOwnOperator, which is what one instance fronting
 // several of them has to be held to.
 //
-// Both operators have an `erin` and both have the same password, because people
+// Both tenants have an `erin` and both have the same password, because people
 // reuse them. What must not follow is that the flow raised for contoso's client
 // signs in fabrikam's person, or the other way round.
 func TestAFlowReachesOnlyItsOwnOperator(t *testing.T) {
@@ -656,7 +656,7 @@ func TestAFlowReachesOnlyItsOwnOperator(t *testing.T) {
 		})
 	}
 
-	// And a challenge for a client no operator holds is nobody's flow. It is
+	// And a challenge for a client no tenant holds is nobody's flow. It is
 	// the deployment's mistake rather than the browser's, and the browser is
 	// told so and nothing else.
 	b := d.browser(t)
@@ -667,7 +667,7 @@ func TestAFlowReachesOnlyItsOwnOperator(t *testing.T) {
 	x.Equal(http.StatusBadGateway, res.StatusCode)
 }
 
-// TestASecondClientIsTheSameOperator, which is what an operator with two
+// TestASecondClientIsTheSameOperator, which is what a tenant with two
 // products has.
 //
 // One sign-in and two relying parties is the case Hydra is for at all, so a
@@ -697,7 +697,7 @@ func TestASecondClientIsTheSameOperator(t *testing.T) {
 //
 // Under `skip` the consent hop is a redirect and nothing is drawn, which is
 // right for the clients this app can have -- every one of them was registered
-// by this deployment for one of its own operators. Under `ask` it is a screen,
+// by this deployment for one of its own tenants. Under `ask` it is a screen,
 // and nothing is granted until somebody says so.
 func TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne(t *testing.T) {
 	consent := func(t *testing.T, d *deployment, b *http.Client, challenge string) *http.Response {
@@ -754,7 +754,7 @@ func TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne(t *testing.T) {
 		x.NoError(json.NewDecoder(res.Body).Decode(&asking))
 		x.Equal("contoso-web", asking.Client, "the screen has nothing to say which app is asking")
 		x.Contains(asking.Scope, "profile", "the screen has nothing to say what it is asking for")
-		x.NotEmpty(asking.Brand, "the screen has nothing to call the operator")
+		x.NotEmpty(asking.Brand, "the screen has nothing to call the tenant")
 
 		// **Nothing granted.** A screen that has been drawn and not answered
 		// must leave the flow where it was, or the screen is decoration.
@@ -811,7 +811,7 @@ func TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne(t *testing.T) {
 }
 
 // TestSigningSomebodyOutEverywhereReachesHydra is the hole this closes, and it
-// is a quiet one: without it an operator signs somebody out, roster's own
+// is a quiet one: without it an tenant signs somebody out, roster's own
 // credentials stop working, and Hydra goes on remembering them -- so the next
 // product they open gets a fresh token with no form in between.
 //
@@ -994,7 +994,7 @@ func (d *deployment) post(t *testing.T, b *http.Client, path, challenge string, 
 // anybody** until it is finished. A Login App that accepted after the first
 // form would hand a product a token for somebody who proved half of what the
 // deployment asked for, which is worse than having no second factor at all,
-// because the operator believes they have one.
+// because the tenant believes they have one.
 func TestASecondFactorIsAskedForAndTheFlowWaitsForIt(t *testing.T) {
 	x := require.New(t)
 	d := serve(t)

@@ -63,8 +63,8 @@ func newCmdLoginServe(c *cmd.Config) *xli.Command {
 			&flg.String{Name: "roster", Brief: "roster's data plane, gRPC: host:port"},
 			&flg.Switch{Name: "insecure", Brief: "dial roster without TLS"},
 			&flg.String{Name: "hydra", Brief: "Hydra's admin API, e.g. http://hydra:4445. Private: anybody who reaches it can sign anybody in as anybody"},
-			&flg.Strings{Name: "key", Brief: "a tenant key, as alias=rt_…; repeat per operator fronted. Or " + LoginKeyPrefix + "<ALIAS> in the environment"},
-			&flg.Strings{Name: "client", Brief: "which OAuth clients are an operator's, as alias=client-id[,client-id…]; repeat per operator"},
+			&flg.Strings{Name: "key", Brief: "a tenant key, as alias=rt_…; repeat per tenant fronted. Or " + LoginKeyPrefix + "<ALIAS> in the environment"},
+			&flg.Strings{Name: "client", Brief: "which OAuth clients are a tenant's, as alias=client-id[,client-id…]; repeat per tenant"},
 			&flg.String{Name: "consent", Brief: "what the consent hop does: skip (grant what the client asked for; the default) or ask (draw a screen)"},
 			&flg.String{Name: "base", Brief: "this app's public origin, registered with every provider as the redirect. One for the whole app"},
 			&flg.String{Name: "enrol", Brief: "who a provider may sign in: invited (only somebody already linked), expected (somebody entered by address), enrolling (anybody)"},
@@ -161,11 +161,11 @@ func newCmdLoginServe(c *cmd.Config) *xli.Command {
 //
 // # What it makes, and what it refuses to
 //
-// **Its own front door and nothing else.** For each operator named in
+// **Its own front door and nothing else.** For each tenant named in
 // `login.clients` it ensures the holder `login-app`, a role holding exactly
 // what the app calls as itself, the binding between them, and a key -- then
 // writes the key to a file. What it does **not** do is make a tenant: a
-// customer is the operator's, and a command that made one by mentioning it
+// customer is the tenant's, and a command that made one by mentioning it
 // would be a way to write rows into somebody else's by typo.
 //
 // A tenant that is not there is **skipped and said**, not refused. This runs
@@ -187,7 +187,7 @@ func newCmdLoginProvision(c *cmd.Config) *xli.Command {
 
 		Flags: flg.Flags{
 			&flg.String{Name: "out", Brief: "the directory to write <alias>.key into; /run/roster-login if empty"},
-			&flg.Strings{Name: "client", Brief: "which OAuth clients are an operator's, as alias=client-id[,…]; the `login.clients` block otherwise"},
+			&flg.Strings{Name: "client", Brief: "which OAuth clients are a tenant's, as alias=client-id[,…]; the `login.clients` block otherwise"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
@@ -197,7 +197,7 @@ func newCmdLoginProvision(c *cmd.Config) *xli.Command {
 				return err
 			}
 			if len(clients) == 0 {
-				return errors.New("login.clients (--client alias=…): which operators this app fronts, and there are none")
+				return errors.New("login.clients (--client alias=…): which tenants this app fronts, and there are none")
 			}
 
 			out, _ := flg.Find[string](cl, "out")
@@ -244,7 +244,7 @@ func newCmdLoginProvision(c *cmd.Config) *xli.Command {
 					// unit -- and a fresh volume has no customers at all, so
 					// refusing here would be a deployment that cannot come up
 					// until somebody has run something inside a pod that is
-					// not running. Said loudly, once per operator, and the
+					// not running. Said loudly, once per tenant, and the
 					// Login App stays off until `login.addr` names it.
 					// To stderr rather than through `log`: this command
 					// stands up no telemetry, and what it says is read in
@@ -278,7 +278,7 @@ func newCmdLoginDoctor(c *cmd.Config) *xli.Command {
 		Flags: flg.Flags{
 			&flg.String{Name: "hydra", Brief: "where hydra's admin API answers; the `login.hydra.admin` block otherwise"},
 			&flg.String{Name: "public", Brief: "where hydra's public endpoints answer, for the half about what hydra was told; derived from --hydra otherwise"},
-			&flg.Strings{Name: "client", Brief: "which OAuth clients are an operator's, as alias=client-id[,…]; the `login.clients` block otherwise"},
+			&flg.Strings{Name: "client", Brief: "which OAuth clients are a tenant's, as alias=client-id[,…]; the `login.clients` block otherwise"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
@@ -288,7 +288,7 @@ func newCmdLoginDoctor(c *cmd.Config) *xli.Command {
 				return err
 			}
 			if len(clients) == 0 {
-				return errors.New("login.clients (--client alias=…): which operators this app fronts, and there are none")
+				return errors.New("login.clients (--client alias=…): which tenants this app fronts, and there are none")
 			}
 
 			at, _ := flg.Find[string](cl, "hydra")
@@ -345,18 +345,18 @@ func newCmdLoginDoctor(c *cmd.Config) *xli.Command {
 	}
 }
 
-// minted drops the operators whose key has not been written yet.
+// minted drops the tenants whose key has not been written yet.
 //
 // **A state a first start has, and one that used to stop the process.**
 // `roster login provision` writes these files and deliberately *skips* an
-// operator whose tenant does not exist -- a fresh volume has no customers, and
+// tenant whose tenant does not exist -- a fresh volume has no customers, and
 // refusing there would be a deployment that cannot come up until somebody has
 // run something inside a pod that is not running. Refusing here put that back:
-// the file the skipped operator would have had is missing, so the server would
+// the file the skipped tenant would have had is missing, so the server would
 // not start, so the tenant could never be made, so the file would never exist.
 // `deploy/` hit exactly that on its first run against an empty cluster.
 //
-// So the operator is dropped and the process is not, and **loudly**: their
+// So the tenant is dropped and the process is not, and **loudly**: their
 // people reach a page saying the login is not working until somebody makes the
 // tenant and the pod restarts, and nobody should have to find that in a
 // browser.
@@ -364,7 +364,7 @@ func newCmdLoginDoctor(c *cmd.Config) *xli.Command {
 // Only `file:`, and only *not there*. An `env:` that is empty, or a path that
 // exists and cannot be read, is a deployment configured wrong and still stops
 // it -- [keysOf] decides that, and this does not reach it.
-// It drops the operator from **both** halves, because [whole] refuses a client
+// It drops the tenant from **both** halves, because [whole] refuses a client
 // with no key -- and rightly: that is how a deployment finds out it wrote one
 // and forgot the other. What is dropped here is not that mistake, and saying so
 // is the difference between the two.
@@ -374,7 +374,7 @@ func minted(keys map[string]string, clients map[string][]string) (map[string]str
 	for alias, ref := range keys {
 		if path, ok := strings.CutPrefix(ref, "file:"); ok {
 			if _, err := os.Stat(path); errors.Is(err, fs.ErrNotExist) {
-				slog.Warn("login: this operator has no key yet, so it is not fronted; "+
+				slog.Warn("login: this tenant has no key yet, so it is not fronted; "+
 					"`roster tenant add` it and restart, or take it out of login.clients",
 					"alias", alias, "ref", ref)
 
@@ -399,15 +399,15 @@ func minted(keys map[string]string, clients map[string][]string) (map[string]str
 
 // LoginMethods is what the Login App calls as itself, and the whole of it.
 //
-// The password half is the flow: resolve the operator, check a secret, mint the
+// The password half is the flow: resolve the tenant, check a secret, mint the
 // delegation, end it. The provider half is the other way in -- read the
-// operator's `Connection` rows to draw the buttons and to be the relying party,
+// tenant's `Connection` rows to draw the buttons and to be the relying party,
 // find the `Identity` a directory's answer names, link one for somebody the
 // policy enrolled, and hand the claim over. `Sync.Watch` is how it hears that
 // somebody has been signed out everywhere so that Hydra can be told to forget
 // them. `login.Methods` is `Me.Get`, which is the claims that go in the token.
 //
-// `Email.Get` is the invitation: an operator who entered somebody in advance
+// `Email.Get` is the invitation: an tenant who entered somebody in advance
 // knows their address and not the subject a directory will assert, so the first
 // sign-in is matched by the one and linked to the other. `Email.Attest` is the
 // other direction -- the address the directory itself handed over, kept with
@@ -415,12 +415,12 @@ func minted(keys map[string]string, clients map[string][]string) (map[string]str
 //
 // **`HolderService.Add` is not here, and that is the point of the list.** It is
 // what `enrol: enrolling` needs, and making people is a wider grant than
-// signing them in: a key that holds it can write a row into an operator's
+// signing them in: a key that holds it can write a row into an tenant's
 // tenant for anybody a directory will vouch for. `provision` adds it when --
 // and only when -- a deployment has written `login.enrol: enrolling` down, so
 // the grant follows a line somebody typed rather than a default.
 //
-// `enrol: expected`, which admits the people an operator entered and nobody
+// `enrol: expected`, which admits the people an tenant entered and nobody
 // else, needs nothing beyond this list: it reads an `Email` row and writes an
 // `Identity`.
 //
@@ -448,7 +448,7 @@ var LoginMethods = append([]string{
 	rstr.EmailService_Attest_FullMethodName,
 }, login.Methods...)
 
-// provision is one operator's front door.
+// provision is one tenant's front door.
 func provision(ctx context.Context, s *cmd.Server, alias, out string, methods []string) error {
 	tn, err := s.Ungated.Tenant().Get(ctx, rstr.TenantGetRequest_builder{
 		Ref:    rstr.TenantRef_builder{Alias: &alias}.Build(),
@@ -456,7 +456,7 @@ func provision(ctx context.Context, s *cmd.Server, alias, out string, methods []
 	}.Build())
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
-			// Said rather than made. A customer is the operator's, and a
+			// Said rather than made. A customer is the tenant's, and a
 			// command that made one by mentioning it would be a way to write
 			// rows into somebody else's tenant by typo.
 			return errNoCustomer
@@ -536,7 +536,7 @@ func provision(ctx context.Context, s *cmd.Server, alias, out string, methods []
 var errNoCustomer = errors.New("no such customer")
 
 // provisioned is what this command's rows are called, so that a later run finds
-// them and a person reading the console can tell them from somebody's.
+// them and a person reading the admin console can tell them from somebody's.
 const provisioned = "login-app"
 
 func ensureHolder(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias string) ([]byte, error) {
@@ -610,7 +610,7 @@ const LoginClientPrefix = "ROSTER_LOGIN_CLIENT_"
 // clientsOf is which OAuth client is whose: the block, the environment over it,
 // and `--client` over that. [keysOf] with nothing secret about it, and it is
 // not that function because an empty one is not an error here -- `whole` is
-// what says an operator is half written, and it can say which half.
+// what says an tenant is half written, and it can say which half.
 func clientsOf(refs map[string][]string, prefix string, given []string) (map[string][]string, error) {
 	out := map[string][]string{}
 	for alias, clients := range refs {
@@ -627,13 +627,13 @@ func clientsOf(refs map[string][]string, prefix string, given []string) (map[str
 		}
 		out[strings.ToLower(alias)] = split(value)
 	}
-	// A repeat is per **operator**, so a repeat of the same one is somebody
+	// A repeat is per **tenant**, so a repeat of the same one is somebody
 	// writing what the comma list is for and getting only the last of it. It
 	// layers over the block and the environment on purpose -- a deployment
 	// narrowing what it was configured with -- and there is no reading of one
-	// command line under which naming an operator twice was meant.
+	// command line under which naming an tenant twice was meant.
 	//
-	// Silent, it is an operator whose other client no challenge resolves to,
+	// Silent, it is an tenant whose other client no challenge resolves to,
 	// which is a page that says the login is not working for half the people.
 	seen := map[string]bool{}
 	for _, v := range given {
@@ -644,7 +644,7 @@ func clientsOf(refs map[string][]string, prefix string, given []string) (map[str
 
 		alias = strings.ToLower(alias)
 		if seen[alias] {
-			return nil, fmt.Errorf("--client %q: %s is named twice; one operator's clients are one comma list", v, alias)
+			return nil, fmt.Errorf("--client %q: %s is named twice; one tenant's clients are one comma list", v, alias)
 		}
 		seen[alias] = true
 
@@ -654,7 +654,7 @@ func clientsOf(refs map[string][]string, prefix string, given []string) (map[str
 	return out, nil
 }
 
-// split is a comma list, which is how an operator with two products writes
+// split is a comma list, which is how a tenant with two products writes
 // them where only one string will fit -- an environment variable, or a flag.
 func split(v string) []string {
 	out := []string{}
@@ -667,22 +667,22 @@ func split(v string) []string {
 	return out
 }
 
-// whole refuses an operator that is half written.
+// whole refuses an tenant that is half written.
 //
 // Loudly and at start, because the failure is otherwise silent in the direction
-// that matters: a key with no client is an operator no challenge ever resolves
+// that matters: a key with no client is an tenant no challenge ever resolves
 // to, so their people reach a page that says the login is not working and
 // nothing anywhere says why. This is what `cmd.LoginConfig.Clients` gives as
 // the reason its two maps are two maps.
 func whole(keys map[string]string, clients map[string][]string) error {
 	for alias := range keys {
 		if len(clients[alias]) == 0 {
-			return fmt.Errorf("login.clients.%s (--client %s=…): a key with no OAuth client is an operator no challenge resolves to", alias, alias)
+			return fmt.Errorf("login.clients.%s (--client %s=…): a key with no OAuth client is an tenant no challenge resolves to", alias, alias)
 		}
 	}
 	for alias := range clients {
 		if _, ok := keys[alias]; !ok {
-			return fmt.Errorf("login.keys.%s (--key %s=rt_…, or %s%s): a client with no key is an operator this app cannot ask roster about", alias, alias, LoginKeyPrefix, strings.ToUpper(alias))
+			return fmt.Errorf("login.keys.%s (--key %s=rt_…, or %s%s): a client with no key is an tenant this app cannot ask roster about", alias, alias, LoginKeyPrefix, strings.ToUpper(alias))
 		}
 	}
 
@@ -754,7 +754,7 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 
 	// The same two words the account app takes, and the same default. What is
 	// **not** the same is what `enrolling` costs here: the key this deployment
-	// mints for itself holds no `HolderService.Add`, so an operator asking for
+	// mints for itself holds no `HolderService.Add`, so an tenant asking for
 	// it has a key of their own to mint. Said at start rather than at the first
 	// stranger's sign-in.
 	var enrol arrives.Enrol
@@ -783,11 +783,11 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 		// `env:NAME`, roster's one vocabulary for a reference to a secret. The
 		// same function the account app and the directory resolve theirs with,
 		// and its refusals name no app for that reason.
-		Secret:    account.EnvSecret,
-		Operators: map[string]login.Operator{},
+		Secret:  account.EnvSecret,
+		Tenants: map[string]login.Tenant{},
 	}
 	for alias, key := range lc.Keys {
-		cfg.Operators[alias] = login.Operator{Key: key, Clients: lc.Clients[alias]}
+		cfg.Tenants[alias] = login.Tenant{Key: key, Clients: lc.Clients[alias]}
 	}
 	if len(lc.Hydra.Header) > 0 {
 		cfg.HydraHeader = http.Header{}
@@ -810,7 +810,7 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 		return err
 	}
 	log.From(ctx).InfoContext(ctx, "login", slog.String("addr", l.Addr().String()),
-		slog.String("hydra", cfg.Hydra), slog.Int("operators", len(cfg.Operators)))
+		slog.String("hydra", cfg.Hydra), slog.Int("tenants", len(cfg.Tenants)))
 
 	srv := &http.Server{Handler: a.Handler()}
 	go func() {

@@ -7,7 +7,7 @@
 # The first customer, once, and the keys the account app and the directory
 # front them with.
 #
-# `roster init` seeds no customer on purpose -- the console makes the first one
+# `roster init` seeds no customer on purpose -- the admin console makes the first one
 # the same way it makes the hundredth -- and a stack somebody brings up to work
 # on the account page needs one already there, with a person who has a
 # password and a host that resolves to them. So this is `docs/operating.md`'s

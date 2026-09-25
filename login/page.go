@@ -8,7 +8,7 @@ import (
 
 // The page, built rather than served.
 //
-// `ts/login/` over the same `ts/lib/` the console and the account page are
+// `ts/login/` over the same `ts/lib/` the admin console and the account page are
 // over, which is where the sign-in they both draw lives. It was one file of
 // plain HTML for a day, on a reason that was about something else: `frontdoor`
 // ships its browser half with **no build on purpose**, so that somebody else's
@@ -61,11 +61,11 @@ func writeJson(w http.ResponseWriter, v any) {
 }
 
 // What a request carries between `inFlow` and everything under it: the
-// operator whose flow this is, and -- for the outgoing calls -- that
-// operator's key.
+// tenant whose flow this is, and -- for the outgoing calls -- that
+// tenant's key.
 type (
-	keyKey      struct{}
-	operatorKey struct{}
+	keyKey    struct{}
+	tenantKey struct{}
 )
 
 func withKey(ctx context.Context, key string) context.Context {
@@ -78,12 +78,12 @@ func keyOf(ctx context.Context) (string, bool) {
 	return k, ok && k != ""
 }
 
-func withOperator(ctx context.Context, o *operator) context.Context {
-	return context.WithValue(ctx, operatorKey{}, o)
+func withTenant(ctx context.Context, o *tenant) context.Context {
+	return context.WithValue(ctx, tenantKey{}, o)
 }
 
-func operatorOf(ctx context.Context) (*operator, bool) {
-	o, ok := ctx.Value(operatorKey{}).(*operator)
+func tenantOf(ctx context.Context) (*tenant, bool) {
+	o, ok := ctx.Value(tenantKey{}).(*tenant)
 
 	return o, ok && o != nil
 }

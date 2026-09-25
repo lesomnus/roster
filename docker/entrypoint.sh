@@ -39,7 +39,7 @@
 # This passed `--tenant` and `--holder` and there was a `ROSTER_SEED_*` pair to
 # set them with, so every container started life with a customer named after an
 # example company. `init` seeds the control plane alone now: what comes up is a
-# deployment and an operator, and the first customer is made from the console
+# deployment and an operator, and the first customer is made from the admin console
 # the same way the hundredth is. See docs/usage/customers.md, 'Standing a
 # customer up'.
 set -eu

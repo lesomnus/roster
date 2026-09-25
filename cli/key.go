@@ -43,7 +43,7 @@ import (
 //
 // `--tenant` and `--holder` mint an `rt_` for one of a customer's people. This
 // said, in as many words, that *a key for somebody inside a tenant is not
-// something a shell on the box should be handing out* -- and the console was
+// something a shell on the box should be handing out* -- and the admin console was
 // the answer.
 //
 // The premise went away. `roster init` seeds no customer (D56), so the first

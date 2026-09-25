@@ -22,7 +22,7 @@ const introspect = pdpb.TokenService_Introspect_FullMethodName
 
 // mintFor puts a key on a **data plane** holder and answers with the token.
 //
-// Through `Ungated` because nothing mints one over the wire yet: the console and
+// Through `Ungated` because nothing mints one over the wire yet: the admin console and
 // the rules that would let a customer do it are not written. What this stands in
 // for is a row, and a row is all `Introspect` reads.
 func mintFor(t *testing.T, ctx context.Context, b *keyedBuilt, who pdid.Id, alias string, methods []string, expires time.Time) string {

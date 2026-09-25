@@ -35,19 +35,19 @@ const stateCookie = "login_state"
 
 // A flow is one round trip to a provider, started and not yet finished.
 type flow struct {
-	operator   *operator
+	tenant     *tenant
 	connection string
 	challenge  string
 }
 
-// provider starts a sign-in through one of the operator's providers.
+// provider starts a sign-in through one of the tenant's providers.
 //
-// `?connection=entra` names it. Left out, an operator with exactly one provider
+// `?connection=entra` names it. Left out, an tenant with exactly one provider
 // goes there and one with several is refused, because guessing would send
 // somebody to a directory they are not in.
 func (a *App) provider(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	o, ok := operatorOf(ctx)
+	o, ok := tenantOf(ctx)
 	if !ok {
 		http.Error(w, "no", http.StatusBadRequest)
 
@@ -83,7 +83,7 @@ func (a *App) provider(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
-	a.flows.Put(state, flow{operator: o, connection: name, challenge: r.URL.Query().Get(Challenge)}, 10*time.Minute)
+	a.flows.Put(state, flow{tenant: o, connection: name, challenge: r.URL.Query().Get(Challenge)}, 10*time.Minute)
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     stateCookie,
@@ -100,7 +100,7 @@ func (a *App) provider(w http.ResponseWriter, r *http.Request) {
 // callback finishes the round trip, and the flow with it.
 //
 // It carries no challenge of its own: the redirect was registered with the
-// provider once and every operator's flow comes back to it, so which flow this
+// provider once and every tenant's flow comes back to it, so which flow this
 // is comes from the state and nowhere else.
 func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -122,8 +122,8 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	o := f.operator
-	as := withOperator(withKey(ctx, o.key), o)
+	o := f.tenant
+	as := withTenant(withKey(ctx, o.key), o)
 
 	cfg, verifier, err := a.arrives.Relying(as, o.id, f.connection, a.redirect(r))
 	if err != nil {
@@ -142,7 +142,7 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 	who.TenantAlias = o.alias
 	who.Provider = f.connection
 
-	// Somebody this operator has never seen is the one decision that is not
+	// Somebody this tenant has never seen is the one decision that is not
 	// roster's and not this app's.
 	holder, err := a.arrives.Known(as, a.c.Enrol, who)
 	if err != nil {
@@ -186,10 +186,10 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 // redirect is where a provider sends the browser back: `Base` if the deployment
 // named one, else this request's own origin.
 //
-// One URL for every operator, unlike the account app's -- which has a host per
+// One URL for every tenant, unlike the account app's -- which has a host per
 // tenant and derives it per request. Hydra sends every browser to this app
-// under one name, so a redirect per operator would be a name this app does not
-// have. Which operator a callback belongs to is the state's to say.
+// under one name, so a redirect per tenant would be a name this app does not
+// have. Which tenant a callback belongs to is the state's to say.
 func (a *App) redirect(r *http.Request) string {
 	if a.c.Base != nil {
 		return a.c.Base.JoinPath("/callback").String()

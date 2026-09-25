@@ -141,7 +141,7 @@ type Server struct {
 	Lockout  vouch.Lockout
 	Password core.Password
 
-	// Sessions is the console's cookie: the endpoint that mints one and the
+	// Sessions is the admin console's cookie: the endpoint that mints one and the
 	// handler that reads it back. Nil where there is no control plane, since
 	// the people who sign in are its holders and there would be nobody to be.
 	//
@@ -418,7 +418,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 			Vouch: VouchConfig{Lockout: c.Vouch.Lockout, Password: c.Vouch.Password},
 
 			// And the corpus, which this left out while saying the line above
-			// (#18): every operator's password -- their own change in the
+			// (#18): every tenant's password -- their own change in the
 			// console, `init --password-stdin`, `control vouch set` -- was
 			// the one write in the deployment nothing checked against it.
 			// Handed over as the value this build already opened rather than
@@ -1325,7 +1325,7 @@ func ConsoleMount(c ConsoleConfig) func(*web.Mux) {
 //
 // A browser cannot speak gRPC, so a port without one of these is a port a
 // console cannot reach -- and until this, the only transcoder was in front of
-// the **data plane**, where an operator's session names nobody. The console
+// the **data plane**, where an operator's session names nobody. The admin console
 // could sign in and then had nothing to call.
 //
 // A second listener rather than a route on the first, because both servers

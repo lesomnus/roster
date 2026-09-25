@@ -1598,7 +1598,7 @@ func TestAddingAWayInNeedsASessionFirst(t *testing.T) {
 // TestSomebodyMintsAKeyFromTheirOwnPage, which `docs/operating.md` listed under
 // *what is not here* for as long as the operator's version existed.
 //
-// The operator's is the console: it lists somebody's keys beside their
+// The operator's is the admin console: it lists somebody's keys beside their
 // passwords and providers, mints one, revokes one. This is the same three acts
 // with no subject anywhere in them, which is what lets a deployment offer it
 // without handing somebody a role that reaches everybody in their tenant.

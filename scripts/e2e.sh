@@ -8,7 +8,7 @@
 # suites check every rule the pages rely on -- against a server in the same
 # process, with the calls a page would make written by hand. What none of that
 # checks is the page itself: that the form posts what `frontdoor` reads, that
-# `navigator.credentials` is asked for the key roster named, that the console
+# `navigator.credentials` is asked for the key roster named, that the admin console
 # reaches the admin listener from the origin the control listener served it
 # from. Each of those was wrong once with every other gate green, which is why
 # this exists.
@@ -184,7 +184,7 @@ up "${E2E_LOGIN}/login?login_challenge=sandbox"
 # failure the specs report is looked at.
 #
 # A line per page rather than one line for both. There are two sign-ins here and
-# they are not interchangeable -- the console is an operator on the control
+# they are not interchangeable -- the admin console is an operator on the control
 # plane, the account app is a customer's person on the data plane -- and run
 # together on one line the second password read as a second thing to try at the
 # first form.

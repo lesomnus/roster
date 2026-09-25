@@ -21,7 +21,7 @@ spec:
     requests:
       storage: 1Gi
 ---
-# The console, which is the one listener a **person** opens and the one this file
+# The admin console, which is the one listener a **person** opens and the one this file
 # had no Service for at all.
 #
 # Nobody noticed because the rig has no browser: the walks are curl and the
@@ -145,7 +145,7 @@ spec:
             - { name: data-http, containerPort: 8081 }
             - { name: control-grpc, containerPort: 8060 }
             - { name: control-http, containerPort: 8061 }
-            # The data plane with **no wall**, for the console's customers
+            # The data plane with **no wall**, for the admin console's customers
             # screen. Up, and offered to nobody until a deployment routes a
             # host to it -- see `config.yaml`.
             - { name: admin-grpc, containerPort: 8070 }

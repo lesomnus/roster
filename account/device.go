@@ -44,7 +44,7 @@ import (
 // distributed binary is not one.
 //
 // This app has what the flow needs and roster does not have to grow any of it: a
-// key per operator, the tenant from the host a browser arrived at, a person
+// key per tenant, the tenant from the host a browser arrived at, a person
 // signed in at a page, and `ApiKey.Issue` reached **as that person** -- which is
 // the same verb *mint an app password* already uses, held to both escalation
 // rules without anything new being taught about grants.
