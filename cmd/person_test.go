@@ -11,7 +11,7 @@ import (
 )
 
 // TestAnOperatorFinishesAPerson is the rest of the person panel
-// (`ts/console/people.tsx`), made as the panel makes it: on the admin port, with the
+// (`ts/lib/tenant/people.tsx`), made as the panel makes it: on the admin port, with the
 // operator's session, about one of a customer's people.
 //
 // Four writes the panel grew and the reads beside them. An address added and

@@ -22,14 +22,14 @@
 import { useState } from 'react'
 import { useCall, useQuery, useRow } from '@lesomnus/payday/react'
 
-import { GroupMembershipService, GroupService } from '../gen/app/group_svc_pb.js'
-import { SiteMembershipService, TeamMembershipService } from '../gen/app/membership_svc_pb.js'
-import { RoleService } from '../gen/app/role_svc_pb.js'
-import { SiteService } from '../gen/app/site_svc_pb.js'
-import { TeamService } from '../gen/app/team_svc_pb.js'
-import type { Role } from '../gen/app/role_pb.js'
-import type { Holder } from '../gen/roster/payday/holder_pb.js'
-import { HolderService } from '../gen/roster/payday/holder_svc_pb.js'
+import { GroupMembershipService, GroupService } from '../../gen/app/group_svc_pb.js'
+import { SiteMembershipService, TeamMembershipService } from '../../gen/app/membership_svc_pb.js'
+import { RoleService } from '../../gen/app/role_svc_pb.js'
+import { SiteService } from '../../gen/app/site_svc_pb.js'
+import { TeamService } from '../../gen/app/team_svc_pb.js'
+import type { Role } from '../../gen/app/role_pb.js'
+import type { Holder } from '../../gen/roster/payday/holder_pb.js'
+import { HolderService } from '../../gen/roster/payday/holder_svc_pb.js'
 
 /** uuid is the bytes an identifier arrives as, written the way a person reads one. */
 export function uuid(v: Uint8Array | undefined): string {

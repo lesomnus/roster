@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The three pages, driven by a browser: two against a deployment stood up the
+# The four pages, driven by a browser: three against a deployment stood up the
 # way `docs/operating.md` says to stand one up, and the Login App's against
 # nothing at all -- `ts/vite.login.ts` is that app made up, which is the whole
 # reason it costs nothing to drive here.
@@ -48,7 +48,7 @@ fi
 # server left over from a `--hold` the day before answered for the sandbox,
 # serving the modules it had cached, and a change to the library it served
 # was invisible for an afternoon.
-for port in 18051 18052 18061 18062 18071 18072 18090 18100 18101; do
+for port in 18051 18052 18061 18062 18071 18072 18090 18100 18101 18102; do
 	if (exec 3<>"/dev/tcp/127.0.0.1/${port}") 2>/dev/null; then
 		echo "something is already listening on 127.0.0.1:${port}; stop it first (a --hold left running?)" >&2
 		exit 1
@@ -59,9 +59,22 @@ done
 # `127.0.0.1` for the account app because a security key's relying party is a
 # domain, and an address is not one.
 export E2E_CONSOLE="http://127.0.0.1:18072/"
+# The user console is on the **data plane's** listener, and at `localhost`
+# rather than at an address: which tenant a sign-in is about is the name the
+# browser arrived at, and the `Host` row seeded below says `localhost`.
+export E2E_USER="http://localhost:18052/"
 export E2E_ACCOUNT="http://localhost:18090"
 export E2E_OPS_PASSWORD="ops-$(head -c 12 /dev/urandom | base64 | tr -d '/+=')"
 export E2E_ERIN_PASSWORD="correct horse battery staple"
+# contoso's own administrator, for the user console.
+#
+# Not erin, and the reason is worth writing down: the account spec walks her
+# through **changing** her password and then enrolling a second factor, and the
+# specs run in order on one worker. Anything later that signed in as her would
+# be signing in with a password she no longer has -- which reads as the page
+# being broken. `admin` is the holder `Tenant.Add` wrote and nothing else
+# touches.
+export E2E_TENANT_ADMIN_PASSWORD="contoso-$(head -c 12 /dev/urandom | base64 | tr -d '/+=')"
 admin_http="http://127.0.0.1:18072"
 
 cat > "${work}/roster.yaml" <<YAML
@@ -76,6 +89,10 @@ server:
   http:
     addr: 127.0.0.1:18052
     allow_web: true
+sign_in:
+  enabled: true
+user_console:
+  dir: ${__root}/ts/dist/user
 control:
   db:
     driver: sqlite3
@@ -110,6 +127,9 @@ r holder add @contoso/erin >/dev/null
 echo '{"role":{"slug":{"alias":"everything","tenant":{"alias":"contoso"}}},"holder":{"slug":{"alias":"erin","tenant":{"alias":"contoso"}}}}' \
 	| r binding add - >/dev/null
 echo "${E2E_ERIN_PASSWORD}" | r vouch set --password-stdin @contoso/erin >/dev/null 2>&1
+# And a way in for the administrator the tenant arrived with, which is who the
+# user console signs in.
+echo "${E2E_TENANT_ADMIN_PASSWORD}" | r vouch set --password-stdin @contoso/admin >/dev/null
 r host add '{"tenant":{"alias":"contoso"},"name":"localhost"}' >/dev/null
 
 # Two directories, and erin arrived through one of them.
@@ -147,6 +167,7 @@ up() {
 	return 1
 }
 up "${E2E_CONSOLE}"
+up "${E2E_USER}"
 
 # After roster answers: the account app checks each key against the server it
 # is handed as it starts, and does not start without one.
@@ -166,6 +187,14 @@ if [ "${E2E_SANDBOX:-1}" != "0" ]; then
 	(cd ts && exec env VITE_SANDBOX=1 ./node_modules/.bin/vite --config vite.console.ts --port 18100 --strictPort >"${work}/sandbox.log" 2>&1) &
 	pids+=($!)
 	up "${E2E_SANDBOX}"
+
+	# And the user console's, over the **same** `app.wasm`: one module publishes
+	# an entry point per listener a deployment would open, so this costs a
+	# second dev server and no second build.
+	export E2E_USER_SANDBOX="http://localhost:18102/"
+	(cd ts && exec env VITE_SANDBOX=1 ./node_modules/.bin/vite --config vite.user.ts --port 18102 --strictPort >"${work}/usersandbox.log" 2>&1) &
+	pids+=($!)
+	up "${E2E_USER_SANDBOX}"
 else
 	unset E2E_SANDBOX
 fi
@@ -192,14 +221,20 @@ if [ "${1:-}" = "--hold" ]; then
 	cat <<-EOF
 	up. ^C stops.
 
-	  console  ${E2E_CONSOLE}
-	           admin / ${E2E_OPS_PASSWORD}
-	           the operator who runs this deployment; the control plane.
+	  admin console  ${E2E_CONSOLE}
+	                 admin / ${E2E_OPS_PASSWORD}
+	                 the operator who runs this deployment; the control plane.
 
-	  account  ${E2E_ACCOUNT}
-	           erin / ${E2E_ERIN_PASSWORD}
-	           somebody in contoso; the data plane. The tenant comes from the
-	           host, so the form asks for the alias alone.
+	  user console   ${E2E_USER}
+	                 admin / ${E2E_TENANT_ADMIN_PASSWORD}
+	                 contoso's own administrator, seeing their own tenant; the
+	                 walled data plane. The tenant comes from the host, so the
+	                 form asks for the alias alone.
+
+	  account        ${E2E_ACCOUNT}
+	                 erin / ${E2E_ERIN_PASSWORD}
+	                 the same person, through the app in front rather than as a
+	                 caller of roster.
 	EOF
 	wait
 	exit 0

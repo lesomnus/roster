@@ -871,22 +871,26 @@ p.bad {
 
 /* ------------------------------------------------- screen particulars */
 
-/* The form that stands a customer up sits above the list, because on a fresh
+/* The forms that add a row sit above the list they add to, because on a fresh
    deployment the list is empty and the thing to do next is the only thing on
-   the screen. */
-.new-customer {
+   the screen. One for a customer, on the admin console; one for somebody in a
+   tenant, on both. */
+.new-customer,
+.new-holder {
 	padding: var(--s-3) var(--s-4);
 	background: var(--surface-2);
 	border-radius: var(--radius);
 	margin-bottom: var(--s-4);
 }
 
-.new-customer form {
+.new-customer form,
+.new-holder form {
 	margin-bottom: var(--s-1);
 }
 
-/* The person panel: what somebody signs in with, and the acts an operator
-   has when they cannot. Together because they are one decision. */
+/* The person panel: what somebody signs in with, and the acts whoever is
+   administering them has when they cannot. Together because they are one
+   decision. */
 .person .state {
 	margin: var(--s-3) 0;
 }

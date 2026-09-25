@@ -159,6 +159,36 @@ guess passwords. The lockout in `vouch.lockout` is what makes that expensive,
 and this being off by default is what keeps the surface off a port that is
 reachable by design.
 
+## The user console
+
+```yaml
+user_console:
+  dir: /usr/share/roster/user       # empty serves no page
+```
+
+The page behind that door: a **roster user** signs in and sees their own tenant
+-- their people, how those people arrive, the organisation, what each may do,
+and the trail. `roster serve` serves the built page at `/` on `server.http` when
+`dir` names it, and that listener is the whole of what the page calls.
+
+**It is served where it signs in, and that is not a preference.** The session is
+a `__Host-` cookie, host-only, so a page and every listener it calls have to be
+one host -- and the name in the address bar is also what decides *which tenant*
+the sign-in was about. So a tenant's people open the name their tenant claims,
+and the page is for whoever claims it. There is nothing to configure and nowhere
+to configure it.
+
+**`user_console.dir` with `sign_in.enabled` off is refused**, rather than
+serving a page whose form is answered `Unimplemented` by a method that is not on
+the wire. That combination looks like a working deployment from the outside,
+which is the only kind of mistake worth refusing at startup.
+
+**It is not the admin console with a filter.** The caller is the tenant's own
+holder and the wall narrows every read to their tenant; the admin console's
+caller is a roster operator on a port that waives two rules (below). Both pages
+draw the same screens, from `ts/lib/tenant/`, and what differs is who is
+calling.
+
 ## The listeners
 
 Five at most, and which open is what the configuration named.
@@ -166,10 +196,10 @@ Five at most, and which open is what the configuration named.
 | | who calls it | |
 | --- | --- | --- |
 | `server.addr` | product apps | gRPC, **walled** and gated. Keys only -- a cookie names nobody here |
-| `server.http.addr` | anything that cannot speak gRPC | the same, transcoded (Connect, gRPC-Web) |
-| `control.addr` | a console, and the deployment's own services | who runs this deployment, which services call it, their keys. Takes a session cookie **and** an `rk_` |
-| `control.http.addr` | a console in a browser | the same, transcoded. This is what the admin console talks to, and where `AuthService` is registered |
-| `admin.addr` / `.http.addr` | a console | **customers**: the data plane with no wall, behind an operator's session |
+| `server.http.addr` | anything that cannot speak gRPC, and a roster user's browser | the same, transcoded (Connect, gRPC-Web). Serves the **user console** and the sign-in behind it |
+| `control.addr` | the deployment's own services | who runs this deployment, which services call it, their keys. Takes an `rk_` |
+| `control.http.addr` | the same, over HTTP | the RPCs a shell makes -- `roster control …`. **No page**, and no sign-in |
+| `admin.addr` / `.http.addr` | a roster operator's browser | **customers**: the data plane with no wall, behind an operator's session. Serves the **admin console** and the sign-in behind it |
 
 ```yaml
 admin:
@@ -193,9 +223,11 @@ that falls out is one sentence:
 > **Who is calling** and **what they hold** are control plane questions. What they
 > are operating on is the data plane.
 
-A browser cannot speak gRPC, so a port with no `http` block is a port a console
-cannot reach. `server.http` is the wrong one for a console: it fronts the walled
-data plane, where an operator's session names nobody.
+A browser cannot speak gRPC, so a port with no `http` block is a port no page
+can reach. `server.http` is the wrong one for the **admin** console: it fronts
+the walled data plane, where an operator's session names nobody. It is the only
+right one for the **user** console, for the same reason read the other way --
+that is where a roster user's session names somebody.
 
 ## The admin console
 
@@ -754,10 +786,12 @@ terminator in front, which is what `deploy/` assumes and what
 docker compose up --build
 ```
 
-roster on Postgres, both planes, the admin console, one customer already stood up
+roster on Postgres, both planes, both consoles, one customer already stood up
 (`contoso`, with `erin` in it), the account app, the directory, and -- for the
 shape a deployment with several products has -- Hydra with the Login App beside
-it, plus two demo relying parties.
+it, plus two demo relying parties. The two consoles are the two callers: the
+admin console at `:8081` is the operator who runs it, and the user console at
+`:8080` is somebody inside `contoso` looking at their own organisation.
 [../README.md](../README.md#quick-start) has the ports and the passwords, and
 [relying-party.md](relying-party.md) is what the two demos are for.
 

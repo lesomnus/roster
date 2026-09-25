@@ -100,14 +100,20 @@ across every entity.
 
 ```sh
 cd ts && npm install
-npm run dev            # the admin console, against a running roster
-npm run dev:sandbox    # the admin console with the whole server compiled into the page
-npm run dev:login      # the sign-in pages, with a made-up server behind them
+npm run dev              # the admin console, against a running roster
+npm run dev:sandbox      # the admin console with the whole server compiled into the page
+npm run dev:user         # the user console, against a running roster
+npm run dev:user:sandbox # the user console with the same server compiled into the page
+npm run dev:login        # the sign-in pages, with a made-up server behind them
 ```
 
-`ts/` builds three pages over one `ts/lib/` and one `ts/gen/`: the **console**
-(`ts/console/`), the **account page** (`ts/account/`) and the **Login App's**
-(`ts/login/`). Two of them draw a sign-in, so it is one component --
+`ts/` builds four pages over one `ts/lib/` and one `ts/gen/`: the **admin
+console** (`ts/console/`), the **user console** (`ts/user/`), the **account
+page** (`ts/account/`) and the **Login App's** (`ts/login/`). The two consoles
+draw one tenant's rows with the same components -- `ts/lib/tenant/`, because
+what differs between them is who is calling and which listener answers, and
+neither of those is something a table of holders knows about. Two pages draw a
+sign-in, so it is one component --
 `ts/lib/signin.tsx`, the password form, the second factor and the operator's
 provider buttons. What is shared is what `frontdoor/web/frontdoor.js` says is
 worth sharing; the markup around it is each page's own.

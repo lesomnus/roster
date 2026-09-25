@@ -128,14 +128,18 @@ sequenceDiagram
 **roster is in the flow once, at sign-in, and beside it afterwards — never in
 the per-request path.** No session check and no token check reaches it, which is
 the property the request was actually after, had without roster signing
-anything. And the caller list is unchanged by any of it — the Login App and
-admin consoles; no customer's browser reaches roster — which is the sign it is
-the right shape. (An operator's does, two paragraphs down: the admin console is a
-browser and roster's own cookie is what it holds. Different plane, and it is a
-caller on this list rather than an exception to it.)
+anything. And the caller list is unchanged by any of it — the Login App, the
+account app, and roster's own two pages — which is the sign it is the right
+shape.
 
-roster ships both of those callers, and neither moves the line. The admin console
-(`ts/console/`) is the admin console, on roster's own cookie. The account app
+A browser does reach roster, and on both planes: the **admin console**
+(`ts/console/`) is an operator's, and the **user console** (`ts/user/`) is a
+roster user's, each on roster's own cookie. Neither is in the per-request path
+of anything — they are somebody administering rows, which is what every line
+above is about not being. What no customer's browser does is ask roster on the
+way to a product's page.
+
+roster ships those callers, and none of them moves the line. The account app
 (`account/`, `roster account serve`) is a login app: a separate process holding
 one tenant key per tenant, doing the OIDC exchange with the providers an
 operator wrote down as `Connection` rows, minting the delegation through

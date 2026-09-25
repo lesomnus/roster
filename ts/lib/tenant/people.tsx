@@ -1,16 +1,28 @@
 /**
- * One person, as the operator of a deployment sees them.
+ * One person, and what somebody administering them may do about them.
+ *
+ * # One screen, two callers
+ *
+ * `ts/lib/tenant/` is the tenant's own rows drawn once, because the two pages
+ * that draw them differ in **who is calling** and in nothing else: a roster
+ * operator reaching a customer through `admin.addr`, or a tenant administrator
+ * reaching their own people through the walled data plane (#34). The server
+ * answers each of them what they may have, which is why there is no second copy
+ * of this with less in it.
+ *
+ * So the prose here says *whoever is administering* rather than *the operator*,
+ * and `may` is what makes the difference visible on screen.
  *
  * # Why this is a screen and not a row in a table
  *
- * The customers screen lists tenants and the people in each, which is a read.
- * This is the other half: what somebody signs in with, and the four things an
- * operator does when they cannot sign in.
+ * The list above is a read: the tenants, or the people in one. This is the
+ * other half -- what somebody signs in with, and the four things somebody does
+ * when they cannot sign in.
  *
  * All four exist because of one deployment shape. In an air gap there is no
  * mail, so the somebody else who delivers a recovery code is a **person** —
- * which makes recovery and an operator-initiated reset the same act reached two
- * ways, and makes a console the thing that reaches it. Roadmap.md's items 3
+ * which makes recovery and an administered reset the same act reached two
+ * ways, and makes a page the thing that reaches it. Roadmap.md's items 3
  * and 10, and D28 is the shape.
  *
  * # What it shows that nothing else could
@@ -37,15 +49,15 @@ import { useCall, useQuery } from '@lesomnus/payday/react'
 
 import { create } from '@bufbuild/protobuf'
 
-import type { ApiKey } from '../gen/app/apikey_pb.js'
-import { SignInKeySchema } from '../gen/app/me_pb.js'
-import type { SignInCredential, SignInIdentity, SignInKey } from '../gen/app/me_pb.js'
-import type { Holder } from '../gen/roster/payday/holder_pb.js'
-import { HolderService } from '../gen/roster/payday/holder_svc_pb.js'
-import { EmailService } from '../gen/app/email_svc_pb.js'
-import { IdentityService } from '../gen/app/identity_svc_pb.js'
-import type { Admin } from '../lib/client.js'
-import { expiries, expiresAt, until } from '../lib/expiry.js'
+import type { ApiKey } from '../../gen/app/apikey_pb.js'
+import { SignInKeySchema } from '../../gen/app/me_pb.js'
+import type { SignInCredential, SignInIdentity, SignInKey } from '../../gen/app/me_pb.js'
+import type { Holder } from '../../gen/roster/payday/holder_pb.js'
+import { HolderService } from '../../gen/roster/payday/holder_svc_pb.js'
+import { EmailService } from '../../gen/app/email_svc_pb.js'
+import { IdentityService } from '../../gen/app/identity_svc_pb.js'
+import type { Writes } from '../client.js'
+import { expiries, expiresAt, until } from '../expiry.js'
 
 /** uuid is the bytes an identifier arrives as, written the way a person reads one. */
 function uuid(v: Uint8Array | undefined): string {
@@ -82,16 +94,182 @@ function when(v: { seconds: bigint } | undefined): string {
 }
 
 /**
- * Person is one person's ways in, and what an operator may do about them.
+ * People is who is in one tenant, and one of them opened.
  *
- * `may` is the control plane's answer about the operator, passed down rather
+ * Filtered by tenant rather than listed and sifted here, which is the whole
+ * reason `HolderFilter` grew the field: a page that read every holder and kept
+ * the ones it wanted would be reading every customer's people to draw one
+ * customer's. On the user console the wall has already done it, and the filter
+ * is still right -- a read narrowed twice is narrowed once.
+ *
+ * Which person is open is the **page's** to say, not this component's: the
+ * admin console keeps it at `/customers/@<tenant>/people/<alias>` and the user
+ * console at `/people/<alias>`, because on that page there is only ever one
+ * tenant and putting it in the address would be saying it twice. So this takes
+ * `at` and answers `onOpen`, and neither page has to know the other's tree.
+ */
+export function People(props: {
+	tenant: { id?: Uint8Array; alias?: string } | undefined
+	writes: Writes
+	may: (method: string) => boolean
+
+	/** Whose panel is open, by alias, or nobody. */
+	at: string | null
+	onOpen: (who: string | null) => void
+}): React.ReactNode {
+	const id = props.tenant?.id
+	const vs = useQuery(HolderService.method.list, {
+		filters: id === undefined ? [] : [{ tenant: { key: { case: 'id', value: id } } }],
+	})
+
+	// Whom this screen erased since it read: a soft erase hides the row from
+	// every read, and a list still showing them would say the erase did not take.
+	const [gone, setGone] = useState<string[]>([])
+
+	// And whom it added, for the reason the customers list keeps the same: a
+	// list query is not revalidated by a write this page made, and somebody who
+	// vanished until a reload would read as somebody who was not created.
+	const [made, setMade] = useState<Holder[]>([])
+
+	if (vs.state === 'pending') return <p className="loading">…</p>
+	if (vs.state === 'error') return <Failed at={vs.error} />
+
+	const at = props.at
+	const read = vs.data?.items ?? []
+	const items = [...read, ...made.filter((v) => !read.some((w) => uuid(w.id) === uuid(v.id)))]
+		.filter((v) => !gone.includes(uuid(v.id)))
+
+	return (
+		<section className="within">
+			<h3>{props.tenant?.alias}</h3>
+
+			<NewHolder
+				tenant={id}
+				may={props.may}
+				onMade={(v) => setMade((was) => [...was, v])}
+			/>
+
+			{items.length === 0 && <p className="none">nobody in it</p>}
+
+			<table>
+				<thead>
+					<tr>
+						<th>alias</th>
+						<th>name</th>
+						<th>since</th>
+						<th />
+					</tr>
+				</thead>
+				<tbody>
+					{items.map((v) => {
+						const who = v.alias
+
+						return (
+							<tr key={uuid(v.id)} className={who === at ? 'at' : ''}>
+								<td>{v.alias}</td>
+								<td>{v.name}</td>
+								<td>{when(v.dateCreated)}</td>
+								<td>
+									<button onClick={() => props.onOpen(who === at ? null : who)}>
+										{who === at ? 'hide' : 'signs in with'}
+									</button>
+								</td>
+							</tr>
+						)
+					})}
+				</tbody>
+			</table>
+
+			{at !== null && (
+				<Person
+					holder={items.find((v) => v.alias === at)}
+					writes={props.writes}
+					may={props.may}
+					onErased={() => {
+						setGone((was) => [...was, at])
+						props.onOpen(null)
+					}}
+				/>
+			)}
+		</section>
+	)
+}
+
+/**
+ * NewHolder adds somebody to this tenant, and gives them nothing.
+ *
+ * No password and no role, deliberately, which is `NewCustomer`'s argument one
+ * level down: a way in belongs on the person, where it is the same act whether
+ * they were created a minute ago or a year ago, and a form that minted a secret
+ * as a side effect of creating a row would put one on screen before whoever is
+ * looking had anybody to give it to.
+ */
+function NewHolder(props: {
+	tenant: Uint8Array | undefined
+	may: (method: string) => boolean
+	onMade: (v: Holder) => void
+}): React.ReactNode {
+	const add = useCall(HolderService.method.add)
+	const [bad, setBad] = useState<string | null>(null)
+
+	const tenant = props.tenant
+	if (tenant === undefined) return null
+
+	const allowed = props.may('/roster.HolderService/Add')
+
+	return (
+		<div className="new-holder">
+			<form
+				onSubmit={(e) => {
+					e.preventDefault()
+
+					const form = e.currentTarget
+					const f = new FormData(form)
+					const alias = String(f.get('alias') ?? '').trim()
+					if (alias === '') return
+
+					setBad(null)
+					void add
+						.call({
+							tenant: { key: { case: 'id', value: tenant } },
+							alias,
+							name: String(f.get('name') ?? '').trim(),
+						})
+						.then((v) => {
+							form.reset()
+							props.onMade(v)
+						})
+						.catch((e: unknown) => setBad(e instanceof Error ? e.message : 'no'))
+				}}
+			>
+				<input name="alias" placeholder="alias" required />
+				<input name="name" placeholder="name (optional)" />
+				<button type="submit" disabled={add.state === 'pending' || !allowed}>
+					add somebody
+				</button>
+			</form>
+
+			{/* Said rather than hidden, for the reason `NewCustomer` says it: a
+			    screen that dropped the form would leave somebody wondering
+			    whether the feature exists. */}
+			{!allowed && <p className="none">this needs /roster.HolderService/Add</p>}
+			{bad !== null && <p className="bad">{bad}</p>}
+		</div>
+	)
+}
+
+/**
+ * Person is one person's ways in, and what whoever is administering them may do
+ * about them.
+ *
+ * `may` is `Me.Get`'s answer about whoever is signed in, passed down rather
  * than asked again: it decides what is worth **drawing** and never what is
  * allowed. The server refuses either way, and a page that treated this as the
  * decision would be one an altered client could talk out of.
  */
 export function Person(props: {
 	holder: Holder | undefined
-	admin: Admin
+	writes: Writes
 	may: (method: string) => boolean
 
 	// Said when this person was erased here, so the list above can stop
@@ -142,7 +320,7 @@ export function Person(props: {
 			<Keys
 				keys={vs.data?.keys ?? []}
 				holder={key}
-				admin={props.admin}
+				writes={props.writes}
 				may={props.may}
 				say={say}
 			/>
@@ -170,14 +348,14 @@ export function Person(props: {
 				{disabled ? (
 					<button
 						disabled={!props.may('/roster.HolderService/Enable')}
-						onClick={() => run(props.admin.holder.enable({ ref: who }), 'signing in is open again')}
+						onClick={() => run(props.writes.holder.enable({ ref: who }), 'signing in is open again')}
 					>
 						reinstate
 					</button>
 				) : (
 					<button
 						disabled={!props.may('/roster.HolderService/Disable')}
-						onClick={() => run(props.admin.holder.disable({ ref: who }), 'suspended')}
+						onClick={() => run(props.writes.holder.disable({ ref: who }), 'suspended')}
 					>
 						suspend
 					</button>
@@ -189,7 +367,7 @@ export function Person(props: {
 					disabled={!props.may('/roster.HolderService/Invalidate')}
 					onClick={() =>
 						run(
-							props.admin.holder.invalidate({ ref: who }),
+							props.writes.holder.invalidate({ ref: who }),
 							'everything issued before now is void',
 						)
 					}
@@ -207,7 +385,7 @@ export function Person(props: {
 					disabled={!props.may('/roster.CredentialService/Issue')}
 					onClick={() => {
 						say(null)
-						void props.admin.credential
+						void props.writes.credential
 							.issue({ ref: who })
 							.then((r) => say({ kind: 'secret', text: r.secret }))
 							.catch((e: unknown) =>
@@ -225,7 +403,7 @@ export function Person(props: {
 				<button
 					disabled={!props.may('/roster.CredentialService/Unlock')}
 					onClick={() =>
-						run(props.admin.credential.unlock({ ref: who }), 'the account is open')
+						run(props.writes.credential.unlock({ ref: who }), 'the account is open')
 					}
 				>
 					unlock
@@ -236,7 +414,7 @@ export function Person(props: {
 				    a phone set up at a desk. The seed is answered once, like a
 				    password, and the factor does not count until one code proves
 				    it. Held to `mayReach`, like every credential write. */}
-				<EnrolFor holder={key} admin={props.admin} may={props.may} say={say} />
+				<EnrolFor holder={key} writes={props.writes} may={props.may} say={say} />
 
 				{/* Soft: the row stays for the trail and vanishes from every
 				    read. There is no undo drawn, because there is no undo. */}
@@ -246,7 +424,7 @@ export function Person(props: {
 					onClick={() => {
 						if (!window.confirm(`erase ${props.holder?.alias ?? 'them'}? they vanish from every read; the trail keeps what they did`)) return
 						say(null)
-						void props.admin.holder
+						void props.writes.holder
 							.erase(who)
 							.then(() => props.onErased?.())
 							.catch((e: unknown) => say({ kind: 'bad', text: e instanceof Error ? e.message : 'no' }))
@@ -357,7 +535,7 @@ function Reaches(props: { holder: Uint8Array; may: (method: string) => boolean }
 function Keys(props: {
 	keys: SignInKey[]
 	holder: Uint8Array
-	admin: Admin
+	writes: Writes
 	may: (method: string) => boolean
 	say: (v: { kind: 'secret' | 'done' | 'bad'; text: string }) => void
 }): React.ReactNode {
@@ -417,7 +595,7 @@ function Keys(props: {
 									<button
 										disabled={!props.may('/roster.ApiKeyService/Erase')}
 										onClick={() => {
-											void props.admin.apiKey
+											void props.writes.apiKey
 												.erase({ key: { case: 'id', value: v.id } })
 												.then(() => {
 													props.say({ kind: 'done', text: 'revoked' })
@@ -465,7 +643,7 @@ function Keys(props: {
 						methods.trim() === ''
 					}
 					onClick={() => {
-						void props.admin.apiKey
+						void props.writes.apiKey
 							.issue({
 								holder: who,
 								alias,
@@ -721,7 +899,7 @@ function Profile(props: { holder: Holder; may: (method: string) => boolean }): R
  */
 function EnrolFor(props: {
 	holder: Uint8Array
-	admin: Admin
+	writes: Writes
 	may: (method: string) => boolean
 	say: (v: { kind: 'secret' | 'done' | 'bad'; text: string } | null) => void
 }): React.ReactNode {
@@ -734,7 +912,7 @@ function EnrolFor(props: {
 				disabled={!props.may('/roster.CredentialService/Enrol')}
 				onClick={() => {
 					props.say(null)
-					void props.admin.credential
+					void props.writes.credential
 						.enrol({ ref: { key: { case: 'id', value: props.holder } }, kind: 'totp', name })
 						.then((r) => {
 							setName('')

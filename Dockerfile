@@ -94,12 +94,14 @@ FROM gcr.io/distroless/static-debian12:nonroot AS app
 COPY --from=build /out/roster /usr/local/bin/roster
 COPY --from=build /out/example-product /usr/local/bin/example-product
 
-# Where the three pages land. A deployment points at each:
+# Where the four pages land. A deployment points at each:
 #
-#   control.console.dir            the console, served at `/` on that listener
+#   admin.console.dir              the admin console, at `/` on that listener
+#   user_console.dir               the user console, at `/` on `server.http`
 #   account.page.dir               the account page
 #   login.page.dir                 the Login App's, for a deployment with Hydra
 COPY --from=page /src/ts/dist/console /usr/share/roster/console
+COPY --from=page /src/ts/dist/user /usr/share/roster/user
 COPY --from=page /src/ts/dist/account /usr/share/roster/account
 COPY --from=page /src/ts/dist/login /usr/share/roster/login
 
@@ -131,6 +133,7 @@ RUN apk add --no-cache ca-certificates curl oath-toolkit-oathtool
 COPY --from=build /out/roster /usr/local/bin/roster
 COPY --from=build /out/example-product /usr/local/bin/example-product
 COPY --from=page /src/ts/dist/console /usr/share/roster/console
+COPY --from=page /src/ts/dist/user /usr/share/roster/user
 COPY --from=page /src/ts/dist/account /usr/share/roster/account
 COPY --from=page /src/ts/dist/login /usr/share/roster/login
 COPY docker/entrypoint.sh docker/customer.sh docker/account.sh docker/ldap.sh docker/login.sh docker/flow.sh docker/behind.sh docker/itself.sh /usr/local/bin/

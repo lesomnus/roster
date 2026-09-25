@@ -41,18 +41,17 @@ import type { App } from '@lesomnus/payday/react'
 
 import type { Tenant } from '../gen/roster/payday/tenant_pb.js'
 import { TenantService } from '../gen/roster/payday/tenant_svc_pb.js'
-import { HolderService } from '../gen/roster/payday/holder_svc_pb.js'
 
-import type { Admin } from '../lib/client.js'
+import type { Writes } from '../lib/client.js'
 import { go, useRoute } from '../lib/route.js'
 // payday's panel, where this build has one; see `devtools.tsx`.
-import { Devtools } from './devtools.js'
+import { Devtools } from '../lib/devtools.js'
 import { entities } from '../gen/entities.js'
-import { Person } from './people.js'
-import { Arrives } from './arrives.js'
-import { Organisation } from './organisation.js'
-import { Access } from './access.js'
-import { Trail } from './trail.js'
+import { People } from '../lib/tenant/people.js'
+import { Arrives } from '../lib/tenant/arrives.js'
+import { Organisation } from '../lib/tenant/organisation.js'
+import { Access } from '../lib/tenant/access.js'
+import { Trail } from '../lib/tenant/trail.js'
 
 /** Panel is what opens under a customer's row: one at a time, because they nest. */
 type Panel = 'people' | 'arrives' | 'organisation' | 'access' | 'trail' | 'edit'
@@ -107,16 +106,16 @@ function when(v: { seconds: bigint } | undefined): string {
  */
 export function Customers(props: {
 	app: App | null
-	admin: Admin | null
+	writes: Writes | null
 	may: (method: string) => boolean
 	// The data plane with no wall, for the panel; the sandbox's alone.
 	ungated?: Transport | undefined
 }): React.ReactNode {
-	if (props.app === null || props.admin === null) return <p className="loading">…</p>
+	if (props.app === null || props.writes === null) return <p className="loading">…</p>
 
 	return (
 		<Provider app={props.app}>
-			<Tenants admin={props.admin} may={props.may} />
+			<Tenants writes={props.writes} may={props.may} />
 			{/* The same window, on the data plane's store -- the one this screen
 			    reads, and the only one mounted while it is showing. */}
 			<Devtools {...(props.ungated !== undefined ? { ungated: props.ungated } : {})} />
@@ -124,7 +123,7 @@ export function Customers(props: {
 	)
 }
 
-function Tenants(props: { admin: Admin; may: (method: string) => boolean }): React.ReactNode {
+function Tenants(props: { writes: Writes; may: (method: string) => boolean }): React.ReactNode {
 	const vs = useQuery(TenantService.method.list, {})
 
 	// Which customer is open, and on which panel: who is in it, how they
@@ -155,7 +154,7 @@ function Tenants(props: { admin: Admin; may: (method: string) => boolean }): Rea
 			<h2>customers</h2>
 
 			<NewCustomer
-				admin={props.admin}
+				writes={props.writes}
 				may={props.may}
 				onMade={(v) => setMade((was) => [...was, v])}
 			/>
@@ -201,8 +200,17 @@ function Tenants(props: { admin: Admin; may: (method: string) => boolean }): Rea
 			{at?.on === 'people' && (
 				<People
 					tenant={items.find(same)}
-					admin={props.admin}
+					writes={props.writes}
 					may={props.may}
+					// Which person is open is this page's to say, in this page's
+					// tree: `/customers/@<tenant>/people/<alias>`, the fourth
+					// segment. The user console's is `/people/<alias>`, which is
+					// why the component takes it rather than reading the route.
+					at={route[3] ?? null}
+					onOpen={(who) => {
+						const under = '@' + (items.find(same)?.alias ?? '')
+						go(who === null ? ['customers', under, 'people'] : ['customers', under, 'people', who])
+					}}
 				/>
 			)}
 			{at?.on === 'arrives' && (
@@ -301,90 +309,6 @@ function EditTenant(props: { tenant: Tenant | undefined; may: (method: string) =
 	)
 }
 
-/**
- * People is who is in one tenant.
- *
- * Filtered by tenant rather than listed and sifted here, which is the whole
- * reason `HolderFilter` grew the field: a page that read every holder and kept
- * the ones it wanted would be reading every customer's people to draw one
- * customer's.
- */
-function People(props: {
-	tenant: { id?: Uint8Array; alias?: string } | undefined
-	admin: Admin
-	may: (method: string) => boolean
-}): React.ReactNode {
-	const id = props.tenant?.id
-	const vs = useQuery(HolderService.method.list, {
-		filters: id === undefined ? [] : [{ tenant: { key: { case: 'id', value: id } } }],
-	})
-
-	// Which person is open: the fourth segment, `/customers/@<tenant>/people/<alias>`.
-	const route = useRoute()
-	const at = route[3] ?? null
-	const under = '@' + (props.tenant?.alias ?? '')
-	const open = (who: string | null): void =>
-		go(who === null ? ['customers', under, 'people'] : ['customers', under, 'people', who])
-
-	// Whom this screen erased since it read: a soft erase hides the row from
-	// every read, and a list still showing them would say the erase did not take.
-	const [gone, setGone] = useState<string[]>([])
-
-	if (vs.state === 'pending') return <p className="loading">…</p>
-	if (vs.state === 'error') return <Failed at={vs.error} />
-
-	const items = (vs.data?.items ?? []).filter((v) => !gone.includes(uuid(v.id)))
-
-	return (
-		<section className="within">
-			<h3>{props.tenant?.alias}</h3>
-
-			{items.length === 0 && <p className="none">nobody in it</p>}
-
-			<table>
-				<thead>
-					<tr>
-						<th>alias</th>
-						<th>name</th>
-						<th>since</th>
-						<th />
-					</tr>
-				</thead>
-				<tbody>
-					{items.map((v) => {
-						const who = v.alias
-
-						return (
-							<tr key={uuid(v.id)} className={who === at ? 'at' : ''}>
-								<td>{v.alias}</td>
-								<td>{v.name}</td>
-								<td>{when(v.dateCreated)}</td>
-								<td>
-									<button onClick={() => open(who === at ? null : who)}>
-										{who === at ? 'hide' : 'signs in with'}
-									</button>
-								</td>
-							</tr>
-						)
-					})}
-				</tbody>
-			</table>
-
-			{at !== null && (
-				<Person
-					holder={items.find((v) => v.alias === at)}
-					admin={props.admin}
-					may={props.may}
-					onErased={() => {
-						setGone((was) => [...was, at])
-						open(null)
-					}}
-				/>
-			)}
-		</section>
-	)
-}
-
 // every is what a customer's first person is given, and it is a **pattern**.
 //
 // The same one `init` wrote for the first customer and for the same reason: a
@@ -436,7 +360,7 @@ const needs = ['/roster.TenantService/Add', '/roster.CredentialService/Issue']
  * making customers. `docs/usage/customers.md` § "Giving it an identifier" carries the warning.
  */
 async function stand(
-	admin: Admin,
+	writes: Writes,
 	alias: string,
 	name: string,
 	who: string,
@@ -454,7 +378,7 @@ async function stand(
 
 	let tenant: Tenant
 	try {
-		tenant = await admin.tenant.add(
+		tenant = await writes.tenant.add(
 			given === undefined ? { alias, name } : { alias, name, id: given },
 		)
 	} catch (e) {
@@ -466,7 +390,7 @@ async function stand(
 	// just made one knows both halves. It answers a password once.
 	let secret: string
 	try {
-		const res = await admin.credential.issue({
+		const res = await writes.credential.issue({
 			ref: {
 				key: {
 					case: 'slug',
@@ -507,7 +431,7 @@ async function stand(
  * operator had anybody to read it to.
  */
 function NewCustomer(props: {
-	admin: Admin
+	writes: Writes
 	may: (method: string) => boolean
 	onMade: (v: Tenant) => void
 }): React.ReactNode {
@@ -531,7 +455,7 @@ function NewCustomer(props: {
 					setBusy(true)
 					say(null)
 					void stand(
-						props.admin,
+						props.writes,
 						alias,
 						String(f.get('name') ?? '').trim(),
 						who,

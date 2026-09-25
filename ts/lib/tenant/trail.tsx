@@ -17,8 +17,8 @@
 import { pdid } from '@lesomnus/payday'
 import { useQuery } from '@lesomnus/payday/react'
 
-import { AuditService } from '../gen/roster/payday/audit_svc_pb.js'
-import '../gen/domains.js'
+import { AuditService } from '../../gen/roster/payday/audit_svc_pb.js'
+import '../../gen/domains.js'
 
 import { Alias, said, uuid } from './organisation.js'
 

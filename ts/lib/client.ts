@@ -59,28 +59,39 @@ export function app(transport: Transport): App {
 }
 
 /**
- * Admin is what a page calls on the **admin** listener, which is where a
- * deployment's operator reaches its customers.
+ * Writes is what a page calls directly, where the store cannot answer.
  *
- * Not the whole of `App`, because this is not a second copy of the admin console: it
- * is the writes an operator makes -- about one person, and about standing a
- * customer up -- and a page reads through the store for everything else.
+ * Not the whole of `App`, and not a second copy of either console: it is the
+ * calls whose answer is **not a row** -- `Credential.Issue` hands back a
+ * password that is shown once and stored nowhere, so there is nothing for the
+ * store to hold and nothing for it to redraw -- plus the writes that stand
+ * something up. Everything else a page reads goes through the store.
  *
- * `CredentialService` is on that port for the reason roadmap.md's item 10
+ * Both consoles have one, over their own listener, which is why this is not
+ * called `Admin` any more. The admin console's is the **admin** listener, where
+ * a roster operator reaches their customers; the user console's is the walled
+ * **data plane**, where a roster user reaches their own tenant (#34). The
+ * services are the same because the rows are the same rows -- what differs is
+ * who is calling and what the wall lets them touch, and neither of those is a
+ * decision a client makes.
+ *
+ * `CredentialService` is on the admin port for the reason roadmap.md's item 10
  * gives -- an air gap has an operator instead of a mail server, so `Issue`
  * hands them a password to read out -- and `cmd/admin.go` says what it costs
  * and what bounds it. It was `VouchService` until `Vouch.Reset` became
  * `Credential.Issue`; the page called nothing else there, so the client went
  * with the method.
  *
- * `tenant`, `role` and `binding` are the four writes that make a customer, and
- * they are here because `roster init` stopped making one. What creates a
- * customer is an operator, on this port, through the rules -- `mayGrant`
- * compares methods and site rather than tenants, so the whole-package pattern
- * an operator holds in the **control** plane reaches a tenant that did not
- * exist a moment ago.
+ * `tenant`, `role` and `binding` are the writes that make a customer, and they
+ * are here because `roster init` stopped making one. What creates a customer is
+ * an operator, on the admin port, through the rules -- `mayGrant` compares
+ * methods and site rather than tenants, so the whole-package pattern an
+ * operator holds in the **control** plane reaches a tenant that did not exist a
+ * moment ago. A user console holds the same client and never calls them: the
+ * wall refuses a tenant that is not theirs, which is the answer rather than a
+ * shorter interface.
  */
-export interface Admin {
+export interface Writes {
 	readonly holder: Client<typeof HolderService>
 	readonly credential: Client<typeof CredentialService>
 
@@ -90,17 +101,17 @@ export interface Admin {
 	readonly binding: Client<typeof BindingService>
 
 	/**
-	 * A key for one of a customer's people, answered once.
+	 * A key for one of a tenant's people, answered once.
 	 *
-	 * The same service the data plane serves, on the same rows, minting the
-	 * same `rt_`. It is on this port too because this is the one a console
-	 * reaches, and a screen that lists somebody's keys and cannot add one is a
-	 * screen that sends an operator to a shell.
+	 * The same service on both listeners, on the same rows, minting the same
+	 * `rt_`. It is on the admin port too because that is the one the admin
+	 * console reaches, and a screen that lists somebody's keys and cannot add
+	 * one is a screen that sends an operator to a shell.
 	 */
 	readonly apiKey: Client<typeof ApiKeyService>
 }
 
-export function admin(transport: Transport): Admin {
+export function writes(transport: Transport): Writes {
 	return {
 		holder: createClient(HolderService, transport),
 		credential: createClient(CredentialService, transport),

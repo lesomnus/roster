@@ -46,8 +46,8 @@
 import { useState } from 'react'
 import { useCall, useQuery } from '@lesomnus/payday/react'
 
-import { ConnectionService } from '../gen/app/connection_svc_pb.js'
-import { HostService, MailDomainService } from '../gen/app/host_svc_pb.js'
+import { ConnectionService } from '../../gen/app/connection_svc_pb.js'
+import { HostService, MailDomainService } from '../../gen/app/host_svc_pb.js'
 
 /** uuid is the bytes an identifier arrives as, written the way a person reads one. */
 function uuid(v: Uint8Array | undefined): string {
@@ -65,7 +65,7 @@ function said(e: unknown): string {
 /**
  * Arrives is the tab, under one tenant.
  *
- * `may` is the control plane's answer about the operator, passed down rather
+ * `may` is `Me.Get`'s answer about whoever is signed in, passed down rather
  * than asked again: it decides what is worth **drawing** and never what is
  * allowed. The server refuses either way.
  */
