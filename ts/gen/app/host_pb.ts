@@ -185,9 +185,10 @@ export const HostSchema: GenMessage<Host> = /*@__PURE__*/
  * # Within a tenant, and only within one
  *
  * Unlike [Host], which is a public name somebody owns, this is a routing hint
- * one operator holds about their own people. Two operators may both say
+ * one **tenant** holds about their own people. Two tenants may both say
  * something about `@gmail.com` and they are two facts, so the key is
- * `(tenant, name)` and nothing crosses.
+ * `(tenant, name)` and nothing crosses -- which is also why this one needs no
+ * proof of ownership and a `Host` does.
  *
  * @generated from message roster.MailDomain
  */
