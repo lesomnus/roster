@@ -86,6 +86,11 @@ func TenantId(v uuid.UUID) predicate.Host {
 	return predicate.Host(sql.FieldEQ(FieldTenantId, v))
 }
 
+// ActsAsId applies equality check predicate on the "acts_as_id" field. It's identical to ActsAsIdEQ.
+func ActsAsId(v uuid.UUID) predicate.Host {
+	return predicate.Host(sql.FieldEQ(FieldActsAsId, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.Host {
 	return predicate.Host(sql.FieldEQ(FieldName, v))
@@ -386,6 +391,36 @@ func TenantIdNotIn(vs ...uuid.UUID) predicate.Host {
 	return predicate.Host(sql.FieldNotIn(FieldTenantId, vs...))
 }
 
+// ActsAsIdEQ applies the EQ predicate on the "acts_as_id" field.
+func ActsAsIdEQ(v uuid.UUID) predicate.Host {
+	return predicate.Host(sql.FieldEQ(FieldActsAsId, v))
+}
+
+// ActsAsIdNEQ applies the NEQ predicate on the "acts_as_id" field.
+func ActsAsIdNEQ(v uuid.UUID) predicate.Host {
+	return predicate.Host(sql.FieldNEQ(FieldActsAsId, v))
+}
+
+// ActsAsIdIn applies the In predicate on the "acts_as_id" field.
+func ActsAsIdIn(vs ...uuid.UUID) predicate.Host {
+	return predicate.Host(sql.FieldIn(FieldActsAsId, vs...))
+}
+
+// ActsAsIdNotIn applies the NotIn predicate on the "acts_as_id" field.
+func ActsAsIdNotIn(vs ...uuid.UUID) predicate.Host {
+	return predicate.Host(sql.FieldNotIn(FieldActsAsId, vs...))
+}
+
+// ActsAsIdIsNil applies the IsNil predicate on the "acts_as_id" field.
+func ActsAsIdIsNil() predicate.Host {
+	return predicate.Host(sql.FieldIsNull(FieldActsAsId))
+}
+
+// ActsAsIdNotNil applies the NotNil predicate on the "acts_as_id" field.
+func ActsAsIdNotNil() predicate.Host {
+	return predicate.Host(sql.FieldNotNull(FieldActsAsId))
+}
+
 // HasTenant applies the HasEdge predicate on the "tenant" edge.
 func HasTenant() predicate.Host {
 	return predicate.Host(func(s *sql.Selector) {
@@ -401,6 +436,29 @@ func HasTenant() predicate.Host {
 func HasTenantWith(preds ...predicate.Tenant) predicate.Host {
 	return predicate.Host(func(s *sql.Selector) {
 		step := newTenantStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasActsAs applies the HasEdge predicate on the "acts_as" edge.
+func HasActsAs() predicate.Host {
+	return predicate.Host(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, ActsAsTable, ActsAsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasActsAsWith applies the HasEdge predicate on the "acts_as" edge with a given conditions (other predicates).
+func HasActsAsWith(preds ...predicate.Holder) predicate.Host {
+	return predicate.Host(func(s *sql.Selector) {
+		step := newActsAsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

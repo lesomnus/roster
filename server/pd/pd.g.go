@@ -7218,7 +7218,41 @@ func (s gateHost) Add(ctx context.Context, req *rstr.HostAddRequest) (*rstr.Host
 		}
 	}
 
+	if ref := req.GetActsAs(); ref != nil {
+		if _, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Holder")
+			}
+
+			return nil, err
+		}
+	}
+
 	return s.HostServiceServer.Add(ctx, req)
+}
+
+// Patch refuses an edge moved onto a row this caller cannot see.
+//
+// The wall narrows the row being written and says nothing about what the
+// write points **at**. An edge is a read -- a `Select` walks it -- so one
+// moved out of the caller's scope is a way through the wall one hop later,
+// exactly as it would have been at `Add`.
+func (s gateHost) Patch(ctx context.Context, req *rstr.HostPatchRequest) (*rstr.Host, error) {
+	if ref := req.GetActsAs(); ref != nil {
+		if _, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Holder")
+			}
+
+			return nil, err
+		}
+	}
+
+	return s.HostServiceServer.Patch(ctx, req)
 }
 
 type gateIdentity struct {

@@ -9,6 +9,7 @@ import (
 	"time"
 	"uuid"
 
+	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/host"
 	"github.com/lesomnus/roster/internal/ent/tenant"
 	"github.com/protobuf-orm/ent/dialect/sql"
@@ -81,6 +82,20 @@ func (_c *HostCreate) SetTenantId(v uuid.UUID) *HostCreate {
 	return _c
 }
 
+// SetActsAsId sets the "acts_as_id" field.
+func (_c *HostCreate) SetActsAsId(v uuid.UUID) *HostCreate {
+	_c.mutation.SetActsAsId(v)
+	return _c
+}
+
+// SetNillableActsAsId sets the "acts_as_id" field if the given value is not nil.
+func (_c *HostCreate) SetNillableActsAsId(v *uuid.UUID) *HostCreate {
+	if v != nil {
+		_c.SetActsAsId(*v)
+	}
+	return _c
+}
+
 // SetId sets the "id" field.
 func (_c *HostCreate) SetId(v uuid.UUID) *HostCreate {
 	_c.mutation.SetId(v)
@@ -90,6 +105,11 @@ func (_c *HostCreate) SetId(v uuid.UUID) *HostCreate {
 // SetTenant sets the "tenant" edge to the Tenant entity.
 func (_c *HostCreate) SetTenant(v *Tenant) *HostCreate {
 	return _c.SetTenantId(v.Id)
+}
+
+// SetActsAs sets the "acts_as" edge to the Holder entity.
+func (_c *HostCreate) SetActsAs(v *Holder) *HostCreate {
+	return _c.SetActsAsId(v.Id)
 }
 
 // Mutation returns the HostMutation object of the builder.
@@ -219,6 +239,23 @@ func (_c *HostCreate) createSpec() (*Host, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.TenantId = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ActsAsIds(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   host.ActsAsTable,
+			Columns: []string{host.ActsAsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(holder.FieldId, field.TypeUuid),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.ActsAsId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

@@ -9,6 +9,7 @@ import (
 	"time"
 	"uuid"
 
+	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/host"
 	"github.com/lesomnus/roster/internal/ent/tenant"
 	"github.com/protobuf-orm/ent"
@@ -34,6 +35,8 @@ type Host struct {
 	DateCreated time.Time `json:"date_created,omitempty"`
 	// TenantId holds the value of the "tenant_id" field.
 	TenantId uuid.UUID `json:"tenant_id,omitempty"`
+	// ActsAsId holds the value of the "acts_as_id" field.
+	ActsAsId uuid.UUID `json:"acts_as_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the HostQuery when eager-loading is set.
 	Edges        HostEdges `json:"edges"`
@@ -44,9 +47,11 @@ type Host struct {
 type HostEdges struct {
 	// Tenant holds the value of the tenant edge.
 	Tenant *Tenant `json:"tenant,omitempty"`
+	// ActsAs holds the value of the acts_as edge.
+	ActsAs *Holder `json:"acts_as,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // TenantOrErr returns the Tenant value or an error if the edge
@@ -60,6 +65,17 @@ func (e HostEdges) TenantOrErr() (*Tenant, error) {
 	return nil, &NotLoadedError{edge: "tenant"}
 }
 
+// ActsAsOrErr returns the ActsAs value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e HostEdges) ActsAsOrErr() (*Holder, error) {
+	if e.ActsAs != nil {
+		return e.ActsAs, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: holder.Label}
+	}
+	return nil, &NotLoadedError{edge: "acts_as"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Host) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -71,6 +87,8 @@ func (*Host) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case host.FieldDateUpdated, host.FieldDateErased, host.FieldDateCreated:
 			values[i] = new(sql.NullTime)
+		case host.FieldActsAsId:
+			values[i] = new(sql.Null[uuid.UUID])
 		case host.FieldId, host.FieldTenantId:
 			values[i] = new(uuid.UUID)
 		default:
@@ -139,6 +157,12 @@ func (_m *Host) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				_m.TenantId = *value
 			}
+		case host.FieldActsAsId:
+			if value, ok := values[i].(*sql.Null[uuid.UUID]); !ok {
+				return fmt.Errorf("unexpected type %T for field acts_as_id", values[i])
+			} else if value.Valid {
+				_m.ActsAsId = value.V
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -155,6 +179,11 @@ func (_m *Host) Value(name string) (ent.Value, error) {
 // QueryTenant queries the "tenant" edge of the Host entity.
 func (_m *Host) QueryTenant() *TenantQuery {
 	return NewHostClient(_m.config).QueryTenant(_m)
+}
+
+// QueryActsAs queries the "acts_as" edge of the Host entity.
+func (_m *Host) QueryActsAs() *HolderQuery {
+	return NewHostClient(_m.config).QueryActsAs(_m)
 }
 
 // Update returns a builder for updating this Host.
@@ -202,6 +231,9 @@ func (_m *Host) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("tenant_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.TenantId))
+	builder.WriteString(", ")
+	builder.WriteString("acts_as_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ActsAsId))
 	builder.WriteByte(')')
 	return builder.String()
 }

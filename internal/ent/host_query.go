@@ -8,6 +8,7 @@ import (
 	"math"
 	"uuid"
 
+	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/host"
 	"github.com/lesomnus/roster/internal/ent/predicate"
 	"github.com/lesomnus/roster/internal/ent/tenant"
@@ -25,6 +26,7 @@ type HostQuery struct {
 	inters     []Interceptor
 	predicates []predicate.Host
 	withTenant *TenantQuery
+	withActsAs *HolderQuery
 	modifiers  []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -77,6 +79,28 @@ func (_q *HostQuery) QueryTenant() *TenantQuery {
 			sqlgraph.From(host.Table, host.FieldId, selector),
 			sqlgraph.To(tenant.Table, tenant.FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, host.TenantTable, host.TenantColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryActsAs chains the current query on the "acts_as" edge.
+func (_q *HostQuery) QueryActsAs() *HolderQuery {
+	query := (&HolderClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(host.Table, host.FieldId, selector),
+			sqlgraph.To(holder.Table, holder.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, host.ActsAsTable, host.ActsAsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -277,6 +301,7 @@ func (_q *HostQuery) Clone() *HostQuery {
 		inters:     append([]Interceptor{}, _q.inters...),
 		predicates: append([]predicate.Host{}, _q.predicates...),
 		withTenant: _q.withTenant.Clone(),
+		withActsAs: _q.withActsAs.Clone(),
 		// clone intermediate query.
 		sql:       _q.sql.Clone(),
 		path:      _q.path,
@@ -292,6 +317,17 @@ func (_q *HostQuery) WithTenant(opts ...func(*TenantQuery)) *HostQuery {
 		opt(query)
 	}
 	_q.withTenant = query
+	return _q
+}
+
+// WithActsAs tells the query-builder to eager-load the nodes that are connected to
+// the "acts_as" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *HostQuery) WithActsAs(opts ...func(*HolderQuery)) *HostQuery {
+	query := (&HolderClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withActsAs = query
 	return _q
 }
 
@@ -373,8 +409,9 @@ func (_q *HostQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Host, e
 	var (
 		nodes       = []*Host{}
 		_spec       = _q.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			_q.withTenant != nil,
+			_q.withActsAs != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -404,6 +441,12 @@ func (_q *HostQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Host, e
 			return nil, err
 		}
 	}
+	if query := _q.withActsAs; query != nil {
+		if err := _q.loadActsAs(ctx, query, nodes, nil,
+			func(n *Host, e *Holder) { n.Edges.ActsAs = e }); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
 }
 
@@ -429,6 +472,35 @@ func (_q *HostQuery) loadTenant(ctx context.Context, query *TenantQuery, nodes [
 		nodes, ok := nodeids[n.Id]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "tenant_id" returned %v`, n.Id)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (_q *HostQuery) loadActsAs(ctx context.Context, query *HolderQuery, nodes []*Host, init func(*Host), assign func(*Host, *Holder)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Host)
+	for i := range nodes {
+		fk := nodes[i].ActsAsId
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(holder.IdIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.Id]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "acts_as_id" returned %v`, n.Id)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -467,6 +539,9 @@ func (_q *HostQuery) querySpec() *sqlgraph.QuerySpec {
 		}
 		if _q.withTenant != nil {
 			_spec.Node.AddColumnOnce(host.FieldTenantId)
+		}
+		if _q.withActsAs != nil {
+			_spec.Node.AddColumnOnce(host.FieldActsAsId)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

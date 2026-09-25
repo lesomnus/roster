@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	"uuid"
 
+	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/host"
 	"github.com/lesomnus/roster/internal/ent/predicate"
 	"github.com/protobuf-orm/ent/dialect/sql"
@@ -103,9 +105,40 @@ func (_u *HostUpdate) ClearDateErased() *HostUpdate {
 	return _u
 }
 
+// SetActsAsId sets the "acts_as_id" field.
+func (_u *HostUpdate) SetActsAsId(v uuid.UUID) *HostUpdate {
+	_u.mutation.SetActsAsId(v)
+	return _u
+}
+
+// SetNillableActsAsId sets the "acts_as_id" field if the given value is not nil.
+func (_u *HostUpdate) SetNillableActsAsId(v *uuid.UUID) *HostUpdate {
+	if v != nil {
+		_u.SetActsAsId(*v)
+	}
+	return _u
+}
+
+// ClearActsAsId clears the value of the "acts_as_id" field.
+func (_u *HostUpdate) ClearActsAsId() *HostUpdate {
+	_u.mutation.ClearActsAsId()
+	return _u
+}
+
+// SetActsAs sets the "acts_as" edge to the Holder entity.
+func (_u *HostUpdate) SetActsAs(v *Holder) *HostUpdate {
+	return _u.SetActsAsId(v.Id)
+}
+
 // Mutation returns the HostMutation object of the builder.
 func (_u *HostUpdate) Mutation() *HostMutation {
 	return _u.mutation
+}
+
+// ClearActsAs clears the "acts_as" edge to the Holder entity.
+func (_u *HostUpdate) ClearActsAs() *HostUpdate {
+	_u.mutation.ClearActsAs()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -184,6 +217,35 @@ func (_u *HostUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.DateCreatedCleared() {
 		_spec.ClearField(host.FieldDateCreated, field.TypeTime)
+	}
+	if _u.mutation.ActsAsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   host.ActsAsTable,
+			Columns: []string{host.ActsAsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(holder.FieldId, field.TypeUuid),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ActsAsIds(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   host.ActsAsTable,
+			Columns: []string{host.ActsAsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(holder.FieldId, field.TypeUuid),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -281,9 +343,40 @@ func (_u *HostUpdateOne) ClearDateErased() *HostUpdateOne {
 	return _u
 }
 
+// SetActsAsId sets the "acts_as_id" field.
+func (_u *HostUpdateOne) SetActsAsId(v uuid.UUID) *HostUpdateOne {
+	_u.mutation.SetActsAsId(v)
+	return _u
+}
+
+// SetNillableActsAsId sets the "acts_as_id" field if the given value is not nil.
+func (_u *HostUpdateOne) SetNillableActsAsId(v *uuid.UUID) *HostUpdateOne {
+	if v != nil {
+		_u.SetActsAsId(*v)
+	}
+	return _u
+}
+
+// ClearActsAsId clears the value of the "acts_as_id" field.
+func (_u *HostUpdateOne) ClearActsAsId() *HostUpdateOne {
+	_u.mutation.ClearActsAsId()
+	return _u
+}
+
+// SetActsAs sets the "acts_as" edge to the Holder entity.
+func (_u *HostUpdateOne) SetActsAs(v *Holder) *HostUpdateOne {
+	return _u.SetActsAsId(v.Id)
+}
+
 // Mutation returns the HostMutation object of the builder.
 func (_u *HostUpdateOne) Mutation() *HostMutation {
 	return _u.mutation
+}
+
+// ClearActsAs clears the "acts_as" edge to the Holder entity.
+func (_u *HostUpdateOne) ClearActsAs() *HostUpdateOne {
+	_u.mutation.ClearActsAs()
+	return _u
 }
 
 // Where appends a list predicates to the HostUpdate builder.
@@ -392,6 +485,35 @@ func (_u *HostUpdateOne) sqlSave(ctx context.Context) (_node *Host, err error) {
 	}
 	if _u.mutation.DateCreatedCleared() {
 		_spec.ClearField(host.FieldDateCreated, field.TypeTime)
+	}
+	if _u.mutation.ActsAsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   host.ActsAsTable,
+			Columns: []string{host.ActsAsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(holder.FieldId, field.TypeUuid),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ActsAsIds(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   host.ActsAsTable,
+			Columns: []string{host.ActsAsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(holder.FieldId, field.TypeUuid),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Host{config: _u.config}
