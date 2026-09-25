@@ -36,11 +36,11 @@ import type { Admin } from '../lib/client.js'
 import { Customers } from './customers.js'
 
 
-type Screen = 'operators' | 'keys' | 'customers' | 'you'
-const screenNames: readonly Screen[] = ['operators', 'keys', 'customers', 'you']
+type Screen = 'customers' | 'you'
+const screenNames: readonly Screen[] = ['customers', 'you']
 
 function screenOf(v: string | undefined): Screen {
-	return (screenNames as readonly string[]).includes(v ?? '') ? (v as Screen) : 'operators'
+	return (screenNames as readonly string[]).includes(v ?? '') ? (v as Screen) : 'customers'
 }
 
 export function Page(props: {
@@ -83,17 +83,9 @@ export function Page(props: {
 	// either way, and a client that treated this as the decision would be one an
 	// altered client could talk out of.
 	const screens: { at: Screen; name: string; ok: boolean }[] = [
-		{ at: 'operators', name: 'signs in', ok: may('/roster.HolderService/List') },
-		{ at: 'keys', name: 'calls in', ok: may('/roster.ApiKeyService/List') },
-
-		// The data plane, through the admin listener. Two conditions rather than
-		// one: the method an operator may call, and whether this deployment has
-		// that listener at all.
-		{
-			at: 'customers',
-			name: 'customers',
-			ok: props.customers !== null && may('/roster.TenantService/List'),
-		},
+		// The data plane with no wall, which is this listener: the page, the
+		// sign-in and these rows are one host (#27, #32).
+		{ at: 'customers', name: 'customers', ok: may('/roster.TenantService/List') },
 		{ at: 'you', name: 'you', ok: true },
 	]
 
@@ -116,223 +108,12 @@ export function Page(props: {
 			</nav>
 
 			<main>
-				{at === 'operators' && <Operators may={may} />}
-				{at === 'keys' && <Keys may={may} />}
 				{at === 'customers' && (
 					<Customers app={props.customers} admin={props.admin} may={may} ungated={props.ungated} />
 				)}
 				{at === 'you' && <You methods={held} />}
 			</main>
 		</div>
-	)
-}
-
-/**
- * Everybody registered here, which is what a `Holder` is.
- *
- * Titled by how they arrive rather than by what they are, because the schema
- * does not say what they are and neither should this. `Keys` below is the
- * same rows read from the other end: a holder with keys.
- */
-function Operators(props: { may: (method: string) => boolean }): React.ReactNode {
-	const vs = useQuery(HolderService.method.list, {})
-	const issue = useCall(CredentialService.method.issue)
-	const [said, say] = useState<{ kind: 'secret' | 'bad'; text: string } | null>(null)
-
-	if (vs.state === 'pending') return <p className="loading">…</p>
-	if (vs.state === 'error') return <Failed at={vs.error} />
-
-	return (
-		<section>
-			<h2>signs in</h2>
-
-			{/* A new operator is one call: `Credential.Issue` with
-			    `holder_alias` makes the row in the control plane's one tenant
-			    if it is not there, and answers with a generated password, once. There is
-			    no field to type one into, for the reason `roster init` has
-			    none. It was `IssueService.IssuePassword`, which wrote the same
-			    column with none of the rules `server/core` puts on it. */}
-			<form
-				onSubmit={(e) => {
-					e.preventDefault()
-					const form = e.currentTarget
-					const alias = String(new FormData(form).get('alias') ?? '').trim()
-					if (alias === '') return
-
-					say(null)
-					void issue
-						.call({ holderAlias: alias })
-						.then((r) => {
-							form.reset()
-							say({ kind: 'secret', text: `${alias}: ${r.secret}` })
-						})
-						.catch((e: unknown) => say({ kind: 'bad', text: e instanceof Error ? e.message : 'no' }))
-				}}
-			>
-				<input name="alias" placeholder="new operator, or one to reset" required />
-				<button type="submit" disabled={issue.state === 'pending' || !props.may('/roster.CredentialService/Issue')}>
-					issue a password
-				</button>
-			</form>
-			{said?.kind === 'secret' && (
-				<div className="secret">
-					<p>
-						Read this out. It is shown <strong>once</strong> — what is stored is a hash.
-					</p>
-					<code>{said.text}</code>
-				</div>
-			)}
-			{said?.kind === 'bad' && <p className="bad">{said.text}</p>}
-
-			<table>
-				<thead>
-					<tr>
-						<th>alias</th>
-						<th>name</th>
-						<th>since</th>
-					</tr>
-				</thead>
-				<tbody>
-					{(vs.data?.items ?? []).map((v) => (
-						<tr key={v.alias}>
-							<td>
-								<code>{v.alias}</code>
-							</td>
-							<td>{v.name}</td>
-							<td>{when(v.dateCreated?.seconds)}</td>
-						</tr>
-					))}
-				</tbody>
-			</table>
-			<p className="note">
-				Everybody registered in this plane. A <code>Holder</code> is not a
-				person or a machine — nothing here says which — so this is the same
-				list <em>calls in</em> draws, seen from the other end.
-			</p>
-		</section>
-	)
-}
-
-/**
- * The keys, which is how something calls in rather than signing in.
- *
- * `ApiKeyService` is served on this port and no other, because its generated
- * `Get` answers with the verifier column. The column is declared
- * `(payday.field).secret`, so it is cleared on the way out and never reaches a
- * page — and never reaches the trail either.
- */
-function Keys(props: { may: (method: string) => boolean }): React.ReactNode {
-	const vs = useQuery(ApiKeyService.method.list, {})
-	const issue = useCall(ApiKeyService.method.issue)
-	const erase = useCall(ApiKeyService.method.erase)
-	const [gone, setGone] = useState<string[]>([])
-	const [said, say] = useState<{ kind: 'secret' | 'bad'; text: string } | null>(null)
-
-	if (vs.state === 'pending') return <p className="loading">…</p>
-	if (vs.state === 'error') return <Failed at={vs.error} />
-
-	const items = (vs.data?.items ?? []).filter((v) => !gone.includes(v.alias))
-
-	return (
-		<section>
-			<h2>calls in</h2>
-			<table>
-				<thead>
-					<tr>
-						<th>key</th>
-						<th>may call</th>
-						<th>last used</th>
-						<th />
-					</tr>
-				</thead>
-				<tbody>
-					{items.map((v) => (
-						<tr key={v.alias}>
-							<td>
-								<code>{v.alias}</code>
-							</td>
-							<td>
-								<ul className="methods">
-									{v.methods.map((m) => (
-										<li key={m}>
-											<code>{m}</code>
-										</li>
-									))}
-								</ul>
-							</td>
-							<td>{v.dateUsed === undefined ? 'never' : when(v.dateUsed.seconds)}</td>
-							<td>
-								{/* Revoking is a delete, and it is immediate: the
-								    next call with this key finds no row. There is
-								    no edit -- a key's methods are what it was
-								    minted with, and a different list is a
-								    different key. */}
-								<button
-									disabled={!props.may('/roster.ApiKeyService/Erase')}
-									onClick={() => {
-										say(null)
-										void erase
-											.call({ key: { case: 'id', value: v.id } })
-											.then(() => setGone((was) => [...was, v.alias]))
-											.catch((e: unknown) => say({ kind: 'bad', text: e instanceof Error ? e.message : 'no' }))
-									}}
-								>
-									revoke
-								</button>
-							</td>
-						</tr>
-					))}
-				</tbody>
-			</table>
-			<p className="note">
-				An empty list allows <strong>nothing</strong>. A key somebody forgot to
-				fill in opens no door.
-			</p>
-
-			{/* `roster control key add --allow … custody`, from a page: the
-			    holder is made if it is not there, because a caller of this
-			    deployment's own is not a row set up on purpose before it is
-			    needed. The token is shown once. */}
-			<form
-				onSubmit={(e) => {
-					e.preventDefault()
-					const form = e.currentTarget
-					const f = new FormData(form)
-					const holder = String(f.get('holder') ?? '').trim()
-					const alias = String(f.get('alias') ?? '').trim() || 'default'
-					const methods = String(f.get('methods') ?? '')
-						.split(/[\s,]+/)
-						.map((s) => s.trim())
-						.filter((s) => s !== '')
-					if (holder === '' || methods.length === 0) return
-
-					say(null)
-					void issue
-						.call({ holderAlias: holder, alias, methods })
-						.then((r) => {
-							form.reset()
-							say({ kind: 'secret', text: r.token })
-						})
-						.catch((e: unknown) => say({ kind: 'bad', text: e instanceof Error ? e.message : 'no' }))
-				}}
-			>
-				<input name="holder" placeholder="holder, e.g. custody" required />
-				<input name="alias" placeholder="key name (default)" />
-				<input name="methods" placeholder="/roster.VouchService/Verify, …" className="wide" required />
-				<button type="submit" disabled={issue.state === 'pending' || !props.may('/roster.ApiKeyService/Issue')}>
-					mint a key
-				</button>
-			</form>
-			{said?.kind === 'secret' && (
-				<div className="secret">
-					<p>
-						The key, shown <strong>once</strong>. What is stored is a hash.
-					</p>
-					<code>{said.text}</code>
-				</div>
-			)}
-			{said?.kind === 'bad' && <p className="bad">{said.text}</p>}
-		</section>
 	)
 }
 

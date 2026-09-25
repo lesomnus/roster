@@ -20,7 +20,7 @@ import (
 // TestTheConsoleIsServedByRosterItself is `control.console`: the built page
 // at `/` on the control listener, so a deployment needs no
 // `origins:` for its own page. A path that is not a file is the index -- the
-// page routes in the browser and must survive a reload -- and `config.json`
+// page routes in the browser and must survive a reload -- and anything else
 // tells it the one thing its own origin does not say: where the admin listener
 // is.
 func TestTheConsoleIsServedByRosterItself(t *testing.T) {
@@ -33,7 +33,7 @@ func TestTheConsoleIsServedByRosterItself(t *testing.T) {
 
 	h, err := web.New(config.HttpConfig{}, grpc.NewServer())
 	x.NoError(err)
-	cmd.ConsoleMount(cmd.ConsoleConfig{Dir: dir, Admin: "https://roster-admin.internal"})(h)
+	cmd.ConsoleMount(cmd.ConsoleConfig{Dir: dir})(h)
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)
 
@@ -60,7 +60,11 @@ func TestTheConsoleIsServedByRosterItself(t *testing.T) {
 	x.Equal(http.StatusOK, code)
 	x.Contains(body, "<title>roster</title>")
 
+	// And no `config.json`: it existed to tell the page another origin to call,
+	// and the page is served by the listener it calls now (#27, #32). A route
+	// the page does not own is the index, which is what this asserts about
+	// every other unknown path above.
 	code, body = get("/config.json")
 	x.Equal(http.StatusOK, code)
-	x.Contains(body, `"admin":"https://roster-admin.internal"`)
+	x.Contains(body, "<title>roster</title>")
 }

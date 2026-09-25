@@ -114,7 +114,7 @@ type Config struct {
 	// own rows, so this cannot join it under the same name.
 	//
 	// Bind it where only a console reaches. It answers with no wall at all.
-	Admin config.ServerConfig `yaml:"admin"`
+	Admin AdminConfig `yaml:"admin"`
 
 	// Client is where the entity commands -- `tenant ls`, `holder get` -- send
 	// their calls. **Empty is this process**, which is the default.
@@ -475,11 +475,23 @@ type ControlConfig struct {
 	// traffic is not one for a console, and one `http` block cannot open two
 	// ports.
 	config.ServerConfig `yaml:",inline"`
+}
 
-	// Console is the built console, served by this listener at `/`
-	// so that a deployment needs no `origins:` for its own page. Empty serves
-	// none, which is what `npm run dev` wants -- it serves the page itself and
-	// is told `origins:` instead.
+// AdminConfig is the listener a **roster operator** administers customers
+// from, and the page they do it on.
+//
+// The page is here rather than on `control.http` because a browser's session
+// cookie is `__Host-` prefixed and host-only: a page and the listener it calls
+// must be the same host, and the customers screen calls this one. What is left
+// on the control listener is the RPCs a shell makes -- `roster control …` --
+// and no page at all.
+type AdminConfig struct {
+	config.ServerConfig `yaml:",inline"`
+
+	// Console is the built page, served by this listener at `/`. Empty serves
+	// none, which is what a deployment with no browser-facing operator wants
+	// and what `npm run dev` wants -- it serves the page itself and is told
+	// `origins:` instead.
 	Console ConsoleConfig `yaml:"console"`
 }
 
@@ -497,17 +509,18 @@ type SignInConfig struct {
 	Enabled bool `yaml:"enabled"`
 }
 
-// ConsoleConfig is the page an operator opens, as this listener serves it.
+// ConsoleConfig is the page a **roster operator** opens, as this listener
+// serves it.
+//
+// One field, and the second one is gone with the arrangement that needed it.
+// `admin` named another origin for the page to call, because the page was
+// served by `control.http` and the customers screen calls `admin.http` -- and a
+// browser will not send a `__Host-` session cookie to a second host, so that
+// arrangement could not work at all (#27). The page is served by the listener
+// it calls now, and there is nothing to tell it.
 type ConsoleConfig struct {
 	// Dir is `ts/dist/console`, or wherever the build was put.
 	Dir string `yaml:"dir"`
-
-	// Admin is where the page reaches the admin listener from a browser --
-	// `admin.http`'s public origin, `https://roster-admin.internal` -- since a
-	// page served by one listener has no way to know the other's address. Empty
-	// leaves the customers panels unoffered, which is also what a deployment
-	// with no admin listener means.
-	Admin string `yaml:"admin"`
 }
 
 // Serves reports whether this deployment checks who is calling.

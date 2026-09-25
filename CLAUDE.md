@@ -371,7 +371,8 @@ docker compose up --build       # Postgres, both planes, a customer, both pages,
 ```
 
 Three UIs, and one to four processes. `roster serve` serves the admin console under
-`/` on `control.http` when `control.console.dir` names the build.
+`/` on `admin.http` when `admin.console.dir` names the build -- the listener it
+calls, because a `__Host-` session cookie is host-only.
 `roster account serve` holds tenant keys and faces the internet; `roster ldap
 serve` is roster as a directory for clients that speak nothing else.
 

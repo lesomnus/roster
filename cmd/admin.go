@@ -17,8 +17,10 @@ import (
 
 	"github.com/lesomnus/roster/internal/ent"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/console"
 	"github.com/lesomnus/roster/server/core"
 	"github.com/lesomnus/roster/server/keys"
+	"github.com/lesomnus/roster/server/me"
 	"github.com/lesomnus/roster/server/pd"
 	"github.com/lesomnus/roster/server/vouch"
 )
@@ -285,7 +287,7 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 		return nil, nil
 	}
 
-	shut := s.closed(Config{Server: c.Admin})
+	shut := s.closed(Config{Server: c.Admin.ServerConfig})
 
 	// One limiter, handed to both halves -- see the same line in
 	// [Server.Grpc]. `Limiter()` builds a bucket, so calling it twice is two
@@ -335,6 +337,26 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 
 	g := grpc.NewServer(os...)
 	Register(g, admin)
+
+	// Signing in, and who the caller is -- both over the **control plane's**
+	// rows, because a roster operator is a holder of that plane and this port
+	// is the one they open a browser at.
+	//
+	// The page is served here too (`admin.console`), and that is the whole
+	// reason these two are: a session cookie is `__Host-` prefixed and
+	// host-only, so a page and the listener it signs in at must be one host
+	// (#27). The control listener keeps the RPCs a shell makes and serves no
+	// page at all.
+	//
+	// Two planes on one port is still refused where it would be ambiguous:
+	// what `Register` above put here is the **data plane's** entity services,
+	// and these two are services it does not serve, so no name means two
+	// things. `MeService` is the one to watch -- the data plane's is on
+	// `server.addr` and answers about a customer's person, and this one
+	// answers about the operator.
+	app.RegisterAuthServiceServer(g, console.Auth(s.Control.Ungated, s.Control.Ent, s.Sessions))
+	app.RegisterMeServiceServer(g, me.New(s.Control.Ent, Everything(s.Control.Ent),
+		me.WithWrites(s.Control.Walled)))
 
 	// And the credential writes, which is what an operator with no mail has
 	// instead of one: reset a password, open an account ten wrong answers

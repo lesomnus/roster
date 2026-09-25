@@ -31,23 +31,17 @@ control:
   watch:
     broker: memory
   addr: 0.0.0.0:8060
-  # The control plane's HTTP listener, which is what a probe asks and what the
-  # console is served on. `control.addr` above is **gRPC** -- a probe pointed at
-  # it gets an HTTP/2 SETTINGS frame and reads it as a malformed response, which
-  # is a pod that never becomes ready and says nothing about why.
+  # The control plane's HTTP listener, for a caller that cannot speak gRPC.
+  # `control.addr` above is **gRPC** -- anything pointed at it gets an HTTP/2
+  # SETTINGS frame and reads it as a malformed response, which is a probe that
+  # never passes and says nothing about why. The probe asks `admin.http` now,
+  # because that is where the page is.
   http:
     addr: 0.0.0.0:8061
-  # The admin console, served under `/` on the listener above. It is also what makes
-  # that `/` answer at all: without this the control plane's HTTP listener has
-  # no root and a probe pointed there gets a 404 forever, which is a pod that
-  # never becomes ready and says nothing about why.
-  console:
-    dir: /usr/share/roster/console
-    # Where the page reaches the admin listener **from a browser**. Empty is the
-    # customers screen not being offered, which is better than offering one that
-    # cannot answer -- and it stays empty until a deployment routes a host to
-    # the block below.
-    admin: ""
+  # No page here. The admin console is served by `admin.http` below, which is
+  # also the listener it calls -- a `__Host-` session cookie is host-only, so
+  # the two have to be one host (#27). What this listener answers is what a
+  # shell asks, carrying an `rk_`.
 
 # The data plane with **no wall**, which is what the admin console's customers screen
 # reads: creating a customer happens before there is a tenant to be narrowed to,
@@ -63,6 +57,10 @@ admin:
     addr: 0.0.0.0:8071
     allow_web: true
     origins: []
+  # And the page itself, on the listener it calls. `origins` stays empty
+  # because there is one origin: this one.
+  console:
+    dir: /usr/share/roster/console
 
 # The Login App, in the same process. `docs/operating.md` § "One process, or
 # three" is the question of whether it should be, and the answer is a

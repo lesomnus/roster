@@ -200,31 +200,47 @@ data plane, where an operator's session names nobody.
 ## The admin console
 
 ```yaml
-control:
+admin:
+  addr: "127.0.0.1:50053"
+  http:
+    addr: "127.0.0.1:8081"
+    allow_web: true
   console:
     dir: /usr/share/roster/console    # empty serves no page
-    admin: https://admin.example      # where the browser reaches admin.http
 ```
 
-`roster serve` serves the built page at `/` on `control.http` when `dir` names it.
-The customers screen talks to `admin.http` directly, which is what `admin:` is
-for, and the operator who signed in on one is the caller on the other.
+`roster serve` serves the built page at `/` on `admin.http` when `dir` names it,
+and that listener is the whole of what the page calls: the sign-in, *who am I*,
+and the customers.
 
-Signing in is `AuthService.SignIn` on `control.http` and nowhere else -- a service
-is registered per listener -- and the cookie travels as `set-cookie` response
-metadata, which `web.Transcode` hands to the browser as a header. It is opaque: 32
-bytes from `crypto/rand` naming a row, `HttpOnly`, `SameSite=Lax` and `__Host-`
-prefixed, so signing out is a delete that takes effect at once.
+**One host, and nothing to configure.** The session is carried in a `__Host-`
+cookie -- host-only, no `Domain` -- so a page and every listener it calls have to
+be the same host. The page used to be served by `control.http` and told to call
+`admin.http` at an origin of its own, which a browser cannot do at all: the
+cookie does not travel, every call arrives as nobody, and the screen is drawn
+anyway.
 
-**The sessions are in a table**, on the control plane. In memory they were right
-for one replica and *silently wrong* for two -- a cookie minted on one is unknown
-to the other, intermittently, per request, with nothing in any log saying why --
-and lost on restart besides, so a deploy signed everybody out. Two properties of
-the table are worth knowing: the cookie value is not in it (what is stored is a
-digest, so a copy of the rows is not a set of live cookies), and a session dies
-with the person, because the holder is an edge. Expired rows are collected hourly
-by `session.Sweep`, which nothing depends on for correctness -- `authsession`
-checks both clocks when it reads one.
+Signing in is `AuthService.SignIn` on **this** listener, and the cookie travels
+as `set-cookie` response metadata, which `web.Transcode` hands to the browser as
+a header. It is opaque: 32 bytes from `crypto/rand` naming a row, `HttpOnly`,
+`SameSite=Lax` and `__Host-` prefixed, so signing out is a delete that takes
+effect at once.
+
+**The control listener serves no page.** What it answers is what a shell asks --
+`roster control holder ls`, `roster control key add`, the deployment's own rows
+-- and it takes an `rk_` rather than a cookie. Managing who runs the deployment
+is a terminal's job; a browser's is customers.
+
+**The sessions are in a table**, on the control plane, because an operator is a
+holder of that plane. In memory they were right for one replica and *silently
+wrong* for two -- a cookie minted on one is unknown to the other, intermittently,
+per request, with nothing in any log saying why -- and lost on restart besides,
+so a deploy signed everybody out. Two properties of the table are worth knowing:
+the cookie value is not in it (what is stored is a digest, so a copy of the rows
+is not a set of live cookies), and a session dies with the person, because the
+holder is an edge. Expired rows are collected hourly by `session.Sweep`, which
+nothing depends on for correctness -- `authsession` checks both clocks when it
+reads one.
 
 ### What the admin port waives, and it does not look like it
 
@@ -241,9 +257,6 @@ on this port they refuse nothing:
 
 So granting either of them on this port is granting the account. `cmd/admin.go`
 is where that is written down beside the wiring.
-
-The dev servers, the sandbox, and how the pages are built are
-[development.md](development.md).
 
 ## One process, or four
 

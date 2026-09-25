@@ -239,7 +239,7 @@ func TestAnAdminPortWithNobodyToBeIsRefused(t *testing.T) {
 	c := cmd.Config{
 		Db:    config.DbConfig{Driver: drv, Dsn: dsn},
 		Watch: config.WatchConfig{Broker: config.BrokerMemory},
-		Admin: config.ServerConfig{Addr: "127.0.0.1:0"},
+		Admin: cmd.AdminConfig{ServerConfig: config.ServerConfig{Addr: "127.0.0.1:0"}},
 	}
 
 	_, err := cmd.Build(t.Context(), c)
@@ -739,7 +739,7 @@ func TestADeploymentWithEveryPortOpenStops(t *testing.T) {
 			Db:           config.DbConfig{Driver: cdrv, Dsn: cdsn},
 			ServerConfig: config.ServerConfig{Addr: "127.0.0.1:0"},
 		},
-		Admin: config.ServerConfig{Addr: "127.0.0.1:0"},
+		Admin: cmd.AdminConfig{ServerConfig: config.ServerConfig{Addr: "127.0.0.1:0"}},
 	}
 
 	s, err := cmd.Build(ctx, c)
