@@ -3,14 +3,14 @@
 # cookies without Secure. It is what somebody working on the pages runs.
 #
 #     docker compose up --build
-#     http://localhost:8082/            admin / admin
+#     http://localhost:8081/            admin / admin
 #     http://localhost:8090/           erin / correct horse battery staple
 #
-# `PUBLIC_HOST` is the name a browser reaches this by, `localhost` unless
-# said otherwise: the account app resolves the customer by that name, and the
-# console is told where the admin listener is by it. The admin console itself is
-# `localhost` only: its cookie is `__Host-` and `Secure`, which a browser takes
-# over plain http from that name and from nowhere else.
+# `PUBLIC_HOST` is the name a browser reaches this by, `localhost` unless said
+# otherwise: the account app resolves the customer by that name. The admin
+# console is `localhost` only: its cookie is `__Host-` and `Secure`, which a
+# browser takes over plain http from that name and from nowhere else -- and it
+# is served by the listener it calls, so there is no second origin to name.
 name: roster
 
 services:
@@ -97,23 +97,22 @@ services:
       ROSTER_SERVER_HTTP_ADDR: ":8080"
       ROSTER_SERVER_HTTP_ALLOW_WEB: "true"
 
-      # The control plane, with the admin console mounted on it; the page is told
-      # where the admin listener is, since it has no way to guess.
+      # The control plane. No page here: what it answers is what a shell asks,
+      # carrying an `rk_`.
       ROSTER_CONTROL_ADDR: ":50052"
       ROSTER_CONTROL_HTTP_ADDR: ":8082"
       ROSTER_CONTROL_HTTP_ALLOW_WEB: "true"
-      ROSTER_CONTROL_CONSOLE_DIR: /usr/share/roster/console
-      ROSTER_CONTROL_CONSOLE_ADMIN: http://${PUBLIC_HOST:-localhost}:8081
-      # A console on a dev server (`npm run dev`, :5173) is another origin and
-      # is refused without this, with nothing useful said about why.
-      ROSTER_CONTROL_HTTP_ORIGINS: '["http://localhost:5173"]'
 
-      # The admin listener: another origin from the page's, so it is named --
-      # the served console's, and the dev server's.
+      # The admin listener, with the admin console mounted on it -- which is
+      # also the listener the page calls, because a `__Host-` session cookie is
+      # host-only and the two have to be one host (#27).
       ROSTER_ADMIN_ADDR: ":50053"
       ROSTER_ADMIN_HTTP_ADDR: ":8081"
       ROSTER_ADMIN_HTTP_ALLOW_WEB: "true"
-      ROSTER_ADMIN_HTTP_ORIGINS: '["http://${PUBLIC_HOST:-localhost}:8082", "http://localhost:5173"]'
+      ROSTER_ADMIN_CONSOLE_DIR: /usr/share/roster/console
+      # A console on a dev server (`npm run dev`, :5173) is another origin and
+      # is refused without this, with nothing useful said about why.
+      ROSTER_ADMIN_HTTP_ORIGINS: '["http://localhost:5173"]'
 
       # Wraps authenticator-app seeds at rest. A key in a compose file is a
       # development key; a deployment writes its own, see `vouch.keys`.
@@ -123,12 +122,12 @@ services:
     ports:
       - "50051:50051" # product apps
       - "8080:8080"   # the same over HTTP: the account app's calls, curl
-      - "50052:50052" # operators
-      - "8082:8082"   # the console
+      - "50052:50052" # operators, for a shell
+      - "8082:8082"   # the same over HTTP
       - "50053:50053" # customers
-      - "8081:8081"   # the same over HTTP: the console's customers screen
+      - "8081:8081"   # the same over HTTP, and the admin console itself
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8082/config.json >/dev/null || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8081/ >/dev/null || exit 1"]
       interval: 2s
       timeout: 5s
       retries: 30

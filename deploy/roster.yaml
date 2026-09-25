@@ -26,9 +26,10 @@ spec:
 #
 # Nobody noticed because the rig has no browser: the walks are curl and the
 # console is a page. A deployment routes a host here, so it is the Service the
-# platform is given, and it is the **control** plane's HTTP listener -- the page
-# is served at `/` there and calls its RPCs on the same origin, so its session
-# cookie works. An overlay that routes it usually wants `port: 80`.
+# platform is given, and it is the **admin** listener -- the page is served at
+# `/` there and calls its RPCs on the same origin, which is what makes its
+# `__Host-` session cookie work at all (#27). An overlay that routes it usually
+# wants `port: 80`.
 apiVersion: v1
 kind: Service
 metadata:
@@ -38,7 +39,7 @@ spec:
     app.kubernetes.io/name: roster
     app.kubernetes.io/component: server
   ports:
-    - { name: http, port: 8061, targetPort: control-http }
+    - { name: http, port: 8071, targetPort: admin-http }
 ---
 # roster itself: the data plane, the control plane, and the Login App, in one
 # process. `docs/operating.md` § "One process, or four" is whether it should
@@ -151,17 +152,19 @@ spec:
             - { name: admin-grpc, containerPort: 8070 }
             - { name: admin-http, containerPort: 8071 }
             - { name: login-http, containerPort: 8091 }
-          # `/` on the control plane's **HTTP** listener: a real answer from
-          # the process that would be serving RPCs, needing no endpoint added
-          # for a probe's sake. Two ways this was written wrong first, both of
-          # which are a pod that never becomes ready and neither of which says
-          # so: `/healthz`, which is a 404 because there is no such path, and
-          # `control`, which is the gRPC port and answers HTTP/2 frames.
+          # `/` on the **admin** listener, which is where the page is served:
+          # a real answer from the process that would be serving RPCs, needing
+          # no endpoint added for a probe's sake. Three ways this was written
+          # wrong, each a pod that never becomes ready and none of which says
+          # so: `/healthz`, a 404 because there is no such path; `control`,
+          # the gRPC port, which answers HTTP/2 frames; and `control-http`,
+          # which was right until the admin console moved here and became a listener
+          # with no root to answer.
           readinessProbe:
-            httpGet: { path: /, port: control-http }
+            httpGet: { path: /, port: admin-http }
             initialDelaySeconds: 3
           livenessProbe:
-            httpGet: { path: /, port: control-http }
+            httpGet: { path: /, port: admin-http }
             initialDelaySeconds: 10
             periodSeconds: 30
           securityContext:

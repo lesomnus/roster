@@ -31,10 +31,11 @@ control:
   watch:
     broker: memory
   addr: 0.0.0.0:8060
-  # The control plane's HTTP listener, which is what a probe asks and what the
-  # console is served on. `control.addr` above is **gRPC** -- a probe pointed at
-  # it gets an HTTP/2 SETTINGS frame and reads it as a malformed response, which
-  # is a pod that never becomes ready and says nothing about why.
+  # The control plane's HTTP listener, for a caller that cannot speak gRPC.
+  # `control.addr` above is **gRPC** -- anything pointed at it gets an HTTP/2
+  # SETTINGS frame and reads it as a malformed response, which is a probe that
+  # never passes and says nothing about why. The probe asks `admin.http` now,
+  # because that is where the page is.
   http:
     addr: 0.0.0.0:8061
   # No page here. The admin console is served by `admin.http` below, which is
