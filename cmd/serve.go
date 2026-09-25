@@ -141,6 +141,14 @@ type Server struct {
 	Lockout  vouch.Lockout
 	Password core.Password
 
+	// People is the cookie a **roster user** carries, minted by `AuthService`
+	// on the data plane and resolved against its holders. Nil unless
+	// `sign_in.enabled`, which is what leaves that door shut by default.
+	//
+	// Separate from [Server.Sessions], which is the roster operator's: two
+	// planes, two databases, and a session in one names nobody in the other.
+	People *authsession.Sessions
+
 	// Sessions is the admin console's cookie: the endpoint that mints one and the
 	// handler that reads it back. Nil where there is no control plane, since
 	// the people who sign in are its holders and there would be nobody to be.
@@ -391,6 +399,30 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		Walled: stacked, Ungated: ungated, Keyring: keyring, Breached: leaked, Lockout: lockout, Password: password,
 	}
 
+	// The door a roster user signs in at, where this deployment serves one.
+	//
+	// **This** plane's rows: the same table on the other database, so a session
+	// minted here names somebody the wall can narrow -- which is the difference
+	// from the operator's, built with the control plane below, and the reason
+	// that one is not on this plane's chain.
+	//
+	// Built before the branch below because it is this plane's and not the
+	// control plane's: a deployment with no `control` still has tenants, and
+	// the people in them are who this is for.
+	if c.SignIn.Enabled {
+		s.People = authsession.New(session.New(client))
+		s.Spin = append(s.Spin, session.Sweep(client, session.Swept))
+
+		// And with no control plane there is no chain below to join, so this
+		// is the whole of one: a cookie, and then whatever a deployment that
+		// believes its callers was going to do anyway. `Plain` is what nil
+		// means here (see [Server.Auth]), written out because `Seq` needs
+		// something to fall through to -- a request with no cookie must reach
+		// it, or a deployment that turned this on would have turned every
+		// other way of calling off.
+		s.Auth = auth.Seq(s.People.Handler(), auth.Plain())
+	}
+
 	// The control plane: roster again, on its own database, holding keys rather
 	// than people. See `ControlConfig`, and docs/position.md, 'Two planes, one
 	// schema'.
@@ -471,10 +503,28 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		// the caller. Put second, `Bearer` would answer with the app and the
 		// delegation would be ignored -- an app would silently read as itself,
 		// across every tenant, on the page it wrote a delegation to narrow.
-		s.Auth = auth.Seq(
+		chain := []auth.Handler{
 			keys.Acting(control.Ungated, s.Ungated),
 			auth.Bearer(keys.Store(control.Ungated, s.Ungated)),
-		)
+		}
+
+		// And a roster user's own cookie in front of both, where this
+		// deployment serves the door that mints one.
+		//
+		// **This** plane's rows: the same table on the other database, so a
+		// session here names somebody the wall can narrow -- which is the
+		// difference from the operator's below, and the reason that one is not
+		// on this chain.
+		//
+		// First for the reason the two below are ordered: a cookie and an
+		// `authorization` header are read from different places, so a request
+		// carries at most one and the order decides nothing but which answers a
+		// request carrying both.
+		if s.People != nil {
+			chain = append([]auth.Handler{s.People.Handler()}, chain...)
+		}
+
+		s.Auth = auth.Seq(chain...)
 
 		// And the control plane authenticates with **its own** keys, which is
 		// what makes it servable on a port at all.
@@ -531,6 +581,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 			auth.Bearer(keys.Store(control.Ungated, nil)),
 		)
 	}
+
 	// Collecting expired delegations, attempts and links.
 	//
 	// It is not what makes an expired one refused -- [keys.findDelegation] is,
@@ -766,6 +817,21 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// row -- one identifier or one provider name -- which is what keeps that
 	// from being a hole; `server/front` says it at length.
 	app.RegisterFrontServiceServer(g, front.New(s.Ungated))
+
+	// And the door a **roster user** signs in at, where this deployment serves
+	// one. Registered rather than served-and-refusing: a method that answers no
+	// is a method somebody can count answers from, and `sign_in.enabled` is off
+	// by default (see [SignInConfig]).
+	//
+	// Which tenant comes from the name the browser arrived at, because on this
+	// plane there is nowhere else it could come from -- `AuthSignInRequest` has
+	// no tenant field, and one added would be a caller naming the tenant it
+	// would like to be checked against. `Hosted` is that resolution and a name
+	// nothing claims is a refusal.
+	if s.People != nil {
+		app.RegisterAuthServiceServer(g, console.Auth(s.Ungated, s.Ent, s.People,
+			console.WithTenant(Hosted(s.Ent))))
+	}
 
 	// And what a caller is, in one round trip. None of its three methods takes
 	// a subject, so none can be pointed at anybody else -- `Unlink` names a
@@ -1377,7 +1443,7 @@ func (s *Server) http(ctx context.Context, name string, c config.HttpConfig, g *
 		return nil, err
 	}
 
-	srv := &http.Server{Handler: h}
+	srv := &http.Server{Handler: arrived(h)}
 	go func() {
 		if err := srv.Serve(l); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.From(ctx).ErrorContext(ctx, name, slog.String("err", err.Error()))
@@ -1387,4 +1453,26 @@ func (s *Server) http(ctx context.Context, name string, c config.HttpConfig, g *
 	log.From(ctx).InfoContext(ctx, name, slog.String("addr", l.Addr().String()))
 
 	return func() { srv.Close() }, nil
+}
+
+// arrived carries the name a browser came in on into the request's headers, so
+// that a handler behind the transcoder can read it.
+//
+// It is not there otherwise. Go keeps the `Host` header out of
+// `Request.Header` and on `Request.Host`, and metadata is built from the header
+// map -- so a sign-in resolving a tenant from the name it was reached at had
+// nothing to read, and gRPC will not carry a `host` of its own either.
+//
+// Only where a proxy has not already said: behind a terminator the public name
+// is `X-Forwarded-Host` and `Host` is whatever the internal Service is called,
+// and the proxy's answer is the true one.
+func arrived(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-Forwarded-Host") == "" && r.Host != "" {
+			r = r.Clone(r.Context())
+			r.Header.Set("X-Forwarded-Host", r.Host)
+		}
+
+		h.ServeHTTP(w, r)
+	})
 }

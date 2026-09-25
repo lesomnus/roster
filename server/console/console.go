@@ -45,8 +45,31 @@ import (
 // `s` has no wall on it, for the reason `cmd.Resolver` and `vouch.Verify` read
 // one: this runs before anybody has been resolved, which is the whole of what
 // it is for.
-func Auth(s app.Server, db *ent.Client, sessions *authsession.Sessions) app.AuthServiceServer {
-	return authed{s: s, db: db, sessions: sessions, v: vouch.New(s, s)}
+//
+// # Which tenant somebody is signing in to
+//
+// The control plane has one, so nothing has to say: [Auth] with no option
+// takes the tenant it finds. A plane with many needs telling, and that is
+// [WithTenant] -- a function of the request, because on the data plane the
+// answer is the name a browser arrived at and there is nowhere else it could
+// come from. A resolver that refuses is a sign-in refused, which is the right
+// direction: one that carried on with no tenant would look somebody up in
+// whichever one it happened to reach, the failure `front.WhoseHost` names.
+func Auth(s app.Server, db *ent.Client, sessions *authsession.Sessions, opts ...Option) app.AuthServiceServer {
+	a := authed{s: s, db: db, sessions: sessions, v: vouch.New(s, s)}
+	for _, opt := range opts {
+		opt(&a)
+	}
+
+	return a
+}
+
+// Option is what [Auth] is told beyond the three things it is built on.
+type Option func(*authed)
+
+// WithTenant is which tenant a sign-in is about, by alias, from the request.
+func WithTenant(fn func(ctx context.Context) (string, error)) Option {
+	return func(a *authed) { a.tenant = fn }
 }
 
 type authed struct {
@@ -56,6 +79,9 @@ type authed struct {
 	db       *ent.Client
 	sessions *authsession.Sessions
 	v        app.VouchServiceServer
+
+	// tenant is [WithTenant], and nil is the one this plane has.
+	tenant func(ctx context.Context) (string, error)
 }
 
 func (a authed) SignIn(ctx context.Context, req *app.AuthSignInRequest) (*app.AuthSignInResponse, error) {
@@ -63,17 +89,17 @@ func (a authed) SignIn(ctx context.Context, req *app.AuthSignInRequest) (*app.Au
 		return nil, status.Error(codes.InvalidArgument, "both an alias and a password")
 	}
 
-	// The one tenant this plane has, by **alias**, because that is what
-	// `VouchWho` names one by: the pair a username field and a tenant selector
-	// make, rather than an identifier a form would have to be told.
-	who, err := a.db.Tenant.Query().First(ctx)
+	// Which tenant, by **alias**, because that is what `VouchWho` names one by:
+	// the pair a username field and a tenant selector make, rather than an
+	// identifier a form would have to be told.
+	tenant, err := a.whose(ctx)
 	if err != nil {
-		return nil, status.Error(codes.FailedPrecondition, "this deployment has no owner")
+		return nil, err
 	}
 
 	res, err := a.v.Verify(ctx, app.VouchVerifyRequest_builder{
 		Who: app.VouchWho_builder{
-			Tenant: who.Alias,
+			Tenant: tenant,
 			Alias:  req.GetAlias(),
 		}.Build(),
 		Secret: []byte(req.GetPassword()),
@@ -124,6 +150,24 @@ func (a authed) SignIn(ctx context.Context, req *app.AuthSignInRequest) (*app.Au
 	_ = grpc.SetHeader(ctx, metadata.Pairs("set-cookie", c.String()))
 
 	return &app.AuthSignInResponse{}, nil
+}
+
+// whose is the tenant this sign-in is about.
+//
+// The plane's only one where nothing was said, which is the control plane and
+// is why `AuthSignInRequest` has no tenant field: asking would be asking a
+// question with a single answer.
+func (a authed) whose(ctx context.Context) (string, error) {
+	if a.tenant != nil {
+		return a.tenant(ctx)
+	}
+
+	v, err := a.db.Tenant.Query().First(ctx)
+	if err != nil {
+		return "", status.Error(codes.FailedPrecondition, "this deployment has no owner")
+	}
+
+	return v.Alias, nil
 }
 
 func (a authed) SignOut(ctx context.Context, req *app.AuthSignOutRequest) (*app.AuthSignOutResponse, error) {

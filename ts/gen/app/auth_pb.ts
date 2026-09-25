@@ -147,17 +147,37 @@ export const AuthSignOutResponseSchema: GenMessage<AuthSignOutResponse> = /*@__P
  *
  * # Where it is served
  *
- * The **control plane's** listener, because that is where the people who sign
- * in live. An operator is a holder of that plane; on the data plane their
- * session names nobody, since the two are separate databases with no query
- * between them.
+ * **Both planes, each over its own rows.** A session names a holder of the
+ * database it was minted in, so one is resolved where that row is and nowhere
+ * else: a roster operator's on the control plane, a roster user's on the data
+ * plane. The two are separate databases with no query between them, which is
+ * why a cookie from one authenticates nothing on the other -- and is not a
+ * reason either plane cannot mint its own.
+ *
+ * The control plane's is the admin console's and is always served. The data
+ * plane's is `sign_in.enabled` and is **off unless a deployment says**, because
+ * this is the port a browser can reach.
+ *
+ * # Which tenant, and where that comes from
+ *
+ * This request has no tenant field, and the two planes answer that differently
+ * rather than one of them answering it in a field. A control plane has exactly
+ * one tenant, so asking which would be asking a question with a single answer.
+ * A data plane has many, and the answer is **the name the request arrived at**:
+ * `Host` rows say which tenant answers at which name, and `cmd.Hosted` reads
+ * them. A name nothing claims is a refusal that names it, because a sign-in
+ * that carried on with no tenant would look somebody up in whichever one the
+ * query happened to reach.
+ *
+ * A field would be worse than either: a caller naming the tenant it would like
+ * to be checked against is a caller choosing which passwords it is guessing at.
  *
  * And it is the one method here served without a credential, which it has to be
  * -- that is what is being asked for. What that costs is the same thing an HTTP
  * `/session` cost: anybody who reaches the port may guess passwords, and the
  * rate limit counts per tenant off a frame a public call has none of. The
- * answer is the same too: the port is private, and `server/vouch` closes an
- * account that has been guessed at.
+ * answers are the lockout in `server/vouch`, the control listener being
+ * private, and the data plane's door being shut until a deployment opens it.
  *
  * @generated from service roster.AuthService
  */
