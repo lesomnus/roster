@@ -86,7 +86,7 @@ func TestTheDocumentationNamesFilesThatExist(t *testing.T) {
 
 		// A path that is **produced** is not a pointer into the tree, and
 		// checking one makes this gate answer differently depending on whether
-		// somebody has built: `ts/console/devtools.tsx` names `ts/dist/console/`,
+		// somebody has built: `ts/lib/devtools.tsx` names `ts/dist/console/`,
 		// which is here after `npm run build` and not in a fresh checkout. It was
 		// green on a desk and red in CI, which is the worst thing a gate can be.
 		for _, made := range []string{"dist/", "node_modules/", ".vite/", "target/"} {

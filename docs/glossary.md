@@ -28,7 +28,7 @@ Three notes about the list itself:
 | **tenant administrator** | a roster user whose role administers their tenant. **Not a kind of row**: the schema has no such thing, and it is a holder with a binding (#29) |
 | **customer** | a tenant, from the roster operator's side of the table. `roster tenant add` makes one; the admin console's *customers* screen is about them |
 | **admin console** | the page a **roster operator** opens. Today it is served by the control listener and reaches `admin.addr` for customers; #32 moves it whole onto the admin listener |
-| **user console** | the page a **roster user** opens, showing their own tenant and nothing else, over the walled data plane. Does not exist yet (#34) |
+| **user console** | the page a **roster user** opens, showing their own tenant and nothing else, over the walled data plane. `ts/user/`, served by `server.http` at `/` where `user_console.dir` names a build (#34) |
 | **a holder's credential** | what tells two holders apart, since the row does not: a `Credential` (a password, a second factor) or an `ApiKey`. One holder may have both, and roster refuses neither -- `roster control key add --allow … admin` mints a key on the operator's own row. Which plane it is in is the other difference, and the one the `rk_`/`rt_` prefix comes from |
 | **custody** (69) | a caller that acts across **every** tenant -- the deployment's own machinery rather than a customer's. `docs/position.md` is where the line is |
 
@@ -57,11 +57,12 @@ Three notes about the list itself:
 
 | | |
 | --- | --- |
-| **the admin console** | roster's own UI for a **roster operator**, served at `/` on the control plane's HTTP listener. `ts/console/`. Write *admin console* rather than *the admin console*: a **user console** is the other one (#34), and *a console* on its own is a terminal somebody is sitting at |
+| **the admin console** | roster's own UI for a **roster operator**, served at `/` on the admin listener. `ts/console/`. Write *admin console* rather than *the admin console*: a **user console** is the other one, and *a console* on its own is a terminal somebody is sitting at |
+| **the user console** | roster's own UI for a **roster user**: their own tenant, over the walled data plane. `ts/user/`. The two pages draw the same screens from `ts/lib/tenant/` and differ in who is calling -- which is the whole of the difference, and why there is one copy of them |
 | **the account app** | roster's front door for a tenant's own people -- their own record, their own ways in. Its own process, holding one tenant key per **tenant** it fronts. `account/`, `ts/account/` |
 | **the Login App** | what Hydra hands a `login_challenge` to, and what answers with a `Holder.id`. `login/`, `ts/login/`. **Self-hosted** is a roster user running it for their own tenant with one `rt_`; **roster-hosted** is a roster operator running one instance for many tenants |
 | **the front door** (227) | the shared browser-facing half both of those are built on: `POST /session` and after. `frontdoor/`, and `frontdoor/web/frontdoor.js` is its browser side |
-| **the sandbox** (211) | two different ones, and both are *the real thing with something faked* -- in opposite directions. The Login App's is the real pages with a **made-up server**: `npm --prefix ts run dev:login`, over `ts/vite.login.ts`. The admin console's is the real **server** compiled into the page: `npm --prefix ts run dev:sandbox`, over `wasm/`. Each fakes the half that is not what it exists to show |
+| **the sandbox** (211) | two different kinds, and both are *the real thing with something faked* -- in opposite directions. The Login App's is the real pages with a **made-up server**: `npm --prefix ts run dev:login`, over `ts/vite.login.ts`. The consoles' is the real **server** compiled into the page: `npm --prefix ts run dev:sandbox` and `dev:user:sandbox`, over `wasm/`, one module publishing an entry point per listener. Each fakes the half that is not what it exists to show -- and the consoles' fakes exactly two things, the cookie and the name the page arrived at, because a message port carries neither |
 | **a relying party** | an app that trusts the issuer's tokens. Two shapes, and a deployment has both: `docs/relying-party.md` |
 
 ## How it is checked

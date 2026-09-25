@@ -3,14 +3,16 @@
 # cookies without Secure. It is what somebody working on the pages runs.
 #
 #     docker compose up --build
-#     http://localhost:8081/            admin / admin
-#     http://localhost:8090/           erin / correct horse battery staple
+#     http://localhost:8081/   admin console   admin / admin
+#     http://localhost:8080/   user console    erin / correct horse battery staple
+#     http://localhost:8090/   account app     the same person, through an app
 #
 # `PUBLIC_HOST` is the name a browser reaches this by, `localhost` unless said
-# otherwise: the account app resolves the customer by that name. The admin
-# console is `localhost` only: its cookie is `__Host-` and `Secure`, which a
-# browser takes over plain http from that name and from nowhere else -- and it
-# is served by the listener it calls, so there is no second origin to name.
+# otherwise: the account app and the user console both resolve the customer by
+# that name. Both consoles are `localhost` only: the cookie is `__Host-` and
+# `Secure`, which a browser takes over plain http from that name and from
+# nowhere else -- and each is served by the listener it calls, so there is no
+# second origin to name.
 name: roster
 
 services:
@@ -97,6 +99,19 @@ services:
       ROSTER_SERVER_HTTP_ADDR: ":8080"
       ROSTER_SERVER_HTTP_ALLOW_WEB: "true"
 
+      # The door a **roster user** signs in at, and the page behind it: their
+      # own tenant, over the walled plane, at `http://localhost:8080/`.
+      #
+      # Which tenant is the name the browser arrived at, so this works here
+      # because `docker/customer.sh` writes a `Host` row for `PUBLIC_HOST`.
+      # Off by default in a deployment -- anybody who reaches the port may
+      # guess passwords -- and on here because this rig is a desk.
+      ROSTER_SIGN_IN_ENABLED: "true"
+      ROSTER_USER_CONSOLE_DIR: /usr/share/roster/user
+      # The user console on a dev server (`npm run dev:user`, :5176) is another
+      # origin and is refused without this, the same line `admin.http` needs.
+      ROSTER_SERVER_HTTP_ORIGINS: '["http://localhost:5176"]'
+
       # The control plane. No page here: what it answers is what a shell asks,
       # carrying an `rk_`.
       ROSTER_CONTROL_ADDR: ":50052"
@@ -121,7 +136,7 @@ services:
     # line that would have to change for a deployment, and none is hidden.
     ports:
       - "50051:50051" # product apps
-      - "8080:8080"   # the same over HTTP: the account app's calls, curl
+      - "8080:8080"   # the same over HTTP: the account app's calls, curl, and the user console
       - "50052:50052" # operators, for a shell
       - "8082:8082"   # the same over HTTP
       - "50053:50053" # customers

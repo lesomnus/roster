@@ -231,6 +231,19 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 				"holders, and control.db.driver names no database, so there is nobody to be and no " +
 				"listener is opened. name a control plane, or take the block out")
 	}
+	// And the same shape once more, for the page a roster user opens.
+	//
+	// `sign_in.enabled` is what registers `AuthService` on this listener, so
+	// without it the page is served, loads, draws a form, and is answered
+	// `Unimplemented` by a method that is not on the wire. There is nothing in
+	// that for anybody to read: the page looks served and the deployment looks
+	// up.
+	if c.UserConsole.Dir != "" && !c.SignIn.Enabled {
+		return nil, errors.New(
+			"user_console.dir: the page is where a roster user signs in, and sign_in.enabled is off " +
+				"-- so AuthService is not on this listener and the form on it can never be answered. " +
+				"turn sign_in.enabled on, or take the page out")
+	}
 
 	db, dialect, err := c.Db.Open(ctx)
 	if err != nil {
@@ -1328,8 +1341,14 @@ func (s *Server) serveAdmin(ctx context.Context, c Config, g *grpc.Server) (func
 // It is the **same** `g`: a page reaches the handlers a gRPC client reaches,
 // through the interceptors a gRPC client goes through, behind the same wall.
 // There is no second stack here for a rule to be missing from.
+//
+// And it is where the **user console** is served, at `/`, beside the RPCs it
+// calls: a roster user signs in here, the wall narrows them to their own
+// tenant, and which tenant that is comes from the name they arrived at. See
+// [Config.UserConsole], which is refused unless `sign_in.enabled` puts the door
+// on this listener.
 func (s *Server) serveHttp(ctx context.Context, c Config, g *grpc.Server) (func(), error) {
-	return s.http(ctx, "http", c.Server.Http, g)
+	return s.http(ctx, "http", c.Server.Http, g, ConsoleMount(c.UserConsole))
 }
 
 // serveControlHttp is the control plane's own browser surface.
@@ -1360,8 +1379,12 @@ func (s *Server) serveControlHttp(ctx context.Context, c Config, g *grpc.Server)
 // now (lesomnus/payday#13), and the root is the app's.
 //
 // Which is where a page belongs. Somebody who types the host and no path gets
-// the front door of whatever is there, and on this listener that is the
-// console; `/console/` was a thing to know rather than a thing to find.
+// the front door of whatever is there -- the admin console on `admin.http`, the
+// user console on `server.http`; `/console/` was a thing to know rather than a
+// thing to find.
+//
+// One function for both, which is what makes the two pages the same kind of
+// thing: a directory, served at the root of the listener whose RPCs it calls.
 //
 // A path that is not a file is the index, which is what a page that routes in
 // the browser needs on reload. `config.json` is the one thing the page has to
@@ -1440,7 +1463,7 @@ func (s *Server) http(ctx context.Context, name string, c config.HttpConfig, g *
 		return nil, err
 	}
 
-	srv := &http.Server{Handler: arrived(h)}
+	srv := &http.Server{Handler: Arrived(h)}
 	go func() {
 		if err := srv.Serve(l); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.From(ctx).ErrorContext(ctx, name, slog.String("err", err.Error()))
@@ -1452,7 +1475,7 @@ func (s *Server) http(ctx context.Context, name string, c config.HttpConfig, g *
 	return func() { srv.Close() }, nil
 }
 
-// arrived carries the name a browser came in on into the request's headers, so
+// Arrived carries the name a browser came in on into the request's headers, so
 // that a handler behind the transcoder can read it.
 //
 // It is not there otherwise. Go keeps the `Host` header out of
@@ -1463,7 +1486,12 @@ func (s *Server) http(ctx context.Context, name string, c config.HttpConfig, g *
 // Only where a proxy has not already said: behind a terminator the public name
 // is `X-Forwarded-Host` and `Host` is whatever the internal Service is called,
 // and the proxy's answer is the true one.
-func arrived(h http.Handler) http.Handler {
+//
+// Exported because it is half of what the user console rests on and a test that
+// wrapped the transcoder by hand would be testing the other half. A page that
+// reaches roster through no proxy carries the name in `Host` alone, which is
+// the case this is here for.
+func Arrived(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("X-Forwarded-Host") == "" && r.Host != "" {
 			r = r.Clone(r.Context())

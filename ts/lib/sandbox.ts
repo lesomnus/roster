@@ -1,9 +1,14 @@
 /**
- * The admin console's server, in the page.
+ * A console's server, in the page. Both of them use this one.
  *
  * A reload is a fresh deployment: two new databases, `roster init` run again,
- * nothing left over. Somebody working on the admin console starts no backend,
+ * nothing left over. Somebody working on either console starts no backend,
  * migrates nothing, and does not have to remember what state they left it in.
+ *
+ * One module because one `app.wasm` publishes every entry point a deployment
+ * would open a listener for (`wasm/main.go`) -- so the admin console and the
+ * user console are one download and one compile, and which one a page is comes
+ * down to the name it dials.
  *
  * # It answers with a transport and nothing else
  *
@@ -36,8 +41,8 @@
  * All of it is `@lesomnus/payday/sandbox` now, which is where it belonged —
  * every payday app's page has the same problem and would solve it the same
  * way. What is left here is the three things that are roster's: where the
- * build is served from under this page's base, the second entry point the
- * customers screen dials, and the name of the cache.
+ * build is served from under this page's base, the entry points a page dials
+ * beside the default one, and the name of the cache.
  *
  * # Two things will bite whoever serves this
  *
@@ -47,7 +52,7 @@
  *     `Cross-Origin-Embedder-Policy: require-corp`.** SQLite in a Worker
  *     cancels work with a `SharedArrayBuffer`, which does not exist without
  *     cross-origin isolation. The symptom is "it works on the other dev
- *     server". `vite.config.ts` sets both.
+ *     server". `ts/vite.console.ts` and `ts/vite.user.ts` set both.
  *   - **`wasm_exec.js` is the toolchain's.** It is the JS half of the Go
  *     runtime and is version-coupled to the compiler that built the module, so
  *     a vendored copy pins the wrong one:
@@ -69,11 +74,11 @@ export interface Sandbox {
 	readonly transport: Transport
 
 	/**
-	 * dial is a transport to another server the same instance publishes, by
-	 * the name it was published under -- `drpcAdmin` for the admin server,
-	 * which the customers screen reaches beside the control one the way
-	 * `admin.http` is dialed beside `control.http`. One instance, one pair of
-	 * databases; see `wasm/main.go`.
+	 * dial is a transport to one of the servers the instance publishes, by the
+	 * name it was published under -- `drpcAdmin` for the admin listener, which
+	 * the customers screen reaches, and `drpcUser` for the walled data plane,
+	 * which is the whole of what the user console talks to. One instance, one
+	 * pair of databases; see `wasm/main.go`, which lists the names.
 	 */
 	dial(entryPoint: string): Transport
 
@@ -105,8 +110,8 @@ export interface Progress {
  *
  *     GOOS=js GOARCH=wasm go build -tags grpcnotrace -o ts/public/app.wasm ./wasm
  *
- * Everything is said under the page's **base**, because `vite.console.ts`
- * serves this page and `public/` with it: the package's defaults are the
+ * Everything is said under the calling page's **base**, because each page's
+ * Vite config serves `public/` with it: the package's defaults are the
  * origin's root, which is right while the base is `/` and is a 404 that reads
  * as "the sandbox never comes up" the moment a deployment moves it.
  *

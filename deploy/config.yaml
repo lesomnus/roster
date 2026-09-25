@@ -13,6 +13,14 @@ server:
     addr: 0.0.0.0:8081
     allow_web: true
 
+# No `sign_in:` and no `user_console:` here, and the absence is a decision
+# rather than an omission. The user console is a public sign-in on the port
+# product apps already reach, and whether a deployment wants one is the
+# deployment's to say -- `docs/operating.md` § "The user console" is the two
+# lines it takes, and the page is already in the image at
+# /usr/share/roster/user. `compose.yaml` turns it on, because that rig is a
+# desk.
+
 # SQLite on a volume, which is what a deployment of this size wants and what
 # `docs/operating.md` § "Which database" says what the trade is. An overlay that
 # outgrows it replaces `db:` and `control.db:` and changes nothing else.

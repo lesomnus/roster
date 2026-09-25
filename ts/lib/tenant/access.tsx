@@ -27,11 +27,11 @@
 import { useState } from 'react'
 import { useCall, useQuery, useRow } from '@lesomnus/payday/react'
 
-import type { Group } from '../gen/app/group_pb.js'
-import { GroupService } from '../gen/app/group_svc_pb.js'
-import { BindingService, RoleService } from '../gen/app/role_svc_pb.js'
-import type { Site } from '../gen/app/site_pb.js'
-import { SiteService } from '../gen/app/site_svc_pb.js'
+import type { Group } from '../../gen/app/group_pb.js'
+import { GroupService } from '../../gen/app/group_svc_pb.js'
+import { BindingService, RoleService } from '../../gen/app/role_svc_pb.js'
+import type { Site } from '../../gen/app/site_pb.js'
+import { SiteService } from '../../gen/app/site_svc_pb.js'
 
 import { Alias, PickHolder, bytesOf, ref, said, uuid } from './organisation.js'
 

@@ -19,13 +19,13 @@ import type { App } from '@lesomnus/payday/react'
 
 import { AuthService } from '../gen/app/auth_pb.js'
 import { MeService } from '../gen/app/me_pb.js'
-import { admin, type Admin } from '../lib/client.js'
+import { writes, type Writes } from '../lib/client.js'
 import { open } from '../lib/store.js'
 import { Page } from './page.js'
-import type { Progress, Sandbox } from './sandbox.js'
+import type { Progress, Sandbox } from '../lib/sandbox.js'
 import { go, useRoute } from '../lib/route.js'
 // payday's panel, where this build has one; see `devtools.tsx`.
-import { Devtools } from './devtools.js'
+import { Devtools } from '../lib/devtools.js'
 import { entities } from '../gen/entities.js'
 import '../lib/style.css'
 
@@ -83,7 +83,7 @@ async function connect(): Promise<Transport> {
 		})
 	}
 
-	const { start } = await import('./sandbox.js')
+	const { start } = await import('../lib/sandbox.js')
 	sandbox = await start(booting)
 
 	return sandbox.transport
@@ -216,12 +216,12 @@ function SignIn(props: { onDone: () => void }): React.ReactNode {
  * row: a reset answers with a secret that is never written down, so there is
  * nothing for the store to hold and nothing for it to redraw.
  */
-async function customers(transport: Transport): Promise<{ app: App; admin: Admin } | null> {
+async function customers(transport: Transport): Promise<{ app: App; writes: Writes } | null> {
 	const at =
 		import.meta.env['VITE_SANDBOX'] !== undefined ? (sandbox?.dial('drpcAdmin') ?? null) : transport
 	if (at === null) return null
 
-	return { app: await open(at, 'console:admin'), admin: admin(at) }
+	return { app: await open(at, 'console:admin'), writes: writes(at) }
 }
 
 /**
@@ -237,7 +237,7 @@ function Shell(props: {
 	onSignIn: () => void
 	onSignOut: () => void
 	customers: App | null
-	admin: Admin | null
+	writes: Writes | null
 	ungated: { control?: Transport; admin?: Transport }
 }): React.ReactNode {
 	const route = useRoute()
@@ -249,7 +249,7 @@ function Shell(props: {
 				<Page
 					onSignOut={props.onSignOut}
 					customers={props.customers}
-					admin={props.admin}
+					writes={props.writes}
 					ungated={props.ungated.admin}
 				/>
 			) : (
@@ -295,7 +295,7 @@ async function run(transport: Transport): Promise<void> {
 						onSignIn={() => render(true)}
 						onSignOut={out}
 						customers={theirs?.app ?? null}
-						admin={theirs?.admin ?? null}
+						writes={theirs?.writes ?? null}
 						ungated={ungated}
 					/>
 				</Provider>

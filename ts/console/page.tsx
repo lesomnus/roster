@@ -32,7 +32,7 @@ import { HolderService } from '../gen/roster/payday/holder_svc_pb.js'
 import { ApiKeyService } from '../gen/app/apikey_svc_pb.js'
 import { CredentialService } from '../gen/app/credential_svc_pb.js'
 
-import type { Admin } from '../lib/client.js'
+import type { Writes } from '../lib/client.js'
 import { Customers } from './customers.js'
 
 
@@ -52,7 +52,7 @@ export function Page(props: {
 
 	// And the clients for the writes that screen makes, which do not go through
 	// the store: a reset answers with a secret rather than with a row.
-	admin: Admin | null
+	writes: Writes | null
 
 	// The data plane with no wall, for that screen's devtools panel; only the
 	// sandbox has one to hand (`main.tsx`, `ungatedTransports`).
@@ -109,7 +109,7 @@ export function Page(props: {
 
 			<main>
 				{at === 'customers' && (
-					<Customers app={props.customers} admin={props.admin} may={may} ungated={props.ungated} />
+					<Customers app={props.customers} writes={props.writes} may={may} ungated={props.ungated} />
 				)}
 				{at === 'you' && <You methods={held} />}
 			</main>

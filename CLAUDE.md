@@ -142,7 +142,7 @@ becomes an accidental API.
 
 **`.g` means a generator wrote it.** Everything else is yours — including
 `proto/app/*.proto`, `proto/ext/**` (overlays), `cmd/` and `cli/`, and `ts/console/`,
-`ts/account/`, `ts/lib/` (the two UIs and what they share).
+`ts/user/`, `ts/account/`, `ts/login/`, `ts/lib/` (the pages and what they share).
 
 To add a field to one of payday's entities, write an **overlay** in
 `proto/ext/payday/`. Editing `proto/roster/payday/` directly is undone by the next

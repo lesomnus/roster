@@ -32,8 +32,9 @@ docker compose up --build
 
 | | | |
 | --- | --- | --- |
-| the admin console | <http://localhost:8082/> | `admin` / `admin` |
-| a customer's own people | <http://localhost:8090/> | `erin` / `correct horse battery staple` |
+| the admin console | <http://localhost:8081/> | `admin` / `admin` |
+| the user console, one customer's own organisation | <http://localhost:8080/> | `erin` / `correct horse battery staple` |
+| a customer's own people, through the app in front | <http://localhost:8090/> | `erin` / `correct horse battery staple` |
 | a product app, holding its own token | <http://localhost:5555/> | sign in through Hydra |
 | the same page behind `oauth2-proxy` | <http://localhost:4180/> | the other relying-party shape |
 | the data plane, for your app | `localhost:50051`, or `:8080` over HTTP | a key, below |

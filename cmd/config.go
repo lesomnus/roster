@@ -105,6 +105,27 @@ type Config struct {
 	// is about one tenant, resolved from the name the browser arrived at.
 	SignIn SignInConfig `yaml:"sign_in"`
 
+	// UserConsole is the page a **roster user** opens: their own tenant, and
+	// nothing of anybody else's. Served by `server.http` at `/`, which is the
+	// listener behind the door above. Empty serves none.
+	//
+	// Two reasons it is this listener and not a fourth. A session is a
+	// `__Host-` cookie, host-only, so a page and the listener it signs in at
+	// have to be one host -- the same thing that moved the admin console onto
+	// `admin.http` (#27). And which tenant a sign-in is about is the name the
+	// browser arrived at (`Hosted`), so the page is served at the tenant's own
+	// name and the tenant is whoever claims it -- which a listener of its own
+	// would have to be told instead.
+	//
+	// It is **not** the admin console with a filter. The caller is the tenant's
+	// own holder, narrowed by the wall; the admin console's is a roster
+	// operator, and `admin.addr` waives two rules from the port (#34, #32).
+	//
+	// Named `user_console` rather than `console` because there are two pages and
+	// naming one of them after the category would be the ambiguity the glossary
+	// settled; see `docs/glossary.md`.
+	UserConsole ConsoleConfig `yaml:"user_console"`
+
 	// Admin is where an operator administers **customers**: the data plane,
 	// with no wall, behind a session. Empty is nowhere.
 	//
@@ -509,17 +530,22 @@ type SignInConfig struct {
 	Enabled bool `yaml:"enabled"`
 }
 
-// ConsoleConfig is the page a **roster operator** opens, as this listener
-// serves it.
+// ConsoleConfig is a built page, as the listener that names it serves it.
+//
+// Two of them now -- `admin.console` is the admin console and `user_console` is
+// the user console -- and the type is one because what a listener needs to know
+// about a page is where the files are. Which page it is, and which caller it is
+// for, is whichever field holds this.
 //
 // One field, and the second one is gone with the arrangement that needed it.
 // `admin` named another origin for the page to call, because the page was
 // served by `control.http` and the customers screen calls `admin.http` -- and a
 // browser will not send a `__Host-` session cookie to a second host, so that
-// arrangement could not work at all (#27). The page is served by the listener
-// it calls now, and there is nothing to tell it.
+// arrangement could not work at all (#27). A page is served by the listener it
+// calls now, and there is nothing to tell it.
 type ConsoleConfig struct {
-	// Dir is `ts/dist/console`, or wherever the build was put.
+	// Dir is `ts/dist/console` or `ts/dist/user`, or wherever the build was
+	// put.
 	Dir string `yaml:"dir"`
 }
 
