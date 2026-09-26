@@ -221,6 +221,26 @@ resync() {
 	return "${out}"
 }
 
+# renominated is roster restarted so that `login provision` sees a name that was
+# not there when it last ran.
+#
+# **Why a declared name takes two starts.** `roster login provision` is an init
+# container, so it runs *before* `serve` -- and `serve` is what applies
+# `resources:`. So the pass that would nominate the holder a new `Host` row
+# borrows happens before the row exists, and the row arrives with `acts_as`
+# unset. What that looks like from a walk is `WhoseHost` answering fine and
+# `Vouch.Delegate` answering `Unauthenticated`, because `keys.At` refuses a name
+# that nominates nobody rather than answering as the key.
+#
+# It is not a rig quirk: any deployment that declares a name in a file has it, and
+# `docs/operating.md` says so beside the command. The first start already needed
+# this for the same reason, which is the restart a hundred lines below. Every
+# phase that adds a name needs it too, and this is that, once.
+renominated() {
+	kube "kubectl -n ${NS} delete pod -l app.kubernetes.io/component=server >/dev/null 2>&1; \
+		kubectl -n ${NS} rollout status deploy/roster --timeout=300s >/dev/null"
+}
+
 # product is the pod serving the relying party, by uid. Which pod it is matters
 # for exactly one assertion and it is the assertion the last phase is about.
 product() {
@@ -1054,6 +1074,9 @@ kube "kubectl -n ${NS} rollout status deploy/roster-product --timeout=300s >/dev
 # sentence about the wrong thing, which is what this phase said on its first run
 # after #36.
 kube "kubectl -n ${NS} rollout status deploy/roster --timeout=300s >/dev/null"
+# And once more, so the init container nominates on the name that rollout applied;
+# `renominated` says why a declared name takes two starts.
+renominated
 echo "   the issuer is behind nginx, and the app came up against it"
 
 moved=0
@@ -1282,6 +1305,7 @@ resync /w/behind || two=$?
 # a sentence about the wrong thing; it cost a CI run, where everything is slower
 # than on a desk and the race actually lands.
 kube "kubectl -n ${NS} rollout status deploy/roster --timeout=300s >/dev/null"
+renominated
 echo "   a second relying party is declared, registered and claimed"
 
 cat > "${work}/behind.yaml" <<EOF

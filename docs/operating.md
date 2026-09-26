@@ -492,6 +492,15 @@ A deployment with no names yet is **said and not refused**, because this runs on
 every start and a fresh volume has nothing to nominate. It replaces rather than
 adds -- a key cannot be read back, so a restart is a rotation.
 
+**A name declared in `resources:` is nominated on the next start, not this one.**
+This runs *before* the server, and the server is what applies `resources:` -- so
+the pass that would nominate a new `Host` row happens before the row exists, and
+the row arrives with `acts_as` unset. A flow for it then resolves to a tenant and
+is refused at `Vouch.Delegate`, because `keys.At` will not answer as the key for a
+name that nominates nobody. One restart fixes it, and a deployment that adds names
+by hand rather than by file does not have it at all: write the row, and the next
+start nominates.
+
 Beside the process is where it belongs: an `initContainer` in Kubernetes, a line
 before `ExecStart` on a box. `deploy/` is that, as manifests.
 
