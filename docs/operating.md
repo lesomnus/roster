@@ -423,10 +423,8 @@ ldap:
 login:                                    # only with Hydra in front; see login.md
   addr: :8091
   hydra: { admin: http://hydra:4445 }
-  keys:
-    contoso: env:ROSTER_LOGIN_KEY_CONTOSO
-  clients:
-    contoso: [contoso-web, contoso-mobile]
+  key: env:ROSTER_LOGIN_KEY                # one rk_, narrowed per request
+
   consent: skip                           # ask draws a screen instead
   base: https://login.contoso.example     # one redirect URI for the whole app
   enrol: invited                          # invited | expected | enrolling
@@ -477,13 +475,31 @@ a tenant, which somebody makes after the first boot.
 roster login provision --out /run/roster-login
 ```
 
-It ensures this deployment's **own** front door inside each tenant named in
-`login.clients` -- a `login-app` holder, a role holding exactly what the app calls
-as itself, the binding, and a key -- and writes the key to `<out>/<alias>.key`, so
-`login.keys` is `file:/run/roster-login/<alias>.key` and there is no Secret at
-all. It makes no customer: a tenant that is not there is **skipped and said**,
-because this runs on every start and a fresh volume has no customers. It replaces
-rather than adds -- a key cannot be read back, so a restart is a rotation.
+Two halves, and neither takes a list of tenants.
+
+**Once:** one deployment key (`rk_`), on a control-plane holder, written to
+`<out>/login-app.key` -- so `login.key` is `file:/run/roster-login/login-app.key`
+and there is no Secret at all. What it allows is the three reads that work out
+whose flow this is and nothing else.
+
+**Per name a tenant registered:** this deployment's own front door inside that
+tenant -- a `login-app` holder, a role holding what the app calls as itself, the
+binding -- and the `Host` row pointed at it (`acts_as`), which is what roster
+narrows the one key **to** on every call. Walked off the `Host` rows rather than a
+list, because a tenant that registered a name is a tenant this app fronts (#42).
+
+A deployment with no names yet is **said and not refused**, because this runs on
+every start and a fresh volume has nothing to nominate. It replaces rather than
+adds -- a key cannot be read back, so a restart is a rotation.
+
+**A name declared in `resources:` is nominated on the next start, not this one.**
+This runs *before* the server, and the server is what applies `resources:` -- so
+the pass that would nominate a new `Host` row happens before the row exists, and
+the row arrives with `acts_as` unset. A flow for it then resolves to a tenant and
+is refused at `Vouch.Delegate`, because `keys.At` will not answer as the key for a
+name that nominates nobody. One restart fixes it, and a deployment that adds names
+by hand rather than by file does not have it at all: write the row, and the next
+start nominates.
 
 Beside the process is where it belongs: an `initContainer` in Kubernetes, a line
 before `ExecStart` on a box. `deploy/` is that, as manifests.

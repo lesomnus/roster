@@ -1,91 +1,86 @@
 package cli
 
 import (
+	"net"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"os"
-	"path/filepath"
+
+	"github.com/lesomnus/roster/cmd"
 )
 
-// One operator's clients are one comma list, and naming the operator twice is
-// the way of writing it that reads right and silently is not.
+// Three tests used to be here and all three were about the two maps `login`
+// was configured with: that a tenant's clients are one comma list rather than
+// a repeated flag, that a tenant whose key file is not written yet is dropped
+// rather than fatal, and that only a missing `file:` is forgiven.
 //
-// It cost a walk: `docker/login.sh` gave the tenant its second client with a
-// second `--client`, the app started with `operators=1` and answered *the login
-// is not working* for the first one, and the message it logged was about a
-// client nobody could see was missing.
-func TestAnOperatorsClientsAreOneList(t *testing.T) {
-	x := require.New(t)
+// All three are gone with the maps (#36). This app holds **one** key -- an
+// `rk_`, which is the control plane's and so needs no customer to exist -- and
+// which tenant a flow is about comes from the redirect it named rather than
+// from a client map. So there is no pair of halves to keep whole, and the
+// first-start cycle those tests were written around cannot happen: there is no
+// per-tenant file to be absent.
+//
+// What is left worth pinning is the one thing that replaced them.
 
-	got, err := clientsOf(nil, "NOTHING_", []string{"contoso=demo,behind"})
-	x.NoError(err)
-	x.Equal(map[string][]string{"contoso": {"demo", "behind"}}, got)
+// TestAFirstStartWithNoKeyYetStillComesUp is the same failure those three were
+// about, in the one shape it still has.
+//
+// `roster login provision` writes the key beside the server -- an init
+// container, a line in a unit -- so the very first `roster serve` can run before
+// the file exists. Refusing there would be a deployment that cannot come up
+// because it has not come up, which is what `deploy/` found on an empty cluster.
+//
+// `roster login serve` still refuses, and that asymmetry is the point: somebody
+// typed that one, and a process whose only job is the Login App has nothing to
+// do without a credential.
+func TestAFirstStartWithNoKeyYetStillComesUp(t *testing.T) {
+	dir := t.TempDir()
+	there := filepath.Join(dir, "login-app.key")
 
-	_, err = clientsOf(nil, "NOTHING_", []string{"contoso=demo", "contoso=behind"})
-	x.ErrorContains(err, "named twice")
+	t.Run("a file that is not there yet leaves the app off", func(t *testing.T) {
+		x := require.New(t)
 
-	// Two operators is what a repeat is for, and still is.
-	got, err = clientsOf(nil, "NOTHING_", []string{"contoso=demo", "fabrikam=other"})
-	x.NoError(err)
-	x.Equal(map[string][]string{"contoso": {"demo"}, "fabrikam": {"other"}}, got)
+		c := &cmd.Config{Login: cmd.LoginConfig{Key: "file:" + there}}
+		got, err := loginApp(c, listening(t))
+		x.NoError(err)
+		x.Empty(got.Key, "a key that is not written yet is not a deployment that fails to start")
+	})
 
-	// And a flag still layers over the block rather than adding to it, which is
-	// a deployment narrowing what it was configured with.
-	got, err = clientsOf(map[string][]string{"contoso": {"old"}}, "NOTHING_", []string{"contoso=demo"})
-	x.NoError(err)
-	x.Equal(map[string][]string{"contoso": {"demo"}}, got)
+	t.Run("and the next start finds it", func(t *testing.T) {
+		x := require.New(t)
+
+		x.NoError(os.WriteFile(there, []byte("rk_written\n"), 0o600))
+
+		c := &cmd.Config{Login: cmd.LoginConfig{Key: "file:" + there}}
+		got, err := loginApp(c, listening(t))
+		x.NoError(err)
+		x.Equal("rk_written", got.Key, "the token and not the reference: the app is handed the thing")
+	})
+
+	// Everything else is a deployment configured wrong, and those still stop it:
+	// only *not there* is forgiven, for the reason the comment above gives.
+	t.Run("an env reference naming nothing still refuses", func(t *testing.T) {
+		x := require.New(t)
+
+		c := &cmd.Config{Login: cmd.LoginConfig{Key: "env:NOTHING_SET_HERE"}}
+		_, err := loginApp(c, listening(t))
+		x.Error(err)
+		x.ErrorContains(err, "login.key")
+	})
 }
 
-// TestAnOperatorWithNoKeyYetIsDroppedAndNotFatal: the state a first start has,
-// and one that used to be a deployment that could not come up at all.
-//
-// `roster login provision` writes these files and skips an operator whose
-// tenant does not exist -- a fresh volume has no customers. Refusing here put
-// that back: the file the skipped operator would have had is missing, so the
-// server would not start, so the tenant could never be made, so the file would
-// never exist. `deploy/` hit it on its first run against an empty cluster.
-func TestAnOperatorWithNoKeyYetIsDroppedAndNotFatal(t *testing.T) {
-	x := require.New(t)
+// listening is a listener whose address the default `login.roster` is taken
+// from, and nothing else: `loginApp` fills that in when a deployment left it
+// unsaid.
+func listening(t *testing.T) net.Listener {
+	t.Helper()
 
-	dir := t.TempDir()
-	there := filepath.Join(dir, "there.key")
-	x.NoError(os.WriteFile(there, []byte("rt_there"), 0o600))
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	t.Cleanup(func() { l.Close() })
 
-	keys, clients := minted(
-		map[string]string{"there": "file:" + there, "notyet": "file:" + filepath.Join(dir, "notyet.key")},
-		map[string][]string{"there": {"a"}, "notyet": {"b"}},
-	)
-
-	// Both halves, because `whole` refuses a client with no key -- and should,
-	// since that is how a deployment finds out it wrote one and forgot the
-	// other. What is dropped here is not that mistake.
-	x.Equal(map[string]string{"there": "file:" + there}, keys)
-	x.Equal(map[string][]string{"there": {"a"}}, clients)
-
-	got, err := keysOf(keys, "NOTHING_", nil)
-	x.NoError(err)
-	x.NoError(whole(got, clients))
-}
-
-// TestOnlyAFileAndOnlyMissingIsForgiven: everything else is a deployment
-// configured wrong, and those still stop it.
-func TestOnlyAFileAndOnlyMissingIsForgiven(t *testing.T) {
-	x := require.New(t)
-
-	dir := t.TempDir()
-	unreadable := filepath.Join(dir, "locked.key")
-	x.NoError(os.WriteFile(unreadable, []byte("rt_x"), 0o000))
-
-	for _, ref := range []string{"env:NOTHING_SET_HERE", "file:" + unreadable} {
-		keys, clients := minted(
-			map[string]string{"one": ref},
-			map[string][]string{"one": {"a"}},
-		)
-		x.Len(keys, 1, "%s is not a key that has not been written yet", ref)
-
-		_, err := keysOf(keys, "NOTHING_", nil)
-		x.Error(err, "%s should stop the process", ref)
-		_ = clients
-	}
+	return l
 }

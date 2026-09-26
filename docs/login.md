@@ -155,12 +155,26 @@ client asked for the scope that carries it. What it never puts there is `methods
 -- roster's answer about roster, which a product holding a copy of would hold a
 stale one.
 
-Which operator a flow belongs to comes from the **challenge**, not the hostname:
-it names the OAuth client, and each tenant's clients are written down
-(`login.clients`) and read back over Hydra's admin API. So the tenant is Hydra's
-word rather than a header a browser wrote, and the key each call goes out with
-follows from it. Several clients per tenant, because one sign-in across two
-products is the case Hydra is for at all.
+Which tenant a flow belongs to comes from the **redirect the authorization
+request named**, read out of the challenge over Hydra's admin API and resolved
+through that tenant's own `Host` row. Not the hostname the browser arrived at:
+Hydra has one `urls.login` for the whole issuer, so every flow lands here under
+one name and the arrival host says nothing about anybody.
+
+It was the OAuth **client**, through a map this app was configured with
+(`login.clients`), and that had to go: one product serving a hundred tenants is
+one client, so a discriminator that is the client forces a Hydra registration per
+customer -- for a fact roster already holds. Several clients per tenant still
+reach one sign-in, because one sign-in across two products is the case Hydra is
+for at all; they resolve here through the redirect each names rather than through
+a list.
+
+A browser picks its `redirect_uri` from the set its client registered, and Hydra
+refuses anything else -- so what picking another tenant's buys is nothing: the
+password is then checked against that tenant's holders, at a front door that is
+public anyway. What a client whose redirects span two tenants *is* is a flow that
+resolves differently depending on what the browser sent, and
+`roster login doctor` says so.
 
 The consent hop **grants what the client asked for and draws nothing**, which is
 `consent: skip`, the default and a decision: every client this app can have was
@@ -205,7 +219,7 @@ sequenceDiagram
   B->>L: GET /login?login_challenge=…
   L->>H: GET /admin/oauth2/auth/requests/login
   H-->>L: {client, skip, subject, requested_scope}
-  Note over L: the client id names the operator,<br/>and so the rt_ key every call below uses
+  Note over L: the redirect it named says which tenant,<br/>and so the roster-at every call below declares
   L-->>B: the page
   B->>L: GET /flow?login_challenge=…
   L-->>B: {brand, client, scope}
@@ -643,19 +657,22 @@ Holder with one history.
 
 ### What a front door needs
 
-**Which tenant it is**, from the host the browser arrived at -- and **one `rt_` per
-tenant it fronts**, picked by the same fact.
+**Which tenant it is**, and a credential the wall can narrow. There are two
+shapes and the difference is which of those two the deployment gets from where.
 
-Not one deployment key **on its own**: an `rk_` resolves to a frame with no
-tenant and the policy hands it `frame.Everything`, so on an internet-facing app
-the thing keeping contoso's request out of fabrikam's rows would be the app's
-own code. A tenant key resolves to a holder inside a tenant and the wall does
-the narrowing with no discipline asked of the app.
+**Self-hosted** -- a roster user running a front door for their own tenant --
+holds **one `rt_`**. It resolves to a holder inside that tenant, and the wall
+narrows every call with no discipline asked of the app.
 
-There is now a third shape for the app one **roster operator** runs in front of
-many tenants, and it is the objection above answered rather than waived. A
-`Host` may nominate a holder -- `acts_as`, written by that tenant -- and a
-request that says which name it arrived at is answered as that holder:
+**Roster-hosted** -- one instance a roster operator runs for many tenants --
+holds **one `rk_`** and declares a name on every call. This page refused that for
+a while, and the refusal was right about the thing it named: an `rk_` resolves to
+a frame with no tenant and the policy hands it `frame.Everything`, so what kept
+contoso's request out of fabrikam's rows would be the app's own code.
+
+It is **answered** rather than waived. A `Host` may nominate a holder --
+`acts_as` -- and a request that says which name it arrived at is answered as that
+holder:
 
 ```
 authorization: Bearer rk_…          who is calling
@@ -669,10 +686,19 @@ claims, or one whose tenant nominated nobody, is refused rather than answered as
 the key -- which would hand back the wide frame the caller was narrowing.
 
 It grants nothing. The key already saw every tenant, so borrowing a nominated
-holder is strictly less, which is why it needs no escalation rule and why the
-tenant is the one who writes the nomination. `server/keys/at.go` is the
-mechanism and `proto/app/host.proto` is the field. `roster key add --tenant contoso --holder account`
-mints each one, and `cmd/accountkey_test.go` is that fact per call.
+holder is strictly less, which is why it needs no escalation rule and why either
+that tenant or a roster operator may write the nomination.
+`server/keys/at.go` is the mechanism and `proto/app/host.proto` is the field.
+
+**And the key's own method list is not carried through.** `keys.At` answers as the
+nominated holder with `frame.Whole()`, so what bounds a call inside a flow is that
+holder's role -- which is why `roster login provision` writes two different lists:
+the key may make only the reads that work out *whose* flow this is, and everything
+a flow does is the role's. A key as wide as the role would be one that could do
+all of it without naming a tenant, which is the frame this exists to take away.
+
+`roster key add --tenant contoso --holder account` mints an `rt_`, and
+`cmd/accountkey_test.go` is that fact per call.
 
 The tenant an app names is always the app's **assertion** -- roster never sees the
 browser -- and the key is the only thing that assertion is held against.

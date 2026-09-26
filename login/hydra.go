@@ -45,12 +45,28 @@ type admin struct {
 
 // client is the OAuth client a challenge was raised for.
 //
-// The `client_id` is what says **which tenant** this flow belongs to, and it
-// is the whole reason this app needs no hostname: it comes from Hydra over the
-// admin API rather than from the browser or from this app's own guess.
+// The `client_id` used to be what said **which tenant** a flow belonged to,
+// through a map this app was configured with. It is a **name on a screen** now
+// and nothing else: which tenant comes from the redirect the authorization
+// request named, because one product serving a hundred tenants is one client and
+// a discriminator that forced a client per customer forced a Hydra registration
+// per customer (`login/at.go`).
 type client struct {
 	Id   string `json:"client_id"`
 	Name string `json:"client_name"`
+}
+
+// registration is what Hydra holds about a client, which is more than a
+// challenge says.
+//
+// Only `redirect_uris`, and only for the fallback in `arrivedAt`: a client that
+// registered exactly one may leave `redirect_uri` out of the authorization
+// request, so the URL Hydra recorded has nothing to read. `login/doctor.go` reads
+// the same field off the same endpoint for its own audit, with its own struct --
+// two narrow shapes over one document rather than one wide one, because what each
+// needs is two fields and neither wants the other's.
+type registration struct {
+	Redirects []string `json:"redirect_uris"`
 }
 
 // loginRequest is what Hydra says about a login challenge.
@@ -71,6 +87,13 @@ type consentRequest struct {
 	Scope     []string `json:"requested_scope"`
 	Audience  []string `json:"requested_access_token_audience"`
 	Client    client   `json:"client"`
+
+	// The same field the login request carries, and read for the same reason:
+	// which name this flow is about (`login/at.go`). Read rather than assumed --
+	// where Hydra leaves it empty, `arrivedAt` falls back to the client's
+	// registration, which is the path a client that registered one redirect
+	// needs anyway.
+	Url string `json:"request_url"`
 }
 
 // session is the claims a consent puts in the tokens.
@@ -118,6 +141,48 @@ func (a admin) acceptLogin(ctx context.Context, challenge, subject string, remem
 	}
 
 	return v.To, nil
+}
+
+// registered is what Hydra holds about a client, by id.
+//
+// Not `.../auth/requests/…`, so it does not go through `do`: that one takes a
+// challenge and this takes an id, and a `do` that took either would be a
+// function with two shapes.
+func (a admin) registered(ctx context.Context, id string) (*registration, error) {
+	if id == "" {
+		return nil, fmt.Errorf("login: which client")
+	}
+
+	u := fmt.Sprintf("%s/admin/clients/%s", a.base, url.PathEscape(id))
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+	if err != nil {
+		return nil, err
+	}
+	for k, vs := range a.header {
+		for _, v := range vs {
+			req.Header.Add(k, v)
+		}
+	}
+	req.Header.Set("accept", "application/json")
+
+	res, err := a.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("login: hydra: %w", err)
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode/100 != 2 {
+		b, _ := io.ReadAll(io.LimitReader(res.Body, 4<<10))
+
+		return nil, fmt.Errorf("login: hydra: GET clients/%s: %s: %s", id, res.Status, bytes.TrimSpace(b))
+	}
+
+	v := &registration{}
+	if err := json.NewDecoder(res.Body).Decode(v); err != nil {
+		return nil, fmt.Errorf("login: hydra: GET clients/%s: %w", id, err)
+	}
+
+	return v, nil
 }
 
 func (a admin) consent(ctx context.Context, challenge string) (*consentRequest, error) {

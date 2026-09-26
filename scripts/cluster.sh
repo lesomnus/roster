@@ -122,6 +122,17 @@ carry() { tar -C "${work}" -cf - . | docker run --rm -i -v "${vol}:/w" alpine sh
 resolver() {
 	{
 		echo
+		echo "-- ${NS}, in case what did not come up says why"
+		kube "kubectl -n ${NS} get pods" 2>/dev/null || true
+
+		# **The init containers too**, which is the half that was missing and
+		# cost a CI run: `roster login provision` runs as one, and a pod whose
+		# init container fails is reported as `timed out waiting for the
+		# condition` about a Deployment -- a sentence about the symptom with
+		# nothing in it about the cause. `--all-containers` is what says it.
+		kube "kubectl -n ${NS} logs -l app.kubernetes.io/component=server --all-containers --tail=30 --prefix" 2>/dev/null || true
+
+		echo
 		echo "-- kube-system/coredns, in case the name that did not resolve was its"
 		kube "kubectl -n kube-system get pods -l k8s-app=kube-dns" 2>/dev/null || true
 		kube "kubectl -n kube-system logs -l k8s-app=kube-dns --tail=20 --previous" 2>/dev/null || true
@@ -208,6 +219,26 @@ resync() {
 	settled roster-hydra-clients-check || out=$?
 
 	return "${out}"
+}
+
+# renominated is roster restarted so that `login provision` sees a name that was
+# not there when it last ran.
+#
+# **Why a declared name takes two starts.** `roster login provision` is an init
+# container, so it runs *before* `serve` -- and `serve` is what applies
+# `resources:`. So the pass that would nominate the holder a new `Host` row
+# borrows happens before the row exists, and the row arrives with `acts_as`
+# unset. What that looks like from a walk is `WhoseHost` answering fine and
+# `Vouch.Delegate` answering `Unauthenticated`, because `keys.At` refuses a name
+# that nominates nobody rather than answering as the key.
+#
+# It is not a rig quirk: any deployment that declares a name in a file has it, and
+# `docs/operating.md` says so beside the command. The first start already needed
+# this for the same reason, which is the restart a hundred lines below. Every
+# phase that adds a name needs it too, and this is that, once.
+renominated() {
+	kube "kubectl -n ${NS} delete pod -l app.kubernetes.io/component=server >/dev/null 2>&1; \
+		kubectl -n ${NS} rollout status deploy/roster --timeout=300s >/dev/null"
 }
 
 # product is the pod serving the relying party, by uid. Which pod it is matters
@@ -440,14 +471,18 @@ kube "kubectl -n ${NS} rollout status deploy/roster-hydra --timeout=300s"
 
 # **Twice, and the second one is the check.**
 #
-# `login provision` skips an operator whose tenant does not exist, and the
-# tenant is made by `resources:` when the server starts -- so a first start
-# fronts nobody and says so, and the *second* has the key. Written with
-# `emptyDir` volumes this could never happen: the database went with the pod
-# and every start was a first one. Restarting here is what proves the volumes
-# outlive it.
+# `login provision` nominates the holder each `Host` row borrows, and the rows are
+# made by `resources:` when the server starts -- so a first start has a key and
+# nothing to nominate on, and the *second* wires it. It was the **key** that the
+# first start could not mint, when there was one per tenant and a tenant had to
+# exist first; an `rk_` needs no customer, so what the restart is for now is the
+# nomination rather than the credential (#36).
+#
+# Written with `emptyDir` volumes this could never happen: the database went with
+# the pod and every start was a first one. Restarting here is what proves the
+# volumes outlive it.
 kube "kubectl -n ${NS} rollout status deploy/roster --timeout=300s"
-echo "== again, for the key the first start could not mint"
+echo "== again, for the nomination the first start had nothing to write"
 kube "kubectl -n ${NS} delete pod -l app.kubernetes.io/component=server >/dev/null 2>&1; kubectl -n ${NS} rollout status deploy/roster --timeout=300s"
 
 echo
@@ -969,14 +1004,34 @@ EOF
 # The client's URLs move with the app, because a redirect URI is the **public**
 # one and the issuer refuses anything else. Same file, same sync as the phase
 # above.
-python3 - "${work}/deploy/clients/product.json" <<'PY'
+python3 - "${work}/deploy/clients/product.json" "${work}/deploy/resources.yaml" <<'PY'
 import sys
 
-p = sys.argv[1]
+p, res = sys.argv[1], sys.argv[2]
 s = open(p).read()
 old = "https://roster-product.roster.svc.cluster.local:5555"
 assert old in s, "the client no longer names the app this phase moves"
 open(p, "w").write(s.replace(old, "https://roster-app.roster.svc.cluster.local"))
+
+# And acme has to claim the **public** name, because moving the app behind a
+# terminator moves the name its redirect carries -- and that name is what says
+# which tenant a flow is about (#36).
+#
+# This is the finding that phase produced on its first run after #36: everything
+# up to here passed, the client was re-registered, and the flow reached
+# `no tenant answers at "roster-app.roster.svc.cluster.local"`. The old
+# discriminator was the client id, which does not change when a redirect does, so
+# a deployment could move an app behind a terminator and never think about
+# roster's rows. Now it has to, which is the trade this bought: one fewer thing
+# per customer, one more thing per **name**.
+s = open(res).read()
+old = "    name: roster-product.roster.svc.cluster.local"
+assert old in s, "resources.yaml no longer reads the way this rig expects"
+open(res, "w").write(s.replace(old, old + """
+
+  - kind: Host
+    tenant: acme
+    name: roster-app.roster.svc.cluster.local""", 1))
 PY
 carry
 
@@ -1002,6 +1057,26 @@ kube "kubectl -n ${NS} rollout status deploy/roster-hydra --timeout=300s >/dev/n
 # `X-Forwarded-Proto` -- is a pod that never becomes ready.
 kube "kubectl -n ${NS} rollout status deploy/roster-product --timeout=300s >/dev/null" \
 	|| { kube "kubectl -n ${NS} logs deploy/roster-product --tail=20"; echo "cluster: the relying party would not come up behind the terminator" >&2; exit 1; }
+
+# **And roster's own**, because this overlay changed `resources.yaml`.
+#
+# Moving the app behind a terminator moves the name its redirect carries, and that
+# name is what says which tenant a flow is about (#36) -- so acme has to claim it,
+# which is a row in that file. The file is in the `roster` ConfigMap, whose name
+# carries a hash of its contents, so the change is a new pod template and a
+# rollout. Two things happen on it and both are the pod's: `serve` applies the new
+# `Host` row, and the `login provision` init container nominates the holder that
+# name borrows.
+#
+# Waited for rather than assumed, which is the same mistake `roster-hydra` and the
+# three above are waited for to avoid. Unwaited, the walk below runs against a pod
+# that has not applied the row and reads `the password was not accepted` -- a
+# sentence about the wrong thing, which is what this phase said on its first run
+# after #36.
+kube "kubectl -n ${NS} rollout status deploy/roster --timeout=300s >/dev/null"
+# And once more, so the init container nominates on the name that rollout applied;
+# `renominated` says why a declared name takes two starts.
+renominated
 echo "   the issuer is behind nginx, and the app came up against it"
 
 moved=0
@@ -1128,10 +1203,16 @@ kube "kubectl -n ${NS} logs job/roster-flow"
 
 
 # A second relying party is a second **declared** client, which is three files and
-# not one: the document, the secret it names, and the line in `login.clients` that
-# says this app answers challenges for it. Leaving that last one out is one of the
-# four defects `roster login doctor` exists for, so the rig does it the way a
-# deployment does and the check gets to prove it.
+# not one: the document, the secret it names, and the `Host` row that says whose
+# the name it redirects to is.
+#
+# That third file used to be `login.clients`, a line naming the client for a
+# tenant. #36 replaced it: which tenant a flow is about comes from the redirect
+# the authorization request named, so what has to be declared is the **name**
+# rather than the client. Leaving it out is still one of the defects
+# `roster login doctor` exists for -- it reads *no tenant answers at any of its
+# redirect_uris* now instead of *no tenant claims it* -- so the rig does it the
+# way a deployment does and the check gets to prove it.
 cat > "${work}/deploy/clients/behind.json" <<'EOF'
 {
   "client_id": "behind",
@@ -1149,10 +1230,10 @@ cat > "${work}/deploy/clients/behind.json" <<'EOF'
 }
 EOF
 
-python3 - "${work}/deploy/kustomization.yaml" "${work}/deploy/config.yaml" "${work}/behind/kustomization.yaml" <<'PY'
+python3 - "${work}/deploy/kustomization.yaml" "${work}/deploy/resources.yaml" "${work}/behind/kustomization.yaml" <<'PY'
 import sys
 
-ku, cfg, overlay = sys.argv[1], sys.argv[2], sys.argv[3]
+ku, res, overlay = sys.argv[1], sys.argv[2], sys.argv[3]
 
 # The generator has to know about the second file.
 s = open(ku).read()
@@ -1160,11 +1241,18 @@ old = "      - clients/product.json"
 assert old in s
 open(ku, "w").write(s.replace(old, old + "\n      - clients/behind.json", 1))
 
-# And the Login App has to answer challenges for it.
-s = open(cfg).read()
-old = "    acme: [product]"
-assert old in s, "login.clients no longer reads the way this rig expects"
-open(cfg, "w").write(s.replace(old, "    acme: [product, behind]", 1))
+# And acme has to claim the name that client redirects to, or the flow raised for
+# it resolves to nobody. Declared here rather than written by hand, because a
+# `Host` row is configuration and `resources:` is where this rig's configuration
+# rows live.
+s = open(res).read()
+old = "    name: roster-product.roster.svc.cluster.local"
+assert old in s, "resources.yaml no longer reads the way this rig expects"
+open(res, "w").write(s.replace(old, old + """
+
+  - kind: Host
+    tenant: acme
+    name: roster-proxy.roster.svc.cluster.local""", 1))
 
 # The proxy joins the overlay, and the Job that registers clients needs the
 # second secret mounted where it looks for it: `/secrets/<id>`. Volumes and mounts
@@ -1191,12 +1279,13 @@ PY
 carry
 
 # The client is declared, so the clients Job needs the second secret mounted and
-# the Login App needs to claim it. Both are files above; this is the sync.
+# acme needs to claim the name it redirects to. Both are files above; this is the
+# sync.
 
 # The second client, registered and then asked about -- and the `doctor` run is
-# not a formality here: a client Hydra has that `login.clients` does not name is
-# the defect that reaches a person as *this login is not working*, and it is
-# exactly the mistake a second relying party invites.
+# not a formality here: a client whose redirect no tenant answers at is the defect
+# that reaches a person as *this login is not working*, and it is exactly the
+# mistake a second relying party invites.
 two=0
 resync /w/behind || two=$?
 
@@ -1204,14 +1293,19 @@ resync /w/behind || two=$?
 	|| { kube "kubectl -n ${NS} logs job/roster-hydra-clients"; kube "kubectl -n ${NS} logs job/roster-hydra-clients-check"; echo "cluster: the second client is not registered the way this stack needs (${two})" >&2; exit 1; }
 # **And wait for the pod**, because declaring a client is a configuration change.
 #
-# `login.clients` is in the `roster` ConfigMap, whose name carries a hash of its
-# contents -- so adding the second client gives the Deployment a new pod template
-# and a rollout. The walk below asks the **Login App** to resolve a challenge
-# raised for that client, and an app that has not restarted yet fronts nobody for
-# it. What that looks like from the walk is `the password was not accepted`,
-# which is a sentence about the wrong thing; it cost a CI run, where everything
-# is slower than on a desk and the race actually lands.
+# `resources.yaml` is in the `roster` ConfigMap, whose name carries a hash of its
+# contents -- so declaring the second name gives the Deployment a new pod template
+# and a rollout. Two things have to happen on that rollout and both are the
+# pod's: `serve` applies the new `Host` row, and the `login provision` init
+# container nominates the holder that name borrows (`Host.acts_as`). Until the
+# second of those, a flow raised for the client resolves to a name that claims
+# nobody and is refused.
+#
+# What that looks like from the walk is `the password was not accepted`, which is
+# a sentence about the wrong thing; it cost a CI run, where everything is slower
+# than on a desk and the race actually lands.
 kube "kubectl -n ${NS} rollout status deploy/roster --timeout=300s >/dev/null"
+renominated
 echo "   a second relying party is declared, registered and claimed"
 
 cat > "${work}/behind.yaml" <<EOF

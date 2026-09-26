@@ -9,3 +9,21 @@ resources:
   - kind: Tenant
     alias: acme
     name: Acme
+
+  # The name the product sends a browser back to, claimed by acme.
+  #
+  # Not decoration: the Login App resolves which tenant a flow is about from the
+  # **redirect** the authorization request named (#36), so a client registered at
+  # `https://roster-product…:5555/callback` reaches nobody unless a row here says
+  # that name is acme's. `roster login doctor` is what tells a deployment it
+  # forgot one, and `deploy/clients/product.json` is the registration this
+  # matches.
+  #
+  # `roster login provision` runs as an init container and nominates the holder
+  # this name borrows (`Host.acts_as`) -- so on the very first start there is no
+  # row to nominate on, and the **second** start is what wires it. That is the
+  # same restart `roster login provision` already needed for the key, and
+  # `scripts/cluster.sh` does it for that reason.
+  - kind: Host
+    tenant: acme
+    name: roster-product.roster.svc.cluster.local

@@ -84,17 +84,21 @@ login:
   addr: 0.0.0.0:8091
   hydra:
     admin: http://roster-hydra:4445
-  # Made at start by the init container and read from a file, because a tenant
-  # can be made after this has first run -- so a key cannot be put anywhere in
-  # advance, and one put there afterwards is a thing to rotate.
-  keys:
-    acme: file:/run/login/acme.key
-  # **Which challenges this app answers at all.** A client not in here is a
-  # flow that reaches a page saying the login is not working, and a client in
-  # here that the issuer has never heard of is a flow nothing can raise --
-  # `roster login doctor` says which of those a deployment has.
-  clients:
-    acme: [product]
+  # **One** key for the whole app, made at start by the init container and read
+  # from a file.
+  #
+  # A deployment key (`rk_`), which is the change in #36: it was one `rt_` per
+  # tenant here, keyed by alias, beside a `clients:` block saying which OAuth
+  # clients were whose so the right key could be picked. Both are gone -- which
+  # tenant a flow is about comes from the redirect it named, through that
+  # tenant's `Host` row, and `Host.acts_as` is what roster narrows this one key
+  # to on every call.
+  #
+  # From a file because it cannot be put anywhere in advance and one put there
+  # afterwards is a thing to rotate. Unlike the per-tenant keys it replaces, it
+  # needs no customer to exist -- an `rk_` is the control plane's -- so the first
+  # start can mint it.
+  key: file:/run/login/login-app.key
   # roster speaks plain gRPC on the pod network, so the app that dials it has
   # to be told that. Without it the handshake fails with *first record does not
   # look like a TLS handshake*, which reads like a certificate problem and is a

@@ -107,8 +107,16 @@ case "${invalidate}" in rt_*) ;; *) echo "no key to sign her out with: ${invalid
 # right, which is a different question and a much faster one.
 echo
 echo "== the clients, as hydra has them"
-docker compose run --rm --no-deps --entrypoint roster login \
-	login doctor --hydra http://hydra:4445 --client "${SEED_CUSTOMER:-contoso}=demo,behind,itself"
+# In the **roster** container and not the login one, which is new with #36: the
+# check now asks *do this client's redirects resolve to exactly one tenant*, and
+# that answer is roster's rows rather than Hydra's -- so it needs the database.
+# Run where there is none, the check says it was skipped rather than passing, and
+# a skipped check that reads as a pass is the thing this whole script is against.
+#
+# No `--client`, because there is no list any more: every client Hydra holds is
+# asked about, and which tenant each belongs to comes from its redirect.
+docker compose run --rm --no-deps --entrypoint roster roster \
+	login doctor --hydra http://hydra:4445
 
 # The walk, twice: once as deployed, and once with the consent screen on.
 #

@@ -69,6 +69,7 @@ import (
 	"github.com/lesomnus/roster/arrives"
 	"github.com/lesomnus/roster/frontdoor"
 	rstr "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/front"
 )
 
 // Methods is what a delegation this app mints is allowed to do.
@@ -126,9 +127,31 @@ type Config struct {
 	// is Hydra's, and this one is closed as soon as the flow finishes.
 	Sessions *authsession.Sessions
 
-	// Tenants is who this app fronts, by the tenant's alias. One entry is one
-	// tenant and the code is the same either way.
-	Tenants map[string]Tenant
+	// Key is the **one** credential this instance holds, and a deployment key
+	// (`rk_`).
+	//
+	// It was one `rt_` per tenant, in a map keyed by alias, and the tenant a
+	// flow belonged to was read off the OAuth client so that the right key
+	// could be picked. Two things per tenant for a roster operator to write, and
+	// one of them a secret to distribute and rotate.
+	//
+	// # An `rk_` used to be refused here, and what changed
+	//
+	// `docs/login.md` argued against it: an `rk_` resolves to a frame with no
+	// tenant, the policy hands it `frame.Everything`, and what keeps contoso's
+	// request out of fabrikam's rows is this app's own code. That objection was
+	// right and is answered rather than waived -- `Host.acts_as` names the
+	// holder a tenant nominates, so every call goes out with `roster-at` and is
+	// answered as that holder, in that tenant, with their bindings and nothing
+	// wider (`server/keys/at.go`, #43).
+	//
+	// So the wall is still what separates tenants. What differs is that it is
+	// applied per **request** rather than per process, and that adding a tenant
+	// is a `Host` row rather than a key.
+	//
+	// One call goes out without `roster-at` and it is the one that has to:
+	// [App.Watch] hears every tenant, which is what an `rk_` is for.
+	Key string
 
 	// Remember is how long Hydra should skip the form, and the consent screen,
 	// for a browser that has already been through them. Zero asks every time.
@@ -166,23 +189,6 @@ type Config struct {
 	Page http.Handler
 }
 
-// Tenant is one customer this app is a front door for.
-//
-// The two facts are one block rather than two maps keyed the same way, because
-// two maps is a place to add an entry to one and not the other.
-type Tenant struct {
-	// Key is this app's `rt_` for that tenant: a key on a holder inside it, so
-	// the wall narrows what it may read with no discipline asked of this app.
-	// `roster key add --tenant contoso --holder login-app --allow …`.
-	Key string
-
-	// Clients are the OAuth clients registered with Hydra for this tenant.
-	// A challenge naming one of them is a flow about this tenant, which is why
-	// this app needs no hostname. More than one because a tenant with two
-	// products has two clients and one sign-in.
-	Clients []string
-}
-
 // Consent is what happens at the consent hop.
 type Consent int
 
@@ -216,8 +222,13 @@ type App struct {
 	roster rstr.Client
 	me     rstr.MeServiceClient
 	sync   rstr.SyncServiceClient
-	door   *frontdoor.Door
-	admin  admin
+
+	// front is the one read that happens before anybody is narrowed: which
+	// tenant claims a name. It is the unwalled server's, which is the whole
+	// argument `server/front` makes about itself.
+	front rstr.FrontServiceClient
+	door  *frontdoor.Door
+	admin admin
 
 	// arrives is the relying-party half, shared with the account app: the
 	// `Connection` rows, the discovery, the exchange and the enrolment.
@@ -226,19 +237,32 @@ type App struct {
 	// flows is every round trip to a provider started and not yet finished.
 	flows *arrives.States[flow]
 
-	byClient map[string]*tenant
-
-	// The same rows as `byClient`, once each: a tenant with two clients is
-	// one stream and not two.
-	tenants []*tenant
+	// known is what a name resolved to, so that a flow costs one round trip to
+	// roster rather than two per hop.
+	//
+	// Keyed on the **host**, which is what is read off the authorization
+	// request, and holding what the two reads answered: which tenant claims
+	// that name, and what it is called. Both are facts a deployment changes
+	// rarely and a flow reads several times -- the sign-in page, the accept, the
+	// consent -- so this is a cache and not state: dropping it costs round trips
+	// and nothing else.
+	//
+	// What it deliberately does not hold is a **negative**: a name nothing
+	// claims is refused and not remembered, so the `Host` row a tenant has just
+	// written works on their next attempt rather than after a restart.
+	known *hosts
 }
 
+// tenant is one customer, as a flow found them.
+//
+// No key on it, unlike the version this replaces: the credential is the app's
+// one `rk_` and `at` is what narrows it -- the name whose `Host` row nominated
+// the holder this call is answered as.
 type tenant struct {
-	id      pdid.Id
-	alias   string
-	name    string
-	key     string
-	clients []string
+	id    pdid.Id
+	alias string
+	name  string
+	at    string
 }
 
 // New dials roster once and resolves each key to its tenant, so a key that
@@ -252,9 +276,15 @@ func New(ctx context.Context, c Config) (*App, error) {
 		return nil, errors.New("login: Hydra: where its admin API answers")
 	case c.Sessions == nil:
 		return nil, errors.New("login: Sessions: the cookie is the app's, so the app makes it")
-	case len(c.Tenants) == 0:
-		return nil, errors.New("login: Tenants: one per customer this app fronts; none is nobody to front")
+	case c.Key == "":
+		return nil, errors.New("login: Key: the one deployment key this app holds; none is nobody to be")
 	}
+
+	// **Not** a check that the key is an `rk_`, which is a real mistake and is
+	// refused one package out (`cli/login.go`). It is a fact about a prefix
+	// `server/keys` owns, and this app may import no server package but
+	// `server/front` -- so the check lives where the configuration is read, and
+	// this stays a consumer.
 
 	// The credential of every call is whichever tenant's key the context
 	// carries, put there by `flow` from the challenge the request named. A call
@@ -264,9 +294,17 @@ func New(ctx context.Context, c Config) (*App, error) {
 	if c.Insecure {
 		creds = insecure.NewCredentials()
 	}
+	// One credential on every call, and `roster-at` on every call a flow made.
+	//
+	// It was the credential that varied -- one `rt_` per tenant, picked from the
+	// challenge -- and now it is the narrowing. A call with no name attached goes
+	// out as the deployment key itself, which is `frame.Everything`: exactly one
+	// caller does that on purpose ([App.Watch]) and everything else runs inside a
+	// flow, where `inFlow` has already put a name in the context.
 	opts := append(auth.Inject(auth.ProviderFunc(func(ctx context.Context) context.Context {
-		if k, ok := keyOf(ctx); ok {
-			return metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+k)
+		ctx = metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+c.Key)
+		if at, ok := atOf(ctx); ok {
+			ctx = metadata.AppendToOutgoingContext(ctx, front.HeaderAt, at)
 		}
 
 		return ctx
@@ -278,58 +316,25 @@ func New(ctx context.Context, c Config) (*App, error) {
 	}
 
 	a := &App{
-		c:        c,
-		conn:     conn,
-		roster:   rstr.NewClient(conn),
-		me:       rstr.NewMeServiceClient(conn),
-		sync:     rstr.NewSyncServiceClient(conn),
-		admin:    admin{base: c.Hydra, header: c.HydraHeader, client: http.DefaultClient},
-		byClient: map[string]*tenant{},
-		flows:    arrives.Held[flow](),
+		c:      c,
+		conn:   conn,
+		roster: rstr.NewClient(conn),
+		me:     rstr.NewMeServiceClient(conn),
+		sync:   rstr.NewSyncServiceClient(conn),
+		front:  rstr.NewFrontServiceClient(conn),
+		admin:  admin{base: c.Hydra, header: c.HydraHeader, client: http.DefaultClient},
+		flows:  arrives.Held[flow](),
+		known:  &hosts{at: map[string]*tenant{}},
 	}
 	a.arrives = arrives.New(a.roster, c.Secret)
 
-	for alias, o := range c.Tenants {
-		if len(o.Clients) == 0 {
-			conn.Close()
-
-			return nil, fmt.Errorf("login: %s: Clients: which OAuth clients are this tenant's", alias)
-		}
-
-		v, err := a.roster.Tenant().Get(withKey(ctx, o.Key), rstr.TenantGetRequest_builder{
-			Ref:    rstr.TenantRef_builder{Alias: proto.String(alias)}.Build(),
-			Select: rstr.TenantSelect_builder{Name: proto.Bool(true)}.Build(),
-		}.Build())
-		if err != nil {
-			conn.Close()
-
-			return nil, fmt.Errorf("login: the key for %q cannot see %q: %w", alias, alias, err)
-		}
-		id, err := pdid.From(v.GetId())
-		if err != nil {
-			conn.Close()
-
-			return nil, err
-		}
-
-		name := v.GetName()
-		if name == "" {
-			name = alias
-		}
-		who := &tenant{id: id, alias: alias, name: name, key: o.Key, clients: o.Clients}
-		a.tenants = append(a.tenants, who)
-		for _, client := range o.Clients {
-			if was, ok := a.byClient[client]; ok {
-				conn.Close()
-
-				// Two tenants on one client is a flow with two answers, and
-				// the answer decides whose password is checked. Refused at
-				// start.
-				return nil, fmt.Errorf("login: client %q is both %q's and %q's", client, was.alias, alias)
-			}
-			a.byClient[client] = who
-		}
-	}
+	// Nothing per tenant is resolved here, because there is nothing to resolve:
+	// who this app fronts is every tenant with a `Host` row, and that is a
+	// question a flow asks rather than a list a start-up walks. What the old
+	// shape bought by walking one -- *a key that cannot see the tenant it is for
+	// is refused at start rather than at somebody's first sign-in* -- is bought
+	// instead by the key being one, and `roster login doctor` is where a
+	// deployment asks whether its registrations resolve.
 
 	a.door, err = frontdoor.New(frontdoor.Config{
 		Sessions:   c.Sessions,
@@ -653,12 +658,14 @@ func (a *App) flow(w http.ResponseWriter, r *http.Request) {
 		// with several of them **which** customer's person this is cannot be
 		// told from the request -- and a brand picked from the first row would
 		// be a guess drawn on a screen. With one, it is not a guess.
-		brand := ""
-		if len(a.tenants) == 1 {
-			brand = a.tenants[0].name
-		}
-
-		writeJson(w, map[string]any{"brand": brand, "logout": true})
+		//
+		// And there is no longer a way to know there is one. This app fronts
+		// whoever has a `Host` row rather than a configured list, so *how many
+		// tenants are there* is a question about the deployment's rows and not
+		// about this process -- and the sign-out hop carries no challenge to
+		// resolve one from. So the screen is unbranded here, which is what it
+		// already was for every deployment fronting more than one.
+		writeJson(w, map[string]any{"brand": "", "logout": true})
 
 		return
 	}
@@ -694,7 +701,7 @@ func (a *App) flow(w http.ResponseWriter, r *http.Request) {
 		// all arrive through a directory turns the password off, and
 		// `Vouch.Verify` refuses one -- so a form drawn here would be a form
 		// that cannot work.
-		tn, err := a.roster.Tenant().Get(withKey(ctx, o.key), rstr.TenantGetRequest_builder{
+		tn, err := a.roster.Tenant().Get(withAt(ctx, o.at), rstr.TenantGetRequest_builder{
 			Ref:    rstr.TenantRef_builder{Id: o.id.Bytes()}.Build(),
 			Select: rstr.TenantSelect_builder{Config: proto.Bool(true)}.Build(),
 		}.Build())
@@ -705,7 +712,7 @@ func (a *App) flow(w http.ResponseWriter, r *http.Request) {
 		}
 		password = tn.OffersPassword()
 
-		cs, err := a.arrives.Connections(withKey(ctx, o.key), o.id)
+		cs, err := a.arrives.Connections(withAt(ctx, o.at), o.id)
 		if err != nil {
 			a.broken(w, r, err)
 
@@ -795,7 +802,7 @@ func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o
 	ctx := r.Context()
 
 	claims := map[string]any{}
-	as, err := a.door.Acting(withKey(ctx, o.key), r)
+	as, err := a.door.Acting(withAt(ctx, o.at), r)
 	switch {
 	case err == nil:
 		me, err := a.me.Get(as, rstr.MeGetRequest_builder{}.Build())
@@ -864,9 +871,14 @@ func (a *App) asking(ctx context.Context, challenge string) (*consentRequest, *t
 		return nil, nil, err
 	}
 
-	o, ok := a.byClient[v.Client.Id]
-	if !ok {
-		return nil, nil, fmt.Errorf("login: no tenant holds the client %q", v.Client.Id)
+	name, err := a.arrivedAt(ctx, v.Url, v.Client.Id)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	o, err := a.at(ctx, name)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	// Hydra answers the challenge it was asked about, and the rest of this
@@ -880,18 +892,24 @@ func (a *App) asking(ctx context.Context, challenge string) (*consentRequest, *t
 
 // whose is the tenant a challenge belongs to.
 //
-// Two lookups and no cache: the challenge is read from Hydra on every request
-// that names one, so which tenant a flow is about is never something this app
-// remembers or the browser carries.
+// The challenge is read from Hydra on every request that names one, so which
+// tenant a flow is about is never something the browser carries. What is cached
+// is one step further in -- the name to tenant hop -- and `login/at.go` says why
+// that is a cache rather than state.
 func (a *App) whose(ctx context.Context, challenge string) (*loginRequest, *tenant, error) {
 	v, err := a.admin.login(ctx, challenge)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	o, ok := a.byClient[v.Client.Id]
-	if !ok {
-		return nil, nil, fmt.Errorf("login: no tenant holds the client %q", v.Client.Id)
+	name, err := a.arrivedAt(ctx, v.Url, v.Client.Id)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	o, err := a.at(ctx, name)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	return v, o, nil
@@ -914,7 +932,7 @@ func (a *App) inFlow(next http.Handler) http.Handler {
 			return
 		}
 
-		next.ServeHTTP(w, r.WithContext(withTenant(withKey(r.Context(), o.key), o)))
+		next.ServeHTTP(w, r.WithContext(withTenant(withAt(r.Context(), o.at), o)))
 	})
 }
 

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/lesomnus/roster/server/front"
 	"net/url"
 	"slices"
 	"sort"
@@ -139,7 +141,7 @@ type hydraClient struct {
 // `clients` is `login.clients`: an tenant's alias against the client ids that
 // are theirs. What comes back is every finding, worst first, and an empty slice
 // is a deployment with nothing wrong that this can see.
-func Doctor(ctx context.Context, hydra, public string, header http.Header, clients map[string][]string) ([]Finding, error) {
+func Doctor(ctx context.Context, hydra, public string, header http.Header, whose Whose) ([]Finding, error) {
 	a := admin{base: strings.TrimSuffix(hydra, "/"), header: header, client: http.DefaultClient}
 	public = strings.TrimSuffix(public, "/")
 
@@ -148,27 +150,34 @@ func Doctor(ctx context.Context, hydra, public string, header http.Header, clien
 	// flow needs a client and one of its own redirect URIs.
 	var sample *hydraClient
 
-	out := []Finding{}
-	for _, alias := range sorted(clients) {
-		for _, id := range clients[alias] {
-			v, err := a.getClient(ctx, id)
-			if err != nil {
-				return nil, err
-			}
-
-			if sample == nil && v != nil && len(v.Redirects) > 0 {
-				sample = v
-			}
-
-			out = append(out, check(alias, id, v)...)
-		}
-	}
-
-	found, err := strays(ctx, a, clients)
+	// Every client Hydra holds, and no list to compare against.
+	//
+	// It was `login.clients`, a map of alias to client id that this app was
+	// configured with -- and the two halves of that were *does this client work*
+	// and *does anybody claim it*. The second is gone with the map (#36): which
+	// tenant a flow is about comes from the redirect it names, so what used to be
+	// an unclaimed client is now [ambiguous]'s question, asked of roster's rows
+	// rather than of a list somebody maintains.
+	ids, err := a.listClients(ctx)
 	if err != nil {
 		return nil, err
 	}
-	out = append(out, found...)
+	sort.Strings(ids)
+
+	out := []Finding{}
+	for _, id := range ids {
+		v, err := a.getClient(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+
+		if sample == nil && v != nil && len(v.Redirects) > 0 {
+			sample = v
+		}
+
+		out = append(out, check(id, v)...)
+		out = append(out, ambiguous(ctx, whose, id, v)...)
+	}
 
 	out = append(out, told(ctx, public, sample)...)
 
@@ -177,63 +186,90 @@ func Doctor(ctx context.Context, hydra, public string, header http.Header, clien
 	return out, nil
 }
 
-// strays is the direction that costs somebody: a client Hydra will raise
-// challenges for that no tenant here claims.
+// Whose is what a hostname resolves to, or an error where nothing claims it.
 //
-// This app resolves a flow to an tenant **by its client id**, so a challenge
-// for one that is not in `login.clients` reaches `no tenant holds the client`
-// -- which a browser is shown as *this login is not working*, with nothing in
-// it to say which client or whose. Registering a client at Hydra and forgetting
-// the line here is the way that happens, and it is one line in two
-// repositories.
+// The seam this file needs and does not want to own: the answer is roster's
+// (`FrontService.WhoseHost` over `Host` rows), and every other question here is
+// answered by Hydra alone. Nil is a run that could not ask, which is **said**
+// rather than passed over -- the same choice `told` makes about `--public`.
+type Whose func(ctx context.Context, host string) (alias string, err error)
+
+// ambiguous is the check that replaces `strays`, and it is the one this file
+// gained for #36.
 //
-// Every client Hydra holds is asked about, because in a deployment like this
-// one Hydra is roster's and there is nobody else to own one. A deployment that
-// shares its Hydra with something that is not fronted here would want this
-// narrowed, and would know it.
-func strays(ctx context.Context, a admin, clients map[string][]string) ([]Finding, error) {
-	claimed := map[string]bool{}
-	for _, ids := range clients {
-		for _, id := range ids {
-			claimed[id] = true
-		}
+// A flow resolves to a tenant through the **redirect** the authorization request
+// named. So what breaks a client is not being unclaimed -- there is no list to be
+// absent from any more -- but having redirects that answer differently:
+//
+//	none of them resolves    every flow raised for it reaches a page saying the
+//	                         login is not working; the tenant has no `Host` row
+//	more than one tenant     which tenant a flow is about depends on which
+//	                         redirect the browser asked for, and the browser
+//	                         chooses from the registered set
+//
+// The second is a **determinism** finding and not a security one, which is worth
+// being exact about because it looks like the other thing. A browser can only
+// pick a redirect its client registered, and picking another tenant's means its
+// password is checked against that tenant's holders -- whose passwords it does
+// not have, at a front door that is public anyway. What is wrong with it is that
+// one client then means two customers, which nobody meant to write down.
+func ambiguous(ctx context.Context, whose Whose, id string, v *hydraClient) []Finding {
+	if v == nil || len(v.Redirects) == 0 {
+		// Both already said by `check`, and saying them twice is a run somebody
+		// reads twice.
+		return nil
+	}
+	if whose == nil {
+		return []Finding{{
+			Severity: Fragile,
+			About:    id,
+			What:     "not asked whether its redirects resolve to a tenant",
+			Costs:    "this run cannot reach roster, so which tenant its flows are about is unchecked",
+		}}
 	}
 
-	ids, err := a.listClients(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	out := []Finding{}
-	for _, id := range ids {
-		if claimed[id] {
+	seen := map[string]bool{}
+	for _, u := range v.Redirects {
+		h := front.Hostname(hostOf(u))
+		if h == "" {
 			continue
 		}
+		alias, err := whose(ctx, h)
+		if err != nil {
+			continue
+		}
+		seen[alias] = true
+	}
 
-		out = append(out, Finding{
+	switch len(seen) {
+	case 0:
+		return []Finding{{
 			Severity: Broken,
 			About:    id,
-			What:     "hydra has it and no tenant here claims it",
-			Costs:    "every flow raised for it reaches a page saying the login is not working",
-		})
+			What:     "no tenant answers at any of its redirect_uris",
+			Costs:    "every flow raised for it reaches a page saying the login is not working; a `Host` row is how a tenant says a name is theirs",
+		}}
+	case 1:
+		return nil
 	}
 
-	return out, nil
-}
-
-func sorted(m map[string][]string) []string {
-	out := make([]string, 0, len(m))
-	for k := range m {
-		out = append(out, k)
+	names := make([]string, 0, len(seen))
+	for alias := range seen {
+		names = append(names, alias)
 	}
-	sort.Strings(out)
+	sort.Strings(names)
 
-	return out
+	return []Finding{{
+		Severity: Broken,
+		About:    id,
+		What:     fmt.Sprintf("its redirect_uris are %s's", strings.Join(names, " and ")),
+		Costs:    "which tenant a flow is about then depends on which redirect the browser asked for, and the browser chooses",
+	}}
 }
 
 // check is every question asked of one client, and it is the whole of what this
 // knows. A `nil` document is a client Hydra has never heard of.
-func check(alias, id string, v *hydraClient) []Finding {
+func check(id string, v *hydraClient) []Finding {
 	if v == nil {
 		// **Not broken, and the first cut of this had it the wrong way round.**
 		//
@@ -245,7 +281,7 @@ func check(alias, id string, v *hydraClient) []Finding {
 		return []Finding{{
 			Severity: Fragile,
 			About:    id,
-			What:     fmt.Sprintf("%s names it and hydra has no such client", alias),
+			What:     "hydra has no such client",
 			Costs:    "no flow can be raised for it, so nothing is broken -- but if it was meant to be live, it is not",
 		}}
 	}

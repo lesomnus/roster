@@ -49,6 +49,24 @@ type Server struct {
 // there is no second stack to get right.
 func New(open app.Server) *Server { return &Server{open: open} }
 
+// HeaderAt is the name a request says it arrived at, and the whole of what a
+// front door fronting many tenants has to send.
+//
+// Here rather than in `server/keys`, where the handler that reads it lives, for
+// one reason that is a rule rather than a preference: a **consumer** has to
+// write this header, and a consumer may import no server package but this one
+// (`scripts/test.sh`, *the consumers reach roster only over the wire*). The
+// Login App is that consumer -- one `rk_`, narrowed per request by the name it
+// declares (#36) -- and a header name written out in two repositories is a
+// header spelled differently in one of them.
+//
+// This package is where it belongs anyway: `FrontService.WhoseHost` answers the
+// same question from the other side, which is *whose is this name*.
+//
+// `keys.HeaderAt` is this constant, and `server/keys` is where what happens when
+// a request carries it is written down.
+const HeaderAt = "roster-at"
+
 // Hostname is a host as this app stores and compares one: lowercased, with any
 // port removed and an address literal unbracketed.
 //

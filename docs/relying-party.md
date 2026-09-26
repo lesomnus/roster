@@ -670,7 +670,7 @@ roster login doctor --hydra … --client contoso=demo,behind,itself
 `login/doctor.go` is the cheapest of them and the one that would have caught
 three of the four defects a person found in a browser: a missing
 `post_logout_redirect_uris`, a `token_endpoint_auth_method` nothing here sends, a
-client named in `login.clients` that Hydra has never heard of. It reports and
+client whose redirects no tenant answers at. It reports and
 changes nothing -- the fix is in a declaration this app cannot reach.
 
 `compose.yaml` runs Hydra with `--dev`, which **disables critical security

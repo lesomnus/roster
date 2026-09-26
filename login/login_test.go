@@ -183,10 +183,31 @@ func (h *hydra) raised(w http.ResponseWriter, r *http.Request, param string) {
 	}
 
 	writeJson(w, map[string]any{
-		"challenge":       c,
-		"client":          map[string]string{"client_id": client},
+		"challenge": c,
+		"client":    map[string]string{"client_id": client},
+
+		// The authorization request, whole, which is what a real Hydra records
+		// and what says **which tenant** this flow is about (#36): the host of
+		// the `redirect_uri` in it. Derived from the client id here because the
+		// harness names clients `<alias>-web` and `<alias>-mobile`, so one
+		// fixture covers both of a tenant's products reaching one sign-in.
+		"request_url": "https://issuer.test/oauth2/auth?client_id=" + client +
+			"&redirect_uri=" + url.QueryEscape("https://"+redirectHostFor(client)+"/callback"),
+
 		"requested_scope": []string{"openid", "profile", "email"},
 	})
+}
+
+// redirectHostFor is where a client sends a browser back, as this harness
+// arranges it: `contoso-web` belongs to contoso, at `contoso.app.test`.
+//
+// A tenant's `Host` row names it, so the app resolves the flow to them. A client
+// whose prefix is nobody's -- `stray-…` -- resolves to nothing, which is the
+// refusal the old shape got from a client map and gets from roster's rows now.
+func redirectHostFor(client string) string {
+	alias, _, _ := strings.Cut(client, "-")
+
+	return alias + ".app.test"
 }
 
 // raise is a browser arriving at a client's `/login`, as far as this app sees.
@@ -312,8 +333,32 @@ func serveAs(t *testing.T, how login.Consent, with func(*login.Config)) *deploym
 	x.NoError(err)
 
 	d := &deployment{s: s, hydra: newHydra(t), who: map[string]pdid.Id{}}
-	tenants := map[string]login.Tenant{}
 	opsKey := ""
+
+	// The app's one credential: a deployment key, on a control-plane holder.
+	//
+	// The three reads it makes before it knows whose flow it is, and nothing
+	// else -- `cli.LoginResolving` is the same list and says why. What every
+	// call *inside* a flow may do is the nominated holder's role, because
+	// `keys.At` answers as that holder with `frame.Whole()` and does not carry
+	// the key's own list through.
+	front := func() string {
+		who, err := cmd.HolderNamed(ctx, s.Control, "login-app")
+		x.NoError(err)
+		token, sum, err := keys.Mint(keys.PrefixDeployment)
+		x.NoError(err)
+		_, err = s.Control.Ungated.ApiKey().Add(ctx, rstr.ApiKeyAddRequest_builder{
+			Holder: rstr.HolderRef_builder{Id: who.Bytes()}.Build(), Alias: "login-app", Secret: sum,
+			Methods: []string{
+				rstr.FrontService_WhoseHost_FullMethodName,
+				rstr.TenantService_Get_FullMethodName,
+				rstr.SyncService_Watch_FullMethodName,
+			},
+		}.Build())
+		x.NoError(err)
+
+		return token
+	}()
 
 	// Two tenants, each with a person who has a password and a key for this
 	// app -- one per tenant, on a holder inside it.
@@ -390,17 +435,18 @@ func serveAs(t *testing.T, how login.Consent, with func(*login.Config)) *deploym
 		}.Build())
 		x.NoError(err)
 
-		token, sum, err := keys.Mint(keys.PrefixTenant)
-		x.NoError(err)
-		_, err = s.Ungated.ApiKey().Add(ctx, rstr.ApiKeyAddRequest_builder{
-			Holder: rstr.HolderRef_builder{Id: front.GetId()}.Build(), Alias: "login-app", Secret: sum,
-			Methods: []string{"/roster.*/*"},
+		// The name this tenant answers at, nominating the holder above.
+		//
+		// This is what replaced a key per tenant (#36): the app holds one `rk_`
+		// and sends `roster-at` per request, and `Host.acts_as` is what roster
+		// narrows that key **to**. Two clients still reach one sign-in -- a
+		// customer with two products has two -- and both resolve here through
+		// the redirect they named rather than through a map.
+		_, err = s.Ungated.Host().Add(ctx, rstr.HostAddRequest_builder{
+			Tenant: at, Name: alias + ".app.test",
+			ActsAs: rstr.HolderRef_builder{Id: front.GetId()}.Build(),
 		}.Build())
 		x.NoError(err)
-
-		// Two clients for one tenant, because a customer with two products
-		// has two and one sign-in.
-		tenants[alias] = login.Tenant{Key: token, Clients: []string{alias + "-web", alias + "-mobile"}}
 
 		if alias != "contoso" {
 			continue
@@ -470,7 +516,7 @@ func serveAs(t *testing.T, how login.Consent, with func(*login.Config)) *deploym
 		Insecure:       true,
 		Hydra:          d.hydra.URL,
 		Sessions:       authsession.New(sealed, authsession.Insecure()),
-		Tenants:        tenants,
+		Key:            front,
 		InsecureCookie: true,
 	}
 	if with != nil {
