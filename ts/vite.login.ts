@@ -6,7 +6,7 @@ import type { Connect } from 'vite'
 //
 // # `npm run dev:login` has no backend at all
 //
-// Not a proxy, unlike `vite.account.ts`. What this app is, is four screens and
+// Not a proxy, unlike `vite.account.ts`. What this app is, is five screens and
 // the order they come in -- the calls behind each are two lines -- so the thing
 // worth having in front of you while you change one is the **screens**, and
 // standing Hydra and roster and a customer up to see a form is four containers
@@ -148,9 +148,9 @@ const sandbox = (): Connect.NextHandleFunction => async (req, res, next) => {
 		return p !== undefined && (p.factor === '' || at.proved.includes('totp'))
 	}
 
-	// The two screens are the same page: vite serves `index.html` at the root,
-	// and the app reads which it is from the challenge in the URL.
-	if (['/login', '/consent', '/logout', '/signed-out'].includes(url.pathname)) {
+	// Every screen is the same page: vite serves `index.html` at the root, and
+	// the app reads which it is from the challenge in the URL.
+	if (['/login', '/consent', '/logout', '/device', '/signed-out'].includes(url.pathname)) {
 		if (req.method === 'GET') {
 			req.url = '/'
 
@@ -263,6 +263,28 @@ const sandbox = (): Connect.NextHandleFunction => async (req, res, next) => {
 			flows.delete(key(req, res))
 
 			return json(res, 200, { signed_out: true, to: '/?signed-out' })
+		}
+
+		case 'POST /device': {
+			// The device screen's answer, and the one made-up endpoint here whose
+			// real version asks Hydra rather than roster: a code is Hydra's to
+			// issue, bind and expire, so there is nothing for the real app to
+			// check either (`login/device.go`).
+			//
+			// `WDJB-MJHT` is RFC 8628 §3.3's own example code, so there is
+			// something to type that is not a guess -- and everything else is
+			// refused, because a screen whose every answer works cannot show what
+			// a wrong code looks like.
+			const v = new URLSearchParams(await body(req))
+			if ((v.get('user_code') ?? '').trim() !== 'WDJB-MJHT') {
+				res.statusCode = 400
+
+				return res.end('no')
+			}
+
+			// Where Hydra would send the browser: into the ordinary flow, which
+			// is the whole point of this half being two handlers wide.
+			return json(res, 200, { to: '/login?login_challenge=sandbox' })
 		}
 
 		case 'POST /consent': {

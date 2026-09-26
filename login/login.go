@@ -402,6 +402,13 @@ func (a *App) Handler() http.Handler {
 	m.HandleFunc("GET /logout", a.logout)
 	m.HandleFunc("POST /logout", a.leave)
 
+	// And the fourth: where somebody types the code a device with no browser
+	// printed. It asks Hydra nothing before drawing, because Hydra has no getter
+	// for a device challenge -- see `login/device.go`, which is the whole of this
+	// half.
+	m.HandleFunc("GET /device", a.device)
+	m.HandleFunc("POST /device", a.verify)
+
 	// Where a sign-out ends when it asked to come back nowhere. Hydra's
 	// `urls.post_logout_redirect`, and the only screen here that is not part of
 	// a flow: there is no challenge on it and nothing to look up, because by

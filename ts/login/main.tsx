@@ -1,5 +1,5 @@
 /**
- * The Login App's page: the two forms, and the consent screen after them.
+ * The Login App's page: the two forms, and the consent, logout and device screens.
  *
  * # Why this is a page here and not one file of HTML
  *
@@ -55,7 +55,7 @@ interface Flow {
  */
 function challenge(): { name: string; value: string } {
 	const q = new URLSearchParams(location.search)
-	for (const name of ['login_challenge', 'consent_challenge', 'logout_challenge']) {
+	for (const name of ['login_challenge', 'consent_challenge', 'logout_challenge', 'device_challenge']) {
 		const value = q.get(name)
 		if (value !== null && value !== '') return { name, value }
 	}
@@ -253,6 +253,99 @@ function Logout(props: { of: Flow }): React.ReactNode {
 	)
 }
 
+/** Device is where somebody types the code a screen with no keyboard printed.
+ *
+ * RFC 8628's verification screen, and `login/device.go` is the argument for how
+ * little is on it. Two things are worth knowing while reading it:
+ *
+ * **It asks the app nothing.** Hydra has no getter for a device challenge, so
+ * unlike every other screen here there is no `/flow` to fetch -- which means no
+ * brand and no client name either. What is being authorised is named on the
+ * consent screen, one hop after the code is accepted, so the person still sees it
+ * before anything is granted.
+ *
+ * **The code is sent as it was typed.** What a code may be spelled with is Hydra's
+ * setting, so a page that upper-cased it or stripped its dashes would be guessing
+ * at somebody else's alphabet -- and would be wrong the day a deployment changes
+ * it. The field is `autocapitalize`d and `spellcheck`ed off so a phone does not
+ * help, and the server trims whitespace because that is the one thing no character
+ * set contains.
+ */
+function Device(): React.ReactNode {
+	// Prefilled from the URL when there is something to prefill: RFC 8628 §3.3.1's
+	// `verification_uri_complete` is the address behind a QR code, and it carries
+	// the code so that a phone that scanned it has nothing to retype. Not
+	// submitted for them -- the point of this screen is that a person is present
+	// and agreeing, and a form that posted itself would be a device authorising
+	// itself through a browser.
+	const [code, setCode] = useState(new URLSearchParams(location.search).get('user_code') ?? '')
+	const [sent, setSent] = useState(false)
+	const [bad, setBad] = useState(false)
+
+	const answer = (e: React.FormEvent): void => {
+		e.preventDefault()
+		if (code.trim() === '') return
+
+		setSent(true)
+		setBad(false)
+
+		void fetch('/device', {
+			method: 'POST',
+			headers: { 'content-type': 'application/x-www-form-urlencoded' },
+			body: new URLSearchParams({ device_challenge: c.value, user_code: code }),
+		})
+			.then(async (res) => (res.ok ? ((await res.json()) as { to: string }) : Promise.reject(new Error('no'))))
+			.then((v) => location.assign(v.to))
+			.catch(() => {
+				setSent(false)
+				setBad(true)
+			})
+	}
+
+	return (
+		<main className="sign-in consent">
+			<h1>type the code</h1>
+
+			<p className="note">
+				The device you are setting up is showing a short code. Type it here, and you will be asked
+				to sign in.
+			</p>
+
+			<form onSubmit={answer}>
+				<label>
+					code
+					<input
+						name="user_code"
+						value={code}
+						onChange={(e) => setCode(e.target.value)}
+						autoComplete="off"
+						autoCapitalize="off"
+						autoCorrect="off"
+						spellCheck={false}
+						// eslint-disable-next-line jsx-a11y/no-autofocus
+						autoFocus
+						required
+					/>
+				</label>
+
+				{/*
+					One message for every way a code can be wrong. The app answers
+					the same for one never issued, one already used and one that
+					ran out -- telling them apart would answer *is this code real*
+					to whoever is typing, which is what RFC 8628 §5.1 is about.
+				*/}
+				{bad && <p className="bad">that code did not work; check the device and type it again</p>}
+
+				<div className="acts">
+					<button type="submit" className="go" disabled={sent || code.trim() === ''}>
+						continue
+					</button>
+				</div>
+			</form>
+		</main>
+	)
+}
+
 /** Gone is where a sign-out ends when it asked to come back nowhere -- which is
  * every sign-out that arrived without an `id_token_hint`, because Hydra refuses
  * a `post_logout_redirect_uri` without one.
@@ -278,20 +371,26 @@ function Root(): React.ReactNode {
 	const [of, setOf] = useState<Flow | null>(null)
 	const [bad, setBad] = useState(false)
 
-	// Before anything is fetched: this page has no challenge and asking the app
-	// about the one that is not there would draw the broken screen.
+	// Before anything is fetched, the two screens that ask the app nothing.
+	//
+	// `/signed-out` has no challenge at all. `/device` has one and there is
+	// nothing to ask **about** it: Hydra offers no getter for a device challenge,
+	// so `/flow` would have nothing to answer with and asking would draw the
+	// broken screen for a flow that is working.
 	const gone = location.pathname === '/signed-out'
+	const typing = c.name === 'device_challenge'
 
 	useEffect(() => {
-		if (gone) return
+		if (gone || typing) return
 
 		void fetch(at('/flow'))
 			.then(async (res) => (res.ok ? ((await res.json()) as Flow) : Promise.reject(new Error('no'))))
 			.then(setOf)
 			.catch(() => setBad(true))
-	}, [gone])
+	}, [gone, typing])
 
 	if (gone) return <Gone />
+	if (typing) return <Device />
 	if (bad) return <Broken />
 	if (of === null) return <main className="sign-in" />
 

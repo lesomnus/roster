@@ -23,8 +23,8 @@ import (
 // else leaves it out; what it must keep is the last hop, `POST /accept`,
 // because that is the half no other front door has.
 
-// page serves the built page: the two screens at their own paths, and the
-// assets under them.
+// page serves the built page: every screen at its own path, and the assets under
+// them.
 //
 // One handler for both, because they are one page -- it reads which screen it
 // is from the challenge in its own URL. A file server would answer 404 for
@@ -38,7 +38,7 @@ func (a *App) page() http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/login", "/consent", "/logout", "/signed-out":
+		case "/login", "/consent", "/logout", "/device", "/signed-out":
 			// A screen, and the build has one document. Rewritten rather than
 			// redirected: the challenge is in the query and a redirect that
 			// dropped it would be a page with nothing to ask about.
