@@ -48,6 +48,9 @@ export const HolderDomain = 2
 /** The domain identifiers of roster.Host carry. */
 export const HostDomain = 20
 
+/** The domain identifiers of roster.HostProof carry. */
+export const HostProofDomain = 26
+
 /** The domain identifiers of roster.Identity carry. */
 export const IdentityDomain = 8
 
@@ -95,6 +98,7 @@ pdid.register("roster.Group", GroupDomain, "group")
 pdid.register("roster.GroupMembership", GroupMembershipDomain, "group-membership")
 pdid.register("roster.Holder", HolderDomain, "holder")
 pdid.register("roster.Host", HostDomain, "host")
+pdid.register("roster.HostProof", HostProofDomain, "host-proof")
 pdid.register("roster.Identity", IdentityDomain, "identity")
 pdid.register("roster.Link", LinkDomain, "link")
 pdid.register("roster.MailDomain", MailDomainDomain, "mail-domain")

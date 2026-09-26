@@ -15,6 +15,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/prove"
 	"github.com/lesomnus/roster/server/vouch"
 )
 
@@ -82,6 +83,16 @@ type Core struct {
 
 	// password is what a new password has to be, beyond not being leaked.
 	password Password
+
+	// proving is how a tenant's claim on a hostname is checked, and nil is a
+	// deployment that cannot check one.
+	//
+	// Nil is a real thing to be and it is not a switch: a deployment with no
+	// route to DNS -- an air gap -- has a roster operator writing `Host` rows
+	// with a shell, which is the other road to one and needs none of this. So
+	// nil refuses a **tenant's** claim, naming the setting, and leaves the
+	// operator's path exactly as it was.
+	proving prove.Resolver
 }
 
 // Password is the deployment's rules for a password somebody chooses, applied
@@ -153,6 +164,10 @@ func WithLockout(v vouch.Lockout) Option { return func(s *Core) { s.lockout = v 
 // WithPassword gives the layer what a new password has to be.
 func WithPassword(v Password) Option { return func(s *Core) { s.password = v } }
 
+// WithProving gives the layer what answers whether a hostname's challenge is
+// published; nil is a deployment that cannot ask. See [Core.proving].
+func WithProving(v prove.Resolver) Option { return func(s *Core) { s.proving = v } }
+
 // Rules is what this layer has to know about a caller and cannot work out.
 //
 // All four answers come from the same rows `gate.Policy` reads -- bindings, group
@@ -179,6 +194,11 @@ type Rules struct {
 	// [Core.mayReach] compares. See [Holding].
 	Holding Holding
 
+	// Releasing lets go of the `Host` row holding a name, whoever's it is. Nil
+	// is a stack that cannot, and taking a name is refused rather than
+	// attempted. See [Releasing].
+	Releasing Releasing
+
 	// Held is the same union as [Rules.Holding], in the shape a page reads:
 	// the method patterns, the sites, and whether a binding reaches the whole
 	// tenant. It is what `Holder.Reaches` answers with and what `MeService.Get`
@@ -186,6 +206,26 @@ type Rules struct {
 	// Nil is a stack that cannot say, and `Reaches` says so.
 	Held Held
 }
+
+// Releasing erases the `Host` row that holds a name, across every tenant, on
+// the driver it is handed.
+//
+// The one write in this package that reaches past the wall, and it is a function
+// rather than a server for exactly that reason: what `Host.Add` needs when a
+// tenant proves a name somebody else holds is *this row, by this name, gone*,
+// and handing over a server that could see every tenant's rows would be handing
+// over far more than that. CLAUDE.md's rule is that `Ungated` is never given to
+// anything a caller can reach; this is what obeying it looks like when a caller
+// legitimately has to.
+//
+// It takes the driver for `Lock`'s reason: the caller is already inside a
+// transaction, and a write on the client this was built from would be a write
+// outside it -- so the release and the insert could not be undone together.
+//
+// A name nothing holds is **not** an error. Taking a name that was free is the
+// ordinary case, and a function that refused it would make the caller ask first,
+// which is a read that the insert already answers.
+type Releasing func(ctx context.Context, drv dialect.Driver, name string) error
 
 // Held is what somebody may call and where, as the gate decides it. The
 // signature is `me.Held`'s, so one function serves both.
@@ -289,5 +329,5 @@ func (s Core) WithDriver(drv dialect.Driver) (app.Server, error) {
 // that has to be remembered in two places is a rule with a half-life.
 func (s Core) over(next app.Server) Core {
 	return New(next, s.rules, WithBreached(s.breached), WithKeyring(s.keyring), WithPrefix(s.prefix),
-		WithLockout(s.lockout), WithPassword(s.password))
+		WithLockout(s.lockout), WithPassword(s.password), WithProving(s.proving))
 }

@@ -408,7 +408,7 @@ a browser holds and `auth` reads credentials rather than making them.
 
 ## Reference
 
-- `docs/entity.md` — the twenty-three entities, how they relate, one paragraph each
+- `docs/entity.md` — the twenty-four entities, how they relate, one paragraph each
 - `docs/glossary.md` — the vocabulary this file uses as given: the wall, the gate,
   a grant, a layer, a plane, a walk, a rig. Four words name two things each and it
   says which

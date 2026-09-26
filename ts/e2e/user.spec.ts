@@ -61,4 +61,30 @@ test('a tenant administrator signs in and sees their own tenant', async ({ page 
 	// registers for its own front door.
 	await page.locator('nav button', { hasText: 'arrives through' }).click()
 	await expect(page.getByRole('cell', { name: 'localhost', exact: true })).toBeVisible()
+
+	// And which road wrote it. The rig's names come from `roster host add` in a
+	// shell, which is the roster operator's road and asks for no proof -- so the
+	// row says `written` rather than `proved` (#42).
+	await expect(page.getByText('written', { exact: true }).first()).toBeVisible()
+
+	// Claiming one of their own, which is the half a tenant could not do before
+	// #42: `Host.name` is unique across the deployment, so registering a name
+	// used to be a permission a deployment withheld.
+	const claiming = page.locator('h4', { hasText: /^proving a name$/ }).locator('xpath=..')
+	await claiming.locator('input[name=name]').fill('proved.example.com')
+	await claiming.locator('button', { hasText: 'claim a name' }).click()
+
+	// What roster asked for, laid out the way a DNS provider's form asks for it.
+	await expect(claiming.getByText('_roster-challenge.proved.example.com')).toBeVisible()
+	await expect(claiming.getByText(/^roster-verify=/)).toBeVisible()
+
+	// And taking it is refused here, naming the setting: this rig cannot publish
+	// a record, so it is configured `host.resolver: none` and roster says a
+	// roster operator writes the row. The success path is a Go test, over a zone
+	// written down rather than a DNS server nobody can run in CI.
+	await claiming.locator('button', { hasText: 'take the name' }).click()
+	await expect(claiming.locator('.bad')).toContainText('host.resolver')
+
+	// Nothing was written, which is the claim holding nothing.
+	await expect(page.getByRole('cell', { name: 'proved.example.com', exact: true })).toHaveCount(0)
 })

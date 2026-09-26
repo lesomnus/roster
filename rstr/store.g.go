@@ -40,6 +40,7 @@ type Server interface {
 	GroupMembership() GroupMembershipServiceServer
 	Host() HostServiceServer
 	MailDomain() MailDomainServiceServer
+	HostProof() HostProofServiceServer
 	Link() LinkServiceServer
 	Team() TeamServiceServer
 	Role() RoleServiceServer
@@ -70,6 +71,7 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterGroupMembershipServiceServer(g, s.GroupMembership())
 	RegisterHostServiceServer(g, s.Host())
 	RegisterMailDomainServiceServer(g, s.MailDomain())
+	RegisterHostProofServiceServer(g, s.HostProof())
 	RegisterLinkServiceServer(g, s.Link())
 	RegisterTeamServiceServer(g, s.Team())
 	RegisterRoleServiceServer(g, s.Role())
@@ -96,6 +98,7 @@ type UnimplementedServer struct {
 	GroupMembershipServer GroupMembershipServiceServer
 	HostServer            HostServiceServer
 	MailDomainServer      MailDomainServiceServer
+	HostProofServer       HostProofServiceServer
 	LinkServer            LinkServiceServer
 	TeamServer            TeamServiceServer
 	RoleServer            RoleServiceServer
@@ -135,6 +138,9 @@ func (UnimplementedServer) Host() HostServiceServer { return UnimplementedHostSe
 func (UnimplementedServer) MailDomain() MailDomainServiceServer {
 	return UnimplementedMailDomainServiceServer{}
 }
+func (UnimplementedServer) HostProof() HostProofServiceServer {
+	return UnimplementedHostProofServiceServer{}
+}
 func (UnimplementedServer) Link() LinkServiceServer       { return UnimplementedLinkServiceServer{} }
 func (UnimplementedServer) Team() TeamServiceServer       { return UnimplementedTeamServiceServer{} }
 func (UnimplementedServer) Role() RoleServiceServer       { return UnimplementedRoleServiceServer{} }
@@ -164,6 +170,7 @@ type StaticServer struct {
 	GroupMembershipServer GroupMembershipServiceServer
 	HostServer            HostServiceServer
 	MailDomainServer      MailDomainServiceServer
+	HostProofServer       HostProofServiceServer
 	LinkServer            LinkServiceServer
 	TeamServer            TeamServiceServer
 	RoleServer            RoleServiceServer
@@ -189,6 +196,7 @@ func (s StaticServer) Group() GroupServiceServer                     { return s.
 func (s StaticServer) GroupMembership() GroupMembershipServiceServer { return s.GroupMembershipServer }
 func (s StaticServer) Host() HostServiceServer                       { return s.HostServer }
 func (s StaticServer) MailDomain() MailDomainServiceServer           { return s.MailDomainServer }
+func (s StaticServer) HostProof() HostProofServiceServer             { return s.HostProofServer }
 func (s StaticServer) Link() LinkServiceServer                       { return s.LinkServer }
 func (s StaticServer) Team() TeamServiceServer                       { return s.TeamServer }
 func (s StaticServer) Role() RoleServiceServer                       { return s.RoleServer }
@@ -214,6 +222,7 @@ type Client interface {
 	GroupMembership() GroupMembershipServiceClient
 	Host() HostServiceClient
 	MailDomain() MailDomainServiceClient
+	HostProof() HostProofServiceClient
 	Link() LinkServiceClient
 	Team() TeamServiceClient
 	Role() RoleServiceClient
@@ -241,6 +250,7 @@ func NewClient(c *grpc.ClientConn) Client {
 		_GroupMembership: NewGroupMembershipServiceClient(c),
 		_Host:            NewHostServiceClient(c),
 		_MailDomain:      NewMailDomainServiceClient(c),
+		_HostProof:       NewHostProofServiceClient(c),
 		_Link:            NewLinkServiceClient(c),
 		_Team:            NewTeamServiceClient(c),
 		_Role:            NewRoleServiceClient(c),
@@ -268,6 +278,7 @@ type client struct {
 	_GroupMembership GroupMembershipServiceClient
 	_Host            HostServiceClient
 	_MailDomain      MailDomainServiceClient
+	_HostProof       HostProofServiceClient
 	_Link            LinkServiceClient
 	_Team            TeamServiceClient
 	_Role            RoleServiceClient
@@ -293,6 +304,7 @@ func (c *client) Group() GroupServiceClient                     { return c._Grou
 func (c *client) GroupMembership() GroupMembershipServiceClient { return c._GroupMembership }
 func (c *client) Host() HostServiceClient                       { return c._Host }
 func (c *client) MailDomain() MailDomainServiceClient           { return c._MailDomain }
+func (c *client) HostProof() HostProofServiceClient             { return c._HostProof }
 func (c *client) Link() LinkServiceClient                       { return c._Link }
 func (c *client) Team() TeamServiceClient                       { return c._Team }
 func (c *client) Role() RoleServiceClient                       { return c._Role }

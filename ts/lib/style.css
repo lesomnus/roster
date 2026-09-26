@@ -888,6 +888,20 @@ p.bad {
 	margin-bottom: var(--s-1);
 }
 
+/* A hostname being proved: the record to publish, laid out the way a DNS
+   provider's form asks for it. Boxed rather than a table row, because what is
+   on it is three values somebody is copying by hand into another window. */
+.claim {
+	padding: var(--s-3) var(--s-4);
+	background: var(--surface-2);
+	border-radius: var(--radius);
+	margin-bottom: var(--s-3);
+}
+
+.claim table {
+	margin-bottom: var(--s-2);
+}
+
 /* The person panel: what somebody signs in with, and the acts whoever is
    administering them has when they cannot. Together because they are one
    decision. */

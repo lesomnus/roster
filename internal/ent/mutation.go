@@ -22,6 +22,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/groupmembership"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/host"
+	"github.com/lesomnus/roster/internal/ent/hostproof"
 	"github.com/lesomnus/roster/internal/ent/identity"
 	"github.com/lesomnus/roster/internal/ent/link"
 	"github.com/lesomnus/roster/internal/ent/maildomain"
@@ -59,6 +60,7 @@ const (
 	TypeGroupMembership = "GroupMembership"
 	TypeHolder          = "Holder"
 	TypeHost            = "Host"
+	TypeHostProof       = "HostProof"
 	TypeIdentity        = "Identity"
 	TypeLink            = "Link"
 	TypeMailDomain      = "MailDomain"
@@ -3473,6 +3475,23 @@ func (m *HostMutation) OldLabels(ctx context.Context) (v map[string]string, err 
 	return oldValue.Labels, nil
 }
 
+// OldDateProved returns the old "date_proved" field's value of the Host entity.
+// If the Host object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HostMutation) OldDateProved(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateProved is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateProved requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateProved: %w", err)
+	}
+	return oldValue.DateProved, nil
+}
+
 // OldDateUpdated returns the old "date_updated" field's value of the Host entity.
 // If the Host object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -3569,6 +3588,8 @@ func (m *HostMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldDesc(ctx)
 	case host.FieldLabels:
 		return m.OldLabels(ctx)
+	case host.FieldDateProved:
+		return m.OldDateProved(ctx)
 	case host.FieldDateUpdated:
 		return m.OldDateUpdated(ctx)
 	case host.FieldDateErased:
@@ -3581,6 +3602,278 @@ func (m *HostMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldActsAsId(ctx)
 	}
 	return nil, fmt.Errorf("unknown Host field %s", name)
+}
+
+// HostProofMutation represents an operation that mutates the HostProof nodes in the graph.
+type HostProofMutation struct {
+	hostproof.Mutation
+	config
+	id       *uuid.UUID
+	done     bool
+	oldValue func(context.Context) (*HostProof, error)
+}
+
+var _ ent.Mutation = (*HostProofMutation)(nil)
+
+// hostproofOption allows management of the mutation configuration using functional options.
+type hostproofOption func(*HostProofMutation)
+
+// newHostProofMutation creates new mutation for the HostProof entity.
+func newHostProofMutation(c config, op Op, opts ...hostproofOption) *HostProofMutation {
+	m := &HostProofMutation{
+		Mutation: *hostproof.NewMutation(op),
+		config:   c,
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// SetId sets the value of the id field. Note that this
+// operation is only accepted on creation of HostProof entities.
+func (m *HostProofMutation) SetId(id uuid.UUID) {
+	m.id = &id
+}
+
+// Id returns the Id value in the mutation. Note that the Id is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *HostProofMutation) Id() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// withHostProofId sets the Id field of the mutation.
+func withHostProofId(id uuid.UUID) hostproofOption {
+	return func(m *HostProofMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *HostProof
+		)
+		m.oldValue = func(ctx context.Context) (*HostProof, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().HostProof.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withHostProof sets the old HostProof of the mutation.
+func withHostProof(node *HostProof) hostproofOption {
+	return func(m *HostProofMutation) {
+		m.oldValue = func(context.Context) (*HostProof, error) {
+			return node, nil
+		}
+		m.id = &node.Id
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m HostProofMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m HostProofMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// Ids queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *HostProofMutation) Ids(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.Op().Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.Id()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.Op().Is(OpUpdate | OpDelete):
+		return m.Client().HostProof.Query().Where(m.Predicates()...).Ids(ctx)
+	default:
+		return nil, fmt.Errorf("Ids is not allowed on %s operations", m.Op())
+	}
+}
+
+// OldName returns the old "name" field's value of the HostProof entity.
+// If the HostProof object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HostProofMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldName requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// OldToken returns the old "token" field's value of the HostProof entity.
+// If the HostProof object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HostProofMutation) OldToken(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldToken is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldToken requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldToken: %w", err)
+	}
+	return oldValue.Token, nil
+}
+
+// OldDateExpires returns the old "date_expires" field's value of the HostProof entity.
+// If the HostProof object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HostProofMutation) OldDateExpires(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateExpires is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateExpires requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateExpires: %w", err)
+	}
+	return oldValue.DateExpires, nil
+}
+
+// OldDesc returns the old "desc" field's value of the HostProof entity.
+// If the HostProof object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HostProofMutation) OldDesc(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDesc is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDesc requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDesc: %w", err)
+	}
+	return oldValue.Desc, nil
+}
+
+// OldDateUpdated returns the old "date_updated" field's value of the HostProof entity.
+// If the HostProof object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HostProofMutation) OldDateUpdated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateUpdated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateUpdated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateUpdated: %w", err)
+	}
+	return oldValue.DateUpdated, nil
+}
+
+// OldDateErased returns the old "date_erased" field's value of the HostProof entity.
+// If the HostProof object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HostProofMutation) OldDateErased(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateErased is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateErased requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateErased: %w", err)
+	}
+	return oldValue.DateErased, nil
+}
+
+// OldDateCreated returns the old "date_created" field's value of the HostProof entity.
+// If the HostProof object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HostProofMutation) OldDateCreated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateCreated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateCreated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateCreated: %w", err)
+	}
+	return oldValue.DateCreated, nil
+}
+
+// OldTenantId returns the old "tenant_id" field's value of the HostProof entity.
+// If the HostProof object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HostProofMutation) OldTenantId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldTenantId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldTenantId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTenantId: %w", err)
+	}
+	return oldValue.TenantId, nil
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *HostProofMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case hostproof.FieldName:
+		return m.OldName(ctx)
+	case hostproof.FieldToken:
+		return m.OldToken(ctx)
+	case hostproof.FieldDateExpires:
+		return m.OldDateExpires(ctx)
+	case hostproof.FieldDesc:
+		return m.OldDesc(ctx)
+	case hostproof.FieldDateUpdated:
+		return m.OldDateUpdated(ctx)
+	case hostproof.FieldDateErased:
+		return m.OldDateErased(ctx)
+	case hostproof.FieldDateCreated:
+		return m.OldDateCreated(ctx)
+	case hostproof.FieldTenantId:
+		return m.OldTenantId(ctx)
+	}
+	return nil, fmt.Errorf("unknown HostProof field %s", name)
 }
 
 // IdentityMutation represents an operation that mutates the Identity nodes in the graph.

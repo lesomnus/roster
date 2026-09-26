@@ -22,6 +22,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/groupmembership"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/host"
+	"github.com/lesomnus/roster/internal/ent/hostproof"
 	"github.com/lesomnus/roster/internal/ent/identity"
 	"github.com/lesomnus/roster/internal/ent/link"
 	"github.com/lesomnus/roster/internal/ent/maildomain"
@@ -66,6 +67,8 @@ type Client struct {
 	Holder *HolderClient
 	// Host is the client for interacting with the Host builders.
 	Host *HostClient
+	// HostProof is the client for interacting with the HostProof builders.
+	HostProof *HostProofClient
 	// Identity is the client for interacting with the Identity builders.
 	Identity *IdentityClient
 	// Link is the client for interacting with the Link builders.
@@ -110,6 +113,7 @@ func (c *Client) init() {
 	c.GroupMembership = NewGroupMembershipClient(c.config)
 	c.Holder = NewHolderClient(c.config)
 	c.Host = NewHostClient(c.config)
+	c.HostProof = NewHostProofClient(c.config)
 	c.Identity = NewIdentityClient(c.config)
 	c.Link = NewLinkClient(c.config)
 	c.MailDomain = NewMailDomainClient(c.config)
@@ -225,6 +229,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		GroupMembership: NewGroupMembershipClient(cfg),
 		Holder:          NewHolderClient(cfg),
 		Host:            NewHostClient(cfg),
+		HostProof:       NewHostProofClient(cfg),
 		Identity:        NewIdentityClient(cfg),
 		Link:            NewLinkClient(cfg),
 		MailDomain:      NewMailDomainClient(cfg),
@@ -267,6 +272,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		GroupMembership: NewGroupMembershipClient(cfg),
 		Holder:          NewHolderClient(cfg),
 		Host:            NewHostClient(cfg),
+		HostProof:       NewHostProofClient(cfg),
 		Identity:        NewIdentityClient(cfg),
 		Link:            NewLinkClient(cfg),
 		MailDomain:      NewMailDomainClient(cfg),
@@ -355,8 +361,8 @@ func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.ApiKey, c.Audit, c.Binding, c.Connection, c.Continuation, c.Credential,
 		c.Delegation, c.Email, c.Group, c.GroupMembership, c.Holder, c.Host,
-		c.Identity, c.Link, c.MailDomain, c.Outbox, c.Role, c.Session, c.Site,
-		c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
+		c.HostProof, c.Identity, c.Link, c.MailDomain, c.Outbox, c.Role, c.Session,
+		c.Site, c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
 	} {
 		n.Use(hooks...)
 	}
@@ -368,8 +374,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.ApiKey, c.Audit, c.Binding, c.Connection, c.Continuation, c.Credential,
 		c.Delegation, c.Email, c.Group, c.GroupMembership, c.Holder, c.Host,
-		c.Identity, c.Link, c.MailDomain, c.Outbox, c.Role, c.Session, c.Site,
-		c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
+		c.HostProof, c.Identity, c.Link, c.MailDomain, c.Outbox, c.Role, c.Session,
+		c.Site, c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -402,6 +408,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Holder.mutate(ctx, m)
 	case *HostMutation:
 		return c.Host.mutate(ctx, m)
+	case *HostProofMutation:
+		return c.HostProof.mutate(ctx, m)
 	case *IdentityMutation:
 		return c.Identity.mutate(ctx, m)
 	case *LinkMutation:
@@ -2313,6 +2321,155 @@ func (c *HostClient) mutate(ctx context.Context, m *HostMutation) (Value, error)
 	}
 }
 
+// HostProofClient is a client for the HostProof schema.
+type HostProofClient struct {
+	config
+}
+
+// NewHostProofClient returns a client for the HostProof from the given config.
+func NewHostProofClient(c config) *HostProofClient {
+	return &HostProofClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `hostproof.Hooks(f(g(h())))`.
+func (c *HostProofClient) Use(hooks ...Hook) {
+	c.hooks.HostProof = append(c.hooks.HostProof, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `hostproof.Intercept(f(g(h())))`.
+func (c *HostProofClient) Intercept(interceptors ...Interceptor) {
+	c.inters.HostProof = append(c.inters.HostProof, interceptors...)
+}
+
+// Create returns a builder for creating a HostProof entity.
+func (c *HostProofClient) Create() *HostProofCreate {
+	mutation := newHostProofMutation(c.config, OpCreate)
+	return &HostProofCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of HostProof entities.
+func (c *HostProofClient) CreateBulk(builders ...*HostProofCreate) *HostProofCreateBulk {
+	return &HostProofCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *HostProofClient) MapCreateBulk(slice any, setFunc func(*HostProofCreate, int)) *HostProofCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &HostProofCreateBulk{err: fmt.Errorf("calling to HostProofClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*HostProofCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &HostProofCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for HostProof.
+func (c *HostProofClient) Update() *HostProofUpdate {
+	mutation := newHostProofMutation(c.config, OpUpdate)
+	return &HostProofUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *HostProofClient) UpdateOne(_m *HostProof) *HostProofUpdateOne {
+	mutation := newHostProofMutation(c.config, OpUpdateOne, withHostProof(_m))
+	return &HostProofUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *HostProofClient) UpdateOneId(id uuid.UUID) *HostProofUpdateOne {
+	mutation := newHostProofMutation(c.config, OpUpdateOne, withHostProofId(id))
+	return &HostProofUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for HostProof.
+func (c *HostProofClient) Delete() *HostProofDelete {
+	mutation := newHostProofMutation(c.config, OpDelete)
+	return &HostProofDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *HostProofClient) DeleteOne(_m *HostProof) *HostProofDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *HostProofClient) DeleteOneId(id uuid.UUID) *HostProofDeleteOne {
+	builder := c.Delete().Where(hostproof.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &HostProofDeleteOne{builder}
+}
+
+// Query returns a query builder for HostProof.
+func (c *HostProofClient) Query() *HostProofQuery {
+	return &HostProofQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeHostProof},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a HostProof entity by its id.
+func (c *HostProofClient) Get(ctx context.Context, id uuid.UUID) (*HostProof, error) {
+	return c.Query().Where(hostproof.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *HostProofClient) GetX(ctx context.Context, id uuid.UUID) *HostProof {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTenant queries the tenant edge of a HostProof.
+func (c *HostProofClient) QueryTenant(_m *HostProof) *TenantQuery {
+	query := (&TenantClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(hostproof.Table, hostproof.FieldId, id),
+			sqlgraph.To(tenant.Table, tenant.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, hostproof.TenantTable, hostproof.TenantColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *HostProofClient) Hooks() []Hook {
+	return c.hooks.HostProof
+}
+
+// Interceptors returns the client interceptors.
+func (c *HostProofClient) Interceptors() []Interceptor {
+	return c.inters.HostProof
+}
+
+func (c *HostProofClient) mutate(ctx context.Context, m *HostProofMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&HostProofCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&HostProofUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&HostProofUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&HostProofDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown HostProof mutation op: %q", m.Op())
+	}
+}
+
 // IdentityClient is a client for the Identity schema.
 type IdentityClient struct {
 	config
@@ -4020,12 +4177,14 @@ func (c *TenantClient) mutate(ctx context.Context, m *TenantMutation) (Value, er
 type (
 	hooks struct {
 		ApiKey, Audit, Binding, Connection, Continuation, Credential, Delegation, Email,
-		Group, GroupMembership, Holder, Host, Identity, Link, MailDomain, Outbox, Role,
-		Session, Site, SiteMembership, Team, TeamMembership, Tenant []ent.Hook
+		Group, GroupMembership, Holder, Host, HostProof, Identity, Link, MailDomain,
+		Outbox, Role, Session, Site, SiteMembership, Team, TeamMembership,
+		Tenant []ent.Hook
 	}
 	inters struct {
 		ApiKey, Audit, Binding, Connection, Continuation, Credential, Delegation, Email,
-		Group, GroupMembership, Holder, Host, Identity, Link, MailDomain, Outbox, Role,
-		Session, Site, SiteMembership, Team, TeamMembership, Tenant []ent.Interceptor
+		Group, GroupMembership, Holder, Host, HostProof, Identity, Link, MailDomain,
+		Outbox, Role, Session, Site, SiteMembership, Team, TeamMembership,
+		Tenant []ent.Interceptor
 	}
 )

@@ -43,7 +43,7 @@ test('an operator signs in and stands a customer up', async ({ page }) => {
 	// How they arrive: a name added, then edited in place -- the note changes
 	// and the name, which the row is, is not offered.
 	await page.locator('tr', { hasText: 'fabrikam' }).locator('button', { hasText: 'arrives through' }).click()
-	const names = page.locator('h4', { hasText: 'names' }).locator('xpath=..')
+	const names = page.locator('h4', { hasText: /^names$/ }).locator('xpath=..')
 	await names.locator('input[name=name]').fill('fabrikam.test')
 	await names.locator('input[name=desc]').fill('staging')
 	await names.locator('button', { hasText: 'add name' }).click()

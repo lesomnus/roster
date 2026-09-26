@@ -1,6 +1,6 @@
 # The entities
 
-roster is twenty-three tables and the arguments for why each is a table. This
+roster is twenty-four tables and the arguments for why each is a table. This
 file is the map: the shape they make, and a paragraph on each.
 
 It is **not** where the reasoning lives. Every entity is declared in a `.proto`
@@ -11,7 +11,7 @@ is short enough to read in one sitting and points at them.
 `docs/position.md` is what roster is for and where it stops. `docs/roadmap.md`
 is the order it was built in.
 
-## One story, told twenty-three times
+## One story, told twenty-four times
 
 Every entity below ends with a line or two about the same deployment, so that
 what a row is **next to** is visible from its own section. Read them in order
@@ -46,7 +46,7 @@ flowchart TB
   W["ways in<br/>🔒 Credential · 🪪 Identity<br/>📧 Email · 🔑 ApiKey"]
   B["with a clock on them<br/>🎫 Delegation · ⏳ Continuation<br/>✨ Link · 🍪 Session"]
   M["what they may do<br/>📜 Role · 🔗 Binding<br/>👥 Group · 🫂 GroupMembership<br/>🎽 Team · 🏅 TeamMembership"]
-  F["the front door<br/>🌐 Host · 📮 MailDomain<br/>🔌 Connection"]
+  F["the front door<br/>🌐 Host · 🔎 HostProof<br/>📮 MailDomain · 🔌 Connection"]
   R["the record<br/>📖 Audit · 📤 Outbox"]
   SM["🚩 SiteMembership"]
 
@@ -505,9 +505,29 @@ managing their own names.
 
 > contoso's people arrive at `contoso.example.com`, and one row says that name
 > is contoso's. A front door asks before it knows anybody, which is why the read
-> is on the unwalled server. fabrikam cannot claim that name -- and neither
-> should contoso claim one it does not own, which is a grant the deployment
-> withholds rather than a rule roster enforces.
+> is on the unwalled server. fabrikam cannot take that name without publishing a
+> record under it, which is the next entity.
+
+### 🔎 `HostProof` — a name being claimed, and what to publish for it
+
+roster answers with a value, the tenant puts it at `_roster-challenge.<name>` as
+a `TXT` record, and `Host.Add` looks it up. A row rather than state on 🌐 `Host`
+for one reason that decides it: `Host.name` is unique among the rows that are not
+erased, so a claim kept there could not be made for a name somebody already
+holds -- which is exactly the case that has to work, because **a name can move**.
+Keyed `(tenant, name)` and claiming nothing, so two tenants may be proving one
+name at once and whoever's value is published takes it. The token is the only one
+in this schema that is **not** a secret and is stored as it is compared: it goes
+in public DNS, and anybody who can put a record under a name owns the name, which
+is the whole of what is being measured. Spent by an erase the way ⏳
+`Continuation` is, and `prove.Sweep` collects the abandoned.
+
+> contoso wants `contoso.example.com`. roster hands them a value, they publish it,
+> and the 🌐 `Host` row is written with `date_proved` on it. fabrikam may claim the
+> same name and gets a different value; they take it the day they can publish
+> theirs, and contoso's row is erased in the same transaction. In an air gap
+> nobody does any of this: **admin** writes the 🌐 `Host` row, and `date_proved` is
+> unset because there was nothing to check.
 
 ### 📮 `MailDomain` — where the people at an address authenticate
 
@@ -628,6 +648,7 @@ hard (gone).
 | 🎫 `Delegation` | 19 | via `holder.tenant` | -- | soft | `proto/app/delegation.proto` |
 | 🌐 `Host` | 20 | `tenant` edge | -- | soft | `proto/app/host.proto` |
 | 📮 `MailDomain` | 21 | `tenant` edge | -- | soft | `proto/app/host.proto` |
+| 🔎 `HostProof` | 26 | `tenant` edge | -- | soft | `proto/app/host.proto` |
 | ⏳ `Continuation` | 22 | via `holder.tenant` | -- | soft | `proto/app/continuation.proto` |
 | ✨ `Link` | 23 | via `holder.tenant` | -- | soft | `proto/app/link.proto` |
 | 🍪 `Session` | 24 | via `holder.tenant` | -- | soft | `proto/app/session.proto` |

@@ -49,6 +49,7 @@ Three notes about the list itself:
 | --- | --- |
 | **a key** | 32 bytes of `crypto/rand` behind a prefix, presented as `authorization: Bearer` on every call and stored as a SHA-256 hash. `rk_` is the control plane's (a service of the operator), `rt_` is a customer's (a person or their service). `server/keys` |
 | **a delegation** (652) | `rd_`: minted per sign-in, expiring in minutes, and **bound to the caller it was issued to**. It does not travel in `authorization` -- it rides in `roster-as` beside the caller's own key, which is what makes the binding checkable. An app calling *as* the person it just signed in |
+| **a host proof** | `HostProof`: a hostname a tenant is claiming, and the value roster asked them to publish at `_roster-challenge.<name>` as a `TXT` record. The one token in this schema that is **not** a secret and is stored as it is compared -- it goes in public DNS, and anybody who can put a record under a name owns the name. Nothing to do with Hydra's `login_challenge`, which the label unfortunately rhymes with. `server/prove`, and #42 |
 | **a continuation** (378) | what a half-finished sign-in is: roster's, short-lived, single-use. The app holds no half-signed-in state; `POST /session/continue` hands the continuation back |
 | **a session** | a cookie an **app** holds for a browser, never roster's to mint for somebody else's app. `payday/auth/authsession`; roster mints one only for its own console (`AuthService`) |
 | **`sub`** | the `Holder.id` in a token. Globally unique, so a relying party keys on it **alone** -- `authoidc.Subject` is the whole of that decision |
@@ -95,5 +96,5 @@ Three notes about the list itself:
 
 - [position.md](position.md) — what roster is and where it stops, which is where
   most of these words get their force
-- [entity.md](entity.md) — the twenty-three tables the nouns above are rows in
+- [entity.md](entity.md) — the twenty-four tables the nouns above are rows in
 - [../CLAUDE.md](../CLAUDE.md) — the rules that use this vocabulary as given

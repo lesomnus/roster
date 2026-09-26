@@ -29,6 +29,9 @@ func (e *Host) Proto() *rstr.Host {
 		r.SetId(v[:])
 		x.SetActsAs(r)
 	}
+	if e.DateProved != nil {
+		x.SetDateProved(timestamppb.New(*e.DateProved))
+	}
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))
@@ -50,6 +53,29 @@ func (e *MailDomain) Proto() *rstr.MailDomain {
 	x.SetProvider(e.Provider)
 	x.SetDesc(e.Desc)
 	x.SetLabels(e.Labels)
+	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
+	if e.DateErased != nil {
+		x.SetDateErased(timestamppb.New(*e.DateErased))
+	}
+	x.SetDateCreated(timestamppb.New(e.DateCreated))
+	return x
+}
+func (e *HostProof) Proto() *rstr.HostProof {
+	x := &rstr.HostProof{}
+	x.SetId(e.Id[:])
+	if v := e.Edges.Tenant; v != nil {
+		x.SetTenant(v.Proto())
+	} else if v := e.TenantId; v != *new(uuid.UUID) {
+		r := &rstr.Tenant{}
+		r.SetId(v[:])
+		x.SetTenant(r)
+	}
+	x.SetName(e.Name)
+	x.SetToken(e.Token)
+	if e.DateExpires != nil {
+		x.SetDateExpires(timestamppb.New(*e.DateExpires))
+	}
+	x.SetDesc(e.Desc)
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))

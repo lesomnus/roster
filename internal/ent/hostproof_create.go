@@ -9,67 +9,66 @@ import (
 	"time"
 	"uuid"
 
-	"github.com/lesomnus/roster/internal/ent/holder"
-	"github.com/lesomnus/roster/internal/ent/host"
+	"github.com/lesomnus/roster/internal/ent/hostproof"
 	"github.com/lesomnus/roster/internal/ent/tenant"
 	"github.com/protobuf-orm/ent/dialect/sql"
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	"github.com/protobuf-orm/ent/schema/field"
 )
 
-// HostCreate is the builder for creating a Host entity.
-type HostCreate struct {
+// HostProofCreate is the builder for creating a HostProof entity.
+type HostProofCreate struct {
 	config
-	mutation *HostMutation
+	mutation *HostProofMutation
 	hooks    []Hook
 }
 
 // SetName sets the "name" field.
-func (_c *HostCreate) SetName(v string) *HostCreate {
+func (_c *HostProofCreate) SetName(v string) *HostProofCreate {
 	_c.mutation.SetName(v)
 	return _c
 }
 
-// SetDesc sets the "desc" field.
-func (_c *HostCreate) SetDesc(v string) *HostCreate {
-	_c.mutation.SetDesc(v)
+// SetToken sets the "token" field.
+func (_c *HostProofCreate) SetToken(v string) *HostProofCreate {
+	_c.mutation.SetToken(v)
 	return _c
 }
 
-// SetLabels sets the "labels" field.
-func (_c *HostCreate) SetLabels(v map[string]string) *HostCreate {
-	_c.mutation.SetLabels(v)
+// SetDateExpires sets the "date_expires" field.
+func (_c *HostProofCreate) SetDateExpires(v time.Time) *HostProofCreate {
+	_c.mutation.SetDateExpires(v)
 	return _c
 }
 
-// SetDateProved sets the "date_proved" field.
-func (_c *HostCreate) SetDateProved(v time.Time) *HostCreate {
-	_c.mutation.SetDateProved(v)
-	return _c
-}
-
-// SetNillableDateProved sets the "date_proved" field if the given value is not nil.
-func (_c *HostCreate) SetNillableDateProved(v *time.Time) *HostCreate {
+// SetNillableDateExpires sets the "date_expires" field if the given value is not nil.
+func (_c *HostProofCreate) SetNillableDateExpires(v *time.Time) *HostProofCreate {
 	if v != nil {
-		_c.SetDateProved(*v)
+		_c.SetDateExpires(*v)
 	}
 	return _c
 }
 
+// SetDesc sets the "desc" field.
+func (_c *HostProofCreate) SetDesc(v string) *HostProofCreate {
+	_c.mutation.SetDesc(v)
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
-func (_c *HostCreate) SetDateUpdated(v time.Time) *HostCreate {
+func (_c *HostProofCreate) SetDateUpdated(v time.Time) *HostProofCreate {
 	_c.mutation.SetDateUpdated(v)
 	return _c
 }
 
 // SetDateErased sets the "date_erased" field.
-func (_c *HostCreate) SetDateErased(v time.Time) *HostCreate {
+func (_c *HostProofCreate) SetDateErased(v time.Time) *HostProofCreate {
 	_c.mutation.SetDateErased(v)
 	return _c
 }
 
 // SetNillableDateErased sets the "date_erased" field if the given value is not nil.
-func (_c *HostCreate) SetNillableDateErased(v *time.Time) *HostCreate {
+func (_c *HostProofCreate) SetNillableDateErased(v *time.Time) *HostProofCreate {
 	if v != nil {
 		_c.SetDateErased(*v)
 	}
@@ -77,13 +76,13 @@ func (_c *HostCreate) SetNillableDateErased(v *time.Time) *HostCreate {
 }
 
 // SetDateCreated sets the "date_created" field.
-func (_c *HostCreate) SetDateCreated(v time.Time) *HostCreate {
+func (_c *HostProofCreate) SetDateCreated(v time.Time) *HostProofCreate {
 	_c.mutation.SetDateCreated(v)
 	return _c
 }
 
 // SetNillableDateCreated sets the "date_created" field if the given value is not nil.
-func (_c *HostCreate) SetNillableDateCreated(v *time.Time) *HostCreate {
+func (_c *HostProofCreate) SetNillableDateCreated(v *time.Time) *HostProofCreate {
 	if v != nil {
 		_c.SetDateCreated(*v)
 	}
@@ -91,53 +90,34 @@ func (_c *HostCreate) SetNillableDateCreated(v *time.Time) *HostCreate {
 }
 
 // SetTenantId sets the "tenant_id" field.
-func (_c *HostCreate) SetTenantId(v uuid.UUID) *HostCreate {
+func (_c *HostProofCreate) SetTenantId(v uuid.UUID) *HostProofCreate {
 	_c.mutation.SetTenantId(v)
 	return _c
 }
 
-// SetActsAsId sets the "acts_as_id" field.
-func (_c *HostCreate) SetActsAsId(v uuid.UUID) *HostCreate {
-	_c.mutation.SetActsAsId(v)
-	return _c
-}
-
-// SetNillableActsAsId sets the "acts_as_id" field if the given value is not nil.
-func (_c *HostCreate) SetNillableActsAsId(v *uuid.UUID) *HostCreate {
-	if v != nil {
-		_c.SetActsAsId(*v)
-	}
-	return _c
-}
-
 // SetId sets the "id" field.
-func (_c *HostCreate) SetId(v uuid.UUID) *HostCreate {
+func (_c *HostProofCreate) SetId(v uuid.UUID) *HostProofCreate {
 	_c.mutation.SetId(v)
 	return _c
 }
 
 // SetTenant sets the "tenant" edge to the Tenant entity.
-func (_c *HostCreate) SetTenant(v *Tenant) *HostCreate {
+func (_c *HostProofCreate) SetTenant(v *Tenant) *HostProofCreate {
 	return _c.SetTenantId(v.Id)
 }
 
-// SetActsAs sets the "acts_as" edge to the Holder entity.
-func (_c *HostCreate) SetActsAs(v *Holder) *HostCreate {
-	return _c.SetActsAsId(v.Id)
-}
-
-// Mutation returns the HostMutation object of the builder.
-func (_c *HostCreate) Mutation() *HostMutation {
+// Mutation returns the HostProofMutation object of the builder.
+func (_c *HostProofCreate) Mutation() *HostProofMutation {
 	return _c.mutation
 }
 
-// Save creates the Host in the database.
-func (_c *HostCreate) Save(ctx context.Context) (*Host, error) {
+// Save creates the HostProof in the database.
+func (_c *HostProofCreate) Save(ctx context.Context) (*HostProof, error) {
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (_c *HostCreate) SaveX(ctx context.Context) *Host {
+func (_c *HostProofCreate) SaveX(ctx context.Context) *HostProof {
 	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -146,39 +126,42 @@ func (_c *HostCreate) SaveX(ctx context.Context) *Host {
 }
 
 // Exec executes the query.
-func (_c *HostCreate) Exec(ctx context.Context) error {
+func (_c *HostProofCreate) Exec(ctx context.Context) error {
 	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_c *HostCreate) ExecX(ctx context.Context) {
+func (_c *HostProofCreate) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_c *HostCreate) check() error {
+func (_c *HostProofCreate) check() error {
 	if _, ok := _c.mutation.Name(); !ok {
-		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Host.name"`)}
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "HostProof.name"`)}
+	}
+	if _, ok := _c.mutation.Token(); !ok {
+		return &ValidationError{Name: "token", err: errors.New(`ent: missing required field "HostProof.token"`)}
 	}
 	if _, ok := _c.mutation.Desc(); !ok {
-		return &ValidationError{Name: "desc", err: errors.New(`ent: missing required field "Host.desc"`)}
+		return &ValidationError{Name: "desc", err: errors.New(`ent: missing required field "HostProof.desc"`)}
 	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
-		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Host.date_updated"`)}
+		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "HostProof.date_updated"`)}
 	}
 	if _, ok := _c.mutation.TenantId(); !ok {
-		return &ValidationError{Name: "tenant_id", err: errors.New(`ent: missing required field "Host.tenant_id"`)}
+		return &ValidationError{Name: "tenant_id", err: errors.New(`ent: missing required field "HostProof.tenant_id"`)}
 	}
 	if len(_c.mutation.TenantIds()) == 0 {
-		return &ValidationError{Name: "tenant", err: errors.New(`ent: missing required edge "Host.tenant"`)}
+		return &ValidationError{Name: "tenant", err: errors.New(`ent: missing required edge "HostProof.tenant"`)}
 	}
 	return nil
 }
 
-func (_c *HostCreate) sqlSave(ctx context.Context) (*Host, error) {
+func (_c *HostProofCreate) sqlSave(ctx context.Context) (*HostProof, error) {
 	if err := _c.check(); err != nil {
 		return nil, err
 	}
@@ -205,49 +188,49 @@ func (_c *HostCreate) sqlSave(ctx context.Context) (*Host, error) {
 	return _node, nil
 }
 
-func (_c *HostCreate) createSpec() (*Host, *sqlgraph.CreateSpec) {
+func (_c *HostProofCreate) createSpec() (*HostProof, *sqlgraph.CreateSpec) {
 	var (
-		_node = &Host{config: _c.config}
-		_spec = sqlgraph.NewCreateSpec(host.Table, sqlgraph.NewFieldSpec(host.FieldId, field.TypeUuid))
+		_node = &HostProof{config: _c.config}
+		_spec = sqlgraph.NewCreateSpec(hostproof.Table, sqlgraph.NewFieldSpec(hostproof.FieldId, field.TypeUuid))
 	)
 	if id, ok := _c.mutation.Id(); ok {
 		_node.Id = id
 		_spec.Id.Value = &id
 	}
 	if value, ok := _c.mutation.Name(); ok {
-		_spec.SetField(host.FieldName, field.TypeString, value)
+		_spec.SetField(hostproof.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
+	if value, ok := _c.mutation.Token(); ok {
+		_spec.SetField(hostproof.FieldToken, field.TypeString, value)
+		_node.Token = value
+	}
+	if value, ok := _c.mutation.DateExpires(); ok {
+		_spec.SetField(hostproof.FieldDateExpires, field.TypeTime, value)
+		_node.DateExpires = &value
+	}
 	if value, ok := _c.mutation.Desc(); ok {
-		_spec.SetField(host.FieldDesc, field.TypeString, value)
+		_spec.SetField(hostproof.FieldDesc, field.TypeString, value)
 		_node.Desc = value
 	}
-	if value, ok := _c.mutation.Labels(); ok {
-		_spec.SetField(host.FieldLabels, field.TypeJson, value)
-		_node.Labels = value
-	}
-	if value, ok := _c.mutation.DateProved(); ok {
-		_spec.SetField(host.FieldDateProved, field.TypeTime, value)
-		_node.DateProved = &value
-	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
-		_spec.SetField(host.FieldDateUpdated, field.TypeTime, value)
+		_spec.SetField(hostproof.FieldDateUpdated, field.TypeTime, value)
 		_node.DateUpdated = value
 	}
 	if value, ok := _c.mutation.DateErased(); ok {
-		_spec.SetField(host.FieldDateErased, field.TypeTime, value)
+		_spec.SetField(hostproof.FieldDateErased, field.TypeTime, value)
 		_node.DateErased = &value
 	}
 	if value, ok := _c.mutation.DateCreated(); ok {
-		_spec.SetField(host.FieldDateCreated, field.TypeTime, value)
+		_spec.SetField(hostproof.FieldDateCreated, field.TypeTime, value)
 		_node.DateCreated = value
 	}
 	if nodes := _c.mutation.TenantIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   host.TenantTable,
-			Columns: []string{host.TenantColumn},
+			Table:   hostproof.TenantTable,
+			Columns: []string{hostproof.TenantColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IdSpec: sqlgraph.NewFieldSpec(tenant.FieldId, field.TypeUuid),
@@ -259,46 +242,29 @@ func (_c *HostCreate) createSpec() (*Host, *sqlgraph.CreateSpec) {
 		_node.TenantId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := _c.mutation.ActsAsIds(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   host.ActsAsTable,
-			Columns: []string{host.ActsAsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IdSpec: sqlgraph.NewFieldSpec(holder.FieldId, field.TypeUuid),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.ActsAsId = nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
-	}
 	return _node, _spec
 }
 
-// HostCreateBulk is the builder for creating many Host entities in bulk.
-type HostCreateBulk struct {
+// HostProofCreateBulk is the builder for creating many HostProof entities in bulk.
+type HostProofCreateBulk struct {
 	config
 	err      error
-	builders []*HostCreate
+	builders []*HostProofCreate
 }
 
-// Save creates the Host entities in the database.
-func (_c *HostCreateBulk) Save(ctx context.Context) ([]*Host, error) {
+// Save creates the HostProof entities in the database.
+func (_c *HostProofCreateBulk) Save(ctx context.Context) ([]*HostProof, error) {
 	if _c.err != nil {
 		return nil, _c.err
 	}
 	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
-	nodes := make([]*Host, len(_c.builders))
+	nodes := make([]*HostProof, len(_c.builders))
 	mutators := make([]Mutator, len(_c.builders))
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				mutation, ok := m.(*HostMutation)
+				mutation, ok := m.(*HostProofMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
 				}
@@ -341,7 +307,7 @@ func (_c *HostCreateBulk) Save(ctx context.Context) ([]*Host, error) {
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_c *HostCreateBulk) SaveX(ctx context.Context) []*Host {
+func (_c *HostProofCreateBulk) SaveX(ctx context.Context) []*HostProof {
 	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -350,13 +316,13 @@ func (_c *HostCreateBulk) SaveX(ctx context.Context) []*Host {
 }
 
 // Exec executes the query.
-func (_c *HostCreateBulk) Exec(ctx context.Context) error {
+func (_c *HostProofCreateBulk) Exec(ctx context.Context) error {
 	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_c *HostCreateBulk) ExecX(ctx context.Context) {
+func (_c *HostProofCreateBulk) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}

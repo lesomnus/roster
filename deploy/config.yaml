@@ -13,6 +13,13 @@ server:
     addr: 0.0.0.0:8081
     allow_web: true
 
+# No `host:` either, which means the system resolver: a tenant that claims a
+# hostname is checked against the servers that hold the zone, and that is right
+# for a deployment on a network. Two reasons to write the block -- a resolver of
+# this cluster's own if it answers for customers' domains out of an internal zone,
+# and `resolver: none` for an air gap, where a roster operator writes the row
+# instead. `docs/operating.md` § "A tenant registers its own hostname".
+
 # No `sign_in:` and no `user_console:` here, and the absence is a decision
 # rather than an omission. The user console is a public sign-in on the port
 # product apps already reach, and whether a deployment wants one is the

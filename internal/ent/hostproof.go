@@ -3,32 +3,30 @@
 package ent
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 	"uuid"
 
-	"github.com/lesomnus/roster/internal/ent/holder"
-	"github.com/lesomnus/roster/internal/ent/host"
+	"github.com/lesomnus/roster/internal/ent/hostproof"
 	"github.com/lesomnus/roster/internal/ent/tenant"
 	"github.com/protobuf-orm/ent"
 	"github.com/protobuf-orm/ent/dialect/sql"
 )
 
-// Host is the model entity for the Host schema.
-type Host struct {
+// HostProof is the model entity for the HostProof schema.
+type HostProof struct {
 	config `json:"-"`
 	// Id of the ent.
 	Id uuid.UUID `json:"id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
+	// Token holds the value of the "token" field.
+	Token string `json:"token,omitempty"`
+	// DateExpires holds the value of the "date_expires" field.
+	DateExpires *time.Time `json:"date_expires,omitempty"`
 	// Desc holds the value of the "desc" field.
 	Desc string `json:"desc,omitempty"`
-	// Labels holds the value of the "labels" field.
-	Labels map[string]string `json:"labels,omitempty"`
-	// DateProved holds the value of the "date_proved" field.
-	DateProved *time.Time `json:"date_proved,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -37,28 +35,24 @@ type Host struct {
 	DateCreated time.Time `json:"date_created,omitempty"`
 	// TenantId holds the value of the "tenant_id" field.
 	TenantId uuid.UUID `json:"tenant_id,omitempty"`
-	// ActsAsId holds the value of the "acts_as_id" field.
-	ActsAsId uuid.UUID `json:"acts_as_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
-	// The values are being populated by the HostQuery when eager-loading is set.
-	Edges        HostEdges `json:"edges"`
+	// The values are being populated by the HostProofQuery when eager-loading is set.
+	Edges        HostProofEdges `json:"edges"`
 	selectValues sql.SelectValues
 }
 
-// HostEdges holds the relations/edges for other nodes in the graph.
-type HostEdges struct {
+// HostProofEdges holds the relations/edges for other nodes in the graph.
+type HostProofEdges struct {
 	// Tenant holds the value of the tenant edge.
 	Tenant *Tenant `json:"tenant,omitempty"`
-	// ActsAs holds the value of the acts_as edge.
-	ActsAs *Holder `json:"acts_as,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [1]bool
 }
 
 // TenantOrErr returns the Tenant value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e HostEdges) TenantOrErr() (*Tenant, error) {
+func (e HostProofEdges) TenantOrErr() (*Tenant, error) {
 	if e.Tenant != nil {
 		return e.Tenant, nil
 	} else if e.loadedTypes[0] {
@@ -67,31 +61,16 @@ func (e HostEdges) TenantOrErr() (*Tenant, error) {
 	return nil, &NotLoadedError{edge: "tenant"}
 }
 
-// ActsAsOrErr returns the ActsAs value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e HostEdges) ActsAsOrErr() (*Holder, error) {
-	if e.ActsAs != nil {
-		return e.ActsAs, nil
-	} else if e.loadedTypes[1] {
-		return nil, &NotFoundError{label: holder.Label}
-	}
-	return nil, &NotLoadedError{edge: "acts_as"}
-}
-
 // scanValues returns the types for scanning values from sql.Rows.
-func (*Host) scanValues(columns []string) ([]any, error) {
+func (*HostProof) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case host.FieldLabels:
-			values[i] = new([]byte)
-		case host.FieldName, host.FieldDesc:
+		case hostproof.FieldName, hostproof.FieldToken, hostproof.FieldDesc:
 			values[i] = new(sql.NullString)
-		case host.FieldDateProved, host.FieldDateUpdated, host.FieldDateErased, host.FieldDateCreated:
+		case hostproof.FieldDateExpires, hostproof.FieldDateUpdated, hostproof.FieldDateErased, hostproof.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case host.FieldActsAsId:
-			values[i] = new(sql.Null[uuid.UUID])
-		case host.FieldId, host.FieldTenantId:
+		case hostproof.FieldId, hostproof.FieldTenantId:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -101,76 +80,68 @@ func (*Host) scanValues(columns []string) ([]any, error) {
 }
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
-// to the Host fields.
-func (_m *Host) assignValues(columns []string, values []any) error {
+// to the HostProof fields.
+func (_m *HostProof) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
 	for i := range columns {
 		switch columns[i] {
-		case host.FieldId:
+		case hostproof.FieldId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				_m.Id = *value
 			}
-		case host.FieldName:
+		case hostproof.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
 				_m.Name = value.String
 			}
-		case host.FieldDesc:
+		case hostproof.FieldToken:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field token", values[i])
+			} else if value.Valid {
+				_m.Token = value.String
+			}
+		case hostproof.FieldDateExpires:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field date_expires", values[i])
+			} else if value.Valid {
+				_m.DateExpires = new(time.Time)
+				*_m.DateExpires = value.Time
+			}
+		case hostproof.FieldDesc:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field desc", values[i])
 			} else if value.Valid {
 				_m.Desc = value.String
 			}
-		case host.FieldLabels:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field labels", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &_m.Labels); err != nil {
-					return fmt.Errorf("unmarshal field labels: %w", err)
-				}
-			}
-		case host.FieldDateProved:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field date_proved", values[i])
-			} else if value.Valid {
-				_m.DateProved = new(time.Time)
-				*_m.DateProved = value.Time
-			}
-		case host.FieldDateUpdated:
+		case hostproof.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field date_updated", values[i])
 			} else if value.Valid {
 				_m.DateUpdated = value.Time
 			}
-		case host.FieldDateErased:
+		case hostproof.FieldDateErased:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field date_erased", values[i])
 			} else if value.Valid {
 				_m.DateErased = new(time.Time)
 				*_m.DateErased = value.Time
 			}
-		case host.FieldDateCreated:
+		case hostproof.FieldDateCreated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field date_created", values[i])
 			} else if value.Valid {
 				_m.DateCreated = value.Time
 			}
-		case host.FieldTenantId:
+		case hostproof.FieldTenantId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
 			} else if value != nil {
 				_m.TenantId = *value
-			}
-		case host.FieldActsAsId:
-			if value, ok := values[i].(*sql.Null[uuid.UUID]); !ok {
-				return fmt.Errorf("unexpected type %T for field acts_as_id", values[i])
-			} else if value.Valid {
-				_m.ActsAsId = value.V
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -179,58 +150,53 @@ func (_m *Host) assignValues(columns []string, values []any) error {
 	return nil
 }
 
-// Value returns the ent.Value that was dynamically selected and assigned to the Host.
+// Value returns the ent.Value that was dynamically selected and assigned to the HostProof.
 // This includes values selected through modifiers, order, etc.
-func (_m *Host) Value(name string) (ent.Value, error) {
+func (_m *HostProof) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
 }
 
-// QueryTenant queries the "tenant" edge of the Host entity.
-func (_m *Host) QueryTenant() *TenantQuery {
-	return NewHostClient(_m.config).QueryTenant(_m)
+// QueryTenant queries the "tenant" edge of the HostProof entity.
+func (_m *HostProof) QueryTenant() *TenantQuery {
+	return NewHostProofClient(_m.config).QueryTenant(_m)
 }
 
-// QueryActsAs queries the "acts_as" edge of the Host entity.
-func (_m *Host) QueryActsAs() *HolderQuery {
-	return NewHostClient(_m.config).QueryActsAs(_m)
-}
-
-// Update returns a builder for updating this Host.
-// Note that you need to call Host.Unwrap() before calling this method if this Host
+// Update returns a builder for updating this HostProof.
+// Note that you need to call HostProof.Unwrap() before calling this method if this HostProof
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (_m *Host) Update() *HostUpdateOne {
-	return NewHostClient(_m.config).UpdateOne(_m)
+func (_m *HostProof) Update() *HostProofUpdateOne {
+	return NewHostProofClient(_m.config).UpdateOne(_m)
 }
 
-// Unwrap unwraps the Host entity that was returned from a transaction after it was closed,
+// Unwrap unwraps the HostProof entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (_m *Host) Unwrap() *Host {
+func (_m *HostProof) Unwrap() *HostProof {
 	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
-		panic("ent: Host is not a transactional entity")
+		panic("ent: HostProof is not a transactional entity")
 	}
 	_m.config.driver = _tx.drv
 	return _m
 }
 
 // String implements the fmt.Stringer.
-func (_m *Host) String() string {
+func (_m *HostProof) String() string {
 	var builder strings.Builder
-	builder.WriteString("Host(")
+	builder.WriteString("HostProof(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.Id))
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
-	builder.WriteString("desc=")
-	builder.WriteString(_m.Desc)
+	builder.WriteString("token=")
+	builder.WriteString(_m.Token)
 	builder.WriteString(", ")
-	builder.WriteString("labels=")
-	builder.WriteString(fmt.Sprintf("%v", _m.Labels))
-	builder.WriteString(", ")
-	if v := _m.DateProved; v != nil {
-		builder.WriteString("date_proved=")
+	if v := _m.DateExpires; v != nil {
+		builder.WriteString("date_expires=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("desc=")
+	builder.WriteString(_m.Desc)
 	builder.WriteString(", ")
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))
@@ -245,12 +211,9 @@ func (_m *Host) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("tenant_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.TenantId))
-	builder.WriteString(", ")
-	builder.WriteString("acts_as_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.ActsAsId))
 	builder.WriteByte(')')
 	return builder.String()
 }
 
-// HostList is a parsable slice of Host.
-type HostList []*Host
+// HostProofList is a parsable slice of HostProof.
+type HostProofList []*HostProof

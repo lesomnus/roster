@@ -23,7 +23,7 @@ import { DelegationSchema } from './app/delegation_pb.js'
 import { EmailSchema } from './app/email_pb.js'
 import { GroupSchema, GroupMembershipSchema } from './app/group_pb.js'
 import { HolderSchema } from './roster/payday/holder_pb.js'
-import { HostSchema, MailDomainSchema } from './app/host_pb.js'
+import { HostSchema, HostProofSchema, MailDomainSchema } from './app/host_pb.js'
 import { IdentitySchema } from './app/identity_pb.js'
 import { LinkSchema } from './app/link_pb.js'
 import { OutboxSchema } from './roster/payday/outbox_pb.js'
@@ -42,7 +42,7 @@ import { DelegationService } from './app/delegation_svc_pb.js'
 import { EmailService } from './app/email_svc_pb.js'
 import { GroupService, GroupMembershipService } from './app/group_svc_pb.js'
 import { HolderService } from './roster/payday/holder_svc_pb.js'
-import { HostService, MailDomainService } from './app/host_svc_pb.js'
+import { HostService, HostProofService, MailDomainService } from './app/host_svc_pb.js'
 import { IdentityService } from './app/identity_svc_pb.js'
 import { LinkService } from './app/link_svc_pb.js'
 import { OutboxService } from './roster/payday/outbox_svc_pb.js'
@@ -197,6 +197,18 @@ export const Host = {
 	service: HostService,
 } as const satisfies EntityDesc
 
+/** roster.HostProof, as the store holds it. */
+export const HostProof = {
+	typeName: "roster.HostProof",
+	schema: HostProofSchema,
+	domain: 26,
+	version: "dateUpdated",
+	refs: [{ field: "tenant", to: "roster.Tenant" }],
+	key: "id",
+	ids: ["id"],
+	service: HostProofService,
+} as const satisfies EntityDesc
+
 /** roster.Identity, as the store holds it. */
 export const Identity = {
 	typeName: "roster.Identity",
@@ -331,5 +343,5 @@ export const Tenant = {
 } as const satisfies EntityDesc
 
 /** Every entity of this app, which is what a store is opened over. */
-export const entities = [ApiKey, Audit, Binding, Connection, Continuation, Credential, Delegation, Email, Group, GroupMembership, Holder, Host, Identity, Link, MailDomain, Outbox, Role, Session, Site, SiteMembership, Team, TeamMembership, Tenant] as const
+export const entities = [ApiKey, Audit, Binding, Connection, Continuation, Credential, Delegation, Email, Group, GroupMembership, Holder, Host, HostProof, Identity, Link, MailDomain, Outbox, Role, Session, Site, SiteMembership, Team, TeamMembership, Tenant] as const
 

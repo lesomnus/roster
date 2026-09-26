@@ -153,6 +153,18 @@ func (f HostFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error)
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.HostMutation", m)
 }
 
+// The HostProofFunc type is an adapter to allow the use of ordinary
+// function as HostProof mutator.
+type HostProofFunc func(context.Context, *ent.HostProofMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f HostProofFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.HostProofMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.HostProofMutation", m)
+}
+
 // The IdentityFunc type is an adapter to allow the use of ordinary
 // function as Identity mutator.
 type IdentityFunc func(context.Context, *ent.IdentityMutation) (ent.Value, error)

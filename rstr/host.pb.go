@@ -59,36 +59,53 @@ const (
 // cannot require knowing who they are. `HostService` is what does that, and it
 // answers with a tenant identifier and nothing else.
 //
-// # The name is unique across the deployment
+// # The name is unique across the deployment, and it can move
 //
-// Two operators cannot both own `contoso.example.com`, so this is one of the
-// few constraints here that crosses the wall. What it costs is a small oracle
-// -- the second operator to claim a name is told it is taken, by somebody they
-// cannot see -- and a hostname is a public fact, so that is the cheaper side of
-// the trade. `Email` deliberately went the other way, and D3 says why.
+// Two tenants cannot both own `contoso.example.com`, so this is one of the few
+// constraints here that crosses the wall. What it costs is a small oracle -- the
+// second tenant to claim a name is told it is taken, by somebody they cannot see
+// -- and a hostname is a public fact, so that is the cheaper side of the trade.
+// `Email` deliberately went the other way, and D3 says why.
 //
-// # And nothing here proves the name is yours
+// It is not forever, and the mechanism is the unique index rather than a rule:
+// it covers the rows that are **not erased**, so an erased row releases its
+// name. A tenant that proves a name somebody else holds takes it -- the
+// incumbent row is erased and a new one written, in one transaction -- because
+// proving requires present control of DNS, and whoever has that has the name
+// whatever a row here says. The incumbent is not asked, which is the right way
+// round and is worth knowing: their people stop being able to sign in at that
+// name, and the erase in the trail is where it is written down.
 //
-// roster does not resolve DNS and should not: it is meant to run in an air gap,
-// which is the same reason the breached-password corpus is a file and a magic
-// link is delivered by somebody else. It would also be checking the wrong
-// thing. What decides that traffic for a name reaches this deployment is DNS
-// and the ingress in front of it, and both belong to whoever runs the
-// deployment -- so a row naming a hostname nothing routes is inert, and a row
-// disagreeing with what **is** routed was written by the same person who routed
-// it.
+// # Proving the name is yours
 //
-// What is left is **claiming a name you do not own**, and it is real: the first
-// writer takes it, the rightful one is refused, and the refusal says only that
-// somebody has it. So the conclusion is about the grant rather than about the
-// schema:
+// roster resolves DNS to check it. This section used to say it should not, on
+// the grounds that roster runs in an air gap -- and that was answering the wrong
+// question. An air-gapped deployment has no tenant registering its own
+// hostnames either; what it has instead is a roster operator with a shell. So
+// there are two roads to a row, and [Host.date_proved] is which one it was.
+//
+//	a tenant's own        claim the name ([HostProof]), publish what roster
+//	                      asked for, and roster looks it up
+//	a roster operator's   write the row. The person who routed the name is the
+//	                      person writing it, so there is nothing to check
+//
+// What has **not** changed is what a row means either way. A name nothing routes
+// here is inert whoever wrote it, because what decides that traffic reaches this
+// deployment is DNS and the ingress in front of it, and both belong to whoever
+// runs the deployment.
+//
+// What has changed is **claiming a name you do not own**. That was real -- the
+// first writer took it and the rightful one was refused -- and the conclusion
+// was a permission nothing could enforce:
 //
 //	Registering a hostname is the deployment's act, not a customer's.
 //	Do not put `/roster.HostService/Add` on a role a tenant's own
 //	administrators hold.
 //
-// Nothing enforces that and nothing can -- it is a permission, and permissions
-// are a deployment's. [MailDomain] needs no such care, and the reason is the
+// It is a customer's act now, and that method is one their administrators may
+// hold: on the walled plane a tenant writing its own name is held to a proof, so
+// the name is theirs if they can show it is and nobody else's row survives their
+// showing it. [MailDomain] still needs none of this, and the reason is the
 // section below it: it claims nothing.
 type Host struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
@@ -98,6 +115,7 @@ type Host struct {
 	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
 	xxx_hidden_Labels      map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_ActsAs      *Holder                `protobuf:"bytes,8,opt,name=acts_as,json=actsAs"`
+	xxx_hidden_DateProved  *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=date_proved,json=dateProved"`
 	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
@@ -172,6 +190,13 @@ func (x *Host) GetActsAs() *Holder {
 	return nil
 }
 
+func (x *Host) GetDateProved() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateProved
+	}
+	return nil
+}
+
 func (x *Host) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -220,6 +245,10 @@ func (x *Host) SetActsAs(v *Holder) {
 	x.xxx_hidden_ActsAs = v
 }
 
+func (x *Host) SetDateProved(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateProved = v
+}
+
 func (x *Host) SetDateUpdated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateUpdated = v
 }
@@ -244,6 +273,13 @@ func (x *Host) HasActsAs() bool {
 		return false
 	}
 	return x.xxx_hidden_ActsAs != nil
+}
+
+func (x *Host) HasDateProved() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateProved != nil
 }
 
 func (x *Host) HasDateUpdated() bool {
@@ -273,6 +309,10 @@ func (x *Host) ClearTenant() {
 
 func (x *Host) ClearActsAs() {
 	x.xxx_hidden_ActsAs = nil
+}
+
+func (x *Host) ClearDateProved() {
+	x.xxx_hidden_DateProved = nil
 }
 
 func (x *Host) ClearDateUpdated() {
@@ -343,7 +383,35 @@ type Host_builder struct {
 	// One of this tenant's, and `server/core` refuses one from another: a row
 	// that named somebody else's would hand a caller a frame in a tenant that
 	// never agreed to it, which is the shape [core.agrees] exists for.
-	ActsAs      *Holder
+	ActsAs *Holder
+	// When roster looked up DNS and read back what it had asked for, and **unset
+	// is a row nobody proved**.
+	//
+	// Which of the two roads above it was, and nothing more: an unproved row is
+	// not inert and is not second class. `FrontService.WhoseHost`, `cmd.Hosted`
+	// and `keys.At` resolve a name whichever road wrote it, because a roster
+	// operator writing one is the person who routed it.
+	//
+	// What it is for is that a later decision is made on evidence rather than on
+	// who happened to be at the keyboard. Set: a tenant claimed the name, put the
+	// token in DNS, and roster read it. Unset: somebody wrote it who was trusted
+	// to.
+	//
+	// # Why the trail is not enough
+	//
+	// The trail says **who wrote this row** and cannot say **whether roster
+	// checked**, because the lookup is not a write by a caller -- there is nothing
+	// for a recorder to record. `Email.date_verified` is the same field for the
+	// same reason.
+	//
+	// `Email.vouched_by` is the half this one does not need. An address can be
+	// vouched for by a third party and the row has to say which, because it is
+	// only as good as that provider's check. Here there is no third party: either
+	// roster's own lookup saw it, or nobody did.
+	//
+	// `stamped`, so a caller cannot write it. The one road to it is a server
+	// writing it below the gate, which is `Email.Confirm`'s arrangement exactly.
+	DateProved  *timestamppb.Timestamp
 	DateUpdated *timestamppb.Timestamp
 	DateErased  *timestamppb.Timestamp
 	DateCreated *timestamppb.Timestamp
@@ -359,6 +427,7 @@ func (b0 Host_builder) Build() *Host {
 	x.xxx_hidden_Desc = b.Desc
 	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_ActsAs = b.ActsAs
+	x.xxx_hidden_DateProved = b.DateProved
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
@@ -628,18 +697,306 @@ func (b0 MailDomain_builder) Build() *MailDomain {
 	return m0
 }
 
+// HostProof is a name a tenant is claiming, and what roster asked them to
+// publish to show the name is theirs.
+//
+// # The exchange, which is one round trip and one DNS record
+//
+//  1. a tenant writes one of these, naming the host they want
+//  2. roster answers with a `token`, and asks for it at
+//     `_roster-challenge.<name>` as a TXT record
+//  3. the tenant adds that record wherever they keep their DNS
+//  4. the tenant writes the [Host]. roster looks the record up, and the row is
+//     written or the call is refused
+//
+// After step 4 there is nothing to keep: the proof is spent by an erase, the way
+// a [Continuation] is, and the record can come out of DNS. What was proved is a
+// moment, and [Host.date_proved] is where that moment is written down.
+//
+// # Why it is a row and not a field on Host
+//
+// Two reasons, and the first is the one that decides it. **`Host.name` is unique
+// among the rows that are not erased**, so a claim kept on a `Host` row could
+// not be made for a name somebody already holds -- which is exactly the case
+// that has to work, because a name can move. Two tenants may be claiming one
+// name at once and each needs a token of their own; whoever's token is in DNS is
+// who has it. So this is keyed `(tenant, name)` and claims nothing.
+//
+// The second is the trail. Every write to a `Host` is recorded, and a row that
+// carried the state of a proof would put a record in the audit table each time
+// anybody looked. A short-lived row beside the thing it is about is what this
+// repository already does with a proof of anything -- [Continuation], `Link`,
+// `Delegation` -- and it is swept for the same reason.
+//
+// # The token is not a secret, which every other token here is
+//
+// It goes in **public DNS**. There is nothing to protect: anybody who can put a
+// record under a name owns the name already, which is the whole of what this
+// measures. So it is a plain field, stored as it is compared, and readable as
+// often as somebody needs to go and look at what they were asked to publish --
+// unlike `ApiKey` or `Link`, where what is stored is a hash and the value is
+// answered once.
+//
+// What it is random for is two things a fixed value could not do. A record left
+// over from an earlier claim, or from another roster deployment, does not count.
+// And when two tenants want one name, the token is what tells their claims apart
+// -- which is the mechanism *the latest proof wins* actually runs on.
+type HostProof struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Tenant      *Tenant                `protobuf:"bytes,2,opt,name=tenant"`
+	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
+	xxx_hidden_Token       string                 `protobuf:"bytes,9,opt,name=token"`
+	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *HostProof) Reset() {
+	*x = HostProof{}
+	mi := &file_app_host_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HostProof) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HostProof) ProtoMessage() {}
+
+func (x *HostProof) ProtoReflect() protoreflect.Message {
+	mi := &file_app_host_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *HostProof) GetId() []byte {
+	if x != nil {
+		return x.xxx_hidden_Id
+	}
+	return nil
+}
+
+func (x *HostProof) GetTenant() *Tenant {
+	if x != nil {
+		return x.xxx_hidden_Tenant
+	}
+	return nil
+}
+
+func (x *HostProof) GetName() string {
+	if x != nil {
+		return x.xxx_hidden_Name
+	}
+	return ""
+}
+
+func (x *HostProof) GetToken() string {
+	if x != nil {
+		return x.xxx_hidden_Token
+	}
+	return ""
+}
+
+func (x *HostProof) GetDateExpires() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateExpires
+	}
+	return nil
+}
+
+func (x *HostProof) GetDesc() string {
+	if x != nil {
+		return x.xxx_hidden_Desc
+	}
+	return ""
+}
+
+func (x *HostProof) GetDateUpdated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateUpdated
+	}
+	return nil
+}
+
+func (x *HostProof) GetDateErased() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateErased
+	}
+	return nil
+}
+
+func (x *HostProof) GetDateCreated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateCreated
+	}
+	return nil
+}
+
+func (x *HostProof) SetId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Id = v
+}
+
+func (x *HostProof) SetTenant(v *Tenant) {
+	x.xxx_hidden_Tenant = v
+}
+
+func (x *HostProof) SetName(v string) {
+	x.xxx_hidden_Name = v
+}
+
+func (x *HostProof) SetToken(v string) {
+	x.xxx_hidden_Token = v
+}
+
+func (x *HostProof) SetDateExpires(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpires = v
+}
+
+func (x *HostProof) SetDesc(v string) {
+	x.xxx_hidden_Desc = v
+}
+
+func (x *HostProof) SetDateUpdated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateUpdated = v
+}
+
+func (x *HostProof) SetDateErased(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateErased = v
+}
+
+func (x *HostProof) SetDateCreated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateCreated = v
+}
+
+func (x *HostProof) HasTenant() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Tenant != nil
+}
+
+func (x *HostProof) HasDateExpires() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateExpires != nil
+}
+
+func (x *HostProof) HasDateUpdated() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateUpdated != nil
+}
+
+func (x *HostProof) HasDateErased() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateErased != nil
+}
+
+func (x *HostProof) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateCreated != nil
+}
+
+func (x *HostProof) ClearTenant() {
+	x.xxx_hidden_Tenant = nil
+}
+
+func (x *HostProof) ClearDateExpires() {
+	x.xxx_hidden_DateExpires = nil
+}
+
+func (x *HostProof) ClearDateUpdated() {
+	x.xxx_hidden_DateUpdated = nil
+}
+
+func (x *HostProof) ClearDateErased() {
+	x.xxx_hidden_DateErased = nil
+}
+
+func (x *HostProof) ClearDateCreated() {
+	x.xxx_hidden_DateCreated = nil
+}
+
+type HostProof_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Id     []byte
+	Tenant *Tenant
+	// The name being claimed, normalised the way [Host.name] is and for the same
+	// reason: this is compared against a `Host` and looked up in DNS, so a value
+	// that differs from what those will use is a claim that can never succeed.
+	Name string
+	// What to publish, and roster's to generate.
+	//
+	// `server/core` refuses a value in the request. A caller-chosen token would
+	// let somebody claim a name whose TXT record already says something they can
+	// predict -- which is a name they do not control, proved by a record they did
+	// not write.
+	Token string
+	// When this stops being spendable, and roster's to set for `token`'s reason.
+	//
+	// A claim is not a reservation -- it holds no name and blocks nobody -- so
+	// what the window is for is that a token lying in DNS forever is a name
+	// provable by whoever finds it. Abandoned claims are collected by
+	// `prove.Sweep`; the expiry is what makes them refused before then.
+	DateExpires *timestamppb.Timestamp
+	Desc        string
+	DateUpdated *timestamppb.Timestamp
+	DateErased  *timestamppb.Timestamp
+	DateCreated *timestamppb.Timestamp
+}
+
+func (b0 HostProof_builder) Build() *HostProof {
+	m0 := &HostProof{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Id = b.Id
+	x.xxx_hidden_Tenant = b.Tenant
+	x.xxx_hidden_Name = b.Name
+	x.xxx_hidden_Token = b.Token
+	x.xxx_hidden_DateExpires = b.DateExpires
+	x.xxx_hidden_Desc = b.Desc
+	x.xxx_hidden_DateUpdated = b.DateUpdated
+	x.xxx_hidden_DateErased = b.DateErased
+	x.xxx_hidden_DateCreated = b.DateCreated
+	return m0
+}
+
 var File_app_host_proto protoreflect.FileDescriptor
 
 const file_app_host_proto_rawDesc = "" +
 	"\n" +
-	"\x0eapp/host.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1aroster/payday/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xdc\x04\n" +
+	"\x0eapp/host.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1aroster/payday/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xa7\x05\n" +
 	"\x04Host\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x1a\n" +
 	"\x04name\x18\x05 \x01(\tB\x06\xea\x82\x16\x020\x01R\x04name\x12\x12\n" +
 	"\x04desc\x18\x06 \x01(\tR\x04desc\x120\n" +
 	"\x06labels\x18\a \x03(\v2\x18.roster.Host.LabelsEntryR\x06labels\x12/\n" +
-	"\aacts_as\x18\b \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x028\x01R\x06actsAs\x12F\n" +
+	"\aacts_as\x18\b \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x028\x01R\x06actsAs\x12I\n" +
+	"\vdate_proved\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\f\xea\x82\x16\x028\x01\xaa\xc1\x16\x02\x10\x01R\n" +
+	"dateProved\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
@@ -684,35 +1041,67 @@ const file_app_host_proto_rawDesc = "" +
 	"\x04\n" +
 	"\x02id\x1a\x05\n" +
 	"\x03ref\x1a\b\n" +
+	"\x06tenant \x14(d\"\xc6\x04\n" +
+	"\tHostProof\x12\x1b\n" +
+	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x1a\n" +
+	"\x04name\x18\x05 \x01(\tB\x06\xea\x82\x16\x02@\x01R\x04name\x12\x1c\n" +
+	"\x05token\x18\t \x01(\tB\x06\xea\x82\x16\x02@\x01R\x05token\x12E\n" +
+	"\fdate_expires\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\vdateExpires\x12\x12\n" +
+	"\x04desc\x18\x06 \x01(\tR\x04desc\x12F\n" +
+	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
+	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
+	"dateErased\x12H\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:\x7f\xca\xfc\x15D\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"\fdate_created\x10\x0f\x1a\x06\n" +
+	"\x02id\x10\x01\x1a\x1c\x12\x02at\x1a\n" +
+	"\n" +
+	"\x06tenant\x10\x02\x1a\b\n" +
+	"\x04name\x10\x050\x01\x8a\xbb\x163\b\x1a2/\n" +
+	"\x10\n" +
+	"\x0e\n" +
+	"\fdate_created\n" +
+	"\x06\n" +
+	"\x04\n" +
+	"\x02id\x1a\x05\n" +
+	"\x03ref\x1a\b\n" +
 	"\x06tenant \x14(dB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_app_host_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_app_host_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_app_host_proto_goTypes = []any{
 	(*Host)(nil),                  // 0: roster.Host
 	(*MailDomain)(nil),            // 1: roster.MailDomain
-	nil,                           // 2: roster.Host.LabelsEntry
-	nil,                           // 3: roster.MailDomain.LabelsEntry
-	(*Tenant)(nil),                // 4: roster.Tenant
-	(*Holder)(nil),                // 5: roster.Holder
-	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
+	(*HostProof)(nil),             // 2: roster.HostProof
+	nil,                           // 3: roster.Host.LabelsEntry
+	nil,                           // 4: roster.MailDomain.LabelsEntry
+	(*Tenant)(nil),                // 5: roster.Tenant
+	(*Holder)(nil),                // 6: roster.Holder
+	(*timestamppb.Timestamp)(nil), // 7: google.protobuf.Timestamp
 }
 var file_app_host_proto_depIdxs = []int32{
-	4,  // 0: roster.Host.tenant:type_name -> roster.Tenant
-	2,  // 1: roster.Host.labels:type_name -> roster.Host.LabelsEntry
-	5,  // 2: roster.Host.acts_as:type_name -> roster.Holder
-	6,  // 3: roster.Host.date_updated:type_name -> google.protobuf.Timestamp
-	6,  // 4: roster.Host.date_erased:type_name -> google.protobuf.Timestamp
-	6,  // 5: roster.Host.date_created:type_name -> google.protobuf.Timestamp
-	4,  // 6: roster.MailDomain.tenant:type_name -> roster.Tenant
-	3,  // 7: roster.MailDomain.labels:type_name -> roster.MailDomain.LabelsEntry
-	6,  // 8: roster.MailDomain.date_updated:type_name -> google.protobuf.Timestamp
-	6,  // 9: roster.MailDomain.date_erased:type_name -> google.protobuf.Timestamp
-	6,  // 10: roster.MailDomain.date_created:type_name -> google.protobuf.Timestamp
-	11, // [11:11] is the sub-list for method output_type
-	11, // [11:11] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	5,  // 0: roster.Host.tenant:type_name -> roster.Tenant
+	3,  // 1: roster.Host.labels:type_name -> roster.Host.LabelsEntry
+	6,  // 2: roster.Host.acts_as:type_name -> roster.Holder
+	7,  // 3: roster.Host.date_proved:type_name -> google.protobuf.Timestamp
+	7,  // 4: roster.Host.date_updated:type_name -> google.protobuf.Timestamp
+	7,  // 5: roster.Host.date_erased:type_name -> google.protobuf.Timestamp
+	7,  // 6: roster.Host.date_created:type_name -> google.protobuf.Timestamp
+	5,  // 7: roster.MailDomain.tenant:type_name -> roster.Tenant
+	4,  // 8: roster.MailDomain.labels:type_name -> roster.MailDomain.LabelsEntry
+	7,  // 9: roster.MailDomain.date_updated:type_name -> google.protobuf.Timestamp
+	7,  // 10: roster.MailDomain.date_erased:type_name -> google.protobuf.Timestamp
+	7,  // 11: roster.MailDomain.date_created:type_name -> google.protobuf.Timestamp
+	5,  // 12: roster.HostProof.tenant:type_name -> roster.Tenant
+	7,  // 13: roster.HostProof.date_expires:type_name -> google.protobuf.Timestamp
+	7,  // 14: roster.HostProof.date_updated:type_name -> google.protobuf.Timestamp
+	7,  // 15: roster.HostProof.date_erased:type_name -> google.protobuf.Timestamp
+	7,  // 16: roster.HostProof.date_created:type_name -> google.protobuf.Timestamp
+	17, // [17:17] is the sub-list for method output_type
+	17, // [17:17] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_app_host_proto_init() }
@@ -728,7 +1117,7 @@ func file_app_host_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_host_proto_rawDesc), len(file_app_host_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

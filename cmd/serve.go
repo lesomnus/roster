@@ -39,6 +39,7 @@ import (
 	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/me"
 	"github.com/lesomnus/roster/server/pd"
+	"github.com/lesomnus/roster/server/prove"
 	"github.com/lesomnus/roster/server/session"
 	rostersync "github.com/lesomnus/roster/server/sync"
 	"github.com/lesomnus/roster/server/vouch"
@@ -385,7 +386,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// the layer, where `Self` -- which overrides `Set` and nothing else -- never
 	// sees it. So the second stack is gone and this rule stays a link of its
 	// own, which is where a reader finds it. See `server/core/self.go`.
-	stacked, err := app.Build(walled.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password)), core.SelfBuild(), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
+	stacked, err := app.Build(walled.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithProving(c.Host.Asking())), core.SelfBuild(), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -400,7 +401,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// what this app means -- an identity linked by `init` or by an admin console
 	// is still an identity, and a subject that is an email address is still
 	// wrong.
-	ungated, err := app.Build(sink.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password)), pd.AuditBuild())
+	ungated, err := app.Build(sink.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithProving(c.Host.Asking())), pd.AuditBuild())
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -619,6 +620,9 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	s.Spin = append(s.Spin,
 		keys.Sweep(s.Ent, keys.Swept),
 		vouch.Sweep(s.Ent, vouch.Swept),
+		// And abandoned hostname claims, which arrive at human speed rather
+		// than per sign-in -- so a day rather than the hour the two above use.
+		prove.Sweep(s.Ent, prove.Swept),
 	)
 
 	// And the trail's retention, which is the one sweep here that is a
@@ -956,6 +960,11 @@ func Register(g grpc.ServiceRegistrar, s app.Server) {
 	app.RegisterApiKeyServiceServer(g, s.ApiKey())
 	app.RegisterTenantServiceServer(g, s.Tenant())
 	app.RegisterHostServiceServer(g, s.Host())
+	// Served, reads and all: the token is what a tenant has to go and look at
+	// while they are in somebody else's web form, and it is not a secret --
+	// `host.proto` says why it is the one token here that is stored as it is
+	// compared. The wall narrows a claim to whoever made it.
+	app.RegisterHostProofServiceServer(g, s.HostProof())
 	app.RegisterMailDomainServiceServer(g, s.MailDomain())
 	app.RegisterConnectionServiceServer(g, s.Connection())
 	app.RegisterHolderServiceServer(g, s.Holder())

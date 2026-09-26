@@ -25,6 +25,9 @@ func (Host) Fields() []ent.Field {
 		field.String("desc"),
 		field.Json("labels", map[string]string{}).
 			Optional(),
+		field.Time("date_proved").
+			Nillable().
+			Optional(),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().
@@ -116,5 +119,60 @@ func (MailDomain) Indexes() []ent.Index {
 func (MailDomain) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entsql.Annotation{Table: "maildomain"},
+	}
+}
+
+type HostProof struct {
+	ent.Schema
+}
+
+func (HostProof) Fields() []ent.Field {
+	return []ent.Field{
+		field.Uuid("id").
+			Unique().
+			Immutable(),
+		field.String("name").
+			Immutable(),
+		field.String("token").
+			Immutable(),
+		field.Time("date_expires").
+			Nillable().
+			Optional(),
+		field.String("desc"),
+		field.Time("date_updated"),
+		field.Time("date_erased").
+			Nillable().
+			Optional(),
+		field.Time("date_created").
+			Immutable().
+			Optional(),
+		field.Uuid("tenant_id").
+			Immutable(),
+	}
+}
+
+func (HostProof) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.To("tenant", Tenant.Type).
+			Unique().
+			Field("tenant_id").
+			Required().
+			Immutable(),
+	}
+}
+
+func (HostProof) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("date_created", "id"),
+		index.Fields("name").
+			Edges("tenant").
+			Unique().
+			Annotations(entsql.IndexWhere("date_erased IS NULL")),
+	}
+}
+
+func (HostProof) Annotations() []schema.Annotation {
+	return []schema.Annotation{
+		entsql.Annotation{Table: "hostproof"},
 	}
 }

@@ -71,6 +71,26 @@ func (_u *HostUpdate) ClearLabels() *HostUpdate {
 	return _u
 }
 
+// SetDateProved sets the "date_proved" field.
+func (_u *HostUpdate) SetDateProved(v time.Time) *HostUpdate {
+	_u.mutation.SetDateProved(v)
+	return _u
+}
+
+// SetNillableDateProved sets the "date_proved" field if the given value is not nil.
+func (_u *HostUpdate) SetNillableDateProved(v *time.Time) *HostUpdate {
+	if v != nil {
+		_u.SetDateProved(*v)
+	}
+	return _u
+}
+
+// ClearDateProved clears the value of the "date_proved" field.
+func (_u *HostUpdate) ClearDateProved() *HostUpdate {
+	_u.mutation.ClearDateProved()
+	return _u
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_u *HostUpdate) SetDateUpdated(v time.Time) *HostUpdate {
 	_u.mutation.SetDateUpdated(v)
@@ -206,6 +226,12 @@ func (_u *HostUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(host.FieldLabels, field.TypeJson)
 	}
+	if value, ok := _u.mutation.DateProved(); ok {
+		_spec.SetField(host.FieldDateProved, field.TypeTime, value)
+	}
+	if _u.mutation.DateProvedCleared() {
+		_spec.ClearField(host.FieldDateProved, field.TypeTime)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(host.FieldDateUpdated, field.TypeTime, value)
 	}
@@ -306,6 +332,26 @@ func (_u *HostUpdateOne) SetLabels(v map[string]string) *HostUpdateOne {
 // ClearLabels clears the value of the "labels" field.
 func (_u *HostUpdateOne) ClearLabels() *HostUpdateOne {
 	_u.mutation.ClearLabels()
+	return _u
+}
+
+// SetDateProved sets the "date_proved" field.
+func (_u *HostUpdateOne) SetDateProved(v time.Time) *HostUpdateOne {
+	_u.mutation.SetDateProved(v)
+	return _u
+}
+
+// SetNillableDateProved sets the "date_proved" field if the given value is not nil.
+func (_u *HostUpdateOne) SetNillableDateProved(v *time.Time) *HostUpdateOne {
+	if v != nil {
+		_u.SetDateProved(*v)
+	}
+	return _u
+}
+
+// ClearDateProved clears the value of the "date_proved" field.
+func (_u *HostUpdateOne) ClearDateProved() *HostUpdateOne {
+	_u.mutation.ClearDateProved()
 	return _u
 }
 
@@ -473,6 +519,12 @@ func (_u *HostUpdateOne) sqlSave(ctx context.Context) (_node *Host, err error) {
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(host.FieldLabels, field.TypeJson)
+	}
+	if value, ok := _u.mutation.DateProved(); ok {
+		_spec.SetField(host.FieldDateProved, field.TypeTime, value)
+	}
+	if _u.mutation.DateProvedCleared() {
+		_spec.ClearField(host.FieldDateProved, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(host.FieldDateUpdated, field.TypeTime, value)

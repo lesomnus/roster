@@ -189,6 +189,99 @@ caller is a roster operator on a port that waives two rules (below). Both pages
 draw the same screens, from `ts/lib/tenant/`, and what differs is who is
 calling.
 
+## A tenant registers its own hostname
+
+```yaml
+host:
+  resolver: ""      # the system's; "1.1.1.1:53" for one of its own; "none" to
+                    # not ask at all
+```
+
+A `Host` row turns the name a browser arrived at into a tenant, and `name` is
+unique **across the deployment** -- so the first writer took a name and the
+rightful owner was refused. The conclusion used to be a permission nothing could
+enforce: *do not put `/roster.HostService/Add` on a role a tenant's own
+administrators hold*. Every other row a tenant needs is theirs to write, and this
+one was not.
+
+It is theirs now, and what makes it safe is a proof. **Two roads to a row, and
+`Host.date_proved` is which one it was:**
+
+| who | how |
+| --- | --- |
+| a tenant's own administrator | claim the name, publish what roster asks for, take it |
+| a roster operator | write the row. Whoever routed the name is writing it |
+
+Neither is second class. A front door resolves a name whichever road wrote it
+(`FrontService.WhoseHost`, `cmd.Hosted`, `keys.At`), because an unproved row was
+written by somebody who was trusted to.
+
+### The exchange, which is two calls and one DNS record
+
+The tenant's road, from the user console or from a terminal with their own `rt_`
+in `client.auth`:
+
+```sh
+roster host-proof add '{"tenant":{"alias":"contoso"},"name":"contoso.example.com"}'
+# token   roster-verify=8f3a...
+
+# at whatever holds contoso.example.com's DNS:
+#   _roster-challenge.contoso.example.com.  IN  TXT  "roster-verify=8f3a..."
+
+roster host add '{"tenant":{"alias":"contoso"},"name":"contoso.example.com"}'
+```
+
+The second call is where the lookup happens -- **there is no third verb**. A
+tenant who has not published yet is refused, saying which record is missing and
+what it should say, so pressing the button again is the whole of what a retry is.
+
+The operator's road is the same second call and nothing before it:
+
+```sh
+roster host add '{"tenant":{"alias":"contoso"},"name":"contoso.example.com"}'
+```
+
+Which is what the CLI run **locally** already is. A local command has no caller
+to be -- it writes through the unwalled server, the way `init` and `key add` do
+-- so the proof is not asked for and `date_proved` is left unset. That is the
+same door every other rule in `server/core/escalate.go` waives itself at, and it
+is a line of wiring rather than a permission: whoever holds the configuration
+file the `db` block is in is already the deployment.
+
+**Claiming holds nothing.** Two tenants may be claiming one name at once, each
+with a value of its own, and whoever publishes theirs takes it. A claim is good
+for a day (`prove.For`) and `prove.Sweep` collects the abandoned.
+
+### A name can move, and the incumbent is not asked
+
+Proving requires present control of DNS, and whoever has that has the name
+whatever a row here says. So the latest proof wins: the incumbent's row is erased
+and the new one written in one transaction. What that costs is worth knowing --
+**their people stop being able to sign in at that name**, with no warning, and
+where it is written down is the erase in the trail.
+
+### Why roster resolves DNS at all, having said it should not
+
+`proto/app/host.proto` used to say roster is meant to run in an air gap, which is
+the same reason the breached-password corpus is a file and a magic link is
+delivered by somebody else. That answered the wrong question: an air-gapped
+deployment has no tenant registering its own hostnames either. What it has is an
+operator with a shell, which is the second road above, and `host.resolver: none`
+is how it says so -- a claim is then refused naming the setting rather than timing
+out on a resolver that is not there.
+
+**The query goes to the servers that hold the zone, not to a cache**, which is
+not fastidiousness. A recursive resolver caches *negative* answers and the
+negative TTL comes from the zone's own SOA minimum -- five minutes to an hour --
+so somebody who publishes a record and presses the button is otherwise refused by
+an `NXDOMAIN` their resolver remembered thirty seconds ago, twice, and concludes
+roster is broken. ACME does it the same way for the same reason.
+
+**Finding** those servers is an ordinary `NS` lookup, so a deployment whose
+resolver answers for its customers' domains out of an internal zone names one
+that does not: that is what `host.resolver` is for, and it is the only thing it is
+for.
+
 ## The listeners
 
 Five at most, and which open is what the configuration named.
