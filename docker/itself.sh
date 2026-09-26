@@ -23,6 +23,9 @@
 # shape of both demos and what each assertion here is for.
 set -eu
 
+# What every call here is willing to wait for, in one place; see `docker/dial.sh`.
+. "$(dirname "$0")/dial.sh"
+
 # Three addresses and nothing about where they are. The compose network is the
 # default; `scripts/cluster.sh` runs this same script as a Job inside a cluster,
 # where they are Services and the issuer is https on a certificate that Job is
@@ -34,7 +37,7 @@ set -eu
 : "${SEED_PASSWORD:=correct horse battery staple}"
 
 i=0
-until curl -sS -o /dev/null "${BASE}/healthz" 2>/dev/null; do
+until curl -sS ${PROBE} -o /dev/null "${BASE}/healthz" 2>/dev/null; do
 	i=$((i + 1))
 	[ "${i}" -lt 60 ] || { echo "itself: the app never answered" >&2; exit 1; }
 	sleep 1
@@ -43,7 +46,7 @@ done
 jar=$(mktemp)
 trap 'rm -f "${jar}"' EXIT
 
-c() { curl -sS -c "${jar}" -b "${jar}" "$@"; }
+c() { curl -sS ${DIAL} -c "${jar}" -b "${jar}" "$@"; }
 loc() { tr -d '\r' | awk '/^[Ll]ocation:/{print $2}'; }
 code() { tr -d '\r' | awk '/^HTTP/{print $2; exit}'; }
 # Only the Login App's host moves: the issuer already answers to a name this
