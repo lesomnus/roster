@@ -66,6 +66,11 @@ func Desc(v string) predicate.Host {
 	return predicate.Host(sql.FieldEQ(FieldDesc, v))
 }
 
+// DateProved applies equality check predicate on the "date_proved" field. It's identical to DateProvedEQ.
+func DateProved(v time.Time) predicate.Host {
+	return predicate.Host(sql.FieldEQ(FieldDateProved, v))
+}
+
 // DateUpdated applies equality check predicate on the "date_updated" field. It's identical to DateUpdatedEQ.
 func DateUpdated(v time.Time) predicate.Host {
 	return predicate.Host(sql.FieldEQ(FieldDateUpdated, v))
@@ -229,6 +234,56 @@ func LabelsIsNil() predicate.Host {
 // LabelsNotNil applies the NotNil predicate on the "labels" field.
 func LabelsNotNil() predicate.Host {
 	return predicate.Host(sql.FieldNotNull(FieldLabels))
+}
+
+// DateProvedEQ applies the EQ predicate on the "date_proved" field.
+func DateProvedEQ(v time.Time) predicate.Host {
+	return predicate.Host(sql.FieldEQ(FieldDateProved, v))
+}
+
+// DateProvedNEQ applies the NEQ predicate on the "date_proved" field.
+func DateProvedNEQ(v time.Time) predicate.Host {
+	return predicate.Host(sql.FieldNEQ(FieldDateProved, v))
+}
+
+// DateProvedIn applies the In predicate on the "date_proved" field.
+func DateProvedIn(vs ...time.Time) predicate.Host {
+	return predicate.Host(sql.FieldIn(FieldDateProved, vs...))
+}
+
+// DateProvedNotIn applies the NotIn predicate on the "date_proved" field.
+func DateProvedNotIn(vs ...time.Time) predicate.Host {
+	return predicate.Host(sql.FieldNotIn(FieldDateProved, vs...))
+}
+
+// DateProvedGT applies the GT predicate on the "date_proved" field.
+func DateProvedGT(v time.Time) predicate.Host {
+	return predicate.Host(sql.FieldGT(FieldDateProved, v))
+}
+
+// DateProvedGTE applies the GTE predicate on the "date_proved" field.
+func DateProvedGTE(v time.Time) predicate.Host {
+	return predicate.Host(sql.FieldGTE(FieldDateProved, v))
+}
+
+// DateProvedLT applies the LT predicate on the "date_proved" field.
+func DateProvedLT(v time.Time) predicate.Host {
+	return predicate.Host(sql.FieldLT(FieldDateProved, v))
+}
+
+// DateProvedLTE applies the LTE predicate on the "date_proved" field.
+func DateProvedLTE(v time.Time) predicate.Host {
+	return predicate.Host(sql.FieldLTE(FieldDateProved, v))
+}
+
+// DateProvedIsNil applies the IsNil predicate on the "date_proved" field.
+func DateProvedIsNil() predicate.Host {
+	return predicate.Host(sql.FieldIsNull(FieldDateProved))
+}
+
+// DateProvedNotNil applies the NotNil predicate on the "date_proved" field.
+func DateProvedNotNil() predicate.Host {
+	return predicate.Host(sql.FieldNotNull(FieldDateProved))
 }
 
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.

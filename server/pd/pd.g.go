@@ -40,6 +40,7 @@ import (
 	groupmembership "github.com/lesomnus/roster/internal/ent/groupmembership"
 	holder "github.com/lesomnus/roster/internal/ent/holder"
 	host "github.com/lesomnus/roster/internal/ent/host"
+	hostproof "github.com/lesomnus/roster/internal/ent/hostproof"
 	identity "github.com/lesomnus/roster/internal/ent/identity"
 	link "github.com/lesomnus/roster/internal/ent/link"
 	maildomain "github.com/lesomnus/roster/internal/ent/maildomain"
@@ -108,6 +109,7 @@ const (
 	GroupMembershipDomain pdid.Domain = 17 // "group-membership"
 	HolderDomain          pdid.Domain = 2  // "holder"
 	HostDomain            pdid.Domain = 20 // "host"
+	HostProofDomain       pdid.Domain = 26 // "host-proof"
 	IdentityDomain        pdid.Domain = 8  // "identity"
 	LinkDomain            pdid.Domain = 23 // "link"
 	MailDomainDomain      pdid.Domain = 21 // "mail-domain"
@@ -134,6 +136,7 @@ func init() {
 	pdid.Register("roster.GroupMembership", GroupMembershipDomain, "group-membership")
 	pdid.Register("roster.Holder", HolderDomain, "holder")
 	pdid.Register("roster.Host", HostDomain, "host")
+	pdid.Register("roster.HostProof", HostProofDomain, "host-proof")
 	pdid.Register("roster.Identity", IdentityDomain, "identity")
 	pdid.Register("roster.Link", LinkDomain, "link")
 	pdid.Register("roster.MailDomain", MailDomainDomain, "mail-domain")
@@ -164,6 +167,7 @@ var Domains = map[string]pdid.Domain{
 	"roster.GroupMembership": GroupMembershipDomain,
 	"roster.Holder":          HolderDomain,
 	"roster.Host":            HostDomain,
+	"roster.HostProof":       HostProofDomain,
 	"roster.Identity":        IdentityDomain,
 	"roster.Link":            LinkDomain,
 	"roster.MailDomain":      MailDomainDomain,
@@ -338,6 +342,16 @@ func (wall) HostScope(ctx context.Context) (predicate.Host, error) {
 	}
 
 	return host.TenantIdIn(vs...), nil
+}
+
+// HostProofScope: a row belongs to the tenant its "tenant" reaches.
+func (wall) HostProofScope(ctx context.Context) (predicate.HostProof, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return hostproof.TenantIdIn(vs...), nil
 }
 
 // IdentityScope: a row belongs to the tenant its "holder.tenant" reaches, read off "tenant_id" -- which the
@@ -549,6 +563,11 @@ func (x grouped) HolderScope(ctx context.Context) (predicate.Holder, error) {
 
 // HostScope: in no set -- it declared no field 3, so this narrows nothing.
 func (x grouped) HostScope(ctx context.Context) (predicate.Host, error) {
+	return nil, nil
+}
+
+// HostProofScope: in no set -- it declared no field 3, so this narrows nothing.
+func (x grouped) HostProofScope(ctx context.Context) (predicate.HostProof, error) {
 	return nil, nil
 }
 
@@ -3678,6 +3697,174 @@ func filterHost(f *rstr.HostFilter) (predicate.Host, error) {
 	}
 
 	return host.And(ps...), nil
+}
+
+type sinkHostProof struct {
+	rstr.HostProofServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) HostProof() rstr.HostProofServiceServer {
+	return sinkHostProof{s.Server.HostProof(), s.Server.Store, s.w, s.namer, s.joined}
+}
+
+// orderHostProof is how HostProofs come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderHostProof = []sqlpage.Order{
+	{Column: hostproof.FieldDateCreated, Desc: false},
+	{Column: hostproof.FieldId, Desc: false},
+}
+
+const (
+	// HostProofPageSize is what a request that did not say gets, and
+	// HostProofPageLimit is the most it gets however loudly it asks.
+	HostProofPageSize  = 20
+	HostProofPageLimit = 100
+
+	// HostProofFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	HostProofFilterLimit = 32
+)
+
+// List answers with the HostProofs that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkHostProof) List(ctx context.Context, req *rstr.HostProofListRequest) (*rstr.HostProofListResponse, error) {
+	q := s.store.Db.HostProof.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.HostProofNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > HostProofFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), HostProofFilterLimit)
+		}
+
+		ps := make([]predicate.HostProof, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterHostProof(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(hostproof.Or(ps...))
+	}
+
+	if v := req.GetAfter(); v != "" {
+		var (
+			at0 time.Time
+			at1 uuid.UUID
+		)
+		if err := sqlpage.Decode(v, &at0, &at1); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		p, err := sqlpage.After(orderHostProof, []any{at0, at1})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := sqlpage.Size(int(req.GetSize()), HostProofPageSize, HostProofPageLimit)
+	us, err := q.Order(hostproof.ByDateCreated(), hostproof.ById()).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*rstr.HostProof, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := rstr.HostProofListResponse_builder{Items: items}.Build()
+	if more {
+		last := us[len(us)-1]
+		next, err := sqlpage.Encode(last.DateCreated, last.Id)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(next)
+	}
+
+	return res, nil
+}
+
+// filterHostProof turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterHostProof(f *rstr.HostProofFilter) (predicate.HostProof, error) {
+	ps := make([]predicate.HostProof, 0, 1)
+	if f.HasRef() {
+		p, err := bare.HostProofPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if f.HasTenant() {
+		w := f.GetTenant()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "tenant: %s", err)
+			}
+
+			ps = append(ps, hostproof.TenantIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.TenantPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, hostproof.HasTenantWith(q))
+		}
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return hostproof.And(ps...), nil
 }
 
 type sinkIdentity struct {
@@ -7206,6 +7393,10 @@ func (s Gate) Host() rstr.HostServiceServer {
 // that a row exists is itself something a caller who may not see it
 // should not be told.
 func (s gateHost) Add(ctx context.Context, req *rstr.HostAddRequest) (*rstr.Host, error) {
+	if req.HasDateProved() {
+		return nil, pderr.Invalidf("date_proved", "is established by this deployment and not asserted by a request")
+	}
+
 	if ref := req.GetTenant(); ref != nil {
 		if _, err := s.Gate.Next().Tenant().Get(ctx, rstr.TenantGetRequest_builder{
 			Ref: ref,
@@ -7253,6 +7444,42 @@ func (s gateHost) Patch(ctx context.Context, req *rstr.HostPatchRequest) (*rstr.
 	}
 
 	return s.HostServiceServer.Patch(ctx, req)
+}
+
+type gateHostProof struct {
+	Gate
+	rstr.HostProofServiceServer
+}
+
+func (s Gate) HostProof() rstr.HostProofServiceServer {
+	return gateHostProof{s, s.Next().HostProof()}
+}
+
+// Add refuses a HostProof put into a Tenant this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `tenant` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Tenant, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.Add`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+func (s gateHostProof) Add(ctx context.Context, req *rstr.HostProofAddRequest) (*rstr.HostProof, error) {
+	if ref := req.GetTenant(); ref != nil {
+		if _, err := s.Gate.Next().Tenant().Get(ctx, rstr.TenantGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Tenant")
+			}
+
+			return nil, err
+		}
+	}
+
+	return s.HostProofServiceServer.Add(ctx, req)
 }
 
 type gateIdentity struct {
@@ -8337,6 +8564,38 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 
 		return k, b, nil
 
+	case HostProofDomain:
+		row, err := s.HostProof().Get(ctx, rstr.HostProofGetRequest_builder{
+			Ref: rstr.HostProofRef_builder{Id: key.Bytes()}.Build(),
+		}.Build())
+		// Erased softly is still a row; see [erasedHostProof].
+		if status.Code(err) == codes.NotFound {
+			row, err = erasedHostProof(ctx, s, key)
+		}
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				return uuid.Nil(), []byte{}, nil
+			}
+
+			return uuid.Nil(), nil, err
+		}
+
+		b, err := proto.Marshal(row)
+		if err != nil {
+			return uuid.Nil(), nil, err
+		}
+
+		if !row.HasTenant() {
+			return uuid.Nil(), b, nil
+		}
+
+		k, err := entuuid.FromBytes(row.GetTenant().GetId())
+		if err != nil {
+			return uuid.Nil(), nil, err
+		}
+
+		return k, b, nil
+
 	case IdentityDomain:
 		row, err := s.Identity().Get(ctx, rstr.IdentityGetRequest_builder{
 			Ref: rstr.IdentityRef_builder{Id: key.Bytes()}.Build(),
@@ -8975,6 +9234,33 @@ func erasedHost(ctx context.Context, s bare.Server, key pdid.Id) (*rstr.Host, er
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, status.Error(codes.NotFound, "Host not found")
+		}
+
+		return nil, err
+	}
+
+	return v.Proto(), nil
+}
+
+// erasedHostProof is the row `key` names among the rows already erased, which no
+// bare read answers: erasure is part of every reference that server builds.
+// The recorder is the one caller that has to see past it -- the row it asks
+// about was erased by the very write it is recording, and a trail row built
+// blind was filed under the actor's tenant with an empty value, which the
+// tenant whose row was erased could not read.
+func erasedHostProof(ctx context.Context, s bare.Server, key pdid.Id) (*rstr.HostProof, error) {
+	k, err := entuuid.FromBytes(key.Bytes())
+	if err != nil {
+		return nil, err
+	}
+
+	q := s.Db.HostProof.Query().Where(hostproof.IdEQ(k), hostproof.DateErasedNotNil())
+	bare.HostProofSelectInit(q, nil)
+
+	v, err := q.Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, status.Error(codes.NotFound, "HostProof not found")
 		}
 
 		return nil, err
@@ -10405,6 +10691,45 @@ func (s interceptMailDomain) List(ctx context.Context, req *rstr.MailDomainListR
 func (s interceptMailDomain) Update(ctx context.Context, req *rstr.MailDomainUpdateRequest) (*rstr.MailDomain, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.MailDomainServiceServer,
 		rstr.MailDomainService_Update_FullMethodName, req, s.MailDomainServiceServer.Update)
+}
+
+func (s Intercept) HostProof() rstr.HostProofServiceServer {
+	return interceptHostProof{s, s.Next().HostProof()}
+}
+
+type interceptHostProof struct {
+	Intercept
+	rstr.HostProofServiceServer
+}
+
+func (s interceptHostProof) Add(ctx context.Context, req *rstr.HostProofAddRequest) (*rstr.HostProof, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HostProofServiceServer,
+		rstr.HostProofService_Add_FullMethodName, req, s.HostProofServiceServer.Add)
+}
+
+func (s interceptHostProof) Get(ctx context.Context, req *rstr.HostProofGetRequest) (*rstr.HostProof, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HostProofServiceServer,
+		rstr.HostProofService_Get_FullMethodName, req, s.HostProofServiceServer.Get)
+}
+
+func (s interceptHostProof) Patch(ctx context.Context, req *rstr.HostProofPatchRequest) (*rstr.HostProof, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HostProofServiceServer,
+		rstr.HostProofService_Patch_FullMethodName, req, s.HostProofServiceServer.Patch)
+}
+
+func (s interceptHostProof) Apply(ctx context.Context, req *rstr.HostProofApplyRequest) (*rstr.HostProof, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HostProofServiceServer,
+		rstr.HostProofService_Apply_FullMethodName, req, s.HostProofServiceServer.Apply)
+}
+
+func (s interceptHostProof) Erase(ctx context.Context, req *rstr.HostProofRef) (*rstr.HostProofEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HostProofServiceServer,
+		rstr.HostProofService_Erase_FullMethodName, req, s.HostProofServiceServer.Erase)
+}
+
+func (s interceptHostProof) List(ctx context.Context, req *rstr.HostProofListRequest) (*rstr.HostProofListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HostProofServiceServer,
+		rstr.HostProofService_List_FullMethodName, req, s.HostProofServiceServer.List)
 }
 
 func (s Intercept) Link() rstr.LinkServiceServer {
@@ -12614,6 +12939,84 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 		}
 
 		res, err := s.MailDomain().Update(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.HostProofService_Add_FullMethodName:
+		v := &rstr.HostProofAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.HostProof().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.HostProofService_Get_FullMethodName:
+		v := &rstr.HostProofGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.HostProof().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.HostProofService_Patch_FullMethodName:
+		v := &rstr.HostProofPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.HostProof().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.HostProofService_Apply_FullMethodName:
+		v := &rstr.HostProofApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.HostProof().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.HostProofService_Erase_FullMethodName:
+		v := &rstr.HostProofRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.HostProof().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.HostProofService_List_FullMethodName:
+		v := &rstr.HostProofListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.HostProof().List(ctx, v)
 		if err != nil {
 			return nil, err
 		}

@@ -707,3 +707,307 @@ var MailDomainService_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "app/host_svc.g.proto",
 }
+
+const (
+	HostProofService_Add_FullMethodName   = "/roster.HostProofService/Add"
+	HostProofService_Get_FullMethodName   = "/roster.HostProofService/Get"
+	HostProofService_Patch_FullMethodName = "/roster.HostProofService/Patch"
+	HostProofService_Apply_FullMethodName = "/roster.HostProofService/Apply"
+	HostProofService_Erase_FullMethodName = "/roster.HostProofService/Erase"
+	HostProofService_List_FullMethodName  = "/roster.HostProofService/List"
+)
+
+// HostProofServiceClient is the client API for HostProofService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type HostProofServiceClient interface {
+	// Add creates a new HostProof
+	Add(ctx context.Context, in *HostProofAddRequest, opts ...grpc.CallOption) (*HostProof, error)
+	// Get retrieves a HostProof
+	Get(ctx context.Context, in *HostProofGetRequest, opts ...grpc.CallOption) (*HostProof, error)
+	// Patch updates an existing HostProof
+	Patch(ctx context.Context, in *HostProofPatchRequest, opts ...grpc.CallOption) (*HostProof, error)
+	// Apply applies a patch document to an existing HostProof
+	Apply(ctx context.Context, in *HostProofApplyRequest, opts ...grpc.CallOption) (*HostProof, error)
+	// Erase deletes a HostProof
+	Erase(ctx context.Context, in *HostProofRef, opts ...grpc.CallOption) (*HostProofEraseResponse, error)
+	// List reads HostProofs a page at a time.
+	List(ctx context.Context, in *HostProofListRequest, opts ...grpc.CallOption) (*HostProofListResponse, error)
+}
+
+type hostProofServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewHostProofServiceClient(cc grpc.ClientConnInterface) HostProofServiceClient {
+	return &hostProofServiceClient{cc}
+}
+
+func (c *hostProofServiceClient) Add(ctx context.Context, in *HostProofAddRequest, opts ...grpc.CallOption) (*HostProof, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HostProof)
+	err := c.cc.Invoke(ctx, HostProofService_Add_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *hostProofServiceClient) Get(ctx context.Context, in *HostProofGetRequest, opts ...grpc.CallOption) (*HostProof, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HostProof)
+	err := c.cc.Invoke(ctx, HostProofService_Get_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *hostProofServiceClient) Patch(ctx context.Context, in *HostProofPatchRequest, opts ...grpc.CallOption) (*HostProof, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HostProof)
+	err := c.cc.Invoke(ctx, HostProofService_Patch_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *hostProofServiceClient) Apply(ctx context.Context, in *HostProofApplyRequest, opts ...grpc.CallOption) (*HostProof, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HostProof)
+	err := c.cc.Invoke(ctx, HostProofService_Apply_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *hostProofServiceClient) Erase(ctx context.Context, in *HostProofRef, opts ...grpc.CallOption) (*HostProofEraseResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HostProofEraseResponse)
+	err := c.cc.Invoke(ctx, HostProofService_Erase_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *hostProofServiceClient) List(ctx context.Context, in *HostProofListRequest, opts ...grpc.CallOption) (*HostProofListResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HostProofListResponse)
+	err := c.cc.Invoke(ctx, HostProofService_List_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// HostProofServiceServer is the server API for HostProofService service.
+// All implementations must embed UnimplementedHostProofServiceServer
+// for forward compatibility.
+type HostProofServiceServer interface {
+	// Add creates a new HostProof
+	Add(context.Context, *HostProofAddRequest) (*HostProof, error)
+	// Get retrieves a HostProof
+	Get(context.Context, *HostProofGetRequest) (*HostProof, error)
+	// Patch updates an existing HostProof
+	Patch(context.Context, *HostProofPatchRequest) (*HostProof, error)
+	// Apply applies a patch document to an existing HostProof
+	Apply(context.Context, *HostProofApplyRequest) (*HostProof, error)
+	// Erase deletes a HostProof
+	Erase(context.Context, *HostProofRef) (*HostProofEraseResponse, error)
+	// List reads HostProofs a page at a time.
+	List(context.Context, *HostProofListRequest) (*HostProofListResponse, error)
+	mustEmbedUnimplementedHostProofServiceServer()
+}
+
+// UnimplementedHostProofServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedHostProofServiceServer struct{}
+
+func (UnimplementedHostProofServiceServer) Add(context.Context, *HostProofAddRequest) (*HostProof, error) {
+	return nil, status.Error(codes.Unimplemented, "method Add not implemented")
+}
+func (UnimplementedHostProofServiceServer) Get(context.Context, *HostProofGetRequest) (*HostProof, error) {
+	return nil, status.Error(codes.Unimplemented, "method Get not implemented")
+}
+func (UnimplementedHostProofServiceServer) Patch(context.Context, *HostProofPatchRequest) (*HostProof, error) {
+	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
+}
+func (UnimplementedHostProofServiceServer) Apply(context.Context, *HostProofApplyRequest) (*HostProof, error) {
+	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
+}
+func (UnimplementedHostProofServiceServer) Erase(context.Context, *HostProofRef) (*HostProofEraseResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
+}
+func (UnimplementedHostProofServiceServer) List(context.Context, *HostProofListRequest) (*HostProofListResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method List not implemented")
+}
+func (UnimplementedHostProofServiceServer) mustEmbedUnimplementedHostProofServiceServer() {}
+func (UnimplementedHostProofServiceServer) testEmbeddedByValue()                          {}
+
+// UnsafeHostProofServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to HostProofServiceServer will
+// result in compilation errors.
+type UnsafeHostProofServiceServer interface {
+	mustEmbedUnimplementedHostProofServiceServer()
+}
+
+func RegisterHostProofServiceServer(s grpc.ServiceRegistrar, srv HostProofServiceServer) {
+	// If the following call panics, it indicates UnimplementedHostProofServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&HostProofService_ServiceDesc, srv)
+}
+
+func _HostProofService_Add_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HostProofAddRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HostProofServiceServer).Add(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HostProofService_Add_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HostProofServiceServer).Add(ctx, req.(*HostProofAddRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HostProofService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HostProofGetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HostProofServiceServer).Get(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HostProofService_Get_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HostProofServiceServer).Get(ctx, req.(*HostProofGetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HostProofService_Patch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HostProofPatchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HostProofServiceServer).Patch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HostProofService_Patch_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HostProofServiceServer).Patch(ctx, req.(*HostProofPatchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HostProofService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HostProofApplyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HostProofServiceServer).Apply(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HostProofService_Apply_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HostProofServiceServer).Apply(ctx, req.(*HostProofApplyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HostProofService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HostProofRef)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HostProofServiceServer).Erase(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HostProofService_Erase_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HostProofServiceServer).Erase(ctx, req.(*HostProofRef))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HostProofService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HostProofListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HostProofServiceServer).List(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HostProofService_List_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HostProofServiceServer).List(ctx, req.(*HostProofListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// HostProofService_ServiceDesc is the grpc.ServiceDesc for HostProofService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var HostProofService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "roster.HostProofService",
+	HandlerType: (*HostProofServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Add",
+			Handler:    _HostProofService_Add_Handler,
+		},
+		{
+			MethodName: "Get",
+			Handler:    _HostProofService_Get_Handler,
+		},
+		{
+			MethodName: "Patch",
+			Handler:    _HostProofService_Patch_Handler,
+		},
+		{
+			MethodName: "Apply",
+			Handler:    _HostProofService_Apply_Handler,
+		},
+		{
+			MethodName: "Erase",
+			Handler:    _HostProofService_Erase_Handler,
+		},
+		{
+			MethodName: "List",
+			Handler:    _HostProofService_List_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "app/host_svc.g.proto",
+}

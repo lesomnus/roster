@@ -53,6 +53,9 @@ func HolderOrErr(p Holder, err error) Holder {
 // Host is the predicate function for host builders.
 type Host func(*sql.Selector)
 
+// HostProof is the predicate function for hostproof builders.
+type HostProof func(*sql.Selector)
+
 // Identity is the predicate function for identity builders.
 type Identity func(*sql.Selector)
 

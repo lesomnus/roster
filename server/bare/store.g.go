@@ -20,6 +20,7 @@ import (
 	groupmembership "github.com/lesomnus/roster/internal/ent/groupmembership"
 	holder "github.com/lesomnus/roster/internal/ent/holder"
 	host "github.com/lesomnus/roster/internal/ent/host"
+	hostproof "github.com/lesomnus/roster/internal/ent/hostproof"
 	identity "github.com/lesomnus/roster/internal/ent/identity"
 	link "github.com/lesomnus/roster/internal/ent/link"
 	maildomain "github.com/lesomnus/roster/internal/ent/maildomain"
@@ -344,6 +345,7 @@ type Scope interface {
 	GroupMembershipScope(ctx context.Context) (predicate.GroupMembership, error)
 	HostScope(ctx context.Context) (predicate.Host, error)
 	MailDomainScope(ctx context.Context) (predicate.MailDomain, error)
+	HostProofScope(ctx context.Context) (predicate.HostProof, error)
 	LinkScope(ctx context.Context) (predicate.Link, error)
 	TeamScope(ctx context.Context) (predicate.Team, error)
 	RoleScope(ctx context.Context) (predicate.Role, error)
@@ -407,6 +409,9 @@ func (Unscoped) HostScope(_ context.Context) (predicate.Host, error) {
 	return nil, nil
 }
 func (Unscoped) MailDomainScope(_ context.Context) (predicate.MailDomain, error) {
+	return nil, nil
+}
+func (Unscoped) HostProofScope(_ context.Context) (predicate.HostProof, error) {
 	return nil, nil
 }
 func (Unscoped) LinkScope(_ context.Context) (predicate.Link, error) {
@@ -736,6 +741,26 @@ func (ss Scopes) MailDomainScope(ctx context.Context) (predicate.MailDomain, err
 	return maildomain.And(ps...), nil
 }
 
+func (ss Scopes) HostProofScope(ctx context.Context) (predicate.HostProof, error) {
+	ps := make([]predicate.HostProof, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.HostProofScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return hostproof.And(ps...), nil
+}
+
 func (ss Scopes) LinkScope(ctx context.Context) (predicate.Link, error) {
 	ps := make([]predicate.Link, 0, len(ss))
 	for _, s := range ss {
@@ -996,7 +1021,7 @@ func (s Store) now() time.Time {
 // is rendered for that dialect, not just what this server writes.
 //
 // That set is also what a soft erasure needs, so this is the whole
-// check. ApiKey, Binding, Connection, Continuation, Credential, Delegation, Email, Group, GroupMembership, Holder, Host, Identity, Link, MailDomain, Role, Session, Site, SiteMembership, Team and TeamMembership free the names they held when a row
+// check. ApiKey, Binding, Connection, Continuation, Credential, Delegation, Email, Group, GroupMembership, Holder, Host, HostProof, Identity, Link, MailDomain, Role, Session, Site, SiteMembership, Team and TeamMembership free the names they held when a row
 // is erased, which is a unique index covering only the rows that are
 // still there -- a partial index, and the dialects above are the ones
 // that have one. MySQL does not, and ent writes the annotation out for
@@ -1059,6 +1084,9 @@ func (s Server) GroupMembership() rstr.GroupMembershipServiceServer {
 func (s Server) Host() rstr.HostServiceServer { return HostServiceServer{Store: s.Store} }
 func (s Server) MailDomain() rstr.MailDomainServiceServer {
 	return MailDomainServiceServer{Store: s.Store}
+}
+func (s Server) HostProof() rstr.HostProofServiceServer {
+	return HostProofServiceServer{Store: s.Store}
 }
 func (s Server) Link() rstr.LinkServiceServer       { return LinkServiceServer{Store: s.Store} }
 func (s Server) Team() rstr.TeamServiceServer       { return TeamServiceServer{Store: s.Store} }

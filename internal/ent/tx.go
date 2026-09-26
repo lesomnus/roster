@@ -36,6 +36,8 @@ type Tx struct {
 	Holder *HolderClient
 	// Host is the client for interacting with the Host builders.
 	Host *HostClient
+	// HostProof is the client for interacting with the HostProof builders.
+	HostProof *HostProofClient
 	// Identity is the client for interacting with the Identity builders.
 	Identity *IdentityClient
 	// Link is the client for interacting with the Link builders.
@@ -201,6 +203,7 @@ func (tx *Tx) init() {
 	tx.GroupMembership = NewGroupMembershipClient(tx.config)
 	tx.Holder = NewHolderClient(tx.config)
 	tx.Host = NewHostClient(tx.config)
+	tx.HostProof = NewHostProofClient(tx.config)
 	tx.Identity = NewIdentityClient(tx.config)
 	tx.Link = NewLinkClient(tx.config)
 	tx.MailDomain = NewMailDomainClient(tx.config)

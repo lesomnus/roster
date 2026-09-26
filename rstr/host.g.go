@@ -128,3 +128,68 @@ func MailDomainByAt(tenant *TenantRef, name string) *MailDomainRef {
 func MailDomainGetByAt(tenant *TenantRef, name string) *MailDomainGetRequest {
 	return MailDomainGetRequest_builder{Ref: MailDomainByAt(tenant, name)}.Build()
 }
+
+func (x *HostProofRef) Pick() *HostProofGetRequest {
+	return HostProofGetRequest_builder{Ref: x}.Build()
+}
+
+func (x *HostProof) Ref() *HostProofRef {
+	if v := x.GetId(); len(v) > 0 {
+		return HostProofById(v)
+	}
+	{
+		v1 := x.GetTenant()
+		v2 := x.GetName()
+		if v1 != nil && len(v2) > 0 {
+			return HostProofByAt(v1.Ref(), v2)
+		}
+	}
+
+	return nil
+}
+
+func (x *HostProof) Pick() *HostProofGetRequest {
+	return x.Ref().Pick()
+}
+
+func (x *HostProofRef) Picks(v *HostProof) bool {
+	switch x.WhichKey() {
+	case HostProofRef_Id_case:
+		return bytes.Equal(x.GetId(), v.GetId())
+	case HostProofRef_At_case:
+		x := x.GetAt()
+		return (x.GetTenant().Picks(v.GetTenant())) &&
+			(x.GetName() == v.GetName())
+	default:
+		return false
+	}
+}
+
+func (x *HostProofGetRequest) WithSelect(f func(s *HostProofSelect)) *HostProofGetRequest {
+	if !x.HasSelect() {
+		x.SetSelect(&HostProofSelect{})
+	}
+	f(x.GetSelect())
+	return x
+}
+
+func HostProofById(v []byte) *HostProofRef {
+	x := &HostProofRef{}
+	x.SetId(v)
+	return x
+}
+
+func HostProofGetById(v []byte) *HostProofGetRequest {
+	return HostProofGetRequest_builder{Ref: HostProofById(v)}.Build()
+}
+
+func HostProofByAt(tenant *TenantRef, name string) *HostProofRef {
+	x := &HostProofRefByAt{}
+	x.SetTenant(tenant)
+	x.SetName(name)
+	return HostProofRef_builder{At: x}.Build()
+}
+
+func HostProofGetByAt(tenant *TenantRef, name string) *HostProofGetRequest {
+	return HostProofGetRequest_builder{Ref: HostProofByAt(tenant, name)}.Build()
+}

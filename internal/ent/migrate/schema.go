@@ -527,6 +527,7 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "desc", Type: field.TypeString},
 		{Name: "labels", Type: field.TypeJson, Nullable: true},
+		{Name: "date_proved", Type: field.TypeTime, Nullable: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
@@ -541,13 +542,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "host_tenant_tenant",
-				Columns:    []*schema.Column{HostColumns[7]},
+				Columns:    []*schema.Column{HostColumns[8]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "host_holder_acts_as",
-				Columns:    []*schema.Column{HostColumns[8]},
+				Columns:    []*schema.Column{HostColumns[9]},
 				RefColumns: []*schema.Column{HolderColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -556,12 +557,53 @@ var (
 			{
 				Name:    "host_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{HostColumns[6], HostColumns[0]},
+				Columns: []*schema.Column{HostColumns[7], HostColumns[0]},
 			},
 			{
 				Name:    "host_name",
 				Unique:  true,
 				Columns: []*schema.Column{HostColumns[1]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
+	// HostproofColumns holds the columns for the "hostproof" table.
+	HostproofColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "token", Type: field.TypeString},
+		{Name: "date_expires", Type: field.TypeTime, Nullable: true},
+		{Name: "desc", Type: field.TypeString},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+	}
+	// HostproofTable holds the schema information for the "hostproof" table.
+	HostproofTable = &schema.Table{
+		Name:       "hostproof",
+		Columns:    HostproofColumns,
+		PrimaryKey: []*schema.Column{HostproofColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "hostproof_tenant_tenant",
+				Columns:    []*schema.Column{HostproofColumns[8]},
+				RefColumns: []*schema.Column{TenantColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "hostproof_date_created_id",
+				Unique:  false,
+				Columns: []*schema.Column{HostproofColumns[7], HostproofColumns[0]},
+			},
+			{
+				Name:    "hostproof_name_tenant_id",
+				Unique:  true,
+				Columns: []*schema.Column{HostproofColumns[1], HostproofColumns[8]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -1023,6 +1065,7 @@ var (
 		GroupmembershipTable,
 		HolderTable,
 		HostTable,
+		HostproofTable,
 		IdentityTable,
 		LinkTable,
 		MaildomainTable,
@@ -1091,6 +1134,10 @@ func init() {
 	HostTable.ForeignKeys[1].RefTable = HolderTable
 	HostTable.Annotation = &entsql.Annotation{
 		Table: "host",
+	}
+	HostproofTable.ForeignKeys[0].RefTable = TenantTable
+	HostproofTable.Annotation = &entsql.Annotation{
+		Table: "hostproof",
 	}
 	IdentityTable.ForeignKeys[0].RefTable = HolderTable
 	IdentityTable.Annotation = &entsql.Annotation{

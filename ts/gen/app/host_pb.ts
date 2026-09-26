@@ -19,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/host.proto.
  */
 export const file_app_host: GenFile = /*@__PURE__*/
-  fileDesc("Cg5hcHAvaG9zdC5wcm90bxIGcm9zdGVyIoIECgRIb3N0EhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESFAoEbmFtZRgFIAEoCUIG6oIWAjABEgwKBGRlc2MYBiABKAkSKAoGbGFiZWxzGAcgAygLMhgucm9zdGVyLkhvc3QuTGFiZWxzRW50cnkSJwoHYWN0c19hcxgIIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgI4ARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATphyvwVJhICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABirsWMwgUMi8KEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYaCAoGdGVuYW50IBQoZCKNBAoKTWFpbERvbWFpbhIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJgoGdGVuYW50GAIgASgLMg4ucm9zdGVyLlRlbmFudEIG8oIWAkABEgwKBG5hbWUYBSABKAkSEAoIcHJvdmlkZXIYCSABKAkSDAoEZGVzYxgGIAEoCRIuCgZsYWJlbHMYByADKAsyHi5yb3N0ZXIuTWFpbERvbWFpbi5MYWJlbHNFbnRyeRI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATp/yvwVRBICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGhwSAmF0GgoKBnRlbmFudBACGggKBG5hbWUQBTABirsWMwgVMi8KEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYaCAoGdGVuYW50IBQoZEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_holder, file_roster_payday_tenant, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg5hcHAvaG9zdC5wcm90bxIGcm9zdGVyIsEECgRIb3N0EhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESFAoEbmFtZRgFIAEoCUIG6oIWAjABEgwKBGRlc2MYBiABKAkSKAoGbGFiZWxzGAcgAygLMhgucm9zdGVyLkhvc3QuTGFiZWxzRW50cnkSJwoHYWN0c19hcxgIIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgI4ARI9CgtkYXRlX3Byb3ZlZBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCDOqCFgI4AarBFgIQARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATphyvwVJhICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABirsWMwgUMi8KEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYaCAoGdGVuYW50IBQoZCKNBAoKTWFpbERvbWFpbhIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJgoGdGVuYW50GAIgASgLMg4ucm9zdGVyLlRlbmFudEIG8oIWAkABEgwKBG5hbWUYBSABKAkSEAoIcHJvdmlkZXIYCSABKAkSDAoEZGVzYxgGIAEoCRIuCgZsYWJlbHMYByADKAsyHi5yb3N0ZXIuTWFpbERvbWFpbi5MYWJlbHNFbnRyeRI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATp/yvwVRBICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGhwSAmF0GgoKBnRlbmFudBACGggKBG5hbWUQBTABirsWMwgVMi8KEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYaCAoGdGVuYW50IBQoZCL0AwoJSG9zdFByb29mEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESFAoEbmFtZRgFIAEoCUIG6oIWAkABEhUKBXRva2VuGAkgASgJQgbqghYCQAESOAoMZGF0ZV9leHBpcmVzGAogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBEgwKBGRlc2MYBiABKAkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOn/K/BVEEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaHBICYXQaCgoGdGVuYW50EAIaCAoEbmFtZRAFMAGKuxYzCBoyLwoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZ0ZW5hbnQgFChkQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_holder, file_roster_payday_tenant, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Host is a name a front door answers at, and the tenant it belongs to.
@@ -58,36 +58,53 @@ export const file_app_host: GenFile = /*@__PURE__*/
  * cannot require knowing who they are. `HostService` is what does that, and it
  * answers with a tenant identifier and nothing else.
  *
- * # The name is unique across the deployment
+ * # The name is unique across the deployment, and it can move
  *
- * Two operators cannot both own `contoso.example.com`, so this is one of the
- * few constraints here that crosses the wall. What it costs is a small oracle
- * -- the second operator to claim a name is told it is taken, by somebody they
- * cannot see -- and a hostname is a public fact, so that is the cheaper side of
- * the trade. `Email` deliberately went the other way, and D3 says why.
+ * Two tenants cannot both own `contoso.example.com`, so this is one of the few
+ * constraints here that crosses the wall. What it costs is a small oracle -- the
+ * second tenant to claim a name is told it is taken, by somebody they cannot see
+ * -- and a hostname is a public fact, so that is the cheaper side of the trade.
+ * `Email` deliberately went the other way, and D3 says why.
  *
- * # And nothing here proves the name is yours
+ * It is not forever, and the mechanism is the unique index rather than a rule:
+ * it covers the rows that are **not erased**, so an erased row releases its
+ * name. A tenant that proves a name somebody else holds takes it -- the
+ * incumbent row is erased and a new one written, in one transaction -- because
+ * proving requires present control of DNS, and whoever has that has the name
+ * whatever a row here says. The incumbent is not asked, which is the right way
+ * round and is worth knowing: their people stop being able to sign in at that
+ * name, and the erase in the trail is where it is written down.
  *
- * roster does not resolve DNS and should not: it is meant to run in an air gap,
- * which is the same reason the breached-password corpus is a file and a magic
- * link is delivered by somebody else. It would also be checking the wrong
- * thing. What decides that traffic for a name reaches this deployment is DNS
- * and the ingress in front of it, and both belong to whoever runs the
- * deployment -- so a row naming a hostname nothing routes is inert, and a row
- * disagreeing with what **is** routed was written by the same person who routed
- * it.
+ * # Proving the name is yours
  *
- * What is left is **claiming a name you do not own**, and it is real: the first
- * writer takes it, the rightful one is refused, and the refusal says only that
- * somebody has it. So the conclusion is about the grant rather than about the
- * schema:
+ * roster resolves DNS to check it. This section used to say it should not, on
+ * the grounds that roster runs in an air gap -- and that was answering the wrong
+ * question. An air-gapped deployment has no tenant registering its own
+ * hostnames either; what it has instead is a roster operator with a shell. So
+ * there are two roads to a row, and [Host.date_proved] is which one it was.
+ *
+ * 	a tenant's own        claim the name ([HostProof]), publish what roster
+ * 	                      asked for, and roster looks it up
+ * 	a roster operator's   write the row. The person who routed the name is the
+ * 	                      person writing it, so there is nothing to check
+ *
+ * What has **not** changed is what a row means either way. A name nothing routes
+ * here is inert whoever wrote it, because what decides that traffic reaches this
+ * deployment is DNS and the ingress in front of it, and both belong to whoever
+ * runs the deployment.
+ *
+ * What has changed is **claiming a name you do not own**. That was real -- the
+ * first writer took it and the rightful one was refused -- and the conclusion
+ * was a permission nothing could enforce:
  *
  * 	Registering a hostname is the deployment's act, not a customer's.
  * 	Do not put `/roster.HostService/Add` on a role a tenant's own
  * 	administrators hold.
  *
- * Nothing enforces that and nothing can -- it is a permission, and permissions
- * are a deployment's. [MailDomain] needs no such care, and the reason is the
+ * It is a customer's act now, and that method is one their administrators may
+ * hold: on the walled plane a tenant writing its own name is held to a proof, so
+ * the name is theirs if they can show it is and nobody else's row survives their
+ * showing it. [MailDomain] still needs none of this, and the reason is the
  * section below it: it claims nothing.
  *
  * @generated from message roster.Host
@@ -173,6 +190,39 @@ export type Host = Message<"roster.Host"> & {
    * @generated from field: roster.Holder acts_as = 8;
    */
   actsAs?: Holder | undefined;
+
+  /**
+   * When roster looked up DNS and read back what it had asked for, and **unset
+   * is a row nobody proved**.
+   *
+   * Which of the two roads above it was, and nothing more: an unproved row is
+   * not inert and is not second class. `FrontService.WhoseHost`, `cmd.Hosted`
+   * and `keys.At` resolve a name whichever road wrote it, because a roster
+   * operator writing one is the person who routed it.
+   *
+   * What it is for is that a later decision is made on evidence rather than on
+   * who happened to be at the keyboard. Set: a tenant claimed the name, put the
+   * token in DNS, and roster read it. Unset: somebody wrote it who was trusted
+   * to.
+   *
+   * # Why the trail is not enough
+   *
+   * The trail says **who wrote this row** and cannot say **whether roster
+   * checked**, because the lookup is not a write by a caller -- there is nothing
+   * for a recorder to record. `Email.date_verified` is the same field for the
+   * same reason.
+   *
+   * `Email.vouched_by` is the half this one does not need. An address can be
+   * vouched for by a third party and the row has to say which, because it is
+   * only as good as that provider's check. Here there is no third party: either
+   * roster's own lookup saw it, or nobody did.
+   *
+   * `stamped`, so a caller cannot write it. The one road to it is a server
+   * writing it below the gate, which is `Email.Confirm`'s arrangement exactly.
+   *
+   * @generated from field: google.protobuf.Timestamp date_proved = 9;
+   */
+  dateProved?: Timestamp | undefined;
 
   /**
    * @generated from field: google.protobuf.Timestamp date_updated = 13;
@@ -304,4 +354,124 @@ export type MailDomain = Message<"roster.MailDomain"> & {
  */
 export const MailDomainSchema: GenMessage<MailDomain> = /*@__PURE__*/
   messageDesc(file_app_host, 1);
+
+/**
+ * HostProof is a name a tenant is claiming, and what roster asked them to
+ * publish to show the name is theirs.
+ *
+ * # The exchange, which is one round trip and one DNS record
+ *
+ *  1. a tenant writes one of these, naming the host they want
+ *  2. roster answers with a `token`, and asks for it at
+ *     `_roster-challenge.<name>` as a TXT record
+ *  3. the tenant adds that record wherever they keep their DNS
+ *  4. the tenant writes the [Host]. roster looks the record up, and the row is
+ *     written or the call is refused
+ *
+ * After step 4 there is nothing to keep: the proof is spent by an erase, the way
+ * a [Continuation] is, and the record can come out of DNS. What was proved is a
+ * moment, and [Host.date_proved] is where that moment is written down.
+ *
+ * # Why it is a row and not a field on Host
+ *
+ * Two reasons, and the first is the one that decides it. **`Host.name` is unique
+ * among the rows that are not erased**, so a claim kept on a `Host` row could
+ * not be made for a name somebody already holds -- which is exactly the case
+ * that has to work, because a name can move. Two tenants may be claiming one
+ * name at once and each needs a token of their own; whoever's token is in DNS is
+ * who has it. So this is keyed `(tenant, name)` and claims nothing.
+ *
+ * The second is the trail. Every write to a `Host` is recorded, and a row that
+ * carried the state of a proof would put a record in the audit table each time
+ * anybody looked. A short-lived row beside the thing it is about is what this
+ * repository already does with a proof of anything -- [Continuation], `Link`,
+ * `Delegation` -- and it is swept for the same reason.
+ *
+ * # The token is not a secret, which every other token here is
+ *
+ * It goes in **public DNS**. There is nothing to protect: anybody who can put a
+ * record under a name owns the name already, which is the whole of what this
+ * measures. So it is a plain field, stored as it is compared, and readable as
+ * often as somebody needs to go and look at what they were asked to publish --
+ * unlike `ApiKey` or `Link`, where what is stored is a hash and the value is
+ * answered once.
+ *
+ * What it is random for is two things a fixed value could not do. A record left
+ * over from an earlier claim, or from another roster deployment, does not count.
+ * And when two tenants want one name, the token is what tells their claims apart
+ * -- which is the mechanism *the latest proof wins* actually runs on.
+ *
+ * @generated from message roster.HostProof
+ */
+export type HostProof = Message<"roster.HostProof"> & {
+  /**
+   * @generated from field: bytes id = 1;
+   */
+  id: Uint8Array;
+
+  /**
+   * @generated from field: roster.Tenant tenant = 2;
+   */
+  tenant?: Tenant | undefined;
+
+  /**
+   * The name being claimed, normalised the way [Host.name] is and for the same
+   * reason: this is compared against a `Host` and looked up in DNS, so a value
+   * that differs from what those will use is a claim that can never succeed.
+   *
+   * @generated from field: string name = 5;
+   */
+  name: string;
+
+  /**
+   * What to publish, and roster's to generate.
+   *
+   * `server/core` refuses a value in the request. A caller-chosen token would
+   * let somebody claim a name whose TXT record already says something they can
+   * predict -- which is a name they do not control, proved by a record they did
+   * not write.
+   *
+   * @generated from field: string token = 9;
+   */
+  token: string;
+
+  /**
+   * When this stops being spendable, and roster's to set for `token`'s reason.
+   *
+   * A claim is not a reservation -- it holds no name and blocks nobody -- so
+   * what the window is for is that a token lying in DNS forever is a name
+   * provable by whoever finds it. Abandoned claims are collected by
+   * `prove.Sweep`; the expiry is what makes them refused before then.
+   *
+   * @generated from field: google.protobuf.Timestamp date_expires = 10;
+   */
+  dateExpires?: Timestamp | undefined;
+
+  /**
+   * @generated from field: string desc = 6;
+   */
+  desc: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_updated = 13;
+   */
+  dateUpdated?: Timestamp | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_erased = 14;
+   */
+  dateErased?: Timestamp | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_created = 15;
+   */
+  dateCreated?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.HostProof.
+ * Use `create(HostProofSchema)` to create a new message.
+ */
+export const HostProofSchema: GenMessage<HostProof> = /*@__PURE__*/
+  messageDesc(file_app_host, 2);
 

@@ -22,6 +22,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/group"
 	"github.com/lesomnus/roster/internal/ent/groupmembership"
 	"github.com/lesomnus/roster/internal/ent/holder"
+	"github.com/lesomnus/roster/internal/ent/host"
 	entteam "github.com/lesomnus/roster/internal/ent/team"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
 	"github.com/lesomnus/roster/server/core"
@@ -428,11 +429,48 @@ func Locking(db *ent.Client) core.Lock {
 // `mayReach` needs, because there a path not walked allows rather than refuses.
 func Rules(db *ent.Client) core.Rules {
 	return core.Rules{
-		Holds:   Holds(db),
-		Granted: Granted(db),
-		Joining: Joining(db),
-		Holding: Holding(db),
-		Held:    core.Held(Everything(db)),
+		Holds:     Holds(db),
+		Granted:   Granted(db),
+		Joining:   Joining(db),
+		Holding:   Holding(db),
+		Held:      core.Held(Everything(db)),
+		Releasing: Releasing(db),
+	}
+}
+
+// Releasing erases whichever `Host` row holds a name, whoever's it is.
+//
+// What it is for is a tenant proving a name another tenant holds: the unique
+// index on `name` covers the rows that are not erased, so the incumbent has to
+// let go before the new row can be written, and no walled server can see the
+// incumbent. `core.Releasing` is where the argument for it being a function
+// rather than a server is written down.
+//
+// A **soft** erase, unlike the sweeps: the row is what a trail entry naming it
+// resolves through, and a name changing hands is exactly the event somebody
+// looks that up for. What makes it release the name anyway is the index being
+// partial.
+//
+// Bounded by the name and by nothing else, which is the whole of why this is
+// safe to hand to a layer a caller reaches: there is no argument here that could
+// be widened, and at most one live row can match.
+func Releasing(db *ent.Client) core.Releasing {
+	return func(ctx context.Context, drv dialect.Driver, name string) error {
+		// On the driver it is handed, which is the transaction `server/core`
+		// opened, for `Locking`'s reason: a write outside it could not be undone
+		// with the rest.
+		if drv != nil {
+			db = ent.NewClient(ent.Driver(drv))
+		}
+
+		// Not an error when nothing holds it. Taking a free name is the ordinary
+		// case, and refusing here would make the caller read first.
+		_, err := db.Host.Update().
+			Where(host.NameEQ(name), host.DateErasedIsNil()).
+			SetDateErased(time.Now()).
+			Save(ctx)
+
+		return err
 	}
 }
 

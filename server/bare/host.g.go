@@ -10,6 +10,7 @@ import (
 	ent "github.com/lesomnus/roster/internal/ent"
 	holder "github.com/lesomnus/roster/internal/ent/holder"
 	host "github.com/lesomnus/roster/internal/ent/host"
+	hostproof "github.com/lesomnus/roster/internal/ent/hostproof"
 	maildomain "github.com/lesomnus/roster/internal/ent/maildomain"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
@@ -132,6 +133,9 @@ func (s HostServiceServer) Add(ctx context.Context, req *rstr.HostAddRequest) (*
 			})
 		}
 	}
+	if req.HasDateProved() {
+		q.SetDateProved(req.GetDateProved().AsTime())
+	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
 		q.SetDateCreated(req.GetDateCreated().AsTime())
@@ -213,6 +217,9 @@ func HostSelectedFields(m *rstr.HostSelect) []string {
 	}
 	if m.GetLabels() {
 		vs = append(vs, host.FieldLabels)
+	}
+	if m.GetDateProved() {
+		vs = append(vs, host.FieldDateProved)
 	}
 	if m.GetDateUpdated() {
 		vs = append(vs, host.FieldDateUpdated)
@@ -311,7 +318,7 @@ func HostGetKey(ctx context.Context, db *ent.Client, ref *rstr.HostRef) (uuid.UU
 var hostOrmEntity = ormpatch.MustEntityOf(rstr.File_app_host_proto, "Host")
 
 var hostPatchColumns = entpatch.Columns{
-	1: host.FieldId, 2: host.TenantColumn, 5: host.FieldName, 6: host.FieldDesc, 7: host.FieldLabels, 8: host.ActsAsColumn, 13: host.FieldDateUpdated, 14: host.FieldDateErased, 15: host.FieldDateCreated}
+	1: host.FieldId, 2: host.TenantColumn, 5: host.FieldName, 6: host.FieldDesc, 7: host.FieldLabels, 8: host.ActsAsColumn, 9: host.FieldDateProved, 13: host.FieldDateUpdated, 14: host.FieldDateErased, 15: host.FieldDateCreated}
 
 func (s HostServiceServer) Apply(ctx context.Context, req *rstr.HostApplyRequest) (*rstr.Host, error) {
 	if !req.HasPatch() {
@@ -997,6 +1004,487 @@ func pickMailDomain(req *rstr.MailDomainRef) (predicate.MailDomain, error) {
 		return maildomain.And(ps...), nil
 	case rstr.MailDomainRef_Key_not_set_case:
 		return nil, status.Errorf(codes.InvalidArgument, "key not set: MailDomain")
+	default:
+		return nil, status.Errorf(codes.Unimplemented, "unknown type of key: %s", req.WhichKey())
+	}
+}
+
+type HostProofServiceServer struct {
+	Store
+
+	rstr.UnimplementedHostProofServiceServer
+}
+
+// NewHostProofServiceServer answers with a server that runs its queries with `db`.
+//
+// It takes the options of [Server] so that what is built here can be told
+// where to report its writes and what it may see. Built without them, it
+// reports nowhere and sees everything.
+func NewHostProofServiceServer(db *ent.Client, opts ...Option) rstr.HostProofServiceServer {
+	s := Server{Store: Store{Db: db}}
+	for _, opt := range opts {
+		opt(&s)
+	}
+	return HostProofServiceServer{Store: s.Store}
+}
+
+// HostProofNarrow answers with `p` and everything else that narrows a
+// read of a HostProof: the rows that have not been erased, and whatever
+// `scope` says of those.
+//
+// Every read this package makes goes through it, and a read written by
+// hand should too -- a List is the one read nothing generates, and so the
+// one that would otherwise answer with rows nobody should be given.
+func HostProofNarrow(ctx context.Context, scope Scope, p predicate.HostProof) (predicate.HostProof, error) {
+	ps := make([]predicate.HostProof, 0, 3)
+
+	// A row that was erased is not a row a read answers with.
+	ps = append(ps, hostproof.DateErasedIsNil())
+	if p != nil {
+		ps = append(ps, p)
+	}
+	if scope != nil {
+		q, err := scope.HostProofScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if q != nil {
+			ps = append(ps, q)
+		}
+	}
+
+	switch len(ps) {
+	case 0:
+		return nil, nil
+	case 1:
+		return ps[0], nil
+	default:
+		return hostproof.And(ps...), nil
+	}
+}
+
+// narrow is [HostProofNarrow] with this server's own scope.
+func (s HostProofServiceServer) narrow(ctx context.Context, p predicate.HostProof) (predicate.HostProof, error) {
+	return HostProofNarrow(ctx, s.Scope, p)
+}
+
+func (s HostProofServiceServer) Add(ctx context.Context, req *rstr.HostProofAddRequest) (*rstr.HostProof, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	ds := make([]func(v *rstr.HostProof), 0, 1)
+	q := st.Db.HostProof.Create()
+	var k uuid.UUID
+	if req.HasId() {
+		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+		} else {
+			k = v
+		}
+	}
+	if v, err := mint(ctx, s.Mint, "roster.HostProof", k, req.HasId()); err != nil {
+		return nil, err
+	} else {
+		q.SetId(v)
+	}
+	if k, err := TenantGetKey(ctx, st.Db, req.GetTenant()); err != nil {
+		return nil, err
+	} else {
+		q.SetTenantId(k)
+		ds = append(ds, func(v *rstr.HostProof) {
+			v.SetTenant(rstr.Tenant_builder{Id: k[:]}.Build())
+		})
+	}
+	q.SetName(req.GetName())
+	q.SetToken(req.GetToken())
+	if req.HasDateExpires() {
+		q.SetDateExpires(req.GetDateExpires().AsTime())
+	}
+	q.SetDesc(req.GetDesc())
+	q.SetDateUpdated(st.now())
+	if req.HasDateCreated() {
+		q.SetDateCreated(req.GetDateCreated().AsTime())
+	} else {
+		q.SetDateCreated(st.now())
+	}
+
+	u, err := q.Save(ctx)
+	if err != nil {
+		if err, ok := err.(*ent.ConstraintError); ok {
+			if sqlgraph.IsUniqueConstraintError(err) {
+				return nil, status.Error(codes.AlreadyExists, "HostProof already exists")
+			}
+			if sqlgraph.IsForeignKeyConstraintError(err) {
+				return nil, status.Error(codes.NotFound, "HostProof: referenced entity not found")
+			}
+		}
+		return nil, err
+	}
+
+	if err := record(ctx, s.Rec, st.Db, Change{
+		By:  rstr.HostProofService_Add_FullMethodName,
+		Key: u.Id,
+	}); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	return v, nil
+}
+
+func (s HostProofServiceServer) Get(ctx context.Context, req *rstr.HostProofGetRequest) (*rstr.HostProof, error) {
+	p, err := HostProofPick(req.GetRef())
+	if err != nil {
+		return nil, err
+	}
+	p, err = s.narrow(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+
+	q := s.Db.HostProof.Query().Where(p)
+	HostProofSelectInit(q, req.GetSelect())
+
+	v, err := q.Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, status.Error(codes.NotFound, "HostProof not found")
+		}
+		return nil, err
+	}
+	return v.Proto(), nil
+}
+
+func selectHostProofKey(q *ent.HostProofQuery) {
+	q.Select(hostproof.FieldId)
+}
+
+func HostProofSelectedFields(m *rstr.HostProofSelect) []string {
+	if m.GetAll() {
+		return hostproof.Columns
+	}
+
+	vs := make([]string, 0, len(hostproof.Columns))
+	{
+		vs = append(vs, hostproof.FieldId)
+	}
+	if m.GetName() {
+		vs = append(vs, hostproof.FieldName)
+	}
+	if m.GetToken() {
+		vs = append(vs, hostproof.FieldToken)
+	}
+	if m.GetDateExpires() {
+		vs = append(vs, hostproof.FieldDateExpires)
+	}
+	if m.GetDesc() {
+		vs = append(vs, hostproof.FieldDesc)
+	}
+	if m.GetDateUpdated() {
+		vs = append(vs, hostproof.FieldDateUpdated)
+	}
+	if m.GetDateErased() {
+		vs = append(vs, hostproof.FieldDateErased)
+	}
+	if m.GetDateCreated() {
+		vs = append(vs, hostproof.FieldDateCreated)
+	}
+
+	return vs
+}
+
+func HostProofSelect(q *ent.HostProofQuery, m *rstr.HostProofSelect) {
+	if !m.GetAll() {
+		fields := HostProofSelectedFields(m)
+		q.Select(fields...)
+	}
+	if m.HasTenant() {
+		q.WithTenant(func(q *ent.TenantQuery) {
+			TenantSelect(q, m.GetTenant())
+		})
+	}
+}
+
+func HostProofSelectInit(q *ent.HostProofQuery, m *rstr.HostProofSelect) {
+	if m != nil {
+		HostProofSelect(q, m)
+	} else {
+		q.WithTenant(selectTenantKey)
+	}
+}
+
+func (s HostProofServiceServer) Patch(ctx context.Context, req *rstr.HostProofPatchRequest) (*rstr.HostProof, error) {
+	doc, err := ormpatch.FromPatchRequest(hostProofOrmEntity, req.ProtoReflect(), nil)
+	if err != nil {
+		if _, ok := status.FromError(err); ok {
+			return nil, err
+		}
+		if errors.Is(err, ormpatch.ErrRequestLayout) {
+			return nil, status.Errorf(codes.Internal, "%s", err)
+		}
+		if errors.Is(err, ormpatch.ErrUnsupported) {
+			return nil, status.Errorf(codes.Unimplemented, "%s", err)
+		}
+		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
+	}
+
+	return s.apply(ctx, req.GetRef(), doc, rstr.HostProofService_Patch_FullMethodName)
+}
+
+func HostProofGetKey(ctx context.Context, db *ent.Client, ref *rstr.HostProofRef) (uuid.UUID, error) {
+	var z uuid.UUID
+	if ref.HasId() {
+		if v, err := entuuid.FromBytes(ref.GetId()); err != nil {
+			return z, status.Errorf(codes.InvalidArgument, "id: %s", err)
+		} else {
+			return v, nil
+		}
+	}
+
+	p, err := HostProofPick(ref)
+	if err != nil {
+		return z, err
+	}
+
+	v, err := db.HostProof.Query().Where(p).OnlyId(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return z, status.Error(codes.NotFound, "HostProof not found")
+		}
+		return z, err
+	}
+
+	return v, nil
+}
+
+var hostProofOrmEntity = ormpatch.MustEntityOf(rstr.File_app_host_proto, "HostProof")
+
+var hostProofPatchColumns = entpatch.Columns{
+	1: hostproof.FieldId, 2: hostproof.TenantColumn, 5: hostproof.FieldName, 9: hostproof.FieldToken, 10: hostproof.FieldDateExpires, 6: hostproof.FieldDesc, 13: hostproof.FieldDateUpdated, 14: hostproof.FieldDateErased, 15: hostproof.FieldDateCreated}
+
+func (s HostProofServiceServer) Apply(ctx context.Context, req *rstr.HostProofApplyRequest) (*rstr.HostProof, error) {
+	if !req.HasPatch() {
+		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
+	}
+	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.HostProofService_Apply_FullMethodName)
+}
+
+func (s HostProofServiceServer) apply(ctx context.Context, ref *rstr.HostProofRef, doc *patchpb.Patch, by string) (*rstr.HostProof, error) {
+	plan := &ormpatch.Plan{Entity: hostProofOrmEntity}
+	if doc != nil {
+		v, err := ormpatch.Compile(hostProofOrmEntity, doc)
+		if err != nil {
+			if errors.Is(err, ormpatch.ErrUnsupported) {
+				return nil, status.Errorf(codes.Unimplemented, "%s", err)
+			}
+			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
+		}
+		plan = v
+	}
+
+	pred, mod, err := entpatch.Build(plan, hostProofPatchColumns, s.Db.Dialect())
+	if err != nil {
+		if errors.Is(err, entpatch.ErrValue) {
+			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
+		}
+		return nil, status.Errorf(codes.Internal, "%s", err)
+	}
+
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	k, err := HostProofGetKey(ctx, st.Db, ref)
+	if err != nil {
+		return nil, err
+	}
+	at := &rstr.HostProofRef{}
+	at.SetId(k[:])
+	p, err := s.narrow(ctx, hostproof.IdEQ(k))
+	if err != nil {
+		return nil, err
+	}
+
+	if mod == nil {
+		q := st.Db.HostProof.Query().Where(p)
+		if pred != nil {
+			q.Where(predicate.HostProof(pred))
+		}
+		if ok, err := q.Exist(ctx); err != nil {
+			return nil, err
+		} else if !ok {
+			return nil, func() error {
+				if ok, err := st.Db.HostProof.Query().Where(p).Exist(ctx); err != nil {
+					return err
+				} else if !ok {
+					return status.Error(codes.NotFound, "HostProof not found")
+				}
+				return status.Error(codes.FailedPrecondition, "a test in the patch did not hold")
+			}()
+		}
+	} else {
+		q := st.Db.HostProof.Update().Where(p)
+		if pred != nil {
+			q.Where(predicate.HostProof(pred))
+		}
+		q.Modify(mod)
+		if !plan.WritesTo(13) {
+			q.SetDateUpdated(st.now())
+		}
+		if n, err := q.Save(ctx); err != nil {
+			if err, ok := err.(*ent.ConstraintError); ok {
+				if sqlgraph.IsUniqueConstraintError(err) {
+					return nil, status.Error(codes.AlreadyExists, "HostProof already exists")
+				}
+				if sqlgraph.IsForeignKeyConstraintError(err) {
+					return nil, status.Error(codes.NotFound, "HostProof: referenced entity not found")
+				}
+			}
+			return nil, err
+		} else if n == 0 {
+			return nil, func() error {
+				if ok, err := st.Db.HostProof.Query().Where(p).Exist(ctx); err != nil {
+					return err
+				} else if !ok {
+					return status.Error(codes.NotFound, "HostProof not found")
+				}
+				return status.Error(codes.FailedPrecondition, "a test in the patch did not hold")
+			}()
+		}
+	}
+
+	if mod != nil {
+		if err := record(ctx, s.Rec, st.Db, Change{
+			By:    by,
+			Key:   k,
+			Patch: doc,
+		}); err != nil {
+			return nil, err
+		}
+	}
+
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (s HostProofServiceServer) Erase(ctx context.Context, req *rstr.HostProofRef) (*rstr.HostProofEraseResponse, error) {
+	p, err := HostProofPick(req)
+	if err != nil {
+		return nil, err
+	}
+	p, err = s.narrow(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	var k any
+	if s.Rec != nil {
+		v, err := st.Db.HostProof.Query().Where(p).OnlyId(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return &rstr.HostProofEraseResponse{}, nil
+			}
+			return nil, err
+		}
+
+		k = v
+		p = hostproof.And(p, hostproof.IdEQ(v))
+	}
+
+	u := st.Db.HostProof.Update().Where(p)
+	u.SetDateErased(st.now())
+	u.SetDateUpdated(st.now())
+	n, err := u.Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if n > 0 {
+		if err := record(ctx, s.Rec, st.Db, Change{
+			By:  rstr.HostProofService_Erase_FullMethodName,
+			Key: k,
+		}); err != nil {
+			return nil, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	res := &rstr.HostProofEraseResponse{}
+	res.SetErased(n > 0)
+
+	return res, nil
+}
+
+// HostProofPick answers with the predicate this reference selects on,
+// among the rows that are still here.
+//
+// Erasure is part of the reference and not only part of a read's scope,
+// because a reference to a HostProof is composed into the reference of
+// whatever names one: an index over an edge asks this for a predicate and
+// puts it inside `HasHostProofWith`, where no narrowing of a HostProof
+// is ever applied. A child of an erased row would otherwise be readable by
+// naming its parent.
+func HostProofPick(req *rstr.HostProofRef) (predicate.HostProof, error) {
+	p, err := pickHostProof(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return hostproof.And(hostproof.DateErasedIsNil(), p), nil
+}
+
+func pickHostProof(req *rstr.HostProofRef) (predicate.HostProof, error) {
+	switch req.WhichKey() {
+	case rstr.HostProofRef_Id_case:
+		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+		} else {
+			return hostproof.IdEQ(v), nil
+		}
+	case rstr.HostProofRef_At_case:
+		k := req.GetAt()
+		ps := make([]predicate.HostProof, 0, 2)
+		if p, err := TenantPick(k.GetTenant()); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "at.tenant: %s", err)
+		} else {
+			ps = append(ps, hostproof.HasTenantWith(p))
+		}
+		ps = append(ps, hostproof.NameEQ(k.GetName()))
+		return hostproof.And(ps...), nil
+	case rstr.HostProofRef_Key_not_set_case:
+		return nil, status.Errorf(codes.InvalidArgument, "key not set: HostProof")
 	default:
 		return nil, status.Errorf(codes.Unimplemented, "unknown type of key: %s", req.WhichKey())
 	}

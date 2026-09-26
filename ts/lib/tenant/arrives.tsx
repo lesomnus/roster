@@ -47,7 +47,7 @@ import { useState } from 'react'
 import { useCall, useQuery } from '@lesomnus/payday/react'
 
 import { ConnectionService } from '../../gen/app/connection_svc_pb.js'
-import { HostService, MailDomainService } from '../../gen/app/host_svc_pb.js'
+import { HostProofService, HostService, MailDomainService } from '../../gen/app/host_svc_pb.js'
 
 /** uuid is the bytes an identifier arrives as, written the way a person reads one. */
 function uuid(v: Uint8Array | undefined): string {
@@ -56,6 +56,13 @@ function uuid(v: Uint8Array | undefined): string {
 	const h = [...v].map((b) => b.toString(16).padStart(2, '0')).join('')
 
 	return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`
+}
+
+// when is a moment written the way somebody reads one, or nothing.
+function when(v: { seconds: bigint } | undefined): string {
+	if (v === undefined) return ''
+
+	return new Date(Number(v.seconds) * 1000).toISOString().replace('T', ' ').slice(0, 16)
 }
 
 function said(e: unknown): string {
@@ -80,6 +87,7 @@ export function Arrives(props: {
 		<section className="within arrives">
 			<h3>{props.tenant?.alias} — arrives through</h3>
 			<Hosts tenant={id} may={props.may} />
+			<Claims tenant={id} may={props.may} />
 			<Connections tenant={id} may={props.may} />
 			<MailDomains tenant={id} may={props.may} />
 		</section>
@@ -114,6 +122,12 @@ function Hosts(props: { tenant: Uint8Array; may: (m: string) => boolean }): Reac
 				asks roster which tenant a name is rather than holding a map, so a name
 				missing here is a sign-in page that says nobody is there.
 			</p>
+			<p className="note">
+				A name is unique across the deployment, so there are two roads to one.
+				Claiming it below and publishing what roster asks for is a tenant's own;
+				writing it straight in is a roster operator's, because the person who
+				routed the name is the person writing it. <em>proved</em> is which.
+			</p>
 
 			{items.length === 0 && <p className="none">no names yet</p>}
 			{items.length > 0 && (
@@ -123,7 +137,7 @@ function Hosts(props: { tenant: Uint8Array; may: (m: string) => boolean }): Reac
 							editing === uuid(v.id) ? (
 								<tr key={uuid(v.id)} className="editing">
 									<td className="mono">{v.name}</td>
-									<td colSpan={2}>
+									<td colSpan={3}>
 										<form
 											className="edit"
 											onSubmit={(e) => {
@@ -154,6 +168,16 @@ function Hosts(props: { tenant: Uint8Array; may: (m: string) => boolean }): Reac
 							<tr key={uuid(v.id)}>
 								<td className="mono">{v.name}</td>
 								<td>{v.desc}</td>
+								<td>
+									{/* Which road wrote it. Not a gate -- a front door resolves a
+									    name either way -- so this says nothing about the row being
+									    usable and everything about what it is evidence of. */}
+									{v.dateProved === undefined ? (
+										<span className="dim">written</span>
+									) : (
+										<span>proved</span>
+									)}
+								</td>
 								<td>
 									<button disabled={!props.may('/roster.HostService/Update')} onClick={() => setEditing(uuid(v.id))}>
 										edit
@@ -203,6 +227,134 @@ function Hosts(props: { tenant: Uint8Array; may: (m: string) => boolean }): Reac
 					add name
 				</button>
 			</form>
+			{bad !== null && <p className="bad">{bad}</p>}
+		</section>
+	)
+}
+
+/**
+ * Claims is the names being proved, and what to publish to prove them.
+ *
+ * The second half of the exchange is `Host.Add` and not a verb of its own, which
+ * is the thing worth knowing before reading this: roster does the lookup when the
+ * row is written, so *take the name* below is the same call the form above makes.
+ * A tenant who has not published yet is refused, saying which record is missing
+ * and what it should say -- so the button needs no optimism and this screen needs
+ * no state machine.
+ */
+function Claims(props: { tenant: Uint8Array; may: (m: string) => boolean }): React.ReactNode {
+	const vs = useQuery(HostProofService.method.list, by(props.tenant))
+	const add = useCall(HostProofService.method.add)
+	const erase = useCall(HostProofService.method.erase)
+	const take = useCall(HostService.method.add)
+	const [gone, setGone] = useState<string[]>([])
+	const [bad, setBad] = useState<string | null>(null)
+	const [done, say] = useState<string | null>(null)
+
+	if (vs.state === 'pending') return <p className="loading">…</p>
+	if (vs.state === 'error') return <p className="bad">{said(vs.error)}</p>
+
+	const items = (vs.data?.items ?? []).filter((v) => !gone.includes(uuid(v.id)))
+
+	// The record to publish, written out the way a DNS provider's form asks for
+	// it: a name, a type, and a value.
+	const record = (name: string): string => `_roster-challenge.${name}`
+
+	const drop = (id: Uint8Array): void => {
+		setBad(null)
+		void erase
+			.call({ key: { case: 'id', value: id } })
+			.then(() => setGone((was) => [...was, uuid(id)]))
+			.catch((e: unknown) => setBad(said(e)))
+	}
+
+	return (
+		<section>
+			<h4>proving a name</h4>
+			<p className="note">
+				Claim a name here, publish the value below as a <code>TXT</code> record,
+				then take it. roster asks the servers that hold the zone rather than a
+				cache, so there is nothing to wait for once the record is saved — and
+				nothing is held by claiming: two tenants may be claiming one name at
+				once, and whoever's value is published has it.
+			</p>
+
+			{items.length === 0 && <p className="none">nothing being proved</p>}
+			{items.map((v) => (
+				<div className="claim" key={uuid(v.id)}>
+					<p className="mono">{v.name}</p>
+					<table>
+						<tbody>
+							<tr>
+								<td>name</td>
+								<td className="mono">{record(v.name)}</td>
+							</tr>
+							<tr>
+								<td>type</td>
+								<td className="mono">TXT</td>
+							</tr>
+							<tr>
+								<td>value</td>
+								<td className="mono">{v.token}</td>
+							</tr>
+							<tr>
+								<td>good until</td>
+								<td>{when(v.dateExpires)}</td>
+							</tr>
+						</tbody>
+					</table>
+					<button
+						disabled={take.state === 'pending' || !props.may('/roster.HostService/Add')}
+						onClick={() => {
+							setBad(null)
+							say(null)
+							// The same call the form above makes. The lookup is
+							// roster's and happens here.
+							void take
+								.call({ tenant: at(props.tenant), name: v.name })
+								.then(() => {
+									setGone((was) => [...was, uuid(v.id)])
+									say(`${v.name} is yours`)
+								})
+								.catch((e: unknown) => setBad(said(e)))
+						}}
+					>
+						take the name
+					</button>
+					<button
+						disabled={!props.may('/roster.HostProofService/Erase')}
+						onClick={() => drop(v.id)}
+					>
+						give up
+					</button>
+				</div>
+			))}
+
+			<form
+				onSubmit={(e) => {
+					e.preventDefault()
+					const form = e.currentTarget
+					const f = new FormData(form)
+					const name = String(f.get('name') ?? '').trim()
+					if (name === '') return
+
+					setBad(null)
+					say(null)
+					// The token and the window are not sent: roster generates
+					// both and refuses a request that carries either, for the
+					// reason `server/core/hostproof.go` gives.
+					void add
+						.call({ tenant: at(props.tenant), name })
+						.then(() => form.reset())
+						.catch((e: unknown) => setBad(said(e)))
+				}}
+			>
+				<input name="name" placeholder="contoso.example.com" required />
+				<button type="submit" disabled={add.state === 'pending' || !props.may('/roster.HostProofService/Add')}>
+					claim a name
+				</button>
+			</form>
+			{done !== null && <p className="note">{done}</p>}
 			{bad !== null && <p className="bad">{bad}</p>}
 		</section>
 	)

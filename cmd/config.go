@@ -17,6 +17,8 @@ import (
 
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/config"
+
+	"github.com/lesomnus/roster/server/prove"
 	// The two engines this app runs on, blank-imported here rather than by
 	// payday so that an app does not carry one it never opens.
 	//
@@ -172,6 +174,14 @@ type Config struct {
 	// that grows by the key and is the last one anybody wants a clock deleting
 	// from.
 	Audit config.AuditConfig `yaml:"audit"`
+
+	// Host is what this deployment needs to check that a hostname is a tenant's.
+	//
+	// One setting, and `docs/operating.md` § "A tenant registers its own
+	// hostname" is what it decides: with a resolver, a tenant claims a name and
+	// proves it through DNS; with `none`, they are told a roster operator writes
+	// the row, which is what an air gap already does.
+	Host prove.Config `yaml:"host"`
 
 	// Holder is what happens to somebody after they leave.
 	//
