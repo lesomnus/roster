@@ -1,9 +1,13 @@
 package core
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"crypto/subtle"
+	"github.com/protobuf-orm/ent/dialect"
+	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
+
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/roster/server/vouch"
@@ -107,6 +111,23 @@ func (s coreEmail) Patch(ctx context.Context, req *app.EmailPatchRequest) (*app.
 // goes in the same table `Vouch.Link` writes, naming its `email`, which is what
 // tells `Confirm` this is a verification and not a way in. See
 // `email_svc.ext.proto`.
+//
+// # And the other shape, which is a claim rather than a proof of your own
+//
+// `holder` set is somebody claiming an address **another row holds unproved**.
+// The rules swap: `mayReach` on the row's holder is not asked -- it guards a row
+// somebody proved and this is one nobody did -- and `mayWriteAWayIn` is asked
+// about the **claimant** instead, which is the rule `Email.Add` already meets on
+// the other road to the same row.
+//
+// What makes it safe is not a permission. It is that the link goes to the
+// **mailbox**, and roster does not deliver: the caller here is a front door,
+// which reads the address off the row and puts the token in a message to it
+// (`account/account.go`). Whoever reads that mailbox is who ends up holding the
+// address, which is the whole of what a proof of an address can mean.
+//
+// See [coreEmail.Confirm] for where the address actually moves, and
+// `email_svc.ext.proto` for why a **proved** address does not.
 func (s coreEmail) Verify(ctx context.Context, req *app.EmailVerifyRequest) (*app.EmailVerifyResponse, error) {
 	f, ok := frame.From(ctx)
 	if !ok || f.Actor.IsZero() {
@@ -114,17 +135,42 @@ func (s coreEmail) Verify(ctx context.Context, req *app.EmailVerifyRequest) (*ap
 	}
 
 	v, err := s.EmailServiceServer.Get(ctx, app.EmailGetRequest_builder{
-		Ref:    req.GetRef(),
-		Select: app.EmailSelect_builder{Holder: app.HolderSelect_builder{}.Build()}.Build(),
+		Ref: req.GetRef(),
+		Select: app.EmailSelect_builder{
+			// The stamp, which decides which of the two shapes below this is.
+			DateVerified: z.Ptr(true),
+			Holder:       app.HolderSelect_builder{}.Build(),
+		}.Build(),
 	}.Build())
 	if err != nil {
 		return nil, err
 	}
-	holder, err := pdid.From(v.GetHolder().GetId())
-	if err != nil {
+
+	// Whose the link is, which is whose the address becomes. The row's own
+	// holder unless a claimant was named.
+	whose := v.GetHolder().GetId()
+
+	if claim := req.GetHolder(); claim != nil {
+		if v.GetDateVerified() != nil {
+			// A proved address does not move. Said rather than made one answer
+			// with the rest, because the caller is a front door and this is a
+			// fact about the row it is looking at: a page that drew *claim this
+			// address* over somebody's confirmed one should stop drawing it.
+			return nil, status.Error(codes.FailedPrecondition,
+				"ref: somebody has proved that address, and a proved address does not change hands here")
+		}
+		if err := s.mayWriteAWayIn(ctx, "holder", claim); err != nil {
+			return nil, err
+		}
+
+		k, err := s.holderOf(ctx, claim)
+		if err != nil {
+			return nil, err
+		}
+		whose = k.Bytes()
+	} else if holder, err := pdid.From(v.GetHolder().GetId()); err != nil {
 		return nil, err
-	}
-	if err := s.mayReach(ctx, "ref", holder); err != nil {
+	} else if err := s.mayReach(ctx, "ref", holder); err != nil {
 		return nil, err
 	}
 
@@ -140,7 +186,12 @@ func (s coreEmail) Verify(ctx context.Context, req *app.EmailVerifyRequest) (*ap
 	}
 
 	if _, err := s.Next().Link().Add(ctx, app.LinkAddRequest_builder{
-		Holder:      app.HolderRef_builder{Id: v.GetHolder().GetId()}.Build(),
+		// The **claimant**, which for the ordinary shape is the row's own holder
+		// and so is what this always wrote. `Confirm` reads it to decide whether
+		// there is anything to move, and `Vouch.Redeem` cannot read it at all --
+		// a link naming an `email` is refused there, which is the discriminator
+		// both doors are held to (`email_svc.ext.proto`).
+		Holder:      app.HolderRef_builder{Id: whose}.Build(),
 		Email:       app.EmailRef_builder{Id: v.GetId()}.Build(),
 		Secret:      sum,
 		Issuer:      f.Actor.Bytes(),
@@ -205,11 +256,26 @@ func (s coreEmail) Attest(ctx context.Context, req *app.EmailAttestRequest) (*ap
 			}.Build(),
 		}.Build())
 		if err != nil {
+			if status.Code(err) != codes.NotFound {
+				return nil, err
+			}
+
 			// Looked up on **this holder's** row, so a NotFound here is the
-			// address being somebody else's -- which is what `AlreadyExists`
-			// meant and is a refusal rather than a thing to stamp. An address
-			// is one person's within a tenant, and that is the rule F7 closed.
-			return nil, err
+			// address being somebody else's. Which used to end here, and that
+			// refusal is what made an address squattable: a row nobody proved
+			// held the address against the index, so the person a directory
+			// vouches for could not be given it by any road.
+			//
+			// A directory saying `email_verified` is a proof, so it takes an
+			// address **nobody proved** the way a link does. Only that, and only
+			// on `verified`: a provider's word is its own word, where a link is a
+			// round trip to the mailbox -- so this is the narrower of the two
+			// roads to the same move and stays that way.
+			if !req.GetVerified() {
+				return nil, err
+			}
+
+			return s.attested(ctx, req)
 		}
 
 	default:
@@ -236,6 +302,22 @@ func (s coreEmail) Attest(ctx context.Context, req *app.EmailAttestRequest) (*ap
 // string. What is different from `Redeem` is the whole point -- nothing is
 // minted. `date_verified` is written here, through the generated `Patch`, which
 // is the one road to it: the gate refuses a request that asserts it.
+//
+// # And it is where an address changes hands
+//
+// A link whose `holder` is not the row's holder is a **claim**, minted by
+// [coreEmail.Verify] for somebody who does not hold the address. Spending one is
+// three writes in one transaction -- erase the row that held it, write the
+// address on the claimant, stamp it -- which is `coreHost.proved`'s shape for
+// `coreHost.proved`'s reason: an address that is two rows for a moment is an
+// address the unique index refuses, and one that is no rows for a moment is an
+// address somebody else can take in between.
+//
+// What may be taken is an address nobody proved. `Verify` is where that is
+// checked, because that is where there is somebody to tell -- and it is checked
+// again here rather than trusted, for the reason every hop in this app rechecks:
+// minutes pass between the two, and what the row said then is not what it says
+// now. Somebody who proved the address in the meantime keeps it.
 func (s coreEmail) Confirm(ctx context.Context, req *app.EmailConfirmRequest) (*app.EmailConfirmResponse, error) {
 	f, ok := frame.From(ctx)
 	if !ok || f.Actor.IsZero() {
@@ -256,6 +338,11 @@ func (s coreEmail) Confirm(ctx context.Context, req *app.EmailConfirmRequest) (*
 			Issuer:      z.Ptr(true),
 			DateExpires: z.Ptr(true),
 			Email:       app.EmailSelect_builder{}.Build(),
+			// Whose claim it is, which for an ordinary verification is the row's
+			// own holder and for a claim is somebody else. Read here rather than
+			// assumed, which is the difference between stamping a row and moving
+			// an address.
+			Holder: app.HolderSelect_builder{}.Build(),
 		}.Build(),
 	}.Build())
 	if err != nil {
@@ -285,12 +372,23 @@ func (s coreEmail) Confirm(ctx context.Context, req *app.EmailConfirmRequest) (*
 
 	ref := app.EmailRef_builder{Id: l.GetEmail().GetId()}.Build()
 	e, err := s.Next().Email().Get(ctx, app.EmailGetRequest_builder{
-		Ref:    ref,
-		Select: app.EmailSelect_builder{DateUpdated: z.Ptr(true)}.Build(),
+		Ref: ref,
+		Select: app.EmailSelect_builder{
+			Address:      z.Ptr(true),
+			DateVerified: z.Ptr(true),
+			DateUpdated:  z.Ptr(true),
+			Holder:       app.HolderSelect_builder{}.Build(),
+		}.Build(),
 	}.Build())
 	if err != nil {
 		return nil, err
 	}
+
+	// A claim, which is a link for somebody who does not hold the row.
+	if !bytes.Equal(l.GetHolder().GetId(), e.GetHolder().GetId()) {
+		return s.moved(ctx, l, e)
+	}
+
 	out, err := s.Next().Email().Patch(ctx, app.EmailPatchRequest_builder{
 		Ref:          ref,
 		DateVerified: timestamppb.Now(),
@@ -301,4 +399,184 @@ func (s coreEmail) Confirm(ctx context.Context, req *app.EmailConfirmRequest) (*
 	}
 
 	return app.EmailConfirmResponse_builder{Email: out}.Build(), nil
+}
+
+// moved is a claim being spent: the address leaves the row that held it and
+// arrives on the claimant's, proved.
+//
+// `coreHost.proved`'s three writes, in one transaction and for the same reason --
+// `Email` is unique on `(tenant, address)` among the living, so the erase has to
+// land before the add or the index refuses it, and neither may be visible alone.
+// A crash between them would otherwise leave an address that is nobody's with a
+// link already spent.
+//
+// # What it checks again, having been checked at `Verify`
+//
+// That the row is still unproved. Fifteen minutes pass between minting a link and
+// clicking it (`vouch.LinkFor`), and what the row said then is not what it says
+// now: somebody who proved the address in that window keeps it, and the claim is
+// the thing that expires. Answered as the refusal `Verify` would have made, rather
+// than `NotFound`, because the caller is a front door holding a spent link and the
+// honest thing to tell it is why.
+//
+// And that both rows are one tenant's, which the wall has already decided --
+// `Confirm` reads both through `Next()`, which is through it. Said here because it
+// is the one property that makes the write narrow: an address crosses rows and
+// never a tenant.
+func (s coreEmail) moved(ctx context.Context, l *app.Link, e *app.Email) (*app.EmailConfirmResponse, error) {
+	if e.GetDateVerified() != nil {
+		return nil, status.Error(codes.FailedPrecondition,
+			"somebody proved that address while this link was out, and a proved address does not change hands here")
+	}
+	if s.drv == nil {
+		return nil, status.Error(codes.FailedPrecondition,
+			"this server cannot open a transaction, so it will not move an address in three writes")
+	}
+
+	drv, tx, err := dialect.BeginTx(ctx, s.drv)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	// This layer again over a rebound one below it, as `coreHost.proved` does:
+	// the writes go to the server **below** this one, so `Add` does not arrive
+	// back here and ask about a claim that has just been spent.
+	next, err := enttx.Rebind(s.Next(), drv)
+	if err != nil {
+		return nil, err
+	}
+
+	// Let go first. A soft erase, which is what every other row here does, and it
+	// is enough: the unique index covers the living only, so an erased row holds
+	// no address.
+	gone, err := next.Email().Erase(ctx, app.EmailRef_builder{Id: e.GetId()}.Build())
+	if err != nil {
+		return nil, err
+	}
+	if !gone.GetErased() {
+		// Somebody else took it out from under this call. Which is not a failure
+		// worth a special answer: the address is nobody's now, and the claimant
+		// may write it with `Email.Add` like anybody else.
+		return nil, status.Error(codes.FailedPrecondition,
+			"that address is no longer held by the row this link was minted against")
+	}
+
+	v, err := next.Email().Add(ctx, app.EmailAddRequest_builder{
+		Holder:  app.HolderRef_builder{Id: l.GetHolder().GetId()}.Build(),
+		Address: e.GetAddress(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	// And the stamp, which is the whole point of having proved it. Through
+	// `Patch` because `date_verified` is `stamped:` and refused to an `Add`.
+	out, err := next.Email().Patch(ctx, app.EmailPatchRequest_builder{
+		Ref:          app.EmailRef_builder{Id: v.GetId()}.Build(),
+		DateVerified: timestamppb.Now(),
+		DateUpdated:  v.GetDateUpdated(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return app.EmailConfirmResponse_builder{Email: out}.Build(), nil
+}
+
+// attested is a directory's word taking an address nobody proved.
+//
+// [coreEmail.moved]'s three writes with the other kind of evidence in front of
+// them, and a separate function rather than a branch because what each one has
+// already established is different: `moved` holds a spent link and knows the row
+// from it, and this holds a `verified` attestation and has to go and find the row.
+//
+// The rules it meets are `Attest`'s own, already run by the time this is reached:
+// the address is normalised, a voucher is required, and `mayWriteAWayIn` has
+// passed for the holder it is writing onto. What is left is the one this adds --
+// the incumbent must be **unproved** -- and it is read here rather than taken on
+// trust, because the caller named an address and not a row.
+func (s coreEmail) attested(ctx context.Context, req *app.EmailAttestRequest) (*app.Email, error) {
+	if s.drv == nil {
+		return nil, status.Error(codes.FailedPrecondition,
+			"this server cannot open a transaction, so it will not move an address in three writes")
+	}
+
+	address := front.Address(req.GetAddress())
+
+	// Through the wall, by address alone -- which is the read `Email`'s `at` index
+	// exists for and the one `Attest` above could not make, because that one is
+	// narrowed to a holder. So this finds the row whoever holds it, within the
+	// caller's tenant and no further.
+	tenant, err := s.tenantOfHolder(ctx, req.GetHolder())
+	if err != nil {
+		return nil, err
+	}
+
+	held, err := s.EmailServiceServer.Get(ctx, app.EmailGetRequest_builder{
+		Ref: app.EmailRef_builder{
+			At: app.EmailRefByAt_builder{TenantId: tenant.Bytes(), Address: z.Ptr(address)}.Build(),
+		}.Build(),
+		Select: app.EmailSelect_builder{DateVerified: z.Ptr(true)}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+	if held.GetDateVerified() != nil {
+		// A proved address does not move, and this is the road where that matters
+		// most: a directory's claim about an address is cheaper to come by than a
+		// mailbox. `NotFound` rather than a reason, uniquely here, because the
+		// caller is an app in the middle of signing somebody in and the answer it
+		// needs is the one it already handles -- `Attest`'s own note says a
+		// failure is not a failure, since the sign-in worked and the address is a
+		// convenience.
+		return nil, status.Error(codes.NotFound, "that address is somebody else's")
+	}
+
+	drv, tx, err := dialect.BeginTx(ctx, s.drv)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	next, err := enttx.Rebind(s.Next(), drv)
+	if err != nil {
+		return nil, err
+	}
+
+	gone, err := next.Email().Erase(ctx, app.EmailRef_builder{Id: held.GetId()}.Build())
+	if err != nil {
+		return nil, err
+	}
+	if !gone.GetErased() {
+		return nil, status.Error(codes.FailedPrecondition, "that address is no longer held by the row this read")
+	}
+
+	v, err := next.Email().Add(ctx, app.EmailAddRequest_builder{
+		Holder:    req.GetHolder(),
+		Address:   req.GetAddress(),
+		VouchedBy: req.GetVouchedBy(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	out, err := next.Email().Patch(ctx, app.EmailPatchRequest_builder{
+		Ref:          app.EmailRef_builder{Id: v.GetId()}.Build(),
+		DateVerified: timestamppb.Now(),
+		DateUpdated:  v.GetDateUpdated(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }

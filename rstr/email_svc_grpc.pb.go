@@ -66,6 +66,23 @@ type EmailServiceClient interface {
 	// is the front door's business. The app that asked puts it in a message to
 	// **that** address; a link that arrives anywhere else proves nothing, which
 	// is why only the address on the row is ever a place it goes.
+	//
+	// # It also mints a link for an address that is somebody else's
+	//
+	// Which is [EmailVerifyRequest.holder], and it exists because the shape
+	// without it left an address **squattable**. `Email` is unique on
+	// `(tenant, address)` and `vouch.byAddress` resolves a person by one, so a row
+	// nobody proved still named somebody -- and `Add` answering `AlreadyExists`
+	// meant the rightful holder could not write the row, could not reach this
+	// verb, and had no road to the address at all. What that cost is not a
+	// takeover: a link goes to the mailbox either way. It is a name the real
+	// holder is refused, with a refusal that says only that somebody has it,
+	// which is `host.proto` § *Why a hostname is not checked* one medium along.
+	//
+	// So this is #42's answer said about an address: a **claim** is minted by
+	// whoever wants the address, the proof is a round trip to the mailbox, and
+	// [EmailService.Confirm] is where the address moves. What is deliberately not
+	// here is a proved address moving; see `Confirm`.
 	Verify(ctx context.Context, in *EmailVerifyRequest, opts ...grpc.CallOption) (*EmailVerifyResponse, error)
 	// Confirm spends a link and stamps the row it was minted for.
 	//
@@ -73,6 +90,23 @@ type EmailServiceClient interface {
 	// spent, one expired, one minted by somebody else, one that is a recovery
 	// link. What a caller may rely on is that after `OK` the address is
 	// `date_verified` at this moment, and that nothing was signed in.
+	//
+	// # And it is where an address changes hands
+	//
+	// A link minted with [EmailVerifyRequest.holder] is a claim by somebody who
+	// does not hold the address. Spending one **moves** it: the row that held it
+	// unproved is erased and the address is written on the claimant, stamped, in
+	// one transaction. `host.proto`'s `proved()` is the same three writes for the
+	// same reason.
+	//
+	// What may be taken is an address **nobody has proved**, and that bound is the
+	// whole of why this is safe: there is nothing on such a row to protect, since
+	// under this change it resolves nobody either (`vouch.byAddress`). An address
+	// that somebody has proved does not move, which is where this and #42 differ
+	// on purpose -- a DNS name's incumbent cannot be relied on to let go, because a
+	// domain changes hands and the old holder is gone, while an address lives
+	// inside one tenant whose operator can erase a row. Letting a proved address
+	// move would make one compromised mailbox into an account somebody else holds.
 	Confirm(ctx context.Context, in *EmailConfirmRequest, opts ...grpc.CallOption) (*EmailConfirmResponse, error)
 	// Attest writes an address a **provider** vouched for, and stamps it when
 	// that provider said it had checked.
@@ -258,6 +292,23 @@ type EmailServiceServer interface {
 	// is the front door's business. The app that asked puts it in a message to
 	// **that** address; a link that arrives anywhere else proves nothing, which
 	// is why only the address on the row is ever a place it goes.
+	//
+	// # It also mints a link for an address that is somebody else's
+	//
+	// Which is [EmailVerifyRequest.holder], and it exists because the shape
+	// without it left an address **squattable**. `Email` is unique on
+	// `(tenant, address)` and `vouch.byAddress` resolves a person by one, so a row
+	// nobody proved still named somebody -- and `Add` answering `AlreadyExists`
+	// meant the rightful holder could not write the row, could not reach this
+	// verb, and had no road to the address at all. What that cost is not a
+	// takeover: a link goes to the mailbox either way. It is a name the real
+	// holder is refused, with a refusal that says only that somebody has it,
+	// which is `host.proto` § *Why a hostname is not checked* one medium along.
+	//
+	// So this is #42's answer said about an address: a **claim** is minted by
+	// whoever wants the address, the proof is a round trip to the mailbox, and
+	// [EmailService.Confirm] is where the address moves. What is deliberately not
+	// here is a proved address moving; see `Confirm`.
 	Verify(context.Context, *EmailVerifyRequest) (*EmailVerifyResponse, error)
 	// Confirm spends a link and stamps the row it was minted for.
 	//
@@ -265,6 +316,23 @@ type EmailServiceServer interface {
 	// spent, one expired, one minted by somebody else, one that is a recovery
 	// link. What a caller may rely on is that after `OK` the address is
 	// `date_verified` at this moment, and that nothing was signed in.
+	//
+	// # And it is where an address changes hands
+	//
+	// A link minted with [EmailVerifyRequest.holder] is a claim by somebody who
+	// does not hold the address. Spending one **moves** it: the row that held it
+	// unproved is erased and the address is written on the claimant, stamped, in
+	// one transaction. `host.proto`'s `proved()` is the same three writes for the
+	// same reason.
+	//
+	// What may be taken is an address **nobody has proved**, and that bound is the
+	// whole of why this is safe: there is nothing on such a row to protect, since
+	// under this change it resolves nobody either (`vouch.byAddress`). An address
+	// that somebody has proved does not move, which is where this and #42 differ
+	// on purpose -- a DNS name's incumbent cannot be relied on to let go, because a
+	// domain changes hands and the old holder is gone, while an address lives
+	// inside one tenant whose operator can erase a row. Letting a proved address
+	// move would make one compromised mailbox into an account somebody else holds.
 	Confirm(context.Context, *EmailConfirmRequest) (*EmailConfirmResponse, error)
 	// Attest writes an address a **provider** vouched for, and stamps it when
 	// that provider said it had checked.

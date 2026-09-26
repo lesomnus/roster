@@ -143,11 +143,10 @@ func TestAskingForALinkSaysNothingAboutWhoIsHere(t *testing.T) {
 	c := app.NewVouchServiceClient(b.Conn)
 	as := bearing(ctx, b.Token)
 
-	_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
-		Holder:  app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
-		Address: "someone@contoso.example",
-	}.Build())
-	x.NoError(err)
+	// Proved, because an address nothing checked names nobody (#48) -- and what
+	// this test is about is that a **real** address and a stranger's answer the
+	// same, which needs a real one to exist.
+	proves(t, ctx, b.Server, b.Who, "someone@contoso.example")
 
 	real, err := c.Link(as, app.VouchLinkRequest_builder{
 		Who: app.VouchWho_builder{Tenant: "contoso", Address: "someone@contoso.example"}.Build(),

@@ -23,6 +23,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/test/bufconn"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/auth/authsession"
@@ -676,9 +677,19 @@ func TestAPasswordSignInReadsItsOwnRecord(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	_, err = d.ungated.Email().Add(ctx, rstr.EmailAddRequest_builder{
+	// **Proved**, because an address nothing has checked names nobody (#48): a
+	// sign-in by address reads `date_verified` now. Stamped through `Patch`, which
+	// is the one road to a `stamped:` field and is what a server below the gate
+	// may do.
+	row, err := d.ungated.Email().Add(ctx, rstr.EmailAddRequest_builder{
 		Holder:  rstr.HolderRef_builder{Id: h.GetId()}.Build(),
 		Address: "erin@contoso.example",
+	}.Build())
+	x.NoError(err)
+	_, err = d.ungated.Email().Patch(ctx, rstr.EmailPatchRequest_builder{
+		Ref:          rstr.EmailRef_builder{Id: row.GetId()}.Build(),
+		DateVerified: timestamppb.Now(),
+		DateUpdated:  row.GetDateUpdated(),
 	}.Build())
 	x.NoError(err)
 

@@ -375,6 +375,7 @@ func (a *App) Handler() http.Handler {
 	m.HandleFunc("POST /recover", a.recover)
 	m.HandleFunc("GET /redeem", a.redeem)
 	m.HandleFunc("POST /verify", a.verify)
+	m.HandleFunc("POST /claim", a.claim)
 	m.HandleFunc("POST /prove", a.prove)
 	m.HandleFunc("GET /confirm", a.confirm)
 	// Every `/roster.<Service>/<Method>` is the page speaking Connect to this
@@ -954,6 +955,102 @@ func (a *App) verify(w http.ResponseWriter, r *http.Request) {
 	link := a.finish(r, "/confirm", res.GetToken())
 	if err := a.c.Mail(ctx, row.GetAddress(), "Confirm your address", link); err != nil {
 		fmt.Fprintf(os.Stderr, "account: mail to %s: %v\n", row.GetAddress(), err)
+		http.Error(w, "cannot send", http.StatusBadGateway)
+		return
+	}
+
+	w.WriteHeader(http.StatusAccepted)
+}
+
+// claim mails a link for an address somebody **else** holds and nobody proved.
+//
+// The road out of a squat, and the reason there has to be one: an address is one
+// person's within a tenant, so a row written down without being checked kept the
+// rightful holder from adding it at all -- `Email.Add` answers *somebody has it*,
+// and there is no second row to be had (#48).
+//
+// # What is different from `verify` above, and what is not
+//
+// Not the delivery, which is the whole shape either way: roster mints and this app
+// mails, so the token goes to the **mailbox** and whoever reads it is who ends up
+// holding the address. Not the key it is minted with, which is this app's for the
+// reason that one gives -- the key that mints a link is the key that confirms it,
+// and the click comes from a mail client with no session.
+//
+// What is different is where the address comes from. `verify` reads it off a row
+// the person holds and never from the request; there is no such row here, so the
+// request names it -- and what keeps that from being a way to mail anybody is that
+// roster refuses the mint unless the address is already on an unproved row in this
+// operator's tenant. So the set of addresses this can reach is the set `POST
+// /recover` can already reach, and for the same reason.
+//
+// The claim is the **signed-in person's**, read off the session and never from the
+// request: an endpoint that took a holder would be a way to put an address on
+// somebody else's account, which is `mayWriteAWayIn`'s case and not something to
+// offer a page.
+func (a *App) claim(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	if a.c.Mail == nil {
+		http.Error(w, "this deployment cannot send mail, so it cannot claim an address this way", http.StatusNotImplemented)
+		return
+	}
+	if _, err := a.door.Acting(ctx, r); err != nil {
+		http.Error(w, "no", http.StatusUnauthorized)
+		return
+	}
+	t, ok := tenantFrom(ctx)
+	if !ok {
+		http.Error(w, "no operator here serves this name", http.StatusNotFound)
+		return
+	}
+	who, ok := a.door.Who(ctx, r)
+	if !ok {
+		http.Error(w, "no", http.StatusUnauthorized)
+		return
+	}
+
+	var body struct {
+		Address string `json:"address"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&body); err != nil {
+		http.Error(w, "no", http.StatusBadRequest)
+		return
+	}
+	address := strings.ToLower(strings.TrimSpace(body.Address))
+	if address == "" {
+		http.Error(w, "address: which address", http.StatusBadRequest)
+		return
+	}
+
+	res, err := a.roster.Email().Verify(withKey(ctx, t.key), rstr.EmailVerifyRequest_builder{
+		Ref: rstr.EmailRef_builder{
+			At: rstr.EmailRefByAt_builder{TenantId: t.id.Bytes(), Address: proto.String(address)}.Build(),
+		}.Build(),
+		Holder: rstr.HolderRef_builder{Id: who.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		switch status.Code(err) {
+		case codes.NotFound:
+			// Nobody in this tenant holds it, so there is nothing to claim -- and
+			// the answer is what a person can act on: add it, which now works.
+			http.Error(w, "nobody here holds that address", http.StatusNotFound)
+		case codes.FailedPrecondition:
+			// Somebody proved it. Said rather than folded into the above, because
+			// it is the one refusal a person cannot do anything about and a page
+			// that offered *claim it* should stop offering it.
+			http.Error(w, "somebody has proved that address", http.StatusConflict)
+		case codes.PermissionDenied:
+			http.Error(w, "no", http.StatusForbidden)
+		default:
+			fmt.Fprintf(os.Stderr, "account: claim %s: %v\n", address, err)
+			http.Error(w, "cannot start", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	link := a.finish(r, "/confirm", res.GetToken())
+	if err := a.c.Mail(ctx, address, "Confirm your address", link); err != nil {
+		fmt.Fprintf(os.Stderr, "account: mail to %s: %v\n", address, err)
 		http.Error(w, "cannot send", http.StatusBadGateway)
 		return
 	}

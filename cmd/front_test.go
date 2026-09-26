@@ -181,14 +181,12 @@ func TestWhereSomebodyAuthenticatesHangsOffTheDomain(t *testing.T) {
 // arrives from somewhere the form did not type*. A front door has one now, and
 // `Email` has a unique `(tenant, address)` to go with it.
 func TestSigningInByAddressIsF7Closed(t *testing.T) {
-	x := require.New(t)
 	b, ctx := build(t)
 
-	_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
-		Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
-		Address: "someone@contoso.example",
-	}.Build())
-	x.NoError(err)
+	// Proved, because an address nothing checked names nobody (#48). Which sits
+	// beside F7's rule rather than replacing it: the index is what makes an
+	// address name **one** person, and the stamp is what makes it name anybody.
+	proves(t, ctx, b.Server, b.ContosoUser, "someone@contoso.example")
 
 	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
@@ -238,11 +236,7 @@ func TestSigningInByAddressIsF7Closed(t *testing.T) {
 		x := require.New(t)
 
 		them := b.holder(t, ctx, b.Fabrikam, "consultant")
-		_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
-			Holder:  app.HolderRef_builder{Id: them.Bytes()}.Build(),
-			Address: "someone@contoso.example",
-		}.Build())
-		x.NoError(err, "a consultant was refused the second account")
+		proves(t, ctx, b.Server, them, "someone@contoso.example")
 
 		b.sets(t, ctx, them, "a different password")
 

@@ -201,11 +201,11 @@ func TestAnAddressNamesOnePersonInATenant(t *testing.T) {
 
 	const theirs = "someone@contoso.example"
 
-	_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
-		Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
-		Address: theirs,
-	}.Build())
-	x.NoError(err)
+	// Proved, because an address nothing checked names nobody (#48). Which is
+	// this test's own subject arriving from the other side: what makes an address
+	// answer with one person is the index, and what makes it answer with anybody
+	// at all is that somebody checked it.
+	proves(t, ctx, b.Server, b.ContosoUser, theirs)
 	b.sets(t, ctx, b.ContosoUser, "the password they chose")
 
 	// Somebody else in the same tenant, with a password of their own so that
@@ -213,7 +213,7 @@ func TestAnAddressNamesOnePersonInATenant(t *testing.T) {
 	alice := b.holder(t, ctx, b.Contoso, "alice")
 	b.sets(t, ctx, alice, "the one alice chose")
 
-	_, err = b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
+	_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
 		Holder:  app.HolderRef_builder{Id: alice.Bytes()}.Build(),
 		Address: theirs,
 	}.Build())
@@ -285,12 +285,11 @@ func TestAnAddressIsStoredAsItIsLookedUp(t *testing.T) {
 			"the refusal did not name the form it should have been stored as")
 	})
 
-	// So this is what is there, and it is the only form there can be.
-	_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
-		Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
-		Address: stored,
-	}.Build())
-	require.NoError(t, err)
+	// So this is what is there, and it is the only form there can be. Proved,
+	// because an address nothing checked names nobody (#48) -- and what this test
+	// is about is which **row** a spelling reaches, which needs a row that
+	// answers at all.
+	proves(t, ctx, b.Server, b.ContosoUser, stored)
 	b.sets(t, ctx, b.ContosoUser, "the password they chose")
 
 	alice := b.holder(t, ctx, b.Contoso, "alice")

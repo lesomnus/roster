@@ -2069,6 +2069,7 @@ func (b0 EmailWatchItem_builder) Build() *EmailWatchItem {
 type EmailVerifyRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Ref     *EmailRef              `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Holder  *HolderRef             `protobuf:"bytes,3,opt,name=holder"`
 	xxx_hidden_Expires *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=expires"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -2106,6 +2107,13 @@ func (x *EmailVerifyRequest) GetRef() *EmailRef {
 	return nil
 }
 
+func (x *EmailVerifyRequest) GetHolder() *HolderRef {
+	if x != nil {
+		return x.xxx_hidden_Holder
+	}
+	return nil
+}
+
 func (x *EmailVerifyRequest) GetExpires() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_Expires
@@ -2115,6 +2123,10 @@ func (x *EmailVerifyRequest) GetExpires() *timestamppb.Timestamp {
 
 func (x *EmailVerifyRequest) SetRef(v *EmailRef) {
 	x.xxx_hidden_Ref = v
+}
+
+func (x *EmailVerifyRequest) SetHolder(v *HolderRef) {
+	x.xxx_hidden_Holder = v
 }
 
 func (x *EmailVerifyRequest) SetExpires(v *timestamppb.Timestamp) {
@@ -2128,6 +2140,13 @@ func (x *EmailVerifyRequest) HasRef() bool {
 	return x.xxx_hidden_Ref != nil
 }
 
+func (x *EmailVerifyRequest) HasHolder() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Holder != nil
+}
+
 func (x *EmailVerifyRequest) HasExpires() bool {
 	if x == nil {
 		return false
@@ -2139,6 +2158,10 @@ func (x *EmailVerifyRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
 
+func (x *EmailVerifyRequest) ClearHolder() {
+	x.xxx_hidden_Holder = nil
+}
+
 func (x *EmailVerifyRequest) ClearExpires() {
 	x.xxx_hidden_Expires = nil
 }
@@ -2148,6 +2171,25 @@ type EmailVerifyRequest_builder struct {
 
 	// Which address, by reference.
 	Ref *EmailRef
+	// Whose claim this is, when it is not the row's own holder's.
+	//
+	// Empty is the ordinary case and is unchanged: a person proving an address
+	// already on their row, held to `mayReach` on that row's holder.
+	//
+	// Set, it is somebody claiming an address **another row holds unproved** --
+	// the case `Email.Add` cannot reach, because the address is taken and the
+	// index says so. Two rules on it and neither is the one it replaces:
+	//
+	//   - the row must be **unproved**. A proved address does not move; see
+	//     [EmailService.Confirm].
+	//   - the claimant is held to `mayWriteAWayIn`, so nobody claims an address
+	//     onto an account wider than their own. That is the rule `Email.Add`
+	//     already meets, arriving at the other road to the same row.
+	//
+	// `mayReach` on the **row's** holder is not asked, and that is the point
+	// rather than an omission: it guards a row somebody proved, and this one is
+	// one nobody did.
+	Holder *HolderRef
 	// When the link stops working; unset, or later than the default, is the
 	// default (`vouch.LinkFor`).
 	Expires *timestamppb.Timestamp
@@ -2158,6 +2200,7 @@ func (b0 EmailVerifyRequest_builder) Build() *EmailVerifyRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Holder = b.Holder
 	x.xxx_hidden_Expires = b.Expires
 	return m0
 }
@@ -2613,9 +2656,10 @@ const file_app_email_svc_g_proto_rawDesc = "" +
 	"\x0eEmailWatchItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12#\n" +
 	"\x05value\x18\x02 \x01(\v2\r.roster.EmailR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"n\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\x99\x01\n" +
 	"\x12EmailVerifyRequest\x12\"\n" +
-	"\x03ref\x18\x01 \x01(\v2\x10.roster.EmailRefR\x03ref\x124\n" +
+	"\x03ref\x18\x01 \x01(\v2\x10.roster.EmailRefR\x03ref\x12)\n" +
+	"\x06holder\x18\x03 \x01(\v2\x11.roster.HolderRefR\x06holder\x124\n" +
 	"\aexpires\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\"h\n" +
 	"\x13EmailVerifyResponse\x12\x1b\n" +
 	"\x05token\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05token\x124\n" +
@@ -2699,36 +2743,37 @@ var file_app_email_svc_g_proto_depIdxs = []int32{
 	14, // 22: roster.EmailWatchResponse.items:type_name -> roster.EmailWatchItem
 	26, // 23: roster.EmailWatchItem.value:type_name -> roster.Email
 	2,  // 24: roster.EmailVerifyRequest.ref:type_name -> roster.EmailRef
-	21, // 25: roster.EmailVerifyRequest.expires:type_name -> google.protobuf.Timestamp
-	21, // 26: roster.EmailVerifyResponse.expires:type_name -> google.protobuf.Timestamp
-	26, // 27: roster.EmailConfirmResponse.email:type_name -> roster.Email
-	20, // 28: roster.EmailAttestRequest.holder:type_name -> roster.HolderRef
-	22, // 29: roster.EmailAttestRequest.vouched_by:type_name -> roster.IdentityRef
-	0,  // 30: roster.EmailService.Add:input_type -> roster.EmailAddRequest
-	1,  // 31: roster.EmailService.Get:input_type -> roster.EmailGetRequest
-	6,  // 32: roster.EmailService.Patch:input_type -> roster.EmailPatchRequest
-	7,  // 33: roster.EmailService.Apply:input_type -> roster.EmailApplyRequest
-	2,  // 34: roster.EmailService.Erase:input_type -> roster.EmailRef
-	9,  // 35: roster.EmailService.List:input_type -> roster.EmailListRequest
-	12, // 36: roster.EmailService.Watch:input_type -> roster.EmailWatchRequest
-	15, // 37: roster.EmailService.Verify:input_type -> roster.EmailVerifyRequest
-	17, // 38: roster.EmailService.Confirm:input_type -> roster.EmailConfirmRequest
-	19, // 39: roster.EmailService.Attest:input_type -> roster.EmailAttestRequest
-	26, // 40: roster.EmailService.Add:output_type -> roster.Email
-	26, // 41: roster.EmailService.Get:output_type -> roster.Email
-	26, // 42: roster.EmailService.Patch:output_type -> roster.Email
-	26, // 43: roster.EmailService.Apply:output_type -> roster.Email
-	8,  // 44: roster.EmailService.Erase:output_type -> roster.EmailEraseResponse
-	10, // 45: roster.EmailService.List:output_type -> roster.EmailListResponse
-	13, // 46: roster.EmailService.Watch:output_type -> roster.EmailWatchResponse
-	16, // 47: roster.EmailService.Verify:output_type -> roster.EmailVerifyResponse
-	18, // 48: roster.EmailService.Confirm:output_type -> roster.EmailConfirmResponse
-	26, // 49: roster.EmailService.Attest:output_type -> roster.Email
-	40, // [40:50] is the sub-list for method output_type
-	30, // [30:40] is the sub-list for method input_type
-	30, // [30:30] is the sub-list for extension type_name
-	30, // [30:30] is the sub-list for extension extendee
-	0,  // [0:30] is the sub-list for field type_name
+	20, // 25: roster.EmailVerifyRequest.holder:type_name -> roster.HolderRef
+	21, // 26: roster.EmailVerifyRequest.expires:type_name -> google.protobuf.Timestamp
+	21, // 27: roster.EmailVerifyResponse.expires:type_name -> google.protobuf.Timestamp
+	26, // 28: roster.EmailConfirmResponse.email:type_name -> roster.Email
+	20, // 29: roster.EmailAttestRequest.holder:type_name -> roster.HolderRef
+	22, // 30: roster.EmailAttestRequest.vouched_by:type_name -> roster.IdentityRef
+	0,  // 31: roster.EmailService.Add:input_type -> roster.EmailAddRequest
+	1,  // 32: roster.EmailService.Get:input_type -> roster.EmailGetRequest
+	6,  // 33: roster.EmailService.Patch:input_type -> roster.EmailPatchRequest
+	7,  // 34: roster.EmailService.Apply:input_type -> roster.EmailApplyRequest
+	2,  // 35: roster.EmailService.Erase:input_type -> roster.EmailRef
+	9,  // 36: roster.EmailService.List:input_type -> roster.EmailListRequest
+	12, // 37: roster.EmailService.Watch:input_type -> roster.EmailWatchRequest
+	15, // 38: roster.EmailService.Verify:input_type -> roster.EmailVerifyRequest
+	17, // 39: roster.EmailService.Confirm:input_type -> roster.EmailConfirmRequest
+	19, // 40: roster.EmailService.Attest:input_type -> roster.EmailAttestRequest
+	26, // 41: roster.EmailService.Add:output_type -> roster.Email
+	26, // 42: roster.EmailService.Get:output_type -> roster.Email
+	26, // 43: roster.EmailService.Patch:output_type -> roster.Email
+	26, // 44: roster.EmailService.Apply:output_type -> roster.Email
+	8,  // 45: roster.EmailService.Erase:output_type -> roster.EmailEraseResponse
+	10, // 46: roster.EmailService.List:output_type -> roster.EmailListResponse
+	13, // 47: roster.EmailService.Watch:output_type -> roster.EmailWatchResponse
+	16, // 48: roster.EmailService.Verify:output_type -> roster.EmailVerifyResponse
+	18, // 49: roster.EmailService.Confirm:output_type -> roster.EmailConfirmResponse
+	26, // 50: roster.EmailService.Attest:output_type -> roster.Email
+	41, // [41:51] is the sub-list for method output_type
+	31, // [31:41] is the sub-list for method input_type
+	31, // [31:31] is the sub-list for extension type_name
+	31, // [31:31] is the sub-list for extension extendee
+	0,  // [0:31] is the sub-list for field type_name
 }
 
 func init() { file_app_email_svc_g_proto_init() }

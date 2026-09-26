@@ -695,7 +695,10 @@ func (s *Server) byAddress(ctx context.Context, tenant *app.TenantRef, address s
 			}.Build(),
 		}.Build(),
 		Select: app.EmailSelect_builder{
-			Holder: app.HolderSelect_builder{}.Build(),
+			// The stamp, because an address names somebody only once something
+			// has checked it. See below.
+			DateVerified: z.Ptr(true),
+			Holder:       app.HolderSelect_builder{}.Build(),
 		}.Build(),
 	}.Build())
 	if err != nil {
@@ -704,6 +707,33 @@ func (s *Server) byAddress(ctx context.Context, tenant *app.TenantRef, address s
 
 	h := v.GetHolder()
 	if h == nil || len(h.GetId()) == 0 {
+		return nil, status.Error(codes.NotFound, "no such address")
+	}
+
+	// And nobody has checked it, which is one answer with the two above for the
+	// reason they are one answer -- and is the sentence `date_verified` exists for.
+	//
+	// It was not read here, and that is what made an address **squattable**.
+	// `Email.Add` is guarded by `mayWriteAWayIn`, which passes for your own row,
+	// so anybody could write any address onto themselves; the unique index then
+	// meant the rightful holder was refused; and this lookup resolved the
+	// squatter. Nothing was taken -- a recovery link goes to the mailbox either
+	// way -- but a name the real holder cannot have, refused with *somebody has
+	// it*, is `host.proto` § *Why a hostname is not checked* one medium along, and
+	// #42 is the paragraph that stopped being true there.
+	//
+	// So the rule is the one #42 settled, said about an address: a name that
+	// resolves somebody may only be taken by proof. An unproved row now resolves
+	// nobody, and `Email.Verify`'s claim shape is what stops it blocking anybody
+	// either.
+	//
+	// **What it costs**, and it is real: somebody whose only address came from a
+	// directory that sent no `email_verified` cannot sign in by it or ask for a
+	// recovery link at it. Which is the honest answer -- roster has nobody's word
+	// that the mailbox is theirs -- and the road out is the one that was always
+	// there: they prove it from the account page, and `Email.Attest` stamps it the
+	// moment a directory does start saying so.
+	if v.GetDateVerified() == nil {
 		return nil, status.Error(codes.NotFound, "no such address")
 	}
 
