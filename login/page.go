@@ -60,20 +60,25 @@ func writeJson(w http.ResponseWriter, v any) {
 	_ = json.NewEncoder(w).Encode(v)
 }
 
-// What a request carries between `inFlow` and everything under it: the
-// tenant whose flow this is, and -- for the outgoing calls -- that
-// tenant's key.
+// What a request carries between `inFlow` and everything under it: the tenant
+// whose flow this is, and -- for the outgoing calls -- the **name** that narrows
+// this app's one key to that tenant's nominated holder.
+//
+// It was the tenant's own key here, one per customer. What the name buys over a
+// key is that it is not a secret: a deployment adding a customer writes a `Host`
+// row rather than distributing and later rotating a credential
+// (`login/at.go`, #36).
 type (
-	keyKey    struct{}
+	atKey     struct{}
 	tenantKey struct{}
 )
 
-func withKey(ctx context.Context, key string) context.Context {
-	return context.WithValue(ctx, keyKey{}, key)
+func withAt(ctx context.Context, at string) context.Context {
+	return context.WithValue(ctx, atKey{}, at)
 }
 
-func keyOf(ctx context.Context) (string, bool) {
-	k, ok := ctx.Value(keyKey{}).(string)
+func atOf(ctx context.Context) (string, bool) {
+	k, ok := ctx.Value(atKey{}).(string)
 
 	return k, ok && k != ""
 }

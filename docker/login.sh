@@ -13,19 +13,21 @@ set -eu
 : "${ACCOUNT_STATE:=/var/lib/roster-account}"
 : "${LOGIN_PORT:=8091}"
 : "${HYDRA_ADMIN:=http://hydra:4445}"
-: "${OAUTH_CLIENT:=demo}"
-# The second client one operator has: `oauth2-proxy` in front of a page, which
-# `docker/behind.sh` walks. Two clients for one tenant is the shape a real
-# deployment has -- and it is what makes "which operator a challenge is about"
-# a question with an answer, rather than a lookup that could not be wrong.
-: "${PROXY_CLIENT:=behind}"
-# And the third: the app that is the relying party itself, which
-# `docker/itself.sh` walks.
-: "${SELF_CLIENT:=itself}"
+# Three clients reach this one sign-in -- the demo product, `oauth2-proxy` in
+# front of a page, and the app that is the relying party itself -- and this app
+# is told about none of them.
+#
+# It was `--client contoso=demo,behind,itself`, because the client was what said
+# which tenant a flow was about. Which tenant comes from the **redirect** the
+# authorization request named now (#36), resolved through that tenant's own
+# `Host` row -- so `customer.sh` writes a row per redirect host and there is
+# nothing here to keep in step with Hydra's registrations.
 : "${LOGIN_CONSENT:=skip}"
 : "${LOGIN_REMEMBER:=1h}"
 
-key="${ACCOUNT_STATE}/${SEED_CUSTOMER}.login.key"
+# One key for the deployment and not one per tenant, which is why the name has
+# no tenant in it: `roster login provision` writes `login-app.key`.
+key="${ACCOUNT_STATE}/login-app.key"
 until [ -e "${key}" ]; do
 	echo "roster: waiting for ${key}" >&2
 	sleep 1
@@ -44,8 +46,11 @@ until wget -T 2 -qO- "${HYDRA_ADMIN}/health/ready" >/dev/null 2>&1; do
 	sleep 1
 done
 
-alias="$(printf '%s' "${SEED_CUSTOMER}" | tr '[:lower:]-' '[:upper:]_')"
-export "ROSTER_LOGIN_KEY_${alias}=$(cat "${key}")"
+# One variable, with no tenant in its name: the app holds one credential, so the
+# loader reads `ROSTER_LOGIN_KEY` like any other setting. It was
+# `ROSTER_LOGIN_KEY_<ALIAS>`, one per tenant, which the loader had to be told was
+# not a typo.
+export "ROSTER_LOGIN_KEY=$(cat "${key}")"
 
 # How long Hydra skips the form for a browser that has already signed in. On by
 # default here because it is what makes "signed out everywhere" observable at
@@ -58,7 +63,6 @@ exec roster login serve \
 	--listen ":${LOGIN_PORT}" \
 	--roster roster:50051 --insecure \
 	--hydra "${HYDRA_ADMIN}" \
-	--client "${SEED_CUSTOMER}=${OAUTH_CLIENT},${PROXY_CLIENT},${SELF_CLIENT}" \
 	--consent "${LOGIN_CONSENT}" \
 	--static /usr/share/roster/login \
 	--insecure-cookie "$@"

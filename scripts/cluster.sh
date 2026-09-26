@@ -440,14 +440,18 @@ kube "kubectl -n ${NS} rollout status deploy/roster-hydra --timeout=300s"
 
 # **Twice, and the second one is the check.**
 #
-# `login provision` skips an operator whose tenant does not exist, and the
-# tenant is made by `resources:` when the server starts -- so a first start
-# fronts nobody and says so, and the *second* has the key. Written with
-# `emptyDir` volumes this could never happen: the database went with the pod
-# and every start was a first one. Restarting here is what proves the volumes
-# outlive it.
+# `login provision` nominates the holder each `Host` row borrows, and the rows are
+# made by `resources:` when the server starts -- so a first start has a key and
+# nothing to nominate on, and the *second* wires it. It was the **key** that the
+# first start could not mint, when there was one per tenant and a tenant had to
+# exist first; an `rk_` needs no customer, so what the restart is for now is the
+# nomination rather than the credential (#36).
+#
+# Written with `emptyDir` volumes this could never happen: the database went with
+# the pod and every start was a first one. Restarting here is what proves the
+# volumes outlive it.
 kube "kubectl -n ${NS} rollout status deploy/roster --timeout=300s"
-echo "== again, for the key the first start could not mint"
+echo "== again, for the nomination the first start had nothing to write"
 kube "kubectl -n ${NS} delete pod -l app.kubernetes.io/component=server >/dev/null 2>&1; kubectl -n ${NS} rollout status deploy/roster --timeout=300s"
 
 echo
@@ -1128,10 +1132,16 @@ kube "kubectl -n ${NS} logs job/roster-flow"
 
 
 # A second relying party is a second **declared** client, which is three files and
-# not one: the document, the secret it names, and the line in `login.clients` that
-# says this app answers challenges for it. Leaving that last one out is one of the
-# four defects `roster login doctor` exists for, so the rig does it the way a
-# deployment does and the check gets to prove it.
+# not one: the document, the secret it names, and the `Host` row that says whose
+# the name it redirects to is.
+#
+# That third file used to be `login.clients`, a line naming the client for a
+# tenant. #36 replaced it: which tenant a flow is about comes from the redirect
+# the authorization request named, so what has to be declared is the **name**
+# rather than the client. Leaving it out is still one of the defects
+# `roster login doctor` exists for -- it reads *no tenant answers at any of its
+# redirect_uris* now instead of *no tenant claims it* -- so the rig does it the
+# way a deployment does and the check gets to prove it.
 cat > "${work}/deploy/clients/behind.json" <<'EOF'
 {
   "client_id": "behind",
@@ -1149,10 +1159,10 @@ cat > "${work}/deploy/clients/behind.json" <<'EOF'
 }
 EOF
 
-python3 - "${work}/deploy/kustomization.yaml" "${work}/deploy/config.yaml" "${work}/behind/kustomization.yaml" <<'PY'
+python3 - "${work}/deploy/kustomization.yaml" "${work}/deploy/resources.yaml" "${work}/behind/kustomization.yaml" <<'PY'
 import sys
 
-ku, cfg, overlay = sys.argv[1], sys.argv[2], sys.argv[3]
+ku, res, overlay = sys.argv[1], sys.argv[2], sys.argv[3]
 
 # The generator has to know about the second file.
 s = open(ku).read()
@@ -1160,11 +1170,18 @@ old = "      - clients/product.json"
 assert old in s
 open(ku, "w").write(s.replace(old, old + "\n      - clients/behind.json", 1))
 
-# And the Login App has to answer challenges for it.
-s = open(cfg).read()
-old = "    acme: [product]"
-assert old in s, "login.clients no longer reads the way this rig expects"
-open(cfg, "w").write(s.replace(old, "    acme: [product, behind]", 1))
+# And acme has to claim the name that client redirects to, or the flow raised for
+# it resolves to nobody. Declared here rather than written by hand, because a
+# `Host` row is configuration and `resources:` is where this rig's configuration
+# rows live.
+s = open(res).read()
+old = "    name: roster-product.roster.svc.cluster.local"
+assert old in s, "resources.yaml no longer reads the way this rig expects"
+open(res, "w").write(s.replace(old, old + """
+
+  - kind: Host
+    tenant: acme
+    name: roster-proxy.roster.svc.cluster.local""", 1))
 
 # The proxy joins the overlay, and the Job that registers clients needs the
 # second secret mounted where it looks for it: `/secrets/<id>`. Volumes and mounts
@@ -1191,12 +1208,13 @@ PY
 carry
 
 # The client is declared, so the clients Job needs the second secret mounted and
-# the Login App needs to claim it. Both are files above; this is the sync.
+# acme needs to claim the name it redirects to. Both are files above; this is the
+# sync.
 
 # The second client, registered and then asked about -- and the `doctor` run is
-# not a formality here: a client Hydra has that `login.clients` does not name is
-# the defect that reaches a person as *this login is not working*, and it is
-# exactly the mistake a second relying party invites.
+# not a formality here: a client whose redirect no tenant answers at is the defect
+# that reaches a person as *this login is not working*, and it is exactly the
+# mistake a second relying party invites.
 two=0
 resync /w/behind || two=$?
 
@@ -1204,13 +1222,17 @@ resync /w/behind || two=$?
 	|| { kube "kubectl -n ${NS} logs job/roster-hydra-clients"; kube "kubectl -n ${NS} logs job/roster-hydra-clients-check"; echo "cluster: the second client is not registered the way this stack needs (${two})" >&2; exit 1; }
 # **And wait for the pod**, because declaring a client is a configuration change.
 #
-# `login.clients` is in the `roster` ConfigMap, whose name carries a hash of its
-# contents -- so adding the second client gives the Deployment a new pod template
-# and a rollout. The walk below asks the **Login App** to resolve a challenge
-# raised for that client, and an app that has not restarted yet fronts nobody for
-# it. What that looks like from the walk is `the password was not accepted`,
-# which is a sentence about the wrong thing; it cost a CI run, where everything
-# is slower than on a desk and the race actually lands.
+# `resources.yaml` is in the `roster` ConfigMap, whose name carries a hash of its
+# contents -- so declaring the second name gives the Deployment a new pod template
+# and a rollout. Two things have to happen on that rollout and both are the
+# pod's: `serve` applies the new `Host` row, and the `login provision` init
+# container nominates the holder that name borrows (`Host.acts_as`). Until the
+# second of those, a flow raised for the client resolves to a name that claims
+# nobody and is refused.
+#
+# What that looks like from the walk is `the password was not accepted`, which is
+# a sentence about the wrong thing; it cost a CI run, where everything is slower
+# than on a desk and the race actually lands.
 kube "kubectl -n ${NS} rollout status deploy/roster --timeout=300s >/dev/null"
 echo "   a second relying party is declared, registered and claimed"
 

@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"time"
 
-	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -33,12 +32,24 @@ import (
 // remembering them -- so the next product they open gets a fresh token with no
 // form in between.
 //
-// # One stream per tenant, and no filter
+// # One stream, and no filter
 //
 // `SyncWatchRequest` is empty on purpose: what an app hears is narrowed by the
-// **wall**, exactly as a read is. This app holds one `rt_` per tenant, so it
-// opens one stream per tenant and each hears that tenant and no other. There
-// is nothing to filter and nothing that could be filtered wrong.
+// **wall**, exactly as a read is. There is nothing to filter and nothing that
+// could be filtered wrong.
+//
+// It was one stream per tenant, because this app held one `rt_` per tenant and
+// each key heard its own. It holds one `rk_` now, and the one call in this app
+// that goes out **without** `roster-at` is this one: a deployment key hears every
+// tenant, which is what a deployment key is for. So a customer added after this
+// process started is heard without anything being restarted -- which the old
+// shape could not do, and which is most of why the list of tenants is gone.
+//
+// What that widens is what this hears, and it is worth being exact about: every
+// tenant's sign-outs rather than the fronted ones'. What it does with one is
+// `DELETE` a Hydra login session for a subject, and a subject Hydra has never
+// seen is a delete of nothing. So the wider stream costs a call that does
+// nothing, and buys not having to know who this app fronts.
 //
 // # What a reconnect means
 //
@@ -54,16 +65,7 @@ import (
 // app that refused to sign anybody in because it could not sign anybody out is
 // worse than one that says so loudly and goes on working.
 func (a *App) Watch(ctx context.Context) error {
-	if len(a.tenants) == 0 {
-		return nil
-	}
-
-	g, ctx := errgroup.WithContext(ctx)
-	for _, o := range a.tenants {
-		g.Go(func() error { return a.watch(ctx, o) })
-	}
-
-	return g.Wait()
+	return a.watch(ctx)
 }
 
 // watchBackoff is how long a dropped stream waits, and how long it waits at
@@ -73,12 +75,12 @@ const (
 	watchAtMost  = 30 * time.Second
 )
 
-func (a *App) watch(ctx context.Context, o *tenant) error {
-	log := slog.With("tenant", o.alias)
+func (a *App) watch(ctx context.Context) error {
+	log := slog.Default()
 	wait := watchBackoff
 
 	for ctx.Err() == nil {
-		err := a.stream(ctx, o)
+		err := a.stream(ctx)
 		switch {
 		case err == nil, ctx.Err() != nil:
 			// A stream that ended because this app is stopping is not a stream
@@ -110,8 +112,10 @@ func (a *App) watch(ctx context.Context, o *tenant) error {
 }
 
 // stream is one connection, and what it remembers lives exactly as long.
-func (a *App) stream(ctx context.Context, o *tenant) error {
-	s, err := a.sync.Watch(withKey(ctx, o.key), rstr.SyncWatchRequest_builder{}.Build())
+func (a *App) stream(ctx context.Context) error {
+	// No `roster-at`, which is the whole of what makes this one stream; see the
+	// paragraph above.
+	s, err := a.sync.Watch(ctx, rstr.SyncWatchRequest_builder{}.Build())
 	if err != nil {
 		return err
 	}
@@ -155,8 +159,11 @@ func (a *App) stream(ctx context.Context, o *tenant) error {
 			// about them would be a retry at an arbitrary later time, and the
 			// reconnect above is the retry this design has. Logged so it is not
 			// silent.
+			// The subject and not the tenant: one stream hears every tenant
+			// now, and a `Holder.id` is globally unique -- which is the whole
+			// of what `sub` is for.
 			slog.ErrorContext(ctx, "login: could not tell hydra to forget somebody",
-				"tenant", o.alias, "subject", who, "err", err)
+				"subject", who, "err", err)
 		}
 	}
 }

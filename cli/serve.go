@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net"
 	"slices"
@@ -189,9 +190,9 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 				// `roster login serve` still refuses: somebody typed that, and
 				// a process whose only job is the Login App has nothing to do
 				// without one.
-				if len(gc.Clients) == 0 {
-					slog.Warn("login: no operator has a key yet, so the login app is not serving; " +
-						"make a tenant and restart")
+				if gc.Key == "" {
+					slog.Warn("login: this deployment has no Login App key yet, so the app is not serving; " +
+						"`roster login provision` writes one and a restart picks it up")
 				} else {
 					g.Go(func() error { return serveLogin(ctx, gc) })
 				}
@@ -263,35 +264,42 @@ func frontDoor(c *cmd.Config, l net.Listener) (cmd.AccountConfig, error) {
 	return ac, nil
 }
 
-// loginApp is `login:` with the same default, for the same reason -- and with
-// each tenant's two halves checked against each other, because half of one
-// runs and answers nothing.
+// loginApp is `login:` with the same default, for the same reason.
+//
+// One key to resolve and nothing to check it against, which is most of what #36
+// removed: it was two maps keyed by tenant alias, half of one running and
+// answering nothing, and a `minted` that dropped a tenant whose key file was not
+// written yet so that a first start could come up at all. A deployment key needs
+// no tenant to exist, so that whole cycle is gone.
+//
+// A key that is not there yet is still **not** a refusal here, for the reason the
+// caller below gives: this is `roster serve`, where the Login App is one of four
+// things in the process, and the one that refuses is `roster login serve`.
 func loginApp(c *cmd.Config, l net.Listener) (cmd.LoginConfig, error) {
 	gc := c.Login
 	if gc.Roster == "" {
 		gc.Roster = l.Addr().String()
 	}
-
-	clients, err := clientsOf(gc.Clients, LoginClientPrefix, nil)
-	if err != nil {
-		return gc, err
-	}
-	// Before `keysOf`, which reads the files -- and before it refuses an empty
-	// set, which on a first start is what is left.
-	refs, clients := minted(gc.Keys, clients)
-	if len(refs) == 0 && len(clients) == 0 {
-		gc.Keys, gc.Clients = nil, nil
-
+	if gc.Key == "" {
 		return gc, nil
 	}
 
-	keys, err := keysOf(refs, LoginKeyPrefix, nil)
+	key, err := tokenOrRef(gc.Key)
 	if err != nil {
-		return gc, err
-	}
-	gc.Keys, gc.Clients = keys, clients
+		if errors.Is(err, fs.ErrNotExist) {
+			// `file:` naming a path that is not there, which is a first start:
+			// the init container writes it and this process is what makes the
+			// tenant it is for. Left empty so the caller says so and carries on.
+			gc.Key = ""
 
-	return gc, whole(keys, clients)
+			return gc, nil
+		}
+
+		return gc, fmt.Errorf("login.key: %w", err)
+	}
+	gc.Key = key
+
+	return gc, nil
 }
 
 // directory is `ldap:` with the same default, for the same reason.

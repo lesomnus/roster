@@ -123,7 +123,7 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	o := f.tenant
-	as := withTenant(withKey(ctx, o.key), o)
+	as := withTenant(withAt(ctx, o.at), o)
 
 	cfg, verifier, err := a.arrives.Relying(as, o.id, f.connection, a.redirect(r))
 	if err != nil {

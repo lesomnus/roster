@@ -142,6 +142,29 @@ func Acting(deployment app.Server, tenant app.Server) auth.Handler {
 			}
 
 			raw = k.Holder.GetId()
+		} else if at := ArrivedAt(md); at != "" {
+			// A deployment key that was **narrowed** when the delegation was
+			// minted, which is what a roster-hosted Login App does on every call
+			// (#36).
+			//
+			// `Vouch.Delegate` stamps a delegation with whoever asked for it, and
+			// under [HeaderAt] that caller is not the key -- it is the holder the
+			// name's `Host` row nominates. So the same resolution has to happen
+			// here or the row is never recognised as this caller's: the app mints
+			// one and is refused its own token on the next hop, which is what a
+			// whole afternoon of `502` looked like.
+			//
+			// It stays a binding rather than becoming a waiver. Anybody holding
+			// this key can narrow themselves to this holder and so could have
+			// minted the delegation -- but an `rt_` cannot, and neither can a key
+			// narrowed to a **different** name, which is what the check still
+			// says.
+			h, err := Nominated(ctx, tenant, at)
+			if err != nil || h == nil {
+				return no()
+			}
+
+			raw = h.GetId()
 		}
 
 		who, err := pdid.From(raw)

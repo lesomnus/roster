@@ -30,7 +30,60 @@ import (
 // the request declares, and refuse a request that declares nothing rather than
 // falling through to a default. The failure it avoids is the same one -- a call
 // that lands somewhere plausible and answers with somebody else's rows.
-const HeaderAt = "roster-at"
+// `server/front`'s, because a consumer has to be able to write it and may import
+// no server package but that one; the reasoning is there.
+const HeaderAt = front.HeaderAt
+
+// Nominated is the holder a name's `Host` row put in `acts_as`, or nil where
+// there is no such row or it nominates nobody.
+//
+// Factored out of [At] because [Acting] needs the same answer: a delegation is
+// bound to the caller it was issued to, and when a deployment key is narrowed
+// the caller **is** this holder -- so a delegation minted under `roster-at` is
+// stamped with them and has to be recognised as theirs on the way back. Two
+// readers of one fact, and a second copy of this query is a second answer to
+// which holder a name borrows.
+//
+// The tenant comes back on the holder, selected, because both callers need it.
+func Nominated(ctx context.Context, tenant app.Server, at string) (*app.Holder, error) {
+	if tenant == nil || at == "" {
+		return nil, nil
+	}
+
+	v, err := tenant.Host().Get(ctx, app.HostGetRequest_builder{
+		Ref: app.HostRef_builder{Name: &at}.Build(),
+		Select: app.HostSelect_builder{
+			ActsAs: app.HolderSelect_builder{
+				Tenant: app.TenantSelect_builder{}.Build(),
+			}.Build(),
+		}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	h := v.GetActsAs()
+	if h == nil || len(h.GetId()) == 0 {
+		return nil, nil
+	}
+
+	return h, nil
+}
+
+// ArrivedAt is the name a request declares, normalised, or empty.
+//
+// One reader was enough while [At] was the only one; [Acting] is the second, and
+// a header read in two places is a header spelled differently in one of them.
+func ArrivedAt(md metadata.MD) string {
+	out := ""
+	for _, v := range md.Get(HeaderAt) {
+		if v != "" {
+			out = front.Hostname(v)
+		}
+	}
+
+	return out
+}
 
 // At resolves a **deployment key** down to the holder a `Host` nominates.
 //
@@ -72,12 +125,7 @@ func At(deployment app.Server, tenant app.Server) auth.Handler {
 			return auth.Identity{}, auth.ErrNoCredential
 		}
 
-		at := ""
-		for _, v := range md.Get(HeaderAt) {
-			if v != "" {
-				at = front.Hostname(v)
-			}
-		}
+		at := ArrivedAt(md)
 		if at == "" {
 			return auth.Identity{}, auth.ErrNoCredential
 		}
@@ -107,23 +155,12 @@ func At(deployment app.Server, tenant app.Server) auth.Handler {
 			return no()
 		}
 
-		v, err := tenant.Host().Get(ctx, app.HostGetRequest_builder{
-			Ref: app.HostRef_builder{Name: &at}.Build(),
-			Select: app.HostSelect_builder{
-				ActsAs: app.HolderSelect_builder{
-					Tenant: app.TenantSelect_builder{}.Build(),
-				}.Build(),
-			}.Build(),
-		}.Build())
-		if err != nil {
-			return no()
-		}
-
-		h := v.GetActsAs()
-		if h == nil || len(h.GetId()) == 0 {
-			// A name that is here and nominates nobody. Refused rather than
-			// answered as the key, because answering would hand back the wide
-			// frame the caller was trying to narrow -- silently.
+		h, err := Nominated(ctx, tenant, at)
+		if err != nil || h == nil {
+			// A name nothing claims, or one that is here and nominates nobody.
+			// Refused rather than answered as the key, because answering would
+			// hand back the wide frame the caller was trying to narrow --
+			// silently.
 			return no()
 		}
 

@@ -268,6 +268,28 @@ func serveAccount(ctx context.Context, ac cmd.AccountConfig) error {
 //
 // Trailing whitespace goes, because the thing that wrote the file almost
 // certainly ended it with a newline and a key with one is not that key.
+// tokenOrRef is a credential that may be the thing or a reference to it.
+//
+// One setting rather than a map is what makes this necessary. `keysOf` could
+// tell them apart by **where** the value came from -- a block's values are
+// references, because a configuration file is committed and a key is a secret;
+// a flag's and an environment variable's are tokens -- and one field arriving
+// from any of the three cannot. So the prefix decides, which is the same
+// vocabulary `secret_ref` already uses everywhere else.
+//
+// A value that is neither is the token, and that is the right way round: a
+// deployment that mistyped `env:` gets a key roster refuses on the first call,
+// which is loud, where the other reading would refuse every deployment that
+// passed `--key rk_…` as the flag's brief says to.
+func tokenOrRef(v string) (string, error) {
+	switch {
+	case strings.HasPrefix(v, "env:"), strings.HasPrefix(v, "file:"):
+		return secretRef(v)
+	default:
+		return v, nil
+	}
+}
+
 func secretRef(ref string) (string, error) {
 	if path, ok := strings.CutPrefix(ref, "file:"); ok {
 		if path == "" {

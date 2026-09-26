@@ -3,6 +3,7 @@ package login_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -62,7 +63,7 @@ func TestDoctorPassesAClientRegisteredTheWayThisStackNeeds(t *testing.T) {
 	x := require.New(t)
 
 	at := clients(t, map[string]map[string]any{"app": good()})
-	found, err := login.Doctor(context.Background(), at, "", nil, map[string][]string{"contoso": {"app"}})
+	found, err := login.Doctor(context.Background(), at, "", nil, at_(t, "app.test", "contoso"))
 	x.NoError(err)
 	x.Empty(found)
 }
@@ -81,7 +82,7 @@ func TestDoctorPassesAPublicClient(t *testing.T) {
 	page["scope"] = "openid profile email"
 
 	at := clients(t, map[string]map[string]any{"app": page})
-	found, err := login.Doctor(context.Background(), at, "", nil, map[string][]string{"contoso": {"app"}})
+	found, err := login.Doctor(context.Background(), at, "", nil, at_(t, "app.test", "contoso"))
 	x.NoError(err)
 	x.Empty(found)
 }
@@ -144,7 +145,7 @@ func TestDoctorFindsWhatCostAnHourEach(t *testing.T) {
 			tc.break_(v)
 
 			at := clients(t, map[string]map[string]any{"app": v})
-			found, err := login.Doctor(context.Background(), at, "", nil, map[string][]string{"contoso": {"app"}})
+			found, err := login.Doctor(context.Background(), at, "", nil, at_(t, "app.test", "contoso"))
 			x.NoError(err)
 			x.Len(found, 1)
 			x.Equal(tc.how, found[0].Severity)
@@ -157,41 +158,85 @@ func TestDoctorFindsWhatCostAnHourEach(t *testing.T) {
 // TestDoctorKnowsWhichDirectionCosts: the two ways a client and this app's
 // configuration can disagree, and only one of them refuses anybody.
 //
-// The first cut of this had it backwards, and its first run in a cluster failed
-// the sync over the harmless one. Hydra raises a challenge for a client **it**
-// has: one it has never heard of is one no flow can name, so a row here with no
-// client behind it costs nobody anything until somebody registers it. A client
-// Hydra holds that nothing here claims is the other story -- a flow for it
-// resolves to no tenant, and a browser is shown *this login is not working*
-// with nothing in it to say which client or whose.
+// TestDoctorKnowsWhichDirectionCosts, in the shape #36 left it.
+//
+// It used to be a pair about `login.clients`: a client named here that Hydra has
+// never heard of is harmless (no flow can be raised for it), and a client Hydra
+// holds that nothing here claims is broken (every flow for it reaches a page
+// saying the login is not working). The list is gone, so the second half is
+// asked of roster's rows instead -- does this client's redirect resolve to a
+// tenant, and to exactly one.
 func TestDoctorKnowsWhichDirectionCosts(t *testing.T) {
-	t.Run("named here and nowhere else", func(t *testing.T) {
+	t.Run("a redirect no tenant answers at", func(t *testing.T) {
 		x := require.New(t)
 
 		at := clients(t, map[string]map[string]any{"app": good()})
-		found, err := login.Doctor(context.Background(), at, "", nil, map[string][]string{"contoso": {"app", "ghost"}})
-		x.NoError(err)
-		x.Len(found, 1)
-		x.Equal(login.Fragile, found[0].Severity, "a client nothing can raise a flow for refuses nobody")
-		x.Equal("ghost", found[0].About)
-		x.Contains(found[0].What, "hydra has no such client")
-	})
 
-	t.Run("at hydra and claimed by nobody", func(t *testing.T) {
-		x := require.New(t)
-
-		stray := good()
-		stray["client_id"] = "stray"
-
-		at := clients(t, map[string]map[string]any{"app": good(), "stray": stray})
-		found, err := login.Doctor(context.Background(), at, "", nil, map[string][]string{"contoso": {"app"}})
+		// A resolver that claims a different name, so `app.test` is nobody's.
+		found, err := login.Doctor(context.Background(), at, "", nil, at_(t, "elsewhere.test", "contoso"))
 		x.NoError(err)
 		x.Len(found, 1)
 		x.Equal(login.Broken, found[0].Severity)
-		x.Equal("stray", found[0].About)
-		x.Contains(found[0].What, "no tenant here claims it")
+		x.Equal("app", found[0].About)
+		x.Contains(found[0].What, "no tenant answers at any of its redirect_uris")
+	})
+
+	t.Run("and redirects that answer with two tenants", func(t *testing.T) {
+		x := require.New(t)
+
+		both := good()
+		both["redirect_uris"] = []string{"https://app.test/callback", "https://other.test/callback"}
+
+		at := clients(t, map[string]map[string]any{"app": both})
+		found, err := login.Doctor(context.Background(), at, "", nil, func(_ context.Context, host string) (string, error) {
+			switch host {
+			case "app.test":
+				return "contoso", nil
+			case "other.test":
+				return "fabrikam", nil
+			}
+
+			return "", errNobody
+		})
+		x.NoError(err)
+		x.Len(found, 1)
+		x.Equal(login.Broken, found[0].Severity)
+		x.Equal("app", found[0].About)
+
+		// A **determinism** finding: which tenant a flow is about would depend
+		// on which registered redirect the browser asked for.
+		x.Contains(found[0].What, "contoso and fabrikam")
+	})
+
+	t.Run("and a run that could not ask says so", func(t *testing.T) {
+		x := require.New(t)
+
+		at := clients(t, map[string]map[string]any{"app": good()})
+		found, err := login.Doctor(context.Background(), at, "", nil, nil)
+		x.NoError(err)
+		x.Len(found, 1)
+		x.Equal(login.Fragile, found[0].Severity, "a check that was skipped is not a check that passed")
+		x.Contains(found[0].What, "not asked")
 	})
 }
+
+// at_ is a resolver that claims one name for one tenant, which is what `good()`
+// registers a redirect on.
+func at_(t *testing.T, name, alias string) login.Whose {
+	t.Helper()
+
+	return func(_ context.Context, host string) (string, error) {
+		if host == name {
+			return alias, nil
+		}
+
+		return "", errNobody
+	}
+}
+
+// errNobody is what a resolver answers for a name nothing claims, which is what
+// `FrontService.WhoseHost` answers with `NotFound`.
+var errNobody = errors.New("no tenant answers at that name")
 
 // TestDoctorPutsWhatIsBrokenFirst, because a deployment reads the first line.
 func TestDoctorPutsWhatIsBrokenFirst(t *testing.T) {
@@ -202,7 +247,7 @@ func TestDoctorPutsWhatIsBrokenFirst(t *testing.T) {
 	v["token_endpoint_auth_method"] = "client_secret_post"
 
 	at := clients(t, map[string]map[string]any{"app": v})
-	found, err := login.Doctor(context.Background(), at, "", nil, map[string][]string{"contoso": {"app"}})
+	found, err := login.Doctor(context.Background(), at, "", nil, at_(t, "app.test", "contoso"))
 	x.NoError(err)
 	x.Len(found, 2)
 	x.Equal(login.Broken, found[0].Severity)
@@ -303,7 +348,7 @@ func TestDoctorAsksHydraToDoTheThingsItsSettingsDecide(t *testing.T) {
 			tc.with(&v)
 
 			at := clients(t, map[string]map[string]any{"app": good()})
-			found, err := login.Doctor(context.Background(), at, serving(t, v), nil, map[string][]string{"contoso": {"app"}})
+			found, err := login.Doctor(context.Background(), at, serving(t, v), nil, at_(t, "app.test", "contoso"))
 			x.NoError(err)
 			x.Len(found, 1)
 			x.Equal(tc.how, found[0].Severity)
@@ -316,7 +361,7 @@ func TestDoctorAsksHydraToDoTheThingsItsSettingsDecide(t *testing.T) {
 		x := require.New(t)
 
 		at := clients(t, map[string]map[string]any{"app": good()})
-		found, err := login.Doctor(context.Background(), at, serving(t, well()), nil, map[string][]string{"contoso": {"app"}})
+		found, err := login.Doctor(context.Background(), at, serving(t, well()), nil, at_(t, "app.test", "contoso"))
 		x.NoError(err)
 		x.Empty(found)
 	})
@@ -332,7 +377,7 @@ func TestDoctorSaysWhenItCouldNotLook(t *testing.T) {
 	x := require.New(t)
 
 	at := clients(t, map[string]map[string]any{"app": good()})
-	found, err := login.Doctor(context.Background(), at, "http://127.0.0.1:1", nil, map[string][]string{"contoso": {"app"}})
+	found, err := login.Doctor(context.Background(), at, "http://127.0.0.1:1", nil, at_(t, "app.test", "contoso"))
 	x.NoError(err)
 	x.Len(found, 1)
 	x.Equal(login.Fragile, found[0].Severity)

@@ -176,35 +176,32 @@ type LoginConfig struct {
 	// Hydra is the one thing here that is not roster's.
 	Hydra HydraConfig `yaml:"hydra"`
 
-	// Keys is one tenant key per tenant fronted, by alias, as `env:NAME`.
-	// See [AccountConfig.Keys]; `ROSTER_LOGIN_KEY_<ALIAS>` is merged with it.
-	Keys map[string]string `yaml:"keys"`
-
-	// Clients is which OAuth clients are whose, by the same alias: `contoso:
-	// [contoso-web, contoso-mobile]`. It is what says which tenant a challenge
-	// belongs to, and it is the one setting here that is about Hydra's rows
-	// rather than roster's.
+	// Key is the **one** credential this instance holds, as `env:NAME` or
+	// `file:PATH`, and it is a deployment key (`rk_`).
 	//
-	// A **list**, because an tenant with two products has two clients and one
-	// sign-in; `ROSTER_LOGIN_CLIENT_<ALIAS>` takes them comma separated, and so
-	// does `--client alias=a,b`. A client named for two tenants is refused at
-	// start: which one it is decides whose password is checked.
+	// # It was a map, and both maps are gone
 	//
-	// # Two flat maps and not a block per tenant
+	// `keys` was one `rt_` per tenant fronted, by alias, and `clients` said which
+	// OAuth clients were whose so that the right key could be picked. Two things
+	// per customer for a roster operator to write, one of them a secret to
+	// distribute and rotate -- and the client map forced a **Hydra registration
+	// per customer**, because a discriminator that is the client cannot tell two
+	// tenants of one product apart.
 	//
-	// A block would carry both facts about one customer together, and the first
-	// draft of this was one -- the argument being that two maps keyed the same
-	// way is a place to add an entry to one and not the other. What decided
-	// against it is the **environment**: a key is a secret, so it arrives as
-	// `ROSTER_LOGIN_KEY_<ALIAS>`, which is flat and which nothing nested
-	// answers to. A nested block would have needed a flat `keys` beside it
-	// anyway, and then there are two places to write a key, which is worse than
-	// two places to write an tenant.
+	// Now: one key, and which tenant a flow is about comes from the redirect the
+	// authorization request named, resolved through that tenant's own `Host` row.
+	// So adding a customer is a row they write themselves (#42) and nothing here
+	// changes. `login/at.go` is the resolution and why the client could not stay.
 	//
-	// The risk the block was for is closed where it actually bites: a key with
-	// no client, or a client with no key, is refused at start by name and with
-	// the flag that fixes it (`cli/login.go`). Half an tenant never runs.
-	Clients map[string][]string `yaml:"clients"`
+	// # Why an `rk_` is allowed to be this app's credential now
+	//
+	// `docs/login.md` refused one: an `rk_` resolves to a frame with no tenant,
+	// so what separated customers would be this app's own code. `Host.acts_as`
+	// answers it rather than waiving it -- every call goes out with `roster-at`
+	// and is answered as the holder that tenant nominated, with their bindings
+	// and nothing wider (#43). The wall is still what separates them; it is
+	// applied per request instead of per process.
+	Key string `yaml:"key"`
 
 	// Base is this app's public origin, which every provider has registered as
 	// the redirect: `https://login.example.com`.
