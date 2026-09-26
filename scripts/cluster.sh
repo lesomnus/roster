@@ -984,14 +984,34 @@ EOF
 # The client's URLs move with the app, because a redirect URI is the **public**
 # one and the issuer refuses anything else. Same file, same sync as the phase
 # above.
-python3 - "${work}/deploy/clients/product.json" <<'PY'
+python3 - "${work}/deploy/clients/product.json" "${work}/deploy/resources.yaml" <<'PY'
 import sys
 
-p = sys.argv[1]
+p, res = sys.argv[1], sys.argv[2]
 s = open(p).read()
 old = "https://roster-product.roster.svc.cluster.local:5555"
 assert old in s, "the client no longer names the app this phase moves"
 open(p, "w").write(s.replace(old, "https://roster-app.roster.svc.cluster.local"))
+
+# And acme has to claim the **public** name, because moving the app behind a
+# terminator moves the name its redirect carries -- and that name is what says
+# which tenant a flow is about (#36).
+#
+# This is the finding that phase produced on its first run after #36: everything
+# up to here passed, the client was re-registered, and the flow reached
+# `no tenant answers at "roster-app.roster.svc.cluster.local"`. The old
+# discriminator was the client id, which does not change when a redirect does, so
+# a deployment could move an app behind a terminator and never think about
+# roster's rows. Now it has to, which is the trade this bought: one fewer thing
+# per customer, one more thing per **name**.
+s = open(res).read()
+old = "    name: roster-product.roster.svc.cluster.local"
+assert old in s, "resources.yaml no longer reads the way this rig expects"
+open(res, "w").write(s.replace(old, old + """
+
+  - kind: Host
+    tenant: acme
+    name: roster-app.roster.svc.cluster.local""", 1))
 PY
 carry
 
@@ -1017,6 +1037,23 @@ kube "kubectl -n ${NS} rollout status deploy/roster-hydra --timeout=300s >/dev/n
 # `X-Forwarded-Proto` -- is a pod that never becomes ready.
 kube "kubectl -n ${NS} rollout status deploy/roster-product --timeout=300s >/dev/null" \
 	|| { kube "kubectl -n ${NS} logs deploy/roster-product --tail=20"; echo "cluster: the relying party would not come up behind the terminator" >&2; exit 1; }
+
+# **And roster's own**, because this overlay changed `resources.yaml`.
+#
+# Moving the app behind a terminator moves the name its redirect carries, and that
+# name is what says which tenant a flow is about (#36) -- so acme has to claim it,
+# which is a row in that file. The file is in the `roster` ConfigMap, whose name
+# carries a hash of its contents, so the change is a new pod template and a
+# rollout. Two things happen on it and both are the pod's: `serve` applies the new
+# `Host` row, and the `login provision` init container nominates the holder that
+# name borrows.
+#
+# Waited for rather than assumed, which is the same mistake `roster-hydra` and the
+# three above are waited for to avoid. Unwaited, the walk below runs against a pod
+# that has not applied the row and reads `the password was not accepted` -- a
+# sentence about the wrong thing, which is what this phase said on its first run
+# after #36.
+kube "kubectl -n ${NS} rollout status deploy/roster --timeout=300s >/dev/null"
 echo "   the issuer is behind nginx, and the app came up against it"
 
 moved=0
