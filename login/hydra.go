@@ -185,6 +185,35 @@ func (a admin) registered(ctx context.Context, id string) (*registration, error)
 	return v, nil
 }
 
+// acceptDeviceCode hands Hydra the short code somebody typed, and answers with
+// where to send them next.
+//
+// The device grant's one admin call, and it is one rather than two because Hydra
+// offers no getter for a device challenge -- there is no
+// `.../requests/device`, only `.../requests/device/accept`. So unlike a login, a
+// consent or a logout there is nothing to ask **about** this challenge before
+// answering it: the screen draws a field, and this is the answer.
+//
+// What `redirect_to` leads to is the ordinary flow. Hydra binds the code to the
+// device that is polling, then raises a `login_challenge` and redirects here
+// again -- so everything after this point is `/login` and `/consent`, unchanged,
+// and the device half of this app is two handlers wide.
+//
+// A wrong code is Hydra's refusal and not this app's: *The 'user_code' session
+// could not be found or has expired or is otherwise malformed*, which is one
+// answer for a code never issued, one already used and one that ran out. Passed
+// back as it arrives rather than sorted into cases, for `Vouch.Redeem`'s reason
+// said about somebody else's store.
+func (a admin) acceptDeviceCode(ctx context.Context, challenge, code string) (string, error) {
+	v := &redirect{}
+	body := map[string]string{"user_code": code}
+	if err := a.do(ctx, http.MethodPut, "device/accept", deviceChallenge, challenge, body, v); err != nil {
+		return "", err
+	}
+
+	return v.To, nil
+}
+
 func (a admin) consent(ctx context.Context, challenge string) (*consentRequest, error) {
 	v := &consentRequest{}
 
@@ -440,6 +469,41 @@ func (a admin) revokeSessions(ctx context.Context, subject string) error {
 	return nil
 }
 
+// refusal is an answer Hydra gave that was not a success, with the status it gave
+// it with.
+//
+// A type rather than a formatted string because one caller has to tell two things
+// apart that every other caller is right to treat as one: `POST /device` is
+// answering a person who **typed** something, so *Hydra refused this code* is a
+// 400 about what they typed and *Hydra could not be reached* is a 502 about the
+// deployment. Everything else here goes to `App.broken`, which is 502 for both --
+// correctly, because no other endpoint takes a value a person composed.
+//
+// The message is unchanged from what this used to format, so a log written before
+// this type existed reads the same.
+type refusal struct {
+	Method string
+	Path   string
+
+	// Status is the code, for a caller deciding what to answer. `Says` is the
+	// same thing as Hydra phrased it, which is what belongs in a log.
+	Status int
+	Says   string
+
+	Body string
+}
+
+func (e *refusal) Error() string {
+	return fmt.Sprintf("login: hydra: %s %s: %s: %s", e.Method, e.Path, e.Says, e.Body)
+}
+
+// Refused is whether this is Hydra saying no rather than Hydra being unreachable.
+//
+// A 4xx and not simply *not 2xx*: a 500 from Hydra is a deployment problem wearing
+// a request's clothes, and answering it as *you typed that wrong* would send
+// somebody back to retype a code that was correct.
+func (e *refusal) Refused() bool { return e.Status/100 == 4 }
+
 // do is the one request shape the five challenge calls share.
 func (a admin) do(ctx context.Context, method, path, param, challenge string, in, out any) error {
 	if challenge == "" {
@@ -484,7 +548,13 @@ func (a admin) do(ctx context.Context, method, path, param, challenge string, in
 		// two mistakes this app makes, and they read differently there.
 		b, _ := io.ReadAll(io.LimitReader(res.Body, 4<<10))
 
-		return fmt.Errorf("login: hydra: %s %s: %s: %s", method, path, res.Status, bytes.TrimSpace(b))
+		return &refusal{
+			Method: method,
+			Path:   path,
+			Status: res.StatusCode,
+			Says:   res.Status,
+			Body:   string(bytes.TrimSpace(b)),
+		}
 	}
 
 	// Nothing to read, for the one call that answers nothing: Hydra's

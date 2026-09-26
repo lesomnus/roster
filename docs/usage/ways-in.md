@@ -261,6 +261,13 @@ first one:
   can see who is signed in. `account/device.go` says why roster itself answers
   none of it.
 
+> **The other device grant.** A deployment with Hydra in front has a second one,
+> and it is not this: the Login App's `/device` screen, where a person types a code
+> a **television** printed so that the device gets an **OAuth token** out of the
+> issuer. Same RFC, different caller, and neither replaces the other -- this one
+> hands out an `rt_` and that one hands out nothing roster issues. See
+> [../login.md](../login.md) § *A device with no browser*.
+
 ## A delegation — `rd_`
 
 For an app that is drawing a person their own record and should not do it with

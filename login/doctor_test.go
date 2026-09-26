@@ -384,3 +384,67 @@ func TestDoctorSaysWhenItCouldNotLook(t *testing.T) {
 	x.Contains(found[0].What, "did not answer")
 	x.Contains(found[0].Costs, "--public")
 }
+
+// device is a client with no browser, registered the way one has to be.
+//
+// Three fields differ from [good] and each is the device grant rather than a
+// mistake: the grant type is RFC 8628's, there is no `authorization_code` beside
+// it, the auth method is `none` because a binary somebody installed cannot hold a
+// client secret, and there is no `post_logout_redirect_uris` because a device has
+// no browser session to end.
+//
+// `redirect_uris` stays, and it is the one worth reading: a device flow never
+// sends a browser anywhere, so this is registered for nothing but saying which
+// tenant it belongs to. `login/device.go` says why that is the cost rather than
+// the bug.
+func device() map[string]any {
+	return map[string]any{
+		"client_id":                  "app",
+		"client_name":                "the one with no browser",
+		"grant_types":                []string{login.DeviceGrant, "refresh_token"},
+		"response_types":             []string{"code"},
+		"scope":                      "openid offline profile email",
+		"redirect_uris":              []string{"https://app.test/callback"},
+		"token_endpoint_auth_method": login.PublicAuthMethod,
+	}
+}
+
+// TestDoctorPassesADeviceClient, and it is here because the checks were written
+// before there was such a thing as one.
+//
+// A device client registered exactly as it should be would have been reported
+// **Broken** for having no `authorization_code` and **Fragile** for having no
+// `post_logout_redirect_uris` -- two loud rows about a correct registration, which
+// is how a deployment learns to stop reading this.
+func TestDoctorPassesADeviceClient(t *testing.T) {
+	x := require.New(t)
+
+	at := clients(t, map[string]map[string]any{"app": device()})
+	found, err := login.Doctor(context.Background(), at, "", nil, at_(t, "app.test", "contoso"))
+	x.NoError(err)
+	x.Empty(found, "a correctly registered device client was reported: %+v", found)
+}
+
+// TestADeviceClientWithNoRedirectIsToldWhyItNeedsOne.
+//
+// The same field as [good]'s case and a different sentence, because the reason is
+// different and the wrong reason sends somebody looking for the wrong thing. An
+// ordinary client needs a redirect because Hydra sends a browser to it. A device
+// client never redirects and still needs one, because `login/at.go` reads which
+// tenant a flow is about off the redirect and a device flow carries none -- so
+// what a deployment sees without it is the right password being refused.
+func TestADeviceClientWithNoRedirectIsToldWhyItNeedsOne(t *testing.T) {
+	x := require.New(t)
+
+	v := device()
+	delete(v, "redirect_uris")
+
+	at := clients(t, map[string]map[string]any{"app": v})
+	found, err := login.Doctor(context.Background(), at, "", nil, at_(t, "app.test", "contoso"))
+	x.NoError(err)
+	x.Len(found, 1)
+	x.Equal(login.Broken, found[0].Severity)
+	x.Contains(found[0].What, "device grant")
+	x.Contains(found[0].Costs, "which tenant",
+		"the finding does not say why a client that never redirects needs a redirect")
+}

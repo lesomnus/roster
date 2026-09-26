@@ -381,7 +381,9 @@ functions stop agreeing, in either direction.
 | `GET /logout` | a screen only half the time: drawn when nothing proved a relying party started the sign-out, answered with a 303 when something did | `TestALogoutNobodyProvedAnAppAskedForIsConfirmed` · `TestSigningOutEndsWhatTheIssuerRemembers` · `docker/behind.sh` |
 | `POST /logout` | `{logout_challenge, allow}` → `{signed_out, to}`, or `{signed_out: false}` and nowhere to go. **400 for a logout an app did prove it started**, because that one is never drawn | `TestTheConfirmedSignOutIsTheOneThatEnds` · `TestTheAnswerIsForTheScreenThatWasDrawn` · `TestALogoutChallengeIsAskedAbout` |
 | `GET /signed-out` | the page a sign-out that asked to come back nowhere ends on. The one screen here with no challenge on it | `docker/behind.sh` · `ts/e2e/login.spec.ts` |
-| `/` | the build, and its assets. `/login`, `/consent`, `/logout` and `/signed-out` are rewritten to `/` rather than redirected, so a page is **one document** that reads which screen it is from the challenge in its own URL | `docker/itself.sh` · `ts/e2e/login.spec.ts` |
+| `GET /device` | where somebody types the code a device with no browser printed. **The one screen that asks the app nothing** -- Hydra has no getter for a device challenge, so there is no `/flow` for it and no client name to draw | `TestADeviceChallengeIsAnsweredWithWhereToGoNext` · `docker/device.sh` · `ts/e2e/login.spec.ts` |
+| `POST /device` | `{device_challenge, user_code}` → `{to}`, which is Hydra, which comes back as an ordinary login challenge. **400 for a code Hydra refused**, one answer for never issued, already used and expired | `TestEveryWrongDeviceCodeIsOneAnswer` · `docker/device.sh` · `ts/e2e/login.spec.ts` |
+| `/` | the build, and its assets. `/login`, `/consent`, `/logout`, `/device` and `/signed-out` are rewritten to `/` rather than redirected, so a page is **one document** that reads which screen it is from the challenge in its own URL | `docker/itself.sh` · `ts/e2e/login.spec.ts` |
 
 And the rules, which are the part that is easy to get wrong and the reason
 `frontdoor/web/frontdoor.js` exists at all:
@@ -481,6 +483,60 @@ out of one ends the issuer's memory and that app's session; the second app's coo
 is its own until it expires. Closing that is **back-channel logout**, one
 `store.Del`, and it is the product app's half rather than roster's -- the hop above
 is roster to Hydra, and this one is Hydra to whatever holds a session.
+
+### A device with no browser
+
+`/device` is the fourth thing Hydra redirects to, and it is the smallest screen here:
+one field, and nothing behind it.
+
+The shape is RFC 8628, the OAuth 2.0 Device Authorization Grant -- a television, a
+set-top box, a shell on a server. It asks the issuer for a `device_code` and a short
+`user_code`, prints the code and an address, and polls the token endpoint until
+somebody has been there. What a person does is open the address on a phone or a
+laptop, type the eight characters, and sign in; the device, which never sees any of
+that, is handed a token on its next poll.
+
+**It is not how a terminal gets a roster credential.** That is the account app's
+`roster sign-in`, it is a different flow for a different caller, and
+`docs/usage/ways-in.md` is where it is written down. The two are worth keeping apart
+because they look identical from the outside:
+
+| | what it is for | who runs the protocol |
+| --- | --- | --- |
+| `roster sign-in` | a **terminal** that wants a roster key (`rt_`) | the account app |
+| this | a **device** that wants an OAuth token from this issuer | Hydra |
+
+roster's part is two handlers, and that is on purpose: the code's alphabet, its
+lifetime, the `slow_down` a client that polls too fast is told, binding the code to
+the device that asked -- all of it is Hydra's, and a second copy here would be a
+second set of numbers to get wrong. What Hydra does not do is ask a person, which is
+this app's part in every other flow too.
+
+Three things to know before deploying it:
+
+- ⚠️ **Set `urls.device_verification`.** It is what brings a browser here at all;
+  unset, Hydra serves its own fallback at `/oauth2/fallbacks/device` and the person
+  holding a code is told an administrator has not configured something -- the same
+  failure `urls.post_logout_redirect` above exists to avoid. `deploy/hydra.yaml`
+  sets it and `docker/device.sh` refuses to pass without it.
+- ⚠️ **A device client registers a `redirect_uri` it will never use.** Which tenant
+  a flow is about comes from the redirect the authorization request named
+  (*Signing in by address, and where the tenant comes from*, below), and a device
+  flow has no redirect -- so what answers is the one the client registered, and a
+  device client with none resolves to nobody. What that looks like is **the right
+  password being refused**, which is why `roster login doctor` reports it as broken
+  and says why. Register the tenant's own host; nothing will redirect to it.
+- **The screen cannot say what is being authorised.** Hydra offers no way to read a
+  device challenge -- there is `.../requests/device/accept` and no getter beside it
+  -- so there is no `/flow` for this screen, no client name and no brand on it. What
+  the device is asking for is named on the **consent** screen, one hop after the
+  code is accepted, so a person still sees it before anything is granted.
+
+A code Hydra refuses is answered **400 with no detail**, one answer for one never
+issued, one already spent and one expired. Telling them apart would answer *is this
+code real* to whoever is typing, which is what RFC 8628 §5.1 is about — and it is
+also the one place this app tells Hydra saying no apart from Hydra not answering, so
+that a mistyped code is not reported as a broken deployment.
 
 ### Putting people in, and letting them arrive
 

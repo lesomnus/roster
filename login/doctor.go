@@ -121,6 +121,27 @@ const AuthMethod = "client_secret_basic"
 // admin API says.
 const PublicAuthMethod = "none"
 
+// DeviceGrant is RFC 8628's grant type, as Hydra spells it.
+//
+// A client that carries this one and **not** `authorization_code` is a device --
+// a television, a shell, anything with no browser to redirect -- and half the
+// questions below do not apply to it. See [deviceOnly].
+const DeviceGrant = "urn:ietf:params:oauth:grant-type:device_code"
+
+// deviceOnly is whether a client can do the device grant and nothing else.
+//
+// Which changes what is wrong with it, and the checks below were written before
+// there was such a thing. A device client registered exactly as it should be would
+// have been reported **Broken** twice -- no `authorization_code`, no
+// `post_logout_redirect_uris` -- and a check that is loud about a correct
+// registration is a check a deployment learns to ignore.
+//
+// Deliberately *only*: a client that does both is asked every question, because it
+// has browser flows to get wrong as well.
+func deviceOnly(v *hydraClient) bool {
+	return slices.Contains(v.Grants, DeviceGrant) && !slices.Contains(v.Grants, "authorization_code")
+}
+
 // hydraClient is what the admin API says about a registered client. It is the
 // whole document rather than the two fields the flow needs, because what this
 // checks is the fields nothing else reads.
@@ -301,12 +322,27 @@ func check(id string, v *hydraClient) []Finding {
 			"every sign-in answers 400 -- or works until the app restarts, which is worse")
 	}
 
+	device := deviceOnly(v)
+
 	if len(v.Redirects) == 0 {
-		add(Broken, "it has no redirect_uris",
-			"hydra refuses the flow before anybody sees a form")
+		// One question, two reasons, and for a device client the reason is the
+		// surprising one. An ordinary client needs a redirect because Hydra sends
+		// a browser to it; a device client never redirects anywhere and still
+		// needs one, because it is the only thing that says **which tenant** a
+		// device flow is about (`login/at.go`, `login/device.go`).
+		//
+		// Said differently for each, because a message about a form would send
+		// somebody looking for a form that is not in their product.
+		if device {
+			add(Broken, "it can do the device grant and has no redirect_uris",
+				"a device flow carries no redirect, so nothing says which tenant it is about and the sign-in refuses the right password")
+		} else {
+			add(Broken, "it has no redirect_uris",
+				"hydra refuses the flow before anybody sees a form")
+		}
 	}
 
-	if !slices.Contains(v.Grants, "authorization_code") {
+	if !device && !slices.Contains(v.Grants, "authorization_code") {
 		add(Broken, "grant_types does not carry authorization_code",
 			"there is no flow this app can complete for it")
 	}
@@ -319,7 +355,11 @@ func check(id string, v *hydraClient) []Finding {
 			"what comes back is an access token and no id_token, so the app learns nobody's name")
 	}
 
-	if len(v.AfterOut) == 0 {
+	// And the one question a device is exempt from rather than answered
+	// differently. Signing out is a browser ending a session it holds, and a
+	// device holds none: what it has is a token that runs out. A row here would
+	// be advice to register a URL nothing will ever redirect to.
+	if !device && len(v.AfterOut) == 0 {
 		add(Fragile, "it has no post_logout_redirect_uris",
 			"an app that sends an id_token_hint to come back here is refused; one that does not lands on urls.post_logout_redirect")
 	}

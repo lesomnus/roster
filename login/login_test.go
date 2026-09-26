@@ -38,8 +38,8 @@ import (
 
 const password = "correct horse battery staple"
 
-// hydra is as much of Hydra as this app talks to: four endpoints, and a record
-// of what it was told.
+// hydra is as much of Hydra as this app talks to, and a record of what it was
+// told.
 //
 // A fake rather than the real thing because what these tests are about is the
 // **flow** -- which tenant a challenge resolves to, which key its calls go
@@ -62,6 +62,13 @@ type hydra struct {
 	rp        map[string]bool
 	endedBy   map[string]bool
 	refusedBy map[string]bool
+
+	// The fourth, which is the device grant's -- and the one challenge a real
+	// Hydra offers no way to **read**, only to answer. So there is nothing here
+	// keyed by it that a `GET` would serve: what this holds is which short code
+	// each challenge will accept, and what the app sent when it tried.
+	codes map[string]string
+	typed map[string]string
 }
 
 func newHydra(t *testing.T) *hydra {
@@ -70,6 +77,8 @@ func newHydra(t *testing.T) *hydra {
 		rp:        map[string]bool{},
 		endedBy:   map[string]bool{},
 		refusedBy: map[string]bool{},
+		codes:     map[string]string{},
+		typed:     map[string]string{},
 	}
 
 	m := http.NewServeMux()
@@ -132,6 +141,38 @@ func newHydra(t *testing.T) *hydra {
 		h.mu.Unlock()
 
 		w.WriteHeader(http.StatusNoContent)
+	})
+
+	// The device grant's one endpoint, and there is deliberately no `GET` beside
+	// it: a real Hydra has `.../requests/device/accept` and nothing to read the
+	// challenge with, which is why `login/device.go` draws its screen without
+	// asking anybody anything.
+	//
+	// A wrong code is a 400 carrying Hydra's own words, because telling that
+	// apart from *Hydra is down* is the one thing the app does with this answer.
+	m.HandleFunc("PUT /admin/oauth2/auth/requests/device/accept", func(w http.ResponseWriter, r *http.Request) {
+		c := r.URL.Query().Get("device_challenge")
+
+		var body struct {
+			UserCode string `json:"user_code"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&body)
+
+		h.mu.Lock()
+		want, ok := h.codes[c]
+		h.typed[c] = body.UserCode
+		h.mu.Unlock()
+
+		if !ok || want != body.UserCode {
+			http.Error(w, `{"error":"invalid_request","error_description":"The 'user_code' session could not be found or has expired or is otherwise malformed."}`,
+				http.StatusBadRequest)
+
+			return
+		}
+
+		// Into the ordinary flow, which is the whole point: everything after this
+		// is `/login` and `/consent`, unchanged.
+		writeJson(w, map[string]string{"redirect_to": "https://issuer.test/oauth2/device/verify?login_challenge=" + c})
 	})
 
 	m.HandleFunc("DELETE /admin/oauth2/auth/sessions/login", func(w http.ResponseWriter, r *http.Request) {
@@ -208,6 +249,28 @@ func redirectHostFor(client string) string {
 	alias, _, _ := strings.Cut(client, "-")
 
 	return alias + ".app.test"
+}
+
+// printed is a device flow Hydra is holding, and the code it is waiting for.
+//
+// No client and no redirect, because the device grant carries neither -- which is
+// exactly the shape `login/at.go`'s fallback was written for. The screen this
+// feeds needs nothing else: it does not resolve a tenant, because nobody is being
+// signed in yet.
+func (h *hydra) printed(challenge, code string) {
+	h.mu.Lock()
+	h.codes[challenge] = code
+	h.mu.Unlock()
+}
+
+// sent is what the app handed Hydra as the code, which is the half of `POST
+// /device` a test cannot see from the answer.
+func (h *hydra) sent(challenge string) (string, bool) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	v, ok := h.typed[challenge]
+
+	return v, ok
 }
 
 // raise is a browser arriving at a client's `/login`, as far as this app sees.
@@ -1279,4 +1342,142 @@ func TestALogoutChallengeIsAskedAbout(t *testing.T) {
 	x.NoError(err)
 	defer res.Body.Close()
 	x.Equal(http.StatusBadGateway, res.StatusCode)
+}
+
+// A device with no browser, and the fourth screen.
+//
+// #14's other half, and it is worth saying which one this is because the two are
+// easy to confuse: `account/device.go` is how a **terminal** gets a roster
+// credential, and this is how a **device** gets an OAuth token out of this
+// deployment's issuer. `login/device.go`'s head is the whole argument.
+//
+// What these two tests pin is the only surface roster adds: a screen that asks
+// nobody anything, and an answer that tells *Hydra refused what you typed* apart
+// from *Hydra did not answer*. Everything else in the flow is Hydra's -- the code,
+// its alphabet, its window, the `slow_down` -- and `docker/device.sh` walks it
+// against the real one.
+
+// TestADeviceChallengeIsAnsweredWithWhereToGoNext: the screen, and the code.
+func TestADeviceChallengeIsAnsweredWithWhereToGoNext(t *testing.T) {
+	x := require.New(t)
+	d := serve(t)
+
+	d.hydra.printed("d1", "WDJB-MJHT")
+
+	// The screen is drawn for a challenge and for nothing else. Nothing is read
+	// from Hydra first, because there is nothing to read -- so what this asserts
+	// is that the page is served, not that a lookup happened.
+	res, err := d.browser(t).Get(d.app.URL + "/device?device_challenge=d1")
+	x.NoError(err)
+	defer res.Body.Close()
+	x.Equal(http.StatusOK, res.StatusCode, "the device screen was not drawn")
+
+	// And no `/flow` was needed to draw it, which is the one way this screen is
+	// unlike every other: a device challenge has no client to name and no brand,
+	// because Hydra offers no way to ask about one.
+	_, asked := d.hydra.sent("d1")
+	x.False(asked, "the screen reached Hydra before anybody typed anything")
+
+	// The answer: the code goes to Hydra as typed, and where Hydra says to go is
+	// handed back for the browser to follow.
+	res, err = d.browser(t).PostForm(d.app.URL+"/device",
+		url.Values{"device_challenge": {"d1"}, "user_code": {"WDJB-MJHT"}})
+	x.NoError(err)
+	defer res.Body.Close()
+	x.Equal(http.StatusOK, res.StatusCode)
+
+	var v struct {
+		To string `json:"to"`
+	}
+	x.NoError(json.NewDecoder(res.Body).Decode(&v))
+	x.Equal("https://issuer.test/oauth2/device/verify?login_challenge=d1", v.To,
+		"the browser was not sent back into the ordinary flow")
+
+	got, _ := d.hydra.sent("d1")
+	x.Equal("WDJB-MJHT", got)
+}
+
+// TestEveryWrongDeviceCodeIsOneAnswer, and the one wrong thing that is not a code.
+//
+// A code never issued, one already spent and one that expired are one answer from
+// Hydra and one answer from here, for `Vouch.Redeem`'s reason said about somebody
+// else's store: a screen that told them apart would answer *is this code real* to
+// whoever is typing, which is what RFC 8628 §5.1 is about.
+//
+// The subtest that matters most is the last one. Hydra being **unreachable** is
+// not somebody mistyping, and answering it as a 400 would send a person back to
+// retype a code that was correct -- so `login/hydra.go` carries the status on the
+// error and this is the one endpoint that reads it.
+func TestEveryWrongDeviceCodeIsOneAnswer(t *testing.T) {
+	post := func(t *testing.T, d *deployment, code string) *http.Response {
+		t.Helper()
+
+		res, err := d.browser(t).PostForm(d.app.URL+"/device",
+			url.Values{"device_challenge": {"d1"}, "user_code": {code}})
+		require.NoError(t, err)
+		t.Cleanup(func() { res.Body.Close() })
+
+		return res
+	}
+
+	t.Run("a code hydra never issued", func(t *testing.T) {
+		d := serve(t)
+		d.hydra.printed("d1", "WDJB-MJHT")
+
+		require.Equal(t, http.StatusBadRequest, post(t, d, "BCDF-GHJK").StatusCode)
+	})
+
+	t.Run("a challenge hydra never raised", func(t *testing.T) {
+		d := serve(t)
+
+		require.Equal(t, http.StatusBadRequest, post(t, d, "WDJB-MJHT").StatusCode)
+	})
+
+	t.Run("nothing typed at all", func(t *testing.T) {
+		// Refused here rather than at Hydra: an empty code is not a guess, and
+		// there is nothing to learn from being told so.
+		d := serve(t)
+		d.hydra.printed("d1", "WDJB-MJHT")
+
+		res := post(t, d, "")
+		require.Equal(t, http.StatusBadRequest, res.StatusCode)
+
+		_, asked := d.hydra.sent("d1")
+		require.False(t, asked, "an empty code was sent to hydra")
+	})
+
+	t.Run("whitespace around a right one is still right", func(t *testing.T) {
+		// The one thing this app does to a code, and the reason it does no more:
+		// what a code may be spelled with is Hydra's setting, so trimming is
+		// safe and lowering or dropping dashes would be guessing at somebody
+		// else's alphabet.
+		d := serve(t)
+		d.hydra.printed("d1", "WDJB-MJHT")
+
+		require.Equal(t, http.StatusOK, post(t, d, "  WDJB-MJHT\n").StatusCode)
+	})
+
+	t.Run("a screen with no challenge on it", func(t *testing.T) {
+		x := require.New(t)
+		d := serve(t)
+
+		res, err := d.browser(t).Get(d.app.URL + "/device")
+		x.NoError(err)
+		defer res.Body.Close()
+		x.Equal(http.StatusBadGateway, res.StatusCode,
+			"a browser that did not come from hydra was given a form")
+	})
+
+	t.Run("and hydra not answering is not somebody mistyping", func(t *testing.T) {
+		x := require.New(t)
+		d := serve(t)
+		d.hydra.printed("d1", "WDJB-MJHT")
+
+		// Hydra gone, which is the deployment being broken rather than the code
+		// being wrong. 502, because the person is not the one who can fix it.
+		d.hydra.Close()
+
+		res := post(t, d, "WDJB-MJHT")
+		x.Equal(http.StatusBadGateway, res.StatusCode)
+	})
 }

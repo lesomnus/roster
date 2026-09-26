@@ -275,6 +275,16 @@ services:
       # successful sign-out and it reads like a broken deployment. A person who
       # clicked *sign out* is told to contact somebody.
       URLS_POST_LOGOUT_REDIRECT: http://${PUBLIC_HOST:-localhost}:8091/signed-out
+      # And where it sends somebody who is holding a code a device printed.
+      #
+      # RFC 8628's verification screen, which is the Login App's fourth
+      # (`login/device.go`). Missing, Hydra serves its own fallback at
+      # `/oauth2/fallbacks/device` -- a page that tells a person looking at a
+      # television that a configuration key is not set, which is the same shape of
+      # failure `URLS_POST_LOGOUT_REDIRECT` above exists to avoid.
+      #
+      # `docker/device.sh` walks it and refuses to pass without this line.
+      URLS_DEVICE_VERIFICATION: http://${PUBLIC_HOST:-localhost}:8091/device
       # The Login App answers consent itself, so nothing here draws a screen.
       # A deployment that wants one points `URLS_CONSENT` at its own.
       LOG_LEVEL: warn
@@ -373,6 +383,31 @@ services:
         }]
         EOF
         hydra import client --endpoint http://hydra:4445 /tmp/itself.json
+        # And a device: a client with no browser and no secret to keep one in.
+        #
+        # `token_endpoint_auth_method: none`, unlike the three above, because that
+        # is what a device **is** -- a binary somebody installed, which cannot
+        # hold a client secret. RFC 8628 is the grant a public client uses when it
+        # also cannot host a redirect.
+        #
+        # `redirect_uris` is the part worth reading. The device grant never sends a
+        # browser anywhere, so this is registered for **nothing but saying which
+        # tenant** a flow belongs to: `login/at.go` resolves that from the
+        # redirect, a device flow carries none, and the fallback is what the client
+        # registered. `login/device.go` says why that is the cost rather than a bug
+        # and `roster login doctor` reports a device client that has none.
+        cat >/tmp/device.json <<'EOF'
+        [{
+          "client_id": "device",
+          "client_name": "the demo with no browser",
+          "grant_types": ["urn:ietf:params:oauth:grant-type:device_code", "refresh_token"],
+          "response_types": ["code"],
+          "scope": "openid offline profile email",
+          "redirect_uris": ["http://127.0.0.1:5555/callback"],
+          "token_endpoint_auth_method": "none"
+        }]
+        EOF
+        hydra import client --endpoint http://hydra:4445 /tmp/device.json
 
   # The Login App: what Hydra hands a `login_challenge` to, and what answers
   # `acceptLoginRequest{subject}` with a `Holder.id`. Its own process with its

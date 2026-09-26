@@ -163,6 +163,17 @@ echo "== and the same issuer, seen by an app that is the relying party itself"
 docker compose up -d --no-deps --wait product >/dev/null
 docker compose run --rm --no-deps --entrypoint /usr/local/bin/itself.sh login "$@"
 
+# And the third kind of client: one with no browser at all.
+#
+# RFC 8628, which is the half of #14 that is the issuer's rather than the account
+# app's -- a device gets a token out of this deployment, where `roster sign-in` gets
+# a roster key out of a front door. Run before the factor walk, because the
+# password alone has to be worth a sign-in for it.
+echo
+echo "== and a device with no browser, through the issuer"
+docker compose run --rm --no-deps --entrypoint /usr/local/bin/device.sh \
+	-e "EXPECT_SUB=${sub}" login "$@"
+
 # And last, because it gives her an authenticator and does not take it away:
 # from here on the password alone is half of a sign-in.
 echo

@@ -185,3 +185,60 @@ test('a sign-out that comes back nowhere still ends on a page for a person', asy
 	// it is about is already over, so a `/flow` call could only fail.
 	await expect(page.getByRole('heading', { name: 'this login is not working' })).toHaveCount(0)
 })
+
+// The fourth screen: where somebody types the code a device printed.
+//
+// `docker/device.sh` walks this against a real Hydra with curl, so the protocol is
+// covered and the **browser** is not -- and this screen has more browser in it than
+// any of the others: a field prefilled off the URL for a phone that scanned a QR
+// code, a button that stays disabled until there is something to send, and one
+// message for every way a code can be wrong.
+//
+// `WDJB-MJHT` is RFC 8628 §3.3's own example code, and it is what
+// `ts/vite.login.ts` accepts.
+test('a code is typed, and a wrong one says so without saying which kind of wrong', async ({ page }) => {
+	await page.goto(`${base}/device?device_challenge=sandbox`)
+
+	await expect(page.getByRole('heading', { name: 'type the code' })).toBeVisible()
+
+	// It asks the app nothing. Unlike every other screen with a challenge on it
+	// there is no `/flow` behind this one -- Hydra has no getter for a device
+	// challenge -- so a page that fetched one would draw the broken screen.
+	await expect(page.getByRole('heading', { name: 'this login is not working' })).toHaveCount(0)
+
+	// Nothing to send yet, so nothing to press.
+	const go = page.locator('form button[type=submit]', { hasText: 'continue' })
+	await expect(go).toBeDisabled()
+
+	await page.locator('input[name=user_code]').fill('BCDF-GHJK')
+	await go.click()
+	await expect(page.locator('.bad')).toBeVisible()
+
+	// And still on the screen with the field, because retyping it is the whole of
+	// what a person can do about it.
+	await expect(page.locator('input[name=user_code]')).toBeVisible()
+
+	await page.locator('input[name=user_code]').fill('WDJB-MJHT')
+	await go.click()
+
+	// Where the app said to go, which is the ordinary flow: the made-up server
+	// answers the sign-in form's challenge, so arriving at a password field is the
+	// hop having worked.
+	await expect(page.locator('input[name=password]')).toBeVisible()
+})
+
+// The complete verification URI: RFC 8628 §3.3.1, which is the address behind a QR
+// code and carries the code so a phone has nothing to retype.
+//
+// Filled in and **not submitted**, which is the assertion. The point of this screen
+// is that a person is present and agreeing; a form that posted itself would be a
+// device authorising itself through somebody's browser.
+test('a code in the address is filled in and not sent', async ({ page }) => {
+	await page.goto(`${base}/device?device_challenge=sandbox&user_code=WDJB-MJHT`)
+
+	await expect(page.locator('input[name=user_code]')).toHaveValue('WDJB-MJHT')
+	await expect(page.locator('form button[type=submit]', { hasText: 'continue' })).toBeEnabled()
+
+	// Nothing has happened yet: the field is still here rather than the next screen.
+	await expect(page.locator('input[name=password]')).toHaveCount(0)
+})

@@ -31,9 +31,10 @@ the issuer's side; this document is it from the product's.
 | `examples/product/product_test.go` | its flow against `internal/idptest`, a fake issuer |
 | `docker/itself.sh` | the walk: sign in, read the page, sign out, and be asked for a form again |
 | `docker/behind.sh` | the same walk for the proxy shape, plus the two asymmetries only it has |
-| `compose.yaml` | both services, their clients, and Hydra's four `URLS_*` |
+| `docker/device.sh` | the third shape: a client with **no browser**, RFC 8628 ([`login.md`](login.md) § *A device with no browser*) |
+| `compose.yaml` | both services, their clients, and Hydra's five `URLS_*` |
 | `deploy/product.yaml`, `deploy/clients/product.json` | `itself` as a manifest and a declared client |
-| `scripts/hydra.sh` | stands compose up and runs five walks |
+| `scripts/hydra.sh` | stands compose up and runs six walks |
 | `scripts/cluster.sh` | k3d over `deploy/`, and `itself.sh` as a Job inside it |
 | `login/doctor.go` | `roster login doctor`: whether the clients are registered in a way any of this works with |
 
@@ -220,9 +221,9 @@ that is what made *sign out* a lie.
 | --- | --- | --- |
 | the product | `GET /`, `GET /callback`, `GET /sign-out`, `GET /healthz` | the whole of `examples/product` |
 | `oauth2-proxy` | `GET /oauth2/start`, `/oauth2/callback`, `/oauth2/userinfo`, `/oauth2/sign_out?rd=`, `/ping` | the same four jobs, done by somebody else's code |
-| Hydra, public | `GET /.well-known/openid-configuration` · `GET /oauth2/auth` · `POST /oauth2/token` · `GET /oauth2/sessions/logout` | the protocol. A relying party touches only these |
-| Hydra, admin | `GET\|PUT /admin/oauth2/auth/requests/{login,consent,logout}[/accept\|/reject]` · `GET /admin/clients` · `DELETE /admin/oauth2/auth/sessions/login` | the Login App's side, and **private** -- `login/hydra.go` is all of it, in one file, with no SDK |
-| the Login App | `GET /login` · `GET /consent` · `POST /consent` · `GET /logout` · `POST /logout` · `GET /signed-out` · `GET /flow` · `POST /session` · `POST /session/continue` · `DELETE /session` · `POST /accept` | the pages Hydra's four `URLS_*` point at, the one endpoint the page may ask (`/flow`), and `frontdoor`'s three (`POST /session` and after) |
+| Hydra, public | `GET /.well-known/openid-configuration` · `GET /oauth2/auth` · `POST /oauth2/token` · `GET /oauth2/sessions/logout` · `POST /oauth2/device/auth` · `GET /oauth2/device/verify` | the protocol. A relying party touches only these -- the last two only if it has no browser |
+| Hydra, admin | `GET\|PUT /admin/oauth2/auth/requests/{login,consent,logout}[/accept\|/reject]` · `PUT /admin/oauth2/auth/requests/device/accept` · `GET /admin/clients` · `DELETE /admin/oauth2/auth/sessions/login` | the Login App's side, and **private** -- `login/hydra.go` is all of it, in one file, with no SDK. The device one has **no getter beside it**, which is why that screen asks the app nothing |
+| the Login App | `GET /login` · `GET /consent` · `POST /consent` · `GET /logout` · `POST /logout` · `GET /device` · `POST /device` · `GET /signed-out` · `GET /flow` · `POST /session` · `POST /session/continue` · `DELETE /session` · `POST /accept` | the pages Hydra's five `URLS_*` point at, the one endpoint the page may ask (`/flow`), and `frontdoor`'s three (`POST /session` and after) |
 | roster, gRPC | `roster.VouchService/Delegate` · `roster.DelegationService/Revoke` · `roster.MeService/Get` · `roster.TenantService/Get` · `roster.SyncService/Watch` | the whole of what roster is asked on this route. `Delegate` verifies the secret **and** mints the `rd_` that `Me.Get` is then made with; `Watch` is continuous and in none of the diagrams -- it is how somebody being disabled reaches the sessions already open |
 
 Two things that table says better than prose. The product and the proxy never
@@ -641,7 +642,15 @@ shape has no use for -- the app asks to come back to **its own origin**, which i
 not its callback, and a registration with only the callback in it is the defect
 quoted above. A proxy that cannot send a hint cannot ask, so it registers none.
 
-And Hydra, four variables of it (`compose.yaml`, and the same four in
+A client with **no browser** registers differently, and the two fields that differ
+are both the device grant rather than a mistake: `token_endpoint_auth_method` is
+`none`, because a binary somebody installed cannot hold a secret, and the grant type
+is `urn:ietf:params:oauth:grant-type:device_code`. What it keeps is
+`redirect_uris` — registered for **nothing but saying which tenant**, since a device
+flow carries no redirect and that is what the answer is read off. A device client
+with none has the right password refused, and `roster login doctor` says so.
+
+And Hydra, five variables of it (`compose.yaml`, and the same five in
 `deploy/hydra.yaml`):
 
 | | |
@@ -650,12 +659,13 @@ And Hydra, four variables of it (`compose.yaml`, and the same four in
 | `URLS_LOGIN`, `URLS_CONSENT` | the Login App's pages |
 | `URLS_LOGOUT` | where it asks whether somebody meant to sign out. Missing, Hydra ends the session itself and the app is never asked |
 | `URLS_POST_LOGOUT_REDIRECT` | where a hintless sign-out lands. Unset, that is Hydra's administrator-facing fallback |
+| `URLS_DEVICE_VERIFICATION` | where somebody holding a code a device printed is sent. Unset, that is another administrator-facing fallback |
 
 ## The gates, and what each can see
 
 ```sh
 roster login doctor --hydra … --client contoso=demo,behind,itself
-./scripts/hydra.sh      # compose: doctor, then five walks
+./scripts/hydra.sh      # compose: doctor, then six walks
 ./scripts/cluster.sh    # k3d over deploy/, and itself.sh as a Job inside it
 ```
 
@@ -665,6 +675,7 @@ roster login doctor --hydra … --client contoso=demo,behind,itself
 | `docker/flow.sh` | does a real Hydra's protocol fit the Login App | compose, and a cluster |
 | `docker/behind.sh` | does a **standard third party** accept this issuer, and what does its session say | compose, and a cluster |
 | `docker/itself.sh` | do the URLs **our app builds** work | compose, and a cluster |
+| `docker/device.sh` | does a client with **no browser** get a token, and does polling before anybody typed the code get nothing | compose |
 | `scripts/cluster.sh` | does any of it work over the real manifests, with no `--dev` -- including **after the registration changes under the running pods** | k3d |
 
 `login/doctor.go` is the cheapest of them and the one that would have caught
