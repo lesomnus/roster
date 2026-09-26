@@ -37,7 +37,7 @@ import (
 // hundredth time. `mayGrant` compares methods and site rather than tenants, so
 // the operator's binding -- tenant-wide, in the **control** plane -- reaches a
 // tenant that did not exist a moment ago; the admin port registers all four
-// writes plus the two that write a way in. `ts/console/customers.tsx` is the
+// writes plus the two that write a way in. `ts/console/tenants.tsx` is the
 // screen, `cmd/newcustomer_test.go` is the whole sequence, and
 // docs/usage/customers.md, § 'Standing a customer up', is why.
 //

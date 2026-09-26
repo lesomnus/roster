@@ -137,7 +137,7 @@ function Booting(props: { at: Progress }): React.ReactNode {
 	)
 }
 
-// The sandbox, once started, for `customers()` to dial its second server on.
+// The sandbox, once started, for `tenants()` to dial its second server on.
 let sandbox: Sandbox | null = null
 
 /**
@@ -202,11 +202,11 @@ function SignIn(props: { onDone: () => void }): React.ReactNode {
 }
 
 /**
- * customers is the store and the clients the customers screen draws from.
+ * tenants is the store and the clients the tenants screen draws from.
  *
  * The **same** transport the rest of the page uses, because there is one
  * listener now: `admin.http` serves the page, signs the operator in, and
- * answers about customers. It was a second transport to a second origin, which
+ * answers about tenants. It was a second transport to a second origin, which
  * a `__Host-` cookie could never have reached (#27).
  *
  * In the sandbox it is the second server the one instance publishes, dialed by
@@ -216,7 +216,7 @@ function SignIn(props: { onDone: () => void }): React.ReactNode {
  * row: a reset answers with a secret that is never written down, so there is
  * nothing for the store to hold and nothing for it to redraw.
  */
-async function customers(transport: Transport): Promise<{ app: App; writes: Writes } | null> {
+async function tenants(transport: Transport): Promise<{ app: App; writes: Writes } | null> {
 	const at =
 		import.meta.env['VITE_SANDBOX'] !== undefined ? (sandbox?.dial('drpcAdmin') ?? null) : transport
 	if (at === null) return null
@@ -229,26 +229,26 @@ async function customers(transport: Transport): Promise<{ app: App; writes: Writ
  * and, in a development build, payday's window over this store beneath both.
  * Beneath both on purpose: the window is for looking at what the page is
  * doing, and a page that is refusing a sign-in is doing something worth
- * looking at. The customers screen mounts its own over its own store, so
+ * looking at. The tenants screen mounts its own over its own store, so
  * this one steps aside there.
  */
 function Shell(props: {
 	signedIn: boolean
 	onSignIn: () => void
 	onSignOut: () => void
-	customers: App | null
+	tenants: App | null
 	writes: Writes | null
 	ungated: { control?: Transport; admin?: Transport }
 }): React.ReactNode {
 	const route = useRoute()
-	const here = !(props.signedIn && route[0] === 'customers')
+	const here = !(props.signedIn && route[0] === 'tenants')
 
 	return (
 		<>
 			{props.signedIn ? (
 				<Page
 					onSignOut={props.onSignOut}
-					customers={props.customers}
+					tenants={props.tenants}
 					writes={props.writes}
 					ungated={props.ungated.admin}
 				/>
@@ -281,9 +281,9 @@ async function run(transport: Transport): Promise<void> {
 	const app = await open(transport, 'console')
 
 	// Opened beside it rather than inside the screen, so that a page which
-	// never opens the customers tab still pays for it once and a page that does
+	// never opens the tenants tab still pays for it once and a page that does
 	// draws immediately. It is a store, not a call.
-	const theirs = await customers(transport)
+	const theirs = await tenants(transport)
 	const ungated = ungatedTransports()
 
 	const render = (signedIn: boolean): void => {
@@ -294,7 +294,7 @@ async function run(transport: Transport): Promise<void> {
 						signedIn={signedIn}
 						onSignIn={() => render(true)}
 						onSignOut={out}
-						customers={theirs?.app ?? null}
+						tenants={theirs?.app ?? null}
 						writes={theirs?.writes ?? null}
 						ungated={ungated}
 					/>

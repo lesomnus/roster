@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 
 // The sandbox: the admin console with the whole server compiled into the page, one
 // instance serving two servers -- the control plane, and the admin one the
-// customers screen dials by name. Nothing else in the repository opens it, so this is what
+// tenants screen dials by name. Nothing else in the repository opens it, so this is what
 // keeps `npm run dev:sandbox` from quietly stopping being a thing that works.
 
 const base = process.env['E2E_SANDBOX'] ?? 'http://localhost:18100/'
@@ -18,16 +18,16 @@ test('the sandbox signs in, and its second server stands a customer up', async (
 	await page.locator('button[type=submit]', { hasText: 'sign in' }).click()
 	await expect(page.locator('nav .who')).toHaveText('admin', { timeout: 90_000 })
 
-	await page.locator('nav button', { hasText: 'customers' }).click()
-	await expect(page.locator('h2', { hasText: 'customers' })).toBeVisible()
+	await page.locator('nav button', { hasText: 'tenants' }).click()
+	await expect(page.locator('h2', { hasText: 'tenants' })).toBeVisible()
 	await expect(page.getByRole('cell', { name: 'contoso', exact: true })).toBeVisible({ timeout: 90_000 })
 
-	const form = page.locator('.new-customer form')
+	const form = page.locator('.new-tenant form')
 	await form.locator('input[name=alias]').fill('fabrikam')
 	await form.locator('input[name=who]').fill('admin')
 	await form.locator('button[type=submit]').click()
 	await expect(page.getByRole('cell', { name: 'fabrikam', exact: true })).toBeVisible()
 
-	await page.locator('tr', { hasText: 'fabrikam' }).locator('button', { hasText: 'people' }).click()
+	await page.locator('tr', { hasText: 'fabrikam' }).locator('button', { hasText: 'open' }).click()
 	await expect(page.getByRole('cell', { name: 'admin', exact: true }).first()).toBeVisible()
 })

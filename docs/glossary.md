@@ -26,8 +26,8 @@ Three notes about the list itself:
 | **roster operator** (990, usually written *operator*) | whoever runs this **deployment**. A holder of the **control plane**, and the only one who makes and unmakes tenants. Never a tenant: *an operator's tenant* is a sentence with no meaning here, and where prose wants the customer organisation the word is **tenant** |
 | **roster user** | a holder of the **data plane** -- somebody in a tenant. What they may do is their bindings, and the wall narrows every read to their own tenant |
 | **tenant administrator** | a roster user whose role administers their tenant. **Not a kind of row**: the schema has no such thing, and it is a holder with a binding (#29) |
-| **customer** | a tenant, from the roster operator's side of the table. `roster tenant add` makes one; the admin console's *customers* screen is about them |
-| **admin console** | the page a **roster operator** opens. Today it is served by the control listener and reaches `admin.addr` for customers; #32 moves it whole onto the admin listener |
+| **customer** | a tenant, from the roster operator's side of the table. `roster tenant add` makes one. A word for **prose** and not a name: what names rows uses the row's name, so the admin console's screen is *tenants* -- see below |
+| **admin console** | the page a **roster operator** opens. Today it is served by the control listener and reaches `admin.addr` for tenants; #32 moves it whole onto the admin listener |
 | **user console** | the page a **roster user** opens, showing their own tenant and nothing else, over the walled data plane. `ts/user/`, served by `server.http` at `/` where `user_console.dir` names a build (#34) |
 | **a holder's credential** | what tells two holders apart, since the row does not: a `Credential` (a password, a second factor) or an `ApiKey`. One holder may have both, and roster refuses neither -- `roster control key add --allow … admin` mints a key on the operator's own row. Which plane it is in is the other difference, and the one the `rk_`/`rt_` prefix comes from |
 | **custody** (69) | a caller that acts across **every** tenant -- the deployment's own machinery rather than a customer's. `docs/position.md` is where the line is |
@@ -84,6 +84,23 @@ Three notes about the list itself:
 | **the corpus** (73) | the breached-password list a new password is checked against, in the one place that holds the row |
 | **an epoch** | a counter on a `Holder` that invalidates everything issued before it. `Holder.Invalidate` moves it, which is how *sign this person out of everything* reaches sessions and delegations that are already open |
 | **a seam** (29) | payday's word for a place it deliberately leaves for an app to fill -- `auth` reads a credential and does not issue one, and `AuthService` is roster filling that seam |
+
+## A word for prose is not a name
+
+**A thing that names rows uses the row's name.** A screen, a route, a component, a
+CLI verb: the entity is `Tenant`, so all four say *tenant*.
+
+Which leaves the words that are about a **point of view** where they belong, in
+prose. **customer** is the one that matters: a tenant seen from the roster
+operator's side of the table, and a true and useful thing to write. It was also,
+for a while, the name of the admin console's screen and of the route under it --
+the single place in this product where a list of rows did not say what it was a
+list of, and the glossary recorded it rather than arguing it.
+
+The distinction is worth stating because the cost is asymmetric. A sentence that
+says *customer* is read once by somebody who has the context. A **name** is read by
+somebody looking for the thing it names -- in an address bar, in a file tree, in a
+grep -- and one that does not match the schema is one they do not find.
 
 ## The two other overloads
 

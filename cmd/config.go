@@ -513,7 +513,7 @@ type ControlConfig struct {
 //
 // The page is here rather than on `control.http` because a browser's session
 // cookie is `__Host-` prefixed and host-only: a page and the listener it calls
-// must be the same host, and the customers screen calls this one. What is left
+// must be the same host, and the tenants screen calls this one. What is left
 // on the control listener is the RPCs a shell makes -- `roster control …` --
 // and no page at all.
 type AdminConfig struct {
@@ -549,7 +549,7 @@ type SignInConfig struct {
 //
 // One field, and the second one is gone with the arrangement that needed it.
 // `admin` named another origin for the page to call, because the page was
-// served by `control.http` and the customers screen calls `admin.http` -- and a
+// served by `control.http` and the tenants screen calls `admin.http` -- and a
 // browser will not send a `__Host-` session cookie to a second host, so that
 // arrangement could not work at all (#27). A page is served by the listener it
 // calls now, and there is nothing to tell it.
