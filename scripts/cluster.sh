@@ -122,6 +122,17 @@ carry() { tar -C "${work}" -cf - . | docker run --rm -i -v "${vol}:/w" alpine sh
 resolver() {
 	{
 		echo
+		echo "-- ${NS}, in case what did not come up says why"
+		kube "kubectl -n ${NS} get pods" 2>/dev/null || true
+
+		# **The init containers too**, which is the half that was missing and
+		# cost a CI run: `roster login provision` runs as one, and a pod whose
+		# init container fails is reported as `timed out waiting for the
+		# condition` about a Deployment -- a sentence about the symptom with
+		# nothing in it about the cause. `--all-containers` is what says it.
+		kube "kubectl -n ${NS} logs -l app.kubernetes.io/component=server --all-containers --tail=30 --prefix" 2>/dev/null || true
+
+		echo
 		echo "-- kube-system/coredns, in case the name that did not resolve was its"
 		kube "kubectl -n kube-system get pods -l k8s-app=kube-dns" 2>/dev/null || true
 		kube "kubectl -n kube-system logs -l k8s-app=kube-dns --tail=20 --previous" 2>/dev/null || true

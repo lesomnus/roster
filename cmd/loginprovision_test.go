@@ -195,3 +195,44 @@ func TestTheProvisionedKeyIsNarrowerThanTheRole(t *testing.T) {
 	// hold: it is reached only through a nomination.
 	x.Greater(len(role), len(key))
 }
+
+// TestProvisionMigratesBothPlanes is the first start of a fresh deployment, and
+// it is here because CI found it and nothing local did.
+//
+// This command is an **init container**: it runs before the server has opened
+// either database, on a volume with no tables. `ready` migrated the data plane,
+// which was the whole of what the per-tenant keys touched -- and #36 put the key
+// on a control-plane holder, so the first start failed in the init container on
+// `no such table: tenant`, the pod never became ready, and what the rig reported
+// was `timed out waiting for the condition` about a Deployment.
+//
+// The other tests here create both schemas first, which is why they were green.
+// This one deliberately does not.
+func TestProvisionMigratesBothPlanes(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	drv, dsn := pdtest.DB(t)
+	cdrv, cdsn := pdtest.DB(t)
+	out := t.TempDir()
+
+	c := cmd.Config{
+		Db:    config.DbConfig{Driver: drv, Dsn: dsn, Migrate: true},
+		Watch: config.WatchConfig{Broker: config.BrokerMemory},
+		Control: cmd.ControlConfig{
+			Db: config.DbConfig{Driver: cdrv, Dsn: cdsn, Migrate: true},
+		},
+	}
+
+	// Nothing has created a table on either plane, which is the state this
+	// command exists for.
+	x.NoError(cli.NewCmdLogin(&c).Run(ctx, []string{"provision", "--out", out}))
+
+	b, err := os.ReadFile(filepath.Join(out, "login-app.key"))
+	x.NoError(err)
+	x.True(strings.HasPrefix(strings.TrimSpace(string(b)), "rk_"))
+
+	// And no names to nominate on, which is said and not refused: a fresh volume
+	// has no customers, and refusing here would be a deployment that cannot come
+	// up because it has not come up.
+}

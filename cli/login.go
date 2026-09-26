@@ -238,6 +238,24 @@ func newCmdLoginProvision(c *cmd.Config) *xli.Command {
 				return err
 			}
 
+			// **And the control plane's**, which this needs since #36 and did
+			// not before: the key is an `rk_` on a control-plane holder, where it
+			// was an `rt_` inside each tenant. `roster control key add` says the
+			// same thing one file over -- *the control database may be new: this
+			// is often the first thing that writes to it* -- and it is truer
+			// here, because this is an init container and runs before anything
+			// else has opened that database at all.
+			//
+			// Left out, the first start of a fresh deployment fails in the init
+			// container on `no such table: tenant`, the pod never becomes ready,
+			// and what the rig reports is `timed out waiting for the condition`
+			// about a Deployment. Which is how this was found.
+			if s.Control != nil {
+				if err := ready(ctx, s.Control, c.Control.Db); err != nil {
+					return err
+				}
+			}
+
 			// What the key is allowed, which is [LoginMethods] plus the one
 			// grant a policy asks for. `enrolling` makes people, and making
 			// people is wider than signing them in -- so it is granted only
