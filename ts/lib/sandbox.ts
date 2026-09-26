@@ -76,7 +76,7 @@ export interface Sandbox {
 	/**
 	 * dial is a transport to one of the servers the instance publishes, by the
 	 * name it was published under -- `drpcAdmin` for the admin listener, which
-	 * the customers screen reaches, and `drpcUser` for the walled data plane,
+	 * the tenants screen reaches, and `drpcUser` for the walled data plane,
 	 * which is the whole of what the user console talks to. One instance, one
 	 * pair of databases; see `wasm/main.go`, which lists the names.
 	 */

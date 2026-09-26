@@ -103,7 +103,7 @@ function when(v: { seconds: bigint } | undefined): string {
  * is still right -- a read narrowed twice is narrowed once.
  *
  * Which person is open is the **page's** to say, not this component's: the
- * admin console keeps it at `/customers/@<tenant>/people/<alias>` and the user
+ * admin console keeps it at `/tenants/@<tenant>/people/<alias>` and the user
  * console at `/people/<alias>`, because on that page there is only ever one
  * tenant and putting it in the address would be saying it twice. So this takes
  * `at` and answers `onOpen`, and neither page has to know the other's tree.
@@ -518,7 +518,7 @@ function Reaches(props: { holder: Uint8Array; may: (method: string) => boolean }
 /**
  * Keys is what a machine of theirs holds, and the one act on it.
  *
- * # Why it is here and not on the customers screen
+ * # Why it is here and not on the tenants screen
  *
  * A key **is** a way in: it resolves to its holder, so a call made with it is
  * made as them. That is why it sits beside the passwords and the providers

@@ -24,6 +24,12 @@
  * would be a second set of answers to *what may be shown*, and the first thing
  * to drift.
  *
+ * The **shell** is shared for the same reason, and was not until it was: the
+ * sidebar, what a selected tab looks like, where the sign-out goes, what a page
+ * says while it is loading. That is the part somebody changing the design touches
+ * first, and it was written twice. `ts/lib/console.tsx` is it now, so a change to
+ * the admin console's chrome is a change to this page's.
+ *
  * # Which tenant
  *
  * The caller's, from `Me.Get`, which takes no subject and so cannot be pointed
@@ -38,6 +44,7 @@ import { useQuery } from '@lesomnus/payday/react'
 
 import { covers } from '../lib/covers.js'
 import { go, useRoute } from '../lib/route.js'
+import { Broken, Console, Loading, You, type Tab } from '../lib/console.js'
 import type { Writes } from '../lib/client.js'
 
 import { MeService } from '../gen/app/me_pb.js'
@@ -67,15 +74,8 @@ export function Page(props: { onSignOut: () => void; writes: Writes }): React.Re
 	const route = useRoute()
 	const at = screenOf(route[0])
 
-	if (me.state === 'pending') return <main className="loading">…</main>
-	if (me.state === 'error') {
-		return (
-			<main className="error">
-				<p>{me.error instanceof Error ? me.error.message : 'no'}</p>
-				<button onClick={props.onSignOut}>sign out</button>
-			</main>
-		)
-	}
+	if (me.state === 'pending') return <Loading />
+	if (me.state === 'error') return <Broken at={me.error} onSignOut={props.onSignOut} />
 
 	const held = me.data?.methods ?? []
 	const may = (method: string): boolean => held.some((v) => covers(v, method))
@@ -127,74 +127,38 @@ function Screens(props: {
 	// What is worth drawing, and never what is allowed. The server refuses
 	// either way, and a client that treated this as the decision would be one an
 	// altered client could talk out of.
-	const screens: { at: Screen; name: string; ok: boolean }[] = [
+	const tabs: Tab<Screen>[] = [
 		{ at: 'people', name: 'people', ok: props.may('/roster.HolderService/List') },
 		{ at: 'arrives', name: 'arrives through', ok: props.may('/roster.HostService/List') },
 		{ at: 'organisation', name: 'organisation', ok: props.may('/roster.SiteService/List') },
 		{ at: 'access', name: 'access', ok: props.may('/roster.RoleService/List') },
 		{ at: 'trail', name: 'trail', ok: props.may('/roster.AuditService/List') },
-		{ at: 'you', name: 'you', ok: true },
+		{ at: 'you', name: 'you', ok: true, group: true },
 	]
 
 	return (
-		<div className="console">
-			<nav>
-				<h1>{name}</h1>
-				{screens.map((s) => (
-					<button
-						key={s.at}
-						disabled={!s.ok}
-						className={s.at === props.at ? 'at' : ''}
-						onClick={() => go([s.at])}
-					>
-						{s.name}
-					</button>
-				))}
-				<span className="who">{props.who}</span>
-				<button onClick={props.onSignOut}>sign out</button>
-			</nav>
-
-			<main>
-				{props.at === 'people' && (
-					<People
-						tenant={tenant}
-						writes={props.writes}
-						may={props.may}
-						at={props.people}
-						onOpen={(who) => go(who === null ? ['people'] : ['people', who])}
-					/>
-				)}
-				{props.at === 'arrives' && <Arrives tenant={tenant} may={props.may} />}
-				{props.at === 'organisation' && <Organisation tenant={tenant} may={props.may} />}
-				{props.at === 'access' && <Access tenant={tenant} may={props.may} />}
-				{props.at === 'trail' && <Trail tenant={tenant} />}
-				{props.at === 'you' && <You methods={props.methods} />}
-			</main>
-		</div>
-	)
-}
-
-/** You: what this person may call, which is the union the server enforces. */
-function You(props: { methods: string[] }): React.ReactNode {
-	return (
-		<section>
-			<h2>you</h2>
-			<ul className="methods">
-				{props.methods.map((m) => (
-					<li key={m}>
-						<code>{m}</code>
-					</li>
-				))}
-			</ul>
-			<p className="note">
-				Patterns, not every RPC written out. <code>/roster.*/*</code> is
-				everything roster serves, now and after an upgrade — which is why it is
-				a pattern and not a list somebody has to keep in step.
-			</p>
-			<p className="note">
-				Narrowed to what this <em>credential</em> may do, not only to what you
-				may: a key or a delegation can call less than its holder.
-			</p>
-		</section>
+		<Console
+			title={name}
+			tabs={tabs}
+			at={props.at}
+			onGo={(to) => go([to])}
+			who={props.who}
+			onSignOut={props.onSignOut}
+		>
+			{props.at === 'people' && (
+				<People
+					tenant={tenant}
+					writes={props.writes}
+					may={props.may}
+					at={props.people}
+					onOpen={(who) => go(who === null ? ['people'] : ['people', who])}
+				/>
+			)}
+			{props.at === 'arrives' && <Arrives tenant={tenant} may={props.may} />}
+			{props.at === 'organisation' && <Organisation tenant={tenant} may={props.may} />}
+			{props.at === 'access' && <Access tenant={tenant} may={props.may} />}
+			{props.at === 'trail' && <Trail tenant={tenant} />}
+			{props.at === 'you' && <You methods={props.methods} />}
+		</Console>
 	)
 }

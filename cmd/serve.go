@@ -1286,7 +1286,7 @@ func (s *Server) GrpcControl(ctx context.Context, c Config, opts ...grpc.ServerO
 	// No `AuthService` here, and no page either. Both moved to `admin.http`,
 	// which is where a roster operator opens a browser: a session cookie is
 	// `__Host-` prefixed and host-only, so the page and the listener it signs
-	// in at have to be one host, and the customers screen is on that listener
+	// in at have to be one host, and the tenants screen is on that listener
 	// (#27, #32). What is left on this one is what a shell makes -- the RPCs
 	// behind `roster control …` -- and those carry an `rk_` rather than a
 	// cookie.

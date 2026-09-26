@@ -1,6 +1,25 @@
 /**
- * The customers screen: the tenants this deployment serves, the people in each,
- * and what each of them signs in with.
+ * The tenants screen -- the ones this deployment serves, and one of them
+ * selected.
+ *
+ * Two exports, and the split is the sidebar's: [Tenants] is the picker, and
+ * [Chosen] is the six screens that are one tenant's. They used to be one thing,
+ * with the screens nested under a row of the table behind six buttons and one
+ * open at a time. `ts/console/page.tsx` says why that moved.
+ *
+ * # Why `tenants` and not `customers`
+ *
+ * The screen was called *customers* and the glossary recorded that rather than
+ * arguing it. **A thing that names rows uses the row's name**: the entity is
+ * `Tenant`, `roster tenant add` makes one, and the wall narrows to one -- so a
+ * screen labelled otherwise was the single place in this product where a list of
+ * rows did not say what it was a list of.
+ *
+ * `customer` is still the right word in **prose**, and the glossary keeps it: a
+ * tenant, from the roster operator's side of the table. What it is not is a name
+ * for a screen, a route, or a component.
+ *
+ * What did **not** move is the port, the store, or the narrowing -- see below.
  *
  * # It reads a different port
  *
@@ -43,7 +62,6 @@ import type { Tenant } from '../gen/roster/payday/tenant_pb.js'
 import { TenantService } from '../gen/roster/payday/tenant_svc_pb.js'
 
 import type { Writes } from '../lib/client.js'
-import { go, useRoute } from '../lib/route.js'
 // payday's panel, where this build has one; see `devtools.tsx`.
 import { Devtools } from '../lib/devtools.js'
 import { entities } from '../gen/entities.js'
@@ -53,16 +71,14 @@ import { Organisation } from '../lib/tenant/organisation.js'
 import { Access } from '../lib/tenant/access.js'
 import { Trail } from '../lib/tenant/trail.js'
 
-/** Panel is what opens under a customer's row: one at a time, because they nest. */
-type Panel = 'people' | 'arrives' | 'organisation' | 'access' | 'trail' | 'edit'
-const panels: readonly Panel[] = ['people', 'arrives', 'organisation', 'access', 'trail', 'edit']
-
-/** panelOf reads a customer and a panel off the path, or nothing open. */
-function panelOf(id: string | undefined, on: string | undefined): { id: string; on: Panel } | null {
-	if (id === undefined || id === '' || !(panels as readonly string[]).includes(on ?? '')) return null
-
-	return { id, on: on as Panel }
-}
+/**
+ * Screen is one of a customer's, as the sidebar names them.
+ *
+ * The same six the user console has -- five of them are `ts/lib/tenant/`
+ * components drawn unchanged -- plus `settings`, which is what a tenant says
+ * about itself and is this page's alone for now.
+ */
+export type Screen = 'people' | 'arrives' | 'organisation' | 'access' | 'trail' | 'settings'
 
 /** uuid is the bytes an identifier arrives as, written the way a person reads one. */
 function uuid(v: Uint8Array | undefined): string {
@@ -98,16 +114,24 @@ function when(v: { seconds: bigint } | undefined): string {
 }
 
 /**
- * Customers is the screen, under its own store.
+ * Tenants is the picker: which tenants this deployment serves, and standing one
+ * up.
  *
  * `app` is null while the store is opening, which is one render rather than a
  * state machine: the disk mirror is read before the first query runs, so a
  * spinner here is the only honest thing to draw.
  */
-export function Customers(props: {
+export function Tenants(props: {
 	app: App | null
 	writes: Writes | null
 	may: (method: string) => boolean
+
+	/** Which one is selected, so the table can say so. */
+	at: string | null
+
+	/** Selecting one, by alias, or letting go of the selection. */
+	onOpen: (alias: string | null) => void
+
 	// The data plane with no wall, for the panel; the sandbox's alone.
 	ungated?: Transport | undefined
 }): React.ReactNode {
@@ -115,7 +139,7 @@ export function Customers(props: {
 
 	return (
 		<Provider app={props.app}>
-			<Tenants writes={props.writes} may={props.may} />
+			<Table writes={props.writes} may={props.may} at={props.at} onOpen={props.onOpen} />
 			{/* The same window, on the data plane's store -- the one this screen
 			    reads, and the only one mounted while it is showing. */}
 			<Devtools {...(props.ungated !== undefined ? { ungated: props.ungated } : {})} />
@@ -123,18 +147,120 @@ export function Customers(props: {
 	)
 }
 
-function Tenants(props: { writes: Writes; may: (method: string) => boolean }): React.ReactNode {
-	const vs = useQuery(TenantService.method.list, {})
+/**
+ * Chosen is one tenant's screens, under the same store the picker reads.
+ *
+ * The store is why this is a component here rather than six in `page.tsx`:
+ * `roster.Holder` means an operator on the control plane and a customer's person
+ * on the data plane, so one store would have them overwrite each other by
+ * identifier. `Provider` is React context, so everything under this reads the
+ * data plane without knowing there is another -- which is the paragraph at the
+ * top of this file, and the reason the screens could not simply be mounted beside
+ * `you`.
+ *
+ * It resolves the alias to a row rather than taking one, because the address bar
+ * carries the alias and a page reached by reload has no row yet.
+ */
+export function Chosen(props: {
+	app: App | null
+	writes: Writes | null
+	may: (method: string) => boolean
+	alias: string
+	at: Screen
+	who: string | null
+	onOpen: (who: string | null) => void
+	ungated?: Transport | undefined
+}): React.ReactNode {
+	if (props.app === null || props.writes === null) return <p className="loading">…</p>
 
-	// Which customer is open, and on which panel: who is in it, how they
-	// arrive, how they are organised, what they may do, what was done. One at
-	// a time, because the panels nest under the row and two open at once read
-	// as one. It is the address bar's to say -- `/customers/@<alias>/<panel>`,
-	// the alias the CLI names a tenant by, because somebody reads the address
-	// -- so the back button closes a panel and a reload keeps it open.
-	const route = useRoute()
-	const at = panelOf(route[1], route[2])
-	const same = (v: Tenant): boolean => at !== null && '@' + v.alias === at.id
+	return (
+		<Provider app={props.app}>
+			<Screens
+				writes={props.writes}
+				may={props.may}
+				alias={props.alias}
+				at={props.at}
+				who={props.who}
+				onOpen={props.onOpen}
+			/>
+			<Devtools {...(props.ungated !== undefined ? { ungated: props.ungated } : {})} />
+		</Provider>
+	)
+}
+
+/** Screens is [Chosen] once it is under the store, so it may read. */
+function Screens(props: {
+	writes: Writes
+	may: (method: string) => boolean
+	alias: string
+	at: Screen
+	who: string | null
+	onOpen: (who: string | null) => void
+}): React.ReactNode {
+	// By alias, which is what the address carries and what `TenantRef` takes -- a
+	// tenant is not inside anything, so its reference is the alias itself and not
+	// a slug. Through the admin listener like every other read here, so there is
+	// no wall and this answers for whichever customer was named.
+	const v = useQuery(TenantService.method.get, {
+		ref: { key: { case: 'alias', value: props.alias } },
+	})
+
+	if (v.state === 'pending') return <p className="loading">…</p>
+	if (v.state === 'error') return <Failed at={v.error} />
+
+	// A row rather than an identifier, because that is what `ts/lib/tenant/`
+	// takes: it filters by the tenant it was handed, which on this listener is the
+	// whole of the narrowing.
+	const tenant = v.data
+
+	return (
+		<>
+			{props.at === 'people' && (
+				<People
+					tenant={tenant}
+					writes={props.writes}
+					may={props.may}
+					// Which person is open is the page's to say, in the page's tree:
+					// `/tenants/@<tenant>/people/<alias>`. The user console's is
+					// `/people/<alias>`, which is why the component takes it rather
+					// than reading the route.
+					at={props.who}
+					onOpen={props.onOpen}
+				/>
+			)}
+			{props.at === 'arrives' && <Arrives tenant={tenant} may={props.may} />}
+			{props.at === 'organisation' && <Organisation tenant={tenant} may={props.may} />}
+			{props.at === 'access' && <Access tenant={tenant} may={props.may} />}
+			{props.at === 'trail' && <Trail tenant={tenant} />}
+			{props.at === 'settings' && <EditTenant tenant={tenant} may={props.may} />}
+		</>
+	)
+}
+
+/**
+ * Table is every tenant, filtered by what somebody typed, and the one that is
+ * selected.
+ *
+ * # The filter is over what was read
+ *
+ * `TenantService` has no `Search` -- `HolderService` does, and that asymmetry is
+ * the schema's rather than this page's -- so what this narrows is the page it
+ * already has. A deployment with more tenants than one page holds pages through
+ * them with `after`, and the box says *of these* rather than pretending to be a
+ * search of the table.
+ *
+ * Said in the placeholder rather than left to be discovered, because a filter
+ * that silently covers the first twenty rows is the shape `login/doctor.go`
+ * refused for the same reason.
+ */
+function Table(props: {
+	writes: Writes
+	may: (method: string) => boolean
+	at: string | null
+	onOpen: (alias: string | null) => void
+}): React.ReactNode {
+	const vs = useQuery(TenantService.method.list, {})
+	const [typed, setTyped] = useState('')
 
 	// What this screen made since it read, which is the shape `Keys` already
 	// uses one file over: a list query is not revalidated by a write this page
@@ -147,83 +273,76 @@ function Tenants(props: { writes: Writes; may: (method: string) => boolean }): R
 	if (vs.state === 'error') return <Failed at={vs.error} />
 
 	const read = vs.data?.items ?? []
-	const items = [...read, ...made.filter((v) => !read.some((w) => uuid(w.id) === uuid(v.id)))]
+	const all = [...read, ...made.filter((v) => !read.some((w) => uuid(w.id) === uuid(v.id)))]
+
+	// Alias and name both, because an operator looking for a tenant knows one or
+	// the other and not reliably which. Lowered on both sides: what somebody
+	// types into a box is not canonical anything.
+	const needle = typed.trim().toLowerCase()
+	const items =
+		needle === ''
+			? all
+			: all.filter((v) => v.alias.toLowerCase().includes(needle) || v.name.toLowerCase().includes(needle))
 
 	return (
 		<section>
-			<h2>customers</h2>
+			<h2>tenants</h2>
 
-			<NewCustomer
+			<NewTenant
 				writes={props.writes}
 				may={props.may}
 				onMade={(v) => setMade((was) => [...was, v])}
 			/>
 
-			{items.length === 0 && <p className="none">nobody yet</p>}
+			{all.length === 0 && <p className="none">none yet</p>}
 
-			<table>
-				<thead>
-					<tr>
-						<th>tenant</th>
-						<th>name</th>
-						<th>since</th>
-						<th />
-					</tr>
-				</thead>
-				<tbody>
-					{items.map((v) => {
-						const id = uuid(v.id)
-						const open = same(v)
-						const toggle = (on: Panel) => () =>
-							go(open && at?.on === on ? ['customers'] : ['customers', '@' + v.alias, on])
-						const label = (on: Panel, name: string) => (open && at?.on === on ? 'hide' : name)
-
-						return (
-							<tr key={id} className={open ? 'at' : ''}>
-								<td>{v.alias}</td>
-								<td>{v.name}</td>
-								<td>{when(v.dateCreated)}</td>
-								<td className="acts">
-									<button onClick={toggle('people')}>{label('people', 'people')}</button>
-									<button onClick={toggle('arrives')}>{label('arrives', 'arrives through')}</button>
-									<button onClick={toggle('organisation')}>{label('organisation', 'organisation')}</button>
-									<button onClick={toggle('access')}>{label('access', 'access')}</button>
-									<button onClick={toggle('trail')}>{label('trail', 'trail')}</button>
-									<button onClick={toggle('edit')}>{label('edit', 'edit')}</button>
-								</td>
-							</tr>
-						)
-					})}
-				</tbody>
-			</table>
-
-			{at?.on === 'people' && (
-				<People
-					tenant={items.find(same)}
-					writes={props.writes}
-					may={props.may}
-					// Which person is open is this page's to say, in this page's
-					// tree: `/customers/@<tenant>/people/<alias>`, the fourth
-					// segment. The user console's is `/people/<alias>`, which is
-					// why the component takes it rather than reading the route.
-					at={route[3] ?? null}
-					onOpen={(who) => {
-						const under = '@' + (items.find(same)?.alias ?? '')
-						go(who === null ? ['customers', under, 'people'] : ['customers', under, 'people', who])
-					}}
+			{all.length > 0 && (
+				<input
+					className="wide"
+					type="search"
+					value={typed}
+					onChange={(e) => setTyped(e.target.value)}
+					placeholder={`filter these ${all.length} by alias or name`}
+					aria-label="filter tenants"
 				/>
 			)}
-			{at?.on === 'arrives' && (
-				<Arrives tenant={items.find(same)} may={props.may} />
+
+			{all.length > 0 && items.length === 0 && <p className="none">none of these match</p>}
+
+			{items.length > 0 && (
+				<table>
+					<thead>
+						<tr>
+							<th>tenant</th>
+							<th>name</th>
+							<th>since</th>
+							<th />
+						</tr>
+					</thead>
+					<tbody>
+						{items.map((v) => {
+							const open = props.at === v.alias
+
+							return (
+								<tr key={uuid(v.id)} className={open ? 'at' : ''}>
+									<td>{v.alias}</td>
+									<td>{v.name}</td>
+									<td>{when(v.dateCreated)}</td>
+									<td className="acts">
+										{/* One button, and the sidebar is where the screens
+										    are. Six buttons per row was six ways to open one
+										    thing, and somebody who wanted `access` after
+										    `people` had to come back out to the table. */}
+										<button onClick={() => props.onOpen(open ? null : v.alias)}>
+											{open ? 'selected' : 'open'}
+										</button>
+									</td>
+								</tr>
+							)
+						})}
+					</tbody>
+				</table>
 			)}
-			{at?.on === 'organisation' && (
-				<Organisation tenant={items.find(same)} may={props.may} />
-			)}
-			{at?.on === 'access' && (
-				<Access tenant={items.find(same)} may={props.may} />
-			)}
-			{at?.on === 'trail' && <Trail tenant={items.find(same)} />}
-			{at?.on === 'edit' && <EditTenant tenant={items.find(same)} may={props.may} />}
 		</section>
 	)
 }
@@ -430,7 +549,7 @@ async function stand(
  * as a side effect of creating a row would put one on the screen before the
  * operator had anybody to read it to.
  */
-function NewCustomer(props: {
+function NewTenant(props: {
 	writes: Writes
 	may: (method: string) => boolean
 	onMade: (v: Tenant) => void
@@ -441,7 +560,7 @@ function NewCustomer(props: {
 	const allowed = needs.every((m) => props.may(m))
 
 	return (
-		<div className="new-customer">
+		<div className="new-tenant">
 			<form
 				onSubmit={(e) => {
 					e.preventDefault()

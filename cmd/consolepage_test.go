@@ -56,7 +56,7 @@ func TestTheConsoleIsServedByRosterItself(t *testing.T) {
 	x.Contains(body, "console.log")
 
 	// A route the page owns, reloaded: the index, not a 404.
-	code, body = get("/customers/contoso")
+	code, body = get("/tenants/@contoso/people")
 	x.Equal(http.StatusOK, code)
 	x.Contains(body, "<title>roster</title>")
 

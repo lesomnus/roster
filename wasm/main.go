@@ -47,7 +47,7 @@
 //
 //	(default)    the control plane: the admin console's own rows
 //	drpcAdmin    the data plane with no wall, behind the operator's session --
-//	             `cmd.GrpcAdmin`, which is what the customers screen reaches
+//	             `cmd.GrpcAdmin`, which is what the tenants screen reaches
 //	drpcUser     the data plane **walled**, behind a roster user's session --
 //	             `Server.Grpc`, which is what the user console reaches
 //	drpcUngated… the same stacks with no wall, for the devtools panel
@@ -112,7 +112,7 @@ const (
 	hostAt = "contoso.roster.example"
 
 	// AdminEntryPoint is the name the admin server is published under, and
-	// what `ts/console/main.tsx` dials for the customers screen.
+	// what `ts/console/main.tsx` dials for the tenants screen.
 	AdminEntryPoint = "drpcAdmin"
 
 	// UserEntryPoint is the data plane **walled**, which is what the user
@@ -397,7 +397,7 @@ func seed(ctx context.Context, s *cmd.Server) error {
 
 	// And a way in for the tenant administrator, which `Seed` does not write:
 	// `roster init` seeds the deployment's own operator and leaves a customer's
-	// people to the operator who stands them up (`ts/console/customers.tsx`,
+	// people to the operator who stands them up (`ts/console/tenants.tsx`,
 	// `stand`). Here there is nobody to do that and nowhere to print what they
 	// would be handed, so it is the same written-down password as above.
 	if _, err := s.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
