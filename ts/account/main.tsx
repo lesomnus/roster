@@ -27,6 +27,7 @@
  * does not cover says so rather than drawing a button that would be refused.
  */
 
+import { Code, ConnectError } from '@connectrpc/connect'
 import { createConnectTransport } from '@connectrpc/connect-web'
 import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -447,7 +448,37 @@ function Addresses(props: { own: Uint8Array; may: (m: string) => boolean }): Rea
 					void add
 						.call({ holder: ref(props.own), address })
 						.then(() => form.reset())
-						.catch((e: unknown) => setNote({ ok: false, text: said(e) }))
+						.catch((e: unknown) => {
+							// An address is one person's within a tenant, so the one
+							// refusal a person can do something about is *somebody has
+							// it* -- and what they can do is claim it, which mails a
+							// link to that mailbox. A row nobody proved lets go; one
+							// somebody proved does not. See docs/login.md § *Signing in
+							// by address*.
+							if (!(e instanceof ConnectError) || e.code !== Code.AlreadyExists) {
+								setNote({ ok: false, text: said(e) })
+
+								return
+							}
+
+							void fetch('/claim', json({ address })).then(async (res) => {
+								if (res.status === 202) {
+									form.reset()
+									setNote({
+										ok: true,
+										text: `nobody has confirmed that address — a link is on its way to ${address}`,
+									})
+
+									return
+								}
+
+								// The app's own refusals are plain text and say what they
+								// are, which is what `why` is for. The one worth reading is
+								// a 409: somebody proved it, and there is nothing further to
+								// try.
+								setNote({ ok: false, text: await why(res) })
+							})
+						})
 				}}
 			>
 				<input name="address" type="email" placeholder="you@example.com" required />

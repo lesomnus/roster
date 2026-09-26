@@ -283,6 +283,27 @@ type Email_builder struct {
 	// -- a verification from three years ago is a different fact from one from
 	// this morning, and a boolean cannot tell them apart.
 	//
+	// # It is what makes an address name somebody, which it was not
+	//
+	// F20 closed this as a **write** -- a caller could assert their own address
+	// had been checked -- and its own note said *which nothing reads yet*. That
+	// stayed true through two writers (`Email.Verify`/`Confirm`, then
+	// `Email.Attest`) and it made the field a decoration on the one road it exists
+	// for: `vouch.byAddress` resolved a person by an address without reading it, so
+	// a row nobody had checked named somebody.
+	//
+	// What that cost is #48 and it is not a takeover -- a link goes to the mailbox
+	// either way. It is that the index below made the address **somebody's**, so
+	// the rightful holder was refused `Add`, could not reach `Verify`, and had no
+	// road to their own address. A name the real holder cannot have, refused with
+	// *somebody has it*, is `host.proto` § *Why a hostname is not checked* one
+	// entity along.
+	//
+	// So `byAddress` reads it now, and `EmailVerifyRequest.holder` is what stops
+	// that turning a squat into a permanent denial: a proof may take an address
+	// **nobody proved**. Which is #42's sentence said about an address -- a name
+	// that resolves somebody may only be taken by proof.
+	//
 	// **Nullable**, and it has to be said out loud. A message field has presence
 	// in the generated API -- `HasDateVerified` exists -- but a NOT NULL column
 	// cannot keep it: an address that was never verified reads back as verified

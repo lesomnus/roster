@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/z"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/pdpb"
 
+	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/pd"
@@ -33,6 +35,38 @@ func (b *built) sets(t *testing.T, ctx context.Context, who pdid.Id, secret stri
 		Secret: []byte(secret),
 	}.Build())
 	require.NoError(t, err)
+}
+
+// proves is an address on somebody's row that something has checked.
+//
+// Two writes, because an address that nothing checked **names nobody**:
+// `vouch.byAddress` reads `date_verified` now (#48), so a test that writes an
+// address and then signs in by it is a test about a row that resolves nothing.
+// That is the rule rather than a detail of the fixture -- a name that resolves
+// somebody may only be taken by proof, which is #42's sentence about a hostname
+// said about an address.
+//
+// The stamp goes through `Patch` and not through a link, because a link is
+// delivered by a front door and there is none here. `Add` refuses one: it is
+// `stamped:`, so the one road to it is a server writing it below the gate, which
+// `Ungated` is.
+func proves(t *testing.T, ctx context.Context, s *cmd.Server, who pdid.Id, address string) *app.Email {
+	t.Helper()
+
+	v, err := s.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
+		Holder:  app.HolderRef_builder{Id: who.Bytes()}.Build(),
+		Address: address,
+	}.Build())
+	require.NoError(t, err)
+
+	out, err := s.Ungated.Email().Patch(ctx, app.EmailPatchRequest_builder{
+		Ref:          app.EmailRef_builder{Id: v.GetId()}.Build(),
+		DateVerified: timestamppb.Now(),
+		DateUpdated:  v.GetDateUpdated(),
+	}.Build())
+	require.NoError(t, err)
+
+	return out
 }
 
 func (b *built) verifies(t *testing.T, ctx context.Context, who pdid.Id, secret string) *app.VouchVerifyResponse {

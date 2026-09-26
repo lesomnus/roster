@@ -360,6 +360,22 @@ roster email add '{"holder":{"slug":{"alias":"alice","tenant":{"alias":"newco"}}
 `date_verified` is **not** a field a caller writes. It is stamped by whatever
 did the verifying, and `Add` refuses a request carrying one.
 
+⚠️ **And an address nobody has checked names nobody.** Signing in by an address, and
+asking for a recovery link at one, both read that stamp — so the row above is a
+contact detail and not yet a way in. Two consequences worth knowing before you
+write one:
+
+- Somebody whose only address came from a directory that sent no `email_verified`
+  cannot sign in by it. They sign in through the directory, which is how they got
+  here; the road to the address resolving them is proving it from the account page,
+  or `Email.Attest` stamping it the day that directory starts saying so.
+- **A proof may take an address nobody proved.** An address is one person's within a
+  tenant, so a row somebody wrote down without checking it would otherwise keep the
+  rightful holder out for good — `Add` answers *somebody has it* and there is no
+  second row to be had. So a claim is minted for the address on such a row, the link
+  goes to the **mailbox**, and whoever reads it ends up holding it. A proved address
+  does not move; see [../login.md](../login.md) § *Signing in by address*.
+
 > Writing an identity or an address onto somebody's row is a way to sign in as
 > them. Both are guarded by the same rule a password is: nobody writes a way
 > into an account wider than their own.

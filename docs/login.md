@@ -698,6 +698,47 @@ naming a tenant is one a front door that forgot to think about which one compile
 wrong answer for -- which is the same reason the tenant is in `Identity`'s key
 rather than checked afterwards.
 
+### And only an address somebody has checked
+
+The row has to carry `date_verified`, or it names nobody. Which is the rule #42
+settled about a hostname, said about an address: **a name that resolves somebody may
+only be taken by proof.**
+
+It was not read here, and what that cost is worth being exact about, because it is
+not the obvious thing. Anybody may add an address to **their own** row -- that is
+`mayReach` passing for the caller's own row, and it has to. So somebody could write
+an address they do not own onto themselves, and the lookup above resolved them.
+Nothing was taken: a recovery link asked for at that address is mailed to that
+mailbox, so whoever reads it is signed in as the **squatter**, which costs the
+squatter. What it cost the rightful holder is that an address is one person's within
+a tenant -- so `Email.Add` answered *somebody has it*, and there was no row for them
+to prove and no road to their own address at all.
+
+So two things hold together, and either alone is worse than neither:
+
+| | |
+| --- | --- |
+| the lookup reads the stamp | an unproved row resolves nobody |
+| a proof takes an unproved address | `EmailVerifyRequest.holder` — so a squat blocks nobody either |
+
+A claim is a link minted for the address on somebody else's unproved row, naming
+whose claim it is. roster does not deliver it, as it does not deliver any of them:
+the front door reads the address off the row and mails the token there, so **whoever
+reads that mailbox** is who ends up holding the address. Spending it erases the row
+that held the address and writes it on the claimant, proved, in one transaction.
+
+**A proved address does not move**, which is where this and #42 differ on purpose. A
+DNS name's incumbent cannot be relied on to let go — a domain changes hands and the
+old holder is gone — while an address lives inside one tenant whose operator can
+erase a row. Letting a proved one move on a second proof would turn one compromised
+mailbox into an account somebody else holds.
+
+What it costs a deployment: somebody whose only address came from a directory that
+sent no `email_verified` can neither sign in by it nor ask for a recovery link at
+it. Which is the honest answer — roster has nobody's word that the mailbox is theirs
+— and the road out is the one that was always there. See
+[usage/ways-in.md](usage/ways-in.md) § *An account somewhere else — an identity*.
+
 ## A person who uses two operators' services
 
 They have two accounts, and that is the whole answer. `Identity` is unique on

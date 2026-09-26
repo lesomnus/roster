@@ -19,6 +19,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/auth/authsession"
 	"github.com/lesomnus/payday/config"
@@ -202,9 +203,23 @@ func serve(t *testing.T, enrol account.Enrol, with ...func(*account.Config)) *de
 		Ref: rstr.HolderRef_builder{Id: bob.GetId()}.Build(), Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
-	// And an address, which is where a recovery link goes.
-	_, err = s.Ungated.Email().Add(ctx, rstr.EmailAddRequest_builder{
+	// And an address, which is where a recovery link goes -- **proved**, because
+	// an address nothing has checked names nobody (#48). A link asked for at an
+	// unproved one is minted and is a dud, which is what a stranger's address
+	// answers and is the right answer for a mailbox roster has nobody's word
+	// about.
+	//
+	// Stamped through `Patch` and not through a link, because a link is the thing
+	// under test: `date_verified` is `stamped:`, so the one road to it is a server
+	// writing it below the gate, which `Ungated` is.
+	row, err := s.Ungated.Email().Add(ctx, rstr.EmailAddRequest_builder{
 		Holder: rstr.HolderRef_builder{Id: bob.GetId()}.Build(), Address: "bob@fabrikam.com",
+	}.Build())
+	x.NoError(err)
+	_, err = s.Ungated.Email().Patch(ctx, rstr.EmailPatchRequest_builder{
+		Ref:          rstr.EmailRef_builder{Id: row.GetId()}.Build(),
+		DateVerified: timestamppb.Now(),
+		DateUpdated:  row.GetDateUpdated(),
 	}.Build())
 	x.NoError(err)
 
@@ -699,4 +714,94 @@ func TestASecondReplicaOpensTheCookie(t *testing.T) {
 	b.base = first
 	code, body = b.rpc(t, "/roster.MeService/Get", `{}`)
 	x.Equal(http.StatusUnauthorized, code, "a sign-out on one replica left the delegation acting on the other: %s", body)
+}
+
+// TestSomebodyClaimsAnAddressNobodyConfirmed is the road out of a squat, from the
+// page's end.
+//
+// #48 is the rule and `docs/login.md` § *Signing in by address* is the argument.
+// What this walks is the part a person can actually do: an address is one person's
+// within a tenant, so a row somebody wrote down without checking it makes `Add`
+// answer *somebody has it* — and the answer to that is a claim, which mails a link
+// to **that mailbox**. Whoever reads it ends up holding the address.
+func TestSomebodyClaimsAnAddressNobodyConfirmed(t *testing.T) {
+	x := require.New(t)
+	d := serve(t, account.Invited())
+
+	const theirs = "shared@fabrikam.com"
+
+	// The squatter: somebody else in the same tenant, with the address on their
+	// own row and nobody having checked it. Written through `Ungated`, which is
+	// what a deployment's own work goes through -- the point is that the row
+	// exists, not who wrote it.
+	ctx := t.Context()
+	alice, err := d.ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Id: d.fabrikam.Bytes()}.Build(),
+		Alias:  "alice",
+	}.Build())
+	x.NoError(err)
+	_, err = d.ungated.Email().Add(ctx, rstr.EmailAddRequest_builder{
+		Holder: rstr.HolderRef_builder{Id: alice.GetId()}.Build(), Address: theirs,
+	}.Build())
+	x.NoError(err)
+
+	b := d.browser(t, "fabrikam.test")
+	code, body := b.do(t, http.MethodPost, "/session", `{"alias":"bob","password":"correct horse battery staple"}`,
+		func(r *http.Request) { r.Header.Set("Content-Type", "application/json") })
+	x.Equal(http.StatusNoContent, code, body)
+
+	// Whose row this is about. Read off the seed rather than out of `Me.Get`,
+	// because what this test is about is the address and not the shape of that
+	// answer.
+	bob, err := d.ungated.Holder().Get(ctx, rstr.HolderGetRequest_builder{
+		Ref: rstr.HolderRef_builder{
+			Slug: rstr.HolderRefBySlug_builder{
+				Alias:  proto.String("bob"),
+				Tenant: rstr.TenantRef_builder{Id: d.fabrikam.Bytes()}.Build(),
+			}.Build(),
+		}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	// What the page does when `Email.Add` refuses that address. Which refusal it
+	// was is `cmd/squat_test.go`'s subject at the layer -- bob holds no role here,
+	// so `Add` would not reach the index anyway, and what this walks is the road
+	// out rather than the wall.
+	//
+	// The claim, then.
+	code, body = b.do(t, http.MethodPost, "/claim", `{"address":"`+theirs+`"}`,
+		func(r *http.Request) { r.Header.Set("Content-Type", "application/json") })
+	x.Equal(http.StatusAccepted, code, body)
+
+	var link string
+	x.Eventually(func() bool { link = d.sent(theirs); return link != "" }, 2*time.Second, 20*time.Millisecond,
+		"no link was mailed to the address being claimed")
+
+	// Clicking it is the ordinary confirm route: the key that minted it confirms
+	// it, and nobody is signed in by it.
+	res, err := b.Get(link)
+	x.NoError(err)
+	res.Body.Close()
+	x.Equal(http.StatusOK, res.StatusCode)
+
+	// And the address is bob's now, proved. Alice's row is gone rather than
+	// unproved, because two rows cannot hold one address.
+	row, err := d.ungated.Email().Get(ctx, rstr.EmailGetRequest_builder{
+		Ref: rstr.EmailRef_builder{
+			At: rstr.EmailRefByAt_builder{TenantId: d.fabrikam.Bytes(), Address: proto.String(theirs)}.Build(),
+		}.Build(),
+		Select: rstr.EmailSelect_builder{
+			DateVerified: proto.Bool(true),
+			Holder:       rstr.HolderSelect_builder{}.Build(),
+		}.Build(),
+	}.Build())
+	x.NoError(err)
+	x.Equal(bob.GetId(), row.GetHolder().GetId(), "the address did not change hands")
+	x.NotNil(row.GetDateVerified())
+
+	// And a second claim on it is refused, because it is proved now -- the one
+	// refusal a person can do nothing about, which is why it is its own answer.
+	code, body = b.do(t, http.MethodPost, "/claim", `{"address":"`+theirs+`"}`,
+		func(r *http.Request) { r.Header.Set("Content-Type", "application/json") })
+	x.Equal(http.StatusConflict, code, "a proved address was claimable: %s", body)
 }

@@ -20,7 +20,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/email_svc.g.proto.
  */
 export const file_app_email_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChVhcHAvZW1haWxfc3ZjLmcucHJvdG8SBnJvc3RlciKAAgoPRW1haWxBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSFgoHYWRkcmVzcxgIIAEoCUIFqgECCAISMQoNZGF0ZV92ZXJpZmllZBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASJwoKdm91Y2hlZF9ieRgKIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIYCgl0ZW5hbnRfaWQYCyABKAxCBaoBAggCEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiVQoPRW1haWxHZXRSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIjCgZzZWxlY3QYAiABKAsyEy5yb3N0ZXIuRW1haWxTZWxlY3QicQoIRW1haWxSZWYSDAoCaWQYASABKAxIABIsCgdhZGRyZXNzGAIgASgLMhkucm9zdGVyLkVtYWlsUmVmQnlBZGRyZXNzSAASIgoCYXQYCyABKAsyFC5yb3N0ZXIuRW1haWxSZWZCeUF0SABCBQoDa2V5IkcKEUVtYWlsUmVmQnlBZGRyZXNzEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSDwoHYWRkcmVzcxgIIAEoCSIyCgxFbWFpbFJlZkJ5QXQSEQoJdGVuYW50X2lkGAsgASgMEg8KB2FkZHJlc3MYCCABKAki6AEKC0VtYWlsU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0Eg8KB2FkZHJlc3MYCCABKAgSFQoNZGF0ZV92ZXJpZmllZBgJIAEoCBIqCgp2b3VjaGVkX2J5GAogASgLMhYucm9zdGVyLklkZW50aXR5U2VsZWN0EhEKCXRlbmFudF9pZBgLIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIqICChFFbWFpbFBhdGNoUmVxdWVzdBIdCgNyZWYYASABKAsyEC5yb3N0ZXIuRW1haWxSZWYSDwoHYWRkcmVzcxgQIAEoCRIxCg1kYXRlX3ZlcmlmaWVkGBIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3ZlcmlmaWVkX251bGwYEyABKAgSJwoKdm91Y2hlZF9ieRgUIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIXCg92b3VjaGVkX2J5X251bGwYFSABKAgSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiTwoRRW1haWxBcHBseVJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLkVtYWlsUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giJAoSRW1haWxFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCJjChBFbWFpbExpc3RSZXF1ZXN0EiQKB2ZpbHRlcnMYASADKAsyEy5yb3N0ZXIuRW1haWxGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIkYKEUVtYWlsTGlzdFJlc3BvbnNlEhwKBWl0ZW1zGAEgAygLMg0ucm9zdGVyLkVtYWlsEhMKBG5leHQYAiABKAlCBaoBAggCIk8KC0VtYWlsRmlsdGVyEh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmIlcKEUVtYWlsV2F0Y2hSZXF1ZXN0EiQKB2ZpbHRlcnMYASADKAsyEy5yb3N0ZXIuRW1haWxGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiOwoSRW1haWxXYXRjaFJlc3BvbnNlEiUKBWl0ZW1zGAEgAygLMhYucm9zdGVyLkVtYWlsV2F0Y2hJdGVtIlEKDkVtYWlsV2F0Y2hJdGVtEgoKAmlkGAEgASgMEhwKBXZhbHVlGAIgASgLMg0ucm9zdGVyLkVtYWlsEhUKBmFjdGlvbhgDIAEoCUIFqgECCAIiYAoSRW1haWxWZXJpZnlSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIrCgdleHBpcmVzGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJYChNFbWFpbFZlcmlmeVJlc3BvbnNlEhQKBXRva2VuGAEgASgJQgWqAQIIAhIrCgdleHBpcmVzGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIrChNFbWFpbENvbmZpcm1SZXF1ZXN0EhQKBXRva2VuGAEgASgJQgWqAQIIAiI0ChRFbWFpbENvbmZpcm1SZXNwb25zZRIcCgVlbWFpbBgBIAEoCzINLnJvc3Rlci5FbWFpbCKDAQoSRW1haWxBdHRlc3RSZXF1ZXN0EiEKBmhvbGRlchgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSDwoHYWRkcmVzcxgIIAEoCRInCgp2b3VjaGVkX2J5GAogASgLMhMucm9zdGVyLklkZW50aXR5UmVmEhAKCHZlcmlmaWVkGAkgASgIMsYECgxFbWFpbFNlcnZpY2USLQoDQWRkEhcucm9zdGVyLkVtYWlsQWRkUmVxdWVzdBoNLnJvc3Rlci5FbWFpbBItCgNHZXQSFy5yb3N0ZXIuRW1haWxHZXRSZXF1ZXN0Gg0ucm9zdGVyLkVtYWlsEjEKBVBhdGNoEhkucm9zdGVyLkVtYWlsUGF0Y2hSZXF1ZXN0Gg0ucm9zdGVyLkVtYWlsEjEKBUFwcGx5Ehkucm9zdGVyLkVtYWlsQXBwbHlSZXF1ZXN0Gg0ucm9zdGVyLkVtYWlsEjUKBUVyYXNlEhAucm9zdGVyLkVtYWlsUmVmGhoucm9zdGVyLkVtYWlsRXJhc2VSZXNwb25zZRI7CgRMaXN0Ehgucm9zdGVyLkVtYWlsTGlzdFJlcXVlc3QaGS5yb3N0ZXIuRW1haWxMaXN0UmVzcG9uc2USQAoFV2F0Y2gSGS5yb3N0ZXIuRW1haWxXYXRjaFJlcXVlc3QaGi5yb3N0ZXIuRW1haWxXYXRjaFJlc3BvbnNlMAESQQoGVmVyaWZ5Ehoucm9zdGVyLkVtYWlsVmVyaWZ5UmVxdWVzdBobLnJvc3Rlci5FbWFpbFZlcmlmeVJlc3BvbnNlEkQKB0NvbmZpcm0SGy5yb3N0ZXIuRW1haWxDb25maXJtUmVxdWVzdBocLnJvc3Rlci5FbWFpbENvbmZpcm1SZXNwb25zZRIzCgZBdHRlc3QSGi5yb3N0ZXIuRW1haWxBdHRlc3RSZXF1ZXN0Gg0ucm9zdGVyLkVtYWlsQiFaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHJiCGVkaXRpb25zcOgH", [file_app_email, file_app_identity_svc_g, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChVhcHAvZW1haWxfc3ZjLmcucHJvdG8SBnJvc3RlciKAAgoPRW1haWxBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSFgoHYWRkcmVzcxgIIAEoCUIFqgECCAISMQoNZGF0ZV92ZXJpZmllZBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASJwoKdm91Y2hlZF9ieRgKIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIYCgl0ZW5hbnRfaWQYCyABKAxCBaoBAggCEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiVQoPRW1haWxHZXRSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIjCgZzZWxlY3QYAiABKAsyEy5yb3N0ZXIuRW1haWxTZWxlY3QicQoIRW1haWxSZWYSDAoCaWQYASABKAxIABIsCgdhZGRyZXNzGAIgASgLMhkucm9zdGVyLkVtYWlsUmVmQnlBZGRyZXNzSAASIgoCYXQYCyABKAsyFC5yb3N0ZXIuRW1haWxSZWZCeUF0SABCBQoDa2V5IkcKEUVtYWlsUmVmQnlBZGRyZXNzEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSDwoHYWRkcmVzcxgIIAEoCSIyCgxFbWFpbFJlZkJ5QXQSEQoJdGVuYW50X2lkGAsgASgMEg8KB2FkZHJlc3MYCCABKAki6AEKC0VtYWlsU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0Eg8KB2FkZHJlc3MYCCABKAgSFQoNZGF0ZV92ZXJpZmllZBgJIAEoCBIqCgp2b3VjaGVkX2J5GAogASgLMhYucm9zdGVyLklkZW50aXR5U2VsZWN0EhEKCXRlbmFudF9pZBgLIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIqICChFFbWFpbFBhdGNoUmVxdWVzdBIdCgNyZWYYASABKAsyEC5yb3N0ZXIuRW1haWxSZWYSDwoHYWRkcmVzcxgQIAEoCRIxCg1kYXRlX3ZlcmlmaWVkGBIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3ZlcmlmaWVkX251bGwYEyABKAgSJwoKdm91Y2hlZF9ieRgUIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIXCg92b3VjaGVkX2J5X251bGwYFSABKAgSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiTwoRRW1haWxBcHBseVJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLkVtYWlsUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giJAoSRW1haWxFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCJjChBFbWFpbExpc3RSZXF1ZXN0EiQKB2ZpbHRlcnMYASADKAsyEy5yb3N0ZXIuRW1haWxGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIkYKEUVtYWlsTGlzdFJlc3BvbnNlEhwKBWl0ZW1zGAEgAygLMg0ucm9zdGVyLkVtYWlsEhMKBG5leHQYAiABKAlCBaoBAggCIk8KC0VtYWlsRmlsdGVyEh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmIlcKEUVtYWlsV2F0Y2hSZXF1ZXN0EiQKB2ZpbHRlcnMYASADKAsyEy5yb3N0ZXIuRW1haWxGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiOwoSRW1haWxXYXRjaFJlc3BvbnNlEiUKBWl0ZW1zGAEgAygLMhYucm9zdGVyLkVtYWlsV2F0Y2hJdGVtIlEKDkVtYWlsV2F0Y2hJdGVtEgoKAmlkGAEgASgMEhwKBXZhbHVlGAIgASgLMg0ucm9zdGVyLkVtYWlsEhUKBmFjdGlvbhgDIAEoCUIFqgECCAIigwEKEkVtYWlsVmVyaWZ5UmVxdWVzdBIdCgNyZWYYASABKAsyEC5yb3N0ZXIuRW1haWxSZWYSIQoGaG9sZGVyGAMgASgLMhEucm9zdGVyLkhvbGRlclJlZhIrCgdleHBpcmVzGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJYChNFbWFpbFZlcmlmeVJlc3BvbnNlEhQKBXRva2VuGAEgASgJQgWqAQIIAhIrCgdleHBpcmVzGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIrChNFbWFpbENvbmZpcm1SZXF1ZXN0EhQKBXRva2VuGAEgASgJQgWqAQIIAiI0ChRFbWFpbENvbmZpcm1SZXNwb25zZRIcCgVlbWFpbBgBIAEoCzINLnJvc3Rlci5FbWFpbCKDAQoSRW1haWxBdHRlc3RSZXF1ZXN0EiEKBmhvbGRlchgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSDwoHYWRkcmVzcxgIIAEoCRInCgp2b3VjaGVkX2J5GAogASgLMhMucm9zdGVyLklkZW50aXR5UmVmEhAKCHZlcmlmaWVkGAkgASgIMsYECgxFbWFpbFNlcnZpY2USLQoDQWRkEhcucm9zdGVyLkVtYWlsQWRkUmVxdWVzdBoNLnJvc3Rlci5FbWFpbBItCgNHZXQSFy5yb3N0ZXIuRW1haWxHZXRSZXF1ZXN0Gg0ucm9zdGVyLkVtYWlsEjEKBVBhdGNoEhkucm9zdGVyLkVtYWlsUGF0Y2hSZXF1ZXN0Gg0ucm9zdGVyLkVtYWlsEjEKBUFwcGx5Ehkucm9zdGVyLkVtYWlsQXBwbHlSZXF1ZXN0Gg0ucm9zdGVyLkVtYWlsEjUKBUVyYXNlEhAucm9zdGVyLkVtYWlsUmVmGhoucm9zdGVyLkVtYWlsRXJhc2VSZXNwb25zZRI7CgRMaXN0Ehgucm9zdGVyLkVtYWlsTGlzdFJlcXVlc3QaGS5yb3N0ZXIuRW1haWxMaXN0UmVzcG9uc2USQAoFV2F0Y2gSGS5yb3N0ZXIuRW1haWxXYXRjaFJlcXVlc3QaGi5yb3N0ZXIuRW1haWxXYXRjaFJlc3BvbnNlMAESQQoGVmVyaWZ5Ehoucm9zdGVyLkVtYWlsVmVyaWZ5UmVxdWVzdBobLnJvc3Rlci5FbWFpbFZlcmlmeVJlc3BvbnNlEkQKB0NvbmZpcm0SGy5yb3N0ZXIuRW1haWxDb25maXJtUmVxdWVzdBocLnJvc3Rlci5FbWFpbENvbmZpcm1SZXNwb25zZRIzCgZBdHRlc3QSGi5yb3N0ZXIuRW1haWxBdHRlc3RSZXF1ZXN0Gg0ucm9zdGVyLkVtYWlsQiFaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHJiCGVkaXRpb25zcOgH", [file_app_email, file_app_identity_svc_g, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.EmailAddRequest
@@ -553,6 +553,30 @@ export type EmailVerifyRequest = Message<"roster.EmailVerifyRequest"> & {
   ref?: EmailRef | undefined;
 
   /**
+   * Whose claim this is, when it is not the row's own holder's.
+   *
+   * Empty is the ordinary case and is unchanged: a person proving an address
+   * already on their row, held to `mayReach` on that row's holder.
+   *
+   * Set, it is somebody claiming an address **another row holds unproved** --
+   * the case `Email.Add` cannot reach, because the address is taken and the
+   * index says so. Two rules on it and neither is the one it replaces:
+   *
+   *   - the row must be **unproved**. A proved address does not move; see
+   *     [EmailService.Confirm].
+   *   - the claimant is held to `mayWriteAWayIn`, so nobody claims an address
+   *     onto an account wider than their own. That is the rule `Email.Add`
+   *     already meets, arriving at the other road to the same row.
+   *
+   * `mayReach` on the **row's** holder is not asked, and that is the point
+   * rather than an omission: it guards a row somebody proved, and this one is
+   * one nobody did.
+   *
+   * @generated from field: roster.HolderRef holder = 3;
+   */
+  holder?: HolderRef | undefined;
+
+  /**
    * When the link stops working; unset, or later than the default, is the
    * default (`vouch.LinkFor`).
    *
@@ -766,6 +790,23 @@ export const EmailService: GenService<{
    * **that** address; a link that arrives anywhere else proves nothing, which
    * is why only the address on the row is ever a place it goes.
    *
+   * # It also mints a link for an address that is somebody else's
+   *
+   * Which is [EmailVerifyRequest.holder], and it exists because the shape
+   * without it left an address **squattable**. `Email` is unique on
+   * `(tenant, address)` and `vouch.byAddress` resolves a person by one, so a row
+   * nobody proved still named somebody -- and `Add` answering `AlreadyExists`
+   * meant the rightful holder could not write the row, could not reach this
+   * verb, and had no road to the address at all. What that cost is not a
+   * takeover: a link goes to the mailbox either way. It is a name the real
+   * holder is refused, with a refusal that says only that somebody has it,
+   * which is `host.proto` § *Why a hostname is not checked* one medium along.
+   *
+   * So this is #42's answer said about an address: a **claim** is minted by
+   * whoever wants the address, the proof is a round trip to the mailbox, and
+   * [EmailService.Confirm] is where the address moves. What is deliberately not
+   * here is a proved address moving; see `Confirm`.
+   *
    * @generated from rpc roster.EmailService.Verify
    */
   verify: {
@@ -780,6 +821,23 @@ export const EmailService: GenService<{
    * spent, one expired, one minted by somebody else, one that is a recovery
    * link. What a caller may rely on is that after `OK` the address is
    * `date_verified` at this moment, and that nothing was signed in.
+   *
+   * # And it is where an address changes hands
+   *
+   * A link minted with [EmailVerifyRequest.holder] is a claim by somebody who
+   * does not hold the address. Spending one **moves** it: the row that held it
+   * unproved is erased and the address is written on the claimant, stamped, in
+   * one transaction. `host.proto`'s `proved()` is the same three writes for the
+   * same reason.
+   *
+   * What may be taken is an address **nobody has proved**, and that bound is the
+   * whole of why this is safe: there is nothing on such a row to protect, since
+   * under this change it resolves nobody either (`vouch.byAddress`). An address
+   * that somebody has proved does not move, which is where this and #42 differ
+   * on purpose -- a DNS name's incumbent cannot be relied on to let go, because a
+   * domain changes hands and the old holder is gone, while an address lives
+   * inside one tenant whose operator can erase a row. Letting a proved address
+   * move would make one compromised mailbox into an account somebody else holds.
    *
    * @generated from rpc roster.EmailService.Confirm
    */
