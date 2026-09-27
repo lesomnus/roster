@@ -2,10 +2,10 @@
  * The small pieces every tenant screen draws with: an identifier written the way
  * a person reads one, a holder or a role by name, and a picker.
  *
- * They lived in `organisation.tsx` and were imported from there by two other
- * screens, which was the shape that made the split obvious: a screen file holding
- * everything else's helpers is a file whose name says the wrong thing about what
- * is in it.
+ * They lived in the screen that is now `sites.tsx` and `groups.tsx`, and were
+ * imported from there by two others, which was the shape that made the split
+ * obvious: a screen file holding everything else's helpers is a file whose name
+ * says the wrong thing about what is in it.
  *
  * Nothing here reads a tenant of its own. Each takes what it needs, because on the
  * admin listener there is no wall and a component that decided its own scope would
@@ -32,7 +32,15 @@ export function uuid(v: Uint8Array | undefined): string {
 	return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`
 }
 
-/** when is a stamp as a date, which is all any of these screens shows of one. */
+/**
+ * when is a stamp as a date, which is all most of these screens show of one.
+ *
+ * Two keep their own and are **not** copies of this waiting to be merged:
+ * `holders.tsx` cuts at the minute, because *suspended since* is a thing that
+ * happened at a time of day, and `trail.tsx` cuts at the second, because two
+ * entries a second apart is the ordinary case in a trail. Merging them would be
+ * changing what three screens show, and would read like tidying.
+ */
 export function when(v: { seconds: bigint } | undefined): string {
 	if (v === undefined) return ''
 

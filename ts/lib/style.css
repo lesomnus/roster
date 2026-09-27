@@ -965,9 +965,9 @@ p.bad {
 	margin-bottom: var(--s-2);
 }
 
-/* The person panel: what somebody signs in with, and the acts whoever is
+/* The holder panel: what somebody signs in with, and the acts whoever is
    administering them has when they cannot. Together because they are one
    decision. */
-.person .state {
+.holder .state {
 	margin: var(--s-3) 0;
 }

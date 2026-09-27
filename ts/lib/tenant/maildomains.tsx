@@ -38,7 +38,7 @@ export function MailDomains(props: {
 	if (id === undefined) return null
 
 	return (
-		<section className="within arrives">
+		<section className="within">
 			<h3>{props.tenant?.alias}</h3>
 			<MailDomainList tenant={id} may={props.may} />
 		</section>

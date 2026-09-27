@@ -213,7 +213,7 @@ async function run(transport: Transport): Promise<void> {
 	// origins in a deployment and one origin in a sandbox, and a `roster.Holder`
 	// means a roster operator on one and a roster user on the other. One store
 	// name would have them overwrite each other by identifier, which is the
-	// shape of a bug rather than a cache -- the same sentence `customers.tsx`
+	// shape of a bug rather than a cache -- the same sentence `tenants.tsx`
 	// makes about its second store.
 	const app = await open(transport, 'user')
 	const ungated = ungatedTransport()

@@ -95,10 +95,15 @@ export interface Writes {
 	readonly holder: Client<typeof HolderService>
 	readonly credential: Client<typeof CredentialService>
 
-	/** The four writes that stand a customer up; see `customers.tsx`. */
+	/**
+	 * Standing a customer up, which is one write and not four.
+	 *
+	 * `Tenant.Add` writes the tenant, its first administrator, the role and the
+	 * binding in one transaction (`server/core/tenant.go`), so the role and binding
+	 * clients that used to be here had nothing left calling them; `tenants.tsx`
+	 * makes the second call, `Credential.Issue`, and it is `credential` above.
+	 */
 	readonly tenant: Client<typeof TenantService>
-	readonly role: Client<typeof RoleService>
-	readonly binding: Client<typeof BindingService>
 
 	/**
 	 * A key for one of a tenant's people, answered once.
@@ -116,8 +121,6 @@ export function writes(transport: Transport): Writes {
 		holder: createClient(HolderService, transport),
 		credential: createClient(CredentialService, transport),
 		tenant: createClient(TenantService, transport),
-		role: createClient(RoleService, transport),
-		binding: createClient(BindingService, transport),
 		apiKey: createClient(ApiKeyService, transport),
 	}
 }
