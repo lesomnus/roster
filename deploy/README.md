@@ -80,9 +80,10 @@ What an overlay is expected to bring, and what it should leave alone:
 | its own | hosts, secrets, storage class, image digests, the products it actually runs, and `config.yaml` -- by a `configMapGenerator` for `roster` with `behavior: replace` |
 | the base's | what a client has to be registered with, which `URLS_*` Hydra needs, that the clients are applied and then **checked** -- the four things that were wrong when they were written twice |
 
-The pieces of the rig that a deployment does not want are `product.yaml` (there
-to have something to sign in *to*) and `secrets.yaml` above; both come out with a
-`$patch: delete`.
+The piece of the rig that a deployment does not want is `product.yaml`, there to
+have something to sign in *to*; it comes out with a `$patch: delete`. The base
+ships no Secret at all -- an overlay's own collides with one that is already
+there -- so there is nothing of that kind to remove.
 
 **And the other shape of relying party is deliberately not here.** `oauth2-proxy`
 in front of a page is half of what a deployment runs

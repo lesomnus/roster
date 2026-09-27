@@ -15,7 +15,7 @@ import (
 // TestAFactorWithANameCanBeConfirmed.
 //
 // `Enrol` invites a name -- *"the phone", "the yubikey in the drawer"* -- and
-// `operate.go` promises what happens next: *an unconfirmed factor still
+// `vouch.proto` promises what happens next: *an unconfirmed factor still
 // **verifies**, and that is how it gets confirmed.* For a named one there was
 // no call that could do it.
 //

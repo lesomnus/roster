@@ -63,6 +63,11 @@ var elsewhere = map[string]string{
 	"lib/route.ts":                "relative to ts/console, where the comment is",
 	"clients/*.json":              "relative to deploy/, and a glob",
 	"migrations/":                 "named to say there is not one",
+
+	// Bare names, which the rule below checks against every file in the tree.
+	"config.json":   "named to say there is not one; the page is served by the listener it calls",
+	"x.json":        "a stand-in for a client's own name, in a comment about how they are named",
+	"customers.tsx": "renamed; named in the comment that explains this rule, as the example of one that was",
 }
 
 // TestTheDocumentationNamesFilesThatExist reads every backticked path in the
@@ -75,6 +80,38 @@ func TestTheDocumentationNamesFilesThatExist(t *testing.T) {
 		".go", ".md", ".proto", ".yaml", ".yml", ".json", ".sh", ".ts", ".tsx",
 		".js", ".sql", ".html", ".txt", ".mod", ".lock", ".css",
 	}
+	// looksLikeAFileName is the weaker half of this gate: a token with no `/` at
+	// all. `escalate.go`, `holder.proto`, `flow.sh` -- naming the file and leaving
+	// the directory to the reader is how this repository has always written them.
+	//
+	// Those cannot be resolved the way a path is, and trying was measured: drop the
+	// `/` requirement below and ~140 correct references go red, because a bare name
+	// resolves against neither the root nor the file that says it.
+	//
+	// So the rule is the one thing still true of a name somebody can follow: **some
+	// file in the tree is called that**. `escalate.go` passes. `customers.tsx`,
+	// which was a screen until it was renamed, does not -- and that is the whole
+	// class this was missing. Four such names had been sitting in comments, pointing
+	// at files that stopped existing two renames ago, with nothing to say so.
+	looksLikeAFileName := func(s string) bool {
+		if strings.Contains(s, "/") || strings.ContainsAny(s, " *…()\"'") {
+			return false
+		}
+
+		// `.proto`, `.d.ts`: an extension being discussed, not a file.
+		if strings.HasPrefix(s, ".") {
+			return false
+		}
+
+		for _, ext := range known {
+			if strings.HasSuffix(s, ext) {
+				return true
+			}
+		}
+
+		return false
+	}
+
 	looksLikeAPath := func(s string) bool {
 		if !strings.Contains(s, "/") || strings.ContainsAny(s, " *…()\"'") {
 			return false
@@ -106,6 +143,8 @@ func TestTheDocumentationNamesFilesThatExist(t *testing.T) {
 		return false
 	}
 
+	named := basenames(t, root)
+
 	for _, f := range sources(t, root) {
 		src, err := os.ReadFile(filepath.Join(root, f))
 		x.NoError(err)
@@ -121,19 +160,23 @@ func TestTheDocumentationNamesFilesThatExist(t *testing.T) {
 
 			for _, tok := range regexp.MustCompile("`([^`\n]+)`").FindAllStringSubmatch(line, -1) {
 				p := strings.TrimRight(strings.SplitN(tok[1], "#", 2)[0], ",.;:")
-				if !looksLikeAPath(p) {
-					continue
-				}
 				if _, ok := elsewhere[p]; ok {
 					continue
 				}
 
-				// Relative to the tree, or to whatever names it -- a comment in
-				// `ts/console` may say `lib/route.ts` and mean its neighbour.
-				_, here := os.Stat(filepath.Join(root, p))
-				_, beside := os.Stat(filepath.Join(root, filepath.Dir(f), p))
-				x.True(here == nil || beside == nil,
-					"%s:%d names %s, and there is no such file; if it is somebody else's, say so in `elsewhere`", f, i+1, p)
+				switch {
+				case looksLikeAPath(p):
+					// Relative to the tree, or to whatever names it -- a comment in
+					// `ts/console` may say `lib/route.ts` and mean its neighbour.
+					_, here := os.Stat(filepath.Join(root, p))
+					_, beside := os.Stat(filepath.Join(root, filepath.Dir(f), p))
+					x.True(here == nil || beside == nil,
+						"%s:%d names %s, and there is no such file; if it is somebody else's, say so in `elsewhere`", f, i+1, p)
+
+				case looksLikeAFileName(p):
+					x.True(named[p],
+						"%s:%d names %s, and no file in the tree is called that; if it was renamed, say the name it has now, and if it is produced or somebody else's, say so in `elsewhere`", f, i+1, p)
+				}
 			}
 		}
 	}
@@ -414,6 +457,39 @@ func sources(t *testing.T, root string) []string {
 			strings.HasSuffix(p, ".tsx"), strings.HasSuffix(p, ".yaml"):
 			out = append(out, rel)
 		}
+
+		return nil
+	}))
+
+	return out
+}
+
+// basenames is what every file in the tree is called, which is what a bare name
+// in a comment is checked against.
+//
+// A **wider** walk than `sources`: that one skips the generated trees because
+// nothing in them is worth reading for pointers, but `holder.proto` lives in
+// `proto/roster/payday/` and `entities.ts` in `ts/gen/`, and a comment naming
+// either is right. What is left out is only what a checkout does not carry --
+// `node_modules`, a `dist`, the git directory -- so that this gate answers the
+// same before and after a build.
+func basenames(t *testing.T, root string) map[string]bool {
+	t.Helper()
+
+	out := map[string]bool{}
+	require.NoError(t, filepath.Walk(root, func(p string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			switch info.Name() {
+			case "node_modules", "dist", ".git":
+				return filepath.SkipDir
+			}
+
+			return nil
+		}
+		out[info.Name()] = true
 
 		return nil
 	}))
