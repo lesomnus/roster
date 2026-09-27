@@ -267,6 +267,41 @@ kube() {
 		"${KUBECTL_IMAGE}" sh -c "$*"
 }
 
+# said asserts that a read says something, and shows what it said when it did not.
+#
+# Not `kube ... | grep -q`, which is what this script did until a run where the
+# race in that came up. `grep -q` leaves at the first match; the `docker run`
+# writing into it takes a SIGPIPE; `set -o pipefail` makes the pipeline's status
+# that one. So a **match** reads as a miss -- but only when the writer had not
+# finished, which is why it was green for as long as the timing held and then was
+# not.
+#
+# It also fixes what made that run hard to read. Every one of these sites failed
+# by running a *second* `kube` to show its working, with different arguments than
+# the first -- so the log printed under *the check went red for some other reason*
+# was not the log that had been judged, and plainly contained the very text the
+# grep was looking for. One read, and the message shows it.
+said() {
+	local what="$1" why="$2"
+	shift 2
+
+	local got
+	if ! got="$(kube "$@")"; then
+		echo "cluster: ${why}" >&2
+		echo "   (and the read itself failed)" >&2
+		printf '%s\n' "${got}" >&2
+		return 1
+	fi
+
+	case "${got}" in
+	*"${what}"*) return 0 ;;
+	esac
+
+	echo "cluster: ${why}" >&2
+	printf '%s\n' "${got}" >&2
+	return 1
+}
+
 # tried is a build that survives the registry having a bad minute.
 #
 # This is the phase that reaches out to Docker Hub, and the first CI run of this
@@ -362,12 +397,20 @@ standing
 
 # Its output rather than its status, because a node that refuses the copy is an
 # `ERRO` line and an exit code of zero.
+#
+# Matched with `case` and not `printf | grep -q`, which was `said`'s bug pointing
+# the other way: there, a match that raced became a spurious failure. Here `grep`
+# is the *condition*, so a match that raced would have made this `if` false and
+# walked on with the images not on the node -- the check would have been the thing
+# that went quiet.
 imported="$(k3d image import "roster-cluster:${CLUSTER}" "roster-walk:${CLUSTER}" -c "${CLUSTER}" 2>&1)" || true
-if printf '%s' "${imported}" | grep -q 'ERRO'; then
+case "${imported}" in
+*ERRO*)
 	printf '%s\n' "${imported}" >&2
 	echo "the images did not reach the node" >&2
 	exit 1
-fi
+	;;
+esac
 
 cp -r deploy "${work}/deploy"
 # The rig runs what was just built rather than what is published.
@@ -634,9 +677,8 @@ echo "   and the app is the pod that was already running"
 	kube "kubectl -n ${NS} logs job/roster-hydra-clients-check"
 	exit 1
 }
-kube "kubectl -n ${NS} logs job/roster-hydra-clients-check --tail=20" \
-	| grep -q 'client_secret_post' \
-	|| { echo "cluster: the check went red for some other reason:"; kube "kubectl -n ${NS} logs job/roster-hydra-clients-check"; exit 1; }
+said 'client_secret_post' 'the check went red for some other reason:' \
+	"kubectl -n ${NS} logs job/roster-hydra-clients-check" || exit 1
 echo "   the sync's own check refuses it, naming the method"
 
 # 2. And a sign-in stops, at the exchange, on the first attempt.
@@ -644,12 +686,12 @@ if walk >/dev/null 2>&1; then
 	echo "cluster: a sign-in worked against a registration the app cannot use, which means this phase proves nothing" >&2
 	exit 1
 fi
-kube "kubectl -n ${NS} logs job/roster-walk" | grep -q 'the callback answered 400' \
-	|| { echo "cluster: the walk failed somewhere other than the exchange:"; kube "kubectl -n ${NS} logs job/roster-walk"; exit 1; }
+said 'the callback answered 400' 'the walk failed somewhere other than the exchange:' \
+	"kubectl -n ${NS} logs job/roster-walk" || exit 1
 # The sentence that says which of the app's five checks refused it, which is the
 # other thing that hour cost -- it used to answer 400 and log nothing.
-kube "kubectl -n ${NS} logs deploy/roster-product --tail=50" | grep -q 'would not exchange the code' \
-	|| { echo "cluster: the app did not say why it refused the callback:"; kube "kubectl -n ${NS} logs deploy/roster-product --tail=50"; exit 1; }
+said 'would not exchange the code' 'the app did not say why it refused the callback:' \
+	"kubectl -n ${NS} logs deploy/roster-product --tail=50" || exit 1
 echo "   and a sign-in fails at the exchange, in one line in the app's log"
 
 # 3. **A restart does not cure it**, which is the assertion this whole phase is
