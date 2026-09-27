@@ -46,28 +46,40 @@ export interface Tab<T extends string> {
 	ok: boolean
 
 	/**
-	 * Draws a rule above this tab, so a sidebar can be read in groups.
+	 * Where this tab sits in the sidebar's shape, and nothing else if it is
+	 * ordinary.
 	 *
-	 * Presentation and nothing else. The admin console has two groups that mean
-	 * something -- the deployment's own screens, and the customer one of them
-	 * selected -- and a person who cannot see where one ends is a person reading
-	 * a list of nine buttons.
+	 * `'group'` draws a rule above it, so a long sidebar can be read in parts: a
+	 * person who cannot see where one ends is a person reading a list.
+	 *
+	 * `'head'` draws the rule and draws the tab **large**, as the name of what is
+	 * under it. There is one, and it is the tenant: every tab below it is that
+	 * tenant's rows, so the thing that says which tenant is the thing you open to
+	 * see the tenant itself. That is a screen like any other -- it has an `at`, it
+	 * can be refused, it takes the selection -- so it is a `Tab` and not a second
+	 * argument to [Console]. Only its drawing differs.
+	 *
+	 * One field rather than two booleans: a head is the start of a group, so
+	 * `{head: true, group: false}` would be a state with nothing to mean.
 	 */
-	group?: boolean
+	lead?: 'group' | 'head'
 }
 
 /**
  * Console is the frame: the sidebar, and whatever the page put in the main
  * column.
  *
- * `title` is the heading over the sidebar and is the one string that says which
- * page this is -- `roster` for the deployment, the tenant's own alias for a
- * customer's screens. The user console falls back to `roster` where the caller's
- * role does not cover `Tenant.Get`, because a page that refused to draw without
- * a name would be a page that needs a permission to show a heading.
+ * `title` is the heading over the sidebar, and says which **deployment** this is
+ * rather than which tenant: the tenant is named by its own tab now, and a name in
+ * both places is a name somebody has to keep in step.
+ *
+ * It is optional because the user console has nothing to put there. That page is
+ * reached at the tenant's own host, so the tenant is the whole of what it is --
+ * the head tab is the top of its sidebar, and a `roster` above it would be the
+ * product's name where the reader wanted theirs.
  */
 export function Console<T extends string>(props: {
-	title: string
+	title?: string
 	tabs: Tab<T>[]
 	at: T
 	onGo: (at: T) => void
@@ -78,12 +90,12 @@ export function Console<T extends string>(props: {
 	return (
 		<div className="console">
 			<nav>
-				<h1>{props.title}</h1>
+				{props.title !== undefined && <h1>{props.title}</h1>}
 				{props.tabs.map((s) => (
 					<button
 						key={s.at}
 						disabled={!s.ok}
-						className={[s.at === props.at ? 'at' : '', s.group === true ? 'group' : '']
+						className={[s.at === props.at ? 'at' : '', s.lead ?? '']
 							.filter((v) => v !== '')
 							.join(' ')}
 						onClick={() => props.onGo(s.at)}

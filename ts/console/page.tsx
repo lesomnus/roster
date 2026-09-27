@@ -38,7 +38,7 @@
  * an operator has no tenant in that database, so there is nothing for a wall to
  * narrow them to and the selection is the whole of the narrowing.
  *
- * Which is why the alias is in the **address** — `/tenants/@contoso/people` —
+ * Which is why the alias is in the **address** — `/tenants/@contoso/holders` —
  * rather than held only here. A person reads it, a reload keeps it, and the back
  * button leaves the tenant.
  *
@@ -71,6 +71,7 @@ type Screen = Of | 'tenants' | 'you'
 
 /** under is the screens that need a tenant to be about. */
 const under: readonly Of[] = [
+	'tenant',
 	'holders',
 	'hosts',
 	'connections',
@@ -79,7 +80,6 @@ const under: readonly Of[] = [
 	'groups',
 	'roles',
 	'trail',
-	'settings',
 ]
 
 function isUnder(v: Screen): v is Of {
@@ -93,11 +93,13 @@ function isUnder(v: Screen): v is Of {
  *
  *	/tenants                        the picker
  *	/you                            the deployment's own
- *	/tenants/@<alias>/<screen>      one tenant's, and `who` under `people`
+ *	/tenants/@<alias>/<screen>      one tenant's, and `who` under `holders`
  *
- * A path naming a tenant and no screen is the picker with that one selected,
- * which is what somebody who clicked a row and then the back button lands on. A screen name this build does not have is somebody's stale bookmark,
- * and the picker is the honest answer to one.
+ * A path naming a tenant and no screen is the picker with that one selected, which
+ * is what somebody who clicked a row and then the back button lands on. A screen
+ * name this build does not have is somebody's stale bookmark, and the picker is the
+ * honest answer to one -- which is what `settings` is now, so a bookmark of it
+ * lands on the picker rather than on a blank.
  */
 function where(route: string[]): { at: Screen; alias: string | null; who: string | null } {
 	const none = { at: 'tenants' as Screen, alias: null, who: null }
@@ -136,7 +138,7 @@ export function Page(props: {
 	const route = useRoute()
 	const at = where(route)
 
-	// The tenant last selected, so the six tabs stay reachable from `you` and from
+	// The tenant last selected, so its screens stay reachable from `you` and from
 	// the picker.
 	//
 	// A cache and not state, in `login/at.go`'s sense: every value in it can be
@@ -157,7 +159,7 @@ export function Page(props: {
 	// either way, and a client that treated this as the decision would be one an
 	// altered client could talk out of.
 	//
-	// The nine in the middle also need a tenant to be about, so they are disabled
+	// The nine under the head also need a tenant to be about, so they are disabled
 	// until one is picked -- which is the same `ok: false` a missing
 	// permission gets, and reads the same way: the screen exists and you cannot
 	// open it yet.
@@ -167,11 +169,25 @@ export function Page(props: {
 		// sign-in and these rows are one host (#27, #32).
 		{ at: 'tenants', name: 'tenants', ok: may('/roster.TenantService/List') },
 
-		// Each named for the rows it lists, which is why there are nine of them
+		// The tenant that was picked, and the screens that are its rows.
+		//
+		// The head is the tenant's own screen, drawn large and named with the alias
+		// rather than with the word `tenant`: it is what everything under it is
+		// about, so it says *which* one and not what kind of thing it is. Before a
+		// tenant is picked it has the word, because there is no alias to say yet
+		// and a head that was blank would be a gap where the heading goes.
+		{
+			at: 'tenant',
+			name: alias ?? 'tenant',
+			ok: picked && may('/roster.TenantService/Get'),
+			lead: 'head',
+		},
+
+		// Each named for the rows it lists, which is why there are eight of them
 		// rather than five: *arrives through* was four entities in one screen and
 		// *organisation* was two. `docs/glossary.md` § *A word for prose is not a
 		// name*.
-		{ at: 'holders', name: 'holders', ok: picked && may('/roster.HolderService/List'), group: true },
+		{ at: 'holders', name: 'holders', ok: picked && may('/roster.HolderService/List') },
 		{ at: 'hosts', name: 'hosts', ok: picked && may('/roster.HostService/List') },
 		{ at: 'connections', name: 'connections', ok: picked && may('/roster.ConnectionService/List') },
 		{ at: 'maildomains', name: 'mail domains', ok: picked && may('/roster.MailDomainService/List') },
@@ -179,19 +195,16 @@ export function Page(props: {
 		{ at: 'groups', name: 'groups', ok: picked && may('/roster.GroupService/List') },
 		{ at: 'roles', name: 'roles', ok: picked && may('/roster.RoleService/List') },
 		{ at: 'trail', name: 'trail', ok: picked && may('/roster.AuditService/List') },
-		{ at: 'settings', name: 'settings', ok: picked && may('/roster.TenantService/Update') },
 
-		{ at: 'you', name: 'you', ok: true, group: true },
+		{ at: 'you', name: 'you', ok: true, lead: 'group' },
 	]
-
-	// The heading says which tenant is being looked at, because nine of the eleven
-	// tabs are about one and a page that said `roster` over them would be a page
-	// somebody operates on the wrong one from.
-	const title = isUnder(at.at) && alias !== null ? alias : 'roster'
 
 	return (
 		<Console
-			title={title}
+			// The deployment, and never which tenant is open: that is the head tab's
+			// to say now, and a name in both places is a name somebody has to keep in
+			// step. This page operates every tenant, so `roster` is what it is.
+			title="roster"
 			tabs={tabs}
 			at={at.at}
 			onGo={(to) => {
@@ -209,7 +222,10 @@ export function Page(props: {
 					writes={props.writes}
 					may={may}
 					at={alias}
-					onOpen={(who) => go(who === null ? ['tenants'] : ['tenants', '@' + who, 'holders'])}
+					// Picking one lands on the tenant itself rather than on its
+					// holders: the first thing somebody who just chose a customer
+					// wants is to know they chose the right one.
+					onOpen={(who) => go(who === null ? ['tenants'] : ['tenants', '@' + who, 'tenant'])}
 					{...(props.ungated !== undefined ? { ungated: props.ungated } : {})}
 				/>
 			)}

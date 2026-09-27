@@ -3,7 +3,7 @@
  * selected.
  *
  * Two exports, and the split is the sidebar's: [Tenants] is the picker, and
- * [Chosen] is the six screens that are one tenant's. They used to be one thing,
+ * [Chosen] is every screen that is one tenant's. They used to be one thing,
  * with the screens nested under a row of the table behind six buttons and one
  * open at a time. `ts/console/page.tsx` says why that moved.
  *
@@ -73,15 +73,21 @@ import { Sites } from '#lib/tenant/sites.js'
 import { Groups } from '#lib/tenant/groups.js'
 import { Roles } from '#lib/tenant/roles.js'
 import { Trail } from '#lib/tenant/trail.js'
+// Renamed here and nowhere else: this file needs the generated `Tenant` message as
+// well as the screen named for it, and the message is the one of the two that is
+// this file's own business.
+import { Tenant as TenantScreen } from '#lib/tenant/tenant.js'
 
 /**
  * Screen is one of a customer's, as the sidebar names them.
  *
- * The same six the user console has -- five of them are `ts/lib/tenant/`
- * components drawn unchanged -- plus `settings`, which is what a tenant says
- * about itself and is this page's alone for now.
+ * The same nine the user console has, every one a `ts/lib/tenant/` component drawn
+ * unchanged. `tenant` is the row the other eight are inside, and it is the one the
+ * sidebar draws as its head -- so the button that says which tenant is the button
+ * that opens it. It was `settings` until it was a screen rather than a form.
  */
 export type Screen =
+	| 'tenant'
 	| 'holders'
 	| 'hosts'
 	| 'connections'
@@ -90,7 +96,6 @@ export type Screen =
 	| 'groups'
 	| 'roles'
 	| 'trail'
-	| 'settings'
 
 /** uuid is the bytes an identifier arrives as, written the way a person reads one. */
 function uuid(v: Uint8Array | undefined): string {
@@ -227,6 +232,7 @@ function Screens(props: {
 
 	return (
 		<>
+			{props.at === 'tenant' && <TenantScreen tenant={tenant} may={props.may} />}
 			{props.at === 'holders' && (
 				<Holders
 					tenant={tenant}
@@ -247,7 +253,6 @@ function Screens(props: {
 			{props.at === 'groups' && <Groups tenant={tenant} may={props.may} />}
 			{props.at === 'roles' && <Roles tenant={tenant} may={props.may} />}
 			{props.at === 'trail' && <Trail tenant={tenant} />}
-			{props.at === 'settings' && <EditTenant tenant={tenant} may={props.may} />}
 		</>
 	)
 }
@@ -358,87 +363,6 @@ function Table(props: {
 					</tbody>
 				</table>
 			)}
-		</section>
-	)
-}
-
-/**
- * EditTenant is what a customer says about itself: name, a note, labels --
- * through `Tenant.Update`, under the version read, and never the alias every
- * reference resolves through nor the identifier an app has written down.
- * Labels are the one thing a page reads per tenant that the schema does not
- * name -- branding, a support address -- so they are drawn as lines of
- * `key=value` rather than as fields somebody would have to invent.
- *
- * The one checkbox is `config.password`, and it is a **way in** rather than a
- * screen setting: roster refuses a password for a tenant that has it off, so
- * the sign-in pages draw what is true rather than being told what to draw.
- */
-function EditTenant(props: { tenant: Tenant | undefined; may: (method: string) => boolean }): React.ReactNode {
-	const update = useCall(TenantService.method.update)
-	const [said, say] = useState<{ kind: 'done' | 'bad'; text: string } | null>(null)
-
-	const t = props.tenant
-	if (t === undefined) return null
-
-	const labels = Object.entries(t.labels ?? {})
-		.map(([k, v]) => `${k}=${v}`)
-		.join('\n')
-
-	return (
-		<section className="within">
-			<h3>{t.alias} — edit</h3>
-			{!props.may('/roster.TenantService/Update') && (
-				<p className="none">this needs /roster.TenantService/Update</p>
-			)}
-			<form
-				className="profile"
-				onSubmit={(e) => {
-					e.preventDefault()
-					const f = new FormData(e.currentTarget)
-					const parsed: Record<string, string> = {}
-					for (const line of String(f.get('labels') ?? '').split('\n')) {
-						const i = line.indexOf('=')
-						if (i > 0) parsed[line.slice(0, i).trim()] = line.slice(i + 1).trim()
-					}
-					say(null)
-					void update
-						.call({
-							ref: { key: { case: 'id', value: t.id } },
-							dateUpdated: t.dateUpdated,
-							name: String(f.get('name') ?? '').trim(),
-							desc: String(f.get('desc') ?? '').trim(),
-							labels: parsed,
-							// Replaced whole, so the checkbox sends the whole
-							// message. `password: true` and not "unset" once
-							// somebody has touched the box: unset means the
-							// default and this is now a decision.
-							config: { password: f.get('password') !== null },
-						})
-						.then(() => say({ kind: 'done', text: 'saved' }))
-						.catch((e: unknown) => say({ kind: 'bad', text: e instanceof Error ? e.message : 'no' }))
-				}}
-			>
-				<input name="name" placeholder="name" defaultValue={t.name} />
-				<input name="desc" placeholder="note" defaultValue={t.desc} />
-				<textarea name="labels" placeholder={'labels, one per line: brand=Contoso'} defaultValue={labels} rows={3} />
-				{/*
-					A way in, and not a screen setting: roster refuses a password
-					for a tenant with this off, so what the sign-in pages draw is
-					what is already true. For an operator whose people all arrive
-					through a directory -- a form nobody uses is a form that says
-					somebody here has a password.
-				*/}
-				<label className="check">
-					<input type="checkbox" name="password" defaultChecked={t.config?.password ?? true} />
-					a password is a way in here
-				</label>
-				<button type="submit" disabled={update.state === 'pending' || !props.may('/roster.TenantService/Update')}>
-					save
-				</button>
-			</form>
-			{said?.kind === 'done' && <p className="note">{said.text}</p>}
-			{said?.kind === 'bad' && <p className="bad">{said.text}</p>}
 		</section>
 	)
 }

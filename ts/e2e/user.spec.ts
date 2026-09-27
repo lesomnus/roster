@@ -30,7 +30,10 @@ test('a tenant administrator signs in and sees their own tenant', async ({ page 
 	// identifier `Me.Get` answered with, which the wall can only ever answer
 	// about theirs.
 	await expect(page.locator('nav .who')).toHaveText(who)
-	await expect(page.locator('nav h1')).toHaveText('contoso')
+	// The head of the sidebar, which is where the tenant's name is on this page:
+	// there is no heading above it, because the page is reached at the tenant's own
+	// host and the tenant is the whole of what it is.
+	await expect(page.locator('nav button.head')).toHaveText('contoso')
 
 	// The people of contoso, and nobody else's: the seed makes `admin`, `erin`
 	// and `account` here, and fabrikam's people do not appear because they do

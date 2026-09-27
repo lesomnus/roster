@@ -58,8 +58,10 @@ import { Sites } from '#lib/tenant/sites.js'
 import { Groups } from '#lib/tenant/groups.js'
 import { Roles } from '#lib/tenant/roles.js'
 import { Trail } from '#lib/tenant/trail.js'
+import { Tenant } from '#lib/tenant/tenant.js'
 
 type Screen =
+	| 'tenant'
 	| 'holders'
 	| 'hosts'
 	| 'connections'
@@ -71,6 +73,7 @@ type Screen =
 	| 'you'
 
 const screenNames: readonly Screen[] = [
+	'tenant',
 	'holders',
 	'hosts',
 	'connections',
@@ -90,10 +93,14 @@ export function Page(props: { onSignOut: () => void; writes: Writes }): React.Re
 	const me = useQuery(MeService.method.get, {})
 
 	// Which screen is the address bar's to say (`ts/lib/route.ts`): the first
-	// segment under the page's base, and the first screen when there is none or
-	// it names nothing. `/people/<alias>` and not `/<tenant>/people/<alias>` --
-	// there is one tenant here and putting it in the path would be saying it
-	// twice, and saying it somewhere a caller could change it.
+	// segment under the page's base. `/holders/<alias>` and not
+	// `/<tenant>/holders/<alias>` -- there is one tenant here and putting it in the
+	// path would be saying it twice, and saying it somewhere a caller could change
+	// it.
+	//
+	// `holders` and not `tenant` where there is no segment, even though `tenant` is
+	// the first tab now: somebody arriving here wants their people, and the head is
+	// where you go to read the tenant rather than where you start.
 	const route = useRoute()
 	const at = screenOf(route[0])
 
@@ -124,10 +131,10 @@ export function Page(props: { onSignOut: () => void; writes: Writes }): React.Re
  * answers about the caller, and the tenant's own name is the tenant's row. So
  * it is read, through the wall, which can only ever answer with this one.
  *
- * A caller whose role does not cover `Tenant.Get` still gets the page: the
- * heading falls back to `roster` and every screen below is unaffected, because
- * what they need is the identifier. A page that refused to draw without a name
- * would be a page that needs a permission to show a heading.
+ * A caller whose role does not cover `Tenant.Get` still gets the page: the head
+ * tab falls back to the word `tenant` and is refused, and every screen below it is
+ * unaffected, because what they need is the identifier. A page that refused to draw
+ * without a name would be a page that needs a permission to show a sidebar.
  */
 function Screens(props: {
 	id: Uint8Array | undefined
@@ -150,11 +157,21 @@ function Screens(props: {
 	// What is worth drawing, and never what is allowed. The server refuses
 	// either way, and a client that treated this as the decision would be one an
 	// altered client could talk out of.
-	// One tab per entity, which is the admin console's list minus `settings` --
-	// they are the same components and the same names, because what differs
-	// between the two pages is who is calling. `docs/glossary.md` § *A word for
-	// prose is not a name*.
+	// One tab per entity, which is the admin console's list minus `tenants` --
+	// there is one tenant here and nothing to pick. They are the same components
+	// and the same names, because what differs between the two pages is who is
+	// calling. `docs/glossary.md` § *A word for prose is not a name*.
 	const tabs: Tab<Screen>[] = [
+		// The head, and the top of this sidebar: there is no heading above it,
+		// because this page is reached at the tenant's own host and the tenant is
+		// the whole of what it is. `roster` there would be the product's name where
+		// the reader wanted theirs.
+		//
+		// It falls back to `tenant` for the same reason the heading used to fall
+		// back to `roster`: a caller whose role does not cover `Tenant.Get` still
+		// gets the page, and a head with nothing in it would be a gap.
+		{ at: 'tenant', name: name === 'roster' ? 'tenant' : name, ok: props.may('/roster.TenantService/Get'), lead: 'head' },
+
 		{ at: 'holders', name: 'holders', ok: props.may('/roster.HolderService/List') },
 		{ at: 'hosts', name: 'hosts', ok: props.may('/roster.HostService/List') },
 		{ at: 'connections', name: 'connections', ok: props.may('/roster.ConnectionService/List') },
@@ -163,18 +180,18 @@ function Screens(props: {
 		{ at: 'groups', name: 'groups', ok: props.may('/roster.GroupService/List') },
 		{ at: 'roles', name: 'roles', ok: props.may('/roster.RoleService/List') },
 		{ at: 'trail', name: 'trail', ok: props.may('/roster.AuditService/List') },
-		{ at: 'you', name: 'you', ok: true, group: true },
+		{ at: 'you', name: 'you', ok: true, lead: 'group' },
 	]
 
 	return (
 		<Console
-			title={name}
 			tabs={tabs}
 			at={props.at}
 			onGo={(to) => go([to])}
 			who={props.who}
 			onSignOut={props.onSignOut}
 		>
+			{props.at === 'tenant' && <Tenant tenant={tenant} may={props.may} />}
 			{props.at === 'holders' && (
 				<Holders
 					tenant={tenant}

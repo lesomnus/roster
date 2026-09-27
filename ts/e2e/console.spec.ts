@@ -39,18 +39,29 @@ test('an operator signs in and stands a customer up', async ({ page }) => {
 	// disclosure under a table row.
 	await page.locator('tr', { hasText: 'fabrikam' }).locator('button', { hasText: 'open' }).click()
 
-	// The place is in the address bar: back leaves the customer and stays in the
-	// app, forward returns, and a reload keeps it.
-	await expect(page).toHaveURL(/\/tenants\/@fabrikam\/holders$/)
-	await expect(page.locator('nav h1')).toHaveText('fabrikam')
+	// Opening one lands on the tenant **itself** and not on its holders: the first
+	// thing somebody who just chose a customer wants is to know they chose the
+	// right one. The head of the sidebar is what says which, so that is what is
+	// asserted -- `h1` says which deployment and never which tenant, because a name
+	// in both places is a name somebody has to keep in step.
+	const head = page.locator('nav button.head')
+	await expect(page).toHaveURL(/\/tenants\/@fabrikam\/tenant$/)
+	await expect(head).toHaveText('fabrikam')
+	await expect(page.locator('nav h1')).toHaveText('roster')
+
+	// And it is the tenant's own screen under it, with the alias it was reached by
+	// and the form that changes what it says about itself.
+	await expect(page.locator('section.within h3', { hasText: 'fabrikam' })).toBeVisible()
+	await expect(page.locator('h4', { hasText: /^what it is$/ })).toBeVisible()
+
+	// The place is in the address bar: back leaves the screen and stays in the app,
+	// forward returns, and a reload keeps it.
 	await page.goBack()
 	await expect(page).toHaveURL(/\/tenants$/)
-	await expect(page.locator('nav h1')).toHaveText('roster')
 	await page.goForward()
-	await expect(page.locator('nav h1')).toHaveText('fabrikam')
+	await expect(page).toHaveURL(/\/tenants\/@fabrikam\/tenant$/)
 	await page.reload()
-	await expect(page.locator('nav h1')).toHaveText('fabrikam')
-	await expect(page.getByRole('cell', { name: 'admin', exact: true }).first()).toBeVisible()
+	await expect(head).toHaveText('fabrikam')
 
 	// And the selection survives a screen that is not a tenant's at all, which
 	// is the one thing a sidebar has to get right: `you` is the control plane's,
@@ -59,6 +70,7 @@ test('an operator signs in and stands a customer up', async ({ page }) => {
 	await expect(page.locator('nav h1')).toHaveText('roster')
 	await page.locator('nav button', { hasText: 'holders' }).click()
 	await expect(page).toHaveURL(/\/tenants\/@fabrikam\/holders$/)
+	await expect(page.getByRole('cell', { name: 'admin', exact: true }).first()).toBeVisible()
 
 	// How they arrive: a name added, then edited in place -- the note changes
 	// and the name, which the row is, is not offered. From the sidebar now.

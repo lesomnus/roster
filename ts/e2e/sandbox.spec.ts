@@ -28,6 +28,11 @@ test('the sandbox signs in, and its second server stands a customer up', async (
 	await form.locator('button[type=submit]').click()
 	await expect(page.getByRole('cell', { name: 'fabrikam', exact: true })).toBeVisible()
 
+	// Opening one lands on the tenant itself, named by the head of the sidebar, and
+	// its holders are one click below -- the administrator `Tenant.Add` wrote, read
+	// back through the second server this page is running.
 	await page.locator('tr', { hasText: 'fabrikam' }).locator('button', { hasText: 'open' }).click()
+	await expect(page.locator('nav button.head')).toHaveText('fabrikam')
+	await page.locator('nav button', { hasText: 'holders' }).click()
 	await expect(page.getByRole('cell', { name: 'admin', exact: true }).first()).toBeVisible()
 })

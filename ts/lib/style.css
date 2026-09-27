@@ -176,16 +176,50 @@ p {
 	background: var(--surface-2);
 }
 
-/* A rule above a tab, so a sidebar of nine buttons can be read in groups.
-   `Tab.group` in `lib/console.tsx` is what sets it; the admin console has two
+/* A rule above a tab, so a sidebar of ten buttons can be read in parts.
+   `Tab.lead` in `lib/console.tsx` is what sets it; the admin console has two
    that mean something -- the deployment's own screens, and the customer one of
    them selected. Margin as well as the border, because a line with buttons
    tight against it reads as an underline on the one above. */
-.console > nav button.group {
+.console > nav button.group,
+.console > nav button.head {
 	margin-top: var(--s-3);
 	padding-top: var(--s-3);
 	border-top: 1px solid var(--border);
 	border-radius: 0 0 var(--radius) var(--radius);
+}
+
+/* The head of a group, which is the tenant naming the screens under it. Drawn at
+   the size of the `h1` it stands in for, because in the user console that is what
+   it is: the top of the sidebar, and the name of the thing the whole page is
+   about. It keeps the rule above so the admin console's `tenants` stays on the
+   other side of a line from the tenant that was picked. */
+.console > nav button.head {
+	font-size: 1.15rem;
+	font-weight: 650;
+	line-height: 1.2;
+	padding-bottom: var(--s-3);
+	/* An alias is one word and rarely wraps, but a long one should stack rather
+	   than widen a sidebar that is a fixed column. */
+	overflow-wrap: anywhere;
+}
+
+/* Selected, it takes the accent like any other tab -- but it is also the tab a
+   person lands on least, so an unselected head still has to read as the heading
+   it replaces rather than as a button waiting to be pressed. */
+.console > nav button.head:not(.at) {
+	color: var(--text);
+}
+
+/* And no rule when it is the top of the sidebar, which it is in the user console:
+   that page passes no `title`, so the head is the first thing in the `nav` and a
+   border above it would be a line drawn under nothing. The admin console has the
+   `h1` and the picker above it, so there it keeps the rule. */
+.console > nav button.head:first-child {
+	margin-top: 0;
+	padding-top: 0;
+	border-top: none;
+	border-radius: var(--radius);
 }
 
 .console > nav button.at {
@@ -231,6 +265,23 @@ p {
 
 	.console > nav h1 {
 		margin: 0 var(--s-3) 0 0;
+	}
+
+	/* The sidebar is a row here, and a row has no *above*: the rule that separates
+	   groups in a column drew a line on the left of whichever button happened to
+	   wrap. The head keeps its size, because it is still the name of what the rest
+	   of the bar is about. */
+	.console > nav button.group,
+	.console > nav button.head {
+		margin-top: 0;
+		padding-top: var(--s-2);
+		border-top: none;
+		border-radius: var(--radius);
+	}
+
+	.console > nav button.head {
+		padding-bottom: var(--s-2);
+		margin-right: var(--s-2);
 	}
 
 	.console > nav .who {

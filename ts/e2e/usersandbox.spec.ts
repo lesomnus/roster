@@ -30,7 +30,7 @@ test('the sandbox signs a roster user in to the tenant the page is at', async ({
 
 	// The tenant `seed` stands up, resolved from the name the instance says the
 	// page arrived at -- not from anything the page sent.
-	await expect(page.locator('nav h1')).toHaveText('contoso', { timeout: 90_000 })
+	await expect(page.locator('nav button.head')).toHaveText('contoso', { timeout: 90_000 })
 
 	// The administrator `Tenant.Add` wrote, who is the person just signed in.
 	await expect(page.getByRole('cell', { name: 'admin', exact: true })).toBeVisible()
