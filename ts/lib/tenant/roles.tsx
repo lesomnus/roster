@@ -33,11 +33,9 @@ import { BindingService, RoleService } from '../../gen/app/role_svc_pb.js'
 import type { Site } from '../../gen/app/site_pb.js'
 import { SiteService } from '../../gen/app/site_svc_pb.js'
 
-import { Alias, PickHolder, bytesOf, ref, said, uuid } from './organisation.js'
+import { Alias, PickHolder, bytesOf, ref, said, uuid, type May } from './parts.js'
 
-type May = (method: string) => boolean
-
-export function Access(props: {
+export function Roles(props: {
 	tenant: { id?: Uint8Array; alias?: string } | undefined
 	may: May
 }): React.ReactNode {
@@ -46,8 +44,8 @@ export function Access(props: {
 
 	return (
 		<section className="within access">
-			<h3>{props.tenant?.alias} — access</h3>
-			<Roles tenant={id} may={props.may} />
+			<h3>{props.tenant?.alias}</h3>
+			<RoleList tenant={id} may={props.may} />
 		</section>
 	)
 }
@@ -65,7 +63,7 @@ function GroupName(props: { id: Uint8Array | undefined }): React.ReactNode {
 	return <span>group {v?.alias ?? uuid(props.id).slice(0, 8)}</span>
 }
 
-function Roles(props: { tenant: Uint8Array; may: May }): React.ReactNode {
+function RoleList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 	const vs = useQuery(RoleService.method.list, {
 		filters: [{ tenant: ref(props.tenant) }],
 	})

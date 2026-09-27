@@ -41,7 +41,7 @@ test('a tenant administrator signs in and sees their own tenant', async ({ page 
 	// One of them opened, which is the screen the admin console draws from the
 	// other side of the table -- the same component, a different caller.
 	await page.locator('tr', { hasText: who }).locator('button', { hasText: 'signs in with' }).click()
-	await expect(page).toHaveURL(new RegExp(`/people/${who}$`))
+	await expect(page).toHaveURL(new RegExp(`/holders/${who}$`))
 	await expect(page.locator('h4', { hasText: who })).toBeVisible()
 
 	// The place is in the address bar, so a reload keeps it.
@@ -51,7 +51,7 @@ test('a tenant administrator signs in and sees their own tenant', async ({ page 
 	// And somebody added, which is the thing a tenant administrator could not
 	// do without a roster operator before #34: this is their own tenant,
 	// through the wall, with their own binding.
-	await page.locator('nav button', { hasText: 'people' }).click()
+	await page.locator('nav button', { hasText: 'holders' }).click()
 	const form = page.locator('.new-holder form')
 	await form.locator('input[name=alias]').fill('newcomer')
 	await form.locator('button[type=submit]').click()
@@ -59,7 +59,7 @@ test('a tenant administrator signs in and sees their own tenant', async ({ page 
 
 	// How they arrive is theirs to say too, which is the `Host` row a tenant
 	// registers for its own front door.
-	await page.locator('nav button', { hasText: 'arrives through' }).click()
+	await page.locator('nav button', { hasText: 'hosts' }).click()
 	await expect(page.getByRole('cell', { name: 'localhost', exact: true })).toBeVisible()
 
 	// And which road wrote it. The rig's names come from `roster host add` in a
@@ -70,7 +70,7 @@ test('a tenant administrator signs in and sees their own tenant', async ({ page 
 	// Claiming one of their own, which is the half a tenant could not do before
 	// #42: `Host.name` is unique across the deployment, so registering a name
 	// used to be a permission a deployment withheld.
-	const claiming = page.locator('h4', { hasText: /^proving a name$/ }).locator('xpath=..')
+	const claiming = page.locator('h4', { hasText: /^host proofs$/ }).locator('xpath=..')
 	await claiming.locator('input[name=name]').fill('proved.example.com')
 	await claiming.locator('button', { hasText: 'claim a name' }).click()
 

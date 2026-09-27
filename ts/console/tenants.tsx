@@ -65,10 +65,13 @@ import type { Writes } from '../lib/client.js'
 // payday's panel, where this build has one; see `devtools.tsx`.
 import { Devtools } from '../lib/devtools.js'
 import { entities } from '../gen/entities.js'
-import { People } from '../lib/tenant/people.js'
-import { Arrives } from '../lib/tenant/arrives.js'
-import { Organisation } from '../lib/tenant/organisation.js'
-import { Access } from '../lib/tenant/access.js'
+import { Holders } from '../lib/tenant/holders.js'
+import { Hosts } from '../lib/tenant/hosts.js'
+import { Connections } from '../lib/tenant/connections.js'
+import { MailDomains } from '../lib/tenant/maildomains.js'
+import { Sites } from '../lib/tenant/sites.js'
+import { Groups } from '../lib/tenant/groups.js'
+import { Roles } from '../lib/tenant/roles.js'
 import { Trail } from '../lib/tenant/trail.js'
 
 /**
@@ -78,7 +81,16 @@ import { Trail } from '../lib/tenant/trail.js'
  * components drawn unchanged -- plus `settings`, which is what a tenant says
  * about itself and is this page's alone for now.
  */
-export type Screen = 'people' | 'arrives' | 'organisation' | 'access' | 'trail' | 'settings'
+export type Screen =
+	| 'holders'
+	| 'hosts'
+	| 'connections'
+	| 'maildomains'
+	| 'sites'
+	| 'groups'
+	| 'roles'
+	| 'trail'
+	| 'settings'
 
 /** uuid is the bytes an identifier arrives as, written the way a person reads one. */
 function uuid(v: Uint8Array | undefined): string {
@@ -215,22 +227,25 @@ function Screens(props: {
 
 	return (
 		<>
-			{props.at === 'people' && (
-				<People
+			{props.at === 'holders' && (
+				<Holders
 					tenant={tenant}
 					writes={props.writes}
 					may={props.may}
-					// Which person is open is the page's to say, in the page's tree:
-					// `/tenants/@<tenant>/people/<alias>`. The user console's is
-					// `/people/<alias>`, which is why the component takes it rather
+					// Which holder is open is the page's to say, in the page's tree:
+					// `/tenants/@<tenant>/holders/<alias>`. The user console's is
+					// `/holders/<alias>`, which is why the component takes it rather
 					// than reading the route.
 					at={props.who}
 					onOpen={props.onOpen}
 				/>
 			)}
-			{props.at === 'arrives' && <Arrives tenant={tenant} may={props.may} />}
-			{props.at === 'organisation' && <Organisation tenant={tenant} may={props.may} />}
-			{props.at === 'access' && <Access tenant={tenant} may={props.may} />}
+			{props.at === 'hosts' && <Hosts tenant={tenant} may={props.may} />}
+			{props.at === 'connections' && <Connections tenant={tenant} may={props.may} />}
+			{props.at === 'maildomains' && <MailDomains tenant={tenant} may={props.may} />}
+			{props.at === 'sites' && <Sites tenant={tenant} may={props.may} />}
+			{props.at === 'groups' && <Groups tenant={tenant} may={props.may} />}
+			{props.at === 'roles' && <Roles tenant={tenant} may={props.may} />}
 			{props.at === 'trail' && <Trail tenant={tenant} />}
 			{props.at === 'settings' && <EditTenant tenant={tenant} may={props.may} />}
 		</>

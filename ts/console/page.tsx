@@ -63,14 +63,24 @@ import { Tenants, Chosen, type Screen as Of } from './tenants.js'
 /**
  * Screen is a tab in the sidebar: a customer's, or one of the deployment's own.
  *
- * `Of` is `tenants.tsx`'s list of the six that are one tenant's, imported
+ * `Of` is `tenants.tsx`'s list of the ones that are a tenant's, imported
  * rather than written again -- so adding a screen there and forgetting it here
  * does not compile.
  */
 type Screen = Of | 'tenants' | 'you'
 
-/** under is the six that need a tenant to be about. */
-const under: readonly Of[] = ['people', 'arrives', 'organisation', 'access', 'trail', 'settings']
+/** under is the screens that need a tenant to be about. */
+const under: readonly Of[] = [
+	'holders',
+	'hosts',
+	'connections',
+	'maildomains',
+	'sites',
+	'groups',
+	'roles',
+	'trail',
+	'settings',
+]
 
 function isUnder(v: Screen): v is Of {
 	return (under as readonly string[]).includes(v)
@@ -147,7 +157,7 @@ export function Page(props: {
 	// either way, and a client that treated this as the decision would be one an
 	// altered client could talk out of.
 	//
-	// The six in the middle also need a tenant to be about, so they are disabled
+	// The nine in the middle also need a tenant to be about, so they are disabled
 	// until one is picked -- which is the same `ok: false` a missing
 	// permission gets, and reads the same way: the screen exists and you cannot
 	// open it yet.
@@ -157,17 +167,24 @@ export function Page(props: {
 		// sign-in and these rows are one host (#27, #32).
 		{ at: 'tenants', name: 'tenants', ok: may('/roster.TenantService/List') },
 
-		{ at: 'people', name: 'people', ok: picked && may('/roster.HolderService/List'), group: true },
-		{ at: 'arrives', name: 'arrives through', ok: picked && may('/roster.HostService/List') },
-		{ at: 'organisation', name: 'organisation', ok: picked && may('/roster.SiteService/List') },
-		{ at: 'access', name: 'access', ok: picked && may('/roster.RoleService/List') },
+		// Each named for the rows it lists, which is why there are nine of them
+		// rather than five: *arrives through* was four entities in one screen and
+		// *organisation* was two. `docs/glossary.md` § *A word for prose is not a
+		// name*.
+		{ at: 'holders', name: 'holders', ok: picked && may('/roster.HolderService/List'), group: true },
+		{ at: 'hosts', name: 'hosts', ok: picked && may('/roster.HostService/List') },
+		{ at: 'connections', name: 'connections', ok: picked && may('/roster.ConnectionService/List') },
+		{ at: 'maildomains', name: 'mail domains', ok: picked && may('/roster.MailDomainService/List') },
+		{ at: 'sites', name: 'sites', ok: picked && may('/roster.SiteService/List') },
+		{ at: 'groups', name: 'groups', ok: picked && may('/roster.GroupService/List') },
+		{ at: 'roles', name: 'roles', ok: picked && may('/roster.RoleService/List') },
 		{ at: 'trail', name: 'trail', ok: picked && may('/roster.AuditService/List') },
 		{ at: 'settings', name: 'settings', ok: picked && may('/roster.TenantService/Update') },
 
 		{ at: 'you', name: 'you', ok: true, group: true },
 	]
 
-	// The heading says which tenant is being looked at, because six of the eight
+	// The heading says which tenant is being looked at, because nine of the eleven
 	// tabs are about one and a page that said `roster` over them would be a page
 	// somebody operates on the wrong one from.
 	const title = isUnder(at.at) && alias !== null ? alias : 'roster'
@@ -192,7 +209,7 @@ export function Page(props: {
 					writes={props.writes}
 					may={may}
 					at={alias}
-					onOpen={(who) => go(who === null ? ['tenants'] : ['tenants', '@' + who, 'people'])}
+					onOpen={(who) => go(who === null ? ['tenants'] : ['tenants', '@' + who, 'holders'])}
 					{...(props.ungated !== undefined ? { ungated: props.ungated } : {})}
 				/>
 			)}
@@ -208,8 +225,8 @@ export function Page(props: {
 					onOpen={(w) =>
 						go(
 							w === null
-								? ['tenants', '@' + alias, 'people']
-								: ['tenants', '@' + alias, 'people', w],
+								? ['tenants', '@' + alias, 'holders']
+								: ['tenants', '@' + alias, 'holders', w],
 						)
 					}
 					{...(props.ungated !== undefined ? { ungated: props.ungated } : {})}

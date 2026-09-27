@@ -36,6 +36,6 @@ test('the sandbox signs a roster user in to the tenant the page is at', async ({
 	await expect(page.getByRole('cell', { name: 'admin', exact: true })).toBeVisible()
 
 	// And the row that made the sign-in resolvable at all, drawn as a row.
-	await page.locator('nav button', { hasText: 'arrives through' }).click()
+	await page.locator('nav button', { hasText: 'hosts' }).click()
 	await expect(page.getByRole('cell', { name: 'contoso.roster.example', exact: true })).toBeVisible()
 })

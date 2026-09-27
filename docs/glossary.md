@@ -59,7 +59,7 @@ Three notes about the list itself:
 | | |
 | --- | --- |
 | **the admin console** | roster's own UI for a **roster operator**, served at `/` on the admin listener. `ts/console/`. Write *admin console* rather than *the admin console*: a **user console** is the other one, and *a console* on its own is a terminal somebody is sitting at |
-| **the user console** | roster's own UI for a **roster user**: their own tenant, over the walled data plane. `ts/user/`. The two pages draw the same screens from `ts/lib/tenant/` and differ in who is calling -- which is the whole of the difference, and why there is one copy of them |
+| **the user console** | roster's own UI for a **roster user**: their own tenant, over the walled data plane. `ts/user/`. The two pages draw the same screens from `ts/lib/tenant/` -- one file per entity, and one shell from `ts/lib/console.tsx` -- and differ in who is calling, which is the whole of the difference and why there is one copy of them |
 | **the account app** | roster's front door for a tenant's own people -- their own record, their own ways in. Its own process, holding one tenant key per **tenant** it fronts. `account/`, `ts/account/` |
 | **the Login App** | what Hydra hands a `login_challenge` to, and what answers with a `Holder.id`. `login/`, `ts/login/`. **Self-hosted** is a roster user running it for their own tenant with one `rt_`; **roster-hosted** is a roster operator running one instance for many tenants with one `rk_`, narrowed per request to the holder each tenant's `Host` row nominates (#36) |
 | **the front door** (227) | the shared browser-facing half both of those are built on: `POST /session` and after. `frontdoor/`, and `frontdoor/web/frontdoor.js` is its browser side |
@@ -87,20 +87,40 @@ Three notes about the list itself:
 
 ## A word for prose is not a name
 
-**A thing that names rows uses the row's name.** A screen, a route, a component, a
-CLI verb: the entity is `Tenant`, so all four say *tenant*.
+**A thing that lists an entity's rows is named for that entity.** A screen, a
+route, a component, a file: the rows are `Tenant`, so all four say *tenant*.
 
-Which leaves the words that are about a **point of view** where they belong, in
-prose. **customer** is the one that matters: a tenant seen from the roster
-operator's side of the table, and a true and useful thing to write. It was also,
-for a while, the name of the admin console's screen and of the route under it --
-the single place in this product where a list of rows did not say what it was a
-list of, and the glossary recorded it rather than arguing it.
+And a thing that lists **two** entities is two things. The admin console had five
+tenant screens where three named no entity at all -- *people* listed `Holder` rows,
+*organisation* was `Site` and `Group`, *arrives through* was `Host`, `HostProof`,
+`Connection` and `MailDomain` -- so it has nine now, one per entity, and the
+sidebar is longer on purpose.
 
-The distinction is worth stating because the cost is asymmetric. A sentence that
-says *customer* is read once by somebody who has the context. A **name** is read by
-somebody looking for the thing it names -- in an address bar, in a file tree, in a
-grep -- and one that does not match the schema is one they do not find.
+The cost of getting this wrong is asymmetric, which is why it is a rule rather than
+a preference. A sentence that says *customer* is read once by somebody who has the
+context. A **name** is read by somebody looking for the thing it names -- in an
+address bar, in a file tree, in a grep -- and one that does not match the schema is
+one they do not find.
+
+### Which leaves three kinds of name that are right to differ
+
+**A word for a point of view, in prose.** **customer** is the one that matters: a
+tenant seen from the roster operator's side of the table, and a true and useful
+thing to write. What it may not be is the name of a screen, which it was.
+
+**A deliberate alias, applied everywhere.** **the trail** is payday's `Audit`
+entity, and roster calls it the trail in the CLI (`roster trail`), in `server/trail`,
+in the documentation and on both consoles. Nothing in roster says *audit*, so
+nobody looking for the trail fails to find it -- which is the whole of what the rule
+protects. An alias that is written down here and used without exception is the
+opposite of the problem; *customers* was neither.
+
+**A screen for somebody who will never see the schema.** The account app says
+*addresses*, *signs in with* and *keys* where the entities are `Email`, `Identity`
+and `ApiKey`, and that is right: its reader is a person looking at their own
+account, not an operator, and they will never grep for anything. The consoles are
+tools over the schema and the account app is a front door -- which is the line
+`docs/position.md` draws, arriving in the vocabulary.
 
 ## The two other overloads
 

@@ -94,7 +94,13 @@ function when(v: { seconds: bigint } | undefined): string {
 }
 
 /**
- * People is who is in one tenant, and one of them opened.
+ * Holders is who -- and what -- is in one tenant, and one of them opened.
+ *
+ * `Holder` and not *people*, which is what this screen used to be called: the
+ * schema says nothing about whether a person or a machine is behind a row, and a
+ * tenant's own service holding an `rt_` is a holder too. A tab labelled *people*
+ * named a set that does not exist (`docs/glossary.md`, § *A word for prose is not
+ * a name*).
  *
  * Filtered by tenant rather than listed and sifted here, which is the whole
  * reason `HolderFilter` grew the field: a page that read every holder and kept
@@ -108,7 +114,7 @@ function when(v: { seconds: bigint } | undefined): string {
  * tenant and putting it in the address would be saying it twice. So this takes
  * `at` and answers `onOpen`, and neither page has to know the other's tree.
  */
-export function People(props: {
+export function Holders(props: {
 	tenant: { id?: Uint8Array; alias?: string } | undefined
 	writes: Writes
 	may: (method: string) => boolean
