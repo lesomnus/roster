@@ -29,6 +29,7 @@ import { HostProofService, HostService, MailDomainService } from '#gen/app/host_
  */
 
 import { by, ref as at, said, uuid, when } from './parts.js'
+import { Bar, Fill, Menu, Sheet } from '#lib/ui.js'
 
 export function MailDomains(props: {
 	tenant: { id?: Uint8Array; alias?: string } | undefined
@@ -54,11 +55,17 @@ function MailDomainList(props: { tenant: Uint8Array; may: (m: string) => boolean
 	const [gone, setGone] = useState<string[]>([])
 	const [editing, setEditing] = useState<string | null>(null)
 	const [bad, setBad] = useState<string | null>(null)
+	const [adding, openAdd] = useState(false)
+
+	// Over what was read; `MailDomainService` has no `Search`.
+	const [find, setFind] = useState('')
 
 	if (vs.state === 'pending') return <p className="loading">…</p>
 	if (vs.state === 'error') return <p className="bad">{said(vs.error)}</p>
 
-	const items = (vs.data?.items ?? []).filter((v) => !gone.includes(uuid(v.id)))
+	const all = (vs.data?.items ?? []).filter((v) => !gone.includes(uuid(v.id)))
+	const q = find.trim().toLowerCase()
+	const items = q === '' ? all : all.filter((v) => `${v.name} ${v.provider}`.toLowerCase().includes(q))
 	const names = (providers.data?.items ?? []).map((v) => v.name)
 
 	return (
@@ -71,14 +78,34 @@ function MailDomainList(props: { tenant: Uint8Array; may: (m: string) => boolean
 				domain, so nobody learns who is here by typing names.
 			</p>
 
-			{items.length === 0 && <p className="none">no domains routed yet</p>}
+			<Bar>
+				<input
+					className="find"
+					type="search"
+					aria-label="filter domains"
+					placeholder={`filter these ${all.length}`}
+					value={find}
+					onChange={(e) => setFind(e.target.value)}
+				/>
+				<Fill />
+				<button
+					className="add"
+					disabled={!props.may('/roster.MailDomainService/Add')}
+					onClick={() => openAdd(true)}
+				>
+					route a domain
+				</button>
+			</Bar>
+
+			{items.length === 0 && (
+				<p className="none">{all.length === 0 ? 'no domains routed yet' : 'none of these match'}</p>
+			)}
 			{items.length > 0 && (
 				<table>
 					<thead>
 						<tr>
-							<th>domain</th>
-							<th>goes to</th>
-							<th />
+							<th>domain, and where it goes</th>
+							<th>note</th>
 							<th />
 						</tr>
 					</thead>
@@ -87,7 +114,7 @@ function MailDomainList(props: { tenant: Uint8Array; may: (m: string) => boolean
 							editing === uuid(v.id) ? (
 								<tr key={uuid(v.id)} className="editing">
 									<td className="mono">@{v.name}</td>
-									<td colSpan={3}>
+									<td colSpan={2}>
 										<form
 											className="edit"
 											onSubmit={(e) => {
@@ -125,27 +152,34 @@ function MailDomainList(props: { tenant: Uint8Array; may: (m: string) => boolean
 								</tr>
 							) : (
 							<tr key={uuid(v.id)}>
-								<td className="mono">@{v.name}</td>
+								{/* The domain and where it routes are one fact read together: an
+								    address at this domain goes to that provider. */}
 								<td className="mono">
-									{v.provider === '' ? <span className="none">nowhere — known, not routed</span> : v.provider}
+									@{v.name}
+									<span className="under">
+										{v.provider === '' ? 'nowhere — known, not routed' : `→ ${v.provider}`}
+									</span>
 								</td>
 								<td>{v.desc}</td>
-								<td>
+								<td className="acts">
 									<button disabled={!props.may('/roster.MailDomainService/Update')} onClick={() => setEditing(uuid(v.id))}>
 										edit
 									</button>
-									<button
-										disabled={!props.may('/roster.MailDomainService/Erase')}
-										onClick={() => {
-											setBad(null)
-											void erase
-												.call({ key: { case: 'id', value: v.id } })
-												.then(() => setGone((was) => [...was, uuid(v.id)]))
-												.catch((e: unknown) => setBad(said(e)))
-										}}
-									>
-										remove
-									</button>
+									<Menu label={`more for @${v.name}`}>
+										<button
+											className="danger"
+											disabled={!props.may('/roster.MailDomainService/Erase')}
+											onClick={() => {
+												setBad(null)
+												void erase
+													.call({ key: { case: 'id', value: v.id } })
+													.then(() => setGone((was) => [...was, uuid(v.id)]))
+													.catch((e: unknown) => setBad(said(e)))
+											}}
+										>
+											stop routing it
+										</button>
+									</Menu>
 								</td>
 							</tr>
 							),
@@ -154,6 +188,9 @@ function MailDomainList(props: { tenant: Uint8Array; may: (m: string) => boolean
 				</table>
 			)}
 
+			{bad !== null && <p className="bad">{bad}</p>}
+
+			<Sheet at={adding} onClose={() => openAdd(false)} title="route a mail domain" bad={bad}>
 			<form
 				onSubmit={(e) => {
 					e.preventDefault()
@@ -172,7 +209,10 @@ function MailDomainList(props: { tenant: Uint8Array; may: (m: string) => boolean
 							provider: String(f.get('provider') ?? ''),
 							desc: String(f.get('desc') ?? '').trim(),
 						})
-						.then(() => form.reset())
+						.then(() => {
+							form.reset()
+							openAdd(false)
+						})
 						.catch((e: unknown) => setBad(said(e)))
 				}}
 			>
@@ -195,7 +235,7 @@ function MailDomainList(props: { tenant: Uint8Array; may: (m: string) => boolean
 					route domain
 				</button>
 			</form>
-			{bad !== null && <p className="bad">{bad}</p>}
+			</Sheet>
 		</section>
 	)
 }

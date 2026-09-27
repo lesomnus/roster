@@ -55,15 +55,19 @@ test('a tenant administrator signs in and sees their own tenant', async ({ page 
 	// do without a roster operator before #34: this is their own tenant,
 	// through the wall, with their own binding.
 	await page.locator('nav button', { hasText: 'holders' }).click()
-	const form = page.locator('.new-holder form')
+	await page.locator('button.add', { hasText: 'add somebody' }).click()
+	const form = page.locator('.sheet .new-holder form')
 	await form.locator('input[name=alias]').fill('newcomer')
 	await form.locator('button[type=submit]').click()
-	await expect(page.getByRole('cell', { name: 'newcomer', exact: true })).toBeVisible()
+	await expect(page.locator('.sheet')).toHaveCount(0)
+	await expect(page.getByRole('cell', { name: /newcomer/ })).toBeVisible()
 
 	// How they arrive is theirs to say too, which is the `Host` row a tenant
 	// registers for its own front door.
 	await page.locator('nav button', { hasText: 'hosts' }).click()
-	await expect(page.getByRole('cell', { name: 'localhost', exact: true })).toBeVisible()
+	// Anchored: the acts cell beside it is named for the row too, because the
+	// menu says which row it is the menu for.
+	await expect(page.getByRole('cell', { name: /^localhost/ })).toBeVisible()
 
 	// And which road wrote it. The rig's names come from `roster host add` in a
 	// shell, which is the roster operator's road and asks for no proof -- so the
@@ -74,8 +78,11 @@ test('a tenant administrator signs in and sees their own tenant', async ({ page 
 	// #42: `Host.name` is unique across the deployment, so registering a name
 	// used to be a permission a deployment withheld.
 	const claiming = page.locator('h4', { hasText: /^host proofs$/ }).locator('xpath=..')
-	await claiming.locator('input[name=name]').fill('proved.example.com')
-	await claiming.locator('button', { hasText: 'claim a name' }).click()
+	await claiming.locator('button.add', { hasText: 'claim a name' }).click()
+	const sheet = page.locator('.sheet')
+	await sheet.locator('input[name=name]').fill('proved.example.com')
+	await sheet.locator('button[type=submit]').click()
+	await expect(sheet).toHaveCount(0)
 
 	// What roster asked for, laid out the way a DNS provider's form asks for it.
 	await expect(claiming.getByText('_roster-challenge.proved.example.com')).toBeVisible()
@@ -89,5 +96,5 @@ test('a tenant administrator signs in and sees their own tenant', async ({ page 
 	await expect(claiming.locator('.bad')).toContainText('host.resolver')
 
 	// Nothing was written, which is the claim holding nothing.
-	await expect(page.getByRole('cell', { name: 'proved.example.com', exact: true })).toHaveCount(0)
+	await expect(page.getByRole('cell', { name: /^proved\.example\.com/ })).toHaveCount(0)
 })

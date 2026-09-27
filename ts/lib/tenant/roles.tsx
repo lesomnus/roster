@@ -34,6 +34,7 @@ import type { Site } from '#gen/app/site_pb.js'
 import { SiteService } from '#gen/app/site_svc_pb.js'
 
 import { Alias, PickHolder, bytesOf, ref, said, uuid, type May } from './parts.js'
+import { Bar, Fill, Menu, Sheet } from '#lib/ui.js'
 
 export function Roles(props: {
 	tenant: { id?: Uint8Array; alias?: string } | undefined
@@ -73,11 +74,18 @@ function RoleList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 	const [gone, setGone] = useState<string[]>([])
 	const [at, go] = useState<string | null>(null)
 	const [bad, setBad] = useState<string | null>(null)
+	const [adding, openAdd] = useState(false)
+
+	// Over what was read; `RoleService` has no `Search`.
+	const [find, setFind] = useState('')
 
 	if (vs.state === 'pending') return <p className="loading">…</p>
 	if (vs.state === 'error') return <p className="bad">{said(vs.error)}</p>
 
-	const items = (vs.data?.items ?? []).filter((v) => !gone.includes(uuid(v.id)))
+	const all = (vs.data?.items ?? []).filter((v) => !gone.includes(uuid(v.id)))
+	const q = find.trim().toLowerCase()
+	const items =
+		q === '' ? all : all.filter((v) => `${v.alias} ${v.desc} ${v.methods.join(' ')}`.toLowerCase().includes(q))
 	const ss = sites.data?.items ?? []
 
 	return (
@@ -89,7 +97,30 @@ function RoleList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 				what you hold yourself.
 			</p>
 
-			{items.length === 0 && <p className="none">no roles — nobody here may call anything</p>}
+			<Bar>
+				<input
+					className="find"
+					type="search"
+					aria-label="filter roles"
+					placeholder={`filter these ${all.length}`}
+					value={find}
+					onChange={(e) => setFind(e.target.value)}
+				/>
+				<Fill />
+				<button
+					className="add"
+					disabled={!props.may('/roster.RoleService/Add')}
+					onClick={() => openAdd(true)}
+				>
+					add role
+				</button>
+			</Bar>
+
+			{items.length === 0 && (
+				<p className="none">
+					{all.length === 0 ? 'no roles — nobody here may call anything' : 'none of these match'}
+				</p>
+			)}
 			{items.length > 0 && (
 				<table>
 					<thead>
@@ -106,9 +137,11 @@ function RoleList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 
 							return (
 								<tr key={k} className={k === at ? 'at' : ''}>
+									{/* What it is called and what it is for: the alias is written
+								    into a binding, the note is read. */}
 									<td>
 										{v.alias}
-										{v.desc !== '' && <span className="dim"> — {v.desc}</span>}
+										<span className="under">{v.desc}</span>
 									</td>
 									<td>
 										<SiteName id={v.site?.id} />
@@ -118,18 +151,21 @@ function RoleList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 										<button onClick={() => go(k === at ? null : k)}>
 											{k === at ? 'hide' : 'who has it'}
 										</button>
-										<button
-											disabled={!props.may('/roster.RoleService/Erase')}
-											onClick={() => {
-												setBad(null)
-												void erase
-													.call(ref(v.id))
-													.then(() => setGone((was) => [...was, k]))
-													.catch((e: unknown) => setBad(said(e)))
-											}}
-										>
-											remove
-										</button>
+										<Menu label={`more for ${v.alias}`}>
+											<button
+												className="danger"
+												disabled={!props.may('/roster.RoleService/Erase')}
+												onClick={() => {
+													setBad(null)
+													void erase
+														.call(ref(v.id))
+														.then(() => setGone((was) => [...was, k]))
+														.catch((e: unknown) => setBad(said(e)))
+												}}
+											>
+												remove role
+											</button>
+										</Menu>
 									</td>
 								</tr>
 							)
@@ -138,6 +174,9 @@ function RoleList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 				</table>
 			)}
 
+			{bad !== null && <p className="bad">{bad}</p>}
+
+			<Sheet at={adding} onClose={() => openAdd(false)} title="add a role" bad={bad}>
 			<form
 				className="role"
 				onSubmit={(e) => {
@@ -161,7 +200,10 @@ function RoleList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 							methods,
 							...(site === undefined ? {} : { site: ref(site) }),
 						})
-						.then(() => form.reset())
+						.then(() => {
+							form.reset()
+							openAdd(false)
+						})
 						.catch((e: unknown) => setBad(said(e)))
 				}}
 			>
@@ -185,7 +227,7 @@ function RoleList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 					add role
 				</button>
 			</form>
-			{bad !== null && <p className="bad">{bad}</p>}
+			</Sheet>
 
 			{at !== null && (
 				<Bound tenant={props.tenant} role={items.find((v) => uuid(v.id) === at)} may={props.may} />
@@ -210,6 +252,7 @@ function Bound(props: {
 	const [gone, setGone] = useState<string[]>([])
 	const [to, setTo] = useState<'holder' | 'group'>('holder')
 	const [bad, setBad] = useState<string | null>(null)
+	const [binding, openBind] = useState(false)
 
 	if (props.role?.id === undefined) return null
 	if (vs.state === 'pending') return <p className="loading">…</p>
@@ -222,6 +265,16 @@ function Bound(props: {
 	return (
 		<section className="within">
 			<h5>{props.role?.alias} — who has it</h5>
+			<Bar>
+				<Fill />
+				<button
+					className="add"
+					disabled={!props.may('/roster.BindingService/Add')}
+					onClick={() => openBind(true)}
+				>
+					give it to somebody
+				</button>
+			</Bar>
 			{items.length === 0 && <p className="none">nobody — the role exists and hands out nothing yet</p>}
 			{items.length > 0 && (
 				<table>
@@ -234,19 +287,22 @@ function Bound(props: {
 								<td>
 									<SiteName id={v.site?.id} />
 								</td>
-								<td>
-									<button
-										disabled={!props.may('/roster.BindingService/Erase')}
-										onClick={() => {
-											setBad(null)
-											void erase
-												.call(ref(v.id))
-												.then(() => setGone((was) => [...was, uuid(v.id)]))
-												.catch((e: unknown) => setBad(said(e)))
-										}}
-									>
-										remove
-									</button>
+								<td className="acts">
+									<Menu label="more for this binding">
+										<button
+											className="danger"
+											disabled={!props.may('/roster.BindingService/Erase')}
+											onClick={() => {
+												setBad(null)
+												void erase
+													.call(ref(v.id))
+													.then(() => setGone((was) => [...was, uuid(v.id)]))
+													.catch((e: unknown) => setBad(said(e)))
+											}}
+										>
+											take the role away
+										</button>
+									</Menu>
 								</td>
 							</tr>
 						))}
@@ -254,6 +310,9 @@ function Bound(props: {
 				</table>
 			)}
 
+			{bad !== null && <p className="bad">{bad}</p>}
+
+			<Sheet at={binding} onClose={() => openBind(false)} title={`give ${props.role?.alias ?? 'this role'} to somebody`} bad={bad}>
 			<form
 				onSubmit={(e) => {
 					e.preventDefault()
@@ -270,7 +329,10 @@ function Bound(props: {
 							...(to === 'holder' ? { holder: ref(who) } : { group: ref(who) }),
 							...(site === undefined ? {} : { site: ref(site) }),
 						})
-						.then(() => form.reset())
+						.then(() => {
+							form.reset()
+							openBind(false)
+						})
 						.catch((e: unknown) => setBad(said(e)))
 				}}
 			>
@@ -310,7 +372,7 @@ function Bound(props: {
 					bind
 				</button>
 			</form>
-			{bad !== null && <p className="bad">{bad}</p>}
+			</Sheet>
 		</section>
 	)
 }

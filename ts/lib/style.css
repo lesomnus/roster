@@ -934,16 +934,14 @@ p.bad {
 
 /* ------------------------------------------------- screen particulars */
 
-/* The forms that add a row sit above the list they add to, because on a fresh
-   deployment the list is empty and the thing to do next is the only thing on
-   the screen. One for a customer, on the admin console; one for somebody in a
-   tenant, on both. */
+/* The forms that add a row. They used to sit above the list, in a box: a person
+   on a screen with rows to scroll had to go and find *add*, and the box took
+   room on every screen where nobody was adding anything. They come up from the
+   bottom now (`lib/ui.tsx`, [Sheet]), so what is left here is no box -- one
+   inside the sheet would be a box in a box. */
 .new-tenant,
 .new-holder {
-	padding: var(--s-3) var(--s-4);
-	background: var(--surface-2);
-	border-radius: var(--radius);
-	margin-bottom: var(--s-4);
+	margin-bottom: 0;
 }
 
 .new-tenant form,
@@ -970,4 +968,322 @@ p.bad {
    decision. */
 .holder .state {
 	margin: var(--s-3) 0;
+}
+
+/* ------------------------------------------------- console: the system */
+
+/* The six rules the console is drawn by; `lib/ui.tsx` says what they are and why.
+   Scoped to `.console` on purpose -- the sign-in pages and the consent screen are
+   somebody arriving at one decision, not an operator working through a list, and
+   their boxed buttons are right for that. */
+
+/* 1. A screen is one container.
+      Every screen's root is `section.within`, which was picking up the card from
+      `main > section` **and** the nesting rule from `.within` -- a box that is
+      also a thing inside a box. It is the box. */
+.console > main > section.within {
+	margin-top: 0;
+	padding: var(--s-5);
+	border-left: none;
+}
+
+/* And what is inside it is inside it. A panel that opens under a row is set off
+   by space and a rule down its left, which says *this belongs to the row above*
+   without drawing a second card to say it. */
+.console > main > section section {
+	background: none;
+	border: none;
+	box-shadow: none;
+	padding: 0;
+}
+
+.console > main > section .within {
+	padding: 0 0 0 var(--s-4);
+	border-left: 2px solid var(--border);
+}
+
+/* The one exception, and it earns it: a record somebody is copying by hand into
+   another window is a thing to hold still and look at, not a part of the page. */
+.console .claim {
+	background: var(--surface-2);
+	border-radius: var(--radius);
+	padding: var(--s-3) var(--s-4);
+}
+
+/* 2. A click does not need a box.
+      What says *press here* is where it is: on the row it is about, at the end of
+      the bar, under the form. The primary act keeps its fill, because on a form
+      there is one act and it is worth pointing at. */
+.console main button,
+.console main a.button {
+	border-color: transparent;
+	background: none;
+	color: var(--accent);
+}
+
+.console main button:hover:not([disabled]),
+.console main a.button:hover {
+	background: var(--accent-soft);
+}
+
+.console main button.danger {
+	color: var(--danger);
+	border-color: transparent;
+}
+
+.console main button.danger:hover:not([disabled]) {
+	background: var(--danger-soft);
+}
+
+.console main form button[type='submit'] {
+	background: var(--accent);
+	border-color: var(--accent);
+	color: var(--accent-text);
+}
+
+/* 3. Same level, close but not touching.
+      `separate` rather than `collapse` so the gap can exist at all: a row is a
+      card, and two pixels is enough to say there are two of them. */
+.console main table {
+	border-collapse: separate;
+	border-spacing: 0 2px;
+	margin-bottom: var(--s-3);
+}
+
+.console main th {
+	border-bottom: none;
+	padding: 0 var(--s-3) var(--s-1);
+}
+
+.console main td {
+	background: var(--surface-2);
+	border-bottom: none;
+	padding: var(--s-2) var(--s-3);
+}
+
+.console main td:first-child {
+	border-radius: var(--radius) 0 0 var(--radius);
+}
+
+.console main td:last-child {
+	border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+/* The hover and the open row are the card lifting, not a stripe across a grid. */
+.console main tbody tr:hover td {
+	background: var(--border);
+}
+
+.console main tr.at > td {
+	background: var(--accent-soft);
+}
+
+/* 4. A row may take more than one line.
+      What a person reads and what they copy are not the same size and do not
+      belong beside each other. `.under` is the second line of a cell. */
+.console main td .under {
+	display: block;
+	min-height: 1.15em;
+	font-size: 0.8rem;
+	color: var(--muted);
+	margin-top: 1px;
+}
+
+/* 5. A value that changes does not move what is beside it. */
+.console main td,
+.console main .pad,
+.console main .slot {
+	font-variant-numeric: tabular-nums;
+}
+
+.slot {
+	display: inline-block;
+}
+
+/* The part of a number that is only there to say how wide the number can be.
+   Near the background on purpose: it is a hint about the space, and a person who
+   reads it as a digit has been told something untrue about the value. */
+.pad > .lead {
+	color: color-mix(in srgb, var(--muted) 25%, transparent);
+}
+
+/* `.dim` is the same idea where the value itself is partly predictable -- the
+   leading bytes of an identifier, a stamp nobody reads to the second. */
+.dim {
+	color: var(--muted);
+}
+
+/* ------------------------------------------------------------ the bar */
+
+/* The top of a screen: find, filter, add. The rule under it runs to the edges of
+   the container, which is what says the bar is the container's and not the
+   list's. */
+.console main .bar {
+	display: flex;
+	align-items: center;
+	gap: var(--s-2);
+	margin: 0 0 var(--s-3);
+	padding: 0 0 var(--s-2);
+	border-bottom: 1px solid var(--border);
+}
+
+/* The screen's own bar runs to the edges of the container, which is what says it
+   belongs to the container and not to the list under it. Only that one: a bar
+   inside a panel would be bleeding past a padding that is not there. */
+.console > main > section > .bar,
+.console > main > section > section > .bar {
+	margin: 0 calc(-1 * var(--s-5)) var(--s-4);
+	padding: 0 var(--s-5) var(--s-3);
+}
+
+.console main .bar .fill {
+	flex: 1 1 auto;
+}
+
+.console main .bar input[type='search'],
+.console main .bar input.find {
+	flex: 0 1 18rem;
+}
+
+.console main .bar form {
+	margin: 0;
+}
+
+/* The act that adds one keeps its fill here, away from a form: it is the one
+   thing on the bar somebody is looking for. */
+.console main .bar button.add {
+	background: var(--accent);
+	border-color: var(--accent);
+	color: var(--accent-text);
+}
+
+.console main .bar button.add:hover:not([disabled]) {
+	background: var(--accent);
+	filter: brightness(1.08);
+}
+
+/* ----------------------------------------------------------- the menu */
+
+.menu {
+	position: relative;
+	display: inline-block;
+}
+
+.console main .menu > button {
+	padding: var(--s-1) var(--s-2);
+	color: var(--muted);
+	line-height: 1;
+}
+
+.menu > .items {
+	position: absolute;
+	right: 0;
+	top: calc(100% + var(--s-1));
+	z-index: 20;
+	min-width: 9rem;
+	display: flex;
+	flex-direction: column;
+	padding: var(--s-1);
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	box-shadow: 0 6px 20px rgba(15, 23, 42, 0.14);
+}
+
+/* The one place a list of buttons is a list: they are stacked, full width, and
+   read as lines rather than as things to aim at. */
+.console main .menu > .items button {
+	justify-content: flex-start;
+	text-align: left;
+	width: 100%;
+	white-space: nowrap;
+}
+
+/* --------------------------------------------------------- the sheet */
+
+.scrim {
+	position: fixed;
+	inset: 0;
+	z-index: 30;
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+	background: rgba(15, 23, 42, 0.35);
+}
+
+.sheet {
+	width: min(40rem, 100%);
+	max-height: 85vh;
+	overflow: auto;
+	padding: var(--s-3) var(--s-5) var(--s-5);
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-bottom: none;
+	border-radius: calc(var(--radius) * 2) calc(var(--radius) * 2) 0 0;
+	animation: rise 140ms ease-out;
+}
+
+/* The grip a sheet is dragged by on a phone. Nothing drags it here, and it is
+   drawn anyway: it is what says which edge this came from. */
+.sheet > .handle {
+	width: 2.5rem;
+	height: 4px;
+	margin: 0 auto var(--s-3);
+	border-radius: 2px;
+	background: var(--border);
+}
+
+.sheet > h5 {
+	margin: 0 0 var(--s-3);
+}
+
+.sheet form {
+	flex-direction: column;
+	align-items: stretch;
+	margin-bottom: 0;
+}
+
+.sheet form button[type='submit'] {
+	align-self: flex-end;
+}
+
+@keyframes rise {
+	from {
+		transform: translateY(1rem);
+		opacity: 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.sheet {
+		animation: none;
+	}
+}
+
+/* A table of two columns that is not a list: a label and a value, one row per
+   fact. `td:last-child` is right-aligned and one per cent wide because on a list
+   the last cell is the acts, and on this one that pushed every value to the far
+   edge with the label stranded on the other. So this says what it is instead of
+   being told apart by shape. */
+.console main table.facts th,
+.console main table.facts td {
+	background: var(--surface-2);
+	padding: var(--s-2) var(--s-3);
+	text-align: left;
+	width: auto;
+	white-space: normal;
+	text-transform: none;
+	letter-spacing: 0;
+	font-size: inherit;
+	font-weight: 400;
+}
+
+.console main table.facts th {
+	width: 9rem;
+	color: var(--muted);
+	border-radius: var(--radius) 0 0 var(--radius);
+}
+
+.console main table.facts td:last-child {
+	border-radius: 0 var(--radius) var(--radius) 0;
 }

@@ -82,7 +82,7 @@ function Row(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 			    are stamps. A screen that offered to edit them would be offering a
 			    write the server refuses. */}
 			<h4>what it is</h4>
-			<table>
+			<table className="facts">
 				<tbody>
 					<tr>
 						<th>alias</th>

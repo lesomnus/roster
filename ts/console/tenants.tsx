@@ -77,6 +77,7 @@ import { Trail } from '#lib/tenant/trail.js'
 // well as the screen named for it, and the message is the one of the two that is
 // this file's own business.
 import { Tenant as TenantScreen } from '#lib/tenant/tenant.js'
+import { Bar, Fill, Sheet } from '#lib/ui.js'
 import { bytesOf, uuid } from '#lib/tenant/parts.js'
 
 /**
@@ -262,6 +263,7 @@ function Table(props: {
 	// was not created. Merged by identifier, so a store that does pick the row
 	// up does not draw it twice.
 	const [made, setMade] = useState<Tenant[]>([])
+	const [adding, openAdd] = useState(false)
 
 	if (vs.state === 'pending') return <p className="loading">…</p>
 	if (vs.state === 'error') return <Failed at={vs.error} />
@@ -282,33 +284,29 @@ function Table(props: {
 		<section>
 			<h2>tenants</h2>
 
-			<NewTenant
-				writes={props.writes}
-				may={props.may}
-				onMade={(v) => setMade((was) => [...was, v])}
-			/>
-
-			{all.length === 0 && <p className="none">none yet</p>}
-
-			{all.length > 0 && (
+			<Bar>
 				<input
-					className="wide"
+					className="find"
 					type="search"
 					value={typed}
 					onChange={(e) => setTyped(e.target.value)}
 					placeholder={`filter these ${all.length} by alias or name`}
 					aria-label="filter tenants"
 				/>
-			)}
+				<Fill />
+				<button className="add" disabled={!props.may('/roster.TenantService/Add')} onClick={() => openAdd(true)}>
+					stand one up
+				</button>
+			</Bar>
 
+			{all.length === 0 && <p className="none">none yet</p>}
 			{all.length > 0 && items.length === 0 && <p className="none">none of these match</p>}
 
 			{items.length > 0 && (
 				<table>
 					<thead>
 						<tr>
-							<th>tenant</th>
-							<th>name</th>
+							<th>tenant, and what it is called</th>
 							<th>since</th>
 							<th />
 						</tr>
@@ -319,8 +317,10 @@ function Table(props: {
 
 							return (
 								<tr key={uuid(v.id)} className={open ? 'at' : ''}>
-									<td>{v.alias}</td>
-									<td>{v.name}</td>
+									<td>
+										{v.alias}
+										<span className="under">{v.name}</span>
+									</td>
 									<td>{when(v.dateCreated)}</td>
 									<td className="acts">
 										{/* One button, and the sidebar is where the screens
@@ -337,6 +337,17 @@ function Table(props: {
 					</tbody>
 				</table>
 			)}
+
+			<Sheet at={adding} onClose={() => openAdd(false)} title="stand a customer up">
+				<NewTenant
+					writes={props.writes}
+					may={props.may}
+					onMade={(v) => {
+						setMade((was) => [...was, v])
+						openAdd(false)
+					}}
+				/>
+			</Sheet>
 		</section>
 	)
 }
