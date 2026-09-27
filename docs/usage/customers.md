@@ -99,21 +99,38 @@ works, and what it costs.
 
 ## Where a customer's requests come from
 
-If your product resolves a customer by hostname, tell roster the name:
+If your product resolves a customer by hostname, the name has to be a row. A front
+door asks `FrontService.WhoseHost` before it knows anything else and gets back a
+tenant identifier and nothing more. The Login App reads the same rows to work out
+which tenant a flow is about, from the redirect the authorization request named.
+
+**There are two roads to a row**, and `Host.date_proved` is which one it was:
+
+| who | how |
+| --- | --- |
+| a tenant's own administrator | claim the name, publish what roster asks for, take it |
+| a roster operator | write the row. Whoever routed the name is writing it |
+
+The operator's road is one call, and it is the one to take when you route the name
+and run the zone:
 
 ```sh
 roster host add '{"tenant":{"alias":"newco"},"name":"newco.example.com"}'
 ```
 
-A front door then asks `FrontService.WhoseHost` before it knows anything else and
-gets back a tenant identifier and nothing more.
+The customer's road is two calls and a TXT record, and is what makes it safe for
+them to have `/roster.HostService/Add` at all --
+[operating.md](../operating.md) § "A tenant registers its own hostname" is the
+exchange.
 
-**`Host` is the deployment's to write, not a customer's.** A hostname is unique
-across the whole deployment, so a customer claiming one takes it from whoever owns
-it and is told only that somebody has it; roster resolves no DNS -- it is meant to
-run in an air gap -- and what makes traffic for a name arrive here is DNS and your
-ingress, both yours. Nothing enforces this and nothing can: keep
-`/roster.HostService/Add` off the roles a tenant's administrators hold.
+**This section used to say the opposite** -- that `Host` was the deployment's to
+write and never a customer's, on the grounds that a customer claiming a name takes
+it from whoever holds it and that roster resolves no DNS because it runs in an air
+gap. The first half was a real problem and the answer is the proof above rather
+than a permission nothing could enforce. The second half was answering the wrong
+question: an air-gapped deployment has no tenant registering hostnames either, and
+what it has instead is an operator with a shell -- which is the first road, and why
+`host.resolver: none` exists.
 
 A `MailDomain` answers a different question -- which tenant an **address**
 belongs to, and where the people at it authenticate. It claims nothing and is
