@@ -1,0 +1,19 @@
+{
+	// The Playwright specs, which are the one half of this package that runs in
+	// **Node** rather than in a browser.
+	//
+	// Their own config because of one line: `types`. `tsconfig.json` narrows to
+	// `vite/client` on purpose -- *not `node`, which would make a file that reads
+	// the filesystem compile in a bundle that cannot* -- and a spec reads
+	// `process.env` and `node:crypto` for exactly that reason. One config for both
+	// would either fail on the specs or let a page import `node:fs`.
+	//
+	// Left out of `include` above, the specs were not checked at all, which is how
+	// `e2e/totp.ts` came to import `node:crypto` under a config that forbids it
+	// without anybody being told.
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"types": ["node"]
+	},
+	"include": ["e2e"]
+}

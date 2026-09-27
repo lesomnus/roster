@@ -16,5 +16,15 @@
 		// filesystem compile in a bundle that cannot.
 		"types": ["vite/client"]
 	},
-	"include": ["console", "account", "lib", "gen"]
+	// Every page, the library under them, and the generated half.
+	//
+	// `user` and `login` were missing, and nothing said so: `include` seeds the
+	// program and nothing in the other three imports them, so `tsc` never opened
+	// either -- the user console and the sign-in page were the two surfaces with
+	// no type check at all. A deliberate error in `user/page.tsx` passed.
+	//
+	// `e2e` is **not** here and that is the one deliberate absence: those are Node
+	// programs rather than pages, so they need `types: ["node"]`, which is what
+	// this config refuses above. `tsconfig.e2e.json` is theirs.
+	"include": ["console", "user", "account", "login", "lib", "gen"]
 }
