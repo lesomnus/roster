@@ -1155,8 +1155,15 @@ echo
 echo "== the other two walks, over the manifests"
 
 # Who erin is, which is the fact the token has to carry.
+#
+# The first of two, because a `Holder` carries its `Tenant` and that has an `id`
+# of its own. Taken with `%%` and not `| head -1`: two matches are one `sed` write
+# so that pipeline does hold today, but it holds by size, and past `sed`'s output
+# buffer it is `said`'s SIGPIPE again (`scripts/hydra.sh` says it at length). `tr`
+# stays in the pipe -- it reads to the end, so nothing upstream of it is killed.
 sub="$(kube "kubectl -n ${NS} exec deploy/roster -c roster -- roster --config /config/config.yaml holder get -o json @acme/erin" \
-	| sed -n 's/.*"id": "\([^"]*\)".*/\1/p' | head -1 | tr -d '\r')"
+	| sed -n 's/.*"id": "\([^"]*\)".*/\1/p' | tr -d '\r')"
+sub="${sub%%$'\n'*}"
 [ -n "${sub}" ] || { echo "cluster: the seeded person has no id" >&2; exit 1; }
 
 # A key that may sign her out and give her an authenticator, for the steps of the

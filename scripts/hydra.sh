@@ -71,10 +71,23 @@ docker compose up -d --build login >/dev/null
 
 # `customer.sh` has already run -- `login` waits on it -- so the person exists
 # and this is the identifier the token has to name.
+#
+# The first of two: a `Holder` carries its `Tenant`, and that has an `id` of its
+# own, so the render answers with both.
+#
+# Taken with `%%` and not `| head -1`. That pipeline is safe *here*, and safe by
+# size rather than by construction: `sed` block-buffers its output, so two matches
+# are one write and `head` cannot leave before it. Past that buffer `sed` writes
+# twice, `head` leaves after the first, and `set -o pipefail` makes the SIGPIPE
+# the pipeline's status -- so a render that grew an `id`, or a `list` where this
+# is a `get`, would fail here having read nothing wrong. `said` in
+# `scripts/cluster.sh` is the same class with the size against it, which is how
+# that one was found.
 echo "== who erin is, to roster"
-sub="$(docker compose exec -T roster sh -lc \
+ids="$(docker compose exec -T roster sh -lc \
 	'roster holder get -o json "@${SEED_CUSTOMER:-contoso}/${SEED_USER:-erin}" 2>/dev/null' \
-	| sed -n 's/.*"id": "\([^"]*\)".*/\1/p' | head -1)"
+	| sed -n 's/.*"id": "\([^"]*\)".*/\1/p')"
+sub="${ids%%$'\n'*}"
 if [ -z "${sub}" ]; then
 	echo "the seeded person is not there; 'docker compose logs customer'" >&2
 	exit 1
