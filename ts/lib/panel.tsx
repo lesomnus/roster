@@ -12,7 +12,7 @@
 import type { Transport } from '@connectrpc/connect'
 import { Devtools } from '@lesomnus/payday/react/devtools'
 
-import { entities } from '../gen/entities.js'
+import { entities } from '#gen/entities.js'
 import { useMonaco } from './monaco.js'
 
 /**

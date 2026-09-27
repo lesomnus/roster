@@ -26,8 +26,8 @@
 import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 
-import { SignIn, type Provider } from '../lib/signin.js'
-import '../lib/style.css'
+import { SignIn, type Provider } from '#lib/signin.js'
+import '#lib/style.css'
 
 /** Flow is what the app says about the challenge in this page's URL. */
 interface Flow {

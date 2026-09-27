@@ -17,17 +17,17 @@ import { createRoot } from 'react-dom/client'
 import { Provider } from '@lesomnus/payday/react'
 import type { App } from '@lesomnus/payday/react'
 
-import { AuthService } from '../gen/app/auth_pb.js'
-import { MeService } from '../gen/app/me_pb.js'
-import { writes, type Writes } from '../lib/client.js'
-import { open } from '../lib/store.js'
+import { AuthService } from '#gen/app/auth_pb.js'
+import { MeService } from '#gen/app/me_pb.js'
+import { writes, type Writes } from '#lib/client.js'
+import { open } from '#lib/store.js'
 import { Page } from './page.js'
-import type { Progress, Sandbox } from '../lib/sandbox.js'
-import { go, useRoute } from '../lib/route.js'
+import type { Progress, Sandbox } from '#lib/sandbox.js'
+import { go, useRoute } from '#lib/route.js'
 // payday's panel, where this build has one; see `devtools.tsx`.
-import { Devtools } from '../lib/devtools.js'
-import { entities } from '../gen/entities.js'
-import '../lib/style.css'
+import { Devtools } from '#lib/devtools.js'
+import { entities } from '#gen/entities.js'
+import '#lib/style.css'
 
 /**
  * Where the app answers.
@@ -83,7 +83,7 @@ async function connect(): Promise<Transport> {
 		})
 	}
 
-	const { start } = await import('../lib/sandbox.js')
+	const { start } = await import('#lib/sandbox.js')
 	sandbox = await start(booting)
 
 	return sandbox.transport

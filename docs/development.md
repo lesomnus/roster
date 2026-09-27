@@ -132,6 +132,17 @@ entity, which is what the store is built from. Nothing there is behaviour, and
 nothing is generated per service: `ts/lib/client.ts` turns a descriptor into a
 client in one line.
 
+**Nothing imports upward.** A specifier starting with `./` names a file in the
+same directory; anything crossing one says `#lib/...` or `#gen/...`. Those are
+Node subpath imports, declared in `ts/package.json` and nowhere else -- `tsc`,
+`vite build` and the dev server each read that one field, so there is no alias in
+any of the four vite configs to be kept in step with it. And `#` cannot be the
+start of an npm package name, so nobody has to work out whether a path is a
+dependency.
+`ts/imports.mjs` refuses a `../`, and `npm run check` runs it before either
+`tsc`. It reads the four pages, `ts/lib/` and `ts/e2e/`; the shape of `ts/gen/`
+is the generator's to decide.
+
 React is a **peer** dependency of payday and an optional one. `payday/store` and
 `payday/query` know nothing about it; `payday/react` is thirty lines of
 `useSyncExternalStore` over them.

@@ -22,7 +22,7 @@ import type { App } from '@lesomnus/payday/react'
 import { Store, identityOf } from '@lesomnus/payday/store'
 import { openDisk } from '@lesomnus/payday/store/idb'
 
-import { entities } from '../gen/entities.js'
+import { entities } from '#gen/entities.js'
 
 /**
  * open answers with this app's store and queries, for one caller.

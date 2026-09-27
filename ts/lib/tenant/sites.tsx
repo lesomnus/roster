@@ -25,10 +25,10 @@
 import { useState } from 'react'
 import { useCall, useQuery } from '@lesomnus/payday/react'
 
-import { SiteMembershipService, TeamMembershipService } from '../../gen/app/membership_svc_pb.js'
-import { RoleService } from '../../gen/app/role_svc_pb.js'
-import { SiteService } from '../../gen/app/site_svc_pb.js'
-import { TeamService } from '../../gen/app/team_svc_pb.js'
+import { SiteMembershipService, TeamMembershipService } from '#gen/app/membership_svc_pb.js'
+import { RoleService } from '#gen/app/role_svc_pb.js'
+import { SiteService } from '#gen/app/site_svc_pb.js'
+import { TeamService } from '#gen/app/team_svc_pb.js'
 
 import { Alias, PickHolder, RoleName, bytesOf, ref, said, uuid, type May } from './parts.js'
 

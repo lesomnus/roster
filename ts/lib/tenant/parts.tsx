@@ -16,9 +16,9 @@
 
 import { useQuery, useRow } from '@lesomnus/payday/react'
 
-import type { Role } from '../../gen/app/role_pb.js'
-import type { Holder } from '../../gen/roster/payday/holder_pb.js'
-import { HolderService } from '../../gen/roster/payday/holder_svc_pb.js'
+import type { Role } from '#gen/app/role_pb.js'
+import type { Holder } from '#gen/roster/payday/holder_pb.js'
+import { HolderService } from '#gen/roster/payday/holder_svc_pb.js'
 
 /** May is whether this caller holds a method, as the pages work it out. */
 export type May = (method: string) => boolean

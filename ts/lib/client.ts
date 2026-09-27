@@ -18,14 +18,14 @@
 
 import { createClient, type Client, type Transport } from '@connectrpc/connect'
 
-import { ApiKeyService } from '../gen/app/apikey_svc_pb.js'
-import { RoleService } from '../gen/app/role_svc_pb.js'
-import { BindingService } from '../gen/app/role_svc_pb.js'
-import { SiteService } from '../gen/app/site_svc_pb.js'
-import { MeService } from '../gen/app/me_pb.js'
-import { TenantService } from '../gen/roster/payday/tenant_svc_pb.js'
-import { HolderService } from '../gen/roster/payday/holder_svc_pb.js'
-import { CredentialService } from '../gen/app/credential_svc_pb.js'
+import { ApiKeyService } from '#gen/app/apikey_svc_pb.js'
+import { RoleService } from '#gen/app/role_svc_pb.js'
+import { BindingService } from '#gen/app/role_svc_pb.js'
+import { SiteService } from '#gen/app/site_svc_pb.js'
+import { MeService } from '#gen/app/me_pb.js'
+import { TenantService } from '#gen/roster/payday/tenant_svc_pb.js'
+import { HolderService } from '#gen/roster/payday/holder_svc_pb.js'
+import { CredentialService } from '#gen/app/credential_svc_pb.js'
 import { BatchService } from '@lesomnus/payday/pdpb'
 
 export interface App {

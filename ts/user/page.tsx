@@ -42,22 +42,22 @@
 
 import { useQuery } from '@lesomnus/payday/react'
 
-import { covers } from '../lib/covers.js'
-import { go, useRoute } from '../lib/route.js'
-import { Broken, Console, Loading, You, type Tab } from '../lib/console.js'
-import type { Writes } from '../lib/client.js'
+import { covers } from '#lib/covers.js'
+import { go, useRoute } from '#lib/route.js'
+import { Broken, Console, Loading, You, type Tab } from '#lib/console.js'
+import type { Writes } from '#lib/client.js'
 
-import { MeService } from '../gen/app/me_pb.js'
-import { TenantService } from '../gen/roster/payday/tenant_svc_pb.js'
+import { MeService } from '#gen/app/me_pb.js'
+import { TenantService } from '#gen/roster/payday/tenant_svc_pb.js'
 
-import { Holders } from '../lib/tenant/holders.js'
-import { Hosts } from '../lib/tenant/hosts.js'
-import { Connections } from '../lib/tenant/connections.js'
-import { MailDomains } from '../lib/tenant/maildomains.js'
-import { Sites } from '../lib/tenant/sites.js'
-import { Groups } from '../lib/tenant/groups.js'
-import { Roles } from '../lib/tenant/roles.js'
-import { Trail } from '../lib/tenant/trail.js'
+import { Holders } from '#lib/tenant/holders.js'
+import { Hosts } from '#lib/tenant/hosts.js'
+import { Connections } from '#lib/tenant/connections.js'
+import { MailDomains } from '#lib/tenant/maildomains.js'
+import { Sites } from '#lib/tenant/sites.js'
+import { Groups } from '#lib/tenant/groups.js'
+import { Roles } from '#lib/tenant/roles.js'
+import { Trail } from '#lib/tenant/trail.js'
 
 type Screen =
 	| 'holders'

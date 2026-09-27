@@ -17,15 +17,15 @@ import { createRoot } from 'react-dom/client'
 import { Provider } from '@lesomnus/payday/react'
 import type { App } from '@lesomnus/payday/react'
 
-import { AuthService } from '../gen/app/auth_pb.js'
-import { MeService } from '../gen/app/me_pb.js'
-import { writes, type Writes } from '../lib/client.js'
-import { Devtools } from '../lib/devtools.js'
-import { go } from '../lib/route.js'
-import type { Progress, Sandbox } from '../lib/sandbox.js'
-import { open } from '../lib/store.js'
+import { AuthService } from '#gen/app/auth_pb.js'
+import { MeService } from '#gen/app/me_pb.js'
+import { writes, type Writes } from '#lib/client.js'
+import { Devtools } from '#lib/devtools.js'
+import { go } from '#lib/route.js'
+import type { Progress, Sandbox } from '#lib/sandbox.js'
+import { open } from '#lib/store.js'
 import { Page } from './page.js'
-import '../lib/style.css'
+import '#lib/style.css'
 
 /**
  * Where the app answers, which is **this page's own origin** and cannot be
@@ -75,7 +75,7 @@ async function connect(): Promise<Transport> {
 		})
 	}
 
-	const { start } = await import('../lib/sandbox.js')
+	const { start } = await import('#lib/sandbox.js')
 	sandbox = await start(booting)
 
 	// The **walled** data plane, which is what a deployment serves on
