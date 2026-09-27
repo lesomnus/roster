@@ -20,7 +20,7 @@ import { useQuery } from '@lesomnus/payday/react'
 import { AuditService } from '../../gen/roster/payday/audit_svc_pb.js'
 import '../../gen/domains.js'
 
-import { Alias, said, uuid } from './organisation.js'
+import { Alias, said, uuid } from './parts.js'
 
 /** names is every domain this app registered, by number, so a row can say what it was about. */
 const names = new Map<number, string>()

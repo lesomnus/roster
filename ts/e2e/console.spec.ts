@@ -41,7 +41,7 @@ test('an operator signs in and stands a customer up', async ({ page }) => {
 
 	// The place is in the address bar: back leaves the customer and stays in the
 	// app, forward returns, and a reload keeps it.
-	await expect(page).toHaveURL(/\/tenants\/@fabrikam\/people$/)
+	await expect(page).toHaveURL(/\/tenants\/@fabrikam\/holders$/)
 	await expect(page.locator('nav h1')).toHaveText('fabrikam')
 	await page.goBack()
 	await expect(page).toHaveURL(/\/tenants$/)
@@ -57,14 +57,14 @@ test('an operator signs in and stands a customer up', async ({ page }) => {
 	// and coming back must not have lost fabrikam.
 	await page.locator('nav button', { hasText: 'you' }).click()
 	await expect(page.locator('nav h1')).toHaveText('roster')
-	await page.locator('nav button', { hasText: 'people' }).click()
-	await expect(page).toHaveURL(/\/tenants\/@fabrikam\/people$/)
+	await page.locator('nav button', { hasText: 'holders' }).click()
+	await expect(page).toHaveURL(/\/tenants\/@fabrikam\/holders$/)
 
 	// How they arrive: a name added, then edited in place -- the note changes
 	// and the name, which the row is, is not offered. From the sidebar now.
-	await page.locator('nav button', { hasText: 'arrives through' }).click()
-	await expect(page).toHaveURL(/\/tenants\/@fabrikam\/arrives$/)
-	const names = page.locator('h4', { hasText: /^names$/ }).locator('xpath=..')
+	await page.locator('nav button', { hasText: 'hosts' }).click()
+	await expect(page).toHaveURL(/\/tenants\/@fabrikam\/hosts$/)
+	const names = page.locator('h4', { hasText: /^hosts$/ }).locator('xpath=..')
 	await names.locator('input[name=name]').fill('fabrikam.test')
 	await names.locator('input[name=desc]').fill('staging')
 	await names.locator('button', { hasText: 'add name' }).click()

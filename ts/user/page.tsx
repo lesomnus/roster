@@ -18,7 +18,7 @@
  *
  * # Why the screens are the same components
  *
- * `ts/lib/tenant/` is one tenant's rows drawn once. What differs between the two
+ * `ts/lib/tenant/` is one tenant's rows drawn once, one file per entity. What differs between the two
  * pages is who is calling and which listener answers -- and neither of those is
  * something a table of holders knows about. A second copy of these screens
  * would be a second set of answers to *what may be shown*, and the first thing
@@ -50,17 +50,40 @@ import type { Writes } from '../lib/client.js'
 import { MeService } from '../gen/app/me_pb.js'
 import { TenantService } from '../gen/roster/payday/tenant_svc_pb.js'
 
-import { People } from '../lib/tenant/people.js'
-import { Arrives } from '../lib/tenant/arrives.js'
-import { Organisation } from '../lib/tenant/organisation.js'
-import { Access } from '../lib/tenant/access.js'
+import { Holders } from '../lib/tenant/holders.js'
+import { Hosts } from '../lib/tenant/hosts.js'
+import { Connections } from '../lib/tenant/connections.js'
+import { MailDomains } from '../lib/tenant/maildomains.js'
+import { Sites } from '../lib/tenant/sites.js'
+import { Groups } from '../lib/tenant/groups.js'
+import { Roles } from '../lib/tenant/roles.js'
 import { Trail } from '../lib/tenant/trail.js'
 
-type Screen = 'people' | 'arrives' | 'organisation' | 'access' | 'trail' | 'you'
-const screenNames: readonly Screen[] = ['people', 'arrives', 'organisation', 'access', 'trail', 'you']
+type Screen =
+	| 'holders'
+	| 'hosts'
+	| 'connections'
+	| 'maildomains'
+	| 'sites'
+	| 'groups'
+	| 'roles'
+	| 'trail'
+	| 'you'
+
+const screenNames: readonly Screen[] = [
+	'holders',
+	'hosts',
+	'connections',
+	'maildomains',
+	'sites',
+	'groups',
+	'roles',
+	'trail',
+	'you',
+]
 
 function screenOf(v: string | undefined): Screen {
-	return (screenNames as readonly string[]).includes(v ?? '') ? (v as Screen) : 'people'
+	return (screenNames as readonly string[]).includes(v ?? '') ? (v as Screen) : 'holders'
 }
 
 export function Page(props: { onSignOut: () => void; writes: Writes }): React.ReactNode {
@@ -89,7 +112,7 @@ export function Page(props: { onSignOut: () => void; writes: Writes }): React.Re
 			methods={held}
 			writes={props.writes}
 			onSignOut={props.onSignOut}
-			people={route[1] ?? null}
+			holders={route[1] ?? null}
 		/>
 	)
 }
@@ -114,7 +137,7 @@ function Screens(props: {
 	methods: string[]
 	writes: Writes
 	onSignOut: () => void
-	people: string | null
+	holders: string | null
 }): React.ReactNode {
 	const id = props.id
 	const v = useQuery(TenantService.method.get, {
@@ -127,11 +150,18 @@ function Screens(props: {
 	// What is worth drawing, and never what is allowed. The server refuses
 	// either way, and a client that treated this as the decision would be one an
 	// altered client could talk out of.
+	// One tab per entity, which is the admin console's list minus `settings` --
+	// they are the same components and the same names, because what differs
+	// between the two pages is who is calling. `docs/glossary.md` § *A word for
+	// prose is not a name*.
 	const tabs: Tab<Screen>[] = [
-		{ at: 'people', name: 'people', ok: props.may('/roster.HolderService/List') },
-		{ at: 'arrives', name: 'arrives through', ok: props.may('/roster.HostService/List') },
-		{ at: 'organisation', name: 'organisation', ok: props.may('/roster.SiteService/List') },
-		{ at: 'access', name: 'access', ok: props.may('/roster.RoleService/List') },
+		{ at: 'holders', name: 'holders', ok: props.may('/roster.HolderService/List') },
+		{ at: 'hosts', name: 'hosts', ok: props.may('/roster.HostService/List') },
+		{ at: 'connections', name: 'connections', ok: props.may('/roster.ConnectionService/List') },
+		{ at: 'maildomains', name: 'mail domains', ok: props.may('/roster.MailDomainService/List') },
+		{ at: 'sites', name: 'sites', ok: props.may('/roster.SiteService/List') },
+		{ at: 'groups', name: 'groups', ok: props.may('/roster.GroupService/List') },
+		{ at: 'roles', name: 'roles', ok: props.may('/roster.RoleService/List') },
 		{ at: 'trail', name: 'trail', ok: props.may('/roster.AuditService/List') },
 		{ at: 'you', name: 'you', ok: true, group: true },
 	]
@@ -145,18 +175,21 @@ function Screens(props: {
 			who={props.who}
 			onSignOut={props.onSignOut}
 		>
-			{props.at === 'people' && (
-				<People
+			{props.at === 'holders' && (
+				<Holders
 					tenant={tenant}
 					writes={props.writes}
 					may={props.may}
-					at={props.people}
-					onOpen={(who) => go(who === null ? ['people'] : ['people', who])}
+					at={props.holders}
+					onOpen={(who) => go(who === null ? ['holders'] : ['holders', who])}
 				/>
 			)}
-			{props.at === 'arrives' && <Arrives tenant={tenant} may={props.may} />}
-			{props.at === 'organisation' && <Organisation tenant={tenant} may={props.may} />}
-			{props.at === 'access' && <Access tenant={tenant} may={props.may} />}
+			{props.at === 'hosts' && <Hosts tenant={tenant} may={props.may} />}
+			{props.at === 'connections' && <Connections tenant={tenant} may={props.may} />}
+			{props.at === 'maildomains' && <MailDomains tenant={tenant} may={props.may} />}
+			{props.at === 'sites' && <Sites tenant={tenant} may={props.may} />}
+			{props.at === 'groups' && <Groups tenant={tenant} may={props.may} />}
+			{props.at === 'roles' && <Roles tenant={tenant} may={props.may} />}
 			{props.at === 'trail' && <Trail tenant={tenant} />}
 			{props.at === 'you' && <You methods={props.methods} />}
 		</Console>
