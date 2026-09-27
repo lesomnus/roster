@@ -60,14 +60,17 @@ var elsewhere = map[string]string{
 	"esm/vs/esm/vs/":              "the same, wrong on purpose in a comment about it",
 	"./esm/vs/*.js":               "the same",
 	"public/":                     "vite's convention, named in a comment about it",
+	"ts/public/":                  "`npm run wasm` writes it, so a checkout has no such directory; named in the comment about why it is not counted",
 	"lib/route.ts":                "relative to ts/console, where the comment is",
 	"clients/*.json":              "relative to deploy/, and a glob",
 	"migrations/":                 "named to say there is not one",
 
-	// Bare names, which the rule below checks against every file in the tree.
+	// Bare names, which the rule below checks against every file a checkout
+	// carries.
 	"config.json":   "named to say there is not one; the page is served by the listener it calls",
 	"x.json":        "a stand-in for a client's own name, in a comment about how they are named",
 	"customers.tsx": "renamed; named in the comment that explains this rule, as the example of one that was",
+	"wasm_exec.js":  "Go's own, from GOROOT; `npm run wasm` copies it in and a committed copy would pin the wrong compiler",
 }
 
 // TestTheDocumentationNamesFilesThatExist reads every backticked path in the
@@ -464,26 +467,36 @@ func sources(t *testing.T, root string) []string {
 	return out
 }
 
-// basenames is what every file in the tree is called, which is what a bare name
-// in a comment is checked against.
+// basenames is what every file a checkout carries is called, which is what a
+// bare name in a comment is checked against.
 //
 // A **wider** walk than `sources`: that one skips the generated trees because
 // nothing in them is worth reading for pointers, but `holder.proto` lives in
 // `proto/roster/payday/` and `entities.ts` in `ts/gen/`, and a comment naming
-// either is right. What is left out is only what a checkout does not carry --
-// `node_modules`, a `dist`, the git directory -- so that this gate answers the
-// same before and after a build.
+// either is right.
+//
+// What it leaves out is what `.gitignore` leaves out, read rather than listed
+// here. The first attempt listed `node_modules` and `dist` by hand and passed on
+// a desk and failed in CI on `wasm_exec.js`: `ts/public/` is produced by
+// `npm run wasm`, so the file was on the disk that ran the test and in no fresh
+// checkout. That is the failure `looksLikeAPath`'s own `made` list exists to
+// stop, and a second list of produced things is a second thing to keep in step.
 func basenames(t *testing.T, root string) map[string]bool {
 	t.Helper()
 
 	out := map[string]bool{}
+	skip := ignored(t, root)
 	require.NoError(t, filepath.Walk(root, func(p string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
+
+		rel, err := filepath.Rel(root, p)
+		if err != nil {
+			return err
+		}
 		if info.IsDir() {
-			switch info.Name() {
-			case "node_modules", "dist", ".git":
+			if rel == ".git" || skip[rel] || skip[info.Name()] {
 				return filepath.SkipDir
 			}
 
@@ -493,6 +506,30 @@ func basenames(t *testing.T, root string) map[string]bool {
 
 		return nil
 	}))
+
+	return out
+}
+
+// ignored is the directories `.gitignore` names, by path and by bare name.
+//
+// Git's own rule, for the two shapes this file uses: a pattern with a `/` inside
+// it is a path from the root (`ts/public/`), and one without is a name at any
+// depth (`dist/`). Only directories -- a pattern for a file cannot be a bare
+// name with a known extension, so nothing above would ask about one.
+func ignored(t *testing.T, root string) map[string]bool {
+	t.Helper()
+
+	b, err := os.ReadFile(filepath.Join(root, ".gitignore"))
+	require.NoError(t, err)
+
+	out := map[string]bool{}
+	for _, line := range strings.Split(string(b), "\n") {
+		v := strings.TrimSpace(line)
+		if v == "" || strings.HasPrefix(v, "#") || !strings.HasSuffix(v, "/") {
+			continue
+		}
+		out[strings.Trim(v, "/")] = true
+	}
 
 	return out
 }
