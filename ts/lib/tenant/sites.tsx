@@ -40,7 +40,7 @@ export function Sites(props: {
 	if (id === undefined) return null
 
 	return (
-		<section className="within organisation">
+		<section className="within">
 			<h3>{props.tenant?.alias}</h3>
 			<SiteList tenant={id} may={props.may} />
 		</section>

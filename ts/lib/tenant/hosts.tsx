@@ -42,7 +42,7 @@ export function Hosts(props: {
 	if (id === undefined) return null
 
 	return (
-		<section className="within arrives">
+		<section className="within">
 			<h3>{props.tenant?.alias}</h3>
 			<HostList tenant={id} may={props.may} />
 			<Claims tenant={id} may={props.may} />

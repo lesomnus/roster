@@ -59,14 +59,7 @@ import { IdentityService } from '#gen/app/identity_svc_pb.js'
 import type { Writes } from '#lib/client.js'
 import { expiries, expiresAt, until } from '#lib/expiry.js'
 
-/** uuid is the bytes an identifier arrives as, written the way a person reads one. */
-function uuid(v: Uint8Array | undefined): string {
-	if (v === undefined || v.length !== 16) return ''
-
-	const h = [...v].map((b) => b.toString(16).padStart(2, '0')).join('')
-
-	return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`
-}
+import { uuid } from './parts.js'
 
 /**
  * keyOf is the row `ApiKey.Issue` answers beside a token, as the table shows
@@ -312,7 +305,7 @@ export function Person(props: {
 	const disabled = props.holder.dateDisabled !== undefined
 
 	return (
-		<section className="within person">
+		<section className="within holder">
 			<h4>{props.holder.alias}</h4>
 
 			<Ways ids={ids} creds={creds} may={props.may} />

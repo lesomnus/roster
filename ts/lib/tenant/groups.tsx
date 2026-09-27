@@ -29,7 +29,7 @@ export function Groups(props: {
 	if (id === undefined) return null
 
 	return (
-		<section className="within organisation">
+		<section className="within">
 			<h3>{props.tenant?.alias}</h3>
 			<GroupList tenant={id} may={props.may} />
 		</section>

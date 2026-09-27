@@ -7,7 +7,7 @@
  * `/roster.HolderService/*` -- and a binding hands the role to a person or a
  * group, tenant-wide or in one site. What somebody *effectively* holds is the
  * union over their bindings, their groups' bindings and their teams' roles,
- * which `Holder.Reaches` answers beside the person (`people.tsx`) rather than
+ * which `Holder.Reaches` answers beside the holder (`holders.tsx`) rather than
  * this page adding it up.
  *
  * # Every write here is a grant
@@ -43,7 +43,7 @@ export function Roles(props: {
 	if (id === undefined) return null
 
 	return (
-		<section className="within access">
+		<section className="within">
 			<h3>{props.tenant?.alias}</h3>
 			<RoleList tenant={id} may={props.may} />
 		</section>

@@ -77,6 +77,7 @@ import { Trail } from '#lib/tenant/trail.js'
 // well as the screen named for it, and the message is the one of the two that is
 // this file's own business.
 import { Tenant as TenantScreen } from '#lib/tenant/tenant.js'
+import { bytesOf, uuid } from '#lib/tenant/parts.js'
 
 /**
  * Screen is one of a customer's, as the sidebar names them.
@@ -96,33 +97,6 @@ export type Screen =
 	| 'groups'
 	| 'roles'
 	| 'trail'
-
-/** uuid is the bytes an identifier arrives as, written the way a person reads one. */
-function uuid(v: Uint8Array | undefined): string {
-	if (v === undefined || v.length !== 16) return ''
-
-	const h = [...v].map((b) => b.toString(16).padStart(2, '0')).join('')
-
-	return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`
-}
-
-/**
- * bytesOf is the other direction: what somebody typed, as the sixteen bytes the
- * wire carries, or nothing if it is not an identifier at all.
- *
- * It exists for one field -- the identifier a new customer may have to be given
- * -- and the check is the whole of its value: a tenant created with a mangled
- * one is the failure that field exists to prevent, made a different way.
- */
-function bytesOf(v: string): Uint8Array | undefined {
-	const h = v.replaceAll('-', '')
-	if (!/^[0-9a-fA-F]{32}$/.test(h)) return undefined
-
-	const b = new Uint8Array(16)
-	for (let i = 0; i < 16; i++) b[i] = Number.parseInt(h.slice(i * 2, i * 2 + 2), 16)
-
-	return b
-}
 
 function when(v: { seconds: bigint } | undefined): string {
 	if (v === undefined) return ''
