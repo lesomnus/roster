@@ -118,6 +118,14 @@ sign-in, so it is one component --
 provider buttons. What is shared is what `frontdoor/web/frontdoor.js` says is
 worth sharing; the markup around it is each page's own.
 
+The shell around those screens is one too (`ts/lib/console.tsx`), and its sidebar
+has a **head**: the tenant, drawn large, naming every screen under it and opening
+the tenant's own. That is a `Tab` like the rest -- it has an address, it can be
+refused, and only its drawing differs -- so `Tab.lead` is the whole of what says
+so. Above the head the two pages differ and are meant to: the admin console has
+the picker that chose the tenant, and the user console has nothing, because it is
+reached at the tenant's own host and the tenant is the whole of what it is.
+
 What is worth reading is what is **not** in them: nothing declares which query a
 write invalidates, nothing pushes a new row into a list, and nothing joins up the
 tenant shown beside a row with the one at the top of the page. That falls out of
