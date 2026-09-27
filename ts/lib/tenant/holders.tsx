@@ -49,15 +49,15 @@ import { useCall, useQuery } from '@lesomnus/payday/react'
 
 import { create } from '@bufbuild/protobuf'
 
-import type { ApiKey } from '../../gen/app/apikey_pb.js'
-import { SignInKeySchema } from '../../gen/app/me_pb.js'
-import type { SignInCredential, SignInIdentity, SignInKey } from '../../gen/app/me_pb.js'
-import type { Holder } from '../../gen/roster/payday/holder_pb.js'
-import { HolderService } from '../../gen/roster/payday/holder_svc_pb.js'
-import { EmailService } from '../../gen/app/email_svc_pb.js'
-import { IdentityService } from '../../gen/app/identity_svc_pb.js'
-import type { Writes } from '../client.js'
-import { expiries, expiresAt, until } from '../expiry.js'
+import type { ApiKey } from '#gen/app/apikey_pb.js'
+import { SignInKeySchema } from '#gen/app/me_pb.js'
+import type { SignInCredential, SignInIdentity, SignInKey } from '#gen/app/me_pb.js'
+import type { Holder } from '#gen/roster/payday/holder_pb.js'
+import { HolderService } from '#gen/roster/payday/holder_svc_pb.js'
+import { EmailService } from '#gen/app/email_svc_pb.js'
+import { IdentityService } from '#gen/app/identity_svc_pb.js'
+import type { Writes } from '#lib/client.js'
+import { expiries, expiresAt, until } from '#lib/expiry.js'
 
 /** uuid is the bytes an identifier arrives as, written the way a person reads one. */
 function uuid(v: Uint8Array | undefined): string {

@@ -16,8 +16,8 @@
 import { useState } from 'react'
 import { useCall, useQuery } from '@lesomnus/payday/react'
 
-import { ConnectionService } from '../../gen/app/connection_svc_pb.js'
-import { HostProofService, HostService, MailDomainService } from '../../gen/app/host_svc_pb.js'
+import { ConnectionService } from '#gen/app/connection_svc_pb.js'
+import { HostProofService, HostService, MailDomainService } from '#gen/app/host_svc_pb.js'
 
 // when is a moment written the way somebody reads one, or nothing.
 /**

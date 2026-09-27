@@ -51,13 +51,13 @@ import type { Transport } from '@connectrpc/connect'
 import { useQuery } from '@lesomnus/payday/react'
 import type { App } from '@lesomnus/payday/react'
 
-import { covers } from '../lib/covers.js'
-import { go, useRoute } from '../lib/route.js'
-import { Broken, Console, Loading, You, type Tab } from '../lib/console.js'
+import { covers } from '#lib/covers.js'
+import { go, useRoute } from '#lib/route.js'
+import { Broken, Console, Loading, You, type Tab } from '#lib/console.js'
 
-import { MeService } from '../gen/app/me_pb.js'
+import { MeService } from '#gen/app/me_pb.js'
 
-import type { Writes } from '../lib/client.js'
+import type { Writes } from '#lib/client.js'
 import { Tenants, Chosen, type Screen as Of } from './tenants.js'
 
 /**
