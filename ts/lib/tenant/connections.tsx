@@ -29,6 +29,7 @@ import { HostProofService, HostService, MailDomainService } from '#gen/app/host_
  */
 
 import { by, ref as at, said, uuid, when } from './parts.js'
+import { Bar, Fill, Menu, Sheet } from '#lib/ui.js'
 
 export function Connections(props: {
 	tenant: { id?: Uint8Array; alias?: string } | undefined
@@ -53,11 +54,18 @@ function ConnectionList(props: { tenant: Uint8Array; may: (m: string) => boolean
 	const [gone, setGone] = useState<string[]>([])
 	const [editing, setEditing] = useState<string | null>(null)
 	const [bad, setBad] = useState<string | null>(null)
+	const [adding, openAdd] = useState(false)
+
+	// Over what was read: `ConnectionService` has no `Search`, and the placeholder
+	// says how many it is narrowing rather than passing for a search of the table.
+	const [find, setFind] = useState('')
 
 	if (vs.state === 'pending') return <p className="loading">…</p>
 	if (vs.state === 'error') return <p className="bad">{said(vs.error)}</p>
 
-	const items = (vs.data?.items ?? []).filter((v) => !gone.includes(uuid(v.id)))
+	const all = (vs.data?.items ?? []).filter((v) => !gone.includes(uuid(v.id)))
+	const q = find.trim().toLowerCase()
+	const items = q === '' ? all : all.filter((v) => `${v.name} ${v.issuer}`.toLowerCase().includes(q))
 
 	return (
 		<section>
@@ -70,15 +78,38 @@ function ConnectionList(props: { tenant: Uint8Array; may: (m: string) => boolean
 				and roster stores that string without reading it.
 			</p>
 
-			{items.length === 0 && <p className="none">no providers yet — people here sign in with a password, or not at all</p>}
+			<Bar>
+				<input
+					className="find"
+					type="search"
+					aria-label="filter providers"
+					placeholder={`filter these ${all.length}`}
+					value={find}
+					onChange={(e) => setFind(e.target.value)}
+				/>
+				<Fill />
+				<button
+					className="add"
+					disabled={!props.may('/roster.ConnectionService/Add')}
+					onClick={() => openAdd(true)}
+				>
+					add provider
+				</button>
+			</Bar>
+
+			{items.length === 0 && (
+				<p className="none">
+					{all.length === 0
+						? 'no providers yet — people here sign in with a password, or not at all'
+						: 'none of these match'}
+				</p>
+			)}
 			{items.length > 0 && (
 				<table>
 					<thead>
 						<tr>
-							<th>name</th>
-							<th>issuer</th>
-							<th>client id</th>
-							<th>scopes</th>
+							<th>name, and the issuer it is</th>
+							<th>client id, and the scopes asked for</th>
 							<th>secret ref</th>
 							<th />
 						</tr>
@@ -88,7 +119,7 @@ function ConnectionList(props: { tenant: Uint8Array; may: (m: string) => boolean
 							editing === uuid(v.id) ? (
 								<tr key={uuid(v.id)} className="editing">
 									<td className="mono">{v.name}</td>
-									<td colSpan={5}>
+									<td colSpan={3}>
 										<form
 											className="edit connection"
 											onSubmit={(e) => {
@@ -129,27 +160,37 @@ function ConnectionList(props: { tenant: Uint8Array; may: (m: string) => boolean
 								</tr>
 							) : (
 							<tr key={uuid(v.id)}>
-								<td className="mono">{v.name}</td>
-								<td className="mono">{v.issuer}</td>
-								<td className="mono">{v.clientId}</td>
-								<td className="mono">{v.scopes.join(' ')}</td>
+								{/* The name is what a row elsewhere points at and the issuer is
+								    what it means; one is copied and one is read, so they are a
+								    line each rather than two columns to scan across. */}
+								<td className="mono">
+									{v.name}
+									<span className="under">{v.issuer}</span>
+								</td>
+								<td className="mono">
+									{v.clientId}
+									<span className="under">{v.scopes.join(' ')}</span>
+								</td>
 								<td className="mono">{v.secretRef}</td>
-								<td>
+								<td className="acts">
 									<button disabled={!props.may('/roster.ConnectionService/Update')} onClick={() => setEditing(uuid(v.id))}>
 										edit
 									</button>
-									<button
-										disabled={!props.may('/roster.ConnectionService/Erase')}
-										onClick={() => {
-											setBad(null)
-											void erase
-												.call({ key: { case: 'id', value: v.id } })
-												.then(() => setGone((was) => [...was, uuid(v.id)]))
-												.catch((e: unknown) => setBad(said(e)))
-										}}
-									>
-										remove
-									</button>
+									<Menu label={`more for ${v.name}`}>
+										<button
+											className="danger"
+											disabled={!props.may('/roster.ConnectionService/Erase')}
+											onClick={() => {
+												setBad(null)
+												void erase
+													.call({ key: { case: 'id', value: v.id } })
+													.then(() => setGone((was) => [...was, uuid(v.id)]))
+													.catch((e: unknown) => setBad(said(e)))
+											}}
+										>
+											remove provider
+										</button>
+									</Menu>
 								</td>
 							</tr>
 							),
@@ -158,6 +199,9 @@ function ConnectionList(props: { tenant: Uint8Array; may: (m: string) => boolean
 				</table>
 			)}
 
+			{bad !== null && <p className="bad">{bad}</p>}
+
+			<Sheet at={adding} onClose={() => openAdd(false)} title="add a provider" bad={bad}>
 			<form
 				className="connection"
 				onSubmit={(e) => {
@@ -185,7 +229,10 @@ function ConnectionList(props: { tenant: Uint8Array; may: (m: string) => boolean
 							secretRef: String(f.get('secret_ref') ?? '').trim(),
 							desc: String(f.get('desc') ?? '').trim(),
 						})
-						.then(() => form.reset())
+						.then(() => {
+							form.reset()
+							openAdd(false)
+						})
 						.catch((e: unknown) => setBad(said(e)))
 				}}
 			>
@@ -205,7 +252,7 @@ function ConnectionList(props: { tenant: Uint8Array; may: (m: string) => boolean
 					add provider
 				</button>
 			</form>
-			{bad !== null && <p className="bad">{bad}</p>}
+			</Sheet>
 		</section>
 	)
 }

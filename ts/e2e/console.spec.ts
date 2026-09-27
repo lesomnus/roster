@@ -18,20 +18,24 @@ test('an operator signs in and stands a customer up', async ({ page }) => {
 
 	await page.locator('nav button', { hasText: 'tenants' }).click()
 	await expect(page.locator('h2', { hasText: 'tenants' })).toBeVisible()
-	await expect(page.getByRole('cell', { name: 'contoso', exact: true })).toBeVisible()
+	await expect(page.getByRole('cell', { name: /contoso/ })).toBeVisible()
 
-	const form = page.locator('.new-tenant form')
+	// Standing one up comes up from the bottom, opened from the bar: the form is
+	// not on the screen until somebody asks for it, so the list has the room.
+	await page.locator('button.add', { hasText: 'stand one up' }).click()
+	const form = page.locator('.sheet .new-tenant form')
 	await form.locator('input[name=alias]').fill('fabrikam')
 	await form.locator('input[name=name]').fill('Fabrikam')
 	await form.locator('input[name=who]').fill('admin')
 	await form.locator('button[type=submit]').click()
-	await expect(page.getByRole('cell', { name: 'fabrikam', exact: true })).toBeVisible()
+	await expect(page.locator('.sheet')).toHaveCount(0)
+	await expect(page.getByRole('cell', { name: /fabrikam/ })).toBeVisible()
 
 	// The filter is over what was read, and says so: `TenantService` has no
 	// `Search`, so the box narrows the page this screen already has.
 	await page.getByLabel('filter tenants').fill('fabri')
-	await expect(page.getByRole('cell', { name: 'contoso', exact: true })).toHaveCount(0)
-	await expect(page.getByRole('cell', { name: 'fabrikam', exact: true })).toBeVisible()
+	await expect(page.getByRole('cell', { name: /contoso/ })).toHaveCount(0)
+	await expect(page.getByRole('cell', { name: /fabrikam/ })).toBeVisible()
 	await page.getByLabel('filter tenants').fill('')
 
 	// Selecting a tenant puts its screens in the **sidebar**, which is the shape
@@ -77,15 +81,21 @@ test('an operator signs in and stands a customer up', async ({ page }) => {
 	await page.locator('nav button', { hasText: 'hosts' }).click()
 	await expect(page).toHaveURL(/\/tenants\/@fabrikam\/hosts$/)
 	const names = page.locator('h4', { hasText: /^hosts$/ }).locator('xpath=..')
-	await names.locator('input[name=name]').fill('fabrikam.test')
-	await names.locator('input[name=desc]').fill('staging')
-	await names.locator('button', { hasText: 'add name' }).click()
+	await names.locator('button.add', { hasText: 'add name' }).click()
+	const sheet = page.locator('.sheet')
+	await sheet.locator('input[name=name]').fill('fabrikam.test')
+	await sheet.locator('input[name=desc]').fill('staging')
+	await sheet.locator('button[type=submit]').click()
+	await expect(sheet).toHaveCount(0)
+
+	// The note is the second line of the name's own cell rather than a column of
+	// its own: what a row is called and what it is for are not the same size.
 	const row = names.locator('tr', { hasText: 'fabrikam.test' })
-	await expect(row.getByRole('cell', { name: 'staging', exact: true })).toBeVisible()
+	await expect(row).toContainText('staging')
 
 	await row.locator('button', { hasText: 'edit' }).click()
 	await expect(row.locator('input[name=name]')).toHaveCount(0)
 	await row.locator('input[name=desc]').fill('production')
 	await row.locator('button', { hasText: 'save' }).click()
-	await expect(names.locator('tr', { hasText: 'fabrikam.test' }).getByRole('cell', { name: 'production', exact: true })).toBeVisible()
+	await expect(names.locator('tr', { hasText: 'fabrikam.test' })).toContainText('production')
 })

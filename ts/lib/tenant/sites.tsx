@@ -31,6 +31,7 @@ import { SiteService } from '#gen/app/site_svc_pb.js'
 import { TeamService } from '#gen/app/team_svc_pb.js'
 
 import { Alias, PickHolder, RoleName, bytesOf, ref, said, uuid, type May } from './parts.js'
+import { Bar, Fill, Menu, Sheet } from '#lib/ui.js'
 
 export function Sites(props: {
 	tenant: { id?: Uint8Array; alias?: string } | undefined
@@ -54,11 +55,17 @@ function SiteList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 	const [gone, setGone] = useState<string[]>([])
 	const [at, go] = useState<string | null>(null)
 	const [bad, setBad] = useState<string | null>(null)
+	const [adding, openAdd] = useState(false)
+
+	// Over what was read; `SiteService` has no `Search`.
+	const [find, setFind] = useState('')
 
 	if (vs.state === 'pending') return <p className="loading">…</p>
 	if (vs.state === 'error') return <p className="bad">{said(vs.error)}</p>
 
-	const items = (vs.data?.items ?? []).filter((v) => !gone.includes(uuid(v.id)))
+	const all = (vs.data?.items ?? []).filter((v) => !gone.includes(uuid(v.id)))
+	const q = find.trim().toLowerCase()
+	const items = q === '' ? all : all.filter((v) => `${v.alias} ${v.name}`.toLowerCase().includes(q))
 
 	return (
 		<section>
@@ -69,7 +76,30 @@ function SiteList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 				live in a site; people are members of one.
 			</p>
 
-			{items.length === 0 && <p className="none">no sites — every role is tenant-wide</p>}
+			<Bar>
+				<input
+					className="find"
+					type="search"
+					aria-label="filter sites"
+					placeholder={`filter these ${all.length}`}
+					value={find}
+					onChange={(e) => setFind(e.target.value)}
+				/>
+				<Fill />
+				<button
+					className="add"
+					disabled={!props.may('/roster.SiteService/Add')}
+					onClick={() => openAdd(true)}
+				>
+					add site
+				</button>
+			</Bar>
+
+			{items.length === 0 && (
+				<p className="none">
+					{all.length === 0 ? 'no sites — every role is tenant-wide' : 'none of these match'}
+				</p>
+			)}
 			{items.length > 0 && (
 				<table>
 					<tbody>
@@ -78,24 +108,29 @@ function SiteList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 
 							return (
 								<tr key={k} className={k === at ? 'at' : ''}>
-									<td>{v.alias}</td>
-									<td>{v.name}</td>
+									<td>
+										{v.alias}
+										<span className="under">{v.name}</span>
+									</td>
 									<td className="acts">
 										<button onClick={() => go(k === at ? null : k)}>
 											{k === at ? 'hide' : 'open'}
 										</button>
-										<button
-											disabled={!props.may('/roster.SiteService/Erase')}
-											onClick={() => {
-												setBad(null)
-												void erase
-													.call(ref(v.id))
-													.then(() => setGone((was) => [...was, k]))
-													.catch((e: unknown) => setBad(said(e)))
-											}}
-										>
-											remove
-										</button>
+										<Menu label={`more for ${v.alias}`}>
+											<button
+												className="danger"
+												disabled={!props.may('/roster.SiteService/Erase')}
+												onClick={() => {
+													setBad(null)
+													void erase
+														.call(ref(v.id))
+														.then(() => setGone((was) => [...was, k]))
+														.catch((e: unknown) => setBad(said(e)))
+												}}
+											>
+												remove site
+											</button>
+										</Menu>
 									</td>
 								</tr>
 							)
@@ -104,6 +139,9 @@ function SiteList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 				</table>
 			)}
 
+			{bad !== null && <p className="bad">{bad}</p>}
+
+			<Sheet at={adding} onClose={() => openAdd(false)} title="add a site" bad={bad}>
 			<form
 				onSubmit={(e) => {
 					e.preventDefault()
@@ -115,7 +153,10 @@ function SiteList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 					setBad(null)
 					void add
 						.call({ tenant: ref(props.tenant), alias, name: String(f.get('name') ?? '').trim() })
-						.then(() => form.reset())
+						.then(() => {
+							form.reset()
+							openAdd(false)
+						})
 						.catch((e: unknown) => setBad(said(e)))
 				}}
 			>
@@ -125,7 +166,7 @@ function SiteList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 					add site
 				</button>
 			</form>
-			{bad !== null && <p className="bad">{bad}</p>}
+			</Sheet>
 
 			{at !== null && (
 				<Site
@@ -163,6 +204,7 @@ function SiteMembers(props: { tenant: Uint8Array; site: Uint8Array; may: May }):
 	const erase = useCall(SiteMembershipService.method.erase)
 	const [gone, setGone] = useState<string[]>([])
 	const [bad, setBad] = useState<string | null>(null)
+	const [adding, openAdd] = useState(false)
 
 	if (vs.state === 'pending') return <p className="loading">…</p>
 	if (vs.state === 'error') return <p className="bad">{said(vs.error)}</p>
@@ -172,6 +214,16 @@ function SiteMembers(props: { tenant: Uint8Array; site: Uint8Array; may: May }):
 	return (
 		<section>
 			<h6>members</h6>
+			<Bar>
+				<Fill />
+				<button
+					className="add"
+					disabled={!props.may('/roster.SiteMembershipService/Add')}
+					onClick={() => openAdd(true)}
+				>
+					add somebody
+				</button>
+			</Bar>
 			{items.length === 0 && <p className="none">nobody in this site</p>}
 			{items.length > 0 && (
 				<table>
@@ -181,25 +233,29 @@ function SiteMembers(props: { tenant: Uint8Array; site: Uint8Array; may: May }):
 								<td>
 									<Alias id={v.holder?.id} />
 								</td>
-								<td>
-									<button
-										disabled={!props.may('/roster.SiteMembershipService/Erase')}
-										onClick={() => {
-											setBad(null)
-											void erase
-												.call(ref(v.id))
-												.then(() => setGone((was) => [...was, uuid(v.id)]))
-												.catch((e: unknown) => setBad(said(e)))
-										}}
-									>
-										remove
-									</button>
+								<td className="acts">
+									<Menu label="more for this member">
+										<button
+											className="danger"
+											disabled={!props.may('/roster.SiteMembershipService/Erase')}
+											onClick={() => {
+												setBad(null)
+												void erase
+													.call(ref(v.id))
+													.then(() => setGone((was) => [...was, uuid(v.id)]))
+													.catch((e: unknown) => setBad(said(e)))
+											}}
+										>
+											take out of site
+										</button>
+									</Menu>
 								</td>
 							</tr>
 						))}
 					</tbody>
 				</table>
 			)}
+			<Sheet at={adding} onClose={() => openAdd(false)} title="put somebody in this site" bad={bad}>
 			<form
 				onSubmit={(e) => {
 					e.preventDefault()
@@ -210,7 +266,10 @@ function SiteMembers(props: { tenant: Uint8Array; site: Uint8Array; may: May }):
 					setBad(null)
 					void add
 						.call({ holder: ref(who), site: ref(props.site) })
-						.then(() => form.reset())
+						.then(() => {
+							form.reset()
+							openAdd(false)
+						})
 						.catch((e: unknown) => setBad(said(e)))
 				}}
 			>
@@ -222,6 +281,7 @@ function SiteMembers(props: { tenant: Uint8Array; site: Uint8Array; may: May }):
 					add to site
 				</button>
 			</form>
+			</Sheet>
 			{bad !== null && <p className="bad">{bad}</p>}
 		</section>
 	)
@@ -234,6 +294,7 @@ function Teams(props: { tenant: Uint8Array; site: Uint8Array; may: May }): React
 	const [gone, setGone] = useState<string[]>([])
 	const [at, go] = useState<string | null>(null)
 	const [bad, setBad] = useState<string | null>(null)
+	const [adding, openAdd] = useState(false)
 
 	if (vs.state === 'pending') return <p className="loading">…</p>
 	if (vs.state === 'error') return <p className="bad">{said(vs.error)}</p>
@@ -243,6 +304,16 @@ function Teams(props: { tenant: Uint8Array; site: Uint8Array; may: May }): React
 	return (
 		<section>
 			<h6>teams</h6>
+			<Bar>
+				<Fill />
+				<button
+					className="add"
+					disabled={!props.may('/roster.TeamService/Add')}
+					onClick={() => openAdd(true)}
+				>
+					add team
+				</button>
+			</Bar>
 			{items.length === 0 && <p className="none">no teams in this site</p>}
 			{items.length > 0 && (
 				<table>
@@ -252,24 +323,29 @@ function Teams(props: { tenant: Uint8Array; site: Uint8Array; may: May }): React
 
 							return (
 								<tr key={k} className={k === at ? 'at' : ''}>
-									<td>{v.alias}</td>
-									<td>{v.name}</td>
+									<td>
+										{v.alias}
+										<span className="under">{v.name}</span>
+									</td>
 									<td className="acts">
 										<button onClick={() => go(k === at ? null : k)}>
 											{k === at ? 'hide' : 'members'}
 										</button>
-										<button
-											disabled={!props.may('/roster.TeamService/Erase')}
-											onClick={() => {
-												setBad(null)
-												void erase
-													.call(ref(v.id))
-													.then(() => setGone((was) => [...was, k]))
-													.catch((e: unknown) => setBad(said(e)))
-											}}
-										>
-											remove
-										</button>
+										<Menu label={`more for ${v.alias}`}>
+											<button
+												className="danger"
+												disabled={!props.may('/roster.TeamService/Erase')}
+												onClick={() => {
+													setBad(null)
+													void erase
+														.call(ref(v.id))
+														.then(() => setGone((was) => [...was, k]))
+														.catch((e: unknown) => setBad(said(e)))
+												}}
+											>
+												remove team
+											</button>
+										</Menu>
 									</td>
 								</tr>
 							)
@@ -277,6 +353,7 @@ function Teams(props: { tenant: Uint8Array; site: Uint8Array; may: May }): React
 					</tbody>
 				</table>
 			)}
+			<Sheet at={adding} onClose={() => openAdd(false)} title="add a team" bad={bad}>
 			<form
 				onSubmit={(e) => {
 					e.preventDefault()
@@ -293,7 +370,10 @@ function Teams(props: { tenant: Uint8Array; site: Uint8Array; may: May }): React
 							alias,
 							name: String(f.get('name') ?? '').trim(),
 						})
-						.then(() => form.reset())
+						.then(() => {
+							form.reset()
+							openAdd(false)
+						})
 						.catch((e: unknown) => setBad(said(e)))
 				}}
 			>
@@ -303,6 +383,7 @@ function Teams(props: { tenant: Uint8Array; site: Uint8Array; may: May }): React
 					add team
 				</button>
 			</form>
+			</Sheet>
 			{bad !== null && <p className="bad">{bad}</p>}
 
 			{at !== null && (
@@ -330,6 +411,7 @@ function TeamMembers(props: {
 	const erase = useCall(TeamMembershipService.method.erase)
 	const [gone, setGone] = useState<string[]>([])
 	const [bad, setBad] = useState<string | null>(null)
+	const [adding, openAdd] = useState(false)
 
 	if (props.team?.id === undefined) return null
 	if (vs.state === 'pending') return <p className="loading">…</p>
@@ -346,6 +428,17 @@ function TeamMembers(props: {
 				person holds that role in this team's site. The server refuses one that
 				hands out more than you hold.
 			</p>
+			<Bar>
+				<Fill />
+				<button
+					className="add"
+					disabled={!props.may('/roster.TeamMembershipService/Add')}
+					onClick={() => openAdd(true)}
+				>
+					add somebody
+				</button>
+			</Bar>
+
 			{items.length === 0 && <p className="none">nobody in this team</p>}
 			{items.length > 0 && (
 				<table>
@@ -358,25 +451,29 @@ function TeamMembers(props: {
 								<td className="mono">
 									<RoleName id={v.role?.id} />
 								</td>
-								<td>
-									<button
-										disabled={!props.may('/roster.TeamMembershipService/Erase')}
-										onClick={() => {
-											setBad(null)
-											void erase
-												.call(ref(v.id))
-												.then(() => setGone((was) => [...was, uuid(v.id)]))
-												.catch((e: unknown) => setBad(said(e)))
-										}}
-									>
-										remove
-									</button>
+								<td className="acts">
+									<Menu label="more for this member">
+										<button
+											className="danger"
+											disabled={!props.may('/roster.TeamMembershipService/Erase')}
+											onClick={() => {
+												setBad(null)
+												void erase
+													.call(ref(v.id))
+													.then(() => setGone((was) => [...was, uuid(v.id)]))
+													.catch((e: unknown) => setBad(said(e)))
+											}}
+										>
+											take out of team
+										</button>
+									</Menu>
 								</td>
 							</tr>
 						))}
 					</tbody>
 				</table>
 			)}
+			<Sheet at={adding} onClose={() => openAdd(false)} title="put somebody in this team" bad={bad}>
 			<form
 				onSubmit={(e) => {
 					e.preventDefault()
@@ -393,7 +490,10 @@ function TeamMembers(props: {
 								? { holder: ref(who), team: ref(team) }
 								: { holder: ref(who), team: ref(team), role: ref(role) },
 						)
-						.then(() => form.reset())
+						.then(() => {
+							form.reset()
+							openAdd(false)
+						})
 						.catch((e: unknown) => setBad(said(e)))
 				}}
 			>
@@ -413,6 +513,7 @@ function TeamMembers(props: {
 					add to team
 				</button>
 			</form>
+			</Sheet>
 			{bad !== null && <p className="bad">{bad}</p>}
 		</section>
 	)

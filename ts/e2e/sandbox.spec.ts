@@ -20,13 +20,15 @@ test('the sandbox signs in, and its second server stands a customer up', async (
 
 	await page.locator('nav button', { hasText: 'tenants' }).click()
 	await expect(page.locator('h2', { hasText: 'tenants' })).toBeVisible()
-	await expect(page.getByRole('cell', { name: 'contoso', exact: true })).toBeVisible({ timeout: 90_000 })
+	await expect(page.getByRole('cell', { name: /contoso/ })).toBeVisible({ timeout: 90_000 })
 
-	const form = page.locator('.new-tenant form')
+	await page.locator('button.add', { hasText: 'stand one up' }).click()
+	const form = page.locator('.sheet .new-tenant form')
 	await form.locator('input[name=alias]').fill('fabrikam')
 	await form.locator('input[name=who]').fill('admin')
 	await form.locator('button[type=submit]').click()
-	await expect(page.getByRole('cell', { name: 'fabrikam', exact: true })).toBeVisible()
+	await expect(page.locator('.sheet')).toHaveCount(0)
+	await expect(page.getByRole('cell', { name: /fabrikam/ })).toBeVisible()
 
 	// Opening one lands on the tenant itself, named by the head of the sidebar, and
 	// its holders are one click below -- the administrator `Tenant.Add` wrote, read

@@ -33,6 +33,7 @@ import { HostProofService, HostService, MailDomainService } from '#gen/app/host_
  */
 
 import { by, ref as at, said, uuid, when } from './parts.js'
+import { Bar, Fill, Menu, Sheet } from '#lib/ui.js'
 
 export function Hosts(props: {
 	tenant: { id?: Uint8Array; alias?: string } | undefined
@@ -58,11 +59,17 @@ function HostList(props: { tenant: Uint8Array; may: (m: string) => boolean }): R
 	const [gone, setGone] = useState<string[]>([])
 	const [editing, setEditing] = useState<string | null>(null)
 	const [bad, setBad] = useState<string | null>(null)
+	const [adding, openAdd] = useState(false)
+
+	// Over what was read; `HostService` has no `Search`.
+	const [find, setFind] = useState('')
 
 	if (vs.state === 'pending') return <p className="loading">…</p>
 	if (vs.state === 'error') return <p className="bad">{said(vs.error)}</p>
 
-	const items = (vs.data?.items ?? []).filter((v) => !gone.includes(uuid(v.id)))
+	const all = (vs.data?.items ?? []).filter((v) => !gone.includes(uuid(v.id)))
+	const q = find.trim().toLowerCase()
+	const items = q === '' ? all : all.filter((v) => `${v.name} ${v.desc}`.toLowerCase().includes(q))
 
 	return (
 		<section>
@@ -79,7 +86,28 @@ function HostList(props: { tenant: Uint8Array; may: (m: string) => boolean }): R
 				routed the name is the person writing it. <em>proved</em> is which.
 			</p>
 
-			{items.length === 0 && <p className="none">no names yet</p>}
+			<Bar>
+				<input
+					className="find"
+					type="search"
+					aria-label="filter hosts"
+					placeholder={`filter these ${all.length}`}
+					value={find}
+					onChange={(e) => setFind(e.target.value)}
+				/>
+				<Fill />
+				<button
+					className="add"
+					disabled={!props.may('/roster.HostService/Add')}
+					onClick={() => openAdd(true)}
+				>
+					add name
+				</button>
+			</Bar>
+
+			{items.length === 0 && (
+				<p className="none">{all.length === 0 ? 'no names yet' : 'none of these match'}</p>
+			)}
 			{items.length > 0 && (
 				<table>
 					<tbody>
@@ -87,7 +115,7 @@ function HostList(props: { tenant: Uint8Array; may: (m: string) => boolean }): R
 							editing === uuid(v.id) ? (
 								<tr key={uuid(v.id)} className="editing">
 									<td className="mono">{v.name}</td>
-									<td colSpan={3}>
+									<td colSpan={2}>
 										<form
 											className="edit"
 											onSubmit={(e) => {
@@ -116,8 +144,10 @@ function HostList(props: { tenant: Uint8Array; may: (m: string) => boolean }): R
 								</tr>
 							) : (
 							<tr key={uuid(v.id)}>
-								<td className="mono">{v.name}</td>
-								<td>{v.desc}</td>
+								<td className="mono">
+									{v.name}
+									<span className="under">{v.desc}</span>
+								</td>
 								<td>
 									{/* Which road wrote it. Not a gate -- a front door resolves a
 									    name either way -- so this says nothing about the row being
@@ -128,22 +158,25 @@ function HostList(props: { tenant: Uint8Array; may: (m: string) => boolean }): R
 										<span>proved</span>
 									)}
 								</td>
-								<td>
+								<td className="acts">
 									<button disabled={!props.may('/roster.HostService/Update')} onClick={() => setEditing(uuid(v.id))}>
 										edit
 									</button>
-									<button
-										disabled={!props.may('/roster.HostService/Erase')}
-										onClick={() => {
-											setBad(null)
-											void erase
-												.call({ key: { case: 'id', value: v.id } })
-												.then(() => setGone((was) => [...was, uuid(v.id)]))
-												.catch((e: unknown) => setBad(said(e)))
-										}}
-									>
-										remove
-									</button>
+									<Menu label={`more for ${v.name}`}>
+										<button
+											className="danger"
+											disabled={!props.may('/roster.HostService/Erase')}
+											onClick={() => {
+												setBad(null)
+												void erase
+													.call({ key: { case: 'id', value: v.id } })
+													.then(() => setGone((was) => [...was, uuid(v.id)]))
+													.catch((e: unknown) => setBad(said(e)))
+											}}
+										>
+											remove name
+										</button>
+									</Menu>
 								</td>
 							</tr>
 							),
@@ -152,6 +185,9 @@ function HostList(props: { tenant: Uint8Array; may: (m: string) => boolean }): R
 				</table>
 			)}
 
+			{bad !== null && <p className="bad">{bad}</p>}
+
+			<Sheet at={adding} onClose={() => openAdd(false)} title="add a name" bad={bad}>
 			<form
 				onSubmit={(e) => {
 					e.preventDefault()
@@ -167,7 +203,10 @@ function HostList(props: { tenant: Uint8Array; may: (m: string) => boolean }): R
 					// than a silent fix they cannot see (`server/core/host.go`).
 					void add
 						.call({ tenant: at(props.tenant), name, desc: String(f.get('desc') ?? '').trim() })
-						.then(() => form.reset())
+						.then(() => {
+							form.reset()
+							openAdd(false)
+						})
 						.catch((e: unknown) => setBad(said(e)))
 				}}
 			>
@@ -177,7 +216,7 @@ function HostList(props: { tenant: Uint8Array; may: (m: string) => boolean }): R
 					add name
 				</button>
 			</form>
-			{bad !== null && <p className="bad">{bad}</p>}
+			</Sheet>
 		</section>
 	)
 }
@@ -200,6 +239,7 @@ function Claims(props: { tenant: Uint8Array; may: (m: string) => boolean }): Rea
 	const [gone, setGone] = useState<string[]>([])
 	const [bad, setBad] = useState<string | null>(null)
 	const [done, say] = useState<string | null>(null)
+	const [claiming, openClaim] = useState(false)
 
 	if (vs.state === 'pending') return <p className="loading">…</p>
 	if (vs.state === 'error') return <p className="bad">{said(vs.error)}</p>
@@ -229,11 +269,22 @@ function Claims(props: { tenant: Uint8Array; may: (m: string) => boolean }): Rea
 				once, and whoever's value is published has it.
 			</p>
 
+			<Bar>
+				<Fill />
+				<button
+					className="add"
+					disabled={!props.may('/roster.HostProofService/Add')}
+					onClick={() => openClaim(true)}
+				>
+					claim a name
+				</button>
+			</Bar>
+
 			{items.length === 0 && <p className="none">nothing being proved</p>}
 			{items.map((v) => (
 				<div className="claim" key={uuid(v.id)}>
 					<p className="mono">{v.name}</p>
-					<table>
+					<table className="facts">
 						<tbody>
 							<tr>
 								<td>name</td>
@@ -271,15 +322,19 @@ function Claims(props: { tenant: Uint8Array; may: (m: string) => boolean }): Rea
 					>
 						take the name
 					</button>
-					<button
-						disabled={!props.may('/roster.HostProofService/Erase')}
-						onClick={() => drop(v.id)}
-					>
-						give up
-					</button>
+					<Menu label={`more for ${v.name}`}>
+						<button
+							className="danger"
+							disabled={!props.may('/roster.HostProofService/Erase')}
+							onClick={() => drop(v.id)}
+						>
+							give up this claim
+						</button>
+					</Menu>
 				</div>
 			))}
 
+			<Sheet at={claiming} onClose={() => openClaim(false)} title="claim a name" bad={bad}>
 			<form
 				onSubmit={(e) => {
 					e.preventDefault()
@@ -295,7 +350,10 @@ function Claims(props: { tenant: Uint8Array; may: (m: string) => boolean }): Rea
 					// reason `server/core/hostproof.go` gives.
 					void add
 						.call({ tenant: at(props.tenant), name })
-						.then(() => form.reset())
+						.then(() => {
+							form.reset()
+							openClaim(false)
+						})
 						.catch((e: unknown) => setBad(said(e)))
 				}}
 			>
@@ -304,6 +362,7 @@ function Claims(props: { tenant: Uint8Array; may: (m: string) => boolean }): Rea
 					claim a name
 				</button>
 			</form>
+			</Sheet>
 			{done !== null && <p className="note">{done}</p>}
 			{bad !== null && <p className="bad">{bad}</p>}
 		</section>

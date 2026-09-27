@@ -14,6 +14,8 @@
  * stripped by the recorder, and a table is the wrong place for them.
  */
 
+import { useState } from 'react'
+
 import { pdid } from '@lesomnus/payday'
 import { useQuery } from '@lesomnus/payday/react'
 
@@ -21,6 +23,7 @@ import { AuditService } from '#gen/roster/payday/audit_svc_pb.js'
 import '#gen/domains.js'
 
 import { Alias, said, uuid } from './parts.js'
+import { Bar } from '#lib/ui.js'
 
 /** names is every domain this app registered, by number, so a row can say what it was about. */
 const names = new Map<number, string>()
@@ -50,10 +53,22 @@ function Rows(props: { tenant: Uint8Array }): React.ReactNode {
 		size: 100,
 	})
 
+	// Over what was read, and the placeholder says how much that is. `Audit` is a
+	// hundred rows here (`size` above) and there is no search of the archive, so a
+	// box that passed for one would be saying the trail is shorter than it is.
+	const [find, setFind] = useState('')
+
 	if (vs.state === 'pending') return <p className="loading">…</p>
 	if (vs.state === 'error') return <p className="bad">{said(vs.error)}</p>
 
-	const items = vs.data?.items ?? []
+	const all = vs.data?.items ?? []
+	const q = find.trim().toLowerCase()
+	const items =
+		q === ''
+			? all
+			: all.filter((v) =>
+					`${v.action} ${names.get(v.domain) ?? ''} ${when(v.dateCreated)}`.toLowerCase().includes(q),
+				)
 
 	return (
 		<section>
@@ -62,7 +77,20 @@ function Rows(props: { tenant: Uint8Array }): React.ReactNode {
 				their people on another customer's rows is recorded under that customer;
 				this is the half about <em>these</em> rows.
 			</p>
-			{items.length === 0 && <p className="none">nothing recorded yet</p>}
+			<Bar>
+				<input
+					className="find"
+					type="search"
+					aria-label="filter the trail"
+					placeholder={`filter these ${all.length}`}
+					value={find}
+					onChange={(e) => setFind(e.target.value)}
+				/>
+			</Bar>
+
+			{items.length === 0 && (
+				<p className="none">{all.length === 0 ? 'nothing recorded yet' : 'none of these match'}</p>
+			)}
 			{items.length > 0 && (
 				<table>
 					<thead>
@@ -76,7 +104,10 @@ function Rows(props: { tenant: Uint8Array }): React.ReactNode {
 					<tbody>
 						{items.map((v) => (
 							<tr key={uuid(v.id)}>
-								<td className="mono dim">{when(v.dateCreated)}</td>
+								{/* One width whatever the stamp says: `toISOString` is fixed
+							    length and the digits are tabular, so the column beside it does
+							    not move as rows arrive. */}
+							<td className="mono dim">{when(v.dateCreated)}</td>
 								<td>
 									<Alias id={v.actorId.length === 16 ? v.actorId : undefined} />
 								</td>

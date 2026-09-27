@@ -58,6 +58,7 @@ import { EmailService } from '#gen/app/email_svc_pb.js'
 import { IdentityService } from '#gen/app/identity_svc_pb.js'
 import type { Writes } from '#lib/client.js'
 import { expiries, expiresAt, until } from '#lib/expiry.js'
+import { Bar, Fill, Menu, Sheet } from '#lib/ui.js'
 
 import { uuid } from './parts.js'
 
@@ -129,32 +130,62 @@ export function Holders(props: {
 	// list query is not revalidated by a write this page made, and somebody who
 	// vanished until a reload would read as somebody who was not created.
 	const [made, setMade] = useState<Holder[]>([])
+	const [adding, openAdd] = useState(false)
+
+	// Over what was read; the list is a page and `Holder.Search` is the server's
+	// own, so this narrows what is on screen rather than passing for that.
+	const [find, setFind] = useState('')
 
 	if (vs.state === 'pending') return <p className="loading">…</p>
 	if (vs.state === 'error') return <Failed at={vs.error} />
 
 	const at = props.at
 	const read = vs.data?.items ?? []
-	const items = [...read, ...made.filter((v) => !read.some((w) => uuid(w.id) === uuid(v.id)))]
+	const all = [...read, ...made.filter((v) => !read.some((w) => uuid(w.id) === uuid(v.id)))]
 		.filter((v) => !gone.includes(uuid(v.id)))
+	const q = find.trim().toLowerCase()
+	const items = q === '' ? all : all.filter((v) => `${v.alias} ${v.name}`.toLowerCase().includes(q))
 
 	return (
 		<section className="within">
 			<h3>{props.tenant?.alias}</h3>
 
-			<NewHolder
-				tenant={id}
-				may={props.may}
-				onMade={(v) => setMade((was) => [...was, v])}
-			/>
+			<Bar>
+				<input
+					className="find"
+					type="search"
+					aria-label="filter holders"
+					placeholder={`filter these ${all.length}`}
+					value={find}
+					onChange={(e) => setFind(e.target.value)}
+				/>
+				<Fill />
+				<button className="add" disabled={!props.may('/roster.HolderService/Add')} onClick={() => openAdd(true)}>
+					add somebody
+				</button>
+			</Bar>
 
-			{items.length === 0 && <p className="none">nobody in it</p>}
+			{items.length === 0 && (
+				<p className="none">{all.length === 0 ? 'nobody in it' : 'none of these match'}</p>
+			)}
+
+			{/* No `bad` here: `NewHolder` keeps its own, beside its own button. */}
+			<Sheet at={adding} onClose={() => openAdd(false)} title="add somebody to this tenant">
+				<NewHolder
+					tenant={id}
+					may={props.may}
+					onMade={(v) => {
+						setMade((was) => [...was, v])
+						openAdd(false)
+					}}
+				/>
+			</Sheet>
+
 
 			<table>
 				<thead>
 					<tr>
-						<th>alias</th>
-						<th>name</th>
+						<th>alias, and who they are</th>
 						<th>since</th>
 						<th />
 					</tr>
@@ -165,10 +196,12 @@ export function Holders(props: {
 
 						return (
 							<tr key={uuid(v.id)} className={who === at ? 'at' : ''}>
-								<td>{v.alias}</td>
-								<td>{v.name}</td>
-								<td>{when(v.dateCreated)}</td>
 								<td>
+									{v.alias}
+									<span className="under">{v.name}</span>
+								</td>
+								<td>{when(v.dateCreated)}</td>
+								<td className="acts">
 									<button onClick={() => props.onOpen(who === at ? null : who)}>
 										{who === at ? 'hide' : 'signs in with'}
 									</button>
@@ -341,45 +374,18 @@ export function Person(props: {
 			</div>
 
 			<div className="acts">
-				{/* Suspending and reinstating are two grants on purpose: a role
-				    is a list of methods, so a deployment can only hand out what
-				    it can name. */}
-				{disabled ? (
-					<button
-						disabled={!props.may('/roster.HolderService/Enable')}
-						onClick={() => run(props.writes.holder.enable({ ref: who }), 'signing in is open again')}
-					>
-						reinstate
-					</button>
-				) : (
-					<button
-						disabled={!props.may('/roster.HolderService/Disable')}
-						onClick={() => run(props.writes.holder.disable({ ref: who }), 'suspended')}
-					>
-						suspend
-					</button>
-				)}
+				{/* What somebody administering this person does often, and the rest behind
+				    the menu. The three in there are the ones that take something away:
+				    suspending, voiding what is already issued, and erasing. None of them is
+				    a thing to reach by accident on a screen somebody opened to reset a
+				    password. */}
 
-				{/* One write, and there is no undo by construction: the server
-				    stamps the moment and nothing can write an older one. */}
-				<button
-					disabled={!props.may('/roster.HolderService/Invalidate')}
-					onClick={() =>
-						run(
-							props.writes.holder.invalidate({ ref: who }),
-							'everything issued before now is void',
-						)
-					}
-				>
-					sign out everywhere
-				</button>
+				{/* Generated here and answered with once. There is no field to type one
+				    into, and that is the point.
 
-				{/* Generated here and answered with once. There is no field to
-				    type one into, and that is the point.
-
-				    `Credential.Issue` -- it was `Vouch.Reset`, and it is the
-				    same call an operator of the deployment makes about a new
-				    operator, which is `service` instead of `ref`. */}
+				    `Credential.Issue` -- it was `Vouch.Reset`, and it is the same call an
+				    operator of the deployment makes about a new operator, which is
+				    `service` instead of `ref`. */}
 				<button
 					disabled={!props.may('/roster.CredentialService/Issue')}
 					onClick={() => {
@@ -396,9 +402,9 @@ export function Person(props: {
 				</button>
 
 				{/* A lockout releases itself after fifteen minutes, so this is a
-				    convenience — and it is also the answer to what locking by
-				    name costs: an account can be held closed by somebody else,
-				    and a person on site can simply open it. */}
+				    convenience — and it is also the answer to what locking by name costs:
+				    an account can be held closed by somebody else, and a person on site can
+				    simply open it. */}
 				<button
 					disabled={!props.may('/roster.CredentialService/Unlock')}
 					onClick={() =>
@@ -409,28 +415,65 @@ export function Person(props: {
 				</button>
 
 				{/* A second factor made **for** somebody: the operator's half of
-				    `Credential.Enrol`, for a hardware key issued in an air gap or
-				    a phone set up at a desk. The seed is answered once, like a
-				    password, and the factor does not count until one code proves
-				    it. Held to `mayReach`, like every credential write. */}
+				    `Credential.Enrol`, for a hardware key issued in an air gap or a phone
+				    set up at a desk. The seed is answered once, like a password, and the
+				    factor does not count until one code proves it. Held to `mayReach`, like
+				    every credential write. */}
 				<EnrolFor holder={key} writes={props.writes} may={props.may} say={say} />
 
-				{/* Soft: the row stays for the trail and vanishes from every
-				    read. There is no undo drawn, because there is no undo. */}
-				<button
-					className="danger"
-					disabled={!props.may('/roster.HolderService/Erase')}
-					onClick={() => {
-						if (!window.confirm(`erase ${props.holder?.alias ?? 'them'}? they vanish from every read; the trail keeps what they did`)) return
-						say(null)
-						void props.writes.holder
-							.erase(who)
-							.then(() => props.onErased?.())
-							.catch((e: unknown) => say({ kind: 'bad', text: e instanceof Error ? e.message : 'no' }))
-					}}
-				>
-					erase
-				</button>
+				<Menu label={`more for ${props.holder?.alias ?? 'them'}`}>
+					{/* Suspending and reinstating are two grants on purpose: a role is a
+					    list of methods, so a deployment can only hand out what it can
+					    name. */}
+					{disabled ? (
+						<button
+							disabled={!props.may('/roster.HolderService/Enable')}
+							onClick={() => run(props.writes.holder.enable({ ref: who }), 'signing in is open again')}
+						>
+							reinstate
+						</button>
+					) : (
+						<button
+							className="danger"
+							disabled={!props.may('/roster.HolderService/Disable')}
+							onClick={() => run(props.writes.holder.disable({ ref: who }), 'suspended')}
+						>
+							suspend
+						</button>
+					)}
+
+					{/* One write, and there is no undo by construction: the server stamps
+					    the moment and nothing can write an older one. */}
+					<button
+						className="danger"
+						disabled={!props.may('/roster.HolderService/Invalidate')}
+						onClick={() =>
+							run(
+								props.writes.holder.invalidate({ ref: who }),
+								'everything issued before now is void',
+							)
+						}
+					>
+						sign out everywhere
+					</button>
+
+					{/* Soft: the row stays for the trail and vanishes from every read.
+					    There is no undo drawn, because there is no undo. */}
+					<button
+						className="danger"
+						disabled={!props.may('/roster.HolderService/Erase')}
+						onClick={() => {
+							if (!window.confirm(`erase ${props.holder?.alias ?? 'them'}? they vanish from every read; the trail keeps what they did`)) return
+							say(null)
+							void props.writes.holder
+								.erase(who)
+								.then(() => props.onErased?.())
+								.catch((e: unknown) => say({ kind: 'bad', text: e instanceof Error ? e.message : 'no' }))
+						}}
+					>
+						erase
+					</button>
+				</Menu>
 			</div>
 
 			{said?.kind === 'secret' && (
