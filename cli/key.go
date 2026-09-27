@@ -180,7 +180,7 @@ func mintingOf(cl *xli.Command) (minting, error) {
 // mint writes the row on `at`, hung off `who`, and prints the token once.
 //
 // The plane is the caller's to have decided, and the prefix travels with it:
-// it is never something anybody names -- `issue.proto` is explicit that a
+// it is never something anybody names -- `apikey_svc.ext.proto` is explicit that a
 // caller who could name one could ask the customer-facing door for the
 // deployment's own kind.
 func (m minting) mint(ctx context.Context, at app.Server, who pdid.Id, prefix string, whose string) error {

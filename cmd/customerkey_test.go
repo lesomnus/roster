@@ -109,7 +109,7 @@ func TestTheCliMintsACustomersKey(t *testing.T) {
 		"--tenant", "newco", "--holder", "admin", "--allow", "/roster.*/*")
 
 	// The prefix is a fact about which plane answered and never something a
-	// caller names; `issue.proto` says why. Here it is a fact about which flags
+	// caller names; `apikey_svc.ext.proto` says why. Here it is a fact about which flags
 	// were given, which is the same decision made one layer out.
 	x.True(strings.HasPrefix(token, keys.PrefixTenant),
 		"the customer's key is the deployment's own kind: %q", token)

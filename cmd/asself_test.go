@@ -448,7 +448,7 @@ func (b *built) inTeam(t *testing.T, ctx context.Context, who, team, role pdid.I
 //
 
 // TestNobodyEnrolsASecondFactorOnSomebodyWiderThanThey is item 11's rule at the
-// door `Enrol` opened, and `operate.go` says why it belongs there: *adding a
+// door `Enrol` opened, and `escalate.go` says why it belongs there: *adding a
 // way in for somebody is not quite writing their credential, and it is close
 // enough.*
 //
