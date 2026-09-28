@@ -1111,6 +1111,19 @@ func Public(method string) bool {
 		return true
 	}
 
+	// And what the form is, which a page has to know before it draws one. A
+	// caller asking how to sign in has not signed in, which is `SignIn`'s
+	// argument exactly.
+	//
+	// It costs less than `SignIn` does, and the reason is the subject: this one
+	// answers about **the tenant the request arrived at**, with no field to point
+	// it elsewhere, so there is nothing here to enumerate. The same fact the
+	// account app's `GET /providers` has answered anonymously at a tenant's own
+	// host for as long as it existed.
+	if method == app.AuthService_Offers_FullMethodName {
+		return true
+	}
+
 	return auth.PublicDefault(method)
 }
 

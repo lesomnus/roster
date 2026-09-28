@@ -11,7 +11,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/auth.proto.
  */
 export const file_app_auth: GenFile = /*@__PURE__*/
-  fileDesc("Cg5hcHAvYXV0aC5wcm90bxIGcm9zdGVyIjQKEUF1dGhTaWduSW5SZXF1ZXN0Eg0KBWFsaWFzGAEgASgJEhAKCHBhc3N3b3JkGAIgASgJIhQKEkF1dGhTaWduSW5SZXNwb25zZSIUChJBdXRoU2lnbk91dFJlcXVlc3QiFQoTQXV0aFNpZ25PdXRSZXNwb25zZTKSAQoLQXV0aFNlcnZpY2USPwoGU2lnbkluEhkucm9zdGVyLkF1dGhTaWduSW5SZXF1ZXN0Ghoucm9zdGVyLkF1dGhTaWduSW5SZXNwb25zZRJCCgdTaWduT3V0Ehoucm9zdGVyLkF1dGhTaWduT3V0UmVxdWVzdBobLnJvc3Rlci5BdXRoU2lnbk91dFJlc3BvbnNlQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac");
+  fileDesc("Cg5hcHAvYXV0aC5wcm90bxIGcm9zdGVyIjQKEUF1dGhTaWduSW5SZXF1ZXN0Eg0KBWFsaWFzGAEgASgJEhAKCHBhc3N3b3JkGAIgASgJIhQKEkF1dGhTaWduSW5SZXNwb25zZSIUChJBdXRoU2lnbk91dFJlcXVlc3QiFQoTQXV0aFNpZ25PdXRSZXNwb25zZSITChFBdXRoT2ZmZXJzUmVxdWVzdCImChJBdXRoT2ZmZXJzUmVzcG9uc2USEAoIcGFzc3dvcmQYASABKAgy0wEKC0F1dGhTZXJ2aWNlEj8KBlNpZ25JbhIZLnJvc3Rlci5BdXRoU2lnbkluUmVxdWVzdBoaLnJvc3Rlci5BdXRoU2lnbkluUmVzcG9uc2USQgoHU2lnbk91dBIaLnJvc3Rlci5BdXRoU2lnbk91dFJlcXVlc3QaGy5yb3N0ZXIuQXV0aFNpZ25PdXRSZXNwb25zZRI/CgZPZmZlcnMSGS5yb3N0ZXIuQXV0aE9mZmVyc1JlcXVlc3QaGi5yb3N0ZXIuQXV0aE9mZmVyc1Jlc3BvbnNlQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac");
 
 /**
  * @generated from message roster.AuthSignInRequest
@@ -92,6 +92,47 @@ export type AuthSignOutResponse = Message<"roster.AuthSignOutResponse"> & {
  */
 export const AuthSignOutResponseSchema: GenMessage<AuthSignOutResponse> = /*@__PURE__*/
   messageDesc(file_app_auth, 3);
+
+/**
+ * AuthOffersRequest is empty for the reason [AuthSignInRequest] has no tenant
+ * field: which tenant is the name the browser arrived at, and a field would be a
+ * caller asking to be told about one it did not arrive at.
+ *
+ * @generated from message roster.AuthOffersRequest
+ */
+export type AuthOffersRequest = Message<"roster.AuthOffersRequest"> & {
+};
+
+/**
+ * Describes the message roster.AuthOffersRequest.
+ * Use `create(AuthOffersRequestSchema)` to create a new message.
+ */
+export const AuthOffersRequestSchema: GenMessage<AuthOffersRequest> = /*@__PURE__*/
+  messageDesc(file_app_auth, 4);
+
+/**
+ * @generated from message roster.AuthOffersResponse
+ */
+export type AuthOffersResponse = Message<"roster.AuthOffersResponse"> & {
+  /**
+   * Whether a password is a way in here.
+   *
+   * `TenantConfig.password`, as roster enforces it, and not the page's guess.
+   * False means every answer to a password form is refused, so the form is not
+   * drawn -- which is the **consequence** of the switch rather than the feature,
+   * the distinction `docs/login.md` § *A tenant with no passwords* draws.
+   *
+   * @generated from field: bool password = 1;
+   */
+  password: boolean;
+};
+
+/**
+ * Describes the message roster.AuthOffersResponse.
+ * Use `create(AuthOffersResponseSchema)` to create a new message.
+ */
+export const AuthOffersResponseSchema: GenMessage<AuthOffersResponse> = /*@__PURE__*/
+  messageDesc(file_app_auth, 5);
 
 /**
  * AuthService is how an operator gets a credential, and gives it up.
@@ -209,6 +250,51 @@ export const AuthService: GenService<{
     methodKind: "unary";
     input: typeof AuthSignOutRequestSchema;
     output: typeof AuthSignOutResponseSchema;
+  },
+  /**
+   * Offers is what this name lets somebody in with, asked before the form is
+   * drawn.
+   *
+   * # Why a page has to ask
+   *
+   * Because `TenantConfig.password` is a fact roster enforces, and `Verify`
+   * refuses a password for a tenant that has it off **with the same answer as a
+   * wrong one**. `server/vouch/vouch.go` argues that at length and ends the
+   * paragraph with *the app that draws the form was told by `/flow` and has no
+   * form to draw* -- which is true of the Login App, true of the account app
+   * (`GET /providers` carries `password`), and was not true of the user console.
+   * That page drew the form unconditionally, so for such a tenant it offered one
+   * every answer to which was refused, and said only "no".
+   *
+   * So this is the third copy of a question two surfaces already ask, and the
+   * first one that is on the wire rather than in an app's own HTTP.
+   *
+   * # Why it is a method here and not a route
+   *
+   * `cmd.serveHttp` deleted `POST /session` and wrote down why: *whatever a
+   * listener serves over HTTP now is a service registered on its own `g`, and
+   * there is nowhere for a second answer to hide.* A hand-written `/providers`
+   * beside the page would be that again.
+   *
+   * And it cannot be a generated verb. `TenantService.Get` is the read this
+   * wants, but the wall **refuses** a frameless call rather than narrowing it,
+   * and a caller who has not signed in has no frame -- so the one method that
+   * could answer is the one no anonymous caller may reach. `Public` is per
+   * method and cannot say *this row, these fields*.
+   *
+   * # It answers about the tenant, never about a person
+   *
+   * Which is what makes it safe to leave open. The subject is the name the
+   * request arrived at, exactly as `SignIn`'s is, and there is no field to point
+   * it somewhere else. What comes back is the same fact `GET /providers` has
+   * answered anonymously at a tenant's own host for as long as it existed.
+   *
+   * @generated from rpc roster.AuthService.Offers
+   */
+  offers: {
+    methodKind: "unary";
+    input: typeof AuthOffersRequestSchema;
+    output: typeof AuthOffersResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_app_auth, 0);

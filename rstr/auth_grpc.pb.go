@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	AuthService_SignIn_FullMethodName  = "/roster.AuthService/SignIn"
 	AuthService_SignOut_FullMethodName = "/roster.AuthService/SignOut"
+	AuthService_Offers_FullMethodName  = "/roster.AuthService/Offers"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -124,6 +125,43 @@ type AuthServiceClient interface {
 	// that had it, immediately, which is the thing a self-contained token cannot
 	// do.
 	SignOut(ctx context.Context, in *AuthSignOutRequest, opts ...grpc.CallOption) (*AuthSignOutResponse, error)
+	// Offers is what this name lets somebody in with, asked before the form is
+	// drawn.
+	//
+	// # Why a page has to ask
+	//
+	// Because `TenantConfig.password` is a fact roster enforces, and `Verify`
+	// refuses a password for a tenant that has it off **with the same answer as a
+	// wrong one**. `server/vouch/vouch.go` argues that at length and ends the
+	// paragraph with *the app that draws the form was told by `/flow` and has no
+	// form to draw* -- which is true of the Login App, true of the account app
+	// (`GET /providers` carries `password`), and was not true of the user console.
+	// That page drew the form unconditionally, so for such a tenant it offered one
+	// every answer to which was refused, and said only "no".
+	//
+	// So this is the third copy of a question two surfaces already ask, and the
+	// first one that is on the wire rather than in an app's own HTTP.
+	//
+	// # Why it is a method here and not a route
+	//
+	// `cmd.serveHttp` deleted `POST /session` and wrote down why: *whatever a
+	// listener serves over HTTP now is a service registered on its own `g`, and
+	// there is nowhere for a second answer to hide.* A hand-written `/providers`
+	// beside the page would be that again.
+	//
+	// And it cannot be a generated verb. `TenantService.Get` is the read this
+	// wants, but the wall **refuses** a frameless call rather than narrowing it,
+	// and a caller who has not signed in has no frame -- so the one method that
+	// could answer is the one no anonymous caller may reach. `Public` is per
+	// method and cannot say *this row, these fields*.
+	//
+	// # It answers about the tenant, never about a person
+	//
+	// Which is what makes it safe to leave open. The subject is the name the
+	// request arrived at, exactly as `SignIn`'s is, and there is no field to point
+	// it somewhere else. What comes back is the same fact `GET /providers` has
+	// answered anonymously at a tenant's own host for as long as it existed.
+	Offers(ctx context.Context, in *AuthOffersRequest, opts ...grpc.CallOption) (*AuthOffersResponse, error)
 }
 
 type authServiceClient struct {
@@ -148,6 +186,16 @@ func (c *authServiceClient) SignOut(ctx context.Context, in *AuthSignOutRequest,
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AuthSignOutResponse)
 	err := c.cc.Invoke(ctx, AuthService_SignOut_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) Offers(ctx context.Context, in *AuthOffersRequest, opts ...grpc.CallOption) (*AuthOffersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuthOffersResponse)
+	err := c.cc.Invoke(ctx, AuthService_Offers_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -255,6 +303,43 @@ type AuthServiceServer interface {
 	// that had it, immediately, which is the thing a self-contained token cannot
 	// do.
 	SignOut(context.Context, *AuthSignOutRequest) (*AuthSignOutResponse, error)
+	// Offers is what this name lets somebody in with, asked before the form is
+	// drawn.
+	//
+	// # Why a page has to ask
+	//
+	// Because `TenantConfig.password` is a fact roster enforces, and `Verify`
+	// refuses a password for a tenant that has it off **with the same answer as a
+	// wrong one**. `server/vouch/vouch.go` argues that at length and ends the
+	// paragraph with *the app that draws the form was told by `/flow` and has no
+	// form to draw* -- which is true of the Login App, true of the account app
+	// (`GET /providers` carries `password`), and was not true of the user console.
+	// That page drew the form unconditionally, so for such a tenant it offered one
+	// every answer to which was refused, and said only "no".
+	//
+	// So this is the third copy of a question two surfaces already ask, and the
+	// first one that is on the wire rather than in an app's own HTTP.
+	//
+	// # Why it is a method here and not a route
+	//
+	// `cmd.serveHttp` deleted `POST /session` and wrote down why: *whatever a
+	// listener serves over HTTP now is a service registered on its own `g`, and
+	// there is nowhere for a second answer to hide.* A hand-written `/providers`
+	// beside the page would be that again.
+	//
+	// And it cannot be a generated verb. `TenantService.Get` is the read this
+	// wants, but the wall **refuses** a frameless call rather than narrowing it,
+	// and a caller who has not signed in has no frame -- so the one method that
+	// could answer is the one no anonymous caller may reach. `Public` is per
+	// method and cannot say *this row, these fields*.
+	//
+	// # It answers about the tenant, never about a person
+	//
+	// Which is what makes it safe to leave open. The subject is the name the
+	// request arrived at, exactly as `SignIn`'s is, and there is no field to point
+	// it somewhere else. What comes back is the same fact `GET /providers` has
+	// answered anonymously at a tenant's own host for as long as it existed.
+	Offers(context.Context, *AuthOffersRequest) (*AuthOffersResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -270,6 +355,9 @@ func (UnimplementedAuthServiceServer) SignIn(context.Context, *AuthSignInRequest
 }
 func (UnimplementedAuthServiceServer) SignOut(context.Context, *AuthSignOutRequest) (*AuthSignOutResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SignOut not implemented")
+}
+func (UnimplementedAuthServiceServer) Offers(context.Context, *AuthOffersRequest) (*AuthOffersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Offers not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 func (UnimplementedAuthServiceServer) testEmbeddedByValue()                     {}
@@ -328,6 +416,24 @@ func _AuthService_SignOut_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_Offers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthOffersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).Offers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_Offers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).Offers(ctx, req.(*AuthOffersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuthService_ServiceDesc is the grpc.ServiceDesc for AuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -342,6 +448,10 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SignOut",
 			Handler:    _AuthService_SignOut_Handler,
+		},
+		{
+			MethodName: "Offers",
+			Handler:    _AuthService_Offers_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
