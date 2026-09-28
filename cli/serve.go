@@ -155,11 +155,22 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 			// others, so a front door that cannot come up is a start-up failure
 			// rather than a deployment that is half there.
 			if c.Account.Serves() {
-				ac, err := frontDoor(c, l)
+				ac, err := frontDoor(ctx, c, l, s)
 				if err != nil {
 					return err
 				}
-				g.Go(func() error { return serveAccount(ctx, ac) })
+
+				// **Nobody to front, so it stays off and the rest serves**, for
+				// the reason the Login App below gives: with `account.keys`
+				// unsaid the keys are made here, one per tenant with a name,
+				// and a fresh deployment has no names yet. The next start
+				// finds them. `roster account serve` still refuses with none.
+				if len(ac.Keys) == 0 {
+					slog.Warn("account: no tenant has a `Host` row yet, so there is nobody to front and the app is not serving; " +
+						"a tenant registers a name and the next start fronts it")
+				} else {
+					g.Go(func() error { return serveAccount(ctx, ac) })
+				}
 			}
 			if c.Ldap.Serves() {
 				lc, err := directory(c, l)
@@ -169,7 +180,7 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 				g.Go(func() error { return serveLdap(ctx, lc) })
 			}
 			if c.Login.Serves() {
-				gc, err := loginApp(c, l)
+				gc, err := loginApp(ctx, c, l, s)
 				if err != nil {
 					return err
 				}
@@ -237,9 +248,16 @@ func Migrate(ctx context.Context, s *cmd.Server) error {
 // goes out on a socket, with a key, and comes back through the wall, exactly as
 // it does from a process of its own.
 //
+// And the keys, when nothing names any: made here at start, one per tenant
+// with a `Host` row, and kept in memory -- the rows `roster account provision`
+// writes, without the file (`cli/provision.go`). One replica, which is the
+// reading `account.seal` gives an empty value. A deployment that wrote a key
+// down is left exactly as it was, and one that wrote a reference that resolves
+// to nothing is refused rather than quietly given a fresh key over it.
+//
 // `l` rather than `c.Server.ListenAddr()` because a configuration may name port
 // 0 and a listener knows what it got.
-func frontDoor(c *cmd.Config, l net.Listener) (cmd.AccountConfig, error) {
+func frontDoor(ctx context.Context, c *cmd.Config, l net.Listener, s *cmd.Server) (cmd.AccountConfig, error) {
 	ac := c.Account
 	if ac.Roster == "" {
 		ac.Roster = l.Addr().String()
@@ -256,10 +274,23 @@ func frontDoor(c *cmd.Config, l net.Listener) (cmd.AccountConfig, error) {
 	}
 
 	keys, err := keysOf(c.Account.Keys, AccountKeyPrefix, nil)
-	if err != nil {
+	switch {
+	case err == nil:
+		ac.Keys = keys
+
+	case errors.Is(err, errNoKeys):
+		made, err := provisionAccount(ctx, s, ac.Enrol, "")
+		if err != nil {
+			return ac, fmt.Errorf("account.keys: none named, and making them here: %w", err)
+		}
+		ac.Keys = made
+		if len(made) > 0 {
+			slog.Warn(fmt.Sprintf("account: keys made at start for %d tenant(s), which is one replica; account.keys names ones to share", len(made)))
+		}
+
+	default:
 		return ac, err
 	}
-	ac.Keys = keys
 
 	return ac, nil
 }
@@ -272,15 +303,32 @@ func frontDoor(c *cmd.Config, l net.Listener) (cmd.AccountConfig, error) {
 // written yet so that a first start could come up at all. A deployment key needs
 // no tenant to exist, so that whole cycle is gone.
 //
-// A key that is not there yet is still **not** a refusal here, for the reason the
-// caller below gives: this is `roster serve`, where the Login App is one of four
-// things in the process, and the one that refuses is `roster login serve`.
-func loginApp(c *cmd.Config, l net.Listener) (cmd.LoginConfig, error) {
+// Nothing named is a key made here at start, with the nominations that go with
+// it -- what `roster login provision` writes, without the file -- which is one
+// replica, and needs the control plane an `rk_` lives in. A `file:` that is not
+// there yet is still **not** a refusal, for the reason the caller gives: this is
+// `roster serve`, where the Login App is one of four things in the process, and
+// the one that refuses is `roster login serve`.
+func loginApp(ctx context.Context, c *cmd.Config, l net.Listener, s *cmd.Server) (cmd.LoginConfig, error) {
 	gc := c.Login
 	if gc.Roster == "" {
 		gc.Roster = l.Addr().String()
 	}
 	if gc.Key == "" {
+		if s == nil || s.Control == nil {
+			return gc, nil
+		}
+
+		token, err := provisionKey(ctx, s, "")
+		if err != nil {
+			return gc, fmt.Errorf("login.key: none named, and making one here: %w", err)
+		}
+		if _, err := nominate(ctx, s, loginMethodsFor(gc.Enrol)); err != nil {
+			return gc, fmt.Errorf("login.key: none named, and making one here: %w", err)
+		}
+		gc.Key = token
+		slog.Warn("login: key made at start, which is one replica; login.key names one to share")
+
 		return gc, nil
 	}
 
