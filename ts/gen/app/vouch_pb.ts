@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/vouch.proto.
  */
 export const file_app_vouch: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJGCghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCSI/CgpWb3VjaENsYWltEg4KBnRlbmFudBgBIAEoDBIQCghwcm92aWRlchgCIAEoCRIPCgdzdWJqZWN0GAMgASgJIl8KElZvdWNoVmVyaWZ5UmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSDAoEbmFtZRgFIAEoCSJyCgtWb3VjaEZhY3RvchIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSMAoMbG9ja2VkX3VudGlsGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIVCg1jcmVkZW50aWFsX2lkGAkgASgJIsQBChNWb3VjaFZlcmlmeVJlc3BvbnNlEgoKAm9rGAEgASgIEg4KBmhvbGRlchgCIAEoDBIOCgZ0ZW5hbnQYAyABKAwSMAoMbG9ja2VkX3VudGlsGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIRCglzYXRpc2ZpZWQYCiADKAkSJgoJYXZhaWxhYmxlGAsgAygLMhMucm9zdGVyLlZvdWNoRmFjdG9yEhQKDGNvbnRpbnVhdGlvbhgMIAEoCSJYChRWb3VjaENvbnRpbnVlUmVxdWVzdBIUCgxjb250aW51YXRpb24YASABKAkSDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSDAoEbmFtZRgFIAEoCSJGChVWb3VjaENvbnRpbnVlUmVzcG9uc2USLQoIdmVyaWZpZWQYASABKAsyGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZSK1AQoUVm91Y2hEZWxlZ2F0ZVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMEhQKDGNvbnRpbnVhdGlvbhgMIAEoCRIMCgRuYW1lGAUgASgJEg8KB21ldGhvZHMYCiADKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAidQoSVm91Y2hBY2NlcHRSZXF1ZXN0EiEKBWNsYWltGAEgASgLMhIucm9zdGVyLlZvdWNoQ2xhaW0SDwoHbWV0aG9kcxgCIAMoCRIrCgdleHBpcmVzGAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKCAQoVVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlEi0KCHZlcmlmaWVkGAEgASgLMhsucm9zdGVyLlZvdWNoVmVyaWZ5UmVzcG9uc2USDQoFdG9rZW4YCiABKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiXgoQVm91Y2hMaW5rUmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiTwoRVm91Y2hMaW5rUmVzcG9uc2USDQoFdG9rZW4YASABKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiYQoSVm91Y2hSZWRlZW1SZXF1ZXN0Eg0KBXRva2VuGAEgASgJEg8KB21ldGhvZHMYCiADKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAyqgMKDFZvdWNoU2VydmljZRJBCgZWZXJpZnkSGi5yb3N0ZXIuVm91Y2hWZXJpZnlSZXF1ZXN0Ghsucm9zdGVyLlZvdWNoVmVyaWZ5UmVzcG9uc2USRwoIRGVsZWdhdGUSHC5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlEjsKBExpbmsSGC5yb3N0ZXIuVm91Y2hMaW5rUmVxdWVzdBoZLnJvc3Rlci5Wb3VjaExpbmtSZXNwb25zZRJDCgZSZWRlZW0SGi5yb3N0ZXIuVm91Y2hSZWRlZW1SZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoRGVsZWdhdGVSZXNwb25zZRJHCghDb250aW51ZRIcLnJvc3Rlci5Wb3VjaENvbnRpbnVlUmVxdWVzdBodLnJvc3Rlci5Wb3VjaENvbnRpbnVlUmVzcG9uc2USQwoGQWNjZXB0Ehoucm9zdGVyLlZvdWNoQWNjZXB0UmVxdWVzdBodLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVzcG9uc2VCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp]);
+  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJGCghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCSI/CgpWb3VjaENsYWltEg4KBnRlbmFudBgBIAEoDBIQCghwcm92aWRlchgCIAEoCRIPCgdzdWJqZWN0GAMgASgJIl8KElZvdWNoVmVyaWZ5UmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSDAoEbmFtZRgFIAEoCSJyCgtWb3VjaEZhY3RvchIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSMAoMbG9ja2VkX3VudGlsGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIVCg1jcmVkZW50aWFsX2lkGAkgASgJIsQBChNWb3VjaFZlcmlmeVJlc3BvbnNlEgoKAm9rGAEgASgIEg4KBmhvbGRlchgCIAEoDBIOCgZ0ZW5hbnQYAyABKAwSMAoMbG9ja2VkX3VudGlsGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIRCglzYXRpc2ZpZWQYCiADKAkSJgoJYXZhaWxhYmxlGAsgAygLMhMucm9zdGVyLlZvdWNoRmFjdG9yEhQKDGNvbnRpbnVhdGlvbhgMIAEoCSJYChRWb3VjaENvbnRpbnVlUmVxdWVzdBIUCgxjb250aW51YXRpb24YASABKAkSDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSDAoEbmFtZRgFIAEoCSJGChVWb3VjaENvbnRpbnVlUmVzcG9uc2USLQoIdmVyaWZpZWQYASABKAsyGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZSK1AQoUVm91Y2hEZWxlZ2F0ZVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMEhQKDGNvbnRpbnVhdGlvbhgMIAEoCRIMCgRuYW1lGAUgASgJEg8KB21ldGhvZHMYCiADKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAigQEKElZvdWNoQWNjZXB0UmVxdWVzdBIhCgVjbGFpbRgBIAEoCzISLnJvc3Rlci5Wb3VjaENsYWltEg8KB21ldGhvZHMYAiADKAkSKwoHZXhwaXJlcxgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASCgoCYXQYBCABKAkiwgEKFVZvdWNoRGVsZWdhdGVSZXNwb25zZRItCgh2ZXJpZmllZBgBIAEoCzIbLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlEg0KBXRva2VuGAogASgJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEgwKBGxpbmsYDCABKAkSMAoMbGlua19leHBpcmVzGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJeChBWb3VjaExpbmtSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIrCgdleHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJPChFWb3VjaExpbmtSZXNwb25zZRINCgV0b2tlbhgBIAEoCRIrCgdleHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJhChJWb3VjaFJlZGVlbVJlcXVlc3QSDQoFdG9rZW4YASABKAkSDwoHbWV0aG9kcxgKIAMoCRIrCgdleHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcDKqAwoMVm91Y2hTZXJ2aWNlEkEKBlZlcmlmeRIaLnJvc3Rlci5Wb3VjaFZlcmlmeVJlcXVlc3QaGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZRJHCghEZWxlZ2F0ZRIcLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVxdWVzdBodLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVzcG9uc2USOwoETGluaxIYLnJvc3Rlci5Wb3VjaExpbmtSZXF1ZXN0Ghkucm9zdGVyLlZvdWNoTGlua1Jlc3BvbnNlEkMKBlJlZGVlbRIaLnJvc3Rlci5Wb3VjaFJlZGVlbVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlEkcKCENvbnRpbnVlEhwucm9zdGVyLlZvdWNoQ29udGludWVSZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoQ29udGludWVSZXNwb25zZRJDCgZBY2NlcHQSGi5yb3N0ZXIuVm91Y2hBY2NlcHRSZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoRGVsZWdhdGVSZXNwb25zZUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp]);
 
 /**
  * VouchWho names somebody in the words a sign-in form collects.
@@ -540,6 +540,49 @@ export type VouchAcceptRequest = Message<"roster.VouchAcceptRequest"> & {
    * @generated from field: google.protobuf.Timestamp expires = 3;
    */
   expires?: Timestamp | undefined;
+
+  /**
+   * A name the person's own tenant answers at, to also mint a **link** for:
+   * one the front door hands the browser, and the user console at that name
+   * spends for a session of roster's own (`AuthService.SignIn`). Empty mints no
+   * link, which is every front door that is not handing anybody on.
+   *
+   * # Why it is here and not on `Link`
+   *
+   * Because of what the grant would mean. `Vouch.Link` is what an app that
+   * mails recovery links holds, and a recovery link ends in a delegation
+   * bounded by the **redeeming caller's** methods -- so the widest thing that
+   * grant can mint is a credential no wider than the app. A link spent at the
+   * console ends in a session carrying everything the person may do, and a
+   * field that let the recovery grant mint one would turn every mailer into
+   * something that can hand anybody their whole account. This method's grant
+   * already means *roster believes this caller about who somebody is*, which is
+   * the trust a session rests on, so the field goes where the trust is.
+   *
+   * # What it costs, beyond what `Accept` already cost
+   *
+   * A delegation is bounded by `methods`, and this is not: the session it ends
+   * in is the person's own, decided by their bindings on every call, exactly as
+   * a password sign-in at the user console is. A front door that may `Accept` could
+   * already act as anybody within its methods; with this it can hand anybody
+   * their own console. That is the same trust -- *this is really them* --
+   * reaching one door further, and it is bounded by two things `Accept` was
+   * not: the tenant has to have named a front door (`TenantConfig.front_door`),
+   * and this has to be a name that tenant answers at. A key that may `Accept`
+   * for contoso cannot hand contoso's people into fabrikam's console, or into
+   * contoso's until contoso says it has a front door at all.
+   *
+   * # Why not `Delegate` too
+   *
+   * A password sign-in at the front door could hand somebody on the same way,
+   * and does not: the user console has a password form of its own, at the tenant's
+   * own name, and a second road for the same credential would be a second
+   * place for the lockout, the second factor and the refusals to be kept in
+   * step. This exists for the sign-in the user console cannot do itself.
+   *
+   * @generated from field: string at = 4;
+   */
+  at: string;
 };
 
 /**
@@ -583,6 +626,27 @@ export type VouchDelegateResponse = Message<"roster.VouchDelegateResponse"> & {
    * @generated from field: google.protobuf.Timestamp expires = 11;
    */
   expires?: Timestamp | undefined;
+
+  /**
+   * The link, when [VouchAcceptRequest.at] asked for one, and the only time it
+   * is readable -- `link.proto` says what is stored. A browser carries it to
+   * the name it was minted for, once, within minutes (`vouch.LinkAtFor`).
+   *
+   * Not the delegation above and not a substitute for it: the front door keeps
+   * its own session on the delegation exactly as before, and this is the one
+   * extra thing it was asked to hand on. Absent for every call that did not
+   * ask, the way `continuation` is absent for a finished sign-in.
+   *
+   * @generated from field: string link = 12;
+   */
+  link: string;
+
+  /**
+   * When the link stops working, set exactly when the link is.
+   *
+   * @generated from field: google.protobuf.Timestamp link_expires = 13;
+   */
+  linkExpires?: Timestamp | undefined;
 };
 
 /**

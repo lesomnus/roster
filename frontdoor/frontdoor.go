@@ -528,13 +528,54 @@ func (d *Door) answer(w http.ResponseWriter, r *http.Request, res *rstr.VouchDel
 // The exchange, the state parameter, and which tenant the browser arrived in.
 // This takes the claim and nothing about the browser's journey to it.
 func (d *Door) Accept(ctx context.Context, w http.ResponseWriter, tenant, provider, subject string) error {
+	_, err := d.accept(ctx, w, tenant, provider, subject, "")
+
+	return err
+}
+
+// HandOn is [Door.Accept] that also asks roster for a **link**: one this app
+// hands the browser, and the user console at `at` -- a name the person's own
+// tenant answers at -- spends for a session of roster's own. The browser is
+// signed in here as well, exactly as `Accept` signs it in, because the person
+// arrived at this door and a door that checked somebody and kept no session
+// would ask them again on the way back.
+//
+// What comes back is the link and nothing else this app should keep: it is
+// for the browser, once, within minutes (`vouch.LinkAtFor`), and the one place
+// it belongs is the redirect that carries it away. `VouchAcceptRequest.at`
+// says what roster refuses -- a tenant that has named no front door, a name
+// that is not the tenant's -- and both come back as errors here.
+//
+// The app owns two things this does not: which name to send the browser to,
+// which it must have checked is the tenant's **before** the round trip to the
+// provider (an open redirect with a way in attached is worse than one
+// without), and the route at that name the link is delivered to.
+func (d *Door) HandOn(ctx context.Context, w http.ResponseWriter, tenant, provider, subject, at string) (string, error) {
+	if at == "" {
+		return "", ErrNotSignedIn
+	}
+
+	res, err := d.accept(ctx, w, tenant, provider, subject, at)
+	if err != nil {
+		return "", err
+	}
+	if res.GetLink() == "" {
+		return "", ErrNotSignedIn
+	}
+
+	return res.GetLink(), nil
+}
+
+// accept is the two above: the claim to roster, and the session that holds
+// what roster answered.
+func (d *Door) accept(ctx context.Context, w http.ResponseWriter, tenant, provider, subject, at string) (*rstr.VouchDelegateResponse, error) {
 	if provider == "" || subject == "" {
-		return ErrNotSignedIn
+		return nil, ErrNotSignedIn
 	}
 
 	id, err := pdid.Parse(tenant)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	res, err := d.c.Vouch.Accept(ctx, rstr.VouchAcceptRequest_builder{
@@ -544,14 +585,15 @@ func (d *Door) Accept(ctx context.Context, w http.ResponseWriter, tenant, provid
 			Subject:  subject,
 		}.Build(),
 		Methods: d.c.Methods,
+		At:      at,
 	}.Build())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	who, err := pdid.From(res.GetVerified().GetHolder())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	_, cookie, err := d.c.Sessions.Mint(ctx, authsession.Session{
@@ -566,12 +608,12 @@ func (d *Door) Accept(ctx context.Context, w http.ResponseWriter, tenant, provid
 		Held:    map[string]string{heldToken: res.GetToken()},
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	http.SetCookie(w, cookie)
 
-	return nil
+	return res, nil
 }
 
 // What this app holds for one browser, under the session: one of two things.

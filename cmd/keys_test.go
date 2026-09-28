@@ -53,6 +53,14 @@ type keyedBuilt struct {
 // keyFor stands a deployment up and mints a key allowing exactly `methods`.
 func keyFor(t *testing.T, methods ...string) *keyedBuilt {
 	t.Helper()
+
+	return keyedFor(t, nil, methods...)
+}
+
+// keyedFor is [keyFor] with a say over the configuration, for the one thing a
+// test about a key may also need: a door that is shut by default, open.
+func keyedFor(t *testing.T, with func(*cmd.Config), methods ...string) *keyedBuilt {
+	t.Helper()
 	x := require.New(t)
 	ctx := t.Context()
 
@@ -67,6 +75,9 @@ func keyFor(t *testing.T, methods ...string) *keyedBuilt {
 		// With a keyring, because a deployment that holds second factors has
 		// one and this harness is what the two-step tests build on.
 		Vouch: cmd.VouchConfig{Keys: []string{"one:" + base64.StdEncoding.EncodeToString(freshKey(t))}},
+	}
+	if with != nil {
+		with(&c)
 	}
 
 	s, err := cmd.Build(ctx, c)

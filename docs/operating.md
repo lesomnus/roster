@@ -178,6 +178,17 @@ the sign-in was about. So a tenant's people open the name their tenant claims,
 and the page is for whoever claims it. There is nothing to configure and nowhere
 to configure it.
 
+**A tenant whose people arrive through a directory signs in through its front
+door.** The page has no form for them and cannot run the round trip itself
+([login.md](login.md) § *The user console, through the front door*). What it
+can do is send them: the tenant writes the origin of its account app down as
+`TenantConfig.front_door` -- on this page, under *what it says about itself* --
+and the sign-in page draws a button per `Connection` pointing there. The front
+door signs them in as it always has and hands the browser back with a link
+roster minted for this name, which the page spends for the same session a
+password ends in. Nothing is configured on the deployment's side: the front door
+is the tenant's to name, as its providers are.
+
 **`user_console.dir` with `sign_in.enabled` off is refused**, rather than
 serving a page whose form is answered `Unimplemented` by a method that is not on
 the wire. That combination looks like a working deployment from the outside,

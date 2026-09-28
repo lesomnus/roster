@@ -125,6 +125,7 @@ func (s LinkServiceServer) Add(ctx context.Context, req *rstr.LinkAddRequest) (*
 			})
 		}
 	}
+	q.SetAt(req.GetAt())
 	q.SetSecret(req.GetSecret())
 	q.SetIssuer(req.GetIssuer())
 	if req.HasDateExpires() {
@@ -202,6 +203,9 @@ func LinkSelectedFields(m *rstr.LinkSelect) []string {
 	vs := make([]string, 0, len(link.Columns))
 	{
 		vs = append(vs, link.FieldId)
+	}
+	if m.GetAt() {
+		vs = append(vs, link.FieldAt)
 	}
 	if m.GetSecret() {
 		vs = append(vs, link.FieldSecret)
@@ -300,7 +304,7 @@ func LinkGetKey(ctx context.Context, db *ent.Client, ref *rstr.LinkRef) (uuid.UU
 var linkOrmEntity = ormpatch.MustEntityOf(rstr.File_app_link_proto, "Link")
 
 var linkPatchColumns = entpatch.Columns{
-	1: link.FieldId, 2: link.HolderColumn, 12: link.EmailColumn, 9: link.FieldSecret, 10: link.FieldIssuer, 11: link.FieldDateExpires, 13: link.FieldDateUpdated, 14: link.FieldDateErased, 15: link.FieldDateCreated}
+	1: link.FieldId, 2: link.HolderColumn, 12: link.EmailColumn, 8: link.FieldAt, 9: link.FieldSecret, 10: link.FieldIssuer, 11: link.FieldDateExpires, 13: link.FieldDateUpdated, 14: link.FieldDateErased, 15: link.FieldDateCreated}
 
 func (s LinkServiceServer) Apply(ctx context.Context, req *rstr.LinkApplyRequest) (*rstr.Link, error) {
 	if !req.HasPatch() {

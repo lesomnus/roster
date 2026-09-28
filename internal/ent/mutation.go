@@ -4240,6 +4240,23 @@ func (m *LinkMutation) Ids(ctx context.Context) ([]uuid.UUID, error) {
 	}
 }
 
+// OldAt returns the old "at" field's value of the Link entity.
+// If the Link object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LinkMutation) OldAt(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldAt is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldAt requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAt: %w", err)
+	}
+	return oldValue.At, nil
+}
+
 // OldSecret returns the old "secret" field's value of the Link entity.
 // If the Link object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -4381,6 +4398,8 @@ func (m *LinkMutation) OldEmailId(ctx context.Context) (v uuid.UUID, err error) 
 // database failed.
 func (m *LinkMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
+	case link.FieldAt:
+		return m.OldAt(ctx)
 	case link.FieldSecret:
 		return m.OldSecret(ctx)
 	case link.FieldIssuer:

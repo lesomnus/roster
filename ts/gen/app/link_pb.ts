@@ -19,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/link.proto.
  */
 export const file_app_link: GenFile = /*@__PURE__*/
-  fileDesc("Cg5hcHAvbGluay5wcm90bxIGcm9zdGVyIv8DCgRMaW5rEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESJgoFZW1haWwYDCABKAsyDS5yb3N0ZXIuRW1haWxCCPKCFgQ4AUABEh4KBnNlY3JldBgJIAEoDEIO6oIWBDABQAGqwRYCCAESFgoGaXNzdWVyGAogASgMQgbqghYCQAESOgoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEII6oIWBDgBQAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOmjK/BUmEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxY6CBcyJQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZiAUKGQiDwoNaG9sZGVyLnRlbmFudEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_holder, file_app_email, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg5hcHAvbGluay5wcm90bxIGcm9zdGVyIpMECgRMaW5rEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESJgoFZW1haWwYDCABKAsyDS5yb3N0ZXIuRW1haWxCCPKCFgQ4AUABEhIKAmF0GAggASgJQgbqghYCQAESHgoGc2VjcmV0GAkgASgMQg7qghYEMAFAAarBFgIIARIWCgZpc3N1ZXIYCiABKAxCBuqCFgJAARI6CgxkYXRlX2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgjqghYEOAFAARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6aMr8FSYSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQAYq7FjoIFzIlChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmIBQoZCIPCg1ob2xkZXIudGVuYW50QiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_holder, file_app_email, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Link is a way in that roster mints and somebody else delivers.
@@ -77,6 +77,32 @@ export type Link = Message<"roster.Link"> & {
    * @generated from field: roster.Email email = 12;
    */
   email?: Email | undefined;
+
+  /**
+   * The name this link is spent **at**, when it is a way into the user console
+   * rather than a recovery: `Vouch.Accept` mints one for a front door to hand
+   * a browser, and `AuthService.SignIn` at that name spends it. Empty for the
+   * two kinds above, which are spent by the caller they were issued to.
+   *
+   * # The third kind, and what tells it from the other two
+   *
+   * A recovery link is bound to its **issuer** -- the app that asked for it
+   * spends it (`issuer`, below) -- and ends in a delegation for that app. This
+   * one is the opposite on both counts, deliberately: it is minted by one
+   * caller and spent by a browser at roster's own console, where there is no
+   * key to bind to, so what it is bound to instead is **where** -- the tenant's
+   * own name, resolved the way every sign-in at that console is (`cmd.Hosted`).
+   * And it ends in roster's own session, which is why a tenant with no
+   * passwords may have one minted: nothing about it hands over a password.
+   *
+   * So this column is the discriminator, and it is read on **both** doors:
+   * `Vouch.Redeem` refuses a link that names one, and the user console refuses a
+   * link that names none. A discriminator read on one side is not one --
+   * `email` above learned that the hard way.
+   *
+   * @generated from field: string at = 8;
+   */
+  at: string;
 
   /**
    * The verifier, never the link -- the shape `ApiKey` argued and every

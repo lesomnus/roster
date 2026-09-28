@@ -209,7 +209,11 @@ func (s coreTenant) Update(ctx context.Context, req *app.TenantUpdateRequest) (*
 	// one is *nothing is set* -- which for `password` means back to the default,
 	// and is a thing a caller may want to say.
 	if req.HasConfig() {
-		patch.Config = req.GetConfig()
+		cfg, err := configOf(req.GetConfig())
+		if err != nil {
+			return nil, err
+		}
+		patch.Config = cfg
 	}
 
 	return s.TenantServiceServer.Patch(ctx, patch.Build())
@@ -282,6 +286,10 @@ const (
 // already arranged a transaction -- a batch -- arrives with no driver and runs
 // inside theirs.
 func (s coreTenant) Add(ctx context.Context, req *app.TenantAddRequest) (*app.Tenant, error) {
+	req, bad := addWithConfig(req)
+	if bad != nil {
+		return nil, bad
+	}
 	if s.prefix != keys.PrefixTenant {
 		return s.TenantServiceServer.Add(ctx, req)
 	}

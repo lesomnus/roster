@@ -337,12 +337,12 @@ func (_q *LinkQuery) WithEmail(opts ...func(*EmailQuery)) *LinkQuery {
 // Example:
 //
 //	var v []struct {
-//		Secret []byte `json:"secret,omitempty"`
+//		At string `json:"at,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Link.Query().
-//		GroupBy(link.FieldSecret).
+//		GroupBy(link.FieldAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (_q *LinkQuery) GroupBy(field string, fields ...string) *LinkGroupBy {
@@ -360,11 +360,11 @@ func (_q *LinkQuery) GroupBy(field string, fields ...string) *LinkGroupBy {
 // Example:
 //
 //	var v []struct {
-//		Secret []byte `json:"secret,omitempty"`
+//		At string `json:"at,omitempty"`
 //	}
 //
 //	client.Link.Query().
-//		Select(link.FieldSecret).
+//		Select(link.FieldAt).
 //		Scan(ctx, &v)
 func (_q *LinkQuery) Select(fields ...string) *LinkSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)

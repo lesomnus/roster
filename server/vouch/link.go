@@ -17,6 +17,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/front"
 )
 
 // A way in that roster mints and somebody else delivers.
@@ -42,6 +43,14 @@ const KindLink = "link"
 // that one left in a mailbox is not a way in next week. A caller may ask for
 // less and not for more.
 const LinkFor = 15 * time.Minute
+
+// LinkAtFor is how long a link minted for the user console lasts.
+//
+// Shorter than [LinkFor] by an order of magnitude, because the channel is a
+// browser redirect and not a mailbox: it is spent in the seconds between the
+// front door answering and the user console asking, and one that is not is one
+// somebody is looking at in an address bar.
+const LinkAtFor = 2 * time.Minute
 
 // Link mints a way in for somebody and answers with it once.
 func (s *Server) Link(ctx context.Context, req *app.VouchLinkRequest) (*app.VouchLinkResponse, error) {
@@ -249,6 +258,48 @@ func (s *Server) Redeem(ctx context.Context, req *app.VouchRedeemRequest) (*app.
 
 // link finds the row a token names, if it is the caller's and still open.
 func (s *Server) link(ctx context.Context, token string, by pdid.Id) (*app.Link, error) {
+	v, err := s.row(ctx, token)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(v.GetIssuer()) == 0 || by == pdid.Nil ||
+		subtle.ConstantTimeCompare(v.GetIssuer(), by.Bytes()) != 1 {
+		return nil, status.Error(codes.NotFound, "no such link")
+	}
+
+	// A link for the user console names where it is spent, and this is not
+	// there: it is bound to a name rather than to a caller, and it ends in a
+	// session rather than a delegation. Refused here as the user console refuses a
+	// link that names no name -- the discriminator is read on both doors, which
+	// is the lesson the `email` guard below was learned from.
+	if v.GetAt() != "" {
+		return nil, status.Error(codes.NotFound, "no such link")
+	}
+
+	// A verification link names its `email`, and this is the door it must not
+	// open. `Email.Verify` mints into this table with this shape on purpose --
+	// one table, one sweep -- and the `email` edge is what tells the two apart;
+	// `Email.Confirm` refuses a link that names none, and until this the other
+	// direction was not refused at all. So a token mailed to prove an address
+	// was redeemable for a delegation naming its holder, which is a mailbox
+	// read once being an account held: the one thing a verify link is worth
+	// less than a recovery link *for*. See `email_svc.ext.proto`, § "A verify
+	// link is worth strictly less than a recovery link".
+	//
+	// A discriminator written on one side is not one, and the pair is now read
+	// the same way in both places.
+	if len(v.GetEmail().GetId()) != 0 {
+		return nil, status.Error(codes.NotFound, "no such link")
+	}
+
+	return v, nil
+}
+
+// row is the link a token names, if it is real, still open, and for somebody
+// who may still sign in -- which is what every kind of link has in common.
+// What each kind is bound to is the caller's to check.
+func (s *Server) row(ctx context.Context, token string) (*app.Link, error) {
 	if !strings.HasPrefix(token, PrefixLink) {
 		return nil, status.Error(codes.NotFound, "no such link")
 	}
@@ -260,11 +311,12 @@ func (s *Server) link(ctx context.Context, token string, by pdid.Id) (*app.Link,
 		Select: app.LinkSelect_builder{
 			Secret:      z.Ptr(true),
 			Issuer:      z.Ptr(true),
+			At:          z.Ptr(true),
 			DateExpires: z.Ptr(true),
 			Email:       app.EmailSelect_builder{}.Build(),
 
 			Holder: app.HolderSelect_builder{
-				Tenant:       app.TenantSelect_builder{}.Build(),
+				Tenant:       app.TenantSelect_builder{Alias: z.Ptr(true)}.Build(),
 				DateErased:   z.Ptr(true),
 				DateDisabled: z.Ptr(true),
 			}.Build(),
@@ -289,28 +341,92 @@ func (s *Server) link(ctx context.Context, token string, by pdid.Id) (*app.Link,
 		return nil, status.Error(codes.NotFound, "no such link")
 	}
 
-	if len(v.GetIssuer()) == 0 || by == pdid.Nil ||
-		subtle.ConstantTimeCompare(v.GetIssuer(), by.Bytes()) != 1 {
-		return nil, status.Error(codes.NotFound, "no such link")
-	}
-
-	// A verification link names its `email`, and this is the door it must not
-	// open. `Email.Verify` mints into this table with this shape on purpose --
-	// one table, one sweep -- and the `email` edge is what tells the two apart;
-	// `Email.Confirm` refuses a link that names none, and until this the other
-	// direction was not refused at all. So a token mailed to prove an address
-	// was redeemable for a delegation naming its holder, which is a mailbox
-	// read once being an account held: the one thing a verify link is worth
-	// less than a recovery link *for*. See `email_svc.ext.proto`, § "A verify
-	// link is worth strictly less than a recovery link".
-	//
-	// A discriminator written on one side is not one, and the pair is now read
-	// the same way in both places.
-	if len(v.GetEmail().GetId()) != 0 {
-		return nil, status.Error(codes.NotFound, "no such link")
-	}
-
 	return v, nil
+}
+
+// SpendAt spends a link at the name it was minted for, and answers who.
+//
+// The user console's half of `VouchAcceptRequest.at`, and a Go call rather
+// than an RPC: the caller is `AuthService.SignIn`, in this process, answering
+// a browser that holds no credential -- so there is no frame to bind a spend
+// to and no method for a role to name. What binds it instead is `at`, which
+// the user console takes from the name the request arrived at and never from
+// anything the browser said, and the tenant that name resolved to.
+//
+// It answers in `Verify`'s shape: `ok` and the person, or `ok` false for every
+// way of being wrong -- a link that was never here, one already spent, one
+// expired, one minted for another name or another tenant, a recovery link,
+// somebody erased or suspended since. One answer, because told apart it says
+// whether a string was ever a real link.
+//
+// No continuation, deliberately. The person was checked by the front door
+// against the tenant's own directory, which is the check `Accept` takes as
+// finished and mints on without a second factor; a second factor asked here
+// would be one the account page did not ask, for the same person through the
+// same directory.
+func (s *Server) SpendAt(ctx context.Context, token, at, tenant string) (*app.VouchVerifyResponse, error) {
+	at = front.Hostname(at)
+	if at == "" || tenant == "" {
+		return no(), nil
+	}
+
+	v, err := s.row(ctx, token)
+	if err != nil {
+		if status.Code(err) != codes.NotFound {
+			return nil, err
+		}
+
+		return no(), nil
+	}
+
+	// Bound to **where**, and this is the whole of the binding: a recovery link
+	// names no name and is refused; a link for another of this tenant's names is
+	// another door's; and a name that has changed hands since the mint is
+	// caught by the tenant behind it, which is belt beside braces.
+	if v.GetAt() == "" || v.GetAt() != at || v.GetHolder().GetTenant().GetAlias() != tenant ||
+		len(v.GetEmail().GetId()) != 0 {
+		return no(), nil
+	}
+
+	// Spent whatever happens next, and only the caller that spent it goes on:
+	// the erase answers who did, which is `Redeem`'s arrangement and the reason
+	// two browsers arriving with one link are one session and not two.
+	spent, err := s.open.Link().Erase(ctx, app.LinkRef_builder{Id: v.GetId()}.Build())
+	if err != nil {
+		return nil, err
+	}
+	if !spent.GetErased() {
+		return no(), nil
+	}
+
+	return app.VouchVerifyResponse_builder{
+		Ok:     true,
+		Holder: v.GetHolder().GetId(),
+		Tenant: v.GetHolder().GetTenant().GetId(),
+	}.Build(), nil
+}
+
+// linkAt mints the link `Accept` hands a front door for one name, and answers
+// with it once. The row is what `link.proto` § *The third kind* describes.
+func (s *Server) linkAt(ctx context.Context, holder, issuer pdid.Id, at string) (string, *timestamppb.Timestamp, error) {
+	token, sum, err := MintLink()
+	if err != nil {
+		return "", nil, err
+	}
+
+	row, err := s.open.Link().Add(ctx, app.LinkAddRequest_builder{
+		Holder:      app.HolderRef_builder{Id: holder.Bytes()}.Build(),
+		Secret:      sum,
+		Issuer:      issuer.Bytes(),
+		At:          at,
+		DateExpires: timestamppb.New(time.Now().Add(LinkAtFor)),
+	}.Build())
+	if err != nil {
+		return "", nil, err
+	}
+
+	// The row's expiry and not the one computed above, for `mint`'s reason.
+	return token, row.GetDateExpires(), nil
 }
 
 // mintLink is the token and the verifier stored for it.

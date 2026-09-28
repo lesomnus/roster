@@ -60,6 +60,28 @@ message Link {
   // 4 to 7 are empty, for `Delegation`'s reason: nobody names one of these. It
   // exists for minutes, between a mail being sent and a browser arriving.
 
+  // The name this link is spent **at**, when it is a way into the user console
+  // rather than a recovery: `Vouch.Accept` mints one for a front door to hand
+  // a browser, and `AuthService.SignIn` at that name spends it. Empty for the
+  // two kinds above, which are spent by the caller they were issued to.
+  //
+  // # The third kind, and what tells it from the other two
+  //
+  // A recovery link is bound to its **issuer** -- the app that asked for it
+  // spends it (`issuer`, below) -- and ends in a delegation for that app. This
+  // one is the opposite on both counts, deliberately: it is minted by one
+  // caller and spent by a browser at roster's own console, where there is no
+  // key to bind to, so what it is bound to instead is **where** -- the tenant's
+  // own name, resolved the way every sign-in at that console is (`cmd.Hosted`).
+  // And it ends in roster's own session, which is why a tenant with no
+  // passwords may have one minted: nothing about it hands over a password.
+  //
+  // So this column is the discriminator, and it is read on **both** doors:
+  // `Vouch.Redeem` refuses a link that names one, and the user console refuses a
+  // link that names none. A discriminator read on one side is not one --
+  // `email` above learned that the hard way.
+  string at = 8 [(orm.field) = {immutable: true}];
+
   // The verifier, never the link -- the shape `ApiKey` argued and every
   // short-lived thing here has repeated: 256 bits from `crypto/rand` have no
   // dictionary, so the hash is fast and unsalted, and it is also how the row is

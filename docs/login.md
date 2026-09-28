@@ -655,6 +655,58 @@ Three things it deliberately does not reach:
 for exactly that: a tenant written before it existed reads *false* for an implicit
 bool, and every one of them would have lost the one credential roster holds itself.
 
+### The user console, through the front door
+
+A tenant with no passwords had a user console with no form and, until #62, no
+door either. The page cannot send a browser to a directory and finish the round
+trip itself: finishing it is being the relying party, and `connection.proto`
+decided roster is not. So the front door stays the relying party, and what was
+added is one hop at the end.
+
+```mermaid
+sequenceDiagram
+  participant B as browser
+  participant C as user console
+  participant F as account app
+  participant E as Entra
+  participant R as roster
+
+  B->>C: contoso.example
+  C->>R: AuthService.Offers
+  R-->>C: {password: false, providers: [entra], front_door}
+  B->>F: /login?connection=entra&next=https://contoso.example
+  Note over F: next is a name this tenant answers at, or 400, before anything else
+  F->>E: the flow it runs
+  E-->>F: (provider, subject)
+  F->>R: Vouch.Accept {claim, methods, at: contoso.example}
+  R-->>F: {token, link}
+  F-->>B: 302 https://contoso.example/callback?link=rl_…
+  B->>C: /callback?link=rl_…
+  C->>R: AuthService.SignIn {link}
+  R-->>C: set-cookie
+```
+
+Three things decide the shape, and each is written beside the thing it decides:
+
+| | |
+| --- | --- |
+| the tenant says where its front door is | `TenantConfig.front_door`. `Offers` hands it to the page, and `Accept` refuses to mint a link for a tenant that has not said -- so it is a fact roster acts on and not a screen setting |
+| the link is bound to **where**, not to whom | `Link.at`. A recovery link is spent by the caller that minted it; this one is spent by a browser at roster's own door, so what binds it is the name -- the one `cmd.Hosted` resolves the tenant from -- and a link for one of a tenant's names is refused at another |
+| the grant is `Accept`'s | `VouchAcceptRequest.at`, and not a field on `Vouch.Link`: the recovery grant ends in a delegation no wider than the app, and this ends in the person's own session |
+
+What roster never does on this road is check anybody's token. The front door
+checks, `Accept` believes it as it always has, and the user console checks a link
+roster minted -- which is D19's question answered the same way twice.
+
+**What it costs.** A front door has to be deployed for this tenant, and the tenant
+has to write its origin down; two hops and two origins where a password is one;
+and a key that may `Accept` may now hand anybody in the tenant their own console,
+where before it could act as them within its methods. `VouchAcceptRequest.at` says
+why that is the same trust reaching one door further, and what bounds it.
+
+`cmd/usersignin_test.go` walks the whole of it against roster, and
+`account/account_test.go` the account app's half.
+
 ## A second factor, and whose it is
 
 roster holds it and checks it; the app with the browser decides when to ask.

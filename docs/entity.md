@@ -457,6 +457,11 @@ more; any second factor is still asked for.
 > somebody else's job. If she has a second factor she is asked for it anyway,
 > because a link that skipped one would turn a mailbox into an account.
 
+A third kind since #62: a link `Vouch.Accept` mints for a front door to hand a
+browser, spent at the user console's own name for a session of roster's own.
+`at` tells it from the other two and both doors read it -- a recovery link is
+refused at the user console, and a link for the user console at `Vouch.Redeem`.
+
 ### 🍪 `Session` — a console's cookie, in a table
 
 `authsession`'s shipped store is right for one replica and **silently wrong**

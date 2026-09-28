@@ -98,3 +98,41 @@ test('a tenant administrator signs in and sees their own tenant', async ({ page 
 	// Nothing was written, which is the claim holding nothing.
 	await expect(page.getByRole('cell', { name: /^proved\.example\.com/ })).toHaveCount(0)
 })
+
+// Where the account app answers, which is what a tenant writes down as its front
+// door: the sign-in page sends people there for a provider, and the front door
+// sends them back with a link (#62). The rig has no directory to walk the round
+// trip against -- `Connection` rows and no provider -- so what is pinned here is
+// the half a browser decides: the setting is the tenant's to write, and the page
+// draws one button per provider pointing where it was told.
+const account = process.env['E2E_ACCOUNT'] ?? 'http://localhost:18090'
+
+test('a tenant names its front door, and the sign-in page sends people there', async ({ page }) => {
+	await page.goto(base)
+	await page.locator('input[name=alias]').fill(who)
+	await page.locator('input[name=password]').fill(password)
+	await page.locator('button[type=submit]', { hasText: 'sign in' }).click()
+	await expect(page.locator('nav .who')).toHaveText(who)
+
+	// The tenant itself is the head of the sidebar, and its settings are there.
+	await page.locator('nav button.head').click()
+	const form = page.locator('form.profile')
+	await form.locator('input[name=front_door]').fill(account)
+	await form.locator('button[type=submit]').click()
+	await expect(page.locator('p.note', { hasText: 'saved' })).toBeVisible()
+
+	// Signed out, the page asks again what this name lets somebody in with.
+	await page.getByRole('button', { name: 'sign out' }).click()
+	await expect(page.locator('input[name=password]')).toBeVisible()
+
+	// contoso has passwords **and** two directories, so both are drawn, under a
+	// rule -- and each button goes to the front door, told which provider and
+	// where to come back to, which is this page's own origin and nothing configured.
+	const origin = new URL(base).origin
+	await expect(page.locator('.providers a.button')).toHaveCount(2)
+	await expect(page.locator('.providers a.button', { hasText: 'entra' })).toHaveAttribute(
+		'href',
+		`${account}/login?connection=entra&next=${encodeURIComponent(origin)}`,
+	)
+	await expect(page.locator('p.or')).toHaveText('or')
+})

@@ -55,4 +55,27 @@ message TenantConfig {
   // case it was asked for: a form nobody uses is a form that says somebody here
   // has a password.
   bool password = 1 [features.field_presence = EXPLICIT];
+
+  // Where this tenant's people sign in through a directory: the origin of
+  // the front door in front of it, `https://account.contoso.example`. Empty is
+  // no front door, which is what a tenant whose people all have passwords is.
+  //
+  // # What roster does with it
+  //
+  // Two things, and the second is the one that makes this a fact rather than an
+  // address a page is handed. The user console asks `AuthService.Offers` what
+  // this name lets somebody in with, and this is where it sends them for a
+  // provider -- the page cannot know, because which of a tenant's `Host` rows
+  // is the front door is not written on the row, and in a development
+  // deployment the two are one name on two ports. And `Vouch.Accept` **refuses
+  // to hand anybody into this tenant's console** while this is empty: a front
+  // door minting a link for a browser to spend at the user console is the
+  // tenant's decision, taken here, and not something a key that may `Accept`
+  // may do to a tenant that never said so.
+  //
+  // An origin and nothing more -- scheme and host, a port if the deployment
+  // needs one -- because the front door's own routes are the front door's
+  // (`/login`, `/callback`) and a path written here would be a second copy of
+  // one of them. `server/core` refuses anything else on the way in.
+  string front_door = 2;
 }

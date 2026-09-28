@@ -805,3 +805,97 @@ func TestSomebodyClaimsAnAddressNobodyConfirmed(t *testing.T) {
 		func(r *http.Request) { r.Header.Set("Content-Type", "application/json") })
 	x.Equal(http.StatusConflict, code, "a proved address was claimable: %s", body)
 }
+
+// names writes where a tenant's people sign in -- `TenantConfig.front_door`,
+// through the verb the consoles call and under the version it read.
+func (d *deployment) names(t *testing.T, in pdid.Id, door string) {
+	t.Helper()
+	x := require.New(t)
+	ctx := t.Context()
+	ref := rstr.TenantRef_builder{Id: in.Bytes()}.Build()
+
+	got, err := d.ungated.Tenant().Get(ctx, rstr.TenantGetRequest_builder{
+		Ref:    ref,
+		Select: rstr.TenantSelect_builder{DateUpdated: proto.Bool(true)}.Build(),
+	}.Build())
+	x.NoError(err)
+	_, err = d.ungated.Tenant().Update(ctx, rstr.TenantUpdateRequest_builder{
+		Ref:         ref,
+		DateUpdated: got.GetDateUpdated(),
+		Config:      rstr.TenantConfig_builder{FrontDoor: door}.Build(),
+	}.Build())
+	x.NoError(err)
+}
+
+// TestTheFrontDoorHandsSomebodyOnToTheirConsole is this app's half of `#62`.
+//
+// A sign-in started at the tenant's user console ends back there rather than
+// here, carrying a link roster minted for **that name** -- and the name is
+// checked to be the tenant's before the round trip to the provider, because an
+// open redirect with a way in attached is worse than one without. The user console's
+// half, spending the link, is `cmd/usersignin_test.go`.
+func TestTheFrontDoorHandsSomebodyOnToTheirConsole(t *testing.T) {
+	x := require.New(t)
+	d := serve(t, account.Invited())
+	ctx := t.Context()
+
+	// contoso's console answers at a second name of contoso's, and contoso has
+	// named this app as where its people sign in.
+	_, err := d.ungated.Host().Add(ctx, rstr.HostAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Id: d.contoso.Bytes()}.Build(), Name: "console.contoso.test",
+	}.Build())
+	x.NoError(err)
+	d.names(t, d.contoso, d.app.URL)
+
+	d.idp.Subject = "3001"
+	d.idp.Claims = map[string]any{"email": "erin@contoso.com", "email_verified": true}
+
+	// A browser that stops where this app sends it on to: that name is the
+	// console's to answer, and what this test is about is the redirect itself.
+	b := d.browser(t, "contoso.test")
+	follow := b.CheckRedirect
+	b.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		if req.URL.Host == "console.contoso.test" {
+			return http.ErrUseLastResponse
+		}
+
+		return follow(req, via)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
+		d.app.URL+"/login?connection=example&next="+url.QueryEscape("http://console.contoso.test"), nil)
+	x.NoError(err)
+	req.Host = "contoso.test"
+	res, err := b.Do(req)
+	x.NoError(err)
+	res.Body.Close()
+	x.Equal(http.StatusFound, res.StatusCode, "the round trip did not end in a redirect to the user console")
+
+	to, err := url.Parse(res.Header.Get("Location"))
+	x.NoError(err)
+	x.Equal("http://console.contoso.test/callback", to.Scheme+"://"+to.Host+to.Path)
+	x.True(strings.HasPrefix(to.Query().Get("link"), "rl_"), "no link for the user console in %q", to.String())
+
+	// And signed in here as well, which is what `HandOn` promises: a person who
+	// passed through this door is not asked again at it.
+	code, body := b.rpc(t, "/roster.MeService/Get", `{}`)
+	x.Equal(http.StatusOK, code, body)
+	x.Contains(body, `"erin"`)
+
+	t.Run("and a name that is not this tenant's is refused before the round trip", func(t *testing.T) {
+		x := require.New(t)
+
+		for _, next := range []string{
+			"http://fabrikam.test",          // another tenant's
+			"http://nobody.test",            // nobody's
+			"http://contoso.test/somewhere", // the tenant's, and more than an origin
+			"contoso.test",                  // no scheme
+			"javascript:alert(1)",           // not a place a browser is sent
+		} {
+			nb := d.browser(t, "contoso.test")
+			nb.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+			code, body := nb.do(t, http.MethodGet, "/login?connection=example&next="+url.QueryEscape(next), "", nil)
+			x.Equal(http.StatusBadRequest, code, "%s: %d %s", next, code, body)
+		}
+	})
+}

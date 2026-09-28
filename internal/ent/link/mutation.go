@@ -17,6 +17,7 @@ import (
 type Mutation struct {
 	op            ent.Op
 	typ           string
+	at            *string
 	secret        *[]byte
 	issuer        *[]byte
 	date_expires  *time.Time
@@ -43,6 +44,25 @@ func NewMutation(op ent.Op) *Mutation {
 // Predicates returns the list of predicates set on the mutation.
 func (m *Mutation) Predicates() []predicate.Link {
 	return m.predicates
+}
+
+// SetAt sets the "at" field.
+func (m *Mutation) SetAt(s string) {
+	m.at = &s
+}
+
+// At returns the value of the "at" field in the mutation.
+func (m *Mutation) At() (r string, exists bool) {
+	v := m.at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAt resets all changes to the "at" field.
+func (m *Mutation) ResetAt() {
+	m.at = nil
 }
 
 // SetSecret sets the "secret" field.
@@ -337,7 +357,10 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 9)
+	if m.at != nil {
+		fields = append(fields, FieldAt)
+	}
 	if m.secret != nil {
 		fields = append(fields, FieldSecret)
 	}
@@ -370,6 +393,8 @@ func (m *Mutation) Fields() []string {
 // schema.
 func (m *Mutation) Field(name string) (ent.Value, bool) {
 	switch name {
+	case FieldAt:
+		return m.At()
 	case FieldSecret:
 		return m.Secret()
 	case FieldIssuer:
@@ -402,6 +427,13 @@ func (m *Mutation) OldField(ctx context.Context, name string) (ent.Value, error)
 // type.
 func (m *Mutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case FieldAt:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAt(v)
+		return nil
 	case FieldSecret:
 		v, ok := value.([]byte)
 		if !ok {
@@ -534,6 +566,9 @@ func (m *Mutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *Mutation) ResetField(name string) error {
 	switch name {
+	case FieldAt:
+		m.ResetAt()
+		return nil
 	case FieldSecret:
 		m.ResetSecret()
 		return nil
