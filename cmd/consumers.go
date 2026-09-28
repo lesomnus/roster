@@ -82,6 +82,16 @@ type AccountConfig struct {
 	// one. `ROSTER_ACCOUNT_KEY_<ALIAS>` still works and is merged with these,
 	// and `--key alias=rt_…` still takes a literal, which is in the process
 	// list and says so.
+	//
+	// **Empty, inside `roster serve`, is keys made at start.** The same rows
+	// `roster account provision` writes -- a holder, a role holding what the
+	// app calls as itself, a binding, a key -- for every tenant with a `Host`
+	// row, and the token kept in memory, which is one replica: the reading
+	// [AccountConfig.Seal] gives an empty value. A restart is a rotation, and
+	// a tenant that registers a name later is fronted after the next start.
+	// `roster account serve` still refuses with none, because somebody typed
+	// that one and a process whose only job is the front door has nothing to
+	// do without a key.
 	Keys map[string]string `yaml:"keys"`
 
 	// Seal is the key sessions are sealed into the cookie under, as `env:NAME`
@@ -201,6 +211,12 @@ type LoginConfig struct {
 	// and is answered as the holder that tenant nominated, with their bindings
 	// and nothing wider (#43). The wall is still what separates them; it is
 	// applied per request instead of per process.
+	//
+	// **Empty, inside `roster serve`, is a key made at start**, with the
+	// nominations that go with it -- what `roster login provision` writes,
+	// without the file -- kept in memory, which is one replica. It needs the
+	// control plane an `rk_` lives in, and `roster login serve` still refuses
+	// with none, for [AccountConfig.Keys]'s reason.
 	Key string `yaml:"key"`
 
 	// Base is this app's public origin, which every provider has registered as

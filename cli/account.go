@@ -408,6 +408,10 @@ func sealOf(who string, refs []string) (*authsession.Sealed, error) {
 	return authsession.NewSealed(keys...)
 }
 
+// errNoKeys is [keysOf] finding nothing in any of the three places: a refusal
+// for a process of its own, and for `roster serve` the cue to make them.
+var errNoKeys = errors.New("no tenant key")
+
 // keysOf is one tenant key per tenant, from three places that are three
 // different kinds of thing.
 //
@@ -453,7 +457,7 @@ func keysOf(refs map[string]string, prefix string, given []string) (map[string]s
 		out[strings.ToLower(alias)] = token
 	}
 	if len(out) == 0 {
-		return nil, fmt.Errorf("--key alias=rt_… (or %s<ALIAS>, or the `keys` block): one tenant key per tenant this fronts", prefix)
+		return nil, fmt.Errorf("%w: --key alias=rt_… (or %s<ALIAS>, or the `keys` block): one tenant key per tenant this fronts", errNoKeys, prefix)
 	}
 
 	return out, nil

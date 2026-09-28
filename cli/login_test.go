@@ -4,11 +4,16 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/lesomnus/z"
+
 	"github.com/lesomnus/roster/cmd"
+	rstr "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/keys"
 )
 
 // Three tests used to be here and all three were about the two maps `login`
@@ -44,7 +49,7 @@ func TestAFirstStartWithNoKeyYetStillComesUp(t *testing.T) {
 		x := require.New(t)
 
 		c := &cmd.Config{Login: cmd.LoginConfig{Key: "file:" + there}}
-		got, err := loginApp(c, listening(t))
+		got, err := loginApp(t.Context(), c, listening(t), nil)
 		x.NoError(err)
 		x.Empty(got.Key, "a key that is not written yet is not a deployment that fails to start")
 	})
@@ -55,7 +60,7 @@ func TestAFirstStartWithNoKeyYetStillComesUp(t *testing.T) {
 		x.NoError(os.WriteFile(there, []byte("rk_written\n"), 0o600))
 
 		c := &cmd.Config{Login: cmd.LoginConfig{Key: "file:" + there}}
-		got, err := loginApp(c, listening(t))
+		got, err := loginApp(t.Context(), c, listening(t), nil)
 		x.NoError(err)
 		x.Equal("rk_written", got.Key, "the token and not the reference: the app is handed the thing")
 	})
@@ -66,9 +71,39 @@ func TestAFirstStartWithNoKeyYetStillComesUp(t *testing.T) {
 		x := require.New(t)
 
 		c := &cmd.Config{Login: cmd.LoginConfig{Key: "env:NOTHING_SET_HERE"}}
-		_, err := loginApp(c, listening(t))
+		_, err := loginApp(t.Context(), c, listening(t), nil)
 		x.Error(err)
 		x.ErrorContains(err, "login.key")
+	})
+
+	// And the shape that replaces the file for a deployment that runs the app
+	// in this process: nothing named, a control plane to mint on, and the key
+	// is made at start with the nominations `provision` would have written.
+	t.Run("and nothing named, with a control plane here, is a key made at start", func(t *testing.T) {
+		x := require.New(t)
+		ctx := t.Context()
+		s := deployment(t)
+		contoso := tenantCalled(t, s, "contoso")
+		answersAt(t, s, contoso, "contoso.example")
+
+		c := &cmd.Config{Login: cmd.LoginConfig{Addr: ":0"}}
+		got, err := loginApp(ctx, c, listening(t), s)
+		x.NoError(err)
+		x.True(strings.HasPrefix(got.Key, keys.PrefixDeployment), "not a deployment key: %q", got.Key)
+
+		// The per-customer half too: the name borrows a holder now.
+		h, err := s.Ungated.Host().Get(ctx, rstr.HostGetRequest_builder{
+			Ref:    rstr.HostRef_builder{Name: z.Ptr("contoso.example")}.Build(),
+			Select: rstr.HostSelect_builder{ActsAs: rstr.HolderSelect_builder{}.Build()}.Build(),
+		}.Build())
+		x.NoError(err)
+		x.NotEmpty(h.GetActsAs().GetId(), "the name was not nominated on")
+
+		// And without the plane an `rk_` lives in, nothing is made and nothing
+		// refuses: the app stays off, as a missing file leaves it.
+		got, err = loginApp(ctx, c, listening(t), nil)
+		x.NoError(err)
+		x.Empty(got.Key)
 	})
 }
 
