@@ -129,8 +129,8 @@ it from whoever holds it and that roster resolves no DNS because it runs in an a
 gap. The first half was a real problem and the answer is the proof above rather
 than a permission nothing could enforce. The second half was answering the wrong
 question: an air-gapped deployment has no tenant registering hostnames either, and
-what it has instead is an operator with a shell -- which is the first road, and why
-`host.resolver: none` exists.
+what it has instead is an operator with a shell -- which is the second road, and
+why `host.resolver: none` exists.
 
 A `MailDomain` answers a different question -- which tenant an **address**
 belongs to, and where the people at it authenticate. It claims nothing and is
