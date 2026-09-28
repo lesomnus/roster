@@ -74,6 +74,46 @@ hold a stale copy of.
 
 **Not a policy engine.** See below, which is the point of this document.
 
+## The same line, beside the others
+
+Every identity product draws these lines somewhere. Read across, and roster's
+is one column further out than the rest:
+
+| | holds people and checks their own secrets | runs the login flow, sends the mail, stands as the relying party at Entra or Google | draws the screens | issues tokens others verify |
+| --- | --- | --- | --- | --- |
+| Keycloak | one server | the same server | the same server, themed | the same server |
+| Zitadel | one server | the same server | Login V2 is an app of its own | the same server |
+| Ory | Kratos | **Kratos** -- its flows, its courier, its social sign-in | an app of its own | Hydra |
+| **roster** | roster | **a front door** -- the account app, the Login App, or one a deployment writes | the user console and the account app | Hydra |
+
+The third column is where most of them cut, and it is the ordinary cut: Ory is
+headless, Zitadel moved its login page out, and Entra answers at
+login.microsoftonline.com and myaccount.microsoft.com. roster's two pages are
+that cut and nothing more.
+
+The second column is roster's own. Kratos, Zitadel and Keycloak run the flow,
+deliver the mail and stand as the relying party **inside** the identity server,
+and send only the page outside. roster sends those out too. That is the whole
+of why every question about signing in through a directory ends at *a front
+door has to exist*, and why [login.md](login.md) opens with two directions.
+
+It is the directory's lineage rather than the identity provider's, and the first
+sentence of this document already said so. An LDAP server neither mails nor
+federates; the single sign-on product above it does. roster keeps that seat and
+leaves the seat above to a front door and to Hydra. What the seat costs is one
+more component to deploy. What it buys is a store that runs wherever a database
+does -- an air gap, a browser page -- and verifies nothing it did not mint.
+
+**And why the two pages are two.** The screens could be drawn on either: both
+draw what the caller may call, and a screen for one's own record and a screen
+for one's tenant are views. What cannot move is the door. The account app *is*
+the front door -- the relying party, the mailer, the enrolment policy -- and
+roster cannot take that in without crossing the line above. The user console is
+roster's own door, on roster's own cookie, where the person acts with their whole
+role and no app between. A screen moved from the user console to the account
+app does not change what it shows; it changes whose call it is made as, and how
+wide the app's key has to be.
+
 ## Single sign-on does not make roster bigger
 
 The request that tests the line hardest sounds like this: *somebody proven by

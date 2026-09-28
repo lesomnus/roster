@@ -10,6 +10,36 @@ app that signs somebody in and reads its own record back, and `examples/product`
 is a product app in front of Hydra. `docker/flow.sh` walks the first through a
 real Hydra; [relying-party.md](relying-party.md) is the last two.
 
+## Two directions, and one word for both
+
+*Single sign-on* is said of two different things here, and they face opposite
+ways.
+
+```
+arriving   Entra ────▶ a front door ────▶ roster
+
+           a tenant's own people sign in with the directory their tenant
+           already has. The front door is the relying party at Entra, and
+           `Connection` is the row that says which.
+
+leaving    roster ────▶ the Login App ────▶ Hydra ────▶ the products
+
+           this deployment's own products share one sign-in. Hydra is the
+           issuer, and the Login App tells it who.
+```
+
+Neither direction is roster's to walk. In the first, somebody has to hold the
+tenant's client secret and check Entra's signature, and `connection.proto` says
+that somebody is not roster. In the second, somebody has to sign what the
+products verify, and [position.md](position.md) says that somebody is Hydra.
+What roster does in both is answer *who is this*, once, and own the answer.
+
+The account app walks the first and never the second. The Login App walks both,
+because a browser Hydra sent it may still arrive through a directory. § *The user
+console, through the front door* is the first direction seen from the user
+console, which cannot walk it either and sends the browser to the front door
+instead.
+
 ## One app, or several
 
 **One app: you do not need Hydra.** The picture below is complete, and nothing is
